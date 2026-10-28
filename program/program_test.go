@@ -3,8 +3,8 @@ package program
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/proto"
+	"gradientcontrol.com/omega/core/internal/test/assert"
 )
 
 func TestOperationIsBool(t *testing.T) {

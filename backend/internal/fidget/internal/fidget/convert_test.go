@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	assembler "gradientcontrol.com/omega/core/internal/assembler"
 	"gradientcontrol.com/omega/core/internal/source"
+	"gradientcontrol.com/omega/core/internal/test/assert"
+	"gradientcontrol.com/omega/core/internal/test/require"
 )
 
 func TestConvert(t *testing.T) {

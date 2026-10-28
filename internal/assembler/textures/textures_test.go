@@ -3,8 +3,8 @@ package textures_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"gradientcontrol.com/omega/core/internal/assembler/textures"
+	"gradientcontrol.com/omega/core/internal/test/assert"
 	"gradientcontrol.com/omega/core/program"
 )
 
