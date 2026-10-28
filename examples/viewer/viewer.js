@@ -145,18 +145,20 @@ class ViewerApp {
     const width = Math.floor(this.canvas.clientWidth * dpr);
     const height = Math.floor(this.canvas.clientHeight * dpr);
 
-    if (this.canvas.width !== width || this.canvas.height !== height) {
-      this.canvas.width = width;
-      this.canvas.height = height;
-      this.camera.aspect = width / height;
+    if (this.canvas.width !== width || this.canvas.height !== height || !this.depthTexture) {
+      if (width > 0 && height > 0) {
+        this.canvas.width = width;
+        this.canvas.height = height;
+        this.camera.aspect = width / height;
 
-      // Recreate depth texture
-      if (this.depthTexture) this.depthTexture.destroy();
-      this.depthTexture = this.device.createTexture({
-        size: [width, height],
-        format: "depth24plus",
-        usage: GPUTextureUsage.RENDER_ATTACHMENT
-      });
+        // Recreate depth texture
+        if (this.depthTexture) this.depthTexture.destroy();
+        this.depthTexture = this.device.createTexture({
+          size: [width, height],
+          format: "depth24plus",
+          usage: GPUTextureUsage.RENDER_ATTACHMENT
+        });
+      }
     }
   }
 
@@ -315,6 +317,28 @@ class ViewerApp {
   // --- Shader Pipelines ---
 
   async compileSdfPipeline() {
+    // Inspect sdShape parameters to bind slider uniforms dynamically
+    const match = this.currentWgslCode.match(/fn\s+sdShape\s*\(([^)]*)\)/);
+    let extraArgsStr = "";
+    if (match) {
+      const params = match[1].split(",").map(s => s.trim()).filter(Boolean);
+      // First two parameters are p: vec3<f32>, time: f32
+      const extraCount = Math.max(0, params.length - 2);
+      const sliderAccessors = [
+        "sliders[0].x", "sliders[0].y", "sliders[0].z", "sliders[0].w",
+        "sliders[1].x", "sliders[1].y", "sliders[1].z", "sliders[1].w",
+        "sliders[2].x", "sliders[2].y", "sliders[2].z", "sliders[2].w",
+        "sliders[3].x", "sliders[3].y", "sliders[3].z", "sliders[3].w",
+      ];
+      const args = ["pt", "t"];
+      for (let i = 0; i < extraCount; i++) {
+        args.push(sliderAccessors[i] || "0.0");
+      }
+      extraArgsStr = args.join(", ");
+    } else {
+      extraArgsStr = "pt, t";
+    }
+
     // Generate SDF raymarching shader with camera uniforms and clip plane
     const fullShader = `
 struct CameraUniforms {
@@ -329,6 +353,19 @@ struct CameraUniforms {
 
 @group(0) @binding(0) var<uniform> camera: CameraUniforms;
 @group(0) @binding(1) var<uniform> sliders: array<vec4<f32>, 4>;
+
+struct gsl_shape {
+  d: f32,
+  shapeIndex: u32,
+};
+
+fn gsl_min(a: gsl_shape, b: gsl_shape) -> gsl_shape {
+  if (abs(a.d) < abs(b.d)) {
+    return a;
+  } else {
+    return b;
+  }
+}
 
 struct VertexOutput {
   @builtin(position) position: vec4<f32>,
@@ -350,6 +387,11 @@ fn vs_main(@builtin(vertex_index) vertexIndex: u32) -> VertexOutput {
 
 // Emitted GSL code containing sdShape
 ${this.currentWgslCode}
+
+// Dynamic dispatch wrapper injecting active slider uniform values
+fn evalSDF(pt: vec3<f32>, t: f32) -> gsl_shape {
+  return sdShape(${extraArgsStr});
+}
 
 struct FragmentOutput {
   @location(0) color: vec4<f32>,
@@ -373,21 +415,26 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
   for (var i: i32 = 0; i < maxSteps; i = i + 1) {
     let p = camera.eyePos + rayDir * t;
 
-    // Cross-section clipping plane
-    if (p.z > camera.clipZ) {
-      t = t + 0.05;
+    // Cross-section clipping plane (active if clipZ < 4.9)
+    if (camera.clipZ < 4.9 && p.z > camera.clipZ) {
+      if (rayDir.z < -0.001) {
+        let skip = (p.z - camera.clipZ) / (-rayDir.z);
+        t = t + max(skip, 0.02);
+      } else {
+        t = t + 0.1;
+      }
       continue;
     }
 
-    let res = sdShape(p, camera.time);
+    let res = evalSDF(p, camera.time);
     let dist = res.d;
 
     if (dist < 0.001) {
       // Calculate normal via gradient
       let eps = 0.001;
-      let nx = sdShape(p + vec3<f32>(eps, 0.0, 0.0), camera.time).d - sdShape(p - vec3<f32>(eps, 0.0, 0.0), camera.time).d;
-      let ny = sdShape(p + vec3<f32>(0.0, eps, 0.0), camera.time).d - sdShape(p - vec3<f32>(0.0, eps, 0.0), camera.time).d;
-      let nz = sdShape(p + vec3<f32>(0.0, 0.0, eps), camera.time).d - sdShape(p - vec3<f32>(0.0, 0.0, eps), camera.time).d;
+      let nx = evalSDF(p + vec3<f32>(eps, 0.0, 0.0), camera.time).d - evalSDF(p - vec3<f32>(eps, 0.0, 0.0), camera.time).d;
+      let ny = evalSDF(p + vec3<f32>(0.0, eps, 0.0), camera.time).d - evalSDF(p - vec3<f32>(0.0, eps, 0.0), camera.time).d;
+      let nz = evalSDF(p + vec3<f32>(0.0, 0.0, eps), camera.time).d - evalSDF(p - vec3<f32>(0.0, 0.0, eps), camera.time).d;
       let normal = normalize(vec3<f32>(nx, ny, nz));
 
       // Environment lighting models
@@ -432,6 +479,19 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
 `;
 
     const shaderModule = this.device.createShaderModule({ code: fullShader });
+    const compInfo = await shaderModule.getCompilationInfo();
+    let hasError = false;
+    for (const msg of compInfo.messages) {
+      if (msg.type === "error") {
+        hasError = true;
+        console.error(`WGSL error [${msg.lineNum}:${msg.linePos}]: ${msg.message}`);
+      } else if (msg.type === "warning") {
+        console.warn(`WGSL warning [${msg.lineNum}:${msg.linePos}]: ${msg.message}`);
+      }
+    }
+    if (hasError) {
+      throw new Error("Shader module compilation failed. See console for details.");
+    }
 
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
@@ -463,7 +523,7 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
       primitive: { topology: "triangle-list" },
       depthStencil: {
         depthWriteEnabled: true,
-        depthCompare: "less-equal",
+        depthCompare: "always",
         format: "depth24plus"
       }
     });
@@ -591,9 +651,9 @@ fn fs_wireframe(input: VertexOutput) -> @location(0) vec4<f32> {
 
   updateCameraMatrices() {
     const eye = [
-      this.camera.radius * Math.cos(this.camera.phi) * Math.sin(this.camera.theta) + this.camera.target[0],
-      this.camera.radius * Math.sin(this.camera.phi) + this.camera.target[1],
-      this.camera.radius * Math.cos(this.camera.phi) * Math.cos(this.camera.theta) + this.camera.target[2]
+      this.camera.radius * Math.cos(this.camera.phi) * Math.cos(this.camera.theta) + this.camera.target[0],
+      this.camera.radius * Math.cos(this.camera.phi) * Math.sin(this.camera.theta) + this.camera.target[1],
+      this.camera.radius * Math.sin(this.camera.phi) + this.camera.target[2]
     ];
 
     const viewProj = this.createViewProjectionMatrix(eye, this.camera.target, [0, 0, 1]);
@@ -605,12 +665,11 @@ fn fs_wireframe(input: VertexOutput) -> @location(0) vec4<f32> {
     uniformData[32] = eye[0];           // 32
     uniformData[33] = eye[1];           // 33
     uniformData[34] = eye[2];           // 34
-    uniformData[35] = 0.0;              // pad
-
-    uniformData[36] = this.currentTime; // 36
-    uniformData[37] = this.clipZ;       // 37
-    uniformData[38] = this.lightingPreset; // 38
-    uniformData[39] = this.camera.inMotion ? 1.0 : 0.0; // 39: motion draft
+    uniformData[35] = this.currentTime; // 35: time
+    uniformData[36] = this.clipZ;       // 36: clipZ
+    uniformData[37] = this.lightingPreset; // 37: lightingPreset
+    uniformData[38] = this.camera.inMotion ? 1.0 : 0.0; // 38: motionDraft
+    uniformData[39] = 0.0;              // 39: pad
 
     this.device.queue.writeBuffer(this.cameraUniformBuffer, 0, uniformData.buffer);
   }
@@ -982,8 +1041,15 @@ fn fs_wireframe(input: VertexOutput) -> @location(0) vec4<f32> {
   }
 }
 
-// Bootstrap application on DOM ready
-window.addEventListener("DOMContentLoaded", () => {
+// Bootstrap application on DOM ready or immediately if already loaded
+function startApp() {
   const app = new ViewerApp();
   app.init();
-});
+  window.viewerInstance = app;
+}
+
+if (document.readyState === "loading") {
+  window.addEventListener("DOMContentLoaded", startApp);
+} else {
+  startApp();
+}
