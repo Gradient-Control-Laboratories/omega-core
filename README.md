@@ -18,6 +18,130 @@ and audio synthesizers.
 - **`stdlib/`**: Compile-time embedded GSL standard library packages (`builtin`, `color`, `vector`, `matrix`, etc.).
 - **`cmd/gslc/`**: Standalone multi-backend command-line compiler driver.
 
+### Directory Layout
+
+```text
+omega_core/
+├── go.mod                     # module gradientcontrol.com/omega/core
+├── assembler/
+│   ├── assemble.go            # Assemble(primarySources, opts...) API
+│   ├── options.go             # Options (SourcePath, SourceManager, WithProgress...)
+│   └── source/                # Source abstraction
+│       └── manager.go         # source.Manager interface definition
+├── backend/                   # Target code generators
+│   ├── audio/                 # Web Audio synthesis generator
+│   │   ├── emit.go            # AudioToJs / ExtractAudio API
+│   │   └── internal/          # Implementation copied from agent/js
+│   │       ├── codegen/       # Copied from agent/js/internal/codegen
+│   │       ├── extract/       # Copied from agent/js/internal/extract
+│   │       └── lib/           # Copied from agent/js/lib
+│   ├── internal/              # Shared backend internal implementations
+│   │   ├── common/            # Shared backend generator base
+│   │   │   └── build.go       # Shared builder and visitor interfaces
+│   │   ├── environment/       # Lighting environment presets for 3D rendering
+│   │   ├── fidget/            # Copied from agent/fidget (dual-contouring SDF mesher)
+│   │   │   ├── tape.go        # Tape generation helper
+│   │   │   ├── internal/
+│   │   │   └── lib/
+│   │   ├── manifold/          # Copied from agent/manifold/internal/manifold (CSG)
+│   │   ├── meshmeasure/       # Mesh measurement utilities
+│   │   └── tape/              # Copied from tape generator
+│   ├── mesh/                  # Unified 3D mesh generator
+│   │   └── emit.go            # Mesh(prog, opts...) & MeshBodies API
+│   ├── tape/                  # Bytecode tape compiler
+│   │   └── emit.go            # Tape compiler API
+│   └── wgsl/                  # WebGPU shader emitter
+│       ├── emit.go            # WGSL emission API
+│       └── internal/          # Implementation copied from agent/wgsl
+│           ├── accel/         # Hardware accelerated WGSL kernel specs
+│           └── lib/           # Copied from agent/wgsl/internal/codegen etc.
+├── bin/                       # Local build outputs (gslc binary; gitignored)
+├── cmd/                       # Standalone CLI tools
+│   └── gslc/                  # Unified compiler CLI (emits WGSL, STL, tape, audio)
+│       └── main.go            # Entry point and CLI command execution
+├── common/
+│   ├── source/
+│   │   └── package/           # Package sources for tests
+│   └── web/
+│       └── example/           # Example GSL files for tests
+├── examples/                  # Curated showcase GSL models and assets
+│   ├── assets/                # Traditional CAD mesh assets (bracket.stl)
+│   └── viewer/                # Zero-dependency client-side WebGPU viewer
+│       └── shaders/           # Pre-compiled WebGPU shaders and metadata
+├── internal/                  # Shared compiler passes and internal AST transformations
+│   ├── assembler/             # Copied from agent/assembler/lib (orchestrates passes)
+│   │   ├── annotation/        # AST annotation metadata extraction
+│   │   ├── constspec/         # Constant specialization
+│   │   ├── deadcode/          # Dead code elimination
+│   │   ├── inline/            # Function inlining
+│   │   ├── meshplan/          # Mesh partition planning (from common/program/meshplan)
+│   │   ├── property/          # Property assignments and evaluation
+│   │   ├── propval/           # Property value evaluation
+│   │   ├── textures/          # Texture descriptor binding
+│   │   ├── topofold/          # Topological folding
+│   │   ├── unroll/            # Loop unrolling transformations
+│   │   └── warpfold/          # Warp fold transformations
+│   ├── build/                 # Shared AST visitor and builder copied from common/build
+│   ├── closure/               # Lambda closure analysis and capture binding
+│   ├── collect/               # Multi-package dependency gathering
+│   ├── edit/                  # Source span edit primitives
+│   ├── eval/                  # Constant evaluation & expression folding
+│   ├── link/                  # Lexical scoping and reference linking
+│   ├── lower/                 # Structural AST transformations
+│   ├── meshfold/              # Asset slot binding
+│   ├── meshslots/             # Mesh slot extraction
+│   ├── noise/                 # Procedural noise generators
+│   ├── pkg/                   # Package naming and path resolution
+│   ├── preamble/              # Builtin preamble generation
+│   ├── refs/                  # AST reference resolution (from common/program/refs)
+│   ├── scope/                 # Lexical scope trees and symbol tables
+│   ├── slider/                # Slider parameter metadata (from common/source/edit/slider)
+│   ├── source/                # Concrete source managers (StdlibManager, LocalManager)
+│   │   └── manager.go         # LocalManager implementation
+│   ├── srctest/               # Shared test runner for GSL source tests
+│   ├── test/
+│   │   ├── assert/            # Test assertions (from stirigma test/assert)
+│   │   └── require/           # Test require assertions (from stirigma test/require)
+│   ├── testdata/              # Assembler test fixtures
+│   ├── types/                 # Semantic type analysis
+│   └── ui/                    # UI control metadata extraction (from common/source/edit/ui)
+├── parser/                    # Lexer and Parser
+│   ├── parser.go              # ParsePackage entry point
+│   └── internal/              # Implementation copied from Omega/omega
+│       ├── annotation/        # Parser AST annotation metadata extraction
+│       ├── api/               # Parser API types
+│       ├── identifier2/       # Copied from agent/parser/internal/identifier2
+│       ├── lib/               # Copied from agent/parser/lib
+│       ├── parser2/           # Copied from agent/parser/internal/parser2 (name preserved)
+│       └── scene/             # Scene descriptor parsing (from common/program/scene)
+├── program/                   # Core Program/AST models and definitions (from common/program)
+│   └── program.proto          # Protobuf AST schema definitions
+├── stdlib/                    # GSL Standard Library (mirrors common/source/package)
+│   ├── pkg_info.go            # Package registry and compile-time embedded source data
+│   ├── builtin/
+│   ├── color/
+│   ├── ease/
+│   ├── glass/
+│   ├── lattice/
+│   ├── map/
+│   ├── material/
+│   ├── matrix/
+│   ├── mechanical/
+│   ├── metal/
+│   ├── noise/
+│   ├── physical/
+│   ├── text/
+│   ├── texture/
+│   ├── transform/
+│   └── vector/
+└── tool/                      # Developer build and automation scripts
+    ├── build.sh               # Builds compiler executables into bin/
+    ├── check.sh               # Pre-commit quality gate (gofmt, go vet, tests)
+    ├── clean.sh               # Cleans bin/ outputs, test cache, and scratch files
+    ├── test.sh                # Runs unit, integration, and golden test suites
+    └── update-goldens.sh      # Regenerates reference test goldens
+```
+
 ## Building the Toolchain
 
 Compile the `gslc` binary into `bin/gslc`:
