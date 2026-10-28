@@ -1,0 +1,65 @@
+{
+  "target": "wgsl",
+  "source": "examples/gear.gsl",
+  "sliders": [
+    {
+      "variableName": "teeth",
+      "min": 6,
+      "max": 40,
+      "initialValue": 18,
+      "decimals": 1,
+      "paramName": "gsl_param_2_9",
+      "span": {
+        "startLine": 2,
+        "startColumn": 9,
+        "endLine": 2,
+        "endColumn": 13
+      }
+    },
+    {
+      "variableName": "radius",
+      "min": 1,
+      "max": 5,
+      "initialValue": 2,
+      "decimals": 1,
+      "paramName": "gsl_param_6_10",
+      "span": {
+        "startLine": 6,
+        "startColumn": 10,
+        "endLine": 6,
+        "endColumn": 13
+      }
+    },
+    {
+      "variableName": "bore",
+      "min": 0.2,
+      "max": 1,
+      "initialValue": 0.5,
+      "decimals": 1,
+      "paramName": "gsl_param_10_8",
+      "span": {
+        "startLine": 10,
+        "startColumn": 8,
+        "endLine": 10,
+        "endColumn": 11
+      }
+    },
+    {
+      "variableName": "height",
+      "min": 0.2,
+      "max": 2,
+      "initialValue": 0.8,
+      "decimals": 1,
+      "paramName": "gsl_param_14_10",
+      "span": {
+        "startLine": 14,
+        "startColumn": 10,
+        "endLine": 14,
+        "endColumn": 13
+      }
+    }
+  ],
+  "uiControls": null,
+  "scene": null,
+  "diagnostics": null
+}

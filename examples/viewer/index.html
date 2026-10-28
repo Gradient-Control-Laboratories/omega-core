@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GSL WebGPU Standalone 3D Viewer</title>
+  <meta name="description" content="Zero-dependency client-side WebGPU viewer for procedural GSL shaders and CAD polygon meshes.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="canvas-container">
+    <canvas id="webgpu-canvas"></canvas>
+  </div>
+
+  <!-- Top Navigation & Model Selection Bar -->
+  <header id="top-bar" class="glass-panel">
+    <div class="logo-group">
+      <span class="logo-badge">GSL</span>
+      <h1 class="title-text">WebGPU 3D Viewer</h1>
+    </div>
+
+    <div class="top-controls">
+      <label for="model-select" style="display:none">Select Model</label>
+      <select id="model-select" class="dropdown">
+        <option value="gear">Parametric Gear (Sliders)</option>
+        <option value="gyroid">Gyroid TPMS (Minimal Surface)</option>
+        <option value="kinetic_sculpture">Kinetic Sculpture (Animation)</option>
+        <option value="hybrid_bracket">Hybrid Bracket (CAD + Infill)</option>
+        <option value="csg_shapes">CSG Shapes (Smooth Booleans)</option>
+      </select>
+
+      <label for="camera-view-select" style="display:none">Camera View</label>
+      <select id="camera-view-select" class="dropdown">
+        <option value="iso">Isometric</option>
+        <option value="top">Top View</option>
+        <option value="front">Front View</option>
+        <option value="right">Right View</option>
+      </select>
+
+      <button id="btn-reset-cam" class="btn" title="Reset Camera View">Reset</button>
+      <button id="btn-screenshot" class="btn primary" title="Capture High-Res PNG">Snapshot</button>
+    </div>
+  </header>
+
+  <!-- Right Floating Sidebar: Controls, Sliders & Lighting -->
+  <aside id="sidebar" class="glass-panel">
+    <div class="sidebar-header">
+      <span>Inspector & Controls</span>
+      <span id="shape-status" style="font-size: 11px; color: var(--accent-cyan);">Ready</span>
+    </div>
+
+    <div class="sidebar-body">
+      <!-- Hybrid Traditional Mesh Integration -->
+      <div class="section-group">
+        <span class="section-title">Layers & Visibility</span>
+        <label class="checkbox-row">
+          <input type="checkbox" id="chk-show-sdf" checked>
+          <span>Show Procedural SDF</span>
+        </label>
+        <label class="checkbox-row">
+          <input type="checkbox" id="chk-show-mesh" checked>
+          <span>Show CAD Polygon Mesh</span>
+        </label>
+        <label class="checkbox-row">
+          <input type="checkbox" id="chk-show-wireframe">
+          <span>Show Mesh Wireframe</span>
+        </label>
+        <label class="checkbox-row">
+          <input type="checkbox" id="chk-show-grid" checked>
+          <span>Show Ground Grid</span>
+        </label>
+      </div>
+
+      <!-- Cross-Sectional Clipping Plane -->
+      <div class="section-group">
+        <span class="section-title">Cross-Section Slice</span>
+        <div class="slider-control">
+          <div class="slider-label-row">
+            <span class="slider-name">Clip Z Plane</span>
+            <span id="val-clip-z" class="slider-val">None</span>
+          </div>
+          <input type="range" id="slider-clip-z" min="-5" max="5" step="0.05" value="5">
+        </div>
+      </div>
+
+      <!-- Environment Lighting & Tone-Mapping -->
+      <div class="section-group">
+        <span class="section-title">Lighting & Environment</span>
+        <select id="lighting-preset-select" class="dropdown" style="width: 100%;">
+          <option value="studio">Studio Neutral</option>
+          <option value="warm">Warm Sunset</option>
+          <option value="cool">Cool Industrial</option>
+          <option value="dramatic">Dramatic Contrast</option>
+          <option value="metallic">High-Contrast Metallic</option>
+        </select>
+      </div>
+
+      <!-- Dynamic Parameter Sliders Container (Auto-populated from JSON/WGSL) -->
+      <div class="section-group">
+        <span class="section-title">GSL Model Parameters</span>
+        <div id="dynamic-sliders-container" style="display:flex; flex-direction:column; gap:12px;">
+          <span style="color:var(--text-muted); font-size:12px;">Loading parameters...</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Bottom Timeline Toolbar for Continuous Dynamic Animation -->
+  <footer id="bottom-toolbar" class="glass-panel">
+    <button id="btn-play-pause" class="btn" title="Toggle Play / Pause (Spacebar)">
+      <span id="play-icon">▶ Play</span>
+    </button>
+
+    <div class="timeline-scrubber">
+      <span id="time-current" class="time-display">0.00s</span>
+      <input type="range" id="timeline-slider" min="0" max="10" step="0.01" value="0">
+      <span class="time-display">10.00s</span>
+    </div>
+
+    <select id="playback-speed-select" class="dropdown" style="width: 72px;">
+      <option value="0.25">0.25x</option>
+      <option value="0.5">0.5x</option>
+      <option value="1.0" selected>1.0x</option>
+      <option value="2.0">2.0x</option>
+    </select>
+  </footer>
+
+  <!-- Diagnostics Badge -->
+  <div id="diagnostics-badge" class="glass-panel">
+    <div>FPS: <span id="diag-fps" class="badge-val">60</span></div>
+    <div>Raymarch Steps: <span id="diag-steps" class="badge-val">~45</span></div>
+  </div>
+
+  <!-- Drag and Drop Hot-reload Overlay -->
+  <div id="drag-overlay">
+    <span>Drop .wgsl shader or .stl/.obj mesh to reload</span>
+  </div>
+
+  <!-- Main Viewer Engine (ES Module) -->
+  <script type="module" src="viewer.js"></script>
+</body>
+</html>

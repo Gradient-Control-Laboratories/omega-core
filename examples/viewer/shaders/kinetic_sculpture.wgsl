@@ -1,0 +1,30 @@
+fn sdShape(p: vec3<f32>, time: f32, gsl_param_2_9: f32) -> gsl_shape {
+  let speed = gsl_param_2_9;
+  let t = time * speed;
+  let angle1 = t * 0.8;
+  let c1 = cos(angle1);
+  let s1 = sin(angle1);
+  let p1_y = p.y * c1 - p.z * s1;
+  let r1 = sqrt(p.x * p.x + p1_y * p1_y);
+  let p1_z = p.y * s1 + p.z * c1;
+  let d_ring1 = max(abs(r1 - 2.2) - 0.12, abs(p1_z) - 0.12);
+  let angle2 = t * 1.3;
+  let c2 = cos(angle2);
+  let s2 = sin(angle2);
+  let p2_x = p.x * c2 - p.z * s2;
+  let r2 = sqrt(p2_x * p2_x + p.y * p.y);
+  let p2_z = p.x * s2 + p.z * c2;
+  let d_ring2 = max(abs(r2 - 1.6) - 0.12, abs(p2_z) - 0.12);
+  let angle3 = t * 1.9;
+  let c3 = cos(angle3);
+  let s3 = sin(angle3);
+  let p3_x = p.x * c3 - p.y * s3;
+  let r3 = sqrt(p3_x * p3_x + p.z * p.z);
+  let p3_y = p.x * s3 + p.y * c3;
+  let d_ring3 = max(abs(r3 - 1.0) - 0.12, abs(p3_y) - 0.12);
+  let r_sphere = sqrt(p.x * p.x + p.y * p.y + p.z * p.z);
+  let pulse = 0.45 + 0.08 * sin(t * 3.0);
+  let d_core = r_sphere - pulse;
+  let gsl_s1 = gsl_shape(min(min(d_ring1, d_ring2), min(d_ring3, d_core)), 1u);
+  return gsl_s1;
+}

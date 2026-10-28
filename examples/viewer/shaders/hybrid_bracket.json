@@ -1,0 +1,37 @@
+{
+  "target": "wgsl",
+  "source": "examples/hybrid_bracket.gsl",
+  "sliders": [
+    {
+      "variableName": "infill_density",
+      "min": 1,
+      "max": 5,
+      "initialValue": 2.5,
+      "decimals": 1,
+      "paramName": "gsl_param_2_18",
+      "span": {
+        "startLine": 2,
+        "startColumn": 18,
+        "endLine": 2,
+        "endColumn": 21
+      }
+    },
+    {
+      "variableName": "infill_thickness",
+      "min": 0.05,
+      "max": 0.6,
+      "initialValue": 0.25,
+      "decimals": 2,
+      "paramName": "gsl_param_6_20",
+      "span": {
+        "startLine": 6,
+        "startColumn": 20,
+        "endLine": 6,
+        "endColumn": 24
+      }
+    }
+  ],
+  "uiControls": null,
+  "scene": null,
+  "diagnostics": null
+}

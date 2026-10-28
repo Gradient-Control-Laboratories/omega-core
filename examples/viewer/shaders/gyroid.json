@@ -1,0 +1,51 @@
+{
+  "target": "wgsl",
+  "source": "examples/gyroid.gsl",
+  "sliders": [
+    {
+      "variableName": "scale",
+      "min": 0.5,
+      "max": 4,
+      "initialValue": 1.5,
+      "decimals": 1,
+      "paramName": "gsl_param_2_9",
+      "span": {
+        "startLine": 2,
+        "startColumn": 9,
+        "endLine": 2,
+        "endColumn": 12
+      }
+    },
+    {
+      "variableName": "thickness",
+      "min": 0.05,
+      "max": 0.8,
+      "initialValue": 0.3,
+      "decimals": 1,
+      "paramName": "gsl_param_6_13",
+      "span": {
+        "startLine": 6,
+        "startColumn": 13,
+        "endLine": 6,
+        "endColumn": 16
+      }
+    },
+    {
+      "variableName": "boundary_radius",
+      "min": 1,
+      "max": 4,
+      "initialValue": 2.5,
+      "decimals": 1,
+      "paramName": "gsl_param_10_19",
+      "span": {
+        "startLine": 10,
+        "startColumn": 19,
+        "endLine": 10,
+        "endColumn": 22
+      }
+    }
+  ],
+  "uiControls": null,
+  "scene": null,
+  "diagnostics": null
+}

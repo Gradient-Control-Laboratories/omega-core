@@ -1,0 +1,41 @@
+// Kinetic Sculpture Showcase: Continuous Time & Rotating Nested Gimbal Rings
+speed = 1.0;
+speed.min = 0.1;
+speed.max = 3.0;
+
+t = time * speed;
+
+// Ring 1: rotates around X axis
+angle1 = t * 0.8;
+c1 = cos(angle1);
+s1 = sin(angle1);
+p1_y = p.y * c1 - p.z * s1;
+p1_z = p.y * s1 + p.z * c1;
+r1 = sqrt(p.x * p.x + p1_y * p1_y);
+d_ring1 = max(abs(r1 - 2.2) - 0.12, abs(p1_z) - 0.12);
+
+// Ring 2: rotates around Y axis
+angle2 = t * 1.3;
+c2 = cos(angle2);
+s2 = sin(angle2);
+p2_x = p.x * c2 - p.z * s2;
+p2_z = p.x * s2 + p.z * c2;
+r2 = sqrt(p2_x * p2_x + p.y * p.y);
+d_ring2 = max(abs(r2 - 1.6) - 0.12, abs(p2_z) - 0.12);
+
+// Ring 3: rotates around Z axis
+angle3 = t * 1.9;
+c3 = cos(angle3);
+s3 = sin(angle3);
+p3_x = p.x * c3 - p.y * s3;
+p3_y = p.x * s3 + p.y * c3;
+r3 = sqrt(p3_x * p3_x + p.z * p.z);
+d_ring3 = max(abs(r3 - 1.0) - 0.12, abs(p3_y) - 0.12);
+
+// Central pulsating sphere
+pulse = 0.45 + 0.08 * sin(t * 3.0);
+r_sphere = sqrt(p.x * p.x + p.y * p.y + p.z * p.z);
+d_core = r_sphere - pulse;
+
+// Union of all components
+return min(min(d_ring1, d_ring2), min(d_ring3, d_core));
