@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/backend/common"
+	"gradientcontrol.com/omega/core/backend/internal/common"
 	"gradientcontrol.com/omega/core/internal/build"
 	"gradientcontrol.com/omega/core/program"
 )
