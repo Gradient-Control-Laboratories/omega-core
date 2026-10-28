@@ -1,0 +1,12 @@
+
+sphere(radius) {
+  return length(p) - radius;
+}
+
+sphere(center, radius) {
+  return remap(sphere(radius), p - center);
+}
+
+// x = sphere(1, 2, 3) ;                  // ERROR: overload_err no function named "sphere" with 3 parameters; perhaps one of these? sphere(radius), sphere(center, radius)
+
+return sphere([1, 2, 3], 2.5);

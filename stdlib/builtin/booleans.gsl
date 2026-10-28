@@ -1,0 +1,619 @@
+// =========================================================
+// BOOLEAN OPERATIONS
+// =========================================================
+
+/// Sharp CSG intersection of two SDFs (logical AND of solid regions).
+intersectSharp(d1, d2) {
+  return max(d1, d2);
+}
+
+/// Sharp CSG intersection of three SDFs.
+intersectSharp(d1, d2, d3) {
+  return max(d1, d2, d3);
+}
+
+/// Sharp CSG intersection of N SDFs. Pass [d1, d2, ...] as one
+/// collection.
+intersectSharp(fields) {
+  return reduce(
+    (peak, field) {
+      return max(peak, field);
+    },
+    fields);
+}
+
+/// Sharp CSG union of two SDFs (logical OR of solid regions).
+unionSharp(d1, d2) {
+  return min(d1, d2);
+}
+
+/// Sharp CSG union of three SDFs.
+unionSharp(d1, d2, d3) {
+  return min(d1, d2, d3);
+}
+
+/// Sharp CSG union of N SDFs.
+unionSharp(fields) {
+  return reduce(
+    (nearest, field) {
+      return min(nearest, field);
+    },
+    fields);
+}
+
+/// Sharp CSG difference: target minus tool.
+differenceSharp(target, tool) {
+  return max(target, neg(tool));
+}
+
+/// Round CSG intersection with fillet `radius`. The intersection edge
+/// becomes a smooth arc of about that radius. At radius 0 the surface is
+/// intersectSharp's, but the field is not: outside a convex corner it
+/// measures the Euclidean distance to the corner instead of the max.
+intersectRound(d1, d2, radius) {
+  inset1 = max(d1 + radius, 0);
+  inset2 = max(d2 + radius, 0);
+  return min(neg(radius), max(d1, d2)) + length([inset1, inset2]);
+}
+
+/// Round CSG intersection of three SDFs with fillet `radius`. Fillets
+/// all three pairwise edges.
+intersectRound(d1, d2, d3, radius) {
+  inset1 = max(d1 + radius, 0);
+  inset2 = max(d2 + radius, 0);
+  inset3 = max(d3 + radius, 0);
+  return min(neg(radius), max(d1, d2, d3)) + length([inset1, inset2, inset3]);
+}
+
+/// Round CSG intersection of N SDFs.
+intersectRound(fields, radius) {
+  sumOfSquares = reduce(0,
+    (runningSum, field) {
+      inset = max(field + radius, 0);
+      return runningSum + inset * inset;
+    },
+    fields);
+  return min(neg(radius), intersectSharp(fields)) + sqrt(sumOfSquares);
+}
+
+/// Partial application: binds the fillet radius and returns the intersection
+/// operator itself, ready to hand to a primitive that takes its own blend —
+/// `boxCentered(center, size, intersectRound(0.2))` rounds every edge of the
+/// box by 0.2. The returned operator takes the list of fields to intersect.
+intersectRound(radius) {
+  return (fields) { return intersectRound(fields, radius); };
+}
+
+/// Round CSG union with fillet `radius`. The union seam becomes a smooth
+/// arc of about that radius.
+unionRound(d1, d2, radius) {
+  return neg(intersectRound(neg(d1), neg(d2), radius));
+}
+
+/// Round CSG union of three SDFs with fillet `radius`.
+unionRound(d1, d2, d3, radius) {
+  return neg(intersectRound(neg(d1), neg(d2), neg(d3), radius));
+}
+
+/// Round CSG union of N SDFs.
+unionRound(fields, radius) {
+  negated = map((field) {
+    return neg(field);
+  }, fields);
+  return neg(intersectRound(negated, radius));
+}
+
+/// Partial application of unionRound: binds the fillet radius and returns the
+/// operator, ready to hand to a primitive that takes its own blend.
+unionRound(radius) {
+  return (fields) { return unionRound(fields, radius); };
+}
+
+/// Round CSG difference: target minus tool with a fillet of `radius`
+/// where the tool carves into the target.
+differenceRound(target, tool, radius) {
+  return intersectRound(target, neg(tool), radius);
+}
+
+/// Lp-norm blend intersection of a list of SDFs. Interpolates between a sharp
+/// intersection (exponent -> infinity) and a round one (exponent == 2) by combining the
+/// clamped per-field insets with an Lp norm instead of intersectRound's L2
+/// norm. A larger exponent is sharper; `width` sets the blend width.
+intersectLp(fields, width, exponent) {
+  // Normalize by the peak inset (the Lp analog of the exponential blend's
+  // log-sum-exp shift): factoring out the largest inset keeps every ratio
+  // in [0, 1], so inset^exponent never overflows the mesher's intervals for any
+  // positive exponent.
+  peak = intersectSharp(fields);
+  peakInset = max(peak + width, 0);
+  normalizer = max(peakInset, 1e-9);
+  sumOfPowers = reduce(0, (runningSum, field) {
+    inset = max(field + width, 0);
+    return runningSum + pow(inset / normalizer, exponent);
+  }, fields);
+  return min(neg(width), peak) + peakInset * pow(sumOfPowers, 1 / exponent);
+}
+
+/// Lp-norm blend intersection of two SDFs (see the list form).
+intersectLp(d1, d2, width, exponent) {
+  return intersectLp([d1, d2], width, exponent);
+}
+
+/// Lp-norm blend intersection of three SDFs (see the list form).
+intersectLp(d1, d2, d3, width, exponent) {
+  return intersectLp([d1, d2, d3], width, exponent);
+}
+
+/// Partial application of intersectLp: binds the blend width and exponent and
+/// returns the operator, ready to hand to a primitive that takes its own blend.
+intersectLp(width, exponent) {
+  return (fields) { return intersectLp(fields, width, exponent); };
+}
+
+/// Lp-norm blend union of a list of SDFs (De Morgan dual of intersectLp):
+/// interpolates between a sharp union (exponent -> infinity) and a round one
+/// (exponent == 2). A larger exponent is sharper; `width` sets the blend width.
+unionLp(fields, width, exponent) {
+  negated = map((field) {
+    return neg(field);
+  }, fields);
+  return neg(intersectLp(negated, width, exponent));
+}
+
+/// Lp-norm blend union of two SDFs (see the list form).
+unionLp(d1, d2, width, exponent) {
+  return unionLp([d1, d2], width, exponent);
+}
+
+/// Lp-norm blend union of three SDFs (see the list form).
+unionLp(d1, d2, d3, width, exponent) {
+  return unionLp([d1, d2, d3], width, exponent);
+}
+
+/// Partial application of unionLp: binds the blend width and exponent and
+/// returns the operator, ready to hand to a primitive that takes its own blend.
+unionLp(width, exponent) {
+  return (fields) { return unionLp(fields, width, exponent); };
+}
+
+/// Lp-norm blend difference: target minus tool, with an Lp-blended seam
+/// (see intersectLp).
+differenceLp(target, tool, width, exponent) {
+  return intersectLp([target, neg(tool)], width, exponent);
+}
+
+/// Exponential (log-sum-exp) blend intersection of a list of SDFs — a smooth
+/// maximum whose softness is set by `width`. A larger width blends more; a small one
+/// approaches the sharp intersection.
+//
+// After Inigo Quilez.
+intersectExponential(fields, width) {
+  scale = width / e;
+  // Shift by the peak (log-sum-exp trick): algebraically identical, but the
+  // exponent stays <= 0 so exp never overflows the mesher's intervals.
+  peak = intersectSharp(fields);
+  total = reduce(0, (runningTotal, field) {
+    return runningTotal + exp((field - peak) / scale);
+  }, fields);
+  return peak + scale * ln(total);
+}
+
+/// Exponential blend intersection of two SDFs (see the list form).
+intersectExponential(d1, d2, width) {
+  return intersectExponential([d1, d2], width);
+}
+
+/// Exponential blend intersection of three SDFs (see the list form).
+intersectExponential(d1, d2, d3, width) {
+  return intersectExponential([d1, d2, d3], width);
+}
+
+/// Partial application of intersectExponential: binds the blend width and
+/// returns the operator, ready to hand to a primitive that takes its own blend.
+intersectExponential(width) {
+  return (fields) { return intersectExponential(fields, width); };
+}
+
+/// Exponential (log-sum-exp) blend union of a list of SDFs (De Morgan dual of
+/// intersectExponential) — a smooth minimum. A larger width blends more.
+unionExponential(fields, width) {
+  negated = map((field) {
+    return neg(field);
+  }, fields);
+  return neg(intersectExponential(negated, width));
+}
+
+/// Exponential blend union of two SDFs (see the list form).
+unionExponential(d1, d2, width) {
+  return unionExponential([d1, d2], width);
+}
+
+/// Exponential blend union of three SDFs (see the list form).
+unionExponential(d1, d2, d3, width) {
+  return unionExponential([d1, d2, d3], width);
+}
+
+/// Partial application of unionExponential: binds the blend width and returns
+/// the operator, ready to hand to a primitive that takes its own blend.
+unionExponential(width) {
+  return (fields) { return unionExponential(fields, width); };
+}
+
+/// Exponential blend difference: target minus tool, with a log-sum-exp seam
+/// (see intersectExponential).
+differenceExponential(target, tool, width) {
+  return intersectExponential([target, neg(tool)], width);
+}
+
+// Chamfer building blocks over a list of distance fields. In 3D the
+// chamfer of N half-spaces is shaped by where pairs of faces meet
+// (edges, the sqrt2 planes) and where triples meet (vertices, the
+// sqrt3 planes); higher-order groups add no new features.
+// intersectChamferEdges and intersectChamferVertices scan all i<j (and
+// i<j<l) combinations and take the strongest plane. Slots that aren't a
+// valid combination fall back to `face` (the sharp intersection), the
+// natural floor of the chamfer field; this avoids large sentinels that
+// would otherwise blow up interval bounds in the mesher. The union
+// counterparts negate, intersect, and negate back, as elsewhere.
+
+/// Strongest pairwise (edge) chamfer plane of a list of SDFs at `setback`.
+intersectChamferEdges(fields, setback) {
+  face = intersectSharp(fields);
+  return intersectSharp(map((di, i) {
+    return intersectSharp(map((dj, j) {
+      return (j > i) ? (di + dj + setback) / sqrt2 : face;
+    }, fields));
+  }, fields));
+}
+
+/// Strongest three-way (vertex) chamfer plane of a list of SDFs at `setback`.
+intersectChamferVertices(fields, setback) {
+  face = intersectSharp(fields);
+  return intersectSharp(map((di, i) {
+    return intersectSharp(map((dj, j) {
+      return intersectSharp(map((dl, l) {
+        return (l > j) && (j > i) ? (di + dj + dl + setback) / sqrt3 : face;
+      }, fields));
+    }, fields));
+  }, fields));
+}
+
+/// Union counterpart of intersectChamferEdges.
+unionChamferEdges(fields, setback) {
+  negated = map((field) {
+    return neg(field);
+  }, fields);
+  return neg(intersectChamferEdges(negated, setback));
+}
+
+/// Union counterpart of intersectChamferVertices.
+unionChamferVertices(fields, setback) {
+  negated = map((field) {
+    return neg(field);
+  }, fields);
+  return neg(intersectChamferVertices(negated, setback));
+}
+
+/// Chamfered CSG intersection: a bevel set back by `setback` along each face
+/// replaces the sharp intersection edge. The bevel is at 45° only where the
+/// faces meet at a right angle; its plane's gradient has length
+/// sqrt(1 + normal1·normal2), so at obtuse edges the field overstates distance.
+intersectChamfer(d1, d2, setback) {
+  face = max(d1, d2);
+  edge = (d1 + d2 + setback) / sqrt2;
+  return max(face, edge);
+}
+
+/// Chamfered CSG intersection of three SDFs. Chamfers all three pairwise
+/// edges and the three-way vertex where they meet.
+intersectChamfer(d1, d2, d3, setback) {
+  face = max(d1, d2, d3);
+  total = d1 + d2 + d3;
+  // The strongest edge is between the two nearest faces: the two largest
+  // d's, whose sum is the total minus the smallest.
+  edge = (total - min(d1, d2, d3) + setback) / sqrt2;
+  corner = (total + setback) / sqrt3;
+  return max(face, edge, corner);
+}
+
+/// Chamfered CSG intersection of N SDFs. `setback` is a scalar that applies
+/// to edges and vertices alike, or pass [edgeSetback, vertexSetback] to
+/// set them separately.
+intersectChamfer(fields, setback) {
+  return max(intersectSharp(fields),
+    intersectChamferEdges(fields, firstOf(setback)),
+    intersectChamferVertices(fields, lastOf(setback)));
+}
+
+/// Partial application of intersectChamfer: binds the chamfer setback and
+/// returns the operator, ready to hand to a primitive that takes its own blend.
+intersectChamfer(setback) {
+  return (fields) { return intersectChamfer(fields, setback); };
+}
+
+/// Chamfered CSG union with bevel set back by `setback`.
+unionChamfer(d1, d2, setback) {
+  return neg(intersectChamfer(neg(d1), neg(d2), setback));
+}
+
+/// Chamfered CSG union of three SDFs.
+unionChamfer(d1, d2, d3, setback) {
+  return neg(intersectChamfer(neg(d1), neg(d2), neg(d3), setback));
+}
+
+/// Chamfered CSG union of N SDFs. `setback` is a scalar, or
+/// [edgeSetback, vertexSetback] to set edges and vertices separately.
+unionChamfer(fields, setback) {
+  negated = map((field) {
+    return neg(field);
+  }, fields);
+  return neg(intersectChamfer(negated, setback));
+}
+
+/// Partial application of unionChamfer: binds the chamfer setback and returns
+/// the operator, ready to hand to a primitive that takes its own blend.
+unionChamfer(setback) {
+  return (fields) { return unionChamfer(fields, setback); };
+}
+
+/// Chamfered CSG difference: target minus tool with a chamfered cut.
+differenceChamfer(target, tool, setback) {
+  return intersectChamfer(target, neg(tool), setback);
+}
+
+/// Chamfered intersection whose chamfer planes are joined by a round fillet
+/// of `radius`: intersectChamferBlend with intersectRound(radius). A
+/// bevel that fades into a fillet rather than ending in a hard line.
+/// Radius 0 gives intersectChamfer's surface.
+intersectChamferRound(d1, d2, setback, radius) {
+  return intersectChamferBlend(d1, d2, setback, intersectRound(radius));
+}
+
+/// Chamfered + rounded intersection of three SDFs.
+intersectChamferRound(d1, d2, d3, setback, radius) {
+  return intersectChamferBlend(d1, d2, d3, setback, intersectRound(radius));
+}
+
+/// Chamfered + rounded CSG intersection of N SDFs. `setback` is a scalar, or
+/// [edgeSetback, vertexSetback] to set edges and vertices separately;
+/// `radius` is the fillet radius. One fillet joins the face, edge
+/// and vertex planes, so edge and vertex rounding are not independent.
+intersectChamferRound(fields, setback, radius) {
+  return intersectChamferBlend(fields, setback, intersectRound(radius));
+}
+
+/// Partial application of intersectChamferRound: binds the chamfer setback and
+/// rounding radius and returns the operator, ready to hand to a primitive that
+/// takes its own blend.
+intersectChamferRound(setback, radius) {
+  return (fields) { return intersectChamferRound(fields, setback, radius); };
+}
+
+/// Chamfered union whose chamfer planes are joined by a round fillet of
+/// `radius`: unionChamferBlend with unionRound(radius).
+unionChamferRound(d1, d2, setback, radius) {
+  return unionChamferBlend(d1, d2, setback, unionRound(radius));
+}
+
+/// Chamfered + rounded union of three SDFs.
+unionChamferRound(d1, d2, d3, setback, radius) {
+  return unionChamferBlend(d1, d2, d3, setback, unionRound(radius));
+}
+
+/// Chamfered + rounded CSG union of N SDFs (see intersectChamferRound for the
+/// setback and radius parameters).
+unionChamferRound(fields, setback, radius) {
+  return unionChamferBlend(fields, setback, unionRound(radius));
+}
+
+/// Partial application of unionChamferRound: binds the chamfer setback and
+/// rounding radius and returns the operator, ready to hand to a primitive that
+/// takes its own blend.
+unionChamferRound(setback, radius) {
+  return (fields) { return unionChamferRound(fields, setback, radius); };
+}
+
+/// Chamfered + rounded CSG difference: target minus tool with a chamfered cut
+/// whose planes are joined by a round fillet of `radius`.
+differenceChamferRound(target, tool, setback, radius) {
+  return intersectChamferRound(target, neg(tool), setback, radius);
+}
+
+/// Chamfered intersection whose chamfer planes are combined by `blend`
+/// instead of a fixed fillet. blend is an intersection operator over a list,
+/// such as intersectRound(radius), intersectLp(width, exponent) or
+/// intersectExponential(width);
+/// its width is used as given. intersectSharp gives back intersectChamfer.
+intersectChamferBlend(d1, d2, setback, blend) {
+  face = max(d1, d2);
+  edge = (d1 + d2 + setback) / sqrt2;
+  return blend([face, edge]);
+}
+
+/// Chamfered intersection of three SDFs with its chamfer planes combined by
+/// `blend`.
+intersectChamferBlend(d1, d2, d3, setback, blend) {
+  face = max(d1, d2, d3);
+  total = d1 + d2 + d3;
+  edge = (total - min(d1, d2, d3) + setback) / sqrt2;
+  corner = (total + setback) / sqrt3;
+  return blend([face, edge, corner]);
+}
+
+/// Chamfered CSG intersection of N SDFs with its chamfer planes combined by
+/// `blend`. `setback` is a scalar, or [edgeSetback, vertexSetback].
+/// One blend joins the face, edge and vertex planes, so edge and vertex
+/// blending are not independent.
+intersectChamferBlend(fields, setback, blend) {
+  return blend([intersectSharp(fields),
+    intersectChamferEdges(fields, firstOf(setback)),
+    intersectChamferVertices(fields, lastOf(setback))]);
+}
+
+/// Partial application of intersectChamferBlend: binds the chamfer setback and
+/// blend and returns the operator, ready to hand to a primitive that takes its
+/// own blend.
+intersectChamferBlend(setback, blend) {
+  return (fields) { return intersectChamferBlend(fields, setback, blend); };
+}
+
+/// Chamfered union whose chamfer planes are combined by `blend`, a union
+/// operator over a list such as unionRound(radius), unionLp(width, exponent) or
+/// unionExponential(width). unionSharp gives back unionChamfer.
+unionChamferBlend(d1, d2, setback, blend) {
+  face = min(d1, d2);
+  edge = (d1 + d2 - setback) / sqrt2;
+  return blend([face, edge]);
+}
+
+/// Chamfered union of three SDFs with its chamfer planes combined by `blend`.
+unionChamferBlend(d1, d2, d3, setback, blend) {
+  face = min(d1, d2, d3);
+  total = d1 + d2 + d3;
+  edge = (total - max(d1, d2, d3) - setback) / sqrt2;
+  corner = (total - setback) / sqrt3;
+  return blend([face, edge, corner]);
+}
+
+/// Chamfered CSG union of N SDFs with its chamfer planes combined by the
+/// union operator `blend` (see intersectChamferBlend for setback).
+unionChamferBlend(fields, setback, blend) {
+  return blend([unionSharp(fields),
+    unionChamferEdges(fields, firstOf(setback)),
+    unionChamferVertices(fields, lastOf(setback))]);
+}
+
+/// Partial application of unionChamferBlend: binds the chamfer setback and
+/// blend and returns the operator, ready to hand to a primitive that takes its
+/// own blend.
+unionChamferBlend(setback, blend) {
+  return (fields) { return unionChamferBlend(fields, setback, blend); };
+}
+
+/// Chamfered CSG difference: target minus tool, with the chamfer planes
+/// combined by the intersection operator `blend` (see intersectChamferBlend).
+differenceChamferBlend(target, tool, setback, blend) {
+  return intersectChamferBlend(target, neg(tool), setback, blend);
+}
+
+/// Edge-coordinate fillets. For each pair of fields in the list, `profile`
+/// (a nullary function returning a 2D field of p) is evaluated in the local
+/// coordinate where x and y are the two signed distances. The result is the
+/// nearest such fillet across all pairs. profile() == length(p.xy) - r gives
+/// a round fillet of radius r along every shared edge; other profiles give
+/// other cross-sections. Slots that aren't a pair fall back to nothing so
+/// they lose the min.
+remapEdges(fields, profile) {
+  return unionSharp(map((di, i) {
+    return unionSharp(map((dj, j) {
+      return (j > i) ? remap(profile(), [di, dj, 0]) : nothing;
+    }, fields));
+  }, fields));
+}
+
+/// Exact rounded union of two fields (nullary field1/field2) that uses their
+/// surface normals normal1, normal2 to scale the blend, staying accurate where the
+/// two gradients differ. The zero set is the sharp union; the field is its
+/// exact SDF, so offsetting the result by r rounds the seam with radius r.
+unionRoundExact(field1, field2, normal1, normal2) {
+  d1 = field1();
+  d2 = field2();
+  sumScale = length(normal1 + normal2);
+  diffScale = length(normal1 - normal2);
+  sum = (d1 + d2) / sumScale;
+  diff = (d1 - d2) / diffScale;
+  sharp = min(d1, d2);
+  field1OnSurface2 = remap(field1(), p - d2 * normal2);
+  field2OnSurface1 = remap(field2(), p - d1 * normal1);
+
+  return max(field1OnSurface2, field2OnSurface1) > 0 ? sharp : -length([sum, diff]);
+}
+
+/// Exact rounded union of two fields (nullary field1/field2), taking each field's
+/// surface normal from its own gradient instead of being handed them. Use the
+/// four-argument form when a normal is known analytically, or when the same
+/// gradient is already computed elsewhere.
+unionRoundExact(field1, field2) {
+  return unionRoundExact(field1, field2, field1().dp, field2().dp);
+}
+
+/// Exact rounded intersection of two fields (nullary field1/field2) that uses
+/// their surface normals normal1, normal2 to scale the blend. The De Morgan dual of
+/// unionRoundExact: negating a field flips its gradient, so the normals are
+/// negated alongside it.
+intersectRoundExact(field1, field2, normal1, normal2) {
+  return neg(unionRoundExact(
+    () { return neg(field1()); },
+    () { return neg(field2()); },
+    neg(normal1), neg(normal2)));
+}
+
+/// Exact rounded intersection of two fields (nullary field1/field2), taking each
+/// field's surface normal from its own gradient instead of being handed them.
+/// The gradients are of field1 and field2 themselves; the four-argument form
+/// negates them along with the fields.
+intersectRoundExact(field1, field2) {
+  return intersectRoundExact(field1, field2, field1().dp, field2().dp);
+}
+
+/// Rvachev R0 intersection of a list of SDFs, gated to a transition band of
+/// width `band`. Beyond -band (well inside the sharp solid) it is the sharp
+/// intersection; within the band it eases (cubic smoothstep) toward pure R0,
+/// sum(d) + sqrt(sum(d*d)). For two inputs R0's zero set is the sharp
+/// intersection's, so band shapes the field, not the surface; with three or more
+/// the n-ary form is not associative and the boundary shifts near
+/// multi-input corners.
+intersectRvachev(fields, band) {
+  sharp = intersectSharp(fields);
+  sum = reduce(0, (runningSum, field) { return runningSum + field; }, fields);
+  sumOfSquares = reduce(0, (runningSum, field) { return runningSum + field * field; }, fields);
+  rvachev = sum + sqrt(sumOfSquares);
+  safeBand = max(band, 0.000001);
+  progress = clamp((sharp + safeBand) / safeBand, 0, 1);
+  weight = progress * progress * (3 - 2 * progress);
+  blended = (1 - weight) * sharp + weight * rvachev;
+  return sharp < -safeBand ? sharp : blended;
+}
+
+/// Rvachev R0 intersection of two SDFs (see the list form).
+intersectRvachev(d1, d2, band) {
+  return intersectRvachev([d1, d2], band);
+}
+
+/// Rvachev R0 intersection of three SDFs (see the list form).
+intersectRvachev(d1, d2, d3, band) {
+  return intersectRvachev([d1, d2, d3], band);
+}
+
+/// Partial application of intersectRvachev: binds the blend width and returns
+/// the operator, ready to hand to a primitive that takes its own blend.
+intersectRvachev(band) {
+  return (fields) { return intersectRvachev(fields, band); };
+}
+
+/// Rvachev R0 union of a list of SDFs (via De Morgan's law).
+unionRvachev(fields, band) {
+  negated = map((field) { return neg(field); }, fields);
+  return neg(intersectRvachev(negated, band));
+}
+
+/// Rvachev R0 union of two SDFs (see the list form).
+unionRvachev(d1, d2, band) {
+  return unionRvachev([d1, d2], band);
+}
+
+/// Rvachev R0 union of three SDFs (see the list form).
+unionRvachev(d1, d2, d3, band) {
+  return unionRvachev([d1, d2, d3], band);
+}
+
+/// Partial application of unionRvachev: binds the blend width and returns the
+/// operator, ready to hand to a primitive that takes its own blend.
+unionRvachev(band) {
+  return (fields) { return unionRvachev(fields, band); };
+}
+
+/// Rvachev R0 difference: target minus tool.
+differenceRvachev(target, tool, band) {
+  return intersectRvachev([target, neg(tool)], band);
+}

@@ -1,0 +1,46 @@
+
+globalOffset = 7;
+
+sphere(radius) {
+  localOffset = 8;
+
+  dist1(pt) {
+    return sqrt(pt.x * pt.x + pt.y * pt.y + pt.z * pt.z);
+  }
+
+  dist2(pt) {
+    return dist1(pt) + localOffset;
+  }
+
+  dist3(pt) {
+    return dist1(pt) - radius;
+  }
+
+  return dist2(p) + dist3(p);
+}
+
+sphere2(radius) {
+  return sphere(radius + globalOffset);
+}
+
+// function reference
+
+sphere3 = sphere2;
+
+// e11 = sphere2 + sphere3; // ERROR: 11 incompatible types
+
+// anonymous function reference
+
+sphere4 = (radius) { return sphere3(radius); };
+
+// function parameter
+
+apply(f, radius) {
+  return f(radius);
+}
+
+a = apply(sphere4, 2.5);
+b = apply((radius) { return sphere3(radius); }, 2.5);
+c = (radius) { return sphere3(radius); }(2.5);
+
+return a + b + c;

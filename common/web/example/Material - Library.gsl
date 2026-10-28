@@ -1,0 +1,70 @@
+// Scene Size: 500
+// Scene Grid: 83.3
+
+// A sampler of the procedural material library (material/stone, material/wood,
+// material/weathering, material/playful, material/natural): each preset pairs
+// a .material and a .color, most built from noise/gradient/cellular noise
+// composed via texture.paint/paintMaterial. Wood carries real, visible
+// grain-ring relief (material.withDisplacement); water carries an animated
+// ripple (noise.gradientBump4 — time as a genuine 4th lattice axis, so it
+// morphs rather than slides). lava has an optional lavaHero displacement
+// tier; every multi-return preset is forwarded via an explicit destructure
+// (see material/weathering/weathering.gsl's doc comment on the compiler
+// limitation this works around).
+
+spacing = 75;
+
+marbleColor = stone.marble(25, 10, 0.4, 10, color.white, color.gray);
+marbleBall = transform.translate(sphere(25), [-4.5 * spacing, 0, 0]);
+marbleBall.material = stone.stoneFinish(0.15);
+marbleBall.color = marbleColor;
+
+graniteColor = stone.granite(4, color.gray, color.black, color.white);
+graniteBall = transform.translate(sphere(25), [-3.5 * spacing, 0, 0]);
+graniteBall.material = stone.stoneFinish(0.6);
+graniteBall.color = graniteColor;
+
+oakMat, oakColor = wood.whiteOak([-2.5 * spacing, 0, -25], [0, 0, 1]);
+oakBall = transform.translate(sphere(25), [-2.5 * spacing, 0, 0]);
+oakBall.material = oakMat;
+oakBall.color = oakColor;
+
+rustedMat, rustedColor = weathering.rustedSteel(0.5);
+rustedBall = transform.translate(sphere(25), [-1.5 * spacing, 0, 0]);
+rustedBall.material = rustedMat;
+rustedBall.color = rustedColor;
+
+patinaMat, patinaColor = weathering.patinaBronze(0.5);
+patinaBall = transform.translate(sphere(25), [-0.5 * spacing, 0, 0]);
+patinaBall.material = patinaMat;
+patinaBall.color = patinaColor;
+
+glitterMat, glitterColor = playful.glitter(material.polishedMetal, color.black, 1.0, color.white, 0.25);
+glitterBall = transform.translate(sphere(25), [0.5 * spacing, 0, 0]);
+glitterBall.material = glitterMat;
+glitterBall.color = glitterColor;
+
+checkerBall = transform.translate(sphere(25), [1.5 * spacing, 0, 0]);
+checkerBall.material = material.matte;
+checkerBall.color = playful.checkerboard(10, color.white, color.black);
+
+// A sea at 0.12 mm to the metre under a 10 m/s wind: its waves move the ball
+// itself, divided by 1 + slope to stay a safe distance for the march, and 60%
+// of the light passes through it.
+waterMat, waterColor, waterHeight, waterSlope = animated.ocean(0.12, 10, [1, 0.3, 0], 0.6);
+waterBall = (transform.translate(sphere(25), [2.5 * spacing, 0, 0]) - waterHeight) / (1 + waterSlope);
+waterBall.material = material.withTransmission(waterMat, 0.6, 50);
+waterBall.color = waterColor;
+
+// A lava lake's crust, plates 15 mm across drifting at 0.2 mm/s, each in 20 s.
+lavaMat, lavaColor, lavaHeight, lavaSlope = animated.lavaLake(15, 20, (x) { return [0.2, 0, 0]; }, 20);
+lavaBall = transform.translate(sphere(25), [3.5 * spacing, 0, 0]) - lavaHeight;
+lavaBall.material = lavaMat;
+lavaBall.color = lavaColor;
+
+skinColor = playful.cellSkin(5, 2.5, color.teal, color.white);
+skinBall = transform.translate(sphere(25), [4.5 * spacing, 0, 0]);
+skinBall.material = material.matte;
+skinBall.color = skinColor;
+
+return marbleBall, graniteBall, oakBall, rustedBall, patinaBall, glitterBall, checkerBall, waterBall, lavaBall, skinBall;

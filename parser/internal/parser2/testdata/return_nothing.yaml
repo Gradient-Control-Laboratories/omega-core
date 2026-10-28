@@ -1,0 +1,8 @@
+Expected:
+  files:
+    - assignments:
+        - expression:
+            value: 440
+          variables:
+            - name: something
+Source: ""

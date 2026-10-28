@@ -1,0 +1,18 @@
+// Exercises a map whose function returns a vector: the results gather into
+// a list of vectors that can be indexed and reduced.
+
+freqs = [220.0, 330.0, 440.0];
+
+// Each result is a [left, right] pair, so voices is a list of vectors.
+voices = map((index, freq) {
+  return [sin(freq * time) / (index + 1.0), cos(freq * time) / (index + 2.0)];
+}, freqs);
+
+// Indexing a list of vectors yields the element vector.
+first = voices[0];
+
+// reduce: mix each channel from the vector elements.
+left = reduce(0.0, (acc, v) { return acc + v.x; }, voices);
+right = reduce(0.0, (acc, v) { return acc + v.y; }, voices);
+
+return audio(left + first.x, right + first.y);

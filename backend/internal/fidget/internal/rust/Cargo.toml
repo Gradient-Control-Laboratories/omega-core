@@ -1,0 +1,32 @@
+[package]
+name = "render"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+# dylib: linked by the Go cgo path (target/release/librender).
+# rlib:  consumed as a normal Rust dependency by the pyo3 wrapper crate
+#        (agent/fidget/internal/field-py), which statically embeds render.
+crate-type = ["dylib", "rlib"]
+path = "src/lib.rs"
+
+[dependencies]
+cxx = "1.0"
+egui = "0.27"
+# To develop with a locally checked out copy of fidget:
+# fidget = { path = "../../../../../fidget/fidget" }
+fidget = { version = "0.5", default-features = false, features = ["gui", "jit", "raster"] }
+fidget-mesh = "0.5"
+image = "0.24"
+libc = "0.2.168"
+nalgebra = "0.35"
+prost = "0.13.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tape-core = { path = "../tape-core" }
+typed-index-collections = "3.2.3"
+
+[build-dependencies]
+cmake = "0.1"
+cxx-build = "1.0"

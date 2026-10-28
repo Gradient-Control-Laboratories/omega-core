@@ -1,0 +1,26 @@
+import "vector";
+
+sphere(radius) {
+   form = (length(p) - radius)
+   form.u = sphereAzimuth(collect(0, 0, 0), vector.dirZ, vector.dirX)
+   form.v = spherePolar(collect(0, 0, 0), vector.dirZ)
+
+   return form;
+}
+
+sphereAzimuth(center, pole, reference) {
+   n = normalize(pole)
+   e1 = normalize((reference - (n * dot(reference, n))))
+   e2 = cross(n, e1)
+   d = (p - center)
+
+   return atan2(dot(d, e2), dot(d, e1));
+}
+
+spherePolar(center, pole) {
+   n = normalize(pole)
+   d = (p - center)
+   along = dot(d, n)
+
+   return atan2(length((d - (n * along))), along);
+}

@@ -1,0 +1,12 @@
+
+// The material counterpart of color_remap: a shape with a material moved by
+// remap keeps its material where it lands. Each blended row is sampled in the
+// unit's own frame, so the remap helpers return vec4 rows.
+ball = sphere(1);
+ball.material = material.chrome;
+
+box = sphere(1);
+box.material = material.matte;
+
+moved = remap(ball, p - [2, 0, 0]);
+return unionSharp([moved, box]);

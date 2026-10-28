@@ -1,0 +1,75 @@
+Expected:
+  files:
+    - assignments:
+        - expression:
+            value: 7
+          variables:
+            - name: a
+        - expression:
+            value: 10
+          variables:
+            - name: b
+        - expression:
+            expression:
+              operands:
+                - reference:
+                    name: a
+                - reference:
+                    name: b
+              operation: LT
+          variables:
+            - name: b1
+        - expression:
+            expression:
+              operands:
+                - reference:
+                    name: a
+                - reference:
+                    name: b
+              operation: LE
+          variables:
+            - name: b2
+        - expression:
+            expression:
+              operands:
+                - reference:
+                    name: a
+                - reference:
+                    name: b
+              operation: EQ
+          variables:
+            - name: b3
+        - expression:
+            expression:
+              operands:
+                - reference:
+                    name: a
+                - reference:
+                    name: b
+              operation: NE
+          variables:
+            - name: b4
+        - expression:
+            expression:
+              operands:
+                - reference:
+                    name: a
+                - reference:
+                    name: b
+              operation: GE
+          variables:
+            - name: b5
+        - expression:
+            expression:
+              operands:
+                - reference:
+                    name: a
+                - reference:
+                    name: b
+              operation: GT
+          variables:
+            - name: b6
+      returns:
+        - reference:
+            name: b6
+Source: ""

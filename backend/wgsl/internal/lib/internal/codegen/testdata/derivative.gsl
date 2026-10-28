@@ -1,0 +1,13 @@
+// Forward-mode derivative operators: .dtime (temporal) and .dp (spatial gradient).
+r = 2 + sin(time);
+f = length(p) - r;
+
+// Temporal derivative: how fast the field changes as time advances.
+// d/dtime (length(p) - (2 + sin(time))) = -cos(time)
+vel = f.dtime;
+
+// Spatial gradient magnitude. For a true distance field this is ~1.
+// f.dp = normalize(p), so length(f.dp) = 1.
+gradMag = length(f.dp);
+
+return f, vel, gradMag;

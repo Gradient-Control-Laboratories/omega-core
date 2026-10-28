@@ -1,0 +1,27 @@
+// Exercises collection access in audio output: passing a collection to a
+// function parameter (then indexing/reducing it), multi-component swizzles,
+// and indexing a swizzle result. Regression test for #354 — these used to
+// fail to compile in the JS backend with "target must be a collection, got
+// number".
+
+// Collection-valued parameter: indexing and reducing the list inside the
+// body used to fail because the parameter was typed as a scalar.
+listMax(xs) {
+  return reduce(xs[0], (acc, value) {
+    return max(acc, value);
+  }, xs);
+}
+
+scale = [0.0, 4.0, 7.0, 12.0];
+
+hi = listMax(scale);   // -> 12
+
+// Multi-component swizzle, then index the result and swizzle it again.
+low = scale.xy;        // [0, 4]
+root = low[0];         // 0
+third = low.y;         // 4
+
+baseHz = 220.0 * exp2((root + hi) / 12.0);
+thirdHz = 220.0 * exp2(third / 12.0);
+
+return audio((sin(baseHz * time) + sin(thirdHz * time)) * 0.2);

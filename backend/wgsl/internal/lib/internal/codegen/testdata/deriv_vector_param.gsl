@@ -1,0 +1,11 @@
+// A derivative operator inside a function whose parameter is a VECTOR. The
+// companion carries the parameter's derivative along each spatial axis, so the
+// tangent has the parameter's own shape. Packing it as one gradient and
+// indexing it componentwise is only correct for a scalar parameter, and for a
+// vector one produced a shape error.
+shell(q) {
+  d = length(q) - 1;
+  return abs(d) / max(length(d.dp), 0.5);
+}
+
+return shell(p * 0.5) - 0.2;

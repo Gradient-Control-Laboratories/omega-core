@@ -1,0 +1,11 @@
+Expected:
+  files:
+    - fnTypes:
+        - groups:
+            - functions:
+                - returns:
+                    - value: 1
+          name: foo
+      returns:
+        - value: 1
+Source: ""

@@ -1,0 +1,121 @@
+// Scene Size: 500
+// Scene Grid: 100
+
+// Measured liquids from the physical library on 50 mm balls. Transmissive
+// presets carry the database's IOR, transmission and absorption depth, so
+// a liquid's colour builds up with the distance light travels through it:
+// dark coffee and red wine within millimetres, water and vodka almost clear.
+// The balls rest on a checkerboard so there is something to see through them.
+
+waterMat, waterColor = physical.water();
+vodka40Mat, vodka40Color = physical.vodka40();
+ethanolMat, ethanolColor = physical.ethanol();
+gasolineMat, gasolineColor = physical.gasoline();
+cookingOilMat, cookingOilColor = physical.cookingOil();
+beerPaleLagerMat, beerPaleLagerColor = physical.beerPaleLager();
+wineWhiteMat, wineWhiteColor = physical.wineWhite();
+wineRedMat, wineRedColor = physical.wineRed();
+colaMat, colaColor = physical.cola();
+coffeeMat, coffeeColor = physical.coffee();
+juiceAppleMat, juiceAppleColor = physical.juiceApple();
+juiceWhiteGrapefruitMat, juiceWhiteGrapefruitColor = physical.juiceWhiteGrapefruit();
+juiceRubyGrapefruitMat, juiceRubyGrapefruitColor = physical.juiceRubyGrapefruit();
+juiceCranberryMat, juiceCranberryColor = physical.juiceCranberry();
+juiceGrapeMat, juiceGrapeColor = physical.juiceGrape();
+honeyLiquidMat, honeyLiquidColor = physical.honeyLiquid();
+milkMat, milkColor = physical.milk();
+creamMat, creamColor = physical.cream();
+petroleumMat, petroleumColor = physical.petroleum();
+bloodOxygenatedMat, bloodOxygenatedColor = physical.bloodOxygenated();
+
+spacing = 75;
+
+ball(x, y) {
+  return remap(sphere(25), p - [x * spacing, y * spacing, 0]);
+}
+
+water = ball(-2, 1.5);
+water.material = waterMat;
+water.color = waterColor;
+
+vodka40 = ball(-1, 1.5);
+vodka40.material = vodka40Mat;
+vodka40.color = vodka40Color;
+
+ethanol = ball(0, 1.5);
+ethanol.material = ethanolMat;
+ethanol.color = ethanolColor;
+
+gasoline = ball(1, 1.5);
+gasoline.material = gasolineMat;
+gasoline.color = gasolineColor;
+
+cookingOil = ball(2, 1.5);
+cookingOil.material = cookingOilMat;
+cookingOil.color = cookingOilColor;
+
+beerPaleLager = ball(-2, 0.5);
+beerPaleLager.material = beerPaleLagerMat;
+beerPaleLager.color = beerPaleLagerColor;
+
+wineWhite = ball(-1, 0.5);
+wineWhite.material = wineWhiteMat;
+wineWhite.color = wineWhiteColor;
+
+wineRed = ball(0, 0.5);
+wineRed.material = wineRedMat;
+wineRed.color = wineRedColor;
+
+cola = ball(1, 0.5);
+cola.material = colaMat;
+cola.color = colaColor;
+
+coffee = ball(2, 0.5);
+coffee.material = coffeeMat;
+coffee.color = coffeeColor;
+
+juiceApple = ball(-2, -0.5);
+juiceApple.material = juiceAppleMat;
+juiceApple.color = juiceAppleColor;
+
+juiceWhiteGrapefruit = ball(-1, -0.5);
+juiceWhiteGrapefruit.material = juiceWhiteGrapefruitMat;
+juiceWhiteGrapefruit.color = juiceWhiteGrapefruitColor;
+
+juiceRubyGrapefruit = ball(0, -0.5);
+juiceRubyGrapefruit.material = juiceRubyGrapefruitMat;
+juiceRubyGrapefruit.color = juiceRubyGrapefruitColor;
+
+juiceCranberry = ball(1, -0.5);
+juiceCranberry.material = juiceCranberryMat;
+juiceCranberry.color = juiceCranberryColor;
+
+juiceGrape = ball(2, -0.5);
+juiceGrape.material = juiceGrapeMat;
+juiceGrape.color = juiceGrapeColor;
+
+honeyLiquid = ball(-2, -1.5);
+honeyLiquid.material = honeyLiquidMat;
+honeyLiquid.color = honeyLiquidColor;
+
+milk = ball(-1, -1.5);
+milk.material = milkMat;
+milk.color = milkColor;
+
+cream = ball(0, -1.5);
+cream.material = creamMat;
+cream.color = creamColor;
+
+petroleum = ball(1, -1.5);
+petroleum.material = petroleumMat;
+petroleum.color = petroleumColor;
+
+bloodOxygenated = ball(2, -1.5);
+bloodOxygenated.material = bloodOxygenatedMat;
+bloodOxygenated.color = bloodOxygenatedColor;
+
+board = boxCentered([0, 0, -27], [380, 300, 4]);
+board.material = material.matte;
+board.color = map.checkerXY(12) > 0 ? [0.85, 0.85, 0.85] : [0.12, 0.12, 0.12];
+
+return water, vodka40, ethanol, gasoline, cookingOil, beerPaleLager, wineWhite, wineRed, cola, coffee, juiceApple, juiceWhiteGrapefruit, juiceRubyGrapefruit, juiceCranberry, juiceGrape, honeyLiquid, milk, cream, petroleum, bloodOxygenated, board;

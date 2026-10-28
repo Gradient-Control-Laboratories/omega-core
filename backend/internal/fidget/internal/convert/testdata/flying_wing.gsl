@@ -1,0 +1,79 @@
+
+// GSL model of a flying wing with four propellers and landing gear.
+
+// SDF for a box centered at the origin with half-extents b.
+// b is a vec3 like [width/2, depth/2, height/2].
+box(b) {
+    q = abs(p) - b;
+    return length(max(q, [0,0,0])) + min(max(q.x, max(q.y, q.z)), 0);
+}
+
+// SDF for a Z-aligned cylinder (standing up) with radius r and height h.
+cylinderZ(r, h) {
+    d = [length(p.xy) - r, abs(p.z) - h/2];
+    return min(max(d.x, d.y), 0) + length(max(d, 0));
+}
+
+// SDF for an X-aligned cylinder (pointing right) with radius r and length l.
+cylinderX(r, l) {
+    d = [length(p.yz) - r, abs(p.x) - l/2];
+    return min(max(d.x, d.y), 0) + length(max(d, 0));
+}
+
+// Defines the shape of a single propeller, oriented vertically.
+// It's a torus in the XZ plane.
+propeller(majorRadius, minorRadius) {
+    q = [length(p.xz) - majorRadius, p.y];
+    return length(q) - minorRadius;
+}
+
+// Defines a single landing gear assembly, consisting of a strut and a wheel.
+landing_gear() {
+    // A vertical cylinder for the strut.
+    strut = cylinderZ(0.1, 1.2);
+
+    // A horizontal cylinder for the wheel, positioned at the bottom of the strut.
+    wheel = remap(
+        () { return cylinderX(0.4, 0.2); }(),
+        p - [0, 0, -0.6]
+    );
+
+    // Return both parts to be unioned.
+    return strut, wheel;
+}
+
+// --- Scene Definition ---
+
+// 1. Define the main wing body.
+// It's a box translated upwards to sit on top of the landing gear.
+wing = remap(
+    () { return box([4.5, 2.0, 0.2]); }(),
+    p - [0, 0, 1.2]
+);
+
+// 2. Define the four propellers.
+// They are remapped to positions along the leading edge of the wing.
+prop_radius = 0.7;
+prop_thickness = 0.05;
+prop_z_pos = 1.45; // Just above the wing's top surface.
+prop_y_pos = 2.0;  // At the wing's leading edge.
+
+prop1 = remap(() { return propeller(prop_radius, prop_thickness); }(), p - [ 1.5, prop_y_pos, prop_z_pos]);
+prop2 = remap(() { return propeller(prop_radius, prop_thickness); }(), p - [-1.5, prop_y_pos, prop_z_pos]);
+prop3 = remap(() { return propeller(prop_radius, prop_thickness); }(), p - [ 3.5, prop_y_pos, prop_z_pos]);
+prop4 = remap(() { return propeller(prop_radius, prop_thickness); }(), p - [-3.5, prop_y_pos, prop_z_pos]);
+
+
+// 3. Define the three landing gears.
+// They are remapped into a standard tricycle configuration.
+front_strut,  front_gear  = remap(landing_gear(), p - [ 0.0,  1.5, 0.0]);
+rear_strut_L, rear_gear_L = remap(landing_gear(), p - [-3.0, -1.0, 0.0]);
+rear_strut_R, rear_gear_R = remap(landing_gear(), p - [ 3.0, -1.0, 0.0]);
+
+// 4. Return all parts.
+// GSL automatically performs a union (min) operation on all returned values.
+return wing,
+       prop1, prop2, prop3, prop4,
+       front_strut, front_gear,
+       rear_strut_L, rear_gear_L,
+       rear_strut_R, rear_gear_R;

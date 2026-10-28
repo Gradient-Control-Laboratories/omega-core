@@ -1,0 +1,37 @@
+// Scene Size: 20
+// Scene Grid: 10
+// AI geometry tool-use demo — Casting Pose
+//
+// The AI can query this scene numerically with its geometry tools (extremum,
+// evalGsl, bounds) and verify its own edits before returning them. Open the
+// AI chat and give it the task below.
+//
+// TRY THIS PROMPT:
+//   Pose the part for a casting branch beside the sprue: stand its LONGEST
+//   axis vertical (along z), turn its FLATTEST face toward the sprue (its
+//   normal — the part's shortest axis — pointing at +X), and position it with
+//   25 mm of clearance between the part and the sprue. Build the placement
+//   from the part's dimensions. Verify before returning code: the part's
+//   vertical extent is its longest dimension, its shortest dimension faces the
+//   sprue, and extremum(max(piece, sprue)) is about 12.5 and positive.
+//
+// What to watch: the model should call extremum on max(piece, sprue) to prove
+// the 25 mm gap, and reorient `piece` so its long (20 mm) axis is vertical.
+
+boxHalf(half) {
+  return max(
+    -half.x - p.x, p.x - half.x,
+    -half.y - p.y, p.y - half.y,
+    -half.z - p.z, p.z - half.z,
+  );
+}
+
+cylZ(center, radius, halfHeight) {
+  q = p - center;
+  return max(length(q.xy) - radius, abs(q.z) - halfHeight);
+}
+
+piece = boxHalf([10.0, 3.0, 1.5]);
+sprue = cylZ([30.0, 0.0, 0.0], 6.0, 12.0);
+
+return piece, sprue;

@@ -1,0 +1,110 @@
+
+
+
+// GSL Program for a Tugboat
+// The model is constructed by defining the Signed Distance Functions (SDFs)
+// for various parts and combining them.
+
+// --- SDF Primitives ---
+
+// Signed distance to a box centered at the origin with half-dimensions b.
+sdBox(pt, b) {
+    q = abs(pt) - b;
+    
+    // This calculates: length(max(q,0)) + min(max(q.x,q.y,q.z),0)
+    len_q_pos = sqrt(
+        square(max(q.x, 0)) +
+        square(max(q.y, 0)) +
+        square(max(q.z, 0))
+    );
+    max_comp = max(q.x, q.y, q.z);
+    
+    return len_q_pos + min(max_comp, 0.0);
+}
+
+// Signed distance to a cylinder aligned with the Y axis.
+// h: half-height, r: radius
+sdCylinder(pt, h, r) {
+    d_xz = sqrt(square(pt.x) + square(pt.z)) - r;
+    d_y = abs(pt.y) - h;
+    
+    len_d_pos = sqrt(square(max(d_xz, 0)) + square(max(d_y, 0)));
+    max_comp = max(d_xz, d_y);
+
+    return len_d_pos + min(max_comp, 0.0);
+}
+
+// Signed distance to a torus aligned with the Y axis.
+sdTorus(pt, major, minor) {
+    q_xz = sqrt(square(pt.x) + square(pt.z)) - major;
+    q_y = pt.y;
+    return sqrt(square(q_xz) + square(q_y)) - minor;
+}
+
+// --- Tugboat Components ---
+
+// The main hull of the boat
+hull() {
+    // Main body: a long box, forms the deck and lower hull
+    main_body_pos = p - [0, 0, -0.2];
+    main_body = sdBox(main_body_pos, [0.4, 0.25, 0.8]);
+
+    // Bow: a rounded front section using a cylinder rotated on its side
+    bow_pos = p - [0, 0, -1.0];
+    bow_cyl_pt = [bow_pos.z, bow_pos.y, bow_pos.x]; // Swizzle to rotate cylinder to face forward
+    bow_cyl = sdCylinder(bow_cyl_pt, 0.25, 0.4);
+
+    return min(main_body, bow_cyl);
+}
+
+// The cabin, pilothouse, and smokestack
+superstructure() {
+    // Main cabin on the deck
+    cabin_pos = p - [0, 0.45, -0.1];
+    cabin = sdBox(cabin_pos, [0.35, 0.2, 0.4]);
+
+    // Pilothouse on top of the cabin
+    pilothouse_pos = p - [0, 0.8, -0.1];
+    pilothouse = sdBox(pilothouse_pos, [0.3, 0.15, 0.3]);
+    
+    // Smokestack towards the rear of the cabin
+    stack_pos = p - [0, 0.85, 0.2];
+    stack = sdCylinder(stack_pos, 0.2, 0.1);
+
+    return min(cabin, pilothouse, stack);
+}
+
+// The tires (bumpers) on the sides of the hull
+side_bumpers() {
+    // Tire dimensions
+    major = 0.3;
+    minor = 0.1;
+
+    // To make tires vertical along the sides, we rotate the Y-axis torus primitive
+    // to align with the Z-axis by swizzling the input point components from (x,y,z) to (x,z,y).
+    
+    // Right side tires (+X)
+    tire_r1 = sdTorus((p - [0.45, 0.1, -0.6]).xzy, major, minor);
+    tire_r2 = sdTorus((p - [0.45, 0.1, 0.0]).xzy, major, minor);
+    tire_r3 = sdTorus((p - [0.45, 0.1, 0.6]).xzy, major, minor);
+
+    // Left side tires (-X)
+    tire_l1 = sdTorus((p - [-0.45, 0.1, -0.6]).xzy, major, minor);
+    tire_l2 = sdTorus((p - [-0.45, 0.1, 0.0]).xzy, major, minor);
+    tire_l3 = sdTorus((p - [-0.45, 0.1, 0.6]).xzy, major, minor);
+    
+    return min(tire_r1, tire_r2, tire_r3, tire_l1, tire_l2, tire_l3);
+}
+
+// --- Final Assembly ---
+
+// Rotate the coordinate space to orient the boat.
+p_rotated = [p.y, p.z, -p.x];
+
+// Combine all parts of the tugboat into a single distance field
+// by passing the rotated point to each component function.
+h = remap(hull(), p_rotated);
+s = remap(superstructure(), p_rotated);
+b = remap(side_bumpers(), p_rotated);
+
+return h, s, b;

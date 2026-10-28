@@ -1,0 +1,5 @@
+// ERROR: variable "center" has no property "field"
+build(center) {
+    return center.field;
+}
+return build(0);

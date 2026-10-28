@@ -1,0 +1,18 @@
+[package]
+name = "tape-core"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# The part of reading an omega tape that needs nothing native: the protobuf
+# types, the replay of a tape into fidget shapes, and the noise-tile oracle.
+# render (the Go cgo library) and the browser build (../wasm) both use it, so
+# the two cannot drift. Oracle kinds that need a native library (the VDB level
+# set) stay in render and are registered through a hook.
+
+[dependencies]
+fidget-core = "0.5"
+prost = "0.13.4"
+
+[build-dependencies]
+prost-build = "0.13.4"

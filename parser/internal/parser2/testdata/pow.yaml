@@ -1,0 +1,15 @@
+Expected:
+  files:
+    - assignments:
+        - expression:
+            expression:
+              operands:
+                - value: 2
+                - value: 3
+              operation: POW
+          variables:
+            - name: a
+      returns:
+        - reference:
+            name: a
+Source: ""

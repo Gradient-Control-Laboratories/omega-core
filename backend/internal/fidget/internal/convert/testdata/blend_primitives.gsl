@@ -1,0 +1,12 @@
+// The mesher path for primitives that take their combining operator: the
+// closure's captured radius has to fold into the tape the same way it folds
+// into a shader.
+
+import . "builtin";
+
+roundBox = box([-1, -1, -1], [1, 1, 1], intersectRound(0.25));
+sharpBox = box([1.5, -1, -1], [3.5, 1, 1]);
+chamfered = boxCentered([5, 0, 0], [2, 2, 2], intersectChamfer(0.25));
+rim = cylinderCapped([8, 0, -1], [8, 0, 1], 0.8, intersectRound(0.2));
+
+return unionSharp([roundBox, sharpBox, chamfered, rim]);

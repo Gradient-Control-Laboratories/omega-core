@@ -1,0 +1,5 @@
+# getrandom has no source of randomness on wasm32-unknown-unknown without
+# wasm-bindgen's JS glue; the crate supplies one instead (src/lib.rs,
+# __getrandom_v03_custom). fidget only draws random bits to name variables.
+[target.wasm32-unknown-unknown]
+rustflags = ['--cfg', 'getrandom_backend="custom"']

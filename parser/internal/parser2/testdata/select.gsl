@@ -1,0 +1,17 @@
+comp1(k, one, two, three) {
+  return k < 0.0 ? one : (k > 6 ? two : three);
+}
+
+comp2(k, value) {
+  return value * (0 > k);
+}
+
+comp3(k) {
+  return k <=> 10;
+}
+
+value1 = comp1(p.x, 1, 2, 3);
+value2 = comp2(p.y, 17);
+value3 = comp3(p.z);
+
+return [value1, value2, value3];

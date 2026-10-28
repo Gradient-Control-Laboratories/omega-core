@@ -1,0 +1,31 @@
+[package]
+name = "fidget-wgpu"
+version = "0.5.1"
+edition = "2024"
+rust-version = "1.95"
+authors = ["Matt Keeter <matt.j.keeter@gmail.com>"]
+description = "WGPU backend for Fidget (vendored at fidget e329a898)"
+readme = "README.md"
+license = "MPL-2.0"
+repository = "https://github.com/mkeeter/fidget"
+build = false
+publish = false
+
+[lib]
+name = "fidget_wgpu"
+path = "src/lib.rs"
+
+[dependencies]
+fidget-bytecode = { path = "../fidget-bytecode", version = "=0.5.0" }
+fidget-core = { path = "../fidget-core", version = "=0.5.0" }
+fidget-raster = { path = "../fidget-raster", version = "=0.5.1" }
+flume = { version = "0.12", features = ["async"] }
+heck = "0.5"
+log = "0.4"
+naga = { version = "30.0.0", features = ["wgsl-in"], default-features = false }
+nalgebra = { version = "0.35", features = ["std", "serde-serialize"], default-features = false }
+pollster = "1.0.1"
+static_assertions = "1"
+thiserror = "2"
+wgpu = "30.0.1"
+zerocopy = { version = "0.8", features = ["derive"] }

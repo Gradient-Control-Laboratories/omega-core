@@ -1,0 +1,23 @@
+// Primitives that combine component fields with a boolean now take that
+// operator as a parameter, so the shape of their edges and junctions is the
+// caller's choice. Each blended call must specialize separately, carrying its
+// own captured parameters.
+
+import . "builtin";
+
+// Two-corner and centered boxes, sharp and blended.
+b1 = box([0, 0, 0], [2, 2, 2], intersectRound(0.2));
+b2 = box([3, 0, 0], [5, 2, 2]);
+b3 = boxCentered([8, 0, 0], [2, 2, 2], intersectChamfer(0.2));
+
+// The 2D rectangle is the same construction one dimension down, in both the
+// centered and two-corner forms.
+r1 = rectangleXYCentered([0, 5], [2, 3], intersectRound(0.3));
+r2 = rectangleXYCentered([5, 5], [2, 3]);
+r3 = rectangleXY([8, 4], [10, 7], intersectRound(0.3));
+r4 = rectangleXY([12, 4], [14, 7]);
+
+// A capped cylinder filleted where the barrel meets its caps.
+c1 = cylinderCapped([0, 0, -6], [0, 0, -3], 1, intersectRound(0.15));
+
+return unionSharp([b1, b2, b3, r1, r2, r3, r4, c1]);

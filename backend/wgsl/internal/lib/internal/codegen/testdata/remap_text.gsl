@@ -1,0 +1,6 @@
+// A constant text() inside a remap must fold to glyphs (not emit the whole
+// font) AND keep the coordinate substitution: the inlined text re-derives in a
+// gsl_remap helper called with the remapped p (p.yzx here).
+import font "text";
+
+return remap(font.left("A36", [0, -5], 10), p.yzx);

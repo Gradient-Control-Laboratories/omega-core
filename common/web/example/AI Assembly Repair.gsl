@@ -1,0 +1,50 @@
+// Scene Size: 40
+// Scene Grid: 10
+// AI geometry tool-use demo — Assembly Repair
+//
+// Three parts packed in an open crate with two deliberate defects: the block
+// and drum interpenetrate, and the ball pokes through the +Y wall. The AI must
+// find both defects with one batched extremum sweep, then repair the layout by
+// moving only the part centers. Open the AI chat and give it this task.
+//
+// TRY THIS PROMPT:
+//   Repair the crate layout by changing only the part center variables. Keep
+//   at least 1.0 clearance between parts, and every part contained in the
+//   crate interior.
+//
+// What to watch: the model checks all pairwise interferences and containments
+// in one extremum call, sees two negatives (block/drum overlap, ball escape),
+// then trials new centers in defs before committing the corrected document.
+
+boxAt(center, half) {
+  q = p - center;
+  return max(
+    -half.x - q.x, q.x - half.x,
+    -half.y - q.y, q.y - half.y,
+    -half.z - q.z, q.z - half.z,
+  );
+}
+
+cylAt(center, radius, halfLength) {
+  q = p - center;
+  return max(length(q.xy) - radius, abs(q.z) - halfLength);
+}
+
+sphereAt(center, radius) {
+  return length(p - center) - radius;
+}
+
+crateOuter = boxAt([0.0, 0.0, 9.5], [16.0, 16.0, 10.5]);
+crateInner = boxAt([0.0, 0.0, 10.0], [15.0, 15.0, 10.0]);
+crate = max(crateOuter, -crateInner);
+
+blockCenter = [-6.0, -5.0, 6.0];
+block = boxAt(blockCenter, [5.0, 4.0, 5.0]);
+
+drumCenter = [1.0, -3.0, 6.0];
+drum = cylAt(drumCenter, 4.0, 5.0);
+
+ballCenter = [8.0, 12.0, 8.0];
+ball = sphereAt(ballCenter, 5.0);
+
+return crate, block, drum, ball;

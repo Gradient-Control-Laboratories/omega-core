@@ -1,0 +1,9 @@
+// The transform library moves a shape and keeps its .box.
+body = unionRound(box([0, 0, 0], [2, 1, 1]), sphere([2, 0.5, 0.5], 0.6), 0.2);
+angle = 0.5;
+angle.min = 0.0;
+angle.max = 3.0;
+placed = transform.rotateZ(transform.translate(body, [1, 2, 0]), angle);
+scaled = transform.scale(body, 0.5);
+hull = box(placed.box[0], placed.box[1]);
+return placed, scaled, hull;

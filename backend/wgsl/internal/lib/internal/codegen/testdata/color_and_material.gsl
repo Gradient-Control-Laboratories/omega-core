@@ -1,0 +1,14 @@
+// Both properties on the same smooth union: gsl_colorField and
+// gsl_materialField are both emitted, each blended over its own units. Uses a
+// glowing material, and a metal library pair (finish + colour).
+brassMat, brassColor = metal.brass();
+
+ball = sphere(1);
+ball.color = color.red;
+ball.material = material.glowing(color.red, 2);
+
+box = remap(sphere(1), p - [1.5, 0, 0]);
+box.color = brassColor;
+box.material = brassMat;
+
+return unionExponential([ball, box], 0.5);

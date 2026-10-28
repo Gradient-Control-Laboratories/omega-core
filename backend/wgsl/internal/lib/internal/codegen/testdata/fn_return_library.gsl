@@ -1,0 +1,13 @@
+// A closure produced inside an imported package and consumed by a primitive
+// from that same package. The closure's body is not built until this call
+// site, long after the function that returned it has finished, so its
+// definition has to reach module scope from a scope that emits nothing
+// itself — otherwise it is called but never declared.
+
+import . "builtin";
+
+roundBox = boxCentered(vector.zero, [2, 3, 2], intersectRound(0.2));
+sharpBox = boxCentered([4, 0, 0], [2, 2, 2]);
+rim = cylinderCapped([0, 0, -4], [0, 0, -2], 1, intersectRound(0.1));
+
+return unionSharp([roundBox, sharpBox, rim]);

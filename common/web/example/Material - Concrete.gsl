@@ -1,0 +1,30 @@
+// Scene Size: 300
+// Scene Grid: 50
+
+// The standard 150 mm concrete test cube, edges eased 1.5 mm. The cement
+// matrix is the measured concrete preset, mottled with fBm; coarse
+// aggregate shows through as irregular stones about 8 mm across, one per
+// 14 mm cellular cell, each stone a single rock with its own tone between
+// grey and brown (noise.cellularCell names the cell, and its hash picks the
+// tone). Small pores ("bug holes") left by trapped air are render-only
+// displacement, at most 0.5 mm deep, and darken where they open. Colors are
+// mixed once in Oklab and converted back once, which keeps the shader quick
+// to compile.
+
+concreteMat, concreteColor = physical.concrete();
+
+cube = boxCentered([0, 0, 75], [150, 150, 150], intersectRound(1.5));
+
+f1, f2, stoneCell = noise.cellularCell(14);
+stoneEdge = 4.5 - (f1 + 1.2 * noise.gradient(2.5));
+stoneTone = texture.mask(noiseHash3(stoneCell + [0, 211, 0]).x, 0.5, 0.25);
+greyStone = color.rgb2oklab([0.55, 0.53, 0.50]);
+stoneLab = greyStone + (color.rgb2oklab([0.62, 0.50, 0.38]) - greyStone) * stoneTone;
+matrixLab = color.rgb2oklab(concreteColor) - [0.15 * texture.mask(noise.fbm3(10, 0.5, 2.0), 0, 0.4), 0, 0];
+surfaceLab = matrixLab + (stoneLab - matrixLab) * texture.mask(stoneEdge, 0, 0.5);
+
+pore = max(0, 1 - noise.cellular(6) / 1.2);
+cube.material = material.withDisplacement(texture.paintMaterial(stoneEdge, 0, 0.5, concreteMat, stone.stoneFinish(0.7)), -0.5 * pore);
+cube.color = color.oklab2rgb(surfaceLab + (color.rgb2oklab([0.25, 0.25, 0.25]) - surfaceLab) * (0.7 * pore));
+
+return cube;

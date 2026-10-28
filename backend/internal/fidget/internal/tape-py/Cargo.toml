@@ -1,0 +1,23 @@
+[package]
+name = "omega-tape"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+# cdylib: a native Python extension module. The output libomega_tape.{dylib,so}
+# is loaded by hodge as `import omega_tape`. The crate statically embeds the
+# render lib (fidget + OpenVDB), so the module is self-contained.
+name = "omega_tape"
+crate-type = ["cdylib"]
+path = "src/lib.rs"
+
+[dependencies]
+render = { path = "../rust" }
+# abi3 builds against the stable Python ABI so one wheel works across 3.9+
+# (including 3.14). extension-module skips linking libpython (dynamic lookup).
+pyo3 = { version = "0.23", features = ["extension-module", "abi3-py39"] }
+# numpy in/out (zero-copy on contiguous f32) — the hot path for hodge's
+# Walk-on-Spheres / mesh-free Monte-Carlo solvers, which evaluate at (N,3)
+# scattered point batches.
+numpy = "0.23"

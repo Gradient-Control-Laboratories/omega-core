@@ -1,0 +1,10 @@
+// A fold in a function inlined at the top level, whose callback reads that
+// function's parameters and locals: the loop passes the arguments in.
+ripples(size, period) {
+  base = floor([p.x / size, p.y / size, 0]);
+  return reduce(0.0, (acc, i) {
+    cell = base + [mod(i, 3) - 1, floor(i / 3) - 1, 0];
+    return acc + sin(length([p.x, p.y, 0] - cell * size) / period);
+  }, [0, 1, 2, 3, 4, 5, 6, 7, 8]);
+}
+return sphere(p, 10 + ripples(4, 2) + ripples(7, 3));

@@ -1,0 +1,29 @@
+radius = -dot(-7, 8);
+offset = (p - [0.45, 0.1, -0.6]).xzy;
+
+offset5 = [0.45, 0.1, -0.6, 0.2, 0.3];
+foo(one) {
+  // p = [1, 2, 3]; // ERROR: 16 p cannot be reassigned
+  // time = 1;      // ERROR: 17 time cannot be reassigned
+  return one + 2.5 + p, one / (2 * p.x) - radius;
+}
+
+result, r = foo(27);
+bar = foo;
+baz = (one) { return one + 2.5 + p; };
+
+// select = 8; // ERROR: 1 reserved word
+// audio = 7;  // ERROR: 2 identifier 'audio' is a reserved word; try 'audio_' or another descriptive name
+// green = ;   // ERROR: 3 expected assignment
+// blue =      // ERROR: 4 unexpected token
+// red = 1     // ERROR: 5 expected ";"
+
+// p = [1, 2, 3]; // ERROR: 6 p cannot be reassigned
+// time = 1;      // ERROR: 7 time cannot be reassigned
+
+apply(fun, arg) {
+  return fun(arg);
+}
+goo = apply(baz, 2);
+
+return goo;

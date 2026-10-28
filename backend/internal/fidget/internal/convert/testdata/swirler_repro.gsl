@@ -1,0 +1,45 @@
+// Minimal reproducer for WGSL vs Fidget divergence on multi-return
+// functions called from two sibling user-defined callers.
+// Mirrors the gatePortFoldedXY/gatePortArcA/gatePortArcB shape from swirler.gsl.
+
+gatePortPatternCount = 6;
+gatePortAnnulusRadiusA = 3;
+gatePortAnnulusThicknessA = 1;
+gatePortXThicknessA = 0.5;
+gatePortAnnulusRadiusB = 2;
+gatePortAnnulusThicknessB = 0.8;
+gatePortXThicknessB = 0.4;
+
+intersectRound2(d1, d2, k) {
+  c1 = max(d1 + k, 0);
+  c2 = max(d2 + k, 0);
+  return min(neg(k), max(d1, d2)) + length([c1, c2]);
+}
+
+gatePortFoldedXY() {
+  count = gatePortPatternCount;
+  wedge = 2 * 3.14159265358979 / count;
+  halfWedge = wedge * 0.5;
+  ang = atan(p.x, p.y);
+  rad = length(p.xy);
+  angmod = (ang + halfWedge) % wedge - halfWedge;
+  foldedX = rad * sin(angmod);
+  foldedY = rad * cos(angmod);
+  return foldedX, foldedY;
+}
+
+gatePortArcA() {
+  foldedX, foldedY = gatePortFoldedXY();
+  annulusFieldA = abs(length([foldedX, foldedY]) - gatePortAnnulusRadiusA) - gatePortAnnulusThicknessA * 0.5;
+  xSlabFieldA = abs(foldedX) - gatePortXThicknessA * 0.5;
+  return intersectRound2(annulusFieldA, xSlabFieldA, 0);
+}
+
+gatePortArcB() {
+  foldedX, foldedY = gatePortFoldedXY();
+  annulusFieldB = abs(length([foldedX, foldedY]) - gatePortAnnulusRadiusB) - gatePortAnnulusThicknessB * 0.5;
+  xSlabFieldB = abs(foldedX) - gatePortXThicknessB * 0.5;
+  return intersectRound2(annulusFieldB, xSlabFieldB, 0);
+}
+
+return gatePortArcA(), gatePortArcB();

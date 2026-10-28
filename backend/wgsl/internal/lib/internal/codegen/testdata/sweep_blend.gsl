@@ -1,0 +1,38 @@
+// The swept-loft family combines its profile with two end caps, and now takes
+// the operator that does so. Each of the three variants is exercised blended
+// and at its default, which must stay the sharp intersection it always was.
+
+import . "builtin";
+
+roundProfile() {
+  return circleXY([0, 0], 0.5);
+}
+
+squareProfile() {
+  return rectangleXYCentered([0, 0], [0.8, 0.8]);
+}
+
+a = [0, 0, 0];
+b = [1.5, 1, 0];
+c = [3, 0, 0];
+up = [0, 0, 1];
+
+plain = sweepLoft(roundProfile, squareProfile, a, b, c, up);
+filleted = sweepLoft(roundProfile, squareProfile, a, b, c, up, intersectRound(0.1));
+
+tapered = sweepLoftScale(roundProfile, squareProfile, a, b, c, up, 1.5);
+taperedFillet = sweepLoftScale(roundProfile, squareProfile, a, b, c, up, 1.5,
+  intersectRound(0.1));
+
+eased = sweepLoftScaleSmooth(roundProfile, squareProfile, a, b, c, up, 1.5);
+easedChamfer = sweepLoftScaleSmooth(roundProfile, squareProfile, a, b, c, up, 1.5,
+  intersectChamfer(0.1));
+
+return unionSharp([
+  plain,
+  remap(filleted, p - [0, 3, 0]),
+  remap(tapered, p - [0, 6, 0]),
+  remap(taperedFillet, p - [0, 9, 0]),
+  remap(eased, p - [0, 12, 0]),
+  remap(easedChamfer, p - [0, 15, 0])
+]);

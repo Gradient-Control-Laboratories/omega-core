@@ -1,0 +1,6 @@
+import "pkg2";
+import "pkg1";
+
+s = pkg1.sphere(pkg1.somePi);
+t = pkg2.castArea(pkg2.castSize);
+return s, t;

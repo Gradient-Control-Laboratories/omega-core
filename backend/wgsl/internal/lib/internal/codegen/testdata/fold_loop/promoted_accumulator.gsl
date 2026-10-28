@@ -1,0 +1,7 @@
+// A fold with a scalar 0.0 initial accumulator whose callback returns a vec3:
+// the initial accumulator is promoted to vec3<f32>(0.0) so the loop is emitted natively.
+sum_vectors(q) {
+  offsets = [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [0, 0, 1], [1, 0, 1], [0, 1, 1], [1, 1, 1]];
+  return reduce(0.0, (acc, o) { return acc + (q - o); }, offsets);
+}
+return sphere(p, 10 + sum_vectors(p / 10).x);

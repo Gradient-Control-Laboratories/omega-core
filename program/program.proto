@@ -1,0 +1,540 @@
+syntax = "proto3";
+
+package program;
+option go_package = "gradientcontrol.com/omega_common/program";
+
+message Operand {
+    // The location containing the first character of the operand
+    Location start = 1;
+
+    // The location one beyond the last character of the operand
+    Location end = 2;
+
+    // The type of the operand.
+    // This may not be initialized until program assembly.
+    Type type = 3;
+
+    // The constant values for this operand if there are any.
+    // This may not be assigned until program assembly.
+    repeated double constValues = 4;
+
+    oneof t {
+        double       value       = 5;
+        Reference    reference   = 6;
+        Expression   expression  = 7;
+        FnCall       fnCall      = 8;
+        PropertyRef  propRef     = 9;
+    }
+}
+
+message Location {
+    int32 line   = 1;
+    int32 column = 2;
+    int32 offset = 3;
+}
+
+enum Operation {
+    UNSPECIFIED_OPERAND = 0;
+
+    ADD    = 1;
+    SUB    = 2;
+    MUL    = 3;
+    DIV    = 4;
+
+    // v0 % v1 or the remainder of v0 / v1
+    // equivalent to v0 - v1 * floor( v0 / v1 )
+    MODULO = 5;
+
+    reserved 6 to 9;
+
+    MIN = 10;
+    MAX = 11;
+
+    AND = 12;
+    OR  = 13;
+    NOT = 14;
+
+    reserved 15 to 19;
+
+    SQUARE = 20;
+    SQRT   = 21;
+
+    FLOOR  = 22;
+    CEIL   = 23;
+    ROUND  = 24;
+
+    NEG    = 25;
+    ABS    = 26;
+
+    EXP    = 27;
+    LN     = 28;
+
+    // POW(base, exponent) returns base^exponent
+    POW    = 29;
+
+    reserved 30 to 39;
+
+    SIN    = 40;
+    COS    = 41;
+    TAN    = 42;
+    ASIN   = 43;
+    ACOS   = 44;
+    ATAN   = 45;
+    ATAN2  = 46;
+
+    reserved 47 to 53;
+
+    // 1 if "lhs op rhs" is true and 0 otherwise
+    GT = 54;
+    GE = 55;
+    EQ = 56;
+    NE = 57;
+    LE = 58;
+    LT = 59;
+
+    // a <=> b: 1 if a > b, 0 if a == b, otherwise -1
+    COMPARE = 60;
+
+    // 1st argument is the function call to be remapped
+    // 2nd argument is the inverse remap function returning a vec3
+    // to be used when evaluating the 1st argument
+    REMAP = 61;
+
+    reserved 62 to 64;
+
+    // 2 to 4 arguments - returns a collection
+    COLLECT = 65;
+
+    // 1st argument is func(index, value) to be applied to each value
+    // 2nd argument is the list of values to be passed to the function if there are only 2 arguments
+    // If there are 3 to 10 arguments then arguments 2 through n-1 are the values passed to the function
+    MAP = 66;
+
+    // 1st argument is the initial value
+    // 2nd argument is the func(currentValue, value) to be applied to each value
+    // 3rd argument is the list of values to be passed to the function if there are only 3 arguments
+    // If there are 4 to 11 arguments then arguments 3 through n-1 are the values passed to the function
+    REDUCE = 67;
+
+    // 1st argument is the collection to be accessed
+    // 2nd argument indicates which value or values from the collection to be returned
+    //    where "x" returns the first value, "y" the second, "z" the third, and "w" the fourth
+    //    where "xy" returns the first and second values, "zyy" returns the third, second, and second values, etc.
+    ACCESS = 68;
+
+    // If "arg1 ? arg2 : arg3",        then if arg1 > 0 return arg2, otherwise return arg3
+    // If "arg1 ? arg2 : arg3 : arg4", then if arg1 > 0 return arg2, arg1 == 0 return arg3, otherwise return arg4
+    SELECT = 69;
+
+    // 1st argument is the collection to be accessed
+    // 2nd argument is the index of the value within the collection to be returned
+    INDEX = 70;
+
+    reserved 71 to 79;
+
+    // Forward-mode derivative of a field. Converted 1:1 to the model DERIV
+    // operation, which the autodiff pass (common/program/property) expands
+    // before backend lowering, so backends never see it.
+    // 1st argument is the target operand being differentiated
+    // 2nd argument is a reference to the variable to differentiate with
+    //   respect to: "time" (temporal, .dtime) or "p" (spatial, .dp)
+    DERIV = 80;
+
+    // Second-closest distance of a field (.second). Expanded by the
+    // self-computing-property pass (common/program/property) before backend
+    // lowering, so backends never see it.
+    // 1st (only) argument is the target field.
+    SECONDCLOSEST = 81;
+
+    // Bounding box of a field's solid (.box), as [lo, hi]. Expanded by the
+    // self-computing-property pass (common/program/property) before backend
+    // lowering, so backends never see it.
+    // 1st (only) argument is the target field.
+    BOUNDINGBOX = 82;
+
+    // A surface frame coordinate of a field (.u, .v): where a point sits on
+    // the shape's own surface, which a material reads so it needs no frame
+    // handed to it at the call site. Expanded by the self-computing-property
+    // pass (common/program/property) before backend lowering, so backends
+    // never see it.
+    //
+    // u is the periodic coordinate wherever a shape has one (a cylinder's
+    // angle about its axis, a sphere's azimuth) and v is the one that never
+    // wraps (axial, radial, polar). Linear coordinates are millimetres and
+    // angular ones radians: u is the ANGLE and never the arc length, since
+    // multiplying by the radius adds a radial term through the product rule
+    // and corrupts a direction read from the gradient.
+    //
+    // 1st (only) argument is the target field.
+    SURFACEU = 83;
+    SURFACEV = 84;
+
+    reserved 85 to 99;
+}
+
+// A reference to a variable or function
+message Reference {
+    // The prefix of the import or empty if referencing something in the current package.
+    string prefix = 1;
+
+    // The name of the thing being referenced
+    string name = 2;
+
+    // The full unique path for the package containing the declaration being referenced
+    // or an empty string if the reference is to a declaration in the same package.
+    //
+    // This field is initialized during program assembly
+    string pkgPath = 3;
+
+    // If the pkgPath is an empty string, then this is a relative path from the reference
+    // to the declaration that it references. For example, if the declaration is in the same scope,
+    // then the refPath will be the name of the declaration. If the declaration is in a parent scope,
+    // then the refPath will be two dots ".." followed by a slash and then the name of the declaration.
+    // This pattern is repeated for each level of parent scopes.
+    // An outer scope cannot reference elements within a function.
+    // A function can reference any element in any of the scopes that contain it.
+    //
+    // If the pkgPath is not empty, then it is a full package path
+    // and the refPath field contains the name of the declaration within that package.
+    //
+    // If refPath is empty, then the reference has not been resolved.
+    //
+    // This field is initialized during program assembly
+    string refPath = 4;
+}
+
+message PropertyRef {
+    Reference reference = 1;
+
+    // The property name to be accessed
+    //
+    // The parser may not be able to distinguish between an prefix-dot-name and a name-dot-property
+    // and chooses Reference over PropertyRef.
+    // When the reference is resolved during program assembly
+    // then a Reference may be replaced by a PropertyRef.
+    string property = 2;
+}
+
+message FnCall {
+    Reference reference = 1;
+
+    // The arguments passed to the referenced function
+    repeated Operand arguments = 2;
+}
+
+message Expression {
+    Operation        operation   = 1;
+    repeated Operand operands    = 2;
+}
+
+message Range {
+    // The location containing the first character of the range annotation
+    Location start = 1;
+
+    // The location one beyond the last character of the range annotation
+    Location end = 2;
+
+    // The minimum bound of the range
+    Operand min = 3;
+
+    // The maximum bound of the range
+    Operand max = 4;
+
+    // Optional step period or discretization of the range
+    Operand period = 5;
+}
+
+message Assignment {
+    // The location containing the first character of the variable name
+    Location start = 1;
+
+    // The location one beyond the last character of the variable name
+    Location end = 2;
+
+    // The variable(s) being assigned to.
+    // If there are multiple variables, then the operand must be a call to a function
+    // that returns the same number of expressions as there are names being assigned.
+    repeated Variable variables = 3;
+
+    // The expression to be evaluated and assigned to the variable(s).
+    Operand expression = 4;
+
+    // Optional range annotation defining slider bounds and period
+    Range range = 5;
+}
+
+message Variable {
+    string name = 1;
+
+    // Optional properties on the variable.
+    repeated Property properties = 2;
+
+    // The variable type is not assigned until program assembly.
+    Type type = 3;
+
+    // The constant values for this variable if there are any.
+    // This may not be assigned until program assembly.
+    repeated double constValues = 4;
+}
+
+message Property {
+    // The location containing the first character of the property
+    Location start = 1;
+
+    // The location one beyond the last character of the property
+    Location end = 2;
+
+    // The name of the property being assigned
+    string name = 3;
+
+    // The expression to be evaluated and assigned to the property
+    Operand expression = 4;
+}
+
+// A declaration-level annotation: `@material brass = metal.finish(0.3);`,
+// `@material walnut(axisOrigin, axisDir) { ... }`, or `@finish matte = ...`.
+//
+// Unlike @point and @transform, which the parser lowers into uiPoint and
+// uiTransform calls inside the expression tree, an annotation recorded here
+// stays out of the tree entirely. Nothing in build or codegen has to strip it,
+// and the symbol it names compiles exactly as it would unannotated, so an
+// annotation can mark a function as readily as a constant.
+message Annotation {
+    // The annotation's name without the '@' (e.g. "material").
+    string kind = 1;
+
+    // The top-level symbol the annotation marks: the variable name of an
+    // annotated assignment, or the function name of an annotated function
+    // declaration. Overloads share one entry, because an annotation marks a
+    // name rather than a particular arity.
+    string symbol = 2;
+
+    // The location containing the '@'
+    Location start = 3;
+
+    // The location one beyond the last character of the annotated symbol's name
+    Location end = 4;
+}
+
+// A function type contains one or more function groups all having the same name
+message FnType {
+    string name = 1;
+
+    // Functions are grouped by the number of parameters
+    repeated FnGroup groups = 2;
+}
+
+// A group of functions all having the same name and same number of parameters
+// but with different parameter types
+message FnGroup {
+    int32             paramCount = 1;
+    repeated Function functions  = 2;
+}
+
+message Function {
+    repeated Parameter parameters = 1;
+
+    // The assignments in the function body
+    repeated Assignment assignments = 2;
+
+    // The functions declared within the function body
+    repeated FnType fnTypes = 3;
+
+    // The expressions returned by the function
+    repeated Operand returns = 4;
+}
+
+message Parameter {
+    Location start = 1;
+    string name = 2;
+
+    // The parameter type is initialized during program assembly
+    Type type = 3;
+
+    // Optional range annotation defining suggested bounds and period
+    Range range = 4;
+
+    // TODO: review how annotations are manifest in the program tree.
+    // The control annotation on the parameter, if any: "color", "point",
+    // "direction", "transform" or "frame". It declares what kind of value
+    // the argument is, so a tool that writes a call to this function can
+    // give each argument its control, or for a frame read the body's own.
+    // Recorded here, never lowered: the function compiles exactly as it
+    // would unannotated.
+    string kind = 5;
+
+    // For a "direction": the name of the sibling parameter its arrow is
+    // drawn from, `@direction(axisOrigin) axisDir`, or empty.
+    string anchor = 6;
+}
+
+message Import {
+    Location start  = 1;
+    Location end    = 2;
+    string   prefix = 3;
+    string   path   = 4;
+}
+
+message MeshImport {
+    Location start = 1;
+    Location end   = 2;
+    int32    index = 3;
+    string   path  = 4;
+}
+
+message StepImport {
+    Location start = 1;
+    Location end   = 2;
+    int32    index = 3;
+    string   path  = 4;
+}
+
+// A casting simulation the document deforms geometry with. Shaped like the
+// other asset imports so it moves through the pipeline the same way, but the
+// asset is a result rather than an input: it names the solve whose displacement
+// meshWarped and vdbSdfWarped bake into their geometry.
+message WarpImport {
+    Location start = 1;
+    Location end   = 2;
+    int32    index = 3;
+    string   path  = 4;
+}
+
+// Scene framing and grid spacing for a package.
+message Scene {
+    Location start = 1;
+    Location end   = 2;
+    double   size  = 3; // Scene framing extent in mm
+    double   grid  = 4; // Grid spacing in mm
+    // Engine-computed domain for graded spinodoid kernel sampling:
+    // [minX, minY, minZ, maxX, maxY, maxZ] in model coordinates.
+    repeated double spinodoidBounds = 5;
+}
+
+// The parser parses one or more source files comprising a package
+// and returns this structure as a result.
+message Package {
+    int32 versionMajor = 1;
+    int32 versionMinor = 2;
+
+    // The full and unique identifier path for this package.
+    // This field is initialized during program assembly.
+    string path = 3;
+
+    // The source files that make up this package
+    repeated PackageFile files = 4;
+
+    // Scene framing (extent and grid) declared for this package
+    Scene scene = 5;
+}
+
+
+message PackageFile {
+    // The full and unique identifier path for this package file.
+    string path = 1;
+
+    // The source is not initialized by the parser
+    // and only initialized during program assembly if an error is detected
+    string source = 2;
+
+    repeated Import       imports      = 3;
+    repeated Assignment   assignments  = 4;
+    repeated FnType       fnTypes      = 5;
+    repeated Operand      returns      = 6;
+    repeated MeshImport   meshImports  = 7;
+    repeated StepImport   stepImports  = 8;
+    repeated WarpImport   warpImports  = 9;
+
+    // Lowered return property fields parallel to returns on the primary package's last file
+    repeated Operand      colorReturns = 10;
+    repeated Operand      materialReturns = 11;
+
+    // Declaration-level annotations on this file's top-level declarations
+    repeated Annotation   annotations  = 12;
+}
+
+message MeshSdfSlot {
+    // Dense, zero-based GPU shader texture binding slot (0, 1, ...) mapped to
+    // WebGPU texture and sampler parameters (e.g. sdfTex0, sdfTex1).
+    int32 slot = 1;
+
+    // Global GSL geometry asset identifier assigned to the imported mesh or STEP asset
+    // (e.g. the asset index argument referenced in bvhSdf(i) or vdbSdf(i)).
+    int32 assetIndex = 2;
+}
+
+message GlobalTextures {
+    // Procedural 3D noise hash tile (noiseHash3, worleyF1, worleyFeature).
+    bool usesNoiseTile = 1;
+
+    // Physics simulation displacement field (warpField).
+    bool usesWarpField = 2;
+
+    // Multi-band microstructure lattice texture (gaborSpinodoid, gaborSpinodoidGradient).
+    bool usesSpinodoid = 3;
+}
+
+// The program assembler takes one or more packages produced by the parser
+// and assembles them into a program returning this structure.
+message Program {
+    int32 versionMajor = 1;
+    int32 versionMinor = 2;
+
+    // The primary package being built.
+    // The primary package is always defined.
+    // The primary package path may be an empty string or an explicit package identifier.
+    Package primary    = 3;
+
+    // All of the packages directly or indirectly imported by the primary package
+    // excluding the primary package itself because it cannot be imported.
+    // The packages are ordered in such a way that a package earlier in the list
+    // cannot be imported by a package later in the list.
+    repeated Package dependencies = 4;
+
+    // Pre-allocated dense shader texture slot bindings for bvhSdf and vdbSdf calls.
+    repeated MeshSdfSlot meshSdfSlots = 5;
+
+    // Global texture requirement flags extracted after dead-code elimination.
+    GlobalTextures globalTextures = 6;
+}
+
+enum TypeKind {
+    TYPE_UNSPECIFIED = 0;
+    SCALAR           = 1;
+    LIST             = 2;
+    MATRIX           = 3;
+    FUNCTION         = 4;
+}
+
+// Type information about the expression, variable, function, or parameter:
+// - scalar
+// - list (vector, array)
+// - matrix
+// - function
+message Type {
+    // The structural kind of the type (SCALAR, LIST, MATRIX, FUNCTION)
+    TypeKind kind = 1;
+
+    // The size of the type, where
+    // size == 0 is a function
+    // size == 1 is a scalar or single-element list
+    // size  > 1 is a list/array/matrix
+    int32 size = 2;
+
+    // If the type is a LIST or MATRIX, then this is the type of elements contained in the list.
+    Type elemType = 3;
+
+    // If the type is a function, then this is the full unique path
+    // for the package containing the function declaration
+    // where an empty string represents the primary package
+    string pkgPath = 4;
+
+    // If the type is a function, then this is the slash "/" separated path
+    // from the package to the function declaration where a name without a slash references a top level function
+    // and a name containing slashes referenced a function declared within another function
+    string fnPath = 5;
+
+    // If the type is a scalar or list then this is the constant value if there is one
+    // where a constant value is a literal value like 0 or [1, 2, 3].
+    Operand constValue = 6;
+}

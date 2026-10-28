@@ -1,0 +1,21 @@
+// @point fn1() { return 1; }              // ERROR: 1 @point annotation can only be applied to variable assignments
+// fn3(@point(1) p) { return p; }          // ERROR: 3 @point annotation does not take arguments
+// @point(1, 2) errDecl = [0.0, 0.0, 0.0]; // ERROR: 4 @point annotation does not take arguments
+// errInline = @point(1) [0.0, 0.0, 0.0];  // ERROR: 5 @point annotation does not take arguments
+
+@point
+origin = [0.0, 0.0, 0.0];
+
+@point
+target = [10.0, 20.0, 30.0];
+
+inlinePoint = @point [1.0, 2.0, 3.0];
+
+applyPoint(p) {
+    return p[0];
+}
+
+callPoint = applyPoint(@point [4.0, 5.0, 6.0]);
+
+return origin[0] + target[1] + inlinePoint[2] + callPoint;
+

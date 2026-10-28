@@ -1,0 +1,24 @@
+[package]
+name = "fidget-shapes"
+version = "0.5.0"
+edition = "2024"
+rust-version = "1.95"
+authors = ["Matt Keeter <matt.j.keeter@gmail.com>"]
+description = "Shapes and transforms for use with Fidget (vendored at fidget e329a898)"
+readme = "README.md"
+license = "MPL-2.0"
+repository = "https://github.com/mkeeter/fidget"
+build = false
+publish = false
+
+[lib]
+name = "fidget_shapes"
+path = "src/lib.rs"
+
+[dependencies]
+enum-map = "3.1.0"
+facet = { version = "0.46", features = ["reflect", "doc"] }
+fidget-core = { path = "../fidget-core", version = "=0.5.0" }
+nalgebra = { version = "0.35", features = ["std", "serde-serialize"], default-features = false }
+strum = { version = "0.28", features = ["derive"] }
+thiserror = "2"

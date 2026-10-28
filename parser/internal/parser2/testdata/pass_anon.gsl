@@ -1,0 +1,11 @@
+sphere(radius) {
+  return length(p) - radius;
+}
+
+useAnon(myFunc) {
+  return myFunc(p.z);
+}
+
+return remap(sphere(2.5), [p.x, p.y, useAnon((z) {
+  return 2 * z;
+})]);

@@ -1,0 +1,16 @@
+// Exercises every lattice: cubic grid, square / diagonal / reinforced (1 and 2
+// diagonals) honeycombs, octet, and the hex / triangular star tilings. Each is
+// thresholded to a beam and the set unioned.
+import "lattice/foam";
+import "lattice/honeycomb";
+
+cub = foam.cubicGrid([6, 6, 6], unionRound(0.5)) - 0.5;
+sqr = honeycomb.squareHoneycomb([5, 5]) - 0.4;
+dia = honeycomb.squareDiagonalHoneycomb([5, 7]) - 0.4;
+rf1 = honeycomb.squareHoneycombReinforced([5, 5], 0.25) - 0.4;
+rf2 = honeycomb.squareHoneycombReinforced([5, 5], 0.25, 0.75, unionSharp) - 0.4;
+oct = honeycomb.octetHoneycomb([6, 6], unionRound(0.3)) - 0.4;
+hex = honeycomb.hexagonalHoneycomb(4, unionRound(0.4)) - 0.3;
+hxs = honeycomb.hexagonalHoneycomb(4, 0.333, unionRound(0.2)) - 0.3;
+tri = honeycomb.triangularHoneycomb(4, unionRound(0.2)) - 0.3;
+return min(min(min(cub, sqr), min(dia, rf1)), min(min(rf2, oct), min(hex, min(hxs, tri))));

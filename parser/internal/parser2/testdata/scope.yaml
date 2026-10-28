@@ -1,0 +1,96 @@
+Expected:
+  files:
+    - assignments:
+        - expression:
+            value: 7
+          variables:
+            - name: radius
+        - expression:
+            fnCall:
+              arguments:
+                - value: 1
+              reference:
+                name: foo
+          variables:
+            - name: result
+            - name: r
+      fnTypes:
+        - groups:
+            - functions:
+                - assignments:
+                    - expression:
+                        value: 2
+                      variables:
+                        - name: radius
+                    - expression:
+                        fnCall:
+                          arguments:
+                            - value: 1
+                            - reference:
+                                name: gsl_anon
+                          reference:
+                            name: bar
+                      variables:
+                        - name: result
+                        - name: r
+                  fnTypes:
+                    - groups:
+                        - functions:
+                            - parameters:
+                                - name: v
+                                - name: f
+                              returns:
+                                - expression:
+                                    operands:
+                                      - fnCall:
+                                          arguments:
+                                            - reference:
+                                                name: v
+                                          reference:
+                                            name: f
+                                      - reference:
+                                          name: radius
+                                    operation: ADD
+                          paramCount: 2
+                      name: bar
+                    - groups:
+                        - functions:
+                            - parameters:
+                                - name: one
+                              returns:
+                                - expression:
+                                    operands:
+                                      - reference:
+                                          name: one
+                                      - value: 2.5
+                                    operation: ADD
+                          paramCount: 1
+                      name: gsl_anon
+                  parameters:
+                    - name: one
+                  returns:
+                    - expression:
+                        operands:
+                          - reference:
+                              name: one
+                          - value: 2.5
+                        operation: ADD
+                    - expression:
+                        operands:
+                          - reference:
+                              name: one
+                          - value: 2
+                        operation: DIV
+              paramCount: 1
+          name: foo
+      returns:
+        - reference:
+            name: result
+        - expression:
+            operands:
+              - reference:
+                  name: r
+              - reference:
+                  name: radius
+            operation: ADD
+Source: ""

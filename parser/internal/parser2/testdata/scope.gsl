@@ -1,0 +1,19 @@
+radius = 7;
+
+foo(one) {
+  radius = 2;
+
+  bar(v, f) {
+    return f(v) + radius; // ERROR: 1 expected "return"
+  }
+
+  result, r = bar(1, (one) {
+    return one + 2.5; // ERROR: 2 expected "return"
+  });
+
+  return one + 2.5, one / 2; // ERROR: 3 expected "return"
+}
+
+result, r = foo(1);
+
+return result, r + radius;

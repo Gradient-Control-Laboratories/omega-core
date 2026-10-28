@@ -1,0 +1,193 @@
+
+// Printed Materials (material/printed)
+//
+// The surfaces additive manufacturing leaves, from each process's own
+// parameters: fused filament's beads, resin's fine layers, the powder beds'
+// grain, and laser-melted metal's rough skin. Each returns material, color,
+// height and slope, as the machined and coating materials do; the height is
+// 0, and the layers ride in the material as displacement and lay.
+//
+// Layers are a field periodic along the build direction, so they fall where
+// they do on a print without knowing its shape: a wall shows them a layer
+// apart, a slope spreads them into the stair-steps it is printed in, L over
+// the sine of its angle apart, and a top or bottom face, one height, shows
+// none. The lay runs round the build direction about a point near the part's
+// middle, along the layers on any wall that faces away from it.
+//
+// Doc convention follows builtin/base.gsl: `///` lines are public docs.
+
+import "material";
+import "texture";
+import "noise";
+import "color";
+
+// The lay along a print's layers: round the build direction about centre,
+// so on any wall facing away from it the lay is level, along its layers.
+layerLay(buildDir, center) {
+  return cross(normalize(buildDir), p - center);
+}
+
+// The finish of a print's layers, `layerHeight` mm apart along up, over
+// baseMaterial. Its coarse look, and its stand-in, is the layers too fine to
+// see: their slopes, `slope` root mean square across them, widen the lobe
+// across the layers, streaking the highlight across them along the lay. Its
+// fine detail (name.detail) is the layers' `relief` as displacement where it
+// is drawn, on a lobe `edgeAlpha` wide; where the relief is not drawn, the
+// displacement off or the part too small for it (displacementDrawn()), or
+// fades as the layers shrink, the lobe widens to the coarse look's. The
+// relief fades by the layer height or 0.15 mm, whichever is less, so it is
+// gone by the pixel the viewer stops drawing fine detail at.
+layerFinish(baseMaterial, up, center, layerHeight, relief, edgeAlpha, slope) {
+  size = min(layerHeight, 0.15);
+  layDir = layerLay(up, center);
+  farAcross = sqrt(edgeAlpha * edgeAlpha + slope * slope);
+  farStretch = (1 - clamp(edgeAlpha / farAcross, 0.1, 1)) / 0.9;
+  coarse = material.withLay(material.withRoughness(baseMaterial, sqrt(sqrt(edgeAlpha * farAcross))), layDir, farStretch);
+  shown = texture.fadeDetail(size) * displacementDrawn();
+  across = sqrt(edgeAlpha * edgeAlpha + (1 - shown) * slope * slope);
+  stretch = (1 - clamp(edgeAlpha / across, 0.1, 1)) / 0.9;
+  fineLay = stretch > 0 ? layDir : [0, 0, 0];
+  fine = material.withDisplacement(material.withLay(material.withRoughness(baseMaterial, sqrt(sqrt(edgeAlpha * across))), fineLay, stretch), relief * texture.fadeDetail(size));
+  finish = coarse;
+  finish.detail = fine;
+  finish.detailSize = size;
+  finish.simple = coarse;
+  return finish;
+}
+
+/// fdm(plasticColor, buildDir, center, layerHeight, glossUnits): a part printed
+/// by fused filament, `layerHeight` mm a layer (0.1 to 0.3) along buildDir.
+/// Each layer is a bead whose side bulges round, so a wall is a chain of
+/// semicircles a layer across, Ra 0.091 L (the chain's mean deviation from
+/// its own mean, pi L / 8), and the plastic's gloss is `glossUnits` (PLA about
+/// 40, PETG 70, matte filaments 10). `center` is a point near the part's
+/// middle, for the lay. While the beads show they are relief; seen smaller
+/// than a pixel their slopes, about a radian either way, streak the highlight
+/// across the layers instead. Returns material, color, height and slope.
+fdm(@color plasticColor, @direction(center) buildDir, @point center, @range(0.1, 0.3) layerHeight, @range(0, 100) glossUnits) {
+  up = normalize(buildDir);
+  s = fract(dot(p, up) / layerHeight);
+  x = 2 * s - 1;
+  // A semicircle a layer across, 0 at its crown and -L/2 at the seam, set
+  // about its mean, pi L / 8 below the crown's L / 2.
+  bead = 0.5 * layerHeight * (sqrt(max(1 - x * x, 0)) - 0.785398);
+  gu = clamp(glossUnits, 1, 99);
+  alpha = 0.044 * sqrt(100 / gu - 1);
+  printed = layerFinish(material.make(0.5, 0, 1.5), up, center, layerHeight, bead, alpha, 0.8);
+  return printed, plasticColor, 0, 0;
+}
+
+/// resin(resinColor, buildDir, center, layerHeight, clarity): a part printed in
+/// resin by stereolithography or masked SLA, `layerHeight` mm a layer (0.025
+/// to 0.1): near glossy, its layers faint steps a few micrometres deep, sharp
+/// where a shallow slope steps through them and a faint streak across them
+/// where they are too fine to see. `clarity` from 0 (opaque, the usual grey
+/// or colour) to 1 (a clear resin) lets light through. `center` is a point
+/// near the part's middle, for the lay. Returns material, color, height and
+/// slope.
+resin(@color resinColor, @direction(center) buildDir, @point center, @range(0.025, 0.1) layerHeight, @range(0, 1) clarity) {
+  up = normalize(buildDir);
+  s = fract(dot(p, up) / layerHeight);
+  stepRelief = (s - 0.5) * 0.08 * layerHeight;
+  clear = material.withTransmission(material.make(0.5, 0, 1.5), clamp(clarity, 0, 1), 20);
+  printed = layerFinish(clear, up, center, layerHeight, stepRelief, 0.0225, 0.05);
+  return printed, resinColor, 0, 0;
+}
+
+/// powderBed(powderColor, grain): a part sintered or fused from nylon powder,
+/// by selective laser sintering (white, grain about 0.06 mm) or multi jet
+/// fusion (grey, often dyed black): matte and grainy, the half-fused grains of
+/// its skin `grain` mm across, its layers lost among them. Returns material,
+/// color, height and slope.
+powderBed(@color powderColor, grain) {
+  // The grains' relief and shade, fine detail (name.detail):
+  // faded, they are no relief and the powder's own colour.
+  grainF1, grainF2, grainCell = noise.cellularCell(grain);
+  speck = noiseHash3(grainCell + [23, 61, 7]);
+  bump = clamp(1 - grainF1 / (0.5 * grain), 0, 1);
+  fine = [0, 1];
+  fine.detail = [(bump * bump - 0.2) * 0.3 * grain * texture.fadeDetail(min(grain, 0.15)), texture.fadeTo(0.9 + 0.2 * speck.x, 1, min(grain, 0.15))];
+  fine.detailSize = min(grain, 0.15);
+  nylon = material.withDisplacement(material.make(0.85, 0, 1.53), fine.x);
+  nylon.simple = material.make(0.85, 0, 1.53);
+  tone = powderColor * fine.y;
+  tone.simple = powderColor;
+  return nylon, tone, 0, 0;
+}
+
+/// laserMelted(baseMaterial, baseColor, roughnessRa): metal printed by laser
+/// powder-bed fusion (DMLS, SLM), as built, `roughnessRa` micrometres Ra (5 to
+/// 15). Its skin is crusted with powder half-melted onto it, about 0.04 mm
+/// across, far too fine to shade as relief: its slopes, 0.6 at Ra 10, spread
+/// the highlight evenly, and up close each speck of powder is a shade lighter
+/// or darker, settling to the metal's own colour as it shrinks below a pixel.
+/// The layers, a few hundredths of a millimetre, are lost beneath it.
+/// Returns material, color, height and slope.
+laserMelted(baseMaterial, @color baseColor, @range(5, 15) roughnessRa) {
+  ra = clamp(roughnessRa, 2, 30);
+  skin = material.withRoughness(material.withMetallic(baseMaterial, 1), sqrt(sqrt(0.09 + 0.0036 * ra * ra)));
+  // A shade per 0.04 mm cell of a lattice, one hash, as fine detail
+  // (name.detail).
+  speck = noiseHash3(floor(p / 0.04) + [31, 5, 59]);
+  shade = 1;
+  shade.detail = texture.fadeTo(0.88 + 0.24 * speck.x, 1, 0.04);
+  shade.detailSize = 0.04;
+  tint = baseColor * 0.85 * shade;
+  tint.simple = baseColor * 0.85;
+  return skin, tint, 0, 0;
+}
+
+// ===========================================================================
+// Ready-made
+// ===========================================================================
+
+// One surface from each constructor above, with the arguments the examples
+// use, so the material browser can show it. The constructors stay the way to
+// set the parameters; see doc/material_composition.md for the plan to adjust
+// them from the browser.
+
+/// Laser-sintered white nylon, as printed. Returns material and colour.
+@material whiteNylonPowder() {
+  nylon, tone, height, slope = powderBed([0.86, 0.85, 0.81], 0.06);
+  return nylon, tone;
+}
+
+/// Black nylon from a powder bed, as Multi Jet Fusion prints it. Returns
+/// material and colour.
+@material blackNylonPowder() {
+  nylon, tone, height, slope = powderBed([0.07, 0.07, 0.075], 0.06);
+  return nylon, tone;
+}
+
+/// A part printed by fused filament in blue PETG, 0.2 mm layers along +Z
+/// through the origin, 70 gloss units. Returns material and colour.
+@material fdm() {
+  layered, tone, height, slope = fdm([0.12, 0.3, 0.75], [0, 0, 1], [0, 0, 0], 0.2, 70);
+  return layered, tone;
+}
+
+/// A part printed in grey resin, 0.05 mm layers along +Z through the origin,
+/// opaque. Returns material and colour.
+@material resin() {
+  layered, tone, height, slope = resin([0.55, 0.57, 0.6], [0, 0, 1], [0, 0, 0], 0.05, 0);
+  return layered, tone;
+}
+
+// One @surface overload per operator above, for the Bodies panel to wrap a
+// surface with: the slots a document supplies and the arguments the examples
+// use for the rest. Adjust opens one back into the full form; see
+// doc/material_composition.md, "Design: operators as presets".
+
+/// laserMelted(baseMaterial, baseColor): laser-melted metal as built, 10 um
+/// Ra. Returns material, color, height and slope.
+@surface laserMelted(baseMaterial, @color baseColor) {
+  skin, tone, height, slope = laserMelted(baseMaterial, baseColor, 10);
+  return skin, tone, height, slope;
+}
+
+// References
+//   Ahn, D. et al. (2009). Representation of surface roughness in fused
+//     deposition modeling. Journal of Materials Processing Technology.
+//   Strano, G. et al. (2013). Surface roughness analysis, modelling and
+//     prediction in selective laser melting. Journal of Materials
+//     Processing Technology.

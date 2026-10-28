@@ -1,0 +1,228 @@
+// Scene Size: 260
+// Scene Grid: 10
+
+// The tools that turn the fasteners: screwdriver bits and screwdrivers, from
+// mechanical/driver.
+//
+// A TIP IS THE RECESS READ FROM THE OTHER SIDE. Each tip here is the same field
+// as the recess drill cuts into a screw, read as a solid, so a bit seated in
+// the screw it is for meets it flank to flank and passes through it nowhere —
+// the row of seated bits shows it, and the driver test proves it.
+//
+// The rows, back to front:
+//
+//   1/4" INSERT BITS   ISO 1173 form C 6.3, 25 long, with the V-groove on the
+//                      corners a magnetic holder catches.
+//   1/4" POWER BITS    ISO 1173 form E 6.3, 50 long — the SELF-LOCKING shank:
+//                      the round groove a quick-release chuck's ball drops into.
+//   4 mm PRECISION     ISO 1173 form C 4, 28 long, for the small sizes.
+//   SEATED             a PH2 in an M4 pan head, a PZ2 in an M4, a T25 in the M5
+//                      pan head ISO 14583 gives one.
+//   SCREWDRIVERS       PH1 x 75, PH2 x 100, PZ2 x 100 and a slotted 1.2 x 6.5,
+//                      blades to ISO 8764-2 series B.
+//
+// Across each row of bits: PH2, PZ2, T25, Robertson #2, a hex key, a slot —
+// and in the precision row the small sizes of the same: PH0, PH1, T6, T10, a
+// 1.5 hex and a 0.4 x 2.5 slot.
+//
+// A Phillips and a Pozidriv tip of one number fit every screw that number goes
+// in, because the recess is one form sunk to each screw's depth. The Phillips
+// tip is ISO 4757's own gauge, which the standard says is the screwdriver's
+// point. The handles are ILLUSTRATIVE — no standard sizes a handle.
+
+steelMat, steelColor = metal.steel();
+zincMat, zincColor = metal.zinc();
+chromiumMat, chromiumColor = metal.chromium();
+
+col = 16.0;
+
+// Bits stand tip-up with their drive end on the floor: turned over, half a
+// turn about x. That is the mirror in z a remap would take, mirrored again in
+// y, and every bit here is symmetric in y, so it is the same bit; the turn
+// keeps the bit's box, and the remap would clear it.
+standing(bitField, x0, y0, len) {
+  return transform.translate(transform.rotateX(bitField, pi), [x0, y0, len]);
+}
+
+// The six tips of a 1/4" row: PH2, PZ2, T25, Robertson #2, 4 hex, 1.0 x 5.5 slot.
+ph2 = driver.phillipsTip(2.0);
+pz2 = driver.pozidrivTip(2.0);
+t25 = driver.torxTip(25.0, 5.0);
+r2 = driver.robertsonTip(2.0, 5.0);
+hex4 = driver.hexTip(4.0, 5.0);
+slot55 = driver.slotTip(1.0, 5.5, 5.0);
+fl2 = driver.fluteLength(2.0);
+
+// =========================================================
+// 1/4" insert bits, ISO 1173 form C 6.3
+// =========================================================
+
+insertPH2 = standing(driver.bit(ph2, driver.insertShank(fl2, 0.7)), -2.5 * col, -70.0, 25.0);
+insertPZ2 = standing(driver.bit(pz2, driver.insertShank(fl2, 0.9)), -1.5 * col, -70.0, 25.0);
+insertT25 = standing(driver.bit(t25, driver.insertShank(5.0, 1.6)), -0.5 * col, -70.0, 25.0);
+insertR2 = standing(driver.bit(r2, driver.insertShank(5.0, 1.4)), 0.5 * col, -70.0, 25.0);
+insertHex4 = standing(driver.bit(hex4, driver.insertShank(5.0, 1.8)), 1.5 * col, -70.0, 25.0);
+insertSlot = standing(driver.bit(slot55, driver.insertShank(5.0, 0.5)), 2.5 * col, -70.0, 25.0);
+
+// =========================================================
+// 1/4" power bits, ISO 1173 form E 6.3 — the self-locking groove
+// =========================================================
+
+powerPH2 = standing(driver.bit(ph2, driver.powerShank(fl2, 0.7)), -2.5 * col, -45.0, 50.0);
+powerPZ2 = standing(driver.bit(pz2, driver.powerShank(fl2, 0.9)), -1.5 * col, -45.0, 50.0);
+powerT25 = standing(driver.bit(t25, driver.powerShank(5.0, 1.6)), -0.5 * col, -45.0, 50.0);
+powerR2 = standing(driver.bit(r2, driver.powerShank(5.0, 1.4)), 0.5 * col, -45.0, 50.0);
+powerHex4 = standing(driver.bit(hex4, driver.powerShank(5.0, 1.8)), 1.5 * col, -45.0, 50.0);
+powerSlot = standing(driver.bit(slot55, driver.powerShank(5.0, 0.5)), 2.5 * col, -45.0, 50.0);
+
+// =========================================================
+// 4 mm precision bits, ISO 1173 form C 4
+// =========================================================
+
+microPH0 = standing(driver.bit(driver.phillipsTip(0.0), driver.microShank(driver.fluteLength(0.0), 0.3)),
+                    -2.5 * col, -20.0, 28.0);
+microPH1 = standing(driver.bit(driver.phillipsTip(1.0), driver.microShank(driver.fluteLength(1.0), 0.45)),
+                    -1.5 * col, -20.0, 28.0);
+microT6 = standing(driver.bit(driver.torxTip(6.0, 3.0), driver.microShank(3.0, 0.6)), -0.5 * col, -20.0, 28.0);
+microT10 = standing(driver.bit(driver.torxTip(10.0, 3.0), driver.microShank(3.0, 0.9)), 0.5 * col, -20.0, 28.0);
+microHex15 = standing(driver.bit(driver.hexTip(1.5, 3.0), driver.microShank(3.0, 0.6)), 1.5 * col, -20.0, 28.0);
+microSlot = standing(driver.bit(driver.slotTip(0.4, 2.5, 3.0), driver.microShank(3.0, 0.2)), 2.5 * col, -20.0, 28.0);
+
+bitFinish = material.withRoughness(steelMat, 0.35);
+bitColor = [0.46, 0.47, 0.50];
+insertPH2.material = bitFinish;
+insertPH2.color = bitColor;
+insertPZ2.material = bitFinish;
+insertPZ2.color = bitColor;
+insertT25.material = bitFinish;
+insertT25.color = bitColor;
+insertR2.material = bitFinish;
+insertR2.color = bitColor;
+insertHex4.material = bitFinish;
+insertHex4.color = bitColor;
+insertSlot.material = bitFinish;
+insertSlot.color = bitColor;
+powerPH2.material = bitFinish;
+powerPH2.color = bitColor;
+powerPZ2.material = bitFinish;
+powerPZ2.color = bitColor;
+powerT25.material = bitFinish;
+powerT25.color = bitColor;
+powerR2.material = bitFinish;
+powerR2.color = bitColor;
+powerHex4.material = bitFinish;
+powerHex4.color = bitColor;
+powerSlot.material = bitFinish;
+powerSlot.color = bitColor;
+microPH0.material = bitFinish;
+microPH0.color = bitColor;
+microPH1.material = bitFinish;
+microPH1.color = bitColor;
+microT6.material = bitFinish;
+microT6.color = bitColor;
+microT10.material = bitFinish;
+microT10.color = bitColor;
+microHex15.material = bitFinish;
+microHex15.color = bitColor;
+microSlot.material = bitFinish;
+microSlot.color = bitColor;
+
+// =========================================================
+// Seated: each bit in the recess it is for
+// =========================================================
+//
+// The screws stand with their seating plane 10 up; a bit goes in tip first.
+// The Phillips and Pozidriv bits' ends sit at ISO 7045's minimum penetration,
+// clear of the recess by a few hundredths; the Torx bit's end sits on the
+// recess floor fastener reports.
+
+// Each screw is the smooth ISO 7045 / 14583 pan head screw, threaded by its relief.
+screwPH = transform.translate(fastener.panPhillips(4.0, 10.0), [-30.0, 5.0, 10.0]);
+screwPZ = transform.translate(fastener.panPozidriv(4.0, 10.0), [0.0, 5.0, 10.0]);
+screwTX = transform.translate(fastener.panTorx(5.0, 10.0), [30.0, 5.0, 10.0]);
+screwPH.material = material.withDisplacement(zincMat,
+  remap(thread.maleRelief(4.0, thread.metricPitch(4.0), 0.0, -10.0), [p.x + 30.0, p.y - 5.0, p.z - 10.0]));
+screwPH.color = thread.reliefColor(zincColor,
+  remap(thread.maleRelief(4.0, thread.metricPitch(4.0), 0.0, -10.0), [p.x + 30.0, p.y - 5.0, p.z - 10.0]), thread.metricPitch(4.0));
+screwPZ.material = material.withDisplacement(zincMat,
+  remap(thread.maleRelief(4.0, thread.metricPitch(4.0), 0.0, -10.0), [p.x, p.y - 5.0, p.z - 10.0]));
+screwPZ.color = thread.reliefColor(zincColor,
+  remap(thread.maleRelief(4.0, thread.metricPitch(4.0), 0.0, -10.0), [p.x, p.y - 5.0, p.z - 10.0]), thread.metricPitch(4.0));
+screwTX.material = material.withDisplacement(zincMat,
+  remap(thread.maleRelief(5.0, thread.metricPitch(5.0), 0.0, -10.0), [p.x - 30.0, p.y - 5.0, p.z - 10.0]));
+screwTX.color = thread.reliefColor(zincColor,
+  remap(thread.maleRelief(5.0, thread.metricPitch(5.0), 0.0, -10.0), [p.x - 30.0, p.y - 5.0, p.z - 10.0]), thread.metricPitch(5.0));
+
+seatedPH = transform.translate(driver.bit(ph2, driver.insertShank(fl2, 0.7)),
+                               [-30.0, 5.0, 10.0 + fastener.panPhillipsSeat(4.0)]);
+seatedPZ = transform.translate(driver.bit(pz2, driver.insertShank(fl2, 0.9)),
+                               [0.0, 5.0, 10.0 + fastener.panPozidrivSeat(4.0)]);
+seatedTX = transform.translate(driver.bit(t25, driver.insertShank(5.0, 1.6)),
+                               [30.0, 5.0, 10.0 + fastener.panTorxFloor(5.0)]);
+seatedPH.material = bitFinish;
+seatedPH.color = bitColor;
+seatedPZ.material = bitFinish;
+seatedPZ.color = bitColor;
+seatedTX.material = bitFinish;
+seatedTX.color = bitColor;
+
+// =========================================================
+// Screwdrivers, lying on their handles
+// =========================================================
+//
+// Blade and handle are two functions because they are two materials. Each
+// screwdriver lies along +X with its tip at x = -110, its axis at the height of
+// its own handle's radius so the handle rests on the floor.
+
+// A third of a turn about the diagonal carries the tool's z to x, its x to y
+// and its y to z.
+lying(tool, y0, z0) {
+  return transform.translate(transform.rotate(tool, [0.0, 0.0, 0.0], [1.0, 1.0, 1.0], 2.0 * pi / 3.0),
+                             [-110.0, y0, z0]);
+}
+
+ph1Len = driver.fluteLength(1.0);
+bladePH1 = lying(driver.bit(driver.phillipsTip(1.0),
+                              driver.screwdriverBlade(ph1Len, 0.45, driver.bladeDia(1.0), driver.bladeLength(1.0))),
+                   35.0, driver.handleDia(1.0) / 2.0);
+bladePH2 = lying(driver.bit(ph2, driver.screwdriverBlade(fl2, 0.7, driver.bladeDia(2.0), driver.bladeLength(2.0))),
+                   65.0, driver.handleDia(2.0) / 2.0);
+bladePZ2 = lying(driver.bit(pz2, driver.screwdriverBlade(fl2, 0.9, driver.bladeDia(2.0), driver.bladeLength(2.0))),
+                   100.0, driver.handleDia(2.0) / 2.0);
+bladeSlot = lying(driver.bit(driver.slotTip(1.2, 6.5, 5.0), driver.screwdriverBlade(5.0, 0.6, 6.0, 125.0)),
+                   135.0, driver.handleDia(2.0) / 2.0);
+bladePH1.material = chromiumMat;
+bladePH1.color = chromiumColor;
+bladePH2.material = chromiumMat;
+bladePH2.color = chromiumColor;
+bladePZ2.material = chromiumMat;
+bladePZ2.color = chromiumColor;
+bladeSlot.material = chromiumMat;
+bladeSlot.color = chromiumColor;
+
+handlePH1 = lying(driver.screwdriverHandle(ph1Len + driver.bladeLength(1.0),
+                                           driver.handleDia(1.0), driver.handleLength(1.0)),
+                  35.0, driver.handleDia(1.0) / 2.0);
+handlePH1.color = color.red;
+handlePH2 = lying(driver.screwdriverHandle(fl2 + driver.bladeLength(2.0),
+                                           driver.handleDia(2.0), driver.handleLength(2.0)),
+                  65.0, driver.handleDia(2.0) / 2.0);
+handlePH2.color = color.red;
+handlePZ2 = lying(driver.screwdriverHandle(fl2 + driver.bladeLength(2.0),
+                                           driver.handleDia(2.0), driver.handleLength(2.0)),
+                  100.0, driver.handleDia(2.0) / 2.0);
+handlePZ2.color = color.yellow;
+handleSlot = lying(driver.screwdriverHandle(5.0 + 125.0, driver.handleDia(2.0), driver.handleLength(2.0)),
+                   135.0, driver.handleDia(2.0) / 2.0);
+handleSlot.color = color.blue;
+handlePH1.material = material.plastic;
+handlePH2.material = material.plastic;
+handlePZ2.material = material.plastic;
+handleSlot.material = material.plastic;
+
+return insertPH2, insertPZ2, insertT25, insertR2, insertHex4, insertSlot,
+       powerPH2, powerPZ2, powerT25, powerR2, powerHex4, powerSlot,
+       microPH0, microPH1, microT6, microT10, microHex15, microSlot,
+       screwPH, screwPZ, screwTX, seatedPH, seatedPZ, seatedTX,
+       bladePH1, bladePH2, bladePZ2, bladeSlot,
+       handlePH1, handlePH2, handlePZ2, handleSlot;

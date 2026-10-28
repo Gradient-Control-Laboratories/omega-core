@@ -1,0 +1,4 @@
+// skip stl
+import "omega";
+
+return omega.pi + p.x;

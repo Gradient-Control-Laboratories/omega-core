@@ -1,0 +1,848 @@
+
+
+// STANDARD MODELING LIBRARY
+// 
+// *** NEVER CHANGE THIS SECTION ***
+//
+// CONTINUES UNTIL "END OF PROTECTED MODELING LIBRARY"
+
+
+pi = 3.14159265;
+origin = [0, 0, 0];
+sqrt2 = sqrt(2);
+sqrt3 = sqrt(3);
+
+// =========================================================
+// UTILITY: mix (linear interpolation)
+// =========================================================
+mix(a, b, t) {
+  return a + (b - a) * t;
+}
+
+// =========================================================
+// BOOLEAN OPERATIONS - Sharp
+// =========================================================
+
+intersectSharp2(d1, d2) {
+  return max(d1, d2);
+}
+
+intersectSharp3(d1, d2, d3) {
+  return max(d1, d2, d3);
+}
+
+unionSharp2(d1, d2) {
+  return min(d1, d2);
+}
+
+unionSharp3(d1, d2, d3) {
+  return min(d1, d2, d3);
+}
+
+subtractSharp(target, tool) {
+  return max(target, neg(tool));
+}
+
+// =========================================================
+// BOOLEAN OPERATIONS - Round (L2 norm)
+// =========================================================
+
+intersectRound2(d1, d2, k) {
+  c1 = max(d1 + k, 0);
+  c2 = max(d2 + k, 0);
+  return min(neg(k), max(d1, d2)) + length([c1, c2]);
+}
+
+intersectRound3(d1, d2, d3, k) {
+  c1 = max(d1 + k, 0);
+  c2 = max(d2 + k, 0);
+  c3 = max(d3 + k, 0);
+  return min(neg(k), max(d1, d2, d3)) + length([c1, c2, c3]);
+}
+
+unionRound2(d1, d2, k) {
+  return neg(intersectRound2(neg(d1), neg(d2), k));
+}
+
+unionRound3(d1, d2, d3, k) {
+  return neg(intersectRound3(neg(d1), neg(d2), neg(d3), k));
+}
+
+subtractRound(target, tool, k) {
+  return intersectRound2(target, neg(tool), k);
+}
+
+// =========================================================
+// BOOLEAN OPERATIONS - Chamfer (Unit Gradient Field theory)
+// =========================================================
+
+intersectChamfer2(d1, d2, k) {
+  face = max(d1, d2);
+  edge = (d1 + d2 + k) / sqrt2;
+  return max(face, edge);
+}
+
+intersectChamfer3(d1, d2, d3, k) {
+  face = max(d1, d2, d3);
+  edge12 = (d1 + d2 + k) / sqrt2;
+  edge13 = (d1 + d3 + k) / sqrt2;
+  edge23 = (d2 + d3 + k) / sqrt2;
+  edgeField = max(edge12, edge13, edge23);
+  vertex123 = (d1 + d2 + d3 + k) / sqrt3;
+  return max(face, edgeField, vertex123);
+}
+
+unionChamfer2(d1, d2, k) {
+  return neg(intersectChamfer2(neg(d1), neg(d2), k));
+}
+
+unionChamfer3(d1, d2, d3, k) {
+  return neg(intersectChamfer3(neg(d1), neg(d2), neg(d3), k));
+}
+
+subtractChamfer(target, tool, k) {
+  return intersectChamfer2(target, neg(tool), k);
+}
+
+// =========================================================
+// COMBINED CHAMFER+ROUND (chamfer with rounded tertiary blend)
+// =========================================================
+
+intersectChamferRound2(d1, d2, kChamfer, kRound) {
+  face = max(d1, d2);
+  edge = (d1 + d2 + kChamfer) / sqrt2;
+  tertiaryK = max(0, kRound - kChamfer);
+  return intersectRound2(face, edge, tertiaryK);
+}
+
+intersectChamferRound3(d1, d2, d3, kChamfer, kRound) {
+  face = max(d1, d2, d3);
+  edge12 = (d1 + d2 + kChamfer) / sqrt2;
+  edge13 = (d1 + d3 + kChamfer) / sqrt2;
+  edge23 = (d2 + d3 + kChamfer) / sqrt2;
+  edgeField = max(edge12, edge13, edge23);
+  vertex123 = (d1 + d2 + d3 + kChamfer) / sqrt3;
+  tertiaryK = max(0, kRound - kChamfer);
+  return intersectRound3(face, edgeField, vertex123, tertiaryK);
+}
+
+unionChamferRound2(d1, d2, kChamfer, kRound) {
+  return neg(intersectChamferRound2(neg(d1), neg(d2), kChamfer, kRound));
+}
+
+unionChamferRound3(d1, d2, d3, kChamfer, kRound) {
+  return neg(intersectChamferRound3(neg(d1), neg(d2), neg(d3), kChamfer, kRound));
+}
+
+// =========================================================
+// UTILITY FUNCTIONS
+// =========================================================
+
+linearMap(value, inMin, inMax, outMin, outMax) {
+  slope = (outMax - outMin) / (inMax - inMin);
+  return (value - inMin) * slope + outMin;
+}
+
+ramp(value, inMin, inMax, outMin, outMax) {
+  mapped = linearMap(value, inMin, inMax, outMin, outMax);
+  lo = min(outMin, outMax);
+  hi = max(outMin, outMax);
+  return clamp(mapped, lo, hi);
+}
+
+rampC1(value, inMin, inMax, outMin, outMax) {
+  t = clamp((value - inMin) / (inMax - inMin), 0, 1);
+  s = t * t * (3 - 2 * t);
+  return outMin + (outMax - outMin) * s;
+}
+
+circleXY(center, radius) {
+  return length(p.xy - center) - radius;
+}
+
+annulusXY(center, radius, thickness) {
+  return abs(length(p.xy - center) - radius) - thickness * 0.5;
+}
+
+// =========================================================
+// PRIMITIVE SDFs
+// =========================================================
+
+axis(center, dir) {
+  d = p - center;
+  dn = normalize(dir);
+  along = dot(d, dn);
+  perp = d - dn * along;
+  return length(perp);
+}
+
+axisX(center) {
+  return axis(center, [1, 0, 0]);
+}
+
+axisY(center) {
+  return axis(center, [0, 1, 0]);
+}
+
+axisZ(center) {
+  return axis(center, [0, 0, 1]);
+}
+
+cylinder(center, dir, radius) {
+  return axis(center, dir) - radius;
+}
+
+cylinderX(center, radius) {
+  return cylinder(center, [1, 0, 0], radius);
+}
+
+cylinderY(center, radius) {
+  return cylinder(center, [0, 1, 0], radius);
+}
+
+cylinderZ(center, radius) {
+  return cylinder(center, [0, 0, 1], radius);
+}
+
+cylinderCapped(a, b, radius) {
+  ba = b - a;
+  pa = p - a;
+  baba = dot(ba, ba);
+  paba = dot(pa, ba);
+  t = clamp(paba / baba, 0, 1);
+  radialDist = length(pa - ba * t) - radius;
+  axialDist = (abs(paba - baba * 0.5) - baba * 0.5) / sqrt(baba);
+  return max(radialDist, axialDist);
+}
+
+plane(c, n) {
+  return dot(p - c, normalize(n));
+}
+
+boxCentered(center, size) {
+  halfSize = size * 0.5;
+  d = abs(p - center) - halfSize;
+  return max(d.x, d.y, d.z);
+}
+
+rectangleXYCentered(center, size) {
+  halfSize = size * 0.5;
+  d = abs(p.xy - center) - halfSize;
+  return max(d.x, d.y);
+}
+
+// =========================================================
+// BEZIER TUBE (vectorized quadratic Bezier SDF)
+// =========================================================
+bezierTube(a, b, c, r) {
+  e = b - a;
+  f = a - 2.0 * b + c;
+  g = 2.0 * e;
+  d = a - p;
+
+  ff = dot(f, f);
+  ef = dot(e, f);
+  ee = dot(e, e);
+  df = dot(d, f);
+  de = dot(d, e);
+
+  kk = 1.0 / (ff + 1e-10);
+  kx = kk * ef;
+  ky = kk * (2.0 * ee + df) / 3.0;
+  kz = kk * de;
+
+  pp = ky - kx * kx;
+  qq = kx * (2.0 * kx * kx - 3.0 * ky) + kz;
+  h = qq * qq + 4.0 * pp * pp * pp;
+
+  sh = sqrt(max(h, 0.0));
+  w1 = (sh - qq) / 2.0;
+  w2 = (-sh - qq) / 2.0;
+  u1 = sign(w1) * exp(ln(max(abs(w1), 1e-12)) / 3.0);
+  u2 = sign(w2) * exp(ln(max(abs(w2), 1e-12)) / 3.0);
+  t1 = clamp(u1 + u2 - kx, 0.0, 1.0);
+  ev1 = d + (g + f * t1) * t1;
+  d1 = dot(ev1, ev1);
+
+  zz = sqrt(max(-pp, 0.0));
+  v = acos(clamp(qq / (2.0 * pp * zz - 1e-20), -1.0, 1.0)) / 3.0;
+  m = cos(v);
+  n = sin(v) * 1.732050808;
+  ta = clamp((m + m) * zz - kx, 0.0, 1.0);
+  tb = clamp((-n - m) * zz - kx, 0.0, 1.0);
+  tc = clamp((n - m) * zz - kx, 0.0, 1.0);
+  eva = d + (g + f * ta) * ta;
+  da = dot(eva, eva);
+  evb = d + (g + f * tb) * tb;
+  dbb = dot(evb, evb);
+  evc = d + (g + f * tc) * tc;
+  dc = dot(evc, evc);
+  d3 = min(min(da, dbb), dc);
+
+  dist2 = (h >= 0.0) ? d1 : d3;
+  return sqrt(dist2) - r;
+}
+
+bezierTubeParam(a, b, c, r) {
+  e = b - a;
+  f = a - 2.0 * b + c;
+  g = 2.0 * e;
+  d = a - p;
+
+  ff = dot(f, f);
+  ef = dot(e, f);
+  ee = dot(e, e);
+  df = dot(d, f);
+  de = dot(d, e);
+
+  kk = 1.0 / (ff + 1e-10);
+  kx = kk * ef;
+  ky = kk * (2.0 * ee + df) / 3.0;
+  kz = kk * de;
+
+  pp = ky - kx * kx;
+  qq = kx * (2.0 * kx * kx - 3.0 * ky) + kz;
+  h = qq * qq + 4.0 * pp * pp * pp;
+
+  sh = sqrt(max(h, 0.0));
+  w1 = (sh - qq) / 2.0;
+  w2 = (-sh - qq) / 2.0;
+  u1 = sign(w1) * exp(ln(max(abs(w1), 1e-12)) / 3.0);
+  u2 = sign(w2) * exp(ln(max(abs(w2), 1e-12)) / 3.0);
+  t1 = clamp(u1 + u2 - kx, 0.0, 1.0);
+  ev1 = d + (g + f * t1) * t1;
+  d1 = dot(ev1, ev1);
+
+  zz = sqrt(max(-pp, 0.0));
+  v = acos(clamp(qq / (2.0 * pp * zz - 1e-20), -1.0, 1.0)) / 3.0;
+  m = cos(v);
+  n = sin(v) * 1.732050808;
+  ta = clamp((m + m) * zz - kx, 0.0, 1.0);
+  tb = clamp((-n - m) * zz - kx, 0.0, 1.0);
+  tc = clamp((n - m) * zz - kx, 0.0, 1.0);
+  eva = d + (g + f * ta) * ta;
+  da = dot(eva, eva);
+  evb = d + (g + f * tb) * tb;
+  dbb = dot(evb, evb);
+  evc = d + (g + f * tc) * tc;
+  dc = dot(evc, evc);
+
+  tBest3 = (da <= dbb) ? ((da <= dc) ? ta : tc) : ((dbb <= dc) ? tb : tc);
+  d3 = min(min(da, dbb), dc);
+
+  dist2 = (h >= 0.0) ? d1 : d3;
+  tBest = (h >= 0.0) ? t1 : tBest3;
+
+  return sqrt(dist2) - r, tBest;
+}
+
+bezierTubeDir(a, b, c, r, dir) {
+  e = b - a;
+  f = a - 2.0 * b + c;
+  g = 2.0 * e;
+  d = a - p;
+
+  ff = dot(f, f);
+  ef = dot(e, f);
+  ee = dot(e, e);
+  df = dot(d, f);
+  de = dot(d, e);
+
+  kk = 1.0 / (ff + 1e-10);
+  kx = kk * ef;
+  ky = kk * (2.0 * ee + df) / 3.0;
+  kz = kk * de;
+
+  pp = ky - kx * kx;
+  qq = kx * (2.0 * kx * kx - 3.0 * ky) + kz;
+  h = qq * qq + 4.0 * pp * pp * pp;
+
+  sh = sqrt(max(h, 0.0));
+  w1 = (sh - qq) / 2.0;
+  w2 = (-sh - qq) / 2.0;
+  u1 = sign(w1) * exp(ln(max(abs(w1), 1e-12)) / 3.0);
+  u2 = sign(w2) * exp(ln(max(abs(w2), 1e-12)) / 3.0);
+  t1 = clamp(u1 + u2 - kx, 0.0, 1.0);
+  ev1 = d + (g + f * t1) * t1;
+  d1 = dot(ev1, ev1);
+
+  zz = sqrt(max(-pp, 0.0));
+  v = acos(clamp(qq / (2.0 * pp * zz - 1e-20), -1.0, 1.0)) / 3.0;
+  m = cos(v);
+  n = sin(v) * 1.732050808;
+  ta = clamp((m + m) * zz - kx, 0.0, 1.0);
+  tb = clamp((-n - m) * zz - kx, 0.0, 1.0);
+  tc = clamp((n - m) * zz - kx, 0.0, 1.0);
+  eva = d + (g + f * ta) * ta;
+  da = dot(eva, eva);
+  evb = d + (g + f * tb) * tb;
+  dbb = dot(evb, evb);
+  evc = d + (g + f * tc) * tc;
+  dc = dot(evc, evc);
+
+  tBest3 = (da <= dbb) ? ((da <= dc) ? ta : tc) : ((dbb <= dc) ? tb : tc);
+  d3 = min(min(da, dbb), dc);
+
+  dist2 = (h >= 0.0) ? d1 : d3;
+  tBest = (h >= 0.0) ? t1 : tBest3;
+
+  unsignedDist = sqrt(dist2) - r;
+
+  closestPt = a + g * tBest + f * tBest * tBest;
+
+  tangentRaw = g + 2.0 * f * tBest;
+  tangentLen = length(tangentRaw);
+  tangent = tangentRaw / (tangentLen + 1e-12);
+
+  offset = p - closestPt;
+  dirSign = sign(dot(offset, normalize(dir)));
+  signedDist = (dirSign != 0) ? dirSign * unsignedDist : unsignedDist;
+
+  chordLen = length(c - a);
+  polyLen = length(b - a) + length(c - b);
+  arcLength = (chordLen + polyLen) * 0.5;
+
+  return signedDist, tBest, arcLength, closestPt, tangent;
+}
+
+// =========================================================
+// INVOLUTES
+// =========================================================
+
+involute(radius) {
+    rho = length(p.xy);
+    tanLen = sqrt(rho * rho - radius * radius);
+    ang = atan(p.y, p.x);
+    ratioVal = radius / rho;
+    invField = tanLen - (acos(ratioVal) + ang) * radius;
+    circumField = neg(ang) * radius;
+    result = (rho > radius) ? invField : circumField;
+    return result;
+}
+
+involuteRadial(radius) {
+    rho = length(p.xy);
+    tanLen = sqrt(rho * rho - radius * radius);
+    ang = atan(p.y, p.x);
+    ratioVal = radius / rho;
+    invField = tanLen - (acos(ratioVal) + ang) * radius;
+    radialField = neg(p.y);
+    result = (rho > radius) ? invField : radialField;
+    return result;
+}
+
+// TRANSFORMATIONS
+
+patternPolarXY(count) {
+  wedge = 2 * pi / count;
+  halfWedge = wedge * 0.5;
+  ang = atan(p.y, p.x);
+  rad = length(p.xy);
+  angmod = (ang + halfWedge) % wedge - halfWedge;
+  return [rad * cos(angmod), rad * sin(angmod), p.z];
+}
+
+// =========================================================
+// SWEEP LOFT
+// =========================================================
+sweepLoft(startProfileFn, endProfileFn, a, b, c, dir) {
+  sDist, tParam, arcLen, closestPt, tangent = bezierTubeDir(a, b, c, 0, dir);
+
+  dirN = normalize(dir);
+  dirProj = dirN - tangent * dot(dirN, tangent);
+  dirProjLen = length(dirProj);
+  frameB = dirProj / (dirProjLen + 1e-12);
+  frameN = cross(tangent, frameB);
+
+  offset = p - closestPt;
+  localX = dot(offset, frameN);
+  localY = dot(offset, frameB);
+
+  localPt = [localX, localY, 0];
+  startDist = remap(startProfileFn(), localPt);
+  endDist   = remap(endProfileFn(),   localPt);
+
+  profileDist = mix(startDist, endDist, tParam);
+
+  tangentA = normalize(2.0 * (b - a));
+  tangentC = normalize(2.0 * (c - b));
+  capA = neg(dot(p - a, tangentA));
+  capC = dot(p - c, tangentC);
+
+  return max(profileDist, capA, capC);
+}
+
+// =========================================================
+// SWEEP LOFT SCALE
+//
+// Like sweepLoft, but profiles are scaled along the sweep.
+// The start profile is at natural size (1.0) at t=0 and scaled
+// by `scale` at t=1. The end profile is scaled by 1/scale at
+// t=0 and at natural size (1.0) at t=1.
+// =========================================================
+sweepLoftScale(startProfileFn, endProfileFn, a, b, c, dir, scale) {
+  sDist, tParam, arcLen, closestPt, tangent = bezierTubeDir(a, b, c, 0, dir);
+
+  dirN = normalize(dir);
+  dirProj = dirN - tangent * dot(dirN, tangent);
+  dirProjLen = length(dirProj);
+  frameB = dirProj / (dirProjLen + 1e-12);
+  frameN = cross(tangent, frameB);
+
+  offset = p - closestPt;
+  localX = dot(offset, frameN);
+  localY = dot(offset, frameB);
+
+  invScale = 1.0 / scale;
+
+  // Start scale: 1.0 at t=0, scale at t=1
+  startScale = mix(1.0, scale, tParam);
+  // End scale: 1/scale at t=0, 1.0 at t=1
+  endScale = mix(invScale, 1.0, tParam);
+
+  // To scale a profile by s, divide the local point by s and multiply
+  // the resulting distance by s (preserves SDF properties).
+  startLocalPt = [localX / startScale, localY / startScale, 0];
+  endLocalPt   = [localX / endScale,   localY / endScale,   0];
+
+  startDist = remap(startProfileFn(), startLocalPt) * startScale;
+  endDist   = remap(endProfileFn(),   endLocalPt)   * endScale;
+
+  profileDist = mix(startDist, endDist, tParam);
+
+  tangentA = normalize(2.0 * (b - a));
+  tangentC = normalize(2.0 * (c - b));
+  capA = neg(dot(p - a, tangentA));
+  capC = dot(p - c, tangentC);
+
+  return max(profileDist, capA, capC);
+}
+
+// =========================================================
+// SWEEP LOFT SCALE SMOOTH
+//
+// Like sweepLoftScale, but uses smoothstep interpolation for
+// the profile blend and the scale blend instead of linear.
+// =========================================================
+sweepLoftScaleSmooth(startProfileFn, endProfileFn, a, b, c, dir, scale) {
+  sDist, tParam, arcLen, closestPt, tangent = bezierTubeDir(a, b, c, 0, dir);
+
+  dirN = normalize(dir);
+  dirProj = dirN - tangent * dot(dirN, tangent);
+  dirProjLen = length(dirProj);
+  frameB = dirProj / (dirProjLen + 1e-12);
+  frameN = cross(tangent, frameB);
+
+  offset = p - closestPt;
+  localX = dot(offset, frameN);
+  localY = dot(offset, frameB);
+
+  // Smoothstep interpolation parameter
+  tClamped = clamp(tParam, 0.0, 1.0);
+  tSmooth = tClamped * tClamped * (3.0 - 2.0 * tClamped);
+
+  invScale = 1.0 / scale;
+
+  // Start scale: 1.0 at t=0, scale at t=1 (via smoothstep)
+  startScale = mix(1.0, scale, tSmooth);
+  // End scale: 1/scale at t=0, 1.0 at t=1 (via smoothstep)
+  endScale = mix(invScale, 1.0, tSmooth);
+
+  startLocalPt = [localX / startScale, localY / startScale, 0];
+  endLocalPt   = [localX / endScale,   localY / endScale,   0];
+
+  startDist = remap(startProfileFn(), startLocalPt) * startScale;
+  endDist   = remap(endProfileFn(),   endLocalPt)   * endScale;
+
+  profileDist = mix(startDist, endDist, tSmooth);
+
+  tangentA = normalize(2.0 * (b - a));
+  tangentC = normalize(2.0 * (c - b));
+  capA = neg(dot(p - a, tangentA));
+  capC = dot(p - c, tangentC);
+
+  return max(profileDist, capA, capC);
+}
+
+// =========================================================
+// SWEEP LOFT SCALE SMOOTH - SEPARATE CAPS
+//
+// Same as sweepLoftScaleSmooth, but returns the profile distance
+// and the two end cap planes as separate values rather than
+// combining them via max. This allows the caller to selectively
+// apply only one cap (useful when blending the start of the
+// sweep with some other field).
+//
+// Returns:
+//   profileDist - the blended scaled profile distance
+//   capA        - the start cap plane (half-space in front of a)
+//   capC        - the end cap plane (half-space behind c)
+// =========================================================
+sweepLoftScaleSmoothSeparateCaps(startProfileFn, endProfileFn, a, b, c, dir, scale) {
+  sDist, tParam, arcLen, closestPt, tangent = bezierTubeDir(a, b, c, 0, dir);
+
+  dirN = normalize(dir);
+  dirProj = dirN - tangent * dot(dirN, tangent);
+  dirProjLen = length(dirProj);
+  frameB = dirProj / (dirProjLen + 1e-12);
+  frameN = cross(tangent, frameB);
+
+  offset = p - closestPt;
+  localX = dot(offset, frameN);
+  localY = dot(offset, frameB);
+
+  tClamped = clamp(tParam, 0.0, 1.0);
+  tSmooth = tClamped * tClamped * (3.0 - 2.0 * tClamped);
+
+  invScale = 1.0 / scale;
+
+  startScale = mix(1.0, scale, tSmooth);
+  endScale = mix(invScale, 1.0, tSmooth);
+
+  startLocalPt = [localX / startScale, localY / startScale, 0];
+  endLocalPt   = [localX / endScale,   localY / endScale,   0];
+
+  startDist = remap(startProfileFn(), startLocalPt) * startScale;
+  endDist   = remap(endProfileFn(),   endLocalPt)   * endScale;
+
+  profileDist = mix(startDist, endDist, tSmooth);
+
+  tangentA = normalize(2.0 * (b - a));
+  tangentC = normalize(2.0 * (c - b));
+  capA = neg(dot(p - a, tangentA));
+  capC = dot(p - c, tangentC);
+
+  return profileDist, capA, capC;
+}
+
+
+// END OF PROTECTED MODELING LIBRARY
+
+// =========================================================
+// MODEL PARAMETERS
+// =========================================================
+
+bottomPoint = [0.48, -1.23, -1.25];
+
+boltCircleRadius = 2.5;
+boltHoleRadius = 0.25;
+
+// Gate parameters
+gateHeight = 1;
+gateCylinderHeight = 1;
+
+gatePortCenterA = [-0.03, 1.29, -0.00];
+gatePortCenterB = [0.01, 0.31, 0.00];
+
+gatePortPatternCount = 6;
+
+// Drain parameters
+drainHeight = 3;
+drainThickness = 0.4;
+drainWidth = 1.25;
+drainRadius = sqrt((drainThickness * drainWidth) / pi);
+
+// Annulus parameters
+gatePortAnnulusRadiusA = length(gatePortCenterA.xy);
+gatePortAnnulusThicknessA = 0.15;
+gatePortXThicknessA = 0.5;
+gatePortAnnulusRadiusB = length(gatePortCenterB.xy);
+gatePortAnnulusThicknessB = 0.15;
+gatePortXThicknessB = 0.15;
+
+gateCylinderRadius = gatePortAnnulusRadiusA + gatePortAnnulusThicknessA;
+
+// Drain sweep scale factor
+drainSweepScaleA = drainRadius / gatePortAnnulusRadiusA;
+drainSweepScaleB = drainRadius / gatePortAnnulusRadiusB;
+
+sprueShaftDiameter = 3;
+sprueBaseDiameter = sprueShaftDiameter * 0.5 + 2 * drainRadius;
+sprueBaseHeight = 1;
+sprueTopDiameter = 4;
+sprueTopChamfer = 0.5;
+sprueHoleDiameter = 0.75;
+sprueHoleDepth = 3;
+
+gateTopZ = gateHeight + gateCylinderHeight;
+sprueTopBaseZ = gateTopZ + 0.5;
+sprueTopZ = 8;
+gatePenetration = 0.1;
+
+partPlacementShift = 6;
+ventRadius = 0.3;
+
+drainRectZ = bottomPoint.z - gatePenetration;
+drainCircZ = drainRectZ - drainHeight - 2 * gatePenetration;
+
+// =========================================================
+// Shared wedge folding for gate port arcs
+// =========================================================
+gatePortFoldedXY() {
+  count = gatePortPatternCount;
+  wedge = 2 * pi / count;
+  halfWedge = wedge * 0.5;
+  // atan(p.x, p.y) measures angle from +Y axis (instead of +X)
+  ang = atan(p.x, p.y);
+  rad = length(p.xy);
+  angmod = (ang + halfWedge) % wedge - halfWedge;
+  foldedX = rad * sin(angmod);
+  foldedY = rad * cos(angmod);
+  return foldedX, foldedY;
+}
+
+// Arc A evaluated at current p (uses p.xy only)
+gatePortArcA() {
+  foldedX, foldedY = gatePortFoldedXY();
+  annulusFieldA = abs(length([foldedX, foldedY]) - gatePortAnnulusRadiusA) - gatePortAnnulusThicknessA * 0.5;
+  xSlabFieldA = abs(foldedX) - gatePortXThicknessA * 0.5;
+  return max(annulusFieldA, xSlabFieldA);
+}
+
+// Arc B evaluated at current p (uses p.xy only)
+gatePortArcB() {
+  foldedX, foldedY = gatePortFoldedXY();
+  annulusFieldB = abs(length([foldedX, foldedY]) - gatePortAnnulusRadiusB) - gatePortAnnulusThicknessB * 0.5;
+  xSlabFieldB = abs(foldedX) - gatePortXThicknessB * 0.5;
+  return max(annulusFieldB, xSlabFieldB);
+}
+
+gatePortCircles() {
+  return min(gatePortArcA(), gatePortArcB());
+}
+
+// Profile thunks: these evaluate the arc fields at the local profile point
+// (sweepLoft passes [localX, localY, 0] as the remapped p)
+drainArcAProfile() {
+  return gatePortArcA();
+}
+
+drainArcBProfile() {
+  return gatePortArcB();
+}
+
+drainEndProfile() {
+  return circleXY(origin.xy, drainRadius);
+}
+
+drainArcAThunk() {
+  return drainArcAProfile();
+}
+
+drainArcBThunk() {
+  return drainArcBProfile();
+}
+
+drainEndThunk() {
+  return drainEndProfile();
+}
+
+// Compute the five component fields for a placed part, given a shift amount.
+// Inlined here so each call site gets fresh SSA names.
+partFieldsAt(trans) {
+  shiftedP = [p.x - trans, p.y, p.z];
+
+  topPlane = remap(plane(origin, [0, 0, 1]), shiftedP);
+  gatePortsXY = remap(gatePortCircles(), shiftedP);
+  gateCirc = remap(circleXY(origin.xy, gateCylinderRadius), shiftedP);
+
+  drainEndRadius = sprueShaftDiameter * 0.5 + drainRadius;
+  drainPtA = [0, 0, drainRectZ];
+  drainPtB = [0, 0, (drainRectZ + drainCircZ) * 0.5];
+  drainPtC = [drainEndRadius - partPlacementShift, 0, drainCircZ];
+
+  drainAProfile, drainACapA, drainACapC = remap(
+    sweepLoftScaleSmoothSeparateCaps(
+      drainArcAThunk,
+      drainEndThunk,
+      drainPtA, drainPtB, drainPtC,
+      [0, 1, 0],
+      drainSweepScaleA
+    ),
+    shiftedP
+  );
+
+  drainTransZ = shiftedP.z - bottomPoint.z + gatePenetration;
+  drainArcAAtShifted = remap(drainArcAThunk(), shiftedP);
+  drainABlended = mix(drainAProfile, drainArcAAtShifted, clamp(drainTransZ / gatePenetration, 0, 1));
+  drainBlendA = max(drainABlended, drainACapC);
+
+  drainB = remap(
+    sweepLoftScaleSmooth(
+      drainArcBThunk,
+      drainEndThunk,
+      drainPtA, drainPtB, drainPtC,
+      [0, 1, 0],
+      drainSweepScaleB
+    ),
+    shiftedP
+  );
+
+  drainEndSphere = length(shiftedP - drainPtC) - drainRadius;
+
+  allDrains = min(drainBlendA, drainB, drainEndSphere);
+
+  partResult = 10;
+
+  return partResult, gatePortsXY, gateCirc, topPlane, allDrains;
+}
+
+partAt, gatePortsAt, gateCircAt, topPlaneAt, drainsAt = partFieldsAt(partPlacementShift);
+
+ventStart = [partPlacementShift, 0, gateTopZ];
+ventEnd = [sprueTopDiameter - sprueTopChamfer * 2, 0, sprueTopZ - sprueTopChamfer];
+
+vent = bezierTube(ventStart, [ventStart.x, 0, mix(ventStart.z, ventEnd.z, 0.75)], ventEnd, ventRadius);
+
+capZ = [0, 0, gateTopZ];
+
+gatePortsField = intersectSharp3(
+  gatePortsAt,
+  plane(capZ, [0, 0, 1]),
+  -(topPlaneAt + gatePenetration)
+);
+
+gateCircles = intersectSharp3(
+  unionSharp2(gateCircAt, rectangleXYCentered([partPlacementShift * 0.5, 0], [partPlacementShift, sprueShaftDiameter])),
+  plane([0, 0, gateHeight], [0, 0, -1]),
+  plane(capZ, [0, 0, 1])
+);
+
+gates = min(gatePortsField, gateCircles);
+
+side = min(gates, partAt, drainsAt, vent);
+
+rotateXY(ang) {
+  ca = cos(ang);
+  sa = sin(ang);
+  return [p.x * ca + p.y * sa, -p.x * sa + p.y * ca, p.z];
+}
+
+side1 = remap(side, rotateXY(radians(-60)));
+side2 = remap(side, rotateXY(radians(-120)));
+side3 = remap(side, rotateXY(radians(60)));
+side4 = remap(side, rotateXY(radians(120)));
+
+pattern = min(side1, side2, side3, side4);
+
+sprueMountHole = max(
+  circleXY(origin.xy, sprueHoleDiameter * 0.5),
+  -p.z + sprueTopZ - sprueHoleDepth
+);
+
+sprueShaft = max(
+  intersectChamfer2(
+    max(cylinderZ(origin, ramp(p.z, sprueTopBaseZ, sprueTopZ, sprueShaftDiameter * 0.5, sprueTopDiameter)), -p.z + drainCircZ - sprueBaseHeight),
+    p.z - sprueTopZ,
+    sprueTopChamfer
+  ), 
+  -sprueMountHole
+);
+ 
+sprue = min(
+  cylinderCapped([0, 0, drainCircZ - sprueBaseHeight], [0, 0, drainCircZ], sprueBaseDiameter),
+  sprueShaft
+);
+
+partAt2, gatePortsAt2, gateCircAt2, topPlaneAt2, drainsAt2 = partFieldsAt(0);
+return partAt2, gatePortsAt2, drainsAt2;

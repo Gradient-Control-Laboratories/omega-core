@@ -1,0 +1,8 @@
+
+sphere(radius) {
+  return length(p) - radius;
+}
+
+return remap(sphere(2.5), [p.x, p.y, (z) {
+  return 2 * z;
+}(p.z)]);

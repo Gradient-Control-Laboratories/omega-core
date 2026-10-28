@@ -1,0 +1,6 @@
+
+glyphs = map((code, index) { return text.glyph(code); }, "hello");
+
+glyphs2 = map((code) { return text.glyph(code); }, "hello");
+
+return glyphs[0], glyphs2[0];

@@ -1,0 +1,5 @@
+// A higher-order call on the right of a property assignment is specialized
+// like one on the right of a variable's.
+ball = sphere(10);
+ball.color = playful.rainbowCycle(10, 5, color.cyclicRainbow);
+return ball;

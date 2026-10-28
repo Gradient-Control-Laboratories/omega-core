@@ -1,0 +1,98 @@
+Expected:
+  files:
+    - annotations:
+        - kind: surface
+          symbol: turned
+      assignments:
+        - expression:
+            fnCall:
+              arguments:
+                - value: 1
+                - expression:
+                    operands:
+                      - value: 0.5
+                      - value: 0.5
+                      - value: 0.5
+                    operation: COLLECT
+                - expression:
+                    operands:
+                      - value: 1
+                      - value: 2
+                    operation: COLLECT
+              reference:
+                name: turned
+          variables:
+            - name: mat
+            - name: col
+      fnTypes:
+        - groups:
+            - functions:
+                - assignments:
+                    - expression:
+                        fnCall:
+                          arguments:
+                            - reference:
+                                name: baseMaterial
+                            - reference:
+                                name: baseColor
+                            - reference:
+                                name: frame
+                            - value: 0.15
+                          reference:
+                            name: turned
+                      variables:
+                        - name: cut
+                        - name: tone
+                  parameters:
+                    - name: baseMaterial
+                    - kind: color
+                      name: baseColor
+                    - kind: frame
+                      name: frame
+                  returns:
+                    - reference:
+                        name: cut
+                    - reference:
+                        name: tone
+              paramCount: 3
+            - functions:
+                - parameters:
+                    - name: baseMaterial
+                    - name: baseColor
+                    - name: frame
+                    - name: feed
+                  returns:
+                    - expression:
+                        operands:
+                          - reference:
+                              name: baseMaterial
+                          - reference:
+                              name: feed
+                        operation: ADD
+                    - expression:
+                        operands:
+                          - expression:
+                              operands:
+                                - reference:
+                                    name: baseColor
+                                - value: 0
+                              operation: INDEX
+                          - expression:
+                              operands:
+                                - reference:
+                                    name: frame
+                                - reference:
+                                    name: x
+                              operation: ACCESS
+                        operation: ADD
+              paramCount: 4
+          name: turned
+      returns:
+        - expression:
+            operands:
+              - reference:
+                  name: mat
+              - reference:
+                  name: col
+            operation: ADD
+Source: ""

@@ -1,0 +1,127 @@
+Expected:
+  files:
+    - assignments:
+        - expression:
+            fnCall:
+              arguments:
+                - expression:
+                    operands:
+                      - reference:
+                          name: p
+                      - reference:
+                          name: x
+                    operation: ACCESS
+                - value: 1
+                - value: 2
+                - value: 3
+              reference:
+                name: comp1
+          variables:
+            - name: value1
+        - expression:
+            fnCall:
+              arguments:
+                - expression:
+                    operands:
+                      - reference:
+                          name: p
+                      - reference:
+                          name: "y"
+                    operation: ACCESS
+                - value: 17
+              reference:
+                name: comp2
+          variables:
+            - name: value2
+        - expression:
+            fnCall:
+              arguments:
+                - expression:
+                    operands:
+                      - reference:
+                          name: p
+                      - reference:
+                          name: z
+                    operation: ACCESS
+              reference:
+                name: comp3
+          variables:
+            - name: value3
+      fnTypes:
+        - groups:
+            - functions:
+                - parameters:
+                    - name: k
+                    - name: one
+                    - name: two
+                    - name: three
+                  returns:
+                    - expression:
+                        operands:
+                          - expression:
+                              operands:
+                                - reference:
+                                    name: k
+                                - value: 0
+                              operation: LT
+                          - reference:
+                              name: one
+                          - expression:
+                              operands:
+                                - expression:
+                                    operands:
+                                      - reference:
+                                          name: k
+                                      - value: 6
+                                    operation: GT
+                                - reference:
+                                    name: two
+                                - reference:
+                                    name: three
+                              operation: SELECT
+                        operation: SELECT
+              paramCount: 4
+          name: comp1
+        - groups:
+            - functions:
+                - parameters:
+                    - name: k
+                    - name: value
+                  returns:
+                    - expression:
+                        operands:
+                          - reference:
+                              name: value
+                          - expression:
+                              operands:
+                                - value: 0
+                                - reference:
+                                    name: k
+                              operation: GT
+                        operation: MUL
+              paramCount: 2
+          name: comp2
+        - groups:
+            - functions:
+                - parameters:
+                    - name: k
+                  returns:
+                    - expression:
+                        operands:
+                          - reference:
+                              name: k
+                          - value: 10
+                        operation: COMPARE
+              paramCount: 1
+          name: comp3
+      returns:
+        - expression:
+            operands:
+              - reference:
+                  name: value1
+              - reference:
+                  name: value2
+              - reference:
+                  name: value3
+            operation: COLLECT
+Source: ""

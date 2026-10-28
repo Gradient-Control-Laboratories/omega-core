@@ -1,0 +1,41 @@
+
+dist(pt) {
+  return sqrt(pt.x * pt.x + pt.y * pt.y + pt.z * pt.z);
+}
+
+sphere(radius) {
+  return remap(dist(p) - radius, [p.x, p.y + 12, p.z]);
+}
+
+moveX() {
+  return [p.x - 7, p.y, p.z];
+}
+
+s0 = remap(sphere(2.5), moveX());
+
+g1 = sphere(7.5);
+s1 = remap(g1, [p.x - 10, p.y, p.z]);
+
+c2 = 6.0;
+g2 = sphere(12.5) + c2 + 6;
+s2 = remap(g2, [p.x - 15, p.y, p.z]);
+
+// remap built-in function
+s3 = remap(max(g1, g2), [p.x - 20, p.y, p.z]);
+
+// remap anonymous function
+s4 = remap(() { return sphere(20.5); }(), [p.x - 25, p.y, p.z]);
+
+// remap function with parameters
+s5 = remap((radius) { return sphere(radius); }(30), [p.x - 35, p.y, p.z]);
+
+// remap a passed-in function
+translate(body, displacement) {
+  return remap(body(), p - displacement);
+}
+someSphere() {
+  return sphere(2.5);
+}
+s6 = translate(someSphere, [p.x - 40, p.y, p.z]);
+
+return s0, s1, s2, s3, s4, s5, s6;

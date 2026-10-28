@@ -1,0 +1,16 @@
+// Stage 2: the `*` operator on matrices works with NO explicit import —
+// the matrix/vector libraries it routes to are auto-imported. (Explicit
+// matrix.X calls still need `import "matrix"`; only the operators auto-import.)
+M = [[2, 0, 1], [1, 1, 0], [0, 1, 1]];
+N = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+v = [p.x, p.y, p.z];
+
+MM    = M * N;     // matrix * matrix  -> matrix.multiply
+Mv    = M * v;     // matrix * vector  -> vector.multiply
+half  = M * 0.5;   // matrix * scalar  -> matrix.scale
+twice = 2 * M;     // scalar * matrix  -> matrix.scale
+
+mm0 = MM[0];
+h0 = half[0];
+t0 = twice[0];
+return length(Mv) + mm0[0] + h0[0] + t0[0] - 1;

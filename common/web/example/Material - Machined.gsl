@@ -1,0 +1,122 @@
+// Scene Size: 120
+// Scene Grid: 10
+
+// The surfaces machining leaves (material/machined), each from the process's
+// own parameters: a lathe's feed and tool nose, a face mill's cutter, a
+// grinding wheel, a brush, a blast's media and a knurl's pitch. Orbit to
+// watch each highlight run across its tool marks.
+
+// A bar turned at 0.2 mm a turn with a 0.8 mm tool nose, its ends faced and
+// chamfered 0.5 mm. Each surface carries its own finish, the chamfer too: it is
+// its own surface, the plane (side + end + k) / sqrt2 offset from both, cut by
+// a form tool plunged in while the bar turns, so its lay runs round the axis,
+// finer than the side's.
+
+steelMat, steelColor = metal.steel();
+aluminumMat, aluminumColor = metal.aluminum();
+stainlessMat, stainlessColor = metal.stainless();
+
+barAxis = [1, 0, 0];
+barOrigin = [-40, 25, 0];
+sideMat, sideColor, sideHeight, sideSlope = machined.turned(steelMat, steelColor, barOrigin, barAxis, 0.2, 0.8);
+endMat, endColor, endHeight, endSlope = machined.faced(steelMat, steelColor, barOrigin, barAxis, 0.2, 0.8);
+barChamferMat, barChamferColor, barChamferHeight, barChamferSlope = machined.turned(steelMat, steelColor, barOrigin, barAxis, 0.05, 0.4);
+barSide = cylinder(barOrigin, barAxis, 10);
+barSide.material = sideMat;
+barSide.color = steelColor;
+barEnds = max(p.x - 5, -p.x - 85);
+barEnds.material = endMat;
+barEnds.color = steelColor;
+barChamfer = (barSide + barEnds + 0.5) / sqrt2;
+barChamfer.material = barChamferMat;
+barChamfer.color = steelColor;
+bar = max(barSide, barEnds, barChamfer);
+
+// Six faces of a box from lo to hi, for chamfering every edge and corner.
+boxFaces(lo, hi) {
+  return [p.x - hi.x, lo.x - p.x, p.y - hi.y, lo.y - p.y, p.z - hi.z, lo.z - p.z];
+}
+
+// A block whose top and bottom are face milled by a 50 mm cutter at 0.3 mm a
+// turn, its sides milled by an end mill running round them, level, and its
+// edges chamfered 0.5 mm by a chamfer mill run along each. Each pair of
+// faces is a slab, and the chamfers of the four edges along an axis are one
+// offset plane of the other two slabs, (slabY + slabZ + k) / sqrt2 for the
+// edges along x, so each family takes its own lay; the corners, where three
+// chamfers meet, blend their faces'.
+blockLo = [-40, -30, -8];
+blockHi = [0, -5, 8];
+blockMat, blockColor, blockHeight, blockSlope = machined.faceMilled(aluminumMat, aluminumColor, [-20, -17.5, 8], [1, 0, 0], [0, 0, 1], 25, 0.3, 0.8);
+sideXMat, sideXColor, sideXHeight, sideXSlope = machined.ground(aluminumMat, aluminumColor, [0, 1, 0], 0.8);
+sideYMat, sideYColor, sideYHeight, sideYSlope = machined.ground(aluminumMat, aluminumColor, [1, 0, 0], 0.8);
+edgeXMat, edgeXColor, edgeXHeight, edgeXSlope = machined.ground(aluminumMat, aluminumColor, [1, 0, 0], 0.8);
+edgeYMat, edgeYColor, edgeYHeight, edgeYSlope = machined.ground(aluminumMat, aluminumColor, [0, 1, 0], 0.8);
+edgeZMat, edgeZColor, edgeZHeight, edgeZSlope = machined.ground(aluminumMat, aluminumColor, [0, 0, 1], 0.8);
+slabX = max(p.x - blockHi.x, blockLo.x - p.x);
+slabX.material = sideXMat;
+slabX.color = aluminumColor;
+slabY = max(p.y - blockHi.y, blockLo.y - p.y);
+slabY.material = sideYMat;
+slabY.color = aluminumColor;
+slabZ = max(p.z - blockHi.z, blockLo.z - p.z);
+slabZ.material = blockMat;
+slabZ.color = aluminumColor;
+edgesX = (slabY + slabZ + 0.5) / sqrt2;
+edgesX.material = edgeXMat;
+edgesX.color = aluminumColor;
+edgesY = (slabX + slabZ + 0.5) / sqrt2;
+edgesY.material = edgeYMat;
+edgesY.color = aluminumColor;
+edgesZ = (slabX + slabY + 0.5) / sqrt2;
+edgesZ.material = edgeZMat;
+edgesZ.color = aluminumColor;
+corners = (slabX + slabY + slabZ + 0.5) / sqrt3;
+block = max(slabX, slabY, slabZ, edgesX, edgesY, edgesZ, corners);
+
+// A plate ground to 0.3 um Ra, and one brushed with 150 grit.
+groundMat, groundColor, groundHeight, groundSlope = machined.ground(steelMat, steelColor, [0, 1, 0], 0.3);
+groundPlate = intersectChamfer(boxFaces([10, -30, -3], [30, -5, 3]), 0.3);
+groundPlate.material = groundMat;
+groundPlate.color = steelColor;
+brushedMat, brushedColor, brushedHeight, brushedSlope = machined.brushed(stainlessMat, stainlessColor, [1, 0, 0], 150);
+brushedPlate = intersectChamfer(boxFaces([35, -30, -3], [55, -5, 3]), 0.3);
+brushedPlate.material = brushedMat;
+brushedPlate.color = stainlessColor;
+
+// Two balls blasted: glass beads of 100 um, and sand.
+beadMat, beadColor, beadHeight, beadSlope = machined.blasted(aluminumMat, aluminumColor, 100, 0);
+beads = remap(sphere(8), p - [20, 25, 0]);
+beads.material = beadMat;
+beads.color = aluminumColor;
+sandMat, sandColor, sandHeight, sandSlope = machined.blasted(aluminumMat, aluminumColor, 300, 1);
+sand = remap(sphere(8), p - [45, 25, 0]);
+sand.material = sandMat;
+sand.color = aluminumColor;
+
+// A handle turned, then knurled diamond with raised points at 1 mm pitch,
+// its ends faced and chamfered 0.5 mm by a form tool, as the bar's are. The
+// knurl runs out over half a millimetre
+// before the chamfers, which adds its own slope of up to a pitch's depth over
+// 0.5 mm to the teeth's.
+knobAxis = [0, 0, 1];
+knobOrigin = [0, 50, 0];
+knurlMat, knurlColor, knurlHeight, knurlSlope = machined.knurled(steelMat, steelColor, knobOrigin, knobAxis, 16, 1.0, 1, 1);
+knobTurnedMat, knobTurnedColor, knobTurnedHeight, knobTurnedSlope = machined.turned(steelMat, steelColor, knobOrigin, knobAxis, 0.15, 0.8);
+knobEndMat, knobEndColor, knobEndHeight, knobEndSlope = machined.faced(steelMat, steelColor, knobOrigin, knobAxis, 0.15, 0.8);
+knobChamferMat, knobChamferColor, knobChamferHeight, knobChamferSlope = machined.turned(steelMat, steelColor, knobOrigin, knobAxis, 0.05, 0.4);
+runOut = clamp((10.5 - abs(p.z)) / 0.5, 0, 1);
+knobBlank = cylinder(knobOrigin, knobAxis, 8);
+knobSide = (knobBlank - knurlHeight * runOut) / (1 + knurlSlope + 1);
+knobSide.material = material.blend(knobTurnedMat, knurlMat, runOut);
+knobSide.color = steelColor;
+knobEnds = abs(p.z) - 12;
+knobEnds.material = knobEndMat;
+knobEnds.color = steelColor;
+// The chamfer is cut on the turned blank, from its true distance: the
+// knurled side's is scaled down to stay a bound.
+knobChamfer = (knobBlank + knobEnds + 0.5) / sqrt2;
+knobChamfer.material = knobChamferMat;
+knobChamfer.color = steelColor;
+knob = max(knobSide, knobEnds, knobChamfer);
+
+return bar, block, groundPlate, brushedPlate, beads, sand, knob;

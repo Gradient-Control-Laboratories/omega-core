@@ -1,0 +1,22 @@
+// mock_pkg1.gsl - mock pkg1 source package for testing.
+
+somePi = 3.14159;
+
+boxCentered(center, size) {
+  halfSize = size * 0.5;
+  d = abs(p - center) - halfSize;
+  return max(d.x, d.y, d.z);
+}
+
+
+// Sphere at origin with the given radius. Uses length(p), so it
+// degenerates cleanly to circles / hyperspheres when p is first
+// projected to a lower or higher dimension via remap. Library
+// functions that need a sphere internally should call sphere().
+sphere(radius) {
+  return length(p) - radius;
+}
+
+sphere(radius, center) {
+  return remap(sphere(radius), p - center);
+}

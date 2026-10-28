@@ -1,0 +1,10 @@
+
+timeCycle = abs(sin(time * 2) - 1);
+
+hello = text.left("hello", [1, 0], .5);
+hello2 = remap(hello, [1, 2, 3]);
+
+return
+  hello2,
+  remap(sphere(0.8), [p.x + 0.5, p.y, p.z]),
+  remap(boxCentered(0, [1, 2, 3]), [p.x, p.y - 0.5 * timeCycle, p.z - 0.5]);

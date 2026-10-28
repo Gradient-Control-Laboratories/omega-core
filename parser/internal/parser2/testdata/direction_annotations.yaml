@@ -1,0 +1,144 @@
+Expected:
+  files:
+    - assignments:
+        - expression:
+            fnCall:
+              arguments:
+                - expression:
+                    operands:
+                      - value: 0
+                      - value: 0
+                      - value: 1
+                    operation: COLLECT
+              reference:
+                name: uiDirection
+          variables:
+            - name: buildDir
+        - expression:
+            fnCall:
+              arguments:
+                - expression:
+                    operands:
+                      - value: 1
+                      - value: 0
+                      - value: 0
+                    operation: COLLECT
+              reference:
+                name: uiDirection
+          variables:
+            - name: inlineDir
+        - expression:
+            fnCall:
+              arguments:
+                - fnCall:
+                    arguments:
+                      - expression:
+                          operands:
+                            - value: 0
+                            - value: 1
+                            - value: 0
+                          operation: COLLECT
+                    reference:
+                      name: uiDirection
+              reference:
+                name: applyDir
+          variables:
+            - name: callDir
+        - expression:
+            fnCall:
+              arguments:
+                - expression:
+                    operands:
+                      - value: 10
+                      - value: 0
+                      - value: 5
+                    operation: COLLECT
+              reference:
+                name: uiPoint
+          variables:
+            - name: center
+        - expression:
+            fnCall:
+              arguments:
+                - expression:
+                    operands:
+                      - value: 0
+                      - value: 0
+                      - value: 1
+                    operation: COLLECT
+                - reference:
+                    name: center
+              reference:
+                name: uiDirection
+          variables:
+            - name: axis
+        - expression:
+            fnCall:
+              arguments:
+                - expression:
+                    operands:
+                      - value: 0
+                      - value: 1
+                      - value: 0
+                    operation: COLLECT
+                - expression:
+                    operands:
+                      - value: 10
+                      - value: 0
+                      - value: 5
+                    operation: COLLECT
+              reference:
+                name: uiDirection
+          variables:
+            - name: anchoredInline
+      fnTypes:
+        - groups:
+            - functions:
+                - parameters:
+                    - name: d
+                  returns:
+                    - expression:
+                        operands:
+                          - reference:
+                              name: d
+                          - value: 2
+                        operation: INDEX
+              paramCount: 1
+          name: applyDir
+      returns:
+        - expression:
+            operands:
+              - expression:
+                  operands:
+                    - reference:
+                        name: buildDir
+                    - value: 2
+                  operation: INDEX
+              - expression:
+                  operands:
+                    - reference:
+                        name: inlineDir
+                    - value: 0
+                  operation: INDEX
+              - reference:
+                  name: callDir
+              - expression:
+                  operands:
+                    - reference:
+                        name: axis
+                    - value: 2
+                  operation: INDEX
+              - expression:
+                  operands:
+                    - reference:
+                        name: anchoredInline
+                    - value: 1
+                  operation: INDEX
+              - expression:
+                  operands:
+                    - reference:
+                        name: center
+                    - value: 0
+                  operation: INDEX
+            operation: ADD
+Source: ""

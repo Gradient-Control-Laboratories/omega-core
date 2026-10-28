@@ -1,0 +1,111 @@
+
+// GSL program to generate a tricycle model.
+
+// --- SDF Primitives ---
+
+// Distance function for a torus at the origin.
+// The major circle lies in the XY plane.
+torus(majorRadius, minorRadius) {
+    q = [length(p.xy) - majorRadius, p.z];
+    return length(q) - minorRadius;
+}
+
+// Distance function for an axis-aligned box defined by two opposite corner points.
+box(c1, c2) {
+    return max(
+        c1.x - p.x, p.x - c2.x,
+        c1.y - p.y, p.y - c2.y,
+        c1.z - p.z, p.z - c2.z
+    );
+}
+
+// Distance function for a capsule along the line segment from point 'a' to 'b' with radius 'r'.
+capsule(a, b, r) {
+  pa = p - a;
+  ba = b - a;
+  h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+  return length(pa - ba * h) - r;
+}
+
+// Helper function to create an SDF for a box centered at the origin.
+// This is more convenient to use with remap for positioning.
+centeredBoxSDF(dims) {
+    halfDims = dims / 2.0;
+    return box(-halfDims, halfDims);
+}
+
+
+// --- Tricycle Parameters and Geometry ---
+
+// Dimensions
+wheelMajorRadius = 0.9;
+wheelMinorRadius = 0.1;
+frameTubeRadius  = 0.08;
+rearAxleHalfWidth = 1.0;
+
+// Key YZ positions
+frontWheelY = 1.5;
+rearAxleY   = -1.2;
+wheelZ      = wheelMajorRadius; // Wheels touch the ground at Z=0
+frontForkTopZ = wheelZ + 1.7;
+seatTopZ      = wheelZ + 1.2;
+
+
+// --- Component SDFs ---
+
+// Wheels: Toruses rotated 90 degrees to stand upright and translated into place.
+frontWheel = remap(torus(wheelMajorRadius, wheelMinorRadius), [p.z, p.y - frontWheelY, p.x]);
+rearWheelL = remap(torus(wheelMajorRadius, wheelMinorRadius), [p.z, p.y - rearAxleY, p.x - rearAxleHalfWidth]);
+rearWheelR = remap(torus(wheelMajorRadius, wheelMinorRadius), [p.z, p.y - rearAxleY, p.x + rearAxleHalfWidth]);
+allWheels  = min(frontWheel, rearWheelL, rearWheelR);
+
+// Frame: A set of capsules connecting key points to form the frame.
+rearAxleCenter = [0.0, rearAxleY, wheelZ];
+frontForkJoint = [0.0, frontWheelY, wheelZ];
+frontForkTop   = [0.0, frontWheelY, frontForkTopZ];
+seatPostTop    = [0.0, rearAxleY + 0.7, seatTopZ];
+
+// A simple triangular frame for stability and recognizability.
+backbone   = capsule(rearAxleCenter, frontForkJoint, frameTubeRadius);
+topTube    = capsule(frontForkJoint, seatPostTop, frameTubeRadius);
+seatTube   = capsule(rearAxleCenter, seatPostTop, frameTubeRadius);
+rearAxle   = capsule([rearAxleHalfWidth, rearAxleY, wheelZ], [-rearAxleHalfWidth, rearAxleY, wheelZ], frameTubeRadius);
+frontFork  = capsule(frontForkJoint, frontForkTop, frameTubeRadius);
+allFrame   = min(backbone, topTube, seatTube, rearAxle, frontFork);
+
+// Handlebars
+handlebarWidth = 0.9;
+handlebarPos = frontForkTop;
+handlebarTube = capsule(
+    handlebarPos - [handlebarWidth/2.0, 0, 0],
+    handlebarPos + [handlebarWidth/2.0, 0, 0],
+    frameTubeRadius
+);
+
+// Seat
+seatPos = seatPostTop + [0, -0.15, 0];
+seatSize = [0.6, 0.7, 0.15];
+seat = remap(centeredBoxSDF(seatSize), p - seatPos);
+
+// Pedals and Crank
+pedalSize  = [0.3, 0.15, 0.05];
+crankArmLength = 0.4;
+crankPos   = frontForkJoint;
+
+// Place pedals horizontally for a simple static model.
+crank = capsule(
+    crankPos - [crankArmLength, 0, 0],
+    crankPos + [crankArmLength, 0, 0],
+    frameTubeRadius * 0.7
+);
+pedalL = remap(centeredBoxSDF(pedalSize), p - (crankPos - [crankArmLength, 0, 0]));
+pedalR = remap(centeredBoxSDF(pedalSize), p - (crankPos + [crankArmLength, 0, 0]));
+allPedals = min(crank, pedalL, pedalR);
+
+
+// --- Final Assembly ---
+
+// Combine all parts using the union operator (min).
+tricycle = min(allWheels, allFrame, handlebarTube, seat, allPedals);
+
+return tricycle;

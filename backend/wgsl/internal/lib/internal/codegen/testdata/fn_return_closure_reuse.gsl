@@ -1,0 +1,14 @@
+// Two closures made by the same factory reaching the same function. They
+// share one function type, so the specialization cache has to tell them
+// apart by the closure itself — otherwise the second call would silently
+// compile with the first one's captured value.
+
+scaleBy(k) {
+  return (a) { return a * k; };
+}
+
+apply(x, f) {
+  return f(f(x));
+}
+
+return apply(p.x, scaleBy(0.5)) + apply(p.y, scaleBy(3.0));

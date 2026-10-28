@@ -1,0 +1,16 @@
+// Exercises every ease.* curve plus both interpolation helpers (interp, mix),
+// so the library parses, type-checks, and generates WGSL end-to-end.
+import ease "ease";
+
+t = clamp(p.x, 0, 1);
+
+curves = ease.linear(t)
+  + ease.quadratic(t) + ease.inQuadratic(t) + ease.outQuadratic(t)
+  + ease.cubic(t) + ease.inCubic(t) + ease.outCubic(t)
+  + ease.exponential(t) + ease.inExponential(t) + ease.outExponential(t)
+  + ease.circular(t) + ease.inCircular(t) + ease.outCircular(t);
+
+remapped = ease.interp(p.y, 0, 10, 1, 5, ease.cubic);
+blended = ease.mix(1, 5, t, ease.quadratic);
+
+return curves + remapped + blended - length(p);

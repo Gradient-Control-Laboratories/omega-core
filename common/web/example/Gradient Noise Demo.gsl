@@ -1,0 +1,20 @@
+// Scene Size: 100
+
+// The simplest possible demo of gradient (Perlin) noise: one sphere, one
+// material, one color, both driven by noise.gradient/noise.gradientBump —
+// nothing else from the texture library (no cellular noise, no fbm, no
+// domain warp, no multiple materials). Good for a quick sanity check that
+// gradient noise itself renders correctly before layering anything on top.
+
+ball = sphere(25);
+
+// gradientBump(size) is pre-scaled to stay Lipschitz-safe when added
+// directly into a distance field or, as here, used as a material's
+// displacement height (see noise.gsl's doc comments for why).
+ball.material = material.withDisplacement(material.plastic, noise.gradientBump(12.5) * 0.4);
+
+// gradient(size) is unscaled (~[-1.5, 1.5]); remap it to [0,1] to drive a
+// color mix between two colors.
+ball.color = color.mixOklab(color.white, color.teal, noise.gradient(12.5) * 0.5 + 0.5);
+
+return ball;

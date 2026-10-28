@@ -1,0 +1,160 @@
+import . "builtin";
+import other "mechanical/gears";
+import "text";
+import vector "vector";
+
+s = shrinkToVanish(sphere(5.141592653589793), collect(-5.141592653589793, -5.141592653589793, -5.141592653589793), collect(5.141592653589793, 5.141592653589793, 5.141592653589793), 1)
+gsl_tmp_12 = (access(p, z) * 0)
+gsl_tmp_13 = cos(gsl_tmp_12)
+gsl_tmp_14 = sin(gsl_tmp_12)
+gsl_tmp_15 = ((access(p, x) * 1) + (access(p, y) * 0))
+gsl_tmp_16 = ((neg(access(p, x)) * 0) + (access(p, y) * 1))
+gsl_tmp_17 = length(collect(gsl_tmp_15, gsl_tmp_16))
+gsl_tmp_18 = (modulo((modulo((atan2(gsl_tmp_16, gsl_tmp_15) + 0.15707963267948966), 0.3141592653589793) + 0.3141592653589793), 0.3141592653589793) - 0.15707963267948966)
+gsl_tmp_19 = length(access(p, xy))
+gsl_tmp_20 = length(access(p, xy))
+g = remap(differenceChamfer(unionChamfer(intersectChamfer(remap(unionRound(intersectChamfer(remap(min(remap(select((gsl_tmp_19 > 3.865559912538053), (sqrt(max(((gsl_tmp_19 * gsl_tmp_19) - 14.942553437421198), 0)) - ((acos((3.865559912538053 / max(gsl_tmp_19, 3.865559912538053))) + atan2(access(p, y), access(p, x))) * 3.865559912538053)), neg(access(p, y))), collect(((access(p, x) * 0.997371702056178) + (access(p, y) * 0.07245473026354154)), ((neg(access(p, x)) * 0.07245473026354154) + (access(p, y) * 0.997371702056178)), access(p, z))), remap(remap(select((gsl_tmp_20 > 3.865559912538053), (sqrt(max(((gsl_tmp_20 * gsl_tmp_20) - 14.942553437421198), 0)) - ((acos((3.865559912538053 / max(gsl_tmp_20, 3.865559912538053))) + atan2(access(p, y), access(p, x))) * 3.865559912538053)), neg(access(p, y))), collect(((access(p, x) * 0.997371702056178) + (access(p, y) * 0.07245473026354154)), ((neg(access(p, x)) * 0.07245473026354154) + (access(p, y) * 0.997371702056178)), access(p, z))), collect(access(p, x), neg(access(p, y)), access(p, z)))), collect((gsl_tmp_17 * cos(gsl_tmp_18)), (gsl_tmp_17 * sin(gsl_tmp_18)), access(p, z))), remap(circleXY(collect(0, 0), 4.4), collect(gsl_tmp_15, gsl_tmp_16, access(p, z))), 0.025), remap(circleXY(collect(0, 0), 3.5), collect(gsl_tmp_15, gsl_tmp_16, access(p, z))), 0.1), collect(((access(p, x) * gsl_tmp_13) + (access(p, y) * gsl_tmp_14)), ((neg(access(p, x)) * gsl_tmp_14) + (access(p, y) * gsl_tmp_13)), access(p, z))), (abs(access(p, z)) - 0.5), 0.025), intersectChamfer(cylinderZ(vector.zero, 0), intersectChamfer(neg(access(p, z)), (access(p, z) - 0), 0.025), 0.025), 0), cylinderZ(vector.zero, 0), 0.025), vector.subtractVector(p, collect(0, 0, 5.641592653589793)))
+gsl_tmp_21 = collect(6.9997, min(1e+06, remap(min(text.segmentDist(collect(0, 9), collect(0, 0)), text.segmentDist(collect(0, 6), collect(2.5, 6)), text.arcDist(2.5, 4.5, 1.5, 0.7854, 0.7854), text.segmentDist(collect(4, 4.5), collect(4, 0))), collect((((access(p, x) - -1.4443777777777778) / 0.1111111111111111) - 0), ((access(p, y) - 0) / 0.1111111111111111), (access(p, z) / 0.1111111111111111)))))
+gsl_tmp_22 = collect((access(gsl_tmp_21, x) + 4 + 2.9997), min(access(gsl_tmp_21, y), remap(min(text.segmentDist(collect(0, 3), collect(4, 3)), text.segmentDist(collect(4, 3), collect(4, 4)), text.arcDist(2, 4, 2, 1.5708, 1.5708), text.segmentDist(collect(0, 4), collect(0, 1.5)), text.arcDist(1.5, 1.5, 1.5, -2.3562, 0.7854), text.segmentDist(collect(1.5, 0), collect(4, 0))), collect((((access(p, x) - -1.4443777777777778) / 0.1111111111111111) - access(gsl_tmp_21, x)), ((access(p, y) - 0) / 0.1111111111111111), (access(p, z) / 0.1111111111111111)))))
+gsl_tmp_23 = collect((access(gsl_tmp_22, x) + 1 + 2.9997), min(access(gsl_tmp_22, y), remap(min(text.segmentDist(collect(0, 9), collect(0, 1)), text.arcDist(1, 1, 1, -2.3562, 0.7854)), collect((((access(p, x) - -1.4443777777777778) / 0.1111111111111111) - access(gsl_tmp_22, x)), ((access(p, y) - 0) / 0.1111111111111111), (access(p, z) / 0.1111111111111111)))))
+gsl_tmp_24 = collect((access(gsl_tmp_23, x) + 1 + 2.9997), min(access(gsl_tmp_23, y), remap(min(text.segmentDist(collect(0, 9), collect(0, 1)), text.arcDist(1, 1, 1, -2.3562, 0.7854)), collect((((access(p, x) - -1.4443777777777778) / 0.1111111111111111) - access(gsl_tmp_23, x)), ((access(p, y) - 0) / 0.1111111111111111), (access(p, z) / 0.1111111111111111)))))
+t = max(((access(collect((access(gsl_tmp_24, x) + 4 + 2.9997), min(access(gsl_tmp_24, y), remap(min(text.arcDist(2, 2, 2, -1.5708, 1.5708), text.segmentDist(collect(4, 2), collect(4, 4)), text.arcDist(2, 4, 2, 1.5708, 1.5708), text.segmentDist(collect(0, 4), collect(0, 2))), collect((((access(p, x) - -1.4443777777777778) / 0.1111111111111111) - access(gsl_tmp_24, x)), ((access(p, y) - 0) / 0.1111111111111111), (access(p, z) / 0.1111111111111111))))), y) * 0.1111111111111111) - 0.0389), (abs((access(p, z) - 6.241592653589793)) - 0.1))
+
+return s, g, t;
+
+
+// ==================
+// Package: text
+
+import . "builtin";
+import vector "vector";
+
+segmentDist(a, b) {
+   pa = vector.subtractVector(access(p, xy), a)
+   ba = vector.subtractVector(b, a)
+   h = clamp((dot(pa, ba) / dot(ba, ba)), 0, 1)
+
+   return length(vector.subtractVector(pa, vector.multiplyScalar(ba, h)));
+}
+
+arcDist(cx, cy, ra, mid, half) {
+   dx = (access(p, x) - cx)
+   dy = (access(p, y) - cy)
+   rot = (1.5707963267948966 - mid)
+   ca = cos(rot)
+   sa = sin(rot)
+   rx = ((dx * ca) - (dy * sa))
+   ry = ((dx * sa) + (dy * ca))
+   scx = sin(half)
+   scy = cos(half)
+   pxAbs = abs(rx)
+   inside = ((scy * pxAbs) > (scx * ry))
+   wx = (pxAbs - (ra * scx))
+   wy = (ry - (ra * scy))
+   dInside = length(collect(wx, wy))
+   l = length(collect(pxAbs, ry))
+   dOutside = abs((l - ra))
+
+   return select(inside, dInside, dOutside);
+}
+
+
+// ==================
+// Package: mechanical/gears
+
+import . "builtin";
+import "vector";
+
+
+// ==================
+// Package: vector
+
+import . "builtin";
+
+zero = collect(0, 0, 0)
+dirZ = collect(0, 0, 1)
+
+subtractVector(a, b) {
+   gsl_anon(x, i) {
+      return (x - index(b, i));
+   }
+
+   return map(gsl_anon, a);
+}
+
+multiplyScalar(v, s) {
+   gsl_anon(x) {
+      return (x * s);
+   }
+
+   return map(gsl_anon, v);
+}
+
+
+// ==================
+// Package: builtin
+
+sqrt2 = 1.4142135623730951
+
+intersectRound(d1, d2, radius) {
+   inset1 = max((d1 + radius), 0)
+   inset2 = max((d2 + radius), 0)
+
+   return (min(neg(radius), max(d1, d2)) + length(collect(inset1, inset2)));
+}
+
+unionRound(d1, d2, radius) {
+   return neg(intersectRound(neg(d1), neg(d2), radius));
+}
+
+intersectChamfer(d1, d2, setback) {
+   face = max(d1, d2)
+   edge = ((d1 + d2 + setback) / sqrt2)
+
+   return max(face, edge);
+}
+
+unionChamfer(d1, d2, setback) {
+   return neg(intersectChamfer(neg(d1), neg(d2), setback));
+}
+
+differenceChamfer(target, tool, setback) {
+   return intersectChamfer(target, neg(tool), setback);
+}
+
+
+
+import vector "vector";
+
+circleXY(center, radius) {
+   return (length(vector.subtractVector(access(p, xy), center)) - radius);
+}
+
+import "vector";
+
+sphere(radius) {
+   return (length(p) - radius);
+}
+
+axis(center, direction) {
+   offset = vector.subtractVector(p, center)
+   unitDirection = normalize(direction)
+   along = dot(offset, unitDirection)
+   perp = vector.subtractVector(offset, vector.multiplyScalar(unitDirection, along))
+
+   return length(perp);
+}
+
+cylinder(center, direction, radius) {
+   return (axis(center, direction) - radius);
+}
+
+cylinderZ(center, radius) {
+   return cylinder(center, vector.dirZ, radius);
+}
+
+shrinkToVanish(shape, low, high, solid) {
+   return shape;
+}
+
+

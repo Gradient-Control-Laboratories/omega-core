@@ -1,0 +1,75 @@
+import "vector";
+
+sphere(radius) {
+   form = (length(p) - radius)
+   form.u = sphereAzimuth(collect(0, 0, 0), vector.dirZ, vector.dirX)
+   form.v = spherePolar(collect(0, 0, 0), vector.dirZ)
+
+   return form;
+}
+
+sphereAzimuth(center, pole, reference) {
+   n = normalize(pole)
+   e1 = normalize((reference - (n * dot(reference, n))))
+   e2 = cross(n, e1)
+   d = (p - center)
+
+   return atan2(dot(d, e2), dot(d, e1));
+}
+
+spherePolar(center, pole) {
+   n = normalize(pole)
+   d = (p - center)
+   along = dot(d, n)
+
+   return atan2(length((d - (n * along))), along);
+}
+
+axis(center, direction) {
+   offset = vector.subtractVector(p, center)
+   unitDirection = normalize(direction)
+   along = dot(offset, unitDirection)
+   perp = vector.subtractVector(offset, vector.multiplyScalar(unitDirection, along))
+   form = length(perp)
+   form.u = axisAngle(center, direction)
+   form.v = axisDistance(center, direction)
+
+   return form;
+}
+
+axisBasis(direction) {
+   n = normalize(direction)
+   sz = sign(access(n, z))
+   s = (sz + (1 - abs(sz)))
+   a = (-1 / (s + access(n, z)))
+   b = (access(n, x) * access(n, y) * a)
+
+   return collect((1 + (s * access(n, x) * access(n, x) * a)), (s * b), neg((s * access(n, x)))), collect(b, (s + (access(n, y) * access(n, y) * a)), neg(access(n, y)));
+}
+
+axisAngle(center, direction) {
+   t1, t2 = axisBasis(direction)
+   d = (p - center)
+
+   return atan2(dot(d, t2), dot(d, t1));
+}
+
+axisDistance(center, direction) {
+   return dot((p - center), normalize(direction));
+}
+
+cylinder(center, direction, radius) {
+   form = (axis(center, direction) - radius)
+   form.u = axisAngle(center, direction)
+   form.v = axisDistance(center, direction)
+
+   return form;
+}
+
+cylinderZ(center, radius) {
+   form = cylinder(center, vector.dirZ, radius)
+   form.u = axisAngle(center, vector.dirZ)
+   form.v = axisDistance(center, vector.dirZ)
+
+   return form;
+}

@@ -1,0 +1,19 @@
+// A map over a list of vectors (radials) whose lambda indexes a parallel
+// list (orientations) by the iteration index. The index must stay a
+// compile-time constant even though the iterated value is not, so the
+// unrolled lambda is inlined. mesh() lowers to a sentinel; the point is
+// that orientations[index] builds.
+
+angles = [0, pi, 0, pi];
+partTrans = [60, 0, -40];
+partOrient = [0, 0, pi / 2];
+
+radials = map((ang) { return map.rotateXY(partTrans, ang); }, angles);
+orientations = map((ang) { return partOrient * [1, 1, ang]; }, angles);
+
+placed = meshUnion(map(
+  (value, index) { return mesh(0, value, 1, orientations[index]); },
+  radials
+));
+
+return max(placed, length(p) - 10);

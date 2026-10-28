@@ -1,0 +1,33 @@
+# fidget for the browser: replays an omega tape and evaluates or meshes it,
+# compiled to wasm32-unknown-unknown (tool/build-fidget-wasm). The VM only:
+# wasm has no JIT and no threads.
+#
+# Its own workspace and Cargo.lock, like gpu-eval, so its dependencies never
+# move the crates render is locked to. The fidget forks are patched in the
+# same way as the root workspace.
+[workspace]
+
+[package]
+name = "fidget-wasm"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+fidget-core = "0.5"
+fidget-mesh = "0.5"
+getrandom = "0.3"
+nalgebra = "0.35"
+prost = "0.13.4"
+tape-core = { path = "../tape-core" }
+
+[patch.crates-io]
+fidget-core = { path = "../../vendor/fidget-core" }
+fidget-mesh = { path = "../../vendor/fidget-mesh" }
+
+[profile.release]
+opt-level = 3
+lto = true

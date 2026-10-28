@@ -1,0 +1,472 @@
+origin = [0, 0, 0];
+sqrt2 = sqrt(2);
+sqrt3 = sqrt(3);
+
+// =========================================================
+// UTILITY: mix (linear interpolation)
+// =========================================================
+// mix(a, b, t) = a + (b - a) * t
+// Works for scalars and vectors (component-wise).
+mix(a, b, t) {
+  return a + (b - a) * t;
+}
+
+// =========================================================
+// BOOLEAN OPERATIONS - Sharp
+// =========================================================
+
+intersectSharp2(d1, d2) {
+  return max(d1, d2);
+}
+
+intersectSharp3(d1, d2, d3) {
+  return max(d1, d2, d3);
+}
+
+unionSharp2(d1, d2) {
+  return min(d1, d2);
+}
+
+unionSharp3(d1, d2, d3) {
+  return min(d1, d2, d3);
+}
+
+subtractSharp(target, tool) {
+  return max(target, neg(tool));
+}
+
+// =========================================================
+// BOOLEAN OPERATIONS - Round (L2 norm)
+// =========================================================
+
+intersectRound2(d1, d2, k) {
+  c1 = max(d1 + k, 0);
+  c2 = max(d2 + k, 0);
+  return min(neg(k), max(d1, d2)) + length([c1, c2]);
+}
+
+intersectRound3(d1, d2, d3, k) {
+  c1 = max(d1 + k, 0);
+  c2 = max(d2 + k, 0);
+  c3 = max(d3 + k, 0);
+  return min(neg(k), max(d1, d2, d3)) + length([c1, c2, c3]);
+}
+
+unionRound2(d1, d2, k) {
+  return neg(intersectRound2(neg(d1), neg(d2), k));
+}
+
+unionRound3(d1, d2, d3, k) {
+  return neg(intersectRound3(neg(d1), neg(d2), neg(d3), k));
+}
+
+subtractRound(target, tool, k) {
+  return intersectRound2(target, neg(tool), k);
+}
+
+// =========================================================
+// BOOLEAN OPERATIONS - Chamfer (Unit Gradient Field theory)
+// =========================================================
+
+intersectChamfer2(d1, d2, k) {
+  face = max(d1, d2);
+  edge = (d1 + d2 + k) / sqrt2;
+  return max(face, edge);
+}
+
+intersectChamfer3(d1, d2, d3, k) {
+  face = max(d1, d2, d3);
+  edge12 = (d1 + d2 + k) / sqrt2;
+  edge13 = (d1 + d3 + k) / sqrt2;
+  edge23 = (d2 + d3 + k) / sqrt2;
+  edgeField = max(edge12, edge13, edge23);
+  vertex123 = (d1 + d2 + d3 + k) / sqrt3;
+  return max(face, edgeField, vertex123);
+}
+
+unionChamfer2(d1, d2, k) {
+  return neg(intersectChamfer2(neg(d1), neg(d2), k));
+}
+
+unionChamfer3(d1, d2, d3, k) {
+  return neg(intersectChamfer3(neg(d1), neg(d2), neg(d3), k));
+}
+
+subtractChamfer(target, tool, k) {
+  return intersectChamfer2(target, neg(tool), k);
+}
+
+// =========================================================
+// COMBINED CHAMFER+ROUND (chamfer with rounded tertiary blend)
+// =========================================================
+
+intersectChamferRound2(d1, d2, kChamfer, kRound) {
+  face = max(d1, d2);
+  edge = (d1 + d2 + kChamfer) / sqrt2;
+  tertiaryK = max(0, kRound - kChamfer);
+  return intersectRound2(face, edge, tertiaryK);
+}
+
+intersectChamferRound3(d1, d2, d3, kChamfer, kRound) {
+  face = max(d1, d2, d3);
+  edge12 = (d1 + d2 + kChamfer) / sqrt2;
+  edge13 = (d1 + d3 + kChamfer) / sqrt2;
+  edge23 = (d2 + d3 + kChamfer) / sqrt2;
+  edgeField = max(edge12, edge13, edge23);
+  vertex123 = (d1 + d2 + d3 + kChamfer) / sqrt3;
+  tertiaryK = max(0, kRound - kChamfer);
+  return intersectRound3(face, edgeField, vertex123, tertiaryK);
+}
+
+unionChamferRound2(d1, d2, kChamfer, kRound) {
+  return neg(intersectChamferRound2(neg(d1), neg(d2), kChamfer, kRound));
+}
+
+unionChamferRound3(d1, d2, d3, kChamfer, kRound) {
+  return neg(intersectChamferRound3(neg(d1), neg(d2), neg(d3), kChamfer, kRound));
+}
+
+// =========================================================
+// UTILITY FUNCTIONS
+// =========================================================
+
+// Linear map: maps value from [inMin, inMax] to [outMin, outMax] (unclamped)
+linearMap(value, inMin, inMax, outMin, outMax) {
+  slope = (outMax - outMin) / (inMax - inMin);
+  return (value - inMin) * slope + outMin;
+}
+
+// Ramp: linear map clamped to the output range [outMin, outMax]
+rampClamp(value, inMin, inMax, outMin, outMax) {
+  mapped = linearMap(value, inMin, inMax, outMin, outMax);
+  lo = min(outMin, outMax);
+  hi = max(outMin, outMax);
+  return clamp(mapped, lo, hi);
+}
+
+// RampC1: smooth S-curve interpolation using smoothstep (3t^2 - 2t^3)
+// Maps value from [inMin, inMax] to [outMin, outMax] with C1 continuity
+// The parameter is clamped to [0,1] before applying the smoothstep curve.
+rampC1(value, inMin, inMax, outMin, outMax) {
+  t = clamp((value - inMin) / (inMax - inMin), 0, 1);
+  s = t * t * (3 - 2 * t);
+  return outMin + (outMax - outMin) * s;
+}
+
+// Circle SDF in XY plane (infinite extrusion in Z)
+circleXY(center, radius) {
+  return length(p.xy - center) - radius;
+}
+
+// =========================================================
+// PRIMITIVE SDFs
+// =========================================================
+
+axis(center, dir) {
+  d = p - center;
+  dn = normalize(dir);
+  along = dot(d, dn);
+  perp = d - dn * along;
+  return length(perp);
+}
+
+axisX(center) {
+  return axis(center, [1, 0, 0]);
+}
+
+axisY(center) {
+  return axis(center, [0, 1, 0]);
+}
+
+axisZ(center) {
+  return axis(center, [0, 0, 1]);
+}
+
+cylinder(center, dir, radius) {
+  return axis(center, dir) - radius;
+}
+
+cylinderX(center, radius) {
+  return cylinder(center, [1, 0, 0], radius);
+}
+
+cylinderY(center, radius) {
+  return cylinder(center, [0, 1, 0], radius);
+}
+
+cylinderZ(center, radius) {
+  return cylinder(center, [0, 0, 1], radius);
+}
+
+// Capped cylinder defined by two endpoints a and b, with given radius.
+// Returns an exact SDF for a finite cylinder segment.
+cylinderCapped(a, b, radius) {
+  ba = b - a;
+  pa = p - a;
+  baba = dot(ba, ba);
+  paba = dot(pa, ba);
+  t = clamp(paba / baba, 0, 1);
+  radialDist = length(pa - ba * t) - radius;
+  axialDist = (abs(paba - baba * 0.5) - baba * 0.5) / sqrt(baba);
+  return max(radialDist, axialDist);
+}
+
+plane(c, n) {
+  return dot(p - c, normalize(n));
+}
+
+// Box centered at 'center' with full extents [sizeX, sizeY, sizeZ]
+boxCentered(center, size) {
+  halfSize = size * 0.5;
+  d = abs(p - center) - halfSize;
+  return max(d.x, d.y, d.z);
+}
+
+// Infinite extrusion in Z of a rectangle in XY, centered at 'center' with [sizeX, sizeY]
+rectangleXYCentered(center, size) {
+  halfSize = size * 0.5;
+  d = abs(p.xy - center) - halfSize;
+  return max(d.x, d.y);
+}
+
+// =========================================================
+// BEZIER TUBE (vectorized quadratic Bezier SDF)
+// =========================================================
+// a, b, c are vec3 control points; r is tube radius
+bezierTube(a, b, c, r) {
+  e = b - a;
+  f = a - 2.0 * b + c;
+  g = 2.0 * e;
+  d = a - p;
+
+  ff = dot(f, f);
+  ef = dot(e, f);
+  ee = dot(e, e);
+  df = dot(d, f);
+  de = dot(d, e);
+
+  kk = 1.0 / (ff + 1e-10);
+  kx = kk * ef;
+  ky = kk * (2.0 * ee + df) / 3.0;
+  kz = kk * de;
+
+  pp = ky - kx * kx;
+  qq = kx * (2.0 * kx * kx - 3.0 * ky) + kz;
+  h = qq * qq + 4.0 * pp * pp * pp;
+
+  sh = sqrt(max(h, 0.0));
+  w1 = (sh - qq) / 2.0;
+  w2 = (-sh - qq) / 2.0;
+  u1 = sign(w1) * exp(ln(max(abs(w1), 1e-12)) / 3.0);
+  u2 = sign(w2) * exp(ln(max(abs(w2), 1e-12)) / 3.0);
+  t1 = clamp(u1 + u2 - kx, 0.0, 1.0);
+  ev1 = d + (g + f * t1) * t1;
+  d1 = dot(ev1, ev1);
+
+  zz = sqrt(max(-pp, 0.0));
+  v = acos(clamp(qq / (2.0 * pp * zz - 1e-20), -1.0, 1.0)) / 3.0;
+  m = cos(v);
+  n = sin(v) * 1.732050808;
+  ta = clamp((m + m) * zz - kx, 0.0, 1.0);
+  tb = clamp((-n - m) * zz - kx, 0.0, 1.0);
+  tc = clamp((n - m) * zz - kx, 0.0, 1.0);
+  eva = d + (g + f * ta) * ta;
+  da = dot(eva, eva);
+  evb = d + (g + f * tb) * tb;
+  dbb = dot(evb, evb);
+  evc = d + (g + f * tc) * tc;
+  dc = dot(evc, evc);
+  d3 = min(min(da, dbb), dc);
+
+  dist2 = (h >= 0.0) ? d1 : d3;
+  return sqrt(dist2) - r;
+}
+
+// =========================================================
+// MODEL PARAMETERS
+// =========================================================
+
+flangeDia = 6;
+flangeHeight = 0.5;
+
+yokeHeight = 4;
+yokeBaseWidth = 2.5;
+yokeBaseHeight = 0.5;
+yokeSpan = 2.5;
+yokeThickness = 0.5;
+yokeRound = 0.5;
+yokeEdge = 0.03;
+
+yokeHoleRadius = 0.5;
+yokeHoleHeight = 3;
+yokeHolePosition = [0, 0, yokeHoleHeight + flangeHeight];
+yokeHoleFlangeRadial = 0.25;
+yokeHoleFlangeHeight = 0.125;
+yokeHoleChamfer = 0.06;
+
+boltCircleRadius = 2.5;
+boltHoleRadius = 0.25;
+numBolts = 6;
+
+// Shaft parameters
+shaftRadius = 0.4;
+shaftLength = 5;
+
+// =========================================================
+// YOKE & FLANGE CONSTRUCTION
+// =========================================================
+
+yokeCut() {
+  yokeCutY = plane([yokeSpan * 0.5, 0, 0], [-1, 0, 0]);
+  yokeCutZ = plane([0, 0, yokeBaseHeight + flangeHeight], [0, 0, 1]);
+  return unionRound2(yokeCutY, yokeCutZ, yokeRound);
+}
+
+yokeBossTopSide() {
+  yokeBossOuterY = plane([0, yokeBaseWidth * 0.5, flangeHeight], [0, 1, 0.1]);
+  yokeBossTopZ = plane([0, 0, yokeHeight + flangeHeight], [0, 0, 1]);
+  return intersectRound2(yokeBossOuterY, yokeBossTopZ, yokeRound);
+}
+
+yokeSide() {
+  side = plane([yokeSpan * 0.5 + yokeThickness, 0, 0], [1, 0, 0]);
+  reinforce = cylinderX(yokeHolePosition, yokeHoleRadius + yokeHoleFlangeRadial);
+  reinforceCap = side - yokeHoleFlangeHeight;
+  return unionRound2(intersectChamfer2(reinforce, reinforceCap, yokeEdge), side, yokeEdge);
+}
+
+boltHole(angle) {
+  cx = boltCircleRadius * cos(angle);
+  cy = boltCircleRadius * sin(angle);
+  return cylinderZ([cx, cy, 0], boltHoleRadius);
+}
+
+flangeHoles4() {
+  h0 = boltHole(0);
+  h1 = boltHole(radians(90));
+  h2 = boltHole(radians(180));
+  h3 = boltHole(radians(270));
+  return min(min(h0, h1), min(h2, h3));
+}
+
+flangeHoles6() {
+  h0 = boltHole(0);
+  h1 = boltHole(radians(60));
+  h2 = boltHole(radians(120));
+  h3 = boltHole(radians(180));
+  h4 = boltHole(radians(240));
+  h5 = boltHole(radians(300));
+  return min(min(unionSharp2(h0, h1), min(h2, h3)), min(h4, h5));
+}
+
+yokeHole() {
+  return cylinderX(yokeHolePosition, yokeHoleRadius);
+}
+
+castPart() {
+  flangeCyl = cylinderZ(origin, flangeDia * 0.5);
+  basePlane = plane(origin, [0, 0, -1]);
+  flangePlane = plane([0, 0, flangeHeight], [0, 0, 1]);
+
+  yokeCutMirrored = remap(yokeCut(), [abs(p.x), p.y, p.z]);
+
+  yokeBossTop = remap(yokeBossTopSide(), [p.x, abs(p.y), p.z]);
+
+  yokeBossTopBot = unionRound2(yokeBossTop, flangePlane, yokeRound);
+
+  yokeSideMirrored = remap(yokeSide(), [abs(p.x), abs(p.y), p.z]);
+  yokeBossSides = unionRound2(yokeSideMirrored, flangePlane, yokeEdge);
+
+  yokeOuter = intersectChamfer2(yokeBossSides, yokeBossTopBot, yokeEdge);
+  yoke = intersectChamfer2(yokeOuter, yokeCutMirrored, yokeEdge);
+
+  flangeBody = max(flangeCyl, basePlane);
+  flangeWithHoles = max(flangeBody, neg(flangeHoles4()));
+
+  body = max(flangeWithHoles, yoke);
+
+  result = intersectChamfer2(body, neg(yokeHole()), yokeHoleChamfer);
+
+  return result;
+}
+
+partPlacementShift = 5;
+
+placePart(trans) {
+  return remap(castPart(), [p.x, p.y - trans, -p.z]);
+}
+
+placedParts = remap(placePart(partPlacementShift), [p.x, abs(p.y), p.z]);
+
+gateHeight = 1;
+drainWidth = 1;
+drainRadius = 0.75;
+drainHeight = 3;
+drainRectZ = -(yokeHeight + flangeHeight);
+drainCircZ = drainRectZ - drainHeight;
+gateCylinderHeight = 1;
+gateCylinderRadius = 2.5;
+
+sprueShaftDiameter = 3;
+sprueBaseDiameter = sprueShaftDiameter * 0.5 + 2 * drainRadius;
+sprueBaseHeight = 1;
+sprueTopDiameter = 4;
+sprueTopBaseZ = gateHeight + gateCylinderHeight + 0.5;
+sprueTopZ = 8;
+sprueTopChamfer = 0.5;
+sprueHoleDiameter = 0.75;
+
+placeGate(trans) {
+  gates = intersectSharp2(
+    boxCentered([0, trans, gateHeight * 0.5], [yokeSpan + 2 * yokeThickness, yokeBaseWidth, gateHeight]),
+    yokeSpan * 0.5 - abs(p.x)
+  );
+
+  gateTop = cylinderCapped([0, trans, gateHeight], [0, trans, gateHeight + gateCylinderHeight], gateCylinderRadius);
+
+  gateSpan = boxCentered([0, 0, gateHeight + gateCylinderHeight * 0.5], [sprueShaftDiameter, 2 * trans, gateCylinderHeight]);
+
+  return min(gates, gateTop, gateSpan);
+}
+
+placeDrain(trans) {
+  center = [(yokeSpan + yokeThickness) * 0.5, trans];
+  rect = rectangleXYCentered(center, [yokeThickness, drainWidth]);
+  circ = circleXY(center, drainRadius);
+
+  loft = linearMap(p.z, drainRectZ, drainCircZ, rect, circ);
+  return intersectSharp3(loft, p.z - drainRectZ, -p.z + drainCircZ);
+}
+
+shearDrain() {
+  return remap(placeDrain(partPlacementShift),
+    rampC1(p.z, drainRectZ, drainCircZ, p,
+    p - [-(yokeSpan + yokeThickness) * 0.5, -partPlacementShift + sprueBaseDiameter - drainRadius, 0])
+  ) * 0.5;  // adjust lipschitz
+}
+
+gates = remap(placeGate(partPlacementShift), [p.x, abs(p.y), p.z]);
+drain = remap(shearDrain(), [abs(p.x), abs(p.y), p.z]);
+
+sprueBase = cylinderCapped([0, 0, drainCircZ - sprueBaseHeight], [0, 0, drainCircZ], sprueBaseDiameter);
+
+sprueShaftBot = max(cylinderZ(origin, rampClamp(p.z, sprueTopBaseZ, sprueTopZ, sprueShaftDiameter * 0.5, sprueTopDiameter)), -p.z + drainCircZ);
+sprueShaft = max(intersectChamfer2(sprueShaftBot, p.z - sprueTopZ, sprueTopChamfer), -circleXY(origin.xy, sprueHoleDiameter * 0.5));
+
+sprue = min(sprueBase, sprueShaft);
+
+gateTopZ = gateHeight + gateCylinderHeight;
+sprueMidZ = (sprueTopBaseZ + sprueTopZ) * 0.5;
+ventRadius = 0.3;
+
+ventStart = [0, partPlacementShift, gateTopZ];
+ventEnd = [0, sprueTopDiameter - sprueTopChamfer * 2, sprueTopZ - sprueTopChamfer];
+ventMid = [0, ventStart.y, mix(ventStart.z, ventEnd.z, 0.75)];
+
+ventTube() {
+  return bezierTube(ventStart, ventMid, ventEnd, ventRadius);
+}
+
+vent = remap(ventTube(), [p.x, abs(p.y), p.z]);
+
+return placedParts, gates, drain, sprue, vent;

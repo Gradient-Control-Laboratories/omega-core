@@ -1,0 +1,7 @@
+
+a = pow(2, 3);
+
+// x = pow(2);              // ERROR: 1 expected 2 arguments, got 1
+// x = pow(2, 3, 4);        // ERROR: 2 expected 2 arguments, got 3
+
+return a;

@@ -1,0 +1,37 @@
+// =========================================================
+// OFFSETS & FIELD BLENDS
+// =========================================================
+
+/// Shell / onion: hollow a solid SDF `d` into a wall of `thickness` centered on
+/// the surface.
+shell(d, thickness) {
+  return abs(d) - thickness * 0.5;
+}
+
+/// Shell with a `bias` in [-1, 1] that shifts the wall inward (-1) or outward
+/// (+1) relative to the surface; 0 is centered.
+shell(d, thickness, bias) {
+  return abs(d + bias * thickness * 0.5) - thickness * 0.5;
+}
+
+/// Two-body Cayley field: (d1 - d2) / (d1 + d2). A normalized interpolant of
+/// two fields whose zero set is where d1 = d2.
+twoBodyField(d1, d2) {
+  return (d1 - d2) / (d1 + d2);
+}
+
+/// Normalized field: v divided by the length of its gradient, so a field that
+/// is not a true distance reads as one near its zero set.
+normalizeField(v) {
+  return v / length(v.dp);
+}
+
+/// Normalized curve: returns a pair, dist, the length of the normalized a + b
+/// and a - b together, and angle, atan of the normalized a - b over the
+/// normalized a + b.
+///   dist, angle = normalizeCurve(a, b);
+normalizeCurve(a, b) {
+  sum = normalizeField(a + b);
+  difference = normalizeField(a - b);
+  return length([sum, difference]), atan(difference, sum);
+}

@@ -1,0 +1,16 @@
+// @color fn1() { return 1; }               // ERROR: 1 @color annotation can only be applied to variable assignments
+// @color(1) errDecl = [1.0, 0.0, 0.0];     // ERROR: 2 @color annotation does not take arguments
+// errInline = @color(1) [1.0, 0.0, 0.0];   // ERROR: 3 @color annotation does not take arguments
+
+@color
+coat = [0.804, 0.098, 0.098];
+
+inlineColor = @color [0.0, 0.5, 1.0];
+
+applyColor(c) {
+    return c[0];
+}
+
+callColor = applyColor(@color [0.2, 0.2, 0.2]);
+
+return coat[0] + inlineColor[1] + callColor;

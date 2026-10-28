@@ -1,0 +1,15 @@
+# Binaries
+bin/
+target/
+*.exe
+*.test
+
+# OS & Editor
+.DS_Store
+.idea/
+.vscode/
+
+# Scratch & test outputs
+scratch/
+tmp/
+*.out

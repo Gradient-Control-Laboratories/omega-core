@@ -1,0 +1,489 @@
+// Joint Library (joint)
+//
+// PARTS MEET AT INTERFACES, AND FASTENERS ARE INSERTED INTO THEM. Declare each
+// interface once — an axis, a face, a channel — and build every part that
+// meets there from it; a screw is inserted into an axis, and comes back with
+// the parts it joins finished:
+//
+//   bolt = joint.cylindrical([0.0, 0.0, 10.0], neg(vector.dirZ), 6.0, fastener.fitMedium);
+//   screw, lid, base = joint.insert(bolt, joint.socketHead, lidBody, baseBody, 7.5);
+//
+// is an ISO 4762 M6 cap screw seated at [0, 0, 10] and driven down, its head in
+// a DIN 974-1 counterbore and its shank through an ISO 273 medium clearance in
+// lidBody, threaded into a tapped hole in baseBody. Change the size or the seat
+// and every feature moves with it; nothing is kept in step by hand.
+// joint.bolted and joint.countersunk build the same joints from the
+// interface's parts passed loose, and joint.planar and joint.slide return a
+// face's and a channel's fields directly.
+//
+// What the joint decides, so the caller does not:
+//
+// - The FIT, from the series named: the clearance, the counterbore, and the
+//   tapped hole at the basic minor diameter, each from the catalog.
+// - The SCREW'S LENGTH, from the grip: the shortest ISO 4762 length that
+//   threads at least 1.5 diameters into the threaded part, the usual minimum
+//   engagement for a steel screw in steel or cast iron.
+// - The FINISH of the parts it makes: the screw in steel and the threaded part
+//   in steel, each carrying its thread as relief (see fastener's Finishes).
+//   The clamped part keeps no finish; set its material on the name it is
+//   returned to. A material or colour set on any returned name replaces the
+//   joint's.
+//
+// THE GRIP IS THE CLAMPED PART'S THICKNESS under the head: the distance along
+// the shank from the seat to the face where the clamped part meets the
+// threaded one. GSL cannot measure a body at build time, so the joint is told,
+// and verifyJoints proves it was told right (see Claims).
+//
+// Conventions follow fastener: `shankDir` is the direction the shank runs from
+// the seat, and the seat is where the head bears — the counterbore's floor.
+// Doc convention follows builtin/base.gsl: `///` lines are public docs.
+
+// =========================================================
+// Interfaces as Values
+// =========================================================
+//
+// AN INTERFACE IS ONE VALUE, declared once and passed to every part that
+// meets at it, and a FASTENER IS INSERTED INTO IT:
+//
+//   bolt = joint.cylindrical([8.0, 26.75, -4.5], vector.dirZ, 3.0, fastener.fitMedium);
+//   screw, plate, drum = joint.insert(bolt, joint.socketHead, plateBody, drumBody, 4.0);
+//
+// GSL has no record type, so an interface is a list of vec4 rows read through
+// the accessors below, as a material is. Read it through them: the rows are a
+// layout, not an interface. Nothing checks that a value is the kind of
+// interface a function takes.
+
+/// The screw heads joint.insert seats: ISO 4762 socket head in a DIN 974-1
+/// counterbore, or ISO 10642 flat head flush in a 90-degree countersink.
+socketHead = 1.0;
+flatHead = 2.0;
+
+/// A CYLINDRICAL interface: an axis through `seatPoint` along `axisDir`, of
+/// nominal diameter `nominalDia`, at ISO 273 clearance `fit`. For a screwed
+/// joint the seat is where the head bears and the axis runs the way the shank
+/// does, as in fastener. START HERE: declare each interface once, at top level,
+/// before the parts, and build every part that meets there from it — insert a
+/// screw into an axis with joint.insert, bound the parts on either side of a
+/// face with joint.planarFace, cut a guide with joint.prismatic:
+///
+///   bolt = joint.cylindrical([8.0, 26.75, -4.5], vector.dirZ, 3.0, fastener.fitMedium);
+///   screw, plate, drum = joint.insert(bolt, joint.socketHead, plateBody, drumBody, 12.0);
+cylindrical(seatPoint, axisDir, nominalDia, fit) {
+  u = normalize(axisDir);
+  return [[seatPoint.x, seatPoint.y, seatPoint.z, nominalDia], [u.x, u.y, u.z, fit]];
+}
+
+/// A cylindrical interface's seat point.
+seat(iface) {
+  r = iface[0];
+  return r.xyz;
+}
+
+/// A cylindrical interface's unit axis: the direction its shank runs from the
+/// seat.
+// Not axis(): builtin's axis(center, direction) is reached unqualified here.
+direction(iface) {
+  r = iface[1];
+  return r.xyz;
+}
+
+/// A cylindrical interface's nominal diameter.
+diameter(iface) {
+  r = iface[0];
+  return r.w;
+}
+
+/// A cylindrical interface's ISO 273 clearance series.
+fit(iface) {
+  r = iface[1];
+  return r.w;
+}
+
+/// A FASTENER INSERTED into cylindrical interface `iface`: a `head` screw
+/// (joint.socketHead or joint.flatHead) clamping `clamped`, `grip` thick, to
+/// `threaded`. Returns the screw, then `clamped` and `threaded` with their
+/// features cut, as joint.bolted and joint.countersunk do — the same parts,
+/// lengths, finishes and claims, the head chosen by the constant.
+insert(iface, head, clamped, threaded, grip) {
+  seatPoint = seat(iface);
+  shankDir = direction(iface);
+  nominalDia = diameter(iface);
+  fitSeries = fit(iface);
+  at =fastener.seatedAt(seatPoint, shankDir);
+  pitchVal = thread.metricPitch(nominalDia);
+  len = head == flatHead ? countersunkLength(nominalDia, grip) : boltedLength(nominalDia, grip);
+  tapDepth = len + 3.0 * pitchVal;
+  // a flat head's thread starts below the head; a socket head's at the seat
+  threadTop = head == flatHead ? 0.0 - (catalog.cskHeadDia(nominalDia) - nominalDia) / 2.0 : 0.0;
+
+  // The finishes are set here, not taken from joint.bolted or
+  // joint.countersunk: a property is carried out of one function call, not two.
+  screw = remap(head == flatHead ? fastener.countersunk(nominalDia, len) : fastener.shcs(nominalDia, len), at);
+  steelMat, steelColor = metal.steel();
+  screw.material = material.withDisplacement(steelMat,
+                     remap(thread.maleRelief(nominalDia, pitchVal, threadTop, 0.0 - len), at));
+  screw.color = thread.reliefColor(steelColor,
+                  remap(thread.maleRelief(nominalDia, pitchVal, threadTop, 0.0 - len), at), pitchVal);
+
+  held = max(clamped, neg(remap(head == flatHead ? fastener.countersunkHole(nominalDia, fitSeries)
+                                                 : fastener.shcsHole(nominalDia, fitSeries), at)));
+
+  tapped = max(threaded, neg(remap(fastener.tappedHole(nominalDia, len), at)));
+  tapped.material = material.withDisplacement(steelMat,
+                      remap(thread.femaleRelief(nominalDia, pitchVal, 0.0 - grip, 0.0 - tapDepth), at));
+  tapped.color = thread.reliefColor(steelColor,
+                   remap(thread.femaleRelief(nominalDia, pitchVal, 0.0 - grip, 0.0 - tapDepth), at),
+                   pitchVal);
+  return screw, held, tapped;
+}
+
+/// A PLANAR interface: the face through `point` with unit `normal`, where one
+/// part sits on another. joint.above and joint.below bound the two parts, as
+/// joint.planar's two returns do:
+///
+///   face = joint.planarFace([0.0, 0.0, -7.5], vector.dirZ);
+///   plate = max(plateBlank, joint.above(face));
+///   cover = max(coverBlank, joint.below(face));
+planarFace(point, normal) {
+  u = normalize(normal);
+  return [[point.x, point.y, point.z, 0.0], [u.x, u.y, u.z, 0.0]];
+}
+
+/// The half-space on a planar interface's normal side, negative there.
+above(face) {
+  r0 = face[0];
+  r1 = face[1];
+  return neg(dot(p - r0.xyz, r1.xyz));
+}
+
+/// The half-space behind a planar interface, negative there.
+below(face) {
+  r0 = face[0];
+  r1 = face[1];
+  return dot(p - r0.xyz, r1.xyz);
+}
+
+/// A PRISMATIC interface: joint.slide's channel as one value — along
+/// `axisDir` through `point`, `width` by `height` in section with `upDir` up,
+/// at running `clearance`. joint.channel and joint.envelope are joint.slide's
+/// two returns:
+///
+///   guide = joint.prismatic([0.0, 17.5, -4.0], vector.dirX, vector.dirZ, 6.0, 5.0, 0.3);
+///   plate = max(plateBlank, neg(joint.channel(guide)));
+///   rail = max(railBlank, joint.envelope(guide));
+prismatic(point, axisDir, upDir, width, height, clearance) {
+  return [[point.x, point.y, point.z, width], [axisDir.x, axisDir.y, axisDir.z, height],
+          [upDir.x, upDir.y, upDir.z, clearance]];
+}
+
+/// The channel to cut from a prismatic interface's guide.
+channel(guide) {
+  r0 = guide[0];
+  r1 = guide[1];
+  r2 = guide[2];
+  c, e = slide(r0.xyz, r1.xyz, r2.xyz, r0.w, r1.w, r2.w);
+  return c;
+}
+
+/// The envelope a prismatic interface's running part fits in.
+envelope(guide) {
+  r0 = guide[0];
+  r1 = guide[1];
+  r2 = guide[2];
+  c, e = slide(r0.xyz, r1.xyz, r2.xyz, r0.w, r1.w, r2.w);
+  return e;
+}
+
+// =========================================================
+// Bolted
+// =========================================================
+
+/// The ISO 4762 length a bolted joint of this size and grip uses: the
+/// shortest catalog length that runs 1.5 diameters past the grip. Zero if no
+/// catalog screw is that long.
+boltedLength(nominalDia, grip) {
+  return catalog.shcsLength(grip + 1.5 * nominalDia);
+}
+
+/// A BOLTED JOINT: an ISO 4762 cap screw seated at `seatPoint` with its shank
+/// running along `shankDir`, clamping `clamped` (`grip` thick under the head)
+/// to `threaded`, at ISO 273 clearance `fit` (fastener.fitFine, fitMedium or
+/// fitCoarse). Returns the screw, then `clamped` with its counterbore and
+/// clearance cut, then `threaded` with its tapped hole cut, each a part of its
+/// own:
+///
+///   screw, lid, base = joint.bolted(lidBody, baseBody, seat, shankDir, 6.0, 7.5,
+///                                   fastener.fitMedium);
+///   lidMat, lidColor = metal.aluminum();
+///   lid.material = lidMat;
+///   return screw, lid, base;
+///
+/// The holes are open above and the clearance is a thru, so each part's own
+/// faces bound them: the counterbore opens through whatever of `clamped` is
+/// above the seat. Chain joints by passing one joint's returned parts to the
+/// next.
+bolted(clamped, threaded, seatPoint, shankDir, nominalDia, grip, fit) {
+  at = fastener.seatedAt(seatPoint, shankDir);
+  pitchVal = thread.metricPitch(nominalDia);
+  len = boltedLength(nominalDia, grip);
+  tapDepth = len + 3.0 * pitchVal;
+
+  // remap(shcs, at), not shcsSeated: shcsSeated's box is right only for a
+  // shank along z, and a joint goes square to any face.
+  screw = remap(fastener.shcs(nominalDia, len), at);
+  steelMat, steelColor = metal.steel();
+  screw.material = material.withDisplacement(steelMat,
+                     remap(thread.maleRelief(nominalDia, pitchVal, 0.0, 0.0 - len), at));
+  screw.color = thread.reliefColor(steelColor,
+                  remap(thread.maleRelief(nominalDia, pitchVal, 0.0, 0.0 - len), at), pitchVal);
+
+  held = max(clamped, neg(remap(fastener.shcsHole(nominalDia, fit), at)));
+
+  tapped = max(threaded, neg(remap(fastener.tappedHole(nominalDia, len), at)));
+  tapped.material = material.withDisplacement(steelMat,
+                      remap(thread.femaleRelief(nominalDia, pitchVal, 0.0 - grip, 0.0 - tapDepth), at));
+  tapped.color = thread.reliefColor(steelColor,
+                   remap(thread.femaleRelief(nominalDia, pitchVal, 0.0 - grip, 0.0 - tapDepth), at),
+                   pitchVal);
+  return screw, held, tapped;
+}
+
+// =========================================================
+// Countersunk
+// =========================================================
+
+/// The ISO 10642 length a countersunk joint of this size and grip uses: the
+/// shortest catalog length that runs 1.5 diameters past the grip. A flat head's
+/// length is overall, its head inside the grip. Zero if no catalog screw is
+/// that long.
+countersunkLength(nominalDia, grip) {
+  return catalog.cskLength(grip + 1.5 * nominalDia);
+}
+
+/// A COUNTERSUNK JOINT: an ISO 10642 flat head screw seated flush at
+/// `seatPoint` — the countersink's rim, on the clamped part's outer face — its
+/// shank running along `shankDir`, clamping `clamped` (`grip` thick from that
+/// face to the face it meets `threaded` on) to `threaded`, at ISO 273
+/// clearance `fit`. Returns the screw, then `clamped` with its 90-degree
+/// countersink and clearance cut, then `threaded` with its tapped hole cut:
+///
+///   screw, cover, plate = joint.countersunk(coverBody, plateBody, seat, shankDir, 3.0, 2.0,
+///                                           fastener.fitMedium);
+///
+/// The countersink's rim is the head's theoretical sharp diameter, so head
+/// and countersink coincide at maximum material. A clamped part thinner than
+/// the head is deep — (dk - d) / 2, 1.86 for an M3 — sinks the head into the
+/// threaded part, and verifyJoints reports the screw overlapping it outside
+/// its thread.
+countersunk(clamped, threaded, seatPoint, shankDir, nominalDia, grip, fit) {
+  at = fastener.seatedAt(seatPoint, shankDir);
+  pitchVal = thread.metricPitch(nominalDia);
+  len = countersunkLength(nominalDia, grip);
+  tapDepth = len + 3.0 * pitchVal;
+  headDepth = (catalog.cskHeadDia(nominalDia) - nominalDia) / 2.0;
+
+  screw = remap(fastener.countersunk(nominalDia, len), at);
+  steelMat, steelColor = metal.steel();
+  screw.material = material.withDisplacement(steelMat,
+                     remap(thread.maleRelief(nominalDia, pitchVal, 0.0 - headDepth, 0.0 - len), at));
+  screw.color = thread.reliefColor(steelColor,
+                  remap(thread.maleRelief(nominalDia, pitchVal, 0.0 - headDepth, 0.0 - len), at), pitchVal);
+
+  held = max(clamped, neg(remap(fastener.countersunkHole(nominalDia, fit), at)));
+
+  tapped = max(threaded, neg(remap(fastener.tappedHole(nominalDia, len), at)));
+  tapped.material = material.withDisplacement(steelMat,
+                      remap(thread.femaleRelief(nominalDia, pitchVal, 0.0 - grip, 0.0 - tapDepth), at));
+  tapped.color = thread.reliefColor(steelColor,
+                   remap(thread.femaleRelief(nominalDia, pitchVal, 0.0 - grip, 0.0 - tapDepth), at),
+                   pitchVal);
+  return screw, held, tapped;
+}
+
+// =========================================================
+// Declared Interfaces
+// =========================================================
+//
+// A FACE ONE PART SITS ON, OR A CHANNEL ONE PART RUNS IN, cuts nothing a
+// fastener would: the interface is a datum both parts are built from. These
+// name the datum once and hand back the fields that bound each side of it, so
+// the two parts cannot disagree about where they meet. They carry no claims of
+// their own; a gate or verifyMechanism grades what they make.
+
+/// A PLANAR interface: the face through `point` with unit `normal`, where one
+/// part sits on another. Returns the field bounding the part on the normal's
+/// side, then the one bounding the part behind it:
+///
+///   above, below = joint.planar([0.0, 0.0, -7.5], vector.dirZ);
+///   plate = max(plateBlank, above);   // the plate's underside is the face
+///   cover = max(coverBlank, below);   // and so is the cover's top
+///
+/// Each is a half-space, negative on its own side, so a blank that reaches the
+/// face is cut flat on it and neither part can cross it.
+planar(point, normal) {
+  d = dot(p - point, normal);
+  return neg(d), d;
+}
+
+/// A PRISMATIC interface: a straight channel along `axisDir` through `point`,
+/// `width` across (along the cross of `upDir` and `axisDir`) and `height` along
+/// `upDir`, for a part `width` by `height` in section to run in at `clearance`
+/// all round. Returns the channel to cut from the guide, then the envelope the
+/// running part's section fits in, both unbounded along the axis:
+///
+///   channel, envelope = joint.slide([0.0, 17.5, -4.0], vector.dirX, vector.dirZ, 6.0, 5.0, 0.3);
+///   plate = max(plateBlank, neg(channel));
+///   rail = max(railBlank, envelope);
+///
+/// The clearance is the running clearance the design declares — the play the
+/// part has in its guide — not an ISO 286 fit.
+slide(point, axisDir, upDir, width, height, clearance) {
+  q = p - point;
+  across = normalize(cross(upDir, axisDir));
+  u = abs(dot(q, across));
+  v = abs(dot(q, upDir));
+  channel = max(u - (width / 2.0 + clearance), v - (height / 2.0 + clearance));
+  envelope = max(u - width / 2.0, v - height / 2.0);
+  return channel, envelope;
+}
+
+// =========================================================
+// Claims
+// =========================================================
+//
+// WHAT A BOLTED JOINT HAS TO BE TRUE, as fields a certify proves are never
+// negative over the joint's region. verifyJoints finds every joint.bolted call
+// and proves these for it; they are here so a proof by hand reads the same.
+// With the call's own arguments and the names its parts went to:
+//
+//   clears the clamped part      max(screw, lid, joint.boltedSeat(seat, dir, d, fit))
+//   threads only where engaged   max(screw, base, joint.boltedEngaged(seat, dir, d, grip))
+//   the grip is clamped metal    max(joint.boltedGripZone(seat, dir, d, grip, fit), neg(lidBody))
+//   the thread has metal         max(joint.boltedThreadZone(seat, dir, d, grip), neg(baseBody))
+//
+// and against everything else in the assembly, the screw with both
+// allowances. The first two are the joint's own fit and hold by construction
+// at nominal; the last two are the CONTEXT — whether the grip it was told is
+// the grip the parts have, and whether there is a wall around the thread —
+// and are what a design actually gets wrong.
+
+// jointZ: the coordinate along the joint's axis, zero on the seat and positive
+// on the head's side.
+jointZ(seatPoint, shankDir) {
+  return neg(dot(p - seatPoint, shankDir));
+}
+
+// jointR: the distance from the joint's axis.
+jointR(seatPoint, shankDir) {
+  q = p - seatPoint;
+  return length(q - shankDir * dot(q, shankDir));
+}
+
+/// The SEAT ALLOWANCE: POSITIVE in a band 0.1 either side of the seating
+/// plane, out to the counterbore's radius. The head bears on the counterbore's
+/// floor, which is contact, not interference; take the max of the screw and a
+/// part with this and the floor is let through and nothing else is.
+boltedSeat(seatPoint, shankDir, nominalDia, fit) {
+  return min(0.1 - abs(jointZ(seatPoint, shankDir)),
+             catalog.counterbore(nominalDia) / 2.0 + 0.1 - jointR(seatPoint, shankDir));
+}
+
+/// The ENGAGEMENT ALLOWANCE: positive where the screw's thread and the tapped
+/// hole's are both cut, grown by 0.2 — thread.engaged for this joint. The
+/// smooth screw at its major diameter overlaps the tapped part at its minor
+/// there by design. The margin is twice thread.engaged's usual 0.1 so that a
+/// joint on a tilted axis, whose intervals are looser, still proves in a
+/// default budget; the threads are the same size and pitch by construction,
+/// so the wider band lets nothing through that a mismatch would have made.
+boltedEngaged(seatPoint, shankDir, nominalDia, grip) {
+  at = fastener.seatedAt(seatPoint, shankDir);
+  pitchVal = thread.metricPitch(nominalDia);
+  len = boltedLength(nominalDia, grip);
+  return thread.engaged(remap(thread.maleZone(nominalDia, pitchVal, 0.0, 0.0 - len), at),
+                        remap(thread.femaleZone(nominalDia, pitchVal, 0.0 - grip,
+                                                0.0 - (len + 3.0 * pitchVal)), at),
+                        0.2);
+}
+
+/// The GRIP ZONE, negative inside: the ring under the head, from the
+/// clearance out to the head's own diameter, and along the axis the grip inset
+/// from both its faces by the slack (see jointSlack). The clamped part has to
+/// fill it — prove max(zone, neg(clampedBody)) is never negative — or the head
+/// bears on nothing, or the grip the joint was told is not the parts' grip.
+boltedGripZone(seatPoint, shankDir, nominalDia, grip, fit) {
+  r = jointR(seatPoint, shankDir);
+  z = jointZ(seatPoint, shankDir);
+  slack = jointSlack(grip);
+  return max(catalog.clearance(nominalDia, fit) / 2.0 + 0.1 - r,
+             r - catalog.shcsHeadDia(nominalDia) / 2.0,
+             z + slack, 0.0 - grip + slack - z);
+}
+
+/// The THREAD ZONE, negative inside: a cylinder three quarters of a diameter
+/// in radius — a quarter-diameter wall outside the thread's crest — from the
+/// slack past the grip to 1.5 diameters past it. The threaded part has to fill
+/// it, or the thread breaks out of a wall or engages less than 1.5 d.
+boltedThreadZone(seatPoint, shankDir, nominalDia, grip) {
+  z = jointZ(seatPoint, shankDir);
+  return max(jointR(seatPoint, shankDir) - 0.75 * nominalDia,
+             z + grip + jointSlack(grip), 0.0 - grip - 1.5 * nominalDia - z);
+}
+
+// THE COUNTERSUNK JOINT'S CLAIMS are the bolted joint's with its own seat,
+// engagement and grip zone; the thread zone is the same (boltedThreadZone).
+
+// cskCone: the distance outward from the countersink's cone, the head's
+// theoretical sharp surface, negative inside it: a 90-degree cone losing a
+// millimetre of radius per millimetre of depth below the seat.
+cskCone(seatPoint, shankDir, nominalDia) {
+  return (jointR(seatPoint, shankDir)
+          - (catalog.cskHeadDia(nominalDia) / 2.0 + jointZ(seatPoint, shankDir))) * 0.7071;
+}
+
+/// The countersunk SEAT ALLOWANCE: POSITIVE within 0.1 of the cone the head
+/// and the countersink share, from the rim to the head's depth. They coincide
+/// at maximum material, which is contact, not interference.
+countersunkSeat(seatPoint, shankDir, nominalDia) {
+  z = jointZ(seatPoint, shankDir);
+  depth = (catalog.cskHeadDia(nominalDia) - nominalDia) / 2.0;
+  return min(0.1 - abs(cskCone(seatPoint, shankDir, nominalDia)), 0.1 - z, z + depth + 0.1);
+}
+
+/// The countersunk ENGAGEMENT ALLOWANCE: boltedEngaged for the ISO 10642
+/// length this joint picks.
+countersunkEngaged(seatPoint, shankDir, nominalDia, grip) {
+  at = fastener.seatedAt(seatPoint, shankDir);
+  pitchVal = thread.metricPitch(nominalDia);
+  len = countersunkLength(nominalDia, grip);
+  return thread.engaged(remap(thread.maleZone(nominalDia, pitchVal, 0.0, 0.0 - len), at),
+                        remap(thread.femaleZone(nominalDia, pitchVal, 0.0 - grip,
+                                                0.0 - (len + 3.0 * pitchVal)), at),
+                        0.2);
+}
+
+/// The countersunk GRIP ZONE, negative inside: a shell 0.1 to 0.6 outside the
+/// head's cone, clear of the clearance hole, from the slack below the rim to the
+/// slack above the head's depth. The clamped part has to fill it — the head is
+/// held all round its cone — or the countersink breaks out of an edge. (A
+/// clamped part thinner than the head is deep is the engagement claim's to
+/// catch: the head sinks into the threaded part.) Below the head the grip is the
+/// clamped part's own business: a countersunk head bears on its cone, not on a
+/// face under it.
+countersunkGripZone(seatPoint, shankDir, nominalDia, grip, fit) {
+  c = cskCone(seatPoint, shankDir, nominalDia);
+  z = jointZ(seatPoint, shankDir);
+  depth = (catalog.cskHeadDia(nominalDia) - nominalDia) / 2.0;
+  slack = jointSlack(grip);
+  return max(0.1 - c, c - 0.6,
+             catalog.clearance(nominalDia, fit) / 2.0 + 0.1 - jointR(seatPoint, shankDir),
+             z + slack, 0.0 - depth + slack - z);
+}
+
+// jointSlack: how far the zones stand in from the grip's faces, 0.5 or a
+// quarter of the grip if that is less. It is how wrong the grip may be before
+// a claim fails, and it is what keeps the proof cheap: a zone flush with a
+// face leaves a slab as thin as the inset across the zone's whole section, and
+// an interval proof has to resolve all of it.
+jointSlack(grip) {
+  return min(0.5, grip / 4.0);
+}

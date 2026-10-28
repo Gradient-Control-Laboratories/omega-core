@@ -1,0 +1,276 @@
+
+// Machined Materials (material/machined)
+//
+// The surfaces machining leaves on a part, from the process's own
+// parameters: a lathe's feed and tool nose, a face mill's cutter and feed, a
+// grinding wheel's or a brush's scratches, a blast's media, a knurl's pitch.
+// Each takes the part's material and colour, a metal from the metal library
+// usually, and returns material, color, height and slope, as the animated
+// materials do: the height is 0 but for knurling, whose teeth are real shape,
+// and the grooves the tools leave ride in the material, as its lay (the
+// highlight streaked across them, material.withLay) and, where they are big
+// enough to see, as displacement.
+//
+// The highlight follows the grooves' slopes, not their height: a turned
+// surface's profile is tool-nose arcs of radius r every feed f, whose slopes
+// run evenly from -f/(2r) to f/(2r), a spread of f/(2 sqrt(3) r), and the
+// lobe's width across the lay is sqrt(2) times that. Along the lay the width
+// is the cutting edge's own finish, about 0.02.
+//
+// Doc convention follows builtin/base.gsl: `///` lines are public docs.
+
+import "material";
+import "texture";
+import "noise";
+
+// The material of a surface whose lobe is `across` wide across its lay and
+// `along` wide along it: its roughness is the root of the widths' geometric
+// mean and its anisotropy the ratio's, as material.withLay reads them. The
+// direction is made unit length, and where the lobe is round, so the lay has
+// nothing to streak, it is 0, as a material without a lay has.
+layFinish(baseMaterial, direction, along, across) {
+  alpha = sqrt(along * across);
+  squeeze = clamp(along / across, 0.1, 1);
+  stretch = (1 - squeeze) / 0.9;
+  unit = stretch > 0 ? direction / max(length(direction), 0.000001) : [0, 0, 0];
+  return material.withLay(material.withRoughness(baseMaterial, sqrt(alpha)), unit, stretch);
+}
+
+// The material of grooves of tool-nose arcs of radius `radius` every
+// `spacing`, whose lay runs along `direction`. While the grooves show, their
+// relief carries their slopes and the lobe is the cutting edge's own, 0.02
+// wide; as they fade below a pixel their slopes, spread f / (2 sqrt(3) r) and
+// sqrt(2) times that across the lay, widen the lobe across it instead
+// (texture.reliefRoughness), so they are never counted twice. Its stand-in is
+// the grooves too fine to see, the highlight streaked across them, as deep on
+// average, f^2 / (12 r).
+grooveFinish(baseMaterial, direction, s, spacing, radius) {
+  fade = texture.fadeDetail(spacing);
+  slope = 0.408 * spacing / radius;
+  across = texture.reliefRoughness(0.02, slope, spacing);
+  finish = material.withDisplacement(layFinish(baseMaterial, direction, 0.02, across), -nosePitch(s, spacing, radius) * fade);
+  finish.simple = material.withDisplacement(layFinish(baseMaterial, direction, 0.02, sqrt(0.0004 + slope * slope)), -spacing * spacing / (12 * radius));
+  return finish;
+}
+
+// The depth below the cusps, in mm, of a groove of tool-nose arcs of radius
+// `radius` every `spacing`, at s of the way across a groove (0 and 1 the
+// cusps, 0.5 the bottom).
+nosePitch(s, spacing, radius) {
+  x = (s - 0.5) * spacing;
+  return sqrt(max(radius * radius - x * x, 0)) - sqrt(max(radius * radius - 0.25 * spacing * spacing, 0));
+}
+
+/// turned(baseMaterial, baseColor, axisOrigin, axisDir, feed, noseRadius): a
+/// surface turned on a lathe about the axis through axisOrigin along axisDir,
+/// at `feed` mm a turn with a tool nose `noseRadius` mm round (0.05 to 0.3
+/// feed and 0.2 to 1.6 nose are usual). The tool leaves a helix of grooves
+/// round the axis, f^2 / (8 r) deep: the highlight streaks along the axis and
+/// the grooves show where they are big enough to see. Returns material,
+/// color, height and slope.
+turned(baseMaterial, @color baseColor, @point axisOrigin, @direction(axisOrigin) axisDir, @range(0.05, 0.3) feed, @range(0.2, 1.6) noseRadius) {
+  axis = normalize(axisDir);
+  offset = p - axisOrigin;
+  s = fract(dot(offset, axis) / feed);
+  return grooveFinish(baseMaterial, cross(axis, offset), s, feed, noseRadius), baseColor, 0, 0;
+}
+
+/// faced(baseMaterial, baseColor, axisOrigin, axisDir, feed, noseRadius): the
+/// face of a part turned on a lathe, its tool fed in toward the axis: the
+/// same grooves as turned, as rings round the axis every `feed` mm, and the
+/// highlight streaked across them, a fan of light from the centre. Returns
+/// material, color, height and slope.
+faced(baseMaterial, @color baseColor, @point axisOrigin, @direction(axisOrigin) axisDir, @range(0.05, 0.3) feed, @range(0.2, 1.6) noseRadius) {
+  axis = normalize(axisDir);
+  offset = p - axisOrigin;
+  radial = offset - axis * dot(offset, axis);
+  s = fract(length(radial) / feed);
+  return grooveFinish(baseMaterial, cross(axis, offset), s, feed, noseRadius), baseColor, 0, 0;
+}
+
+/// turned(baseMaterial, baseColor, frame, feed, noseRadius): turned on a
+/// lathe, read from the part's own frame, `[bar.u, bar.v]`, rather than an
+/// axis kept in step with the geometry by hand: the lay runs along u's
+/// gradient, round the axis, and the grooves fall every `feed` mm of v. On a
+/// capped cylinder one call turns the side, where v runs along the axis, and
+/// faces the caps, where v runs out from it, as a lathe does. Returns
+/// material, color, height and slope.
+turned(baseMaterial, @color baseColor, frame, @range(0.05, 0.3) feed, @range(0.2, 1.6) noseRadius) {
+  s = fract(frame.y / feed);
+  return grooveFinish(baseMaterial, frame.x.dp, s, feed, noseRadius), baseColor, 0, 0;
+}
+
+/// faceMilled(baseMaterial, baseColor, origin, feedDir, normal, cutterRadius,
+/// feedPerRev, cornerRadius): a face milled flat, facing along `normal`, by a
+/// cutter `cutterRadius` mm across its path fed along feedDir through
+/// origin, `feedPerRev` mm a turn, its inserts' corners `cornerRadius` mm
+/// round. The inserts leave arcs of the cutter's radius, one every feed, whose
+/// cusps are f^2 / (8 r) high: the highlight streaks across the arcs. Returns
+/// material, color, height and slope.
+faceMilled(baseMaterial, @color baseColor, @point origin, @direction(origin) feedDir, @direction(origin) normal, cutterRadius, feedPerRev, cornerRadius) {
+  n = normalize(normal);
+  along = normalize(feedDir - n * dot(feedDir, n));
+  side = cross(n, along);
+  offset = p - origin;
+  x = dot(offset, along);
+  y = clamp(dot(offset, side), -0.999 * cutterRadius, 0.999 * cutterRadius);
+  // The arc of the cut that passed through the point: its centre was
+  // sqrt(R^2 - y^2) behind it along the feed.
+  reach = sqrt(cutterRadius * cutterRadius - y * y);
+  s = fract((x - reach) / feedPerRev);
+  return grooveFinish(baseMaterial, side * reach - along * y, s, feedPerRev, cornerRadius), baseColor, 0, 0;
+}
+
+/// ground(baseMaterial, baseColor, direction, roughnessRa): a surface ground
+/// along `direction`, to `roughnessRa` micrometres Ra (0.1 to 0.8; a fine
+/// grind 0.1 to 0.4). Its scratches, a few micrometres across, are never big
+/// enough to see: the highlight streaks across them, its width across from
+/// slopes of about 0.05 to 0.15 over that range (judged). Returns material,
+/// color, height and slope.
+ground(baseMaterial, @color baseColor, @direction direction, @range(0.1, 0.8) roughnessRa) {
+  across = 0.07 + 0.2 * clamp(roughnessRa - 0.1, 0, 1);
+  return layFinish(baseMaterial, direction, 0.02, across), baseColor, 0, 0;
+}
+
+/// brushed(baseMaterial, baseColor, direction, grit): a satin finish brushed
+/// along `direction` with an abrasive of `grit` (120 to 240; No. 4 stainless
+/// is 150 to 180). Ra falls with the grit, 1.06 um at 150 and 0.76 at 180
+/// (Euro Inox), and the lobe across the lay with it, 0.3 at 150 (judged).
+/// Returns material, color, height and slope.
+brushed(baseMaterial, @color baseColor, @direction direction, @range(120, 240) grit) {
+  ra = 1.06 * pow(150 / grit, 1.8);
+  return layFinish(baseMaterial, direction, 0.03, 0.3 * ra / 1.06), baseColor, 0, 0;
+}
+
+/// blasted(baseMaterial, baseColor, mediaSize, angular): a surface blasted
+/// with media `mediaSize` micrometres across (50 to 400), round glass beads
+/// at angular 0 and sharp sand or grit at 1. Its dimples, a fraction of the
+/// media's size, are never big enough to see: they scatter the highlight
+/// evenly into a satin to matte sheen, a lobe 0.3 to 0.5 wide for beads and
+/// 0.5 to 0.7 for sand, growing with the media (judged from Ra 0.8 to 3.4
+/// um). Returns material, color, height and slope.
+blasted(baseMaterial, @color baseColor, @range(50, 400) mediaSize, @range(0, 1) angular) {
+  alpha = 0.3 + 0.2 * clamp((mediaSize - 50) / 350, 0, 1) + 0.2 * clamp(angular, 0, 1);
+  return material.withRoughness(baseMaterial, sqrt(alpha)), baseColor, 0, 0;
+}
+
+// A 90 degree tooth's profile, 0 at its crest and -0.5 at its root, in
+// pitches, at u pitches along.
+knurlTooth(u) {
+  return -abs(fract(u) - 0.5);
+}
+
+/// knurled(baseMaterial, baseColor, axisOrigin, axisDir, diameter, pitch,
+/// diamond, raised): a knurl rolled on a round `diameter` mm across, about
+/// the axis through axisOrigin along axisDir, to ISO 13444: 90 degree teeth
+/// `pitch` mm apart round it (0.4, 0.5, 0.6, 0.8, 1.0, 1.2 or 1.6), straight
+/// along the axis (diamond 0) or crossed at 30 degrees either way to it
+/// (diamond 1), their points raised (raised 1) or sunk (raised 0). The count
+/// of teeth round it is whole, so the knurl closes on itself. The teeth are
+/// real shape, pitch / 2 deep: subtract the height from the part and divide
+/// by 1 + slope. Returns material, color, height and slope.
+knurled(baseMaterial, @color baseColor, @point axisOrigin, @direction(axisOrigin) axisDir, diameter, @range(0.4, 1.6) pitch, @range(0, 1) diamond, @range(0, 1) raised) {
+  axis = normalize(axisDir);
+  offset = p - axisOrigin;
+  radial = offset - axis * dot(offset, axis);
+  side = normalize(cross(axis, [0.577, 0.577, 0.577]) + [0.000001, 0, 0]);
+  across = cross(axis, side);
+  teeth = floor(3.14159265 * diameter / pitch + 0.5);
+  around = (atan(dot(radial, across), dot(radial, side)) / 6.2831853 + 0.5) * teeth;
+  axial = dot(offset, axis) / pitch;
+  straight = knurlTooth(around);
+  // Crossed teeth run at 30 degrees to the axis, so each family advances
+  // tan(30) of a pitch round it for each pitch along it.
+  left = knurlTooth(around + 0.57735 * axial);
+  right = knurlTooth(around - 0.57735 * axial);
+  crossed = raised > 0.5 ? min(left, right) : max(left, right);
+  height = (diamond > 0.5 ? crossed : straight) * pitch + 0.25 * pitch;
+  return baseMaterial, baseColor, height, 1.2;
+}
+
+/// knurled(baseMaterial, baseColor, frame, diameter, pitch, diamond, raised):
+/// the same knurl read from the part's own frame, `[bar.u, bar.v]`: the teeth
+/// are counted round u and spaced along v. The count round the part is whole,
+/// so the pattern runs on across u's seam, where u's value jumps by a turn.
+/// Returns material, color, height and slope.
+knurled(baseMaterial, @color baseColor, frame, diameter, @range(0.4, 1.6) pitch, @range(0, 1) diamond, @range(0, 1) raised) {
+  teeth = floor(3.14159265 * diameter / pitch + 0.5);
+  around = frame.x / 6.2831853 * teeth;
+  axial = frame.y / pitch;
+  straight = knurlTooth(around);
+  // Crossed teeth run at 30 degrees to the axis, as above.
+  left = knurlTooth(around + 0.57735 * axial);
+  right = knurlTooth(around - 0.57735 * axial);
+  crossed = raised > 0.5 ? min(left, right) : max(left, right);
+  height = (diamond > 0.5 ? crossed : straight) * pitch + 0.25 * pitch;
+  return baseMaterial, baseColor, height, 1.2;
+}
+
+// ===========================================================================
+// Ready-made
+// ===========================================================================
+
+// One @surface overload per operator above: the slots a document supplies
+// (the part's surface, its colour, its frame) and the arguments the examples
+// use for the rest. The Bodies panel wraps a surface with one of these, and
+// Adjust opens it back into the full form; see doc/material_composition.md,
+// "Design: operators as presets".
+
+/// turned(baseMaterial, baseColor, frame): a finish cut, 0.15 mm feed with a
+/// 0.8 mm nose radius, on the part's own frame. Returns material, color,
+/// height and slope.
+@surface turned(baseMaterial, @color baseColor, @frame frame) {
+  cut, tone, height, slope = turned(baseMaterial, baseColor, frame, 0.15, 0.8);
+  return cut, tone, height, slope;
+}
+
+/// faced(baseMaterial, baseColor): a finish cut, 0.15 mm feed with a 0.8 mm
+/// nose radius, about +Z through the origin. Returns material, color, height
+/// and slope.
+@surface faced(baseMaterial, @color baseColor) {
+  cut, tone, height, slope = faced(baseMaterial, baseColor, [0, 0, 0], [0, 0, 1], 0.15, 0.8);
+  return cut, tone, height, slope;
+}
+
+/// faceMilled(baseMaterial, baseColor): a 50 mm face mill fed along +X over a
+/// +Z face through the origin, 0.3 mm a revolution with a 0.8 mm corner
+/// radius. Returns material, color, height and slope.
+@surface faceMilled(baseMaterial, @color baseColor) {
+  cut, tone, height, slope = faceMilled(baseMaterial, baseColor, [0, 0, 0], [1, 0, 0], [0, 0, 1], 25, 0.3, 0.8);
+  return cut, tone, height, slope;
+}
+
+/// ground(baseMaterial, baseColor): ground along +X to 0.8 um Ra. Returns
+/// material, color, height and slope.
+@surface ground(baseMaterial, @color baseColor) {
+  cut, tone, height, slope = ground(baseMaterial, baseColor, [1, 0, 0], 0.8);
+  return cut, tone, height, slope;
+}
+
+/// brushed(baseMaterial, baseColor): brushed along +X at 150 grit, a No. 4
+/// finish. Returns material, color, height and slope.
+@surface brushed(baseMaterial, @color baseColor) {
+  cut, tone, height, slope = brushed(baseMaterial, baseColor, [1, 0, 0], 150);
+  return cut, tone, height, slope;
+}
+
+/// blasted(baseMaterial, baseColor): bead blasted with 100 um glass beads.
+/// Returns material, color, height and slope.
+@surface blasted(baseMaterial, @color baseColor) {
+  cut, tone, height, slope = blasted(baseMaterial, baseColor, 100, 0);
+  return cut, tone, height, slope;
+}
+
+/// knurled(baseMaterial, baseColor, frame): a raised diamond knurl, 1.0 mm
+/// pitch on a 16 mm diameter, on the part's own frame. Returns material,
+/// color, height and slope.
+@surface knurled(baseMaterial, @color baseColor, @frame frame) {
+  cut, tone, height, slope = knurled(baseMaterial, baseColor, frame, 16, 1.0, 1, 1);
+  return cut, tone, height, slope;
+}
+
+// References
+//   Burley, B. (2012). Physically-based shading at Disney. SIGGRAPH course
+//     notes.
+//   Euro Inox / IMOA. Surface roughness measurement of stainless steel.
+//   ISO 13444:2012. Knurling.

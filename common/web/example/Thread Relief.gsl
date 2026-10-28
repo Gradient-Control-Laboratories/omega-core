@@ -1,0 +1,65 @@
+// Scene Size: 48
+// Scene Grid: 10
+
+// Threads as relief: a thread is a MACHINING OPERATION, so the geometry is
+// the part before it — at its maximum material condition — and the thread is
+// a displacement height on the part's material that only the renderer reads.
+//
+//   the screw   an M6 x 20 socket head cap screw. The geometry is the smooth
+//               shank at the major diameter, fastener.shcs; thread.maleRelief
+//               takes the ISO 68-1 thread off it on screen.
+//   the plate   an M6 hole. The geometry is the bore at the basic MINOR
+//               diameter, and thread.femaleRelief taps it.
+//   the joint   the two together, the screw backed out six millimetres so
+//               its thread shows going into the hole. As designed they
+//               INTERFERE, by the annulus between the two diameters over the
+//               length they share: that overlap is the thread engagement.
+//               Displaced, the flanks meet.
+//
+// The mesher, every export and every proof see the geometry — the smooth
+// screw and the plain bore — and the section plane cuts it as built, so it
+// shows the interference the render resolves. That is the point: one object
+// is both the form to prove against and the form to look at.
+//
+// Each relief is bounded, so a part wears ONE material and the thread stops
+// where it should: under the head, at the tip, at the mouth of the hole.
+
+steelMat, steelColor = metal.steel();
+aluminumMat, aluminumColor = metal.aluminum();
+
+d = 6.0;
+pitchVal = thread.metricPitch(d);
+screwLength = 20.0;
+plateT = 8.0;
+
+// The screw, built at the origin on the library datum — seating plane z = 0,
+// shank down — with its material set there, so the relief moves with it.
+screw = fastener.shcs(d, screwLength);
+screw.material = material.withDisplacement(steelMat,
+                                          thread.maleRelief(d, pitchVal, 0.0, 0.0 - screwLength));
+screw.color = thread.reliefColor(steelColor,
+                                 thread.maleRelief(d, pitchVal, 0.0, 0.0 - screwLength), pitchVal);
+
+// The plate, drilled at the thread's basic minor diameter and tapped through
+// its whole thickness.
+plate = max(box([-6.0, -6.0, 0.0], [6.0, 6.0, plateT]),
+            thread.minorDia(d, pitchVal) / 2.0 - length(p.xy));
+plate.material = material.withDisplacement(aluminumMat,
+                                          thread.femaleRelief(d, pitchVal, plateT, 0.0));
+plate.color = thread.reliefColor(aluminumColor,
+                                 thread.femaleRelief(d, pitchVal, plateT, 0.0), pitchVal);
+
+// A shorter screw for the joint, seated six millimetres above the plate so
+// the thread between its head and the plate shows.
+backedOut = 6.0;
+stub = fastener.shcs(d, 16.0);
+stub.material = material.withDisplacement(steelMat,
+                                        thread.maleRelief(d, pitchVal, 0.0, -16.0));
+stub.color = thread.reliefColor(steelColor, thread.maleRelief(d, pitchVal, 0.0, -16.0), pitchVal);
+
+looseScrew = remap(screw, [p.x + 18.0, p.y, p.z - screwLength]);
+tappedPlate = remap(plate, [p.x, p.y, p.z]);
+jointPlate = remap(plate, [p.x - 18.0, p.y, p.z]);
+jointScrew = remap(stub, [p.x - 18.0, p.y, p.z - plateT - backedOut]);
+
+return looseScrew, tappedPlate, jointPlate, jointScrew;

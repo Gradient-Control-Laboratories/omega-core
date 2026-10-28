@@ -1,0 +1,14 @@
+// Lattice unions take their combining operator too, so the junctions where
+// strut families meet can be filleted rather than left sharp.
+
+import . "builtin";
+import "lattice";
+import "lattice/beam";
+
+filleted = lattice.bcc(4, 0.3, unionRound(0.2));
+sharp = lattice.bcc(4, 0.3);
+truss = beam.isotruss(4, unionRound(0.15));
+folded = beam.reentrant(4, 0.4, unionRound(0.1));
+
+block = boxCentered(vector.zero, [8, 8, 8]);
+return intersectSharp([block, unionSharp([filleted, sharp, truss, folded])]);

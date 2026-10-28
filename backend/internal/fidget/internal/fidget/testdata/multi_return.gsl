@@ -1,0 +1,10 @@
+basis() {
+  px = p.x;
+  return px, p.y, p.z;
+}
+
+// x = acosh(basis); // ERROR: 1 builtin acosh not found for arguments
+
+bx, by, bz = basis();
+cx, cy, cz = remap(basis(), p + 7);
+return bx, cy;

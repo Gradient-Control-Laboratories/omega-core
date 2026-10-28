@@ -1,0 +1,18 @@
+// Test: inlined local variables inside a non-primary scope (helper function).
+// The helper function 'inline_helper' has a local assignment 'center' and is
+// inlined because it is called with a constant argument. The outer function
+// 'branch' is a multi-return function and thus compiled as a real WGSL helper.
+// The inlined local 'center' must be emitted in the body of 'branch'.
+
+inline_helper(pos) {
+  center = pos * [0.5, 1.0, 1.0];
+  return center;
+}
+
+branch() {
+  c = inline_helper([1.0, 2.0, 3.0]);
+  return c + p, p.y;
+}
+
+bx, by = branch();
+return length(bx) + by;

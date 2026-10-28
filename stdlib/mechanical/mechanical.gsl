@@ -1,0 +1,26 @@
+// Mechanical Library (mechanical)
+//
+// Shared base for the mechanical family. The libraries themselves live in
+// sub-packages by subject:
+//
+//   import "mechanical/catalog";   // the standard sizes, one row per size
+//   import "mechanical/thread";    // ISO 68-1 thread profiles and pitches
+//   import "mechanical/fastener";  // ISO screws, nuts, washers, dowels
+//   import "mechanical/drill";     // generalized holes as a stack of features
+//   import "mechanical/driver";    // screwdriver bits and screwdrivers
+//   import "mechanical/gears";     // involute spur and bevel gears
+//   import "mechanical/joint";     // joints: the interface between parts in one call
+//
+// They share one list of standard sizes. mechanical/catalog holds it — one row
+// per nominal diameter carrying the thread pitch and every fastener dimension
+// for that size — so a thread and the screw cut with it cannot disagree about
+// which sizes exist. Anything here that is sized by a standard thread diameter
+// reads its numbers from there.
+//
+// The convention across the family: a part is a solid and a feature that
+// receives one is a VOID SOLID, which the caller subtracts. So a screw is
+// min'd into the scene and a hole is subtracted from the part:
+//
+//   max(plate, -drill.hole([drill.chamfer(7.0, 0.5), drill.thru(6.6)], 0))
+//
+// Doc convention follows builtin/base.gsl: `///` lines are public docs.

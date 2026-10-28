@@ -1,0 +1,20 @@
+// A three-level chain: each call binds one parameter and yields a function
+// that closes over everything bound so far. The innermost call has to see
+// both radius = 0.1 and sharpness = 0.5.
+
+blend(d1, d2, k) {
+  h = max(k - abs(d1 - d2), 0) / k;
+  return min(d1, d2) - h * h * k * 0.25;
+}
+
+makeFactory(radius) {
+  return (sharpness) {
+    return (a, b) {
+      return blend(a, b, radius * sharpness);
+    };
+  };
+}
+
+makerFn = makeFactory(0.1);
+blendOp = makerFn(0.5);
+return blendOp(p.x, p.y);

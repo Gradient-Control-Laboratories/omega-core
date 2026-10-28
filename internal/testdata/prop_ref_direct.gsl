@@ -1,0 +1,4 @@
+// ERROR: variable "center" has no property "field"
+import "omega";
+center = 0;
+return center.field;

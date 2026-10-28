@@ -1,0 +1,9 @@
+// A lambda handed to a higher-order call reads a parameter of the function it
+// is written in, directly and through a local.
+apply(f, x) { return f(x); }
+grow(q, k) {
+  a = 2 * k;
+  b = apply((v) { return v * k + a; }, q);
+  return b;
+}
+return sphere(p, grow(5, 0.1 * p.z + 0.5));

@@ -1,0 +1,12 @@
+
+// One shape with a material unioned sharply with one without: the region of
+// the plain shape inherits the nearest unit's material (the fill). The second
+// return references no material at all, so gsl_materialField falls through
+// to the default record with present = 0 for it.
+ball = sphere(1);
+ball.material = material.brushedMetal;
+
+box = remap(sphere(1), p - [3, 0, 0]);
+plain = remap(sphere(1), p - [0, 3, 0]);
+
+return unionSharp([ball, box]), plain;

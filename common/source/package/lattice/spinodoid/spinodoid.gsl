@@ -1,0 +1,146 @@
+// Spinodoid Library (spinodoid)
+//
+// Spinodoid metamaterial fields after Kumar, Tan, Zheng & Kochmann,
+// "Inverse-designed spinodoid metamaterials" (npj Comput. Mater. 6:73, 2020):
+// non-periodic, bicontinuous cellular structures whose anisotropy is set by an
+// orientation distribution of wave directions — cones of half-angle theta about
+// a set of poles.
+//
+// These are hodge's Gabor spinodoid (hodge-release spinodoid.py,
+// spinodoid_gabor) exactly: the same localized wave packets, the same
+// direction distribution, the same kernel hash (see common/noise/spinodoid).
+// So a part built here is one hodge can rebuild from the same arguments, which
+// is what sending a design on to hodge or elasticam needs. Each packet reads
+// the scale and orientation drivers at its own centre and is then an honest
+// plane wave, so the wavelength and the orientation distribution can vary
+// through space without the drift that warping coordinates would cause.
+//
+// The browser previews a cheaper LATTICE form of the same field rather than
+// this one: the same model and the same density, with the kernels on a lattice
+// and their envelopes tapered, several times faster to ray-march, and a
+// different realization — the structure measures the same but individual cells
+// sit elsewhere. Meshing, export and the oracle use the field asked for here.
+// A document that wants the lattice field there too calls the
+// fastGaborSpinodoid builtin directly.
+//
+// Fields are unit-normalized like the rest of the lattice family: a
+// pseudo-distance with unit RMS gradient, negative in the solid phase. So
+// lattice.solidify(field, 0, h) is a wall of width h straddling the level set
+// (hodge's wall_thickness), and lengths are real lengths even under a graded
+// scale.
+//
+// The kernel grid is fixed in the world, at a cell size set by period and
+// packetWidth, and hodge's repeats every 32 cells. The preview's lattice goes
+// further: stationary fields repeat every 64 sites, while graded ones sample
+// actual kernel centres across the imported geometry or explicit scene size,
+// so scale and orientation do not wrap with the random realization. Headerless
+// analytical fields and outer coordinate remaps keep the legacy periodic
+// table; direct low-level query transforms use query bounds. hodge's table is
+// always the periodic one, and a graded field whose domain would not fit
+// inside it is refused rather than left to repeat.
+//
+// The short forms use hodge's kernel density, 8 kernels per cell. Pass a lower
+// impulses through the full forms to trade quality for speed; a given density
+// costs the same in hodge, so lowering it is also a change hodge has to be
+// told about.
+//
+// Doc convention follows builtin/base.gsl: `///` lines are public docs.
+
+import "lattice";
+
+// The paper's poles: the Cartesian axes, as a list of column vectors.
+cartesianPoles() {
+  return [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+}
+
+// No rotation.
+identityFrame() {
+  return [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+}
+
+/// gabor(period, theta): a stationary spinodoid of wavelength `period` with
+/// the default packet width (3) and kernel density (8). `theta` holds the cone half-angles in radians about the
+/// x, y and z axes, each 0 or between pi/12 and pi/2: [pi/2, pi/2, pi/2] is
+/// isotropic, [0, 0, pi/2] lamellar along z, [pi/6, pi/6, 0] columnar. The level set sits at the
+/// balanced interface.
+gabor(period, theta) {
+  return gaborSpinodoid(p, period, theta, cartesianPoles(), 3, 8, 4096, 0, 0.5, 1, 1, identityFrame());
+}
+
+/// gabor(period, theta, levelBias): gabor(period, theta) with the level set at
+/// quantile `levelBias` of the field, in (0, 1). As a solid network
+/// (field <= 0) that is the relative density, and the paper wants 0.3 or more
+/// for bicontinuity. A wall deposited on the level set takes its density from
+/// the cell size instead, so leave this at 0.5 there.
+gabor(period, theta, levelBias) {
+  return gaborSpinodoid(p, period, theta, cartesianPoles(), 3, 8, 4096, 0, levelBias, 1, 1, identityFrame());
+}
+
+/// gabor(period, theta, poles, packetWidth, impulses, seed, levelBias): every
+/// parameter of a stationary spinodoid. `poles` lists one cone axis per angle
+/// in `theta` (e.g. the six <110> directions reach the gyroid's star).
+/// `packetWidth` is the envelope width in wavelengths (default 3); `impulses`
+/// the kernel density, in kernels per cell of the kernel grid (default 8,
+/// hodge's impulses_per_cell; evaluation cost grows with it, and the preview
+/// shows banding at low densities); `seed` picks the realization.
+gabor(period, theta, poles, packetWidth, impulses, seed, levelBias) {
+  return gaborSpinodoid(p, period, theta, poles, packetWidth, impulses, 4096, seed, levelBias, 1, 1, identityFrame());
+}
+
+/// gaborGraded(period, theta, scale, orientation): a spinodoid whose
+/// wavelength and orientation distribution vary through space. `scale` is a
+/// field multiplying `period` (> 0; keep it below ~packetWidth/2 = 1.5, past
+/// which a packet holds under two waves); `orientation` is a 3x3 rotation field
+/// applied to the wave directions — a frame that follows the part, e.g. a
+/// build axis. Both are read once at every kernel centre.
+gaborGraded(period, theta, scale, orientation) {
+  return gaborSpinodoid(p, period, theta, cartesianPoles(), 3, 8, 4096, 0, 0.5, 1, scale, orientation);
+}
+
+/// gaborGraded(period, theta, poles, packetWidth, impulses, pool, seed,
+/// levelBias, localNormalize, scale, orientation): every parameter.
+/// `pool` is the size of the sampled direction pool (default 4096).
+/// `localNormalize` 1 divides by the wavenumber the field carries at each
+/// point, keeping lengths real under a graded scale; 0 divides by the
+/// wavenumber of `period`.
+gaborGraded(period, theta, poles, packetWidth, impulses, pool, seed, levelBias, localNormalize, scale, orientation) {
+  return gaborSpinodoid(p, period, theta, poles, packetWidth, impulses, pool, seed, levelBias, localNormalize, scale, orientation);
+}
+
+// --- the lattice field ---
+//
+// The same forms over fastGaborSpinodoid: the lattice realization in every
+// backend, not just the preview. Reach for these when nothing downstream has
+// to agree with hodge — a visual study, or a part whose lattice only has to
+// measure right — and pay several times less per evaluation in the mesher and
+// on export. The arguments mean exactly what they mean above.
+
+/// fastGabor(period, theta): gabor(period, theta) over the lattice field.
+fastGabor(period, theta) {
+  return fastGaborSpinodoid(p, period, theta, cartesianPoles(), 3, 8, 4096, 0, 0.5, 1, 1, identityFrame());
+}
+
+/// fastGabor(period, theta, levelBias): gabor(period, theta, levelBias) over
+/// the lattice field.
+fastGabor(period, theta, levelBias) {
+  return fastGaborSpinodoid(p, period, theta, cartesianPoles(), 3, 8, 4096, 0, levelBias, 1, 1, identityFrame());
+}
+
+/// fastGabor(period, theta, poles, packetWidth, impulses, seed, levelBias):
+/// every parameter of a stationary lattice spinodoid.
+fastGabor(period, theta, poles, packetWidth, impulses, seed, levelBias) {
+  return fastGaborSpinodoid(p, period, theta, poles, packetWidth, impulses, 4096, seed, levelBias, 1, 1, identityFrame());
+}
+
+/// fastGaborGraded(period, theta, scale, orientation): gaborGraded over the
+/// lattice field. Its table is sized to the part's domain, so a graded field
+/// may cover geometry of any extent.
+fastGaborGraded(period, theta, scale, orientation) {
+  return fastGaborSpinodoid(p, period, theta, cartesianPoles(), 3, 8, 4096, 0, 0.5, 1, scale, orientation);
+}
+
+/// fastGaborGraded(period, theta, poles, packetWidth, impulses, pool, seed,
+/// levelBias, localNormalize, scale, orientation): every parameter.
+fastGaborGraded(period, theta, poles, packetWidth, impulses, pool, seed, levelBias, localNormalize, scale, orientation) {
+  return fastGaborSpinodoid(p, period, theta, poles, packetWidth, impulses, pool, seed, levelBias, localNormalize, scale, orientation);
+}

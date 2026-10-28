@@ -1,0 +1,20 @@
+
+// A function with local assignments folds to a constant when called with
+// constant arguments, including through map and reduce.
+
+wave(ang) {
+  ca = cos(ang);
+  sa = sin(ang);
+  return ca * ca + 2.0 * sa;
+}
+
+// Each call folds: the locals ca and sa fold under the const angle.
+heights = map((ang) { return wave(ang); }, [0.0, 1.0, 2.0, 3.0]);
+
+// The fold chains: heights is a constant collection, so the reduce folds too.
+total = reduce(0.0, (acc, h) { return acc + h; }, heights);
+
+// A non-constant argument falls back to a regular call.
+runtime = wave(p.x);
+
+return length(p) - total * 0.1 - runtime * 0.0;

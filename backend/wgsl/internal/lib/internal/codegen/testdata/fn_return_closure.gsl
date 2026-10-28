@@ -1,0 +1,16 @@
+// A function that returns a closure over one of its parameters.
+// The captured value (radius = 0.1) is substituted at the call site of the
+// returned function, so the WGSL passes 0.1 in rather than referring to a
+// `radius` that has no binding in sdShape's scope.
+
+blend(d1, d2, k) {
+  h = max(k - abs(d1 - d2), 0) / k;
+  return min(d1, d2) - h * h * k * 0.25;
+}
+
+blendWith(radius) {
+  return (a, b) { return blend(a, b, radius); };
+}
+
+op = blendWith(0.1);
+return op(p.x, p.y);

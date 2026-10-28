@@ -1,0 +1,24 @@
+
+// Define a centered rectangular solid
+boxCentered(w, d, h) {
+    return max(
+        -w - p.x, p.x - w,
+        -d - p.y, p.y - d,
+        -h - p.z, p.z - h
+    );
+}
+
+// The spaceship operator (<=>) returns:
+//  1.0 if left > right
+//  0.0 if equal
+// -1.0 if left < right
+// This evaluates our position relative to the X-axis origin.
+direction = p.x <=> 0.0;
+
+// Calculate a vertical offset based on the direction (1.5 units up or down)
+zOffset = direction * 1.5;
+
+// Remap the shape's domain.
+// The right side (X > 0) translates UP relative to the origin.
+// The left side (X < 0) translates DOWN relative to the origin.
+return remap(() { return boxCentered(2.0, 1.0, 1.0); }(), [p.x, p.y, p.z - zOffset]);

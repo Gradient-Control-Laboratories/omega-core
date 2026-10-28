@@ -1,0 +1,34 @@
+import . "builtin";
+import other "mechanical/gears";
+import "text";
+import vector "vector";
+
+s = sphere((pi + 2))
+g = buildGears()
+t = buildText()
+
+buildGears() {
+   numTeeth = 20
+   moduleVal = 0.4
+   pressureAngle = 0.26
+   rotOffset = 0
+   thickness = 1
+   helixAngle = 0
+   standoffDiameter = 0
+   standoffHeight = 0
+   standoffChamfer = 0
+   boreDiameter = 0
+   dedendumClearance = 0.25
+   kSmall = 0.025
+   g_raw = other.gear(numTeeth, moduleVal, pressureAngle, rotOffset, thickness, helixAngle, standoffDiameter, standoffHeight, standoffChamfer, boreDiameter, dedendumClearance, kSmall)
+
+   return remap(g_raw, vector.subtractVector(p, collect(0, 0, (pi + 2.5))));
+}
+
+buildText() {
+   t2d = text.center(collect(104, 101, 108, 108, 111), collect(0, 0), 1)
+
+   return max(t2d, (abs((access(p, z) - (pi + 3.1))) - 0.1));
+}
+
+return s, g, t;

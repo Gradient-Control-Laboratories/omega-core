@@ -1,0 +1,16 @@
+// Coverage for the UGF odds-and-ends: torus, segment, shell (+bias), two-body
+// blends, Rvachev R0 booleans (omega) and rotateAxis / remapCylindrical (map).
+import map "map";
+
+t = torus(20, 5);
+seg = lineSegment([-10, 0, 0], [10, 0, 0]) - 2;
+hollow = shell(sphere(8), 1.5);
+hollowBias = shell(sphere(8), 1.5, 0.5);
+cay = twoBodyField(sphere(8), boxCentered([0, 0, 0], [12, 12, 12]));
+pol = mixAngle(sphere(8), boxCentered([0, 0, 0], [12, 12, 12]), 0.6);
+rv = intersectRvachev([sphere(8), boxCentered([0, 0, 0], [12, 12, 12])], 1.0);
+ru = unionRvachev([sphere(8), boxCentered([0, 0, 0], [12, 12, 12])], 1.0);
+rd = differenceRvachev(sphere(8), boxCentered([0, 0, 0], [12, 12, 12]), 1.0);
+spun = remap(t, map.rotateAxis(p, [0, 0, 0], [1, 1, 0], 0.5));
+cyl = remap(boxCentered([0, 0, 0], [3, 3, 3]), map.remapCylindrical(40));
+return min(min(min(t, seg), min(hollow, hollowBias)), min(min(cay, pol), min(min(rv, ru), min(rd, min(spun, cyl)))));

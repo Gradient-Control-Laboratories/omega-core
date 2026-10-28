@@ -1,0 +1,13 @@
+foo(x) {
+  return x;
+}
+
+foo(x, y) {
+  return x;
+}
+
+return foo(
+// unresolvedVar, // ERROR: 1 undefined identifier: unresolvedVar
+// unresolvedFn(1), // ERROR: 2 undefined identifier: unresolvedFn
+1
+);

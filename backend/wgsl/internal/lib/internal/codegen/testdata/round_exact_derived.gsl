@@ -1,0 +1,20 @@
+// The two-argument forms take each field's surface normal from its own
+// gradient rather than being handed them. The .dp lives inside the library
+// function, on a call made through a function-valued parameter, so each one
+// lowers to a companion specialized on the thunks it was called with.
+
+import . "builtin";
+
+// Two spheres: the derived normals are the analytic ones, so this must agree
+// with the four-argument form passed normalize(p - center).
+lens = unionRoundExact(
+  () { return sphere([0, 0, 0], 1); },
+  () { return sphere([1.2, 0, 0], 1); });
+
+// The dual, over a different pair of fields: a second specialization of the
+// same library function, which must not collapse onto the first.
+notch = intersectRoundExact(
+  () { return boxCentered([0, 0, 0], [1.6, 1.6, 1.6]); },
+  () { return sphere([0.8, 0, 0], 1); });
+
+return unionSharp([lens, remap(notch, p - [4, 0, 0])]);

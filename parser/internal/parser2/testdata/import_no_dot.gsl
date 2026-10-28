@@ -1,0 +1,45 @@
+import "foo";
+// import something; // ERROR: 11 enclosed in double quotes
+// import 'something'; // ERROR: 12 lexer: invalid input text
+// import "foo" bar; // ERROR: 13 expected 'import <optional-prefix> "<path>";'
+// import ""; // ERROR: 14 identifier cannot be empty
+// import "foo//bar"; // ERROR: 15 import path cannot contain '//'
+// import "/foo"; // ERROR: 16 import path cannot start or end with '/'
+// import "foo/."; // ERROR: 17 import path contains invalid element "."
+// import "foo/../bar"; // ERROR: 18 import path contains invalid element ".."
+// import "foo/b r"; // ERROR: 19 import path contains invalid character ' '
+// import "foo"; // ERROR: 20 Cannot import the same package more than once: foo
+
+import "some/other/thing";
+import thunk "example.com/some/goo";
+// import thing "new/other4"; // ERROR: 31 "thing" is an existing import prefix
+// import thunk "new/other4"; // ERROR: 32 "thunk" is an existing import prefix
+// import "../foo"; // ERROR: 33 import path contains invalid element ".."
+// import "/foo"; // ERROR: 34 import path cannot start or end with '/'
+// import "foo/bar.txt"; // ERROR: 35 identifier 'bar.txt' contains invalid character '.' at position 3
+// import "foo/bar.gsl"; // ERROR: 36 remove the '.gsl' suffix from the import path
+
+// import grack "example.com/some/goo"; // ERROR: 37 Cannot import the same package more than once: example.com/some/goo
+// import foo "example.com/some/goo"; // ERROR: 38 Cannot import the same package more than once: example.com/some/goo
+// import "example.com/another/thing"; // ERROR: 39 "thing" is an existing import prefix
+
+a = foo.bar;
+b = foo.baz(2);
+
+// import = 7; // ERROR: 41 reserved word
+// e3 = grack.bar(1, 2);
+
+c = thing.bar;
+d = thing.baz(2);
+
+// thunk = c;             // ERROR: 52 "thunk" is an existing import prefix
+// thunk(s) { return s; } // ERROR: 53 "thunk" is an existing import prefix
+
+e = thunk.something;
+f = thunk.else;
+
+// These should be allowed because there is atleast one dot import
+
+// Not allowed when dot imports are not used
+
+return a, b;

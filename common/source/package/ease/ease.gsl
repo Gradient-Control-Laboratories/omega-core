@@ -1,0 +1,99 @@
+/// Interpolate value from [inMin, inMax] to [outMin, outMax] through an easing
+/// curve. Like ramp() but the interior of the range is shaped by easeFn rather
+/// than being linear. Pass any of the curve functions below (or a user-defined
+/// one with the same (t)-in-[0,1] signature) as the easeFn argument, e.g.
+/// ease.interp(v, 0, 1, a, b, ease.quadratic).
+interp(value, inMin, inMax, outMin, outMax, easeFn) {
+  t = clamp((value - inMin) / (inMax - inMin), 0, 1);
+  s = easeFn(t);
+  return outMin + (outMax - outMin) * s;
+}
+
+/// Mix between a and b by an eased parameter t: a at t = 0, b at t = 1, with the
+/// blend shaped by easeFn instead of being linear — the eased counterpart of
+/// the library mix(). Like it, t outside [0, 1] extrapolates per the curve.
+/// e.g. ease.mix(a, b, t, ease.cubic).
+mix(a, b, t, easeFn) {
+  return a + (b - a) * easeFn(t);
+}
+
+// Easing curves: shaping functions f(t) over t in [0, 1] that map 0 -> 0 and
+// 1 -> 1 with various acceleration profiles, plus interp() and mix() to run one
+// across a value range. Self-contained (no imports). Use qualified, e.g.
+// ease.quadratic(t) or ease.interp(v, 0, 10, a, b, ease.cubic).
+
+/// Linear (identity) easing: f(t) = t. The no-op curve — pass to interp()
+/// for a straight linear remap, or as a neutral default.
+linear(t) {
+  return t;
+}
+
+/// Smooth quadratic S-curve from 0 to 1 (smoothstep). Symmetric.
+quadratic(t) {
+  return t * t * (3 - 2 * t);
+}
+
+/// Quadratic ease-in. Accelerates from 0.
+inQuadratic(t) {
+  return t * t;
+}
+
+/// Quadratic ease-out. Decelerates into 1.
+outQuadratic(t) {
+  return 1 - inQuadratic(1 - t);
+}
+
+/// Smoother cubic S-curve from 0 to 1 (smootherstep). Symmetric, with flatter
+/// transitions at 0 and 1 than quadratic.
+cubic(t) {
+  return t * t * t * (t * (t * 6 - 15) + 10);
+}
+
+/// Cubic ease-in. Steeper acceleration than inQuadratic.
+inCubic(t) {
+  return t * t * t;
+}
+
+/// Cubic ease-out. Steeper deceleration than outQuadratic.
+outCubic(t) {
+  return 1 - inCubic(1 - t);
+}
+
+/// Exponential S-curve. Long flat regions near 0 and 1 with a rapid
+/// transition through the middle.
+exponential(t) {
+  lo = (t <= 0) ? 0 : exp2(20 * t - 10) * 0.5;
+  hi = (t >= 1) ? 1 : 1 - exp2(-20 * t + 10) * 0.5;
+  return (t < 0.5) ? lo : hi;
+}
+
+/// Exponential ease-in. Very slow start, very fast finish.
+inExponential(t) {
+  return (t <= 0) ? 0 : exp2(10 * t - 10);
+}
+
+/// Exponential ease-out. Very fast start, very slow finish.
+outExponential(t) {
+  return 1 - inExponential(1 - t);
+}
+
+/// Circular S-curve. Sharper transition than quadratic with a similar
+/// overall shape.
+circular(t) {
+  a = 2 * t;
+  b = -2 * t + 2;
+  lo = (1 - sqrt(max(0, 1 - a * a))) * 0.5;
+  hi = (sqrt(max(0, 1 - b * b)) + 1) * 0.5;
+  return (t < 0.5) ? lo : hi;
+}
+
+/// Circular ease-in. Tangent to a vertical at t = 0, approaches 1
+/// sharply at t = 1.
+inCircular(t) {
+  return 1 - sqrt(max(0, 1 - t * t));
+}
+
+/// Circular ease-out. Mirror of inCircular.
+outCircular(t) {
+  return 1 - inCircular(1 - t);
+}

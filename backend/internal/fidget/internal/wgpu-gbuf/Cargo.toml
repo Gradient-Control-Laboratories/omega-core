@@ -1,0 +1,19 @@
+[package]
+name = "wgpu-gbuf"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# An omega tape as a G-buffer, on fidget-wgpu: which return each pixel hit,
+# its depth and normal, its colour and material fields evaluated there, and
+# SSAO occlusion. Shared by wgpu-render (native) and wgpu-web (the browser),
+# each of which builds it in its own workspace.
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+fidget-core = { path = "../../vendor/fidget-core" }
+fidget-raster = { path = "../../vendor/fidget-raster" }
+fidget-wgpu = { path = "../../vendor/fidget-wgpu" }
+tape-core = { path = "../tape-core" }

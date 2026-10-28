@@ -1,0 +1,22 @@
+// Exercises the SDF transform helpers: map the world point into a shape's
+// local frame with the homogeneous-affine inverse, evaluate the shape there
+// with remap, and correct the distance by the conservative Lipschitz factor.
+
+// A unit sphere centered at the origin, evaluated at the global point p.
+unitSphere() {
+  return length(p) - 1;
+}
+
+// World transform: scale up 2x, then translate. Non-uniform-safe path uses
+// the smallest axis scale as the conservative factor.
+xf = matrix.multiply(matrix.translation([3, 0, 0]), matrix.scaling([2, 2, 2]));
+inv = matrix.inverse(xf);
+
+// Sample point mapped into local space, and a transformed ray direction.
+local = vector.multiplyPoint(inv, p);
+dir = vector.multiplyVector(xf, [0, 0, 1]);
+
+// Transformed SDF with the Lipschitz distance correction.
+d = remap(unitSphere(), local) * matrix.minScale(xf);
+
+return d + dir[0] * 0;

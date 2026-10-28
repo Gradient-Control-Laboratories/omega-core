@@ -1,0 +1,153 @@
+
+
+// --- Helper Functions ---
+
+// Defines a box centered at the origin with size b (half-extents).
+box(b) {
+    q = abs(p) - b;
+    return length(max(q, 0)) + min(max(q.x, q.y, q.z), 0.0);
+}
+
+// Defines a cylinder oriented along the Y-axis.
+// r is radius, h is half-height.
+cylinderY(r, h) {
+    d = p.xz;
+    return max(length(d) - r, abs(p.y) - h);
+}
+
+// Defines a heatsink with fins running parallel to the X-axis.
+// b: half-extents of the heatsink volume.
+heatsink(b) {
+    fin_spacing = 0.15; // Distance between the center of fins
+    fin_thickness = 0.02; // Half-thickness of a single fin
+
+    // Create an infinite series of fins (slabs) along the Z-axis.
+    // First, create a repeating coordinate space for Z.
+    p_z_rep = mod(p.z + fin_spacing * 0.5, fin_spacing) - fin_spacing * 0.5;
+    // Then calculate the distance to these infinite slabs.
+    d_fins = abs(p_z_rep) - fin_thickness;
+
+    // Get the distance to the main bounding box of the heatsink.
+    d_bounds = box(b);
+
+    // The final shape is the intersection (max) of the bounding box and the fins.
+    return max(d_bounds, d_fins);
+}
+
+
+// Defines a complete fan assembly (hub and blades) centered at the origin.
+// The fan is oriented to spin in the XZ plane.
+fan_assembly() {
+    // Scale factor to make the fan 20% smaller.
+    fan_scale = 0.8;
+
+    // Central hub of the fan.
+    hub = cylinderY(0.3 * fan_scale, 0.2 * fan_scale);
+
+    // This helper function creates a single, thin box-shaped blade,
+    // rotated around the Y-axis by the given angle.
+    rotated_blade(angle) {
+        c = cos(angle);
+        s = sin(angle);
+
+        // Rotate the current point 'p' around the Y-axis.
+        p_rot_x = p.x * c + p.z * s;
+        p_rot_z = -p.x * s + p.z * c;
+
+        // Define the blade's distance from the center.
+        blade_offset = [0.7 * fan_scale, 0, 0];
+
+        // Create the remapped point for the blade SDF.
+        // We use the rotated point and translate it outwards along its new X-axis.
+        p_remapped = [p_rot_x, p.y, p_rot_z] - blade_offset;
+
+        // Define a parameter-less function that returns the SDF for a static blade.
+        // This resolves a parser issue by wrapping the box SDF call.
+        static_blade() {
+            blade_size = [0.8 * fan_scale, 0.1 * fan_scale, 0.15 * fan_scale];
+            return box(blade_size);
+        }
+
+        // Return the distance to the blade by remapping the static blade SDF.
+        return remap(static_blade(), p_remapped);
+    }
+
+    // Create 7 fan blades, evenly spaced.
+    b1 = rotated_blade(radians(0.0));
+    b2 = rotated_blade(radians(51.4));
+    b3 = rotated_blade(radians(102.8));
+    b4 = rotated_blade(radians(154.2));
+    b5 = rotated_blade(radians(205.6));
+    b6 = rotated_blade(radians(257.0));
+    b7 = rotated_blade(radians(308.4));
+
+    // Union all the blades together.
+    blades = min(b1, b2, b3, b4, b5, b6, b7);
+
+    // Union the hub and the blades to form the final fan.
+    return min(hub, blades);
+}
+
+
+// --- Main Scene Construction ---
+
+// 1. Main Printed Circuit Board (PCB)
+// This is a long, flat board that forms the base of the card.
+pcb_size = [4.0, 0.1, 1.5]; // X: length, Y: thickness, Z: width
+pcb = box(pcb_size);
+
+// 2. Fan Shroud / Heatsink (the housing on top)
+// This sits on top of the PCB and is now a heatsink.
+shroud_size = [3.5, 0.75, 1.4];
+shroud_y_offset = pcb_size.y + shroud_size.y;
+shroud_pos = [0, shroud_y_offset, 0];
+// Replace box() with heatsink() to generate fins.
+shroud = remap(heatsink(shroud_size), p - shroud_pos);
+
+// 3. Fan Cutouts (holes in the shroud)
+// These are two large cylinders that will be subtracted from the shroud.
+fan_hole_radius = 1.2;
+fan_hole_height = 0.8; // Slightly larger than shroud half-height for a clean cut
+fan_x_offset = 1.7;
+
+fan1_hole_pos = [-fan_x_offset, shroud_y_offset, 0];
+fan2_hole_pos = [fan_x_offset, shroud_y_offset, 0];
+
+fan1_hole = remap(cylinderY(fan_hole_radius, fan_hole_height), p - fan1_hole_pos);
+fan2_hole = remap(cylinderY(fan_hole_radius, fan_hole_height), p - fan2_hole_pos);
+holes = min(fan1_hole, fan2_hole);
+
+// Subtract the holes from the shroud using max(shape, -hole).
+shroud_with_holes = max(shroud, -holes);
+
+// 4. Fan Assemblies
+// Place two instances of the fan assembly into the cutouts.
+fan1 = remap(fan_assembly(), p - fan1_hole_pos);
+fan2 = remap(fan_assembly(), p - fan2_hole_pos);
+all_fans = min(fan1, fan2);
+
+// 5. GPU Processor (on the "back" of the PCB)
+// A main square chip representing the GPU.
+gpu_size = [0.8, 0.15, 0.8];
+gpu_y_offset = -pcb_size.y - gpu_size.y;
+gpu_pos = [0, gpu_y_offset, 0];
+gpu_chip = remap(box(gpu_size), p - gpu_pos);
+
+// 6. I/O Bracket
+// The metal plate at the end of the card.
+io_bracket_size = [0.1, 0.8, 1.4];
+io_bracket_x_offset = -pcb_size.x - io_bracket_size.x;
+io_bracket_pos = [io_bracket_x_offset, io_bracket_size.y, 0];
+io_bracket = remap(box(io_bracket_size), p - io_bracket_pos);
+
+
+// --- Final Combination ---
+
+// Union all the components together into a single shape using min().
+return
+    pcb,
+    shroud_with_holes,
+    all_fans,
+    gpu_chip,
+    io_bracket
+;

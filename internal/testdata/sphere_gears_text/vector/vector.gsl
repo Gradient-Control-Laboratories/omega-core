@@ -1,0 +1,21 @@
+import . "builtin";
+
+zero = collect(0, 0, 0)
+dirX = collect(1, 0, 0)
+dirZ = collect(0, 0, 1)
+
+subtractVector(a, b) {
+   gsl_anon(x, i) {
+      return (x - index(b, i));
+   }
+
+   return map(gsl_anon, a);
+}
+
+multiplyScalar(v, s) {
+   gsl_anon(x) {
+      return (x * s);
+   }
+
+   return map(gsl_anon, v);
+}

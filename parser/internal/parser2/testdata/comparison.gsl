@@ -1,0 +1,10 @@
+a = 7;
+b = 10;
+b1 = a < b;
+b2 = a <= b;
+b3 = a == b;
+b4 = a != b;
+b5 = a >= b;
+b6 = a > b;
+
+return b6;

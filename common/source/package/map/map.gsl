@@ -1,0 +1,244 @@
+
+// Map Library (map)
+//
+// Domain transforms — functions that map points and directions through space.
+// These pair with `remap`, GSL's domain-remapping primitive: to evaluate a
+// shape under a transform you sample it at the mapped point.
+//
+// The package name reuses the word `map`. That is intentional and unambiguous:
+// `map(fn, list)` is the iteration primitive (bare, in call position) while
+// `map.rotateXY(...)` is a package-qualified call. The parser keys the
+// primitive check off the member name, not the prefix, so the two never
+// collide. Call qualified: `map.rotateXY(v, ang)`.
+//
+// Uses builtin's shared constants (tau, pi) rather than redefining them.
+// builtin is implicitly dot-imported into every file, so nothing declares it.
+//
+// Doc convention follows builtin/base.gsl: `///` lines are public docs.
+
+/// Polar repeat in the XY plane: returns a remapped p so any shape
+/// evaluated against it is replicated `count` times around the Z axis.
+/// Use as the second argument to remap().
+patternPolarXY(count) {
+  wedge = tau / count;
+  halfWedge = wedge * 0.5;
+  ang = atan(p.y, p.x);
+  rad = length(p.xy);
+  angmod = (ang + halfWedge) % wedge - halfWedge;
+  return [rad * cos(angmod), rad * sin(angmod), p.z];
+}
+
+/// triangleWave(x, period) folds x into [-period/2, period/2] as a triangle
+/// wave: it equals x near 0, rises to +period/2, then mirrors back — continuous
+/// everywhere, unlike a modulo sawtooth which jumps. The full (mirror) period
+/// is 2 * period; zeros recur every `period`.
+triangleWave(x, period) {
+  half = period * 0.5;
+  twoPeriod = period * 2;
+  // Positive modulo into [0, 2*period), then fold to a centered triangle.
+  u = ((x + half) % twoPeriod + twoPeriod) % twoPeriod;
+  return half - abs(u - period);
+}
+
+/// repeatCentered(x, period) folds x into [-period/2, period/2] with a modulo
+/// sawtooth: every cell is an *identical* translated copy (unlike triangleWave,
+/// which mirrors alternate cells). The field jumps at each cell boundary, so
+/// use it to tile a self-contained cell, not to fold a single asymmetric shape.
+/// repeatCentered also works component-wise on vectors: pass a vec2/vec3 `x` and
+/// matching `period` (no zero component) to fold every axis at once.
+repeatCentered(x, period) {
+  half = period * 0.5;
+  return ((x + half) % period + period) % period - half;
+}
+
+/// Rectangular (grid) repeat in the XY plane: returns a remapped p so any shape
+/// at the origin tiles across a `cell` = [width, height] grid (pass [s, s] for
+/// a square). Built from triangleWave, so adjacent tiles are mirror images and
+/// the remapped field stays continuous (no modulo seam). z passes through. Use
+/// as the second argument to remap().
+patternRectangularXY(cell) {
+  return [triangleWave(p.x, cell.x), triangleWave(p.y, cell.y), p.z];
+}
+
+/// 3D translational repeat: returns a remapped p so any shape at the cell center
+/// tiles across a vec3 `size` grid by identical (non-mirrored) copies. Built from
+/// repeatCentered per axis, so each cell is a translated duplicate with a seam at
+/// the boundary — fold a self-contained cell, not an asymmetric motif. Use as the
+/// second argument to remap().
+patternRepeat(size) {
+  return repeatCentered(p, size);
+}
+
+/// 3D mirror repeat: like patternRepeat but reflects each cell into its positive
+/// octant (abs of the centered fold), so a motif defined in one octant is mirrored
+/// across the three cell-center planes. This is the symmetry behind the cubic beam
+/// lattices: one representative strut, mirrored, fills the cell. Use with remap().
+patternRepeatMirror(size) {
+  return abs(repeatCentered(p, size));
+}
+
+/// 2D translational repeat in the XY plane: tiles by identical copies across a
+/// vec2-ish `size` grid (size.x, size.y), with z passing through unchanged. The
+/// modulo sibling of patternRectangularXY (which mirror-tiles). Use to grid a
+/// column or other z-extruded motif. Use with remap().
+patternRepeatXY(size) {
+  fold = repeatCentered(p.xy, size.xy);
+  return [fold.x, fold.y, p.z];
+}
+
+/// Triangular point lattice in the XY plane: returns a remapped p giving the
+/// offset to the nearest point of a 6-neighbor close-packed lattice with
+/// nearest-neighbor distance `spacing`. Built from two interleaved rectangular
+/// sublattices (cell [spacing, spacing*sqrt3]); z passes through. The resulting
+/// distance field is continuous across cell boundaries — use it with remap() for
+/// a radially-symmetric motif (e.g. a column) to tile it triangularly.
+patternTriangularXY(spacing) {
+  cell = [spacing, spacing * sqrt3];
+  a = repeatCentered(p.xy, cell);
+  b = repeatCentered(p.xy - cell * 0.5, cell);
+  near = dot(a, a) < dot(b, b) ? a : b;
+  return [near.x, near.y, p.z];
+}
+
+/// Hexagonal (honeycomb) point lattice in the XY plane: returns a remapped p
+/// giving the offset to the nearest vertex of a 3-neighbor honeycomb with bond
+/// length `spacing`. Built from the four-atom rectangular cell
+/// [spacing*sqrt3, spacing*3]; z passes through. Continuous across boundaries —
+/// use with remap() for a radially-symmetric motif to tile it hexagonally.
+patternHexagonalXY(spacing) {
+  cell = [spacing * sqrt3, spacing * 3];
+  half = cell * 0.5;
+  o0 = repeatCentered(p.xy, cell);
+  o1 = repeatCentered(p.xy - [0, spacing], cell);
+  o2 = repeatCentered(p.xy - [half.x, spacing * 1.5], cell);
+  o3 = repeatCentered(p.xy - [half.x, spacing * 2.5], cell);
+  n01 = dot(o0, o0) < dot(o1, o1) ? o0 : o1;
+  n23 = dot(o2, o2) < dot(o3, o3) ? o2 : o3;
+  near = dot(n01, n01) < dot(n23, n23) ? n01 : n23;
+  return [near.x, near.y, p.z];
+}
+
+/// triangleDistance(x, period) is the unit-gradient distance to the nearest of
+/// a set of parallel planes spaced `period` apart (at x = 0, ±period, ...).
+/// abs of triangleWave; range [0, period/2]. The building block for grid and
+/// honeycomb lattice fields. Shift x by period/2 to phase the planes onto cell
+/// centers instead of boundaries.
+triangleDistance(x, period) {
+  return abs(triangleWave(x, period));
+}
+
+/// triangleWaveEvenPositive(x, period): the unit-gradient triangle-wave distance
+/// whose zeros land on cell *boundaries* (x = 0, +/-period, ...) and whose peak
+/// (period/2) is at the cell center. Identical to triangleDistance — the named
+/// form documents the phase. "Even" follows the GCL stdlib convention; note this
+/// is the OPPOSITE phase from the lattice package's legacy `planesEven` (which
+/// is center-phased, i.e. the Odd family here). Range [0, period/2].
+triangleWaveEvenPositive(x, period) {
+  return triangleDistance(x, period);
+}
+
+/// triangleWaveOddPositive(x, period): triangle-wave distance phased a half cell
+/// over from Even, so its zeros land on cell *centers* (x = +/-period/2, ...).
+/// Equivalent to the lattice package's legacy `planesEven`. Range [0, period/2].
+triangleWaveOddPositive(x, period) {
+  return triangleDistance(x - period * 0.5, period);
+}
+
+/// Checkerboard parity on a 3D grid of cell size `cellSize`: +1 or -1 by
+/// whether the cell's (x+y+z) integer-coordinate sum is even or odd. Signed,
+/// so it works directly as a GSL boolean (`map.checker(2) ? colorA : colorB`)
+/// per the "<=0 is false" convention — no threshold/mask needed for a sharp
+/// 2-way board.
+checker(cellSize) {
+  ix = floor(p.x / cellSize);
+  iy = floor(p.y / cellSize);
+  iz = floor(p.z / cellSize);
+  s = ((ix + iy + iz) % 2 + 2) % 2;
+  return 1 - 2 * s;
+}
+
+/// Checkerboard parity in the XY plane only (z passes through unaffected) —
+/// the planar sibling of checker, for a board pattern that doesn't repeat
+/// along Z.
+checkerXY(cellSize) {
+  ix = floor(p.x / cellSize);
+  iy = floor(p.y / cellSize);
+  s = ((ix + iy) % 2 + 2) % 2;
+  return 1 - 2 * s;
+}
+
+/// Rotate 3D vector v by `ang` radians around the Z axis (XY plane
+/// rotation). v.z passes through unchanged.
+rotateXY(v, ang) {
+  ca = cos(ang);
+  sa = sin(ang);
+  return [v.x * ca + v.y * sa, -v.x * sa + v.y * ca, v.z];
+}
+
+rotateYZ(v, ang) {
+  ca = cos(ang);
+  sa = sin(ang);
+  return [v.x, v.y * ca + v.z * sa, -v.y * sa + v.z * ca];
+}
+
+rotateZX(v, ang) {
+  ca = cos(ang);
+  sa = sin(ang);
+  return [v.x * ca - v.z * sa, v.y, v.z * ca + v.x * sa];
+}
+
+eulerAngles(v, angles) {
+  return rotateXY(rotateZX(rotateYZ(v, angles.x), angles.y), angles.z);
+}
+
+/// Rotate vector `v` by `angle` radians about the line through `axisOrigin` with
+/// direction `axisDir` (Rodrigues' formula). `axisDir` need not be normalized.
+/// The arbitrary-axis counterpart to rotateXY / rotateYZ / rotateZX.
+rotateAxis(v, axisOrigin, axisDir, angle) {
+  kn = normalize(axisDir);
+  rel = v - axisOrigin;
+  ca = cos(angle);
+  sa = sin(angle);
+  return axisOrigin + rel * ca + cross(kn, rel) * sa + kn * dot(kn, rel) * (1 - ca);
+}
+
+/// Wrap a flat XY pattern around a Z cylinder: returns a remapped point where
+/// x' = radial distance from the Z axis, y' = arc length around Z scaled so a
+/// full turn spans `circumference`, z' = z. Use with remap() to bend a planar
+/// field onto a cylinder.
+remapCylindrical(circumference) {
+  radial = length(p.xy);
+  theta = atan(p.y, p.x);
+  return [radial, theta * circumference / tau, p.z];
+}
+
+/// The remap coordinate that puts a +Z-datum shape at `point` with its datum
+/// axis aligned to `axis` — for a hole, the direction the drill enters, which
+/// is the outward normal of the face it goes into. Pass it to remap:
+///
+///   remap(drill.hole([drill.thru(6.6)], 0), map.axisAt(faceCenter, faceNormal))
+///
+/// It takes a DIRECTION, where rotateAxis and matrix.rotation take an axis AND
+/// an angle. Nothing else here aligns a datum to a direction, which is the
+/// usual thing to want when placing a feature on a face whose normal you
+/// already have.
+///
+/// Well conditioned at every axis, -Z included. The rotation ABOUT the axis is
+/// not continuous across the equator, which is invisible for a round hole and
+/// visible for a keyway, a D-flat or a slot: orient those by their own angle,
+/// or place them on faces whose normals stay on one side.
+axisAt(point, axis) {
+  n = normalize(axis);
+  // sign(n.z), counting 0 as +1, so s + n.z is never 0 and the basis below is
+  // finite for every axis. Duff et al., "Building an Orthonormal Basis,
+  // Revisited" — branchless, and exact rather than a shortest-arc rotation
+  // that blows up opposite its datum.
+  sz = sign(n.z);
+  s = sz + (1.0 - abs(sz));
+  a = -1.0 / (s + n.z);
+  b = n.x * n.y * a;
+  t1 = [1.0 + s * n.x * n.x * a, s * b, neg(s * n.x)];
+  t2 = [b, s + n.y * n.y * a, neg(n.y)];
+  d = p - point;
+  return [dot(d, t1), dot(d, t2), dot(d, n)];
+}

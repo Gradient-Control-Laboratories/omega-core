@@ -1,0 +1,80 @@
+Expected:
+  files:
+    - assignments:
+        - expression:
+            value: 0
+          variables:
+            - name: a
+        - expression:
+            value: 1
+          variables:
+            - name: b
+        - expression:
+            value: 2
+          variables:
+            - name: c
+        - expression:
+            value: 3
+          variables:
+            - name: d
+        - expression:
+            value: 4
+          variables:
+            - name: e
+        - expression:
+            expression:
+              operands:
+                - reference:
+                    name: a
+              operation: NOT
+          variables:
+            - name: b1
+        - expression:
+            expression:
+              operands:
+                - reference:
+                    name: a
+                - reference:
+                    name: b
+              operation: AND
+          variables:
+            - name: b2
+        - expression:
+            expression:
+              operands:
+                - reference:
+                    name: a
+                - reference:
+                    name: b
+              operation: OR
+          variables:
+            - name: b3
+        - expression:
+            expression:
+              operands:
+                - expression:
+                    operands:
+                      - reference:
+                          name: a
+                      - expression:
+                          operands:
+                            - reference:
+                                name: b
+                            - reference:
+                                name: c
+                          operation: OR
+                      - reference:
+                          name: d
+                    operation: AND
+                - expression:
+                    operands:
+                      - reference:
+                          name: e
+                    operation: NOT
+              operation: OR
+          variables:
+            - name: b4
+      returns:
+        - reference:
+            name: b4
+Source: ""

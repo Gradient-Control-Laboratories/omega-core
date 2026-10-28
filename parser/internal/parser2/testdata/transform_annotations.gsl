@@ -1,0 +1,25 @@
+// @transform fn1() { return 1; }          // ERROR: 1 @transform annotation can only be applied to variable assignments
+// fn3(@transform(1) t) { return t; }      // ERROR: 3 @transform annotation does not take arguments
+// @transform(1) errDecl = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]; // ERROR: 4 @transform annotation does not take arguments
+// errInline = @transform(1, 2) [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]; // ERROR: 5 @transform annotation does not take arguments
+
+@transform
+identity = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0];
+
+@transform
+offsetMat = [1.0, 0.0, 0.0, 5.0, 0.0, 1.0, 0.0, 2.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0];
+
+@transform
+nestedMat = [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]];
+
+inlineMat = @transform [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0];
+
+applyTransform(m) {
+    return m[0];
+}
+
+callMat = applyTransform(@transform [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]);
+
+row = nestedMat[0];
+
+return identity[0] + offsetMat[3] + row[0] + inlineMat[0] + callMat[0];

@@ -1,0 +1,8 @@
+import "somePrefix";
+
+foo = 8;
+qual = somePrefix.someName;
+someArray = [3.1, foo, 2.7];
+swizzel = someArray.zyx;
+
+return swizzel;

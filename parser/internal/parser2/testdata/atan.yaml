@@ -1,0 +1,27 @@
+Expected:
+  files:
+    - assignments:
+        - expression:
+            expression:
+              operands:
+                - value: 1
+              operation: ATAN
+          variables:
+            - name: a
+        - expression:
+            expression:
+              operands:
+                - value: 1
+                - value: 2
+              operation: ATAN2
+          variables:
+            - name: b
+      returns:
+        - expression:
+            operands:
+              - reference:
+                  name: a
+              - reference:
+                  name: b
+            operation: ADD
+Source: ""

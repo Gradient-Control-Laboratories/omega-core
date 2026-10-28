@@ -1,0 +1,22 @@
+// Scene Size: 100
+
+// Debug scene: glitter, checkerboard, cellSkin alone, three balls, small
+// scene — isolates cellularF1F2 (glitter), map.checkerXY (checkerboard),
+// and noise.cellularEdgesZBlend (cellSkin, the newest Worley-family
+// primitive added this session) from everything else.
+
+glitterMat, glitterColor = playful.glitter(material.polishedMetal, color.black, 1.0, color.white, 0.25);
+glitterBall = transform.translate(sphere(25), [-50, 0, 0]);
+glitterBall.material = glitterMat;
+glitterBall.color = glitterColor;
+
+checkerBall = transform.translate(sphere(25), [0, 0, 0]);
+checkerBall.material = material.matte;
+checkerBall.color = playful.checkerboard(10, color.white, color.black);
+
+skinColor = playful.cellSkin(5, 2.5, color.teal, color.white);
+skinBall = transform.translate(sphere(25), [50, 0, 0]);
+skinBall.material = material.matte;
+skinBall.color = skinColor;
+
+return glitterBall, checkerBall, skinBall;

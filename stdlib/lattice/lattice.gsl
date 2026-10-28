@@ -1,0 +1,85 @@
+
+// Lattice Library (lattice)
+//
+// Shared base for the lattice family. The lattices themselves now live in
+// sub-packages by type:
+//
+//   import "lattice/beam";       // 3D strut lattices (octet, fcc, kelvin, ...)
+//   import "lattice/honeycomb";  // 2D cell walls (square, hex, triangular, ...)
+//   import "lattice/foam";       // 3D plate/wall lattices (cubic, bcc, fcc)
+//   import "lattice/tpms";       // triply periodic minimal surfaces
+//
+// All of those return *infinitely thin* fields — the unsigned distance to the
+// strut/wall skeleton. This package holds the thicken() utility that gives them
+// width, plus the legacy bcc() (kept for substitution by the new
+// lattice/beam.bcc and lattice/foam.bcc).
+//
+// Doc convention follows builtin/base.gsl: `///` lines are public docs.
+
+// --- solidification ---
+
+// Every lattice field in this library is unit-normalized: a unit-gradient
+// distance field whose value is the (real-length) distance to the lattice's zero
+// surface. That makes one solidify() utility work across all families, with
+// `bias` and `thickness` in the model's length units.
+
+/// solidify(field, bias): grow a unit-normalized lattice field into a solid by
+/// offsetting its zero level set outward by `bias` (a length, or a field for
+/// graded thickness). The beam / honeycomb / foam lattices start with NO
+/// thickness — their skeleton sits at field = 0 — so a positive `bias` is what
+/// gives the struts/walls their half-width. TPMS surfaces instead start at ~50%
+/// volume (the signed field is already negative inside), so bias = 0 is already
+/// solid and `bias` merely shifts the volume fraction.
+solidify(field, bias) {
+  return field - bias;
+}
+
+/// solidify(field, bias, thickness): a shell/wall of the given `thickness`
+/// straddling the biased level set (|field - bias| <= thickness/2). For a thin
+/// lattice this turns the struts into hollow tubes; for a TPMS it carves a sheet
+/// of that thickness following the surface.
+solidify(field, bias, thickness) {
+  return abs(field - bias) - thickness * 0.5;
+}
+
+// --- legacy ---
+
+/// Body-centered-cubic beam lattice: an infinite 3D lattice of cubes of size
+/// `cellSize` with diagonal beams of the given radius connecting each cube
+/// center to its eight corners. Useful for printable space-filling support
+/// structures. (Legacy; the new GCL-derived lattice/beam.bcc supersedes this for
+/// later substitution.)
+bcc(cellSize, beamRadius, combine) {
+  half = cellSize * 0.5;
+  q = [
+    ((p.x + half) % cellSize + cellSize) % cellSize - half,
+    ((p.y + half) % cellSize + cellSize) % cellSize - half,
+    ((p.z + half) % cellSize + cellSize) % cellSize - half
+  ];
+
+  d1 = normalize(vector.dirX + vector.dirY + vector.dirZ);
+  d2 = normalize(-vector.dirX + vector.dirY + vector.dirZ);
+  d3 = normalize(vector.dirX - vector.dirY + vector.dirZ);
+  d4 = normalize(vector.dirX + vector.dirY - vector.dirZ);
+
+  diagHalf = cellSize * sqrt3 * 0.5;
+
+  t1 = clamp(dot(q, d1), -diagHalf, diagHalf);
+  t2 = clamp(dot(q, d2), -diagHalf, diagHalf);
+  t3 = clamp(dot(q, d3), -diagHalf, diagHalf);
+  t4 = clamp(dot(q, d4), -diagHalf, diagHalf);
+
+  b1 = length(q - d1 * t1) - beamRadius;
+  b2 = length(q - d2 * t2) - beamRadius;
+  b3 = length(q - d3 * t3) - beamRadius;
+  b4 = length(q - d4 * t4) - beamRadius;
+
+  return combine([b1, b2, b3, b4]);
+}
+
+/// Body-centered-cubic beam lattice with the four diagonal beams unioned
+/// sharply. Pass a blend to `bcc(cellSize, beamRadius, combine)` to fillet the
+/// junction where they meet at the cell center.
+bcc(cellSize, beamRadius) {
+  return bcc(cellSize, beamRadius, unionSharp);
+}

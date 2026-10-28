@@ -1,0 +1,10 @@
+
+a = atan(1);
+b = atan(1, 2);
+
+// x = atan();            // ERROR: 1 expected between 1 and 2 arguments, got 0
+// x = atan(1, 2, 3);     // ERROR: 2 expected between 1 and 2 arguments, got 3
+// x = atan2(1, 2);       // ERROR: 3 reserved word
+
+return a + b;
+

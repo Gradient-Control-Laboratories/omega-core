@@ -1,0 +1,15 @@
+// A closure bound to a name and then passed as an argument. The captured
+// value has to be followed through the binding — the argument is a reference
+// to `op`, not the call that produced it — and the same closure used twice
+// shares one specialization.
+
+scaleBy(k) {
+  return (a) { return a * k; };
+}
+
+apply(x, f) {
+  return f(f(x));
+}
+
+op = scaleBy(0.5);
+return apply(p.x, op) + apply(p.y, op);

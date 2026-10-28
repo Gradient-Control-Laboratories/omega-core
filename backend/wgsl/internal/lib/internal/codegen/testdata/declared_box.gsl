@@ -1,0 +1,11 @@
+// name.box = [lo, hi] crops the declaration to its box, grown by boxPad.
+ring(r) {
+  s = remap(torus(r, 0.25), [p.y, p.x, p.z]);
+  s.box = [[-r - 0.25, -r - 0.25, -0.25], [r + 0.25, r + 0.25, 0.25]];
+  return s;
+}
+ball = sphere(1);
+ball.box = [[-0.5, -1, -1], [1, 1, 1]];
+big = ring(3);
+hull = box(big.box[0], big.box[1]);
+return ball, big, hull;

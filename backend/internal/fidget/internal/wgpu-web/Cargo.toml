@@ -1,0 +1,45 @@
+[package]
+name = "fidget-wgpu-web"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# fidget's all-GPU pipeline in the browser: replays an omega tape and renders
+# it with fidget-wgpu's voxel pass and shading effects on the page's WebGPU
+# (tool/build-fidget: wasm32 + wasm-bindgen, into
+# common/web/vendor/fidget-wgpu). Unlike ../wasm, which the page instantiates
+# with no imports, this one needs wasm-bindgen's glue: wgpu reaches WebGPU
+# through web-sys.
+#
+# Its own workspace and Cargo.lock, like ../wasm and ../wgpu-render.
+
+[workspace]
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+fidget-core = { path = "../../vendor/fidget-core" }
+fidget-raster = { path = "../../vendor/fidget-raster" }
+fidget-wgpu = { path = "../../vendor/fidget-wgpu" }
+# fidget-core names getrandom 0.2/0.3/0.4 for wasm32; in a browser they take
+# their randomness from Web Crypto through wasm-bindgen.
+getrandom-02 = { package = "getrandom", version = "0.2", features = ["js"] }
+getrandom-03 = { package = "getrandom", version = "0.3", features = ["wasm_js"] }
+getrandom-04 = { package = "getrandom", version = "0.4", features = ["wasm_js"] }
+js-sys = "0.3"
+nalgebra = "0.35"
+prost = "0.13.4"
+tape-core = { path = "../tape-core" }
+wgpu-gbuf = { path = "../wgpu-gbuf" }
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+
+[patch.crates-io]
+fidget-core = { path = "../../vendor/fidget-core" }
+fidget-bytecode = { path = "../../vendor/fidget-bytecode" }
+fidget-raster = { path = "../../vendor/fidget-raster" }
+
+[profile.release]
+opt-level = 3
+lto = true

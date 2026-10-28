@@ -1,0 +1,498 @@
+
+// Matrix Library (matrix)
+//
+// Linear algebra over rectangular lists of vectors. There is no distinct
+// matrix type: a matrix is a list of COLUMN vectors, exactly like GLSL and
+// Julia. A list of C column vectors, each a vecR, is an R×C matrix — m[j] is
+// column j (a vecR), and the entry at row i, column j is m[j][i].
+//
+// Everything lowers to scalar/vector arithmetic, so it runs identically on
+// every backend (WGSL, JS, fidget). Native WGSL matNxM is a later, WGSL-only
+// optimization and is intentionally NOT used here.
+//
+// ---------------------------------------------------------
+// API conventions
+// ---------------------------------------------------------
+//   - Call qualified, through the package name: `matrix.multiply(a, b)`.
+//     Never dot-import these.
+//   - Full names, no abbreviations: `multiply`, `transpose`, `determinant`,
+//     `inverse` — not `mul`/`det`/`inv`.
+//   - Overloads are disambiguated by NAMESPACE = return type, because GSL
+//     cannot overload on argument type. Matrix×matrix is `matrix.multiply`
+//     (returns a matrix); matrix×vector is `vector.multiply` (returns a
+//     vector). See the vector library.
+//   - Size convention: a TRAILING NUMBER is the plain N×N form of an op
+//     (`inverse2/3/4`, `transpose2/3/4`, `determinant2/3/4`, `identity3/4`),
+//     with no homogeneous interpretation. An UN-NUMBERED name is reserved for
+//     ops that are either genuinely size-generic (multiply, outer, scale,
+//     negate) or carry special HOMOGENEOUS behavior — the transform
+//     constructors (rotation, translation, scaling) and `inverse`, which
+//     inverts a homogeneous affine 4×4 by exploiting its block structure
+//     (much cheaper than the general `inverse4`).
+//
+// ---------------------------------------------------------
+// Two language constraints that shape the code below
+// ---------------------------------------------------------
+//   - add/sub/mul/div/neg/min/max/... are reserved primitive (operator)
+//     names and cannot be used as function names, even qualified. So the
+//     matrix product is `multiply`, not `mul`. Elementwise +/−/unary− on
+//     matrices are deferred to Phase 2, where they become real operators.
+//   - You can only subscript by a compile-time constant: a literal, or a
+//     map's OWN index used directly at that map's level. A function
+//     parameter used as an index, or an outer map's index captured into a
+//     nested map, is not const and fails to build. This is why the ops that
+//     reindex elements (transpose, determinant, inverse, identity) are
+//     provided per size 2/3/4 rather than generically.
+//
+// Doc convention follows builtin/base.gsl: `///` lines are public docs, plain `//`
+// lines are internal notes.
+
+// =========================================================
+// STRUCTURE
+// =========================================================
+
+/// transpose2(m) returns the transpose of a 2×2 matrix.
+transpose2(m) {
+  c0 = m[0];
+  c1 = m[1];
+  return [[c0[0], c1[0]],
+          [c0[1], c1[1]]];
+}
+
+/// transpose3(m) returns the transpose of a 3×3 matrix.
+transpose3(m) {
+  c0 = m[0];
+  c1 = m[1];
+  c2 = m[2];
+  return [[c0[0], c1[0], c2[0]],
+          [c0[1], c1[1], c2[1]],
+          [c0[2], c1[2], c2[2]]];
+}
+
+/// transpose4(m) returns the transpose of a 4×4 matrix.
+transpose4(m) {
+  c0 = m[0];
+  c1 = m[1];
+  c2 = m[2];
+  c3 = m[3];
+  return [[c0[0], c1[0], c2[0], c3[0]],
+          [c0[1], c1[1], c2[1], c3[1]],
+          [c0[2], c1[2], c2[2], c3[2]],
+          [c0[3], c1[3], c2[3], c3[3]]];
+}
+
+// =========================================================
+// PRODUCTS
+// =========================================================
+
+/// multiply(a, b) is the matrix product a·b. a is R×K, b is K×C, and the
+/// result is R×C. Each result column is a·(column of b), formed as the linear
+/// combination of a's columns weighted by that column's entries — so no
+/// transpose is needed and any rectangular size works. Conformability (a's
+/// column count == b's row count) is the caller's responsibility.
+multiply(a, b) {
+  return map((bcol) {
+    scaled = map((acol, k) { return acol * bcol[k]; }, a);
+    return reduce((acc, c) { return acc + c; }, scaled);
+  }, b);
+}
+
+/// outer(u, v) is the exterior (outer) product u·vᵀ. For a vecR u and a vecC
+/// v the result is the R×C matrix whose column j is v[j]·u.
+outer(u, v) {
+  return map((vj) { return u * vj; }, v);
+}
+
+// =========================================================
+// ELEMENTWISE
+// =========================================================
+
+/// scale(s, m) multiplies every entry of m by the scalar s. (This is scalar
+/// scaling of a matrix; for a scaling-transform matrix see the constructors.)
+scale(s, m) {
+  return map((col) { return col * s; }, m);
+}
+
+/// negate(m) negates every entry: −m. The unary `-` operator on a matrix
+/// routes here.
+negate(m) {
+  return map((col) { return col * -1; }, m);
+}
+
+/// plus(a, b) is the elementwise sum of two equally-shaped matrices. The `+`
+/// operator on matrices routes here.
+plus(a, b) {
+  return map((acol, i) { return acol + b[i]; }, a);
+}
+
+/// minus(a, b) is the elementwise difference a − b. The `-` operator on
+/// matrices routes here.
+minus(a, b) {
+  return map((acol, i) { return acol - b[i]; }, a);
+}
+
+// =========================================================
+// CONSTRUCTORS
+// =========================================================
+
+/// identity3() is the 3×3 identity matrix.
+identity3() {
+  return [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+}
+
+/// identity4() is the 4×4 identity matrix.
+identity4() {
+  return [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]];
+}
+
+/// rotation3(direction, angle) is the 3×3 rotation by `angle` radians about
+/// `direction` (normalized internally), via Rodrigues' formula. Use this to
+/// rotate directions/normals; to rotate points about an arbitrary line use
+/// the 4×4 rotation below.
+rotation3(direction, angle) {
+  a = normalize(direction);
+  x = a[0];
+  y = a[1];
+  z = a[2];
+  c = cos(angle);
+  s = sin(angle);
+  t = 1 - c;
+  return [[t * x * x + c,     t * x * y + s * z, t * x * z - s * y],
+          [t * x * y - s * z, t * y * y + c,     t * y * z + s * x],
+          [t * x * z + s * y, t * y * z - s * x, t * z * z + c]];
+}
+
+/// rotation(axis_origin, axis_direction, angle) is the 4×4 affine transform
+/// that rotates by `angle` radians about the line through `axis_origin` with
+/// direction `axis_direction`. Points on that line are fixed. Apply it to
+/// points with vector.transformPoint.
+rotation(axis_origin, axis_direction, angle) {
+  r = rotation3(axis_direction, angle);
+  rc0 = r[0];
+  rc1 = r[1];
+  rc2 = r[2];
+  o = axis_origin;
+  // Translation that keeps the axis fixed: t = o − R·o (R·o is the linear
+  // combination of R's columns weighted by o's components).
+  ro = rc0 * o[0] + rc1 * o[1] + rc2 * o[2];
+  t = o - ro;
+  return [[rc0[0], rc0[1], rc0[2], 0],
+          [rc1[0], rc1[1], rc1[2], 0],
+          [rc2[0], rc2[1], rc2[2], 0],
+          [t[0],   t[1],   t[2],   1]];
+}
+
+/// translation(t) is the 4×4 affine transform that translates by the vec3 t.
+translation(t) {
+  return [[1, 0, 0, 0],
+          [0, 1, 0, 0],
+          [0, 0, 1, 0],
+          [t[0], t[1], t[2], 1]];
+}
+
+/// scaling(factors) is the 4×4 transform that scales by the per-axis vec3
+/// `factors` about the origin. Uniform scale: pass [k, k, k].
+scaling(factors) {
+  return [[factors[0], 0, 0, 0],
+          [0, factors[1], 0, 0],
+          [0, 0, factors[2], 0],
+          [0, 0, 0, 1]];
+}
+
+/// scaling3(factors) is the 3×3 linear scale by the per-axis vec3 `factors`.
+scaling3(factors) {
+  return [[factors[0], 0, 0],
+          [0, factors[1], 0],
+          [0, 0, factors[2]]];
+}
+
+// The euler constructors are written in CLOSED FORM — each builds its
+// list-of-vectors literal directly from cos/sin scalars, with no multiply()
+// and no column indexing of an intermediate matrix. That keeps them foldable
+// by the canvas's lightweight const-evaluator (simple-assignment locals + a
+// literal), so a matrix built this way works in mesh(index, M). The closed
+// form R = R_XY(a.z)·R_ZX(a.y)·R_YZ(a.x) was verified numerically to match
+// map.eulerAngles to machine epsilon.
+
+/// rotationEuler3(angles) is the 3×3 rotation for the vec3 of euler angles
+/// `angles`, matching map.eulerAngles:
+///   map.eulerAngles(v, a) = map.rotateXY(map.rotateZX(map.rotateYZ(v, a.x), a.y), a.z).
+/// So vector.multiplyVector(rotationEuler3(a), v) == map.eulerAngles(v, a).
+rotationEuler3(angles) {
+  cx = cos(angles.x);
+  sx = sin(angles.x);
+  cy = cos(angles.y);
+  sy = sin(angles.y);
+  cz = cos(angles.z);
+  sz = sin(angles.z);
+  return [[cz * cy, -sz * cy, sy],
+          [cz * sy * sx + sz * cx, -sz * sy * sx + cz * cx, -cy * sx],
+          [-cz * sy * cx + sz * sx, sz * sy * cx + cz * sx, cy * cx]];
+}
+
+/// rotationEuler(angles) is the 4×4 homogeneous rotation for the euler vec3
+/// `angles` (about the origin), matching map.eulerAngles.
+rotationEuler(angles) {
+  cx = cos(angles.x);
+  sx = sin(angles.x);
+  cy = cos(angles.y);
+  sy = sin(angles.y);
+  cz = cos(angles.z);
+  sz = sin(angles.z);
+  return [[cz * cy, -sz * cy, sy, 0],
+          [cz * sy * sx + sz * cx, -sz * sy * sx + cz * cx, -cy * sx, 0],
+          [-cz * sy * cx + sz * sx, sz * sy * cx + cz * sx, cy * cx, 0],
+          [0, 0, 0, 1]];
+}
+
+/// rotation(spin, orient) builds the 4×4 rotation matrix Rz(spin)·R(orient):
+/// the base euler orientation `orient` (vec3, map.eulerAngles convention)
+/// first, then a spin by `spin` radians about +Z. A real matrix product (not an
+/// euler-vector sum), closed form from scalars, so it is valid in BOTH the full
+/// build and the canvas evaluator. Pass it to mesh(index, position, rotation) to
+/// place a part: that overload drops the translation into the 4th column.
+rotation(spin, orient) {
+  // R(orient) entries e_{row,col}, map.eulerAngles convention.
+  cx = cos(orient.x);
+  sx = sin(orient.x);
+  cy = cos(orient.y);
+  sy = sin(orient.y);
+  cz = cos(orient.z);
+  sz = sin(orient.z);
+  e00 = cz * cy;
+  e01 = cz * sy * sx + sz * cx;
+  e02 = -cz * sy * cx + sz * sx;
+  e10 = -sz * cy;
+  e11 = -sz * sy * sx + cz * cx;
+  e12 = sz * sy * cx + cz * sx;
+  e20 = sy;
+  e21 = -cy * sx;
+  e22 = cy * cx;
+  // Premultiply by Rz(spin): rows 0 and 1 mix, row 2 is unchanged.
+  c = cos(spin);
+  s = sin(spin);
+  p00 = c * e00 + s * e10;
+  p01 = c * e01 + s * e11;
+  p02 = c * e02 + s * e12;
+  p10 = -s * e00 + c * e10;
+  p11 = -s * e01 + c * e11;
+  p12 = -s * e02 + c * e12;
+  // Column-major: column j holds (row0, row1, row2, 0) of the product.
+  return [[p00, p10, e20, 0],
+          [p01, p11, e21, 0],
+          [p02, p12, e22, 0],
+          [0, 0, 0, 1]];
+}
+
+/// compose(position, euler) builds the 4×4 homogeneous placement T·R: rotate
+/// by the euler vec3 `euler` (map.eulerAngles convention) about the origin,
+/// then translate to the vec3 `position`. Closed form from scalars, so it folds
+/// in the canvas evaluator and compiles on every backend. Pass it to
+/// mesh(index, M) to place a part rigidly (no scale).
+compose(position, euler) {
+  cx = cos(euler.x);
+  sx = sin(euler.x);
+  cy = cos(euler.y);
+  sy = sin(euler.y);
+  cz = cos(euler.z);
+  sz = sin(euler.z);
+  // R columns (closed form, map.eulerAngles convention):
+  r00 = cz * cy;
+  r10 = -sz * cy;
+  r20 = sy;
+  r01 = cz * sy * sx + sz * cx;
+  r11 = -sz * sy * sx + cz * cx;
+  r21 = -cy * sx;
+  r02 = -cz * sy * cx + sz * sx;
+  r12 = sz * sy * cx + cz * sx;
+  r22 = cy * cx;
+  return [[r00, r10, r20, 0],
+          [r01, r11, r21, 0],
+          [r02, r12, r22, 0],
+          [position[0], position[1], position[2], 1]];
+}
+
+/// compose(position, euler, scale) builds the 4×4 homogeneous placement
+/// T·R·S: scale by the per-axis vec3 `scale`, rotate by the euler vec3 `euler`
+/// (map.eulerAngles convention), then translate to the vec3 `position`. It
+/// takes the rigid T·R from the two-argument compose and scales each rotation
+/// column by the matching component of `scale` — right-multiplication by the
+/// diagonal scale matrix — so the two forms stay in lockstep.
+compose(position, euler, scale) {
+  m = compose(position, euler);
+  return [m[0] * scale[0],
+          m[1] * scale[1],
+          m[2] * scale[2],
+          m[3]];
+}
+
+// =========================================================
+// DETERMINANT
+// =========================================================
+
+/// determinant2(m) is the determinant of a 2×2 matrix.
+determinant2(m) {
+  c0 = m[0];
+  c1 = m[1];
+  return c0[0] * c1[1] - c1[0] * c0[1];
+}
+
+/// determinant3(m) is the determinant of a 3×3 matrix (the scalar triple
+/// product of its columns).
+determinant3(m) {
+  return dot(m[0], cross(m[1], m[2]));
+}
+
+/// determinant4(m) is the determinant of a 4×4 matrix, by cofactor expansion
+/// along the first column over the four 3×3 minors.
+determinant4(m) {
+  c0 = m[0];
+  c1 = m[1];
+  c2 = m[2];
+  c3 = m[3];
+  // Each minor drops column 0 and one row; build the 3×3 from the surviving
+  // rows of columns c1,c2,c3.
+  m0 = determinant3([[c1[1], c1[2], c1[3]], [c2[1], c2[2], c2[3]], [c3[1], c3[2], c3[3]]]);
+  m1 = determinant3([[c1[0], c1[2], c1[3]], [c2[0], c2[2], c2[3]], [c3[0], c3[2], c3[3]]]);
+  m2 = determinant3([[c1[0], c1[1], c1[3]], [c2[0], c2[1], c2[3]], [c3[0], c3[1], c3[3]]]);
+  m3 = determinant3([[c1[0], c1[1], c1[2]], [c2[0], c2[1], c2[2]], [c3[0], c3[1], c3[2]]]);
+  return c0[0] * m0 - c0[1] * m1 + c0[2] * m2 - c0[3] * m3;
+}
+
+// =========================================================
+// INVERSE
+// =========================================================
+
+/// inverse2(m) is the inverse of a 2×2 (linear) matrix. Undefined (divides by
+/// zero) when determinant2(m) is 0.
+inverse2(m) {
+  c0 = m[0];
+  c1 = m[1];
+  inv = 1 / determinant2(m);
+  return [[c1[1] * inv, c0[1] * -inv],
+          [c1[0] * -inv, c0[0] * inv]];
+}
+
+/// inverse3(m) is the inverse of a 3×3 (linear) matrix, built from the cross
+/// products of its columns (adjugate over determinant). Undefined when
+/// determinant3(m) is 0.
+inverse3(m) {
+  inv = 1 / determinant3(m);
+  // Cross products of the columns are the rows of the adjugate; scale by
+  // 1/det and write them out transposed into the inverse's columns.
+  r0 = cross(m[1], m[2]) * inv;
+  r1 = cross(m[2], m[0]) * inv;
+  r2 = cross(m[0], m[1]) * inv;
+  return [[r0[0], r1[0], r2[0]],
+          [r0[1], r1[1], r2[1]],
+          [r0[2], r1[2], r2[2]]];
+}
+
+/// inverse4(m) is the general inverse of an arbitrary 4×4 matrix, via the
+/// compact 2×2-minor (GLM) method: 18 paired sub-determinants assembled into
+/// cofactor columns, divided by the determinant. Works for affine AND
+/// projective matrices. Undefined when the determinant is 0. For a 4×4 you
+/// know to be a homogeneous affine transform, prefer `inverse` below — it is
+/// much cheaper.
+inverse4(m) {
+  c0 = m[0];
+  c1 = m[1];
+  c2 = m[2];
+  c3 = m[3];
+
+  coef00 = c2[2] * c3[3] - c3[2] * c2[3];
+  coef02 = c1[2] * c3[3] - c3[2] * c1[3];
+  coef03 = c1[2] * c2[3] - c2[2] * c1[3];
+  coef04 = c2[1] * c3[3] - c3[1] * c2[3];
+  coef06 = c1[1] * c3[3] - c3[1] * c1[3];
+  coef07 = c1[1] * c2[3] - c2[1] * c1[3];
+  coef08 = c2[1] * c3[2] - c3[1] * c2[2];
+  coef10 = c1[1] * c3[2] - c3[1] * c1[2];
+  coef11 = c1[1] * c2[2] - c2[1] * c1[2];
+  coef12 = c2[0] * c3[3] - c3[0] * c2[3];
+  coef14 = c1[0] * c3[3] - c3[0] * c1[3];
+  coef15 = c1[0] * c2[3] - c2[0] * c1[3];
+  coef16 = c2[0] * c3[2] - c3[0] * c2[2];
+  coef18 = c1[0] * c3[2] - c3[0] * c1[2];
+  coef19 = c1[0] * c2[2] - c2[0] * c1[2];
+  coef20 = c2[0] * c3[1] - c3[0] * c2[1];
+  coef22 = c1[0] * c3[1] - c3[0] * c1[1];
+  coef23 = c1[0] * c2[1] - c2[0] * c1[1];
+
+  fac0 = [coef00, coef00, coef02, coef03];
+  fac1 = [coef04, coef04, coef06, coef07];
+  fac2 = [coef08, coef08, coef10, coef11];
+  fac3 = [coef12, coef12, coef14, coef15];
+  fac4 = [coef16, coef16, coef18, coef19];
+  fac5 = [coef20, coef20, coef22, coef23];
+
+  vc0 = [c1[0], c0[0], c0[0], c0[0]];
+  vc1 = [c1[1], c0[1], c0[1], c0[1]];
+  vc2 = [c1[2], c0[2], c0[2], c0[2]];
+  vc3 = [c1[3], c0[3], c0[3], c0[3]];
+
+  inv0 = vc1 * fac0 - vc2 * fac1 + vc3 * fac2;
+  inv1 = vc0 * fac0 - vc2 * fac3 + vc3 * fac4;
+  inv2 = vc0 * fac1 - vc1 * fac3 + vc3 * fac5;
+  inv3 = vc0 * fac2 - vc1 * fac4 + vc2 * fac5;
+
+  signA = [1, -1, 1, -1];
+  signB = [-1, 1, -1, 1];
+  col0 = inv0 * signA;
+  col1 = inv1 * signB;
+  col2 = inv2 * signA;
+  col3 = inv3 * signB;
+
+  // determinant = dot(first column, first row of the cofactor matrix)
+  row0 = [col0[0], col1[0], col2[0], col3[0]];
+  invDet = 1 / dot(c0, row0);
+
+  return [col0 * invDet, col1 * invDet, col2 * invDet, col3 * invDet];
+}
+
+/// inverse(m) inverts a 4×4 HOMOGENEOUS AFFINE transform (bottom row
+/// [0, 0, 0, 1]) far more cheaply than the general inverse4: it inverts the
+/// 3×3 linear block A and remaps the translation t to −A⁻¹·t, leaving the
+/// bottom row intact. Exact for any invertible affine transform — rotation,
+/// scale, shear, translation, and their compositions. NOT valid for
+/// projective matrices; use inverse4 for those.
+inverse(m) {
+  c0 = m[0];
+  c1 = m[1];
+  c2 = m[2];
+  c3 = m[3];
+  // Invert the linear 3×3 block (top-left of the 4×4).
+  a = [[c0[0], c0[1], c0[2]], [c1[0], c1[1], c1[2]], [c2[0], c2[1], c2[2]]];
+  ai = inverse3(a);
+  ac0 = ai[0];
+  ac1 = ai[1];
+  ac2 = ai[2];
+  // New translation column: −A⁻¹·t, where t is the original 4th column.
+  nt = (ac0 * c3[0] + ac1 * c3[1] + ac2 * c3[2]) * -1;
+  return [[ac0[0], ac0[1], ac0[2], 0],
+          [ac1[0], ac1[1], ac1[2], 0],
+          [ac2[0], ac2[1], ac2[2], 0],
+          [nt[0],  nt[1],  nt[2],  1]];
+}
+
+// =========================================================
+// SDF SCALE
+// =========================================================
+
+/// minScale(m) returns the smallest per-axis scale of m's linear block — the
+/// length of its shortest column among the first three. After transforming an
+/// SDF's sample point by inverse(m), multiply the resulting distance by this
+/// factor to keep the field a conservative (non-overstepping) distance bound:
+///   `remap(shape(), vector.multiplyPoint(inverse(m), p)) * matrix.minScale(m)`.
+/// Exact for rotation and axis-aligned scale (the linear block's smallest
+/// singular value); for shear it is an approximation that may slightly
+/// overestimate distance. Works on a 3×3 or the linear block of a 4×4.
+minScale(m) {
+  c0 = m[0];
+  c1 = m[1];
+  c2 = m[2];
+  s0 = length([c0[0], c0[1], c0[2]]);
+  s1 = length([c1[0], c1[1], c1[2]]);
+  s2 = length([c2[0], c2[1], c2[2]]);
+  return min(s0, s1, s2);
+}

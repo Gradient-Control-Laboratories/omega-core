@@ -1,0 +1,24 @@
+
+// Exercises lists of vectors: a map whose function returns a vector, indexing
+// into the resulting list, and reducing it with a vector accumulator.
+
+angles = [p.x, p.y, p.x + p.y, p.x * 2.0];
+
+// map: each result is a vector, so the results gather into a list of vectors.
+radials = map((ang, index) {
+  return [cos(ang), sin(ang), index];
+}, angles);
+
+// Indexing a list of vectors yields the element vector.
+first = radials[0];
+
+// reduce: fold the vector elements into a vector accumulator.
+sum = reduce([0.0, 0.0, 0.0], (acc, v) {
+  return acc + v;
+}, radials);
+
+// A literal list of two vectors stays a list of vectors, not a vec2.
+pair = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]];
+second = pair[1];
+
+return length(p + first * 0.1 + sum * 0.05 + second * 0.01) - 2.0;

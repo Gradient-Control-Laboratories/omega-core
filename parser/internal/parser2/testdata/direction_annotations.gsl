@@ -1,0 +1,25 @@
+// @direction fn1() { return 1; }                      // ERROR: 1 @direction annotation can only be applied to variable assignments
+// @direction(1, 2) errDecl = [0.0, 0.0, 1.0];         // ERROR: 2 @direction annotation takes at most one argument: @direction(anchor)
+// errInline = @direction(1, 2, 3) [0.0, 0.0, 1.0];    // ERROR: 3 @direction annotation takes at most one argument: @direction(anchor)
+
+@direction
+buildDir = [0.0, 0.0, 1.0];
+
+inlineDir = @direction [1.0, 0.0, 0.0];
+
+applyDir(d) {
+    return d[2];
+}
+
+callDir = applyDir(@direction [0.0, 1.0, 0.0]);
+
+// The argument is the point the arrow is drawn from: a @point, or a constant.
+@point
+center = [10.0, 0.0, 5.0];
+
+@direction(center)
+axis = [0.0, 0.0, 1.0];
+
+anchoredInline = @direction([10.0, 0.0, 5.0]) [0.0, 1.0, 0.0];
+
+return buildDir[2] + inlineDir[0] + callDir + axis[2] + anchoredInline[1] + center[0];

@@ -1,0 +1,39 @@
+[package]
+name = "wgpu-render"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# Renders an omega tape with fidget-wgpu (fidget's all-GPU voxel pipeline and
+# its shading effects) and, for comparison, with fidget's CPU raster and the
+# same effects on the CPU. Writes both images and reports where the two
+# geometries differ.
+#
+# Its own workspace, with its own Cargo.lock, like gpu-eval: wgpu 30's
+# dependency floor must not move the crates the render dylib is locked to.
+
+[workspace]
+
+[[bin]]
+name = "wgpu-render"
+path = "src/main.rs"
+
+[dependencies]
+fidget-core = { path = "../../vendor/fidget-core" }
+fidget-raster = { path = "../../vendor/fidget-raster" }
+fidget-wgpu = { path = "../../vendor/fidget-wgpu" }
+image = { version = "0.25", default-features = false, features = ["png"] }
+nalgebra = "0.35"
+pollster = "0.4"
+prost = "0.13.4"
+tape-core = { path = "../tape-core" }
+wgpu-gbuf = { path = "../wgpu-gbuf" }
+zerocopy = "0.8"
+
+[patch.crates-io]
+fidget-core = { path = "../../vendor/fidget-core" }
+fidget-bytecode = { path = "../../vendor/fidget-bytecode" }
+fidget-raster = { path = "../../vendor/fidget-raster" }
+
+[profile.release]
+opt-level = 3

@@ -1,0 +1,14 @@
+
+// Regression: remapEdges takes a lambda (profile) and itself defines a hoisted
+// `map` lambda. Calling it with two distinct profile lambdas used to emit two
+// WGSL functions both named `omega_remapEdges_gsl_anon` — the profile-driven
+// specialization vs remapEdges' own hoisted lambda — which is an invalid shader
+// (redefinition). The codegen now re-uniquifies argument-suffixed names.
+list() {
+  return [length(p) - 1, length(p) - 2, length(p) - 3];
+}
+
+circle = remapEdges(list(), () { return length(p.xy) - 0.2; });
+diamond = remapEdges(list(), () { return max(abs(p.x), abs(p.y)) - 0.2; });
+
+return min(circle, diamond);

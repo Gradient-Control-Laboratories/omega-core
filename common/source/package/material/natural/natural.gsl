@@ -1,0 +1,215 @@
+
+// Natural Materials (material/natural)
+//
+// Water, lava, fog, and clouds — the animated set, built on gradient4/
+// gradientBump4 (time as a genuine 4th lattice axis, so ripples/flow/puffs
+// actually morph rather than slide). Fog and clouds are honest surface
+// approximations of volumetric phenomena (transmissive material draped over
+// a caller-supplied shape) — this renderer has no true volumetric path, only
+// surface hits plus a second "glass" march for transmissive material. Terrain
+// paints a continent-and-ocean map with mountain chains onto any shape.
+//
+// Doc convention follows builtin/base.gsl: `///` lines are public docs.
+
+import "noise";
+import "color";
+import "material";
+import "glass";
+import "physical";
+import "texture";
+import "material/stone";
+
+/// water(rippleScale, rippleTimeScale, rippleAmount): glass.water with an
+/// animated ripple, via a SINGLE noise.gradientBump4 tap. Water is
+/// transmissive, so it is already marched twice (the primary
+/// gradient-corrected march plus the secondary refraction march) — keep the
+/// ripple to one tap, not a multi-octave stack, or the double-march cost
+/// compounds. For water that moves by its own physics, with waves that run
+/// at the speed their length gives them, see animated.ocean. Returns
+/// material, color.
+water(rippleScale, rippleTimeScale, rippleAmount) {
+  still, tint = glass.water();
+  // Too small to resolve, the ripples fade flat and their slopes, 0.06
+  // rippleAmount root mean square (measured), widen the lobe instead.
+  height = rippleAmount * noise.gradientBump4(rippleScale, rippleTimeScale) * texture.fadeDetail(rippleScale);
+  calm = material.roughness(still);
+  mat = material.withDisplacement(material.withRoughness(still, sqrt(texture.reliefRoughness(calm * calm, 0.06 * rippleAmount, rippleScale))), height);
+  // Stand-in: the ripples too small to see, their slopes in the lobe.
+  mat.simple = material.withRoughness(still, sqrt(sqrt(calm * calm * calm * calm + 0.0036 * rippleAmount * rippleAmount)));
+  return mat, tint;
+}
+
+/// lava(crackScale, crustColor, glowColor, glowStrength, flowTimeScale): a
+/// dark rocky crust (noise.cellularEdges crack network) with glowing molten
+/// cracks (material.glowing) — primarily a material/color effect, no
+/// geometric relief by design. glowStrength is modulated by a slow
+/// noise.gradient4 time-morph so the glow seems to pulse and flow along the
+/// crack network. For a lava lake whose plates drift and tear open, with
+/// seams that glow by a Planck fit, see animated.lavaLake. Returns material,
+/// color.
+lava(crackScale, @color crustColor, @color glowColor, glowStrength, flowTimeScale) {
+  cracks = noise.cellularEdges(crackScale);
+  flow = noise.gradient4(crackScale * 2.0, flowTimeScale) * 0.5 + 0.5;
+  crustMat = material.make(0.9, 0, 1.5);
+  glowMat = material.glowing(glowColor, glowStrength * flow);
+  // The cracks as lines 0.12 of a cell wide, keeping their share of a pixel.
+  crack = texture.coverageLine(cracks, crackScale * 0.12);
+  mat = material.blend(crustMat, glowMat, crack);
+  col = color.mixOklab(crustColor, glowColor, crack);
+  mat.simple = lavaStandMaterial(glowColor, glowStrength);
+  col.simple = lavaStandColor(crustColor, glowColor);
+  return mat, col;
+}
+
+// lava's stand-ins: its cracks cover 20.9% of the crust (measured), glowing
+// at half their strength on average.
+lavaStandMaterial(glowColor, glowStrength) {
+  return material.blend(material.make(0.9, 0, 1.5), material.glowing(glowColor, 0.5 * glowStrength), 0.209);
+}
+
+lavaStandColor(crustColor, glowColor) {
+  return color.mixOklab(crustColor, glowColor, 0.209);
+}
+
+/// lavaHero(crackScale, crustColor, glowColor, glowStrength, flowTimeScale,
+/// crustDepth): lava(), plus one cheap noise.gradientBump crust-roughness
+/// displacement — an explicit, separately-named EXPENSIVE tier (real
+/// geometric relief on top of the already-animated color/material effect).
+/// See animated.lavaLake for the lake's physics. Returns material, color.
+lavaHero(crackScale, @color crustColor, @color glowColor, glowStrength, flowTimeScale, crustDepth) {
+  mat, col = lava(crackScale, crustColor, glowColor, glowStrength, flowTimeScale);
+  // Too small to resolve, the crust fades flat; its slopes, 0.17 crustDepth
+  // root mean square (measured), would barely widen a lobe already 0.9 rough.
+  height = crustDepth * noise.gradientBump(crackScale * 0.5) * texture.fadeDetail(crackScale * 0.5);
+  relief = material.withDisplacement(mat, height);
+  relief.simple = lavaStandMaterial(glowColor, glowStrength);
+  crust = col;
+  crust.simple = lavaStandColor(crustColor, glowColor);
+  return relief, crust;
+}
+
+/// fogMaterial(density, tintColor): a pure material-row (no noise, free)
+/// surface approximation of fog — transmission and absorptionDistance eased
+/// by `density` in [0,1]. Drape it over a caller-supplied soft blob-union or
+/// slab shape; generating that geometry is out of scope here. Returns
+/// material, color.
+fogMaterial(@range(0, 1) density, @color tintColor) {
+  d = clamp(density, 0, 1);
+  transmission = 1.0 - d * 0.6;
+  absorptionDist = 80.0 - d * 70.0;
+  mat = material.translucent(material.make(0.9, 0, 1.4), transmission, absorptionDist);
+  return mat, tintColor;
+}
+
+/// cloudMaterial(density, tintColor, puffScale, puffTimeScale, puffAmount):
+/// fogMaterial, plus one cheap noise.gradientBump4 puff displacement so the
+/// surface visibly billows over time. Drape over a caller-supplied soft
+/// blob-union or slab shape. Returns material, color.
+cloudMaterial(@range(0, 1) density, @color tintColor, puffScale, puffTimeScale, puffAmount) {
+  d = clamp(density, 0, 1);
+  transmission = 1.0 - d * 0.5;
+  absorptionDist = 60.0 - d * 50.0;
+  // Too small to resolve, the puffs fade flat and their slopes, 0.06
+  // puffAmount root mean square (measured), widen the lobe instead.
+  height = puffAmount * noise.gradientBump4(puffScale, puffTimeScale) * texture.fadeDetail(puffScale);
+  puffed = sqrt(texture.reliefRoughness(0.9025, 0.06 * puffAmount, puffScale));
+  mat = material.withDisplacement(material.translucent(material.make(puffed, 0, 1.35), transmission, absorptionDist), height);
+  // Stand-in: the puffs too small to see, their slopes in the lobe.
+  mat.simple = material.translucent(material.make(sqrt(sqrt(0.8145 + 0.0036 * puffAmount * puffAmount)), 0, 1.35), transmission, absorptionDist);
+  return mat, tintColor;
+}
+
+/// terrain(scale, snowBias): a world map painted on any shape — continents
+/// about `scale` mm across, with mountain chains raised along ridges, coloured
+/// by height through sea, beach sand, grass and forest, granite rock and snow
+/// (the measured sand, grass and snow presets). Returns material, color and
+/// height: the land's height in mm above sea level (negative out at sea,
+/// where the colour deepens), proportional to scale, for relief. Subtract
+/// max(height, 0) from a shape for real mountains, as Terrain Planet does, or
+/// pass it to material.withDisplacement for render-only relief. The terrain
+/// bands sit at fixed heights in units of scale / 12: grass from 0.2, rock
+/// from 1.2 and snow from 2. snowBias is added to the height, in those units,
+/// before the snow line only: 0 for none, or a field that grows toward the
+/// poles (up to about 3) for polar caps.
+terrain(scale, snowBias) {
+  // Proportions of Terrain Planet, whose continents are 12 mm across.
+  unit = scale / 12;
+  continents = noise.fbmBump4(scale, 0.5, 2.0) - 0.25 * unit;
+  ridges = noise.turbulenceBump2(scale / 4, 0.5, 2.0);
+  height = 1.2 * continents + 2.2 * (0.45 * unit - ridges) * clamp(continents / unit, 0, 1);
+
+  // Height with a little noise, so the bands between terrain types wander.
+  band = (height + 0.25 * unit * noise.gradient(scale / 4)) / unit;
+  seaLevel = height / unit;
+
+  // Mixed once in Oklab and converted back once (see material/stone).
+  shallowSea = color.rgb2oklab([0.10, 0.42, 0.52]);
+  sea = shallowSea + (color.rgb2oklab([0.02, 0.07, 0.20]) - shallowSea) * clamp(-seaLevel / 1.2, 0, 1);
+  sandMat, sandColor = physical.sand();
+  grassMat, grassColor = physical.grass();
+  snowMat, snowColor = physical.snow();
+  // Not named `grass`: a local sharing its name with a referenced package
+  // member (physical.grass, used just above) hides that member from the WGSL
+  // backend's capture of package values.
+  grassLab = color.rgb2oklab(grassColor);
+  meadow = grassLab + (color.rgb2oklab([0.13, 0.26, 0.09]) - grassLab) * texture.mask(noise.gradient(scale / 3), 0, 0.3);
+  rock = color.rgb2oklab(stone.granite(0.6 * unit, [0.42, 0.40, 0.38], [0.22, 0.21, 0.20], [0.62, 0.60, 0.58]));
+  coast = sea + (color.rgb2oklab(sandColor) - sea) * texture.mask(seaLevel, 0.0, 0.02);
+  green = coast + (meadow - coast) * texture.mask(band, 0.2, 0.12);
+  rocky = green + (rock - green) * texture.mask(band, 1.2, 0.25);
+  land = rocky + (color.rgb2oklab(snowColor) - rocky) * texture.mask(band + snowBias, 2.0, 0.2);
+
+  sandy = texture.paintMaterial(seaLevel, 0.0, 0.02, material.make(0.08, 0, 1.33), sandMat);
+  grassy = texture.paintMaterial(band, 0.2, 0.12, sandy, grassMat);
+  stony = texture.paintMaterial(band, 1.2, 0.25, grassy, stone.stoneFinish(0.8));
+  return texture.paintMaterial(band + snowBias, 2.0, 0.2, stony, snowMat), color.oklab2rgb(land), height;
+}
+
+// ===========================================================================
+// Ready-made
+// ===========================================================================
+
+// One surface from each constructor above, with the arguments the examples
+// use, so the material browser can show it. The constructors stay the way to
+// set the parameters; see doc/material_composition.md for the plan to adjust
+// them from the browser.
+
+/// Water rippled by a light breeze, 8 mm ripples. Returns material and colour.
+@material rippledWater() {
+  mat, tint = water(8, 3.0, 0.15);
+  return mat, tint;
+}
+
+/// Glowing lava under a cracked crust, 15 mm plates. Returns material and
+/// colour.
+@material glowingLava() {
+  relief, crust = lavaHero(15, [0.12, 0.09, 0.08], [1.0, 0.4, 0.05], 4.0, 5.0, 0.1);
+  return relief, crust;
+}
+
+/// Cracked lava crust with glowing seams, 15 mm cracks, without the hero
+/// relief. Returns material and colour.
+@material lava() {
+  crust, glow = lava(15, [0.12, 0.09, 0.08], [1.0, 0.4, 0.05], 4.0, 5.0);
+  return crust, glow;
+}
+
+/// Fog at half density, a cool white. Returns material and colour.
+@material fogMaterial() {
+  fog, tint = fogMaterial(0.5, [0.9, 0.92, 0.95]);
+  return fog, tint;
+}
+
+/// Cloud at six tenths density, white, 15 mm puffs billowing over 10 s, 3 mm
+/// high. Returns material and colour.
+@material cloudMaterial() {
+  cloud, tint = cloudMaterial(0.6, [1, 1, 1], 15, 10, 3);
+  return cloud, tint;
+}
+
+/// Terrain at a scale of 3, sea to snow, no polar bias. Returns material and
+/// colour.
+@material terrain() {
+  land, tint, height = terrain(3, 0);
+  return land, tint;
+}
