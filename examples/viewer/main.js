@@ -1361,7 +1361,7 @@ exampleSelectEl.addEventListener("change", () => {
 (async function initExamples() {
     const examples = await refreshExampleList();
     if (examples.length > 0) {
-        const defaultEx = examples.find((e) => e.name === "gear.gsl") || examples[0];
+        const defaultEx = examples.find((e) => e.name === "gears.gsl") || examples[0];
         await loadExample(defaultEx.name);
     }
 })();

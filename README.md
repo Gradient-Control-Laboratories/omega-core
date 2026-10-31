@@ -67,6 +67,7 @@ omega_core/
 │   └── web/
 │       └── example/           # Example GSL files for tests
 ├── examples/                  # Curated showcase GSL models and assets
+│   ├── gears.gsl              # Parametric helical gear pair showcase (from common/web/example/Gears.gsl)
 │   ├── assets/                # Traditional CAD mesh assets (bracket.stl)
 │   └── viewer/                # Interactive WebGPU viewer web application
 │       ├── README.md          # Viewer usage and architecture overview

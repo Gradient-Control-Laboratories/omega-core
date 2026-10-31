@@ -439,7 +439,7 @@ func TestRealViewerAndExamplesIntegration(t *testing.T) {
 		t.Fatalf("walking viewer directory failed: %v", err)
 	}
 
-	// 3. Verify GET /api/examples lists real examples and POST /api/compile compiles gear.gsl.
+	// 3. Verify GET /api/examples lists real examples and POST /api/compile compiles gears.gsl.
 	exRes, err := http.Get(ts.URL + "/api/examples")
 	if err != nil {
 		t.Fatal(err)
@@ -457,7 +457,7 @@ func TestRealViewerAndExamplesIntegration(t *testing.T) {
 		t.Fatalf("expected non-empty examples list from %s", realExamplesDir)
 	}
 
-	srcRes, err := http.Get(ts.URL + "/api/example?name=gear.gsl")
+	srcRes, err := http.Get(ts.URL + "/api/example?name=gears.gsl")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -470,11 +470,11 @@ func TestRealViewerAndExamplesIntegration(t *testing.T) {
 		t.Fatal(err)
 	}
 	if exPayload.Source == "" {
-		t.Fatal("expected non-empty gear.gsl source")
+		t.Fatal("expected non-empty gears.gsl source")
 	}
 
 	compBody, _ := json.Marshal(map[string]any{
-		"id":     "real-gear",
+		"id":     "real-gears",
 		"source": exPayload.Source,
 	})
 	compRes, err := http.Post(ts.URL+"/api/compile", "application/json", bytes.NewReader(compBody))
@@ -490,6 +490,6 @@ func TestRealViewerAndExamplesIntegration(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(compOut.Errors) > 0 || compOut.WGSL == "" {
-		t.Fatalf("expected gear.gsl to compile cleanly, got errors=%v", compOut.Errors)
+		t.Fatalf("expected gears.gsl to compile cleanly, got errors=%v", compOut.Errors)
 	}
 }
