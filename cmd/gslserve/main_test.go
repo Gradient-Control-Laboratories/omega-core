@@ -99,3 +99,55 @@ func TestRun_ServerLifecycle(t *testing.T) {
 		t.Fatalf("timed out waiting for server shutdown")
 	}
 }
+
+func TestRun_OpenBrowserFlag(t *testing.T) {
+	exDir := t.TempDir()
+	viewDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(exDir, "demo.gsl"), []byte("return sphere(5);\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(viewDir, "index.html"), []byte("<!DOCTYPE html><html></html>"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	openedCh := make(chan string, 1)
+	origOpen := openBrowserFunc
+	openBrowserFunc = func(url string) error {
+		openedCh <- url
+		return nil
+	}
+	defer func() { openBrowserFunc = origOpen }()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var stdout, stderr bytes.Buffer
+	done := make(chan error, 1)
+	go func() {
+		done <- Run(ctx, []string{
+			"--addr", "127.0.0.1:0",
+			"--examples-dir", exDir,
+			"--viewer-dir", viewDir,
+			"--open",
+		}, &stdout, &stderr)
+	}()
+
+	select {
+	case url := <-openedCh:
+		if !strings.HasPrefix(url, "http://127.0.0.1:") {
+			t.Errorf("expected opened URL to start with http://127.0.0.1:, got %q", url)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatalf("timed out waiting for browser open call")
+	}
+
+	cancel()
+	select {
+	case runErr := <-done:
+		if runErr != nil {
+			t.Errorf("unexpected error on clean shutdown: %v", runErr)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatalf("timed out waiting for server shutdown")
+	}
+}

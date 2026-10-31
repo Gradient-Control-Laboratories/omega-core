@@ -445,7 +445,7 @@ function planBodies(plan) {
 // scene box.
 async function measureSurfaceBbox() {
     try {
-        const sdfCtx = deps.getSdfContext();
+        const sdfCtx = deps.getSdfContext?.();
         if (!sdfCtx || sdfCtx.unsupported) return null;
         const device = (await deps.getComputeDevice()) || (await deps.getRawGPUDevice());
         if (!device) return null;

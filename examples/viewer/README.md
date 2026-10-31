@@ -9,18 +9,17 @@ From the `omega_core` repository root, build and launch the viewer server:
 
 ```bash
 ./tool/build.sh
-./bin/gslserve
+./bin/gslserve --open
 ```
 
 Or run directly with `go run`:
 
 ```bash
-go run ./cmd/gslserve -port 8080
+go run ./cmd/gslserve --open
 ```
 
-`gslserve` automatically opens `http://127.0.0.1:8080` in your default WebGPU-capable browser
-(Chrome 113+, Edge 113+, or Safari 18+ on macOS Sequoia).
-Pass `-no-browser` to disable auto-opening the browser.
+The `--open` (`-o`) flag tells `gslserve` to automatically open `http://127.0.0.1:8080`
+in your default WebGPU-capable browser (Chrome 113+, Edge 113+, or Safari 18+ on macOS Sequoia).
 
 ## Features
 

@@ -35,7 +35,7 @@ function cosinePalette(t) {
 }
 
 const DRAG_THRESHOLD = 3; // pixels — distinguishes click from drag
-const WORLD_EXTENT = 200; // default half-size of the bounding volume and grid
+const WORLD_EXTENT = 4; // default half-size of the bounding volume and grid for showcase examples
 // Mutable current half-extent, adjustable via the Scene panel. This is a domain
 // bound, not a geometry scale.
 let worldExtent = WORLD_EXTENT;
@@ -103,8 +103,8 @@ let timeOffsetMs = 0;   // total ms to subtract (accumulated pauses + manual see
 const fieldEnabledU = uniform(0.0);
 const fieldHeightU = uniform(0.0);
 const fieldNormalU = uniform(new THREE.Vector3(0, 0, 1));
-const fieldIntervalU = uniform(5.0); // matches the panel default
-const fieldFadeU = uniform(100.0); // matches the panel default (half of fade max)
+const fieldIntervalU = uniform(0.25); // matches the panel default
+const fieldFadeU = uniform(5.0); // matches the panel default (half of fade max)
 const modelOpacityU = uniform(1.0);
 const sectionOpacityU = uniform(0.25);
 const fieldUnionU = uniform(0.0); // off by default — draw each shape's field independently

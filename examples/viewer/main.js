@@ -90,6 +90,7 @@ const btnSaveAs = document.getElementById("btn-save-as");
 const saveAsPopover = document.getElementById("save-as-popover");
 const saveAsInput = document.getElementById("save-as-input");
 const btnSaveConfirm = document.getElementById("btn-save-confirm");
+const btnSaveCancel = document.getElementById("btn-save-cancel");
 
 function nextCompileID() {
     latestCompileID = `compile-${Date.now()}-${++compileSeq}`;
@@ -183,6 +184,13 @@ btnSaveConfirm.addEventListener("click", (e) => {
     e.stopPropagation();
     submitSaveAs();
 });
+
+if (btnSaveCancel) {
+    btnSaveCancel.addEventListener("click", (e) => {
+        e.stopPropagation();
+        closeSaveAsPopover();
+    });
+}
 
 saveAsInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
@@ -360,17 +368,13 @@ eventManager.addListener("canvas/update-shader", (event) => {
         clearHighlights();
         setSelectedShape(0);
 
-        if (event.scene) {
-            const sizeChanged = event.scene.size > 0 &&
-                Math.abs(event.scene.size - getWorldExtent() * 2) > 1e-4;
-            if (event.scene.size > 0) {
-                setWorldExtent(event.scene.size / 2);
-            }
-            if (event.scene.grid > 0) {
-                setGridDensity(event.scene.grid);
-            }
-            if (sizeChanged) frameWorldExtent();
+        const targetExtent = (event.scene && event.scene.size > 0) ? event.scene.size / 2 : 4;
+        const sizeChanged = Math.abs(targetExtent - getWorldExtent()) > 1e-4;
+        setWorldExtent(targetExtent);
+        if (event.scene && event.scene.grid > 0) {
+            setGridDensity(event.scene.grid);
         }
+        if (sizeChanged) frameWorldExtent();
 
         const decls = event.meshDecls || [];
         const unknowns = syncMeshInstances(decls);
@@ -378,7 +382,7 @@ eventManager.addListener("canvas/update-shader", (event) => {
             showError(`Unknown mesh index: ${unknowns.join(", ")}. Upload in the Meshes panel first.`, false);
         }
 
-        renderSliderPanel(event.sliders || []);
+        renderSliderPanel(event.sliders || [], event.uiControls || []);
 
         if (currentTab === "WGSL") {
             suppressDirty = true;
@@ -421,9 +425,10 @@ async function compileGsl(source) {
         clearNotification();
         eventManager.dispatchEvent("canvas/update-shader", data);
 
-        const hasAudio = Boolean(data.audio && data.audio.javascript);
+        const audioJs = data.audio && (data.audio.jsCode || data.audio.javascript) || "";
+        const hasAudio = Boolean(audioJs);
         eventManager.dispatchEvent("canvas/update-audio", {
-            javascript: hasAudio ? data.audio.javascript : "",
+            javascript: audioJs,
             hasAudio,
         });
     } catch (err) {
@@ -460,7 +465,7 @@ async function requestStlExport(detail, surfaceBbox) {
                 source,
                 subdivision,
                 bbox,
-                algo: "dc",
+                algo: "marching-cubes",
                 time: getAnimTime(),
             }),
         });

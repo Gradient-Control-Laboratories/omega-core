@@ -2,6 +2,7 @@ import { showNotification, clearNotification } from "./notification.js";
 import eventManager from "./event-manager.js";
 import { updateShader, defaultWGSL, setShaderGrayscaleFilter } from "../render/viewer.js";
 
+const errorWrapper = document.getElementById("error-wrapper");
 const errorOutput = document.getElementById("error-output");
 let hasCanvasError = false;
 let hasWgslError = false;
@@ -32,6 +33,9 @@ export function showError(errMsg, isWgslErr, isStlErr) {
     hasCanvasError = !isWgslErr && !isStlErr;
     hasWgslError = !isStlErr;
 
+    if (errorWrapper) {
+        errorWrapper.classList.remove("hidden");
+    }
     if (errorOutput) {
         errorOutput.value = errMsg;
     }
@@ -53,6 +57,9 @@ export function clearError() {
     hasCanvasError = false;
     hasWgslError = false;
     clearNotification();
+    if (errorWrapper) {
+        errorWrapper.classList.add("hidden");
+    }
     if (errorOutput) {
         errorOutput.value = "";
     }
