@@ -57,8 +57,10 @@ omega_core/
 │           └── lib/           # Copied from agent/wgsl/internal/codegen etc.
 ├── bin/                       # Local build outputs (gslc binary; gitignored)
 ├── cmd/                       # Standalone CLI tools
-│   └── gslc/                  # Unified compiler CLI (emits WGSL, STL, tape, audio)
-│       └── main.go            # Entry point and CLI command execution
+│   ├── gslc/                  # Unified compiler CLI (emits WGSL, STL, tape, audio)
+│   │   └── main.go            # Entry point and CLI command execution
+│   └── gslserve/              # Local HTTP server and WebGPU viewer host
+│       └── main.go            # Entry point and HTTP server startup
 ├── common/
 │   ├── source/
 │   │   └── package/           # Package sources for tests
@@ -66,8 +68,23 @@ omega_core/
 │       └── example/           # Example GSL files for tests
 ├── examples/                  # Curated showcase GSL models and assets
 │   ├── assets/                # Traditional CAD mesh assets (bracket.stl)
-│   └── viewer/                # Zero-dependency client-side WebGPU viewer
-│       └── shaders/           # Pre-compiled WebGPU shaders and metadata
+│   └── viewer/                # Interactive WebGPU viewer web application
+│       ├── README.md          # Viewer usage and architecture overview
+│       ├── index.html         # Single-page HTML shell and import map
+│       ├── main.js            # Top-level UI controller and /api/* client
+│       ├── style.css          # Layout styles for top bar, editor, and panels
+│       ├── docs/              # Built-in GSL language reference and interactive help panel
+│       ├── editor/            # CodeMirror 6 GSL/WGSL editor, autocomplete, and search
+│       ├── fonts/             # Self-hosted UI (PublicSans) and code (IBMPlexMono) fonts
+│       ├── icons/             # SVG toolbar and inspector icons
+│       ├── materials/         # PBR material catalog, BRDF lookup tables, and swatches
+│       ├── panels/            # Inspector panel controllers, mesh/CSG pipelines, and styles
+│       ├── render/            # 3D viewport, WebGPU raymarching, shading, and gizmo modules
+│       │   ├── viewer.js      # Three.js/WebGPU raymarching viewport and camera rig
+│       │   └── environment/   # Lighting environment presets JSON for 3D rendering
+│       ├── ui/                # Generic browser UI widgets (events, toasts, progress, splitters)
+│       │   └── error.js       # Diagnostics banner and compiler/shader error controller
+│       └── vendor/            # Vendored browser libraries (Three.js, CodeMirror, Manifold)
 ├── internal/                  # Shared compiler passes and internal AST transformations
 │   ├── assembler/             # Copied from agent/assembler/lib (orchestrates passes)
 │   │   ├── annotation/        # AST annotation metadata extraction

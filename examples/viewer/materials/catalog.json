@@ -1,0 +1,7724 @@
+{
+  "image": "swatches.png",
+  "cellWidth": 96,
+  "cellHeight": 96,
+  "cols": 12,
+  "rows": 19,
+  "gap": 4,
+  "sheetWidth": 1196,
+  "sheetHeight": 1896,
+  "entries": [
+    {
+      "kind": "finish",
+      "package": "material",
+      "symbol": "standard",
+      "section": "Presets",
+      "doc": "The material a shape has when it sets none: roughness 0.5, not metallic, ior 1.5.",
+      "index": 0
+    },
+    {
+      "kind": "finish",
+      "package": "material",
+      "symbol": "matte",
+      "section": "Presets",
+      "doc": "Fully diffuse: chalk, unglazed clay, flat paint.",
+      "index": 1
+    },
+    {
+      "kind": "finish",
+      "package": "material",
+      "symbol": "rubber",
+      "section": "Presets",
+      "doc": "Soft, low-gloss: elastomers, grips, tyres.",
+      "index": 2
+    },
+    {
+      "kind": "finish",
+      "package": "material",
+      "symbol": "plastic",
+      "section": "Presets",
+      "doc": "Moulded plastic with a satin sheen: ABS, nylon, PLA.",
+      "index": 3
+    },
+    {
+      "kind": "finish",
+      "package": "material",
+      "symbol": "shinyPlastic",
+      "section": "Presets",
+      "doc": "Glossy plastic: polished acrylic, phone cases, car paint before clearcoat.",
+      "index": 4
+    },
+    {
+      "kind": "finish",
+      "package": "material",
+      "symbol": "brushedMetal",
+      "section": "Presets",
+      "doc": "Brushed or bead-blasted metal, directionless satin. Pair with a colour from the metal library.",
+      "index": 5
+    },
+    {
+      "kind": "finish",
+      "package": "material",
+      "symbol": "polishedMetal",
+      "section": "Presets",
+      "doc": "Polished metal with soft reflections.",
+      "index": 6
+    },
+    {
+      "kind": "finish",
+      "package": "material",
+      "symbol": "chrome",
+      "section": "Presets",
+      "doc": "Mirror finish.",
+      "index": 7
+    },
+    {
+      "kind": "material",
+      "package": "metal",
+      "symbol": "steel",
+      "section": "Ferrous",
+      "doc": "Mild steel, machined satin.",
+      "index": 8
+    },
+    {
+      "kind": "material",
+      "package": "metal",
+      "symbol": "stainless",
+      "section": "Ferrous",
+      "doc": "Stainless steel, brushed. Its colour is a touch brighter and cooler than mild steel's.",
+      "index": 9
+    },
+    {
+      "kind": "material",
+      "package": "metal",
+      "symbol": "castIron",
+      "section": "Ferrous",
+      "doc": "Cast iron, rough as-cast surface.",
+      "index": 10
+    },
+    {
+      "kind": "material",
+      "package": "metal",
+      "symbol": "aluminum",
+      "section": "Light metals",
+      "doc": "Aluminium, machined satin.",
+      "index": 11
+    },
+    {
+      "kind": "material",
+      "package": "metal",
+      "symbol": "titanium",
+      "section": "Light metals",
+      "doc": "Titanium, bead-blasted, a warm gray.",
+      "index": 12
+    },
+    {
+      "kind": "material",
+      "package": "metal",
+      "symbol": "zinc",
+      "section": "Light metals",
+      "doc": "Zinc, as a galvanised or plated dull finish, a cool bluish gray.",
+      "index": 13
+    },
+    {
+      "kind": "material",
+      "package": "metal",
+      "symbol": "brass",
+      "section": "Copper alloys and precious",
+      "doc": "Brass, polished.",
+      "index": 14
+    },
+    {
+      "kind": "material",
+      "package": "metal",
+      "symbol": "copper",
+      "section": "Copper alloys and precious",
+      "doc": "Copper, polished.",
+      "index": 15
+    },
+    {
+      "kind": "material",
+      "package": "metal",
+      "symbol": "gold",
+      "section": "Copper alloys and precious",
+      "doc": "Gold, polished.",
+      "index": 16
+    },
+    {
+      "kind": "material",
+      "package": "metal",
+      "symbol": "chromium",
+      "section": "Copper alloys and precious",
+      "doc": "Chromium plate, mirror finish.",
+      "index": 17
+    },
+    {
+      "kind": "material",
+      "package": "glass",
+      "symbol": "clear",
+      "section": "Glass",
+      "doc": "Clear polished glass.",
+      "index": 18
+    },
+    {
+      "kind": "material",
+      "package": "glass",
+      "symbol": "frosted",
+      "section": "Glass",
+      "doc": "Frosted glass: sand-blasted or acid-etched, blurs what is behind it.",
+      "index": 19
+    },
+    {
+      "kind": "material",
+      "package": "glass",
+      "symbol": "smoked",
+      "section": "Glass",
+      "doc": "Smoked glass, neutral grey tint over 6 mm.",
+      "index": 20
+    },
+    {
+      "kind": "material",
+      "package": "glass",
+      "symbol": "amber",
+      "section": "Glass",
+      "doc": "Amber glass, the bottle tint, over 5 mm.",
+      "index": 21
+    },
+    {
+      "kind": "material",
+      "package": "glass",
+      "symbol": "acrylic",
+      "section": "Plastics and liquids",
+      "doc": "Cast acrylic (PMMA), clearer than glass with a lower index.",
+      "index": 22
+    },
+    {
+      "kind": "material",
+      "package": "glass",
+      "symbol": "polycarbonate",
+      "section": "Plastics and liquids",
+      "doc": "Polycarbonate, the high-index engineering plastic, with a faint haze.",
+      "index": 23
+    },
+    {
+      "kind": "material",
+      "package": "glass",
+      "symbol": "resin",
+      "section": "Plastics and liquids",
+      "doc": "Clear SLA resin, a satin finish with a pale amber tint over 8 mm.",
+      "index": 24
+    },
+    {
+      "kind": "material",
+      "package": "glass",
+      "symbol": "water",
+      "section": "Plastics and liquids",
+      "doc": "Water, with a faint cyan tint over 200 mm.",
+      "index": 25
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "diamond",
+      "section": "Crystal",
+      "doc": "Diamond. Source: Refractive index database.",
+      "index": 26
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "glassBorosilicate",
+      "section": "Crystal",
+      "doc": "Glass (Borosilicate). Borosilicate glass has numerous advantages over regular soda-lime glass, including having a higher clarity (transparency). Borosilicate is generally slightly more expensive than soda-lime glass. Source: Refractive index database.",
+      "index": 27
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "glassSodaLime",
+      "section": "Crystal",
+      "doc": "Glass (Soda-lime). Soda-lime glass is the most prevelant type of glass made, and accounts for about 90% of manufactured glass. It's used for windowpanes and glass containers (bottles and jars) for beverages, food, and some commodity items. Source: Refractive index database.",
+      "index": 28
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "ice",
+      "section": "Crystal",
+      "doc": "Ice. Source: Refractive index database.",
+      "index": 29
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "marble",
+      "section": "Crystal",
+      "doc": "Marble. Source: A Practical Model for Subsurface Light Transport.",
+      "index": 30
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "quartz",
+      "section": "Crystal",
+      "doc": "Quartz. Source: Quartz.",
+      "index": 31
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "salt",
+      "section": "Crystal",
+      "doc": "Salt. Source: Refractive index database.",
+      "index": 32
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "sand",
+      "section": "Crystal",
+      "doc": "Sand. Source: Feeding a Physically Based Shading Model.",
+      "index": 33
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "sapphire",
+      "section": "Crystal",
+      "doc": "Sapphire. Source: Refractive index database.",
+      "index": 34
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "snow",
+      "section": "Crystal",
+      "doc": "Snow. Source: Feeding a Physically Based Shading Model.",
+      "index": 35
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "bloodDeoxygenated",
+      "section": "Human",
+      "doc": "Blood (Deoxygenated). The color of blood depends on its oxygen level. When hemoglobin has a full oxygen load, it has a bright red color, and when it's deoxygenated it's a darker red. For example, arterial and capillary blood is bright, and venous blood is dark. Upon exposure to air, deoxygenated blood quickly oxygenates and turns a brighter shade of red. Source: Blood.",
+      "index": 36
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "bloodOxygenated",
+      "section": "Human",
+      "doc": "Blood (Oxygenated). The color of blood depends on its oxygen level. When hemoglobin has a full oxygen load, it has a bright red color, and when it's deoxygenated it's a darker red. For example, arterial and capillary blood is bright, and venous blood is dark. Upon exposure to air, deoxygenated blood quickly oxygenates and turns a brighter shade of red. Source: Blood.",
+      "index": 37
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "eyeCornea",
+      "section": "Human",
+      "doc": "Eye (Cornea). Source: Cornea.",
+      "index": 38
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "eyeLens",
+      "section": "Human",
+      "doc": "Eye (Lens). The refractive index of human lens varies from approximately 1.406 in the central layers down to 1.386 in less dense layers of the lens. This index gradient enhances the optical power of the lens. Source: Lens (vertebrate anatomy).",
+      "index": 39
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "eyeSclera",
+      "section": "Human",
+      "doc": "Eye (Sclera). Source: Optical properties of human sclera in spectral range 370-2500 nm.",
+      "index": 40
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "skinI",
+      "section": "Human",
+      "doc": "Skin I. Source: A Practical Model for Subsurface Light Transport.",
+      "index": 41
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "skinII",
+      "section": "Human",
+      "doc": "Skin II. Source: A Practical Model for Subsurface Light Transport.",
+      "index": 42
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "skinIII",
+      "section": "Human",
+      "doc": "Skin III. Source: A Practical Model for Subsurface Light Transport.",
+      "index": 43
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "skinIV",
+      "section": "Human",
+      "doc": "Skin IV. Source: A Practical Model for Subsurface Light Transport.",
+      "index": 44
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "skinV",
+      "section": "Human",
+      "doc": "Skin V. Source: A Practical Model for Subsurface Light Transport.",
+      "index": 45
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "skinVI",
+      "section": "Human",
+      "doc": "Skin VI. Source: A Practical Model for Subsurface Light Transport.",
+      "index": 46
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "beerPaleLager",
+      "section": "Liquid",
+      "doc": "Beer (Pale Lager). While the index of refraction of beer depends on its alcohol and sugar contents, beer contains 90%-95% water, so the index of refraction can in most cases be assumed to be close to that of water. Source: Acquiring Scattering Properties Of Participating Media By Dilution.",
+      "index": 47
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "coffee",
+      "section": "Liquid",
+      "doc": "Coffee. Source: Photo Reference.",
+      "index": 48
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "cola",
+      "section": "Liquid",
+      "doc": "Cola. Source: Acquiring Scattering Properties Of Participating Media By Dilution.",
+      "index": 49
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "cookingOil",
+      "section": "Liquid",
+      "doc": "Cooking Oil. Source: Index of Refraction of Vegetable Oil.",
+      "index": 50
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "cream",
+      "section": "Liquid",
+      "doc": "Cream. Source: A Practical Model for Subsurface Light Transport.",
+      "index": 51
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "ethanol",
+      "section": "Liquid",
+      "doc": "Ethanol. Ethanol is also called ethyl alcohol, grain alcohol, drinking alcohol, or simply alcohol. The refractive index of an alcoholic beverage such as vodka depends on the ratio of alcohol and water. For example, vodka with 40% alcohol by volume contains 40% ethanol and 60% water. Source: Ethanol.",
+      "index": 52
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "gasoline",
+      "section": "Liquid",
+      "doc": "Gasoline. Source: Gasoline.",
+      "index": 53
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "honeyLiquid",
+      "section": "Liquid",
+      "doc": "Honey (Liquid). Variations in its water content alter its refractive index. Typically, the refractive index for honey ranges from 1.504 at 13% water content to 1.474 at 25%. Fresh honey is liquid and clear but with time it crystallizes and becomes thicker and less clear. The crystallization depends on temperature and the ratio of glucose and fructose. Source: Honey.",
+      "index": 54
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "juiceApple",
+      "section": "Liquid",
+      "doc": "Juice (Apple). Source: Acquiring Scattering Properties Of Participating Media By Dilution.",
+      "index": 55
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "juiceCranberry",
+      "section": "Liquid",
+      "doc": "Juice (Cranberry). Source: Acquiring Scattering Properties Of Participating Media By Dilution.",
+      "index": 56
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "juiceGrape",
+      "section": "Liquid",
+      "doc": "Juice (Grape). Source: Acquiring Scattering Properties Of Participating Media By Dilution.",
+      "index": 57
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "juiceRubyGrapefruit",
+      "section": "Liquid",
+      "doc": "Juice (Ruby Grapefruit). Source: Acquiring Scattering Properties Of Participating Media By Dilution.",
+      "index": 58
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "juiceWhiteGrapefruit",
+      "section": "Liquid",
+      "doc": "Juice (White Grapefruit). Source: Acquiring Scattering Properties Of Participating Media By Dilution.",
+      "index": 59
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "milk",
+      "section": "Liquid",
+      "doc": "Milk. Cow's milk Source: A Practical Model for Subsurface Light Transport.",
+      "index": 60
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "petroleum",
+      "section": "Liquid",
+      "doc": "Petroleum. The viscosity of crude oil is sensitive to temperature. Source: Petroleum.",
+      "index": 61
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "vodka40",
+      "section": "Liquid",
+      "doc": "Vodka (40%). The refractive index of vodka depends on the ratio of alcohol and water. Vodka with 40% alcohol by volume contains 40% ethanol and 60% water. Source: Vodka.",
+      "index": 62
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "water",
+      "section": "Liquid",
+      "doc": "Water. While relatively small quantities of water appear to be colorless, pure water has a slight blue color that becomes deeper as the thickness of the observed sample increases beyond 50 cm. The hue of water is an intrinsic property and is caused by selective absorption and scattering of white light. Dissolved elements or suspended impurities may give water a different color. Source: Refractive index database.",
+      "index": 63
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "wineRed",
+      "section": "Liquid",
+      "doc": "Wine (Red). Source: Acquiring Scattering Properties Of Participating Media By Dilution.",
+      "index": 64
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "wineWhite",
+      "section": "Liquid",
+      "doc": "Wine (White). Source: Acquiring Scattering Properties Of Participating Media By Dilution.",
+      "index": 65
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "asphaltFresh",
+      "section": "Manmade",
+      "doc": "Asphalt (Fresh). Asphalt consists of crushed stone, gravel, and sand, bound together with bitumen. Source: Spectral Materials Database.",
+      "index": 66
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "blackboard",
+      "section": "Manmade",
+      "doc": "Blackboard. Source: Spectral Materials Database.",
+      "index": 67
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "brick",
+      "section": "Manmade",
+      "doc": "Brick. Source: Spectrophotometer Measurement.",
+      "index": 68
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "carPaint",
+      "section": "Manmade",
+      "doc": "Car Paint. Modern car paints are nearly always an acrylic polyurethane \"enamel\" with a pigmented basecoat and a clear topcoat. It may be described as \"acrylic\", \"acrylic enamel\", \"urethane\", etc. and the clearcoat in particular may be described as a lacquer. The size of the metal flakes in metallic paints is typically between 100 to 400 microns in diameter. Modern automobile paint is applied in several layers, with a total thickness of around 100 μm (0.1mm). Source: Automotive Paint.",
+      "index": 69
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "cardboard",
+      "section": "Manmade",
+      "doc": "Cardboard. The material commonly referred to as \"cardboard\" is more specifically named \"corrugated fiberboard\". Source: Spectrophotometer Measurement.",
+      "index": 70
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "castIron",
+      "section": "Manmade",
+      "doc": "Cast Iron. Source: Spectrophotometer Measurement.",
+      "index": 71
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "clay",
+      "section": "Manmade",
+      "doc": "Clay. Source: Spectrophotometer Measurement.",
+      "index": 72
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "concrete",
+      "section": "Manmade",
+      "doc": "Concrete. Source: Feeding a Physically Based Shading Model.",
+      "index": 73
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "grayCard",
+      "section": "Manmade",
+      "doc": "Gray Card. In photography and computer graphics, middle gray is a tone that is perceptually about halfway between black and white on a lightness scale. Light meters and cameras are often calibrated using an 18% gray card or a color reference card such as a ColorChecker. It is typically defined as 18% reflectance in visible light. Source: Gray Card.",
+      "index": 74
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "mitBlack",
+      "section": "Manmade",
+      "doc": "MIT Black. Source: MIT engineers develop “blackest black” material to date.",
+      "index": 75
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "musouBlack",
+      "section": "Manmade",
+      "doc": "Musou Black. Musou Black is one of the darkest paints available. Darker materials can be achieved by using carbon nanotube technology, such as the “MIT Black” material. Source: Spectrophotometer Measurement.",
+      "index": 76
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "officePaper",
+      "section": "Manmade",
+      "doc": "Office Paper. Office paper contains optical brightening additives that absorb light in the ultraviolet and violet region (usually 340-370 nm), and re-emit light in the blue region (typically 420-470 nm) by fluorescence. Source: Spectrophotometer Measurement.",
+      "index": 77
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "polystyreneFoam",
+      "section": "Manmade",
+      "doc": "Polystyrene (Foam). Source: Spectral Materials Database.",
+      "index": 78
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "porcelain",
+      "section": "Manmade",
+      "doc": "Porcelain. Source: Spectrophotometer Measurement.",
+      "index": 79
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "rust",
+      "section": "Manmade",
+      "doc": "Rust. When iron reacts with oxygen it transforms into a non-metal substance called iron oxide. Source: Spectrophotometer Measurement.",
+      "index": 80
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "spectralon",
+      "section": "Manmade",
+      "doc": "Spectralon. Spectralon is a fluoropolymer that has the highest diffuse reflectance of any known material or coating over the ultraviolet, visible, and near-infrared regions of the spectrum. It is the whitest substance available and reflects 99% of the light. Source: Spectralon.",
+      "index": 81
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "terracotta",
+      "section": "Manmade",
+      "doc": "Terracotta. Source: Spectrophotometer Measurement.",
+      "index": 82
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "tire",
+      "section": "Manmade",
+      "doc": "Tire. Car tire. Source: Spectrophotometer Measurement.",
+      "index": 83
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "toiletPaper",
+      "section": "Manmade",
+      "doc": "Toilet Paper. Source: Spectrophotometer Measurement.",
+      "index": 84
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "tonerBlack",
+      "section": "Manmade",
+      "doc": "Toner (Black). Black toner printed on office paper with linear sRGB values of 0, 0, 0. Source: Spectrophotometer Measurement.",
+      "index": 85
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "toothpaste",
+      "section": "Manmade",
+      "doc": "Toothpaste. Source: Spectrophotometer Measurement.",
+      "index": 86
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "whiteboard",
+      "section": "Manmade",
+      "doc": "Whiteboard. Source: Spectral Materials Database.",
+      "index": 87
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "aluminum",
+      "section": "Metal",
+      "doc": "Aluminum. Source: Refractive index database.",
+      "index": 88
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "aluminumAnodizedRed",
+      "section": "Metal",
+      "doc": "Aluminum (Anodized Red). Aluminum can be colorized by a process called anodization. It creates a layer of aluminum oxide by supplying different voltages which results in different thickness. Unlike titanium, aluminum doesn't get vivid colors from anodization so dyes are used to color it further. Source: Refractive index database.",
+      "index": 89
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "beryllium",
+      "section": "Metal",
+      "doc": "Beryllium. Source: Refractive index database.",
+      "index": 90
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "brass",
+      "section": "Metal",
+      "doc": "Brass. Brass is an alloy of copper and zinc, with a bright and gold-like appearance. It is similar to bronze, another alloy containing copper that uses tin instead of zinc. Historically, the distinction between the two alloys has been less consistent and clear, and modern practice in museums and archaeology increasingly avoids both terms for historical objects in favor of the more general \"copper alloy\". Source: Refractive index database.",
+      "index": 91
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "cesium",
+      "section": "Metal",
+      "doc": "Cesium. Source: Refractive index database.",
+      "index": 92
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "chromium",
+      "section": "Metal",
+      "doc": "Chromium. Source: Refractive index database.",
+      "index": 93
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "cobalt",
+      "section": "Metal",
+      "doc": "Cobalt. Source: Refractive index database.",
+      "index": 94
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "copper",
+      "section": "Metal",
+      "doc": "Copper. Source: Refractive index database.",
+      "index": 95
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "germanium",
+      "section": "Metal",
+      "doc": "Germanium. Source: Refractive index database.",
+      "index": 96
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "gold",
+      "section": "Metal",
+      "doc": "Gold. Source: Refractive index database.",
+      "index": 97
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "iridium",
+      "section": "Metal",
+      "doc": "Iridium. Source: Refractive index database.",
+      "index": 98
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "iron",
+      "section": "Metal",
+      "doc": "Iron. Source: Refractive index database.",
+      "index": 99
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "lead",
+      "section": "Metal",
+      "doc": "Lead. Source: Refractive index database.",
+      "index": 100
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "lithium",
+      "section": "Metal",
+      "doc": "Lithium. Source: Refractive index database.",
+      "index": 101
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "magnesium",
+      "section": "Metal",
+      "doc": "Magnesium. Source: Refractive index database.",
+      "index": 102
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "manganese",
+      "section": "Metal",
+      "doc": "Manganese. Source: Refractive index database.",
+      "index": 103
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "mercury",
+      "section": "Metal",
+      "doc": "Mercury. Mercury is the only metallic element that is known to be liquid at standard conditions. Source: Refractive index database.",
+      "index": 104
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "molybdenum",
+      "section": "Metal",
+      "doc": "Molybdenum. Source: Refractive index database.",
+      "index": 105
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "nickel",
+      "section": "Metal",
+      "doc": "Nickel. Source: Refractive index database.",
+      "index": 106
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "palladium",
+      "section": "Metal",
+      "doc": "Palladium. Source: Refractive index database.",
+      "index": 107
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "platinum",
+      "section": "Metal",
+      "doc": "Platinum. Source: Refractive index database.",
+      "index": 108
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "potassium",
+      "section": "Metal",
+      "doc": "Potassium. Source: Refractive index database.",
+      "index": 109
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "rubidium",
+      "section": "Metal",
+      "doc": "Rubidium. Source: Refractive index database.",
+      "index": 110
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "silicon",
+      "section": "Metal",
+      "doc": "Silicon. Source: Refractive index database.",
+      "index": 111
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "silver",
+      "section": "Metal",
+      "doc": "Silver. Source: Refractive index database.",
+      "index": 112
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "sodium",
+      "section": "Metal",
+      "doc": "Sodium. Source: Refractive index database.",
+      "index": 113
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "stainlessSteel",
+      "section": "Metal",
+      "doc": "Stainless Steel. Source: Refractive index database.",
+      "index": 114
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "titanium",
+      "section": "Metal",
+      "doc": "Titanium. Source: Refractive index database.",
+      "index": 115
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "titaniumAnodized",
+      "section": "Metal",
+      "doc": "Titanium (Anodized). Titanium can be colorized by a process called anodization. It creates a layer of titanium dioxide by supplying different voltages which results in different thickness and color. Additional colors can be achieved by adding dyes. Source: Refractive index database.",
+      "index": 116
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "tungsten",
+      "section": "Metal",
+      "doc": "Tungsten. Source: Refractive index database.",
+      "index": 117
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "vanadium",
+      "section": "Metal",
+      "doc": "Vanadium. Source: Refractive index database.",
+      "index": 118
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "zinc",
+      "section": "Metal",
+      "doc": "Zinc. Source: Refractive index database.",
+      "index": 119
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "amber",
+      "section": "Organic",
+      "doc": "Amber. Source: Amber.",
+      "index": 120
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "banana",
+      "section": "Organic",
+      "doc": "Banana. Source: Spectral Materials Database.",
+      "index": 121
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "bone",
+      "section": "Organic",
+      "doc": "Bone. Source: Density of Bone.",
+      "index": 122
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "carrot",
+      "section": "Organic",
+      "doc": "Carrot. Source: Spectral Materials Database.",
+      "index": 123
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "charcoal",
+      "section": "Organic",
+      "doc": "Charcoal. Source: Feeding a Physically Based Shading Model.",
+      "index": 124
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "chocolate",
+      "section": "Organic",
+      "doc": "Chocolate. Source: Spectrophotometer Measurement.",
+      "index": 125
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "eggShellBrown",
+      "section": "Organic",
+      "doc": "Egg Shell (Brown). Brown hen egg from grocery store. Source: Spectrophotometer Measurement.",
+      "index": 126
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "eggShellWhite",
+      "section": "Organic",
+      "doc": "Egg Shell (White). White hen egg from grocery store. Source: Spectrophotometer Measurement.",
+      "index": 127
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "grass",
+      "section": "Organic",
+      "doc": "Grass. Source: Spectral Materials Database.",
+      "index": 128
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "honeyCrystallized",
+      "section": "Organic",
+      "doc": "Honey (Crystallized). Variations in its water content alter its refractive index. Typically, the refractive index for honey ranges from 1.504 at 13% water content to 1.474 at 25%. Fresh honey is liquid and clear but with time it crystallizes and becomes thicker and less clear. The crystallization depends on temperature and the ratio of glucose and fructose. Source: Honey.",
+      "index": 129
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "ketchup",
+      "section": "Organic",
+      "doc": "Ketchup. Source: A Practical Model for Subsurface Light Transport.",
+      "index": 130
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "lemon",
+      "section": "Organic",
+      "doc": "Lemon. Source: Spectral Materials Database.",
+      "index": 131
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "orange",
+      "section": "Organic",
+      "doc": "Orange. Source: Spectrophotometer Measurement.",
+      "index": 132
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "pearl",
+      "section": "Organic",
+      "doc": "Pearl. The akoya pearl is a saltwater cultured pearl from the akoya oyster. Akoya are considered to be the classic pearl used for necklaces and other pearl jewelry. Nacre is the material of which pearls are composed and consists of aragonite crystal layers separated by conchiolin, a protein secreted by mollusk shells. The thickness of these layers determines the color of reflection from the nacre. The transmission interference color is complementary to the reflection interference color. Source: Structural colors of pearls.",
+      "index": 133
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "soapBubble",
+      "section": "Organic",
+      "doc": "Soap Bubble. The colors of a soap bubble are the result of an interaction between the light reflected from the front and back surfaces of the soap film, a phenomenon known as thin-film interference. The thickness of a soap bubble can range between 10 nm and 1000 nm. It's thinner at the top due to gravity. Source: Soap Bubble Wiki - Color and Film Thickness.",
+      "index": 134
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "plasticAcrylic",
+      "section": "Plastic",
+      "doc": "Plastic (Acrylic). Source: Poly(methyl Methacrylate).",
+      "index": 135
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "plasticPC",
+      "section": "Plastic",
+      "doc": "Plastic (PC). Source: Polycarbonate.",
+      "index": 136
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "plasticPET",
+      "section": "Plastic",
+      "doc": "Plastic (PET). Source: Polyethylene Terephthalate.",
+      "index": 137
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "plasticPLA",
+      "section": "Plastic",
+      "doc": "Plastic (PLA). Source: Polylactic Acid.",
+      "index": 138
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "plasticPP",
+      "section": "Plastic",
+      "doc": "Plastic (PP). Source: Polypropylene.",
+      "index": 139
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "plasticPUR",
+      "section": "Plastic",
+      "doc": "Plastic (PUR). Modern car paints are nearly always an acrylic polyurethane \"enamel\" with a pigmented basecoat and a clear topcoat. It may be described as \"acrylic\", \"acrylic enamel\", \"urethane\", etc. and the clearcoat in particular may be described as a lacquer. Source: Polyurethane.",
+      "index": 140
+    },
+    {
+      "kind": "material",
+      "package": "physical",
+      "symbol": "plasticPVC",
+      "section": "Plastic",
+      "doc": "Plastic (PVC). Source: Polyvinyl Chloride.",
+      "index": 141
+    },
+    {
+      "kind": "material",
+      "package": "stone",
+      "symbol": "greyGranite",
+      "section": "Ready-made",
+      "doc": "Grey granite: 4 mm grains of grey, black and white, matte polished.",
+      "index": 142
+    },
+    {
+      "kind": "material",
+      "package": "stone",
+      "symbol": "whiteMarble",
+      "section": "Ready-made",
+      "doc": "White marble with grey veins 25 mm across, honed.",
+      "index": 143
+    },
+    {
+      "kind": "material",
+      "package": "stone",
+      "symbol": "carrara",
+      "section": "Ready-made",
+      "doc": "Carrara marble, veins along +Z, honed.",
+      "index": 144
+    },
+    {
+      "kind": "material",
+      "package": "stone",
+      "symbol": "statuario",
+      "section": "Ready-made",
+      "doc": "Statuario marble, veins along +Z, honed.",
+      "index": 145
+    },
+    {
+      "kind": "material",
+      "package": "stone",
+      "symbol": "calacatta",
+      "section": "Ready-made",
+      "doc": "Calacatta marble, veins along +Z, honed.",
+      "index": 146
+    },
+    {
+      "kind": "material",
+      "package": "stone",
+      "symbol": "glintingGranite",
+      "section": "Ready-made",
+      "doc": "Grey granite whose quartz glints, 4 mm grains, polished.",
+      "index": 147
+    },
+    {
+      "kind": "material",
+      "package": "stone",
+      "symbol": "flagstone",
+      "section": "Ready-made",
+      "doc": "Flagstone paving, 250 mm warm grey slabs with dark joints.",
+      "index": 148
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "whiteOak",
+      "section": "Ready-made",
+      "doc": "White oak, stem along +Z through the origin, at its default look.",
+      "index": 149
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "redOak",
+      "section": "Ready-made",
+      "doc": "Red oak, stem along +Z through the origin, at its default look.",
+      "index": 150
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "liveOak",
+      "section": "Ready-made",
+      "doc": "Live oak, stem along +Z through the origin, at its default look.",
+      "index": 151
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "japaneseElm",
+      "section": "Ready-made",
+      "doc": "Japanese elm, stem along +Z through the origin, at its default look.",
+      "index": 152
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "walnut",
+      "section": "Ready-made",
+      "doc": "Walnut, stem along +Z through the origin, at its default look.",
+      "index": 153
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "cherry",
+      "section": "Ready-made",
+      "doc": "Cherry, stem along +Z through the origin, at its default look.",
+      "index": 154
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "sugarMaple",
+      "section": "Ready-made",
+      "doc": "Sugar maple, stem along +Z through the origin, at its default look.",
+      "index": 155
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "norwayMaple",
+      "section": "Ready-made",
+      "doc": "Norway maple, stem along +Z through the origin, at its default look.",
+      "index": 156
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "beech",
+      "section": "Ready-made",
+      "doc": "Beech, stem along +Z through the origin, at its default look.",
+      "index": 157
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "rosewood",
+      "section": "Ready-made",
+      "doc": "Rosewood, stem along +Z through the origin, at its default look.",
+      "index": 158
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "macassarEbony",
+      "section": "Ready-made",
+      "doc": "Macassar ebony, stem along +Z through the origin, at its default look.",
+      "index": 159
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "ebony",
+      "section": "Ready-made",
+      "doc": "Ebony, stem along +Z through the origin, at its default look.",
+      "index": 160
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "yew",
+      "section": "Ready-made",
+      "doc": "Yew, stem along +Z through the origin, at its default look.",
+      "index": 161
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "douglasFir",
+      "section": "Ready-made",
+      "doc": "Douglas fir, stem along +Z through the origin, at its default look.",
+      "index": 162
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "chestnut",
+      "section": "Ready-made",
+      "doc": "Chestnut, stem along +Z through the origin, at its default look.",
+      "index": 163
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "japaneseWalnut",
+      "section": "Ready-made",
+      "doc": "Japanese walnut, stem along +Z through the origin, at its default look.",
+      "index": 164
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "keyaki",
+      "section": "Ready-made",
+      "doc": "Keyaki, stem along +Z through the origin, at its default look.",
+      "index": 165
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "cherryBirch",
+      "section": "Ready-made",
+      "doc": "Cherry birch, stem along +Z through the origin, at its default look.",
+      "index": 166
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "sycamore",
+      "section": "Ready-made",
+      "doc": "Sycamore, stem along +Z through the origin, at its default look.",
+      "index": 167
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "sakura",
+      "section": "Ready-made",
+      "doc": "Sakura, stem along +Z through the origin, at its default look.",
+      "index": 168
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "horseChestnut",
+      "section": "Ready-made",
+      "doc": "Horse chestnut, stem along +Z through the origin, at its default look.",
+      "index": 169
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "hinoki",
+      "section": "Ready-made",
+      "doc": "Hinoki, stem along +Z through the origin, at its default look.",
+      "index": 170
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "sugi",
+      "section": "Ready-made",
+      "doc": "Sugi, stem along +Z through the origin, at its default look.",
+      "index": 171
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "ginkgo",
+      "section": "Ready-made",
+      "doc": "Ginkgo, stem along +Z through the origin, at its default look.",
+      "index": 172
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "poplar",
+      "section": "Ready-made",
+      "doc": "Poplar, stem along +Z through the origin, at its default look.",
+      "index": 173
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "darkPoplar",
+      "section": "Ready-made",
+      "doc": "Dark poplar, stem along +Z through the origin, at its default look.",
+      "index": 174
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "butternut",
+      "section": "Ready-made",
+      "doc": "Butternut, stem along +Z through the origin, at its default look.",
+      "index": 175
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "englishWalnut",
+      "section": "Ready-made",
+      "doc": "English walnut, stem along +Z through the origin, at its default look.",
+      "index": 176
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "honeyLocust",
+      "section": "Ready-made",
+      "doc": "Honey locust, stem along +Z through the origin, at its default look.",
+      "index": 177
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "hickory",
+      "section": "Ready-made",
+      "doc": "Hickory, stem along +Z through the origin, at its default look.",
+      "index": 178
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "teak",
+      "section": "Ready-made",
+      "doc": "Teak, stem along +Z through the origin, at its default look.",
+      "index": 179
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "padauk",
+      "section": "Ready-made",
+      "doc": "Padauk, stem along +Z through the origin, at its default look.",
+      "index": 180
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "mahogany",
+      "section": "Ready-made",
+      "doc": "Mahogany, stem along +Z through the origin, at its default look.",
+      "index": 181
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "americanElm",
+      "section": "Ready-made",
+      "doc": "American elm, stem along +Z through the origin, at its default look.",
+      "index": 182
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "dutchElm",
+      "section": "Ready-made",
+      "doc": "Dutch elm, stem along +Z through the origin, at its default look.",
+      "index": 183
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "chineseElm",
+      "section": "Ready-made",
+      "doc": "Chinese elm, stem along +Z through the origin, at its default look.",
+      "index": 184
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "whiteAsh",
+      "section": "Ready-made",
+      "doc": "White ash, stem along +Z through the origin, at its default look.",
+      "index": 185
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "europeanAsh",
+      "section": "Ready-made",
+      "doc": "European ash, stem along +Z through the origin, at its default look.",
+      "index": 186
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "oliveAsh",
+      "section": "Ready-made",
+      "doc": "Olive ash, stem along +Z through the origin, at its default look.",
+      "index": 187
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "osageOrange",
+      "section": "Ready-made",
+      "doc": "Osage orange, stem along +Z through the origin, at its default look.",
+      "index": 188
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "europeanSycamore",
+      "section": "Ready-made",
+      "doc": "European sycamore, stem along +Z through the origin, at its default look.",
+      "index": 189
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "purpleheart",
+      "section": "Ready-made",
+      "doc": "Purpleheart, stem along +Z through the origin, at its default look.",
+      "index": 190
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "zebrawood",
+      "section": "Ready-made",
+      "doc": "Zebrawood, stem along +Z through the origin, at its default look.",
+      "index": 191
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "lacewood",
+      "section": "Ready-made",
+      "doc": "Lacewood, stem along +Z through the origin, at its default look.",
+      "index": 192
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "spruce",
+      "section": "Ready-made",
+      "doc": "Spruce, stem along +Z through the origin, at its default look.",
+      "index": 193
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "westernRedCedar",
+      "section": "Ready-made",
+      "doc": "Western red cedar, stem along +Z through the origin, at its default look.",
+      "index": 194
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "aromaticCedar",
+      "section": "Ready-made",
+      "doc": "Aromatic cedar, stem along +Z through the origin, at its default look.",
+      "index": 195
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "holly",
+      "section": "Ready-made",
+      "doc": "Holly, stem along +Z through the origin, at its default look.",
+      "index": 196
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "weatheredOak",
+      "section": "Ready-made",
+      "doc": "Weathered oak, stem along +Z through the origin, at its default look.",
+      "index": 197
+    },
+    {
+      "kind": "material",
+      "package": "wood",
+      "symbol": "weatheredWalnut",
+      "section": "Ready-made",
+      "doc": "Weathered walnut, stem along +Z through the origin, at its default look.",
+      "index": 198
+    },
+    {
+      "kind": "material",
+      "package": "weathering",
+      "symbol": "rustySteel",
+      "section": "Ready-made",
+      "doc": "Steel halfway to rust.",
+      "index": 199
+    },
+    {
+      "kind": "material",
+      "package": "weathering",
+      "symbol": "patinatedBronze",
+      "section": "Ready-made",
+      "doc": "Bronze halfway to its green patina.",
+      "index": 200
+    },
+    {
+      "kind": "material",
+      "package": "playful",
+      "symbol": "blackWhiteChecker",
+      "section": "Ready-made",
+      "doc": "A black and white checkerboard of 10 mm squares, matte.",
+      "index": 201
+    },
+    {
+      "kind": "material",
+      "package": "playful",
+      "symbol": "bluePolkaDot",
+      "section": "Ready-made",
+      "doc": "White polka dots 4 mm across every 8 mm on blue plastic.",
+      "index": 202
+    },
+    {
+      "kind": "material",
+      "package": "playful",
+      "symbol": "tealCellSkin",
+      "section": "Ready-made",
+      "doc": "Teal cell walls on white, 5 mm cells, matte.",
+      "index": 203
+    },
+    {
+      "kind": "material",
+      "package": "playful",
+      "symbol": "polkaDotDrift",
+      "section": "Ready-made",
+      "doc": "White polka dots 4 mm across every 8 mm on blue plastic, drifting 2 mm/s along +X.",
+      "index": 204
+    },
+    {
+      "kind": "material",
+      "package": "natural",
+      "symbol": "rippledWater",
+      "section": "Ready-made",
+      "doc": "Water rippled by a light breeze, 8 mm ripples.",
+      "index": 205
+    },
+    {
+      "kind": "material",
+      "package": "natural",
+      "symbol": "glowingLava",
+      "section": "Ready-made",
+      "doc": "Glowing lava under a cracked crust, 15 mm plates.",
+      "index": 206
+    },
+    {
+      "kind": "material",
+      "package": "natural",
+      "symbol": "lava",
+      "section": "Ready-made",
+      "doc": "Cracked lava crust with glowing seams, 15 mm cracks, without the hero relief.",
+      "index": 207
+    },
+    {
+      "kind": "material",
+      "package": "natural",
+      "symbol": "fogMaterial",
+      "section": "Ready-made",
+      "doc": "Fog at half density, a cool white.",
+      "index": 208
+    },
+    {
+      "kind": "material",
+      "package": "natural",
+      "symbol": "cloudMaterial",
+      "section": "Ready-made",
+      "doc": "Cloud at six tenths density, white, 15 mm puffs billowing over 10 s, 3 mm high.",
+      "index": 209
+    },
+    {
+      "kind": "material",
+      "package": "natural",
+      "symbol": "terrain",
+      "section": "Ready-made",
+      "doc": "Terrain at a scale of 3, sea to snow, no polar bias.",
+      "index": 210
+    },
+    {
+      "kind": "material",
+      "package": "animated",
+      "symbol": "ocean",
+      "section": "Ready-made",
+      "doc": "Open sea under a 10 m/s wind along +X, a little across, choppy.",
+      "index": 211
+    },
+    {
+      "kind": "material",
+      "package": "animated",
+      "symbol": "rain",
+      "section": "Ready-made",
+      "doc": "A puddle under 10 mm/h of rain, 2 mm drops.",
+      "index": 212
+    },
+    {
+      "kind": "material",
+      "package": "animated",
+      "symbol": "mudPot",
+      "section": "Ready-made",
+      "doc": "A mud pot, 6 mm bubbles every 2 s, stiff mud.",
+      "index": 213
+    },
+    {
+      "kind": "material",
+      "package": "animated",
+      "symbol": "sandRipples",
+      "section": "Ready-made",
+      "doc": "Sand rippled by a 10 m/s wind, at a model scale of 60.",
+      "index": 214
+    },
+    {
+      "kind": "material",
+      "package": "coating",
+      "symbol": "redPowderCoat",
+      "section": "Ready-made",
+      "doc": "Red powder coat at 85 gloss units, a little orange peel.",
+      "index": 215
+    },
+    {
+      "kind": "material",
+      "package": "coating",
+      "symbol": "blackWrinkleCoat",
+      "section": "Ready-made",
+      "doc": "Black wrinkle finish, 0.6 mm wrinkles.",
+      "index": 216
+    },
+    {
+      "kind": "material",
+      "package": "coating",
+      "symbol": "greenSandCoat",
+      "section": "Ready-made",
+      "doc": "Green sand-texture coat, 0.2 mm grain.",
+      "index": 217
+    },
+    {
+      "kind": "material",
+      "package": "coating",
+      "symbol": "blueHammertone",
+      "section": "Ready-made",
+      "doc": "Blue hammertone, 4 mm hammer marks.",
+      "index": 218
+    },
+    {
+      "kind": "material",
+      "package": "coating",
+      "symbol": "newGalvanized",
+      "section": "Ready-made",
+      "doc": "Hot-dip galvanized steel, fresh: bright 1 mm spangles.",
+      "index": 219
+    },
+    {
+      "kind": "material",
+      "package": "coating",
+      "symbol": "agedGalvanized",
+      "section": "Ready-made",
+      "doc": "Hot-dip galvanized steel, aged to a dull grey.",
+      "index": 220
+    },
+    {
+      "kind": "material",
+      "package": "printed",
+      "symbol": "whiteNylonPowder",
+      "section": "Ready-made",
+      "doc": "Laser-sintered white nylon, as printed.",
+      "index": 221
+    },
+    {
+      "kind": "material",
+      "package": "printed",
+      "symbol": "blackNylonPowder",
+      "section": "Ready-made",
+      "doc": "Black nylon from a powder bed, as Multi Jet Fusion prints it.",
+      "index": 222
+    },
+    {
+      "kind": "material",
+      "package": "printed",
+      "symbol": "fdm",
+      "section": "Ready-made",
+      "doc": "A part printed by fused filament in blue PETG, 0.2 mm layers along +Z through the origin, 70 gloss units.",
+      "index": 223
+    },
+    {
+      "kind": "material",
+      "package": "printed",
+      "symbol": "resin",
+      "section": "Ready-made",
+      "doc": "A part printed in grey resin, 0.05 mm layers along +Z through the origin, opaque.",
+      "index": 224
+    }
+  ],
+  "colors": {
+    "animated.mudPot": [
+      [
+        0.3,
+        0.29,
+        0.27
+      ],
+      [
+        0.3,
+        0.29,
+        0.27
+      ],
+      [
+        0.412,
+        0.402,
+        0.378
+      ]
+    ],
+    "animated.ocean": [
+      [
+        0.04,
+        0.16,
+        0.29
+      ],
+      [
+        0.04,
+        0.16,
+        0.29
+      ],
+      [
+        0.057,
+        0.251,
+        0.345
+      ]
+    ],
+    "animated.rain": [
+      [
+        0.05,
+        0.11,
+        0.12
+      ]
+    ],
+    "animated.sandRipples": [
+      [
+        0.565,
+        0.48,
+        0.35
+      ],
+      [
+        0.748,
+        0.63,
+        0.434
+      ],
+      [
+        0.76,
+        0.64,
+        0.44
+      ]
+    ],
+    "coating.agedGalvanized": [
+      [
+        0.627,
+        0.647,
+        0.659
+      ],
+      [
+        0.644,
+        0.664,
+        0.676
+      ],
+      [
+        0.657,
+        0.677,
+        0.691
+      ]
+    ],
+    "coating.blackWrinkleCoat": [
+      [
+        0.04,
+        0.04,
+        0.045
+      ]
+    ],
+    "coating.blueHammertone": [
+      [
+        0.159,
+        0.283,
+        0.398
+      ],
+      [
+        0.176,
+        0.312,
+        0.439
+      ],
+      [
+        0.203,
+        0.36,
+        0.507
+      ]
+    ],
+    "coating.greenSandCoat": [
+      [
+        0.12,
+        0.22,
+        0.12
+      ]
+    ],
+    "coating.newGalvanized": [
+      [
+        0.74,
+        0.759,
+        0.777
+      ],
+      [
+        0.796,
+        0.816,
+        0.836
+      ],
+      [
+        0.843,
+        0.864,
+        0.885
+      ]
+    ],
+    "coating.redPowderCoat": [
+      [
+        0.62,
+        0.06,
+        0.05
+      ]
+    ],
+    "glass.acrylic": [
+      [
+        1,
+        1,
+        1
+      ]
+    ],
+    "glass.amber": [
+      [
+        0.95,
+        0.6,
+        0.15
+      ]
+    ],
+    "glass.clear": [
+      [
+        1,
+        1,
+        1
+      ]
+    ],
+    "glass.frosted": [
+      [
+        1,
+        1,
+        1
+      ]
+    ],
+    "glass.polycarbonate": [
+      [
+        1,
+        1,
+        1
+      ]
+    ],
+    "glass.resin": [
+      [
+        0.95,
+        0.85,
+        0.6
+      ]
+    ],
+    "glass.smoked": [
+      [
+        0.35,
+        0.35,
+        0.37
+      ]
+    ],
+    "glass.water": [
+      [
+        0.8,
+        0.93,
+        0.97
+      ]
+    ],
+    "metal.aluminum": [
+      [
+        0.96,
+        0.96,
+        0.97
+      ]
+    ],
+    "metal.brass": [
+      [
+        0.95,
+        0.9,
+        0.69
+      ]
+    ],
+    "metal.castIron": [
+      [
+        0.45,
+        0.45,
+        0.46
+      ]
+    ],
+    "metal.chromium": [
+      [
+        0.77,
+        0.78,
+        0.77
+      ]
+    ],
+    "metal.copper": [
+      [
+        0.98,
+        0.82,
+        0.76
+      ]
+    ],
+    "metal.gold": [
+      [
+        1,
+        0.89,
+        0.62
+      ]
+    ],
+    "metal.stainless": [
+      [
+        0.8,
+        0.81,
+        0.82
+      ]
+    ],
+    "metal.steel": [
+      [
+        0.77,
+        0.78,
+        0.78
+      ]
+    ],
+    "metal.titanium": [
+      [
+        0.76,
+        0.74,
+        0.7
+      ]
+    ],
+    "metal.zinc": [
+      [
+        0.8,
+        0.82,
+        0.84
+      ]
+    ],
+    "natural.cloudMaterial": [
+      [
+        1,
+        1,
+        1
+      ]
+    ],
+    "natural.fogMaterial": [
+      [
+        0.9,
+        0.92,
+        0.95
+      ]
+    ],
+    "natural.glowingLava": [
+      [
+        0.12,
+        0.09,
+        0.08
+      ],
+      [
+        0.12,
+        0.09,
+        0.08
+      ],
+      [
+        1,
+        0.4,
+        0.05
+      ]
+    ],
+    "natural.lava": [
+      [
+        0.12,
+        0.09,
+        0.08
+      ],
+      [
+        0.12,
+        0.09,
+        0.08
+      ],
+      [
+        1,
+        0.4,
+        0.05
+      ]
+    ],
+    "natural.rippledWater": [
+      [
+        0.8,
+        0.93,
+        0.97
+      ]
+    ],
+    "natural.terrain": [
+      [
+        0.02,
+        0.07,
+        0.2
+      ],
+      [
+        0.15,
+        0.272,
+        0.101
+      ],
+      [
+        0.329,
+        0.382,
+        0.206
+      ]
+    ],
+    "physical.aluminum": [
+      [
+        0.962,
+        0.965,
+        0.966
+      ]
+    ],
+    "physical.aluminumAnodizedRed": [
+      [
+        0.798,
+        0,
+        0
+      ]
+    ],
+    "physical.amber": [
+      [
+        0.921,
+        0.573,
+        0.209
+      ]
+    ],
+    "physical.asphaltFresh": [
+      [
+        0.229,
+        0.225,
+        0.221
+      ]
+    ],
+    "physical.banana": [
+      [
+        0.817,
+        0.756,
+        0.367
+      ]
+    ],
+    "physical.beerPaleLager": [
+      [
+        0.95,
+        0.894,
+        0.772
+      ]
+    ],
+    "physical.beryllium": [
+      [
+        0.761,
+        0.757,
+        0.757
+      ]
+    ],
+    "physical.blackboard": [
+      [
+        0.218,
+        0.218,
+        0.218
+      ]
+    ],
+    "physical.bloodDeoxygenated": [
+      [
+        0.676,
+        0,
+        0
+      ]
+    ],
+    "physical.bloodOxygenated": [
+      [
+        0.823,
+        0.039,
+        0.061
+      ]
+    ],
+    "physical.bone": [
+      [
+        0.903,
+        0.903,
+        0.835
+      ]
+    ],
+    "physical.brass": [
+      [
+        0.959,
+        0.895,
+        0.682
+      ]
+    ],
+    "physical.brick": [
+      [
+        0.549,
+        0.341,
+        0.274
+      ]
+    ],
+    "physical.carPaint": [
+      [
+        0.349,
+        0.349,
+        0.349
+      ]
+    ],
+    "physical.cardboard": [
+      [
+        0.627,
+        0.493,
+        0.366
+      ]
+    ],
+    "physical.carrot": [
+      [
+        0.861,
+        0.449,
+        0.176
+      ]
+    ],
+    "physical.castIron": [
+      [
+        0.179,
+        0.176,
+        0.176
+      ]
+    ],
+    "physical.cesium": [
+      [
+        0.864,
+        0.77,
+        0.524
+      ]
+    ],
+    "physical.charcoal": [
+      [
+        0.152,
+        0.152,
+        0.152
+      ]
+    ],
+    "physical.chocolate": [
+      [
+        0.439,
+        0.334,
+        0.272
+      ]
+    ],
+    "physical.chromium": [
+      [
+        0.829,
+        0.846,
+        0.855
+      ]
+    ],
+    "physical.clay": [
+      [
+        0.543,
+        0.378,
+        0.334
+      ]
+    ],
+    "physical.cobalt": [
+      [
+        0.854,
+        0.857,
+        0.838
+      ]
+    ],
+    "physical.coffee": [
+      [
+        0.699,
+        0.4,
+        0.203
+      ]
+    ],
+    "physical.cola": [
+      [
+        0.633,
+        0.468,
+        0.323
+      ]
+    ],
+    "physical.concrete": [
+      [
+        0.742,
+        0.742,
+        0.742
+      ]
+    ],
+    "physical.cookingOil": [
+      [
+        0.874,
+        0.847,
+        0.334
+      ]
+    ],
+    "physical.copper": [
+      [
+        0.97,
+        0.811,
+        0.75
+      ]
+    ],
+    "physical.cream": [
+      [
+        0.989,
+        0.955,
+        0.868
+      ]
+    ],
+    "physical.diamond": [
+      [
+        1,
+        1,
+        1
+      ]
+    ],
+    "physical.eggShellBrown": [
+      [
+        0.731,
+        0.535,
+        0.386
+      ]
+    ],
+    "physical.eggShellWhite": [
+      [
+        0.804,
+        0.812,
+        0.816
+      ]
+    ],
+    "physical.ethanol": [
+      [
+        1,
+        1,
+        1
+      ]
+    ],
+    "physical.eyeCornea": [
+      [
+        1,
+        1,
+        1
+      ]
+    ],
+    "physical.eyeLens": [
+      [
+        1,
+        1,
+        1
+      ]
+    ],
+    "physical.eyeSclera": [
+      [
+        0.828,
+        0.735,
+        0.661
+      ]
+    ],
+    "physical.gasoline": [
+      [
+        1,
+        0.987,
+        0.808
+      ]
+    ],
+    "physical.germanium": [
+      [
+        0.735,
+        0.746,
+        0.712
+      ]
+    ],
+    "physical.glassBorosilicate": [
+      [
+        0.995,
+        0.997,
+        0.993
+      ]
+    ],
+    "physical.glassSodaLime": [
+      [
+        0.993,
+        0.998,
+        0.998
+      ]
+    ],
+    "physical.gold": [
+      [
+        1,
+        0.893,
+        0.59
+      ]
+    ],
+    "physical.grass": [
+      [
+        0.357,
+        0.4,
+        0.224
+      ]
+    ],
+    "physical.grayCard": [
+      [
+        0.461,
+        0.461,
+        0.461
+      ]
+    ],
+    "physical.honeyCrystallized": [
+      [
+        0.701,
+        0.6,
+        0.106
+      ]
+    ],
+    "physical.honeyLiquid": [
+      [
+        0.922,
+        0.78,
+        0.212
+      ]
+    ],
+    "physical.ice": [
+      [
+        0.988,
+        0.998,
+        1
+      ]
+    ],
+    "physical.iridium": [
+      [
+        0.878,
+        0.873,
+        0.857
+      ]
+    ],
+    "physical.iron": [
+      [
+        0.755,
+        0.744,
+        0.731
+      ]
+    ],
+    "physical.juiceApple": [
+      [
+        0.934,
+        0.889,
+        0.779
+      ]
+    ],
+    "physical.juiceCranberry": [
+      [
+        0.833,
+        0.651,
+        0.566
+      ]
+    ],
+    "physical.juiceGrape": [
+      [
+        0.625,
+        0.334,
+        0.255
+      ]
+    ],
+    "physical.juiceRubyGrapefruit": [
+      [
+        0.332,
+        0.203,
+        0.133
+      ]
+    ],
+    "physical.juiceWhiteGrapefruit": [
+      [
+        0.988,
+        0.985,
+        0.969
+      ]
+    ],
+    "physical.ketchup": [
+      [
+        0.442,
+        0.07,
+        0.026
+      ]
+    ],
+    "physical.lead": [
+      [
+        0.813,
+        0.821,
+        0.85
+      ]
+    ],
+    "physical.lemon": [
+      [
+        0.808,
+        0.639,
+        0.235
+      ]
+    ],
+    "physical.lithium": [
+      [
+        0.962,
+        0.95,
+        0.91
+      ]
+    ],
+    "physical.magnesium": [
+      [
+        0.98,
+        0.979,
+        0.978
+      ]
+    ],
+    "physical.manganese": [
+      [
+        0.801,
+        0.793,
+        0.781
+      ]
+    ],
+    "physical.marble": [
+      [
+        0.921,
+        0.902,
+        0.882
+      ]
+    ],
+    "physical.mercury": [
+      [
+        0.897,
+        0.896,
+        0.895
+      ]
+    ],
+    "physical.milk": [
+      [
+        0.914,
+        0.913,
+        0.845
+      ]
+    ],
+    "physical.mitBlack": [
+      [
+        0.001,
+        0.001,
+        0.001
+      ]
+    ],
+    "physical.molybdenum": [
+      [
+        0.791,
+        0.805,
+        0.794
+      ]
+    ],
+    "physical.musouBlack": [
+      [
+        0.07,
+        0.07,
+        0.07
+      ]
+    ],
+    "physical.nickel": [
+      [
+        0.853,
+        0.822,
+        0.775
+      ]
+    ],
+    "physical.officePaper": [
+      [
+        0.903,
+        0.923,
+        0.947
+      ]
+    ],
+    "physical.orange": [
+      [
+        0.807,
+        0.49,
+        0.1
+      ]
+    ],
+    "physical.palladium": [
+      [
+        0.873,
+        0.856,
+        0.833
+      ]
+    ],
+    "physical.pearl": [
+      [
+        0.906,
+        0.881,
+        0.854
+      ]
+    ],
+    "physical.petroleum": [
+      [
+        0.19,
+        0.179,
+        0.168
+      ]
+    ],
+    "physical.plasticAcrylic": [
+      [
+        1,
+        1,
+        1
+      ]
+    ],
+    "physical.plasticPC": [
+      [
+        1,
+        1,
+        1
+      ]
+    ],
+    "physical.plasticPET": [
+      [
+        1,
+        1,
+        1
+      ]
+    ],
+    "physical.plasticPLA": [
+      [
+        1,
+        1,
+        1
+      ]
+    ],
+    "physical.plasticPP": [
+      [
+        1,
+        1,
+        1
+      ]
+    ],
+    "physical.plasticPUR": [
+      [
+        1,
+        1,
+        1
+      ]
+    ],
+    "physical.plasticPVC": [
+      [
+        1,
+        1,
+        1
+      ]
+    ],
+    "physical.platinum": [
+      [
+        0.889,
+        0.87,
+        0.841
+      ]
+    ],
+    "physical.polystyreneFoam": [
+      [
+        0.926,
+        0.925,
+        0.927
+      ]
+    ],
+    "physical.porcelain": [
+      [
+        0.878,
+        0.878,
+        0.867
+      ]
+    ],
+    "physical.potassium": [
+      [
+        0.993,
+        0.98,
+        0.957
+      ]
+    ],
+    "physical.quartz": [
+      [
+        1,
+        1,
+        1
+      ]
+    ],
+    "physical.rubidium": [
+      [
+        0.964,
+        0.935,
+        0.879
+      ]
+    ],
+    "physical.rust": [
+      [
+        0.463,
+        0.265,
+        0.138
+      ]
+    ],
+    "physical.salt": [
+      [
+        1,
+        1,
+        1
+      ]
+    ],
+    "physical.sand": [
+      [
+        0.694,
+        0.655,
+        0.518
+      ]
+    ],
+    "physical.sapphire": [
+      [
+        0.838,
+        0.888,
+        0.933
+      ]
+    ],
+    "physical.silicon": [
+      [
+        0.622,
+        0.641,
+        0.684
+      ]
+    ],
+    "physical.silver": [
+      [
+        0.996,
+        0.993,
+        0.988
+      ]
+    ],
+    "physical.skinI": [
+      [
+        0.929,
+        0.82,
+        0.769
+      ]
+    ],
+    "physical.skinII": [
+      [
+        0.906,
+        0.725,
+        0.624
+      ]
+    ],
+    "physical.skinIII": [
+      [
+        0.811,
+        0.689,
+        0.621
+      ]
+    ],
+    "physical.skinIV": [
+      [
+        0.692,
+        0.514,
+        0.397
+      ]
+    ],
+    "physical.skinV": [
+      [
+        0.568,
+        0.421,
+        0.311
+      ]
+    ],
+    "physical.skinVI": [
+      [
+        0.332,
+        0.248,
+        0.152
+      ]
+    ],
+    "physical.snow": [
+      [
+        0.931,
+        0.931,
+        0.931
+      ]
+    ],
+    "physical.soapBubble": [
+      [
+        1,
+        1,
+        1
+      ]
+    ],
+    "physical.sodium": [
+      [
+        0.99,
+        0.983,
+        0.971
+      ]
+    ],
+    "physical.spectralon": [
+      [
+        0.996,
+        0.996,
+        0.996
+      ]
+    ],
+    "physical.stainlessSteel": [
+      [
+        0.837,
+        0.82,
+        0.797
+      ]
+    ],
+    "physical.terracotta": [
+      [
+        0.771,
+        0.498,
+        0.366
+      ]
+    ],
+    "physical.tire": [
+      [
+        0.164,
+        0.164,
+        0.164
+      ]
+    ],
+    "physical.titanium": [
+      [
+        0.695,
+        0.665,
+        0.635
+      ]
+    ],
+    "physical.titaniumAnodized": [
+      [
+        0.695,
+        0.665,
+        0.635
+      ]
+    ],
+    "physical.toiletPaper": [
+      [
+        0.921,
+        0.924,
+        0.898
+      ]
+    ],
+    "physical.tonerBlack": [
+      [
+        0.248,
+        0.248,
+        0.248
+      ]
+    ],
+    "physical.toothpaste": [
+      [
+        0.97,
+        0.972,
+        0.968
+      ]
+    ],
+    "physical.tungsten": [
+      [
+        0.759,
+        0.759,
+        0.748
+      ]
+    ],
+    "physical.vanadium": [
+      [
+        0.757,
+        0.752,
+        0.765
+      ]
+    ],
+    "physical.vodka40": [
+      [
+        1,
+        1,
+        1
+      ]
+    ],
+    "physical.water": [
+      [
+        0.986,
+        0.998,
+        0.999
+      ]
+    ],
+    "physical.whiteboard": [
+      [
+        0.94,
+        0.939,
+        0.892
+      ]
+    ],
+    "physical.wineRed": [
+      [
+        0.593,
+        0.315,
+        0.255
+      ]
+    ],
+    "physical.wineWhite": [
+      [
+        0.953,
+        0.948,
+        0.898
+      ]
+    ],
+    "physical.zinc": [
+      [
+        0.91,
+        0.928,
+        0.938
+      ]
+    ],
+    "playful.blackWhiteChecker": [
+      [
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        1,
+        1
+      ],
+      [
+        1,
+        1,
+        1
+      ]
+    ],
+    "playful.bluePolkaDot": [
+      [
+        0.25,
+        0.55,
+        0.75
+      ],
+      [
+        0.25,
+        0.55,
+        0.75
+      ],
+      [
+        1,
+        1,
+        1
+      ]
+    ],
+    "playful.polkaDotDrift": [
+      [
+        0.25,
+        0.55,
+        0.75
+      ],
+      [
+        0.25,
+        0.55,
+        0.75
+      ],
+      [
+        1,
+        1,
+        1
+      ]
+    ],
+    "playful.tealCellSkin": [
+      [
+        0,
+        0.5,
+        0.5
+      ],
+      [
+        1,
+        1,
+        1
+      ],
+      [
+        1,
+        1,
+        1
+      ]
+    ],
+    "printed.blackNylonPowder": [
+      [
+        0.064,
+        0.064,
+        0.068
+      ],
+      [
+        0.069,
+        0.069,
+        0.074
+      ],
+      [
+        0.075,
+        0.075,
+        0.08
+      ]
+    ],
+    "printed.fdm": [
+      [
+        0.12,
+        0.3,
+        0.75
+      ]
+    ],
+    "printed.resin": [
+      [
+        0.55,
+        0.57,
+        0.6
+      ]
+    ],
+    "printed.whiteNylonPowder": [
+      [
+        0.783,
+        0.774,
+        0.738
+      ],
+      [
+        0.844,
+        0.834,
+        0.795
+      ],
+      [
+        0.919,
+        0.908,
+        0.866
+      ]
+    ],
+    "stone.calacatta": [
+      [
+        0.891,
+        0.882,
+        0.864
+      ],
+      [
+        0.934,
+        0.924,
+        0.904
+      ],
+      [
+        0.948,
+        0.938,
+        0.918
+      ]
+    ],
+    "stone.carrara": [
+      [
+        0.675,
+        0.691,
+        0.716
+      ],
+      [
+        0.86,
+        0.871,
+        0.883
+      ],
+      [
+        0.89,
+        0.9,
+        0.912
+      ]
+    ],
+    "stone.flagstone": [
+      [
+        0.2,
+        0.19,
+        0.18
+      ],
+      [
+        0.238,
+        0.225,
+        0.211
+      ],
+      [
+        0.439,
+        0.41,
+        0.371
+      ]
+    ],
+    "stone.glintingGranite": [
+      [
+        0.336,
+        0.336,
+        0.336
+      ],
+      [
+        0.504,
+        0.504,
+        0.504
+      ],
+      [
+        0.716,
+        0.719,
+        0.732
+      ]
+    ],
+    "stone.greyGranite": [
+      [
+        0.336,
+        0.336,
+        0.336
+      ],
+      [
+        0.504,
+        0.504,
+        0.504
+      ],
+      [
+        0.716,
+        0.719,
+        0.732
+      ]
+    ],
+    "stone.statuario": [
+      [
+        0.883,
+        0.888,
+        0.903
+      ],
+      [
+        0.919,
+        0.922,
+        0.936
+      ],
+      [
+        0.939,
+        0.939,
+        0.949
+      ]
+    ],
+    "stone.whiteMarble": [
+      [
+        0.812,
+        0.812,
+        0.812
+      ],
+      [
+        0.981,
+        0.981,
+        0.981
+      ],
+      [
+        1,
+        1,
+        1
+      ]
+    ],
+    "weathering.patinatedBronze": [
+      [
+        0.528,
+        0.694,
+        0.682
+      ],
+      [
+        0.774,
+        0.763,
+        0.724
+      ],
+      [
+        0.933,
+        0.807,
+        0.752
+      ]
+    ],
+    "weathering.rustySteel": [
+      [
+        0.588,
+        0.325,
+        0.231
+      ],
+      [
+        0.695,
+        0.565,
+        0.518
+      ],
+      [
+        0.754,
+        0.73,
+        0.718
+      ]
+    ],
+    "wood.americanElm": [
+      [
+        0.657,
+        0.56,
+        0.423
+      ],
+      [
+        0.748,
+        0.648,
+        0.508
+      ],
+      [
+        0.973,
+        0.868,
+        0.722
+      ]
+    ],
+    "wood.aromaticCedar": [
+      [
+        0.636,
+        0.449,
+        0.408
+      ],
+      [
+        0.68,
+        0.49,
+        0.451
+      ],
+      [
+        0.752,
+        0.57,
+        0.495
+      ]
+    ],
+    "wood.beech": [
+      [
+        0.656,
+        0.518,
+        0.439
+      ],
+      [
+        0.72,
+        0.582,
+        0.502
+      ],
+      [
+        0.802,
+        0.66,
+        0.579
+      ]
+    ],
+    "wood.butternut": [
+      [
+        0.703,
+        0.614,
+        0.504
+      ],
+      [
+        0.788,
+        0.698,
+        0.583
+      ],
+      [
+        0.852,
+        0.761,
+        0.64
+      ]
+    ],
+    "wood.cherry": [
+      [
+        0.557,
+        0.403,
+        0.318
+      ],
+      [
+        0.622,
+        0.48,
+        0.391
+      ],
+      [
+        0.686,
+        0.545,
+        0.454
+      ]
+    ],
+    "wood.cherryBirch": [
+      [
+        0.6,
+        0.482,
+        0.442
+      ],
+      [
+        0.658,
+        0.537,
+        0.495
+      ],
+      [
+        0.713,
+        0.592,
+        0.545
+      ]
+    ],
+    "wood.chestnut": [
+      [
+        0.592,
+        0.494,
+        0.431
+      ],
+      [
+        0.644,
+        0.543,
+        0.483
+      ],
+      [
+        0.703,
+        0.594,
+        0.515
+      ]
+    ],
+    "wood.chineseElm": [
+      [
+        0.569,
+        0.375,
+        0.215
+      ],
+      [
+        0.664,
+        0.458,
+        0.291
+      ],
+      [
+        0.887,
+        0.672,
+        0.505
+      ]
+    ],
+    "wood.darkPoplar": [
+      [
+        0.476,
+        0.431,
+        0.456
+      ],
+      [
+        0.728,
+        0.728,
+        0.557
+      ],
+      [
+        0.803,
+        0.803,
+        0.622
+      ]
+    ],
+    "wood.douglasFir": [
+      [
+        0.51,
+        0.329,
+        0.154
+      ],
+      [
+        0.718,
+        0.59,
+        0.461
+      ],
+      [
+        0.784,
+        0.653,
+        0.523
+      ]
+    ],
+    "wood.dutchElm": [
+      [
+        0.481,
+        0.373,
+        0.315
+      ],
+      [
+        0.569,
+        0.443,
+        0.384
+      ],
+      [
+        0.784,
+        0.666,
+        0.602
+      ]
+    ],
+    "wood.ebony": [
+      [
+        0.05,
+        0.043,
+        0.031
+      ],
+      [
+        0.084,
+        0.083,
+        0.065
+      ],
+      [
+        0.12,
+        0.116,
+        0.099
+      ]
+    ],
+    "wood.englishWalnut": [
+      [
+        0.469,
+        0.379,
+        0.293
+      ],
+      [
+        0.518,
+        0.435,
+        0.345
+      ],
+      [
+        0.57,
+        0.478,
+        0.388
+      ]
+    ],
+    "wood.europeanAsh": [
+      [
+        0.774,
+        0.653,
+        0.57
+      ],
+      [
+        0.851,
+        0.729,
+        0.648
+      ],
+      [
+        0.904,
+        0.778,
+        0.692
+      ]
+    ],
+    "wood.europeanSycamore": [
+      [
+        0.608,
+        0.524,
+        0.395
+      ],
+      [
+        0.657,
+        0.569,
+        0.411
+      ],
+      [
+        0.713,
+        0.623,
+        0.462
+      ]
+    ],
+    "wood.ginkgo": [
+      [
+        0.703,
+        0.535,
+        0.387
+      ],
+      [
+        0.787,
+        0.648,
+        0.519
+      ],
+      [
+        0.844,
+        0.7,
+        0.568
+      ]
+    ],
+    "wood.hickory": [
+      [
+        0.536,
+        0.39,
+        0.254
+      ],
+      [
+        0.584,
+        0.433,
+        0.302
+      ],
+      [
+        0.626,
+        0.475,
+        0.336
+      ]
+    ],
+    "wood.hinoki": [
+      [
+        0.571,
+        0.428,
+        0.333
+      ],
+      [
+        0.82,
+        0.711,
+        0.641
+      ],
+      [
+        0.879,
+        0.768,
+        0.698
+      ]
+    ],
+    "wood.holly": [
+      [
+        0.89,
+        0.81,
+        0.651
+      ],
+      [
+        0.939,
+        0.858,
+        0.698
+      ],
+      [
+        1,
+        0.947,
+        0.785
+      ]
+    ],
+    "wood.honeyLocust": [
+      [
+        0.695,
+        0.533,
+        0.4
+      ],
+      [
+        0.747,
+        0.586,
+        0.455
+      ],
+      [
+        0.814,
+        0.643,
+        0.502
+      ]
+    ],
+    "wood.horseChestnut": [
+      [
+        0.655,
+        0.545,
+        0.476
+      ],
+      [
+        0.722,
+        0.603,
+        0.534
+      ],
+      [
+        0.767,
+        0.651,
+        0.58
+      ]
+    ],
+    "wood.japaneseElm": [
+      [
+        0.48,
+        0.375,
+        0.296
+      ],
+      [
+        0.582,
+        0.473,
+        0.39
+      ],
+      [
+        0.747,
+        0.631,
+        0.546
+      ]
+    ],
+    "wood.japaneseWalnut": [
+      [
+        0.532,
+        0.453,
+        0.394
+      ],
+      [
+        0.567,
+        0.487,
+        0.428
+      ],
+      [
+        0.613,
+        0.532,
+        0.472
+      ]
+    ],
+    "wood.keyaki": [
+      [
+        0.535,
+        0.389,
+        0.273
+      ],
+      [
+        0.594,
+        0.444,
+        0.33
+      ],
+      [
+        0.648,
+        0.497,
+        0.376
+      ]
+    ],
+    "wood.lacewood": [
+      [
+        0.601,
+        0.472,
+        0.372
+      ],
+      [
+        0.686,
+        0.552,
+        0.449
+      ],
+      [
+        0.765,
+        0.622,
+        0.511
+      ]
+    ],
+    "wood.liveOak": [
+      [
+        0.43,
+        0.323,
+        0.186
+      ],
+      [
+        0.471,
+        0.361,
+        0.226
+      ],
+      [
+        0.557,
+        0.444,
+        0.302
+      ]
+    ],
+    "wood.macassarEbony": [
+      [
+        0.149,
+        0.118,
+        0.095
+      ],
+      [
+        0.345,
+        0.241,
+        0.131
+      ],
+      [
+        0.411,
+        0.298,
+        0.188
+      ]
+    ],
+    "wood.mahogany": [
+      [
+        0.494,
+        0.332,
+        0.157
+      ],
+      [
+        0.565,
+        0.4,
+        0.217
+      ],
+      [
+        0.618,
+        0.446,
+        0.257
+      ]
+    ],
+    "wood.norwayMaple": [
+      [
+        0.64,
+        0.511,
+        0.451
+      ],
+      [
+        0.686,
+        0.557,
+        0.49
+      ],
+      [
+        0.741,
+        0.61,
+        0.542
+      ]
+    ],
+    "wood.oliveAsh": [
+      [
+        0.631,
+        0.494,
+        0.406
+      ],
+      [
+        0.774,
+        0.617,
+        0.528
+      ],
+      [
+        0.83,
+        0.676,
+        0.595
+      ]
+    ],
+    "wood.osageOrange": [
+      [
+        0.671,
+        0.553,
+        0.292
+      ],
+      [
+        0.766,
+        0.636,
+        0.366
+      ],
+      [
+        0.997,
+        0.869,
+        0.602
+      ]
+    ],
+    "wood.padauk": [
+      [
+        0.368,
+        0.136,
+        0
+      ],
+      [
+        0.422,
+        0.177,
+        0.021
+      ],
+      [
+        0.456,
+        0.211,
+        0.073
+      ]
+    ],
+    "wood.poplar": [
+      [
+        0.813,
+        0.759,
+        0.589
+      ],
+      [
+        0.93,
+        0.856,
+        0.682
+      ],
+      [
+        1,
+        0.926,
+        0.745
+      ]
+    ],
+    "wood.purpleheart": [
+      [
+        0.479,
+        0.295,
+        0.316
+      ],
+      [
+        0.52,
+        0.342,
+        0.362
+      ],
+      [
+        0.56,
+        0.369,
+        0.389
+      ]
+    ],
+    "wood.redOak": [
+      [
+        0.578,
+        0.432,
+        0.349
+      ],
+      [
+        0.624,
+        0.474,
+        0.392
+      ],
+      [
+        0.691,
+        0.538,
+        0.455
+      ]
+    ],
+    "wood.rosewood": [
+      [
+        0.227,
+        0.17,
+        0.159
+      ],
+      [
+        0.304,
+        0.231,
+        0.192
+      ],
+      [
+        0.34,
+        0.263,
+        0.222
+      ]
+    ],
+    "wood.sakura": [
+      [
+        0.603,
+        0.466,
+        0.378
+      ],
+      [
+        0.647,
+        0.511,
+        0.421
+      ],
+      [
+        0.7,
+        0.558,
+        0.468
+      ]
+    ],
+    "wood.spruce": [
+      [
+        0.833,
+        0.705,
+        0.54
+      ],
+      [
+        0.95,
+        0.831,
+        0.682
+      ],
+      [
+        0.999,
+        0.879,
+        0.728
+      ]
+    ],
+    "wood.sugarMaple": [
+      [
+        0.691,
+        0.58,
+        0.442
+      ],
+      [
+        0.754,
+        0.637,
+        0.498
+      ],
+      [
+        0.809,
+        0.691,
+        0.55
+      ]
+    ],
+    "wood.sugi": [
+      [
+        0.508,
+        0.356,
+        0.287
+      ],
+      [
+        0.675,
+        0.546,
+        0.467
+      ],
+      [
+        0.719,
+        0.588,
+        0.507
+      ]
+    ],
+    "wood.sycamore": [
+      [
+        0.684,
+        0.564,
+        0.494
+      ],
+      [
+        0.738,
+        0.611,
+        0.541
+      ],
+      [
+        0.781,
+        0.652,
+        0.581
+      ]
+    ],
+    "wood.teak": [
+      [
+        0.322,
+        0.213,
+        0.066
+      ],
+      [
+        0.388,
+        0.274,
+        0.134
+      ],
+      [
+        0.433,
+        0.313,
+        0.164
+      ]
+    ],
+    "wood.walnut": [
+      [
+        0.409,
+        0.34,
+        0.301
+      ],
+      [
+        0.451,
+        0.38,
+        0.34
+      ],
+      [
+        0.485,
+        0.414,
+        0.374
+      ]
+    ],
+    "wood.weatheredOak": [
+      [
+        0.535,
+        0.446,
+        0.361
+      ],
+      [
+        0.573,
+        0.489,
+        0.409
+      ],
+      [
+        0.618,
+        0.534,
+        0.453
+      ]
+    ],
+    "wood.weatheredWalnut": [
+      [
+        0.444,
+        0.391,
+        0.344
+      ],
+      [
+        0.484,
+        0.43,
+        0.381
+      ],
+      [
+        0.506,
+        0.451,
+        0.401
+      ]
+    ],
+    "wood.westernRedCedar": [
+      [
+        0.344,
+        0.242,
+        0.109
+      ],
+      [
+        0.438,
+        0.319,
+        0.169
+      ],
+      [
+        0.487,
+        0.366,
+        0.217
+      ]
+    ],
+    "wood.whiteAsh": [
+      [
+        0.702,
+        0.603,
+        0.475
+      ],
+      [
+        0.779,
+        0.678,
+        0.546
+      ],
+      [
+        0.829,
+        0.719,
+        0.58
+      ]
+    ],
+    "wood.whiteOak": [
+      [
+        0.539,
+        0.43,
+        0.341
+      ],
+      [
+        0.587,
+        0.476,
+        0.385
+      ],
+      [
+        0.676,
+        0.554,
+        0.453
+      ]
+    ],
+    "wood.yew": [
+      [
+        0.388,
+        0.21,
+        0.011
+      ],
+      [
+        0.684,
+        0.496,
+        0.245
+      ],
+      [
+        0.737,
+        0.546,
+        0.297
+      ]
+    ],
+    "wood.zebrawood": [
+      [
+        0.42,
+        0.313,
+        0.202
+      ],
+      [
+        0.679,
+        0.531,
+        0.362
+      ],
+      [
+        0.745,
+        0.594,
+        0.424
+      ]
+    ]
+  },
+  "finishBasis": {
+    "file": "finish-basis.bin",
+    "width": 96,
+    "height": 96,
+    "order": [
+      "material.standard",
+      "material.matte",
+      "material.rubber",
+      "material.plastic",
+      "material.shinyPlastic",
+      "material.brushedMetal",
+      "material.polishedMetal",
+      "material.chrome"
+    ]
+  },
+  "large": {
+    "dir": "large",
+    "width": 240,
+    "height": 240
+  },
+  "adjust": {
+    "animated.mudPot": {
+      "calls": [
+        "animated.mudPot"
+      ],
+      "parameters": [
+        {
+          "name": "period",
+          "kind": "range",
+          "min": 0.5,
+          "max": 5,
+          "call": "animated.mudPot",
+          "arg": 1,
+          "default": [
+            2
+          ]
+        },
+        {
+          "name": "thinness",
+          "kind": "range",
+          "min": 0,
+          "max": 1,
+          "call": "animated.mudPot",
+          "arg": 2,
+          "default": [
+            0.3
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor, ${body}Height, ${body}Slope = animated.mudPot(6, ${period}, ${thinness});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "animated.ocean": {
+      "calls": [
+        "animated.ocean"
+      ],
+      "parameters": [
+        {
+          "name": "windDirection",
+          "kind": "direction",
+          "call": "animated.ocean",
+          "arg": 2,
+          "default": [
+            1,
+            0.3,
+            0
+          ]
+        },
+        {
+          "name": "choppiness",
+          "kind": "range",
+          "min": 0,
+          "max": 1,
+          "call": "animated.ocean",
+          "arg": 3,
+          "default": [
+            0.6
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor, ${body}Height, ${body}Slope = animated.ocean(0.12, 10, ${windDirection}, ${choppiness});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "animated.rain": {
+      "calls": [
+        "animated.rain"
+      ],
+      "parameters": [
+        {
+          "name": "dropSize",
+          "kind": "range",
+          "min": 1,
+          "max": 4,
+          "call": "animated.rain",
+          "arg": 1,
+          "default": [
+            2
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor, ${body}Height, ${body}Slope = animated.rain(10, ${dropSize});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "animated.sandRipples": {
+      "calls": [
+        "animated.sandRipples"
+      ],
+      "parameters": [
+        {
+          "name": "windDirection",
+          "kind": "direction",
+          "call": "animated.sandRipples",
+          "arg": 2,
+          "default": [
+            0.94,
+            0.34,
+            0
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor, ${body}Height, ${body}Slope = animated.sandRipples(60, 10, ${windDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "coating.agedGalvanized": {
+      "calls": [
+        "coating.galvanized"
+      ],
+      "parameters": [
+        {
+          "name": "spangleSize",
+          "kind": "range",
+          "min": 1,
+          "max": 10,
+          "call": "coating.galvanized",
+          "arg": 0,
+          "default": [
+            1
+          ]
+        },
+        {
+          "name": "age",
+          "kind": "range",
+          "min": 0,
+          "max": 1,
+          "call": "coating.galvanized",
+          "arg": 1,
+          "default": [
+            0.7
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor, ${body}Height, ${body}Slope = coating.galvanized(${spangleSize}, ${age});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "coating.blackWrinkleCoat": {
+      "calls": [
+        "coating.wrinkleCoat"
+      ],
+      "parameters": [
+        {
+          "name": "coatColor",
+          "kind": "color",
+          "call": "coating.wrinkleCoat",
+          "arg": 0,
+          "default": [
+            0.04,
+            0.04,
+            0.045
+          ]
+        },
+        {
+          "name": "size",
+          "kind": "range",
+          "min": 0.3,
+          "max": 1,
+          "call": "coating.wrinkleCoat",
+          "arg": 1,
+          "default": [
+            0.6
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor, ${body}Height, ${body}Slope = coating.wrinkleCoat(${coatColor}, ${size});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "coating.blueHammertone": {
+      "calls": [
+        "coating.hammertone"
+      ],
+      "parameters": [
+        {
+          "name": "coatColor",
+          "kind": "color",
+          "call": "coating.hammertone",
+          "arg": 0,
+          "default": [
+            0.18,
+            0.32,
+            0.45
+          ]
+        },
+        {
+          "name": "cellSize",
+          "kind": "range",
+          "min": 2,
+          "max": 6,
+          "call": "coating.hammertone",
+          "arg": 1,
+          "default": [
+            4
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor, ${body}Height, ${body}Slope = coating.hammertone(${coatColor}, ${cellSize});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "coating.greenSandCoat": {
+      "calls": [
+        "coating.sandCoat"
+      ],
+      "parameters": [
+        {
+          "name": "coatColor",
+          "kind": "color",
+          "call": "coating.sandCoat",
+          "arg": 0,
+          "default": [
+            0.12,
+            0.22,
+            0.12
+          ]
+        },
+        {
+          "name": "grain",
+          "kind": "range",
+          "min": 0.1,
+          "max": 0.3,
+          "call": "coating.sandCoat",
+          "arg": 1,
+          "default": [
+            0.2
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor, ${body}Height, ${body}Slope = coating.sandCoat(${coatColor}, ${grain});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "coating.newGalvanized": {
+      "calls": [
+        "coating.galvanized"
+      ],
+      "parameters": [
+        {
+          "name": "spangleSize",
+          "kind": "range",
+          "min": 1,
+          "max": 10,
+          "call": "coating.galvanized",
+          "arg": 0,
+          "default": [
+            1
+          ]
+        },
+        {
+          "name": "age",
+          "kind": "range",
+          "min": 0,
+          "max": 1,
+          "call": "coating.galvanized",
+          "arg": 1,
+          "default": [
+            0
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor, ${body}Height, ${body}Slope = coating.galvanized(${spangleSize}, ${age});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "coating.redPowderCoat": {
+      "calls": [
+        "coating.powderCoat"
+      ],
+      "parameters": [
+        {
+          "name": "coatColor",
+          "kind": "color",
+          "call": "coating.powderCoat",
+          "arg": 0,
+          "default": [
+            0.62,
+            0.06,
+            0.05
+          ]
+        },
+        {
+          "name": "glossUnits",
+          "kind": "range",
+          "min": 0,
+          "max": 100,
+          "call": "coating.powderCoat",
+          "arg": 1,
+          "default": [
+            85
+          ]
+        },
+        {
+          "name": "peel",
+          "kind": "range",
+          "min": 0,
+          "max": 1,
+          "call": "coating.powderCoat",
+          "arg": 2,
+          "default": [
+            0.7
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor, ${body}Height, ${body}Slope = coating.powderCoat(${coatColor}, ${glossUnits}, ${peel});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "natural.cloudMaterial": {
+      "calls": [
+        "natural.cloudMaterial"
+      ],
+      "parameters": [
+        {
+          "name": "density",
+          "kind": "range",
+          "min": 0,
+          "max": 1,
+          "call": "natural.cloudMaterial",
+          "arg": 0,
+          "default": [
+            0.6
+          ]
+        },
+        {
+          "name": "tintColor",
+          "kind": "color",
+          "call": "natural.cloudMaterial",
+          "arg": 1,
+          "default": [
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = natural.cloudMaterial(${density}, ${tintColor}, 15, 10, 3);\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "natural.fogMaterial": {
+      "calls": [
+        "natural.fogMaterial"
+      ],
+      "parameters": [
+        {
+          "name": "density",
+          "kind": "range",
+          "min": 0,
+          "max": 1,
+          "call": "natural.fogMaterial",
+          "arg": 0,
+          "default": [
+            0.5
+          ]
+        },
+        {
+          "name": "tintColor",
+          "kind": "color",
+          "call": "natural.fogMaterial",
+          "arg": 1,
+          "default": [
+            0.9,
+            0.92,
+            0.95
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = natural.fogMaterial(${density}, ${tintColor});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "natural.glowingLava": {
+      "calls": [
+        "natural.lavaHero"
+      ],
+      "parameters": [
+        {
+          "name": "crustColor",
+          "kind": "color",
+          "call": "natural.lavaHero",
+          "arg": 1,
+          "default": [
+            0.12,
+            0.09,
+            0.08
+          ]
+        },
+        {
+          "name": "glowColor",
+          "kind": "color",
+          "call": "natural.lavaHero",
+          "arg": 2,
+          "default": [
+            1,
+            0.4,
+            0.05
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = natural.lavaHero(15, ${crustColor}, ${glowColor}, 4.0, 5.0, 0.1);\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "natural.lava": {
+      "calls": [
+        "natural.lava"
+      ],
+      "parameters": [
+        {
+          "name": "crustColor",
+          "kind": "color",
+          "call": "natural.lava",
+          "arg": 1,
+          "default": [
+            0.12,
+            0.09,
+            0.08
+          ]
+        },
+        {
+          "name": "glowColor",
+          "kind": "color",
+          "call": "natural.lava",
+          "arg": 2,
+          "default": [
+            1,
+            0.4,
+            0.05
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = natural.lava(15, ${crustColor}, ${glowColor}, 4.0, 5.0);\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "playful.blackWhiteChecker": {
+      "calls": [
+        "playful.checkerboard"
+      ],
+      "parameters": [
+        {
+          "name": "colorA",
+          "kind": "color",
+          "call": "playful.checkerboard",
+          "arg": 1,
+          "default": [
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "name": "colorB",
+          "kind": "color",
+          "call": "playful.checkerboard",
+          "arg": 2,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "template": "${body}.material = material.matte;\n${body}.color = playful.checkerboard(10, ${colorA}, ${colorB});"
+    },
+    "playful.bluePolkaDot": {
+      "calls": [
+        "playful.polkaDot"
+      ],
+      "parameters": [
+        {
+          "name": "baseColor",
+          "kind": "color",
+          "call": "playful.polkaDot",
+          "arg": 2,
+          "default": [
+            0.25,
+            0.55,
+            0.75
+          ]
+        },
+        {
+          "name": "dotColor",
+          "kind": "color",
+          "call": "playful.polkaDot",
+          "arg": 3,
+          "default": [
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "template": "${body}.material = material.plastic;\n${body}.color = playful.polkaDot(8, 2, ${baseColor}, ${dotColor});"
+    },
+    "playful.polkaDotDrift": {
+      "calls": [
+        "playful.polkaDotDrift"
+      ],
+      "parameters": [
+        {
+          "name": "baseColor",
+          "kind": "color",
+          "call": "playful.polkaDotDrift",
+          "arg": 2,
+          "default": [
+            0.25,
+            0.55,
+            0.75
+          ]
+        },
+        {
+          "name": "dotColor",
+          "kind": "color",
+          "call": "playful.polkaDotDrift",
+          "arg": 3,
+          "default": [
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "template": "${body}.material = material.plastic;\n${body}.color = playful.polkaDotDrift(8, 2, ${baseColor}, ${dotColor}, [2, 0, 0]);"
+    },
+    "playful.tealCellSkin": {
+      "calls": [
+        "playful.cellSkin"
+      ],
+      "parameters": [
+        {
+          "name": "colorA",
+          "kind": "color",
+          "call": "playful.cellSkin",
+          "arg": 2,
+          "default": [
+            0,
+            0.5,
+            0.5
+          ]
+        },
+        {
+          "name": "colorB",
+          "kind": "color",
+          "call": "playful.cellSkin",
+          "arg": 3,
+          "default": [
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "template": "${body}.material = material.matte;\n${body}.color = playful.cellSkin(5, 2.5, ${colorA}, ${colorB});"
+    },
+    "printed.blackNylonPowder": {
+      "calls": [
+        "printed.powderBed"
+      ],
+      "parameters": [
+        {
+          "name": "powderColor",
+          "kind": "color",
+          "call": "printed.powderBed",
+          "arg": 0,
+          "default": [
+            0.07,
+            0.07,
+            0.075
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor, ${body}Height, ${body}Slope = printed.powderBed(${powderColor}, 0.06);\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "printed.fdm": {
+      "calls": [
+        "printed.fdm"
+      ],
+      "parameters": [
+        {
+          "name": "plasticColor",
+          "kind": "color",
+          "call": "printed.fdm",
+          "arg": 0,
+          "default": [
+            0.12,
+            0.3,
+            0.75
+          ]
+        },
+        {
+          "name": "buildDir",
+          "kind": "direction",
+          "call": "printed.fdm",
+          "arg": 1,
+          "anchor": "center",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "name": "center",
+          "kind": "point",
+          "call": "printed.fdm",
+          "arg": 2,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "layerHeight",
+          "kind": "range",
+          "min": 0.1,
+          "max": 0.3,
+          "call": "printed.fdm",
+          "arg": 3,
+          "default": [
+            0.2
+          ]
+        },
+        {
+          "name": "glossUnits",
+          "kind": "range",
+          "min": 0,
+          "max": 100,
+          "call": "printed.fdm",
+          "arg": 4,
+          "default": [
+            70
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor, ${body}Height, ${body}Slope = printed.fdm(${plasticColor}, ${buildDir}, ${center}, ${layerHeight}, ${glossUnits});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "printed.resin": {
+      "calls": [
+        "printed.resin"
+      ],
+      "parameters": [
+        {
+          "name": "resinColor",
+          "kind": "color",
+          "call": "printed.resin",
+          "arg": 0,
+          "default": [
+            0.55,
+            0.57,
+            0.6
+          ]
+        },
+        {
+          "name": "buildDir",
+          "kind": "direction",
+          "call": "printed.resin",
+          "arg": 1,
+          "anchor": "center",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "name": "center",
+          "kind": "point",
+          "call": "printed.resin",
+          "arg": 2,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "layerHeight",
+          "kind": "range",
+          "min": 0.025,
+          "max": 0.1,
+          "call": "printed.resin",
+          "arg": 3,
+          "default": [
+            0.05
+          ]
+        },
+        {
+          "name": "clarity",
+          "kind": "range",
+          "min": 0,
+          "max": 1,
+          "call": "printed.resin",
+          "arg": 4,
+          "default": [
+            0
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor, ${body}Height, ${body}Slope = printed.resin(${resinColor}, ${buildDir}, ${center}, ${layerHeight}, ${clarity});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "printed.whiteNylonPowder": {
+      "calls": [
+        "printed.powderBed"
+      ],
+      "parameters": [
+        {
+          "name": "powderColor",
+          "kind": "color",
+          "call": "printed.powderBed",
+          "arg": 0,
+          "default": [
+            0.86,
+            0.85,
+            0.81
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor, ${body}Height, ${body}Slope = printed.powderBed(${powderColor}, 0.06);\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "stone.calacatta": {
+      "calls": [
+        "stone.stoneFinish",
+        "stone.calacatta"
+      ],
+      "parameters": [
+        {
+          "name": "rough",
+          "kind": "range",
+          "min": 0,
+          "max": 1,
+          "call": "stone.stoneFinish",
+          "arg": 0,
+          "default": [
+            0.15
+          ]
+        },
+        {
+          "name": "direction",
+          "kind": "direction",
+          "call": "stone.calacatta",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}.material = stone.stoneFinish(${rough});\n${body}.color = stone.calacatta(${direction});"
+    },
+    "stone.carrara": {
+      "calls": [
+        "stone.stoneFinish",
+        "stone.carrara"
+      ],
+      "parameters": [
+        {
+          "name": "rough",
+          "kind": "range",
+          "min": 0,
+          "max": 1,
+          "call": "stone.stoneFinish",
+          "arg": 0,
+          "default": [
+            0.15
+          ]
+        },
+        {
+          "name": "direction",
+          "kind": "direction",
+          "call": "stone.carrara",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}.material = stone.stoneFinish(${rough});\n${body}.color = stone.carrara(${direction});"
+    },
+    "stone.flagstone": {
+      "calls": [
+        "stone.stoneFinish",
+        "stone.flagstone"
+      ],
+      "parameters": [
+        {
+          "name": "rough",
+          "kind": "range",
+          "min": 0,
+          "max": 1,
+          "call": "stone.stoneFinish",
+          "arg": 0,
+          "default": [
+            0.8
+          ]
+        },
+        {
+          "name": "baseColor",
+          "kind": "color",
+          "call": "stone.flagstone",
+          "arg": 1,
+          "default": [
+            0.45,
+            0.42,
+            0.38
+          ]
+        },
+        {
+          "name": "jointColor",
+          "kind": "color",
+          "call": "stone.flagstone",
+          "arg": 2,
+          "default": [
+            0.2,
+            0.19,
+            0.18
+          ]
+        }
+      ],
+      "template": "${body}.material = stone.stoneFinish(${rough});\n${body}.color = stone.flagstone(250, ${baseColor}, ${jointColor});"
+    },
+    "stone.glintingGranite": {
+      "calls": [
+        "stone.graniteFacetFinish",
+        "stone.granite"
+      ],
+      "parameters": [
+        {
+          "name": "rough",
+          "kind": "range",
+          "min": 0,
+          "max": 1,
+          "call": "stone.graniteFacetFinish",
+          "arg": 1,
+          "default": [
+            0.12
+          ]
+        },
+        {
+          "name": "gleam",
+          "kind": "range",
+          "min": 0,
+          "max": 1,
+          "call": "stone.graniteFacetFinish",
+          "arg": 3,
+          "default": [
+            0.35
+          ]
+        },
+        {
+          "name": "baseColor",
+          "kind": "color",
+          "call": "stone.granite",
+          "arg": 1,
+          "default": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        {
+          "name": "fleckColorA",
+          "kind": "color",
+          "call": "stone.granite",
+          "arg": 2,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "fleckColorB",
+          "kind": "color",
+          "call": "stone.granite",
+          "arg": 3,
+          "default": [
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "template": "${body}.material = stone.graniteFacetFinish(4, ${rough}, 0.05, ${gleam});\n${body}.color = stone.granite(4, ${baseColor}, ${fleckColorA}, ${fleckColorB});"
+    },
+    "stone.greyGranite": {
+      "calls": [
+        "stone.stoneFinish",
+        "stone.granite"
+      ],
+      "parameters": [
+        {
+          "name": "rough",
+          "kind": "range",
+          "min": 0,
+          "max": 1,
+          "call": "stone.stoneFinish",
+          "arg": 0,
+          "default": [
+            0.6
+          ]
+        },
+        {
+          "name": "baseColor",
+          "kind": "color",
+          "call": "stone.granite",
+          "arg": 1,
+          "default": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        {
+          "name": "fleckColorA",
+          "kind": "color",
+          "call": "stone.granite",
+          "arg": 2,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "fleckColorB",
+          "kind": "color",
+          "call": "stone.granite",
+          "arg": 3,
+          "default": [
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "template": "${body}.material = stone.stoneFinish(${rough});\n${body}.color = stone.granite(4, ${baseColor}, ${fleckColorA}, ${fleckColorB});"
+    },
+    "stone.statuario": {
+      "calls": [
+        "stone.stoneFinish",
+        "stone.statuario"
+      ],
+      "parameters": [
+        {
+          "name": "rough",
+          "kind": "range",
+          "min": 0,
+          "max": 1,
+          "call": "stone.stoneFinish",
+          "arg": 0,
+          "default": [
+            0.15
+          ]
+        },
+        {
+          "name": "direction",
+          "kind": "direction",
+          "call": "stone.statuario",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}.material = stone.stoneFinish(${rough});\n${body}.color = stone.statuario(${direction});"
+    },
+    "stone.whiteMarble": {
+      "calls": [
+        "stone.stoneFinish",
+        "stone.marble"
+      ],
+      "parameters": [
+        {
+          "name": "rough",
+          "kind": "range",
+          "min": 0,
+          "max": 1,
+          "call": "stone.stoneFinish",
+          "arg": 0,
+          "default": [
+            0.15
+          ]
+        },
+        {
+          "name": "baseColor",
+          "kind": "color",
+          "call": "stone.marble",
+          "arg": 4,
+          "default": [
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "name": "veinColor",
+          "kind": "color",
+          "call": "stone.marble",
+          "arg": 5,
+          "default": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        }
+      ],
+      "template": "${body}.material = stone.stoneFinish(${rough});\n${body}.color = stone.marble(25, 10, 0.4, 10, ${baseColor}, ${veinColor});"
+    },
+    "weathering.patinatedBronze": {
+      "calls": [
+        "weathering.patinaBronze"
+      ],
+      "parameters": [
+        {
+          "name": "amount",
+          "kind": "range",
+          "min": 0,
+          "max": 1,
+          "call": "weathering.patinaBronze",
+          "arg": 0,
+          "default": [
+            0.5
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = weathering.patinaBronze(${amount});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "weathering.rustySteel": {
+      "calls": [
+        "weathering.rustedSteel"
+      ],
+      "parameters": [
+        {
+          "name": "amount",
+          "kind": "range",
+          "min": 0,
+          "max": 1,
+          "call": "weathering.rustedSteel",
+          "arg": 0,
+          "default": [
+            0.5
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = weathering.rustedSteel(${amount});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.americanElm": {
+      "calls": [
+        "wood.americanElm"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.americanElm",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.americanElm",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.americanElm(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.aromaticCedar": {
+      "calls": [
+        "wood.aromaticCedar"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.aromaticCedar",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.aromaticCedar",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.aromaticCedar(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.beech": {
+      "calls": [
+        "wood.beech"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.beech",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.beech",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.beech(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.butternut": {
+      "calls": [
+        "wood.butternut"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.butternut",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.butternut",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.butternut(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.cherry": {
+      "calls": [
+        "wood.cherry"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.cherry",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.cherry",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.cherry(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.cherryBirch": {
+      "calls": [
+        "wood.cherryBirch"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.cherryBirch",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.cherryBirch",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.cherryBirch(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.chestnut": {
+      "calls": [
+        "wood.chestnut"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.chestnut",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.chestnut",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.chestnut(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.chineseElm": {
+      "calls": [
+        "wood.chineseElm"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.chineseElm",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.chineseElm",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.chineseElm(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.darkPoplar": {
+      "calls": [
+        "wood.darkPoplar"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.darkPoplar",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.darkPoplar",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.darkPoplar(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.douglasFir": {
+      "calls": [
+        "wood.douglasFir"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.douglasFir",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.douglasFir",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.douglasFir(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.dutchElm": {
+      "calls": [
+        "wood.dutchElm"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.dutchElm",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.dutchElm",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.dutchElm(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.ebony": {
+      "calls": [
+        "wood.ebony"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.ebony",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.ebony",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.ebony(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.englishWalnut": {
+      "calls": [
+        "wood.englishWalnut"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.englishWalnut",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.englishWalnut",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.englishWalnut(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.europeanAsh": {
+      "calls": [
+        "wood.europeanAsh"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.europeanAsh",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.europeanAsh",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.europeanAsh(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.europeanSycamore": {
+      "calls": [
+        "wood.europeanSycamore"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.europeanSycamore",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.europeanSycamore",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.europeanSycamore(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.ginkgo": {
+      "calls": [
+        "wood.ginkgo"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.ginkgo",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.ginkgo",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.ginkgo(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.hickory": {
+      "calls": [
+        "wood.hickory"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.hickory",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.hickory",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.hickory(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.hinoki": {
+      "calls": [
+        "wood.hinoki"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.hinoki",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.hinoki",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.hinoki(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.holly": {
+      "calls": [
+        "wood.holly"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.holly",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.holly",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.holly(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.honeyLocust": {
+      "calls": [
+        "wood.honeyLocust"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.honeyLocust",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.honeyLocust",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.honeyLocust(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.horseChestnut": {
+      "calls": [
+        "wood.horseChestnut"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.horseChestnut",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.horseChestnut",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.horseChestnut(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.japaneseElm": {
+      "calls": [
+        "wood.japaneseElm"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.japaneseElm",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.japaneseElm",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.japaneseElm(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.japaneseWalnut": {
+      "calls": [
+        "wood.japaneseWalnut"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.japaneseWalnut",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.japaneseWalnut",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.japaneseWalnut(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.keyaki": {
+      "calls": [
+        "wood.keyaki"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.keyaki",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.keyaki",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.keyaki(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.lacewood": {
+      "calls": [
+        "wood.lacewood"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.lacewood",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.lacewood",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.lacewood(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.liveOak": {
+      "calls": [
+        "wood.liveOak"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.liveOak",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.liveOak",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.liveOak(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.macassarEbony": {
+      "calls": [
+        "wood.macassarEbony"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.macassarEbony",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.macassarEbony",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.macassarEbony(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.mahogany": {
+      "calls": [
+        "wood.mahogany"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.mahogany",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.mahogany",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.mahogany(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.norwayMaple": {
+      "calls": [
+        "wood.norwayMaple"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.norwayMaple",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.norwayMaple",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.norwayMaple(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.oliveAsh": {
+      "calls": [
+        "wood.oliveAsh"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.oliveAsh",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.oliveAsh",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.oliveAsh(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.osageOrange": {
+      "calls": [
+        "wood.osageOrange"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.osageOrange",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.osageOrange",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.osageOrange(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.padauk": {
+      "calls": [
+        "wood.padauk"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.padauk",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.padauk",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.padauk(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.poplar": {
+      "calls": [
+        "wood.poplar"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.poplar",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.poplar",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.poplar(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.purpleheart": {
+      "calls": [
+        "wood.purpleheart"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.purpleheart",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.purpleheart",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.purpleheart(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.redOak": {
+      "calls": [
+        "wood.redOak"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.redOak",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.redOak",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.redOak(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.rosewood": {
+      "calls": [
+        "wood.rosewood"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.rosewood",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.rosewood",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.rosewood(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.sakura": {
+      "calls": [
+        "wood.sakura"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.sakura",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.sakura",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.sakura(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.spruce": {
+      "calls": [
+        "wood.spruce"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.spruce",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.spruce",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.spruce(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.sugarMaple": {
+      "calls": [
+        "wood.sugarMaple"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.sugarMaple",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.sugarMaple",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.sugarMaple(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.sugi": {
+      "calls": [
+        "wood.sugi"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.sugi",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.sugi",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.sugi(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.sycamore": {
+      "calls": [
+        "wood.sycamore"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.sycamore",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.sycamore",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.sycamore(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.teak": {
+      "calls": [
+        "wood.teak"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.teak",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.teak",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.teak(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.walnut": {
+      "calls": [
+        "wood.walnut"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.walnut",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.walnut",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.walnut(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.weatheredOak": {
+      "calls": [
+        "wood.weatheredOak"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.weatheredOak",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.weatheredOak",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.weatheredOak(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.weatheredWalnut": {
+      "calls": [
+        "wood.weatheredWalnut"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.weatheredWalnut",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.weatheredWalnut",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.weatheredWalnut(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.westernRedCedar": {
+      "calls": [
+        "wood.westernRedCedar"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.westernRedCedar",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.westernRedCedar",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.westernRedCedar(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.whiteAsh": {
+      "calls": [
+        "wood.whiteAsh"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.whiteAsh",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.whiteAsh",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.whiteAsh(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.whiteOak": {
+      "calls": [
+        "wood.whiteOak"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.whiteOak",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.whiteOak",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.whiteOak(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.yew": {
+      "calls": [
+        "wood.yew"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.yew",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.yew",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.yew(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    },
+    "wood.zebrawood": {
+      "calls": [
+        "wood.zebrawood"
+      ],
+      "parameters": [
+        {
+          "name": "axisOrigin",
+          "kind": "point",
+          "call": "wood.zebrawood",
+          "arg": 0,
+          "default": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "axisDir",
+          "kind": "direction",
+          "call": "wood.zebrawood",
+          "arg": 1,
+          "anchor": "axisOrigin",
+          "default": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "template": "${body}Surface, ${body}SurfaceColor = wood.zebrawood(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+    }
+  },
+  "coatBasis": {
+    "file": "coat-basis.bin",
+    "width": 96,
+    "height": 96,
+    "order": [
+      "natural.fogMaterial",
+      "natural.cloudMaterial",
+      "coating.redPowderCoat",
+      "coating.blackWrinkleCoat",
+      "coating.greenSandCoat",
+      "coating.blueHammertone",
+      "printed.whiteNylonPowder",
+      "printed.blackNylonPowder",
+      "printed.fdm",
+      "printed.resin"
+    ]
+  },
+  "operators": {
+    "coating.anodized": {
+      "call": "coating.anodized",
+      "arity": 4,
+      "slots": {
+        "material": 0,
+        "color": 1,
+        "frame": -1
+      },
+      "adjust": {
+        "calls": [
+          "coating.anodized"
+        ],
+        "parameters": [
+          {
+            "name": "dyeColor",
+            "kind": "color",
+            "call": "coating.anodized",
+            "arg": 2,
+            "default": [
+              1,
+              1,
+              1
+            ]
+          }
+        ],
+        "template": "${layer}, ${layer}Color, ${layer}Height, ${layer}Slope = coating.anodized(${material}, ${color}, ${dyeColor});\n${body}.material = ${layer};\n${body}.color = ${layer}Color;"
+      }
+    },
+    "coating.blackOxide": {
+      "call": "coating.blackOxide",
+      "arity": 4,
+      "slots": {
+        "material": 0,
+        "color": -1,
+        "frame": -1
+      },
+      "adjust": {
+        "calls": [
+          "coating.blackOxide"
+        ],
+        "parameters": [
+          {
+            "name": "oiled",
+            "kind": "range",
+            "min": 0,
+            "max": 1,
+            "call": "coating.blackOxide",
+            "arg": 1,
+            "default": [
+              1
+            ]
+          }
+        ],
+        "template": "${layer}, ${layer}Color, ${layer}Height, ${layer}Slope = coating.blackOxide(${material}, ${oiled});\n${body}.material = ${layer};\n${body}.color = ${layer}Color;"
+      }
+    },
+    "coating.chippedPaint": {
+      "call": "coating.chippedPaint",
+      "arity": 4,
+      "slots": {
+        "material": 0,
+        "color": 1,
+        "frame": -1
+      },
+      "adjust": {
+        "calls": [
+          "coating.chippedPaint"
+        ],
+        "parameters": [
+          {
+            "name": "paintColor",
+            "kind": "color",
+            "call": "coating.chippedPaint",
+            "arg": 2,
+            "default": [
+              0.14,
+              0.32,
+              0.18
+            ]
+          },
+          {
+            "name": "primerColor",
+            "kind": "color",
+            "call": "coating.chippedPaint",
+            "arg": 3,
+            "default": [
+              0.55,
+              0.22,
+              0.14
+            ]
+          },
+          {
+            "name": "glossUnits",
+            "kind": "range",
+            "min": 0,
+            "max": 100,
+            "call": "coating.chippedPaint",
+            "arg": 4,
+            "default": [
+              60
+            ]
+          }
+        ],
+        "template": "${layer}, ${layer}Color, ${layer}Height, ${layer}Slope = coating.chippedPaint(${material}, ${color}, ${paintColor}, ${primerColor}, ${glossUnits}, 0.5, 1.5);\n${body}.material = ${layer};\n${body}.color = ${layer}Color;"
+      }
+    },
+    "coating.clearCoat": {
+      "call": "coating.clearCoat",
+      "arity": 4,
+      "slots": {
+        "material": 0,
+        "color": 1,
+        "frame": -1
+      },
+      "adjust": {
+        "calls": [
+          "coating.clearCoat"
+        ],
+        "parameters": [
+          {
+            "name": "tint",
+            "kind": "color",
+            "call": "coating.clearCoat",
+            "arg": 2,
+            "default": [
+              1,
+              1,
+              1
+            ]
+          },
+          {
+            "name": "glossUnits",
+            "kind": "range",
+            "min": 0,
+            "max": 100,
+            "call": "coating.clearCoat",
+            "arg": 3,
+            "default": [
+              45
+            ]
+          }
+        ],
+        "template": "${layer}, ${layer}Color, ${layer}Height, ${layer}Slope = coating.clearCoat(${material}, ${color}, ${tint}, ${glossUnits}, 0.08, 1.2);\n${body}.material = ${layer};\n${body}.color = ${layer}Color;"
+      }
+    },
+    "coating.hammertone": {
+      "call": "coating.hammertone",
+      "arity": 4,
+      "slots": {
+        "material": 0,
+        "color": -1,
+        "frame": -1
+      },
+      "adjust": {
+        "calls": [
+          "coating.hammertone"
+        ],
+        "parameters": [
+          {
+            "name": "coatColor",
+            "kind": "color",
+            "call": "coating.hammertone",
+            "arg": 1,
+            "default": [
+              0.18,
+              0.32,
+              0.45
+            ]
+          },
+          {
+            "name": "cellSize",
+            "kind": "range",
+            "min": 2,
+            "max": 6,
+            "call": "coating.hammertone",
+            "arg": 2,
+            "default": [
+              4
+            ]
+          }
+        ],
+        "template": "${layer}, ${layer}Color, ${layer}Height, ${layer}Slope = coating.hammertone(${material}, ${coatColor}, ${cellSize}, 0.08, 1.2);\n${body}.material = ${layer};\n${body}.color = ${layer}Color;"
+      }
+    },
+    "coating.hardAnodized": {
+      "call": "coating.hardAnodized",
+      "arity": 4,
+      "slots": {
+        "material": 0,
+        "color": 1,
+        "frame": -1
+      },
+      "adjust": {
+        "calls": [
+          "coating.hardAnodized"
+        ],
+        "parameters": [
+          {
+            "name": "thickness",
+            "kind": "range",
+            "min": 25,
+            "max": 100,
+            "call": "coating.hardAnodized",
+            "arg": 2,
+            "default": [
+              50
+            ]
+          }
+        ],
+        "template": "${layer}, ${layer}Color, ${layer}Height, ${layer}Slope = coating.hardAnodized(${material}, ${color}, ${thickness});\n${body}.material = ${layer};\n${body}.color = ${layer}Color;"
+      }
+    },
+    "coating.phosphate": {
+      "call": "coating.phosphate",
+      "arity": 4,
+      "slots": {
+        "material": 0,
+        "color": -1,
+        "frame": -1
+      },
+      "adjust": {
+        "calls": [
+          "coating.phosphate"
+        ],
+        "parameters": [
+          {
+            "name": "manganese",
+            "kind": "range",
+            "min": 0,
+            "max": 1,
+            "call": "coating.phosphate",
+            "arg": 1,
+            "default": [
+              1
+            ]
+          }
+        ],
+        "template": "${layer}, ${layer}Color, ${layer}Height, ${layer}Slope = coating.phosphate(${material}, ${manganese});\n${body}.material = ${layer};\n${body}.color = ${layer}Color;"
+      }
+    },
+    "coating.powderCoat": {
+      "call": "coating.powderCoat",
+      "arity": 4,
+      "slots": {
+        "material": 0,
+        "color": -1,
+        "frame": -1
+      },
+      "adjust": {
+        "calls": [
+          "coating.powderCoat"
+        ],
+        "parameters": [
+          {
+            "name": "coatColor",
+            "kind": "color",
+            "call": "coating.powderCoat",
+            "arg": 1,
+            "default": [
+              0.62,
+              0.06,
+              0.05
+            ]
+          },
+          {
+            "name": "glossUnits",
+            "kind": "range",
+            "min": 0,
+            "max": 100,
+            "call": "coating.powderCoat",
+            "arg": 2,
+            "default": [
+              85
+            ]
+          },
+          {
+            "name": "peel",
+            "kind": "range",
+            "min": 0,
+            "max": 1,
+            "call": "coating.powderCoat",
+            "arg": 3,
+            "default": [
+              0.7
+            ]
+          }
+        ],
+        "template": "${layer}, ${layer}Color, ${layer}Height, ${layer}Slope = coating.powderCoat(${material}, ${coatColor}, ${glossUnits}, ${peel}, 0.08, 1.2);\n${body}.material = ${layer};\n${body}.color = ${layer}Color;"
+      }
+    },
+    "coating.sandCoat": {
+      "call": "coating.sandCoat",
+      "arity": 4,
+      "slots": {
+        "material": 0,
+        "color": -1,
+        "frame": -1
+      },
+      "adjust": {
+        "calls": [
+          "coating.sandCoat"
+        ],
+        "parameters": [
+          {
+            "name": "coatColor",
+            "kind": "color",
+            "call": "coating.sandCoat",
+            "arg": 1,
+            "default": [
+              0.12,
+              0.22,
+              0.12
+            ]
+          },
+          {
+            "name": "grain",
+            "kind": "range",
+            "min": 0.1,
+            "max": 0.3,
+            "call": "coating.sandCoat",
+            "arg": 2,
+            "default": [
+              0.2
+            ]
+          }
+        ],
+        "template": "${layer}, ${layer}Color, ${layer}Height, ${layer}Slope = coating.sandCoat(${material}, ${coatColor}, ${grain}, 0.08, 1.2);\n${body}.material = ${layer};\n${body}.color = ${layer}Color;"
+      }
+    },
+    "coating.wrinkleCoat": {
+      "call": "coating.wrinkleCoat",
+      "arity": 4,
+      "slots": {
+        "material": 0,
+        "color": -1,
+        "frame": -1
+      },
+      "adjust": {
+        "calls": [
+          "coating.wrinkleCoat"
+        ],
+        "parameters": [
+          {
+            "name": "coatColor",
+            "kind": "color",
+            "call": "coating.wrinkleCoat",
+            "arg": 1,
+            "default": [
+              0.04,
+              0.04,
+              0.045
+            ]
+          },
+          {
+            "name": "size",
+            "kind": "range",
+            "min": 0.3,
+            "max": 1,
+            "call": "coating.wrinkleCoat",
+            "arg": 2,
+            "default": [
+              0.6
+            ]
+          }
+        ],
+        "template": "${layer}, ${layer}Color, ${layer}Height, ${layer}Slope = coating.wrinkleCoat(${material}, ${coatColor}, ${size}, 0.08, 1.2);\n${body}.material = ${layer};\n${body}.color = ${layer}Color;"
+      }
+    },
+    "machined.blasted": {
+      "call": "machined.blasted",
+      "arity": 4,
+      "slots": {
+        "material": 0,
+        "color": 1,
+        "frame": -1
+      },
+      "adjust": {
+        "calls": [
+          "machined.blasted"
+        ],
+        "parameters": [
+          {
+            "name": "mediaSize",
+            "kind": "range",
+            "min": 50,
+            "max": 400,
+            "call": "machined.blasted",
+            "arg": 2,
+            "default": [
+              100
+            ]
+          },
+          {
+            "name": "angular",
+            "kind": "range",
+            "min": 0,
+            "max": 1,
+            "call": "machined.blasted",
+            "arg": 3,
+            "default": [
+              0
+            ]
+          }
+        ],
+        "template": "${layer}, ${layer}Color, ${layer}Height, ${layer}Slope = machined.blasted(${material}, ${color}, ${mediaSize}, ${angular});\n${body}.material = ${layer};\n${body}.color = ${layer}Color;"
+      }
+    },
+    "machined.brushed": {
+      "call": "machined.brushed",
+      "arity": 4,
+      "slots": {
+        "material": 0,
+        "color": 1,
+        "frame": -1
+      },
+      "adjust": {
+        "calls": [
+          "machined.brushed"
+        ],
+        "parameters": [
+          {
+            "name": "direction",
+            "kind": "direction",
+            "call": "machined.brushed",
+            "arg": 2,
+            "default": [
+              1,
+              0,
+              0
+            ]
+          },
+          {
+            "name": "grit",
+            "kind": "range",
+            "min": 120,
+            "max": 240,
+            "call": "machined.brushed",
+            "arg": 3,
+            "default": [
+              150
+            ]
+          }
+        ],
+        "template": "${layer}, ${layer}Color, ${layer}Height, ${layer}Slope = machined.brushed(${material}, ${color}, ${direction}, ${grit});\n${body}.material = ${layer};\n${body}.color = ${layer}Color;"
+      }
+    },
+    "machined.faceMilled": {
+      "call": "machined.faceMilled",
+      "arity": 4,
+      "slots": {
+        "material": 0,
+        "color": 1,
+        "frame": -1
+      },
+      "adjust": {
+        "calls": [
+          "machined.faceMilled"
+        ],
+        "parameters": [
+          {
+            "name": "origin",
+            "kind": "point",
+            "call": "machined.faceMilled",
+            "arg": 2,
+            "default": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "name": "feedDir",
+            "kind": "direction",
+            "call": "machined.faceMilled",
+            "arg": 3,
+            "anchor": "origin",
+            "default": [
+              1,
+              0,
+              0
+            ]
+          },
+          {
+            "name": "normal",
+            "kind": "direction",
+            "call": "machined.faceMilled",
+            "arg": 4,
+            "anchor": "origin",
+            "default": [
+              0,
+              0,
+              1
+            ]
+          }
+        ],
+        "template": "${layer}, ${layer}Color, ${layer}Height, ${layer}Slope = machined.faceMilled(${material}, ${color}, ${origin}, ${feedDir}, ${normal}, 25, 0.3, 0.8);\n${body}.material = ${layer};\n${body}.color = ${layer}Color;"
+      }
+    },
+    "machined.faced": {
+      "call": "machined.faced",
+      "arity": 4,
+      "slots": {
+        "material": 0,
+        "color": 1,
+        "frame": -1
+      },
+      "adjust": {
+        "calls": [
+          "machined.faced"
+        ],
+        "parameters": [
+          {
+            "name": "axisOrigin",
+            "kind": "point",
+            "call": "machined.faced",
+            "arg": 2,
+            "default": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "name": "axisDir",
+            "kind": "direction",
+            "call": "machined.faced",
+            "arg": 3,
+            "anchor": "axisOrigin",
+            "default": [
+              0,
+              0,
+              1
+            ]
+          },
+          {
+            "name": "feed",
+            "kind": "range",
+            "min": 0.05,
+            "max": 0.3,
+            "call": "machined.faced",
+            "arg": 4,
+            "default": [
+              0.15
+            ]
+          },
+          {
+            "name": "noseRadius",
+            "kind": "range",
+            "min": 0.2,
+            "max": 1.6,
+            "call": "machined.faced",
+            "arg": 5,
+            "default": [
+              0.8
+            ]
+          }
+        ],
+        "template": "${layer}, ${layer}Color, ${layer}Height, ${layer}Slope = machined.faced(${material}, ${color}, ${axisOrigin}, ${axisDir}, ${feed}, ${noseRadius});\n${body}.material = ${layer};\n${body}.color = ${layer}Color;"
+      }
+    },
+    "machined.ground": {
+      "call": "machined.ground",
+      "arity": 4,
+      "slots": {
+        "material": 0,
+        "color": 1,
+        "frame": -1
+      },
+      "adjust": {
+        "calls": [
+          "machined.ground"
+        ],
+        "parameters": [
+          {
+            "name": "direction",
+            "kind": "direction",
+            "call": "machined.ground",
+            "arg": 2,
+            "default": [
+              1,
+              0,
+              0
+            ]
+          },
+          {
+            "name": "roughnessRa",
+            "kind": "range",
+            "min": 0.1,
+            "max": 0.8,
+            "call": "machined.ground",
+            "arg": 3,
+            "default": [
+              0.8
+            ]
+          }
+        ],
+        "template": "${layer}, ${layer}Color, ${layer}Height, ${layer}Slope = machined.ground(${material}, ${color}, ${direction}, ${roughnessRa});\n${body}.material = ${layer};\n${body}.color = ${layer}Color;"
+      }
+    },
+    "machined.knurled": {
+      "call": "machined.knurled",
+      "arity": 4,
+      "slots": {
+        "material": 0,
+        "color": 1,
+        "frame": 2
+      },
+      "adjust": {
+        "calls": [
+          "machined.knurled"
+        ],
+        "parameters": [
+          {
+            "name": "pitch",
+            "kind": "range",
+            "min": 0.4,
+            "max": 1.6,
+            "call": "machined.knurled",
+            "arg": 4,
+            "default": [
+              1
+            ]
+          },
+          {
+            "name": "diamond",
+            "kind": "range",
+            "min": 0,
+            "max": 1,
+            "call": "machined.knurled",
+            "arg": 5,
+            "default": [
+              1
+            ]
+          },
+          {
+            "name": "raised",
+            "kind": "range",
+            "min": 0,
+            "max": 1,
+            "call": "machined.knurled",
+            "arg": 6,
+            "default": [
+              1
+            ]
+          }
+        ],
+        "template": "${layer}, ${layer}Color, ${layer}Height, ${layer}Slope = machined.knurled(${material}, ${color}, ${frame}, 16, ${pitch}, ${diamond}, ${raised});\n${body}.material = ${layer};\n${body}.color = ${layer}Color;"
+      }
+    },
+    "machined.turned": {
+      "call": "machined.turned",
+      "arity": 4,
+      "slots": {
+        "material": 0,
+        "color": 1,
+        "frame": 2
+      },
+      "adjust": {
+        "calls": [
+          "machined.turned"
+        ],
+        "parameters": [
+          {
+            "name": "feed",
+            "kind": "range",
+            "min": 0.05,
+            "max": 0.3,
+            "call": "machined.turned",
+            "arg": 3,
+            "default": [
+              0.15
+            ]
+          },
+          {
+            "name": "noseRadius",
+            "kind": "range",
+            "min": 0.2,
+            "max": 1.6,
+            "call": "machined.turned",
+            "arg": 4,
+            "default": [
+              0.8
+            ]
+          }
+        ],
+        "template": "${layer}, ${layer}Color, ${layer}Height, ${layer}Slope = machined.turned(${material}, ${color}, ${frame}, ${feed}, ${noseRadius});\n${body}.material = ${layer};\n${body}.color = ${layer}Color;"
+      }
+    },
+    "material.withEmissive": {
+      "call": "material.withEmissive",
+      "arity": 1,
+      "slots": {
+        "material": 0,
+        "color": -1,
+        "frame": -1
+      },
+      "adjust": {
+        "calls": [
+          "material.withEmissive"
+        ],
+        "parameters": [
+          {
+            "name": "rgb",
+            "kind": "color",
+            "call": "material.withEmissive",
+            "arg": 1,
+            "default": [
+              1,
+              1,
+              1
+            ]
+          }
+        ],
+        "template": "${layer} = material.withEmissive(${material}, ${rgb}, 1);\n${body}.material = ${layer};"
+      }
+    },
+    "material.withIor": {
+      "call": "material.withIor",
+      "arity": 1,
+      "slots": {
+        "material": 0,
+        "color": -1,
+        "frame": -1
+      }
+    },
+    "material.withLay": {
+      "call": "material.withLay",
+      "arity": 1,
+      "slots": {
+        "material": 0,
+        "color": -1,
+        "frame": -1
+      },
+      "adjust": {
+        "calls": [
+          "material.withLay"
+        ],
+        "parameters": [
+          {
+            "name": "direction",
+            "kind": "direction",
+            "call": "material.withLay",
+            "arg": 1,
+            "default": [
+              1,
+              0,
+              0
+            ]
+          },
+          {
+            "name": "anisotropy",
+            "kind": "range",
+            "min": 0,
+            "max": 1,
+            "call": "material.withLay",
+            "arg": 2,
+            "default": [
+              0.8
+            ]
+          }
+        ],
+        "template": "${layer} = material.withLay(${material}, ${direction}, ${anisotropy});\n${body}.material = ${layer};"
+      }
+    },
+    "material.withMetallic": {
+      "call": "material.withMetallic",
+      "arity": 1,
+      "slots": {
+        "material": 0,
+        "color": -1,
+        "frame": -1
+      },
+      "adjust": {
+        "calls": [
+          "material.withMetallic"
+        ],
+        "parameters": [
+          {
+            "name": "metal",
+            "kind": "range",
+            "min": 0,
+            "max": 1,
+            "call": "material.withMetallic",
+            "arg": 1,
+            "default": [
+              1
+            ]
+          }
+        ],
+        "template": "${layer} = material.withMetallic(${material}, ${metal});\n${body}.material = ${layer};"
+      }
+    },
+    "material.withRoughness": {
+      "call": "material.withRoughness",
+      "arity": 1,
+      "slots": {
+        "material": 0,
+        "color": -1,
+        "frame": -1
+      },
+      "adjust": {
+        "calls": [
+          "material.withRoughness"
+        ],
+        "parameters": [
+          {
+            "name": "rough",
+            "kind": "range",
+            "min": 0,
+            "max": 1,
+            "call": "material.withRoughness",
+            "arg": 1,
+            "default": [
+              0.5
+            ]
+          }
+        ],
+        "template": "${layer} = material.withRoughness(${material}, ${rough});\n${body}.material = ${layer};"
+      }
+    },
+    "material.withTransmission": {
+      "call": "material.withTransmission",
+      "arity": 1,
+      "slots": {
+        "material": 0,
+        "color": -1,
+        "frame": -1
+      },
+      "adjust": {
+        "calls": [
+          "material.withTransmission"
+        ],
+        "parameters": [
+          {
+            "name": "transmission",
+            "kind": "range",
+            "min": 0,
+            "max": 1,
+            "call": "material.withTransmission",
+            "arg": 1,
+            "default": [
+              0.6
+            ]
+          }
+        ],
+        "template": "${layer} = material.withTransmission(${material}, ${transmission}, 24);\n${body}.material = ${layer};"
+      }
+    },
+    "playful.glitter": {
+      "call": "playful.glitter",
+      "arity": 2,
+      "slots": {
+        "material": 0,
+        "color": 1,
+        "frame": -1
+      },
+      "adjust": {
+        "calls": [
+          "playful.glitter"
+        ],
+        "parameters": [
+          {
+            "name": "flakeColor",
+            "kind": "color",
+            "call": "playful.glitter",
+            "arg": 3,
+            "default": [
+              1,
+              1,
+              1
+            ]
+          },
+          {
+            "name": "density",
+            "kind": "range",
+            "min": 0,
+            "max": 1,
+            "call": "playful.glitter",
+            "arg": 4,
+            "default": [
+              0.25
+            ]
+          }
+        ],
+        "template": "${layer}, ${layer}Color = playful.glitter(${material}, ${color}, 1.0, ${flakeColor}, ${density});\n${body}.material = ${layer};\n${body}.color = ${layer}Color;"
+      }
+    },
+    "playful.glitterTwinkle": {
+      "call": "playful.glitterTwinkle",
+      "arity": 2,
+      "slots": {
+        "material": 0,
+        "color": 1,
+        "frame": -1
+      },
+      "adjust": {
+        "calls": [
+          "playful.glitterTwinkle"
+        ],
+        "parameters": [
+          {
+            "name": "flakeColor",
+            "kind": "color",
+            "call": "playful.glitterTwinkle",
+            "arg": 3,
+            "default": [
+              1,
+              1,
+              1
+            ]
+          },
+          {
+            "name": "density",
+            "kind": "range",
+            "min": 0,
+            "max": 1,
+            "call": "playful.glitterTwinkle",
+            "arg": 4,
+            "default": [
+              0.25
+            ]
+          }
+        ],
+        "template": "${layer}, ${layer}Color = playful.glitterTwinkle(${material}, ${color}, 1.0, ${flakeColor}, ${density}, 8);\n${body}.material = ${layer};\n${body}.color = ${layer}Color;"
+      }
+    },
+    "printed.laserMelted": {
+      "call": "printed.laserMelted",
+      "arity": 4,
+      "slots": {
+        "material": 0,
+        "color": 1,
+        "frame": -1
+      },
+      "adjust": {
+        "calls": [
+          "printed.laserMelted"
+        ],
+        "parameters": [
+          {
+            "name": "roughnessRa",
+            "kind": "range",
+            "min": 5,
+            "max": 15,
+            "call": "printed.laserMelted",
+            "arg": 2,
+            "default": [
+              10
+            ]
+          }
+        ],
+        "template": "${layer}, ${layer}Color, ${layer}Height, ${layer}Slope = printed.laserMelted(${material}, ${color}, ${roughnessRa});\n${body}.material = ${layer};\n${body}.color = ${layer}Color;"
+      }
+    },
+    "weathering.weathered": {
+      "call": "weathering.weathered",
+      "arity": 2,
+      "slots": {
+        "material": 0,
+        "color": 1,
+        "frame": -1
+      },
+      "adjust": {
+        "calls": [
+          "weathering.weathered"
+        ],
+        "parameters": [
+          {
+            "name": "amount",
+            "kind": "range",
+            "min": 0,
+            "max": 1,
+            "call": "weathering.weathered",
+            "arg": 3,
+            "default": [
+              0.5
+            ]
+          }
+        ],
+        "template": "${layer}, ${layer}Color = weathering.weathered(${material}, ${color}, color.hsv2rgb([0.045 * tau, 0.75, 0.55]), ${amount});\n${body}.material = ${layer};\n${body}.color = ${layer}Color;"
+      }
+    },
+    "weathering.weatheredRunoff": {
+      "call": "weathering.weatheredRunoff",
+      "arity": 2,
+      "slots": {
+        "material": 0,
+        "color": 1,
+        "frame": -1
+      },
+      "adjust": {
+        "calls": [
+          "weathering.weatheredRunoff"
+        ],
+        "parameters": [
+          {
+            "name": "amount",
+            "kind": "range",
+            "min": 0,
+            "max": 1,
+            "call": "weathering.weatheredRunoff",
+            "arg": 3,
+            "default": [
+              0.5
+            ]
+          },
+          {
+            "name": "flowOrigin",
+            "kind": "point",
+            "call": "weathering.weatheredRunoff",
+            "arg": 4,
+            "default": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "name": "flowDir",
+            "kind": "direction",
+            "call": "weathering.weatheredRunoff",
+            "arg": 5,
+            "anchor": "flowOrigin",
+            "default": [
+              0,
+              0,
+              -1
+            ]
+          }
+        ],
+        "template": "${layer}, ${layer}Color = weathering.weatheredRunoff(${material}, ${color}, color.hsv2rgb([0.045 * tau, 0.75, 0.55]), ${amount}, ${flowOrigin}, ${flowDir}, 20);\n${body}.material = ${layer};\n${body}.color = ${layer}Color;"
+      }
+    }
+  }
+}

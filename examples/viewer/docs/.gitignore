@@ -1,0 +1,4 @@
+# Markdown reference docs in this directory are generated at launch by
+# common/program/preamble/export/main.go (invoked from webai/launch*.sh).
+# They are build artifacts, not source — don't check them in.
+*.md

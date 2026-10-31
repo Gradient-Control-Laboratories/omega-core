@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -359,3 +360,136 @@ func TestServerValidationErrors(t *testing.T) {
 	}
 }
 
+func TestRealViewerAndExamplesIntegration(t *testing.T) {
+	repoRoot, err := filepath.Abs(filepath.Join("..", "..", "..", ".."))
+	if err != nil {
+		t.Fatal(err)
+	}
+	realExamplesDir := filepath.Join(repoRoot, "examples")
+	realViewerDir := filepath.Join(realExamplesDir, "viewer")
+	realStdlibDir := filepath.Join(repoRoot, "stdlib")
+
+	srv := server.New(&config.Config{
+		Addr:        "127.0.0.1:0",
+		ExamplesDir: realExamplesDir,
+		ViewerDir:   realViewerDir,
+		SourcePaths: []string{realExamplesDir, realStdlibDir},
+	})
+	ts := httptest.NewServer(srv.Handler())
+	defer ts.Close()
+
+	// 1. Verify key viewer entrypoints and subdirectory modules are served.
+	requiredPaths := []string{
+		"/",
+		"/index.html",
+		"/main.js",
+		"/style.css",
+		"/render/viewer.js",
+		"/panels/export-panel.js",
+		"/panels/mesh-import.js",
+		"/panels/slider-panel.js",
+		"/ui/event-manager.js",
+		"/ui/error.js",
+		"/editor/editor.js",
+		"/docs/help-panel.js",
+	}
+	for _, p := range requiredPaths {
+		res, err := http.Get(ts.URL + p)
+		if err != nil {
+			t.Fatalf("GET %s failed: %v", p, err)
+		}
+		res.Body.Close()
+		if res.StatusCode != http.StatusOK {
+			t.Errorf("expected HTTP 200 for %s, got %d", p, res.StatusCode)
+		}
+	}
+
+	// 2. Verify all relative ES module imports in examples/viewer/**/*.js resolve on disk.
+	relImportRe := regexp.MustCompile(`(?m)^\s*import\s+(?:[^;]*?\s+from\s+)?["'](\.\.?/[^"']+)["']`)
+	err = filepath.Walk(realViewerDir, func(path string, info os.FileInfo, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if info.IsDir() {
+			if info.Name() == "vendor" {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if !strings.HasSuffix(info.Name(), ".js") {
+			return nil
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		dir := filepath.Dir(path)
+		matches := relImportRe.FindAllStringSubmatch(string(data), -1)
+		for _, m := range matches {
+			spec := m[1]
+			target := filepath.Join(dir, filepath.FromSlash(spec))
+			if _, statErr := os.Stat(target); statErr != nil {
+				relFile, _ := filepath.Rel(realViewerDir, path)
+				t.Errorf("%s has unresolved relative import %q (resolved to %s)", relFile, spec, target)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("walking viewer directory failed: %v", err)
+	}
+
+	// 3. Verify GET /api/examples lists real examples and POST /api/compile compiles gear.gsl.
+	exRes, err := http.Get(ts.URL + "/api/examples")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer exRes.Body.Close()
+	var listPayload struct {
+		Examples []struct {
+			Name string `json:"name"`
+		} `json:"examples"`
+	}
+	if err := json.NewDecoder(exRes.Body).Decode(&listPayload); err != nil {
+		t.Fatal(err)
+	}
+	if len(listPayload.Examples) == 0 {
+		t.Fatalf("expected non-empty examples list from %s", realExamplesDir)
+	}
+
+	srcRes, err := http.Get(ts.URL + "/api/example?name=gear.gsl")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer srcRes.Body.Close()
+	var exPayload struct {
+		Name   string `json:"name"`
+		Source string `json:"source"`
+	}
+	if err := json.NewDecoder(srcRes.Body).Decode(&exPayload); err != nil {
+		t.Fatal(err)
+	}
+	if exPayload.Source == "" {
+		t.Fatal("expected non-empty gear.gsl source")
+	}
+
+	compBody, _ := json.Marshal(map[string]any{
+		"id":     "real-gear",
+		"source": exPayload.Source,
+	})
+	compRes, err := http.Post(ts.URL+"/api/compile", "application/json", bytes.NewReader(compBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer compRes.Body.Close()
+	var compOut struct {
+		WGSL   string   `json:"wgsl"`
+		Errors []string `json:"errors"`
+	}
+	if err := json.NewDecoder(compRes.Body).Decode(&compOut); err != nil {
+		t.Fatal(err)
+	}
+	if len(compOut.Errors) > 0 || compOut.WGSL == "" {
+		t.Fatalf("expected gear.gsl to compile cleanly, got errors=%v", compOut.Errors)
+	}
+}
