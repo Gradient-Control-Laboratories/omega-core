@@ -461,6 +461,7 @@ func TestParseEmptyAndBlankInputsGuaranteePackageFile(t *testing.T) {
 		res, err := parser2.Parse(nil)
 		assert.NoError(t, err)
 		if assert.NotNil(t, res) && assert.NotNil(t, res.Package) {
+			assert.Equal(t, 1, len(res.Errors))
 			if assert.Equal(t, 1, len(res.Package.Files)) {
 				assert.NotNil(t, res.Package.Files[0])
 			}
@@ -471,6 +472,7 @@ func TestParseEmptyAndBlankInputsGuaranteePackageFile(t *testing.T) {
 		res, err := parser2.Parse([]string{})
 		assert.NoError(t, err)
 		if assert.NotNil(t, res) && assert.NotNil(t, res.Package) {
+			assert.Equal(t, 1, len(res.Errors))
 			if assert.Equal(t, 1, len(res.Package.Files)) {
 				assert.NotNil(t, res.Package.Files[0])
 			}

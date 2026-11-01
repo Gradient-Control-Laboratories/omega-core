@@ -9,20 +9,18 @@ import (
 
 func (d *TopLevel) parseImports(lex *lexer.PeekingLexer) error {
 	imports, err := importsParser.ParseFromLexer(lex)
-	if imports != nil {
+	if isImportError(lex, err) {
 		for _, imp := range imports.Imports {
 			if imp.EndPos.Line > 0 {
 				d.Imports = append(d.Imports, imp)
 			}
 		}
-	}
-
-	if isImportError(lex, err) {
 		return &participle.ParseError{
 			Pos: lex.Peek().Pos,
 			Msg: "expected 'import <optional-prefix> \"<path>\";', where the path is enclosed in double quotes"}
 	}
 
+	d.Imports = imports.Imports
 	return nil
 }
 

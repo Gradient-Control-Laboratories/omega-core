@@ -25,24 +25,20 @@ func (d *TopLevel) Parse(lex *lexer.PeekingLexer) error {
 	}
 
 	decls, err := declarationsParser.ParseFromLexer(lex)
-	if decls != nil {
-		for _, decl := range decls.Declarations {
-			if isCompleteDeclaration(decl) {
-				d.Declarations = append(d.Declarations, decl)
-			}
-		}
-	}
+	d.Declarations = decls.Declarations
 
 	peek := lex.Peek().Value
 	if err != nil {
 
 		var tokenErr *participle.UnexpectedTokenError
 		if errors.As(err, &tokenErr) && tokenErr.Unexpected.Value == "return" {
+			d.Declarations = filterCompleteDeclarations(d.Declarations)
 			return &participle.ParseError{Pos: tokenErr.Position(),
 				Msg: "missing \";\" before return"}
 		}
 
 		if peek != "return" {
+			d.Declarations = filterCompleteDeclarations(d.Declarations)
 			if errors.As(err, &tokenErr) {
 				if tokenErr.Unexpected.Value == "=" || tokenErr.Unexpected.Value == "}" {
 					return errors.Join(err, errors.New("  perhaps forgot \";\" at the end of a previous statement?"))
@@ -69,6 +65,17 @@ func (d *TopLevel) Parse(lex *lexer.PeekingLexer) error {
 	}
 	d.Return = returnExprs.Expressions
 	return nil
+}
+
+func filterCompleteDeclarations(decls []Declaration) []Declaration {
+	n := 0
+	for _, decl := range decls {
+		if isCompleteDeclaration(decl) {
+			decls[n] = decl
+			n++
+		}
+	}
+	return decls[:n]
 }
 
 func isCompleteDeclaration(decl Declaration) bool {

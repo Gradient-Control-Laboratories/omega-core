@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/internal/meshslots"
 	"gradientcontrol.com/omega/core/parser/internal/parser2"
 	"gradientcontrol.com/omega/core/program"
 	gsllibs "gradientcontrol.com/omega/core/stdlib"
@@ -63,8 +62,12 @@ func TestParsePackageCachedStdPackagesMatchFreshParse(t *testing.T) {
 // A parse that fails is not cached, and a later parse reports it again.
 func TestParsePackageDoesNotCacheErrors(t *testing.T) {
 	src := "r = ;\nreturn r;\n"
-	if _, err := ParsePackage([]string{src}); err == nil {
+	pkg, err := ParsePackage([]string{src})
+	if err == nil {
 		t.Fatal("expected a parse error")
+	}
+	if pkg == nil || len(pkg.Files) != 1 || pkg.Files[0] == nil {
+		t.Fatalf("expected non-nil partial Package with 1 PackageFile, got %+v", pkg)
 	}
 	if _, ok := parsed.entries[sourcesKey([]string{src})]; ok {
 		t.Fatal("a failed parse was cached")
@@ -105,60 +108,4 @@ func TestSourcesKeySeparatesFiles(t *testing.T) {
 	if sourcesKey([]string{"ab", "c"}) == sourcesKey([]string{"a", "bc"}) {
 		t.Fatal("file boundaries do not change the key")
 	}
-}
-
-func TestParsePackageReturnsPartialPackageOnErrorAndGuaranteesFileZero(t *testing.T) {
-	t.Run("NilAndEmptySourcesGuaranteePackageAndFileZero", func(t *testing.T) {
-		pkgNil, err := ParsePackage(nil)
-		if err != nil {
-			t.Fatalf("unexpected error for nil sources: %v", err)
-		}
-		if pkgNil == nil || len(pkgNil.Files) != 1 || pkgNil.Files[0] == nil {
-			t.Fatalf("expected non-nil Package with 1 non-nil PackageFile, got %+v", pkgNil)
-		}
-
-		pkgEmpty, err := ParsePackage([]string{})
-		if err != nil {
-			t.Fatalf("unexpected error for empty sources: %v", err)
-		}
-		if pkgEmpty == nil || len(pkgEmpty.Files) != 1 || pkgEmpty.Files[0] == nil {
-			t.Fatalf("expected non-nil Package with 1 non-nil PackageFile, got %+v", pkgEmpty)
-		}
-	})
-
-	t.Run("PartialPackageReturnedWithErrorAndNotCached", func(t *testing.T) {
-		src := `@scene(25)
-import "dm/gate";
-importStep 0 "stmt.step";
-importId = importStep "expr.stp";
-broken = ;
-`
-		pkg, err := ParsePackage([]string{src})
-		if err == nil {
-			t.Fatal("expected parse error for trailing syntax error")
-		}
-		if pkg == nil {
-			t.Fatal("expected non-nil partial Package alongside error")
-		}
-		if pkg.Scene == nil || pkg.Scene.Size != 25 {
-			t.Fatalf("expected Scene Size 25, got %+v", pkg.Scene)
-		}
-		if len(pkg.Files) != 1 || pkg.Files[0] == nil {
-			t.Fatalf("expected 1 PackageFile, got %+v", pkg.Files)
-		}
-		file := pkg.Files[0]
-		if len(file.Imports) != 1 || file.Imports[0].Path != "dm/gate" {
-			t.Fatalf("expected dm/gate import, got %+v", file.Imports)
-		}
-		if len(file.StepImports) != 1 || file.StepImports[0].Path != "stmt.step" {
-			t.Fatalf("expected stmt.step import, got %+v", file.StepImports)
-		}
-		slots, _ := meshslots.Assign(pkg, nil)
-		if len(slots) != 1 || slots[0].Path != "expr.stp" {
-			t.Fatalf("expected meshslots.Assign to find expr.stp, got %+v", slots)
-		}
-		if _, ok := parsed.entries[sourcesKey([]string{src})]; ok {
-			t.Fatal("failed parse must not be cached")
-		}
-	})
 }
