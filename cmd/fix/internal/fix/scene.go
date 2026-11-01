@@ -18,7 +18,7 @@ var (
 var sceneFixer = Fixer{
 	Name: "scene",
 	Doc:  "replace legacy // Scene Size and // Scene Grid comments with @scene directive",
-	Help: `The scene fixer replaces legacy GSL v1 "// Scene Size:" and "// Scene Grid:"
+	Help: `The scene fixer replaces legacy "// Scene Size:" and "// Scene Grid:"
 header comments with the top-level "@scene(...)" directive.
 
 When the resolved grid spacing equals the default (size / 10), single-argument
