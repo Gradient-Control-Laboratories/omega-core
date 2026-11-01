@@ -24,6 +24,12 @@ func init() {
 
 // ParsePackage parses all of the sources in a package.
 //
+// Invariants:
+//   - The returned *program.Package is never nil and always contains at least
+//     one non-nil *program.PackageFile (len(pkg.Files) >= 1, pkg.Files[0] != nil).
+//   - When a parse or build error occurs, ParsePackage returns the partially
+//     populated *program.Package alongside the error without caching it.
+//
 // Every assembly parses each package it imports, and parsing was the largest
 // share of assembling a typical document: about a microsecond per byte, so
 // 50–400 ms of library a compile. A package parsed before is cloned from the
@@ -40,17 +46,15 @@ func ParsePackage(sources []string) (*program.Package, error) {
 	}
 	if len(res.Errors) > 0 {
 		if len(res.Errors) == 1 {
-			return nil, &res.Errors[0]
+			return res.Package, &res.Errors[0]
 		}
 		errs := make([]error, len(res.Errors))
 		for i := range res.Errors {
 			errs[i] = &res.Errors[i]
 		}
-		return nil, errors.Join(errs...)
+		return res.Package, errors.Join(errs...)
 	}
-	if res.Package != nil {
-		parsed.put(key, proto.Clone(res.Package).(*program.Package), sourcesSize(sources))
-	}
+	parsed.put(key, proto.Clone(res.Package).(*program.Package), sourcesSize(sources))
 	return res.Package, nil
 }
 

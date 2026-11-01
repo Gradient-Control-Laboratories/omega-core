@@ -95,6 +95,24 @@ func TestSceneFixer_Conversions(t *testing.T) {
 			want:        "@scene(24)\r\n\r\nreturn sphere(1);\r\n",
 			wantChanged: true,
 		},
+		{
+			name:        "converts legacy scene comments even when trailing declaration has syntax error",
+			in:          "// Scene Size: 30\n// Scene Grid: 6\n\nx = 10;\nbroken = ;\n",
+			want:        "@scene(30, 5)\n\nx = 10;\nbroken = ;\n",
+			wantChanged: true,
+		},
+		{
+			name:        "strips leftover legacy comments when @scene present and trailing declaration has syntax error",
+			in:          "@scene(25)\n// Scene Size: 25\nx = 1;\nbroken = ;\n",
+			want:        "@scene(25)\nx = 1;\nbroken = ;\n",
+			wantChanged: true,
+		},
+		{
+			name:        "converts comment-only file with legacy scene comments",
+			in:          "// Scene Size: 20\n// Scene Grid: 10\n",
+			want:        "@scene(20)\n",
+			wantChanged: true,
+		},
 	}
 
 	for _, tc := range tests {

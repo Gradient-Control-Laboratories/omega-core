@@ -1,6 +1,7 @@
 package parser2
 
 import (
+	"errors"
 	"strings"
 
 	participle "github.com/alecthomas/participle/v2"
@@ -44,31 +45,52 @@ var options = []participle.Option{
 	participle.Union[Value](&ImportRef{}, &Number{}, &FunctionCall{}, &QualifiedRef{}, &Reference{}, &AnonCall{}, &SubExpression{}, &Collection{}, &String{}, &AnnotatedExpr{}),
 }
 
+// Parse parses all source files in a package into a program.Package.
+//
+// Invariants:
+//   - The returned *api.ParseResult and its Package are never nil.
+//   - Package.Files always contains at least one non-nil *program.PackageFile
+//     (len(res.Package.Files) >= 1 and res.Package.Files[0] != nil).
+//   - If a syntax or semantic error occurs, res.Errors contains the error and
+//     res.Package preserves all files, scene metadata, imports, and declarations
+//     completed prior to the error.
 func Parse(sources []string) (*api.ParseResult, error) {
 	pkg := &program.Package{
 		VersionMajor: program.VersionMajor,
 		VersionMinor: program.VersionMinor,
+		Files:        make([]*program.PackageFile, 0, max(1, len(sources))),
 	}
+	res := &api.ParseResult{
+		Package: pkg,
+	}
+	if len(sources) == 0 {
+		pkgFile := &program.PackageFile{}
+		pkg.Files = append(pkg.Files, pkgFile)
+		return recordFileError(res, pkgFile, "", errors.New("no sources provided to parse"))
+	}
+
 	prog := &program.Program{
 		Primary: pkg,
 	}
 	progScope, err := scope.Init(prog)
 	if err != nil {
-		return nil, err
+		pkgFile := &program.PackageFile{}
+		pkg.Files = append(pkg.Files, pkgFile)
+		return recordFileError(res, pkgFile, "", err)
 	}
 	pkgScope := progScope.Primary
 
-	pkgFiles := make([]*program.PackageFile, 0, len(sources))
-	var parseErr error
-	var sourceWithErr string
-	var pkgFileWithErr *program.PackageFile
-
 	for i, source := range sources {
+		pkgFile := &program.PackageFile{}
+		pkg.Files = append(pkg.Files, pkgFile)
+		pkgFileScope := pkgScope.NewPkgFileScope(pkgFile)
+
 		topLevel, perr := parser.ParseString("", source)
-		if perr != nil {
-			parseErr = perr
-			sourceWithErr = source
-			break
+		if topLevel == nil {
+			if perr == nil {
+				perr = program.InternalErr(errors.New("nil AST with no parse error"))
+			}
+			return recordFileError(res, pkgFile, source, perr)
 		}
 
 		if i == 0 {
@@ -76,59 +98,36 @@ func Parse(sources []string) (*api.ParseResult, error) {
 				sc, err := scene.New(topLevel.Scene.Size, topLevel.Scene.Grid,
 					posToLocation(topLevel.Scene.Pos), posToLocation(topLevel.Scene.EndPos))
 				if err != nil {
-					parseErr = participle.Errorf(topLevel.Scene.Pos, "%s", err.Error())
-					sourceWithErr = source
-					break
+					return recordFileError(res, pkgFile, source, participle.Errorf(topLevel.Scene.Pos, "%s", err.Error()))
 				}
 				pkg.Scene = sc
 			} else {
 				pkg.Scene = scene.FromLegacyComments(source)
 			}
 		} else if topLevel.Scene != nil {
-			parseErr = participle.Errorf(topLevel.Scene.Pos, "@scene directive is only allowed in the first source file")
-			sourceWithErr = source
-			break
+			return recordFileError(res, pkgFile, source, participle.Errorf(topLevel.Scene.Pos, "@scene directive is only allowed in the first source file"))
 		}
 
-		pkgFile, berr := buildPkgFile(pkgScope, topLevel)
-		if berr != nil {
-			parseErr = berr
-			sourceWithErr = source
-			pkgFileWithErr = pkgFile
-			break
+		if berr := buildPkgFile(pkgFileScope, topLevel); berr != nil {
+			return recordFileError(res, pkgFile, source, berr)
+		}
+
+		if perr != nil {
+			return recordFileError(res, pkgFile, source, perr)
 		}
 
 		if i < len(sources)-1 && len(topLevel.Return) > 0 {
-			pos := lexer.Position{Line: 1, Column: 1}
-			if len(topLevel.Return) > 0 {
-				pos = topLevel.Return[0].Pos
-			}
-			parseErr = participle.Errorf(pos, "return statement is only allowed in the last source file")
-			sourceWithErr = source
-			pkgFileWithErr = pkgFile
-			break
+			return recordFileError(res, pkgFile, source, participle.Errorf(topLevel.Return[0].Pos, "return statement is only allowed in the last source file"))
 		}
-
-		pkgFiles = append(pkgFiles, pkgFile)
 	}
 
-	pkg.Files = pkgFiles
+	return res, nil
+}
 
-	if parseErr != nil {
-		if pkgFileWithErr != nil {
-			pkgFileWithErr.Source = sourceWithErr
-		}
-		return &api.ParseResult{
-			Package: pkg,
-			Errors: []program.Error{
-				ParseError(sourceWithErr, parseErr),
-			},
-		}, nil
-	}
-
-	return &api.ParseResult{
-		Package: pkg,
-	}, nil
+func recordFileError(res *api.ParseResult, pkgFile *program.PackageFile, source string, err error) (*api.ParseResult, error) {
+	pkgFile.Source = source
+	res.Errors = append(res.Errors, ParseError(source, err))
+	return res, nil
 }
 
 func ParseError(source string, err error) program.Error {

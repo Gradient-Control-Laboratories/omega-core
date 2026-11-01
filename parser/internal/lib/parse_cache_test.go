@@ -62,8 +62,12 @@ func TestParsePackageCachedStdPackagesMatchFreshParse(t *testing.T) {
 // A parse that fails is not cached, and a later parse reports it again.
 func TestParsePackageDoesNotCacheErrors(t *testing.T) {
 	src := "r = ;\nreturn r;\n"
-	if _, err := ParsePackage([]string{src}); err == nil {
+	pkg, err := ParsePackage([]string{src})
+	if err == nil {
 		t.Fatal("expected a parse error")
+	}
+	if pkg == nil || len(pkg.Files) != 1 || pkg.Files[0] == nil {
+		t.Fatalf("expected non-nil partial Package with 1 PackageFile, got %+v", pkg)
 	}
 	if _, ok := parsed.entries[sourcesKey([]string{src})]; ok {
 		t.Fatal("a failed parse was cached")

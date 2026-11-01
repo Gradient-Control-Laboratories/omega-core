@@ -6,13 +6,14 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"gradientcontrol.com/omega/core/parser"
+	"gradientcontrol.com/omega/core/program"
 )
 
 var (
-	sceneSizeLineRE  = regexp.MustCompile(`(?i)^\s*//\s*Scene\s+Size:[^\S\n]*(.*)$`)
-	sceneGridLineRE  = regexp.MustCompile(`(?i)^\s*//\s*Scene\s+Grid:[^\S\n]*(.*)$`)
-	mmGridRE         = regexp.MustCompile(`(?i)^\s*[-+0-9.eE]+\s*mm\b`)
-	sceneDirectiveRE = regexp.MustCompile(`^\s*@scene\s*\(`)
+	sceneSizeLineRE = regexp.MustCompile(`(?i)^\s*//\s*Scene\s+Size:[^\S\n]*(.*)$`)
+	sceneGridLineRE = regexp.MustCompile(`(?i)^\s*//\s*Scene\s+Grid:[^\S\n]*(.*)$`)
 )
 
 var sceneFixer = Fixer{
@@ -49,14 +50,17 @@ func applySceneFix(src string) (string, bool, error) {
 		normalized = strings.ReplaceAll(src, "\r\n", "\n")
 	}
 
+	pkg, _ := parser.ParsePackage([]string{normalized})
+	if pkg.Scene == nil {
+		return src, false, nil
+	}
+
 	lines := strings.Split(normalized, "\n")
-	hasDirective := hasTopLevelSceneDirective(lines)
+	firstSceneIdx := findFirstSceneCommentIndex(lines)
 
-	sizeVal, hasSize, gridVal, hasGrid := parseLegacySceneComments(lines)
-	hasAnySceneComment := hasLegacySceneCommentLine(lines)
-
-	if hasDirective {
-		if !hasAnySceneComment {
+	// pkg.Scene.Start != nil indicates an explicit @scene(...) directive was parsed.
+	if pkg.Scene.Start != nil {
+		if firstSceneIdx == -1 {
 			return src, false, nil
 		}
 		cleaned := removeSceneCommentLines(lines)
@@ -64,13 +68,8 @@ func applySceneFix(src string) (string, bool, error) {
 		return out, out != src, nil
 	}
 
-	if !hasSize {
-		return src, false, nil
-	}
-
-	directive := formatSceneDirective(sizeVal, gridVal, hasGrid)
-	firstCodeIdx := findFirstCodeLineIndex(lines)
-	firstSceneIdx := findFirstSceneCommentIndex(lines)
+	directive := formatSceneDirective(pkg.Scene.Size, pkg.Scene.Grid)
+	firstCodeIdx := firstStatementLineIndex(pkg.Files[0], lines)
 
 	var resultLines []string
 	if firstCodeIdx == -1 || firstSceneIdx < firstCodeIdx {
@@ -103,30 +102,40 @@ func applySceneFix(src string) (string, bool, error) {
 	return out, out != src, nil
 }
 
-func hasTopLevelSceneDirective(lines []string) bool {
-	inBlockComment := false
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if inBlockComment {
-			if idx := strings.Index(trimmed, "*/"); idx != -1 {
-				inBlockComment = false
-				trimmed = strings.TrimSpace(trimmed[idx+2:])
-			} else {
-				continue
-			}
+func firstStatementLineIndex(file *program.PackageFile, lines []string) int {
+	minLine := int32(0)
+	consider := func(loc *program.Location) {
+		if minLine == 0 || loc.Line < minLine {
+			minLine = loc.Line
 		}
-		if strings.HasPrefix(trimmed, "/*") {
-			if !strings.Contains(trimmed, "*/") {
-				inBlockComment = true
-			}
-			continue
-		}
-		if trimmed == "" || strings.HasPrefix(trimmed, "//") {
-			continue
-		}
-		return sceneDirectiveRE.MatchString(trimmed)
 	}
-	return false
+
+	for _, imp := range file.Imports {
+		consider(imp.Start)
+	}
+	for _, imp := range file.MeshImports {
+		consider(imp.Start)
+	}
+	for _, imp := range file.StepImports {
+		consider(imp.Start)
+	}
+	for _, imp := range file.WarpImports {
+		consider(imp.Start)
+	}
+	for _, ann := range file.Annotations {
+		consider(ann.Start)
+	}
+	for _, assign := range file.Assignments {
+		consider(assign.Start)
+	}
+	for _, ret := range file.Returns {
+		consider(ret.Start)
+	}
+
+	if minLine > 0 {
+		return int(minLine) - 1
+	}
+	return findFirstCodeLineIndex(lines)
 }
 
 func findFirstCodeLineIndex(lines []string) int {
@@ -164,68 +173,14 @@ func findFirstSceneCommentIndex(lines []string) int {
 	return -1
 }
 
-func hasLegacySceneCommentLine(lines []string) bool {
-	return findFirstSceneCommentIndex(lines) != -1
-}
-
 func isSceneCommentLine(line string) bool {
 	return sceneSizeLineRE.MatchString(line) || sceneGridLineRE.MatchString(line)
 }
 
-func parseLegacySceneComments(lines []string) (size float64, hasSize bool, grid float64, hasGrid bool) {
-	var rawGrid string
-	var foundGridLine bool
-
-	for _, line := range lines {
-		if !hasSize {
-			if m := sceneSizeLineRE.FindStringSubmatch(line); len(m) >= 2 {
-				sizeStr := strings.TrimSpace(m[1])
-				if strings.HasSuffix(strings.ToLower(sizeStr), "mm") {
-					sizeStr = strings.TrimSpace(sizeStr[:len(sizeStr)-2])
-				}
-				if v, err := strconv.ParseFloat(sizeStr, 64); err == nil && v > 0 {
-					size = v
-					hasSize = true
-				}
-			}
-		}
-		if !foundGridLine {
-			if m := sceneGridLineRE.FindStringSubmatch(line); len(m) >= 2 {
-				rawGrid = strings.TrimSpace(m[1])
-				foundGridLine = true
-			}
-		}
-	}
-
-	if !hasSize {
-		return 0, false, 0, false
-	}
-
-	if foundGridLine {
-		if mmGridRE.MatchString(rawGrid) {
-			valStr := strings.TrimSpace(rawGrid)
-			if strings.HasSuffix(strings.ToLower(valStr), "mm") {
-				valStr = strings.TrimSpace(valStr[:len(valStr)-2])
-			}
-			if val, err := strconv.ParseFloat(valStr, 64); err == nil && val > 0 {
-				grid = val
-				hasGrid = true
-			}
-		} else {
-			if count, err := strconv.ParseFloat(rawGrid, 64); err == nil && count > 0 {
-				grid = size / count
-				hasGrid = true
-			}
-		}
-	}
-
-	return size, true, grid, hasGrid
-}
-
-func formatSceneDirective(size, grid float64, hasGrid bool) string {
+func formatSceneDirective(size, grid float64) string {
 	sizeStr := strconv.FormatFloat(size, 'f', -1, 64)
 	defaultGrid := size / 10.0
-	if !hasGrid || math.Abs(grid-defaultGrid) < 1e-9 {
+	if math.Abs(grid-defaultGrid) < 1e-9 {
 		return fmt.Sprintf("@scene(%s)", sizeStr)
 	}
 	gridStr := strconv.FormatFloat(grid, 'f', -1, 64)

@@ -32,11 +32,13 @@ func (d *TopLevel) Parse(lex *lexer.PeekingLexer) error {
 
 		var tokenErr *participle.UnexpectedTokenError
 		if errors.As(err, &tokenErr) && tokenErr.Unexpected.Value == "return" {
+			d.Declarations = filterCompleteDeclarations(d.Declarations)
 			return &participle.ParseError{Pos: tokenErr.Position(),
 				Msg: "missing \";\" before return"}
 		}
 
 		if peek != "return" {
+			d.Declarations = filterCompleteDeclarations(d.Declarations)
 			if errors.As(err, &tokenErr) {
 				if tokenErr.Unexpected.Value == "=" || tokenErr.Unexpected.Value == "}" {
 					return errors.Join(err, errors.New("  perhaps forgot \";\" at the end of a previous statement?"))
@@ -63,6 +65,32 @@ func (d *TopLevel) Parse(lex *lexer.PeekingLexer) error {
 	}
 	d.Return = returnExprs.Expressions
 	return nil
+}
+
+func filterCompleteDeclarations(decls []Declaration) []Declaration {
+	n := 0
+	for _, decl := range decls {
+		if isCompleteDeclaration(decl) {
+			decls[n] = decl
+			n++
+		}
+	}
+	return decls[:n]
+}
+
+func isCompleteDeclaration(decl Declaration) bool {
+	switch d := decl.(type) {
+	case *NamedFunction:
+		return d.EndPos.Line > 0
+	case *PropertyAssignment:
+		return d.EndPos.Line > 0
+	case *Assignment:
+		return d.EndPos.Line > 0
+	case *AnnotatedDeclaration:
+		return d.EndPos.Line > 0 && isCompleteDeclaration(d.Declaration)
+	default:
+		return false
+	}
 }
 
 func (vn *VarNames) Parse(lex *lexer.PeekingLexer) error {
