@@ -1,5 +1,4 @@
-// Scene Size: 48
-// Scene Grid: 10
+@scene(48)
 
 // A row of spheres showing the material presets. Each shape sets a material
 // (its finish) and, where the finish has a natural colour, a colour to pair

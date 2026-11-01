@@ -1,5 +1,4 @@
-// Scene Size: 10
-// Scene Grid: 10
+@scene(10)
 // Glyph showcase for the text stroke font — every script and symbol
 // range the package covers, laid out as a thin extruded sheet.
 

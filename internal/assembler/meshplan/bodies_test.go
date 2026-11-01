@@ -21,9 +21,9 @@ func sliceSource(t *testing.T, src string) *meshplan.MeshExportPlan {
 	return plan
 }
 
-// Each top-level return is a body, named by its variable; an expression
-// return is body-N, a repeated name gets a suffix, and a return's own mesh
-// booleans stay inside its body.
+// Each top-level return is a body, named by its variable or the function it
+// calls (program.OperandName), a repeated name gets a suffix, and a return's
+// own mesh booleans stay inside its body.
 func TestMeshExportPlan_Bodies(t *testing.T) {
 	plan := sliceSource(t, `
 screw = sphere(1.0);
@@ -38,7 +38,7 @@ return screw, nut, meshUnion(mesh(0), sphere(2.0)), screw;
 	}{
 		{1, "screw", meshplan.MeshPlanKindSdf},
 		{2, "nut", meshplan.MeshPlanKindSdf},
-		{3, "body-3", meshplan.MeshPlanKindBool},
+		{3, "meshUnion", meshplan.MeshPlanKindBool},
 		{4, "screw-2", meshplan.MeshPlanKindSdf},
 	}
 	if len(bodies) != len(want) {
@@ -56,8 +56,8 @@ return screw, nut, meshUnion(mesh(0), sphere(2.0)), screw;
 func TestMeshExportPlan_BodiesSingleReturn(t *testing.T) {
 	plan := sliceSource(t, `return meshUnion(mesh(0), sphere(1.0));`)
 	bodies := plan.Bodies()
-	if len(bodies) != 1 || bodies[0].Root != plan.Root || bodies[0].Name != "body-1" {
-		t.Fatalf("got %+v, want the root as body-1", bodies)
+	if len(bodies) != 1 || bodies[0].Root != plan.Root || bodies[0].Name != "meshUnion" {
+		t.Fatalf("got %+v, want the root as meshUnion", bodies)
 	}
 }
 
@@ -86,5 +86,36 @@ return a, b, c;
 	meshplan.IndexSdfLeaves(plan.Root, leaves)
 	if len(leaves) != 2 || leaves["leaf-1"] != nil {
 		t.Fatalf("got leaves %v, want b's leaf-1 gone", leaves)
+	}
+}
+
+// With the document's source, a return that names nothing is named by its
+// text, as the Bodies panel names it, and repeats of any name get a suffix.
+func TestSliceDocument_NamesExpressionsByText(t *testing.T) {
+	src := `
+a = sphere(1.0);
+b = sphere(2.0);
+return min(a, b), a, min(a, b);
+`
+	pkg, err := parser.ParsePackage([]string{src})
+	if err != nil {
+		t.Fatalf("ParsePackage failed: %v", err)
+	}
+	plan, _, err := meshplan.SliceDocument(&program.Program{Primary: pkg}, "leaf-", src)
+	if err != nil {
+		t.Fatalf("SliceDocument failed: %v", err)
+	}
+	var got []string
+	for _, b := range plan.Bodies() {
+		got = append(got, b.Name)
+	}
+	want := []string{"min(a, b)", "a", "min(a, b)-2"}
+	if len(got) != len(want) {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("got %q, want %q", got, want)
+		}
 	}
 }

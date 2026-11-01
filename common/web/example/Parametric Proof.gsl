@@ -1,4 +1,4 @@
-// Scene Size: 58
+@scene(58)
 
 // A damper piston in a blind bore, with two design parameters. The point of
 // this example: certify with overParams proves the piston NEVER touches the

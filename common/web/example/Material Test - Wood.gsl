@@ -1,4 +1,4 @@
-// Scene Size: 100
+@scene(100)
 
 // Debug scene: one wood.whiteOak ball, alone, at a small scene size — isolates
 // the cost of a single material.withDisplacement preset (grain-ring

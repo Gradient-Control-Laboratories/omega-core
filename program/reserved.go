@@ -34,7 +34,7 @@ const FastGaborSpinodoid = "fastGaborSpinodoid"
 const FastGaborSpinodoidGradient = "fastGaborSpinodoidGradient"
 
 // GaborSpinodoidArgs is every spinodoid builtin's argument count: q, period,
-// theta, poles, packetWidth, impulses, pool, seed, levelBias, localNormalize,
+// theta, poles, packetWidth, impulses, pool, seed, bias, localNormalize,
 // scale, orientation.
 const GaborSpinodoidArgs = 12
 
@@ -132,6 +132,7 @@ var reservedMap = map[string]bool{
 	"degrees":   true,
 	"distance":  true,
 	"dot":       true,
+	"erfinv":    true,
 	"exp2":      true,
 	"fract":     true,
 	"length":    true,

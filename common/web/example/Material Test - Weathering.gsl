@@ -1,4 +1,4 @@
-// Scene Size: 100
+@scene(100)
 
 // Debug scene: rustedSteel and patinaBronze alone, two balls, small scene
 // — isolates weathering.weathered's fbm3 blotch mask + cellularEdges

@@ -9,13 +9,13 @@ import (
 	"gradientcontrol.com/omega/core/cmd/fix/internal/cli"
 )
 
-// Run executes the fix tool with the given arguments and I/O streams.
-func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
-	return cli.Run(args, stdin, stdout, stderr)
+// Run executes the fix tool with the given arguments and output writer.
+func Run(args []string, stdout io.Writer) error {
+	return cli.Run(args, stdout)
 }
 
 func main() {
-	if err := Run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr); err != nil {
+	if err := Run(os.Args[1:], os.Stdout); err != nil {
 		if !errors.Is(err, cli.ErrDiffFound) {
 			fmt.Fprintf(os.Stderr, "fix: %v\n", err)
 		}

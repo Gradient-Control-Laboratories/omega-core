@@ -1,5 +1,4 @@
-// Scene Size: 20
-// Scene Grid: 10
+@scene(20)
 // AI geometry tool-use demo — Gate Placement
 //
 // The part is already posed beside the sprue (longest axis vertical, flattest

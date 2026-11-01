@@ -1,5 +1,4 @@
-// Scene Size: 20
-// Scene Grid: 10
+@scene(20)
 pi = atan(1) * 4;
 pi2 = pi * 2;
 zero = [0, 0, 0];

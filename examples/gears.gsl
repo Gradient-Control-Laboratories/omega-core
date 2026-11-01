@@ -1,5 +1,4 @@
-// Scene Size: 24
-// Scene Grid: 10
+@scene(24)
 
 animate = mod(time, 1);
 

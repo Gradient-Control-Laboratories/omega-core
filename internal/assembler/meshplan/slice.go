@@ -8,10 +8,22 @@ import (
 
 // SliceProgram translates a GSL whole-program AST into a MeshExportPlan
 // (a tree of boolean, step/mesh asset, and analytical SDF nodes) and a slice of
-// synthetic analytical SDF subtrees requiring backend meshing.
+// synthetic analytical SDF subtrees requiring backend meshing. Without the
+// document's source, a return that names nothing is body-N; see SliceDocument.
 func SliceProgram(
 	prog *program.Program,
 	idPrefix string,
+) (*MeshExportPlan, []SdfSubtree, error) {
+	return SliceDocument(prog, idPrefix, "")
+}
+
+// SliceDocument is SliceProgram given the document's source, so the plan names
+// every return as the Bodies panel does (program.OperandName), its text when
+// it names nothing.
+func SliceDocument(
+	prog *program.Program,
+	idPrefix string,
+	source string,
 ) (*MeshExportPlan, []SdfSubtree, error) {
 	if prog == nil || prog.Primary == nil {
 		return &MeshExportPlan{Root: nil}, nil, nil
@@ -43,10 +55,10 @@ func SliceProgram(
 		}
 		assignShapeIndex(node, retIdx+1)
 		roots = append(roots, node)
-		if ref := ret.GetReference(); ref != nil && ref.Name != "" && ref.Prefix == "" {
-			name := ref.Name
+		if base := program.OperandName(ret, source); base != "" {
+			name := base
 			for n := 2; used[name]; n++ {
-				name = fmt.Sprintf("%s-%d", ref.Name, n)
+				name = fmt.Sprintf("%s-%d", base, n)
 			}
 			used[name] = true
 			bodyNames[retIdx+1] = name

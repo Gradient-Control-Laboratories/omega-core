@@ -36,13 +36,10 @@ func WGSL(
 func WGSLWithParts(
 	prog *program.Program,
 ) (string, []api.MeshSdfSlot, []api.Part, []api.SpinodoidSlot, error) {
-	gslSource := prog.Primary.Files[0].Source
-
 	// Invariant: prog and prog.Primary are guaranteed non-nil by boundary validation in logic.Render.
 	meshSdfSlots := NewMeshSdfSlotsFromProto(prog.MeshSdfSlots)
 
 	d := &Delegate{
-		gslSource:       gslSource,
 		prog:            prog,
 		structTypeCache: make(map[string]wgsl.TypeInfo),
 		module:          ir.NewModule(),
@@ -68,24 +65,63 @@ func WGSLWithParts(
 			d.uiParamVars[param.Span] = nil
 		}
 	}
+	if !hasPackageReturns(prog.Primary) {
+		d.buildEmptyProgram()
+		return d.wgslSource, d.meshSdfSlots.Ordered(), d.parts, d.spinodoidSlots, nil
+	}
 	err := build.Build(d, prog, false)
 	err = build.ErrWithPkgSrc(prog, err)
 	return d.wgslSource, d.meshSdfSlots.Ordered(), d.parts, d.spinodoidSlots, err
 }
 
+func hasPackageReturns(pkg *program.Package) bool {
+	// Invariant: pkg and pkg.Files elements are guaranteed non-nil.
+	for _, f := range pkg.Files {
+		if len(f.Returns) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func (d *Delegate) buildEmptyProgram() {
+	// Invariant: d.prog.Primary, its Files, Assignments, and lifted assignment Expression.Start are guaranteed non-nil.
+	lifted := slider.Lifted(d.prog.Primary)
+	for _, f := range d.prog.Primary.Files {
+		for _, a := range f.Assignments {
+			if !lifted[a] {
+				continue
+			}
+			loc := a.Expression.Start
+			d.sliderParamNames = append(d.sliderParamNames, fmt.Sprintf("gsl_param_%d_%d", loc.Line, loc.Column))
+		}
+	}
+	for _, param := range d.uiParams {
+		d.sliderParamNames = append(d.sliderParamNames, param.ParamName)
+	}
+	var paramStrs []string
+	paramStrs = append(paramStrs, "p: vec3<f32>", "time: f32")
+	for _, name := range d.sliderParamNames {
+		paramStrs = append(paramStrs, fmt.Sprintf("%s: f32", name))
+	}
+	sdShapeBlock := ir.NewBlock()
+	sdShapeBlock.Add(ir.NewReturnStmt(emptyShapeWGSL, []string{emptyShapeWGSL}))
+	mainFnDecl := ir.NewFuncDecl("sdShape", nil, "gsl_shape", sdShapeBlock)
+	mainFnDecl.RawParams = strings.Join(paramStrs, ", ")
+	d.module.AddFunction(mainFnDecl)
+	d.wgslSource = d.module.WGSL()
+}
+
 func (d *Delegate) NewImpliedVars(bScope *build.Scope) ([]build.VarInfo, error) {
+	// Invariant: d.prog, d.prog.Primary, its Files, Assignments, Variables, and lifted Expression.Start are guaranteed non-nil.
 	d.sliderParamVars = make(map[string]*wgsl.VarInfo)
 	d.sliderParamNames = nil
 
 	var count int
-	if d.prog != nil && d.prog.Primary != nil {
-		for _, f := range d.prog.Primary.Files {
-			if f != nil {
-				for _, a := range f.Assignments {
-					if a != nil && a.Range != nil {
-						count++
-					}
-				}
+	for _, f := range d.prog.Primary.Files {
+		for _, a := range f.Assignments {
+			if a.Range != nil {
+				count++
 			}
 		}
 	}
@@ -100,29 +136,22 @@ func (d *Delegate) NewImpliedVars(bScope *build.Scope) ([]build.VarInfo, error) 
 	d.rootTimeVar = wgsl.NewParamWithExpr(bScope, program.TimeVarName, timeExpr, nil, wgsl.TypeF32)
 	impliedVars = append(impliedVars, d.rootTimeVar)
 
-	if d.prog != nil && d.prog.Primary != nil {
-		// Only a range the viewer gets a slider for becomes a parameter; any
-		// other keeps its literal, or sdShape is called an argument short.
-		lifted := slider.Lifted(d.prog.Primary)
-		for _, f := range d.prog.Primary.Files {
-			for _, a := range f.Assignments {
-				if !lifted[a] {
-					continue
-				}
-				loc := a.Start
-				if a.Expression != nil && a.Expression.Start != nil {
-					loc = a.Expression.Start
-				}
-				name := fmt.Sprintf("gsl_param_%d_%d", loc.Line, loc.Column)
-				expr := wgsl.NewOpaqueExpr(nil, wgsl.TypeF32, build.PrecedenceHighest, name)
-				varInfo := wgsl.NewParamWithExpr(bScope, name, expr, nil, wgsl.TypeF32)
-				impliedVars = append(impliedVars, varInfo)
-				d.sliderParamNames = append(d.sliderParamNames, name)
-				for _, v := range a.Variables {
-					if v != nil {
-						d.sliderParamVars[v.Name] = varInfo
-					}
-				}
+	// Only a range the viewer gets a slider for becomes a parameter; any
+	// other keeps its literal, or sdShape is called an argument short.
+	lifted := slider.Lifted(d.prog.Primary)
+	for _, f := range d.prog.Primary.Files {
+		for _, a := range f.Assignments {
+			if !lifted[a] {
+				continue
+			}
+			loc := a.Expression.Start
+			name := fmt.Sprintf("gsl_param_%d_%d", loc.Line, loc.Column)
+			expr := wgsl.NewOpaqueExpr(nil, wgsl.TypeF32, build.PrecedenceHighest, name)
+			varInfo := wgsl.NewParamWithExpr(bScope, name, expr, nil, wgsl.TypeF32)
+			impliedVars = append(impliedVars, varInfo)
+			d.sliderParamNames = append(d.sliderParamNames, name)
+			for _, v := range a.Variables {
+				d.sliderParamVars[v.Name] = varInfo
 			}
 		}
 	}

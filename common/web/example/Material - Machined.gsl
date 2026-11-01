@@ -1,5 +1,4 @@
-// Scene Size: 120
-// Scene Grid: 10
+@scene(120)
 
 // The surfaces machining leaves (material/machined), each from the process's
 // own parameters: a lathe's feed and tool nose, a face mill's cutter, a

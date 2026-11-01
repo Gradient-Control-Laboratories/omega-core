@@ -13,12 +13,15 @@ import (
 // Dense SDF texture slots are assigned to distinct asset indices referenced by
 // bvhSdf(i) and vdbSdf(i) calls, sorted deterministically in ascending order (0, 1, ...).
 func Extract(prog *program.Program) ([]*program.MeshSdfSlot, *program.GlobalTextures) {
-	// Invariant: prog is guaranteed non-nil throughout compiler pipeline.
+	// Invariant: prog, prog.Primary, and prog.Dependencies elements are guaranteed non-nil throughout compiler pipeline.
 	global := &program.GlobalTextures{}
+	if !hasPackageReturns(prog.Primary) {
+		return nil, global
+	}
 
 	w := &walker{
-		global:       global,
-		assetIndices: make(map[int32]bool),
+		global:     global,
+		assetSlots: make(map[int32]sdfSlotInfo),
 	}
 
 	w.walkPackage(prog.Primary)
@@ -26,40 +29,55 @@ func Extract(prog *program.Program) ([]*program.MeshSdfSlot, *program.GlobalText
 		w.walkPackage(dep)
 	}
 
-	if len(w.assetIndices) == 0 {
+	if len(w.assetSlots) == 0 {
 		return nil, global
 	}
 
-	sortedIndices := make([]int, 0, len(w.assetIndices))
-	for idx := range w.assetIndices {
+	sortedIndices := make([]int, 0, len(w.assetSlots))
+	for idx := range w.assetSlots {
 		sortedIndices = append(sortedIndices, int(idx))
 	}
 	sort.Ints(sortedIndices)
 
 	slots := make([]*program.MeshSdfSlot, len(sortedIndices))
 	for slot, assetIdx := range sortedIndices {
+		info := w.assetSlots[int32(assetIdx)]
 		slots[slot] = &program.MeshSdfSlot{
-			Slot:       int32(slot),
-			AssetIndex: int32(assetIdx),
+			Slot:           int32(slot),
+			AssetIndex:     int32(assetIdx),
+			Kind:           info.kind,
+			VoxelDivisor:   info.voxelDivisor,
+			HalfBandVoxels: info.halfBandVoxels,
 		}
 	}
 
 	return slots, global
 }
 
+func hasPackageReturns(pkg *program.Package) bool {
+	// Invariant: pkg and pkg.Files elements are guaranteed non-nil.
+	for _, f := range pkg.Files {
+		if len(f.Returns) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+type sdfSlotInfo struct {
+	kind           program.MeshSdfKind
+	voxelDivisor   int32
+	halfBandVoxels float64
+}
+
 type walker struct {
-	global       *program.GlobalTextures
-	assetIndices map[int32]bool
+	global     *program.GlobalTextures
+	assetSlots map[int32]sdfSlotInfo
 }
 
 func (w *walker) walkPackage(pkg *program.Package) {
-	if pkg == nil {
-		return
-	}
+	// Invariant: pkg and pkg.Files elements are guaranteed non-nil.
 	for _, file := range pkg.Files {
-		if file == nil {
-			continue
-		}
 		for _, a := range file.Assignments {
 			w.walkAssignment(a)
 		}
@@ -79,19 +97,18 @@ func (w *walker) walkPackage(pkg *program.Package) {
 }
 
 func (w *walker) walkAssignment(a *program.Assignment) {
-	if a != nil {
-		w.walkOperand(a.Expression)
+	// Invariant: a and a.Expression are guaranteed non-nil.
+	w.walkOperand(a.Expression)
+	for _, v := range a.Variables {
+		for _, prop := range v.Properties {
+			w.walkOperand(prop.Expression)
+		}
 	}
 }
 
 func (w *walker) walkFnType(ft *program.FnType) {
-	if ft == nil {
-		return
-	}
+	// Invariant: ft and ft.Groups elements are guaranteed non-nil.
 	for _, g := range ft.Groups {
-		if g == nil {
-			continue
-		}
 		for _, fn := range g.Functions {
 			w.walkFunction(fn)
 		}
@@ -99,9 +116,7 @@ func (w *walker) walkFnType(ft *program.FnType) {
 }
 
 func (w *walker) walkFunction(fn *program.Function) {
-	if fn == nil {
-		return
-	}
+	// Invariant: fn is guaranteed non-nil.
 	for _, a := range fn.Assignments {
 		w.walkAssignment(a)
 	}
@@ -114,22 +129,34 @@ func (w *walker) walkFunction(fn *program.Function) {
 }
 
 func (w *walker) walkOperand(op *program.Operand) {
-	if op == nil {
-		return
-	}
+	// Invariant: op and its oneof payload fields (FnCall, Reference, Expression) are guaranteed non-nil.
 	switch v := op.T.(type) {
 	case *program.Operand_FnCall:
 		fc := v.FnCall
-		if fc == nil {
-			return
-		}
-		if fc.Reference != nil && fc.Reference.Prefix == "" {
+		if fc.Reference.Prefix == "" {
 			name := fc.Reference.Name
 			switch name {
 			case "bvhSdf", "vdbSdf":
 				if len(fc.Arguments) >= 1 {
 					if valOp, ok := fc.Arguments[0].T.(*program.Operand_Value); ok {
-						w.assetIndices[int32(valOp.Value)] = true
+						idx := int32(valOp.Value)
+						info := w.assetSlots[idx]
+						if name == "vdbSdf" {
+							info.kind = program.MeshSdfKind_MESH_SDF_KIND_VDB
+							if len(fc.Arguments) >= 2 {
+								if vv2, ok := fc.Arguments[1].T.(*program.Operand_Value); ok {
+									info.voxelDivisor = int32(vv2.Value)
+								}
+							}
+							if len(fc.Arguments) >= 3 {
+								if vv3, ok := fc.Arguments[2].T.(*program.Operand_Value); ok {
+									info.halfBandVoxels = vv3.Value
+								}
+							}
+						} else if info.kind == program.MeshSdfKind_MESH_SDF_KIND_UNSPECIFIED {
+							info.kind = program.MeshSdfKind_MESH_SDF_KIND_BVH
+						}
+						w.assetSlots[idx] = info
 					}
 				}
 			case program.NoiseHash3, program.WorleyF1, program.WorleyFeature:
@@ -147,10 +174,8 @@ func (w *walker) walkOperand(op *program.Operand) {
 			w.walkOperand(arg)
 		}
 	case *program.Operand_Expression:
-		if v.Expression != nil {
-			for _, operand := range v.Expression.Operands {
-				w.walkOperand(operand)
-			}
+		for _, operand := range v.Expression.Operands {
+			w.walkOperand(operand)
 		}
 	}
 }

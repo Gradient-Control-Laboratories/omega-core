@@ -169,10 +169,10 @@ enum OracleKind {
 // (common/noise/spinodoid/hodge_parity_test.go). Carrying arguments keeps that
 // agreement checkable; carrying a table would hide a divergence.
 //
-// Maps onto hodge's `spinodoid_gabor_field(theta_deg, density=..., poles=...,
+// Maps onto hodge's `spinodoid_gabor_field(theta, bias=..., poles=...,
 // packet_width=..., impulses_per_cell=..., n_pool=..., seed=...,
-// normalize=...)` argument for argument, with the one conversion called out on
-// `thetaRadians` below.
+// normalize=...)` argument for argument, in hodge's own units: hodge-release
+// #45 or later.
 message SpinodoidParams {
   // Which of the two fields this leaf is. False is hodge's `spinodoid_gabor`
   // exactly — jittered kernels, untapered envelope — and is what a consumer
@@ -186,9 +186,10 @@ message SpinodoidParams {
   double period = 2;
 
   // Cone half-angles of the direction ODF, one per pole, in **RADIANS**
-  // ([pi/2, pi/2, pi/2] is isotropic). hodge's Python takes DEGREES
-  // (`theta_deg`), and hodge-release and the vendored copy have disagreed
-  // about this, so the unit is in the field name: convert on the way in.
+  // ([pi/2, pi/2, pi/2] is isotropic), as hodge takes them (`theta`, since
+  // hodge-release #44). The unit is in the field name because the field was
+  // once in degrees and hodge was too: a stale degree value cannot pass as
+  // this one.
   repeated double thetaRadians = 3;
 
   // Cone axes, flat xyz, three per entry in `thetaRadians`. Empty means the
@@ -204,10 +205,10 @@ message SpinodoidParams {
   // Seed for both the pool draw and the spatial hash.
   int64 seed = 8;
 
-  // Quantile of the field the level set sits at (hodge's level_bias, formerly
-  // density). For a solid network this IS the relative density; 0.5 is the
-  // balanced interface. The threshold itself is sqrt(2)*erfinv(2*b - 1).
-  double levelBias = 9;
+  // DEPRECATED, never written: the old quantile form of `bias`, where 0.5 was
+  // the median. A reader refuses a tape that sets it, since read as a bias it
+  // would be a different lattice. Regenerate such a tape.
+  double levelBias = 9 [deprecated = true];
   // True divides by the wavenumber carried at each point (hodge's
   // normalize="local"), so lengths stay real under a graded scale; false
   // divides by the wavenumber of `period` ("base").
@@ -241,6 +242,14 @@ message SpinodoidParams {
   // so a consumer can tell what omega's own bake covered.
   bool periodic = 16;
   repeated double domain = 17;
+
+  // The threshold the level set sits at, in units of the field's standard
+  // deviation, as a TPMS level t is: 0 is the median (the balanced
+  // interface), and +-1 leaves about 84% / 16% of the field below it. A
+  // document that asked for a solid fraction (spinodoid ...BySolidFraction)
+  // arrives here already converted, as sqrt(2) * erfinv(2 * fraction - 1).
+  // hodge takes it as `bias` (hodge-release #45).
+  double bias = 18;
 }
 
 message Node {

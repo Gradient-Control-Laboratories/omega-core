@@ -117,16 +117,16 @@ func Bake(p Params) (*Table, error) {
 	if pool == 0 {
 		pool = defaultPool
 	}
-	// The pool is hodge's draw, which takes degrees. Allow pi/2 to arrive a
-	// float32 rounding high.
-	thetaDeg := make([]float64, len(p.Theta))
+	// The pool is hodge's draw, in radians as hodge takes them. Allow pi/2 to
+	// arrive a float32 rounding high, and clamp it back.
+	theta := make([]float64, len(p.Theta))
 	for i, t := range p.Theta {
 		if !(t >= 0 && t <= pi/2+1e-6) {
 			return nil, fmt.Errorf("theta must lie in [0, pi/2] radians, got %v", t)
 		}
-		thetaDeg[i] = min(t*180/pi, 90)
+		theta[i] = min(t, pi/2)
 	}
-	baseDirs, err := Waves(thetaDeg, pool, uint64(p.Seed), p.Poles)
+	baseDirs, err := Waves(theta, pool, uint64(p.Seed), p.Poles)
 	if err != nil {
 		return nil, err
 	}
@@ -275,13 +275,28 @@ func (t *Table) Sample(q [3]float64) (field float64, grad [3]float64, beta float
 	return field, grad, beta, gbeta
 }
 
-// Level is the threshold placing the level set at quantile levelBias of the
-// (asymptotically standard normal) field, hodge's _spinodoid_level.
-func Level(levelBias float64) (float64, error) {
-	if !(levelBias > 0 && levelBias < 1) {
-		return 0, fmt.Errorf("level_bias must lie in (0, 1), got %v", levelBias)
+// Level is the threshold that leaves fraction `solidFraction` of the
+// (asymptotically standard normal) field below it: the bias a
+// ...BySolidFraction spinodoid passes, and hodge's solid_fraction= path. It is
+// an estimate, exact only where the kernel sum is Gaussian, which the median
+// (fraction 0.5, level 0) always is.
+func Level(solidFraction float64) (float64, error) {
+	if !(solidFraction > 0 && solidFraction < 1) {
+		return 0, fmt.Errorf("solid fraction must lie in (0, 1), got %v", solidFraction)
 	}
-	return math.Sqrt2 * math.Erfinv(2.0*levelBias-1.0), nil
+	return math.Sqrt2 * math.Erfinv(2.0*solidFraction-1.0), nil
+}
+
+// CheckBias rejects a bias that cannot be a threshold. A bias is the level
+// itself, in units of the field's standard deviation, as a TPMS level t is:
+// 0 is the median, ±1 leaves about 16% / 84% below it, and any finite value
+// is allowed.
+func CheckBias(bias float64) error {
+	if math.IsNaN(bias) || math.IsInf(bias, 0) {
+		return fmt.Errorf("bias must be finite, got %v (a ...BySolidFraction fraction "+
+			"outside (0, 1) gives this)", bias)
+	}
+	return nil
 }
 
 // Distance is the field leveled at level and divided by the local wavenumber

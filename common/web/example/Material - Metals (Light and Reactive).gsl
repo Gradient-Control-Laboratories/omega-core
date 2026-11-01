@@ -1,5 +1,4 @@
-// Scene Size: 700
-// Scene Grid: 100
+@scene(700, 7)
 
 // Measured light, post-transition and alkali metals, and the semimetals
 // silicon and germanium, from the physical library on 50 mm balls, including

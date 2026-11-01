@@ -1,8 +1,8 @@
 {
   "inputs": {
-    "iP.x": 0.0,
     "iP.y": 0.0,
-    "iP.z": 0.0
+    "iP.z": 0.0,
+    "iP.x": 0.0
   },
   "helpers": [
     "float fidget_not(float x) { return (x == 0.0) ? 1.0 : 0.0; }"

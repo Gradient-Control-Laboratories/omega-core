@@ -36,7 +36,7 @@ func StampSpinodoids(t *tapepb.Tape, oracles []convert.SpinodoidOracle) error {
 			Impulses:          s.Impulses,
 			Pool:              s.Pool,
 			Seed:              s.Seed,
-			LevelBias:         s.LevelBias,
+			Bias:              s.Bias,
 			LocalNormalize:    s.LocalNormalize,
 			Scale:             s.Scale,
 			Orientation:       s.Orientation,

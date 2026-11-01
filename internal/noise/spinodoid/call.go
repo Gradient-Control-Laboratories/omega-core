@@ -73,7 +73,7 @@ type Call struct {
 	Impulses    int
 	Pool        int
 	Seed        int64
-	LevelBias   float64
+	Bias        float64
 	Local       bool
 	// Fast is true for the lattice table (kernels.go), false for hodge's
 	// (hodge.go). The two are different fields from the same arguments, so the
@@ -95,7 +95,7 @@ func (c Call) Key() string {
 	}
 	return fmt.Sprintf("p%s|t%s|o%s|w%s|i%d|n%d|s%d|l%s|L%t|F%t|c%s",
 		num(c.Period), list(c.Theta), list(c.Poles), num(c.PacketWidth),
-		c.Impulses, c.Pool, c.Seed, num(c.LevelBias), c.Local, c.Fast, c.Chain)
+		c.Impulses, c.Pool, c.Seed, num(c.Bias), c.Local, c.Fast, c.Chain)
 }
 
 // GPU texel layout of a table, shared by the packer (GPUTexels) and the WGSL
@@ -108,9 +108,27 @@ func (c Call) Key() string {
 // direction times the wavenumber (the shader takes the wavenumber back as its
 // length, and only when a scale driver makes it vary), and the phase.
 const (
-	GPUWidth = TableSites * TableSites
-	GPURows  = TableSites
+	GPUWidth        = TableSites * TableSites
+	GPURows         = TableSites
+	GPUMaxRows      = 8192
+	GPUHeaderTexels = 4
 )
+
+// BakedTable is one baked table in the GPU layout (GPUTexels): RGBA float32
+// texels, little-endian, base64. Shared between the Fidget baker response and
+// the WGSL texture binding packer.
+type BakedTable struct {
+	Key      string     `json:"key"`
+	Rows     int        `json:"rows"`
+	Origin   [3]int     `json:"origin"`
+	Size     [3]int     `json:"size"`
+	Bounds   [6]float64 `json:"bounds"`
+	Periodic bool       `json:"periodic"`
+	// ContentID names the table's content: two tables with one ContentID are
+	// identical. TexelsB64 is empty when the request listed it as Known.
+	ContentID string `json:"contentId"`
+	TexelsB64 string `json:"texelsB64,omitempty"`
+}
 
 // GPUTexels packs the table as GPUWidth x table.Rows() RGBA float32 texels, row by
 // row.

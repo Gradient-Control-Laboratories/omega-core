@@ -139,7 +139,7 @@ omega_tape.register_hodge_spinodoid(
     bounds=[0, 0, 0, 0, 0, 0], periodic=True,
     impulses=8, cell_size=7.2644,
     a=a0, sigma=sigma, base_beta=2 * np.pi / period,
-    level=np.sqrt(2) * erfinv(2 * level_bias - 1), local=True,
+    level=bias, local=True,         # the payload's bias is the threshold; 0 is the median
 )
 field = omega_tape.Tape(blob)       # now it loads
 ```

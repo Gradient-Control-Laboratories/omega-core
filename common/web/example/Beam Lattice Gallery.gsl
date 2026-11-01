@@ -1,4 +1,4 @@
-// Scene Size: 500
+@scene(500)
 // Every strut lattice from the `lattice/beam` library, shown as beams side by
 // side. Each lattice is returned infinitely thin (distance to the strut
 // skeleton); lattice.thicken gives the struts a width, and each is clipped to

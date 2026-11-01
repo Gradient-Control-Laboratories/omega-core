@@ -970,6 +970,8 @@ func (c *constCtx) functionCall(fc *program.FnCall) (value, error) {
 		return unary(args, math.Atanh)
 	case "exp2":
 		return unary(args, math.Exp2)
+	case "erfinv":
+		return unary(args, math.Erfinv)
 	case "fract":
 		return unary(args, func(x float64) float64 { _, f := math.Modf(x); return f })
 	case "sign":

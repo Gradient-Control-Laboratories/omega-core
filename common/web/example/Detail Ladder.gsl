@@ -1,4 +1,4 @@
-// Scene Size: 400
+@scene(400)
 
 // The Detail ladder, one rung per column: three treatments on parts of five
 // sizes, each double the last, so one frame spans five octaves of size on

@@ -1,5 +1,4 @@
-// Scene Size: 70
-// Scene Grid: 10
+@scene(70)
 
 // Water that moves by its own physics (material/animated): a sphere of sea
 // whose waves run at the speed their length gives them, and a river whose

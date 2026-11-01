@@ -1,7 +1,7 @@
 # GSL Interactive WebGPU Example Viewer
 
 An interactive WebGPU 3D viewport and live GSL code editor for the `omega_core` SDK, served by the
-local `gslserve` HTTP server (`cmd/gslserve`).
+local `gsl serve` HTTP server (`cmd/serve`).
 
 ## Quickstart
 
@@ -9,16 +9,16 @@ From the `omega_core` repository root, build and launch the viewer server:
 
 ```bash
 ./tool/build.sh
-./bin/gslserve --open
+./bin/gsl serve --open
 ```
 
 Or run directly with `go run`:
 
 ```bash
-go run ./cmd/gslserve --open
+go run ./cmd/serve --open
 ```
 
-The `--open` (`-o`) flag tells `gslserve` to automatically open `http://127.0.0.1:8080`
+The `--open` (`-o`) flag tells `serve` to automatically open `http://127.0.0.1:8080`
 in your default WebGPU-capable browser (Chrome 113+, Edge 113+, or Safari 18+ on macOS Sequoia).
 
 ## Features

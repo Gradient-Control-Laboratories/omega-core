@@ -746,10 +746,10 @@ func (x *VdbLevelSet) GetLeafValues() []float32 {
 // (common/noise/spinodoid/hodge_parity_test.go). Carrying arguments keeps that
 // agreement checkable; carrying a table would hide a divergence.
 //
-// Maps onto hodge's `spinodoid_gabor_field(theta_deg, density=..., poles=...,
+// Maps onto hodge's `spinodoid_gabor_field(theta, bias=..., poles=...,
 // packet_width=..., impulses_per_cell=..., n_pool=..., seed=...,
-// normalize=...)` argument for argument, with the one conversion called out on
-// `thetaRadians` below.
+// normalize=...)` argument for argument, in hodge's own units: hodge-release
+// #45 or later.
 type SpinodoidParams struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Which of the two fields this leaf is. False is hodge's `spinodoid_gabor`
@@ -762,9 +762,10 @@ type SpinodoidParams struct {
 	// Reference wavelength, in the tape's length units. `scale` multiplies it.
 	Period float64 `protobuf:"fixed64,2,opt,name=period,proto3" json:"period,omitempty"`
 	// Cone half-angles of the direction ODF, one per pole, in **RADIANS**
-	// ([pi/2, pi/2, pi/2] is isotropic). hodge's Python takes DEGREES
-	// (`theta_deg`), and hodge-release and the vendored copy have disagreed
-	// about this, so the unit is in the field name: convert on the way in.
+	// ([pi/2, pi/2, pi/2] is isotropic), as hodge takes them (`theta`, since
+	// hodge-release #44). The unit is in the field name because the field was
+	// once in degrees and hodge was too: a stale degree value cannot pass as
+	// this one.
 	ThetaRadians []float64 `protobuf:"fixed64,3,rep,packed,name=thetaRadians,proto3" json:"thetaRadians,omitempty"`
 	// Cone axes, flat xyz, three per entry in `thetaRadians`. Empty means the
 	// Cartesian axes (the paper's poles).
@@ -777,9 +778,11 @@ type SpinodoidParams struct {
 	Pool uint32 `protobuf:"varint,7,opt,name=pool,proto3" json:"pool,omitempty"`
 	// Seed for both the pool draw and the spatial hash.
 	Seed int64 `protobuf:"varint,8,opt,name=seed,proto3" json:"seed,omitempty"`
-	// Quantile of the field the level set sits at (hodge's level_bias, formerly
-	// density). For a solid network this IS the relative density; 0.5 is the
-	// balanced interface. The threshold itself is sqrt(2)*erfinv(2*b - 1).
+	// DEPRECATED, never written: the old quantile form of `bias`, where 0.5 was
+	// the median. A reader refuses a tape that sets it, since read as a bias it
+	// would be a different lattice. Regenerate such a tape.
+	//
+	// Deprecated: Marked as deprecated in tape.proto.
 	LevelBias float64 `protobuf:"fixed64,9,opt,name=levelBias,proto3" json:"levelBias,omitempty"`
 	// True divides by the wavenumber carried at each point (hodge's
 	// normalize="local"), so lengths stay real under a graded scale; false
@@ -809,8 +812,15 @@ type SpinodoidParams struct {
 	// [xmin, ymin, zmin, xmax, ymax, zmax] in `domain` when known. hodge builds
 	// its table from the query points instead and needs neither; they are here
 	// so a consumer can tell what omega's own bake covered.
-	Periodic      bool      `protobuf:"varint,16,opt,name=periodic,proto3" json:"periodic,omitempty"`
-	Domain        []float64 `protobuf:"fixed64,17,rep,packed,name=domain,proto3" json:"domain,omitempty"`
+	Periodic bool      `protobuf:"varint,16,opt,name=periodic,proto3" json:"periodic,omitempty"`
+	Domain   []float64 `protobuf:"fixed64,17,rep,packed,name=domain,proto3" json:"domain,omitempty"`
+	// The threshold the level set sits at, in units of the field's standard
+	// deviation, as a TPMS level t is: 0 is the median (the balanced
+	// interface), and +-1 leaves about 84% / 16% of the field below it. A
+	// document that asked for a solid fraction (spinodoid ...BySolidFraction)
+	// arrives here already converted, as sqrt(2) * erfinv(2 * fraction - 1).
+	// hodge takes it as `bias` (hodge-release #45).
+	Bias          float64 `protobuf:"fixed64,18,opt,name=bias,proto3" json:"bias,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -901,6 +911,7 @@ func (x *SpinodoidParams) GetSeed() int64 {
 	return 0
 }
 
+// Deprecated: Marked as deprecated in tape.proto.
 func (x *SpinodoidParams) GetLevelBias() float64 {
 	if x != nil {
 		return x.LevelBias
@@ -962,6 +973,13 @@ func (x *SpinodoidParams) GetDomain() []float64 {
 		return x.Domain
 	}
 	return nil
+}
+
+func (x *SpinodoidParams) GetBias() float64 {
+	if x != nil {
+		return x.Bias
+	}
+	return 0
 }
 
 type Node struct {
@@ -1408,7 +1426,7 @@ const file_tape_proto_rawDesc = "" +
 	"blockValue\x12\x1e\n" +
 	"\n" +
 	"leafValues\x18\b \x03(\x02R\n" +
-	"leafValues\"\x89\x04\n" +
+	"leafValues\"\xa1\x04\n" +
 	"\x0fSpinodoidParams\x12\x12\n" +
 	"\x04fast\x18\x01 \x01(\bR\x04fast\x12\x16\n" +
 	"\x06period\x18\x02 \x01(\x01R\x06period\x12\"\n" +
@@ -1417,8 +1435,8 @@ const file_tape_proto_rawDesc = "" +
 	"\vpacketWidth\x18\x05 \x01(\x01R\vpacketWidth\x12\x1a\n" +
 	"\bimpulses\x18\x06 \x01(\rR\bimpulses\x12\x12\n" +
 	"\x04pool\x18\a \x01(\rR\x04pool\x12\x12\n" +
-	"\x04seed\x18\b \x01(\x03R\x04seed\x12\x1c\n" +
-	"\tlevelBias\x18\t \x01(\x01R\tlevelBias\x12&\n" +
+	"\x04seed\x18\b \x01(\x03R\x04seed\x12 \n" +
+	"\tlevelBias\x18\t \x01(\x01B\x02\x18\x01R\tlevelBias\x12&\n" +
 	"\x0elocalNormalize\x18\n" +
 	" \x01(\bR\x0elocalNormalize\x12\x14\n" +
 	"\x05scale\x18\v \x03(\x01R\x05scale\x12 \n" +
@@ -1429,7 +1447,8 @@ const file_tape_proto_rawDesc = "" +
 	"\x10orientationNodes\x18\x0e \x03(\rR\x10orientationNodes\x12,\n" +
 	"\x11driverFingerprint\x18\x0f \x01(\tR\x11driverFingerprint\x12\x1a\n" +
 	"\bperiodic\x18\x10 \x01(\bR\bperiodic\x12\x16\n" +
-	"\x06domain\x18\x11 \x03(\x01R\x06domain\"\x84\x02\n" +
+	"\x06domain\x18\x11 \x03(\x01R\x06domain\x12\x12\n" +
+	"\x04bias\x18\x12 \x01(\x01R\x04bias\"\x84\x02\n" +
 	"\x04Node\x12 \n" +
 	"\x04axis\x18\x01 \x01(\x0e2\n" +
 	".tape.AxisH\x00R\x04axis\x12\x1c\n" +

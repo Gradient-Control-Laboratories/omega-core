@@ -1,5 +1,4 @@
-// Scene Size: 700
-// Scene Grid: 100
+@scene(700, 7)
 
 // A dark granite, polished, as a 400 mm slab and a 150 mm ball: near-black
 // feldspar and mica with chunky smoky quartz crystals about 5 mm across that

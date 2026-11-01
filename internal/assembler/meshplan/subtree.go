@@ -29,10 +29,6 @@ func SubtreeProgram(prog *program.Program, returns ...*program.Operand) *program
 	module := prog.Primary
 	var files []*program.PackageFile
 	for i, f := range module.Files {
-		var pruned []*program.Assignment
-		if f.Assignments != nil {
-			pruned = pruneMeshTypedAssignments(f.Assignments)
-		}
 		var fReturns []*program.Operand
 		if i == 0 {
 			fReturns = returns
@@ -40,7 +36,7 @@ func SubtreeProgram(prog *program.Program, returns ...*program.Operand) *program
 		files = append(files, &program.PackageFile{
 			Path:        f.Path,
 			Imports:     f.Imports,
-			Assignments: pruned,
+			Assignments: pruneMeshTypedAssignments(f.Assignments),
 			FnTypes:     f.FnTypes,
 			Returns:     fReturns,
 		})

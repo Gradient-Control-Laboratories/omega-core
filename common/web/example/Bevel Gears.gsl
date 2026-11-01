@@ -1,5 +1,4 @@
-// Scene Size: 20
-// Scene Grid: 10
+@scene(20)
 
 // A bevel pair carries motion around a corner. Both pitch cones share one
 // apex at the origin, so shaftAngle is the angle between the shafts and the

@@ -1,5 +1,4 @@
-// Scene Size: 700
-// Scene Grid: 100
+@scene(700, 7)
 
 // Measured plastics (top) and crystals (bottom) from the physical library on
 // 50 mm balls: the database's IOR sets how strongly each one bends light,

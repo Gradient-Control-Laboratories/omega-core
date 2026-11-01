@@ -39,6 +39,9 @@ func SanityCheck() {
 			// gaborSpinodoid lowers to the gsl_spinodoid helper in
 			// codegen/spinodoid.go.
 			program.IsGaborSpinodoid(name) ||
+			// erfinv takes only a constant and is folded by the compiler, so
+			// it never reaches codegen (a density's spinodoid level, mostly).
+			name == "erfinv" ||
 			name == "meshWarped" || name == "vdbSdfWarped" ||
 			name == "uiPoint" || name == "uiTransform" || name == "uiSpline" || name == "uiColor" || name == "uiDirection" ||
 			name == "facePoint" || name == "facePointNormal" ||

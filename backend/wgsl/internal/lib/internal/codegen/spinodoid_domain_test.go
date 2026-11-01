@@ -8,8 +8,8 @@ import (
 func TestSpinodoidDomainMetadataAndConservativeOutsideBuild(t *testing.T) {
 	const src = `// Scene Size: 300
 upright = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
-field = gaborSpinodoid(p, 2, [pi / 2, pi / 2, pi / 2], upright, 3, 8, 4096, 0, 0.5, 1, 1 + 0.001 * p.y, upright);
-gradient = gaborSpinodoidGradient(p, 3, [pi / 2, pi / 2, pi / 2], upright, 3, 8, 4096, 0, 0.5, 1, 1 + 0.001 * p.y, upright);
+field = gaborSpinodoid(p, 2, [pi / 2, pi / 2, pi / 2], upright, 3, 8, 4096, 0, 0, 1, 1 + 0.001 * p.y, upright);
+gradient = gaborSpinodoidGradient(p, 3, [pi / 2, pi / 2, pi / 2], upright, 3, 8, 4096, 0, 0, 1, 1 + 0.001 * p.y, upright);
 return field + length(gradient) * 0.01;
 `
 	res, err := runTestBuildOne(t, "", []byte(src))

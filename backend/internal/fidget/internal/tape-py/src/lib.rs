@@ -288,8 +288,8 @@ fn tape_oracle_uses(tape: &[u8]) -> PyResult<Vec<tape::OracleUseRow>> {
 /// dir y, dir z, beta, gamma]` — a centre is `(cell + jitter) * cell_size`.
 /// `periodic` tables must be hodge's 32-cubed window and ignore `bounds`; a
 /// bounded table is located by `bounds` and reads as a conservative
-/// distance-to-domain outside it. `level` is the field threshold
-/// (`sqrt(2) * erfinv(2 * level_bias - 1)`), and `local` divides by the
+/// distance-to-domain outside it. `level` is the field threshold, the
+/// payload's `bias` as it stands, and `local` divides by the
 /// wavenumber carried at each point rather than the base one.
 #[pyfunction]
 #[allow(clippy::too_many_arguments)]

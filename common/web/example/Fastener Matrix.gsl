@@ -1,5 +1,4 @@
-// Scene Size: 150
-// Scene Grid: 10
+@scene(150)
 
 // A screw is a head, a shank, a drive and an end, and the four are independent.
 //
@@ -85,7 +84,6 @@ place(shape, offset) {
   return transform.translate(shape, offset);
 }
 
-
 // =========================================================
 // HEADS — one shank, one drive, every head
 // =========================================================
@@ -128,7 +126,6 @@ setScrew = place(fastener.screw(fastener.noHead(),
                                                1000.0),
                                 drill.hexSocketAt(0.0, 3.0, 5.0)),
                  [4.0 * col, 22.0, 0.0]);
-
 
 // =========================================================
 // DRIVES — one head, one shank, every drive
@@ -180,7 +177,6 @@ slotDrive = place(fastener.screw(fastener.panHead(panDk, panK, panRf),
                                  drill.slotDriveAt(panK, 1.2, 2.0)),
                   [2.5 * col, 0.0, 0.0]);
 
-
 // =========================================================
 // SHANKS — one head, one drive, every shank
 // =========================================================
@@ -212,7 +208,6 @@ shoulder = place(fastener.screw(fastener.cylindricalHead(13.0, 6.0),
 
 // Fine pitch: M6 x 0.75, ISO 261's first fine pitch for the size.
 fineTh = place(fastener.shcs(d, len), [2.0 * col, -22.0, 0.0]);
-
 
 // =========================================================
 // ENDS — one head (none), one shank, every end

@@ -1,5 +1,4 @@
-// Scene Size: 40
-// Scene Grid: 10
+@scene(40)
 
 // A sphere of water whose surface carries waves of 4D gradient noise: time is
 // the noise's fourth axis, so the waves change shape as they travel, carried

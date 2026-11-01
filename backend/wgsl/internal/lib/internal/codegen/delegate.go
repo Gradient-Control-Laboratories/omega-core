@@ -11,7 +11,6 @@ import (
 )
 
 type Delegate struct {
-	gslSource  string
 	wgslSource string
 	module     *ir.Module
 

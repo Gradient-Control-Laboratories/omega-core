@@ -1,4 +1,4 @@
-// Scene Size: 100
+@scene(100)
 
 // Debug scene: one natural.water ball, alone, at a small scene size —
 // isolates the combination of material.withDisplacement (animated ripple)

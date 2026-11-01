@@ -1,5 +1,4 @@
-// Scene Size: 1100
-// Scene Grid: 100
+@scene(1100, 11)
 
 // The wood library's simple model, oak, walnut and pine left to right, four
 // ways (their colours are measured; see the wood library). The rings are

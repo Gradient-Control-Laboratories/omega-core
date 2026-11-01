@@ -83,7 +83,7 @@ func (s *Server) handleSave(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dstPath := filepath.Join(s.cfg.ExamplesDir, req.Name)
-	tmpFile, err := os.CreateTemp(s.cfg.ExamplesDir, ".gslserve-save-*.tmp")
+	tmpFile, err := os.CreateTemp(s.cfg.ExamplesDir, ".serve-save-*.tmp")
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "failed to create temp file: "+err.Error())
 		return

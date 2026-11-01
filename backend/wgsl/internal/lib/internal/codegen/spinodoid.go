@@ -27,26 +27,27 @@ import (
 const spinodoidTexName = "spinodoidTex"
 const spinodoidTexParam = spinodoidTexName + ": texture_2d<f32>"
 
-// Four metadata texels per slot must fit in the fixed-width header row. Canvas
-// additionally checks that all data bands fit the GPU's texture-height limit.
+// spinodoid.GPUHeaderTexels metadata texels per slot must fit in the fixed-width
+// header row. PackSpinodoidBinding additionally checks that all data bands fit
+// the GPU's texture-height limit (spinodoid.GPUMaxRows).
 const spinodoidMaxSlots = 256
 
 func spinodoidHeaderWGSL(outside string) string {
-	return `  let originRow = textureLoad(tex, vec2<i32>(slot * 4, 0), 0);
-  let sizePeriodic = textureLoad(tex, vec2<i32>(slot * 4 + 1, 0), 0);
+	return fmt.Sprintf(`  let originRow = textureLoad(tex, vec2<i32>(slot * %[1]d, 0), 0);
+  let sizePeriodic = textureLoad(tex, vec2<i32>(slot * %[1]d + 1, 0), 0);
   let origin = vec3<i32>(originRow.xyz);
   let size = vec3<i32>(sizePeriodic.xyz);
   let row = i32(originRow.w);
   let periodic = sizePeriodic.w > 0.5;
   if (!periodic) {
-    let domainMin = textureLoad(tex, vec2<i32>(slot * 4 + 2, 0), 0).xyz;
-    let domainMax = textureLoad(tex, vec2<i32>(slot * 4 + 3, 0), 0).xyz;
+    let domainMin = textureLoad(tex, vec2<i32>(slot * %[1]d + 2, 0), 0).xyz;
+    let domainMax = textureLoad(tex, vec2<i32>(slot * %[1]d + 3, 0), 0).xyz;
     if (any(q < domainMin) || any(q > domainMax)) {
       let outsideDelta = q - clamp(q, domainMin, domainMax);
-      return ` + outside + `;
+      return %[2]s;
     }
   }
-`
+`, spinodoid.GPUHeaderTexels, outside)
 }
 
 // spinodoidLoopWGSL visits every lattice site within the reach of q, row by
@@ -200,7 +201,7 @@ func (d *Delegate) BuildSpinodoidCall(
 		return nil, err
 	}
 	call.Seed = int64(seed)
-	if call.LevelBias, err = scalar(8, "levelBias"); err != nil {
+	if call.Bias, err = scalar(8, "bias"); err != nil {
 		return nil, err
 	}
 	local, err := scalar(9, "localNormalize")
@@ -216,8 +217,9 @@ func (d *Delegate) BuildSpinodoidCall(
 	}
 	call.Chain = build.KeyedCallSite(d.GetScope(), op)
 
-	level, err := spinodoid.Level(call.LevelBias)
-	if err != nil {
+	// The bias is the level itself (spinodoid.CheckBias).
+	level := call.Bias
+	if err := spinodoid.CheckBias(level); err != nil {
 		return nil, fmt.Errorf("%s: %v", name, err)
 	}
 	if !(call.Period > 0) || !(call.PacketWidth > 0) {

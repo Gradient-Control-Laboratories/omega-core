@@ -1,5 +1,4 @@
-// Scene Size: 5
-// Scene Grid: 10
+@scene(5)
 sphere(radius) {
   return sqrt(p.x * p.x + p.y * p.y + p.z * p.z) - radius;
 }

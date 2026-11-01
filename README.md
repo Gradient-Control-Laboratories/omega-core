@@ -1,9 +1,9 @@
 # Omega Core SDK (`omega_core`)
 
 `omega_core` is the standalone Go SDK for the Geometric Specification Language (GSL). It provides
-pure, modular compiler libraries and the `gslc` command-line compiler for parsing, analyzing, and
-compiling GSL models into WebGPU compute shaders (WGSL), 3D meshes (STL), bytecode tapes,
-and audio synthesizers.
+pure, modular compiler libraries and the `gsl` command-line toolchain (`compile`, `serve`, `fix`)
+for parsing, analyzing, refactoring, and compiling GSL models into WebGPU compute shaders (WGSL),
+3D meshes (STL), bytecode tapes, and audio synthesizers.
 
 ## Architecture & Package Topology
 
@@ -16,7 +16,10 @@ and audio synthesizers.
   - `audio/`: Audio synthesizer compiler emitting WebAudio / JavaScript synthesis functions.
   - `tape/`: Bytecode tape compiler for compact embedded geometry evaluation.
 - **`stdlib/`**: Compile-time embedded GSL standard library packages (`builtin`, `color`, `vector`, `matrix`, etc.).
-- **`cmd/gslc/`**: Standalone multi-backend command-line compiler driver.
+- **`cmd/gsl/`**: Unified GSL toolchain CLI driver (`gsl <command> [args]`).
+- **`cmd/compile/`**: Standalone multi-backend command-line compiler (`gsl compile`).
+- **`cmd/serve/`**: Local HTTP server and interactive WebGPU viewer host (`gsl serve`).
+- **`cmd/fix/`**: Source refactoring tool for migrating legacy GSL syntax (`gsl fix`).
 
 ### Directory Layout
 
@@ -55,11 +58,15 @@ omega_core/
 │       └── internal/          # Implementation copied from agent/wgsl
 │           ├── accel/         # Hardware accelerated WGSL kernel specs
 │           └── lib/           # Copied from agent/wgsl/internal/codegen etc.
-├── bin/                       # Local build outputs (gslc binary; gitignored)
+├── bin/                       # Local build outputs (gsl, compile, serve, fix binaries; gitignored)
 ├── cmd/                       # Standalone CLI tools
-│   ├── gslc/                  # Unified compiler CLI (emits WGSL, STL, tape, audio)
+│   ├── compile/               # Unified compiler CLI (emits WGSL, STL, tape, audio)
 │   │   └── main.go            # Entry point and CLI command execution
-│   └── gslserve/              # Local HTTP server and WebGPU viewer host
+│   ├── fix/                   # GSL source refactoring CLI (rewrites legacy comments to directives)
+│   │   └── main.go            # Entry point and source refactoring CLI execution
+│   ├── gsl/                   # Unified GSL toolchain CLI driver (delegates to bin/ tools)
+│   │   └── main.go            # Entry point and subcommand delegation
+│   └── serve/                 # Local HTTP server and WebGPU viewer host
 │       └── main.go            # Entry point and HTTP server startup
 ├── common/
 │   ├── source/
@@ -104,8 +111,10 @@ omega_core/
 │   ├── collect/               # Multi-package dependency gathering
 │   ├── edit/                  # Source span edit primitives
 │   ├── eval/                  # Constant evaluation & expression folding
+│   ├── float16/               # IEEE 754 binary16 half-precision float encoding
 │   ├── link/                  # Lexical scoping and reference linking
 │   ├── lower/                 # Structural AST transformations
+│   ├── meshasset/             # Imported triangle mesh and SDF grid assets
 │   ├── meshfold/              # Asset slot binding
 │   ├── meshslots/             # Mesh slot extraction
 │   ├── noise/                 # Procedural noise generators
@@ -162,7 +171,7 @@ omega_core/
 
 ## Building the Toolchain
 
-Compile the `gslc` binary into `bin/gslc`:
+Compile the `gsl`, `compile`, `serve`, and `fix` binaries into `bin/`:
 
 ```bash
 ./tool/build.sh
@@ -186,13 +195,19 @@ Clean build outputs and test cache:
 ./tool/clean.sh
 ```
 
-## Compiler Driver (`bin/gslc`) Usage
+## Toolchain Driver (`bin/gsl`) Usage
 
 ```text
-gslc [flags] [source1.gsl source2.gsl ...]
+gsl <command> [arguments]
 ```
 
-### Supported Targets (`-t, --target`)
+Subcommands delegate to sibling tool binaries in `bin/`:
+- `gsl compile` (aliases `build`, `c`): Compile GSL sources to target outputs (`bin/compile`).
+- `gsl serve`: Launch the local HTTP server and interactive WebGPU viewer (`bin/serve`).
+- `gsl fix`: Refactor GSL source files to current syntax (`bin/fix`).
+- `gsl help [command]`: Display help for `gsl` or a specific subcommand.
+
+### Supported Compiler Targets (`-t, --target`)
 
 - `wgsl`: WebGPU signed distance field shader code (default).
 - `stl`: 3D printable watertight binary polygon mesh via dual-contouring.
@@ -202,7 +217,7 @@ gslc [flags] [source1.gsl source2.gsl ...]
 
 ### Companion Metadata (`<output>.json`)
 
-When compiling to output artifacts (such as `.wgsl` or `.stl`), `gslc` automatically emits a
+When compiling to output artifacts (such as `.wgsl` or `.stl`), `gsl compile` automatically emits a
 companion `<output>.json` metadata file alongside the output. This document includes:
 - Extracted `@slider` definitions (names, min, max, initial values, and precision).
 - Extracted UI controls and layout descriptors.
@@ -217,23 +232,30 @@ pass `--no-meta`.
 Compile a model to a WebGPU shader with auto-emitted `model.json` metadata:
 
 ```bash
-bin/gslc -t wgsl -o model.wgsl model.gsl
+bin/gsl compile -t wgsl -o model.wgsl model.gsl
 ```
 
 Compile a standalone WebGPU shader bundle with full-screen raymarcher harness (`vs_main`, `fs_main`):
 
 ```bash
-bin/gslc --standalone -o preview.wgsl model.gsl
+bin/gsl compile --standalone -o preview.wgsl model.gsl
 ```
 
 Compile a model into a watertight binary STL mesh:
 
 ```bash
-bin/gslc -t stl --subdivision 5 --algo marching-cubes -o model.stl model.gsl
+bin/gsl compile -t stl --subdivision 5 --algo marching-cubes -o model.stl model.gsl
 ```
 
 Compile from standard input (`stdin`) and stream to standard output (`stdout`):
 
 ```bash
-cat model.gsl | bin/gslc -t wgsl -o -
+cat model.gsl | bin/gsl compile -t wgsl -o -
+```
+
+Refactor `.gsl` files or directories in-place (or preview with `-diff`):
+
+```bash
+bin/gsl fix -diff examples
+bin/gsl fix examples
 ```

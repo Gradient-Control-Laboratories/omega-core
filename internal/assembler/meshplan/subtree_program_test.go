@@ -16,7 +16,7 @@ import (
 func TestSubtreeProgram(t *testing.T) {
 	pkg, err := parser.ParsePackage([]string{`
 m = mesh(0);
-s = sphere(1.0);
+s = vdbSdf(1, 64, 5);
 b = bvhSdf(2);
 return m, s, b;
 `})
@@ -55,8 +55,14 @@ return m, s, b;
 	if len(sub.Dependencies) != 1 || sub.Dependencies[0] != dep {
 		t.Errorf("dependencies %v, want the program's, shared", sub.Dependencies)
 	}
-	if len(sub.MeshSdfSlots) != 1 || sub.MeshSdfSlots[0].AssetIndex != 2 {
-		t.Errorf("mesh SDF slots %v, want one for bvhSdf(2)", sub.MeshSdfSlots)
+	if len(sub.MeshSdfSlots) != 2 ||
+		sub.MeshSdfSlots[0].AssetIndex != 1 ||
+		sub.MeshSdfSlots[0].Kind != program.MeshSdfKind_MESH_SDF_KIND_VDB ||
+		sub.MeshSdfSlots[0].VoxelDivisor != 64 ||
+		sub.MeshSdfSlots[0].HalfBandVoxels != 5 ||
+		sub.MeshSdfSlots[1].AssetIndex != 2 ||
+		sub.MeshSdfSlots[1].Kind != program.MeshSdfKind_MESH_SDF_KIND_BVH {
+		t.Errorf("mesh SDF slots %v, want VDB slot for vdbSdf(1, 64, 5) and BVH slot for bvhSdf(2)", sub.MeshSdfSlots)
 	}
 	if got := prog.Primary.Files[0].Returns; len(got) != 3 {
 		t.Errorf("the sliced program's returns changed: %d, want 3", len(got))

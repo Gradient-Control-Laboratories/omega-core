@@ -1,4 +1,4 @@
-// Scene Size: 100
+@scene(100)
 
 // The simplest possible demo of gradient (Perlin) noise: one sphere, one
 // material, one color, both driven by noise.gradient/noise.gradientBump —

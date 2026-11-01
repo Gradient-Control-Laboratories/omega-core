@@ -113,7 +113,7 @@ function downloadArrayBuffer(name, arrayBuffer, type = 'model/stl') {
 }
 
 export async function runClientShapeMC({ resolution, visibleShapes, onProgress, sdfContext = null, bbox: measured = null }) {
-    const sdfCtx = sdfContext || deps.getSdfContext();
+    const sdfCtx = sdfContext || deps.getSdfContext?.();
     if (!sdfCtx) {
         throw new Error("No SDF compiled — render a scene first");
     }
@@ -183,7 +183,7 @@ async function measureBodyBoxes() {
     if (!bodies) return null;
     let sdfCtx, device;
     try {
-        sdfCtx = deps.getSdfContext();
+        sdfCtx = deps.getSdfContext?.();
         if (!sdfCtx || sdfCtx.unsupported) return null;
         device = (await deps.getComputeDevice()) || (await deps.getRawGPUDevice());
         if (!device) return null;

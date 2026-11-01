@@ -61,7 +61,7 @@ func PrintUsage(w io.Writer) {
 	fmt.Fprintf(w, "        Display usage instructions\n")
 }
 
-// Run executes the gslc compilation pipeline with the given arguments and I/O streams.
+// Run executes the compile pipeline with the given arguments and I/O streams.
 func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	cfg, err := config.ParseFlags(args)
 	if err != nil {

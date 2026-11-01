@@ -1,5 +1,4 @@
-// Scene Size: 20
-// Scene Grid: 10
+@scene(20)
 gyroidShell(thickness, period) {
   sx = p.x * period * 6.2831853;
   sy = p.y * period * 6.2831853;

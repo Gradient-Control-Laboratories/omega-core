@@ -1,4 +1,4 @@
-// Scene Size: 100
+@scene(100)
 
 // Debug scene: stone.marble alone, one ball, small scene — isolates
 // domainWarp + fbm3 + cellularEdges (marble's ~9-10 combined taps) from

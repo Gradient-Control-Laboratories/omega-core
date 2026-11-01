@@ -1,5 +1,4 @@
-// Scene Size: 150
-// Scene Grid: 10
+@scene(150)
 // Showcase of the ease library: every easing curve plotted as y = f(x) over
 // x in [0, 1], arranged in a 3-column grid. Columns are ease-in, ease-out, and
 // the symmetric S-curve; rows are the quadratic, cubic, exponential, and

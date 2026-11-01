@@ -29,7 +29,7 @@ func (pa *PackageAnalyzer) inferBuiltinCall(name string, args []*program.Operand
 	}
 
 	switch name {
-	case "acosh", "asinh", "atanh", "cosh", "sinh", "tanh", "trunc", "degrees", "radians", "fract", "sign", "normalize", "exp2":
+	case "acosh", "asinh", "atanh", "cosh", "sinh", "tanh", "trunc", "degrees", "radians", "fract", "sign", "normalize", "exp2", "erfinv":
 		return []*program.Type{argTypes[0]}, nil
 
 	case "clamp":

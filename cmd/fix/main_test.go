@@ -13,22 +13,22 @@ import (
 )
 
 func TestRun_NoArgs_PrintsUsage(t *testing.T) {
-	var stdout, stderr bytes.Buffer
-	err := main.Run(nil, nil, &stdout, &stderr)
+	var stdout bytes.Buffer
+	err := main.Run(nil, &stdout)
 	require.NoError(t, err)
 	assert.Contains(t, stdout.String(), "Usage of fix:")
 }
 
 func TestRun_HelpAndFixerHelp(t *testing.T) {
-	var stdout, stderr bytes.Buffer
-	err := main.Run([]string{"help"}, nil, &stdout, &stderr)
+	var stdout bytes.Buffer
+	err := main.Run([]string{"help"}, &stdout)
 	require.NoError(t, err)
 	assert.Contains(t, stdout.String(), "Registered fixers:")
 	assert.Contains(t, stdout.String(), "scene")
 	assert.Contains(t, stdout.String(), "-diff")
 
 	stdout.Reset()
-	err = main.Run([]string{"help", "scene"}, nil, &stdout, &stderr)
+	err = main.Run([]string{"help", "scene"}, &stdout)
 	require.NoError(t, err)
 	assert.Contains(t, stdout.String(), "@scene")
 	assert.Contains(t, stdout.String(), "Before:")
@@ -40,8 +40,8 @@ func TestRun_InPlaceFileAndIdempotency(t *testing.T) {
 	orig := "// Scene Size: 20\n// Scene Grid: 10\n\nreturn sphere(1);\n"
 	require.NoError(t, os.WriteFile(gslPath, []byte(orig), 0644))
 
-	var stdout, stderr bytes.Buffer
-	err := main.Run([]string{gslPath}, nil, &stdout, &stderr)
+	var stdout bytes.Buffer
+	err := main.Run([]string{gslPath}, &stdout)
 	require.NoError(t, err)
 
 	updated, err := os.ReadFile(gslPath)
@@ -52,7 +52,7 @@ func TestRun_InPlaceFileAndIdempotency(t *testing.T) {
 	pastTime := time.Now().Add(-10 * time.Minute).Truncate(time.Second)
 	require.NoError(t, os.Chtimes(gslPath, pastTime, pastTime))
 
-	err = main.Run([]string{gslPath}, nil, &stdout, &stderr)
+	err = main.Run([]string{gslPath}, &stdout)
 	require.NoError(t, err)
 
 	fi, err := os.Stat(gslPath)
@@ -77,8 +77,8 @@ func TestRun_RecursiveDirectoryWalk(t *testing.T) {
 	require.NoError(t, os.WriteFile(hiddenFile, []byte("// Scene Size: 10\nreturn sphere(1);\n"), 0644))
 	require.NoError(t, os.WriteFile(txtFile, []byte("// Scene Size: 10\n"), 0644))
 
-	var stdout, stderr bytes.Buffer
-	err := main.Run([]string{tmpDir}, nil, &stdout, &stderr)
+	var stdout bytes.Buffer
+	err := main.Run([]string{tmpDir}, &stdout)
 	require.NoError(t, err)
 
 	b1, err := os.ReadFile(file1)
@@ -101,8 +101,8 @@ func TestRun_DiffMode(t *testing.T) {
 	orig := "// Scene Size: 20\n// Scene Grid: 10\n\nreturn sphere(1);\n"
 	require.NoError(t, os.WriteFile(gslPath, []byte(orig), 0644))
 
-	var stdout, stderr bytes.Buffer
-	err := main.Run([]string{"-diff", gslPath}, nil, &stdout, &stderr)
+	var stdout bytes.Buffer
+	err := main.Run([]string{"-diff", gslPath}, &stdout)
 	// Per Go fix -diff semantics, exits with non-zero error when diff is not empty
 	require.Error(t, err)
 	assert.Contains(t, stdout.String(), "--- ")
@@ -118,13 +118,13 @@ func TestRun_DiffMode(t *testing.T) {
 	// When file is already fixed, -diff exits with nil error and empty output
 	require.NoError(t, os.WriteFile(gslPath, []byte("@scene(20)\n\nreturn sphere(1);\n"), 0644))
 	stdout.Reset()
-	err = main.Run([]string{"-diff", gslPath}, nil, &stdout, &stderr)
+	err = main.Run([]string{"-diff", gslPath}, &stdout)
 	require.NoError(t, err)
 	assert.Equal(t, "", stdout.String())
 }
 
 func TestRun_NonexistentPath(t *testing.T) {
-	var stdout, stderr bytes.Buffer
-	err := main.Run([]string{"/nonexistent/path/to/file.gsl"}, nil, &stdout, &stderr)
+	var stdout bytes.Buffer
+	err := main.Run([]string{"/nonexistent/path/to/file.gsl"}, &stdout)
 	require.Error(t, err)
 }

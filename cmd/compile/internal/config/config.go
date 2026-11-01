@@ -32,7 +32,7 @@ func (m *multiStringFlag) Set(val string) error {
 	return nil
 }
 
-// Config encapsulates parsed CLI flags and configuration for gslc.
+// Config encapsulates parsed CLI flags and configuration for compile.
 type Config struct {
 	Target      Target
 	OutputPath  string

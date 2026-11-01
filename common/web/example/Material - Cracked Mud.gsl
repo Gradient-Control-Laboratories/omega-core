@@ -1,5 +1,4 @@
-// Scene Size: 200
-// Scene Grid: 20
+@scene(200, 10)
 
 // A 120 mm tile of dried mud. Cellular noise lays out the plates (sampled
 // in 3D; 14 mm cells against 3 mm of relief keep the walls near vertical).

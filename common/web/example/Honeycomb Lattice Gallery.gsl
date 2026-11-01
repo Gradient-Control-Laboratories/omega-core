@@ -1,4 +1,4 @@
-// Scene Size: 300
+@scene(300)
 // Every cell-wall lattice from the `lattice/honeycomb` library, shown side by
 // side. Each is returned infinitely thin (distance to the cell-wall skeleton);
 // lattice.thicken gives the walls a width, and each is clipped to its own cube

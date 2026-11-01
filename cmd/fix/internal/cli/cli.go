@@ -51,9 +51,8 @@ Core flags:
 	fmt.Fprintf(w, "\nTo see details and examples of a specific fixer, run 'fix help <name>'.\n")
 }
 
-// Run executes the fix CLI workflow for the given arguments and I/O streams.
-func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
-	_ = stdin
+// Run executes the fix CLI workflow for the given arguments and output writer.
+func Run(args []string, stdout io.Writer) error {
 	cfg, err := config.ParseFlags(args)
 	if err != nil {
 		return err
@@ -69,10 +68,8 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		return nil
 
 	case config.ModeFixerHelp:
-		f, ok := fix.ByName(cfg.HelpTopic)
-		if !ok {
-			return fmt.Errorf("unknown fixer %q", cfg.HelpTopic)
-		}
+		// Invariant: config.ParseFlags validates HelpTopic against fix.ByName before setting ModeFixerHelp.
+		f, _ := fix.ByName(cfg.HelpTopic)
 		fmt.Fprintf(stdout, "%s: %s\n\n%s", f.Name, f.Doc, f.Help)
 		return nil
 	}

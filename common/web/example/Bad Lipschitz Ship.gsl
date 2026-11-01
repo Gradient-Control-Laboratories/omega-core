@@ -1,5 +1,4 @@
-// Scene Size: 20
-// Scene Grid: 10
+@scene(20)
 // Defines a simple ship hull shape using a profile of varying elliptical cross-sections.
 // The hull is aligned along the x-axis and centered at the origin.
 // hull_length: The total length of the hull (bow to stern) along the x-axis.

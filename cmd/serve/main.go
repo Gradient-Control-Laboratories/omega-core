@@ -65,7 +65,7 @@ func resolveDefaultDirs(cfg *config.Config) {
 	}
 }
 
-// Run parses CLI arguments and runs the gslserve HTTP server until ctx is canceled.
+// Run parses CLI arguments and runs the serve HTTP server until ctx is canceled.
 func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 	cfg, err := config.ParseFlags(args)
 	if err != nil {

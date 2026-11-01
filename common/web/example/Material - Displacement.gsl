@@ -1,5 +1,4 @@
-// Scene Size: 40
-// Scene Grid: 10
+@scene(40)
 
 // Displacement: the third row of a material record carries a signed height in
 // millimetres, set with material.withDisplacement. The renderer marches the

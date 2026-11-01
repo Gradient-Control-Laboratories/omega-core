@@ -13,19 +13,19 @@ import (
 )
 
 func TestCLI_ModesAndDiff(t *testing.T) {
-	var stdout, stderr bytes.Buffer
-	require.NoError(t, cli.Run(nil, nil, &stdout, &stderr))
+	var stdout bytes.Buffer
+	require.NoError(t, cli.Run(nil, &stdout))
 	assert.Contains(t, stdout.String(), "Usage of fix:")
 
 	stdout.Reset()
-	require.NoError(t, cli.Run([]string{"help"}, nil, &stdout, &stderr))
+	require.NoError(t, cli.Run([]string{"help"}, &stdout))
 	assert.Contains(t, stdout.String(), "Registered fixers:")
 
 	stdout.Reset()
-	require.NoError(t, cli.Run([]string{"help", "scene"}, nil, &stdout, &stderr))
+	require.NoError(t, cli.Run([]string{"help", "scene"}, &stdout))
 	assert.Contains(t, stdout.String(), "@scene")
 
-	err := cli.Run([]string{"help", "nonexistent"}, nil, &stdout, &stderr)
+	err := cli.Run([]string{"help", "nonexistent"}, &stdout)
 	require.Error(t, err)
 
 	tmpDir := t.TempDir()
@@ -33,12 +33,12 @@ func TestCLI_ModesAndDiff(t *testing.T) {
 	require.NoError(t, os.WriteFile(f, []byte("// Header\n// Scene Size: 30\nreturn sphere(1);\n"), 0644))
 
 	stdout.Reset()
-	err = cli.Run([]string{"-diff", f}, nil, &stdout, &stderr)
+	err = cli.Run([]string{"-diff", f}, &stdout)
 	assert.True(t, errors.Is(err, cli.ErrDiffFound))
 	assert.Contains(t, stdout.String(), "+ @scene(30)")
 
 	stdout.Reset()
-	require.NoError(t, cli.Run([]string{tmpDir}, nil, &stdout, &stderr))
+	require.NoError(t, cli.Run([]string{tmpDir}, &stdout))
 	b, err := os.ReadFile(f)
 	require.NoError(t, err)
 	assert.Equal(t, "// Header\n@scene(30)\nreturn sphere(1);\n", string(b))

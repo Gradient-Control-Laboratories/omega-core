@@ -148,16 +148,16 @@ func HodgeBake(p Params) (*HodgeTable, error) {
 	if pool == 0 {
 		pool = defaultPool
 	}
-	// The pool is hodge's draw, which takes degrees. Allow pi/2 to arrive a
-	// float32 rounding high.
-	thetaDeg := make([]float64, len(p.Theta))
+	// The pool is hodge's draw, in radians as hodge takes them. Allow pi/2 to
+	// arrive a float32 rounding high, and clamp it back.
+	theta := make([]float64, len(p.Theta))
 	for i, t := range p.Theta {
 		if !(t >= 0 && t <= pi/2+1e-6) {
 			return nil, fmt.Errorf("theta must lie in [0, pi/2] radians, got %v", t)
 		}
-		thetaDeg[i] = min(t*180/pi, 90)
+		theta[i] = min(t, pi/2)
 	}
-	baseDirs, err := Waves(thetaDeg, pool, uint64(p.Seed), p.Poles)
+	baseDirs, err := Waves(theta, pool, uint64(p.Seed), p.Poles)
 	if err != nil {
 		return nil, err
 	}

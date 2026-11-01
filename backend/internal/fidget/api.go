@@ -1,5 +1,7 @@
 package fidget
 
+import "gradientcontrol.com/omega/core/internal/noise/spinodoid"
+
 const (
 	// RequestPathMesh is fidget-only.
 	RequestPathMesh          = "mesh/request"
@@ -75,18 +77,7 @@ type SpinodoidBakeRequest struct {
 // SpinodoidTable is one baked table in the GPU layout of
 // common/noise/spinodoid (GPUTexels): RGBA float32 texels, little-endian,
 // base64.
-type SpinodoidTable struct {
-	Key      string     `json:"key"`
-	Rows     int        `json:"rows"`
-	Origin   [3]int     `json:"origin"`
-	Size     [3]int     `json:"size"`
-	Bounds   [6]float64 `json:"bounds"`
-	Periodic bool       `json:"periodic"`
-	// ContentID names the table's content: two tables with one ContentID are
-	// identical. TexelsB64 is empty when the request listed it as Known.
-	ContentID string `json:"contentId"`
-	TexelsB64 string `json:"texelsB64,omitempty"`
-}
+type SpinodoidTable = spinodoid.BakedTable
 
 type SpinodoidBakeResponse struct {
 	ID     string           `json:"id"`

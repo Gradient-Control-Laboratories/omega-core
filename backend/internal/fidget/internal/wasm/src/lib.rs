@@ -243,9 +243,17 @@ fn world_to_model(b: &[f32]) -> nalgebra::Matrix4<f32> {
     m
 }
 
+#[link(wasm_import_module = "env")]
+extern "C" {
+    /// The host's progress callback for fw_mesh_dc: `completed` of `total`
+    /// octree cells built (fidget-mesh's single-threaded progress).
+    fn fw_progress(completed: u32, total: u32);
+}
+
 /// Dual-contours the field over the box `b[0..6]` at octree `depth` (2^depth
 /// cells per axis) and keeps the mesh as a binary STL (fw_result_ptr).
-/// Single-threaded: wasm has no threads.
+/// Single-threaded: wasm has no threads. Reports its progress through the
+/// host's `env.fw_progress`.
 ///
 /// # Safety
 /// `b` must point to 6 readable f32s.
@@ -257,6 +265,9 @@ pub unsafe extern "C" fn fw_mesh_dc(output: i32, depth: u32, b: *const f32) -> i
             depth: depth.min(u8::MAX as u32) as u8,
             world_to_model: world_to_model(b),
             threads: None,
+            progress: Some(std::sync::Arc::new(|completed, total| unsafe {
+                fw_progress(completed, total)
+            })),
             ..Default::default()
         };
         let bound = shape.bind(&tape.shape_vars).map_err(|e| e.to_string())?;

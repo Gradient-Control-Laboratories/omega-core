@@ -1,5 +1,4 @@
-// Scene Size: 2000
-// Scene Grid: 100
+@scene(2000, 20)
 
 // Spalting and worm holes in six woods, each log with the fungi and insects
 // found in its wood. Front to back on the left:

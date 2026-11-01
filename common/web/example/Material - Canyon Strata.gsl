@@ -1,5 +1,4 @@
-// Scene Size: 200
-// Scene Grid: 20
+@scene(200, 10)
 
 // A 120 mm desert tile cut by a meandering canyon. The canyon follows the
 // zero set of a large, slow noise field: the closer to it, the deeper the

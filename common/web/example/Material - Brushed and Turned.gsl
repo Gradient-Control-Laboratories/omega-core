@@ -1,5 +1,4 @@
-// Scene Size: 80
-// Scene Grid: 10
+@scene(80)
 
 // Metal with a lay (material.withLay): grooves too fine to see that stretch
 // the highlight across them, as brushing, turning and grinding leave. Orbit

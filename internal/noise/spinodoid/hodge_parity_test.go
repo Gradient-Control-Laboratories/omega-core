@@ -53,9 +53,9 @@ const fieldTolerance = 1e-9
 
 func TestWavesMatchHodge(t *testing.T) {
 	py := hodgePython(t)
-	thetaDeg := []float64{90, 60, 0}
+	theta := []float64{math.Pi / 2, math.Pi / 3, 0}
 
-	got, err := spinodoid.Waves(thetaDeg, parityPool, 0, nil)
+	got, err := spinodoid.Waves(theta, parityPool, 0, nil)
 	if err != nil {
 		t.Fatalf("Waves: %v", err)
 	}
@@ -64,7 +64,7 @@ func TestWavesMatchHodge(t *testing.T) {
 import json, numpy as np, spinodoid as sp
 dirs, _phases = sp.spinodoid_waves(%s, %d, seed=0)
 print(json.dumps(np.asarray(dirs).tolist()))
-`, pyList(thetaDeg), parityPool), &want)
+`, pyList(theta), parityPool), &want)
 
 	if len(got) != len(want) {
 		t.Fatalf("pool has %d directions, hodge drew %d", len(got), len(want))
@@ -78,7 +78,7 @@ print(json.dumps(np.asarray(dirs).tolist()))
 	if worst > poolTolerance {
 		t.Errorf("direction pool differs from hodge's by %g, want <= %g", worst, poolTolerance)
 	}
-	t.Logf("pool of %d directions, worst component differs by %g (theta %v deg)", len(got), worst, thetaDeg)
+	t.Logf("pool of %d directions, worst component differs by %g (theta %v rad)", len(got), worst, theta)
 }
 
 // A stationary field: no drivers at all, which is what hodge's None means.
@@ -167,10 +167,6 @@ func checkFieldParity(t *testing.T, p spinodoid.Params, orientationPy, scalePy s
 		got[i] = table.Distance(q, level, true)
 	}
 
-	thetaDeg := make([]float64, len(p.Theta))
-	for i, th := range p.Theta {
-		thetaDeg[i] = th * 180 / math.Pi
-	}
 	var want []float64
 	py.run(t, fmt.Sprintf(`
 import json, numpy as np, spinodoid as sp
@@ -184,12 +180,12 @@ def _zrot(angle):
 
 pts = np.asarray(%s, dtype=np.float64)
 dirs, _phases = sp.spinodoid_waves(%s, %d, seed=%d)
-d = sp.spinodoid_gabor(pts, %.17g, dirs, density=%.17g, packet_width=%.17g,
+d = sp.spinodoid_gabor(pts, %.17g, dirs, bias=%.17g, packet_width=%.17g,
                        impulses_per_cell=%d, seed=%d, normalize="local",
                        orientation=%s, scale=%s)
 print(json.dumps(np.asarray(d).tolist()))
-`, pyPoints(points), pyList(thetaDeg), p.Pool, p.Seed,
-		p.Period, parityLevelBias, p.PacketWidth, p.Impulses, p.Seed,
+`, pyPoints(points), pyList(p.Theta), p.Pool, p.Seed,
+		p.Period, level, p.PacketWidth, p.Impulses, p.Seed,
 		orNone(orientationPy), orNone(scalePy)), &want)
 
 	if len(want) != len(got) {

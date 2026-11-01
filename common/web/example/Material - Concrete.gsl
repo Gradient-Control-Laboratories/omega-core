@@ -1,5 +1,4 @@
-// Scene Size: 300
-// Scene Grid: 50
+@scene(300, 6)
 
 // The standard 150 mm concrete test cube, edges eased 1.5 mm. The cement
 // matrix is the measured concrete preset, mottled with fBm; coarse

@@ -107,12 +107,13 @@ func (d *Delegate) builtinGaborSpinodoid(
 		return nil, err
 	}
 	p.Seed = int64(seed)
-	levelBias, err := scalar(8, "levelBias")
+	// The bias is the level itself (spinodoid.CheckBias).
+	bias, err := scalar(8, "bias")
 	if err != nil {
 		return nil, err
 	}
-	level, err := spinodoid.Level(levelBias)
-	if err != nil {
+	level := bias
+	if err := spinodoid.CheckBias(level); err != nil {
 		return nil, fmt.Errorf("%s: %v", name, err)
 	}
 	localFlag, err := scalar(9, "localNormalize")
@@ -213,7 +214,7 @@ func (d *Delegate) builtinGaborSpinodoid(
 		// asking which table each of its calls reads (see BakeSpinodoids).
 		callKey := spinodoid.Call{
 			Period: p.Period, Theta: p.Theta, Poles: poles, PacketWidth: p.PacketWidth,
-			Impulses: p.Impulses, Pool: p.Pool, Seed: p.Seed, LevelBias: levelBias, Local: local,
+			Impulses: p.Impulses, Pool: p.Pool, Seed: p.Seed, Bias: bias, Local: local,
 			Fast:  true,
 			Chain: build.KeyedCallSite(d.GetScope(), op),
 		}.Key()
@@ -234,7 +235,7 @@ func (d *Delegate) builtinGaborSpinodoid(
 			}
 			d.spinodoidSlots[slotKey] = slot
 			d.recordSpinodoidOracle(fidget.SpinodoidOracleID(slot, fidget.SpinodoidDistance),
-				true, p, poles, levelBias, local, scale, scaleIsField, rot, rotIsField, fingerprint, driverTape)
+				true, p, poles, bias, local, scale, scaleIsField, rot, rotIsField, fingerprint, driverTape)
 		}
 		d.spinodoidBakes[callKey] = BakedSpinodoid{Table: table, ContentID: hex.EncodeToString(contentSum[:16]),
 			params: p, cacheKey: key, slot: slot, level: level, local: local}
@@ -266,7 +267,7 @@ func (d *Delegate) builtinGaborSpinodoid(
 		}
 		d.spinodoidHodgeSlots[slotKey] = slot
 		d.recordSpinodoidOracle(fidget.HodgeSpinodoidOracleID(slot, fidget.SpinodoidDistance),
-			false, p, poles, levelBias, local, scale, scaleIsField, rot, rotIsField, fingerprint, driverTape)
+			false, p, poles, bias, local, scale, scaleIsField, rot, rotIsField, fingerprint, driverTape)
 	}
 	return d.spinodoidLeaves(op, name, slot, q, fidget.HodgeSpinodoidTree)
 }
@@ -427,14 +428,14 @@ func bakeSpinodoid(key string, p spinodoid.Params) (*spinodoid.Table, error) {
 // driver leaves the value nil and travels as its trees, serialized in
 // driverTape (the same bytes the fingerprint hashes).
 func (d *Delegate) recordSpinodoidOracle(assetID uint32, fast bool, p spinodoid.Params,
-	poles []float64, levelBias float64, local bool,
+	poles []float64, bias float64, local bool,
 	scale float64, scaleIsField bool, rot [3][3]float64, rotIsField bool,
 	fingerprint string, driverTape []byte) {
 	o := SpinodoidOracle{
 		AssetID: assetID, Fast: fast,
 		Period: p.Period, Theta: p.Theta, Poles: poles,
 		PacketWidth: p.PacketWidth, Impulses: uint32(p.Impulses), Pool: uint32(p.Pool),
-		Seed: p.Seed, LevelBias: levelBias, LocalNormalize: local,
+		Seed: p.Seed, Bias: bias, LocalNormalize: local,
 		DriverFingerprint: fingerprint, DriverTape: driverTape, Periodic: p.Periodic,
 	}
 	if !scaleIsField {
@@ -481,7 +482,7 @@ type SpinodoidOracle struct {
 	Impulses       uint32
 	Pool           uint32
 	Seed           int64
-	LevelBias      float64
+	Bias           float64 // the level itself, in field standard deviations
 	LocalNormalize bool
 
 	// Constant drivers, nil when the driver is a field. Orientation is
