@@ -1,5 +1,4 @@
-// Scene Size: 500
-// Scene Grid: 50
+@scene(500, 10)
 
 // A 3D printer's gantry: aluminum T-slot extrusions joined by plates and M5
 // screws, with a hotend on a carriage riding the X beam.

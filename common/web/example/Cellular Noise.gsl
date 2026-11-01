@@ -1,5 +1,4 @@
-// Scene Size: 20
-// Scene Grid: 10
+@scene(20)
 // Cellular (Worley) noise from the noise library, three ways side by side.
 // Each ball samples the same cells, so you can compare the measures directly:
 //   left   — F1: distance to the nearest feature point (blobs around points)

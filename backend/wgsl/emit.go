@@ -15,6 +15,9 @@ type ShapeLocations = api.ShapeLocations
 // Part represents a part bounding box in world coordinates.
 type Part = api.Part
 
+// MeshSdfSlot maps a densified shader binding slot to the asset index it references.
+type MeshSdfSlot = api.MeshSdfSlot
+
 // Option configures WGSL shader rendering.
 type Option func(*config)
 

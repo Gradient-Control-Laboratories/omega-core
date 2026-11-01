@@ -272,6 +272,11 @@ func (d *Delegate) BuildBuiltinCall(
 	if program.IsGaborSpinodoid(builtin.Name) {
 		return d.BuildSpinodoidCall(op, fnCall, expressions)
 	}
+	// A constant erfinv is folded by the build layer; one that reaches here
+	// has a field argument, and there is no field form.
+	if builtin.Name == "erfinv" {
+		return nil, fmt.Errorf("erfinv: the argument must be a constant; erfinv is evaluated at compile time only")
+	}
 	if builtin.Name == "mesh" {
 		return wgsl.NewOpaqueExpr(op, wgsl.TypeF32, build.PrecedenceHighest, nestedMeshDistanceWGSL), nil
 	}

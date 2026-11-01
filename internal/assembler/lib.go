@@ -343,7 +343,13 @@ func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*
 		if idPrefix == "" {
 			idPrefix = "leaf-"
 		}
-		plan, subtrees, planErr := meshplan.SliceProgram(prog, idPrefix)
+		// The returns are the last primary file's, as the wgsl render names
+		// them: the plan names its bodies from the same text.
+		var document string
+		if n := len(primarySources); n > 0 {
+			document = primarySources[n-1]
+		}
+		plan, subtrees, planErr := meshplan.SliceDocument(prog, idPrefix, document)
 		if planErr != nil {
 			return nil, planErr
 		}

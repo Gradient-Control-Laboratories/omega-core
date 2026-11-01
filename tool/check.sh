@@ -18,7 +18,7 @@ echo "==> Running go vet..."
 echo "  ✓ go vet passed."
 
 echo "==> Running tests..."
-(cd "${ROOT_DIR}" && go test ./cmd/gslc/... ./parser/... ./assembler/... ./backend/wgsl ./backend/mesh ./backend/tape ./backend/audio ./stdlib/... ./program/... ./tool/analyze-deps/...)
+(cd "${ROOT_DIR}" && go test ./cmd/... ./parser/... ./assembler/... ./backend/wgsl ./backend/mesh ./backend/tape ./backend/audio ./stdlib/... ./program/... ./tool/analyze-deps/...)
 echo "  ✓ Tests passed."
 
 echo "==> All quality checks passed!"

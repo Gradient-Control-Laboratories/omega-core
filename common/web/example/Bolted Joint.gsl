@@ -1,5 +1,4 @@
-// Scene Size: 100
-// Scene Grid: 10
+@scene(100)
 
 // A BOLTED JOINT, one call each: an ISO 4762 M6 cap screw clamping a lid to a
 // base, its head down in a counterbore and its thread in a tapped hole.

@@ -87,6 +87,9 @@ impl Octree {
         } else {
             let mut eval = RenderHandle::new(shape.clone());
             let mut out = OctreeBuilder::new(settings, vars);
+            if let Some(p) = settings.progress.as_ref() {
+                out.track_progress(p);
+            }
             let mut hermite = LeafHermiteData::default();
             if out.recurse(&mut eval, CellIndex::default(), &mut hermite) {
                 Some(out.octree)
@@ -502,6 +505,13 @@ pub(crate) struct OctreeBuilder<'a, F: Function + RenderHints> {
     tape_storage: Vec<F::TapeStorage>,
     shape_storage: Vec<F::Storage>,
     workspace: F::Workspace,
+
+    // Progress of a single-threaded build (track_progress): cells done of
+    // the 8^progress_depth at progress_depth.
+    progress: Option<&'a crate::ProgressSink>,
+    progress_depth: usize,
+    progress_done: u32,
+    progress_total: u32,
 }
 
 impl<'a, F: Function + RenderHints> OctreeBuilder<'a, F> {
@@ -530,7 +540,25 @@ impl<'a, F: Function + RenderHints> OctreeBuilder<'a, F> {
             tape_storage: vec![],
             shape_storage: vec![],
             workspace: Default::default(),
+
+            progress: None,
+            progress_depth: 0,
+            progress_done: 0,
+            progress_total: 0,
         }
+    }
+
+    /// Reports a single-threaded build's progress to `p`, which the
+    /// multithreaded build reports per subtree task instead: `(completed,
+    /// total)` over the cells at depth 2 (or the octree's depth, if less).
+    /// A cell found full or empty above that depth counts for every cell
+    /// it would have held, so the count is of volume, not of work.
+    pub(crate) fn track_progress(&mut self, p: &'a crate::ProgressSink) {
+        self.progress = Some(p);
+        self.progress_depth = usize::from(self.max_depth.min(2));
+        self.progress_done = 0;
+        self.progress_total = 8u32.pow(self.progress_depth as u32);
+        p(0, self.progress_total);
     }
 
     /// Recurse down the octree, building the given cell
@@ -562,6 +590,7 @@ impl<'a, F: Function + RenderHints> OctreeBuilder<'a, F> {
             Ok(v) => v,
             Err(ShapeTracingEvalError::MissingVar(..)) => unreachable!(),
         };
+        let pruned = i.upper() < 0.0 || i.lower() > 0.0;
         self.octree[cell] = if i.upper() < 0.0 {
             Cell::Full
         } else if i.lower() > 0.0 {
@@ -603,6 +632,15 @@ impl<'a, F: Function + RenderHints> OctreeBuilder<'a, F> {
                 self.octree.check_done(cell, index, hermite_child, hermite)
             }
         };
+        if let Some(p) = self.progress {
+            if cell.depth == self.progress_depth
+                || (pruned && cell.depth < self.progress_depth)
+            {
+                self.progress_done +=
+                    8u32.pow((self.progress_depth - cell.depth) as u32);
+                p(self.progress_done, self.progress_total);
+            }
+        }
         true
     }
 

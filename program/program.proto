@@ -453,6 +453,12 @@ message PackageFile {
     repeated Annotation   annotations  = 12;
 }
 
+enum MeshSdfKind {
+    MESH_SDF_KIND_UNSPECIFIED = 0;
+    MESH_SDF_KIND_BVH         = 1;
+    MESH_SDF_KIND_VDB         = 2;
+}
+
 message MeshSdfSlot {
     // Dense, zero-based GPU shader texture binding slot (0, 1, ...) mapped to
     // WebGPU texture and sampler parameters (e.g. sdfTex0, sdfTex1).
@@ -461,6 +467,15 @@ message MeshSdfSlot {
     // Global GSL geometry asset identifier assigned to the imported mesh or STEP asset
     // (e.g. the asset index argument referenced in bvhSdf(i) or vdbSdf(i)).
     int32 assetIndex = 2;
+
+    // Distance oracle kind (BVH triangle soup vs. OpenVDB level set).
+    MeshSdfKind kind = 3;
+
+    // Optional 2nd argument of vdbSdf(i, voxelDivisor, halfBandVoxels).
+    int32 voxelDivisor = 4;
+
+    // Optional 3rd argument of vdbSdf(i, voxelDivisor, halfBandVoxels).
+    double halfBandVoxels = 5;
 }
 
 message GlobalTextures {

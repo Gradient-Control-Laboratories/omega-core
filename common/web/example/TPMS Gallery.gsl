@@ -1,4 +1,4 @@
-// Scene Size: 280
+@scene(280)
 // Row 1: all seven triply periodic minimal surfaces from the `tpms` library in
 // their nominal form — the solid network at the natural (balanced) threshold.
 // Row 2: one surface (gyroid) in four solidification variants, all via the shared

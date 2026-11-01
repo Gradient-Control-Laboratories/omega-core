@@ -1,5 +1,4 @@
-// Scene Size: 500
-// Scene Grid: 83.3
+@scene(500, 6.002400960384154)
 
 // Debug scene: every non-displaced texture/color preset from Texture
 // Library.gsl (marble, granite, rustedSteel, patinaBronze, glitter,

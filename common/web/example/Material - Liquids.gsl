@@ -1,5 +1,4 @@
-// Scene Size: 500
-// Scene Grid: 100
+@scene(500, 5)
 
 // Measured liquids from the physical library on 50 mm balls. Transmissive
 // presets carry the database's IOR, transmission and absorption depth, so

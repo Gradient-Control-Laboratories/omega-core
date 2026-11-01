@@ -1,5 +1,4 @@
-// Scene Size: 100
-// Scene Grid: 10
+@scene(100)
 
 // INTERFACES FIRST: a base with a lid bolted on, a cover screwed flush, and a
 // slider running in a guide, designed from the places the parts meet.

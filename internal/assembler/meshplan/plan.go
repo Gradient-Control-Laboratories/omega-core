@@ -19,8 +19,9 @@ const (
 // MeshExportPlan describes the boolean tree compiled from GSL mesh operations.
 type MeshExportPlan struct {
 	Root *MeshPlanNode `json:"root"`
-	// BodyNames names each top-level return, keyed by its ShapeIndex: the
-	// returned variable's name, or "body-N" for an expression.
+	// BodyNames names each top-level return, keyed by its ShapeIndex, as
+	// program.OperandName does, a repeat suffixed -2, -3, ...; Bodies calls a
+	// return missing here "body-N".
 	BodyNames map[int]string `json:"bodyNames,omitempty"`
 }
 

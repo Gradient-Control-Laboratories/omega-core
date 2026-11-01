@@ -1,5 +1,4 @@
-// Scene Size: 700
-// Scene Grid: 50
+@scene(700, 14)
 
 // A box-frame CoreXY printer in the style of the Voron Trident 300, built from
 // the parts such a machine is bought as.

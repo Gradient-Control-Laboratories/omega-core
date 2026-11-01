@@ -1,4 +1,4 @@
-// Scene Size: 500
+@scene(500)
 
 angle = 0.852;
 angle.min = 0;

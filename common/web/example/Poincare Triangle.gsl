@@ -1,5 +1,4 @@
-// Scene Size: 4
-// Scene Grid: 1
+@scene(4, 4)
 // Don't remove!  We are doing complex analysis and visualizing everything in a thin slab.  xy are real and imaginary axes.
 
 t = sin(time) * 4;

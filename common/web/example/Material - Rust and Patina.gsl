@@ -1,5 +1,4 @@
-// Scene Size: 100
-// Scene Grid: 20
+@scene(100, 5)
 
 // A 50 mm cast-iron cannonball, rusting. Broad fBm blotches decide where
 // rust has taken hold; inside them, cellular noise pits the surface, each

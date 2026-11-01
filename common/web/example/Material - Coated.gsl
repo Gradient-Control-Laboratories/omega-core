@@ -1,5 +1,4 @@
-// Scene Size: 120
-// Scene Grid: 10
+@scene(120)
 
 // The coatings laid over parts (material/coating): anodize over turned
 // aluminium, black oxide and phosphate on steel, powder coats from gloss to

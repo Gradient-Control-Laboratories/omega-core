@@ -1,5 +1,4 @@
-// Scene Size: 20
-// Scene Grid: 10
+@scene(20)
 // GSL code for a Violin
 
 // --- Helper Functions ---

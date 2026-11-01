@@ -1,5 +1,4 @@
-// Scene Size: 260
-// Scene Grid: 10
+@scene(260)
 
 // The tools that turn the fasteners: screwdriver bits and screwdrivers, from
 // mechanical/driver.

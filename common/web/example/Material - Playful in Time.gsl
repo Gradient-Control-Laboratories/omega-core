@@ -1,5 +1,4 @@
-// Scene Size: 70
-// Scene Grid: 10
+@scene(70)
 
 // Playful textures that move (material/playful): glitter that glints as a
 // moving light would catch it, and polka dots drifting over a climbing

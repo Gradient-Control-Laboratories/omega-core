@@ -1,5 +1,4 @@
-// Scene Size: 900
-// Scene Grid: 50
+@scene(900, 18)
 
 // Four woods, finished thirteen ways, as 40 mm cubes cut from stems standing
 // upright, so the top is end grain and the sides face grain. Back to front,

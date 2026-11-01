@@ -1,5 +1,4 @@
-// Scene Size: 100
-// Scene Grid: 20
+@scene(100, 5)
 
 // A small procedural planet, 50 mm across, as one shape. The land is real
 // geometry: a height field (mm) subtracted from the sphere's distance, built

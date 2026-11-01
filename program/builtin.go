@@ -64,6 +64,7 @@ var builtinsMap = map[string]*BuiltinType{
 	"degrees":   {Name: "degrees", MinArgs: 1, MaxArgs: 1},
 	"distance":  {Name: "distance", MinArgs: 2, MaxArgs: 2},
 	"dot":       {Name: "dot", MinArgs: 2, MaxArgs: 2},
+	"erfinv":    {Name: "erfinv", MinArgs: 1, MaxArgs: 1},
 	"exp2":      {Name: "exp2", MinArgs: 1, MaxArgs: 1},
 	"fract":     {Name: "fract", MinArgs: 1, MaxArgs: 1},
 	"length":    {Name: "length", MinArgs: 1, MaxArgs: 1},
@@ -90,7 +91,7 @@ var builtinsMap = map[string]*BuiltinType{
 	WorleyFarFeature: {Name: WorleyFarFeature, MinArgs: 1, MaxArgs: 2},
 
 	// gaborSpinodoid(q, period, theta, poles, packetWidth, impulses, pool,
-	// seed, levelBias, localNormalize, scale, orientation) and its gradient.
+	// seed, bias, localNormalize, scale, orientation) and its gradient.
 	// Everything but q, scale and orientation must fold to a constant: it
 	// keys the baked kernel table.
 	GaborSpinodoid:         {Name: GaborSpinodoid, MinArgs: GaborSpinodoidArgs, MaxArgs: GaborSpinodoidArgs},

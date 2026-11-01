@@ -1,5 +1,4 @@
-// Scene Size: 6
-// Scene Grid: 10
+@scene(6)
 
 s = sphere(0.8);
 r = boxCentered([0.3, 0.3, 0], [1.5, 1.5, 1.2]);

@@ -1,5 +1,4 @@
-// Scene Size: 20
-// Scene Grid: 10
+@scene(20)
 // --- Helper Functions ---
 
 // Defines a box centered at the origin with size b (half-extents).
@@ -33,7 +32,6 @@ heatsink(b) {
   // The final shape is the intersection (max) of the bounding box and the fins.
   return max(d_bounds, d_fins);
 }
-
 
 // Defines a complete fan assembly (hub and blades) centered at the origin.
 // The fan is oriented to spin in the XZ plane.
@@ -80,7 +78,6 @@ fan_assembly() {
   // Union the hub and the blades to form the final fan.
   return min(hub, blades);
 }
-
 
 // --- Main Scene Construction ---
 
@@ -132,7 +129,6 @@ io_bracket_size = [0.1, 0.8, 1.4];
 io_bracket_x_offset = -pcb_size.x - io_bracket_size.x;
 io_bracket_pos = [io_bracket_x_offset, io_bracket_size.y, 0];
 io_bracket = remap(box(io_bracket_size), p - io_bracket_pos);
-
 
 // --- Final Combination ---
 

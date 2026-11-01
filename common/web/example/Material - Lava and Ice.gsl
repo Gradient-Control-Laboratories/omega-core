@@ -1,5 +1,4 @@
-// Scene Size: 70
-// Scene Grid: 10
+@scene(70)
 
 // Plates that drift, form and are swallowed (material/animated): the crust of
 // a lava lake tearing open along glowing seams, and pack ice drifting apart

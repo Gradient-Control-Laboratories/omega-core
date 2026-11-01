@@ -1,5 +1,4 @@
-// Scene Size: 50
-// Scene Grid: 10
+@scene(50)
 import "lattice";
 import "lattice/spinodoid";
 

@@ -147,7 +147,7 @@ return specimen;
 func TestDirectSpinodoidQueryUsesTransformedFiniteDomain(t *testing.T) {
 	const src = `// Scene Size: 20
 upright = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
-return fastGaborSpinodoid(p + [0, 200, 0], 2, [pi / 2, pi / 2, pi / 2], upright, 3, 8, 4096, 0, 0.5, 1, 1 + 0.001 * p.y, upright);
+return fastGaborSpinodoid(p + [0, 200, 0], 2, [pi / 2, pi / 2, pi / 2], upright, 3, 8, 4096, 0, 0, 1, 1 + 0.001 * p.y, upright);
 `
 	prog, baked := bakeSingleSpinodoidForDomainTest(t, src)
 	if baked.Table.Periodic || !baked.Table.Contains([3]float64{0, 200, 0}) || baked.Table.Contains([3]float64{}) {

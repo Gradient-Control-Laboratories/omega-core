@@ -1,5 +1,4 @@
-// Scene Size: 120
-// Scene Grid: 10
+@scene(120)
 
 // The surfaces printing leaves (material/printed), all built along +Z: fused
 // filament's beads, resin's fine layers, nylon powder beds and laser-melted

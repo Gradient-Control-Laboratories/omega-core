@@ -1,5 +1,4 @@
-// Scene Size: 700
-// Scene Grid: 100
+@scene(700, 7)
 
 // Measured everyday surfaces from the physical library on 50 mm balls:
 // building materials, paper and boards, ground cover, and the calibration

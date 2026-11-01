@@ -1,5 +1,4 @@
-// Scene Size: 80
-// Scene Grid: 10
+@scene(80)
 
 // Surface frames, read off plain primitives. Every part is the same stainless
 // steel, its lay streaked along one frame coordinate's gradient, so the

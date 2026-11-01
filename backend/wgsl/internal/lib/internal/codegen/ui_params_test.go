@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/internal/assembler/meshplan"
 	"gradientcontrol.com/omega/core/internal/slider"
 	"gradientcontrol.com/omega/core/internal/source"
 	"gradientcontrol.com/omega/core/internal/ui"
@@ -87,5 +88,48 @@ func TestUIParametersDoNotCaptureInlinedControls(t *testing.T) {
 	}
 	if !strings.Contains(rendered.WGSL, "vec3<f32>(7.0, 8.0, 9.0)") {
 		t.Fatalf("inlined branch constant was captured by the primary UI parameters: %s", rendered.WGSL)
+	}
+}
+
+func TestZeroReturnShaderParametersMatchViewer(t *testing.T) {
+	src := `importId = importStep "part.step";
+radius = 5;
+radius.min = 1;
+radius.max = 10;
+center = uiPoint([1, 2, 3]);
+xf = uiTransform([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [4, 5, 6, 1]]);
+cavity = length(p - center) - radius;
+return meshDifference(mesh(importId, xf), cavity);`
+	assembled, err := assembler.Assemble([]string{src}, mockMgr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var names []string
+	for _, control := range slider.Extract(src, assembled.Program.Primary) {
+		names = append(names, control.ParamName)
+	}
+	for _, control := range ui.Extract(assembled.Program.Primary, assembled.Program.GetImport) {
+		for _, param := range control.Params {
+			names = append(names, param.ParamName)
+		}
+	}
+	if len(names) != 20 {
+		t.Fatalf("expected one slider, one point and one transform: %v", names)
+	}
+	sliced := meshplan.SubtreeProgram(assembled.Program)
+	rendered, err := renderHelper(src, sliced)
+	if err != nil {
+		t.Fatal(err)
+	}
+	params := []string{"p: vec3<f32>", "time: f32"}
+	for _, name := range names {
+		params = append(params, name+": f32")
+	}
+	want := "fn sdShape(" + strings.Join(params, ", ") + ") -> gsl_shape"
+	if !strings.Contains(rendered.WGSL, want) {
+		t.Fatalf("zero-return shader signature does not match viewer argument order; want %s, got %s", want, rendered.WGSL)
+	}
+	if !strings.Contains(rendered.WGSL, "return gsl_shape(1e10, 0u);") {
+		t.Fatalf("expected empty shape sentinel in zero-return shader: %s", rendered.WGSL)
 	}
 }

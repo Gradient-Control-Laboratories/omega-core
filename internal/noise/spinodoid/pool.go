@@ -23,18 +23,10 @@ func dot3(a, b [3]float64) float64 {
 	return float64(float64(a[0]*b[0])+float64(a[1]*b[1])) + float64(a[2]*b[2])
 }
 
-// deg2rad is numpy's radians: x * (NPY_PI / 180.0), the quotient rounded to a
-// double first. Dividing a float64 variable (not the untyped constant, which
-// Go would evaluate exactly) reproduces that rounding.
-func deg2rad(x float64) float64 {
-	pi := math.Pi
-	return x * (pi / 180.0)
-}
-
 // cartesianPoles is spinodoid_waves' default, np.eye(3): the paper's Eq. (2).
 var cartesianPoles = [][3]float64{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}
 
-// Waves is hodge's spinodoid_waves(theta_deg, n_waves, seed, poles) without the
+// Waves is hodge's spinodoid_waves(theta, n_waves, seed, poles) without the
 // phases: the unit directions only, which is all the Gabor form reads (its
 // kernel phases come from the spatial hash). The draw consumes numpy's stream
 // exactly as hodge does: batches of 3-vectors of standard normals, normalized,
@@ -42,9 +34,10 @@ var cartesianPoles = [][3]float64{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}
 // batch size between rounds. Since the phases are drawn after the directions,
 // leaving them out does not move the directions.
 //
-// poles nil means the Cartesian basis; otherwise each is normalized as hodge
-// normalizes them.
-func Waves(thetaDeg []float64, nWaves int, seed uint64, poles [][3]float64) ([][3]float64, error) {
+// theta holds the cone half-angles in radians, one per pole, each in
+// [0, pi/2], as hodge takes them. poles nil means the Cartesian basis;
+// otherwise each is normalized as hodge normalizes them.
+func Waves(theta []float64, nWaves int, seed uint64, poles [][3]float64) ([][3]float64, error) {
 	if poles == nil {
 		poles = cartesianPoles
 	} else {
@@ -54,13 +47,13 @@ func Waves(thetaDeg []float64, nWaves int, seed uint64, poles [][3]float64) ([][
 		}
 		poles = normed
 	}
-	if len(thetaDeg) != len(poles) {
-		return nil, fmt.Errorf("theta_deg has %d angles but %d poles were given", len(thetaDeg), len(poles))
+	if len(theta) != len(poles) {
+		return nil, fmt.Errorf("theta has %d angles but %d poles were given", len(theta), len(poles))
 	}
 	anyOpen := false
-	for _, t := range thetaDeg {
-		if t < 0 || t > 90 {
-			return nil, fmt.Errorf("theta_deg must lie in [0, 90]")
+	for _, t := range theta {
+		if t < 0 || t > 0.5*math.Pi+1e-12 {
+			return nil, fmt.Errorf("theta must lie in [0, pi/2] radians")
 		}
 		if t > 0 {
 			anyOpen = true
@@ -72,9 +65,9 @@ func Waves(thetaDeg []float64, nWaves int, seed uint64, poles [][3]float64) ([][
 	if nWaves < 1 {
 		return nil, fmt.Errorf("n_waves must be >= 1, got %d", nWaves)
 	}
-	cosTheta := make([]float64, len(thetaDeg))
-	for i, t := range thetaDeg {
-		cosTheta[i] = math.Cos(deg2rad(t))
+	cosTheta := make([]float64, len(theta))
+	for i, t := range theta {
+		cosTheta[i] = math.Cos(t)
 	}
 
 	g := newGenerator(seed)
@@ -101,7 +94,7 @@ func Waves(thetaDeg []float64, nWaves int, seed uint64, poles [][3]float64) ([][
 		if accepted > 0 {
 			nHave += accepted
 		} else if nDrawn > 1_000_000 {
-			return nil, fmt.Errorf("cone ODF %v deg is too narrow to sample; widen theta_deg", thetaDeg)
+			return nil, fmt.Errorf("cone ODF %v rad is too narrow to sample; widen theta", theta)
 		}
 		rate := math.Max(float64(nHave)/float64(nDrawn), 1e-6)
 		next := float64(float64(float64(nWaves-nHave)/rate)*1.3) + 64

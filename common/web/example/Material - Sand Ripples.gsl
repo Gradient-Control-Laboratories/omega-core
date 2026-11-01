@@ -1,5 +1,4 @@
-// Scene Size: 50
-// Scene Grid: 10
+@scene(50)
 
 // Wind ripples on dry sand (material/animated), creeping downwind under
 // grains that stream over them, with dark heavy minerals in the troughs.

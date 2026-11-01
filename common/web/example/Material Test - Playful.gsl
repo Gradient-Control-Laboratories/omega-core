@@ -1,4 +1,4 @@
-// Scene Size: 100
+@scene(100)
 
 // Debug scene: glitter, checkerboard, cellSkin alone, three balls, small
 // scene — isolates cellularF1F2 (glitter), map.checkerXY (checkerboard),

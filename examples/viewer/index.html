@@ -1,145 +1,271 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GSL WebGPU Standalone 3D Viewer</title>
-  <meta name="description" content="Zero-dependency client-side WebGPU viewer for procedural GSL shaders and CAD polygon meshes.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Omega Core — GSL Example Viewer</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="editor/editor.css">
+    <link rel="stylesheet" href="docs/docs.css">
+    <link rel="stylesheet" href="docs/help-panel.css">
+    <link rel="icon" type="image/svg+xml" href="icons/cube-lightning.svg">
 </head>
+
 <body>
-  <div id="canvas-container">
-    <canvas id="webgpu-canvas"></canvas>
-  </div>
-
-  <!-- Top Navigation & Model Selection Bar -->
-  <header id="top-bar" class="glass-panel">
-    <div class="logo-group">
-      <span class="logo-badge">GSL</span>
-      <h1 class="title-text">WebGPU 3D Viewer</h1>
-    </div>
-
-    <div class="top-controls">
-      <label for="model-select" style="display:none">Select Model</label>
-      <select id="model-select" class="dropdown">
-        <option value="gear">Parametric Gear (Sliders)</option>
-        <option value="gyroid">Gyroid TPMS (Minimal Surface)</option>
-        <option value="kinetic_sculpture">Kinetic Sculpture (Animation)</option>
-        <option value="hybrid_bracket">Hybrid Bracket (CAD + Infill)</option>
-        <option value="csg_shapes">CSG Shapes (Smooth Booleans)</option>
-      </select>
-
-      <label for="camera-view-select" style="display:none">Camera View</label>
-      <select id="camera-view-select" class="dropdown">
-        <option value="iso">Isometric</option>
-        <option value="top">Top View</option>
-        <option value="front">Front View</option>
-        <option value="right">Right View</option>
-      </select>
-
-      <button id="btn-reset-cam" class="btn" title="Reset Camera View">Reset</button>
-      <button id="btn-screenshot" class="btn primary" title="Capture High-Res PNG">Snapshot</button>
-    </div>
-  </header>
-
-  <!-- Right Floating Sidebar: Controls, Sliders & Lighting -->
-  <aside id="sidebar" class="glass-panel">
-    <div class="sidebar-header">
-      <span>Inspector & Controls</span>
-      <span id="shape-status" style="font-size: 11px; color: var(--accent-cyan);">Ready</span>
-    </div>
-
-    <div class="sidebar-body">
-      <!-- Hybrid Traditional Mesh Integration -->
-      <div class="section-group">
-        <span class="section-title">Layers & Visibility</span>
-        <label class="checkbox-row">
-          <input type="checkbox" id="chk-show-sdf" checked>
-          <span>Show Procedural SDF</span>
-        </label>
-        <label class="checkbox-row">
-          <input type="checkbox" id="chk-show-mesh" checked>
-          <span>Show CAD Polygon Mesh</span>
-        </label>
-        <label class="checkbox-row">
-          <input type="checkbox" id="chk-show-wireframe">
-          <span>Show Mesh Wireframe</span>
-        </label>
-        <label class="checkbox-row">
-          <input type="checkbox" id="chk-show-grid" checked>
-          <span>Show Ground Grid</span>
-        </label>
-      </div>
-
-      <!-- Cross-Sectional Clipping Plane -->
-      <div class="section-group">
-        <span class="section-title">Cross-Section Slice</span>
-        <div class="slider-control">
-          <div class="slider-label-row">
-            <span class="slider-name">Clip Z Plane</span>
-            <span id="val-clip-z" class="slider-val">None</span>
-          </div>
-          <input type="range" id="slider-clip-z" min="-5" max="5" step="0.05" value="5">
+    <div id="app-shell">
+        <header id="top-bar">
+            <div id="top-bar-left">
+                <button id="btn-toggle-code" class="btn-regular" type="button" aria-pressed="false" title="Toggle GSL code editor panel">
+                    <img src="icons/code.svg" width="16" height="16" alt="">
+                    <span>Code</span>
+                </button>
+                <div id="editor-top-controls" class="hidden">
+                    <div id="btn-wrap" class="btn-regular active" title="Soft-wrap long lines">
+                        <span class="icon-mask icon-wrap"></span>Wrap
+                    </div>
+                    <div class="editor-tab-container"></div>
+                    <div id="help-menu"></div>
+                </div>
+            </div>
+            <div id="top-bar-center">
+                <select id="example-select" aria-label="Select GSL example" title="Select an example GSL model"></select>
+            </div>
+            <div id="top-bar-right">
+                <button id="btn-save-as" class="btn-regular" type="button" disabled title="Save modified GSL source as a new example">Save As</button>
+                <div id="save-as-popover" class="hidden">
+                    <input type="text" id="save-as-input" spellcheck="false" placeholder="example_copy.gsl">
+                    <button id="btn-save-confirm" class="btn-regular" type="button">Save</button>
+                    <button id="btn-save-cancel" class="btn-regular" type="button">Cancel</button>
+                </div>
+            </div>
+        </header>
+        <div id="container">
+            <div id="editor-container" class="collapsed">
+                <div id="editor"></div>
+                <div id="error-wrapper" class="hidden">
+                    <textarea id="error-output" readonly></textarea>
+                </div>
+            </div>
+            <div class="splitter hidden" data-splitter></div>
+            <div id="canvas-column" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0;">
+                <div id="canvas-container">
+                    <div id="canvas-left-btns">
+                        <div id="btn-fullscreen" class="btn-icon" title="Fullscreen"><img src="icons/fullscreen.svg" alt="Fullscreen"></div>
+                        <div id="btn-point-select" class="btn-icon" title="Point selection"><img src="icons/crosshair.svg" alt="Point selection"></div>
+                        <div id="btn-point-normal-select" class="btn-icon" title="Point + normal selection"><img src="icons/crosshair-normal.svg" alt="Point + normal selection"></div>
+                    </div>
+                    <div id="canvas-controls">
+                        <div id="slider-panel">
+                            <div id="slider-panel-header">Parameters <span class="panel-close">&#x2715;</span></div>
+                            <div class="panel-body">
+                                <div id="slider-panel-body"></div>
+                            </div>
+                        </div>
+                        <div id="animation-panel">
+                            <div id="animation-panel-header">Animation <span class="panel-close">&#x2715;</span></div>
+                            <div class="panel-body">
+                                <div class="field-panel-row">
+                                    <label>Time</label>
+                                    <input type="number" id="animation-time-input" value="0.00" step="0.01" min="0" readonly>
+                                    <span class="anim-unit">s</span>
+                                </div>
+                                <div class="anim-btns">
+                                    <div id="btn-rewind-anim" class="btn-light anim-btn"><span class="anim-glyph">&#x23EE;</span></div>
+                                    <div id="btn-pause-anim" class="btn-light anim-btn"><span class="anim-glyph">&#x25B6;</span></div>
+                                </div>
+                                <div class="field-panel-row" id="audio-volume-row" style="display: none;">
+                                    <label>Volume</label>
+                                    <input type="range" id="audio-volume" min="0" max="100" value="50" step="1">
+                                </div>
+                            </div>
+                        </div>
+                        <div id="mesh-import-panel">
+                            <div id="mesh-import-header">Meshes <span class="panel-close">&#x2715;</span></div>
+                            <div class="panel-body">
+                                <input type="file" id="mesh-file-input" accept=".stl,.obj" multiple hidden>
+                                <div id="mesh-drop-zone" class="mesh-drop-zone">
+                                    <span class="mesh-upload-label">Drop STL/OBJ here or click to upload</span>
+                                </div>
+                                <div id="mesh-list"></div>
+                                <div id="mesh-hint" class="mesh-hint" style="display:none"></div>
+                            </div>
+                        </div>
+                        <div id="render-panel">
+                            <div id="render-panel-header">Render <span class="panel-close">&#x2715;</span></div>
+                            <div class="panel-body">
+                                <div class="field-panel-row">
+                                    <label>Moving</label>
+                                    <div class="resolution-controls" role="group" aria-label="Render quality while the view moves">
+                                        <button class="resolution-btn active" type="button" data-moving-tier="draft" aria-pressed="true" title="While the view moves: half resolution, no ambient occlusion, one sharp refraction through glass">Draft</button>
+                                        <button class="resolution-btn" type="button" data-moving-tier="standard" aria-pressed="false" title="While the view moves: full quality">Full</button>
+                                    </div>
+                                </div>
+                                <div class="field-panel-row">
+                                    <label>At rest</label>
+                                    <div class="resolution-controls" role="group" aria-label="Render quality at rest">
+                                        <button class="resolution-btn" type="button" data-rest-tier="simple" aria-pressed="false" title="Always: one headlight on flat colours, one per return, with no shadows, occlusion, glass or materials">Simple</button>
+                                        <button class="resolution-btn" type="button" data-rest-tier="color" aria-pressed="false" title="Always: the Standard frame&#39;s lighting and colours on the default surface, without the document&#39;s materials (no metal, roughness, glass, emission or displacement)">Color</button>
+                                        <button class="resolution-btn active" type="button" data-rest-tier="standard" aria-pressed="true" title="At rest: the full-quality frame">Standard</button>
+                                        <button class="resolution-btn" type="button" data-rest-tier="progressive" aria-pressed="false" title="At rest: path tracing that refines while the view is still (shadows, bounce light, antialiasing)">Progressive</button>
+                                    </div>
+                                </div>
+                                <div class="field-panel-row">
+                                    <label>Shadows</label>
+                                    <div class="resolution-controls" role="group" aria-label="Shadows in the path tracer">
+                                        <button class="resolution-btn active" type="button" data-trace-shadows="on" aria-pressed="true" title="Each light casts shadows in Progressive and Render image; Standard darkens corners with ambient occlusion">On</button>
+                                        <button class="resolution-btn" type="button" data-trace-shadows="off" aria-pressed="false" title="No shadows from the lights in Progressive and Render image (bounce light still darkens corners), and no ambient occlusion in Standard">Off</button>
+                                    </div>
+                                </div>
+                                <div class="field-panel-row">
+                                    <label>Back faces</label>
+                                    <div class="resolution-controls" role="group" aria-label="How a surface seen from behind is drawn">
+                                        <button class="resolution-btn active" type="button" data-back-faces="dim" aria-pressed="true" title="Every tier draws a surface seen from behind, such as the inside of a part cut open, at 25% brightness">Dim</button>
+                                        <button class="resolution-btn" type="button" data-back-faces="full" aria-pressed="false" title="Every tier draws a surface seen from behind as brightly as one seen from the front">Full</button>
+                                    </div>
+                                </div>
+                                <div class="field-panel-row">
+                                    <label>Displacement</label>
+                                    <div class="resolution-controls" role="group" aria-label="Displacement of surfaces">
+                                        <button class="resolution-btn active" type="button" data-displacement="on" aria-pressed="true" title="Materials with displacement move the surface, such as open pores and weathered relief">On</button>
+                                        <button class="resolution-btn" type="button" data-displacement="off" aria-pressed="false" title="Draw every surface undisplaced: faster, and the pores and relief show as colour only">Off</button>
+                                    </div>
+                                </div>
+                                <div class="field-panel-row">
+                                    <label>Fine relief</label>
+                                    <div class="resolution-controls" role="group" aria-label="Where fine relief fades in Standard">
+                                        <button class="resolution-btn active" type="button" data-march-fade="hit" aria-pressed="true" title="Relief too fine to see fades only where the surface is shaded; the ray marches the full relief">At hit</button>
+                                        <button class="resolution-btn" type="button" data-march-fade="march" aria-pressed="false" title="Relief too fine to see fades while the ray marches too, so the surface found and the surface shaded agree">In march</button>
+                                    </div>
+                                </div>
+                                <div class="field-panel-row">
+                                    <label>Pixel filter</label>
+                                    <input type="range" id="render-pixel-filter" min="0" max="3" value="1" step="0.05" style="width: 80px;" title="How many pixels wide detail must be to show: textures fade detail finer than this, and lines thinner than this are drawn this wide and fainter; 0 filters nothing, so fine detail aliases">
+                                    <span id="render-pixel-filter-label" class="field-panel-label">1.00</span>
+                                </div>
+                                <div class="field-panel-row detail-row">
+                                    <label>Detail</label>
+                                    <div id="detail-slider" role="group" aria-label="What a part keeps as it gets smaller on screen"></div>
+                                </div>
+                                <div class="field-panel-row">
+                                    <label>Field of view</label>
+                                    <input type="range" id="render-fov" min="9" max="90" value="50" step="1" style="width: 80px;" title="Lens angle; leftmost is orthographic. The view keeps its size at the orbit pivot, so a narrower lens stands farther back">
+                                    <span id="render-fov-label" class="field-panel-label">50&deg;</span>
+                                </div>
+                                <div class="field-panel-row">
+                                    <label>Depth of field</label>
+                                    <input type="range" id="render-aperture" min="0" max="1" value="0" step="0.01" style="width: 80px;" title="Lens blur for the path tracer; 0 is off">
+                                    <span id="render-aperture-label" class="field-panel-label">0.00</span>
+                                    <div id="btn-render-focus" class="btn-icon" title="Focus: click a point on the model to focus on it (until then, the orbit pivot)"><img src="icons/crosshair.svg" alt="Focus"></div>
+                                </div>
+                                <div class="field-panel-row">
+                                    <label>Light</label>
+                                    <div class="resolution-controls" role="group" aria-label="Environment light">
+                                        <button class="resolution-btn active" type="button" data-env-preset="Viewer" aria-pressed="true" title="The viewer's lights, which turn with the camera, over a dim sky">Viewer</button>
+                                        <button class="resolution-btn" type="button" data-env-preset="Softbox" aria-pressed="false" title="Large soft panels around a dark room, turning with the camera like the rig: highlights slide across polished surfaces as you orbit">Softbox</button>
+                                        <button class="resolution-btn" type="button" data-env-preset="Overcast" aria-pressed="false" title="A bright cloudy sky: even light that shows colour and grain">Overcast</button>
+                                        <button class="resolution-btn" type="button" data-env-preset="Horizon" aria-pressed="false" title="Blue sky over dark ground with a small sun: a horizon line and a glint in chrome and glass">Horizon</button>
+                                    </div>
+                                </div>
+                                <div class="field-panel-row">
+                                    <label>Turn</label>
+                                    <input type="range" id="env-azimuth" min="0" max="360" value="0" step="1" style="width: 80px;" title="Turn the environment about the vertical axis">
+                                    <span id="env-azimuth-label" class="field-panel-label">0&deg;</span>
+                                </div>
+                                <div class="field-panel-row">
+                                    <div id="btn-render-image" class="btn-light" title="Path trace this view to 1024 samples in the background and download it as a PNG with a transparent background; press again to cancel">Render image</div>
+                                    <div class="resolution-controls" role="group" aria-label="Render image size">
+                                        <button class="resolution-btn active" type="button" data-image-scale="1" aria-pressed="true" title="The image is the size of the view">1&times;</button>
+                                        <button class="resolution-btn" type="button" data-image-scale="2" aria-pressed="false" title="Twice the view's width and height">2&times;</button>
+                                        <button class="resolution-btn" type="button" data-image-scale="4" aria-pressed="false" title="Four times the view's width and height">4&times;</button>
+                                    </div>
+                                </div>
+                                <div class="field-panel-row">
+                                    <label>Frame rate</label>
+                                    <span id="render-fps" title="Frames drawn in the last second; the viewer draws only when something changes, so at rest it is idle">Idle</span>
+                                    <span id="render-progress" title="How much of the progressive sum is done"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="field-panel">
+                            <div id="field-panel-header">Cross Section <span class="panel-close">&#x2715;</span></div>
+                            <div class="panel-body">
+                                <div class="stl-row-loose">
+                                    <label>Direction</label>
+                                    <input type="number" id="field-normal-x" value="0" step="0.1">
+                                    <input type="number" id="field-normal-y" value="0" step="0.1">
+                                    <input type="number" id="field-normal-z" value="1" step="0.1">
+                                </div>
+                                <div class="field-panel-row">
+                                    <label>Offset</label>
+                                    <input type="range" id="field-height" min="-10" max="10" value="0" step="0.01">
+                                    <span id="field-height-label" class="field-panel-label">0.00</span>
+                                </div>
+                                <div class="field-panel-row">
+                                    <label>Interval</label>
+                                    <input type="range" id="field-interval" min="0" max="2" value="0.25" step="0.01">
+                                    <span id="field-interval-label" class="field-panel-label">0.25</span>
+                                </div>
+                                <div class="field-panel-row">
+                                    <label>Fade</label>
+                                    <input type="range" id="field-fade" min="0" max="10" value="5" step="0.1">
+                                    <span id="field-fade-label" class="field-panel-label">5.0</span>
+                                </div>
+                                <div class="field-panel-row">
+                                    <label>Model</label>
+                                    <input type="range" id="field-model" min="0" max="1" value="0.5" step="0.01">
+                                    <span id="field-model-label" class="field-panel-label">0.50</span>
+                                </div>
+                                <div class="field-panel-row">
+                                    <label>Section</label>
+                                    <input type="range" id="field-section" min="0" max="1" value="0.25" step="0.01">
+                                    <span id="field-section-label" class="field-panel-label">0.25</span>
+                                </div>
+                                <div class="checkbox-row">
+                                    <div class="checkbox-row-group">
+                                        <label for="field-union">Union</label>
+                                        <input type="checkbox" id="field-union">
+                                    </div>
+                                    <div class="checkbox-row-group">
+                                        <label for="field-external">External</label>
+                                        <input type="checkbox" id="field-external" checked>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="color-picker-panel">
+                            <div id="color-picker-header">Shapes<span class="panel-close">&#x2715;</span></div>
+                            <div class="panel-body">
+                                <div id="palette-strip"></div>
+                                <div id="color-pickers"></div>
+                            </div>
+                        </div>
+                        <div id="stl-bounds-panel"></div>
+                    </div>
+                </div>
+                <div id="stl-canvas-container" style="display: none;">
+                    <div id="stl-left-btns">
+                        <div id="btn-live-stl" class="btn-icon" title="Live STL: Auto-render on compile"><img src="icons/cube-lightning.svg" alt="Live STL"></div>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-
-      <!-- Environment Lighting & Tone-Mapping -->
-      <div class="section-group">
-        <span class="section-title">Lighting & Environment</span>
-        <select id="lighting-preset-select" class="dropdown" style="width: 100%;">
-          <option value="studio">Studio Neutral</option>
-          <option value="warm">Warm Sunset</option>
-          <option value="cool">Cool Industrial</option>
-          <option value="dramatic">Dramatic Contrast</option>
-          <option value="metallic">High-Contrast Metallic</option>
-        </select>
-      </div>
-
-      <!-- Dynamic Parameter Sliders Container (Auto-populated from JSON/WGSL) -->
-      <div class="section-group">
-        <span class="section-title">GSL Model Parameters</span>
-        <div id="dynamic-sliders-container" style="display:flex; flex-direction:column; gap:12px;">
-          <span style="color:var(--text-muted); font-size:12px;">Loading parameters...</span>
-        </div>
-      </div>
     </div>
-  </aside>
-
-  <!-- Bottom Timeline Toolbar for Continuous Dynamic Animation -->
-  <footer id="bottom-toolbar" class="glass-panel">
-    <button id="btn-play-pause" class="btn" title="Toggle Play / Pause (Spacebar)">
-      <span id="play-icon">▶ Play</span>
-    </button>
-
-    <div class="timeline-scrubber">
-      <span id="time-current" class="time-display">0.00s</span>
-      <input type="range" id="timeline-slider" min="0" max="10" step="0.01" value="0">
-      <span class="time-display">10.00s</span>
-    </div>
-
-    <select id="playback-speed-select" class="dropdown" style="width: 72px;">
-      <option value="0.25">0.25x</option>
-      <option value="0.5">0.5x</option>
-      <option value="1.0" selected>1.0x</option>
-      <option value="2.0">2.0x</option>
-    </select>
-  </footer>
-
-  <!-- Diagnostics Badge -->
-  <div id="diagnostics-badge" class="glass-panel">
-    <div>FPS: <span id="diag-fps" class="badge-val">60</span></div>
-    <div>Raymarch Steps: <span id="diag-steps" class="badge-val">~45</span></div>
-  </div>
-
-  <!-- Drag and Drop Hot-reload Overlay -->
-  <div id="drag-overlay">
-    <span>Drop .wgsl shader or .stl/.obj mesh to reload</span>
-  </div>
-
-  <!-- Main Viewer Engine (ES Module) -->
-  <script type="module" src="viewer.js"></script>
+    <div id="notification" class="notification"></div>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "./vendor/three/three.webgpu.js",
+                "three/webgpu": "./vendor/three/three.webgpu.js",
+                "three/tsl": "./vendor/three/three.tsl.js",
+                "three/addons/": "./vendor/three/jsm/",
+                "manifold-3d": "./vendor/manifold/manifold.js",
+                "codemirror": "./vendor/codemirror/codemirror.js",
+                "viewer": "./render/viewer.js"
+            }
+        }
+    </script>
+    <script type="module" src="main.js"></script>
 </body>
+
 </html>

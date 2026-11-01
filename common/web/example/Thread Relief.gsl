@@ -1,5 +1,4 @@
-// Scene Size: 48
-// Scene Grid: 10
+@scene(48)
 
 // Threads as relief: a thread is a MACHINING OPERATION, so the geometry is
 // the part before it — at its maximum material condition — and the thread is

@@ -1,5 +1,4 @@
-// Scene Size: 40
-// Scene Grid: 10
+@scene(40)
 // AI geometry tool-use demo — Assembly Repair
 //
 // Three parts packed in an open crate with two deliberate defects: the block

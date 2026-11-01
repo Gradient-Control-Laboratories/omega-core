@@ -1,5 +1,4 @@
-// Scene Size: 700
-// Scene Grid: 100
+@scene(700, 7)
 
 // Measured noble and transition metals from the physical library on 50 mm
 // balls. A metal's colour is its measured reflectance (F0); roughness is the

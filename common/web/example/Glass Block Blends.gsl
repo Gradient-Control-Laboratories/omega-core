@@ -1,5 +1,4 @@
-// Scene Size: 25
-// Scene Grid: 10
+@scene(25)
 
 // The block from the Glass example in clear glass, twice, each rounded by an
 // intersection blend of its six faces: on the left an Lp blend whose exponent

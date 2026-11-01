@@ -1,5 +1,4 @@
-// Scene Size: 800
-// Scene Grid: 100
+@scene(800, 8)
 
 // A 600 x 400 mm wall panel in running bond: standard 215 x 65 mm brick
 // faces with 10 mm mortar joints, each course shifted half a brick, laid by

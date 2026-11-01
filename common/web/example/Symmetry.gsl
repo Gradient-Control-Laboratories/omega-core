@@ -1,5 +1,4 @@
-// Scene Size: 40
-// Scene Grid: 20
+@scene(40, 2)
 // The symmetry maps in the `map` library. An asymmetric motif at the origin is
 // replicated two ways: patternPolarXY (N-fold rotation about Z, left) and
 // patternRectangularXY (mirror-tiled grid, right). Because the motif is

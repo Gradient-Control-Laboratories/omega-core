@@ -1,5 +1,4 @@
-// Scene Size: 120
-// Scene Grid: 10
+@scene(120)
 
 // A sample board of holes, one to a tile. Each is written the way a drawing
 // calls one out: a list of features, every depth measured from the face the

@@ -86,6 +86,8 @@ func (d *Delegate) BuildBuiltinCall(
 		return d.builtinTanh(op, args[0].(*TreeNode))
 	case "trunc":
 		return d.builtinTrunc(op, args[0].(*TreeNode))
+	case "erfinv":
+		return d.builtinErfinv(op, args[0].(*TreeNode))
 
 	default:
 		return nil, fmt.Errorf("unsupported builtin: %s", call.Reference.Name)
@@ -409,6 +411,22 @@ func (d *Delegate) builtinSign(op *program.Operand, arg *TreeNode) (*TreeNode, e
 	result := make([]fidget.TreeIndex, len(v))
 	for i := range v {
 		result[i] = fidget.Compare(v[i], d.zero)
+	}
+	return NewTreeNode(op, op.Start, result...)
+}
+
+// erfinv(x), element-wise, for a constant x only: it has no field form, and
+// exists to turn a constant solid fraction into a spinodoid bias. A literal
+// argument is folded before it gets here; a library function's parameter
+// arrives as a constant tree, which folds here instead.
+func (d *Delegate) builtinErfinv(op *program.Operand, arg *TreeNode) (*TreeNode, error) {
+	result := make([]fidget.TreeIndex, len(arg.trees))
+	for i, t := range arg.trees {
+		v, ok := fidget.ConstValue(t)
+		if !ok {
+			return nil, fmt.Errorf("erfinv: the argument must be a constant; erfinv is evaluated at compile time only")
+		}
+		result[i] = fidget.NewConst(math.Erfinv(v))
 	}
 	return NewTreeNode(op, op.Start, result...)
 }

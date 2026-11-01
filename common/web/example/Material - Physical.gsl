@@ -1,5 +1,4 @@
-// Scene Size: 500
-// Scene Grid: 100
+@scene(500, 5)
 
 // Measured materials from the physical library (the Physically Based
 // database, physicallybased.info), on 50 mm balls. Top row: metals, whose

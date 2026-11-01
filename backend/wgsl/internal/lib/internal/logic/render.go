@@ -2,7 +2,6 @@ package logic
 
 import (
 	"fmt"
-	"strings"
 
 	api "gradientcontrol.com/omega/core/backend/wgsl/internal/lib"
 	"gradientcontrol.com/omega/core/backend/wgsl/internal/lib/internal/codegen"
@@ -295,31 +294,6 @@ func (c *locationCollector) collectFromFunctionAllReturns(fn *program.Function) 
 	}
 }
 
-// shapeNameFromOperand extracts a human-readable name for a return operand.
-func shapeNameFromOperand(op *program.Operand, source string) string {
-	if op == nil {
-		return ""
-	}
-	if ref := op.GetReference(); ref != nil && ref.Name != "" {
-		return ref.Name
-	}
-	if fc := op.GetFnCall(); fc != nil && fc.Reference != nil && fc.Reference.Name != "" {
-		return fc.Reference.Name
-	}
-	if prop := op.GetPropRef(); prop != nil && prop.Reference != nil && prop.Reference.Name != "" {
-		return prop.Reference.Name
-	}
-	// Fall back to the source text between the operand's start and end offsets
-	if op.Start != nil && op.End != nil {
-		start := int(op.Start.Offset)
-		end := int(op.End.Offset)
-		if start >= 0 && end > start && end <= len(source) {
-			return strings.TrimSpace(source[start:end])
-		}
-	}
-	return ""
-}
-
 func Render(
 	source string,
 	prog *program.Program,
@@ -336,24 +310,27 @@ func Render(
 			pkg.VersionMajor, pkg.VersionMinor, SupportedMajor, SupportedMinor)
 	}
 
-	if len(pkg.Files) == 0 {
-		return nil, fmt.Errorf("empty package files")
+	var returns []*program.Operand
+	var assignments []*program.Assignment
+	if len(pkg.Files) > 0 {
+		lastFile := pkg.Files[len(pkg.Files)-1]
+		returns = lastFile.Returns
+		assignments = lastFile.Assignments
 	}
-	lastFile := pkg.Files[len(pkg.Files)-1]
 
 	result := &api.RenderResult{}
 
 	// Extract all source locations and names for each shape by traversing the AST
-	shapeLocations := make([]api.ShapeLocations, len(lastFile.Returns))
-	shapeNames := make([]string, len(lastFile.Returns))
-	for i, ret := range lastFile.Returns {
+	shapeLocations := make([]api.ShapeLocations, len(returns))
+	shapeNames := make([]string, len(returns))
+	for i, ret := range returns {
 		collector := newLocationCollector(pkg)
-		collector.collectFromOperand(ret, lastFile.Assignments, packageFunctions(pkg))
+		collector.collectFromOperand(ret, assignments, packageFunctions(pkg))
 		shapeLocations[i] = api.ShapeLocations{Spans: collector.spans}
-		shapeNames[i] = shapeNameFromOperand(ret, source)
+		shapeNames[i] = program.OperandName(ret, source)
 	}
 
-	result.ShapeCount = len(lastFile.Returns)
+	result.ShapeCount = len(returns)
 	result.ShapeNames = shapeNames
 	result.ShapeLocations = shapeLocations
 

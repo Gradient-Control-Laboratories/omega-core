@@ -1,5 +1,4 @@
-// Scene Size: 1000
-// Scene Grid: 100
+@scene(1000, 10)
 
 // Four polished stone slabs, 400 mm square and 20 mm thick. The three
 // marbles are the measured marble preset (polished, roughness 0) coloured by

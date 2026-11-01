@@ -1,4 +1,4 @@
-// Scene Size: 150
+@scene(150)
 // Every wall (plate) lattice from the `lattice/foam` library, shown side by
 // side. Each is returned infinitely thin (distance to the wall skeleton);
 // lattice.thicken gives the walls a thickness, and each is clipped to its own

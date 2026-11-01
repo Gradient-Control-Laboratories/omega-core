@@ -1,4 +1,4 @@
-// Scene Size: 30
+@scene(30)
 
 // A slider-crank behind a crankcase wall: the connecting rod swings through
 // the wall opening once per revolution. The point of this example: certify

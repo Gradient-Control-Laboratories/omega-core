@@ -1,5 +1,4 @@
-// Scene Size: 900
-// Scene Grid: 50
+@scene(900, 18)
 
 // Every wood in the library as a 40 mm cube, the way the Mokume dataset
 // photographs them: each cube is cut from a stem standing upright about
