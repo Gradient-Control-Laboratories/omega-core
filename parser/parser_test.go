@@ -7,9 +7,12 @@ import (
 )
 
 func TestParsePackage_Empty(t *testing.T) {
-	_, err := parser.ParsePackage(nil)
+	pkg, err := parser.ParsePackage(nil)
 	if err == nil {
 		t.Fatal("expected error for empty sources, got nil")
+	}
+	if pkg == nil || len(pkg.Files) != 1 || pkg.Files[0] == nil {
+		t.Fatalf("expected non-nil Package with 1 PackageFile, got %+v", pkg)
 	}
 }
 

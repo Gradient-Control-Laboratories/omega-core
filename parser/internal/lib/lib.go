@@ -40,17 +40,15 @@ func ParsePackage(sources []string) (*program.Package, error) {
 	}
 	if len(res.Errors) > 0 {
 		if len(res.Errors) == 1 {
-			return nil, &res.Errors[0]
+			return res.Package, &res.Errors[0]
 		}
 		errs := make([]error, len(res.Errors))
 		for i := range res.Errors {
 			errs[i] = &res.Errors[i]
 		}
-		return nil, errors.Join(errs...)
+		return res.Package, errors.Join(errs...)
 	}
-	if res.Package != nil {
-		parsed.put(key, proto.Clone(res.Package).(*program.Package), sourcesSize(sources))
-	}
+	parsed.put(key, proto.Clone(res.Package).(*program.Package), sourcesSize(sources))
 	return res.Package, nil
 }
 

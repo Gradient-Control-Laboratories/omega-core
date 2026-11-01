@@ -48,7 +48,16 @@ func Parse(sources []string) (*api.ParseResult, error) {
 	pkg := &program.Package{
 		VersionMajor: program.VersionMajor,
 		VersionMinor: program.VersionMinor,
+		Files:        make([]*program.PackageFile, 0, max(1, len(sources))),
 	}
+	res := &api.ParseResult{
+		Package: pkg,
+	}
+	if len(sources) == 0 {
+		pkg.Files = append(pkg.Files, &program.PackageFile{})
+		return res, nil
+	}
+
 	prog := &program.Program{
 		Primary: pkg,
 	}
@@ -58,77 +67,55 @@ func Parse(sources []string) (*api.ParseResult, error) {
 	}
 	pkgScope := progScope.Primary
 
-	pkgFiles := make([]*program.PackageFile, 0, len(sources))
-	var parseErr error
-	var sourceWithErr string
-	var pkgFileWithErr *program.PackageFile
-
 	for i, source := range sources {
-		topLevel, perr := parser.ParseString("", source)
-		if perr != nil {
-			parseErr = perr
-			sourceWithErr = source
-			break
-		}
+		pkgFile := &program.PackageFile{}
+		pkg.Files = append(pkg.Files, pkgFile)
+		pkgFileScope := pkgScope.NewPkgFileScope(pkgFile)
 
+		topLevel, perr := parser.ParseString("", source)
+
+		var sceneErr error
 		if i == 0 {
-			if topLevel.Scene != nil {
+			if topLevel != nil && topLevel.Scene != nil {
 				sc, err := scene.New(topLevel.Scene.Size, topLevel.Scene.Grid,
 					posToLocation(topLevel.Scene.Pos), posToLocation(topLevel.Scene.EndPos))
 				if err != nil {
-					parseErr = participle.Errorf(topLevel.Scene.Pos, "%s", err.Error())
-					sourceWithErr = source
-					break
+					sceneErr = participle.Errorf(topLevel.Scene.Pos, "%s", err.Error())
+				} else {
+					pkg.Scene = sc
 				}
-				pkg.Scene = sc
 			} else {
 				pkg.Scene = scene.FromLegacyComments(source)
 			}
-		} else if topLevel.Scene != nil {
-			parseErr = participle.Errorf(topLevel.Scene.Pos, "@scene directive is only allowed in the first source file")
-			sourceWithErr = source
-			break
+		} else if topLevel != nil && topLevel.Scene != nil {
+			sceneErr = participle.Errorf(topLevel.Scene.Pos, "@scene directive is only allowed in the first source file")
 		}
 
-		pkgFile, berr := buildPkgFile(pkgScope, topLevel)
-		if berr != nil {
-			parseErr = berr
-			sourceWithErr = source
-			pkgFileWithErr = pkgFile
-			break
+		var berr error
+		if topLevel != nil && sceneErr == nil {
+			berr = buildPkgFile(pkgFileScope, topLevel)
 		}
 
-		if i < len(sources)-1 && len(topLevel.Return) > 0 {
-			pos := lexer.Position{Line: 1, Column: 1}
-			if len(topLevel.Return) > 0 {
-				pos = topLevel.Return[0].Pos
-			}
-			parseErr = participle.Errorf(pos, "return statement is only allowed in the last source file")
-			sourceWithErr = source
-			pkgFileWithErr = pkgFile
-			break
+		var fileErr error
+		switch {
+		case sceneErr != nil:
+			fileErr = sceneErr
+		case berr != nil:
+			fileErr = berr
+		case perr != nil:
+			fileErr = perr
+		case i < len(sources)-1 && topLevel != nil && len(topLevel.Return) > 0:
+			fileErr = participle.Errorf(topLevel.Return[0].Pos, "return statement is only allowed in the last source file")
 		}
 
-		pkgFiles = append(pkgFiles, pkgFile)
+		if fileErr != nil {
+			pkgFile.Source = source
+			res.Errors = append(res.Errors, ParseError(source, fileErr))
+			return res, nil
+		}
 	}
 
-	pkg.Files = pkgFiles
-
-	if parseErr != nil {
-		if pkgFileWithErr != nil {
-			pkgFileWithErr.Source = sourceWithErr
-		}
-		return &api.ParseResult{
-			Package: pkg,
-			Errors: []program.Error{
-				ParseError(sourceWithErr, parseErr),
-			},
-		}, nil
-	}
-
-	return &api.ParseResult{
-		Package: pkg,
-	}, nil
+	return res, nil
 }
 
 func ParseError(source string, err error) program.Error {

@@ -25,7 +25,13 @@ func (d *TopLevel) Parse(lex *lexer.PeekingLexer) error {
 	}
 
 	decls, err := declarationsParser.ParseFromLexer(lex)
-	d.Declarations = decls.Declarations
+	if decls != nil {
+		for _, decl := range decls.Declarations {
+			if isCompleteDeclaration(decl) {
+				d.Declarations = append(d.Declarations, decl)
+			}
+		}
+	}
 
 	peek := lex.Peek().Value
 	if err != nil {
@@ -63,6 +69,21 @@ func (d *TopLevel) Parse(lex *lexer.PeekingLexer) error {
 	}
 	d.Return = returnExprs.Expressions
 	return nil
+}
+
+func isCompleteDeclaration(decl Declaration) bool {
+	switch d := decl.(type) {
+	case *NamedFunction:
+		return d.EndPos.Line > 0
+	case *PropertyAssignment:
+		return d.EndPos.Line > 0
+	case *Assignment:
+		return d.EndPos.Line > 0
+	case *AnnotatedDeclaration:
+		return d.EndPos.Line > 0 && isCompleteDeclaration(d.Declaration)
+	default:
+		return false
+	}
 }
 
 func (vn *VarNames) Parse(lex *lexer.PeekingLexer) error {

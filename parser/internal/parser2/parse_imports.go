@@ -9,7 +9,13 @@ import (
 
 func (d *TopLevel) parseImports(lex *lexer.PeekingLexer) error {
 	imports, err := importsParser.ParseFromLexer(lex)
-	d.Imports = imports.Imports
+	if imports != nil {
+		for _, imp := range imports.Imports {
+			if imp.EndPos.Line > 0 {
+				d.Imports = append(d.Imports, imp)
+			}
+		}
+	}
 
 	if isImportError(lex, err) {
 		return &participle.ParseError{
