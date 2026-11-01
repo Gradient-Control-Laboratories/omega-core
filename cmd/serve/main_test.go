@@ -17,7 +17,7 @@ func TestRun_HelpFlag(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error on --help: %v", err)
 	}
-	if !strings.Contains(stdout.String(), "Usage: gslserve") {
+	if !strings.Contains(stdout.String(), "Usage: serve") {
 		t.Errorf("expected help text in stdout, got %q", stdout.String())
 	}
 }

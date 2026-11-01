@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/cmd/gslc/internal/cli"
+	"gradientcontrol.com/omega/core/cmd/compile/internal/cli"
 	"gradientcontrol.com/omega/core/internal/test/assert"
 	"gradientcontrol.com/omega/core/internal/test/require"
 )

@@ -16,8 +16,8 @@ import (
 	"testing"
 	"time"
 
-	"gradientcontrol.com/omega/core/cmd/gslserve/internal/config"
-	"gradientcontrol.com/omega/core/cmd/gslserve/internal/server"
+	"gradientcontrol.com/omega/core/cmd/serve/internal/config"
+	"gradientcontrol.com/omega/core/cmd/serve/internal/server"
 )
 
 func setupTestServer(t *testing.T) (*server.Server, string, string) {

@@ -107,7 +107,7 @@ func (c *Config) ResolveMetaPath() string {
 
 // ParseFlags parses CLI arguments into a validated Config.
 func ParseFlags(args []string) (*Config, error) {
-	fs := flag.NewFlagSet("gslc", flag.ContinueOnError)
+	fs := flag.NewFlagSet("compile", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 
 	var (

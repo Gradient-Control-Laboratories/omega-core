@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"gradientcontrol.com/omega/core/cmd/gslserve/internal/compiler"
+	"gradientcontrol.com/omega/core/cmd/serve/internal/compiler"
 )
 
 func (s *Server) handleExamples(w http.ResponseWriter, r *http.Request) {

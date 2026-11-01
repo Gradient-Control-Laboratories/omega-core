@@ -3,7 +3,7 @@ package config_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/cmd/gslc/internal/config"
+	"gradientcontrol.com/omega/core/cmd/compile/internal/config"
 	"gradientcontrol.com/omega/core/internal/test/assert"
 	"gradientcontrol.com/omega/core/internal/test/require"
 )

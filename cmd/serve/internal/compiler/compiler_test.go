@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/cmd/gslserve/internal/compiler"
+	"gradientcontrol.com/omega/core/cmd/serve/internal/compiler"
 )
 
 func TestCompile_StandardSDFWithSlidersAndParts(t *testing.T) {

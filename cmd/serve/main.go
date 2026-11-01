@@ -15,8 +15,8 @@ import (
 	"syscall"
 	"time"
 
-	"gradientcontrol.com/omega/core/cmd/gslserve/internal/config"
-	"gradientcontrol.com/omega/core/cmd/gslserve/internal/server"
+	"gradientcontrol.com/omega/core/cmd/serve/internal/config"
+	"gradientcontrol.com/omega/core/cmd/serve/internal/server"
 )
 
 // openBrowserFunc launches the system default web browser for url. Overridable in tests.
@@ -91,7 +91,7 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 	}
 
 	url := fmt.Sprintf("http://%s", ln.Addr().String())
-	fmt.Fprintf(stdout, "gslserve listening on %s (examples: %s, viewer: %s)\n",
+	fmt.Fprintf(stdout, "serve listening on %s (examples: %s, viewer: %s)\n",
 		url, cfg.ExamplesDir, cfg.ViewerDir)
 
 	errCh := make(chan error, 1)
@@ -105,7 +105,7 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 
 	if cfg.Open {
 		if openErr := openBrowserFunc(url); openErr != nil {
-			fmt.Fprintf(stderr, "gslserve: failed to open browser: %v\n", openErr)
+			fmt.Fprintf(stderr, "serve: failed to open browser: %v\n", openErr)
 		}
 	}
 
@@ -125,7 +125,7 @@ func main() {
 	defer stop()
 
 	if err := Run(ctx, os.Args[1:], os.Stdout, os.Stderr); err != nil {
-		fmt.Fprintf(os.Stderr, "gslserve: %v\n", err)
+		fmt.Fprintf(os.Stderr, "serve: %v\n", err)
 		os.Exit(1)
 	}
 }

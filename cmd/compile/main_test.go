@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	main "gradientcontrol.com/omega/core/cmd/gslc"
+	main "gradientcontrol.com/omega/core/cmd/compile"
 	"gradientcontrol.com/omega/core/internal/test/assert"
 	"gradientcontrol.com/omega/core/internal/test/require"
 )
@@ -17,7 +17,7 @@ func TestRun_Help(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	err := main.Run([]string{"--help"}, nil, &stdout, &stderr)
 	require.NoError(t, err)
-	assert.Contains(t, stdout.String(), "Usage of gslc")
+	assert.Contains(t, stdout.String(), "Usage of compile")
 	assert.Contains(t, stdout.String(), "--target")
 }
 

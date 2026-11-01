@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// Config holds the runtime configuration for the gslserve HTTP server.
+// Config holds the runtime configuration for the serve HTTP server.
 type Config struct {
 	Addr        string
 	ExamplesDir string
@@ -33,7 +33,7 @@ func ParseFlags(args []string) (*Config, error) {
 	cfg := &Config{}
 	var sourcePaths stringSlice
 
-	fs := flag.NewFlagSet("gslserve", flag.ContinueOnError)
+	fs := flag.NewFlagSet("serve", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 
 	fs.StringVar(&cfg.Addr, "addr", "127.0.0.1:8080", "HTTP listen address (host:port)")
@@ -64,9 +64,9 @@ func ParseFlags(args []string) (*Config, error) {
 	return cfg, nil
 }
 
-// Usage returns the formatted CLI help text for gslserve.
+// Usage returns the formatted CLI help text for serve.
 func Usage() string {
-	return `Usage: gslserve [flags]
+	return `Usage: serve [flags]
 
 Local HTTP server and interactive WebGPU viewer for the omega_core GSL SDK.
 

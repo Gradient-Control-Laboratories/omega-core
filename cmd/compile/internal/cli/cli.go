@@ -14,7 +14,7 @@ import (
 	"gradientcontrol.com/omega/core/backend/mesh"
 	"gradientcontrol.com/omega/core/backend/tape"
 	"gradientcontrol.com/omega/core/backend/wgsl"
-	"gradientcontrol.com/omega/core/cmd/gslc/internal/config"
+	"gradientcontrol.com/omega/core/cmd/compile/internal/config"
 	"gradientcontrol.com/omega/core/parser"
 )
 
@@ -30,8 +30,8 @@ type companionMeta struct {
 
 // PrintUsage outputs formatted CLI help information.
 func PrintUsage(w io.Writer) {
-	fmt.Fprintf(w, "Usage of gslc:\n")
-	fmt.Fprintf(w, "  gslc [flags] [source1.gsl source2.gsl ...]\n\n")
+	fmt.Fprintf(w, "Usage of compile:\n")
+	fmt.Fprintf(w, "  compile [flags] [source1.gsl source2.gsl ...]\n\n")
 	fmt.Fprintf(w, "Flags:\n")
 	fmt.Fprintf(w, "  -t, --target string\n")
 	fmt.Fprintf(w, "        Compilation output target (wgsl, stl, tape, audio, ast) (default \"wgsl\")\n")

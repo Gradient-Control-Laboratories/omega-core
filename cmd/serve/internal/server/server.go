@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"gradientcontrol.com/omega/core/cmd/gslserve/internal/config"
+	"gradientcontrol.com/omega/core/cmd/serve/internal/config"
 )
 
 // ProgressEvent represents a single NDJSON progress update pushed over GET /api/progress.
