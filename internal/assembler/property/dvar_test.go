@@ -207,18 +207,95 @@ func TestDVarCanSurfaceIntegral(t *testing.T) {
 	}
 }
 
-// TestDVarErrors: the variable must be a top-level scalar, and the operator
-// must be used at top level, not in a function body (a companion).
+// TestDVarVector differentiates with respect to a literal vector variable, one
+// seed per component. For a scalar field the partials collect into a vector:
+// with f = |p − c|, f.d(c) = −(p − c)/|p − c|, checked against finite
+// differences in each component of c. For a vector field they collect into a
+// list of vectors, the Jacobian by columns: (p − c).d(c) = −I. Component access
+// on the variable reads through the seed: (c.x·c.y).d(c) = [c.y, c.x, 0].
+func TestDVarVector(t *testing.T) {
+	d := newDerivative()
+	d.decls = map[string]*program.Operand{
+		"c": nary(program.Operation_COLLECT, num(1), num(2), num(3)),
+		"f": call("length", sub(ref(program.PVarName), ref("c"))),
+		"g": sub(ref(program.PVarName), ref("c")),
+		"q": mul(nary(program.Operation_ACCESS, ref("c"), ref(program.XVarName)), nary(program.Operation_ACCESS, ref("c"), ref(program.YVarName))),
+	}
+	pt := point{3, -4, 1, 0}
+	varsAt := func(c []float64) map[string][]float64 {
+		vars := pt.vars()
+		vars["c"] = c
+		return vars
+	}
+	c := []float64{1, 2, 3}
+
+	// Scalar field: a vec3 of partials, each a finite difference in c_k.
+	dfdc, err := d.wrt(ref("f"), "c")
+	if err != nil {
+		t.Fatalf("wrt f: %v", err)
+	}
+	got := evalAt(t, dfdc, varsAt(c))
+	if len(got) != 3 {
+		t.Fatalf("f.d(c) has %d components, want 3", len(got))
+	}
+	for k := 0; k < 3; k++ {
+		hi, lo := append([]float64{}, c...), append([]float64{}, c...)
+		hi[k] += fdStep
+		lo[k] -= fdStep
+		fd := (scalarAt(t, d.decls["f"], varsAt(hi)) - scalarAt(t, d.decls["f"], varsAt(lo))) / (2 * fdStep)
+		if !closeEnough(got[k], fd) {
+			t.Errorf("df/dc[%d]=%v, finite difference %v", k, got[k], fd)
+		}
+	}
+
+	// Vector field: a list of three vec3 columns, here −I.
+	dgdc, err := d.wrt(ref("g"), "c")
+	if err != nil {
+		t.Fatalf("wrt g: %v", err)
+	}
+	jac := evalAt(t, dgdc, varsAt(c))
+	if len(jac) != 9 {
+		t.Fatalf("(p - c).d(c) flattens to %d values, want 9", len(jac))
+	}
+	for i, v := range jac {
+		want := 0.0
+		if i%4 == 0 { // the diagonal of a 3x3, flattened column by column
+			want = -1
+		}
+		if !closeEnough(v, want) {
+			t.Errorf("jacobian[%d]=%v, want %v", i, v, want)
+		}
+	}
+
+	// Component access through the seed.
+	dqdc, err := d.wrt(ref("q"), "c")
+	if err != nil {
+		t.Fatalf("wrt q: %v", err)
+	}
+	got = evalAt(t, dqdc, varsAt(c))
+	for k, want := range []float64{2, 1, 0} {
+		if k >= len(got) || !closeEnough(got[k], want) {
+			t.Errorf("(c.x*c.y).d(c)=%v, want [2 1 0]", got)
+			break
+		}
+	}
+}
+
+// TestDVarErrors: the variable must be a top-level scalar or literal vector,
+// and the operator must be used at top level, not in a function body (a
+// companion).
 func TestDVarErrors(t *testing.T) {
 	d := newDerivative()
 	d.decls = canDecls()
-	d.decls["c"] = nary(program.Operation_COLLECT, num(1), num(2), num(3))
+	d.decls["m"] = nary(program.Operation_COLLECT,
+		nary(program.Operation_COLLECT, num(1), num(0)),
+		nary(program.Operation_COLLECT, num(0), num(1)))
 
 	if _, err := d.wrt(ref("can"), "nope"); err == nil || !strings.Contains(err.Error(), "not a top-level variable") {
 		t.Errorf("unknown variable: got %v", err)
 	}
-	if _, err := d.wrt(ref("can"), "c"); err == nil || !strings.Contains(err.Error(), "is a vector") {
-		t.Errorf("vector variable: got %v", err)
+	if _, err := d.wrt(ref("can"), "m"); err == nil || !strings.Contains(err.Error(), "list of vectors") {
+		t.Errorf("list-of-vectors variable: got %v", err)
 	}
 
 	companion := newDerivative()

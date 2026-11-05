@@ -35,6 +35,29 @@ return can, speed, dv;
 	}
 }
 
+// TestRender_DerivWrtVector takes a .d(c) on a literal vector variable through
+// the pipeline: the vec3 of partials of a scalar field, and the Jacobian (a
+// list of vec3 columns) of a vector field, both consumed downstream.
+func TestRender_DerivWrtVector(t *testing.T) {
+	src := `c = [1, 2, 3];
+f = length(p - c);
+g = f.d(c);
+j = (p - c).d(c);
+return f, length(g), length(j[0]) + length(j[2]);
+`
+	res, err := assembler.Assemble([]string{src})
+	if err != nil {
+		t.Fatalf("Assemble failed: %v", err)
+	}
+	renderRes, err := wgsl.Render(src, res.Program)
+	if err != nil {
+		t.Fatalf("wgsl.Render failed: %v", err)
+	}
+	if renderRes == nil || renderRes.WGSL == "" {
+		t.Fatal("expected WGSL output")
+	}
+}
+
 // TestRender_CanExample compiles the shipped can example, which is the
 // showcase for .d(var): the volume's derivative through the budget-constrained
 // height, and the can's own surface speed.
@@ -58,8 +81,8 @@ func TestRender_CanExample(t *testing.T) {
 }
 
 // TestAssemble_DerivWrtVariableErrors: .d(var) is rejected inside a function
-// body (a companion has no tangent for a top-level variable), on a vector
-// variable, and on a name that is not declared.
+// body (a companion has no tangent for a top-level variable), on a list of
+// vectors, and on a name that is not declared.
 func TestAssemble_DerivWrtVariableErrors(t *testing.T) {
 	cases := []struct {
 		name, src, want string
@@ -71,11 +94,11 @@ grow(s) {
 f = grow(sphere(width));
 return f;
 `, "inside a function body"},
-		{"vector", `c = [1, 2, 3];
-f = length(p - c);
-g = f.d(c);
+		{"list_of_vectors", `m = [[1, 0, 0], [0, 1, 0]];
+f = length(p - m[0]);
+g = f.d(m);
 return f, g;
-`, "is a vector"},
+`, "list of vectors"},
 		{"undeclared", `f = sphere(2);
 g = f.d(undeclaredVariable);
 return g;

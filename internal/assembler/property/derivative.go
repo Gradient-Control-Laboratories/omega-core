@@ -134,11 +134,13 @@ func (d *derivative) expandDeriv(operands []*program.Operand) (*program.Operand,
 // declaration written in terms of it picks up its tangent by the chain rule —
 // with h = budget / r, (pi * r * r * h).d(r) differentiates through h.
 //
-// Only a top-level scalar variable, and only from a top-level expression. A
-// parameter would need the call site's tangent, which is the companion
-// machinery (.dp / .dtime inside a function); a vector would need one seed per
-// component, as the gradient takes per axis. Neither is supported here. Types
-// are not known when properties expand, so only a literal vector is caught.
+// Only a top-level variable, and only from a top-level expression: a parameter
+// would need the call site's tangent, which is the companion machinery (.dp /
+// .dtime inside a function). A scalar variable gives target's shape. A vector
+// variable written as a literal [..] goes through wrtVector, one seed per
+// component. Types are not known when properties expand, so a vector that is
+// not a literal is not recognised here: it is seeded as a scalar and fails
+// later, in type analysis, as a shape error.
 func (d *derivative) wrt(target *program.Operand, name string) (*program.Operand, error) {
 	if d.params != nil {
 		return nil, fmt.Errorf("cannot differentiate with respect to %q inside a function body; .d(%s) is only supported in top-level expressions", name, name)
@@ -150,26 +152,60 @@ func (d *derivative) wrt(target *program.Operand, name string) (*program.Operand
 	}
 	if declared {
 		if e, ok := body.T.(*program.Operand_Expression); ok && e.Expression.Operation == program.Operation_COLLECT {
-			return nil, fmt.Errorf("cannot differentiate with respect to %q: it is a vector, and .d takes a scalar variable", name)
+			return d.wrtVector(target, name, e.Expression.Operands)
 		}
 	}
-	v, err := d.engineIn(&derivDomain{d: d, seed: d.varSeed(name), wrt: name}).Eval(target)
+	return d.wrtSeeded(target, name, num(1))
+}
+
+// wrtVector computes d(target)/d(name) for a vector variable of n components,
+// seeding each component in turn and collecting, as gradient does for the
+// three axes: a scalar target gives a vector of n partials, a vector target a
+// list of n vectors — the Jacobian by columns, column k being d(target)/d(name_k).
+func (d *derivative) wrtVector(target *program.Operand, name string, components []*program.Operand) (*program.Operand, error) {
+	n := len(components)
+	for _, c := range components {
+		if e, ok := c.T.(*program.Operand_Expression); ok && e.Expression.Operation == program.Operation_COLLECT {
+			return nil, fmt.Errorf("cannot differentiate with respect to %q: it is a list of vectors, and .d takes a scalar or vector variable", name)
+		}
+	}
+	cols := make([]*program.Operand, n)
+	for k := 0; k < n; k++ {
+		e := make([]*program.Operand, n)
+		for i := range e {
+			e[i] = num(0)
+		}
+		e[k] = num(1)
+		t, err := d.wrtSeeded(target, name, nary(program.Operation_COLLECT, e...))
+		if err != nil {
+			return nil, err
+		}
+		cols[k] = t
+	}
+	return nary(program.Operation_COLLECT, cols...), nil
+}
+
+// wrtSeeded is one seed direction of a .d(var): name' = tangent, which has
+// name's shape (1 for a scalar, a unit vector for one component of a vector).
+func (d *derivative) wrtSeeded(target *program.Operand, name string, tangent *program.Operand) (*program.Operand, error) {
+	v, err := d.engineIn(&derivDomain{d: d, seed: d.varSeed(name, tangent), wrt: name}).Eval(target)
 	if err != nil {
 		return nil, err
 	}
 	return v.(dual).tangent, nil
 }
 
-// varSeed seeds d/d(name) for a top-level variable: name'=1, time and every
-// spatial coordinate '=0. No parameter tangents: wrt refuses companion bodies.
-func (d *derivative) varSeed(name string) map[string]*program.Operand {
+// varSeed seeds d/d(name) for a top-level variable: name' = tangent, time and
+// every spatial coordinate '=0. No parameter tangents: wrt refuses companion
+// bodies.
+func (d *derivative) varSeed(name string, tangent *program.Operand) map[string]*program.Operand {
 	return map[string]*program.Operand{
 		program.TimeVarName: num(0),
 		program.PVarName:    nary(program.Operation_COLLECT, num(0), num(0), num(0)),
 		program.XVarName:    num(0),
 		program.YVarName:    num(0),
 		program.ZVarName:    num(0),
-		name:                num(1),
+		name:                tangent,
 	}
 }
 
@@ -227,13 +263,14 @@ type derivDomain struct {
 }
 
 // Seeded stands in for the declaration of the variable a .d(var) is taken with
-// respect to: its live reference with tangent 1, in place of the derivative of
+// respect to: its live reference with the seed's tangent (1, or a unit vector
+// for one component of a vector variable), in place of the derivative of
 // whatever it was assigned. That is what makes the variable independent.
 func (dd *derivDomain) Seeded(name string) (Value, bool) {
 	if dd.wrt == "" || name != dd.wrt {
 		return nil, false
 	}
-	return dual{primal: ref(name), tangent: num(1)}, true
+	return dual{primal: ref(name), tangent: dd.seed[name]}, true
 }
 
 func (dd *derivDomain) Literal(v float64) Value { return dual{num(v), num(0)} }
