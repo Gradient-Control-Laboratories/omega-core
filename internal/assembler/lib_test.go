@@ -333,7 +333,7 @@ return font.left("a", [0, 0], 1, 0.04, 0.3);
 
 func TestAssembleTextGlyphs(t *testing.T) {
 	pkgMgr := source.NewLocalManager("../../../common/source/package")
-	content, err := os.ReadFile("../../../common/web/example/Text Glyphs.gsl")
+	content, err := os.ReadFile("../../internal/testdata/example/Text Glyphs.gsl")
 	if err != nil {
 		t.Fatalf("failed to read Text Glyphs.gsl: %v", err)
 	}

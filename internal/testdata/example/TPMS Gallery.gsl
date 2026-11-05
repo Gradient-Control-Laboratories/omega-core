@@ -1,0 +1,49 @@
+// Scene Size: 280
+// Row 1: all seven triply periodic minimal surfaces from the `tpms` library in
+// their nominal form — the solid network at the natural (balanced) threshold.
+// Row 2: one surface (gyroid) in four solidification variants, all via the shared
+// lattice.solidify utility — solid (bias only), sheet (bias + thickness), and the
+// inverses (same utility on the negated field). Unlike the thin beam/honeycomb/
+// foam lattices, a TPMS is already ~50% solid at bias = 0; bias just shifts the
+// volume fraction. Row 3: a long block grading gyroid -> diamond along its length
+// via diamond's gyroidBlend. Each piece is clipped to its own box.
+
+cell = 22;
+wall = 1.4;
+r = 14;        // specimen half-size
+step = 34;     // spacing along X
+yTop = 36;
+yMid = 0;
+yBot = -36;
+
+c = [cell, cell, cell];
+
+// Clip a field to a cube centered at (ox, oy).
+specimen(field, ox, oy) {
+  return max(field, boxCentered([ox, oy, 0], [2 * r, 2 * r, 2 * r]));
+}
+
+// Row 1 — every surface in its nominal solid form.
+gyr = specimen(tpms.gyroid(c),               -3 * step, yTop);
+sch = specimen(tpms.schwarz(c),              -2 * step, yTop);
+dia = specimen(tpms.diamond(c),              -1 * step, yTop);
+lid = specimen(tpms.lidinoid(c),              0,        yTop);
+neo = specimen(tpms.neovius(c),              1 * step,  yTop);
+wp  = specimen(tpms.iwp(c),                  2 * step,  yTop);
+spl = specimen(tpms.splitP(c, 1, 0.5, 0.25), 3 * step,  yTop);
+
+// Row 2 — gyroid in four solidification variants, all via lattice.solidify.
+gf = tpms.gyroid(c);
+vThick   = specimen(lattice.solidify(gf, 0),                -1.5 * step, yMid);
+vThin    = specimen(lattice.solidify(gf, 0, wall),          -0.5 * step, yMid);
+vInverse = specimen(lattice.solidify(neg(gf), 0),            0.5 * step, yMid);
+vThinInv = specimen(neg(lattice.solidify(gf, 0, wall)),      1.5 * step, yMid);
+
+// Row 3 — a long block grading gyroid -> diamond along X via gyroidBlend.
+blockLen = 7 * step;
+blockHalf = blockLen * 0.5;
+gyrToDia = ramp(p.x, -blockHalf, blockHalf, 1, 0);
+morph = max(tpms.diamond(c, [1, 1, 1], gyrToDia),
+            boxCentered([0, yBot, 0], [blockLen, 2 * r, 2 * r]));
+
+return gyr, sch, dia, lid, neo, wp, spl, vThick, vThin, vInverse, vThinInv, morph;

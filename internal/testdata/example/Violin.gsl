@@ -1,0 +1,213 @@
+// Scene Size: 20
+// Scene Grid: 10
+// GSL code for a Violin
+
+// --- Helper Functions ---
+
+// Smooth minimum for blending shapes
+smin(a, b, k) {
+  h = max(k - abs(a - b), 0.0);
+  return min(a, b) - square(h) / (4.0 * k);
+}
+
+// Box centered at origin with size b (half-dimensions)
+box(b) {
+  q = abs(p) - b;
+  return length(max(q, [0,0,0])) + min(max(q.x, max(q.y, q.z)), 0.0);
+}
+
+// Torus centered at origin in the XY plane. t=[majorRadius, minorRadius]
+torus(t) {
+  q = [length(p.xy) - t.x, p.z];
+  return length(q) - t.y;
+}
+
+// Capsule (capped cylinder) between points a and b with radius r
+capsule(a, b, r) {
+  pa = p - a;
+  ba = b - a;
+  h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+  return length(pa - ba * h) - r;
+}
+
+// --- Main Violin Model Function ---
+// Encapsulates the entire violin construction.
+violin() {
+  // --- Component Functions ---
+
+  // 2D SDF for a pair of F-holes
+  fHoles2D() {
+    // Transform p to define one hole; use abs(p.y) for symmetry
+    // Centered around x=1.0 to align with the bridge
+    p_local = [p.x - 1.0, abs(p.y) - 0.9];
+
+    // Top and bottom circles
+    c1 = distance(p_local, [0.0, 0.6]) - 0.2;
+    c2 = distance(p_local, [0.0, -0.6]) - 0.2;
+
+    // Main stem (a thin box)
+    stem_p = abs(p_local) - [0.07, 0.7];
+    stem = length(max(stem_p, [0,0])) + min(max(stem_p.x, stem_p.y), 0.0);
+
+    return min(c1, c2, stem);
+  }
+
+  // 2D SDF for the violin body profile
+  violinBody2D() {
+    // Lower bout (larger curve)
+    lower_bout = distance(p.xy, [1.75, 0.0]) - 2.1;
+    // Upper bout (smaller curve)
+    upper_bout = distance(p.xy, [-1.25, 0.0]) - 1.7;
+
+    // Blend the two bouts
+    blended_bouts = smin(lower_bout, upper_bout, 0.7);
+
+    // Create the C-bout (waist) cut by subtracting a shape
+    // Define the cutter based on p with an absolute y for symmetry
+    cutter_p = [p.x, abs(p.y)];
+    c_bout_cutter = distance(cutter_p, [0.2, 2.2]) - 1.1;
+
+    return max(blended_bouts, -c_bout_cutter);
+  }
+
+  // 3D SDF for the violin body, with arching and F-holes
+  body() {
+    profile = violinBody2D();
+
+    // Define the arched top and back using a parabolic curve
+    arch = 0.3 * (1.0 - clamp(square(p.x/4.0) + square(p.y/2.1), 0.0, 1.0));
+    thickness = 0.6; // Half-thickness at the edge
+
+    bodySDF = max(profile, abs(p.z) - (thickness + arch));
+
+    // Create a 3D cutter for the F-holes
+    fHoleCutter = max(fHoles2D(), abs(p.z - 0.7) - 0.2);
+
+    // Subtract the F-holes from the body
+    return max(bodySDF, -fHoleCutter);
+  }
+
+  // 3D SDF for the bridge shape at the origin
+  bridgeShape() {
+    // Main shape is a thin box
+    mainShape = box([0.05, 1.0, 0.5]);
+    // Cutter to form the legs by removing material from the bottom-middle
+    cutter = remap(box([0.06, 0.4, 0.3]), p - [0, 0, -0.1]);
+    return max(mainShape, -cutter);
+  }
+
+  // --- Assembly Functions ---
+
+  neckAssembly() {
+    // Neck (a tapered box), now extending in the -X direction
+    neck_t = clamp((-p.x - 2.5) / 5.0, 0.0, 1.0);
+    neck_scale_y = 1.0 - 0.2 * neck_t; // Taper width
+    neck_scale_z = 1.0 + 0.5 * neck_t; // Get thicker towards the pegbox
+    p_neck = p - [-5.0, 0.0, 0.2];
+    p_neck_scaled = [p_neck.x, p_neck.y/neck_scale_y, p_neck.z/neck_scale_z];
+    neck = remap(box([2.5, 0.3, 0.3]), p_neck_scaled) * min(neck_scale_y, neck_scale_z);
+
+    // Fingerboard (a tapered box on top of the neck)
+    fb_t = clamp((-p.x - 2.3) / 5.2, 0.0, 1.0);
+    fb_scale = 1.0 - 0.3 * fb_t;
+    p_fb = p - [-4.9, 0.0, 0.75];
+    p_fb_scaled = [p_fb.x, p_fb.y/fb_scale, p_fb.z];
+    fingerboard = remap(box([2.6, 0.4, 0.1]), p_fb_scaled) * fb_scale;
+
+    // Pegbox (an angled box)
+    pb_pos = [-8.0, 0.0, 0.5];
+    p_local = p - pb_pos;
+    angle = 0.2; // Radians for downward angle (flipped for -X direction)
+    c = cos(angle); s = sin(angle);
+    p_rot = [p_local.x*c - p_local.z*s, p_local.y, p_local.x*s + p_local.z*c];
+    pegbox = remap(box([0.5, 0.35, 0.6]), p_rot);
+
+    // Scroll (a torus rotated to be vertical)
+    scroll_pos = [-9.0, 0.0, 0.5];
+    p_scroll = p - scroll_pos;
+    p_scroll_rot = [p_scroll.z, p_scroll.y, p_scroll.x]; // Rotated to curl towards the body (+X)
+    scroll = remap(torus([0.5, 0.15]), p_scroll_rot);
+
+    return min(neck, fingerboard, pegbox, scroll);
+  }
+
+  accessories() {
+    // Tailpiece (a tapered box)
+    tp_pos = [3.5, 0.0, 0.9];
+    p_tp = p - tp_pos;
+    tp_t = clamp((p_tp.x + 0.4)/0.8, 0.0, 1.0);
+    tp_scale = 1.0 - 0.5 * tp_t;
+    p_tp_scaled = [p_tp.x, p_tp.y/tp_scale, p_tp.z];
+    tailpiece = remap(box([0.4, 0.8, 0.1]), p_tp_scaled) * tp_scale;
+
+    // Bridge (placed on top of the body)
+    bridge = remap(bridgeShape(), p - [1.0, 0.0, 0.95]);
+
+    return min(tailpiece, bridge);
+  }
+
+  // --- Final Assembly within function ---
+  violinBody = body();
+  violinNeck = neckAssembly();
+  violinAcc = accessories();
+
+  bodyAndNeck = smin(violinBody, violinNeck, 0.3);
+  finalViolin = min(bodyAndNeck, violinAcc);
+
+  return finalViolin;
+}
+
+stringsAssembly() {
+  // Define anchor points for the strings
+  tp_anchor = [3.3, 0, 0.9]; // Behind tailpiece
+  br_saddle = [1.0, 0, 1.45]; // Top of bridge
+  nut       = [-7.5, 0, 0.85]; // End of fingerboard (position updated)
+
+  // Y-positions for the 4 strings at each point (from player's left to right)
+  tp_y  = [-0.25, -0.08, 0.08, 0.25];
+  br_y  = [-0.3, -0.1, 0.1, 0.3];
+  nut_y = [-0.15, -0.05, 0.05, 0.15];
+
+  // Radii for strings (G, D, A, E - thickest to thinnest)
+  r = [0.03, 0.025, 0.02, 0.015];
+
+  // String 1 (G)
+  s1_seg1 = capsule([tp_anchor.x, tp_y.x, tp_anchor.z], [br_saddle.x, br_y.x, br_saddle.z], r.x);
+  s1_seg2 = capsule([br_saddle.x, br_y.x, br_saddle.z], [nut.x, nut_y.x, nut.z], r.x);
+  s1 = min(s1_seg1, s1_seg2);
+
+  // String 2 (D)
+  s2_seg1 = capsule([tp_anchor.x, tp_y.y, tp_anchor.z], [br_saddle.x, br_y.y, br_saddle.z], r.y);
+  s2_seg2 = capsule([br_saddle.x, br_y.y, br_saddle.z], [nut.x, nut_y.y, nut.z], r.y);
+  s2 = min(s2_seg1, s2_seg2);
+
+  // String 3 (A)
+  s3_seg1 = capsule([tp_anchor.x, tp_y.z, tp_anchor.z], [br_saddle.x, br_y.z, br_saddle.z], r.z);
+  s3_seg2 = capsule([br_saddle.x, br_y.z, br_saddle.z], [nut.x, nut_y.z, nut.z], r.z);
+  s3 = min(s3_seg1, s3_seg2);
+
+  // String 4 (E)
+  s4_seg1 = capsule([tp_anchor.x, tp_y.w, tp_anchor.z], [br_saddle.x, br_y.w, br_saddle.z], r.w);
+  s4_seg2 = capsule([br_saddle.x, br_y.w, br_saddle.z], [nut.x, nut_y.w, nut.z], r.w);
+  s4 = min(s4_seg1, s4_seg2);
+
+  return min(s1, s2, s3, s4);
+}
+
+// --- Main Program ---
+
+// Define scaling and translation to fit the model from x=-4 to x=4.
+// Original model extents: min_x = -9.5, max_x = 3.85. Original length = 13.35.
+// Target length = 8.0.
+scale = 8.0 / 13.35;
+// Calculate the offset to shift the scaled model to the [-4, 4] range.
+offset_x = -4.0 - (-9.5 * scale);
+
+// Create the transformed point vector to pass to remap.
+// This scales the entire space uniformly and translates the x-axis.
+p_transformed = [(p.x - offset_x) / scale, p.y / scale, p.z / scale];
+
+// Call the main violin function with the transformed point.
+return
+  remap(violin(), p_transformed),
+  remap(stringsAssembly(), p_transformed);

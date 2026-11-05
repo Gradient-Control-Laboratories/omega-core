@@ -1,0 +1,24 @@
+// Scene Size: 100
+// Scene Grid: 20
+
+// A 50 mm cast-iron cannonball, rusting. Broad fBm blotches decide where
+// rust has taken hold; inside them, cellular noise pits the surface, each
+// pit a shallow crater around a Voronoi feature point. Both the colour and
+// the material blend between the measured cast iron and rust presets, and
+// the pits are render-only displacement, at most 0.25 mm deep.
+
+castIronMat, castIronColor = physical.castIron();
+rustMat, rustColor = physical.rust();
+
+blotches = noise.fbm3(12, 0.5, 2.0) + 0.1;
+pitSize = 1.5;
+nearPit = noise.cellular(pitSize) / pitSize;
+rusted = blotches - 0.3 * (1 - clamp(nearPit, 0, 1));
+rustAmount = texture.mask(rusted, 0, 0.15);
+pitDepth = -0.25 * rustAmount * max(0, 1 - nearPit / 0.35);
+
+ball = sphere(25);
+ball.material = material.withDisplacement(texture.paintMaterial(rusted, 0, 0.15, castIronMat, rustMat), pitDepth);
+ball.color = texture.paint(rusted, 0, 0.15, castIronColor, rustColor);
+
+return ball;

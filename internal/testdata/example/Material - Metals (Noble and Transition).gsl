@@ -1,0 +1,96 @@
+// Scene Size: 700
+// Scene Grid: 100
+
+// Measured noble and transition metals from the physical library on 50 mm
+// balls. A metal's colour is its measured reflectance (F0); roughness is the
+// database's polished reference. Vary a finish with
+// material.withRoughness(goldMat, 0.3).
+
+goldMat, goldColor = physical.gold();
+silverMat, silverColor = physical.silver();
+platinumMat, platinumColor = physical.platinum();
+palladiumMat, palladiumColor = physical.palladium();
+iridiumMat, iridiumColor = physical.iridium();
+copperMat, copperColor = physical.copper();
+brassMat, brassColor = physical.brass();
+tungstenMat, tungstenColor = physical.tungsten();
+ironMat, ironColor = physical.iron();
+stainlessSteelMat, stainlessSteelColor = physical.stainlessSteel();
+nickelMat, nickelColor = physical.nickel();
+cobaltMat, cobaltColor = physical.cobalt();
+chromiumMat, chromiumColor = physical.chromium();
+manganeseMat, manganeseColor = physical.manganese();
+vanadiumMat, vanadiumColor = physical.vanadium();
+molybdenumMat, molybdenumColor = physical.molybdenum();
+
+spacing = 75;
+
+ball(x, y) {
+  return transform.translate(sphere(25), [x * spacing, y * spacing, 0]);
+}
+
+gold = ball(-3.5, 0.5);
+gold.material = goldMat;
+gold.color = goldColor;
+
+silver = ball(-2.5, 0.5);
+silver.material = silverMat;
+silver.color = silverColor;
+
+platinum = ball(-1.5, 0.5);
+platinum.material = platinumMat;
+platinum.color = platinumColor;
+
+palladium = ball(-0.5, 0.5);
+palladium.material = palladiumMat;
+palladium.color = palladiumColor;
+
+iridium = ball(0.5, 0.5);
+iridium.material = iridiumMat;
+iridium.color = iridiumColor;
+
+copper = ball(1.5, 0.5);
+copper.material = copperMat;
+copper.color = copperColor;
+
+brass = ball(2.5, 0.5);
+brass.material = brassMat;
+brass.color = brassColor;
+
+tungsten = ball(3.5, 0.5);
+tungsten.material = tungstenMat;
+tungsten.color = tungstenColor;
+
+iron = ball(-3.5, -0.5);
+iron.material = ironMat;
+iron.color = ironColor;
+
+stainlessSteel = ball(-2.5, -0.5);
+stainlessSteel.material = stainlessSteelMat;
+stainlessSteel.color = stainlessSteelColor;
+
+nickel = ball(-1.5, -0.5);
+nickel.material = nickelMat;
+nickel.color = nickelColor;
+
+cobalt = ball(-0.5, -0.5);
+cobalt.material = cobaltMat;
+cobalt.color = cobaltColor;
+
+chromium = ball(0.5, -0.5);
+chromium.material = chromiumMat;
+chromium.color = chromiumColor;
+
+manganese = ball(1.5, -0.5);
+manganese.material = manganeseMat;
+manganese.color = manganeseColor;
+
+vanadium = ball(2.5, -0.5);
+vanadium.material = vanadiumMat;
+vanadium.color = vanadiumColor;
+
+molybdenum = ball(3.5, -0.5);
+molybdenum.material = molybdenumMat;
+molybdenum.color = molybdenumColor;
+
+return gold, silver, platinum, palladium, iridium, copper, brass, tungsten, iron, stainlessSteel, nickel, cobalt, chromium, manganese, vanadium, molybdenum;

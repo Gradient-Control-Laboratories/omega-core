@@ -1,0 +1,73 @@
+// Scene Size: 20
+// Scene Grid: 10
+pi = atan(1) * 4;
+pi2 = pi * 2;
+zero = [0, 0, 0];
+dirX = [1, 0, 0];
+dirY = [0, 1, 0];
+dirZ = [0, 0, 1];
+sqrt2 = sqrt(2);
+sqrt3 = sqrt(3);
+
+sphere(center, radius) {
+  return length(p - center) - radius;
+}
+
+cylinderRounded(a, b, radius) {
+  pa = p - a;
+  ba = b - a;
+  h = clamp(dot(pa, ba) / dot(ba, ba), 0, 1);
+  return length(pa - ba * h) - radius;
+}
+
+@range(2, 8)   semiMajor = 4.0;
+@range(0, .95) ecc       = 0.68;
+
+meanAnomaly = time;
+
+keplerStep(prevE, meanAnom, eccen) {
+  fVal = prevE - eccen * sin(prevE) - meanAnom;
+  fPrime = 1 - eccen * cos(prevE);
+  return prevE - fVal / fPrime;
+}
+
+eccAnom0 = meanAnomaly;
+eccAnom1 = keplerStep(eccAnom0, meanAnomaly, ecc);
+eccAnom2 = keplerStep(eccAnom1, meanAnomaly, ecc);
+eccAnom3 = keplerStep(eccAnom2, meanAnomaly, ecc);
+eccAnom4 = keplerStep(eccAnom3, meanAnomaly, ecc);
+eccAnom = eccAnom4;
+
+semiMinor = semiMajor * sqrt(1 - ecc * ecc);
+focusOffset = semiMajor * ecc;
+
+orbitPos(E) {
+  xc = semiMajor * cos(E);
+  yc = semiMinor * sin(E);
+  return [xc - focusOffset, yc, 0];
+}
+
+center = orbitPos(eccAnom);
+
+body = sphere(center, 0.25);
+
+tanPoint = center + 0.5 * center.dtime;
+tangent = cylinderRounded(center, tanPoint, 0.1);
+
+accPoint = center + 0.1 * center.dtime.dtime;
+acc = cylinderRounded(center, accPoint, 0.1);
+
+focusMarker = sphere(zero, 0.5);
+
+// --- Orbit ellipse path ---
+// Ellipse centered at [-focusOffset, 0, 0], semi-axes semiMajor (X) and semiMinor (Y).
+// Map into normalized space where the ellipse becomes a unit circle, then build a
+// thin ring and rescale by the smaller semi-axis to keep the distance well-behaved.
+ellipsePathRadius = 0.04;
+ellipseSlab = abs(p.z) - 0.04;
+ellipseQ = [(p.x + focusOffset) / semiMajor, p.y / semiMinor];
+ellipseRing = (length(ellipseQ) - 1) * semiMinor;
+ellipseTrack = abs(ellipseRing) - ellipsePathRadius;
+ellipse = max(ellipseTrack, ellipseSlab);
+
+return body, tangent, acc, focusMarker, ellipse;

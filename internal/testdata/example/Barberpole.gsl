@@ -1,0 +1,121 @@
+// Scene Size: 20
+// Scene Grid: 10
+
+// --- Shepard Tone Audio ---
+cyclePeriod = 4.0;
+phase = fract(time / cyclePeriod);
+baseFreq = 8.0;
+
+f0 = baseFreq * exp2(0 + phase);
+g0 = (0 - 5.0) / 2.0;
+a0 = exp(-0.5 * g0 * g0);
+f1 = baseFreq * exp2(1 + phase);
+g1 = (1 - 5.0) / 2.0;
+a1 = exp(-0.5 * g1 * g1);
+f2 = baseFreq * exp2(2 + phase);
+g2 = (2 - 5.0) / 2.0;
+a2 = exp(-0.5 * g2 * g2);
+f3 = baseFreq * exp2(3 + phase);
+g3 = (3 - 5.0) / 2.0;
+a3 = exp(-0.5 * g3 * g3);
+f4 = baseFreq * exp2(4 + phase);
+g4 = (4 - 5.0) / 2.0;
+a4 = exp(-0.5 * g4 * g4);
+f5 = baseFreq * exp2(5 + phase);
+g5 = (5 - 5.0) / 2.0;
+a5 = exp(-0.5 * g5 * g5);
+f6 = baseFreq * exp2(6 + phase);
+g6 = (6 - 5.0) / 2.0;
+a6 = exp(-0.5 * g6 * g6);
+f7 = baseFreq * exp2(7 + phase);
+g7 = (7 - 5.0) / 2.0;
+a7 = exp(-0.5 * g7 * g7);
+f8 = baseFreq * exp2(8 + phase);
+g8 = (8 - 5.0) / 2.0;
+a8 = exp(-0.5 * g8 * g8);
+f9 = baseFreq * exp2(9 + phase);
+g9 = (9 - 5.0) / 2.0;
+a9 = exp(-0.5 * g9 * g9);
+
+t = time;
+stereoOff = 0.0003;
+
+outL = 0.09 * (
+  a0 * sin(tau * f0 * t) +
+  a1 * sin(tau * f1 * t) +
+  a2 * sin(tau * f2 * t) +
+  a3 * sin(tau * f3 * t) +
+  a4 * sin(tau * f4 * t) +
+  a5 * sin(tau * f5 * t) +
+  a6 * sin(tau * f6 * t) +
+  a7 * sin(tau * f7 * t) +
+  a8 * sin(tau * f8 * t) +
+  a9 * sin(tau * f9 * t)
+);
+tr = time + stereoOff;
+outR = 0.09 * (
+  a0 * sin(tau * f0 * tr) +
+  a1 * sin(tau * f1 * tr) +
+  a2 * sin(tau * f2 * tr) +
+  a3 * sin(tau * f3 * tr) +
+  a4 * sin(tau * f4 * tr) +
+  a5 * sin(tau * f5 * tr) +
+  a6 * sin(tau * f6 * tr) +
+  a7 * sin(tau * f7 * tr) +
+  a8 * sin(tau * f8 * tr) +
+  a9 * sin(tau * f9 * tr)
+);
+
+// --- Barber Pole Visual ---
+
+// Rotation synced to Shepard tone
+rotAngle = tau * phase;
+cosA = cos(rotAngle);
+sinA = sin(rotAngle);
+rpx = p.x * cosA + p.y * sinA;
+rpy = -p.x * sinA + p.y * cosA;
+rpz = p.z;
+
+// --- Main pole: cylinder (doubled diameter) ---
+poleRadius = 1.6;
+poleHalfH = 3.5;
+poleCapDist = abs(rpz) - poleHalfH;
+mainPole = cylinderCapped([0, 0, -poleHalfH], [0, 0, poleHalfH], poleRadius);
+
+// --- Helical stripes carved into the pole surface ---
+helixAngle = atan(rpy, rpx);
+helixPitch = 3.0;
+grooveDepth = 0.15;
+
+// Three helical stripes offset by 120 degrees
+helix1 = 0.5 + 0.5 * sin(helixPitch * rpz + helixAngle * 2.0);
+helix2 = 0.5 + 0.5 * sin(helixPitch * rpz + helixAngle * 2.0 + tau / 3.0);
+helix3 = 0.5 + 0.5 * sin(helixPitch * rpz + helixAngle * 2.0 + 2.0 * tau / 3.0);
+
+stripe1 = max(cylinderZ(vector.zero, poleRadius - grooveDepth * (1.0 - helix1)), poleCapDist);
+stripe2 = max(cylinderZ(vector.zero, poleRadius - grooveDepth * (1.0 - helix2)), poleCapDist);
+stripe3 = max(cylinderZ(vector.zero, poleRadius - grooveDepth * (1.0 - helix3)), poleCapDist);
+
+// --- Top finial: sphere + small neck cylinder ---
+finialRadius = 1.3;
+topFinialZ = poleHalfH + finialRadius * 0.6;
+topFinial = remap(sphere(finialRadius), [p.x, p.y, p.z - topFinialZ]);
+
+topNeckR = poleRadius + 0.15;
+topNeckHH = 0.3;
+topNeckZ = poleHalfH + 0.15;
+topNeck = cylinderCapped([0, 0, topNeckZ - topNeckHH], [0, 0, topNeckZ + topNeckHH], topNeckR);
+
+// --- Bottom finial: sphere + small neck ---
+botFinialZ = -poleHalfH - finialRadius * 0.6;
+botFinial = remap(sphere(finialRadius), [p.x, p.y, p.z - botFinialZ]);
+
+botNeckZ = -poleHalfH - 0.15;
+botNeck = cylinderCapped([0, 0, botNeckZ - topNeckHH], [0, 0, botNeckZ + topNeckHH], topNeckR);
+
+// --- Union the necks and finials ---
+topCap = min(topFinial, topNeck);
+botCap = min(botFinial, botNeck);
+caps = min(topCap, botCap);
+
+return stripe1, stripe2, stripe3, caps, audio(outL, outR);

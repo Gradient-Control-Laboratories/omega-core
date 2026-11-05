@@ -69,10 +69,8 @@ omega-core/
 │   └── serve/                 # Local HTTP server and WebGPU viewer host
 │       └── main.go            # Entry point and HTTP server startup
 ├── common/
-│   ├── source/
-│   │   └── package/           # Package sources for tests
-│   └── web/
-│       └── example/           # Example GSL files for tests
+│   └── source/
+│       └── package/           # Package sources for tests
 ├── examples/                  # Curated showcase GSL models and assets
 │   ├── gears.gsl              # Parametric helical gear pair showcase (from common/web/example/Gears.gsl)
 │   ├── assets/                # Traditional CAD mesh assets (bracket.stl)
@@ -130,6 +128,7 @@ omega-core/
 │   │   ├── assert/            # Test assertions (from stirigma test/assert)
 │   │   └── require/           # Test require assertions (from stirigma test/require)
 │   ├── testdata/              # Assembler test fixtures
+│   │   └── example/           # Example GSL files for tests
 │   ├── types/                 # Semantic type analysis
 │   └── ui/                    # UI control metadata extraction (from common/source/edit/ui)
 ├── parser/                    # Lexer and Parser

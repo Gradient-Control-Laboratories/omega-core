@@ -1,0 +1,37 @@
+// Scene Size: 70
+// Scene Grid: 10
+
+// Pools at true scale (material/animated): rain ringing on still water, and a
+// mud pot whose bubbles swell and burst.
+// Both are at true size, in real seconds.
+// Press play to start the clock.
+
+// Rain, in mm/h: 2 is drizzle, 50 a downpour.
+rainfall = 10;
+rainfall.min = 1;
+rainfall.max = 60;
+
+// How thin the mud is: stiff mud, 0, keeps each burst's crater; watery mud,
+// 1, rings like water.
+thinness = 0.3;
+thinness.min = 0;
+thinness.max = 1;
+
+// Each piece is a slab 24 mm square, 32 mm apart.
+slab(column, row) {
+  return transform.translate(box([-12, -12, -4], [12, 12, 4]), [32 * column, -32 * row, 0]);
+}
+
+// Rain on a pool, drops 2 mm across.
+rainMat, rainColor, rainHeight, rainSlope = animated.rain(rainfall, 2);
+rain = slab(-0.5, 0) - rainHeight;
+rain.material = rainMat;
+rain.color = rainColor;
+
+// A mud pot, bubbles 6 mm across every 2 s or so.
+mudMat, mudColor, mudHeight, mudSlope = animated.mudPot(6, 2, thinness);
+mud = slab(0.5, 0) - mudHeight;
+mud.material = mudMat;
+mud.color = mudColor;
+
+return rain, mud;

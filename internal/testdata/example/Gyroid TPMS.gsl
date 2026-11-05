@@ -1,0 +1,27 @@
+// Scene Size: 20
+// Scene Grid: 10
+gyroidShell(thickness, period) {
+  sx = p.x * period * 6.2831853;
+  sy = p.y * period * 6.2831853;
+  sz = p.z * period * 6.2831853;
+
+  g = sin(sx) * cos(sy) + sin(sy) * cos(sz) + sin(sz) * cos(sx);
+
+  // Thin shell around the zero level set
+  return abs(g) / 6.2831853 - thickness;
+}
+
+boundingBox() {
+  h = 5;
+  dx = abs(p.x) - h;
+  dy = abs(p.y) - h;
+  dz = abs(p.z) - h;
+  return max(dx, dy, dz);
+}
+
+gyroid = max(
+  remap(gyroidShell(0.03, 3), p),
+  remap(boundingBox(), p)
+);
+
+return gyroid;

@@ -1,0 +1,33 @@
+// Scene Size: 24
+// Scene Grid: 10
+
+animate = mod(time, 1);
+
+numTeeth1 = 20;
+numTeeth1.min = 9;
+numTeeth1.max = 100;
+numTeeth2 = 26;
+numTeeth2.min = 9;
+numTeeth2.max = 100;
+moduleVal = 0.4;
+moduleVal.min = 0.1;
+moduleVal.max = 1.0;
+pressureAngle = 0.26;
+pressureAngle.min = 0.0;
+pressureAngle.max = 0.5;
+thickness = 3.5;
+dedendumClearance = 0.25;
+kSmall = 0.025;
+helixAngle = 0.5;
+helixAngle.min = -1.0;
+helixAngle.max = 1.0;
+standoffHeight = 2.5;
+standoffChamfer = 0.1;
+standoffDiam1 = 3.0;
+standoffDiam2 = 4.0;
+boreDiam1 = 1.2;
+boreDiam2 = 1.6;
+
+g1, g2 = gears.gearPair(numTeeth1, numTeeth2, moduleVal, pressureAngle, thickness, helixAngle, standoffDiam1, standoffDiam2, standoffHeight, standoffChamfer, boreDiam1, boreDiam2, dedendumClearance, kSmall, animate);
+
+return g1, g2;
