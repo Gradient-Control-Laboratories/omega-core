@@ -19,7 +19,7 @@ import (
 // vec3 and fails to validate, or, where the two structs match, silently takes
 // the wrong values. Every function must declare each temp it reads, once.
 func TestDestructureTempsDistinct(t *testing.T) {
-	src, err := os.ReadFile("../../../../common/web/example/Material - Coated.gsl")
+	src, err := os.ReadFile("../../../../../../internal/testdata/example/Material - Coated.gsl")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -19,7 +19,7 @@ r.max = 3.0;
 f(x) { return x + r; }
 return sphere(f(1.0));
 `
-	res, err := Assemble([]string{src}, source.NewLocalManager("../../../common/source/package"))
+	res, err := Assemble([]string{src}, source.NewLocalManager("../../stdlib"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,7 +37,7 @@ func TestAssembleKeepsUIPointReadThroughVariable(t *testing.T) {
 pt = uiPoint([1.0, 2.0, 3.0]);
 return sphere(pt.x * 2.0 + 1.0);
 `
-	res, err := Assemble([]string{src}, source.NewLocalManager("../../../common/source/package"), ExtractUI())
+	res, err := Assemble([]string{src}, source.NewLocalManager("../../stdlib"), ExtractUI())
 	if err != nil {
 		t.Fatal(err)
 	}

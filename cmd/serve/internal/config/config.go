@@ -68,7 +68,7 @@ func ParseFlags(args []string) (*Config, error) {
 func Usage() string {
 	return `Usage: serve [flags]
 
-Local HTTP server and interactive WebGPU viewer for the omega_core GSL SDK.
+Local HTTP server and interactive WebGPU viewer for the omega-core GSL SDK.
 
 Flags:
   --addr, -a <string>         HTTP listen address (default "127.0.0.1:8080")

@@ -165,8 +165,7 @@ func (w *walker) walkOperand(op *program.Operand) {
 				w.global.UsesWarpField = true
 			case program.GaborSpinodoid, program.GaborSpinodoidGradient,
 				program.FastGaborSpinodoid, program.FastGaborSpinodoidGradient:
-				// The preview renders the lattice field for all four: only the
-				// bake tells hodge's field from the lattice's.
+				// All four are the lattice field, in the preview and the bake.
 				w.global.UsesSpinodoid = true
 			}
 		}

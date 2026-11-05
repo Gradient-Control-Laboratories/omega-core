@@ -21,7 +21,7 @@ import (
 )
 
 var mockMgr = source.NewLocalManager(
-	"../../../../common/source/package",
+	"../../../../../stdlib",
 )
 
 func TestConvert(t *testing.T) {
@@ -184,17 +184,28 @@ func testOneConvert(t *testing.T, testDir, testName string) {
 		require.NoError(t, os.Remove(expectedFile))
 	}
 
+	actualTrimmed := strings.TrimSpace(actualOutput)
 	actualFile := filepath.Join(testDir, testName+".actual.glsl")
-	require.NoError(t, os.WriteFile(actualFile, []byte(strings.TrimSpace(actualOutput)), 0644))
+	require.NoError(t, os.WriteFile(actualFile, []byte(actualTrimmed), 0644))
 
 	if expectedExists {
-		if strings.TrimSpace(string(expectedOutput)) == actualOutput {
-			// exact match
-		} else {
+		expectedTrimmed := strings.TrimSpace(string(expectedOutput))
+		if len(expectedTrimmed) != len(actualTrimmed) || expectedTrimmed != actualTrimmed {
+			diff := len(actualTrimmed) - len(expectedTrimmed)
+			var pct float64
+			if len(expectedTrimmed) > 0 {
+				pct = (float64(diff) / float64(len(expectedTrimmed))) * 100.0
+			}
+			t.Logf("golden size change for %s: %d B -> %d B (%+d B, %+.2f%%)",
+				expectedFile, len(expectedTrimmed), len(actualTrimmed), diff, pct)
+		}
+		if os.Getenv("UPDATE_GOLDEN") != "" {
+			require.NoError(t, os.WriteFile(expectedFile, []byte(actualTrimmed), 0644))
+		} else if expectedTrimmed != actualTrimmed {
 			assertGLSLEquivalent(t, string(expectedOutput), actualOutput)
 		}
 	} else {
-		require.NoError(t, os.WriteFile(expectedFile, []byte(strings.TrimSpace(actualOutput)), 0644))
+		require.NoError(t, os.WriteFile(expectedFile, []byte(actualTrimmed), 0644))
 	}
 }
 

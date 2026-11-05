@@ -1,0 +1,17 @@
+// Scene Size: 100
+
+// Debug scene: rustedSteel and patinaBronze alone, two balls, small scene
+// — isolates weathering.weathered's fbm3 blotch mask + cellularEdges
+// pitting, thresholded via texture.mask, driving material.blend + color.
+
+rustedMat, rustedColor = weathering.rustedSteel(0.5);
+rustedBall = transform.translate(sphere(25), [-33.3, 0, 0]);
+rustedBall.material = rustedMat;
+rustedBall.color = rustedColor;
+
+patinaMat, patinaColor = weathering.patinaBronze(0.5);
+patinaBall = transform.translate(sphere(25), [33.3, 0, 0]);
+patinaBall.material = patinaMat;
+patinaBall.color = patinaColor;
+
+return rustedBall, patinaBall;

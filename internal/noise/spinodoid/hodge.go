@@ -14,10 +14,12 @@ import (
 // beside it (kernels.go) is the same model, cheaper, and a different
 // realization.
 //
-// It shares Params, Level and the pool with the lattice baker. What it does
-// not share is Params.Domain: this table is the periodic one hodge's own grid
-// describes, 32^3 cells about the world origin, and HodgeBake refuses a domain
-// that would not fit inside it rather than let a driver repeat unnoticed.
+// It shares Params, Level, the pool and the domain rules with the lattice
+// baker, but not its layout. A stationary field is the periodic window hodge's
+// own grid describes, 32^3 cells about the world origin. A driven field with a
+// Domain is baked over the cells covering it, hashed on true cell indices, so
+// it is hodge's field everywhere inside it; one without a Domain falls back to
+// the periodic window, and its drivers repeat with it.
 
 // HodgeTableCells is the table's edge in kernel cells: 32^3 cells, about 116
 // wavelengths at the default packet width, before the field repeats.
@@ -335,8 +337,14 @@ func (t *HodgeTable) Sample(q [3]float64) (field, beta float64) {
 
 // Distance is spinodoid_gabor's result without wall_thickness: the field
 // leveled at level and divided by the local wavenumber (local true) or by
-// BaseBeta (hodge's normalize="base"). Negative in the solid phase.
+// BaseBeta (hodge's normalize="base"). Negative in the solid phase. Outside a
+// bounded domain it is the distance to the domain, unleveled, as the lattice
+// table's Distance and the oracle are.
 func (t *HodgeTable) Distance(q [3]float64, level float64, local bool) float64 {
+	if !t.Contains(q) {
+		d, _ := t.Outside(q)
+		return d
+	}
 	field, beta := t.Sample(q)
 	if !local {
 		beta = t.BaseBeta

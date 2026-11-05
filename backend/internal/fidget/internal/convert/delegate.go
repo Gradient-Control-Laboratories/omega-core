@@ -33,22 +33,11 @@ type Delegate struct {
 	spinodoidBakes  map[string]BakedSpinodoid
 	spinodoidDomain *[6]float64
 
-	// hodge's slots are a separate space in the oracle (tape-core
-	// spinodoid/hodge.rs), handed out per build like the lattice's.
-	spinodoidHodgeSlots    map[string]uint32
-	spinodoidHodgeNextSlot uint32
-
 	// spinodoidOracles describes every spinodoid table bound this build, one
 	// per slot, for a tape export to stamp into tape.oracles. A slot's leaf id
 	// means nothing outside this process, so the arguments have to travel with
 	// it — see SpinodoidOracle.
 	spinodoidOracles []SpinodoidOracle
-
-	// spinodoidPreview makes every spinodoid call bake the lattice table the
-	// browser renders, hodge-exact calls included, instead of the field the
-	// document asked for: what BakeSpinodoids is for. A mesh or tape build
-	// leaves it false and gets the document's own field.
-	spinodoidPreview bool
 
 	// per-output display names (parallel to outputs), matching the UI's
 	// per-shape labels — see outputName.

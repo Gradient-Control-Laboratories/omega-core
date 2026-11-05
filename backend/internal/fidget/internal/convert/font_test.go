@@ -18,7 +18,7 @@ func TestFontConverts(t *testing.T) {
 	// Compile-time const-fold + per-iter specialization means only the four
 	// glyphs in "HI42" actually emit, so using the full text font here is
 	// still fast.
-	const fontPath = "../../../../common/source/package/text/text.gsl"
+	const fontPath = "../../../../../stdlib/text/text.gsl"
 	font, err := os.ReadFile(fontPath)
 	if err != nil {
 		t.Skipf("font not generated at %s: %v", fontPath, err)

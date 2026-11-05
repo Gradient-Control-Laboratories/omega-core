@@ -15,6 +15,59 @@ type WarpResolver interface {
 	ResolveWarpedSlot(meshSlot int, pkgDir, warpPath string, scale float64) (int, error)
 }
 
+// WarpedAsset records a derived warped mesh slot resolved during FoldProgram so callers
+// can materialize or cache the deformed mesh asset at DerivedSlot.
+type WarpedAsset struct {
+	DerivedSlot int
+	MeshSlot    int
+	WarpDir     string
+	WarpPath    string
+	Scale       float64
+}
+
+// GraphPackages returns every package in the import graph rooted at root (with optional byte
+// overrides) that contains any warp-related import or builtin call.
+func GraphPackages(getImport program.GetImportFunc, root *program.Package, overrides map[string][]byte) []WarpGraphPkg {
+	var out []WarpGraphPkg
+	if HasWarpCall(root) {
+		out = append(out, WarpGraphPkg{Path: "", Pkg: root})
+	}
+	if getImport == nil || root == nil {
+		return out
+	}
+	resolve := func(path string) *program.Package {
+		if bytes, ok := overrides[path]; ok {
+			if p, err := program.DecodePackage(bytes); err == nil {
+				return p
+			}
+		}
+		child, _ := getImport(path)
+		return child
+	}
+	visited := map[string]bool{}
+	var walk func(p *program.Package)
+	walk = func(p *program.Package) {
+		for _, file := range p.Files {
+			for _, imp := range file.Imports {
+				if imp == nil || visited[imp.GetPath()] {
+					continue
+				}
+				visited[imp.GetPath()] = true
+				child := resolve(imp.GetPath())
+				if child == nil {
+					continue
+				}
+				if HasWarpCall(child) {
+					out = append(out, WarpGraphPkg{Path: imp.GetPath(), Pkg: child})
+				}
+				walk(child)
+			}
+		}
+	}
+	walk(root)
+	return out
+}
+
 // HasWarpCall returns true if the package uses any warp-related builtins or imports.
 func HasWarpCall(pkg *program.Package) bool {
 	if pkg == nil {
@@ -227,10 +280,11 @@ func stringFromOperand(op *program.Operand) string {
 }
 
 // FoldProgram folds all warp simulations and rewrites meshWarped/vdbSdfWarped calls across
-// the program graph using the provided WarpResolver.
-func FoldProgram(prog *program.Program, resolver WarpResolver) (*program.Program, error) {
+// the program graph using the provided WarpResolver, returning the folded program and the
+// deduplicated list of resolved WarpedAsset descriptors.
+func FoldProgram(prog *program.Program, resolver WarpResolver) (*program.Program, []WarpedAsset, error) {
 	if prog == nil || resolver == nil {
-		return prog, nil
+		return prog, nil, nil
 	}
 
 	hasWarp := false
@@ -246,7 +300,7 @@ func FoldProgram(prog *program.Program, resolver WarpResolver) (*program.Program
 		}
 	}
 	if !hasWarp {
-		return prog, nil
+		return prog, nil, nil
 	}
 
 	_, slotResolver := meshslots.Assign(prog.Primary, prog.GetImport)
@@ -254,7 +308,7 @@ func FoldProgram(prog *program.Program, resolver WarpResolver) (*program.Program
 	// Clone & slot-fold the program graph so that mesh slot parameters are constants.
 	foldedProg, err := meshfold.FoldProgramMeshIndices(prog, slotResolver)
 	if err != nil {
-		return nil, fmt.Errorf("warpfold: mesh slots folding failed: %w", err)
+		return nil, nil, fmt.Errorf("warpfold: mesh slots folding failed: %w", err)
 	}
 
 	var foldedPkgs []WarpGraphPkg
@@ -267,42 +321,56 @@ func FoldProgram(prog *program.Program, resolver WarpResolver) (*program.Program
 		}
 	}
 
-	warps := AssignWarpSlots(foldedPkgs, "")
+	warps := AssignWarpSlots(foldedPkgs, foldedProg.Primary.GetPath())
+
+	// Rewrite all expression-form importWarp calls to their assigned integer slot
+	// across every package first so cross-package references (e.g. a tree referencing
+	// a branch's warpId) evaluate to the assigned slot during foldPackage.
+	for _, gp := range foldedPkgs {
+		for _, op := range warps.ExprByPkg[gp.Path] {
+			slot := warps.ExprCalls[op]
+			*op = program.Operand{
+				Start: op.Start,
+				End:   op.End,
+				T:     &program.Operand_Value{Value: float64(slot)},
+			}
+		}
+	}
+
+	var warpedAssets []WarpedAsset
+	seenDerived := make(map[int]bool)
 
 	for _, gp := range foldedPkgs {
 		folder := &warpFolder{
+			prog:         foldedProg,
 			pkg:          gp.Pkg,
 			pkgPath:      gp.Path,
 			resolver:     resolver,
 			warps:        warps,
 			slotResolver: slotResolver,
+			seenDerived:  seenDerived,
+			warpedAssets: &warpedAssets,
 		}
 		if err := folder.foldPackage(); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
-	return foldedProg, nil
+	return foldedProg, warpedAssets, nil
 }
 
 type warpFolder struct {
+	prog         *program.Program
 	pkg          *program.Package
 	pkgPath      string
 	resolver     WarpResolver
 	warps        *WarpSlots
 	slotResolver meshslots.Resolver
+	seenDerived  map[int]bool
+	warpedAssets *[]WarpedAsset
 }
 
 func (f *warpFolder) foldPackage() error {
-	for _, op := range f.warps.ExprByPkg[f.pkgPath] {
-		slot := f.warps.ExprCalls[op]
-		*op = program.Operand{
-			Start: op.Start,
-			End:   op.End,
-			T:     &program.Operand_Value{Value: float64(slot)},
-		}
-	}
-
 	for _, file := range f.pkg.Files {
 		for _, a := range file.Assignments {
 			out, err := f.foldOperand(a.Expression)
@@ -444,6 +512,17 @@ func (f *warpFolder) rewrite(fc *program.FnCall, op *program.Operand, plain stri
 	if err != nil {
 		return fail("%v", err)
 	}
+	// Invariant: f.warpedAssets and f.seenDerived are guaranteed non-nil by FoldProgram.
+	if !f.seenDerived[derivedSlot] {
+		f.seenDerived[derivedSlot] = true
+		*f.warpedAssets = append(*f.warpedAssets, WarpedAsset{
+			DerivedSlot: derivedSlot,
+			MeshSlot:    meshSlot,
+			WarpDir:     ref.Dir,
+			WarpPath:    ref.Path,
+			Scale:       scale,
+		})
+	}
 
 	fc.Reference.Name = plain
 	rest := fc.Arguments[3:]
@@ -465,7 +544,8 @@ func (f *warpFolder) constScalar(op *program.Operand) (float64, bool) {
 	if v, ok := op.T.(*program.Operand_Value); ok {
 		return v.Value, true
 	}
-	vals, err := eval.Const(op, nil, nil)
+	// Invariant: f.prog is guaranteed non-nil by FoldProgram.
+	vals, err := eval.ConstPkgSlotsAt(op, f.pkg, f.pkgPath, f.prog.GetImport, f.slotResolver)
 	if err == nil && len(vals) == 1 {
 		return vals[0], true
 	}

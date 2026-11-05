@@ -10,7 +10,7 @@ import (
 // TestDetailPixel holds the share of a feature's size the detail guard
 // switches at to the one builtin's detailValue documents.
 func TestDetailPixel(t *testing.T) {
-	src, err := os.ReadFile("../../../../common/source/package/builtin/base.gsl")
+	src, err := os.ReadFile("../../../../../../stdlib/builtin/base.gsl")
 	if err != nil {
 		t.Fatal(err)
 	}

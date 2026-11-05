@@ -1,0 +1,41 @@
+// Scene Size: 20
+// Scene Grid: 10
+// AI geometry tool-use demo — Proof-Carrying Clearance
+//
+// The certify tool PROVES a geometric claim over a WHOLE region with interval
+// arithmetic — a sound verdict, not a sampled guess, and with no Lipschitz
+// constant to get wrong. When a claim fails, certify returns a counterexample
+// box to repair toward. Open the AI chat and give it this task.
+//
+// TRY THIS PROMPT:
+//   Seat the peg inside the bracket's pocket — centered, resting clear of the
+//   walls and floor. Then PROVE the placement with the certify tool over a
+//   region containing both: (1) the peg does not interfere with the bracket
+//   anywhere — certify max(peg, bracket) >= 0; and (2) it clears the bracket by
+//   at least 1 mm everywhere — certify max(peg, bracket) >= 0.5 (the separation
+//   is twice the minimum). If certify DISPROVES a claim it returns a
+//   counterexample box — move the peg to fix it and certify again. Return the
+//   seated peg and report what you proved.
+//
+// What to watch: certify comes back proven / disproven (with a counterexample
+// box) / indeterminate. A proven verdict holds EVERYWHERE in the region, not
+// just at the points the model happened to sample — the guarantee extremum's
+// caller-supplied Lipschitz constant and grid sampling can't give.
+
+box(x1, y1, z1, x2, y2, z2) {
+  return max(
+    x1 - p.x, p.x - x2,
+    y1 - p.y, p.y - y2,
+    z1 - p.z, p.z - z2,
+  );
+}
+
+// Bracket: a solid block with a square pocket open at the top (floor 1 mm thick).
+bracketOuter = box(-15.0, -15.0, 0.0, 15.0, 15.0, 12.0);
+pocket = box(-8.0, -8.0, 1.0, 8.0, 8.0, 13.0);
+bracket = max(bracketOuter, -pocket);
+
+// Peg: a block to seat in the pocket, currently sitting off to the side.
+peg = box(14.0, -6.0, 3.0, 26.0, 6.0, 11.0);
+
+return bracket, peg;

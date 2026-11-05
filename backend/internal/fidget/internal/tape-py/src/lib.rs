@@ -3,11 +3,12 @@
 //! oracles.
 //!
 //! Flow: omega serializes a GSL-lowered field to a `tape::Tape` protobuf (or
-//! Python authors one directly via `tape_pb2`). hodge asks `tape_oracle_uses`
-//! what the tape cannot resolve by itself, registers that — a bvhSdf/vdbSdf
-//! payload by asset id, a spinodoid kernel table by slot — loads
-//! `Tape(tape_bytes)`, then calls `eval` / `grad` / `interval` / `mesh_stl`.
-//! All evaluation is in-process against fidget's VM evaluator.
+//! Python authors one directly via `tape_pb2`). The reader loads
+//! `Tape(tape_bytes)` — mesh payloads are built and spinodoids baked from the
+//! arguments the tape carries — then calls `eval` / `grad` / `interval` /
+//! `mesh_stl`. `tape_oracle_uses` says what, if anything, a tape needs
+//! registered first. All evaluation is in-process against fidget's VM
+//! evaluator.
 //!
 //! `eval` / `grad` are numpy-native: they take `(N,3)` float32 arrays and
 //! return `(N,)` / `(N,4)` — the shape hodge's Walk-on-Spheres / mesh-free
@@ -20,7 +21,31 @@ use numpy::{
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
-use render::tape::{self, MeshAlgorithm, OracleForce, OracleMode, Tape as RawTape};
+use pyo3::types::PyDict;
+use render::tape::{
+    self, MeshAlgorithm, OracleForce, OracleMode, OracleOverride, SpinodoidBackend, Tape as RawTape,
+};
+use std::collections::HashMap;
+
+/// A load setting given either as one value (the default for every payload)
+/// or as a dict keyed by payload asset id (for those payloads alone). None
+/// leaves the default to the caller.
+fn per_payload<T>(
+    arg: Option<&Bound<'_, PyAny>>,
+    parse: impl Fn(&Bound<'_, PyAny>) -> PyResult<T>,
+) -> PyResult<(Option<T>, Vec<(u32, T)>)> {
+    let Some(arg) = arg.filter(|a| !a.is_none()) else {
+        return Ok((None, Vec::new()));
+    };
+    if let Ok(dict) = arg.downcast::<PyDict>() {
+        let mut out = Vec::with_capacity(dict.len());
+        for (k, v) in dict.iter() {
+            out.push((k.extract::<u32>()?, parse(&v)?));
+        }
+        return Ok((None, out));
+    }
+    Ok((Some(parse(arg)?), Vec::new()))
+}
 
 /// A built, evaluable implicit field loaded from an omega tape.
 #[pyclass(unsendable)]
@@ -39,30 +64,71 @@ impl Tape {
     /// in voxels (how far from the surface distance stays accurate). Both
     /// default to the tape's values or sensible defaults, and are ignored for
     /// BVH.
+    ///
+    /// `backend` chooses which field a spinodoid is rebuilt as from its
+    /// payload's arguments: "fast" (omega's lattice, what the viewer draws) or
+    /// "manufacturing" (hodge's jittered-kernel field), whatever the payload's
+    /// `fast` flag says.
+    ///
+    /// Each of the four is either one value, for every payload it applies to,
+    /// or a dict keyed by payload asset id (see `tape_oracle_payloads`), for
+    /// those payloads alone; a payload a dict leaves out takes the default.
+    /// A key must be a payload in the tape, of a kind the setting applies to.
     #[new]
-    #[pyo3(signature = (tape, oracles="auto", resolution=None, half_band=None))]
+    #[pyo3(signature = (tape, oracles=None, resolution=None, half_band=None, backend=None))]
     fn new(
         tape: &[u8],
-        oracles: &str,
-        resolution: Option<u32>,
-        half_band: Option<f32>,
+        oracles: Option<&Bound<'_, PyAny>>,
+        resolution: Option<&Bound<'_, PyAny>>,
+        half_band: Option<&Bound<'_, PyAny>>,
+        backend: Option<&Bound<'_, PyAny>>,
     ) -> PyResult<Self> {
-        let force = match oracles.to_ascii_lowercase().as_str() {
-            "auto" => OracleForce::Auto,
-            "bvh" => OracleForce::Bvh,
-            "vdb" => OracleForce::Vdb,
-            other => {
-                return Err(PyValueError::new_err(format!(
+        let parse_force = |v: &Bound<'_, PyAny>| -> PyResult<OracleForce> {
+            let s: String = v.extract()?;
+            match s.to_ascii_lowercase().as_str() {
+                "auto" => Ok(OracleForce::Auto),
+                "bvh" => Ok(OracleForce::Bvh),
+                "vdb" => Ok(OracleForce::Vdb),
+                other => Err(PyValueError::new_err(format!(
                     "oracles must be 'auto', 'bvh', or 'vdb', got '{other}'"
-                )))
+                ))),
             }
         };
+        let parse_backend = |v: &Bound<'_, PyAny>| -> PyResult<SpinodoidBackend> {
+            let s: String = v.extract()?;
+            match s.to_ascii_lowercase().as_str() {
+                "fast" => Ok(SpinodoidBackend::Fast),
+                "manufacturing" => Ok(SpinodoidBackend::Manufacturing),
+                other => Err(PyValueError::new_err(format!(
+                    "backend must be 'fast' or 'manufacturing', got '{other}'"
+                ))),
+            }
+        };
+        let (force, forces) = per_payload(oracles, parse_force)?;
+        let (resolution, resolutions) = per_payload(resolution, |v| v.extract::<u32>())?;
+        let (half_band, half_bands) = per_payload(half_band, |v| v.extract::<f32>())?;
+        let (spinodoid, backends) = per_payload(backend, parse_backend)?;
+
         let mode = OracleMode {
-            force,
+            force: force.unwrap_or(OracleForce::Auto),
             resolution,
             half_band,
+            spinodoid: spinodoid.unwrap_or(SpinodoidBackend::Fast),
         };
-        RawTape::from_bytes_with(tape, mode)
+        let mut overrides: HashMap<u32, OracleOverride> = HashMap::new();
+        for (id, v) in forces {
+            overrides.entry(id).or_default().force = Some(v);
+        }
+        for (id, v) in resolutions {
+            overrides.entry(id).or_default().resolution = Some(v);
+        }
+        for (id, v) in half_bands {
+            overrides.entry(id).or_default().half_band = Some(v);
+        }
+        for (id, v) in backends {
+            overrides.entry(id).or_default().spinodoid = Some(v);
+        }
+        RawTape::from_bytes_with_overrides(tape, mode, &overrides)
             .map(|inner| Tape { inner })
             .map_err(PyValueError::new_err)
     }
@@ -257,9 +323,9 @@ impl Mesh {
 ///
 /// `kind` is "noise", "cellular", "spinodoid", "hodgeSpinodoid", "mesh" or
 /// "unknown". `self_contained` is True when loading resolves the id by itself
-/// (a library-baked tile, or a source mesh carried in the tape) and False when
-/// this process has to register the oracle first — a spinodoid leaf carries
-/// only its id, never its kernel table. `slot` is what to pass as
+/// (a library-baked tile, a source mesh carried in the tape, or a spinodoid
+/// whose payload the tape carries) and False when this process has to
+/// register the oracle first. `slot` is what to pass as
 /// `register_hodge_spinodoid`'s first argument, where the kind has a slot.
 ///
 /// Read-only, and it registers nothing, so this is the first call to make on a
@@ -273,6 +339,20 @@ impl Mesh {
 #[pyfunction]
 fn tape_oracle_uses(tape: &[u8]) -> PyResult<Vec<tape::OracleUseRow>> {
     tape::tape_oracle_uses(tape).map_err(PyValueError::new_err)
+}
+
+/// The oracle payloads a tape carries, as `(asset_id, kind)` with `kind`
+/// "bvh", "vdb" (a mesh, as the GSL author wrote it) or "spinodoid": the keys
+/// `Tape(...)`'s per-payload settings take.
+///
+/// ```python
+/// for asset_id, kind in omega_tape.tape_oracle_payloads(blob):
+///     print(f"{asset_id:#x} {kind}")
+/// field = omega_tape.Tape(blob, backend={0xE05B1000: "manufacturing"})
+/// ```
+#[pyfunction]
+fn tape_oracle_payloads(tape: &[u8]) -> PyResult<Vec<(u32, String)>> {
+    tape::tape_oracle_payloads(tape).map_err(PyValueError::new_err)
 }
 
 /// Install a baked hodge-spinodoid kernel table in `slot`, so a tape whose
@@ -371,6 +451,7 @@ fn omega_tape(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Tape>()?;
     m.add_class::<Mesh>()?;
     m.add_function(wrap_pyfunction!(tape_oracle_uses, m)?)?;
+    m.add_function(wrap_pyfunction!(tape_oracle_payloads, m)?)?;
     m.add_function(wrap_pyfunction!(register_mesh_oracle, m)?)?;
     m.add_function(wrap_pyfunction!(register_vdb_oracle, m)?)?;
     m.add_function(wrap_pyfunction!(register_hodge_spinodoid, m)?)?;

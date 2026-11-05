@@ -5,7 +5,7 @@ package fidget
 // BSP traversal + Fast GWN is a performance-critical inner loop, and the
 // debug profile is ~10x slower. The launcher script does `cargo build
 // --release` to match.
-#cgo LDFLAGS: -L../../../../target/release -lrender
+#cgo LDFLAGS: -L../../../../../target/release -lrender
 #include <stdlib.h>  // include for C.CString
 #include <stddef.h>  // include for size_t
 #include <stdint.h>  // include for int64_t

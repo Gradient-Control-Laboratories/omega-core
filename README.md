@@ -1,6 +1,6 @@
-# Omega Core SDK (`omega_core`)
+# Omega Core SDK (`omega-core`)
 
-`omega_core` is the standalone Go SDK for the Geometric Specification Language (GSL). It provides
+`omega-core` is the standalone Go SDK for the Geometric Specification Language (GSL). It provides
 pure, modular compiler libraries and the `gsl` command-line toolchain (`compile`, `serve`, `fix`)
 for parsing, analyzing, refactoring, and compiling GSL models into WebGPU compute shaders (WGSL),
 3D meshes (STL), bytecode tapes, and audio synthesizers.
@@ -24,7 +24,7 @@ for parsing, analyzing, refactoring, and compiling GSL models into WebGPU comput
 ### Directory Layout
 
 ```text
-omega_core/
+omega-core/
 ├── go.mod                     # module gradientcontrol.com/omega/core
 ├── assembler/
 │   ├── assemble.go            # Assemble(primarySources, opts...) API
@@ -68,13 +68,9 @@ omega_core/
 │   │   └── main.go            # Entry point and subcommand delegation
 │   └── serve/                 # Local HTTP server and WebGPU viewer host
 │       └── main.go            # Entry point and HTTP server startup
-├── common/
-│   ├── source/
-│   │   └── package/           # Package sources for tests
-│   └── web/
-│       └── example/           # Example GSL files for tests
 ├── examples/                  # Curated showcase GSL models and assets
 │   ├── gears.gsl              # Parametric helical gear pair showcase (from common/web/example/Gears.gsl)
+│   ├── glass.gsl              # Transmissive glass and refraction showcase (from common/web/example/Material - Glass.gsl)
 │   ├── assets/                # Traditional CAD mesh assets (bracket.stl)
 │   └── viewer/                # Interactive WebGPU viewer web application
 │       ├── README.md          # Viewer usage and architecture overview
@@ -130,6 +126,7 @@ omega_core/
 │   │   ├── assert/            # Test assertions (from stirigma test/assert)
 │   │   └── require/           # Test require assertions (from stirigma test/require)
 │   ├── testdata/              # Assembler test fixtures
+│   │   └── example/           # Example GSL files for tests
 │   ├── types/                 # Semantic type analysis
 │   └── ui/                    # UI control metadata extraction (from common/source/edit/ui)
 ├── parser/                    # Lexer and Parser
@@ -139,10 +136,10 @@ omega_core/
 │       ├── api/               # Parser API types
 │       ├── identifier2/       # Copied from agent/parser/internal/identifier2
 │       ├── lib/               # Copied from agent/parser/lib
-│       ├── parser2/           # Copied from agent/parser/internal/parser2 (name preserved)
-│       └── scene/             # Scene descriptor parsing (from common/program/scene)
+│       └── parser2/           # Copied from agent/parser/internal/parser2 (name preserved)
 ├── program/                   # Core Program/AST models and definitions (from common/program)
-│   └── program.proto          # Protobuf AST schema definitions
+│   ├── program.proto          # Protobuf AST schema definitions
+│   └── scene/                 # Scene descriptor construction and extent utilities (from common/program/scene)
 ├── stdlib/                    # GSL Standard Library (mirrors common/source/package)
 │   ├── pkg_info.go            # Package registry and compile-time embedded source data
 │   ├── builtin/

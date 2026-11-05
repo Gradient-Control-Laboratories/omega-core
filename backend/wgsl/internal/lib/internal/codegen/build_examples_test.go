@@ -14,7 +14,7 @@ import (
 )
 
 func TestBuildExamples(t *testing.T) {
-	src_test.RunAllSourceTests(t, "../../../../common/web/example/*.gsl", testBuildExample)
+	src_test.RunAllSourceTests(t, "../../../../../../internal/testdata/example/*.gsl", testBuildExample)
 }
 
 func testBuildExample(t *testing.T, srcFile string) {

@@ -10,17 +10,26 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::f64::consts::PI;
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::{
+    atomic::{AtomicU64, Ordering},
+    Arc, Mutex, OnceLock,
+};
 
 use fidget_core::{
     mesh_oracle::{self, MeshOracle as MeshOracleTrait},
     types::{Grad, Interval},
 };
 
-/// hodge's own field, over its own slots and leaf ids (hodge.rs). A document
-/// may read both: the lattice here is what previews render, and hodge's is
-/// what a part that has to be rebuilt elsewhere is baked from.
+/// hodge's own field, over its own slots and leaf ids (hodge.rs). omega's
+/// builds bind only the lattice here; hodge's is for a tape reader that
+/// registers hodge's kernels itself (tape.rs register_hodge_spinodoid).
 pub mod hodge;
+
+/// Both tables baked from a field's arguments, for a tape reader that rebuilds
+/// a spinodoid from its payload.
+pub mod bake;
+mod numpy;
+mod ziggurat_tables;
 
 /// Reserved fidget mesh-oracle id block for spinodoid tables, clear of the
 /// noise tile's and the cellular oracles' blocks.
@@ -44,9 +53,12 @@ pub mod component {
 /// How many tables can be registered at once.
 pub const MAX_SLOTS: u32 = 256;
 
+static NEXT_TABLE_ID: AtomicU64 = AtomicU64::new(1);
+
 /// One baked table: a lattice of kernel sites at `spacing`, each a tapered
 /// Gabor kernel reaching `reach` (see common/noise/spinodoid).
 pub struct Table {
+    id: u64,
     sites: Vec<f64>,
     origin: [i64; 3],
     size: [usize; 3],
@@ -113,6 +125,7 @@ impl Table {
             beta_max = beta_max.max(s[3]);
         }
         Ok(Table {
+            id: NEXT_TABLE_ID.fetch_add(1, Ordering::Relaxed),
             sites,
             origin,
             size,
@@ -389,12 +402,14 @@ fn distance_envelope(phi_max: f64, level: f64, b_lo: f64, b_hi: f64) -> (f64, f6
 
 // One-entry memo: the four leaves of a slot ask for the same evaluation at the
 // same point. Pure, so reuse for bit-identical arguments is always safe.
+// Keyed by the table's monotonic `id` rather than its heap address so re-baking
+// into a recycled allocation cannot hit a stale memoized sample.
 thread_local! {
-    static MEMO: RefCell<Option<([u32; 3], usize, (f64, [f64; 3]))>> = const { RefCell::new(None) };
+    static MEMO: RefCell<Option<([u32; 3], u64, (f64, [f64; 3]))>> = const { RefCell::new(None) };
 }
 
 fn eval_memo(table: &Arc<Table>, x: f32, y: f32, z: f32) -> (f64, [f64; 3]) {
-    let tag = Arc::as_ptr(table) as usize;
+    let tag = table.id;
     let key = [x.to_bits(), y.to_bits(), z.to_bits()];
     MEMO.with(|m| {
         if let Some((k, t, v)) = *m.borrow() {
@@ -546,6 +561,22 @@ pub fn register(slot: u32, table: Table) -> Result<(), String> {
     }
     tables().lock().unwrap().insert(slot, table);
     Ok(())
+}
+
+/// Install a table under the four leaf ids starting at `first_id`, whichever
+/// block they are in: a tape reader binds the table it baked to the ids the
+/// tape's leaves carry.
+pub fn register_leaves(first_id: u32, table: Table) {
+    let table = Arc::new(table);
+    for comp in 0..component::COUNT {
+        mesh_oracle::register(
+            first_id + comp,
+            Arc::new(SpinodoidOracle {
+                table: table.clone(),
+                comp,
+            }),
+        );
+    }
 }
 
 /// True once `slot` holds a table.

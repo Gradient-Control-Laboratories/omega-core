@@ -1,0 +1,16 @@
+// Scene Size: 50
+// Scene Grid: 10
+import "lattice";
+import "lattice/spinodoid";
+
+// A 30 mm block filled with a spinodoid metamaterial: an isotropic thin wall,
+// 0.6 mm thick, with cones of pi/2 about every axis. The scale driver
+// refines the cells toward the top of the block (scale 1 at the bottom, 0.5
+// at the top).
+block = box([-15, -15, -15], [15, 15, 15]);
+refine = 1 - 0.5 * clamp((p.z + 15) / 30, 0, 1);
+upright = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+isotropic = spinodoid.gaborGraded(6, [pi / 2, pi / 2, pi / 2], refine, upright);
+specimen = max(block, lattice.solidify(isotropic, 0, 0.6));
+
+return specimen;

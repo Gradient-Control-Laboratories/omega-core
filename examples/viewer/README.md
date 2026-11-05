@@ -1,11 +1,11 @@
 # GSL Interactive WebGPU Example Viewer
 
-An interactive WebGPU 3D viewport and live GSL code editor for the `omega_core` SDK, served by the
+An interactive WebGPU 3D viewport and live GSL code editor for the `omega-core` SDK, served by the
 local `gsl serve` HTTP server (`cmd/serve`).
 
 ## Quickstart
 
-From the `omega_core` repository root, build and launch the viewer server:
+From the `omega-core` repository root, build and launch the viewer server:
 
 ```bash
 ./tool/build.sh

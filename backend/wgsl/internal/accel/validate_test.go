@@ -9,19 +9,19 @@ import (
 )
 
 func TestValidateSidecar_RealFiles(t *testing.T) {
-	matrixYAML := filepath.Join("..", "package", "matrix", "matrix.wgsl.yaml")
+	matrixYAML := filepath.Join("../../../../stdlib", "matrix", "matrix.wgsl.yaml")
 	if _, err := accel.ValidateSidecar(matrixYAML); err != nil {
 		t.Fatalf("ValidateSidecar(%s) failed: %v", matrixYAML, err)
 	}
 
-	vectorYAML := filepath.Join("..", "package", "vector", "vector.wgsl.yaml")
+	vectorYAML := filepath.Join("../../../../stdlib", "vector", "vector.wgsl.yaml")
 	if _, err := accel.ValidateSidecar(vectorYAML); err != nil {
 		t.Fatalf("ValidateSidecar(%s) failed: %v", vectorYAML, err)
 	}
 }
 
 func TestValidateAll_RealPackages(t *testing.T) {
-	pkgRoot := filepath.Join("..", "package")
+	pkgRoot := filepath.Join("../../../../stdlib")
 	descriptors, err := accel.ValidateAll(pkgRoot, "wgsl")
 	if err != nil {
 		t.Fatalf("ValidateAll(%s, \"wgsl\") failed: %v", pkgRoot, err)

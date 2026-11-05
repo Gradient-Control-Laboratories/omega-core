@@ -20,7 +20,7 @@ import (
 )
 
 func TestRebuild(t *testing.T) {
-	src_test.RunAllSourceTests(t, "../internal/testdata/*.gsl", testRebuildOne)
+	src_test.RunAllSourceTests(t, "../testdata/*.gsl", testRebuildOne)
 }
 
 func testRebuildOne(t *testing.T, srcFile string) {
@@ -28,7 +28,7 @@ func testRebuildOne(t *testing.T, srcFile string) {
 }
 
 func runTestRebuildOne(t *testing.T, srcFile string, src []byte) (*program.Program, error) {
-	pkgMgr := source.NewLocalManager("../../../common/source/package")
+	pkgMgr := source.NewLocalManager("../../stdlib")
 
 	prog, err := collect.Program([]string{string(src)}, pkgMgr, parser.ParsePackage)
 	if err != nil {
@@ -220,7 +220,7 @@ func TestReferencesInPlace(t *testing.T) {
 }
 
 func TestReferences(t *testing.T) {
-	src_test.RunAllSourceTests(t, "../internal/testdata/*.gsl", testReferencesOne)
+	src_test.RunAllSourceTests(t, "../testdata/*.gsl", testReferencesOne)
 }
 
 func testReferencesOne(t *testing.T, srcFile string) {
@@ -228,7 +228,7 @@ func testReferencesOne(t *testing.T, srcFile string) {
 }
 
 func runTestReferencesOn(t *testing.T, srcFile string, src []byte) (*program.Program, error) {
-	pkgMgr := source.NewLocalManager("../../../common/source/package")
+	pkgMgr := source.NewLocalManager("../../stdlib")
 
 	prog, err := collect.Program([]string{string(src)}, pkgMgr, parser.ParsePackage)
 	if err != nil {

@@ -21,6 +21,11 @@ type TriMesh struct {
 	Bbox      Bbox
 }
 
+// Bounds returns the lower and upper corners of the mesh bounding box.
+func (m *TriMesh) Bounds() ([3]float64, [3]float64) {
+	return m.Bbox.Min, m.Bbox.Max
+}
+
 // Bbox is an axis-aligned bounding box. Min is the inclusive lower corner;
 // Max is the inclusive upper corner. An empty/zero bbox has Min > Max on all
 // axes and IsValid() returns false.

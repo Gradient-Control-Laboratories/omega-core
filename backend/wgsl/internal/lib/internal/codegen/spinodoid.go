@@ -235,9 +235,9 @@ func (d *Delegate) BuildSpinodoidCall(
 		}
 	}
 
-	// The preview binds a lattice table whichever builtin this is, so the key
-	// it asks the baker for is the lattice one. A hodge-exact call's own table
-	// is baked for the oracle and never shipped here.
+	// gaborSpinodoid and fastGaborSpinodoid are both the lattice field, here
+	// and in the fidget bake, so the key it asks the baker for is the lattice
+	// one.
 	call.Fast = true
 	key := call.Key()
 	slot, ok := d.spinodoidSlotByKey[key]

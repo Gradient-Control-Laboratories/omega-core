@@ -1,0 +1,48 @@
+// Scene Size: 200
+// Scene Grid: 20
+
+// A 120 mm desert tile cut by a meandering canyon. The canyon follows the
+// zero set of a large, slow noise field: the closer to it, the deeper the
+// cut, up to 10 mm. The cut is terraced into 2.5 mm steps with wide
+// smoothstep risers, so the walls stair-step down the way layered rock
+// erodes while the surface stays gentle enough to march: its steepest
+// slope, sampled across the tile, is 3.5. The rock is coloured by absolute
+// height through a cycle of measured sandstone and clay colours, gently
+// warped, so the strata run level across both walls. A tinted river fills
+// the channel below its water line, stopping 0.3 mm short of the rock so
+// the light it refracts starts in open water.
+
+// 1 on the canyon's centre line, easing to 0 at the rim.
+
+terracottaMat, terracottaColor = physical.terracotta();
+clayMat, clayColor = physical.clay();
+brickMat, brickColor = physical.brick();
+sandMat, sandColor = physical.sand();
+waterMat, waterColor = physical.water();
+
+canyonProfile(x) {
+  t = clamp(x / 0.1, 0, 1);
+  return 1 - t * t * (3 - 2 * t);
+}
+
+meander = noise.gradient(120);
+cut = 10 * canyonProfile(abs(meander));
+terrace = 2.5;
+terraced = floor(cut / terrace) * terrace + terrace * texture.mask(fract(cut / terrace), 0.6, 0.4);
+ground = p.z + terraced;
+
+tile = boxCentered([0, 0, -20], [120, 120, 40]);
+rock = intersectSharp(tile, ground);
+
+sandstone = [0.83, 0.66, 0.47];
+layer = p.z / 2.5 + 0.35 * noise.gradient(15);
+strata = color.sampleMap([terracottaColor, sandstone, clayColor, brickColor, sandColor, terracottaColor], fract(layer / 6));
+rock.material = terracottaMat;
+rock.color = strata;
+
+waterLine = -7;
+river = intersectSharp(boxCentered([0, 0, -20], [119, 119, 40]), intersectSharp(p.z - waterLine, 0.3 - ground));
+river.material = material.withTransmission(waterMat, 1, 4);
+river.color = [0.16, 0.38, 0.40];
+
+return rock, river;

@@ -1,0 +1,16 @@
+// Scene Size: 100
+
+// Debug scene: one wood.whiteOak ball, alone, at a small scene size — isolates
+// the cost of a single material.withDisplacement preset (grain-ring
+// relief) from everything else in Texture Library.gsl. The displaced
+// field's height comes from a real noise function defined over all of
+// space, not just near the surface, so the raymarch's gradient-based step
+// correction can shrink steps well before the ray ever nears the ball —
+// this scene tests whether that alone is enough to be expensive.
+
+oakMat, oakColor = wood.whiteOak([0, 0, -25], [0, 0, 1]);
+ball = sphere(25);
+ball.material = oakMat;
+ball.color = oakColor;
+
+return ball;

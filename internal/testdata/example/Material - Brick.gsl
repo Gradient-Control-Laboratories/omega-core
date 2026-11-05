@@ -1,0 +1,77 @@
+// Scene Size: 800
+// Scene Grid: 100
+
+// A 600 x 400 mm wall panel in running bond: standard 215 x 65 mm brick
+// faces with 10 mm mortar joints, each course shifted half a brick, laid by
+// hand rather than by machine. Every course is set a little off the half
+// bond, every head joint wanders so bricks run long and short, and every
+// brick sits a little high or low in its course, so the joints vary in width;
+// each brick is also up to a millimetre proud of or back from its
+// neighbours, leaning slightly one way. All of that and the 3 mm mortar
+// recess are real geometry, drawn from per-brick hashes, which cost almost
+// nothing to march. Bricks are the measured brick preset, each one's tone
+// nudged by noise sampled at its own centre, with a finer mottle across its
+// face that also roughens it as render-only relief and chips its edges; the
+// mortar is measured concrete warmed with a little sand, and grainy.
+
+brickMat, brickColor = physical.brick();
+concreteMat, concreteColor = physical.concrete();
+sandMat, sandColor = physical.sand();
+
+brickLength = 225;   // 215 mm brick + 10 mm joint
+courseHeight = 75;   // 65 mm brick + 10 mm joint
+jointHalf = 5;
+recess = 3;
+
+// The course, set up to 15 mm off the half bond.
+course = floor(p.z / courseHeight);
+courseHash = noiseHash3([course, course + 3, 2 * course + 11]);
+shifted = p.x + brickLength * fract(course * 0.5) + (courseHash.x - 0.5) * 30;
+
+// Head joints jittered up to 4 mm each way: the brick holding a point is the
+// one between its two jittered joints (the same selection wood.ringAt makes
+// among its rings), so bricks run long and short.
+slot = floor(shifted / brickLength);
+headJoint(k) {
+  return (k + (noiseHash3([k, course, k + course + 5]).x - 0.5) * 0.036) * brickLength;
+}
+before = shifted < headJoint(slot);
+after = shifted >= headJoint(slot + 1);
+brickStart = before ? headJoint(slot - 1) : (after ? headJoint(slot + 1) : headJoint(slot));
+brickEnd = before ? headJoint(slot) : (after ? headJoint(slot + 2) : headJoint(slot + 1));
+brickMid = (brickStart + brickEnd) * 0.5;
+alongBrick = shifted - brickMid;
+
+// Each brick its own hash: how high it sits in its course (up to 1.5 mm),
+// how far proud it stands and how it leans.
+brickHash = noiseHash3([brickMid, course, brickMid + course]);
+upBrick = p.z - (course + 0.5) * courseHeight - (brickHash.z - 0.5) * 3;
+toJoint = min((brickEnd - brickStart) * 0.5 - abs(alongBrick), courseHeight * 0.5 - abs(upBrick));
+inJoint = 1 - texture.mask(toJoint, jointHalf, 0.8);
+proud = (brickHash.x - 0.5) * 2 + (brickHash.y - 0.5) * 2.4 * alongBrick / brickLength;
+
+// Front face at y = -50, pushed back by the recess wherever there is mortar
+// and moved by each brick's own offset elsewhere.
+wall = intersectSharp(boxCentered([0, 0, 200], [600, 100, 400]), -p.y - 50 + recess * inJoint - proud * (1 - inJoint));
+
+brickCentre = [brickMid, p.y, (course + 0.5) * courseHeight];
+tone = remap(noise.gradient(37), brickCentre);
+mottle = noise.gradient(6);
+darkBrick = [0.38, 0.20, 0.15];
+lightBrick = [0.66, 0.45, 0.36];
+brickTone = color.mixOklab(brickColor, darkBrick, texture.mask(tone, 0.05, 0.2));
+brickFace = color.mixOklab(brickTone, lightBrick, 0.35 * texture.mask(mottle, 0.1, 0.3));
+mortarColor = color.mixOklab(concreteColor, sandColor, 0.3);
+
+// Render-only relief: the mottle roughens each face by a few tenths of a
+// millimetre and chips the edges back up to a millimetre where it runs low;
+// the mortar is grainy, one sand grain per 0.8 mm cell.
+chipped = (1 - texture.mask(toJoint, jointHalf + 3.5, 2)) * (1 - texture.mask(mottle, -0.2, 0.2));
+brickRelief = 0.35 * mottle - 1.0 * chipped;
+mortarRelief = 0.25 * (noiseHash3(floor(p / 0.8) + [7, 0, 0]).x - 0.5);
+relief = brickRelief + (mortarRelief - brickRelief) * inJoint;
+
+wall.material = material.withDisplacement(texture.paintMaterial(toJoint, jointHalf, 0.8, concreteMat, brickMat), relief);
+wall.color = texture.paint(toJoint, jointHalf, 0.8, mortarColor, brickFace);
+
+return wall;

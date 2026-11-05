@@ -96,6 +96,7 @@ No semicolon follows the directive.
 
 * **Variable Assignment:** `name = expression;`
 Supports multiple assignment: `x, y = someFunc();`
+Top-level variables are evaluated in order: declare a name before any line that uses it. Functions may be called before their definition.
 
 * **Variable Properties (sliders):**
 A top-level variable assigned a single numeric literal can be annotated
@@ -116,6 +117,30 @@ the user can grab the slider manually at any time. For example:
   radius.period = 4.0;  // animate radius over 4 seconds
   return remap(sphere(radius), p);
   ```
+
+* **Control annotations:**
+A top-level variable assigned a literal can instead carry one annotation
+naming the control it wants: `@range(min, max)` is the slider
+above in one line; `@point` on an `[x, y, z]` marks a
+point in the scene, `@direction` on an `[x, y, z]` a
+direction, drawn from the origin or from `@direction(anchor)`'s
+point (a `@point` variable or a constant),
+`@color` on an sRGB `[r, g, b]` a colour, and
+`@transform` on a 4x4 matrix a frame. The annotation changes nothing
+about the value. The same annotations on a function's parameters declare what
+kind of argument each takes, so a tool writing a call to the function can give
+each argument its control:
+  ```gsl
+  powderCoat(@color coatColor, @range(0, 100) glossUnits, @range(0, 1) peel) { ... }
+  turned(@point axisOrigin, @direction(axisOrigin) axisDir, @range(0.05, 0.5) feed) { ... }
+  ```
+On a parameter, `@direction`'s argument names the sibling parameter
+the arrow is drawn from. `@frame` is a parameter kind alone: the
+body's own frame, `[body.u, body.v]`, which a tool writing the call
+reads off the body rather than asks for. `@surface` marks a
+function that takes a surface first and returns the modified one, the
+overload of a surface operator that takes only those slots and bakes the
+operator's other arguments: what the Bodies panel wraps a surface with.
 
 * **Shape Color (`name.color`):**
 A declaration property that gives a shape an RGB color:
