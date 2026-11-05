@@ -12,7 +12,7 @@ import (
 )
 
 func TestGenerateOps_Valid(t *testing.T) {
-	pkgRoot := filepath.Join("..", "..", "..", "..", "common", "source", "package")
+	pkgRoot := filepath.Join("../../../../../..", "stdlib")
 	descriptors, err := commonaccel.ValidateAll(pkgRoot, "wgsl")
 	if err != nil {
 		t.Fatalf("ValidateAll(%s, \"wgsl\") failed: %v", pkgRoot, err)
@@ -98,7 +98,7 @@ func TestGenerateOps_UnsupportedSignature(t *testing.T) {
 }
 
 func TestGenerateInlinerRegistration_Valid(t *testing.T) {
-	pkgRoot := filepath.Join("..", "..", "..", "..", "common", "source", "package")
+	pkgRoot := filepath.Join("../../../../../..", "stdlib")
 	descriptors, err := commonaccel.ValidateAll(pkgRoot, "wgsl")
 	if err != nil {
 		t.Fatalf("ValidateAll(%s, \"wgsl\") failed: %v", pkgRoot, err)

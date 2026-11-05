@@ -11,7 +11,7 @@ import (
 )
 
 func TestWGSLOps_NoDrift(t *testing.T) {
-	pkgDir := filepath.Join("..", "..", "..", "..", "common", "source", "package")
+	pkgDir := filepath.Join("../../../../../..", "stdlib")
 	descriptors, err := commonaccel.ValidateAll(pkgDir, "wgsl")
 	if err != nil {
 		t.Fatalf("validation of package sidecars failed: %v", err)

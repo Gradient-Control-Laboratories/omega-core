@@ -40,7 +40,7 @@ func TestAnnotationSurvivesAssembly(t *testing.T) {
 	// deadcode rebuild among them — so a new field is easy to drop silently.
 	// The browser reads annotations off an assembled program, so assert they are
 	// still there after the full assemble, not just after the parse.
-	pkgMgr := source.NewLocalManager("../../../common/source/package")
+	pkgMgr := source.NewLocalManager("../../stdlib")
 	src := `
 @material brass() {
   return material.make(0.3, 1, 1.5), [0.95, 0.90, 0.69];
@@ -72,7 +72,7 @@ func TestAnnotationSurvivesWhenItsSymbolIsUnused(t *testing.T) {
 	// An unused material is deadcoded out of the program, but its annotation
 	// still describes the source: a browser lists every material a library
 	// declares, not only the ones this document draws with.
-	pkgMgr := source.NewLocalManager("../../../common/source/package")
+	pkgMgr := source.NewLocalManager("../../stdlib")
 	src := `
 @material brass() {
   return material.make(0.3, 1, 1.5), [0.95, 0.90, 0.69];
@@ -92,7 +92,7 @@ func TestAssembleRejectsMaterialConstant(t *testing.T) {
 	// The assembler is where the pair contract is enforced, so it holds for
 	// documents and libraries alike: a constant can carry the record or the
 	// colour, never both.
-	pkgMgr := source.NewLocalManager("../../../common/source/package")
+	pkgMgr := source.NewLocalManager("../../stdlib")
 	src := `
 @material brass = material.make(0.3, 1, 1.5);
 brassColor = [0.95, 0.90, 0.69];
@@ -110,7 +110,7 @@ return sphere(3);
 func TestAssembleRejectsMaterialReturningOneValue(t *testing.T) {
 	// The shape half of the contract, through the whole pipeline: the check
 	// runs after type analysis, so this is where it is reachable.
-	pkgMgr := source.NewLocalManager("../../../common/source/package")
+	pkgMgr := source.NewLocalManager("../../stdlib")
 	src := `
 @material brass() {
   return material.make(0.3, 1, 1.5);

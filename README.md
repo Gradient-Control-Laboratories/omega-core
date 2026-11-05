@@ -68,9 +68,6 @@ omega-core/
 │   │   └── main.go            # Entry point and subcommand delegation
 │   └── serve/                 # Local HTTP server and WebGPU viewer host
 │       └── main.go            # Entry point and HTTP server startup
-├── common/
-│   └── source/
-│       └── package/           # Package sources for tests
 ├── examples/                  # Curated showcase GSL models and assets
 │   ├── gears.gsl              # Parametric helical gear pair showcase (from common/web/example/Gears.gsl)
 │   ├── assets/                # Traditional CAD mesh assets (bracket.stl)

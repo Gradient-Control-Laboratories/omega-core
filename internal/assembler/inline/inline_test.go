@@ -177,7 +177,7 @@ return rec(5);
 }
 
 func TestInline_CrossPackage(t *testing.T) {
-	srcMgr := source.NewLocalManager("../../../common/source/package")
+	srcMgr := source.NewLocalManager("../../../stdlib")
 	src := `
 import font "text";
 return font.fontSpacing();
@@ -195,7 +195,7 @@ return font.fontSpacing();
 }
 
 func TestInline_CrossPackageQualification(t *testing.T) {
-	srcMgr := source.NewLocalManager("../../../common/source/package")
+	srcMgr := source.NewLocalManager("../../../stdlib")
 	src := `
 import font "text";
 return font.left("A", [0, 0], 1, 0.04, 0.3);

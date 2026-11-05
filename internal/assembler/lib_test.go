@@ -31,7 +31,7 @@ func TestAssembleSingle(t *testing.T) {
 }
 
 func TestAssembleLegacyOmegaVectorConstants(t *testing.T) {
-	pkgMgr := source.NewLocalManager("../../../common/source/package")
+	pkgMgr := source.NewLocalManager("../../stdlib")
 	_, err := Assemble([]string{`import . "omega";
 import "vector";
 return length(zero + dirX + dirY + dirZ + vector.zero);`}, pkgMgr)
@@ -41,7 +41,7 @@ return length(zero + dirX + dirY + dirZ + vector.zero);`}, pkgMgr)
 }
 
 func TestAssemble_NamedPrimaryPackage(t *testing.T) {
-	pkgMgr := source.NewLocalManager("../../../common/source/package")
+	pkgMgr := source.NewLocalManager("../../stdlib")
 	src := `
 import "vector";
 addOne(x) { return x + 1.0; }
@@ -170,7 +170,7 @@ func testAssembleOne(t *testing.T, srcFile string) {
 }
 
 func runTestAssembleOne(t *testing.T, srcFile string, src []byte) (*program.Program, error) {
-	pkgMgr := source.NewLocalManager("../../../common/source/package")
+	pkgMgr := source.NewLocalManager("../../stdlib")
 	res, err := Assemble([]string{string(src)}, pkgMgr)
 	if err != nil {
 		return nil, err
@@ -230,7 +230,7 @@ func (m *mockWarpResolver) ResolveWarpedSlot(meshSlot int, pkgDir, warpPath stri
 }
 
 func TestAssembleOptions(t *testing.T) {
-	pkgMgr := source.NewLocalManager("../../../common/source/package")
+	pkgMgr := source.NewLocalManager("../../stdlib")
 
 	// 1. Test PrimaryPackage option
 	res, err := Assemble([]string{"return 123.0;"}, pkgMgr, PrimaryPackage("trees/WO-1"))
@@ -307,7 +307,7 @@ func TestAssembleOptions(t *testing.T) {
 }
 
 func TestAssembleIterativeCascade(t *testing.T) {
-	pkgMgr := source.NewLocalManager("../../../common/source/package")
+	pkgMgr := source.NewLocalManager("../../stdlib")
 	src := `
 import font "text";
 return font.left("a", [0, 0], 1, 0.04, 0.3);
@@ -332,7 +332,7 @@ return font.left("a", [0, 0], 1, 0.04, 0.3);
 }
 
 func TestAssembleTextGlyphs(t *testing.T) {
-	pkgMgr := source.NewLocalManager("../../../common/source/package")
+	pkgMgr := source.NewLocalManager("../../stdlib")
 	content, err := os.ReadFile("../../internal/testdata/example/Text Glyphs.gsl")
 	if err != nil {
 		t.Fatalf("failed to read Text Glyphs.gsl: %v", err)
@@ -363,7 +363,7 @@ func TestAssembleTextGlyphs(t *testing.T) {
 }
 
 func TestAssemble_PrimaryPackageMeshSlotFolding(t *testing.T) {
-	pkgMgr := source.NewLocalManager("../../../common/source/package")
+	pkgMgr := source.NewLocalManager("../../stdlib")
 	src := `
 importId = importStep "A356-H01.STEP";
 partXf = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]];
@@ -389,7 +389,7 @@ return msh;
 }
 
 func TestAssembleWithSlots(t *testing.T) {
-	pkgMgr := source.NewLocalManager("../../../common/source/package")
+	pkgMgr := source.NewLocalManager("../../stdlib")
 	src := `
 importId = importStep "A356-H01.STEP";
 partXf = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]];
@@ -412,7 +412,7 @@ return msh;
 }
 
 func TestAssembleTreesManifold(t *testing.T) {
-	commonRoot := "../../../common/source/package"
+	commonRoot := "../../stdlib"
 	docRoot := "../../../../dm/documents"
 	src, err := os.ReadFile(docRoot + "/trees/manifold/manifold.gsl")
 	if err != nil {
@@ -429,7 +429,7 @@ func TestAssembleTreesManifold(t *testing.T) {
 }
 
 func TestAssembleS304_C02(t *testing.T) {
-	commonRoot := "../../../common/source/package"
+	commonRoot := "../../stdlib"
 	docRoot := "../../../../dm/documents"
 	src, err := os.ReadFile(docRoot + "/branches/S304_C02/S304_C02.gsl")
 	if err != nil {
@@ -446,7 +446,7 @@ func TestAssembleS304_C02(t *testing.T) {
 }
 
 func TestAssembleS304_T001(t *testing.T) {
-	commonRoot := "../../../common/source/package"
+	commonRoot := "../../stdlib"
 	docRoot := "../../../../dm/documents"
 	src, err := os.ReadFile(docRoot + "/trees/S304-T001/S304-T001.gsl")
 	if err != nil {
@@ -789,7 +789,7 @@ return sphere(p, 10 + scan(p).x);
 }
 
 func TestAssemble_MapUnrollSlotsFromComputedCollection(t *testing.T) {
-	pkgMgr := source.NewLocalManager("../../../common/source/package")
+	pkgMgr := source.NewLocalManager("../../stdlib")
 	src := `
 makeMesh(id) {
 	partXf = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]];

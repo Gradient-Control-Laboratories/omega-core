@@ -25,7 +25,7 @@ a, capA = capped(flatHead, length(p) - 3.0, 1.0);
 b, capB = capped(roundHead, length(p - [5.0, 0.0, 0.0]) - 3.0, 1.5);
 return min(a, b), min(capA, capB);
 `
-	res, err := Assemble([]string{src}, source.NewLocalManager("../../../common/source/package"))
+	res, err := Assemble([]string{src}, source.NewLocalManager("../../stdlib"))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -116,7 +116,7 @@ banded(x, period) {
 }
 return length(p) - 3.0 - banded(p.x, 20.0);
 `
-	res, err := Assemble([]string{src}, source.NewLocalManager("../../../common/source/package"))
+	res, err := Assemble([]string{src}, source.NewLocalManager("../../stdlib"))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

@@ -21,7 +21,7 @@ import (
 )
 
 var mockMgr = source.NewLocalManager(
-	"../../../../common/source/package",
+	"../../../../../stdlib",
 )
 
 func TestConvert(t *testing.T) {

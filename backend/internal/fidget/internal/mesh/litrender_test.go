@@ -12,7 +12,7 @@ import (
 	"gradientcontrol.com/omega/core/program"
 )
 
-var testPkgMgr = source.NewLocalManager("../../../../common/source/package")
+var testPkgMgr = source.NewLocalManager("../../../../../stdlib")
 
 func litProgram(t *testing.T, src string) *program.Program {
 	t.Helper()

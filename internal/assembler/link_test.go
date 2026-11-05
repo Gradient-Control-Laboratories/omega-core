@@ -28,7 +28,7 @@ func testRebuildOne(t *testing.T, srcFile string) {
 }
 
 func runTestRebuildOne(t *testing.T, srcFile string, src []byte) (*program.Program, error) {
-	pkgMgr := source.NewLocalManager("../../../common/source/package")
+	pkgMgr := source.NewLocalManager("../../stdlib")
 
 	prog, err := collect.Program([]string{string(src)}, pkgMgr, parser.ParsePackage)
 	if err != nil {
@@ -228,7 +228,7 @@ func testReferencesOne(t *testing.T, srcFile string) {
 }
 
 func runTestReferencesOn(t *testing.T, srcFile string, src []byte) (*program.Program, error) {
-	pkgMgr := source.NewLocalManager("../../../common/source/package")
+	pkgMgr := source.NewLocalManager("../../stdlib")
 
 	prog, err := collect.Program([]string{string(src)}, pkgMgr, parser.ParsePackage)
 	if err != nil {

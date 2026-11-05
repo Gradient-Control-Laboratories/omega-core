@@ -16,7 +16,7 @@ import (
 	"gradientcontrol.com/omega/core/program"
 )
 
-var mockMgr = source.NewLocalManager("testpkg", "../../../../common/source/package")
+var mockMgr = source.NewLocalManager("testpkg", "../../../../../../stdlib")
 
 func renderHelper(
 	src string,

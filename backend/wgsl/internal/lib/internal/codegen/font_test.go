@@ -10,7 +10,7 @@ import (
 	"gradientcontrol.com/omega/core/internal/source"
 )
 
-const textFontPath = "../../../../common/source/package/text/text.gsl"
+const textFontPath = "../../../../../../stdlib/text/text.gsl"
 
 // Verifies the generated pen-stroke font compiles end-to-end: the helpers,
 // per-glyph functions, branchless glyph(code) dispatch, and the map/reduce
@@ -85,7 +85,7 @@ func TestFontCompilesDynamicTime(t *testing.T) {
 }
 
 func TestFontImportsDynamicTime(t *testing.T) {
-	const pkgRoot = "../../../../common/source/package"
+	const pkgRoot = "../../../../../../stdlib"
 	gsl := pkgRoot + "/text/text.gsl"
 	if _, err := os.Stat(gsl); err != nil {
 		t.Skipf("font not generated: %v", err)
@@ -112,7 +112,7 @@ func TestFontImportsDynamicTime(t *testing.T) {
 // Verifies the font resolves as an importable package and that string literals
 // of various scripts (the codes are Unicode codepoints) resolve to glyphs.
 func TestFontImports(t *testing.T) {
-	const pkgRoot = "../../../../common/source/package"
+	const pkgRoot = "../../../../../../stdlib"
 
 	cases := []struct{ name, pkg, text string }{
 		{"latin", "text", "Hi"},

@@ -19,7 +19,7 @@ pitch = thread.metricPitch(d);
 depth = 5.0 * 0.866 * pitch / 8.0;
 return cylinderZ([0.0, 0.0, 0.0], d / 2.0 - depth);
 `
-	res, err := Assemble([]string{src}, source.NewLocalManager("../../../common/source/package"))
+	res, err := Assemble([]string{src}, source.NewLocalManager("../../stdlib"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,7 +99,7 @@ f(a, b) {
 }
 return f(n, m);
 `
-	res, err := Assemble([]string{src}, source.NewLocalManager("../../../common/source/package"))
+	res, err := Assemble([]string{src}, source.NewLocalManager("../../stdlib"))
 	if err != nil {
 		t.Fatal(err)
 	}

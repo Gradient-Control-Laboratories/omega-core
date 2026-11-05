@@ -133,7 +133,7 @@ accelerations:
 }
 
 func TestParseCommittedSidecars(t *testing.T) {
-	matrixPath := "../package/matrix/matrix.wgsl.yaml"
+	matrixPath := "../../../../stdlib/matrix/matrix.wgsl.yaml"
 	mDesc, err := ParseFile(matrixPath)
 	if err != nil {
 		t.Fatalf("failed to parse %s: %v", matrixPath, err)
@@ -145,7 +145,7 @@ func TestParseCommittedSidecars(t *testing.T) {
 		t.Errorf("expected 11 accelerations in matrix.wgsl.yaml, got %d", len(mDesc.Accelerations))
 	}
 
-	vectorPath := "../package/vector/vector.wgsl.yaml"
+	vectorPath := "../../../../stdlib/vector/vector.wgsl.yaml"
 	vDesc, err := ParseFile(vectorPath)
 	if err != nil {
 		t.Fatalf("failed to parse %s: %v", vectorPath, err)

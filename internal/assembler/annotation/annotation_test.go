@@ -14,7 +14,7 @@ import (
 
 func parseAndValidate(t *testing.T, src string) error {
 	t.Helper()
-	srcMgr := source.NewLocalManager("../../../common/source/package")
+	srcMgr := source.NewLocalManager("../../../stdlib")
 	prog, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
 	if err != nil {
 		return err
@@ -29,7 +29,7 @@ func parseAndValidate(t *testing.T, src string) error {
 // types and so runs after types.Analyze rather than beside Validate.
 func parseAndValidateReturns(t *testing.T, src string) error {
 	t.Helper()
-	srcMgr := source.NewLocalManager("../../../common/source/package")
+	srcMgr := source.NewLocalManager("../../../stdlib")
 	prog, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
 	if err != nil {
 		return err
