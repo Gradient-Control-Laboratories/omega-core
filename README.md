@@ -1,6 +1,6 @@
-# Omega Core SDK (`omega_core`)
+# Omega Core SDK (`omega-core`)
 
-`omega_core` is the standalone Go SDK for the Geometric Specification Language (GSL). It provides
+`omega-core` is the standalone Go SDK for the Geometric Specification Language (GSL). It provides
 pure, modular compiler libraries and the `gsl` command-line toolchain (`compile`, `serve`, `fix`)
 for parsing, analyzing, refactoring, and compiling GSL models into WebGPU compute shaders (WGSL),
 3D meshes (STL), bytecode tapes, and audio synthesizers.
@@ -24,7 +24,7 @@ for parsing, analyzing, refactoring, and compiling GSL models into WebGPU comput
 ### Directory Layout
 
 ```text
-omega_core/
+omega-core/
 ├── go.mod                     # module gradientcontrol.com/omega/core
 ├── assembler/
 │   ├── assemble.go            # Assemble(primarySources, opts...) API

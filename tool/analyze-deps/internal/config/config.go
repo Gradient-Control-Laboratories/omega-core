@@ -24,7 +24,7 @@ func ParseFlags(args []string) (*Config, error) {
 	fs := flag.NewFlagSet("analyze-deps", flag.ContinueOnError)
 
 	var (
-		rootDir   = fs.String("root", ".", "Path to omega_core root directory")
+		rootDir   = fs.String("root", ".", "Path to omega-core root directory")
 		narrowPkg = fs.String("narrow", "", "Analyze a specific internal package for narrowing")
 		allNarrow = fs.Bool("all-narrow", false, "Report all internal packages that can be narrowed")
 		rules     = fs.Bool("rules", false, "Audit all packages against architectural invariants")
