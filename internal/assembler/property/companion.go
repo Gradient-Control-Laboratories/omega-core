@@ -584,7 +584,16 @@ func (c *companions) reachableParams(fn *program.Function) (paramNeeds, error) {
 		case *program.Operand_Expression:
 			if t.Expression.Operation == program.Operation_DERIV && len(t.Expression.Operands) == 2 {
 				if ref, ok := t.Expression.Operands[1].T.(*program.Operand_Reference); ok {
-					mark(t.Expression.Operands[0], ref.Reference.Name == program.PVarName)
+					switch ref.Reference.Name {
+					case program.PVarName, program.TimeVarName:
+						mark(t.Expression.Operands[0], ref.Reference.Name == program.PVarName)
+					default:
+						// A .d(var) names a top-level variable, not a
+						// parameter, so a companion has no tangent to pass
+						// it; it is a top-level operator.
+						walkErr = fmt.Errorf("cannot differentiate with respect to %q inside a function body; .d(%s) is only supported in top-level expressions", ref.Reference.Name, ref.Reference.Name)
+						return
+					}
 				}
 			}
 			for _, sub := range t.Expression.Operands {

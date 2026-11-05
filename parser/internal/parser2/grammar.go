@@ -242,9 +242,19 @@ type Factor struct {
 	Not      bool           `parser:"@'!'?"`
 	Negative bool           `parser:"@'-'?"`
 	Value    Value          `parser:"@@"`
-	Access   string         `parser:"( '.' @Ident )?"`
+	Access   *Accessor      `parser:"@@?"`
 	Index    *Expression    `parser:"( '[' @@ ']' )?"`
 	EndPos   lexer.Position // automatically assigned by parser
+}
+
+// Accessor is a postfix `.name` on a factor: a swizzle, a property operator
+// (.dp, .second, .box, .u, .v) or, with arguments, the derivative `.d(var)`.
+// Only .d takes arguments; the build rejects them on any other name.
+type Accessor struct {
+	Pos    lexer.Position // automatically assigned by parser
+	Name   string         `parser:"'.' @Ident"`
+	Args   *Arguments     `parser:"@@?"`
+	EndPos lexer.Position // automatically assigned by parser
 }
 
 type Value interface{ isValue() }

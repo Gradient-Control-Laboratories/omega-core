@@ -189,6 +189,22 @@ func buildFunctionCall(buildScope scope.BuilderScope, fnCall *FunctionCall) (*pr
 		return buildVdbSdfCall(buildScope, fnCall, pos, endPos)
 	}
 
+	// name.d(var), the derivative of the variable `name` with respect to
+	// `var`, reaches here as a qualified call: `name.d(` reads as a package's
+	// function d until the prefix turns out not to be an import.
+	if fnName == program.DAccessor && pkgName != "" {
+		if _, isImport := buildScope.NamedElem(pkgName).(*scope.PkgRef); !isImport {
+			start := posToLocation(pos)
+			refEnd := program.NewLoc(
+				start.Line,
+				start.Column+int32(len(pkgName)),
+				start.Offset+int32(len(pkgName)),
+			)
+			target := program.NewReference("", pkgName, start, refEnd)
+			return newDerivWrt(buildScope, target, fnCall.Arguments, pos, endPos)
+		}
+	}
+
 	arguments, err := buildExpressions(buildScope, fnCall.Arguments)
 	if err != nil {
 		return nil, err

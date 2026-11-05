@@ -125,6 +125,16 @@ type ArgsCallDomain interface {
 	ArgsCall(name string, args []*program.Operand, eval func(*program.Operand) (Value, error)) (Value, bool, error)
 }
 
+// SeedDomain is an optional Domain extension asked for a declaration's value
+// before its body is evaluated, in a nameable scope (top level, companion
+// bodies — never an inlined function's locals, which may shadow the name).
+// (value, true) stands in for the declaration, so its body is never seen. The
+// derivative uses it to hold the variable a .d(var) is taken with respect to
+// independent of whatever that variable was assigned.
+type SeedDomain interface {
+	Seeded(name string) (Value, bool)
+}
+
 // Engine evaluates operands in a Domain, resolving names against a package's
 // declarations and inlining user functions.
 type Engine struct {
@@ -281,6 +291,14 @@ func (f *frame) lookup(name string) (Value, error) {
 		mb, destructured := s.multiDecls[name]
 		if !ok && !destructured {
 			continue
+		}
+		if s.nameable {
+			if sd, ok := f.eng.dom.(SeedDomain); ok {
+				if v, ok := sd.Seeded(name); ok {
+					s.vars[name] = v
+					return v, nil
+				}
+			}
 		}
 		if s.evaluating[name] {
 			return nil, fmt.Errorf("cyclic reference through %q", name)

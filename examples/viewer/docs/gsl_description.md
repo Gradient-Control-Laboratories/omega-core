@@ -251,11 +251,12 @@ Example: `v.xy` returns a vec2; `v.z` returns a scalar.
 * **Vector Indexing:** Another way to access vector components is using `[index]`.
 Example: `v[0]` returns the first component; `v[1]` returns the second component.
 
-* **Derivatives:** `.dtime` and `.dp` compute derivatives of a field by automatic differentiation.
+* **Derivatives:** `.dtime`, `.dp` and `.d(var)` compute derivatives of a field by automatic differentiation.
   * `f.dtime` — the rate of change of `f` with respect to `time` (same shape as `f`). Composes for higher orders: `f.dtime.dtime` is the second time derivative (e.g. velocity, then acceleration).
   * `f.dp` — the spatial gradient of a scalar field `f` with respect to the point `p`, returning a vec3. For a distance field this points along the surface normal; use `normalize(f.dp)` for a unit normal.
-  * Works in top-level expressions and inside functions (a function using `.dp` / `.dtime` on a parameter is differentiated at each call site). Use parentheses to combine with other accessors, e.g. `(f.dp).x`.
-  Example: `vel = shape.dtime;` `n = normalize(shape.dp);`
+  * `f.d(var)` — the derivative of `f` with respect to a top-level scalar variable `var`, such as a slider (same shape as `f`). The variable is taken as independent: its own assignment is not differentiated, and every value written in terms of it follows by the chain rule, so with `h = budget / r;` and `v = pi * r * r * h;`, `v.d(r)` differentiates through `h`. On a distance field, `-f.d(var) / length(f.dp)` is the speed of the surface along its normal as `var` grows. `.d(p)` and `.d(time)` are `.dp` and `.dtime`. Top-level expressions only; `var` must be a scalar.
+  * Works in top-level expressions and inside functions (a function using `.dp` / `.dtime` on a parameter is differentiated at each call site; `.d(var)` is top-level only). Use parentheses to combine with other accessors, e.g. `(f.dp).x`.
+  Example: `vel = shape.dtime;` `n = normalize(shape.dp);` `dVolume = volume.d(radius);`
 
 * **Second-closest distance:** `f.second` is the distance to the
 SECOND-nearest primitive surface of `f`, over the surfaces reachable

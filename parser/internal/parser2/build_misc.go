@@ -88,6 +88,36 @@ func newDeriv(target *program.Operand, accessor string, endPos lexer.Position) *
 	)
 }
 
+// newDerivWrt builds a DERIV operand for the derivative of target with respect
+// to a named variable: the postfix `.d(var)`, or `name.d(var)`, which reaches
+// the build as a qualified call whose prefix is not an import. As for .dtime
+// and .dp the second operand references the variable; the autodiff pass
+// expands the DERIV before backend lowering, and is where the name is checked
+// to be a top-level scalar variable.
+func newDerivWrt(buildScope scope.BuilderScope, target *program.Operand, args []*Expression, pos, endPos lexer.Position) (*program.Operand, error) {
+	if len(args) != 1 {
+		return nil, &participle.ParseError{
+			Pos: pos,
+			Msg: fmt.Sprintf(".d takes one argument, the variable to differentiate with respect to, not %d", len(args)),
+		}
+	}
+	wrt, err := buildExpression(buildScope, args[0])
+	if err != nil {
+		return nil, err
+	}
+	if r, ok := wrt.T.(*program.Operand_Reference); !ok || r.Reference.Prefix != "" {
+		return nil, &participle.ParseError{
+			Pos: args[0].Pos,
+			Msg: ".d takes the name of a variable to differentiate with respect to",
+		}
+	}
+	return program.NewExpression(
+		program.Operation_DERIV,
+		[]*program.Operand{target, wrt},
+		target.Start, posToLocation(endPos),
+	), nil
+}
+
 // newSecond builds a SECONDCLOSEST operand for a .second postfix accessor: the
 // second-closest primitive-surface distance of the target field. It converts
 // 1:1 to the model SECONDCLOSEST, which the self-computing-property pass expands

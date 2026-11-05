@@ -207,7 +207,7 @@ func plainReference(expr *Expression) (string, bool) {
 		return "", false
 	}
 	factor := logicAnd.Left.Left.Left.Left.Left
-	if factor == nil || factor.Not || factor.Negative || factor.Access != "" || factor.Index != nil {
+	if factor == nil || factor.Not || factor.Negative || factor.Access != nil || factor.Index != nil {
 		return "", false
 	}
 	ref, ok := factor.Value.(*Reference)

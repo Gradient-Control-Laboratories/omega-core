@@ -1,0 +1,50 @@
+@scene(200)
+
+// The can problem: the most volume for a fixed material budget, when the side
+// wall and the two lids cost different amounts per area. The height is not a
+// free choice — it is whatever wall the budget still pays for once the lids
+// are bought — so the volume is a function of the radius alone, and the best
+// can is where its derivative with respect to r is zero.
+//
+// `.d(r)` differentiates with respect to the slider r by automatic
+// differentiation. r is taken as independent, and everything written in terms
+// of it (h, volume, the can itself) follows by the chain rule.
+
+r = 30.0;
+r.min = 10.0;
+r.max = 60.0;
+sideCost = 1.0;
+sideCost.min = 0.5;
+sideCost.max = 3.0;
+endCost = 2.0;
+endCost.min = 0.5;
+endCost.max = 3.0;
+budget = 40000.0;
+budget.min = 10000.0;
+budget.max = 80000.0;
+
+// cost = sideCost * 2 pi r h + endCost * 2 pi r^2, solved for h.
+h = (budget - endCost * 2 * pi * r * r) / (sideCost * 2 * pi * r);
+volume = pi * r * r * h;
+
+// dVolume/dr, through h. Positive: a wider can holds more; negative: the lids
+// are eating the budget. Zero at the optimum, which is h = 2 r endCost / sideCost
+// — the classic h = 2r when the lids cost the same as the wall.
+dVolume = volume.d(r);
+
+can = max(length(p.xy) - r, abs(p.z) - h / 2);
+
+// The same derivative of the SHAPE: -can.d(r) / |grad can| is how fast the
+// surface moves along its normal as r grows. The wall moves out at speed 1;
+// the lids move in, since h shrinks as r grows. Red is out, blue is in.
+speed = -can.d(r) / length(can.dp);
+can.color = ramp(speed, -1, 1, color.blue, color.red);
+
+// A gauge for dVolume: a bar beside the can, pointing +x when growing r would
+// gain volume and -x when it would lose it. Slide r until it vanishes.
+gaugeScale = 0.01;
+gaugeLength = dVolume * gaugeScale;
+gauge = boxCentered([r + 12 + gaugeLength / 2, 0, 0], [abs(gaugeLength) + 1, 4, 4]);
+gauge.color = dVolume > 0 ? color.green : color.red;
+
+return can, gauge;

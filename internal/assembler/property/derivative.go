@@ -33,7 +33,8 @@ type paramTangent struct {
 }
 
 // derivative is the forward-mode automatic-differentiation property. It expands
-// the .dtime (temporal) and .dp (spatial gradient) operators.
+// the .dtime (temporal) and .dp (spatial gradient) operators, and .d(var), the
+// derivative with respect to a top-level variable.
 //
 // params is non-empty only while generating a companion function body: it maps
 // a parameter name to its symbolic tangents so a .dp / .dtime written inside the
@@ -65,7 +66,13 @@ func (d *derivative) box() *boxProp {
 }
 
 func (d *derivative) engine(seed map[string]*program.Operand) *Engine {
-	return &Engine{dom: &derivDomain{d: d, seed: seed}, decls: d.decls, multiDecls: d.multiDecls, funcs: d.funcs, imports: d.imports}
+	return d.engineIn(&derivDomain{d: d, seed: seed})
+}
+
+// engineIn is engine for a Domain the caller has built, when a seed set is not
+// all it needs: a .d(var) also names the variable it holds independent.
+func (d *derivative) engineIn(dom *derivDomain) *Engine {
+	return &Engine{dom: dom, decls: d.decls, multiDecls: d.multiDecls, funcs: d.funcs, imports: d.imports}
 }
 
 // temporal computes d(target)/d(time), preserving target's shape.
@@ -101,7 +108,8 @@ func (d *derivative) gradient(target *program.Operand) (*program.Operand, error)
 	return nary(program.Operation_COLLECT, axes...), nil
 }
 
-// expandDeriv expands a DERIV operand (.dtime / .dp) to a derivative operand.
+// expandDeriv expands a DERIV operand (.dtime / .dp / .d(var)) to a derivative
+// operand.
 func (d *derivative) expandDeriv(operands []*program.Operand) (*program.Operand, error) {
 	if len(operands) != 2 {
 		return nil, fmt.Errorf("derivative expects 2 operands, got %d", len(operands))
@@ -116,7 +124,52 @@ func (d *derivative) expandDeriv(operands []*program.Operand) (*program.Operand,
 	case program.PVarName:
 		return d.gradient(operands[0])
 	default:
-		return nil, fmt.Errorf("cannot differentiate with respect to %q", wrtRef.Reference.Name)
+		return d.wrt(operands[0], wrtRef.Reference.Name)
+	}
+}
+
+// wrt computes d(target)/d(name) for a top-level variable, preserving target's
+// shape. The variable is INDEPENDENT: its own assignment is not differentiated
+// (see derivDomain.Seeded), so name' = 1 whatever it was set to, and every
+// declaration written in terms of it picks up its tangent by the chain rule —
+// with h = budget / r, (pi * r * r * h).d(r) differentiates through h.
+//
+// Only a top-level scalar variable, and only from a top-level expression. A
+// parameter would need the call site's tangent, which is the companion
+// machinery (.dp / .dtime inside a function); a vector would need one seed per
+// component, as the gradient takes per axis. Neither is supported here. Types
+// are not known when properties expand, so only a literal vector is caught.
+func (d *derivative) wrt(target *program.Operand, name string) (*program.Operand, error) {
+	if d.params != nil {
+		return nil, fmt.Errorf("cannot differentiate with respect to %q inside a function body; .d(%s) is only supported in top-level expressions", name, name)
+	}
+	body, declared := d.decls[name]
+	_, destructured := d.multiDecls[name]
+	if !declared && !destructured {
+		return nil, fmt.Errorf("cannot differentiate with respect to %q: not a top-level variable", name)
+	}
+	if declared {
+		if e, ok := body.T.(*program.Operand_Expression); ok && e.Expression.Operation == program.Operation_COLLECT {
+			return nil, fmt.Errorf("cannot differentiate with respect to %q: it is a vector, and .d takes a scalar variable", name)
+		}
+	}
+	v, err := d.engineIn(&derivDomain{d: d, seed: d.varSeed(name), wrt: name}).Eval(target)
+	if err != nil {
+		return nil, err
+	}
+	return v.(dual).tangent, nil
+}
+
+// varSeed seeds d/d(name) for a top-level variable: name'=1, time and every
+// spatial coordinate '=0. No parameter tangents: wrt refuses companion bodies.
+func (d *derivative) varSeed(name string) map[string]*program.Operand {
+	return map[string]*program.Operand{
+		program.TimeVarName: num(0),
+		program.PVarName:    nary(program.Operation_COLLECT, num(0), num(0), num(0)),
+		program.XVarName:    num(0),
+		program.YVarName:    num(0),
+		program.ZVarName:    num(0),
+		name:                num(1),
 	}
 }
 
@@ -167,6 +220,20 @@ func (d *derivative) axisSeed(k int) map[string]*program.Operand {
 type derivDomain struct {
 	d    *derivative
 	seed map[string]*program.Operand // implied-var name -> tangent operand
+	// wrt names the top-level variable a .d(var) differentiates with respect
+	// to, which Seeded holds independent of its assignment. Empty for .dtime
+	// and .dp, whose seeds are implied variables with no assignment to skip.
+	wrt string
+}
+
+// Seeded stands in for the declaration of the variable a .d(var) is taken with
+// respect to: its live reference with tangent 1, in place of the derivative of
+// whatever it was assigned. That is what makes the variable independent.
+func (dd *derivDomain) Seeded(name string) (Value, bool) {
+	if dd.wrt == "" || name != dd.wrt {
+		return nil, false
+	}
+	return dual{primal: ref(name), tangent: num(1)}, true
 }
 
 func (dd *derivDomain) Literal(v float64) Value { return dual{num(v), num(0)} }
