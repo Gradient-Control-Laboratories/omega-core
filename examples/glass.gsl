@@ -1,0 +1,56 @@
+@scene(40)
+
+// Transmissive materials from the glass library. A glass shape sets a
+// material (its finish and medium) and a colour (the tint that comes
+// through), and the viewer refracts the view ray into it and marches on, so
+// what is behind or inside the glass is seen through it. Everything stands on
+// a checkerboard so there is something to see through the glass.
+
+clearMat, clearColor = glass.clear();
+brassMat, brassColor = metal.brass();
+frostedMat, frostedColor = glass.frosted();
+smokedMat, smokedColor = glass.smoked();
+resinMat, resinColor = glass.resin();
+stainlessMat, stainlessColor = metal.stainless();
+
+spacing = 9;
+
+// A clear glass sphere with a brass ball behind it.
+lens = remap(sphere(3.5), p - [-1.5 * spacing, 0, 0]);
+lens.material = clearMat;
+lens.color = clearColor;
+
+brassBall = remap(sphere(2), p - [-1.5 * spacing, 8, 0]);
+brassBall.material = brassMat;
+brassBall.color = brassColor;
+
+// A frosted slab in front of a red sphere: the finish blurs it.
+slab = remap(box([-4, -0.75, -4], [4, 0.75, 4], intersectChamfer(0.2)), p - [-0.5 * spacing, -4, 0]);
+slab.material = frostedMat;
+slab.color = frostedColor;
+
+redBall = remap(sphere(2.5), p - [-0.5 * spacing, 4, 0]);
+redBall.material = material.shinyPlastic;
+redBall.color = color.cherry;
+
+// A smoked glass cube, tinted by its thickness.
+cube = remap(box([-3, -3, -3], [3, 3, 3], intersectRound(0.2)), p - [0.5 * spacing, 0, 0]);
+cube.material = smokedMat;
+cube.color = smokedColor;
+
+// A resin block with a steel pin cast inside it.
+block = remap(box([-3.5, -3.5, -3.5], [3.5, 3.5, 3.5], intersectExponential
+(0.5)), p - [1.5 * spacing, 0, 0]);
+block.material = resinMat;
+block.color = resinColor;
+
+pin = remap(cylinderCapped([0, 0, -2.5], [0, 0, 2.5], 0.6, intersectExponential
+(0.2)), p - [1.5 * spacing, 0, 0]);
+pin.material = stainlessMat;
+pin.color = stainlessColor;
+
+board = boxCentered([0, 2, -4.5], [38, 20, 1]);
+board.material = material.matte;
+board.color = map.checkerXY(2) > 0 ? [0.85, 0.85, 0.85] : [0.12, 0.12, 0.12];
+
+return lens, brassBall, slab, redBall, cube, block, pin, board;
