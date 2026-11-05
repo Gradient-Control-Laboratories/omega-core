@@ -16,10 +16,15 @@ import (
 	"gradientcontrol.com/omega/core/program"
 )
 
-// builtinGaborSpinodoid lowers gaborSpinodoid / gaborSpinodoidGradient to the
-// spinodoid oracle leaves over a kernel table baked here, in the fidget agent:
-// the drivers are fields of p, and this is where a field can be evaluated at
-// the kernel centres, once each, as hodge samples them.
+// builtinGaborSpinodoid lowers gaborSpinodoid / gaborSpinodoidGradient and
+// their fastGaborSpinodoid aliases to the spinodoid oracle leaves over a
+// lattice kernel table baked here, in the fidget agent: the drivers are fields
+// of p, and this is where a field can be evaluated at the kernel centres, once
+// each, as hodge samples them.
+//
+// Both names are the lattice field, here as in the preview, so a part meshes
+// as it renders. A tape marks every leaf fast; a reader that wants hodge's
+// field swaps it in from the payload's arguments.
 //
 // Every argument but q, scale and orientation must be a constant by now
 // (inlining has folded the library wrapper's parameters into the call); they
@@ -194,82 +199,48 @@ func (d *Delegate) builtinGaborSpinodoid(
 			return nil, fmt.Errorf("%s: %w", name, err)
 		}
 	}
-	// Which field this is: hodge's unless the document named the lattice, or
-	// this build is the preview's bake, which renders the lattice for every
-	// spinodoid call (see BakeSpinodoids).
-	if program.IsFastGaborSpinodoid(name) || d.spinodoidPreview {
-		layout, err := spinodoid.NewLayout(spinodoid.TableConstants(p.Period, p.PacketWidth, p.Impulses), p.Domain, p.Periodic)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", name, err)
-		}
-		key := fmt.Sprintf("domain-v2|%v|%v|%v|%v|%d|%d|%d|%v|%v|%s|%v", p.Period, p.Theta, p.Poles,
-			p.PacketWidth, p.Impulses, p.Pool, p.Seed, scale, rot, fingerprint, layout)
-		table, err := bakeSpinodoid(key, p)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %v", name, err)
-		}
-		contentSum := sha256.Sum256([]byte(key))
-
-		// Record the bake under the call's cross-backend key, for a WGSL preview
-		// asking which table each of its calls reads (see BakeSpinodoids).
-		callKey := spinodoid.Call{
-			Period: p.Period, Theta: p.Theta, Poles: poles, PacketWidth: p.PacketWidth,
-			Impulses: p.Impulses, Pool: p.Pool, Seed: p.Seed, Bias: bias, Local: local,
-			Fast:  true,
-			Chain: build.KeyedCallSite(d.GetScope(), op),
-		}.Key()
-		if d.spinodoidBakes == nil {
-			d.spinodoidBakes = map[string]BakedSpinodoid{}
-		}
-
-		slotKey := fmt.Sprintf("%p/%v/%v", table, level, local)
-		slot, ok := d.spinodoidSlots[slotKey]
-		if !ok {
-			if d.spinodoidSlots == nil {
-				d.spinodoidSlots = map[string]uint32{}
-			}
-			slot = d.spinodoidNextSlot
-			d.spinodoidNextSlot++
-			if err := fidget.RegisterSpinodoid(slot, table, level, local); err != nil {
-				return nil, fmt.Errorf("%s: %v", name, err)
-			}
-			d.spinodoidSlots[slotKey] = slot
-			d.recordSpinodoidOracle(fidget.SpinodoidOracleID(slot, fidget.SpinodoidDistance),
-				true, p, poles, bias, local, scale, scaleIsField, rot, rotIsField, fingerprint, driverTape)
-		}
-		d.spinodoidBakes[callKey] = BakedSpinodoid{Table: table, ContentID: hex.EncodeToString(contentSum[:16]),
-			params: p, cacheKey: key, slot: slot, level: level, local: local}
-		return d.spinodoidLeaves(op, name, slot, q, fidget.SpinodoidTree)
+	layout, err := spinodoid.NewLayout(spinodoid.TableConstants(p.Period, p.PacketWidth, p.Impulses), p.Domain, p.Periodic)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", name, err)
 	}
-
-	// hodge's field. Its table is laid out like the lattice's -- periodic for
-	// a stationary field, bounded to the domain for a driven one -- but hashed
-	// on true cell indices, so it is hodge's field everywhere inside the
-	// domain rather than a world-anchored realization that repeats. Its slots
-	// are a separate space in the oracle, and the preview never binds one, so
-	// it records no bake here.
-	key := fmt.Sprintf("hodge-v2|%v|%v|%v|%v|%d|%d|%d|%v|%v|%s|%v|%v", p.Period, p.Theta, p.Poles,
-		p.PacketWidth, p.Impulses, p.Pool, p.Seed, scale, rot, fingerprint, p.Periodic, p.Domain)
-	table, err := bakeHodgeSpinodoid(key, p)
+	key := fmt.Sprintf("domain-v2|%v|%v|%v|%v|%d|%d|%d|%v|%v|%s|%v", p.Period, p.Theta, p.Poles,
+		p.PacketWidth, p.Impulses, p.Pool, p.Seed, scale, rot, fingerprint, layout)
+	table, err := bakeSpinodoid(key, p)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %v", name, err)
 	}
-	slotKey := fmt.Sprintf("hodge/%p/%v/%v", table, level, local)
-	slot, ok := d.spinodoidHodgeSlots[slotKey]
+	contentSum := sha256.Sum256([]byte(key))
+
+	// Record the bake under the call's cross-backend key, for a WGSL preview
+	// asking which table each of its calls reads (see BakeSpinodoids).
+	callKey := spinodoid.Call{
+		Period: p.Period, Theta: p.Theta, Poles: poles, PacketWidth: p.PacketWidth,
+		Impulses: p.Impulses, Pool: p.Pool, Seed: p.Seed, Bias: bias, Local: local,
+		Fast:  true,
+		Chain: build.KeyedCallSite(d.GetScope(), op),
+	}.Key()
+	if d.spinodoidBakes == nil {
+		d.spinodoidBakes = map[string]BakedSpinodoid{}
+	}
+
+	slotKey := fmt.Sprintf("%p/%v/%v", table, level, local)
+	slot, ok := d.spinodoidSlots[slotKey]
 	if !ok {
-		if d.spinodoidHodgeSlots == nil {
-			d.spinodoidHodgeSlots = map[string]uint32{}
+		if d.spinodoidSlots == nil {
+			d.spinodoidSlots = map[string]uint32{}
 		}
-		slot = d.spinodoidHodgeNextSlot
-		d.spinodoidHodgeNextSlot++
-		if err := fidget.RegisterHodgeSpinodoid(slot, table, level, local); err != nil {
+		slot = d.spinodoidNextSlot
+		d.spinodoidNextSlot++
+		if err := fidget.RegisterSpinodoid(slot, table, level, local); err != nil {
 			return nil, fmt.Errorf("%s: %v", name, err)
 		}
-		d.spinodoidHodgeSlots[slotKey] = slot
-		d.recordSpinodoidOracle(fidget.HodgeSpinodoidOracleID(slot, fidget.SpinodoidDistance),
-			false, p, poles, bias, local, scale, scaleIsField, rot, rotIsField, fingerprint, driverTape)
+		d.spinodoidSlots[slotKey] = slot
+		d.recordSpinodoidOracle(fidget.SpinodoidOracleID(slot, fidget.SpinodoidDistance),
+			p, poles, bias, local, scale, scaleIsField, rot, rotIsField, fingerprint, driverTape)
 	}
-	return d.spinodoidLeaves(op, name, slot, q, fidget.HodgeSpinodoidTree)
+	d.spinodoidBakes[callKey] = BakedSpinodoid{Table: table, ContentID: hex.EncodeToString(contentSum[:16]),
+		params: p, cacheKey: key, slot: slot, level: level, local: local}
+	return d.spinodoidLeaves(op, name, slot, q, fidget.SpinodoidTree)
 }
 
 // spinodoidLeaves builds the oracle leaves for one call: the distance, or the
@@ -385,27 +356,6 @@ var (
 	spinodoidCache   = map[string]*spinodoid.Table{}
 )
 
-// hodge's tables are cached the same way, keyed apart: the two fields are
-// different tables from the same arguments.
-var hodgeSpinodoidCache = map[string]*spinodoid.HodgeTable{}
-
-func bakeHodgeSpinodoid(key string, p spinodoid.Params) (*spinodoid.HodgeTable, error) {
-	spinodoidCacheMu.Lock()
-	defer spinodoidCacheMu.Unlock()
-	if t, ok := hodgeSpinodoidCache[key]; ok {
-		return t, nil
-	}
-	t, err := spinodoid.HodgeBake(p)
-	if err != nil {
-		return nil, err
-	}
-	if len(hodgeSpinodoidCache) >= spinodoidCacheSize {
-		clear(hodgeSpinodoidCache)
-	}
-	hodgeSpinodoidCache[key] = t
-	return t, nil
-}
-
 func bakeSpinodoid(key string, p spinodoid.Params) (*spinodoid.Table, error) {
 	spinodoidCacheMu.Lock()
 	defer spinodoidCacheMu.Unlock()
@@ -427,12 +377,12 @@ func bakeSpinodoid(key string, p spinodoid.Params) (*spinodoid.Table, error) {
 // for a tape export to carry. A constant driver travels as its value; a field
 // driver leaves the value nil and travels as its trees, serialized in
 // driverTape (the same bytes the fingerprint hashes).
-func (d *Delegate) recordSpinodoidOracle(assetID uint32, fast bool, p spinodoid.Params,
+func (d *Delegate) recordSpinodoidOracle(assetID uint32, p spinodoid.Params,
 	poles []float64, bias float64, local bool,
 	scale float64, scaleIsField bool, rot [3][3]float64, rotIsField bool,
 	fingerprint string, driverTape []byte) {
 	o := SpinodoidOracle{
-		AssetID: assetID, Fast: fast,
+		AssetID: assetID, Fast: true,
 		Period: p.Period, Theta: p.Theta, Poles: poles,
 		PacketWidth: p.PacketWidth, Impulses: uint32(p.Impulses), Pool: uint32(p.Pool),
 		Seed: p.Seed, Bias: bias, LocalNormalize: local,
@@ -472,7 +422,8 @@ type SpinodoidOracle struct {
 	// components are the next three ids; a consumer registers the slot once and
 	// resolves all four, so a gradient-only call is covered too.
 	AssetID uint32
-	// Fast marks the lattice field (fastGaborSpinodoid) rather than hodge's.
+	// Fast marks the lattice field rather than hodge's. Every table omega
+	// binds is the lattice, whichever builtin the document called.
 	Fast bool
 
 	Period         float64
@@ -605,7 +556,6 @@ func BakeSpinodoids(prog *program.Program) (map[string]BakedSpinodoid, error) {
 		gslSource = prog.Primary.Files[0].Source
 	}
 	d := NewDelegate(gslSource)
-	d.spinodoidPreview = true
 
 	fidget.Lock()
 	defer fidget.Unlock()

@@ -9,20 +9,24 @@
 //! float work, done in f64 so a point matches the Go reference's Sample -- and
 //! so a part this builds is one hodge can rebuild.
 //!
-//! The table holds the cells [-TABLE_CELLS/2, TABLE_CELLS/2)^3 and wraps
+//! A periodic table holds the cells [-TABLE_CELLS/2, TABLE_CELLS/2)^3 and wraps
 //! outside them; a lookup rebuilds each kernel's centre from the query's
-//! unwrapped cell, so the wrap is seamless. Unlike the lattice table beside it
-//! (super), it is always periodic and never sized to a domain: the Go baker
-//! refuses a driven domain that would not fit, so a driver cannot repeat here
-//! unnoticed.
+//! unwrapped cell, so the wrap is seamless. A bounded one, which the Go baker
+//! makes for a driven field over a known domain, holds the cells covering that
+//! domain, hashed on their true indices, and reads as the distance to the
+//! domain outside it, as the lattice table beside it (super) does.
 //!
-//! Its own slots and oracle-leaf block are separate from the lattice's, so a
-//! document may read both fields. The parent's interval helpers are shared.
+//! Its own slots and oracle-leaf block are separate from the lattice's. omega's
+//! builds bind only the lattice; these are registered by a tape reader
+//! (tape.rs register_hodge_spinodoid). The parent's interval helpers are shared.
 
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::f64::consts::PI;
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::{
+    atomic::{AtomicU64, Ordering},
+    Arc, Mutex, OnceLock,
+};
 
 use fidget_core::{
     mesh_oracle::{self, MeshOracle as MeshOracleTrait},
@@ -43,8 +47,11 @@ const TABLE_ORIGIN: i64 = -TABLE_CELLS / 2;
 /// f64s per kernel: jitter xyz, direction xyz, wavenumber, phase.
 pub const KERNEL_STRIDE: usize = 8;
 
+static NEXT_TABLE_ID: AtomicU64 = AtomicU64::new(1);
+
 /// One baked table.
 pub struct Table {
+    id: u64,
     kernels: Vec<f64>,
     origin: [i64; 3],
     size: [usize; 3],
@@ -115,6 +122,7 @@ impl Table {
             beta_max = beta_max.max(k[6]);
         }
         Ok(Table {
+            id: NEXT_TABLE_ID.fetch_add(1, Ordering::Relaxed),
             kernels,
             origin,
             size,
@@ -376,12 +384,14 @@ impl Table {
 
 // One-entry memo: the four leaves of a slot ask for the same evaluation at the
 // same point. Pure, so reuse for bit-identical arguments is always safe.
+// Keyed by the table's monotonic `id` rather than its heap address so re-baking
+// into a recycled allocation cannot hit a stale memoized sample.
 thread_local! {
-    static MEMO: RefCell<Option<([u32; 3], usize, (f64, [f64; 3]))>> = const { RefCell::new(None) };
+    static MEMO: RefCell<Option<([u32; 3], u64, (f64, [f64; 3]))>> = const { RefCell::new(None) };
 }
 
 fn eval_memo(table: &Arc<Table>, x: f32, y: f32, z: f32) -> (f64, [f64; 3]) {
-    let tag = Arc::as_ptr(table) as usize;
+    let tag = table.id;
     let key = [x.to_bits(), y.to_bits(), z.to_bits()];
     MEMO.with(|m| {
         if let Some((k, t, v)) = *m.borrow() {
@@ -518,6 +528,22 @@ pub fn register(slot: u32, table: Table) -> Result<(), String> {
     }
     tables().lock().unwrap().insert(slot, table);
     Ok(())
+}
+
+/// Install a table under the four leaf ids starting at `first_id`, whichever
+/// block they are in: a tape reader binds the table it baked to the ids the
+/// tape's leaves carry.
+pub fn register_leaves(first_id: u32, table: Table) {
+    let table = Arc::new(table);
+    for comp in 0..component::COUNT {
+        mesh_oracle::register(
+            first_id + comp,
+            Arc::new(HodgeOracle {
+                table: table.clone(),
+                comp,
+            }),
+        );
+    }
 }
 
 /// True once `slot` holds a table.

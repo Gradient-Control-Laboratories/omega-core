@@ -7,9 +7,11 @@
 //! `Tape::from_bytes` to get a handle it can `eval` / `grad` / `interval` /
 //! `mesh_stl` in-process. Oracle payloads (bvhSdf/vdbSdf) travel out-of-band and
 //! are bound by asset id via `register_mesh_oracle` / `register_vdb_oracle`
-//! before replay; a spinodoid's kernel table is bound by slot via
-//! `register_hodge_spinodoid`. `tape_oracle_uses` lists what a given tape
-//! needs, and loading fails rather than reading an unbound oracle as zero.
+//! before replay; a spinodoid is baked on load from the arguments its payload
+//! carries, as the backend `OracleMode::spinodoid` chooses (a tape without the
+//! payload binds a table by slot via `register_hodge_spinodoid`).
+//! `tape_oracle_uses` lists what a given tape needs, and loading fails rather
+//! than reading an unbound oracle as zero.
 //!
 //! Two layers live here:
 //!   * a safe Rust API (`serialize_outputs`, `Tape`, the `register_*` helpers)
@@ -57,7 +59,17 @@ pub enum OracleForce {
     Vdb,
 }
 
-/// Load-time policy for turning embedded mesh-oracle payloads into oracles.
+/// Which spinodoid a payload is rebuilt as on load. The tape carries the
+/// field's arguments, and the same arguments describe two fields: `Fast` is
+/// omega's lattice (what the viewer draws), `Manufacturing` hodge's
+/// jittered-kernel field.
+#[derive(Clone, Copy, PartialEq)]
+pub enum SpinodoidBackend {
+    Fast,
+    Manufacturing,
+}
+
+/// Load-time policy for turning embedded oracle payloads into oracles.
 #[derive(Clone, Copy)]
 pub struct OracleMode {
     pub force: OracleForce,
@@ -69,6 +81,8 @@ pub struct OracleMode {
     /// stays accurate (band reach in world units = voxel_size * half_band).
     /// None uses the tape's value, or a default of 3. Ignored for BVH.
     pub half_band: Option<f32>,
+    /// Which field a spinodoid payload is baked as, whatever its `fast` flag.
+    pub spinodoid: SpinodoidBackend,
 }
 
 impl Default for OracleMode {
@@ -77,6 +91,77 @@ impl Default for OracleMode {
             force: OracleForce::Auto,
             resolution: None,
             half_band: None,
+            spinodoid: SpinodoidBackend::Fast,
+        }
+    }
+}
+
+/// One payload's departures from the tape-wide [`OracleMode`]: each set field
+/// replaces the mode's for the payload whose asset id it is keyed by. A tape
+/// may carry several meshes and several spinodoids, and each can be read its
+/// own way.
+#[derive(Clone, Copy, Default)]
+pub struct OracleOverride {
+    pub force: Option<OracleForce>,
+    pub resolution: Option<u32>,
+    pub half_band: Option<f32>,
+    pub spinodoid: Option<SpinodoidBackend>,
+}
+
+impl OracleMode {
+    fn with(self, o: Option<&OracleOverride>) -> OracleMode {
+        let Some(o) = o else { return self };
+        OracleMode {
+            force: o.force.unwrap_or(self.force),
+            resolution: o.resolution.or(self.resolution),
+            half_band: o.half_band.or(self.half_band),
+            spinodoid: o.spinodoid.unwrap_or(self.spinodoid),
+        }
+    }
+}
+
+// Every payload a Tape loads is bound under ids of its own, taken from here,
+// so two tapes in one process never read each other's oracles even where
+// their tapes share asset ids. The block sits below the vdbSdf bit and clear
+// of the library-baked and spinodoid blocks (0xE0...), and above the small
+// asset ids omega writes.
+const LOADED_ORACLE_ID_FIRST: u32 = 0x4000_0000;
+const LOADED_ORACLE_ID_END: u32 = 0x7FFF_FFFF;
+static NEXT_LOADED_ORACLE_ID: std::sync::atomic::AtomicU32 =
+    std::sync::atomic::AtomicU32::new(LOADED_ORACLE_ID_FIRST);
+
+fn fresh_oracle_ids(n: u32) -> Result<u32, String> {
+    let first = NEXT_LOADED_ORACLE_ID.fetch_add(n, std::sync::atomic::Ordering::Relaxed);
+    if first > LOADED_ORACLE_ID_END - n {
+        return Err("this process has loaded too many oracles to give a new tape ids of its own".into());
+    }
+    Ok(first)
+}
+
+/// What a released id reads as: nothing should evaluate it once its Tape is
+/// gone, and a NaN says so if something does.
+struct ReleasedOracle;
+
+impl fidget::mesh_oracle::MeshOracle for ReleasedOracle {
+    fn point(&self, _x: f32, _y: f32, _z: f32) -> f32 {
+        f32::NAN
+    }
+
+    fn interval(&self, _x: Interval, _y: Interval, _z: Interval) -> Interval {
+        Interval::new(f32::NEG_INFINITY, f32::INFINITY)
+    }
+}
+
+/// The registry ids a Tape bound, released when it is dropped (or when a load
+/// fails part way). fidget's registry has no removal, so releasing replaces
+/// each oracle with a ReleasedOracle: the mesh or table it held is freed, and
+/// a few bytes per id remain.
+struct OwnedOracles(Vec<u32>);
+
+impl Drop for OwnedOracles {
+    fn drop(&mut self) {
+        for &id in &self.0 {
+            fidget::mesh_oracle::register(id, Arc::new(ReleasedOracle));
         }
     }
 }
@@ -110,24 +195,15 @@ fn resolve_voxel(o: &tape_proto::OraclePayload, resolution: Option<u32>) -> f32 
     (oracle_longest_axis(o) / DEFAULT_VDB_RESOLUTION as f32).max(MIN_VOXEL)
 }
 
-/// Register one embedded oracle payload as the structure `mode` selects, under
-/// the registry key its tree leaf uses (vdbSdf leaves carry the high bit).
-fn register_oracle(o: &tape_proto::OraclePayload, mode: OracleMode) -> Result<(), String> {
-    // A SPINODOID payload is the field's arguments, not a mesh, and this
-    // runtime has no baker for it — omega bakes in Go, hodge in Python, and
-    // both are pinned to each other, so a third would be a third thing to keep
-    // in parity. Skipping it leaves the slot unregistered, which the load-time
-    // check below reports: the caller binds the table with
-    // register_hodge_spinodoid. Building a BVH from its empty triangle lists
-    // would instead register an oracle that answers, wrongly, forever.
-    if o.kind == tape_proto::OracleKind::Spinodoid as i32 {
-        return Ok(());
-    }
+/// Register one embedded mesh payload as the structure `mode` selects, under
+/// `asset_id` as its tree leaf uses it (vdbSdf leaves carry the high bit).
+/// Returns the registry key.
+fn register_oracle(o: &tape_proto::OraclePayload, asset_id: u32, mode: OracleMode) -> Result<u32, String> {
     let authored_vdb = o.kind == tape_proto::OracleKind::Vdb as i32;
     let key = if authored_vdb {
-        o.asset_id | crate::vdb_oracle::VDB_ASSET_BIT
+        asset_id | crate::vdb_oracle::VDB_ASSET_BIT
     } else {
-        o.asset_id
+        asset_id
     };
     let want_vdb = match mode.force {
         OracleForce::Auto => authored_vdb,
@@ -156,6 +232,159 @@ fn register_oracle(o: &tape_proto::OraclePayload, mode: OracleMode) -> Result<()
             .collect();
         let oracle = crate::mesh_oracle::TriBspOracle::new(verts, tris);
         fidget::mesh_oracle::register(key, Arc::new(oracle));
+    }
+    Ok(key)
+}
+
+/// The values of the tape's driver nodes at `centers`, one Vec per node: the
+/// tape's own trees, evaluated in f32 as omega's bake reads them.
+fn eval_driver_nodes(
+    tape: &tape_proto::Tape,
+    nodes: &[u32],
+    centers: &[[f64; 3]],
+) -> Result<Vec<Vec<f64>>, String> {
+    // Replay just the driver trees, as the outputs of a copy of this tape that
+    // carries no oracles: every oracle it could reach is already bound.
+    let sub = tape_proto::Tape {
+        outputs: nodes.to_vec(),
+        oracles: Vec::new(),
+        output_names: Vec::new(),
+        appearance: Vec::new(),
+        ..tape.clone()
+    };
+    let d = tape_core::decode(&sub, &mut |_| Ok(()))?;
+    let n = centers.len();
+    let xs: Vec<f32> = centers.iter().map(|c| c[0] as f32).collect();
+    let ys: Vec<f32> = centers.iter().map(|c| c[1] as f32).collect();
+    let zs: Vec<f32> = centers.iter().map(|c| c[2] as f32).collect();
+    let mut out = Vec::with_capacity(nodes.len());
+    for shape in &d.outputs {
+        let t = shape.float_slice_tape(Default::default());
+        let mut eval = ShapeBulkEval::<VmFloatSliceEval<N>>::default();
+        let values = eval
+            .eval_with_vars(&t, &xs, &ys, &zs, &d.shape_vars)
+            .map_err(|e| format!("spinodoid driver: {:?}", e))?;
+        out.push(values[..n].iter().map(|&v| v as f64).collect());
+    }
+    Ok(out)
+}
+
+/// Whether `id` is a spinodoid slot's distance leaf, lattice or hodge block:
+/// the only id a SPINODOID payload may be keyed by.
+fn is_spinodoid_distance_id(id: u32) -> bool {
+    use tape_core::spinodoid::{component, hodge};
+    let comp = tape_core::spinodoid::leaf_of_id(id)
+        .or_else(|| hodge::leaf_of_id(id))
+        .map(|(_, comp)| comp);
+    comp == Some(component::DISTANCE)
+}
+
+/// Bake one SPINODOID payload as `backend` and bind it under the four leaf ids
+/// from `first_id`. The payload is everything the field is a function of
+/// (tape.proto's SpinodoidParams), so this is the same table omega's Go baker
+/// builds from the same arguments; tape-core's bake tests pin the two to each
+/// other. `tape` is the tape the payload's driver nodes index into, with every
+/// oracle they could read already bound.
+fn register_spinodoid(
+    tape: &tape_proto::Tape,
+    o: &tape_proto::OraclePayload,
+    first_id: u32,
+    backend: SpinodoidBackend,
+) -> Result<(), String> {
+    use tape_core::spinodoid::{bake, hodge};
+
+    let s = o
+        .spinodoid
+        .as_ref()
+        .ok_or_else(|| format!("spinodoid oracle {:#x} has no parameters", o.asset_id))?;
+    #[allow(deprecated)]
+    if s.level_bias != 0.0 {
+        return Err(format!(
+            "spinodoid oracle {:#x} carries the retired quantile levelBias ({}) rather than a bias; regenerate the tape",
+            o.asset_id, s.level_bias
+        ));
+    }
+    if s.poles.len() % 3 != 0 {
+        return Err(format!("spinodoid oracle {:#x}: poles are not xyz triples", o.asset_id));
+    }
+
+    let constant_scale = match (s.scale_nodes.len(), s.scale.first()) {
+        (0, Some(&v)) => Some(v),
+        (0, None) => {
+            return Err(format!(
+                "spinodoid oracle {:#x} has neither scale nor scaleNodes",
+                o.asset_id
+            ))
+        }
+        _ => None,
+    };
+    let constant_rotation = match (s.orientation_nodes.len(), s.orientation.len()) {
+        (0, 9) => Some([
+            [s.orientation[0], s.orientation[1], s.orientation[2]],
+            [s.orientation[3], s.orientation[4], s.orientation[5]],
+            [s.orientation[6], s.orientation[7], s.orientation[8]],
+        ]),
+        (9, _) => None,
+        _ => {
+            return Err(format!(
+                "spinodoid oracle {:#x} needs 9 orientation entries or 9 orientationNodes",
+                o.asset_id
+            ))
+        }
+    };
+
+    // The drivers as the bake takes them, mirroring omega's converter: a
+    // constant 1 or identity is no driver at all.
+    let scale_field = |c: &[[f64; 3]]| -> Result<Vec<f64>, String> {
+        Ok(eval_driver_nodes(tape, &s.scale_nodes, c)?.remove(0))
+    };
+    let scale_constant = |c: &[[f64; 3]]| -> Result<Vec<f64>, String> {
+        Ok(vec![constant_scale.unwrap_or(1.0); c.len()])
+    };
+    let rotation_field = |c: &[[f64; 3]]| -> Result<Vec<[[f64; 3]; 3]>, String> {
+        let v = eval_driver_nodes(tape, &s.orientation_nodes, c)?;
+        Ok((0..c.len())
+            .map(|k| [[v[0][k], v[1][k], v[2][k]], [v[3][k], v[4][k], v[5][k]], [v[6][k], v[7][k], v[8][k]]])
+            .collect())
+    };
+    let rotation_constant = |c: &[[f64; 3]]| -> Result<Vec<[[f64; 3]; 3]>, String> {
+        Ok(vec![constant_rotation.unwrap_or_default(); c.len()])
+    };
+    let identity = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
+    let scale: Option<bake::ScaleDriver> = match constant_scale {
+        None => Some(&scale_field),
+        Some(v) if v != 1.0 => Some(&scale_constant),
+        Some(_) => None,
+    };
+    let orientation: Option<bake::OrientationDriver> = match constant_rotation {
+        None => Some(&rotation_field),
+        Some(r) if r != identity => Some(&rotation_constant),
+        Some(_) => None,
+    };
+
+    let p = bake::Params {
+        theta: s.theta_radians.clone(),
+        poles: s.poles.chunks_exact(3).map(|c| [c[0], c[1], c[2]]).collect(),
+        period: s.period,
+        packet_width: s.packet_width,
+        impulses: s.impulses as usize,
+        pool: s.pool as usize,
+        seed: s.seed,
+        scale,
+        orientation,
+        domain: (s.domain.len() == 6).then(|| [s.domain[0], s.domain[1], s.domain[2], s.domain[3], s.domain[4], s.domain[5]]),
+        periodic: s.periodic,
+    };
+    let what = |e: String| format!("spinodoid oracle {:#x}: {}", o.asset_id, e);
+    match backend {
+        SpinodoidBackend::Fast => {
+            let table = bake::lattice(&p, s.bias, s.local_normalize).map_err(what)?;
+            tape_core::spinodoid::register_leaves(first_id, table);
+        }
+        SpinodoidBackend::Manufacturing => {
+            let table = bake::manufacturing(&p, s.bias, s.local_normalize).map_err(what)?;
+            hodge::register_leaves(first_id, table);
+        }
     }
     Ok(())
 }
@@ -391,13 +620,116 @@ pub struct Tape {
     // Optional world-space scene bbox [xmin,ymin,zmin,xmax,ymax,zmax] carried as
     // tape metadata (None when the tape didn't record one).
     bbox: Option<[f32; 6]>,
+    // The registry ids this tape's payloads are bound under, released with it.
+    // Last, so the shapes that read them are dropped first.
+    _oracles: OwnedOracles,
 }
 
-fn build_tape(tape: &tape_proto::Tape, mode: OracleMode) -> Result<Tape, String> {
+/// Check that every override names a payload in `tape`, and only sets what
+/// that payload's kind reads.
+fn check_overrides(tape: &tape_proto::Tape, overrides: &HashMap<u32, OracleOverride>) -> Result<(), String> {
+    for (&id, ov) in overrides {
+        let Some(o) = tape.oracles.iter().find(|o| o.asset_id == id) else {
+            return Err(format!("no oracle payload in this tape has asset id {:#x}", id));
+        };
+        let spinodoid = o.kind == tape_proto::OracleKind::Spinodoid as i32;
+        if spinodoid && (ov.force.is_some() || ov.resolution.is_some() || ov.half_band.is_some()) {
+            return Err(format!(
+                "oracle {:#x} is a spinodoid: oracles / resolution / half_band are mesh settings",
+                id
+            ));
+        }
+        if !spinodoid && ov.spinodoid.is_some() {
+            return Err(format!("oracle {:#x} is a mesh: backend is a spinodoid setting", id));
+        }
+    }
+    Ok(())
+}
+
+fn build_tape(
+    tape: &tape_proto::Tape,
+    mode: OracleMode,
+    overrides: &HashMap<u32, OracleOverride>,
+) -> Result<Tape, String> {
     // The replay is tape-core's, shared with the browser build; only the
-    // oracle kinds are render's: `mode` chooses whether an embedded source
-    // mesh becomes an exact BVH or a VDB level set (at an optional resolution).
-    let d = tape_core::decode(tape, &mut |o| register_oracle(o, mode))?;
+    // oracle kinds are render's: each payload's mode (the tape-wide one with
+    // its override, if any) chooses whether an embedded source mesh becomes an
+    // exact BVH or a VDB level set (at an optional resolution), and which field
+    // a spinodoid payload is baked as.
+    check_overrides(tape, overrides)?;
+
+    // Bind every payload under fresh ids, and replay a copy of the tape whose
+    // leaves name them: the registry is process-wide, and a payload read one
+    // way here must not be read that way by another tape, or replace what
+    // another tape bound. A leaf with no payload keeps its id; its oracle was
+    // registered by hand, for every tape that names it.
+    let mut rekeyed = tape.clone();
+    let mut owned = OwnedOracles(Vec::new());
+    let mut leaf_ids: HashMap<u32, u32> = HashMap::new();
+    let mut first_of: Vec<Option<u32>> = vec![None; tape.oracles.len()];
+    for (i, o) in tape.oracles.iter().enumerate() {
+        if tape_proto::OracleKind::try_from(o.kind).is_err() {
+            return Err(format!("oracle {}: unknown kind {}", i, o.kind));
+        }
+        let spinodoid = o.kind == tape_proto::OracleKind::Spinodoid as i32;
+        if spinodoid && !is_spinodoid_distance_id(o.asset_id) {
+            return Err(format!(
+                "oracle {}: spinodoid oracle {:#x} is not a slot's distance leaf",
+                i, o.asset_id
+            ));
+        }
+        // A tape may carry one asset's payload twice; it binds once.
+        if leaf_ids.contains_key(&o.asset_id) {
+            continue;
+        }
+        if spinodoid {
+            let n = tape_core::spinodoid::component::COUNT;
+            let first = fresh_oracle_ids(n)?;
+            for c in 0..n {
+                leaf_ids.insert(o.asset_id + c, first + c);
+            }
+            first_of[i] = Some(first);
+        } else {
+            let first = fresh_oracle_ids(1)?;
+            leaf_ids.insert(o.asset_id, first);
+            leaf_ids.insert(
+                o.asset_id | crate::vdb_oracle::VDB_ASSET_BIT,
+                first | crate::vdb_oracle::VDB_ASSET_BIT,
+            );
+            first_of[i] = Some(first);
+        }
+    }
+    for node in &mut rekeyed.nodes {
+        if let Some(tape_proto::node::N::MeshOracle(id)) = &mut node.n {
+            if let Some(&new) = leaf_ids.get(id) {
+                *id = new;
+            }
+        }
+    }
+
+    // Every oracle is bound before the replay. Meshes go first: a spinodoid's
+    // driver trees may read them while it bakes.
+    for (i, o) in tape.oracles.iter().enumerate() {
+        let Some(first) = first_of[i] else { continue };
+        if o.kind == tape_proto::OracleKind::Spinodoid as i32 {
+            continue;
+        }
+        let key = register_oracle(o, first, mode.with(overrides.get(&o.asset_id)))
+            .map_err(|e| format!("oracle {}: {}", i, e))?;
+        owned.0.push(key);
+    }
+    for (i, o) in tape.oracles.iter().enumerate() {
+        let Some(first) = first_of[i] else { continue };
+        if o.kind != tape_proto::OracleKind::Spinodoid as i32 {
+            continue;
+        }
+        let backend = mode.with(overrides.get(&o.asset_id)).spinodoid;
+        // Bound before baking, so a failed bake releases what it registered.
+        owned.0.extend((0..tape_core::spinodoid::component::COUNT).map(|c| first + c));
+        register_spinodoid(&rekeyed, o, first, backend)?;
+    }
+    let tape = &rekeyed;
+    let d = tape_core::decode(tape, &mut |_| Ok(()))?;
 
     // Every oracle leaf must resolve before this handle is handed out.
     //
@@ -430,6 +762,7 @@ fn build_tape(tape: &tape_proto::Tape, mode: OracleMode) -> Result<Tape, String>
         names: d.names,
         shape_vars: d.shape_vars,
         bbox: d.bbox,
+        _oracles: owned,
     })
 }
 
@@ -634,8 +967,20 @@ impl Tape {
     /// Like `from_bytes`, but `mode` chooses the oracle structure on load — e.g.
     /// force exact BVH everywhere, or VDB at a target resolution.
     pub fn from_bytes_with(bytes: &[u8], mode: OracleMode) -> Result<Tape, String> {
+        Tape::from_bytes_with_overrides(bytes, mode, &HashMap::new())
+    }
+
+    /// Like `from_bytes_with`, with per-payload departures from `mode`, keyed
+    /// by each payload's asset id ([`tape_oracle_payloads`] lists them). An
+    /// override must name a payload in the tape and set only what its kind
+    /// reads.
+    pub fn from_bytes_with_overrides(
+        bytes: &[u8],
+        mode: OracleMode,
+        overrides: &HashMap<u32, OracleOverride>,
+    ) -> Result<Tape, String> {
         let tape = tape_proto::Tape::decode(bytes).map_err(|e| format!("decode: {:?}", e))?;
-        build_tape(&tape, mode)
+        build_tape(&tape, mode, overrides)
     }
 
     /// The world-space scene bbox recorded in the tape, if any:
@@ -791,22 +1136,59 @@ pub type OracleUseRow = (u32, String, bool, Option<u32>);
 ///
 /// This is read-only and needs no registration, so it is the first call a host
 /// replaying someone else's tape makes.
+///
+/// A spinodoid leaf is self-contained here when the tape carries its slot's
+/// payload, which `Tape` bakes on load; tape-core alone cannot.
 pub fn tape_oracle_uses(bytes: &[u8]) -> Result<Vec<OracleUseRow>, String> {
     let tape = tape_proto::Tape::decode(bytes).map_err(|e| format!("decode: {:?}", e))?;
+    let baked = |slot: Option<u32>, kind: &str| {
+        let first = match (kind, slot) {
+            ("spinodoid", Some(s)) => tape_core::spinodoid::oracle_id(s, 0),
+            ("hodgeSpinodoid", Some(s)) => tape_core::spinodoid::hodge::oracle_id(s, 0),
+            _ => return false,
+        };
+        tape.oracles
+            .iter()
+            .any(|o| o.kind == tape_proto::OracleKind::Spinodoid as i32 && o.asset_id == first)
+    };
     Ok(tape_core::oracle_uses(&tape)
         .into_iter()
-        .map(|u| (u.id, u.kind.to_string(), u.self_contained, u.slot))
+        .map(|u| {
+            let self_contained = u.self_contained || baked(u.slot, u.kind);
+            (u.id, u.kind.to_string(), self_contained, u.slot)
+        })
         .collect())
+}
+
+/// The oracle payloads a tape carries, as `(asset_id, kind)`: the ids
+/// per-payload load settings are keyed by. `kind` is "bvh" or "vdb" (a mesh,
+/// as the GSL author wrote it) or "spinodoid". A payload the tape repeats is
+/// listed once.
+pub fn tape_oracle_payloads(bytes: &[u8]) -> Result<Vec<(u32, String)>, String> {
+    let tape = tape_proto::Tape::decode(bytes).map_err(|e| format!("decode: {:?}", e))?;
+    let mut out: Vec<(u32, String)> = Vec::new();
+    for o in &tape.oracles {
+        if out.iter().any(|(id, _)| *id == o.asset_id) {
+            continue;
+        }
+        let kind = match tape_proto::OracleKind::try_from(o.kind) {
+            Ok(tape_proto::OracleKind::MeshBvh) => "bvh",
+            Ok(tape_proto::OracleKind::Vdb) => "vdb",
+            Ok(tape_proto::OracleKind::Spinodoid) => "spinodoid",
+            Err(_) => return Err(format!("oracle {:#x}: unknown kind {}", o.asset_id, o.kind)),
+        };
+        out.push((o.asset_id, kind.to_string()));
+    }
+    Ok(out)
 }
 
 /// Install a baked hodge-spinodoid kernel table in `slot`, registering the
 /// oracles for every leaf id `slot` covers, so a tape referencing them loads.
 ///
-/// The table is the caller's, because the field's definition is the caller's:
+/// For a tape whose leaf has no payload. A tape with one is baked on load
+/// instead (register_spinodoid), and its payload's table replaces this one.
 /// hodge's `_gabor_kernels` produces exactly these kernels, and omega's
 /// `HodgeBake` is pinned to it (common/noise/spinodoid/hodge_parity_test.go).
-/// Nothing here re-derives a field — it binds the one handed over — so there is
-/// no second implementation to keep in parity.
 ///
 /// `kernels` is `cells * impulses * 8` f64, in row-major cell order over
 /// `size` from `origin`, each kernel `[jitter xyz, dir xyz, beta, gamma]`.
@@ -1269,6 +1651,337 @@ mod tests {
         assert!(
             vals[0] > 0.0 && vals[1] < 0.0,
             "crest and trough of a cos wave should straddle the level: {vals:?}"
+        );
+    }
+
+    // A tape as omega writes it: one spinodoid leaf with its payload. The
+    // arguments are spinodoid.gabor(6, [pi/2, pi/2, pi/2]) at bias 0.3.
+    fn payload_tape(asset_id: u32) -> tape_proto::Tape {
+        use tape_proto::node::N;
+        tape_proto::Tape {
+            version: 1,
+            nodes: vec![tape_proto::Node {
+                n: Some(N::MeshOracle(asset_id)),
+            }],
+            outputs: vec![0],
+            oracles: vec![tape_proto::OraclePayload {
+                kind: tape_proto::OracleKind::Spinodoid as i32,
+                asset_id,
+                spinodoid: Some(tape_proto::SpinodoidParams {
+                    fast: true,
+                    period: 6.0,
+                    theta_radians: vec![std::f64::consts::FRAC_PI_2; 3],
+                    poles: vec![1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0],
+                    packet_width: 3.0,
+                    impulses: 8,
+                    pool: 4096,
+                    seed: 0,
+                    local_normalize: true,
+                    scale: vec![1.0],
+                    orientation: vec![1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0],
+                    periodic: true,
+                    bias: 0.3,
+                    ..Default::default()
+                }),
+                ..Default::default()
+            }],
+            ..Default::default()
+        }
+    }
+
+    // What omega's Go baker gives for payload_tape's arguments at these
+    // points (Bake / HodgeBake, Distance with local normalization).
+    const PAYLOAD_POINTS: [f32; 9] = [0.0, 0.0, 0.0, 2.5, -3.75, 6.125, -18.5, 11.25, 4.0];
+    const GO_LATTICE: [f64; 3] = [0.52092486296795693, 1.0646893390705905, -0.02383445563949289];
+    const GO_MANUFACTURING: [f64; 3] = [-0.41810563283014013, -1.0595184216823339, 0.18173290695875885];
+
+    fn load(t: &tape_proto::Tape, backend: Option<SpinodoidBackend>) -> Tape {
+        use prost::Message;
+        let mut mode = OracleMode::default();
+        if let Some(b) = backend {
+            mode.spinodoid = b;
+        }
+        Tape::from_bytes_with(&t.encode_to_vec(), mode).expect("load")
+    }
+
+    fn assert_near(got: &[f32], want: &[f64], tolerance: f64, what: &str) {
+        for (g, w) in got.iter().zip(want) {
+            assert!(
+                (*g as f64 - w).abs() < tolerance,
+                "{what}: got {got:?}, want {want:?}"
+            );
+        }
+    }
+
+    // The payload is enough: no registration, and the backend picks which of
+    // the two fields the same arguments describe. f32 evaluation, so the
+    // tolerance is float32 rounding on values of order one.
+    #[test]
+    fn spinodoid_payload_loads_as_either_backend() {
+        let t = payload_tape(tape_core::spinodoid::oracle_id(240, 0));
+        let fast = load(&t, None).eval(&PAYLOAD_POINTS, None).expect("eval");
+        assert_near(&fast, &GO_LATTICE, 1e-5, "default backend (fast)");
+
+        let t = payload_tape(tape_core::spinodoid::oracle_id(241, 0));
+        let fast = load(&t, Some(SpinodoidBackend::Fast)).eval(&PAYLOAD_POINTS, None).expect("eval");
+        assert_near(&fast, &GO_LATTICE, 1e-5, "fast");
+
+        let t = payload_tape(tape_core::spinodoid::oracle_id(242, 0));
+        let mfg = load(&t, Some(SpinodoidBackend::Manufacturing))
+            .eval(&PAYLOAD_POINTS, None)
+            .expect("eval");
+        assert_near(&mfg, &GO_MANUFACTURING, 1e-5, "manufacturing");
+    }
+
+    // A tape written before omega marked every leaf fast has its leaf in
+    // hodge's id block. The backend still decides: with none chosen it reads
+    // as the lattice, and the table is bound under the ids the tape carries.
+    #[test]
+    fn hodge_block_leaf_follows_the_backend() {
+        let mut t = payload_tape(tape_core::spinodoid::hodge::oracle_id(243, 0));
+        t.oracles[0].spinodoid.as_mut().unwrap().fast = false;
+        let fast = load(&t, None).eval(&PAYLOAD_POINTS, None).expect("eval");
+        assert_near(&fast, &GO_LATTICE, 1e-5, "hodge-block leaf, default backend");
+
+        let mut t = payload_tape(tape_core::spinodoid::hodge::oracle_id(244, 0));
+        t.oracles[0].spinodoid.as_mut().unwrap().fast = false;
+        let mfg = load(&t, Some(SpinodoidBackend::Manufacturing))
+            .eval(&PAYLOAD_POINTS, None)
+            .expect("eval");
+        assert_near(&mfg, &GO_MANUFACTURING, 1e-5, "hodge-block leaf, manufacturing");
+    }
+
+    // Two spinodoids from the same arguments, one output each: the second
+    // payload's override reads it as the manufacturing field, and the first
+    // keeps the tape-wide default.
+    fn two_spinodoid_tape() -> tape_proto::Tape {
+        use tape_proto::node::N;
+        let mut t = payload_tape(tape_core::spinodoid::oracle_id(0, 0));
+        let second = payload_tape(tape_core::spinodoid::oracle_id(1, 0));
+        t.nodes.push(tape_proto::Node {
+            n: Some(N::MeshOracle(second.oracles[0].asset_id)),
+        });
+        t.outputs.push(1);
+        t.oracles.push(second.oracles[0].clone());
+        t
+    }
+
+    fn overrides(entries: &[(u32, OracleOverride)]) -> HashMap<u32, OracleOverride> {
+        entries.iter().copied().collect()
+    }
+
+    #[test]
+    fn each_spinodoid_payload_takes_its_own_backend() {
+        use prost::Message;
+        let bytes = two_spinodoid_tape().encode_to_vec();
+        let mfg = OracleOverride {
+            spinodoid: Some(SpinodoidBackend::Manufacturing),
+            ..Default::default()
+        };
+        let h = Tape::from_bytes_with_overrides(
+            &bytes,
+            OracleMode::default(),
+            &overrides(&[(tape_core::spinodoid::oracle_id(1, 0), mfg)]),
+        )
+        .expect("load");
+        let first = h.eval(&PAYLOAD_POINTS, Some(0)).expect("eval");
+        let second = h.eval(&PAYLOAD_POINTS, Some(1)).expect("eval");
+        assert_near(&first, &GO_LATTICE, 1e-5, "payload without an override");
+        assert_near(&second, &GO_MANUFACTURING, 1e-5, "payload overridden to manufacturing");
+    }
+
+    // A tetrahedron, outward-wound, as a mesh payload.
+    fn tetra_payload(asset_id: u32) -> tape_proto::OraclePayload {
+        tape_proto::OraclePayload {
+            kind: tape_proto::OracleKind::MeshBvh as i32,
+            asset_id,
+            vertices: vec![1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, 1.0, -1.0, -1.0, -1.0, 1.0],
+            triangles: vec![0, 1, 2, 0, 3, 1, 0, 2, 3, 1, 3, 2],
+            ..Default::default()
+        }
+    }
+
+    // Two copies of one mesh. Loaded as authored, both are exact BVHs and
+    // agree; with the second forced to a coarse VDB, only the second moves.
+    #[test]
+    fn each_mesh_payload_takes_its_own_structure() {
+        use prost::Message;
+        use tape_proto::node::N;
+        let t = tape_proto::Tape {
+            version: 1,
+            nodes: vec![
+                tape_proto::Node { n: Some(N::MeshOracle(1)) },
+                tape_proto::Node { n: Some(N::MeshOracle(2)) },
+            ],
+            outputs: vec![0, 1],
+            oracles: vec![tetra_payload(1), tetra_payload(2)],
+            ..Default::default()
+        };
+        let vdb = OracleOverride {
+            force: Some(OracleForce::Vdb),
+            resolution: Some(16),
+            ..Default::default()
+        };
+        let bytes = t.encode_to_vec();
+        // Off a vertex along x the exact distance is 9.
+        let far = [10.0, 1.0, 1.0];
+        let authored = Tape::from_bytes(&bytes).expect("load as authored");
+        let a0 = authored.eval(&far, Some(0)).expect("eval")[0];
+        let a1 = authored.eval(&far, Some(1)).expect("eval")[0];
+        assert!((a0 - 9.0).abs() < 1e-4, "BVH distance: {a0}");
+        assert_eq!(a0, a1, "two BVHs of one mesh");
+
+        let h = Tape::from_bytes_with_overrides(&bytes, OracleMode::default(), &overrides(&[(2, vdb)]))
+            .expect("load");
+        let bvh = h.eval(&far, Some(0)).expect("eval")[0];
+        let vdb = h.eval(&far, Some(1)).expect("eval")[0];
+        assert_eq!(bvh, a0, "the payload without an override is still the BVH");
+        assert!((vdb - bvh).abs() > 1e-3, "the overridden payload should be the coarse VDB: {vdb} vs {bvh}");
+    }
+
+    // Two tapes with the same asset ids, read different ways, in one process:
+    // each keeps its own oracle, and dropping one releases only its own.
+    #[test]
+    fn tapes_sharing_asset_ids_keep_their_own_oracles() {
+        use prost::Message;
+        let bytes = payload_tape(tape_core::spinodoid::oracle_id(0, 0)).encode_to_vec();
+        let fast = Tape::from_bytes(&bytes).expect("load fast");
+        let mut mode = OracleMode::default();
+        mode.spinodoid = SpinodoidBackend::Manufacturing;
+        let mfg = Tape::from_bytes_with(&bytes, mode).expect("load manufacturing");
+        assert_near(&fast.eval(&PAYLOAD_POINTS, None).expect("eval"), &GO_LATTICE, 1e-5, "first tape");
+        assert_near(&mfg.eval(&PAYLOAD_POINTS, None).expect("eval"), &GO_MANUFACTURING, 1e-5, "second tape");
+
+        let released = mfg._oracles.0.clone();
+        drop(mfg);
+        for id in released {
+            let o = fidget::mesh_oracle::lookup(id).expect("still registered");
+            assert!(o.point(0.0, 0.0, 0.0).is_nan(), "{id:#x} should read as released");
+        }
+        assert_near(&fast.eval(&PAYLOAD_POINTS, None).expect("eval"), &GO_LATTICE, 1e-5, "survivor");
+    }
+
+    #[test]
+    fn overrides_must_fit_the_tape() {
+        use prost::Message;
+        let bytes = payload_tape(tape_core::spinodoid::oracle_id(0, 0)).encode_to_vec();
+        let mode = OracleMode::default();
+        let backend = OracleOverride {
+            spinodoid: Some(SpinodoidBackend::Manufacturing),
+            ..Default::default()
+        };
+        let err = Tape::from_bytes_with_overrides(&bytes, mode, &overrides(&[(7, backend)]))
+            .err()
+            .expect("an id the tape lacks");
+        assert!(err.contains("no oracle payload"), "{err}");
+        let force = OracleOverride {
+            force: Some(OracleForce::Vdb),
+            ..Default::default()
+        };
+        let err = Tape::from_bytes_with_overrides(
+            &bytes,
+            mode,
+            &overrides(&[(tape_core::spinodoid::oracle_id(0, 0), force)]),
+        )
+        .err()
+        .expect("a mesh setting on a spinodoid");
+        assert!(err.contains("mesh settings"), "{err}");
+
+        let mesh = tape_proto::Tape {
+            version: 1,
+            nodes: vec![tape_proto::Node {
+                n: Some(tape_proto::node::N::MeshOracle(1)),
+            }],
+            outputs: vec![0],
+            oracles: vec![tetra_payload(1)],
+            ..Default::default()
+        };
+        let err = Tape::from_bytes_with_overrides(&mesh.encode_to_vec(), mode, &overrides(&[(1, backend)]))
+            .err()
+            .expect("a backend on a mesh");
+        assert!(err.contains("spinodoid setting"), "{err}");
+        assert_eq!(
+            tape_oracle_payloads(&two_spinodoid_tape().encode_to_vec()).expect("payloads"),
+            vec![
+                (tape_core::spinodoid::oracle_id(0, 0), "spinodoid".to_string()),
+                (tape_core::spinodoid::oracle_id(1, 0), "spinodoid".to_string()),
+            ]
+        );
+    }
+
+    // With its payload in the tape, a spinodoid leaf needs nothing registered.
+    #[test]
+    fn oracle_uses_counts_a_payload_as_self_contained() {
+        use prost::Message;
+        let uses = tape_oracle_uses(&payload_tape(tape_core::spinodoid::oracle_id(247, 0)).encode_to_vec())
+            .expect("uses");
+        assert_eq!(uses.len(), 1);
+        assert_eq!(uses[0].1, "spinodoid");
+        assert!(uses[0].2, "the tape carries this slot's payload");
+    }
+
+    // Field drivers travel as nodes of the tape and are read at every kernel
+    // centre: scale 1 + 0.004 x, and a rotation about z by 0.05 y, over a
+    // bounded domain. The Go reference reads the drivers in f64 and this
+    // reader in f32, as omega's own bake does, hence the looser bound.
+    #[test]
+    fn spinodoid_payload_reads_its_driver_nodes() {
+        use tape_proto::node::N;
+        use tape_proto::{BinaryOp as B, UnaryOp as U};
+        let asset_id = tape_core::spinodoid::oracle_id(245, 0);
+        let mut t = payload_tape(asset_id);
+        let mut push = |n: N| {
+            t.nodes.push(tape_proto::Node { n: Some(n) });
+            (t.nodes.len() - 1) as u32
+        };
+        let bin = |op: B, lhs, rhs| N::Binary(tape_proto::Binary { op: op as i32, lhs, rhs });
+        let un = |op: U, arg| N::Unary(tape_proto::Unary { op: op as i32, arg });
+        let x = push(N::Axis(tape_proto::Axis::X as i32));
+        let y = push(N::Axis(tape_proto::Axis::Y as i32));
+        let one = push(N::Constant(1.0));
+        let zero = push(N::Constant(0.0));
+        let k = push(N::Constant(0.004));
+        let kx = push(bin(B::Mul, x, k));
+        let scale = push(bin(B::Add, one, kx));
+        let w = push(N::Constant(0.05));
+        let a = push(bin(B::Mul, y, w));
+        let c = push(un(U::Cos, a));
+        let s = push(un(U::Sin, a));
+        let ns = push(un(U::Neg, s));
+        let p = t.oracles[0].spinodoid.as_mut().unwrap();
+        p.theta_radians = vec![
+            std::f64::consts::FRAC_PI_2,
+            std::f64::consts::FRAC_PI_2,
+            std::f64::consts::FRAC_PI_6,
+        ];
+        p.seed = 3;
+        p.bias = 0.25;
+        p.scale = Vec::new();
+        p.orientation = Vec::new();
+        p.scale_nodes = vec![scale];
+        p.orientation_nodes = vec![c, ns, zero, s, c, zero, zero, zero, one];
+        p.periodic = false;
+        p.domain = vec![-20.0, -20.0, -20.0, 20.0, 20.0, 20.0];
+
+        let pts = [0.0, 0.0, 0.0, 2.5, -3.75, 6.125, -18.5, 11.25, 4.0, 30.0, 0.0, 0.0];
+        let fast = load(&t, None).eval(&pts, None).expect("eval");
+        assert_near(
+            &fast,
+            &[-1.7870893793673694, 0.86395264880181899, -0.22853634702410267, 10.0],
+            1e-4,
+            "driven lattice",
+        );
+
+        let mut t = t;
+        let id = tape_core::spinodoid::oracle_id(246, 0);
+        t.oracles[0].asset_id = id;
+        t.nodes[0].n = Some(N::MeshOracle(id));
+        let mfg = load(&t, Some(SpinodoidBackend::Manufacturing)).eval(&pts, None).expect("eval");
+        assert_near(
+            &mfg,
+            &[-1.9002615102383427, 0.44457195544755918, -0.28181459383269619, 10.0],
+            1e-4,
+            "driven manufacturing",
         );
     }
 

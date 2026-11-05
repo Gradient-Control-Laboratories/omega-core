@@ -10,9 +10,9 @@ const (
 
 	// RequestPathTape serializes the parsed module into an omega tape
 	// (tape::Tape protobuf — the post-lowering fidget-tree DAG) and writes it
-	// to the downloads dir. The request reuses MeshRequest (module + oracles +
-	// importSlots; bbox/depth/algorithm are ignored). The response reuses
-	// MeshStlResponse (Url points at the written .tape).
+	// to the downloads dir. The request reuses MeshRequest (program + oracles;
+	// bbox/depth/algorithm are ignored). The response reuses MeshStlResponse
+	// (Url points at the written .tape).
 	RequestPathTape  = "tape/request"
 	ResponsePathTape = "tape/result"
 
@@ -62,13 +62,11 @@ const (
 	ResponsePathSpinodoidBake = "fidget/spinodoid-bake/result"
 )
 
-// SpinodoidBakeRequest asks for every spinodoid table prog reads. Program,
-// ImportSlots and Imports mean what they mean on MeshRequest.
+// SpinodoidBakeRequest asks for every spinodoid table prog reads. Program
+// carries the serialized pre-folded program.Program.
 type SpinodoidBakeRequest struct {
-	ID          string            `json:"id"`
-	Program     []byte            `json:"program"` // Serialized program.Program
-	ImportSlots []ImportSlotRef   `json:"importSlots,omitempty"`
-	Imports     map[string][]byte `json:"imports,omitempty"`
+	ID      string `json:"id"`
+	Program []byte `json:"program"` // Serialized program.Program
 	// Known lists the content ids of tables the requester already holds;
 	// those come back without texels.
 	Known []string `json:"known,omitempty"`
@@ -97,19 +95,6 @@ type MeshRequest struct {
 	Algorithm        string              `json:"algorithm"`
 	MeshOracles      []MeshOraclePayload `json:"meshOracles,omitempty"`
 	VdbOracles       []VdbOraclePayload  `json:"vdbOracles,omitempty"`
-	// ImportSlots maps each package-local importStep/importMesh asset path to its
-	// compiler-assigned slot so fidget can fold the expression-form import
-	// (importStep "f") to a literal slot when it rebuilds the subtree — the
-	// same fold the canvas applied before slicing. Empty for the numbered form.
-	ImportSlots []ImportSlotRef `json:"importSlots,omitempty"`
-
-	// Imports carries canvas-preprocessed import packages, keyed by import
-	// path (each a serialized model.Package). Currently packages whose
-	// topology-reference builtins the canvas folded to constants — only the
-	// canvas holds the annotated bodies, so fidget must build from these
-	// instead of re-parsing the import source. Paths not present resolve
-	// through fidget's own source manager as usual.
-	Imports map[string][]byte `json:"imports,omitempty"`
 
 	// Inline (tape requests only) returns the serialized tape in the response
 	// as TapeB64 instead of writing it to the downloads dir and returning a
@@ -135,10 +120,9 @@ type MeshRequest struct {
 }
 
 // MeasureRequest asks for numeric geometry measurements of a compiled
-// program. The program, oracle payloads, import slots and canvas-folded
-// imports mean exactly what they mean on MeshRequest; a coarse pass over
-// Bbox finds the shape, then a measuring mesh at Depth over the shape's
-// own (padded) bounding box produces the numbers.
+// program. The program and oracle payloads mean what they mean on MeshRequest;
+// a coarse pass over Bbox finds the shape, then a measuring mesh at Depth over
+// the shape's own (padded) bounding box produces the numbers.
 type MeasureRequest struct {
 	ID         string `json:"id"`
 	ExportMesh bool   `json:"exportMesh,omitempty"`
@@ -150,8 +134,6 @@ type MeasureRequest struct {
 	Bbox        [6]float32          `json:"bbox"`
 	MeshOracles []MeshOraclePayload `json:"meshOracles,omitempty"`
 	VdbOracles  []VdbOraclePayload  `json:"vdbOracles,omitempty"`
-	ImportSlots []ImportSlotRef     `json:"importSlots,omitempty"`
-	Imports     map[string][]byte   `json:"imports,omitempty"`
 }
 
 type MeasureResponse struct {

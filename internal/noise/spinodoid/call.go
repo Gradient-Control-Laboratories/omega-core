@@ -77,8 +77,8 @@ type Call struct {
 	Local       bool
 	// Fast is true for the lattice table (kernels.go), false for hodge's
 	// (hodge.go). The two are different fields from the same arguments, so the
-	// kind is part of the key: a preview asks for the lattice table of a
-	// hodge-exact call by taking its key and setting this.
+	// kind is part of the key. Every omega backend binds the lattice, for
+	// gaborSpinodoid and fastGaborSpinodoid alike, so both set it.
 	Fast  bool
 	Chain string
 }

@@ -9,8 +9,8 @@ import (
 
 	"gradientcontrol.com/omega/core/internal/scope"
 	api "gradientcontrol.com/omega/core/parser/internal/api"
-	"gradientcontrol.com/omega/core/parser/internal/scene"
 	"gradientcontrol.com/omega/core/program"
+	"gradientcontrol.com/omega/core/program/scene"
 )
 
 var gslLexer = lexer.MustSimple([]lexer.SimpleRule{
@@ -102,7 +102,7 @@ func Parse(sources []string) (*api.ParseResult, error) {
 				}
 				pkg.Scene = sc
 			} else {
-				pkg.Scene = scene.FromLegacyComments(source)
+				pkg.Scene = fromLegacyComments(source)
 			}
 		} else if topLevel.Scene != nil {
 			return recordFileError(res, pkgFile, source, participle.Errorf(topLevel.Scene.Pos, "@scene directive is only allowed in the first source file"))

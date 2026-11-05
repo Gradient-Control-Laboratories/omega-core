@@ -52,8 +52,8 @@ return m, s, b;
 	if names["m"] || !names["s"] || !names["b"] {
 		t.Errorf("assignments %v: want the mesh-typed m pruned and s, b kept", names)
 	}
-	if len(sub.Dependencies) != 1 || sub.Dependencies[0] != dep {
-		t.Errorf("dependencies %v, want the program's, shared", sub.Dependencies)
+	if len(sub.Dependencies) != 1 || sub.Dependencies[0].VersionMajor != 1 {
+		t.Errorf("dependencies %v, want the program's dependency preserved", sub.Dependencies)
 	}
 	if len(sub.MeshSdfSlots) != 2 ||
 		sub.MeshSdfSlots[0].AssetIndex != 1 ||
@@ -66,5 +66,60 @@ return m, s, b;
 	}
 	if got := prog.Primary.Files[0].Returns; len(got) != 3 {
 		t.Errorf("the sliced program's returns changed: %d, want 3", len(got))
+	}
+}
+
+func TestSubtreeProgramPrunesDeadDeclarations(t *testing.T) {
+	pkg, err := parser.ParsePackage([]string{`
+usedFn(r) {
+	return length(p) - r;
+}
+unusedFn(r) {
+	return length(p) - r * 2.0;
+}
+usedSdf = vdbSdf(1, 64, 5) + usedFn(2.0);
+unusedSdf = bvhSdf(2) + unusedFn(3.0);
+return usedSdf, unusedSdf;
+`})
+	if err != nil {
+		t.Fatalf("ParsePackage failed: %v", err)
+	}
+	prog := &program.Program{Primary: pkg}
+
+	_, subtrees, err := meshplan.SliceProgram(prog, "leaf-")
+	if err != nil {
+		t.Fatalf("SliceProgram failed: %v", err)
+	}
+	if len(subtrees) != 2 {
+		t.Fatalf("got %d subtrees, want 2", len(subtrees))
+	}
+
+	sub := meshplan.SubtreeProgram(prog, subtrees[0].Return)
+	f := sub.Primary.Files[0]
+
+	names := map[string]bool{}
+	for _, a := range f.Assignments {
+		for _, v := range a.Variables {
+			if v != nil {
+				names[v.Name] = true
+			}
+		}
+	}
+	if !names["usedSdf"] || names["unusedSdf"] {
+		t.Errorf("assignments = %v, want only usedSdf retained and unusedSdf pruned", names)
+	}
+
+	fnNames := map[string]bool{}
+	for _, ft := range f.FnTypes {
+		if ft != nil {
+			fnNames[ft.Name] = true
+		}
+	}
+	if !fnNames["usedFn"] || fnNames["unusedFn"] {
+		t.Errorf("functions = %v, want only usedFn retained and unusedFn pruned", fnNames)
+	}
+
+	if len(sub.MeshSdfSlots) != 1 || sub.MeshSdfSlots[0].AssetIndex != 1 {
+		t.Errorf("MeshSdfSlots = %v, want only slot 1 (from usedSdf) and slot 2 pruned", sub.MeshSdfSlots)
 	}
 }

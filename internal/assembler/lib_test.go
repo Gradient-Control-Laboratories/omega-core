@@ -162,7 +162,7 @@ return scaleBy(0.5);
 }
 
 func TestAssemble(t *testing.T) {
-	src_test.RunAllSourceTests(t, "../internal/testdata/*.gsl", testAssembleOne)
+	src_test.RunAllSourceTests(t, "../testdata/*.gsl", testAssembleOne)
 }
 
 func testAssembleOne(t *testing.T, srcFile string) {
@@ -414,6 +414,9 @@ return msh;
 func TestAssembleTreesManifold(t *testing.T) {
 	commonRoot := "../../stdlib"
 	docRoot := "../../../../dm/documents"
+	if _, err := os.Stat(docRoot); os.IsNotExist(err) {
+		t.Skipf("skipping: %s not present", docRoot)
+	}
 	src, err := os.ReadFile(docRoot + "/trees/manifold/manifold.gsl")
 	if err != nil {
 		t.Fatalf("read manifold: %v", err)
@@ -431,6 +434,9 @@ func TestAssembleTreesManifold(t *testing.T) {
 func TestAssembleS304_C02(t *testing.T) {
 	commonRoot := "../../stdlib"
 	docRoot := "../../../../dm/documents"
+	if _, err := os.Stat(docRoot); os.IsNotExist(err) {
+		t.Skipf("skipping: %s not present", docRoot)
+	}
 	src, err := os.ReadFile(docRoot + "/branches/S304_C02/S304_C02.gsl")
 	if err != nil {
 		t.Fatalf("read S304_C02: %v", err)
@@ -448,6 +454,9 @@ func TestAssembleS304_C02(t *testing.T) {
 func TestAssembleS304_T001(t *testing.T) {
 	commonRoot := "../../stdlib"
 	docRoot := "../../../../dm/documents"
+	if _, err := os.Stat(docRoot); os.IsNotExist(err) {
+		t.Skipf("skipping: %s not present", docRoot)
+	}
 	src, err := os.ReadFile(docRoot + "/trees/S304-T001/S304-T001.gsl")
 	if err != nil {
 		t.Fatalf("read S304-T001: %v", err)
@@ -1011,6 +1020,9 @@ return sphere(1.0), meshOut;
 		if len(subtrees) != 1 {
 			t.Fatalf("expected 1 SdfSubtree, got %d", len(subtrees))
 		}
+		if len(res.PreviewBodies) != 2 {
+			t.Fatalf("expected 2 PreviewBodies, got %+v", res.PreviewBodies)
+		}
 		leaf := res.SdfSubtrees[0]
 		if !strings.HasPrefix(leaf.ID, "leaf-") {
 			t.Errorf("expected leaf ID to have prefix 'leaf-', got %s", leaf.ID)
@@ -1064,4 +1076,137 @@ return sphere(1.0), meshOut;
 			t.Errorf("expected 0 SdfSubtrees, got %d", len(subtrees))
 		}
 	})
+}
+
+func TestAssemble_WarpResolverAndFoldWarpFieldToZero(t *testing.T) {
+	pkgMgr := source.NewLocalManager("../../stdlib")
+	warpRes := &mockWarpResolver{slot: 1048599}
+	src := `importMesh 0 "part.stl";
+importWarp 0 "sim.castsim";
+s = vdbSdfWarped(0, 0, 1.0);
+return meshWarped(0, 0, 1.0), remap(s, p + warpField(p));
+`
+
+	res, err := Assemble(
+		[]string{src},
+		pkgMgr,
+		PrimaryPackage("wo1"),
+		WarpResolver(warpRes),
+		ExtractMeshPlan("leaf-"),
+	)
+	if err != nil {
+		t.Fatalf("Assemble failed: %v", err)
+	}
+	if len(res.WarpedAssets) != 1 || res.WarpedAssets[0].DerivedSlot != 1048599 || res.WarpedAssets[0].WarpDir != "wo1" {
+		t.Fatalf("res.WarpedAssets = %+v, want 1 entry with DerivedSlot=1048599 and WarpDir=wo1", res.WarpedAssets)
+	}
+	if len(res.MeshSdfSlots) != 1 || res.MeshSdfSlots[0].AssetIndex != 1048599 {
+		t.Fatalf("res.MeshSdfSlots = %+v, want AssetIndex=1048599", res.MeshSdfSlots)
+	}
+	if res.GlobalTextures == nil || !res.GlobalTextures.UsesWarpField {
+		t.Errorf("expected UsesWarpField=true when FoldWarpFieldToZero is not set")
+	}
+
+	var stages []string
+	resZero, err := Assemble(
+		[]string{src},
+		pkgMgr,
+		PrimaryPackage("wo1"),
+		WarpResolver(warpRes),
+		FoldWarpFieldToZero(),
+		ExtractMeshPlan("leaf-"),
+		DisableMeshSlotFolding(),
+		WithProgress(func(stage string, completed, total uint32) {
+			stages = append(stages, stage)
+		}),
+	)
+	if err != nil {
+		t.Fatalf("Assemble with FoldWarpFieldToZero failed: %v", err)
+	}
+	if len(stages) == 0 {
+		t.Errorf("expected progress stages to be reported")
+	}
+	if resZero.GlobalTextures != nil && resZero.GlobalTextures.UsesWarpField {
+		t.Errorf("expected UsesWarpField=false when FoldWarpFieldToZero is set")
+	}
+}
+
+type mockMeshBboxResolver struct {
+	bboxes map[int][2][3]float64
+}
+
+func (m *mockMeshBboxResolver) GetMesh(slot int) (topofold.MeshGeometry, bool) {
+	bb, ok := m.bboxes[slot]
+	if !ok {
+		return nil, false
+	}
+	return &mockBboxMesh{min: bb[0], max: bb[1]}, true
+}
+
+func (m *mockMeshBboxResolver) GetAnnotatedMesh(slot int) (topofold.AnnotatedMesh, bool, error) {
+	return nil, false, nil
+}
+
+type mockBboxMesh struct {
+	min, max [3]float64
+}
+
+func (m *mockBboxMesh) Area() float64                    { return 1 }
+func (m *mockBboxMesh) Volume() float64                  { return 1 }
+func (m *mockBboxMesh) Bounds() ([3]float64, [3]float64) { return m.min, m.max }
+
+func TestAssemble_SpinodoidBounds(t *testing.T) {
+	pkgMgr := &source.MockManager{}
+
+	// 1. Analytical @scene program
+	resAnalytical, err := Assemble([]string{"@scene(80, 10)\nreturn sphere(1.0);"}, pkgMgr, ExtractUI())
+	if err != nil {
+		t.Fatalf("Assemble analytical failed: %v", err)
+	}
+	wantAnalytical := []float64{-40, -40, -40, 40, 40, 40}
+	if got := resAnalytical.Program.Scene().GetSpinodoidBounds(); len(got) != 6 || got[0] != -40 || got[3] != 40 {
+		t.Fatalf("analytical Program.Scene.SpinodoidBounds = %v, want %v", got, wantAnalytical)
+	}
+	if got := resAnalytical.Scene.GetSpinodoidBounds(); len(got) != 6 || got[0] != -40 || got[3] != 40 {
+		t.Fatalf("analytical Result.Scene.SpinodoidBounds = %v, want %v", got, wantAnalytical)
+	}
+
+	// 2. Headerless analytical program preserves empty SpinodoidBounds
+	resHeaderless, err := Assemble([]string{"return sphere(10.0);"}, pkgMgr, ExtractUI())
+	if err != nil {
+		t.Fatalf("Assemble headerless failed: %v", err)
+	}
+	if got := resHeaderless.Program.Scene().GetSpinodoidBounds(); len(got) != 0 {
+		t.Fatalf("headerless SpinodoidBounds = %v, want empty", got)
+	}
+
+	// 3. Resolver-backed mesh with transformed placement
+	geomRes := &mockMeshBboxResolver{
+		bboxes: map[int][2][3]float64{
+			0: {{1, 2, 0}, {3, 5, 6}},
+		},
+	}
+	meshSrc := `importMesh 0 "part.stl";
+return mesh(0, [0,1,0,0,-1,0,0,0,0,0,1,0,100,300,20,1]), sphere(1.0);
+`
+	resMesh, err := Assemble(
+		[]string{meshSrc},
+		pkgMgr,
+		GeometryResolver(geomRes),
+		ExtractMeshPlan("leaf-"),
+		ExtractUI(),
+	)
+	if err != nil {
+		t.Fatalf("Assemble mesh failed: %v", err)
+	}
+	wantMesh := [6]float64{-3.85, -13.05, -1.3, 102.85, 318.05, 27.3}
+	gotMesh := resMesh.Program.Scene().GetSpinodoidBounds()
+	if len(gotMesh) != 6 {
+		t.Fatalf("mesh SpinodoidBounds = %v, want %v", gotMesh, wantMesh)
+	}
+	for i := range wantMesh {
+		if gotMesh[i]-wantMesh[i] > 1e-8 || wantMesh[i]-gotMesh[i] > 1e-8 {
+			t.Fatalf("mesh SpinodoidBounds = %v, want %v", gotMesh, wantMesh)
+		}
+	}
 }

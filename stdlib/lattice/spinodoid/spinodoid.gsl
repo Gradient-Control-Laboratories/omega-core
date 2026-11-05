@@ -6,22 +6,19 @@
 // orientation distribution of wave directions — cones of half-angle theta about
 // a set of poles.
 //
-// These are hodge's Gabor spinodoid (hodge-release spinodoid.py,
-// spinodoid_gabor) exactly: the same localized wave packets, the same
-// direction distribution, the same kernel hash (see common/noise/spinodoid).
-// So a part built here is one hodge can rebuild from the same arguments, which
-// is what sending a design on to hodge or elasticam needs. Each packet reads
-// the scale and orientation drivers at its own centre and is then an honest
-// plane wave, so the wavelength and the orientation distribution can vary
-// through space without the drift that warping coordinates would cause.
+// These are a lattice form of hodge's Gabor spinodoid (hodge-release
+// spinodoid.py, spinodoid_gabor): the same localized wave packets, the same
+// direction distribution and the same density, with the kernels on a lattice
+// and their envelopes tapered, several times faster to evaluate (see
+// common/noise/spinodoid). Each packet reads the scale and orientation drivers
+// at its own centre and is then an honest plane wave, so the wavelength and
+// the orientation distribution can vary through space without the drift that
+// warping coordinates would cause.
 //
-// The browser previews a cheaper LATTICE form of the same field rather than
-// this one: the same model and the same density, with the kernels on a lattice
-// and their envelopes tapered, several times faster to ray-march, and a
-// different realization — the structure measures the same but individual cells
-// sit elsewhere. Meshing, export and the oracle use the field asked for here.
-// A document that wants the lattice field there too calls the
-// fastGaborSpinodoid builtin directly.
+// The preview, meshing, export and the oracle all evaluate this one field, so
+// a part meshes as it renders. A tape carries the field's arguments; a reader
+// that has to agree with hodge rebuilds hodge's own field from them, which
+// measures the same but places individual cells elsewhere.
 //
 // Fields are unit-normalized like the rest of the lattice family: a
 // pseudo-distance with unit RMS gradient, negative in the solid phase. So
@@ -29,20 +26,15 @@
 // (hodge's wall_thickness), and lengths are real lengths even under a graded
 // scale.
 //
-// The kernel grid is fixed in the world, at a cell size set by period and
-// packetWidth, and hodge's repeats every 32 cells. The preview's lattice goes
-// further: stationary fields repeat every 64 sites, while graded ones sample
-// actual kernel centres across the imported geometry or explicit scene size,
-// so scale and orientation do not wrap with the random realization. Headerless
-// analytical fields and outer coordinate remaps keep the legacy periodic
-// table; direct low-level query transforms use query bounds. hodge's table is
-// always the periodic one, and a graded field whose domain would not fit
-// inside it is refused rather than left to repeat.
+// The kernel grid is fixed in the world, at a spacing set by period and
+// packetWidth. Stationary fields repeat every 64 sites, while graded ones
+// sample actual kernel centres across the imported geometry or explicit scene
+// size, so scale and orientation do not wrap with the random realization.
+// Headerless analytical fields and outer coordinate remaps keep the legacy
+// periodic table; direct low-level query transforms use query bounds.
 //
 // The short forms use hodge's kernel density, 8 kernels per cell. Pass a lower
-// impulses through the full forms to trade quality for speed; a given density
-// costs the same in hodge, so lowering it is also a change hodge has to be
-// told about.
+// impulses through the full forms to trade quality for speed.
 //
 // Doc convention follows builtin/base.gsl: `///` lines are public docs.
 
@@ -110,13 +102,11 @@ gaborGraded(period, theta, poles, packetWidth, impulses, pool, seed, bias, local
   return gaborSpinodoid(p, period, theta, poles, packetWidth, impulses, pool, seed, bias, localNormalize, scale, orientation);
 }
 
-// --- the lattice field ---
+// --- fast forms ---
 //
-// The same forms over fastGaborSpinodoid: the lattice realization in every
-// backend, not just the preview. Reach for these when nothing downstream has
-// to agree with hodge — a visual study, or a part whose lattice only has to
-// measure right — and pay several times less per evaluation in the mesher and
-// on export. The arguments mean exactly what they mean above.
+// The same forms over fastGaborSpinodoid, which is the same field as
+// gaborSpinodoid; they are kept so documents that name them still build. The
+// arguments mean exactly what they mean above.
 
 /// fastGabor(period, theta): gabor(period, theta) over the lattice field.
 fastGabor(period, theta) {

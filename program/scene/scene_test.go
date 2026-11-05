@@ -3,8 +3,8 @@ package scene_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/parser/internal/scene"
 	"gradientcontrol.com/omega/core/program"
+	"gradientcontrol.com/omega/core/program/scene"
 )
 
 func TestSceneNew(t *testing.T) {
@@ -46,47 +46,6 @@ func TestSceneNew(t *testing.T) {
 	zeroGrid := 0.0
 	if _, err := scene.New(20, &zeroGrid, nil, nil); err == nil {
 		t.Errorf("expected error for zero grid")
-	}
-}
-
-func TestFromLegacyComments(t *testing.T) {
-	// Legacy division count: 20 / 10 = 2.0 mm
-	srcDiv := "// Scene Size: 20\n// Scene Grid: 10\nreturn sphere(1);"
-	s1 := scene.FromLegacyComments(srcDiv)
-	if s1 == nil {
-		t.Fatalf("expected scene from legacy comments, got nil")
-	}
-	if s1.Size != 20 {
-		t.Errorf("got size %v, want 20", s1.Size)
-	}
-	if s1.Grid != 2.0 {
-		t.Errorf("got grid %v, want 2.0", s1.Grid)
-	}
-
-	// Explicit mm grid
-	srcMm := "// Scene Size: 50.5\n// Scene Grid: 5 mm\nreturn sphere(1);"
-	s2 := scene.FromLegacyComments(srcMm)
-	if s2 == nil {
-		t.Fatalf("expected scene from legacy comments, got nil")
-	}
-	if s2.Size != 50.5 || s2.Grid != 5.0 {
-		t.Errorf("got size=%v grid=%v, want 50.5 and 5.0", s2.Size, s2.Grid)
-	}
-
-	// Scene Size only, grid omitted defaults to size / 10
-	srcSizeOnly := "// Scene Size: 40\nreturn sphere(1);"
-	s3 := scene.FromLegacyComments(srcSizeOnly)
-	if s3 == nil {
-		t.Fatalf("expected scene from legacy comments, got nil")
-	}
-	if s3.Size != 40 || s3.Grid != 4.0 {
-		t.Errorf("got size=%v grid=%v, want 40 and 4.0", s3.Size, s3.Grid)
-	}
-
-	// No scene comments
-	s4 := scene.FromLegacyComments("return sphere(1);")
-	if s4 != nil {
-		t.Errorf("expected nil for source without scene comments, got %+v", s4)
 	}
 }
 

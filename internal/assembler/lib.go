@@ -34,6 +34,7 @@ type options struct {
 	primaryPackage        string
 	geometryResolver      topofold.GeometryResolver
 	warpResolver          warpfold.WarpResolver
+	foldWarpFieldToZero   bool
 	enableSlotFold        bool
 	enableDeadcodeRemoval bool
 	extractUI             bool
@@ -49,6 +50,7 @@ type Option func(*options)
 type Result struct {
 	Program        *program.Program
 	Slots          []meshslots.Import
+	WarpedAssets   []warpfold.WarpedAsset
 	MeshSdfSlots   []*program.MeshSdfSlot
 	GlobalTextures *program.GlobalTextures
 	Diagnostics    []program.Diagnostic
@@ -57,6 +59,7 @@ type Result struct {
 	Scene          *program.Scene
 	MeshPlan       *meshplan.MeshExportPlan
 	SdfSubtrees    []meshplan.SdfSubtree
+	PreviewBodies  []meshplan.PreviewBody
 }
 
 // PrimaryPackage supplies a primary package path assigned to the assembled program's primary package.
@@ -77,6 +80,14 @@ func GeometryResolver(r topofold.GeometryResolver) Option {
 func WarpResolver(r warpfold.WarpResolver) Option {
 	return func(o *options) {
 		o.warpResolver = r
+	}
+}
+
+// FoldWarpFieldToZero replaces every warpField(...) call across the program with [0, 0, 0]
+// during Step 5 domain folding for backends that do not sample live warp textures.
+func FoldWarpFieldToZero() Option {
+	return func(o *options) {
+		o.foldWarpFieldToZero = true
 	}
 }
 
@@ -291,8 +302,15 @@ func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*
 		}
 	}
 
+	var warpedAssets []warpfold.WarpedAsset
 	if o.warpResolver != nil {
-		prog, err = warpfold.FoldProgram(prog, o.warpResolver)
+		prog, warpedAssets, err = warpfold.FoldProgram(prog, o.warpResolver)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if o.foldWarpFieldToZero {
+		prog, err = warpfold.FoldWarpFieldToZero(prog)
 		if err != nil {
 			return nil, err
 		}
@@ -326,19 +344,13 @@ func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*
 	result := &Result{
 		Program:        prog,
 		Slots:          importSlots,
+		WarpedAssets:   warpedAssets,
 		MeshSdfSlots:   sdfSlots,
 		GlobalTextures: globalTex,
 		Diagnostics:    assemblyDiags,
 	}
 
-	if o.extractUI && prog != nil && prog.Primary != nil {
-		sourceText := strings.Join(primarySources, "\n")
-		result.Sliders = slider.Extract(sourceText, prog.Primary)
-		result.UIControls = ui.Extract(prog.Primary, prog.GetImport)
-		result.Scene = prog.Scene()
-	}
-
-	if o.extractMeshPlan && prog != nil {
+	if o.extractMeshPlan {
 		idPrefix := o.meshPlanIdPrefix
 		if idPrefix == "" {
 			idPrefix = "leaf-"
@@ -355,9 +367,97 @@ func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*
 		}
 		result.MeshPlan = plan
 		result.SdfSubtrees = subtrees
+		if plan.Root != nil && len(plan.MeshDecls()) > 0 {
+			result.PreviewBodies = meshplan.PreviewBodies(plan, subtrees)
+		}
+	}
+
+	// Invariant: prog and prog.Primary are guaranteed non-nil following lowering and deadcode removal.
+	meshBboxes, decls := resolveAssemblerSpinodoidInputs(prog, importSlots, warpedAssets, sdfSlots, result.MeshPlan, o.geometryResolver)
+	if err := meshplan.SetProgramSpinodoidBounds(prog, meshBboxes, decls); err != nil {
+		return nil, err
+	}
+
+	if o.extractUI {
+		sourceText := strings.Join(primarySources, "\n")
+		result.Sliders = slider.Extract(sourceText, prog.Primary)
+		result.UIControls = ui.Extract(prog.Primary, prog.GetImport)
+		result.Scene = prog.Scene()
 	}
 
 	return result, nil
+}
+
+func resolveAssemblerSpinodoidInputs(
+	prog *program.Program,
+	importSlots []meshslots.Import,
+	warpedAssets []warpfold.WarpedAsset,
+	sdfSlots []*program.MeshSdfSlot,
+	plan *meshplan.MeshExportPlan,
+	geomResolver topofold.GeometryResolver,
+) (map[int][6]float64, []meshplan.MeshDecl) {
+	var decls []meshplan.MeshDecl
+	if plan != nil && plan.Root != nil {
+		decls = plan.MeshDecls()
+	}
+	if geomResolver == nil {
+		return nil, decls
+	}
+	if plan == nil {
+		if sliced, _, err := meshplan.SliceProgram(prog, "spinodoid-bounds::"); err == nil && sliced != nil && sliced.Root != nil {
+			decls = sliced.MeshDecls()
+		}
+	}
+
+	candidates := make(map[int]struct{})
+	for _, imp := range importSlots {
+		candidates[imp.Slot] = struct{}{}
+	}
+	for _, wa := range warpedAssets {
+		candidates[wa.MeshSlot] = struct{}{}
+		candidates[wa.DerivedSlot] = struct{}{}
+	}
+	for _, s := range sdfSlots {
+		candidates[int(s.AssetIndex)] = struct{}{}
+	}
+	for _, d := range decls {
+		candidates[d.Index] = struct{}{}
+	}
+	// Invariant: prog.Primary and prog.Dependencies entries are guaranteed non-nil.
+	collectPkgImportIndices := func(pkg *program.Package) {
+		for _, f := range pkg.Files {
+			for _, mi := range f.MeshImports {
+				candidates[int(mi.Index)] = struct{}{}
+			}
+			for _, si := range f.StepImports {
+				candidates[int(si.Index)] = struct{}{}
+			}
+		}
+	}
+	collectPkgImportIndices(prog.Primary)
+	for _, dep := range prog.Dependencies {
+		collectPkgImportIndices(dep)
+	}
+
+	var meshBboxes map[int][6]float64
+	for slot := range candidates {
+		mg, ok := geomResolver.GetMesh(slot)
+		if !ok || mg == nil {
+			continue
+		}
+		bm, ok := mg.(interface {
+			Bounds() ([3]float64, [3]float64)
+		})
+		if !ok {
+			continue
+		}
+		if meshBboxes == nil {
+			meshBboxes = make(map[int][6]float64)
+		}
+		minPt, maxPt := bm.Bounds()
+		meshBboxes[slot] = [6]float64{minPt[0], minPt[1], minPt[2], maxPt[0], maxPt[1], maxPt[2]}
+	}
+	return meshBboxes, decls
 }
 
 // optimizeProgram runs an iterative fixed-point optimization loop alternating

@@ -19,10 +19,14 @@ func AssertWGSLEqual(t *testing.T, goldenPath string, actualWGSL string, autoUpd
 	t.Helper()
 
 	actualTrimmed := strings.TrimSpace(actualWGSL)
+	actualBytes := []byte(actualTrimmed + "\n")
 	goldenBytes, err := os.ReadFile(goldenPath)
 
 	if errors.Is(err, os.ErrNotExist) || os.Getenv("UPDATE_GOLDEN") != "" {
-		err = os.WriteFile(goldenPath, []byte(actualTrimmed+"\n"), 0644)
+		if err == nil && strings.TrimSpace(string(goldenBytes)) != actualTrimmed {
+			logGoldenSizeChange(t, goldenPath, len(goldenBytes), len(actualBytes))
+		}
+		err = os.WriteFile(goldenPath, actualBytes, 0644)
 		assert.NoError(t, err)
 		if os.Getenv("UPDATE_GOLDEN") == "" {
 			t.Skipf("Generated expected WGSL file: %s", goldenPath)
@@ -36,13 +40,15 @@ func AssertWGSLEqual(t *testing.T, goldenPath string, actualWGSL string, autoUpd
 		return
 	}
 
+	logGoldenSizeChange(t, goldenPath, len(goldenBytes), len(actualBytes))
+
 	// Declaration-aware fallback comparison
 	expDecls, expOk := parseDeclarations(expectedTrimmed)
 	actDecls, actOk := parseDeclarations(actualTrimmed)
 
 	if expOk && actOk && declarationsEqual(expDecls, actDecls) {
 		if autoUpdate {
-			err = os.WriteFile(goldenPath, []byte(actualTrimmed+"\n"), 0644)
+			err = os.WriteFile(goldenPath, actualBytes, 0644)
 			assert.NoError(t, err)
 			t.Logf("Auto-updated golden file %s due to canonical declaration reordering", goldenPath)
 		}
@@ -50,6 +56,16 @@ func AssertWGSLEqual(t *testing.T, goldenPath string, actualWGSL string, autoUpd
 	}
 
 	assert.Equal(t, expectedTrimmed, actualTrimmed)
+}
+
+func logGoldenSizeChange(t *testing.T, path string, oldBytes, newBytes int) {
+	t.Helper()
+	diff := newBytes - oldBytes
+	var pct float64
+	if oldBytes > 0 {
+		pct = (float64(diff) / float64(oldBytes)) * 100.0
+	}
+	t.Logf("golden size change for %s: %d B -> %d B (%+d B, %+.2f%%)", path, oldBytes, newBytes, diff, pct)
 }
 
 func declarationsEqual(a, b map[string]string) bool {

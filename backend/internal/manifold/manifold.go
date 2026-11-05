@@ -31,7 +31,7 @@
 package manifold
 
 /*
-#cgo LDFLAGS: -L../../../../target/release -lmanifold_glue
+#cgo LDFLAGS: -L../../../target/release -lmanifold_glue
 #include <stdint.h>
 #include <stdlib.h>
 

@@ -20,7 +20,7 @@ import (
 )
 
 func TestRebuild(t *testing.T) {
-	src_test.RunAllSourceTests(t, "../internal/testdata/*.gsl", testRebuildOne)
+	src_test.RunAllSourceTests(t, "../testdata/*.gsl", testRebuildOne)
 }
 
 func testRebuildOne(t *testing.T, srcFile string) {
@@ -220,7 +220,7 @@ func TestReferencesInPlace(t *testing.T) {
 }
 
 func TestReferences(t *testing.T) {
-	src_test.RunAllSourceTests(t, "../internal/testdata/*.gsl", testReferencesOne)
+	src_test.RunAllSourceTests(t, "../testdata/*.gsl", testReferencesOne)
 }
 
 func testReferencesOne(t *testing.T, srcFile string) {
