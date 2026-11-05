@@ -54,7 +54,8 @@ struct BspNode {
     bbox: Aabb,
     /// Aggregate statistics over all triangles in this subtree, used by the
     /// Fast Winding Number traversal to approximate a whole cluster's
-    /// contribution from far-field points (Jacobson-Kavan-Sorkine 2013 §5).
+    /// contribution from far-field points (Barill et al. 2018, "Fast Winding
+    /// Numbers for Soups and Clouds", §3.2).
     cluster: ClusterStats,
     payload: NodePayload,
 }
@@ -265,9 +266,11 @@ impl TriBspOracle {
         }
     }
 
-    /// Generalized winding number via hierarchical BVH traversal
-    /// (Jacobson-Kavan-Sorkine 2013 §5 "Fast evaluation"). Far clusters are
-    /// approximated by a single dipole term; near clusters recurse. O(log N)
+    /// Generalized winding number via hierarchical BVH traversal. The winding
+    /// number is from Jacobson-Kavan-Sorkine-Hornung 2013; the hierarchical
+    /// far-field dipole approximation is from Barill et al. 2018 §3.2. Far
+    /// clusters are approximated by a single dipole term; near clusters
+    /// recurse. O(log N)
     /// per query instead of O(N) — the difference between minutes and hours
     /// when meshing a ~10⁵-triangle input at depth 8.
     ///
@@ -283,8 +286,10 @@ impl TriBspOracle {
     /// Recursive walk summing (unnormalized) solid-angle contributions.
     /// At each node, a Barnes-Hut-style admission criterion `dist > β·radius`
     /// decides whether the cluster is far enough to use the single-dipole
-    /// approximation. `β = 2` is a standard choice and gives good accuracy
-    /// well past the 0.5 threshold we actually care about.
+    /// approximation. This is the paper's order-0 term only. The paper's
+    /// `β = 2` (about 1e-3 RMS error for triangles) is quoted for its
+    /// second-order expansion, so accuracy of order 0 at `β = 2` is a choice
+    /// made here, not a figure taken from the paper.
     fn fast_gwn_walk(&self, node: &BspNode, p: [f64; 3]) -> f64 {
         const BETA: f64 = 2.0;
         let stats = &node.cluster;
@@ -557,7 +562,10 @@ fn compute_cluster_stats(
 
 /// Squared distance from `p` to triangle `(a, b, c)`, together with the
 /// closest point on the triangle. Ericson, Real-Time Collision Detection
-/// §5.1.5 — closed-form via barycentric region test. The closest point is
+/// §5.1.5 — closed-form via barycentric region test. The body below follows
+/// the book's `ClosestPtPointTriangle`: from Real-Time Collision Detection
+/// by Christer Ericson, published by Morgan Kaufmann Publishers,
+/// (c) 2005 Elsevier Inc. The closest point is
 /// what `grad` turns into the analytic gradient (the unit vector from it to
 /// `p`); `unsigned_distance` uses only the squared distance.
 fn point_triangle_sq_distance(

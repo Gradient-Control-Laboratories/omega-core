@@ -24,8 +24,12 @@ and VL-Gothic — are released as **public domain** (all copyright is waived):
 > Other CXF fonts in directory 'fonts' are released as public domain (all
 > copyright is waived).
 
-This is also recorded in the app's third-party notices
-(`common/web/about/third-party-notices.md`).
+Upstream: <https://github.com/qcad/qcad/blob/master/fonts/Unicode.cxf>; the
+committed copy is byte-identical to it (SHA-256
+`07606da523689ddb7ea11a1a83b7d426aa905981bb00e45caaebb72504c7d26d`). The
+license statement is quoted from
+<https://github.com/qcad/qcad/blob/master/LICENSE.txt>. This is also recorded
+in the repository's `THIRD_PARTY_NOTICES.md`.
 
 ## Regenerating `text/text.gsl`
 
