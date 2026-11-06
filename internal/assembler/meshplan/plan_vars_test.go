@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"gradientcontrol.com/omega/core/internal/assembler/meshplan"
+	"gradientcontrol.com/omega/core/internal/assembler/variation"
 	parser "gradientcontrol.com/omega/core/parser"
 	"gradientcontrol.com/omega/core/program"
 )
@@ -43,7 +44,7 @@ return meshUnion(refM, s);
 		t.Fatalf("expected 1 subtree, got %d", len(subtrees))
 	}
 	// Check top-level assignments in synthetic subtree: m and refM must be pruned; s must remain!
-	assignments := meshplan.SubtreeProgram(prog, subtrees[0].Return).Primary.Files[0].Assignments
+	assignments := variation.Program(prog, subtrees[0].Return).Primary.Files[0].Assignments
 	names := make(map[string]bool)
 	for _, a := range assignments {
 		if len(a.Variables) > 0 && a.Variables[0] != nil {

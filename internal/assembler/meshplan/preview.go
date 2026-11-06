@@ -1,6 +1,9 @@
 package meshplan
 
-import "gradientcontrol.com/omega/core/program"
+import (
+	"gradientcontrol.com/omega/core/internal/assembler/variation"
+	"gradientcontrol.com/omega/core/program"
+)
 
 // PreviewBody is one top-level return as the Shapes panel lists it, sent with
 // the preview when the program returns meshes. The shader numbers its slots by
@@ -97,77 +100,7 @@ func PreviewProgram(prog *program.Program, plan *MeshExportPlan, subtrees []SdfS
 	for _, sub := range additive {
 		returns = append(returns, sub.Return)
 	}
-	return subtreeProgram(prog, returns, previewControlRoots(prog.Primary))
-}
-
-// previewControlRoots returns references to top-level range sliders and UI
-// control assignments so dead-code pruning in PreviewProgram keeps their
-// declarations aligned with the viewer's uniform parameter list.
-func previewControlRoots(pkg *program.Package) []*program.Operand {
-	// Invariant: pkg, its Files, Assignments, and Variables are guaranteed non-nil by parser/assembler invariants.
-	var roots []*program.Operand
-	for _, f := range pkg.Files {
-		for _, a := range f.Assignments {
-			keep := a.Range != nil || containsUIControlCall(a.Expression)
-			if !keep {
-				continue
-			}
-			for _, v := range a.Variables {
-				if v.Name != "" {
-					roots = append(roots, &program.Operand{
-						T: &program.Operand_Reference{
-							Reference: &program.Reference{Name: v.Name},
-						},
-					})
-				}
-			}
-			if a.Range != nil {
-				if a.Range.Min != nil {
-					roots = append(roots, a.Range.Min)
-				}
-				if a.Range.Max != nil {
-					roots = append(roots, a.Range.Max)
-				}
-				if a.Range.Period != nil {
-					roots = append(roots, a.Range.Period)
-				}
-			}
-		}
-	}
-	return roots
-}
-
-func containsUIControlCall(op *program.Operand) bool {
-	if op == nil {
-		return false
-	}
-	switch v := op.T.(type) {
-	case *program.Operand_FnCall:
-		if v.FnCall == nil {
-			return false
-		}
-		if ref := v.FnCall.Reference; ref != nil && ref.Prefix == "" {
-			switch ref.Name {
-			case "uiPoint", "uiTransform", "uiColor", "uiDirection", "uiSpline":
-				return true
-			}
-		}
-		for _, arg := range v.FnCall.Arguments {
-			if containsUIControlCall(arg) {
-				return true
-			}
-		}
-	case *program.Operand_Expression:
-		if v.Expression == nil {
-			return false
-		}
-		for _, child := range v.Expression.Operands {
-			if containsUIControlCall(child) {
-				return true
-			}
-		}
-	}
-	return false
+	return variation.ProgramWithExtraRoots(prog, returns, variation.ControlRoots(prog.Primary))
 }
 
 // SubtreesInPlan keeps the subtrees whose SdfLeaf is still in the plan.

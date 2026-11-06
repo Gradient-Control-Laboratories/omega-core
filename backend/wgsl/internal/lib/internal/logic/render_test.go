@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	assembler "gradientcontrol.com/omega/core/internal/assembler"
-	"gradientcontrol.com/omega/core/internal/assembler/meshplan"
+	"gradientcontrol.com/omega/core/internal/assembler/variation"
 	"gradientcontrol.com/omega/core/internal/slider"
 	"gradientcontrol.com/omega/core/internal/source"
 	"gradientcontrol.com/omega/core/internal/test/require"
@@ -48,7 +48,7 @@ return meshDifference(mesh(importId, xf), cavity);`
 	res, err := assembler.Assemble([]string{src}, &source.MockManager{})
 	require.NoError(t, err)
 
-	sliced := meshplan.SubtreeProgram(res.Program)
+	sliced := variation.Program(res.Program)
 	rendered, err := Render(src, sliced)
 	require.NoError(t, err)
 	require.NotNil(t, rendered)

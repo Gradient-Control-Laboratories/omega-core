@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	assembler "gradientcontrol.com/omega/core/internal/assembler"
-	"gradientcontrol.com/omega/core/internal/assembler/meshplan"
+	"gradientcontrol.com/omega/core/internal/assembler/variation"
 	"gradientcontrol.com/omega/core/internal/slider"
 	"gradientcontrol.com/omega/core/internal/source"
 	"gradientcontrol.com/omega/core/internal/ui"
@@ -116,7 +116,7 @@ return meshDifference(mesh(importId, xf), cavity);`
 	if len(names) != 20 {
 		t.Fatalf("expected one slider, one point and one transform: %v", names)
 	}
-	sliced := meshplan.SubtreeProgram(assembled.Program)
+	sliced := variation.Program(assembled.Program)
 	rendered, err := renderHelper(src, sliced)
 	if err != nil {
 		t.Fatal(err)

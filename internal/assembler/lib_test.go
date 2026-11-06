@@ -9,6 +9,7 @@ import (
 
 	"gradientcontrol.com/omega/core/internal/assembler/meshplan"
 	"gradientcontrol.com/omega/core/internal/assembler/topofold"
+	"gradientcontrol.com/omega/core/internal/assembler/variation"
 	"gradientcontrol.com/omega/core/internal/assembler/warpfold"
 	"gradientcontrol.com/omega/core/internal/eval"
 	"gradientcontrol.com/omega/core/internal/source"
@@ -1027,7 +1028,7 @@ return sphere(1.0), meshOut;
 		if !strings.HasPrefix(leaf.ID, "leaf-") {
 			t.Errorf("expected leaf ID to have prefix 'leaf-', got %s", leaf.ID)
 		}
-		leafProg := meshplan.SubtreeProgram(res.Program, leaf.Return)
+		leafProg := variation.Program(res.Program, leaf.Return)
 		if leaf.Return == nil || leafProg.Primary == nil {
 			t.Fatalf("expected valid subprogram in leaf")
 		}
@@ -1209,4 +1210,452 @@ return mesh(0, [0,1,0,0,-1,0,0,0,0,0,1,0,100,300,20,1]), sphere(1.0);
 			t.Fatalf("mesh SpinodoidBounds = %v, want %v", gotMesh, wantMesh)
 		}
 	}
+}
+
+func TestAssemble_AudioReturnPartition_Invalid(t *testing.T) {
+	pkgMgr := source.NewLocalManager("../../stdlib")
+
+	tests := []struct {
+		name        string
+		sources     []string
+		errContains string
+	}{
+		{
+			name:        "non_final_return_element",
+			sources:     []string{"import . \"omega\"; return audio(sin(time)), sphere(1);"},
+			errContains: "audio(...) must be the last element in the return statement",
+		},
+		{
+			name:        "multiple_audio_returns",
+			sources:     []string{"return audio(1.0), audio(2.0);"},
+			errContains: "audio(...) must be the last element in the return statement",
+		},
+		{
+			name:        "zero_arguments",
+			sources:     []string{"import . \"omega\"; return sphere(1), audio();"},
+			errContains: "audio(...) requires 1 (mono) or 2 (stereo) arguments",
+		},
+		{
+			name:        "three_arguments",
+			sources:     []string{"import . \"omega\"; return sphere(1), audio(1.0, 2.0, 3.0);"},
+			errContains: "audio(...) requires 1 (mono) or 2 (stereo) arguments",
+		},
+		{
+			name:        "non_scalar_vector_first_argument",
+			sources:     []string{"import . \"omega\"; return sphere(1), audio([1.0, 2.0, 3.0]);"},
+			errContains: "must be a scalar number",
+		},
+		{
+			name:        "non_scalar_vector_second_argument",
+			sources:     []string{"import . \"omega\"; return sphere(1), audio(1.0, [1.0, 2.0]);"},
+			errContains: "must be a scalar number",
+		},
+		{
+			name:        "audio_in_assignment",
+			sources:     []string{"import . \"omega\"; x = audio(1.0); return sphere(x);"},
+			errContains: "audio(...) can only be used as the final top-level return expression",
+		},
+		{
+			name:        "audio_in_nested_return_expression",
+			sources:     []string{"import . \"omega\"; return sphere(audio(1.0));"},
+			errContains: "audio(...) can only be used as the final top-level return expression",
+		},
+		{
+			name:        "audio_in_nested_audio_argument",
+			sources:     []string{"return audio(audio(1.0));"},
+			errContains: "audio(...) can only be used as the final top-level return expression",
+		},
+		{
+			name:        "audio_in_function_body",
+			sources:     []string{"import . \"omega\"; f() { return audio(1.0); } return sphere(f());"},
+			errContains: "audio(...) can only be used as the final top-level return expression",
+		},
+		{
+			name:        "audio_in_non_final_file",
+			sources:     []string{"x = audio(1.0);", "import . \"omega\"; return sphere(1.0);"},
+			errContains: "audio(...) can only be used as the final top-level return expression",
+		},
+		{
+			name:        "no_returns_no_audio_no_variations",
+			sources:     []string{"x = 1.0;"},
+			errContains: "primary package must have a return statement",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := Assemble(tc.sources, pkgMgr)
+			if err == nil {
+				t.Fatalf("expected error containing %q, got nil", tc.errContains)
+			}
+			if !strings.Contains(err.Error(), tc.errContains) {
+				t.Fatalf("expected error containing %q, got %q", tc.errContains, err.Error())
+			}
+		})
+	}
+}
+
+func TestAssemble_AudioReturnPartition_MonoStereoAndAudioOnly(t *testing.T) {
+	pkgMgr := source.NewLocalManager("../../stdlib")
+
+	t.Run("mono_with_geometry_and_deadcode_isolation", func(t *testing.T) {
+		src := `import . "omega";
+@range(1, 20)
+r = 10.0;
+@range(100, 1000)
+freq = 440.0;
+geomRadius = r * 2.0 + p.x * 0.0;
+audioTone = sin(freq * time);
+s = sphere(geomRadius);
+return s, audio(audioTone);
+`
+		res, err := Assemble([]string{src}, pkgMgr, ExtractUI(), ExtractMeshPlan("leaf-"))
+		if err != nil {
+			t.Fatalf("Assemble failed: %v", err)
+		}
+		if got := len(res.Program.Returns()); got != 1 {
+			t.Fatalf("len(res.Program.Returns()) = %d, want 1", got)
+		}
+		if got := len(res.AudioReturns); got != 1 {
+			t.Fatalf("len(res.AudioReturns) = %d, want 1", got)
+		}
+		if res.AudioReturns[0].ID != "audio-0" || res.AudioReturns[0].Return == nil {
+			t.Fatalf("unexpected AudioReturns[0]: %+v", res.AudioReturns[0])
+		}
+		if len(res.Sliders) != 2 {
+			t.Fatalf("len(res.Sliders) = %d, want 2", len(res.Sliders))
+		}
+
+		// Materialize the audio program via variation.Program and verify geometry-only declarations are pruned.
+		audioProg := variation.Program(res.Program, res.AudioReturns[0].Return)
+		if got := len(audioProg.Returns()); got != 1 {
+			t.Fatalf("len(audioProg.Returns()) = %d, want 1", got)
+		}
+		audioPP := audioProg.Primary.PrettyPrint(0)
+		if strings.Contains(audioPP, "geomRadius =") {
+			t.Errorf("expected geometry declaration geomRadius to be pruned from audioProg:\n%s", audioPP)
+		}
+		if !strings.Contains(audioPP, "audioTone =") {
+			t.Errorf("expected audio declaration audioTone to remain in audioProg:\n%s", audioPP)
+		}
+
+		// Prune audio-only declarations from geometry program via variation.PrunePrimary.
+		geomProg := variation.PrunePrimary(res.Program)
+		geomPP := geomProg.Primary.PrettyPrint(0)
+		if strings.Contains(geomPP, "audioTone =") {
+			t.Errorf("expected audio-only declaration audioTone to be pruned from geomProg:\n%s", geomPP)
+		}
+		if !strings.Contains(geomPP, "geomRadius =") {
+			t.Errorf("expected geometry declaration geomRadius to remain in geomProg:\n%s", geomPP)
+		}
+	})
+
+	t.Run("stereo_with_color_and_material_returns", func(t *testing.T) {
+		src := `import . "omega";
+import "material";
+@range(100, 1000)
+freq = 440.0;
+s = sphere(10.0);
+s.color = [1.0, 0.2, 0.1];
+s.material = material.chrome;
+return s, audio(sin(freq * time), cos(freq * time));
+`
+		res, err := Assemble([]string{src}, pkgMgr, ExtractMeshPlan("leaf-"))
+		if err != nil {
+			t.Fatalf("Assemble failed: %v", err)
+		}
+		if got := len(res.Program.Returns()); got != 1 {
+			t.Fatalf("len(res.Program.Returns()) = %d, want 1", got)
+		}
+		if got := len(res.Program.ColorReturns()); got != 1 {
+			t.Fatalf("len(res.Program.ColorReturns()) = %d, want 1 (1-to-1 with geomCount)", got)
+		}
+		if got := len(res.Program.MaterialReturns()); got != 1 {
+			t.Fatalf("len(res.Program.MaterialReturns()) = %d, want 1 (1-to-1 with geomCount)", got)
+		}
+		if got := len(res.AudioReturns); got != 2 {
+			t.Fatalf("len(res.AudioReturns) = %d, want 2", got)
+		}
+		if res.AudioReturns[0].ID != "audio-0" || res.AudioReturns[1].ID != "audio-1" {
+			t.Fatalf("unexpected AudioReturns IDs: %q, %q", res.AudioReturns[0].ID, res.AudioReturns[1].ID)
+		}
+
+		audioProg := variation.Program(res.Program, res.AudioReturns[0].Return, res.AudioReturns[1].Return)
+		if got := len(audioProg.Returns()); got != 2 {
+			t.Fatalf("len(audioProg.Returns()) = %d, want 2", got)
+		}
+		if got := len(audioProg.ColorReturns()); got != 0 {
+			t.Fatalf("len(audioProg.ColorReturns()) = %d, want 0", got)
+		}
+
+		geomProg := variation.PrunePrimary(res.Program)
+		if got := len(geomProg.ColorReturns()); got != 1 {
+			t.Fatalf("len(geomProg.ColorReturns()) = %d, want 1 after PrunePrimary", got)
+		}
+		if got := len(geomProg.MaterialReturns()); got != 1 {
+			t.Fatalf("len(geomProg.MaterialReturns()) = %d, want 1 after PrunePrimary", got)
+		}
+	})
+
+	t.Run("audio_only_document", func(t *testing.T) {
+		src := `import . "omega";
+freq = 440.0; // [100:1000]
+return audio(sin(freq * time.dtime + freq * time));
+`
+		res, err := Assemble([]string{src}, pkgMgr, ExtractUI(), ExtractMeshPlan("leaf-"))
+		if err != nil {
+			t.Fatalf("Assemble audio-only failed: %v", err)
+		}
+		if got := len(res.Program.Returns()); got != 0 {
+			t.Fatalf("len(res.Program.Returns()) = %d, want 0 for audio-only document", got)
+		}
+		if got := len(res.Program.ColorReturns()); got != 0 {
+			t.Fatalf("len(res.Program.ColorReturns()) = %d, want 0", got)
+		}
+		if got := len(res.AudioReturns); got != 1 {
+			t.Fatalf("len(res.AudioReturns) = %d, want 1", got)
+		}
+		if hasDeriv(res.AudioReturns[0].Return) {
+			t.Errorf("expected .dtime DERIV operator in audio return to be expanded by property.ExpandShared")
+		}
+		if res.MeshPlan == nil || res.MeshPlan.Root != nil {
+			t.Fatalf("expected empty MeshPlan for audio-only document, got %+v", res.MeshPlan)
+		}
+
+		audioProg := variation.Program(res.Program, res.AudioReturns[0].Return)
+		if got := len(audioProg.Returns()); got != 1 {
+			t.Fatalf("len(audioProg.Returns()) = %d, want 1", got)
+		}
+	})
+}
+
+func TestAssemble_WithVariants(t *testing.T) {
+	pkgMgr := source.NewLocalManager("../../stdlib")
+
+	t.Run("branch_and_part_variants_with_deadcode_isolation", func(t *testing.T) {
+		src := `import . "omega";
+gates = sphere([0, 0, -10], 5);
+unusedVar = 999.0;
+castPart() {
+  helper = sphere(10);
+  return helper;
+}
+s = sphere(2);
+s.color = [1, 0, 0];
+return s, audio(sin(time));
+`
+		variants := map[string]string{
+			"part":   "return castPart();",
+			"branch": "return min(gates, castPart());",
+		}
+		res, err := Assemble([]string{src}, pkgMgr, ExtractUI(), ExtractMeshPlan("leaf-"), WithVariants(variants))
+		if err != nil {
+			t.Fatalf("Assemble with variants failed: %v", err)
+		}
+		if got := len(res.Program.Returns()); got != 1 {
+			t.Fatalf("len(res.Program.Returns()) = %d, want 1", got)
+		}
+		if got := len(res.Program.ColorReturns()); got != 1 {
+			t.Fatalf("len(res.Program.ColorReturns()) = %d, want 1", got)
+		}
+		if got := len(res.AudioReturns); got != 1 {
+			t.Fatalf("len(res.AudioReturns) = %d, want 1", got)
+		}
+		for _, a := range res.Program.Primary.Files[0].Assignments {
+			for _, v := range a.Variables {
+				if v.Name == "unusedVar" {
+					t.Errorf("expected unusedVar to be eliminated by deadcode removal")
+				}
+			}
+		}
+
+		partVar, ok := res.Variants["part"]
+		if !ok || partVar.Error != "" {
+			t.Fatalf("unexpected part variant result: %+v", partVar)
+		}
+		if len(partVar.SdfSubtrees) != 1 {
+			t.Fatalf("len(partVar.SdfSubtrees) = %d, want 1", len(partVar.SdfSubtrees))
+		}
+		partProg := variation.Program(res.Program, partVar.SdfSubtrees[0].Return)
+		for _, a := range partProg.Primary.Files[0].Assignments {
+			for _, v := range a.Variables {
+				if v.Name == "gates" || v.Name == "s" {
+					t.Errorf("expected %s to be pruned from part variant program", v.Name)
+				}
+			}
+		}
+
+		branchVar, ok := res.Variants["branch"]
+		if !ok || branchVar.Error != "" {
+			t.Fatalf("unexpected branch variant result: %+v", branchVar)
+		}
+		if len(branchVar.SdfSubtrees) != 1 {
+			t.Fatalf("len(branchVar.SdfSubtrees) = %d, want 1", len(branchVar.SdfSubtrees))
+		}
+	})
+
+	t.Run("library_module_with_zero_primary_returns", func(t *testing.T) {
+		src := `import . "omega";
+castPart() {
+  return sphere(10);
+}
+`
+		if _, err := Assemble([]string{src}, pkgMgr); err == nil || !strings.Contains(err.Error(), "primary package must have a return statement") {
+			t.Fatalf("expected missing return error without variants, got %v", err)
+		}
+
+		res, err := Assemble([]string{src}, pkgMgr, ExtractMeshPlan("leaf-"), WithVariants(map[string]string{
+			"part": "return castPart();",
+		}))
+		if err != nil {
+			t.Fatalf("Assemble return-less module with variants failed: %v", err)
+		}
+		if res.Program.Returns() != nil {
+			t.Fatalf("expected nil primary returns after PopVariations on return-less module, got %v", res.Program.Returns())
+		}
+		partVar := res.Variants["part"]
+		if partVar.Error != "" || len(partVar.SdfSubtrees) != 1 {
+			t.Fatalf("unexpected part variant result: %+v", partVar)
+		}
+	})
+
+	t.Run("canonical_mesh_and_constant_gate_variants", func(t *testing.T) {
+		src := `import . "omega";
+importId = importStep "part.step";
+partXf = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]];
+gates = 1e6;
+return mesh(importId, partXf);
+`
+		res, err := Assemble([]string{src}, pkgMgr, ExtractMeshPlan("leaf-"), WithVariants(map[string]string{
+			"part":  "return mesh(importId, partXf);",
+			"gates": "return (gates);",
+		}))
+		if err != nil {
+			t.Fatalf("Assemble canonical branch variants failed: %v", err)
+		}
+		partVar := res.Variants["part"]
+		if partVar.Error != "" || partVar.MeshPlan == nil || len(partVar.MeshPlan.MeshDecls()) != 1 {
+			t.Fatalf("expected 1 MeshDecl on part variant, got %+v", partVar)
+		}
+		if len(partVar.SdfSubtrees) != 0 {
+			t.Fatalf("expected 0 SdfSubtrees on mesh-only part variant, got %d", len(partVar.SdfSubtrees))
+		}
+		gateVar := res.Variants["gates"]
+		if gateVar.Error != "" || len(gateVar.SdfSubtrees) != 1 {
+			t.Fatalf("expected 1 SdfSubtree on gates variant, got %+v", gateVar)
+		}
+		if len(gateVar.SdfSubtrees[0].Return.ConstValues) != 1 || gateVar.SdfSubtrees[0].Return.ConstValues[0] != 1e6 {
+			t.Fatalf("expected gates variant return to have ConstValues=[1e6], got %+v", gateVar.SdfSubtrees[0].Return)
+		}
+	})
+
+	t.Run("per_variant_errors_isolated", func(t *testing.T) {
+		src := `import . "omega";
+castParts = sphere(10);
+solidOutside = sphere(12);
+return castParts, solidOutside;
+`
+		res, err := Assemble([]string{src}, pkgMgr, ExtractMeshPlan("leaf-"), WithVariants(map[string]string{
+			"metal":        "return min(castParts, solidOutside);",
+			"printed":      "return max(min(castParts, solidOutside), -latticedInside);",
+			"badSyntax":    "return (",
+			"noReturn":     "x = 1;",
+			"audioVariant": "return audio(1.0);",
+		}))
+		if err != nil {
+			t.Fatalf("Assemble failed when only individual variants had errors: %v", err)
+		}
+		metalVar := res.Variants["metal"]
+		if metalVar.Error != "" || len(metalVar.SdfSubtrees) != 1 {
+			t.Fatalf("expected valid metal variant, got %+v", metalVar)
+		}
+		if !strings.Contains(res.Variants["printed"].Error, "undefined") {
+			t.Errorf("expected undefined error for printed variant, got %q", res.Variants["printed"].Error)
+		}
+		if res.Variants["badSyntax"].Error == "" {
+			t.Errorf("expected syntax error for badSyntax variant")
+		}
+		if !strings.Contains(res.Variants["noReturn"].Error, "no returns") {
+			t.Errorf("expected no returns error for noReturn variant, got %q", res.Variants["noReturn"].Error)
+		}
+		if !strings.Contains(res.Variants["audioVariant"].Error, "audio") {
+			t.Errorf("expected audio error for audioVariant, got %q", res.Variants["audioVariant"].Error)
+		}
+	})
+}
+
+func TestDependenciesSha256AndAnalyzePackage(t *testing.T) {
+	t.Run("DependenciesSha256MatchesAssembleResult", func(t *testing.T) {
+		pkgMgr := &source.MockManager{
+			PkgSources: map[string][]string{
+				"trees/test":    {`import branch "branches/part"; return branch.solid();`},
+				"branches/part": {`import shared "dm/shared"; solid() { return shared.solid(); }`},
+				"dm/shared":     {`solid() { return sphere(2); }`},
+			},
+		}
+		res, err := Assemble(pkgMgr.PkgSources["trees/test"], pkgMgr, PrimaryPackage("trees/test"))
+		if err != nil {
+			t.Fatalf("Assemble failed: %v", err)
+		}
+		if len(res.DependenciesSha256) != 64 {
+			t.Fatalf("expected 64-char DependenciesSha256, got %q", res.DependenciesSha256)
+		}
+		directHash, err := DependenciesSha256("trees/test", pkgMgr)
+		if err != nil {
+			t.Fatalf("DependenciesSha256 failed: %v", err)
+		}
+		if directHash != res.DependenciesSha256 {
+			t.Fatalf("DependenciesSha256 = %q, want %q", directHash, res.DependenciesSha256)
+		}
+
+		pkgMgr.PkgSources["dm/shared"] = []string{`solid() { return sphere(5); }`}
+		changedHash, err := DependenciesSha256("trees/test", pkgMgr)
+		if err != nil {
+			t.Fatalf("DependenciesSha256 after edit failed: %v", err)
+		}
+		if changedHash == directHash {
+			t.Fatal("expected DependenciesSha256 to change when transitive dependency changes")
+		}
+	})
+
+	t.Run("AnalyzePackageStampsConstantsAndPreservesUninlinedStructure", func(t *testing.T) {
+		src := `import "dm/gate";
+partScale = 1.018;
+verticalSpan = 100;
+sprueLength = verticalSpan * 1.5;
+branch() {
+  start = uiTransform([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [10, 20, 30, 1]]);
+  bend = uiTransform([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [15, 25, 35, 1]]);
+  end = uiTransform([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [20, 30, 40, 1]]);
+  controls = uiSpline([start, bend, end]);
+  manualGate1 = gate.splineSection(controls[0], controls[1], controls[2], 1, 6, 3, 2);
+  gates = manualGate1;
+  return gates;
+}
+return branch();`
+
+		pkg, err := AnalyzePackage(src, nil)
+		if err != nil {
+			t.Fatalf("AnalyzePackage failed: %v", err)
+		}
+		if fn := program.ModuleFunction(pkg, "branch", 0); fn == nil {
+			t.Fatal("expected un-inlined branch() function to remain in AnalyzePackage output")
+		}
+		if vals, ok := program.ConstValues(program.TopLevelAssignment(pkg, "sprueLength")); !ok || len(vals) != 1 || vals[0] != 150 {
+			t.Fatalf("expected sprueLength ConstValues [150], got %v, %v", vals, ok)
+		}
+		branchFn := program.ModuleFunction(pkg, "branch", 0)
+		var gateCall *program.FnCall
+		for _, a := range branchFn.Assignments {
+			if len(a.Variables) == 1 && a.Variables[0].Name == "manualGate1" {
+				gateCall = a.Expression.GetFnCall()
+			}
+		}
+		if gateCall == nil || len(gateCall.Arguments) != 7 {
+			t.Fatalf("expected manualGate1 splineSection call with 7 args, got %v", gateCall)
+		}
+		if vals, ok := program.ConstValues(gateCall.Arguments[0]); !ok || len(vals) != 16 || vals[12] != 10 {
+			t.Fatalf("expected controls[0] stamped 4x4 matrix with tx=10, got %v, %v", vals, ok)
+		}
+	})
 }

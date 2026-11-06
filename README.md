@@ -101,6 +101,7 @@ omega-core/
 │   │   ├── textures/          # Texture descriptor binding
 │   │   ├── topofold/          # Topological folding
 │   │   ├── unroll/            # Loop unrolling transformations
+│   │   ├── variation/         # Sub-program and variation slicing (from common/program/variation)
 │   │   └── warpfold/          # Warp fold transformations
 │   ├── build/                 # Shared AST visitor and builder copied from common/build
 │   ├── closure/               # Lambda closure analysis and capture binding

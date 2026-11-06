@@ -1,6 +1,11 @@
 package ui
 
 import (
+	"encoding/json"
+	"fmt"
+	"sort"
+	"strings"
+
 	"gradientcontrol.com/omega/core/internal/edit"
 	"gradientcontrol.com/omega/core/internal/eval"
 	"gradientcontrol.com/omega/core/program"
@@ -46,10 +51,8 @@ func ExtractWithOperands(pkg *program.Package, getImport program.GetImportFunc) 
 		return nil, operands
 	}
 	var out []Control
+	// Invariant: pkg.Files, FnTypes, Groups, and Functions are guaranteed non-nil by the parser.
 	for _, f := range pkg.Files {
-		if f == nil {
-			continue
-		}
 		for _, assign := range f.Assignments {
 			collect(assign.Expression, pkg, getImport, &out, operands)
 		}
@@ -64,9 +67,6 @@ func ExtractWithOperands(pkg *program.Package, getImport program.GetImportFunc) 
 }
 
 func collectFunction(fn *program.Function, pkg *program.Package, getImport program.GetImportFunc, out *[]Control, operands map[*program.Operand]edit.Span) {
-	if fn == nil {
-		return
-	}
 	pkg = &program.Package{Path: pkg.Path, Files: append([]*program.PackageFile{{Assignments: fn.Assignments, FnTypes: fn.FnTypes}}, pkg.Files...)}
 	for _, assign := range fn.Assignments {
 		collect(assign.Expression, pkg, getImport, out, operands)
@@ -80,13 +80,7 @@ func collectFunction(fn *program.Function, pkg *program.Package, getImport progr
 }
 
 func collectFnType(fnType *program.FnType, pkg *program.Package, getImport program.GetImportFunc, out *[]Control, operands map[*program.Operand]edit.Span) {
-	if fnType == nil {
-		return
-	}
 	for _, group := range fnType.Groups {
-		if group == nil {
-			continue
-		}
 		for _, fn := range group.Functions {
 			collectFunction(fn, pkg, getImport, out, operands)
 		}
@@ -219,7 +213,7 @@ func editableOperand(op *program.Operand, pkg *program.Package) *program.Operand
 	seen := map[string]bool{}
 	for name := getReferenceName(op); name != "" && !seen[name]; name = getReferenceName(op) {
 		seen[name] = true
-		assign := assignmentFor(name, pkg)
+		assign := program.TopLevelAssignment(pkg, name)
 		if assign == nil {
 			break
 		}
@@ -239,21 +233,72 @@ func getReferenceName(op *program.Operand) string {
 	return refOp.Reference.Name
 }
 
-func assignmentFor(name string, pkg *program.Package) *program.Operand {
-	for _, f := range pkg.Files {
-		if f == nil {
+// RewriteSplineControls replaces non-literal uiSpline control expressions in source
+// with JSON-marshaled 4x4 matrix literals, returning the rewritten source along
+// with the number of spline controls and unique control matrices visited.
+func RewriteSplineControls(source string, controls []Control) (string, int, int, error) {
+	type replacement struct {
+		start, end int
+		text       string
+	}
+	var replacements []replacement
+	lines := strings.SplitAfter(source, "\n")
+	offset := func(line, column int) (int, error) {
+		if line < 1 || line > len(lines) || column < 1 {
+			return 0, fmt.Errorf("invalid gate control location")
+		}
+		runes := []rune(lines[line-1])
+		if column > len(runes)+1 {
+			return 0, fmt.Errorf("invalid gate control column")
+		}
+		n := len(string(runes[:column-1]))
+		for _, prefix := range lines[:line-1] {
+			n += len(prefix)
+		}
+		return n, nil
+	}
+	seen := map[int]bool{}
+	splines := 0
+	for _, spline := range controls {
+		if spline.Kind != KindSpline {
 			continue
 		}
-		for _, a := range f.Assignments {
-			if a == nil || len(a.Variables) != 1 || a.Variables[0] == nil {
+		splines++
+		for _, control := range spline.Controls {
+			start, err := offset(control.Span.StartLine, control.Span.StartColumn)
+			if err != nil {
+				return "", 0, 0, err
+			}
+			end, err := offset(control.Span.EndLine, control.Span.EndColumn)
+			if err != nil {
+				return "", 0, 0, err
+			}
+			if end < start || len(control.Value) != 16 {
+				return "", 0, 0, fmt.Errorf("invalid gate control matrix")
+			}
+			if seen[start] {
 				continue
 			}
-			if a.Variables[0].Name == name {
-				return a.Expression
+			seen[start] = true
+			if len(control.Params) == 16 {
+				continue
 			}
+			var matrix [4][4]float64
+			for i := range matrix {
+				copy(matrix[i][:], control.Value[4*i:4*i+4])
+			}
+			literal, err := json.Marshal(matrix)
+			if err != nil {
+				return "", 0, 0, err
+			}
+			replacements = append(replacements, replacement{start, end, string(literal)})
 		}
 	}
-	return nil
+	sort.Slice(replacements, func(i, j int) bool { return replacements[i].start > replacements[j].start })
+	for _, replacement := range replacements {
+		source = source[:replacement.start] + replacement.text + source[replacement.end:]
+	}
+	return source, splines, len(seen), nil
 }
 
 func spanOf(op *program.Operand) edit.Span {
