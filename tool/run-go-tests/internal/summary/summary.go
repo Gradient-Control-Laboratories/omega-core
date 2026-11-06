@@ -93,14 +93,14 @@ func BuildHistoryRecord(now time.Time, branch, commit string, totalSec float64, 
 }
 
 // PrintSuiteTable writes the per-suite timing table and golden size diffs (if any) to w.
-func PrintSuiteTable(w io.Writer, results []runner.SuiteResult, history []HistoryRecord, totalSec float64, goldens runner.GoldensReport) {
+func PrintSuiteTable(w io.Writer, results []runner.SuiteResult, history []HistoryRecord, totalSec float64, goldens runner.GoldensReport, wgslTestdataRel, fidgetTestdataRel string) {
 	var prevSuites map[string]float64
 	if len(history) > 0 {
 		prevSuites = history[len(history)-1].Suites
 	}
 
 	fmt.Fprintln(w, "==========================================================================")
-	fmt.Fprintln(w, "Omega Go Test Suite Timings")
+	fmt.Fprintln(w, "Go Test Suite Timings")
 	fmt.Fprintln(w, "--------------------------------------------------------------------------")
 	fmt.Fprintf(w, "%-32s %9s %10s %10s  %s\n", "Suite", "Time", "vs Prev", "vs Avg", "Status")
 	fmt.Fprintln(w, "--------------------------------------------------------------------------")
@@ -132,13 +132,11 @@ func PrintSuiteTable(w io.Writer, results []runner.SuiteResult, history []Histor
 		fmt.Fprintf(w, "%-44s %9s %9s %16s\n", "File", "main", "Current", "Delta")
 		for _, d := range allDiffs {
 			shortPath := d.Path
-			for _, prefix := range []string{
-				runner.WGSLTestdataRel + "/",
-				runner.OmegaCoreWGSLTestdataRel + "/",
-				runner.FidgetTestdataRel + "/",
-				runner.OmegaCoreFidgetTestdataRel + "/",
-			} {
-				if trimmed := strings.TrimPrefix(shortPath, prefix); trimmed != shortPath {
+			for _, prefix := range []string{wgslTestdataRel, fidgetTestdataRel} {
+				if prefix == "" {
+					continue
+				}
+				if trimmed := strings.TrimPrefix(shortPath, prefix+"/"); trimmed != shortPath {
 					shortPath = trimmed
 					break
 				}

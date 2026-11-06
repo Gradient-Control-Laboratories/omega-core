@@ -16,13 +16,6 @@ import (
 	"time"
 )
 
-const (
-	WGSLTestdataRel            = "agent/wgsl/internal/codegen/testdata"
-	OmegaCoreWGSLTestdataRel   = "backend/wgsl/internal/lib/internal/codegen/testdata"
-	FidgetTestdataRel          = "agent/fidget/internal/convert/testdata"
-	OmegaCoreFidgetTestdataRel = "backend/internal/fidget/internal/convert/testdata"
-)
-
 // SuiteResult holds the timing and pass/fail outcome of a single Go module test run.
 type SuiteResult struct {
 	Path    string
@@ -62,7 +55,7 @@ type GoldensReport struct {
 }
 
 // RunSuites executes `go test -count=1 ./...` in each directory path and records per-suite timings.
-func RunSuites(omegaRoot string, paths []string, stdout, stderr io.Writer) RunResult {
+func RunSuites(repoRoot string, paths []string, stdout, stderr io.Writer) RunResult {
 	results := make([]SuiteResult, 0, len(paths))
 	var failures []string
 	var totalSec float64
@@ -72,7 +65,7 @@ func RunSuites(omegaRoot string, paths []string, stdout, stderr io.Writer) RunRe
 		if err != nil {
 			absDir = dir
 		}
-		suiteName := SuiteDisplayName(absDir, omegaRoot)
+		suiteName := SuiteDisplayName(absDir, repoRoot)
 
 		fmt.Fprintln(stdout, "")
 		fmt.Fprintln(stdout, absDir)
@@ -110,10 +103,10 @@ func RunSuites(omegaRoot string, paths []string, stdout, stderr io.Writer) RunRe
 	}
 }
 
-// SuiteDisplayName formats absDir relative to omegaRoot when inside omegaRoot.
-func SuiteDisplayName(absDir, omegaRoot string) string {
-	if omegaRoot != "" {
-		if rel, err := filepath.Rel(omegaRoot, absDir); err == nil && !strings.HasPrefix(rel, "..") {
+// SuiteDisplayName formats absDir relative to repoRoot when inside repoRoot.
+func SuiteDisplayName(absDir, repoRoot string) string {
+	if repoRoot != "" {
+		if rel, err := filepath.Rel(repoRoot, absDir); err == nil && !strings.HasPrefix(rel, "..") {
 			return filepath.ToSlash(rel)
 		}
 	}
@@ -121,33 +114,35 @@ func SuiteDisplayName(absDir, omegaRoot string) string {
 }
 
 // CollectGoldenSizes scans WGSL and Fidget GLSL testdata directories and compares their sizes against git main.
-func CollectGoldenSizes(omegaRoot string) GoldensReport {
-	if omegaRoot == "" {
+func CollectGoldenSizes(repoRoot, wgslTestdataRel, fidgetTestdataRel string) GoldensReport {
+	if repoRoot == "" {
 		return GoldensReport{}
 	}
-	wgslRel := resolveTestdataRel(omegaRoot, WGSLTestdataRel, OmegaCoreWGSLTestdataRel)
-	fidgetRel := resolveTestdataRel(omegaRoot, FidgetTestdataRel, OmegaCoreFidgetTestdataRel)
-	mainSizes, hasMain := gitMainBlobSizes(omegaRoot, wgslRel, fidgetRel)
-
-	wgslDisk := scanGoldenFiles(omegaRoot, wgslRel, ".wgsl", "")
-	fidgetDisk := scanGoldenFiles(omegaRoot, fidgetRel, ".glsl", ".actual.glsl")
-
-	wgslMain := filterPrefixAndSuffix(mainSizes, wgslRel+"/", ".wgsl", "")
-	fidgetMain := filterPrefixAndSuffix(mainSizes, fidgetRel+"/", ".glsl", ".actual.glsl")
-
-	return GoldensReport{
-		WGSL:       CompareGoldenCategory(wgslDisk, wgslMain, hasMain),
-		FidgetGLSL: CompareGoldenCategory(fidgetDisk, fidgetMain, hasMain),
+	var relPaths []string
+	if wgslTestdataRel != "" {
+		relPaths = append(relPaths, wgslTestdataRel)
 	}
-}
-
-func resolveTestdataRel(omegaRoot string, candidates ...string) string {
-	for _, rel := range candidates {
-		if info, err := os.Stat(filepath.Join(omegaRoot, rel)); err == nil && info.IsDir() {
-			return rel
-		}
+	if fidgetTestdataRel != "" {
+		relPaths = append(relPaths, fidgetTestdataRel)
 	}
-	return candidates[0]
+	if len(relPaths) == 0 {
+		return GoldensReport{}
+	}
+
+	mainSizes, hasMain := gitMainBlobSizes(repoRoot, relPaths...)
+
+	var report GoldensReport
+	if wgslTestdataRel != "" {
+		wgslDisk := scanGoldenFiles(repoRoot, wgslTestdataRel, ".wgsl", "")
+		wgslMain := filterPrefixAndSuffix(mainSizes, wgslTestdataRel+"/", ".wgsl", "")
+		report.WGSL = CompareGoldenCategory(wgslDisk, wgslMain, hasMain)
+	}
+	if fidgetTestdataRel != "" {
+		fidgetDisk := scanGoldenFiles(repoRoot, fidgetTestdataRel, ".glsl", ".actual.glsl")
+		fidgetMain := filterPrefixAndSuffix(mainSizes, fidgetTestdataRel+"/", ".glsl", ".actual.glsl")
+		report.FidgetGLSL = CompareGoldenCategory(fidgetDisk, fidgetMain, hasMain)
+	}
+	return report
 }
 
 // CompareGoldenCategory computes total bytes and per-file diffs between current disk files and main.
@@ -206,9 +201,9 @@ func CompareGoldenCategory(diskSizes, mainSizes map[string]int64, hasMain bool) 
 	return summary
 }
 
-func scanGoldenFiles(omegaRoot, relDir, ext, actualExt string) map[string]int64 {
+func scanGoldenFiles(repoRoot, relDir, ext, actualExt string) map[string]int64 {
 	out := make(map[string]int64)
-	rootDir := filepath.Join(omegaRoot, relDir)
+	rootDir := filepath.Join(repoRoot, relDir)
 	_ = filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() {
 			return nil
@@ -231,7 +226,7 @@ func scanGoldenFiles(omegaRoot, relDir, ext, actualExt string) map[string]int64 
 		if sErr != nil {
 			return nil
 		}
-		rel, rErr := filepath.Rel(omegaRoot, path)
+		rel, rErr := filepath.Rel(repoRoot, path)
 		if rErr != nil {
 			rel = path
 		}
@@ -255,10 +250,10 @@ func filterPrefixAndSuffix(all map[string]int64, prefix, suffix, excludeSuffix s
 	return out
 }
 
-func gitMainBlobSizes(omegaRoot string, relPaths ...string) (map[string]int64, bool) {
+func gitMainBlobSizes(repoRoot string, relPaths ...string) (map[string]int64, bool) {
 	args := append([]string{"ls-tree", "-r", "-l", "main", "--"}, relPaths...)
 	cmd := exec.Command("git", args...)
-	cmd.Dir = omegaRoot
+	cmd.Dir = repoRoot
 	raw, err := cmd.Output()
 	if err != nil {
 		return nil, false

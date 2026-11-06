@@ -8,8 +8,10 @@ HISTORY_FILE="${PROJ_DIR}/.test-history/omega-core-test.jsonl"
 
 echo "==> Running omega-core test suite..."
 go run "${ROOT_DIR}/tool/run-go-tests" \
-    --omega-root "${ROOT_DIR}" \
+    --repo-root "${ROOT_DIR}" \
     --history-file "${HISTORY_FILE}" \
+    --wgsl-testdata "backend/wgsl/internal/lib/internal/codegen/testdata" \
+    --fidget-testdata "backend/internal/fidget/internal/convert/testdata" \
     "${ROOT_DIR}/parser" \
     "${ROOT_DIR}/program" \
     "${ROOT_DIR}/stdlib" \

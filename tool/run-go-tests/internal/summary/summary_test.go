@@ -66,7 +66,7 @@ func TestHistoryRoundTripAndSummaryFormatting(t *testing.T) {
 	}
 
 	var tableBuf bytes.Buffer
-	PrintSuiteTable(&tableBuf, current, loaded, 54.0, goldensCurr)
+	PrintSuiteTable(&tableBuf, current, loaded, 54.0, goldensCurr, "agent/wgsl/internal/codegen/testdata", "agent/fidget/internal/convert/testdata")
 	tableStr := tableBuf.String()
 	if !strings.Contains(tableStr, "agent/assembler") || !strings.Contains(tableStr, "-1.00s") {
 		t.Fatalf("unexpected suite table:\n%s", tableStr)

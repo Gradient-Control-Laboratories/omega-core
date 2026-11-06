@@ -20,17 +20,17 @@ func main() {
 
 	history := summary.LoadHistory(cfg.HistoryFile)
 
-	runRes := runner.RunSuites(cfg.OmegaRoot, cfg.Paths, os.Stdout, os.Stderr)
-	goldens := runner.CollectGoldenSizes(cfg.OmegaRoot)
+	runRes := runner.RunSuites(cfg.RepoRoot, cfg.Paths, os.Stdout, os.Stderr)
+	goldens := runner.CollectGoldenSizes(cfg.RepoRoot, cfg.WGSLTestdata, cfg.FidgetTestdata)
 
 	fmt.Println("")
-	summary.PrintSuiteTable(os.Stdout, runRes.Results, history, runRes.TotalSec, goldens)
+	summary.PrintSuiteTable(os.Stdout, runRes.Results, history, runRes.TotalSec, goldens, cfg.WGSLTestdata, cfg.FidgetTestdata)
 
 	allPassed := len(runRes.Failures) == 0
 	summaryText := summary.FormatTotalComparison(runRes.TotalSec, goldens, history, cfg.HistoryFile, allPassed)
 
 	if allPassed && cfg.HistoryFile != "" {
-		branch, commit := runner.GitBranchAndCommit(cfg.OmegaRoot)
+		branch, commit := runner.GitBranchAndCommit(cfg.RepoRoot)
 		rec := summary.BuildHistoryRecord(time.Now(), branch, commit, runRes.TotalSec, runRes.Results, goldens)
 		if err := summary.AppendHistory(cfg.HistoryFile, rec); err != nil {
 			fmt.Fprintf(os.Stderr, "warning: failed to record test timing history to %s: %v\n", cfg.HistoryFile, err)
@@ -50,4 +50,3 @@ func main() {
 		os.Exit(1)
 	}
 }
-

@@ -1,56 +1,50 @@
 package config
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 )
 
-func TestParseFlagsDefaultsAndValidation(t *testing.T) {
+func TestParseFlagsValidation(t *testing.T) {
 	if _, err := ParseFlags(nil); err == nil {
-		t.Fatal("expected error when no paths are provided")
+		t.Fatal("expected error when no flags or paths are provided")
 	}
 
 	tmp := t.TempDir()
-	omegaDir := filepath.Join(tmp, "omega")
-	pkgDir := filepath.Join(omegaDir, "tool", "mdpath")
-	if err := os.MkdirAll(pkgDir, 0o755); err != nil {
-		t.Fatal(err)
+	repoDir := filepath.Join(tmp, "omega")
+	histFile := filepath.Join(tmp, ".test-history", "omega-test.jsonl")
+	pkgDir := filepath.Join(repoDir, "tool", "mdpath")
+
+	if _, err := ParseFlags([]string{"--history-file", histFile, pkgDir}); err == nil {
+		t.Fatal("expected error when --repo-root is missing")
 	}
-	if err := os.WriteFile(filepath.Join(omegaDir, "go.work"), []byte("go 1.24\n"), 0o644); err != nil {
-		t.Fatal(err)
+	if _, err := ParseFlags([]string{"--repo-root", repoDir, pkgDir}); err == nil {
+		t.Fatal("expected error when --history-file is missing")
+	}
+	if _, err := ParseFlags([]string{"--repo-root", repoDir, "--history-file", histFile}); err == nil {
+		t.Fatal("expected error when no suite paths are provided")
 	}
 
-	cfg, err := ParseFlags([]string{pkgDir})
+	cfg, err := ParseFlags([]string{
+		"--repo-root", repoDir,
+		"--history-file", histFile,
+		"--wgsl-testdata", "agent/wgsl/internal/codegen/testdata",
+		"--fidget-testdata", "agent/fidget/internal/convert/testdata",
+		pkgDir,
+	})
 	if err != nil {
 		t.Fatalf("ParseFlags failed: %v", err)
 	}
-	if cfg.OmegaRoot != omegaDir {
-		t.Errorf("OmegaRoot = %q, want %q", cfg.OmegaRoot, omegaDir)
+	if cfg.RepoRoot != repoDir {
+		t.Errorf("RepoRoot = %q, want %q", cfg.RepoRoot, repoDir)
 	}
-	wantHist := filepath.Join(tmp, ".test-history", "omega-test.jsonl")
-	if cfg.HistoryFile != wantHist {
-		t.Errorf("HistoryFile = %q, want %q", cfg.HistoryFile, wantHist)
+	if cfg.HistoryFile != histFile {
+		t.Errorf("HistoryFile = %q, want %q", cfg.HistoryFile, histFile)
 	}
-
-	// Single-module repo (like omega-core) with go.mod at root and no go.work.
-	coreDir := filepath.Join(tmp, "omega-core")
-	corePkgDir := filepath.Join(coreDir, "parser")
-	if err := os.MkdirAll(corePkgDir, 0o755); err != nil {
-		t.Fatal(err)
+	if cfg.WGSLTestdata != "agent/wgsl/internal/codegen/testdata" {
+		t.Errorf("WGSLTestdata = %q, want agent/wgsl/internal/codegen/testdata", cfg.WGSLTestdata)
 	}
-	if err := os.WriteFile(filepath.Join(coreDir, "go.mod"), []byte("module gradientcontrol.com/omega/core\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	coreCfg, err := ParseFlags([]string{corePkgDir})
-	if err != nil {
-		t.Fatalf("ParseFlags(omega-core) failed: %v", err)
-	}
-	if coreCfg.OmegaRoot != coreDir {
-		t.Errorf("coreCfg.OmegaRoot = %q, want %q", coreCfg.OmegaRoot, coreDir)
-	}
-	wantCoreHist := filepath.Join(tmp, ".test-history", "omega-core-test.jsonl")
-	if coreCfg.HistoryFile != wantCoreHist {
-		t.Errorf("coreCfg.HistoryFile = %q, want %q", coreCfg.HistoryFile, wantCoreHist)
+	if cfg.FidgetTestdata != "agent/fidget/internal/convert/testdata" {
+		t.Errorf("FidgetTestdata = %q, want agent/fidget/internal/convert/testdata", cfg.FidgetTestdata)
 	}
 }

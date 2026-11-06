@@ -165,9 +165,7 @@ omega-core/
     ├── clean.sh               # Cleans bin/ outputs, test cache, and scratch files
     ├── test.sh                # Runs unit, integration, and golden test suites
     ├── update-goldens.sh      # Regenerates reference test goldens
-    └── run-go-tests/          # Go test suite runner, timing history, and golden size reporter
-        ├── main.go            # Entry point for running test suites and reporting golden sizes
-        └── internal/          # Copied from tool/run-go-tests/internal
+    └── run-go-tests/          # Go test suite runner, timing history, and golden size reporter (from tool/run-go-tests)
 ```
 
 ## Building the Toolchain
