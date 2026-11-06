@@ -1,3 +1,5 @@
+@scene(8, 0.4)
+
 // CSG Shapes Showcase: Smooth Booleans & Geometric Primitives
 blend = 0.35;
 blend.min = 0.05;

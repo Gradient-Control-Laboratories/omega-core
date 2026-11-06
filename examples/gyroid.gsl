@@ -1,3 +1,5 @@
+@scene(8, 0.4)
+
 // Triply Periodic Minimal Surface (Gyroid TPMS) Showcase
 scale = 1.5;
 scale.min = 0.5;
