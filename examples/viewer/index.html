@@ -56,23 +56,30 @@
                         <div id="btn-point-normal-select" class="btn-icon" title="Point + normal selection"><img src="icons/crosshair-normal.svg" alt="Point + normal selection"></div>
                     </div>
                     <div id="canvas-controls">
+                        <!-- Parameters panel: one slider row per top-level variable with
+                             both a .min and .max property, one colour chip per @color
+                             control, and the animation clock's transport at the bottom
+                             (the Time range, rewind / play-pause / fast-forward, and the
+                             end time), which replaced the former Animation panel. -->
                         <div id="slider-panel">
                             <div id="slider-panel-header">Parameters <span class="panel-close">&#x2715;</span></div>
                             <div class="panel-body">
-                                <div id="slider-panel-body"></div>
-                            </div>
-                        </div>
-                        <div id="animation-panel">
-                            <div id="animation-panel-header">Animation <span class="panel-close">&#x2715;</span></div>
-                            <div class="panel-body">
-                                <div class="field-panel-row">
-                                    <label>Time</label>
-                                    <input type="number" id="animation-time-input" value="0.00" step="0.01" min="0" readonly>
-                                    <span class="anim-unit">s</span>
+                                <div id="slider-panel-body">
+                                    <!-- Slider rows populated by panels/slider-panel.js from the
+                                         compile response's slider metadata. -->
                                 </div>
-                                <div class="anim-btns">
-                                    <div id="btn-rewind-anim" class="btn-light anim-btn"><span class="anim-glyph">&#x23EE;</span></div>
-                                    <div id="btn-pause-anim" class="btn-light anim-btn"><span class="anim-glyph">&#x25B6;</span></div>
+                                <div class="field-panel-row" id="time-slider-row">
+                                    <label>time</label>
+                                    <input type="range" id="time-range" min="0" max="10" value="0" step="0.01" disabled>
+                                    <input type="number" id="animation-time-input" class="field-panel-label" value="0.00" step="0.01" min="0" readonly>
+                                </div>
+                                <div class="field-panel-row" id="anim-controls-row">
+                                    <div class="anim-btns">
+                                        <div id="btn-rewind-anim" class="btn-light anim-btn" title="Rewind to 0"><span class="anim-glyph">&#x23EE;</span></div>
+                                        <div id="btn-pause-anim" class="btn-light anim-btn" title="Play / pause"><span class="anim-glyph">&#x25B6;</span></div>
+                                        <div id="btn-fastforward-anim" class="btn-light anim-btn" title="Fast-forward to end"><span class="anim-glyph">&#x23ED;</span></div>
+                                    </div>
+                                    <input type="number" id="anim-end-time" class="field-panel-label" title="End time" value="10" step="0.5" min="0.01">
                                 </div>
                                 <div class="field-panel-row" id="audio-volume-row" style="display: none;">
                                     <label>Volume</label>
@@ -80,20 +87,38 @@
                                 </div>
                             </div>
                         </div>
-                        <div id="mesh-import-panel">
-                            <div id="mesh-import-header">Meshes <span class="panel-close">&#x2715;</span></div>
+                        <!-- Imports (panels/mesh-import.js), Bodies (panels/body-panel.js) and
+                             Export (panels/export-panel.js) inject their own markup into these
+                             empty panels at init. -->
+                        <div id="mesh-import-panel"></div>
+                        <div id="scene-panel">
+                            <div id="scene-panel-header">Scene <span class="panel-close">&#x2715;</span></div>
                             <div class="panel-body">
-                                <input type="file" id="mesh-file-input" accept=".stl,.obj" multiple hidden>
-                                <div id="mesh-drop-zone" class="mesh-drop-zone">
-                                    <span class="mesh-upload-label">Drop STL/OBJ here or click to upload</span>
+                                <div class="field-panel-row">
+                                    <label>Size (mm)</label>
+                                    <input type="range" id="scene-bbox" min="1" max="10000" value="400" step="1">
+                                    <span id="scene-bbox-label" class="field-panel-label">400</span>
                                 </div>
-                                <div id="mesh-list"></div>
-                                <div id="mesh-hint" class="mesh-hint" style="display:none"></div>
+                                <div id="scene-bbox-info"></div>
+                                <div class="field-panel-row">
+                                    <label>Grid (mm)</label>
+                                    <input type="range" id="scene-grid-spacing" min="0" max="12" value="7" step="1">
+                                    <span id="scene-grid-spacing-label" class="field-panel-label">20</span>
+                                </div>
+                                <div id="scene-grid-info"></div>
                             </div>
                         </div>
                         <div id="render-panel">
                             <div id="render-panel-header">Render <span class="panel-close">&#x2715;</span></div>
                             <div class="panel-body">
+                                <div class="field-panel-row">
+                                    <label>Resolution</label>
+                                    <div class="resolution-controls" role="group" aria-label="Viewer resolution">
+                                        <button class="resolution-btn active" type="button" data-render-scale="1" aria-pressed="true" title="Full rendering resolution">1x</button>
+                                        <button class="resolution-btn" type="button" data-render-scale="0.5" aria-pressed="false" title="Half rendering resolution for faster interaction">1/2</button>
+                                        <button class="resolution-btn" type="button" data-render-scale="0.25" aria-pressed="false" title="Quarter rendering resolution for fastest interaction">1/4</button>
+                                    </div>
+                                </div>
                                 <div class="field-panel-row">
                                     <label>Moving</label>
                                     <div class="resolution-controls" role="group" aria-label="Render quality while the view moves">
@@ -188,7 +213,7 @@
                             </div>
                         </div>
                         <div id="field-panel">
-                            <div id="field-panel-header">Cross Section <span class="panel-close">&#x2715;</span></div>
+                            <div id="field-panel-header">Section <span class="panel-close">&#x2715;</span></div>
                             <div class="panel-body">
                                 <div class="stl-row-loose">
                                     <label>Direction</label>
@@ -197,19 +222,19 @@
                                     <input type="number" id="field-normal-z" value="1" step="0.1">
                                 </div>
                                 <div class="field-panel-row">
-                                    <label>Offset</label>
-                                    <input type="range" id="field-height" min="-10" max="10" value="0" step="0.01">
+                                    <label>Offset (mm)</label>
+                                    <input type="range" id="field-height" min="-200" max="200" value="0" step="0.01">
                                     <span id="field-height-label" class="field-panel-label">0.00</span>
                                 </div>
                                 <div class="field-panel-row">
-                                    <label>Interval</label>
-                                    <input type="range" id="field-interval" min="0" max="2" value="0.25" step="0.01">
-                                    <span id="field-interval-label" class="field-panel-label">0.25</span>
+                                    <label>Interval (mm)</label>
+                                    <input type="range" id="field-interval" min="0" max="40" value="5" step="0.01">
+                                    <span id="field-interval-label" class="field-panel-label">5.00</span>
                                 </div>
                                 <div class="field-panel-row">
-                                    <label>Fade</label>
-                                    <input type="range" id="field-fade" min="0" max="10" value="5" step="0.1">
-                                    <span id="field-fade-label" class="field-panel-label">5.0</span>
+                                    <label>Fade (mm)</label>
+                                    <input type="range" id="field-fade" min="0" max="200" value="100" step="0.1">
+                                    <span id="field-fade-label" class="field-panel-label">100.0</span>
                                 </div>
                                 <div class="field-panel-row">
                                     <label>Model</label>
@@ -233,13 +258,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div id="color-picker-panel">
-                            <div id="color-picker-header">Shapes<span class="panel-close">&#x2715;</span></div>
-                            <div class="panel-body">
-                                <div id="palette-strip"></div>
-                                <div id="color-pickers"></div>
-                            </div>
-                        </div>
+                        <div id="body-panel"></div>
                         <div id="stl-bounds-panel"></div>
                     </div>
                 </div>

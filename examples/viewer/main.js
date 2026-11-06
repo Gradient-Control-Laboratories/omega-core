@@ -19,6 +19,8 @@ import {
     setFieldUnion,
     setFieldExternal,
     setShapeVisible,
+    setSlotVisible,
+    setMeshShapeVisible,
     setAnimPaused,
     setAnimTime,
     getAnimTime,
@@ -32,14 +34,14 @@ import {
     syncMeshInstances,
     setOutlinesEnabled,
     setWorldExtent,
-    setGridDensity,
     frameWorldExtent,
     getWorldExtent,
+    getGridSpacing,
+    setGridSpacing,
     getGridDensity,
     setSliderValue,
     setUiControlValues,
 } from "./render/viewer.js";
-import { srgbEncode } from "./render/gsl-shading.js";
 import {
     initEditor,
     getContent,
@@ -61,6 +63,7 @@ import { initHelpPanel } from "./docs/help-panel.js";
 import { initSliderPanel, renderSliderPanel, sliderAnimTick } from "./panels/slider-panel.js";
 import { initMeshImport } from "./panels/mesh-import.js";
 import { initExportPanel } from "./panels/export-panel.js";
+import { initBodyPanel, setBodies, pickBody } from "./panels/body-panel.js";
 
 const clientId = (typeof crypto !== "undefined" && crypto.randomUUID)
     ? crypto.randomUUID()
@@ -315,17 +318,8 @@ eventManager.addListener("shape/picked", (event) => {
     const shapeIndex = event.shapeIndex;
     setSelectedShape(shapeIndex);
 
-    if (shapeIndex > 0 && !colorPickerPanel.classList.contains("open")) {
-        colorPickerPanel.classList.add("open");
-    }
-
-    colorPickersContainer.querySelectorAll(".color-picker-row").forEach((row) => {
-        if (parseInt(row.dataset.shapeIndex, 10) === shapeIndex) {
-            row.classList.add("selected");
-        } else {
-            row.classList.remove("selected");
-        }
-    });
+    // Select the picked body in the Bodies panel.
+    pickBody(shapeIndex);
 
     if (shapeIndex === 0) {
         clearHighlights();
@@ -368,18 +362,20 @@ eventManager.addListener("canvas/update-shader", (event) => {
         clearHighlights();
         setSelectedShape(0);
 
-        const targetExtent = (event.scene && event.scene.size > 0) ? event.scene.size / 2 : 4;
-        const sizeChanged = Math.abs(targetExtent - getWorldExtent()) > 1e-4;
-        setWorldExtent(targetExtent);
-        if (event.scene && event.scene.grid > 0) {
-            setGridDensity(event.scene.grid);
+        // A document's @scene directive commits into the Scene panel, which
+        // then also keeps the Section ranges in step; without one the scene
+        // stays as the panel has it.
+        if (event.scene) {
+            const sizeChanged = event.scene.size > 0 && Math.abs(event.scene.size - getWorldExtent() * 2) > 1e-4;
+            if (event.scene.size > 0) commitSceneBbox(event.scene.size);
+            if (event.scene.grid > 0) commitGridSpacing(event.scene.grid);
+            if (sizeChanged) frameWorldExtent();
         }
-        if (sizeChanged) frameWorldExtent();
 
         const decls = event.meshDecls || [];
         const unknowns = syncMeshInstances(decls);
         if (unknowns.length > 0) {
-            showError(`Unknown mesh index: ${unknowns.join(", ")}. Upload in the Meshes panel first.`, false);
+            showError(`Unknown mesh index: ${unknowns.join(", ")}. Upload in the Imports panel first.`, false);
         }
 
         renderSliderPanel(event.sliders || [], event.uiControls || []);
@@ -806,253 +802,128 @@ initExportPanel({
     },
 });
 
-// ── Palette & Shapes Panel ──
+// ── Bodies Panel ──
+// The body list, its colours and the swatch grid live in panels/body-panel.js;
+// main.js wires the editor's source in and out, the viewer's per-body colour
+// and visibility, and the body list from shapes/detected. Picking a body in
+// the 3D view selects it there (see the shape/picked listener above).
 
-const PALETTE_PRESETS = [
-    { a: [0.5, 0.5, 0.5], b: [0.5, 0.5, 0.5], c: [1, 1, 1], d: [0.00, 0.33, 0.67] },
-    { a: [0.5, 0.5, 0.5], b: [0.55, 0.55, 0.55], c: [1, 1, 1], d: [0.30, 0.50, 0.50] },
-    { a: [0.5, 0.5, 0.5], b: [0.5, 0.5, 0.5], c: [1, 1, 1], d: [0.00, 0.10, 0.20] },
-    { a: [0.5, 0.5, 0.5], b: [0.5, 0.5, 0.5], c: [1, 1, 1], d: [0.30, 0.20, 0.20] },
-    { a: [0.5, 0.5, 0.5], b: [0.5, 0.5, 0.5], c: [1, 1, 0.5], d: [0.80, 0.90, 0.30] },
-    { a: [0.5, 0.5, 0.5], b: [0.5, 0.5, 0.5], c: [1, 0.7, 0.4], d: [0.00, 0.15, 0.20] },
-];
-
-let currentPalette = PALETTE_PRESETS[0];
-let paletteShapeCount = 0;
-
-function cosineRGB(t, { a, b, c, d }) {
-    return a.map((ai, i) => Math.max(0, Math.min(1, ai + b[i] * Math.cos(2 * Math.PI * (c[i] * t + d[i]))))).map(srgbEncode);
-}
-
-function rgbToHex([r, g, b]) {
-    const h = (v) => Math.round(v * 255).toString(16).padStart(2, "0");
-    return `#${h(r)}${h(g)}${h(b)}`;
-}
-
-function shapeT(i) { return (1 / 3 + (i - 1) * (5 / 12)) % 1; }
-
-const colorPickerPanel = document.getElementById("color-picker-panel");
-const colorPickersContainer = document.getElementById("color-pickers");
-const paletteStrip = document.getElementById("palette-strip");
-
-document.getElementById("color-picker-header").addEventListener("click", (e) => {
-    if (e.target.classList.contains("panel-close")) {
-        colorPickerPanel.classList.remove("open");
-    } else if (!colorPickerPanel.classList.contains("open")) {
-        colorPickerPanel.classList.add("open");
-    }
-});
-
-function renderPaletteStrip(palette) {
-    paletteStrip.innerHTML = "";
-    for (let k = 0; k < 12; k++) {
-        const [r, g, b] = cosineRGB(k / 12, palette);
-        const el = document.createElement("div");
-        el.className = "palette-swatch";
-        el.style.background = `rgb(${Math.round(r * 255)},${Math.round(g * 255)},${Math.round(b * 255)})`;
-        paletteStrip.appendChild(el);
-    }
-}
-
-function applyPalette(palette) {
-    currentPalette = palette;
-    renderPaletteStrip(palette);
-    for (let i = 1; i <= paletteShapeCount; i++) {
-        const [r, g, b] = cosineRGB(shapeT(i), palette);
-        setShapeColor(i, r, g, b);
-        const row = colorPickersContainer.querySelector(`.color-picker-row[data-shape-index="${i}"]`);
-        if (row) row.querySelector('input[type="color"]').value = rgbToHex([r, g, b]);
-    }
-    updatePopupHeader();
-}
-
-renderPaletteStrip(currentPalette);
-
-function drawPresetCanvas(canvas, palette) {
-    const ctx = canvas.getContext("2d");
-    const w = canvas.width, h = canvas.height;
-    for (let x = 0; x < w; x++) {
-        const [r, g, b] = cosineRGB(x / w, palette);
-        ctx.fillStyle = `rgb(${Math.round(r * 255)},${Math.round(g * 255)},${Math.round(b * 255)})`;
-        ctx.fillRect(x, 0, 1, h);
-    }
-}
-
-const palettePopup = document.createElement("div");
-palettePopup.id = "palette-popup";
-
-const popupParams = document.createElement("div");
-popupParams.id = "palette-popup-params";
-["a", "b", "c", "d"].forEach((key) => {
-    const col = document.createElement("div");
-    col.className = "palette-param-col";
-    const input = document.createElement("input");
-    input.type = "color";
-    input.className = "palette-param-swatch";
-    input.dataset.param = key;
-    input.addEventListener("input", (e) => {
-        const hex = e.target.value;
-        const r = parseInt(hex.slice(1, 3), 16) / 255;
-        const g = parseInt(hex.slice(3, 5), 16) / 255;
-        const b = parseInt(hex.slice(5, 7), 16) / 255;
-        currentPalette = { ...currentPalette, [key]: [r, g, b] };
-        if (selectedPresetEl) {
-            selectedPresetEl.classList.remove("selected");
-            selectedPresetEl = null;
-        }
-        applyPalette(currentPalette);
-    });
-    const lbl = document.createElement("div");
-    lbl.className = "palette-param-label";
-    lbl.textContent = key;
-    col.appendChild(input);
-    col.appendChild(lbl);
-    popupParams.appendChild(col);
-});
-palettePopup.appendChild(popupParams);
-
-function updatePopupHeader() {
-    const p = currentPalette;
-    ["a", "b", "c", "d"].forEach((key) => {
-        const input = palettePopup.querySelector(`.palette-param-swatch[data-param="${key}"]`);
-        if (input) input.value = rgbToHex(p[key]);
-    });
-}
-
-const popupPresets = document.createElement("div");
-popupPresets.id = "palette-popup-presets";
-let selectedPresetEl = null;
-
-PALETTE_PRESETS.forEach((preset, idx) => {
-    const row = document.createElement("div");
-    row.className = "palette-preset" + (idx === 0 ? " selected" : "");
-    if (idx === 0) selectedPresetEl = row;
-    const canvas = document.createElement("canvas");
-    canvas.width = 200;
-    canvas.height = 16;
-    row.appendChild(canvas);
-    popupPresets.appendChild(row);
-    requestAnimationFrame(() => drawPresetCanvas(canvas, preset));
-
-    row.addEventListener("click", () => {
-        if (selectedPresetEl) selectedPresetEl.classList.remove("selected");
-        row.classList.add("selected");
-        selectedPresetEl = row;
-        applyPalette(preset);
-    });
-});
-palettePopup.appendChild(popupPresets);
-document.getElementById("canvas-container").appendChild(palettePopup);
-
-updatePopupHeader();
-
-paletteStrip.style.cursor = "pointer";
-paletteStrip.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const rect = paletteStrip.getBoundingClientRect();
-    palettePopup.style.right = `${window.innerWidth - rect.right}px`;
-    palettePopup.style.top = `${rect.bottom + 6}px`;
-    palettePopup.classList.toggle("visible");
-});
-
-document.addEventListener("click", (e) => {
-    if (!palettePopup.contains(e.target)) palettePopup.classList.remove("visible");
+initBodyPanel({
+    getSource: getGslSourceForServer,
+    setSource: (next) => {
+        if (currentTab !== "GSL") selectTab("GSL");
+        suppressDirty = true;
+        setContent(next);
+        suppressDirty = false;
+        gslSource = next;
+        currentGSL = next;
+        markDirty();
+    },
+    recompile: () => {
+        const source = getGslSourceForServer();
+        if (!source || source.trim() === "") return;
+        compileGsl(source);
+    },
+    setShapeColor,
+    setShapeVisible,
+    setSlotVisible,
+    setMeshShapeVisible,
+    selectShape: setSelectedShape,
+    popupParent: document.getElementById("canvas-container"),
 });
 
 eventManager.addListener("shapes/detected", (event) => {
-    const count = event.count;
     const names = event.names || [];
-    paletteShapeCount = count;
-    colorPickersContainer.innerHTML = "";
-
-    if (count === 0) {
-        colorPickerPanel.classList.remove("visible");
-        colorPickerPanel.classList.remove("open");
-        return;
-    }
-
-    for (let i = 1; i <= count; i++) {
-        const row = document.createElement("div");
-        row.className = "color-picker-row";
-        row.dataset.shapeIndex = i;
-
-        const label = document.createElement("label");
-        label.textContent = names[i - 1] || `Shape ${i}`;
-
-        const input = document.createElement("input");
-        input.type = "color";
-        input.value = rgbToHex(cosineRGB(shapeT(i), currentPalette));
-        input.addEventListener("input", (e) => {
-            const hex = e.target.value;
-            const r = parseInt(hex.slice(1, 3), 16) / 255;
-            const g = parseInt(hex.slice(3, 5), 16) / 255;
-            const b = parseInt(hex.slice(5, 7), 16) / 255;
-            setShapeColor(i, r, g, b);
-        });
-
-        const vis = document.createElement("input");
-        vis.type = "checkbox";
-        vis.checked = true;
-        vis.addEventListener("change", (e) => setShapeVisible(i, e.target.checked));
-
-        row.appendChild(label);
-        row.appendChild(input);
-        row.appendChild(vis);
-        colorPickersContainer.appendChild(row);
-    }
-
-    for (let i = 1; i <= count; i++) {
-        const [r, g, b] = cosineRGB(shapeT(i), currentPalette);
-        setShapeColor(i, r, g, b);
-    }
-
-    colorPickerPanel.classList.add("visible");
+    setBodies(Array.from({ length: event.count || 0 }, (_, i) => names[i] || ""));
 });
 
-// ── Animation & Audio Panel ──
+// ── Parameters Panel: Animation Transport & Audio ──
+// The animation clock's controls sit at the bottom of the Parameters panel
+// below the program's slider rows: the Time range, rewind / play-pause /
+// fast-forward, and the end time. They replaced the former Animation panel.
 
-const animationPanel = document.getElementById("animation-panel");
 const animTimeInput = document.getElementById("animation-time-input");
 const btnPauseAnim = document.getElementById("btn-pause-anim");
 const btnRewindAnim = document.getElementById("btn-rewind-anim");
+const btnFastForwardAnim = document.getElementById("btn-fastforward-anim");
+const timeRange = document.getElementById("time-range");
+const animEndTimeInput = document.getElementById("anim-end-time");
 let animPaused = true;
-let animTimeInterval = null;
 
-document.getElementById("animation-panel-header").addEventListener("click", (e) => {
-    if (e.target.classList.contains("panel-close")) {
-        animationPanel.classList.remove("open");
-        clearInterval(animTimeInterval);
-        animTimeInterval = null;
-    } else if (!animationPanel.classList.contains("open")) {
-        animationPanel.classList.add("open");
-        animTimeInterval = setInterval(() => {
-            if (!animPaused) animTimeInput.value = getAnimTime().toFixed(2);
-        }, 50);
-    }
-});
+// One always-on ticker mirrors the animation clock into the Time row's number
+// and range inputs while the clock runs. One DOM write per 50 ms is cheap
+// enough that gating on panel visibility isn't worth the bookkeeping.
+setInterval(() => {
+    if (animPaused) return;
+    const t = getAnimTime();
+    animTimeInput.value = t.toFixed(2);
+    timeRange.value = String(t);
+}, 50);
 
-btnPauseAnim.addEventListener("click", () => {
-    animPaused = !animPaused;
+function setAnimPausedState(paused) {
+    animPaused = paused;
     setAnimPaused(animPaused);
     btnPauseAnim.innerHTML = animPaused
-        ? `<span class="anim-glyph">\u25B6</span>`
-        : `<span class="anim-glyph anim-glyph-low">\u23F8</span>`;
-    animTimeInput.readOnly = animPaused;
+        ? `<span class="anim-glyph">▶</span>`
+        : `<span class="anim-glyph anim-glyph-low">⏸</span>`;
+    // The time inputs are editable only while the clock is paused; the
+    // animation loop owns them otherwise.
+    animTimeInput.readOnly = !animPaused;
+    timeRange.disabled = !animPaused;
     if (animPaused) {
-        animTimeInput.value = getAnimTime().toFixed(2);
+        const t = getAnimTime();
+        animTimeInput.value = t.toFixed(2);
+        timeRange.value = String(t);
     } else {
+        // Re-kick the slider animation loop on unpause: while the clock was
+        // frozen, sliderAnimTick exited once each row reached a stable value.
         requestAnimationFrame(sliderAnimTick);
     }
-});
+}
+// Apply the initial (paused) state so the UI matches animPaused.
+setAnimPausedState(animPaused);
+
+btnPauseAnim.addEventListener("click", () => setAnimPausedState(!animPaused));
 
 btnRewindAnim.addEventListener("click", () => {
     setAnimTime(0);
     animTimeInput.value = "0.00";
+    timeRange.value = "0";
+});
+
+btnFastForwardAnim.addEventListener("click", () => {
+    const end = parseFloat(animEndTimeInput.value);
+    if (!isFinite(end) || end <= 0) return;
+    setAnimTime(end);
+    animTimeInput.value = end.toFixed(2);
+    timeRange.value = String(end);
 });
 
 animTimeInput.addEventListener("change", () => {
     const t = parseFloat(animTimeInput.value);
-    if (!isNaN(t) && t >= 0) setAnimTime(t);
+    if (!isNaN(t) && t >= 0) {
+        setAnimTime(t);
+        timeRange.value = String(t);
+    }
+});
+
+// Scrub time with the range input (active only while paused). Stays within
+// [0, endTime].
+timeRange.addEventListener("input", () => {
+    const t = parseFloat(timeRange.value);
+    if (!isNaN(t) && t >= 0) {
+        setAnimTime(t);
+        animTimeInput.value = t.toFixed(2);
+    }
+});
+
+// The end-time field sets the Time slider's soft upper bound; it doesn't clamp
+// the animation clock itself, so the number input can still go past it.
+animEndTimeInput.addEventListener("input", () => {
+    const end = parseFloat(animEndTimeInput.value);
+    if (!isNaN(end) && end > 0) {
+        timeRange.max = String(end);
+    }
 });
 
 document.getElementById("audio-volume").addEventListener("input", (e) => {
@@ -1069,7 +940,7 @@ eventManager.addListener("canvas/update-audio", (event) => {
     audioSystem.updateShader(javascript, hasAudio);
 });
 
-// ── Cross Section Panel ──
+// ── Section Panel ──
 
 const fieldPanel = document.getElementById("field-panel");
 const fieldHeightSlider = document.getElementById("field-height");
@@ -1095,12 +966,12 @@ fieldHeightSlider.addEventListener("input", (e) => {
     setFieldHeight(value);
 });
 
-const fieldMin = parseFloat(fieldHeightSlider.min);
-const fieldMax = parseFloat(fieldHeightSlider.max);
-
 function commitFieldHeight(text) {
     const value = parseFloat(text);
     if (isNaN(value)) return;
+    // Read the live bounds: the Scene panel resizes this range with the box.
+    const fieldMin = parseFloat(fieldHeightSlider.min);
+    const fieldMax = parseFloat(fieldHeightSlider.max);
     const clamped = Math.min(Math.max(value, fieldMin), fieldMax);
     fieldHeightSlider.value = clamped;
     fieldHeightLabel.textContent = clamped.toFixed(2);
@@ -1136,12 +1007,12 @@ fieldIntervalSlider.addEventListener("input", (e) => {
     if (value > 0) setFieldInterval(value);
 });
 
-const fieldIntervalMin = parseFloat(fieldIntervalSlider.min);
-const fieldIntervalMax = parseFloat(fieldIntervalSlider.max);
-
 function commitFieldInterval(text) {
     const value = parseFloat(text);
     if (isNaN(value)) return;
+    // Live bounds: the max scales with the scene size (syncCrossSectionRange).
+    const fieldIntervalMin = parseFloat(fieldIntervalSlider.min);
+    const fieldIntervalMax = parseFloat(fieldIntervalSlider.max);
     const clamped = Math.min(Math.max(value, fieldIntervalMin), fieldIntervalMax);
     fieldIntervalSlider.value = clamped;
     fieldIntervalLabel.textContent = clamped.toFixed(2);
@@ -1171,22 +1042,24 @@ fieldIntervalLabel.addEventListener("blur", () => {
 const fieldFadeSlider = document.getElementById("field-fade");
 const fieldFadeLabel = document.getElementById("field-fade-label");
 const fieldFadeMin = parseFloat(fieldFadeSlider.min);
-const fieldFadeMax = parseFloat(fieldFadeSlider.max);
 
-function fadeSliderToUniform(v) { return v >= fieldFadeMax ? 1e9 : v; }
+// The top of the slider always maps to infinity in the shader. The max scales
+// with the scene size (syncCrossSectionRange), so it is read live everywhere.
+function fadeSliderToUniform(v) { return v >= parseFloat(fieldFadeSlider.max) ? 1e9 : v; }
 
 fieldFadeSlider.addEventListener("input", (e) => {
     const value = parseFloat(e.target.value);
-    fieldFadeLabel.textContent = value >= fieldFadeMax ? "\u221E" : value.toFixed(1);
+    fieldFadeLabel.textContent = value >= parseFloat(fieldFadeSlider.max) ? "∞" : value.toFixed(1);
     setFieldFade(fadeSliderToUniform(value));
 });
 
 function commitFieldFade(text) {
     const value = parseFloat(text);
     if (isNaN(value)) return;
+    const fieldFadeMax = parseFloat(fieldFadeSlider.max);
     const clamped = Math.min(Math.max(value, fieldFadeMin), fieldFadeMax);
     fieldFadeSlider.value = clamped;
-    fieldFadeLabel.textContent = clamped >= fieldFadeMax ? "\u221E" : clamped.toFixed(1);
+    fieldFadeLabel.textContent = clamped >= fieldFadeMax ? "∞" : clamped.toFixed(1);
     setFieldFade(fadeSliderToUniform(clamped));
 }
 
@@ -1199,7 +1072,7 @@ fieldFadeLabel.addEventListener("keydown", (e) => {
         fieldFadeLabel.blur();
     } else if (e.key === "Escape") {
         const v = parseFloat(fieldFadeSlider.value);
-        fieldFadeLabel.textContent = v >= fieldFadeMax ? "\u221E" : v.toFixed(1);
+        fieldFadeLabel.textContent = v >= parseFloat(fieldFadeSlider.max) ? "∞" : v.toFixed(1);
         fieldFadeLabel.contentEditable = "false";
         fieldFadeLabel.blur();
     }
@@ -1301,6 +1174,192 @@ function updateFieldNormal() {
 document.getElementById("field-normal-x").addEventListener("input", updateFieldNormal);
 document.getElementById("field-normal-y").addEventListener("input", updateFieldNormal);
 document.getElementById("field-normal-z").addEventListener("input", updateFieldNormal);
+
+// ── Scene Panel: Size ──
+// The slider value is the full edge length (twice the half-extent), so it
+// reads "400" for the default 400 mm cube. A document's @scene directive
+// commits into the same controls (see the canvas/update-shader listener).
+
+const scenePanel = document.getElementById("scene-panel");
+const sceneBboxSlider = document.getElementById("scene-bbox");
+const sceneBboxLabel = document.getElementById("scene-bbox-label");
+const sceneBboxInfo = document.getElementById("scene-bbox-info");
+const sceneBboxMin = parseFloat(sceneBboxSlider.min);
+const sceneBboxMax = parseFloat(sceneBboxSlider.max);
+
+function updateSceneBboxInfo(edge) {
+    sceneBboxInfo.textContent = `${edge} mm cube`;
+}
+
+// Keep the Section controls in step with the domain: the Offset can sweep the
+// whole box, and the Interval (a world-unit spacing) scales with the scene
+// size (half-extent 200 -> 0..40, so a 10x scene -> 0..400).
+function syncCrossSectionRange(half) {
+    fieldHeightSlider.min = -half;
+    fieldHeightSlider.max = half;
+    const cur = parseFloat(fieldHeightSlider.value);
+    const clamped = Math.min(Math.max(cur, -half), half);
+    if (clamped !== cur) {
+        fieldHeightSlider.value = clamped;
+        fieldHeightLabel.textContent = clamped.toFixed(2);
+        setFieldHeight(clamped);
+    }
+
+    const intervalMax = half / 5;
+    fieldIntervalSlider.max = intervalMax;
+    fieldIntervalSlider.step = intervalMax / 200;
+    const curInt = parseFloat(fieldIntervalSlider.value);
+    if (curInt > intervalMax) {
+        fieldIntervalSlider.value = intervalMax;
+        fieldIntervalLabel.textContent = intervalMax.toFixed(2);
+        if (intervalMax > 0) setFieldInterval(intervalMax);
+    }
+
+    // The Fade range scales too (half-extent 200 -> 0..200).
+    const fadeMax = half;
+    const fadeWasInf = parseFloat(fieldFadeSlider.value) >= parseFloat(fieldFadeSlider.max);
+    fieldFadeSlider.max = fadeMax;
+    fieldFadeSlider.step = fadeMax / 100;
+    if (fadeWasInf || parseFloat(fieldFadeSlider.value) > fadeMax) {
+        fieldFadeSlider.value = fadeMax;
+        fieldFadeLabel.textContent = "∞";
+        setFieldFade(1e9);
+    }
+}
+
+function applySceneBbox(edge) {
+    const half = edge / 2;
+    setWorldExtent(half);
+    syncCrossSectionRange(half);
+    updateSceneBboxInfo(edge);
+    updateGridInfo(); // the spacing holds; the division count across it changes
+}
+
+// Initialize from the renderer's current extent (default 400 x 400 x 400).
+sceneBboxSlider.value = getWorldExtent() * 2;
+sceneBboxLabel.textContent = sceneBboxSlider.value;
+updateSceneBboxInfo(parseInt(sceneBboxSlider.value, 10));
+
+document.getElementById("scene-panel-header").addEventListener("click", (e) => {
+    if (e.target.classList.contains("panel-close")) {
+        scenePanel.classList.remove("open");
+    } else if (!scenePanel.classList.contains("open")) {
+        scenePanel.classList.add("open");
+    }
+});
+
+sceneBboxSlider.addEventListener("input", () => {
+    const edge = parseInt(sceneBboxSlider.value, 10);
+    sceneBboxLabel.textContent = edge;
+    applySceneBbox(edge);
+});
+
+function commitSceneBbox(text) {
+    const value = parseInt(text, 10);
+    if (isNaN(value)) return;
+    const clamped = Math.min(Math.max(value, sceneBboxMin), sceneBboxMax);
+    sceneBboxSlider.value = clamped;
+    sceneBboxLabel.textContent = clamped;
+    applySceneBbox(clamped);
+}
+
+sceneBboxLabel.addEventListener("mousedown", () => { sceneBboxLabel.contentEditable = "true"; });
+sceneBboxLabel.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        commitSceneBbox(sceneBboxLabel.textContent);
+        sceneBboxLabel.contentEditable = "false";
+        sceneBboxLabel.blur();
+    } else if (e.key === "Escape") {
+        sceneBboxLabel.textContent = sceneBboxSlider.value;
+        sceneBboxLabel.contentEditable = "false";
+        sceneBboxLabel.blur();
+    }
+});
+sceneBboxLabel.addEventListener("blur", () => {
+    if (sceneBboxLabel.contentEditable === "true") {
+        commitSceneBbox(sceneBboxLabel.textContent);
+        sceneBboxLabel.contentEditable = "false";
+    }
+});
+
+// ── Scene Panel: Grid ──
+// The slider indexes a 1-2-5 ladder, the way a CAD grid steps, so every detent
+// is a round spacing in millimeters; the editable label takes any value.
+
+const GRID_SPACING_STEPS = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000];
+const GRID_SPACING_MIN = 0.01;   // matches the viewer's own clamp
+const GRID_SPACING_MAX = 5000;
+const gridSpacingSlider = document.getElementById("scene-grid-spacing");
+const gridSpacingLabel = document.getElementById("scene-grid-spacing-label");
+const gridSpacingInfo = document.getElementById("scene-grid-info");
+
+// The ladder index nearest a spacing, compared in log space since the ladder
+// is geometric, so a typed off-detent value still parks the handle sensibly.
+function gridStepIndex(mm) {
+    let best = 0;
+    for (let i = 1; i < GRID_SPACING_STEPS.length; i++) {
+        if (Math.abs(Math.log(GRID_SPACING_STEPS[i] / mm))
+            < Math.abs(Math.log(GRID_SPACING_STEPS[best] / mm))) best = i;
+    }
+    return best;
+}
+
+function formatSpacing(mm) {
+    return String(parseFloat(mm.toPrecision(4)));
+}
+
+// The spacing is absolute, so what moves with the scene size is how many
+// divisions it makes. A very large scene hits the viewer's line-count ceiling,
+// which draws a coarser grid than asked for; say so rather than report a
+// division count the grid doesn't have.
+function updateGridInfo() {
+    const divisions = Math.round(getGridDensity());
+    const drawn = (getWorldExtent() * 2) / divisions;
+    const coarsened = drawn > getGridSpacing() * 1.01
+        ? ` — drawn at ${formatSpacing(drawn)} mm` : "";
+    gridSpacingInfo.textContent = `${divisions} divisions across${coarsened}`;
+}
+
+function applyGridSpacing(mm) {
+    setGridSpacing(mm);
+    gridSpacingSlider.value = gridStepIndex(mm);
+    gridSpacingLabel.textContent = formatSpacing(mm);
+    updateGridInfo();
+}
+
+gridSpacingSlider.max = GRID_SPACING_STEPS.length - 1;
+applyGridSpacing(getGridSpacing());
+
+gridSpacingSlider.addEventListener("input", () => {
+    applyGridSpacing(GRID_SPACING_STEPS[parseInt(gridSpacingSlider.value, 10)]);
+});
+
+function commitGridSpacing(text) {
+    const value = parseFloat(text);
+    if (isNaN(value) || value <= 0) return;
+    applyGridSpacing(Math.min(Math.max(value, GRID_SPACING_MIN), GRID_SPACING_MAX));
+}
+
+gridSpacingLabel.addEventListener("mousedown", () => { gridSpacingLabel.contentEditable = "true"; });
+gridSpacingLabel.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        commitGridSpacing(gridSpacingLabel.textContent);
+        gridSpacingLabel.contentEditable = "false";
+        gridSpacingLabel.blur();
+    } else if (e.key === "Escape") {
+        gridSpacingLabel.textContent = formatSpacing(getGridSpacing());
+        gridSpacingLabel.contentEditable = "false";
+        gridSpacingLabel.blur();
+    }
+});
+gridSpacingLabel.addEventListener("blur", () => {
+    if (gridSpacingLabel.contentEditable === "true") {
+        commitGridSpacing(gridSpacingLabel.textContent);
+        gridSpacingLabel.contentEditable = "false";
+    }
+});
 
 // ── Top Bar: Example Dropdown & Initial Load ──
 

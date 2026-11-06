@@ -25,7 +25,7 @@
 // so the app's two existing listeners serve it unchanged.
 import { readSourceSpan, replaceSourceSpan } from "../editor/editor.js";
 import eventManager from "../ui/event-manager.js";
-const rgbToHex = ([r, g, b]) => "#" + [r, g, b].map(v => Math.round(v * 255).toString(16).padStart(2, "0")).join(""); const hexToRgb = (hex) => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255);
+import { rgbToHex, hexToRgb } from "./body-palette.js";
 
 let deps = {
     setSliderValue: () => {},
