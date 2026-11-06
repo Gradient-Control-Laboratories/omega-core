@@ -1,6 +1,6 @@
 fn gsl_remap(p: vec3<f32>) -> f32 {
-  let gsl_tmp_3 = abs(p) - vec3<f32>(4.5, 2.0, 0.2);
-  return length(max(gsl_tmp_3, vec3<f32>(0.0, 0.0, 0.0))) + min(max(gsl_tmp_3.x, max(gsl_tmp_3.y, gsl_tmp_3.z)), 0.0);
+  let gsl_tmp_4 = abs(p) - vec3<f32>(4.5, 2.0, 0.2);
+  return length(max(gsl_tmp_4, vec3<f32>(0.0, 0.0, 0.0))) + min(max(gsl_tmp_4.x, max(gsl_tmp_4.y, gsl_tmp_4.z)), 0.0);
 }
 
 fn propeller(p: vec3<f32>, majorRadius: f32, minorRadius: f32) -> f32 {
@@ -9,13 +9,13 @@ fn propeller(p: vec3<f32>, majorRadius: f32, minorRadius: f32) -> f32 {
 }
 
 fn gsl_landing_gear_remap(p: vec3<f32>) -> f32 {
-  let gsl_tmp_2 = vec2<f32>(length(p.yz) - 0.4, abs(p.x) - 0.1);
-  return min(max(gsl_tmp_2.x, gsl_tmp_2.y), 0.0) + length(max(gsl_tmp_2, vec2<f32>(0.0)));
+  let gsl_tmp_3 = vec2<f32>(length(p.yz) - 0.4, abs(p.x) - 0.1);
+  return min(max(gsl_tmp_3.x, gsl_tmp_3.y), 0.0) + length(max(gsl_tmp_3, vec2<f32>(0.0)));
 }
 
 fn landing_gear(p: vec3<f32>) -> gsl_struct {
-  let gsl_tmp_1 = vec2<f32>(length(p.xy) - 0.1, abs(p.z) - 0.6);
-  let strut = min(max(gsl_tmp_1.x, gsl_tmp_1.y), 0.0) + length(max(gsl_tmp_1, vec2<f32>(0.0)));
+  let gsl_tmp_2 = vec2<f32>(length(p.xy) - 0.1, abs(p.z) - 0.6);
+  let strut = min(max(gsl_tmp_2.x, gsl_tmp_2.y), 0.0) + length(max(gsl_tmp_2, vec2<f32>(0.0)));
   let wheel = gsl_landing_gear_remap(p - vec3<f32>(0.0, 0.0, -0.6));
   var gsl_result : gsl_struct;
   gsl_result.v_1 = strut;

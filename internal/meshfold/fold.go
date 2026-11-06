@@ -20,6 +20,24 @@ func FoldProgram(prog *program.Program) (*program.Program, error) {
 // and returns the folded program along with the assigned import slot table.
 // TODO: is the returned program a clone? If so, then update the comment to indicate as much
 func FoldProgramWithSlots(prog *program.Program) (*program.Program, []meshslots.Import, error) {
+	return FoldProgramWithSlotsChecked(prog, nil)
+}
+
+// FoldProgramWithSlotsChecked is FoldProgramWithSlots for a program whose
+// runtime parameters are known: newChecker builds the parameter checker for
+// the primary package the fold runs over. The constant fold that resolves the
+// slot variables runs over the WHOLE program, and with no checker it folds
+// through a slider as if it were its current literal: `r > 0.5 ? a : b` was
+// pruned to one branch and r dropped from the shader, so the viewer's live
+// slider never reached it. The assembler passes the checker its own folds use.
+//
+// A constructor rather than a checker because FoldMeshIndicesAt CLONES the
+// packages first, and the assembler's checker knows a UI marker's literals by
+// operand: built before the clone it would not recognise them, and under a
+// checker the fold also collapses the constants it evaluates, so pt.x * 2.0 +
+// 1.0 became 3 and the marker's declaration went as dead code. A nil
+// newChecker folds everything, as before.
+func FoldProgramWithSlotsChecked(prog *program.Program, newChecker func(primary *program.Package) eval.ParameterChecker) (*program.Program, []meshslots.Import, error) {
 	if prog == nil || prog.Primary == nil {
 		return prog, nil, nil
 	}
@@ -28,7 +46,11 @@ func FoldProgramWithSlots(prog *program.Program) (*program.Program, []meshslots.
 	for i, dep := range prog.Dependencies {
 		prog.Dependencies[i] = FoldMeshIndicesAt(dep, dep.Path, prog.GetImport, slots)
 	}
-	if _, err := eval.Fold(prog, nil); err != nil {
+	var checker eval.ParameterChecker
+	if newChecker != nil {
+		checker = newChecker(prog.Primary)
+	}
+	if _, err := eval.Fold(prog, checker); err != nil {
 		return nil, nil, err
 	}
 	prog.Primary = FoldMeshIndicesAt(prog.Primary, prog.Primary.Path, prog.GetImport, slots)
