@@ -24,7 +24,7 @@ func warpImportsOf(pkg *program.Package) []*program.WarpImport {
 
 func TestWarpImportNumberedForm(t *testing.T) {
 	pkg, err := ParsePackage([]string{`importStep 0 "p.hodge";
-importWarp 0 "casting.castsim";
+importWarp 0 "sim.warp";
 return meshWarped(0, 0, 1);
 `})
 	if err != nil {
@@ -34,7 +34,7 @@ return meshWarped(0, 0, 1);
 	if len(imports) != 1 {
 		t.Fatalf("warp imports = %d, want 1", len(imports))
 	}
-	if imports[0].GetIndex() != 0 || imports[0].GetPath() != "casting.castsim" {
+	if imports[0].GetIndex() != 0 || imports[0].GetPath() != "sim.warp" {
 		t.Errorf("warp import = %d %q", imports[0].GetIndex(), imports[0].GetPath())
 	}
 }
@@ -43,7 +43,7 @@ return meshWarped(0, 0, 1);
 // resolves — so the parser must accept it while leaving WarpImports empty.
 func TestWarpImportExpressionForm(t *testing.T) {
 	pkg, err := ParsePackage([]string{`importId = importStep "p.hodge";
-warpID = importWarp "casting.castsim";
+warpID = importWarp "sim.warp";
 return meshWarped(importId, warpID, -1);
 `})
 	if err != nil {
@@ -55,13 +55,13 @@ return meshWarped(importId, warpID, -1);
 }
 
 func TestWarpImportRejectsNonSimulationFile(t *testing.T) {
-	_, err := ParsePackage([]string{`importWarp 0 "casting.stl";
+	_, err := ParsePackage([]string{`importWarp 0 "sim.stl";
 return 0;
 `})
 	if err == nil {
 		t.Fatal("importWarp must reject a path that is not a simulation")
 	}
-	if !strings.Contains(err.Error(), ".castsim") {
+	if !strings.Contains(err.Error(), ".warp") {
 		t.Errorf("the error should name the expected extension, got: %s", err.Error())
 	}
 }
@@ -77,7 +77,7 @@ func TestWarpedBuiltinArities(t *testing.T) {
 		`return vdbSdfWarped(0, 0, 1);`,
 		`return vdbSdfWarped(0, 0, 1, 256);`,
 	}
-	prefix := "importMesh 0 \"p.stl\";\nimportWarp 0 \"c.castsim\";\n"
+	prefix := "importMesh 0 \"p.stl\";\nimportWarp 0 \"c.warp\";\n"
 	for _, src := range ok {
 		_, err := ParsePackage([]string{prefix + src + "\n"})
 		if err != nil {

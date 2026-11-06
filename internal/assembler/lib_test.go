@@ -234,12 +234,12 @@ func TestAssembleOptions(t *testing.T) {
 	pkgMgr := source.NewLocalManager("../../stdlib")
 
 	// 1. Test PrimaryPackage option
-	res, err := Assemble([]string{"return 123.0;"}, pkgMgr, PrimaryPackage("trees/WO-1"))
+	res, err := Assemble([]string{"return 123.0;"}, pkgMgr, PrimaryPackage("trees/pkg1"))
 	if err != nil {
 		t.Fatalf("PrimaryPackage option failed: %v", err)
 	}
-	if res == nil || res.Program == nil || res.Program.Primary == nil || res.Program.Primary.Path != "trees/WO-1" {
-		t.Fatalf("expected program with primary package path 'trees/WO-1', got: %v", res)
+	if res == nil || res.Program == nil || res.Program.Primary == nil || res.Program.Primary.Path != "trees/pkg1" {
+		t.Fatalf("expected program with primary package path 'trees/pkg1', got: %v", res)
 	}
 
 	// 2. Test GeometryResolver option
@@ -414,7 +414,7 @@ return msh;
 
 func TestAssembleTreesManifold(t *testing.T) {
 	commonRoot := "../../stdlib"
-	docRoot := "../../../../dm/documents"
+	docRoot := "../../../../documents"
 	if _, err := os.Stat(docRoot); os.IsNotExist(err) {
 		t.Skipf("skipping: %s not present", docRoot)
 	}
@@ -434,7 +434,7 @@ func TestAssembleTreesManifold(t *testing.T) {
 
 func TestAssembleS304_C02(t *testing.T) {
 	commonRoot := "../../stdlib"
-	docRoot := "../../../../dm/documents"
+	docRoot := "../../../../documents"
 	if _, err := os.Stat(docRoot); os.IsNotExist(err) {
 		t.Skipf("skipping: %s not present", docRoot)
 	}
@@ -454,7 +454,7 @@ func TestAssembleS304_C02(t *testing.T) {
 
 func TestAssembleS304_T001(t *testing.T) {
 	commonRoot := "../../stdlib"
-	docRoot := "../../../../dm/documents"
+	docRoot := "../../../../documents"
 	if _, err := os.Stat(docRoot); os.IsNotExist(err) {
 		t.Skipf("skipping: %s not present", docRoot)
 	}
@@ -1083,7 +1083,7 @@ func TestAssemble_WarpResolverAndFoldWarpFieldToZero(t *testing.T) {
 	pkgMgr := source.NewLocalManager("../../stdlib")
 	warpRes := &mockWarpResolver{slot: 1048599}
 	src := `importMesh 0 "part.stl";
-importWarp 0 "sim.castsim";
+importWarp 0 "sim.warp";
 s = vdbSdfWarped(0, 0, 1.0);
 return meshWarped(0, 0, 1.0), remap(s, p + warpField(p));
 `
@@ -1091,15 +1091,15 @@ return meshWarped(0, 0, 1.0), remap(s, p + warpField(p));
 	res, err := Assemble(
 		[]string{src},
 		pkgMgr,
-		PrimaryPackage("wo1"),
+		PrimaryPackage("pkg1"),
 		WarpResolver(warpRes),
 		ExtractMeshPlan("leaf-"),
 	)
 	if err != nil {
 		t.Fatalf("Assemble failed: %v", err)
 	}
-	if len(res.WarpedAssets) != 1 || res.WarpedAssets[0].DerivedSlot != 1048599 || res.WarpedAssets[0].WarpDir != "wo1" {
-		t.Fatalf("res.WarpedAssets = %+v, want 1 entry with DerivedSlot=1048599 and WarpDir=wo1", res.WarpedAssets)
+	if len(res.WarpedAssets) != 1 || res.WarpedAssets[0].DerivedSlot != 1048599 || res.WarpedAssets[0].WarpDir != "pkg1" {
+		t.Fatalf("res.WarpedAssets = %+v, want 1 entry with DerivedSlot=1048599 and WarpDir=pkg1", res.WarpedAssets)
 	}
 	if len(res.MeshSdfSlots) != 1 || res.MeshSdfSlots[0].AssetIndex != 1048599 {
 		t.Fatalf("res.MeshSdfSlots = %+v, want AssetIndex=1048599", res.MeshSdfSlots)
@@ -1112,7 +1112,7 @@ return meshWarped(0, 0, 1.0), remap(s, p + warpField(p));
 	resZero, err := Assemble(
 		[]string{src},
 		pkgMgr,
-		PrimaryPackage("wo1"),
+		PrimaryPackage("pkg1"),
 		WarpResolver(warpRes),
 		FoldWarpFieldToZero(),
 		ExtractMeshPlan("leaf-"),
@@ -1589,8 +1589,8 @@ func TestDependenciesSha256AndAnalyzePackage(t *testing.T) {
 		pkgMgr := &source.MockManager{
 			PkgSources: map[string][]string{
 				"trees/test":    {`import branch "branches/part"; return branch.solid();`},
-				"branches/part": {`import shared "dm/shared"; solid() { return shared.solid(); }`},
-				"dm/shared":     {`solid() { return sphere(2); }`},
+				"branches/part": {`import shared "pkg/shared"; solid() { return shared.solid(); }`},
+				"pkg/shared":    {`solid() { return sphere(2); }`},
 			},
 		}
 		res, err := Assemble(pkgMgr.PkgSources["trees/test"], pkgMgr, PrimaryPackage("trees/test"))
@@ -1608,7 +1608,7 @@ func TestDependenciesSha256AndAnalyzePackage(t *testing.T) {
 			t.Fatalf("DependenciesSha256 = %q, want %q", directHash, res.DependenciesSha256)
 		}
 
-		pkgMgr.PkgSources["dm/shared"] = []string{`solid() { return sphere(5); }`}
+		pkgMgr.PkgSources["pkg/shared"] = []string{`solid() { return sphere(5); }`}
 		changedHash, err := DependenciesSha256("trees/test", pkgMgr)
 		if err != nil {
 			t.Fatalf("DependenciesSha256 after edit failed: %v", err)
@@ -1619,7 +1619,7 @@ func TestDependenciesSha256AndAnalyzePackage(t *testing.T) {
 	})
 
 	t.Run("AnalyzePackageStampsConstantsAndPreservesUninlinedStructure", func(t *testing.T) {
-		src := `import "dm/gate";
+		src := `import "pkg/gate";
 partScale = 1.018;
 verticalSpan = 100;
 sprueLength = verticalSpan * 1.5;

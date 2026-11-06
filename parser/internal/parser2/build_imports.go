@@ -163,7 +163,7 @@ func buildStepImports(pkgFileScope scope.BuilderScope, imports []*StepImport) er
 
 func buildWarpImports(pkgFileScope scope.BuilderScope, imports []*WarpImport) error {
 	for _, imp := range imports {
-		path, err := verifyAssetImportPath(imp.Path, "warp", ".castsim")
+		path, err := verifyAssetImportPath(imp.Path, "warp", ".warp", ".castsim")
 		if err != nil {
 			return &participle.ParseError{Pos: imp.Pos, Msg: err.Error()}
 		}

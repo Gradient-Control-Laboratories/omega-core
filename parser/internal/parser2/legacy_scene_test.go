@@ -48,7 +48,7 @@ func TestFromLegacyComments(t *testing.T) {
 func TestLegacySceneSizeMillimeters(t *testing.T) {
 	for _, size := range []string{"400 mm", "400mm", "4e2 MM", "400"} {
 		t.Run(size, func(t *testing.T) {
-			got := fromLegacyComments("// Work Order: WO-1\n// Scene Size: " + size + "\n// Scene Grid: 20 mm\nreturn sphere(1);")
+			got := fromLegacyComments("// Part: P-1\n// Scene Size: " + size + "\n// Scene Grid: 20 mm\nreturn sphere(1);")
 			if got == nil || got.Size != 400 || got.Grid != 20 {
 				t.Fatalf("scene = %+v, want size 400 and grid 20", got)
 			}
