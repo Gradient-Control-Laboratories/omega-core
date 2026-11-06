@@ -40,26 +40,38 @@ type options struct {
 	extractUI             bool
 	extractMeshPlan       bool
 	meshPlanIdPrefix      string
+	variants              map[string]string
 	progressFn            ProgressFunc
 }
 
 // Option configures program assembly.
 type Option func(*options)
 
+// VariantResult holds the sliced MeshExportPlan, analytical SdfSubtrees, or
+// per-variant compilation error for a single caller-supplied variant return.
+type VariantResult struct {
+	MeshPlan    *meshplan.MeshExportPlan `json:"meshPlan,omitempty"`
+	SdfSubtrees []meshplan.SdfSubtree    `json:"sdfSubtrees,omitempty"`
+	Error       string                   `json:"error,omitempty"`
+}
+
 // Result contains the assembled program AST and the assigned import slot table.
 type Result struct {
-	Program        *program.Program
-	Slots          []meshslots.Import
-	WarpedAssets   []warpfold.WarpedAsset
-	MeshSdfSlots   []*program.MeshSdfSlot
-	GlobalTextures *program.GlobalTextures
-	Diagnostics    []program.Diagnostic
-	Sliders        []slider.SliderInfo
-	UIControls     []ui.Control
-	Scene          *program.Scene
-	MeshPlan       *meshplan.MeshExportPlan
-	SdfSubtrees    []meshplan.SdfSubtree
-	PreviewBodies  []meshplan.PreviewBody
+	Program            *program.Program
+	DependenciesSha256 string
+	Slots              []meshslots.Import
+	WarpedAssets       []warpfold.WarpedAsset
+	MeshSdfSlots       []*program.MeshSdfSlot
+	GlobalTextures     *program.GlobalTextures
+	Diagnostics        []program.Diagnostic
+	Sliders            []slider.SliderInfo
+	UIControls         []ui.Control
+	Scene              *program.Scene
+	MeshPlan           *meshplan.MeshExportPlan
+	SdfSubtrees        []meshplan.SdfSubtree
+	PreviewBodies      []meshplan.PreviewBody
+	AudioReturns       []meshplan.SdfSubtree
+	Variants           map[string]VariantResult
 }
 
 // PrimaryPackage supplies a primary package path assigned to the assembled program's primary package.
@@ -121,6 +133,15 @@ func ExtractMeshPlan(idPrefix string) Option {
 	}
 }
 
+// WithVariants configures the assembler to compile and slice the named
+// alternative top-level return statements (e.g. map[string]string{"part": "return castPart();"})
+// alongside the primary package in a single pass.
+func WithVariants(variants map[string]string) Option {
+	return func(o *options) {
+		o.variants = variants
+	}
+}
+
 // ProgressFunc is invoked at discrete compilation milestones during program assembly.
 type ProgressFunc func(stage string, completed, total uint32)
 
@@ -164,6 +185,11 @@ func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*
 		return nil, err
 	}
 	prog.Primary.Path = o.primaryPackage
+	dependenciesSha256 := collect.ProgramSourceHash(prog)
+	rp, err := partitionReturns(prog, primarySources, o.variants, o.enableDeadcodeRemoval)
+	if err != nil {
+		return nil, err
+	}
 	assemblyDiags, err := link.ReferencesAndDiagnostics(prog, srcMgr, parser.ParsePackage)
 	if err != nil {
 		return nil, err
@@ -178,6 +204,7 @@ func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*
 	if err = link.References(prog, srcMgr, parser.ParsePackage); err != nil {
 		return nil, err
 	}
+	rp.AttachVariants(prog, srcMgr, o.variants)
 
 	// 2. Closure & Higher-Order Function Transformation
 	// Hoist anonymous closures to package level and convert higher-order function patterns
@@ -208,22 +235,31 @@ func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*
 	if err != nil {
 		return nil, err
 	}
-	// Mark the document's parts for the viewer, which shrinks one to nothing
-	// when it is small on screen; everywhere else the mark is the part itself.
-	prog, err = property.MarkParts(prog)
+	// Mark the document's parts for the viewer, drop declared boxes, and lower
+	// .color and .material properties over the primary geometry returns only
+	// (prog.Returns()[:geomCount]) so ColorReturns and MaterialReturns remain
+	// 1-to-1 with geometry returns.
+	prog, err = rp.WithGeometryReturnsOnly(prog, func(p *program.Program) (*program.Program, error) {
+		p, err := property.MarkParts(p)
+		if err != nil {
+			return nil, err
+		}
+		property.DropDeclaredBoxes(p)
+		if err := property.LowerReturnProperties(p); err != nil {
+			return nil, err
+		}
+		return p, nil
+	})
 	if err != nil {
-		return nil, err
-	}
-	// That was the last reader of a library part's declared box.
-	property.DropDeclaredBoxes(prog)
-	// Lower .color and .material properties into explicit AST return fields.
-	if err = property.LowerReturnProperties(prog); err != nil {
 		return nil, err
 	}
 	if err = link.References(prog, srcMgr, parser.ParsePackage); err != nil {
 		return nil, err
 	}
 	if err = types.Analyze(prog); err != nil {
+		return nil, err
+	}
+	if err = rp.ValidateAudioTypes(prog); err != nil {
 		return nil, err
 	}
 	// Now that types are resolved, hold an annotated pair to the material and
@@ -336,25 +372,30 @@ func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*
 		}
 	}
 
+	idPrefix := o.meshPlanIdPrefix
+	if idPrefix == "" {
+		idPrefix = "leaf-"
+	}
+	audioReturns, variants := rp.PopVariations(prog, idPrefix)
+
 	sdfSlots, globalTex := textures.Extract(prog)
 	// Invariant: prog is guaranteed non-nil following lowering and deadcode removal.
 	prog.MeshSdfSlots = sdfSlots
 	prog.GlobalTextures = globalTex
 
 	result := &Result{
-		Program:        prog,
-		Slots:          importSlots,
-		WarpedAssets:   warpedAssets,
-		MeshSdfSlots:   sdfSlots,
-		GlobalTextures: globalTex,
-		Diagnostics:    assemblyDiags,
+		Program:            prog,
+		DependenciesSha256: dependenciesSha256,
+		Slots:              importSlots,
+		WarpedAssets:       warpedAssets,
+		MeshSdfSlots:       sdfSlots,
+		GlobalTextures:     globalTex,
+		Diagnostics:        assemblyDiags,
+		AudioReturns:       audioReturns,
+		Variants:           variants,
 	}
 
 	if o.extractMeshPlan {
-		idPrefix := o.meshPlanIdPrefix
-		if idPrefix == "" {
-			idPrefix = "leaf-"
-		}
 		// The returns are the last primary file's, as the wgsl render names
 		// them: the plan names its bodies from the same text.
 		var document string
@@ -686,4 +727,100 @@ func (c *assemblerParamChecker) IsParameter(op *program.Operand) bool {
 		return c.sliderVars[ref.Reference.Name]
 	}
 	return false
+}
+
+// DependenciesSha256 computes the deterministic SHA-256 hex digest of pkgPath
+// and all its transitive GSL package dependencies from srcMgr without reading
+// mesh assets.
+func DependenciesSha256(pkgPath string, srcMgr source.Manager) (string, error) {
+	return collect.SourceHash(pkgPath, srcMgr, parser.ParsePackage)
+}
+
+// AnalyzePackage parses source into an un-inlined *program.Package and stamps
+// evaluated constant float64 values onto top-level assignments, local function
+// expressions/returns, and call arguments while preserving the original AST
+// structure for template comparisons and bounds extraction.
+func AnalyzePackage(sourceText string, getImport program.GetImportFunc) (*program.Package, error) {
+	pkg, err := parser.ParsePackage([]string{sourceText})
+	if err != nil {
+		return nil, err
+	}
+	stampPackageConstants(pkg, getImport)
+	return pkg, nil
+}
+
+func stampPackageConstants(pkg *program.Package, getImport program.GetImportFunc) {
+	// Invariant: pkg and its parsed AST slices (Files, Assignments, FnTypes, Groups, Functions)
+	// are guaranteed non-nil by parser.ParsePackage in AnalyzePackage.
+	var stampOperand func(op *program.Operand, scope *program.Package)
+	var stampFnType func(ft *program.FnType, scope *program.Package)
+
+	stampOperand = func(op *program.Operand, scope *program.Package) {
+		if op == nil {
+			return
+		}
+		if len(op.ConstValues) == 0 {
+			if val, err := eval.ConstPkg(op, scope, getImport); err == nil && len(val) > 0 {
+				op.ConstValues = val
+			}
+		}
+		switch t := op.T.(type) {
+		case *program.Operand_Expression:
+			expr := t.Expression
+			if expr == nil {
+				return
+			}
+			operands := expr.Operands
+			switch expr.Operation {
+			case program.Operation_ACCESS:
+				operands = operands[:min(1, len(operands))]
+			case program.Operation_MAP:
+				if len(operands) > 1 {
+					operands = operands[1:]
+				}
+			}
+			for _, child := range operands {
+				stampOperand(child, scope)
+			}
+		case *program.Operand_FnCall:
+			if t.FnCall == nil {
+				return
+			}
+			for _, arg := range t.FnCall.Arguments {
+				stampOperand(arg, scope)
+			}
+		}
+	}
+
+	stampFnType = func(ft *program.FnType, scope *program.Package) {
+		for _, g := range ft.Groups {
+			for _, fn := range g.Functions {
+				local := &program.Package{
+					Path:  scope.Path,
+					Files: append([]*program.PackageFile{{Assignments: fn.Assignments, FnTypes: fn.FnTypes}}, scope.Files...),
+				}
+				for _, a := range fn.Assignments {
+					stampOperand(a.Expression, local)
+				}
+				for _, r := range fn.Returns {
+					stampOperand(r, local)
+				}
+				for _, nested := range fn.FnTypes {
+					stampFnType(nested, local)
+				}
+			}
+		}
+	}
+
+	for _, f := range pkg.Files {
+		for _, a := range f.Assignments {
+			stampOperand(a.Expression, pkg)
+		}
+		for _, ft := range f.FnTypes {
+			stampFnType(ft, pkg)
+		}
+		for _, r := range f.Returns {
+			stampOperand(r, pkg)
+		}
+	}
 }

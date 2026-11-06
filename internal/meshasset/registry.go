@@ -41,7 +41,7 @@ type Registry struct {
 }
 
 type sourceKey struct {
-	workOrder string
+	groupName string
 	filename  string
 }
 
@@ -145,34 +145,34 @@ func (r *Registry) FindByFilename(name string) (*Asset, bool) {
 }
 
 // BindSource records the storage location that produced an asset.
-func (r *Registry) BindSource(workOrder string, asset *Asset, filenames ...string) {
-	if workOrder == "" || asset == nil {
+func (r *Registry) BindSource(groupName string, asset *Asset, filenames ...string) {
+	if groupName == "" || asset == nil {
 		return
 	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	for _, filename := range filenames {
 		if filename != "" {
-			r.bySource[sourceKey{workOrder, normalizeFilename(filename)}] = asset
+			r.bySource[sourceKey{groupName, normalizeFilename(filename)}] = asset
 		}
 	}
 }
 
 // FindBySource returns the asset loaded from one storage location.
-func (r *Registry) FindBySource(workOrder, filename string) (*Asset, bool) {
+func (r *Registry) FindBySource(groupName, filename string) (*Asset, bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	a, ok := r.bySource[sourceKey{workOrder, normalizeFilename(filename)}]
+	a, ok := r.bySource[sourceKey{groupName, normalizeFilename(filename)}]
 	return a, ok
 }
 
 // ForgetSource drops the binding for one storage location, so the next lookup
 // misses and the file is loaded again (it was replaced). Slots aliased to the
 // old asset keep it until they are bound again.
-func (r *Registry) ForgetSource(workOrder, filename string) {
+func (r *Registry) ForgetSource(groupName, filename string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	delete(r.bySource, sourceKey{workOrder, normalizeFilename(filename)})
+	delete(r.bySource, sourceKey{groupName, normalizeFilename(filename)})
 }
 
 // BindUpload records an asset supplied directly by the browser.
@@ -191,8 +191,8 @@ func (r *Registry) BindUpload(asset *Asset, filenames ...string) {
 }
 
 // ClaimUpload binds the latest matching browser upload to one document.
-func (r *Registry) ClaimUpload(workOrder, filename string) (*Asset, bool) {
-	if workOrder == "" {
+func (r *Registry) ClaimUpload(groupName, filename string) (*Asset, bool) {
+	if groupName == "" {
 		return nil, false
 	}
 	r.mu.Lock()
@@ -208,7 +208,7 @@ func (r *Registry) ClaimUpload(workOrder, filename string) (*Asset, bool) {
 	}
 	for _, name := range []string{filename, entry.asset.Filename, entry.asset.StepFilename, entry.asset.StepSourceFilename} {
 		if name != "" {
-			r.bySource[sourceKey{workOrder, normalizeFilename(name)}] = entry.asset
+			r.bySource[sourceKey{groupName, normalizeFilename(name)}] = entry.asset
 		}
 	}
 	return entry.asset, true

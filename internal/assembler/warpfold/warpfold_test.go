@@ -23,11 +23,11 @@ func TestWarpFoldMeshWarped(t *testing.T) {
 
 	prog := &program.Program{
 		Primary: &program.Package{
-			Path: "wo_primary",
+			Path: "pkg_primary",
 			Files: []*program.PackageFile{
 				{
 					WarpImports: []*program.WarpImport{
-						{Index: 0, Path: "run.castsim"},
+						{Index: 0, Path: "run.warp"},
 					},
 					Assignments: []*program.Assignment{
 						{
@@ -62,8 +62,8 @@ func TestWarpFoldMeshWarped(t *testing.T) {
 	if err != nil {
 		t.Fatalf("FoldProgram failed: %v", err)
 	}
-	if resolver.lastDir != "wo_primary" {
-		t.Errorf("expected ResolveWarpedSlot pkgDir = \"wo_primary\", got %q", resolver.lastDir)
+	if resolver.lastDir != "pkg_primary" {
+		t.Errorf("expected ResolveWarpedSlot pkgDir = \"pkg_primary\", got %q", resolver.lastDir)
 	}
 	if len(warpedAssets) != 1 {
 		t.Fatalf("expected 1 WarpedAsset, got %d", len(warpedAssets))
@@ -71,8 +71,8 @@ func TestWarpFoldMeshWarped(t *testing.T) {
 	wantAsset := WarpedAsset{
 		DerivedSlot: 42,
 		MeshSlot:    0,
-		WarpDir:     "wo_primary",
-		WarpPath:    "run.castsim",
+		WarpDir:     "pkg_primary",
+		WarpPath:    "run.warp",
 		Scale:       -1.0,
 	}
 	if warpedAssets[0] != wantAsset {
@@ -96,7 +96,7 @@ func TestGraphPackages(t *testing.T) {
 	dep := &program.Package{
 		Path: "branches/b1",
 		Files: []*program.PackageFile{{
-			WarpImports: []*program.WarpImport{{Index: 0, Path: "branch.castsim"}},
+			WarpImports: []*program.WarpImport{{Index: 0, Path: "branch.warp"}},
 		}},
 	}
 	root := &program.Package{
@@ -195,20 +195,20 @@ func importWarpExprPkg(paths ...string) *program.Package {
 func TestAssignWarpSlotsBothImportForms(t *testing.T) {
 	numbered := &program.Package{
 		Files: []*program.PackageFile{{
-			WarpImports: []*program.WarpImport{{Index: 0, Path: "run.castsim"}},
+			WarpImports: []*program.WarpImport{{Index: 0, Path: "run.warp"}},
 		}},
 	}
 	w := AssignWarpSlots([]WarpGraphPkg{{Path: "", Pkg: numbered}}, "trees/T1")
-	if got, ok := w.Ref(0); !ok || got.Path != "run.castsim" || got.Dir != "trees/T1" {
-		t.Fatalf("numbered form: slot 0 = %+v (ok=%v), want run.castsim in trees/T1", got, ok)
+	if got, ok := w.Ref(0); !ok || got.Path != "run.warp" || got.Dir != "trees/T1" {
+		t.Fatalf("numbered form: slot 0 = %+v (ok=%v), want run.warp in trees/T1", got, ok)
 	}
 	if len(w.ExprCalls) != 0 {
 		t.Errorf("numbered form should produce no expression calls, got %d", len(w.ExprCalls))
 	}
 
-	expr := importWarpExprPkg("run.castsim")
+	expr := importWarpExprPkg("run.warp")
 	w2 := AssignWarpSlots([]WarpGraphPkg{{Path: "", Pkg: expr}}, "trees/T1")
-	if got, ok := w2.Ref(0); !ok || got.Path != "run.castsim" {
+	if got, ok := w2.Ref(0); !ok || got.Path != "run.warp" {
 		t.Fatalf("expression form: slot 0 = %+v (ok=%v)", got, ok)
 	}
 	if len(w2.ExprCalls) != 1 {
@@ -221,19 +221,19 @@ func TestAssignWarpSlotsBothImportForms(t *testing.T) {
 
 func TestAssignWarpSlotsSeparatesIdenticalFilenames(t *testing.T) {
 	pkgs := []WarpGraphPkg{
-		{Path: "", Pkg: importWarpExprPkg("casting.castsim")},
-		{Path: "branches/A", Pkg: importWarpExprPkg("casting.castsim")},
-		{Path: "branches/B", Pkg: importWarpExprPkg("casting.castsim")},
+		{Path: "", Pkg: importWarpExprPkg("part.warp")},
+		{Path: "branches/A", Pkg: importWarpExprPkg("part.warp")},
+		{Path: "branches/B", Pkg: importWarpExprPkg("part.warp")},
 	}
 	w := AssignWarpSlots(pkgs, "trees/T1")
 
 	if len(w.BySlot) != 3 {
-		t.Fatalf("three packages naming casting.castsim should get three slots, got %d: %+v",
+		t.Fatalf("three packages naming part.warp should get three slots, got %d: %+v",
 			len(w.BySlot), w.BySlot)
 	}
 	dirs := map[string]bool{}
 	for _, ref := range w.BySlot {
-		if ref.Path != "casting.castsim" {
+		if ref.Path != "part.warp" {
 			t.Errorf("unexpected path %q", ref.Path)
 		}
 		if dirs[ref.Dir] {
@@ -254,7 +254,7 @@ func TestAssignWarpSlotsSeparatesIdenticalFilenames(t *testing.T) {
 }
 
 func TestAssignWarpSlotsReusesOneFile(t *testing.T) {
-	pkg := importWarpExprPkg("run.castsim", "run.castsim")
+	pkg := importWarpExprPkg("run.warp", "run.warp")
 	w := AssignWarpSlots([]WarpGraphPkg{{Path: "", Pkg: pkg}}, "trees/T1")
 	if len(w.BySlot) != 1 {
 		t.Fatalf("one file should occupy one slot, got %d: %+v", len(w.BySlot), w.BySlot)
@@ -272,12 +272,12 @@ func TestAssignWarpSlotsReusesOneFile(t *testing.T) {
 func TestAssignWarpSlotsRenumbersImportedNumberedForms(t *testing.T) {
 	doc := &program.Package{
 		Files: []*program.PackageFile{{
-			WarpImports: []*program.WarpImport{{Index: 0, Path: "tree.castsim"}},
+			WarpImports: []*program.WarpImport{{Index: 0, Path: "tree.warp"}},
 		}},
 	}
 	branch := &program.Package{
 		Files: []*program.PackageFile{{
-			WarpImports: []*program.WarpImport{{Index: 0, Path: "branch.castsim"}},
+			WarpImports: []*program.WarpImport{{Index: 0, Path: "branch.warp"}},
 		}},
 	}
 	w := AssignWarpSlots([]WarpGraphPkg{
@@ -288,12 +288,12 @@ func TestAssignWarpSlotsRenumbersImportedNumberedForms(t *testing.T) {
 	if len(w.BySlot) != 2 {
 		t.Fatalf("want two slots, got %+v", w.BySlot)
 	}
-	if got, ok := w.Ref(0); !ok || got.Path != "tree.castsim" {
+	if got, ok := w.Ref(0); !ok || got.Path != "tree.warp" {
 		t.Errorf("the document keeps slot 0, got %+v", got)
 	}
 	found := false
 	for slot, ref := range w.BySlot {
-		if ref.Path == "branch.castsim" {
+		if ref.Path == "branch.warp" {
 			found = true
 			if slot == 0 {
 				t.Errorf("the branch's import collided with the document's slot 0")
@@ -341,7 +341,7 @@ func TestFoldProgram_NestedFunctionsAndErrors(t *testing.T) {
 	dep := &program.Package{
 		Path: "branches/dep",
 		Files: []*program.PackageFile{{
-			WarpImports: []*program.WarpImport{{Index: 0, Path: "dep.castsim"}},
+			WarpImports: []*program.WarpImport{{Index: 0, Path: "dep.warp"}},
 			FnTypes: []*program.FnType{{
 				Name: "helper",
 				Groups: []*program.FnGroup{{
@@ -421,7 +421,7 @@ func TestFoldProgram_NestedFunctionsAndErrors(t *testing.T) {
 		badProg := &program.Program{
 			Primary: &program.Package{
 				Files: []*program.PackageFile{{
-					WarpImports: []*program.WarpImport{{Index: 0, Path: "sim.castsim"}},
+					WarpImports: []*program.WarpImport{{Index: 0, Path: "sim.warp"}},
 					Returns:     []*program.Operand{nestedCall("meshWarped", tc.args...)},
 				}},
 			},

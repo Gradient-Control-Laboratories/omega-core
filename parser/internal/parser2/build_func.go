@@ -222,6 +222,13 @@ func buildFunctionCall(buildScope scope.BuilderScope, fnCall *FunctionCall) (*pr
 		return buildBuiltinCall(builtin, arguments, pos, endPos)
 	}
 
+	if pkgName == "" && fnName == "audio" {
+		return program.NewFnCall(
+			"", fnName, arguments,
+			posToLocation(pos), posToLocation(endPos),
+		), nil
+	}
+
 	if pkgName == "" {
 		err := identifier2.Validate(fnName)
 		if err != nil {

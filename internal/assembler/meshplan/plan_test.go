@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"gradientcontrol.com/omega/core/internal/assembler/meshplan"
+	"gradientcontrol.com/omega/core/internal/assembler/variation"
 	parser "gradientcontrol.com/omega/core/parser"
 	"gradientcontrol.com/omega/core/program"
 )
@@ -122,7 +123,7 @@ func TestSliceProgram_PureSDF(t *testing.T) {
 	if subtrees[0].ID != "leaf-0" {
 		t.Fatalf("expected subtree id leaf-0, got %s", subtrees[0].ID)
 	}
-	if subtrees[0].Return == nil || len(meshplan.SubtreeProgram(prog, subtrees[0].Return).Dependencies) != 1 {
+	if subtrees[0].Return == nil || len(variation.Program(prog, subtrees[0].Return).Dependencies) != 1 {
 		t.Fatalf("expected subtree program to carry parent dependencies")
 	}
 }

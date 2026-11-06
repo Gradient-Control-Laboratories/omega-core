@@ -1,7 +1,11 @@
 package program
 
 import (
+	"math"
 	"strings"
+
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 const VersionMajor = 0
@@ -234,6 +238,34 @@ func (p *Program) Scene() *Scene {
 	return p.Primary.Scene
 }
 
+// Returns returns the return operands of the package's last file,
+// or nil if no files or returns exist.
+func (pkg *Package) Returns() []*Operand {
+	if len(pkg.Files) == 0 {
+		return nil
+	}
+	return pkg.Files[len(pkg.Files)-1].Returns
+}
+
+// SetReturns sets the return operands of the package's last file.
+func (pkg *Package) SetReturns(returns []*Operand) {
+	if len(pkg.Files) == 0 {
+		return
+	}
+	pkg.Files[len(pkg.Files)-1].Returns = returns
+}
+
+// Returns returns the return operands of the primary package's last file,
+// or nil if no files or returns exist.
+func (p *Program) Returns() []*Operand {
+	return p.Primary.Returns()
+}
+
+// SetReturns sets the return operands of the primary package's last file.
+func (p *Program) SetReturns(returns []*Operand) {
+	p.Primary.SetReturns(returns)
+}
+
 // ColorReturns returns the lowered color operands of the primary package's
 // last file, or nil if no files or color returns exist.
 func (p *Program) ColorReturns() []*Operand {
@@ -250,4 +282,136 @@ func (p *Program) MaterialReturns() []*Operand {
 		return nil
 	}
 	return p.Primary.Files[len(p.Primary.Files)-1].MaterialReturns
+}
+
+// ModuleFunction finds a package-local function declaration with the given
+// name and parameter count.
+func ModuleFunction(pkg *Package, name string, paramCount int) *Function {
+	if pkg == nil {
+		return nil
+	}
+	for _, f := range pkg.Files {
+		for _, ft := range f.FnTypes {
+			if ft.Name != name {
+				continue
+			}
+			for _, g := range ft.Groups {
+				if int(g.ParamCount) == paramCount && len(g.Functions) > 0 {
+					return g.Functions[0]
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// TopLevelAssignment returns the RHS expression of a single-variable top-level
+// assignment with the given variable name across the package's files, or nil.
+func TopLevelAssignment(pkg *Package, name string) *Operand {
+	if pkg == nil {
+		return nil
+	}
+	for _, file := range pkg.Files {
+		if file == nil {
+			continue
+		}
+		for _, a := range file.Assignments {
+			if a != nil && len(a.Variables) == 1 && a.Variables[0].GetName() == name {
+				return a.Expression
+			}
+		}
+	}
+	return nil
+}
+
+// ConstValues returns finite constant float64 values from an operand's stamped
+// ConstValues slice or from literal numeric/collection AST nodes.
+func ConstValues(op *Operand) ([]float64, bool) {
+	if op == nil {
+		return nil, false
+	}
+	if len(op.ConstValues) > 0 {
+		for _, v := range op.ConstValues {
+			if math.IsNaN(v) || math.IsInf(v, 0) {
+				return nil, false
+			}
+		}
+		return append([]float64(nil), op.ConstValues...), true
+	}
+	switch t := op.T.(type) {
+	case *Operand_Value:
+		if math.IsNaN(t.Value) || math.IsInf(t.Value, 0) {
+			return nil, false
+		}
+		return []float64{t.Value}, true
+	case *Operand_Expression:
+		if t.Expression == nil {
+			return nil, false
+		}
+		switch t.Expression.Operation {
+		case Operation_NEG:
+			if len(t.Expression.Operands) != 1 {
+				return nil, false
+			}
+			vals, ok := ConstValues(t.Expression.Operands[0])
+			if !ok {
+				return nil, false
+			}
+			for i := range vals {
+				vals[i] = -vals[i]
+			}
+			return vals, true
+		case Operation_COLLECT:
+			if len(t.Expression.Operands) == 0 {
+				return nil, false
+			}
+			var out []float64
+			for _, child := range t.Expression.Operands {
+				vals, ok := ConstValues(child)
+				if !ok {
+					return nil, false
+				}
+				out = append(out, vals...)
+			}
+			return out, true
+		default:
+			return nil, false
+		}
+	default:
+		return nil, false
+	}
+}
+
+// EqualModuloLocations compares two protobuf AST messages for structural
+// equality while ignoring source Location and stamped ConstValues fields.
+func EqualModuloLocations(a, b proto.Message) bool {
+	if a == nil || b == nil || !a.ProtoReflect().IsValid() || !b.ProtoReflect().IsValid() {
+		return false
+	}
+	a, b = proto.Clone(a), proto.Clone(b)
+	var clean func(protoreflect.Message)
+	clean = func(m protoreflect.Message) {
+		m.Range(func(field protoreflect.FieldDescriptor, value protoreflect.Value) bool {
+			if field.Name() == "constValues" {
+				m.Clear(field)
+				return true
+			}
+			if field.Kind() != protoreflect.MessageKind {
+				return true
+			}
+			if field.Message().Name() == "Location" {
+				m.Clear(field)
+			} else if field.IsList() {
+				for i := 0; i < value.List().Len(); i++ {
+					clean(value.List().Get(i).Message())
+				}
+			} else if !field.IsMap() {
+				clean(value.Message())
+			}
+			return true
+		})
+	}
+	clean(a.ProtoReflect())
+	clean(b.ProtoReflect())
+	return proto.Equal(a, b)
 }

@@ -101,6 +101,7 @@ omega-core/
 │   │   ├── textures/          # Texture descriptor binding
 │   │   ├── topofold/          # Topological folding
 │   │   ├── unroll/            # Loop unrolling transformations
+│   │   ├── variation/         # Sub-program and variation slicing (from common/program/variation)
 │   │   └── warpfold/          # Warp fold transformations
 │   ├── build/                 # Shared AST visitor and builder copied from common/build
 │   ├── closure/               # Lambda closure analysis and capture binding
@@ -163,7 +164,8 @@ omega-core/
     ├── check.sh               # Pre-commit quality gate (gofmt, go vet, tests)
     ├── clean.sh               # Cleans bin/ outputs, test cache, and scratch files
     ├── test.sh                # Runs unit, integration, and golden test suites
-    └── update-goldens.sh      # Regenerates reference test goldens
+    ├── update-goldens.sh      # Regenerates reference test goldens
+    └── run-go-tests/          # Go test suite runner, timing history, and golden size reporter (from tool/run-go-tests)
 ```
 
 ## Building the Toolchain

@@ -3,6 +3,7 @@ package meshplan
 import (
 	"fmt"
 
+	"gradientcontrol.com/omega/core/internal/assembler/variation"
 	"gradientcontrol.com/omega/core/program"
 )
 
@@ -15,7 +16,7 @@ func SelectPrimarySdfProgram(prog *program.Program, plan *MeshExportPlan, subtre
 		meshDecls = plan.MeshDecls()
 	}
 	if len(subtrees) > 0 && subtrees[0].Return != nil {
-		return SubtreeProgram(prog, subtrees[0].Return), meshDecls
+		return variation.Program(prog, subtrees[0].Return), meshDecls
 	}
 	return prog, meshDecls
 }
@@ -38,7 +39,7 @@ func SelectBodySdfProgram(prog *program.Program, plan *MeshExportPlan, subtrees 
 			if s.ID != b.Root.SubtreeID || s.Return == nil {
 				continue
 			}
-			return SubtreeProgram(prog, s.Return), nil
+			return variation.Program(prog, s.Return), nil
 		}
 		return nil, fmt.Errorf("%s has no SDF program", b.Name)
 	}

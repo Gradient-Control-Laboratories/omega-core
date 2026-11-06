@@ -1,6 +1,9 @@
 package collect
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 
 	"gradientcontrol.com/omega/core/internal/source"
@@ -25,7 +28,19 @@ func Program(primarySources []string, srcMgr source.Manager, parse program.Parse
 	if primaryPkg == nil {
 		return nil, fmt.Errorf("no primary package returned")
 	}
+	setPackageSources(primaryPkg, primarySources)
 	return Package(primaryPkg, srcMgr, parse)
+}
+
+func setPackageSources(pkg *program.Package, sources []string) {
+	if pkg == nil {
+		return
+	}
+	for i := 0; i < len(pkg.Files) && i < len(sources); i++ {
+		if pkg.Files[i] != nil && pkg.Files[i].Source == "" {
+			pkg.Files[i].Source = sources[i]
+		}
+	}
 }
 
 // Package collects all packages starting from a pre-parsed primary package.
@@ -37,10 +52,6 @@ func Package(primaryPkg *program.Package, srcMgr source.Manager, parse program.P
 
 	if len(primaryPkg.Files) == 0 {
 		return nil, fmt.Errorf("primary package must have at least one file")
-	}
-	lastFile := primaryPkg.Files[len(primaryPkg.Files)-1]
-	if len(lastFile.Returns) == 0 {
-		return nil, fmt.Errorf("primary package must have a return statement")
 	}
 
 	var collected []*program.Package
@@ -73,6 +84,7 @@ func Package(primaryPkg *program.Package, srcMgr source.Manager, parse program.P
 					if depPkg == nil {
 						return fmt.Errorf("package not found: %s", impPath)
 					}
+					setPackageSources(depPkg, sources)
 					program.UpdateImports(depPkg, impPath)
 					if depPkg.Path == "" {
 						depPkg.Path = impPath
@@ -108,4 +120,51 @@ func Package(primaryPkg *program.Package, srcMgr source.Manager, parse program.P
 		Primary:      primaryPkg,
 		Dependencies: collected,
 	}, nil
+}
+
+// ProgramSourceHash returns the deterministic SHA-256 hex digest of all GSL
+// package sources in prog (primary and transitive dependencies), preserving
+// each package's declared source file order.
+func ProgramSourceHash(prog *program.Program) string {
+	if prog == nil {
+		return ""
+	}
+	sources := make(map[string][]string, len(prog.Dependencies)+1)
+	addPkg := func(pkg *program.Package) {
+		if pkg == nil || pkg.Path == "" {
+			return
+		}
+		// Invariant: pkg.Files elements are guaranteed non-nil by the parser.
+		fileSources := make([]string, 0, len(pkg.Files))
+		for _, f := range pkg.Files {
+			fileSources = append(fileSources, f.Source)
+		}
+		sources[pkg.Path] = fileSources
+	}
+	addPkg(prog.Primary)
+	for _, dep := range prog.Dependencies {
+		addPkg(dep)
+	}
+	// JSON sorts package keys while preserving each package's declared source order.
+	data, err := json.Marshal(sources)
+	if err != nil {
+		return ""
+	}
+	sum := sha256.Sum256([]byte("gsl-dependencies-v1\n" + string(data)))
+	return hex.EncodeToString(sum[:])
+}
+
+// SourceHash collects primaryPkgPath and all its transitive GSL imports from
+// srcMgr and returns their deterministic SHA-256 hex digest.
+func SourceHash(primaryPkgPath string, srcMgr source.Manager, parse program.ParsePackageFunc) (string, error) {
+	primary, _, err := srcMgr.Sources(primaryPkgPath)
+	if err != nil {
+		return "", err
+	}
+	prog, err := Program(primary, srcMgr, parse)
+	if err != nil {
+		return "", err
+	}
+	prog.Primary.Path = primaryPkgPath
+	return ProgramSourceHash(prog), nil
 }

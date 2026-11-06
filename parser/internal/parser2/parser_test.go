@@ -568,7 +568,7 @@ func TestParsePartialImportsAndAssetImportsOnError(t *testing.T) {
 	})
 
 	t.Run("ValidAssetImportsFollowedBySyntaxOrBuildError", func(t *testing.T) {
-		src := "import \"math\";\nimportStep 0 \"a.step\";\nimportMesh 1 \"b.stl\";\nimportWarp 2 \"c.castsim\";\nimportStep 3 ;\n"
+		src := "import \"math\";\nimportStep 0 \"a.step\";\nimportMesh 1 \"b.stl\";\nimportWarp 2 \"c.warp\";\nimportStep 3 ;\n"
 		res, err := parser2.Parse([]string{src})
 		assert.NoError(t, err)
 		assert.Equal(t, 1, len(res.Errors))
@@ -582,7 +582,7 @@ func TestParsePartialImportsAndAssetImportsOnError(t *testing.T) {
 				assert.Equal(t, "b.stl", file.MeshImports[0].Path)
 			}
 			if assert.Equal(t, 1, len(file.WarpImports)) {
-				assert.Equal(t, "c.castsim", file.WarpImports[0].Path)
+				assert.Equal(t, "c.warp", file.WarpImports[0].Path)
 			}
 		}
 	})
@@ -604,11 +604,11 @@ func TestParsePartialImportsAndAssetImportsOnError(t *testing.T) {
 func TestParsePartialDeclarationsAndReturnOnError(t *testing.T) {
 	t.Run("SyntaxErrorOnLaterDeclarationPreservesPrecedingDeclarations", func(t *testing.T) {
 		src := `@scene(30, 5)
-import "dm/gate";
+import "pkg/gate";
 importStep 0 "stmt.step";
 importId = importStep "expr.stp";
 m = importMesh "expr.stl";
-w = importWarp "sim.castsim";
+w = importWarp "sim.warp";
 @range(0, 10) r = 5;
 r.color = [1, 0, 0];
 helper(a) {

@@ -61,8 +61,8 @@ func TestSceneFixer_Conversions(t *testing.T) {
 		},
 		{
 			name:        "preserves non-scene header comments and blank lines",
-			in:          "// Work Order: WO-1\n// Material: Aluminum\n// Scene Size: 60 mm\n// Scene Grid: 15 mm\n\nx = 1;\nreturn sphere(x);\n",
-			want:        "// Work Order: WO-1\n// Material: Aluminum\n@scene(60, 15)\n\nx = 1;\nreturn sphere(x);\n",
+			in:          "// Part: P-1\n// Material: Aluminum\n// Scene Size: 60 mm\n// Scene Grid: 15 mm\n\nx = 1;\nreturn sphere(x);\n",
+			want:        "// Part: P-1\n// Material: Aluminum\n@scene(60, 15)\n\nx = 1;\nreturn sphere(x);\n",
 			wantChanged: true,
 		},
 		{

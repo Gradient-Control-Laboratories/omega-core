@@ -1,6 +1,6 @@
-# Fidget Agent
+# Fidget Mesher
 
-The fidget agent is the server-side mesher used by `webedit` and `webdm` deployment. It wraps a Rust crate (`internal/rust/`)∑ that links against a patched [fidget](https://github.com/mkeeter/fidget) plus the C++ [OpenVDB](https://github.com/AcademySoftwareFoundation/openvdb) library for narrow-band level-set sampling.
+The fidget package provides server-side SDF meshing and evaluation. It wraps a Rust crate (`internal/rust/`) that links against a patched [fidget](https://github.com/mkeeter/fidget) plus the C++ [OpenVDB](https://github.com/AcademySoftwareFoundation/openvdb) library for narrow-band level-set sampling.
 
 ## Prerequisites
 You need:
@@ -19,8 +19,7 @@ git submodule update --init --recursive
 ```
 
 ## Build
-- **[webedit](../../webedit/README.md)** launches the fidget agent for server-side meshing.
-- **webdm** (in progress on a follow up branch) launches the fidget agent plus the [manifold agent](../manifold)(also in progress on a follow up branch) for boolean composition.
+- **[webedit](../../webedit/README.md)** launches the fidget agent for server-side meshing alongside the [manifold](../manifold) package for boolean composition.
 
 The launch scripts for both these agents already invoke cargo builds for you — the manual build steps below are only needed if you're working on the agent itself or you want to verify a fresh setup. The first build of OpenVDB + its transitive dependencies takes several minutes, builds after that are incremental.
 

@@ -13,31 +13,27 @@ func parseMockPackage(sources []string) (*program.Package, error) {
 	if len(sources) == 0 {
 		return nil, fmt.Errorf("empty sources")
 	}
-	src := sources[0]
-	var imports []*program.Import
-
-	// Parse simple import declarations in the mock sources
-	if strings.Contains(src, `import "dep1"`) {
-		imports = append(imports, &program.Import{Path: "dep1"})
-	}
-	if strings.Contains(src, `import "dep2"`) {
-		imports = append(imports, &program.Import{Path: "dep2"})
-	}
-	if strings.Contains(src, `import "dep3"`) {
-		imports = append(imports, &program.Import{Path: "dep3"})
-	}
-
-	return &program.Package{
-		Files: []*program.PackageFile{
-			{
-				Source:  src,
-				Imports: imports,
-				Returns: []*program.Operand{
-					{T: &program.Operand_Value{Value: 1.0}},
-				},
+	files := make([]*program.PackageFile, 0, len(sources))
+	for _, src := range sources {
+		var imports []*program.Import
+		if strings.Contains(src, `import "dep1"`) {
+			imports = append(imports, &program.Import{Path: "dep1"})
+		}
+		if strings.Contains(src, `import "dep2"`) {
+			imports = append(imports, &program.Import{Path: "dep2"})
+		}
+		if strings.Contains(src, `import "dep3"`) {
+			imports = append(imports, &program.Import{Path: "dep3"})
+		}
+		files = append(files, &program.PackageFile{
+			Source:  src,
+			Imports: imports,
+			Returns: []*program.Operand{
+				{T: &program.Operand_Value{Value: 1.0}},
 			},
-		},
-	}, nil
+		})
+	}
+	return &program.Package{Files: files}, nil
 }
 
 func TestCollect_Ordering(t *testing.T) {
@@ -143,5 +139,119 @@ func TestCollect_NamedPrimaryPackage(t *testing.T) {
 	}
 	if !foundDep1 {
 		t.Fatalf("expected dependency 'dep1' in %v", prog.Dependencies)
+	}
+}
+
+func TestCollect_PrimaryWithoutReturnsAndErrorPaths(t *testing.T) {
+	t.Run("primary without returns succeeds", func(t *testing.T) {
+		pkg := &program.Package{
+			Path: "lib/module",
+			Files: []*program.PackageFile{
+				{Source: "fn helper() { return 1; }"},
+			},
+		}
+		prog, err := Package(pkg, &source.MockManager{}, parseMockPackage)
+		if err != nil {
+			t.Fatalf("expected primary package without returns to succeed, got: %v", err)
+		}
+		if len(prog.Returns()) != 0 {
+			t.Fatalf("expected 0 returns, got %d", len(prog.Returns()))
+		}
+	})
+
+	t.Run("missing primary sources and empty package errors", func(t *testing.T) {
+		if _, err := Program(nil, &source.MockManager{}, parseMockPackage); err == nil {
+			t.Fatal("expected error for empty primarySources")
+		}
+		if _, err := Package(nil, &source.MockManager{}, parseMockPackage); err == nil {
+			t.Fatal("expected error for nil primaryPkg")
+		}
+		if _, err := Package(&program.Package{}, &source.MockManager{}, parseMockPackage); err == nil {
+			t.Fatal("expected error for primaryPkg with no files")
+		}
+	})
+
+	t.Run("self import and cyclic import errors", func(t *testing.T) {
+		selfPkg := &program.Package{
+			Path: "dep1",
+			Files: []*program.PackageFile{
+				{Imports: []*program.Import{{Path: "dep1"}}},
+			},
+		}
+		if _, err := Package(selfPkg, &source.MockManager{}, parseMockPackage); err == nil || !strings.Contains(err.Error(), "cannot import itself") {
+			t.Fatalf("expected self-import error, got: %v", err)
+		}
+
+		srcMgr := &source.MockManager{
+			PkgSources: map[string][]string{
+				"dep1": {`import "dep2"; return 1.0;`},
+				"dep2": {`import "dep1"; return 2.0;`},
+			},
+		}
+		if _, err := Program([]string{`import "dep1"; return 0.0;`}, srcMgr, parseMockPackage); err == nil || !strings.Contains(err.Error(), "cyclic package import") {
+			t.Fatalf("expected cyclic import error, got: %v", err)
+		}
+	})
+}
+
+func TestCollect_SourceHashAndProgramSourceHash(t *testing.T) {
+	srcMgr := &source.MockManager{
+		PkgSources: map[string][]string{
+			"trees/test": {`import "dep1"; import "dep2"; return 42.0;`},
+			"dep1":       {`import "dep3"; return 1.0;`},
+			"dep2":       {`import "dep3"; return 2.0;`},
+			"dep3":       {`return 3.0;`},
+			"unrelated":  {`return 999.0;`},
+		},
+	}
+
+	hash1, err := SourceHash("trees/test", srcMgr, parseMockPackage)
+	if err != nil {
+		t.Fatalf("SourceHash failed: %v", err)
+	}
+	if len(hash1) != 64 {
+		t.Fatalf("expected 64-char sha256 hex digest, got %q", hash1)
+	}
+
+	prog, err := Program(srcMgr.PkgSources["trees/test"], srcMgr, parseMockPackage)
+	if err != nil {
+		t.Fatalf("Program failed: %v", err)
+	}
+	prog.Primary.Path = "trees/test"
+	if got := ProgramSourceHash(prog); got != hash1 {
+		t.Fatalf("ProgramSourceHash = %q, want %q", got, hash1)
+	}
+
+	// Modifying an unreferenced package must not change the digest.
+	srcMgr.PkgSources["unrelated"] = []string{`return -1.0;`}
+	hashUnrelated, err := SourceHash("trees/test", srcMgr, parseMockPackage)
+	if err != nil || hashUnrelated != hash1 {
+		t.Fatalf("unreferenced package changed digest: got %q, want %q (err=%v)", hashUnrelated, hash1, err)
+	}
+
+	// Modifying a transitive dependency must change the digest.
+	srcMgr.PkgSources["dep3"] = []string{`return 30.0;`}
+	hashChanged, err := SourceHash("trees/test", srcMgr, parseMockPackage)
+	if err != nil || hashChanged == hash1 {
+		t.Fatalf("transitive dependency edit did not change digest: %q (err=%v)", hashChanged, err)
+	}
+
+	// Changing file order within a package must change the digest.
+	srcMgr.PkgSources["trees/test"] = []string{`a = 1;`, `import "dep1"; return a;`}
+	hashOrderA, err := SourceHash("trees/test", srcMgr, parseMockPackage)
+	if err != nil {
+		t.Fatalf("SourceHash order A failed: %v", err)
+	}
+	srcMgr.PkgSources["trees/test"] = []string{`import "dep1"; return a;`, `a = 1;`}
+	hashOrderB, err := SourceHash("trees/test", srcMgr, parseMockPackage)
+	if err != nil {
+		t.Fatalf("SourceHash order B failed: %v", err)
+	}
+	if hashOrderA == hashOrderB {
+		t.Fatal("package file order was not preserved in SourceHash")
+	}
+
+	if got := ProgramSourceHash(nil); got != "" {
+		t.Fatalf("expected empty hash for nil program, got %q", got)
 	}
 }
