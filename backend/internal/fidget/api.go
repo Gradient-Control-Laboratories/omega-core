@@ -99,7 +99,7 @@ type MeshRequest struct {
 	// Inline (tape requests only) returns the serialized tape in the response
 	// as TapeB64 instead of writing it to the downloads dir and returning a
 	// URL. The browser's Save Tape wants a file to download; a server-side
-	// consumer (the casting simulation, which posts the tape to an out-of-
+	// consumer (a simulation, which posts the tape to an out-of-
 	// process service) wants the bytes, and canvas has no downloads dir to
 	// read them back from — nor would one exist if the two agents were ever
 	// split across containers.

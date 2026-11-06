@@ -1,5 +1,5 @@
 /* ProgressBar component styles */
-.webdm-progress-area {
+.omega-progress-area {
     position: absolute;
     top: 14px;
     left: 50%;
@@ -23,7 +23,7 @@
     backdrop-filter: blur(10px);
 }
 
-.webdm-progress-bar-wrapper {
+.omega-progress-bar-wrapper {
     width: 100%;
     height: 3px;
     background: #303030;
@@ -32,7 +32,7 @@
     border-radius: 2px;
 }
 
-.webdm-progress-bar-fill {
+.omega-progress-bar-fill {
     width: 0%;
     height: 100%;
     background: #426b91;
@@ -40,7 +40,7 @@
     transition: width 100ms linear;
 }
 
-.webdm-progress-label-wrapper {
+.omega-progress-label-wrapper {
     width: 100%;
     display: flex;
     align-items: center;
@@ -48,7 +48,7 @@
     overflow: hidden;
 }
 
-.webdm-progress-label-text {
+.omega-progress-label-text {
     color: #c5c5c5;
     white-space: nowrap;
     overflow: hidden;

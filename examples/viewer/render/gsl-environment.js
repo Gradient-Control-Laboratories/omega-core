@@ -1,4 +1,4 @@
-// Environment lighting for the GSL raymarch viewers (webdm, webai, webedit).
+// Environment lighting for the GSL raymarch viewers (webai, webedit).
 //
 // The light a surface sees from the world around it: a sky and up to four
 // soft panels that turn about the vertical with the camera, as the three rig

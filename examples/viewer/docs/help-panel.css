@@ -1,10 +1,10 @@
 /* Panel chrome for the shared Help menu and its two overlays — the frame, not
  * the rendered markdown, which is docs.css.
  *
- * FOR AN APP THAT DOES NOT ALREADY CARRY THESE RULES. webai and webdm each have
+ * FOR AN APP THAT DOES NOT ALREADY CARRY THESE RULES. webai and a second app each have
  * their own copy in style.css, where .omega-menu-item, .app-panel* and
  * .panel-close are also used by app chrome that is not the help panel — the
- * About modal and the side panels — so lifting them out of those two is a wider
+ * About modal and the side panels — so lifting them out of those is a wider
  * change than sharing the help panel itself, and is deliberately not done here.
  * They do not load this file. Transcribed from webai's style.css; keep the two
  * in step until that consolidation happens. */

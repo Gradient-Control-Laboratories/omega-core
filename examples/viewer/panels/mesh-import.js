@@ -18,17 +18,17 @@
 //                                       the app's source state
 //   recompile()                         re-run the normal compile path
 //   onImported(index, file, bytes)      optional, awaited before placement
-//                                       (webdm ships the bytes to the canvas agent)
+//                                       (an app may ship the bytes to the canvas agent)
 //   placeMesh(index, filename)          optional override of the placement
-//                                       (webdm's document-aware version)
-//   afterImport()                       optional (webdm saves the document)
+//                                       (a document-aware version)
+//   afterImport()                       optional (an app may save the document)
 //   setStatus(msg, isError)             optional inline status line
 //   extraFormats                        optional { ext: (file) => void } for formats
-//                                       the app handles itself (webdm: step, stp,
+//                                       the app handles itself (e.g. step, stp,
 //                                       hodge); they join the accept list, the drop
 //                                       filter and the drop-overlay label
 //   builtinFormats                      optional subset of ["stl", "obj"] to accept
-//                                       (webdm takes STL only — its canvas agent
+//                                       (an app may take STL only — if its canvas agent
 //                                       parses no other mesh format)
 //   formatLabel                         optional text for the drop-zone and overlay
 //                                       labels (default: derived from the formats)

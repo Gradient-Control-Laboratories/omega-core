@@ -1612,7 +1612,7 @@ mod tests {
     }
 
     // And with the table bound first, the same tape loads and evaluates. This
-    // is the hodge/elasticam path: inspect, register, load.
+    // is the hodge path: inspect, register, load.
     #[test]
     fn spinodoid_leaf_replays_from_a_registered_table() {
         let slot = 251;

@@ -2,7 +2,7 @@
 // character span from the `return` keyword to its terminating `;`, skipping
 // strings, comments and anything inside braces. Returns null when there is
 // no top-level return. Shared by the mesh import (which appends a mesh()
-// placement to the return) and webdm's document tooling.
+// placement to the return) and an app's document tooling.
 export function topLevelReturnSpan(source) {
     let braces = 0, quote = false, lineComment = false, blockComment = false;
     let start = -1;

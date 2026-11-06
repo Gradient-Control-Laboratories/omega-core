@@ -6,7 +6,7 @@
 // stay in sync with each library's .gsl source.
 //
 // WHERE THE MARKDOWN COMES FROM IS THE ONLY THING THAT DIFFERED between the
-// apps that had this. webai fetched the static file; webdm asks its server over
+// apps that had this. webai fetched the static file; another app asks its server over
 // the websocket, because its library set is per-project, and falls back to the
 // static file after a timeout. That is the loadLibraries hook; everything else
 // — the menu, the panels, the parse, the submenu, the per-page render — was

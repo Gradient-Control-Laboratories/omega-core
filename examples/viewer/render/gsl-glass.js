@@ -1,4 +1,4 @@
-// Transparency and refraction for the GSL raymarch viewers (webdm, webai,
+// Transparency and refraction for the GSL raymarch viewers (webai,
 // webedit), by marching the refracted ray through the same SDF.
 //
 // A hit whose material has transmission (the `volume.x` row of the material

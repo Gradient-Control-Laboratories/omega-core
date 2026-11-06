@@ -3,7 +3,7 @@
 // empty, and removes the items an app passes no handler for — the same
 // arrangement export-panel.js uses for #stl-bounds-panel.
 //
-// The markup is transcribed from webai, which had it inline; webdm carried a
+// The markup is transcribed from webai, which had it inline; a second app carried a
 // copy differing only in the absence of "I wish…".
 
 // Goes in the toolbar, conventionally right after .editor-tab-container.
