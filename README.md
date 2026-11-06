@@ -71,6 +71,7 @@ omega-core/
 ├── examples/                  # Curated showcase GSL models and assets
 │   ├── gears.gsl              # Parametric helical gear pair showcase (from common/web/example/Gears.gsl)
 │   ├── glass.gsl              # Transmissive glass and refraction showcase (from common/web/example/Material - Glass.gsl)
+│   ├── can.gsl                # Volume of a can at a fixed material budget, optimized with the .d(var) derivative
 │   ├── assets/                # Traditional CAD mesh assets (bracket.stl)
 │   └── viewer/                # Interactive WebGPU viewer web application
 │       ├── README.md          # Viewer usage and architecture overview
