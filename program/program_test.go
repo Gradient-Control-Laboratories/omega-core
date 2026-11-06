@@ -2,6 +2,7 @@ package program
 
 import (
 	"math"
+	"slices"
 	"testing"
 
 	"google.golang.org/protobuf/proto"
@@ -102,13 +103,13 @@ func TestPackageAndProgramReturns(t *testing.T) {
 	}
 	prog := &Program{Primary: pkg}
 
-	assert.Equal(t, []*Operand{r1, r2}, pkg.Returns())
-	assert.Equal(t, []*Operand{r1, r2}, prog.Returns())
+	assert.True(t, slices.Equal([]*Operand{r1, r2}, pkg.Returns()))
+	assert.True(t, slices.Equal([]*Operand{r1, r2}, prog.Returns()))
 
 	prog.SetReturns([]*Operand{r3})
-	assert.Equal(t, []*Operand{r3}, pkg.Returns())
-	assert.Equal(t, []*Operand{r3}, prog.Returns())
-	assert.Equal(t, []*Operand{r1}, pkg.Files[0].Returns)
+	assert.True(t, slices.Equal([]*Operand{r3}, pkg.Returns()))
+	assert.True(t, slices.Equal([]*Operand{r3}, prog.Returns()))
+	assert.True(t, slices.Equal([]*Operand{r1}, pkg.Files[0].Returns))
 
 	pkg.SetReturns(nil)
 	assert.Nil(t, prog.Returns())

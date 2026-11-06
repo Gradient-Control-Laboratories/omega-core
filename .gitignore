@@ -14,5 +14,3 @@ scratch/
 tmp/
 *.out
 *.actual.*
-*.actual.glsl
-
