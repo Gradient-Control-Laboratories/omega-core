@@ -127,8 +127,8 @@ func TestModuleFunction(t *testing.T) {
 		},
 	}
 
-	assert.Same(t, fn0, ModuleFunction(pkg, "helper", 0))
-	assert.Same(t, fn2, ModuleFunction(pkg, "helper", 2))
+	assert.True(t, fn0 == ModuleFunction(pkg, "helper", 0))
+	assert.True(t, fn2 == ModuleFunction(pkg, "helper", 2))
 	assert.Nil(t, ModuleFunction(pkg, "helper", 1))
 	assert.Nil(t, ModuleFunction(pkg, "missing", 0))
 	assert.Nil(t, ModuleFunction(nil, "helper", 0))
@@ -146,7 +146,7 @@ func TestTopLevelAssignment(t *testing.T) {
 		},
 	}
 
-	assert.Same(t, scaleExpr, TopLevelAssignment(pkg, "partScale"))
+	assert.True(t, scaleExpr == TopLevelAssignment(pkg, "partScale"))
 	assert.Nil(t, TopLevelAssignment(pkg, "a"))
 	assert.Nil(t, TopLevelAssignment(pkg, "missing"))
 	assert.Nil(t, TopLevelAssignment(nil, "partScale"))
