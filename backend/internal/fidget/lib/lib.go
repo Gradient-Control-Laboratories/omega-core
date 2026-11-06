@@ -148,7 +148,7 @@ func RenderFramed(prog *program.Program) ([]byte, *api.RenderGlslResponse, error
 	return pngBytes, convertRenderResult(internalResult), err
 }
 
-// RenderLit renders the module the way the webdm viewer shades it — the same
+// RenderLit renders the module the way the viewer shades it — the same
 // three-light rig, ambient occlusion, speculars, and the document's own
 // authored color fields — by sphere-tracing the field on the CPU.
 func RenderLit(prog *program.Program, opts mesh.LitOptions) ([]byte, error) {

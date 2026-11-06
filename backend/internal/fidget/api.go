@@ -29,7 +29,7 @@ const (
 
 	// RequestPathRenderLit asks for litrender's frame of a program, drawn the
 	// way the viewer's standard frame is (its march, shading and camera):
-	// webdm's CPU render tier. The request is RenderLitRequest; the response,
+	// the CPU render tier. The request is RenderLitRequest; the response,
 	// RenderLitResponse, points at the raw frame written to the downloads dir.
 	RequestPathRenderLit  = "fidget/render-lit"
 	ResponsePathRenderLit = "fidget/render-lit/result"
@@ -114,7 +114,7 @@ type MeshRequest struct {
 	// every voxel of the band — so only a reader that needs it asks.
 	LevelSets bool `json:"levelSets,omitempty"`
 	// Filename specifies the explicit destination filename under downloads dir
-	// (e.g. "WO-10492-a1b2c3d4.stl" or "leaf-a1b2c3d4.stl"). If empty, fidget
+	// (e.g. "part-10492-a1b2c3d4.stl" or "leaf-a1b2c3d4.stl"). If empty, fidget
 	// falls back to generating a timestamped name.
 	Filename string `json:"filename,omitempty"`
 }
