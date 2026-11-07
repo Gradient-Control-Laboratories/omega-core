@@ -2,8 +2,6 @@ package source
 
 import (
 	"fmt"
-
-	gsllibs "gradientcontrol.com/omega/core/stdlib"
 )
 
 type MockManager struct {
@@ -36,13 +34,4 @@ func (m *MockManager) Asset(pkg, filename string) ([]byte, error) {
 		}
 	}
 	return nil, wrapError(pkg, fmt.Errorf("asset %q: %w", filename, ErrPkgNotFound))
-}
-
-func embeddedSources(path string) ([]string, bool) {
-	for _, lib := range gsllibs.All() {
-		if lib.ImportPath == path {
-			return lib.Sources, true
-		}
-	}
-	return nil, false
 }

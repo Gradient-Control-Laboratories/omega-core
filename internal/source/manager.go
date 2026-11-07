@@ -3,7 +3,6 @@ package source
 import (
 	"os"
 	"path/filepath"
-	"sync"
 )
 
 // Manager provides access to package sources and assets.
@@ -21,9 +20,6 @@ type Manager interface {
 type LocalManager struct {
 	// Read-only immutable fields set at construction
 	rootPaths []string
-
-	// Lock for accessing the fields below
-	mu sync.Mutex
 }
 
 var _ Manager = &LocalManager{}
