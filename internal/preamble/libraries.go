@@ -101,7 +101,7 @@ func LibrariesDescriptiveText(includeDomains ...string) string {
 
 // SourceLibraryDescriptiveText renders the same per-library documentation
 // section that LibrariesDescriptiveText emits, but for a library source
-// supplied by the caller — e.g. project libraries like pkg/gate that live in
+// supplied by the caller — e.g. product libraries that live in
 // a documents tree rather than the embedded set. Returns "" when the source
 // has no documented API.
 func SourceLibraryDescriptiveText(importPath, source string) string {

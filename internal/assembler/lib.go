@@ -134,7 +134,7 @@ func ExtractMeshPlan(idPrefix string) Option {
 }
 
 // WithVariants configures the assembler to compile and slice the named
-// alternative top-level return statements (e.g. map[string]string{"part": "return castPart();"})
+// alternative top-level return statements (e.g. map[string]string{"part": "return mainPart();"})
 // alongside the primary package in a single pass.
 func WithVariants(variants map[string]string) Option {
 	return func(o *options) {

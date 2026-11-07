@@ -234,12 +234,12 @@ func TestAssembleOptions(t *testing.T) {
 	pkgMgr := source.NewLocalManager("../../stdlib")
 
 	// 1. Test PrimaryPackage option
-	res, err := Assemble([]string{"return 123.0;"}, pkgMgr, PrimaryPackage("trees/pkg1"))
+	res, err := Assemble([]string{"return 123.0;"}, pkgMgr, PrimaryPackage("assemblies/sample"))
 	if err != nil {
 		t.Fatalf("PrimaryPackage option failed: %v", err)
 	}
-	if res == nil || res.Program == nil || res.Program.Primary == nil || res.Program.Primary.Path != "trees/pkg1" {
-		t.Fatalf("expected program with primary package path 'trees/pkg1', got: %v", res)
+	if res == nil || res.Program == nil || res.Program.Primary == nil || res.Program.Primary.Path != "assemblies/sample" {
+		t.Fatalf("expected program with primary package path 'assemblies/sample', got: %v", res)
 	}
 
 	// 2. Test GeometryResolver option
@@ -366,17 +366,17 @@ func TestAssembleTextGlyphs(t *testing.T) {
 func TestAssemble_PrimaryPackageMeshSlotFolding(t *testing.T) {
 	pkgMgr := source.NewLocalManager("../../stdlib")
 	src := `
-importId = importStep "A356-H01.STEP";
+importId = importStep "PART-A.STEP";
 partXf = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]];
 msh = mesh(importId, partXf);
 return msh;
 `
-	res, err := Assemble([]string{src}, pkgMgr, PrimaryPackage("branches/A356_H01"))
+	res, err := Assemble([]string{src}, pkgMgr, PrimaryPackage("parts/PART-A"))
 	if err != nil {
 		t.Fatalf("Assemble failed: %v", err)
 	}
-	if res.Program.Primary == nil || res.Program.Primary.Path != "branches/A356_H01" {
-		t.Fatalf("expected primary package path 'branches/A356_H01', got: %v", res.Program)
+	if res.Program.Primary == nil || res.Program.Primary.Path != "parts/PART-A" {
+		t.Fatalf("expected primary package path 'parts/PART-A', got: %v", res.Program)
 	}
 
 	// Verify importStep expression was folded to a constant value
@@ -392,12 +392,12 @@ return msh;
 func TestAssembleWithSlots(t *testing.T) {
 	pkgMgr := source.NewLocalManager("../../stdlib")
 	src := `
-importId = importStep "A356-H01.STEP";
+importId = importStep "PART-A.STEP";
 partXf = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]];
 msh = mesh(importId, partXf);
 return msh;
 `
-	res, err := Assemble([]string{src}, pkgMgr, PrimaryPackage("branches/A356_H01"))
+	res, err := Assemble([]string{src}, pkgMgr, PrimaryPackage("parts/PART-A"))
 	if err != nil {
 		t.Fatalf("Assemble failed: %v", err)
 	}
@@ -407,68 +407,8 @@ return msh;
 	if len(res.Slots) != 1 {
 		t.Fatalf("expected 1 import slot, got %d", len(res.Slots))
 	}
-	if res.Slots[0].Slot != 0 || res.Slots[0].Path != "A356-H01.STEP" {
+	if res.Slots[0].Slot != 0 || res.Slots[0].Path != "PART-A.STEP" {
 		t.Errorf("unexpected slot entry: %+v", res.Slots[0])
-	}
-}
-
-func TestAssembleTreesManifold(t *testing.T) {
-	commonRoot := "../../stdlib"
-	docRoot := "../../../../documents"
-	if _, err := os.Stat(docRoot); os.IsNotExist(err) {
-		t.Skipf("skipping: %s not present", docRoot)
-	}
-	src, err := os.ReadFile(docRoot + "/trees/manifold/manifold.gsl")
-	if err != nil {
-		t.Fatalf("read manifold: %v", err)
-	}
-	srcMgr := source.NewLocalManager(commonRoot, docRoot)
-	res, err := Assemble([]string{string(src)}, srcMgr)
-	if err != nil {
-		t.Fatalf("Assemble trees/manifold failed: %+v", err)
-	}
-	if res == nil || res.Program == nil {
-		t.Fatalf("expected non-nil program")
-	}
-}
-
-func TestAssembleS304_C02(t *testing.T) {
-	commonRoot := "../../stdlib"
-	docRoot := "../../../../documents"
-	if _, err := os.Stat(docRoot); os.IsNotExist(err) {
-		t.Skipf("skipping: %s not present", docRoot)
-	}
-	src, err := os.ReadFile(docRoot + "/branches/S304_C02/S304_C02.gsl")
-	if err != nil {
-		t.Fatalf("read S304_C02: %v", err)
-	}
-	srcMgr := source.NewLocalManager(commonRoot, docRoot)
-	res, err := Assemble([]string{string(src)}, srcMgr, PrimaryPackage("branches/S304_C02"))
-	if err != nil {
-		t.Fatalf("Assemble branches/S304_C02 failed: %+v", err)
-	}
-	if err := types.Analyze(res.Program); err != nil {
-		t.Fatalf("types.Analyze failed: %+v", err)
-	}
-}
-
-func TestAssembleS304_T001(t *testing.T) {
-	commonRoot := "../../stdlib"
-	docRoot := "../../../../documents"
-	if _, err := os.Stat(docRoot); os.IsNotExist(err) {
-		t.Skipf("skipping: %s not present", docRoot)
-	}
-	src, err := os.ReadFile(docRoot + "/trees/S304-T001/S304-T001.gsl")
-	if err != nil {
-		t.Fatalf("read S304-T001: %v", err)
-	}
-	srcMgr := source.NewLocalManager(commonRoot, docRoot)
-	res, err := Assemble([]string{string(src)}, srcMgr, PrimaryPackage("trees/S304-T001"))
-	if err != nil {
-		t.Fatalf("Assemble trees/S304-T001 failed: %+v", err)
-	}
-	if err := types.Analyze(res.Program); err != nil {
-		t.Fatalf("types.Analyze failed: %+v", err)
 	}
 }
 
@@ -805,12 +745,12 @@ makeMesh(id) {
 	partXf = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]];
 	return mesh(id, partXf);
 }
-id1 = importStep "A356-H01.STEP";
+id1 = importStep "PART-A.STEP";
 id2 = importStep "B123-H02.STEP";
 ids = [id1] + [id2];
 return map(makeMesh, ids);
 `
-	res, err := Assemble([]string{src}, pkgMgr, PrimaryPackage("branches/A356_H01"))
+	res, err := Assemble([]string{src}, pkgMgr, PrimaryPackage("parts/PART-A"))
 	if err != nil {
 		t.Fatalf("Assemble failed: %v", err)
 	}
@@ -1436,7 +1376,7 @@ func TestAssemble_WithVariants(t *testing.T) {
 		src := `import . "omega";
 gates = sphere([0, 0, -10], 5);
 unusedVar = 999.0;
-castPart() {
+mainPart() {
   helper = sphere(10);
   return helper;
 }
@@ -1445,8 +1385,8 @@ s.color = [1, 0, 0];
 return s, audio(sin(time));
 `
 		variants := map[string]string{
-			"part":   "return castPart();",
-			"branch": "return min(gates, castPart());",
+			"part":   "return mainPart();",
+			"branch": "return min(gates, mainPart());",
 		}
 		res, err := Assemble([]string{src}, pkgMgr, ExtractUI(), ExtractMeshPlan("leaf-"), WithVariants(variants))
 		if err != nil {
@@ -1496,7 +1436,7 @@ return s, audio(sin(time));
 
 	t.Run("library_module_with_zero_primary_returns", func(t *testing.T) {
 		src := `import . "omega";
-castPart() {
+mainPart() {
   return sphere(10);
 }
 `
@@ -1505,7 +1445,7 @@ castPart() {
 		}
 
 		res, err := Assemble([]string{src}, pkgMgr, ExtractMeshPlan("leaf-"), WithVariants(map[string]string{
-			"part": "return castPart();",
+			"part": "return mainPart();",
 		}))
 		if err != nil {
 			t.Fatalf("Assemble return-less module with variants failed: %v", err)
@@ -1551,13 +1491,13 @@ return mesh(importId, partXf);
 
 	t.Run("per_variant_errors_isolated", func(t *testing.T) {
 		src := `import . "omega";
-castParts = sphere(10);
+mainParts = sphere(10);
 solidOutside = sphere(12);
-return castParts, solidOutside;
+return mainParts, solidOutside;
 `
 		res, err := Assemble([]string{src}, pkgMgr, ExtractMeshPlan("leaf-"), WithVariants(map[string]string{
-			"metal":        "return min(castParts, solidOutside);",
-			"printed":      "return max(min(castParts, solidOutside), -latticedInside);",
+			"metal":        "return min(mainParts, solidOutside);",
+			"printed":      "return max(min(mainParts, solidOutside), -latticedInside);",
 			"badSyntax":    "return (",
 			"noReturn":     "x = 1;",
 			"audioVariant": "return audio(1.0);",
@@ -1588,19 +1528,19 @@ func TestDependenciesSha256AndAnalyzePackage(t *testing.T) {
 	t.Run("DependenciesSha256MatchesAssembleResult", func(t *testing.T) {
 		pkgMgr := &source.MockManager{
 			PkgSources: map[string][]string{
-				"trees/test":    {`import branch "branches/part"; return branch.solid();`},
-				"branches/part": {`import shared "pkg/shared"; solid() { return shared.solid(); }`},
-				"pkg/shared":    {`solid() { return sphere(2); }`},
+				"assemblies/test": {`import part "parts/part"; return part.solid();`},
+				"parts/part":      {`import shared "common/shared"; solid() { return shared.solid(); }`},
+				"common/shared":   {`solid() { return sphere(2); }`},
 			},
 		}
-		res, err := Assemble(pkgMgr.PkgSources["trees/test"], pkgMgr, PrimaryPackage("trees/test"))
+		res, err := Assemble(pkgMgr.PkgSources["assemblies/test"], pkgMgr, PrimaryPackage("assemblies/test"))
 		if err != nil {
 			t.Fatalf("Assemble failed: %v", err)
 		}
 		if len(res.DependenciesSha256) != 64 {
 			t.Fatalf("expected 64-char DependenciesSha256, got %q", res.DependenciesSha256)
 		}
-		directHash, err := DependenciesSha256("trees/test", pkgMgr)
+		directHash, err := DependenciesSha256("assemblies/test", pkgMgr)
 		if err != nil {
 			t.Fatalf("DependenciesSha256 failed: %v", err)
 		}
@@ -1608,8 +1548,8 @@ func TestDependenciesSha256AndAnalyzePackage(t *testing.T) {
 			t.Fatalf("DependenciesSha256 = %q, want %q", directHash, res.DependenciesSha256)
 		}
 
-		pkgMgr.PkgSources["pkg/shared"] = []string{`solid() { return sphere(5); }`}
-		changedHash, err := DependenciesSha256("trees/test", pkgMgr)
+		pkgMgr.PkgSources["common/shared"] = []string{`solid() { return sphere(5); }`}
+		changedHash, err := DependenciesSha256("assemblies/test", pkgMgr)
 		if err != nil {
 			t.Fatalf("DependenciesSha256 after edit failed: %v", err)
 		}
@@ -1619,7 +1559,7 @@ func TestDependenciesSha256AndAnalyzePackage(t *testing.T) {
 	})
 
 	t.Run("AnalyzePackageStampsConstantsAndPreservesUninlinedStructure", func(t *testing.T) {
-		src := `import "pkg/gate";
+		src := `import "mechanical";
 partScale = 1.018;
 verticalSpan = 100;
 sprueLength = verticalSpan * 1.5;
@@ -1628,7 +1568,7 @@ branch() {
   bend = uiTransform([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [15, 25, 35, 1]]);
   end = uiTransform([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [20, 30, 40, 1]]);
   controls = uiSpline([start, bend, end]);
-  manualGate1 = gate.splineSection(controls[0], controls[1], controls[2], 1, 6, 3, 2);
+  manualGate1 = mechanical.splineSection(controls[0], controls[1], controls[2], 1, 6, 3, 2);
   gates = manualGate1;
   return gates;
 }

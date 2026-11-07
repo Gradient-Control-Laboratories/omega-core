@@ -604,7 +604,7 @@ func TestParsePartialImportsAndAssetImportsOnError(t *testing.T) {
 func TestParsePartialDeclarationsAndReturnOnError(t *testing.T) {
 	t.Run("SyntaxErrorOnLaterDeclarationPreservesPrecedingDeclarations", func(t *testing.T) {
 		src := `@scene(30, 5)
-import "pkg/gate";
+import "lib/part";
 importStep 0 "stmt.step";
 importId = importStep "expr.stp";
 m = importMesh "expr.stl";

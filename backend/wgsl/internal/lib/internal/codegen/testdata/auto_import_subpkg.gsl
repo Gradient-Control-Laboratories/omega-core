@@ -1,4 +1,4 @@
 import branch "branch_pkg";
 
-pt = branch.castPart();
+pt = branch.mainPart();
 return length(pt) - branch.shaftRadius;
