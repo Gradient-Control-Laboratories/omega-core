@@ -238,6 +238,18 @@ func (p *Program) Scene() *Scene {
 	return p.Primary.Scene
 }
 
+// ResolveWorldExtent returns the worldExtent (half-size of the scene bounding box)
+// based on the scene definition, or falls back to the requested fallback or default 10.0.
+func (s *Scene) ResolveWorldExtent(fallback float64) float64 {
+	if s != nil && s.Size > 0 {
+		return s.Size / 2.0
+	}
+	if fallback > 0 {
+		return fallback
+	}
+	return 10.0
+}
+
 // Returns returns the return operands of the package's last file,
 // or nil if no files or returns exist.
 func (pkg *Package) Returns() []*Operand {

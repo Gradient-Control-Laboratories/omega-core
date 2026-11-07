@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"gradientcontrol.com/omega/core/program"
-	"gradientcontrol.com/omega/core/program/scene"
 )
 
 var (
@@ -52,7 +51,7 @@ func fromLegacyComments(source string) *program.Scene {
 		}
 	}
 
-	s, err := scene.New(size, grid, nil, nil)
+	s, err := NewScene(size, grid, nil, nil)
 	if err != nil {
 		return nil
 	}

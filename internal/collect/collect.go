@@ -126,12 +126,12 @@ func Package(primaryPkg *program.Package, srcMgr source.Manager, parse program.P
 // package sources in prog (primary and transitive dependencies), preserving
 // each package's declared source file order.
 func ProgramSourceHash(prog *program.Program) string {
-	if prog == nil {
+	if prog == nil || prog.Primary == nil {
 		return ""
 	}
 	sources := make(map[string][]string, len(prog.Dependencies)+1)
 	addPkg := func(pkg *program.Package) {
-		if pkg == nil || pkg.Path == "" {
+		if pkg == nil {
 			return
 		}
 		// Invariant: pkg.Files elements are guaranteed non-nil by the parser.
@@ -143,6 +143,9 @@ func ProgramSourceHash(prog *program.Program) string {
 	}
 	addPkg(prog.Primary)
 	for _, dep := range prog.Dependencies {
+		if dep == nil || dep.Path == "" {
+			continue
+		}
 		addPkg(dep)
 	}
 	// JSON sorts package keys while preserving each package's declared source order.
@@ -165,6 +168,5 @@ func SourceHash(primaryPkgPath string, srcMgr source.Manager, parse program.Pars
 	if err != nil {
 		return "", err
 	}
-	prog.Primary.Path = primaryPkgPath
 	return ProgramSourceHash(prog), nil
 }

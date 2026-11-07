@@ -31,7 +31,6 @@ import (
 )
 
 type options struct {
-	primaryPackage        string
 	geometryResolver      topofold.GeometryResolver
 	warpResolver          warpfold.WarpResolver
 	foldWarpFieldToZero   bool
@@ -72,13 +71,6 @@ type Result struct {
 	PreviewBodies      []meshplan.PreviewBody
 	AudioReturns       []meshplan.SdfSubtree
 	Variants           map[string]VariantResult
-}
-
-// PrimaryPackage supplies a primary package path assigned to the assembled program's primary package.
-func PrimaryPackage(pkg string) Option {
-	return func(o *options) {
-		o.primaryPackage = pkg
-	}
 }
 
 // GeometryResolver supplies a topology geometry resolver for folding STEP topology builtins.
@@ -184,7 +176,6 @@ func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*
 	if err != nil {
 		return nil, err
 	}
-	prog.Primary.Path = o.primaryPackage
 	dependenciesSha256 := collect.ProgramSourceHash(prog)
 	rp, err := partitionReturns(prog, primarySources, o.variants, o.enableDeadcodeRemoval)
 	if err != nil {

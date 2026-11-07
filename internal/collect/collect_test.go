@@ -100,48 +100,6 @@ func TestCollect_Ordering(t *testing.T) {
 	}
 }
 
-func TestCollect_NamedPrimaryPackage(t *testing.T) {
-	depSource := `return 1.0;`
-	primarySource := `import "dep1"; return 42.0;`
-
-	srcMgr := &source.MockManager{
-		PkgSources: map[string][]string{
-			"dep1": {depSource},
-		},
-	}
-
-	parseNamedMock := func(sources []string) (*program.Package, error) {
-		pkg, err := parseMockPackage(sources)
-		if err != nil {
-			return nil, err
-		}
-		if sources[0] == primarySource {
-			pkg.Path = "custom/main_pkg"
-		}
-		return pkg, nil
-	}
-
-	prog, err := Program([]string{primarySource}, srcMgr, parseNamedMock)
-	if err != nil {
-		t.Fatalf("Collect failed: %v", err)
-	}
-
-	if prog.Primary == nil || prog.Primary.Path != "custom/main_pkg" {
-		t.Fatalf("expected primary package path 'custom/main_pkg', got %q", prog.Primary.GetPath())
-	}
-
-	foundDep1 := false
-	for _, dep := range prog.Dependencies {
-		if dep.Path == "dep1" {
-			foundDep1 = true
-			break
-		}
-	}
-	if !foundDep1 {
-		t.Fatalf("expected dependency 'dep1' in %v", prog.Dependencies)
-	}
-}
-
 func TestCollect_PrimaryWithoutReturnsAndErrorPaths(t *testing.T) {
 	t.Run("primary without returns succeeds", func(t *testing.T) {
 		pkg := &program.Package{
@@ -217,7 +175,6 @@ func TestCollect_SourceHashAndProgramSourceHash(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Program failed: %v", err)
 	}
-	prog.Primary.Path = "trees/test"
 	if got := ProgramSourceHash(prog); got != hash1 {
 		t.Fatalf("ProgramSourceHash = %q, want %q", got, hash1)
 	}

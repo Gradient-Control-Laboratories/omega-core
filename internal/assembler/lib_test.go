@@ -11,10 +11,8 @@ import (
 	"gradientcontrol.com/omega/core/internal/assembler/topofold"
 	"gradientcontrol.com/omega/core/internal/assembler/variation"
 	"gradientcontrol.com/omega/core/internal/assembler/warpfold"
-	"gradientcontrol.com/omega/core/internal/eval"
 	"gradientcontrol.com/omega/core/internal/source"
 	src_test "gradientcontrol.com/omega/core/internal/srctest"
-	"gradientcontrol.com/omega/core/internal/types"
 	"gradientcontrol.com/omega/core/program"
 )
 
@@ -38,33 +36,6 @@ import "vector";
 return length(zero + dirX + dirY + dirZ + vector.zero);`}, pkgMgr)
 	if err != nil {
 		t.Fatalf("legacy omega constants: %v", err)
-	}
-}
-
-func TestAssemble_NamedPrimaryPackage(t *testing.T) {
-	pkgMgr := source.NewLocalManager("../../stdlib")
-	src := `
-import "vector";
-addOne(x) { return x + 1.0; }
-a = addOne(vector.zero.x);
-return a;
-`
-	res, err := Assemble([]string{src}, pkgMgr)
-	if err != nil {
-		t.Fatalf("assemble failed: %v", err)
-	}
-
-	// Explicitly assign primary package path and run reference linking, types, and folding
-	res.Program.Primary.Path = "test/root/pkg"
-	if err := types.Analyze(res.Program); err != nil {
-		t.Fatalf("types.Analyze failed with named primary path: %v", err)
-	}
-	if _, err := eval.Fold(res.Program, nil); err != nil {
-		t.Fatalf("eval.Fold failed with named primary path: %v", err)
-	}
-
-	if res.Program.Primary.Path != "test/root/pkg" {
-		t.Errorf("expected primary path 'test/root/pkg', got %q", res.Program.Primary.Path)
 	}
 }
 
@@ -233,16 +204,7 @@ func (m *mockWarpResolver) ResolveWarpedSlot(meshSlot int, pkgDir, warpPath stri
 func TestAssembleOptions(t *testing.T) {
 	pkgMgr := source.NewLocalManager("../../stdlib")
 
-	// 1. Test PrimaryPackage option
-	res, err := Assemble([]string{"return 123.0;"}, pkgMgr, PrimaryPackage("assemblies/sample"))
-	if err != nil {
-		t.Fatalf("PrimaryPackage option failed: %v", err)
-	}
-	if res == nil || res.Program == nil || res.Program.Primary == nil || res.Program.Primary.Path != "assemblies/sample" {
-		t.Fatalf("expected program with primary package path 'assemblies/sample', got: %v", res)
-	}
-
-	// 2. Test GeometryResolver option
+	// 1. Test GeometryResolver option
 	geomResolver := &mockGeometryResolver{volume: 100.0}
 	res2, err := Assemble([]string{"return 42.0;"}, pkgMgr, GeometryResolver(geomResolver))
 	if err != nil {
@@ -252,7 +214,7 @@ func TestAssembleOptions(t *testing.T) {
 		t.Fatalf("expected non-nil program")
 	}
 
-	// 3. Test WarpResolver option
+	// 2. Test WarpResolver option
 	warpRes := &mockWarpResolver{slot: 7}
 	res3, err := Assemble([]string{"return 42.0;"}, pkgMgr, WarpResolver(warpRes))
 	if err != nil {
@@ -262,7 +224,7 @@ func TestAssembleOptions(t *testing.T) {
 		t.Fatalf("expected non-nil program")
 	}
 
-	// 4. Test DisableMeshSlotFolding option
+	// 3. Test DisableMeshSlotFolding option
 	res4, err := Assemble([]string{"return 42.0;"}, pkgMgr, DisableMeshSlotFolding())
 	if err != nil {
 		t.Fatalf("DisableMeshSlotFolding option failed: %v", err)
@@ -271,7 +233,7 @@ func TestAssembleOptions(t *testing.T) {
 		t.Fatalf("expected non-nil program")
 	}
 
-	// 5. Test DisableDeadcodeRemoval option
+	// 4. Test DisableDeadcodeRemoval option
 	srcWithDead := "unused() { return 100.0; }\nreturn 42.0;\n"
 	res5, err := Assemble([]string{srcWithDead}, pkgMgr, DisableDeadcodeRemoval())
 	if err != nil {
@@ -363,32 +325,6 @@ func TestAssembleTextGlyphs(t *testing.T) {
 	}
 }
 
-func TestAssemble_PrimaryPackageMeshSlotFolding(t *testing.T) {
-	pkgMgr := source.NewLocalManager("../../stdlib")
-	src := `
-importId = importStep "PART-A.STEP";
-partXf = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]];
-msh = mesh(importId, partXf);
-return msh;
-`
-	res, err := Assemble([]string{src}, pkgMgr, PrimaryPackage("parts/PART-A"))
-	if err != nil {
-		t.Fatalf("Assemble failed: %v", err)
-	}
-	if res.Program.Primary == nil || res.Program.Primary.Path != "parts/PART-A" {
-		t.Fatalf("expected primary package path 'parts/PART-A', got: %v", res.Program)
-	}
-
-	// Verify importStep expression was folded to a constant value
-	for _, a := range res.Program.Primary.Files[0].Assignments {
-		if len(a.Variables) == 1 && a.Variables[0].Name == "importId" {
-			if _, ok := a.Expression.T.(*program.Operand_Value); !ok {
-				t.Fatalf("expected importId to fold to Operand_Value, got: %s", a.Expression.PrettyPrint(0))
-			}
-		}
-	}
-}
-
 func TestAssembleWithSlots(t *testing.T) {
 	pkgMgr := source.NewLocalManager("../../stdlib")
 	src := `
@@ -397,7 +333,7 @@ partXf = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]];
 msh = mesh(importId, partXf);
 return msh;
 `
-	res, err := Assemble([]string{src}, pkgMgr, PrimaryPackage("parts/PART-A"))
+	res, err := Assemble([]string{src}, pkgMgr)
 	if err != nil {
 		t.Fatalf("Assemble failed: %v", err)
 	}
@@ -409,6 +345,15 @@ return msh;
 	}
 	if res.Slots[0].Slot != 0 || res.Slots[0].Path != "PART-A.STEP" {
 		t.Errorf("unexpected slot entry: %+v", res.Slots[0])
+	}
+
+	// Verify importStep expression was folded to a constant value
+	for _, a := range res.Program.Primary.Files[0].Assignments {
+		if len(a.Variables) == 1 && a.Variables[0].Name == "importId" {
+			if _, ok := a.Expression.T.(*program.Operand_Value); !ok {
+				t.Fatalf("expected importId to fold to Operand_Value, got: %s", a.Expression.PrettyPrint(0))
+			}
+		}
 	}
 }
 
@@ -750,7 +695,7 @@ id2 = importStep "B123-H02.STEP";
 ids = [id1] + [id2];
 return map(makeMesh, ids);
 `
-	res, err := Assemble([]string{src}, pkgMgr, PrimaryPackage("parts/PART-A"))
+	res, err := Assemble([]string{src}, pkgMgr)
 	if err != nil {
 		t.Fatalf("Assemble failed: %v", err)
 	}
@@ -1031,15 +976,14 @@ return meshWarped(0, 0, 1.0), remap(s, p + warpField(p));
 	res, err := Assemble(
 		[]string{src},
 		pkgMgr,
-		PrimaryPackage("pkg1"),
 		WarpResolver(warpRes),
 		ExtractMeshPlan("leaf-"),
 	)
 	if err != nil {
 		t.Fatalf("Assemble failed: %v", err)
 	}
-	if len(res.WarpedAssets) != 1 || res.WarpedAssets[0].DerivedSlot != 1048599 || res.WarpedAssets[0].WarpDir != "pkg1" {
-		t.Fatalf("res.WarpedAssets = %+v, want 1 entry with DerivedSlot=1048599 and WarpDir=pkg1", res.WarpedAssets)
+	if len(res.WarpedAssets) != 1 || res.WarpedAssets[0].DerivedSlot != 1048599 || res.WarpedAssets[0].WarpDir != "" {
+		t.Fatalf("res.WarpedAssets = %+v, want 1 entry with DerivedSlot=1048599 and empty WarpDir", res.WarpedAssets)
 	}
 	if len(res.MeshSdfSlots) != 1 || res.MeshSdfSlots[0].AssetIndex != 1048599 {
 		t.Fatalf("res.MeshSdfSlots = %+v, want AssetIndex=1048599", res.MeshSdfSlots)
@@ -1052,7 +996,6 @@ return meshWarped(0, 0, 1.0), remap(s, p + warpField(p));
 	resZero, err := Assemble(
 		[]string{src},
 		pkgMgr,
-		PrimaryPackage("pkg1"),
 		WarpResolver(warpRes),
 		FoldWarpFieldToZero(),
 		ExtractMeshPlan("leaf-"),
@@ -1533,7 +1476,7 @@ func TestDependenciesSha256AndAnalyzePackage(t *testing.T) {
 				"common/shared":   {`solid() { return sphere(2); }`},
 			},
 		}
-		res, err := Assemble(pkgMgr.PkgSources["assemblies/test"], pkgMgr, PrimaryPackage("assemblies/test"))
+		res, err := Assemble(pkgMgr.PkgSources["assemblies/test"], pkgMgr)
 		if err != nil {
 			t.Fatalf("Assemble failed: %v", err)
 		}

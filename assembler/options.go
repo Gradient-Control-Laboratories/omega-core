@@ -32,13 +32,6 @@ func SourceManager(mgr source.Manager) Option {
 	}
 }
 
-// PrimaryPackage supplies a primary package path assigned to the assembled program's primary package.
-func PrimaryPackage(pkg string) Option {
-	return func(c *config) {
-		c.libOpts = append(c.libOpts, lib.PrimaryPackage(pkg))
-	}
-}
-
 // DisableMeshSlotFolding disables the automatic mesh slot assignment and folding pass.
 func DisableMeshSlotFolding() Option {
 	return func(c *config) {
