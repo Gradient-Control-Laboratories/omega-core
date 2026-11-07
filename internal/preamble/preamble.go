@@ -75,30 +75,30 @@ Be sure to add the parentheses to the function call.
 The second argument is an expression that evaluates to a vector with x, y, and z components.
 The result of evaluating the second argument becomes the p value used when evaluating the signed distance function.
 
-For example, assuming you have a box function
-that returns a box centered at the origin with a given width, depth, and height,
-then the following remap call would translate the box to a new location:
+For example, a box centered at the origin can be moved with transform.translate,
+which is a remap whose second argument is p minus the offset:
 
-` + "```gsl\nremap(box(width, depth, height), [p.x - 1, p.y - 2, p.z - 3])\n```" + `
+` + "```gsl\ntransform.translate(boxCentered(vector.zero, [10, 20, 30]), [1, 2, 3])\n```" + `
 
 This would translate the box 1 mm in the positive x direction,
 2 mm in the positive y direction, and 3 mm in the positive z direction.
-Various other expressions using sin and cos could be used as part of the 2nd remap argument to rotate the box.
+transform.rotateX, rotateY and rotateZ turn a shape about an axis through the origin by an angle in radians.
 
-Another example is to assign an expression to a variable and then use remap on it to produce identical shapes in different orientations:
+Another example is to assign an expression to a variable and then reuse it to produce identical shapes in different places and orientations:
 
 ` + "```gsl\n" + `
-baseShape = box(width, depth, height)
+baseShape = boxCentered(vector.zero, [10, 20, 30]);
 
-shape1 = remap(baseShape, [p.x - 1, p.y - 2, p.z - 3])
-shape2 = remap(baseShape, [p.x + 1, p.y - 2, p.z - 3])
-rotatedShape = remap(baseShape, [p.x * cos(radians(45)) + p.y * sin(radians(45)), -p.x * sin(radians(45)) + p.y * cos(radians(45)), p.z])
+shape1 = transform.translate(baseShape, [1, 2, 3]);
+shape2 = transform.translate(baseShape, [-1, 2, 3]);
+rotatedShape = transform.rotateZ(baseShape, radians(45));
 ` + "```" + `
 
-When possible remap should be used to translate, rotate, and scale shapes.
+When possible, translate, rotate, and scale shapes with the transform functions, which are remaps.
 For example, instead of generating a function that returns a box at a specific location with a specific rotation and scale,
-generate a simple box function that defines a box centered at the origin with a given width, depth, and height,
-and then use remap to translate, rotate, and scale the box as needed.
+use a library shape centered at the origin, such as boxCentered, and then move it with transform.translate, rotateZ and the like.
+Write the remap yourself only when the change is not one of those, such as a warp that depends on the point.
+A hand-written remap clears the shape's bounding box, so declare one with name.box = [lo, hi] (see Bounding box).
 `)
 	return sb.String()
 }
