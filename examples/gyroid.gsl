@@ -21,7 +21,6 @@ gyroid_val = sin(sp.x) * cos(sp.y) + sin(sp.y) * cos(sp.z) + sin(sp.z) * cos(sp.
 d_lattice = (abs(gyroid_val) - thickness) / scale;
 
 // Spherical boundary mask
-r = sqrt(p.x * p.x + p.y * p.y + p.z * p.z);
-d_sphere = r - boundary_radius;
+d_sphere = sphere(boundary_radius);
 
 return max(d_lattice, d_sphere);

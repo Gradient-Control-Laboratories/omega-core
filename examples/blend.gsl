@@ -14,16 +14,15 @@ box_size.min = 0.5;
 box_size.max = 1.5;
 
 // Sphere primitive
-r_sphere = sqrt(p.x * p.x + p.y * p.y + p.z * p.z);
-d_sphere = r_sphere - sphere_radius;
+d_sphere = sphere(sphere_radius);
 
-// Box primitive
-d_box = max(max(abs(p.x) - box_size, abs(p.y) - box_size), abs(p.z) - box_size);
+// Box primitive, box_size from the center to each face
+d_box = boxCentered(vector.zero, [2 * box_size, 2 * box_size, 2 * box_size]);
 
 // Cross cylinders along X, Y, Z
-d_cyl_z = sqrt(p.x * p.x + p.y * p.y) - 0.55;
-d_cyl_y = sqrt(p.x * p.x + p.z * p.z) - 0.55;
-d_cyl_x = sqrt(p.y * p.y + p.z * p.z) - 0.55;
+d_cyl_z = cylinderZ(vector.zero, 0.55);
+d_cyl_y = cylinderY(vector.zero, 0.55);
+d_cyl_x = cylinderX(vector.zero, 0.55);
 d_cross = min(min(d_cyl_x, d_cyl_y), d_cyl_z);
 
 // Smooth boolean union between box and sphere

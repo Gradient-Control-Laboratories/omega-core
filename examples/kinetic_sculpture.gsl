@@ -36,8 +36,7 @@ d_ring3 = max(abs(r3 - 1.0) - 0.12, abs(p3_y) - 0.12);
 
 // Central pulsating sphere
 pulse = 0.45 + 0.08 * sin(t * 3.0);
-r_sphere = sqrt(p.x * p.x + p.y * p.y + p.z * p.z);
-d_core = r_sphere - pulse;
+d_core = sphere(pulse);
 
 // Union of all components
 return min(min(d_ring1, d_ring2), min(d_ring3, d_core));
