@@ -10,9 +10,9 @@ import (
 	"gradientcontrol.com/omega/core/program"
 )
 
-// NewScene constructs and validates a new Scene protobuf message.
+// newScene constructs and validates a new Scene protobuf message.
 // If grid is nil, grid spacing defaults to size / 10.0.
-func NewScene(size float64, grid *float64, start, end *program.Location) (*program.Scene, error) {
+func newScene(size float64, grid *float64, start, end *program.Location) (*program.Scene, error) {
 	if size <= 0 {
 		return nil, fmt.Errorf("scene size must be greater than zero, got %v", size)
 	}

@@ -94,7 +94,7 @@ func Parse(sources []string) (*api.ParseResult, error) {
 
 		if i == 0 {
 			if topLevel.Scene != nil {
-				sc, err := NewScene(topLevel.Scene.Size, topLevel.Scene.Grid,
+				sc, err := newScene(topLevel.Scene.Size, topLevel.Scene.Grid,
 					posToLocation(topLevel.Scene.Pos), posToLocation(topLevel.Scene.EndPos))
 				if err != nil {
 					return recordFileError(res, pkgFile, source, participle.Errorf(topLevel.Scene.Pos, "%s", err.Error()))

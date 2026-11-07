@@ -11,6 +11,7 @@ import (
 	"gradientcontrol.com/omega/core/internal/assembler/topofold"
 	"gradientcontrol.com/omega/core/internal/assembler/variation"
 	"gradientcontrol.com/omega/core/internal/assembler/warpfold"
+	"gradientcontrol.com/omega/core/internal/collect"
 	"gradientcontrol.com/omega/core/internal/source"
 	src_test "gradientcontrol.com/omega/core/internal/srctest"
 	"gradientcontrol.com/omega/core/program"
@@ -1468,7 +1469,7 @@ return mainParts, solidOutside;
 }
 
 func TestDependenciesSha256AndAnalyzePackage(t *testing.T) {
-	t.Run("DependenciesSha256MatchesAssembleResult", func(t *testing.T) {
+	t.Run("DependenciesSha256MatchesAssembledProgramSourceHash", func(t *testing.T) {
 		pkgMgr := &source.MockManager{
 			PkgSources: map[string][]string{
 				"assemblies/test": {`import part "parts/part"; return part.solid();`},
@@ -1480,15 +1481,17 @@ func TestDependenciesSha256AndAnalyzePackage(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Assemble failed: %v", err)
 		}
-		if len(res.DependenciesSha256) != 64 {
-			t.Fatalf("expected 64-char DependenciesSha256, got %q", res.DependenciesSha256)
+		res.Program.Primary.Path = "assemblies/test"
+		assembledHash := collect.ProgramSourceHash(res.Program)
+		if len(assembledHash) != 64 {
+			t.Fatalf("expected 64-char ProgramSourceHash, got %q", assembledHash)
 		}
 		directHash, err := DependenciesSha256("assemblies/test", pkgMgr)
 		if err != nil {
 			t.Fatalf("DependenciesSha256 failed: %v", err)
 		}
-		if directHash != res.DependenciesSha256 {
-			t.Fatalf("DependenciesSha256 = %q, want %q", directHash, res.DependenciesSha256)
+		if directHash != assembledHash {
+			t.Fatalf("DependenciesSha256 = %q, want %q", directHash, assembledHash)
 		}
 
 		pkgMgr.PkgSources["common/shared"] = []string{`solid() { return sphere(5); }`}

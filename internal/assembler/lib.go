@@ -56,21 +56,20 @@ type VariantResult struct {
 
 // Result contains the assembled program AST and the assigned import slot table.
 type Result struct {
-	Program            *program.Program
-	DependenciesSha256 string
-	Slots              []meshslots.Import
-	WarpedAssets       []warpfold.WarpedAsset
-	MeshSdfSlots       []*program.MeshSdfSlot
-	GlobalTextures     *program.GlobalTextures
-	Diagnostics        []program.Diagnostic
-	Sliders            []slider.SliderInfo
-	UIControls         []ui.Control
-	Scene              *program.Scene
-	MeshPlan           *meshplan.MeshExportPlan
-	SdfSubtrees        []meshplan.SdfSubtree
-	PreviewBodies      []meshplan.PreviewBody
-	AudioReturns       []meshplan.SdfSubtree
-	Variants           map[string]VariantResult
+	Program        *program.Program
+	Slots          []meshslots.Import
+	WarpedAssets   []warpfold.WarpedAsset
+	MeshSdfSlots   []*program.MeshSdfSlot
+	GlobalTextures *program.GlobalTextures
+	Diagnostics    []program.Diagnostic
+	Sliders        []slider.SliderInfo
+	UIControls     []ui.Control
+	Scene          *program.Scene
+	MeshPlan       *meshplan.MeshExportPlan
+	SdfSubtrees    []meshplan.SdfSubtree
+	PreviewBodies  []meshplan.PreviewBody
+	AudioReturns   []meshplan.SdfSubtree
+	Variants       map[string]VariantResult
 }
 
 // GeometryResolver supplies a topology geometry resolver for folding STEP topology builtins.
@@ -176,7 +175,6 @@ func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*
 	if err != nil {
 		return nil, err
 	}
-	dependenciesSha256 := collect.ProgramSourceHash(prog)
 	rp, err := partitionReturns(prog, primarySources, o.variants, o.enableDeadcodeRemoval)
 	if err != nil {
 		return nil, err
@@ -375,15 +373,14 @@ func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*
 	prog.GlobalTextures = globalTex
 
 	result := &Result{
-		Program:            prog,
-		DependenciesSha256: dependenciesSha256,
-		Slots:              importSlots,
-		WarpedAssets:       warpedAssets,
-		MeshSdfSlots:       sdfSlots,
-		GlobalTextures:     globalTex,
-		Diagnostics:        assemblyDiags,
-		AudioReturns:       audioReturns,
-		Variants:           variants,
+		Program:        prog,
+		Slots:          importSlots,
+		WarpedAssets:   warpedAssets,
+		MeshSdfSlots:   sdfSlots,
+		GlobalTextures: globalTex,
+		Diagnostics:    assemblyDiags,
+		AudioReturns:   audioReturns,
+		Variants:       variants,
 	}
 
 	if o.extractMeshPlan {

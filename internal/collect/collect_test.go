@@ -175,6 +175,7 @@ func TestCollect_SourceHashAndProgramSourceHash(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Program failed: %v", err)
 	}
+	prog.Primary.Path = "trees/test"
 	if got := ProgramSourceHash(prog); got != hash1 {
 		t.Fatalf("ProgramSourceHash = %q, want %q", got, hash1)
 	}

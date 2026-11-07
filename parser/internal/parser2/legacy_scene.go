@@ -51,7 +51,7 @@ func fromLegacyComments(source string) *program.Scene {
 		}
 	}
 
-	s, err := NewScene(size, grid, nil, nil)
+	s, err := newScene(size, grid, nil, nil)
 	if err != nil {
 		return nil
 	}
