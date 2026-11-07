@@ -410,7 +410,7 @@ fn driver_hexTip(p: vec3<f32>, acrossFlats: f32, gsl_var_length: f32) -> f32 {
 
 fn driver_slotTip(p: vec3<f32>, thickness: f32, width: f32, gsl_var_length: f32) -> f32 {
   let edge = abs(p.y) * 0.9961947 - p.z * 0.08715574 - thickness / 2.0 * 0.9961947;
-  let ramp = abs(p.y) * 0.8660254 - (p.z - 1.5) * 0.5 - thickness / 2.0 * 0.8660254;
+  let ramp = abs(p.y) * 0.9659258 - (p.z - 1.5) * 0.25881904 - thickness / 2.0 * 0.9659258;
   let form = max(max(max(min(edge, ramp), abs(p.x) - width / 2.0), -p.z), p.z - gsl_var_length);
   return form;
 }

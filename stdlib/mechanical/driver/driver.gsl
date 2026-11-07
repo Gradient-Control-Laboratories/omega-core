@@ -219,14 +219,15 @@ robertsonTip(sizeNo, length) {
 
 /// A SLOTTED tip, ISO 2380 form A: a blade `thickness` by `width` at its end,
 /// `length` long. Its faces open at the standard's 10-degree wedge for the
-/// first 1.5, which is the part that sits in the slot, and then at 30 degrees,
-/// which is how the blade gets back to the bar it was ground from in the length
-/// of a bit rather than of a crowbar.
+/// first 1.5, which is the part that sits in the slot, and then at 30 degrees
+/// (included, like the first), which is how the blade gets back to the bar it
+/// was ground from in the length of a bit rather than of a crowbar. Each face
+/// leans half the included angle from the axis: 5 degrees, then 15.
 slotTip(thickness, width, length) {
   edge = abs(p.y) * 0.99619470 - p.z * 0.08715574 - thickness / 2.0 * 0.99619470;
-  ramp = abs(p.y) * 0.86602540 - (p.z - 1.5) * 0.5 - thickness / 2.0 * 0.86602540;
+  ramp = abs(p.y) * 0.96592583 - (p.z - 1.5) * 0.25881905 - thickness / 2.0 * 0.96592583;
   // Both wedges open upward, so the blade is thickest at its top.
-  flare = thickness / 2.0 + max(length * 0.08748866, (length - 1.5) * 0.57735027);
+  flare = thickness / 2.0 + max(length * 0.08748866, (length - 1.5) * 0.26794919);
   form = max(min(edge, ramp), abs(p.x) - width / 2.0, neg(p.z), p.z - length);
   form.box = [[-width / 2.0, -flare, 0.0], [width / 2.0, flare, length]];
   return form;
