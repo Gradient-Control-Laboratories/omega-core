@@ -706,7 +706,9 @@ func (l *linker) resolveRef(op *program.Operand, ref *program.Reference, currSco
 					freshPkg = std
 				} else if l.srcMgr != nil && l.parsePackage != nil {
 					if sources, _, err := l.srcMgr.Sources(pkgPath); err == nil && len(sources) > 0 {
-						freshPkg, _ = l.parsePackage(sources)
+						if freshRes, _ := l.parsePackage(sources); freshRes != nil {
+							freshPkg = freshRes.Package
+						}
 					}
 				}
 				if freshPkg != nil {
@@ -782,13 +784,14 @@ func (l *linker) loadAndScopeDependency(
 		return nil, err
 	}
 
-	depPkg, err := l.parsePackage(sources)
+	depRes, err := l.parsePackage(sources)
 	if err != nil {
 		return nil, err
 	}
-	if depPkg == nil {
+	if depRes == nil || depRes.Package == nil {
 		return nil, fmt.Errorf("package %q not found or empty", pkgPath)
 	}
+	depPkg := depRes.Package
 
 	program.UpdateImports(depPkg, pkgPath)
 	if depPkg.Path == "" {

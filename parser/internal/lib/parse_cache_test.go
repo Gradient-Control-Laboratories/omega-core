@@ -14,19 +14,21 @@ import (
 // it is given in place.
 func TestParsePackageCacheHandsOutIndependentCopies(t *testing.T) {
 	src := "r = 2.0;\nreturn length(p) - r;\n"
-	first, err := ParsePackage([]string{src})
+	firstRes, err := ParsePackage([]string{src})
 	if err != nil {
 		t.Fatal(err)
 	}
+	first := firstRes.Package
 	want := proto.Clone(first).(*program.Package)
 
 	first.Files[0].Assignments[0].Variables[0].Name = "rewritten"
 	first.Files[0].Assignments = nil
 
-	second, err := ParsePackage([]string{src})
+	secondRes, err := ParsePackage([]string{src})
 	if err != nil {
 		t.Fatal(err)
 	}
+	second := secondRes.Package
 	if second == first {
 		t.Fatal("the cache handed out the package it gave the first caller")
 	}
@@ -53,7 +55,7 @@ func TestParsePackageCachedStdPackagesMatchFreshParse(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", lib.ImportPath, err)
 		}
-		if !proto.Equal(cached, res.Package) {
+		if !proto.Equal(cached.Package, res.Package) {
 			t.Errorf("%s: the cached package differs from a fresh parse", lib.ImportPath)
 		}
 	}
@@ -62,12 +64,12 @@ func TestParsePackageCachedStdPackagesMatchFreshParse(t *testing.T) {
 // A parse that fails is not cached, and a later parse reports it again.
 func TestParsePackageDoesNotCacheErrors(t *testing.T) {
 	src := "r = ;\nreturn r;\n"
-	pkg, err := ParsePackage([]string{src})
+	res, err := ParsePackage([]string{src})
 	if err == nil {
 		t.Fatal("expected a parse error")
 	}
-	if pkg == nil || len(pkg.Files) != 1 || pkg.Files[0] == nil {
-		t.Fatalf("expected non-nil partial Package with 1 PackageFile, got %+v", pkg)
+	if res == nil || res.Package == nil || len(res.Package.Files) != 1 || res.Package.Files[0] == nil {
+		t.Fatalf("expected non-nil partial Package with 1 PackageFile, got %+v", res)
 	}
 	if _, ok := parsed.entries[sourcesKey([]string{src})]; ok {
 		t.Fatal("a failed parse was cached")

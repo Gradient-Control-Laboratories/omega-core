@@ -16,10 +16,11 @@ s = vdbSdf(1, 64, 5);
 b = bvhSdf(2);
 return m, s, b;
 `
-	pkg, err := parser.ParsePackage([]string{src})
+	res, err := parser.ParsePackage([]string{src})
 	if err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
 	}
+	pkg := res.Package
 	pkg.Files[0].Source = src
 	dep := &program.Package{VersionMajor: 1}
 	prog := &program.Program{Primary: pkg, Dependencies: []*program.Package{dep}}
@@ -71,7 +72,7 @@ return m, s, b;
 }
 
 func TestVariationProgramPrunesDeadDeclarations(t *testing.T) {
-	pkg, err := parser.ParsePackage([]string{`
+	res, err := parser.ParsePackage([]string{`
 usedFn(r) {
 	return length(p) - r;
 }
@@ -85,7 +86,7 @@ return usedSdf, unusedSdf;
 	if err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
 	}
-	prog := &program.Program{Primary: pkg}
+	prog := &program.Program{Primary: res.Package}
 
 	_, subtrees, err := meshplan.SliceProgram(prog, "leaf-")
 	if err != nil {
@@ -126,7 +127,7 @@ return usedSdf, unusedSdf;
 }
 
 func TestVariationProgramEmptyReturnsRetainsUIControls(t *testing.T) {
-	pkg, err := parser.ParsePackage([]string{`
+	res, err := parser.ParsePackage([]string{`
 r = 10;
 r.min = 1;
 r.max = 20;
@@ -138,6 +139,7 @@ return m;
 	if err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
 	}
+	pkg := res.Package
 	// Simulate property.ExpandShared setting a.Range on r
 	for _, a := range pkg.Files[0].Assignments {
 		if len(a.Variables) > 0 && a.Variables[0].Name == "r" {
@@ -182,10 +184,11 @@ s = vdbSdf(1, 64, 5) + geomFn(5);
 a = audioFn(freq * time);
 return s;
 `
-	pkg, err := parser.ParsePackage([]string{src})
+	res, err := parser.ParsePackage([]string{src})
 	if err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
 	}
+	pkg := res.Package
 	pkg.Files[0].Source = src
 	// Simulate freq having a Range (slider), and ColorReturns / MaterialReturns referencing colorHelper / matHelper.
 	for _, a := range pkg.Files[0].Assignments {

@@ -15,47 +15,57 @@ import (
 
 func init() {
 	for _, libInfo := range gsllibs.All() {
-		pkg, err := ParsePackage(libInfo.Sources)
-		if err == nil && pkg != nil {
-			program.RegisterStdPackage(libInfo.ImportPath, pkg)
+		res, err := ParsePackage(libInfo.Sources)
+		if err == nil && res != nil && res.Package != nil {
+			program.RegisterStdPackage(libInfo.ImportPath, res.Package)
 		}
 	}
 }
 
+// Result holds the parsed package and any structured parse errors.
+//
+// Invariants:
+//   - Result and Result.Package are never nil.
+//   - Result.Package.Files always contains at least one non-nil *program.PackageFile
+//     (len(res.Package.Files) >= 1 and res.Package.Files[0] != nil).
+type Result = program.ParseResult
+
 // ParsePackage parses all of the sources in a package.
 //
 // Invariants:
-//   - The returned *program.Package is never nil and always contains at least
-//     one non-nil *program.PackageFile (len(pkg.Files) >= 1, pkg.Files[0] != nil).
+//   - The returned *Result and Result.Package are never nil, and Result.Package
+//     always contains at least one non-nil *program.PackageFile
+//     (len(res.Package.Files) >= 1, res.Package.Files[0] != nil).
 //   - When a parse or build error occurs, ParsePackage returns the partially
-//     populated *program.Package alongside the error without caching it.
+//     populated Result.Package, the structured Result.Errors, and a non-nil
+//     error (joining Result.Errors) without caching it.
 //
 // Every assembly parses each package it imports, and parsing was the largest
 // share of assembling a typical document: about a microsecond per byte, so
 // 50–400 ms of library a compile. A package parsed before is cloned from the
 // cache instead, which costs about a twenty-fifth of that. The caller owns
 // the package it is given and may rewrite it in place.
-func ParsePackage(sources []string) (*program.Package, error) {
+func ParsePackage(sources []string) (*Result, error) {
 	key := sourcesKey(sources)
 	if pkg := parsed.get(key); pkg != nil {
-		return pkg, nil
+		return &Result{Package: pkg}, nil
 	}
 	res, err := parser2.Parse(sources)
 	if err != nil {
-		return nil, err
+		return res, err
 	}
 	if len(res.Errors) > 0 {
 		if len(res.Errors) == 1 {
-			return res.Package, &res.Errors[0]
+			return res, &res.Errors[0]
 		}
 		errs := make([]error, len(res.Errors))
 		for i := range res.Errors {
 			errs[i] = &res.Errors[i]
 		}
-		return res.Package, errors.Join(errs...)
+		return res, errors.Join(errs...)
 	}
 	parsed.put(key, proto.Clone(res.Package).(*program.Package), sourcesSize(sources))
-	return res.Package, nil
+	return res, nil
 }
 
 // parseCacheLimit bounds the source bytes whose parses are kept. The standard

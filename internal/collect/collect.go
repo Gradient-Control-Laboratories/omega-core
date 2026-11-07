@@ -21,13 +21,14 @@ func Program(primarySources []string, srcMgr source.Manager, parse program.Parse
 		return nil, fmt.Errorf("missing primary sources")
 	}
 
-	primaryPkg, err := parse(primarySources)
+	primaryRes, err := parse(primarySources)
 	if err != nil {
 		return nil, err
 	}
-	if primaryPkg == nil {
+	if primaryRes == nil || primaryRes.Package == nil {
 		return nil, fmt.Errorf("no primary package returned")
 	}
+	primaryPkg := primaryRes.Package
 	setPackageSources(primaryPkg, primarySources)
 	return Package(primaryPkg, srcMgr, parse)
 }
@@ -77,13 +78,14 @@ func Package(primaryPkg *program.Package, srcMgr source.Manager, parse program.P
 					if err != nil {
 						return fmt.Errorf("failed to load package %s: %w", impPath, err)
 					}
-					depPkg, err := parse(sources)
+					depRes, err := parse(sources)
 					if err != nil {
 						return fmt.Errorf("failed to parse package %s: %w", impPath, err)
 					}
-					if depPkg == nil {
+					if depRes == nil || depRes.Package == nil {
 						return fmt.Errorf("package not found: %s", impPath)
 					}
+					depPkg := depRes.Package
 					setPackageSources(depPkg, sources)
 					program.UpdateImports(depPkg, impPath)
 					if depPkg.Path == "" {

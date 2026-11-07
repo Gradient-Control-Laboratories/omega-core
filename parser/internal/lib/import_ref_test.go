@@ -14,10 +14,11 @@ func TestImportRefExpressionLowers(t *testing.T) {
 		"meshId = importMesh \"m.stl\";\n" +
 		"return partId, meshId;\n"
 
-	pkg, err := ParsePackage([]string{src})
+	res, err := ParsePackage([]string{src})
 	if err != nil {
 		t.Fatalf("parse err: %v", err)
 	}
+	pkg := res.Package
 
 	calls := map[string]string{} // declared name -> import call name
 	for _, assign := range pkg.Files[0].Assignments {
@@ -42,10 +43,11 @@ func TestImportRefExpressionLowers(t *testing.T) {
 
 	// The legacy numbered statement form must still parse alongside it.
 	legacy := "import . \"omega\";\nimportStep 0 \"upload.stp\";\nreturn mesh(0);\n"
-	pkg2, err := ParsePackage([]string{legacy})
+	res2, err := ParsePackage([]string{legacy})
 	if err != nil {
 		t.Fatalf("legacy numbered form regressed: err=%v", err)
 	}
+	pkg2 := res2.Package
 	if len(pkg2.Files[0].StepImports) != 1 || pkg2.Files[0].StepImports[0].Path != "upload.stp" {
 		t.Fatalf("legacy StepImports = %+v", pkg2.Files[0].StepImports)
 	}

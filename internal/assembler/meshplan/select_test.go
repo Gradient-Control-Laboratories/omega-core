@@ -11,7 +11,7 @@ import (
 )
 
 func TestSelectPrimaryAndBodySdfProgram(t *testing.T) {
-	pkg, err := parser.ParsePackage([]string{`
+	res, err := parser.ParsePackage([]string{`
 ball = sphere(1.0);
 cube = box([-1.0, -1.0, -1.0], [1.0, 1.0, 1.0]);
 return mesh(0), ball, cube;
@@ -19,7 +19,7 @@ return mesh(0), ball, cube;
 	if err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
 	}
-	prog := &program.Program{Primary: pkg}
+	prog := &program.Program{Primary: res.Package}
 	plan, subtrees, err := meshplan.SliceProgram(prog, "leaf-")
 	if err != nil {
 		t.Fatalf("SliceProgram failed: %v", err)
@@ -53,14 +53,14 @@ return mesh(0), ball, cube;
 }
 
 func TestSdfSubtreeJSONAndLeafPrograms(t *testing.T) {
-	pkg, err := parser.ParsePackage([]string{`
+	res, err := parser.ParsePackage([]string{`
 ball = bvhSdf(2);
 return meshUnion(mesh(0), ball);
 `})
 	if err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
 	}
-	prog := &program.Program{Primary: pkg}
+	prog := &program.Program{Primary: res.Package}
 	_, subtrees, err := meshplan.SliceProgram(prog, "leaf-")
 	if err != nil {
 		t.Fatalf("SliceProgram failed: %v", err)

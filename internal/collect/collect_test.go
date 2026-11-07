@@ -9,7 +9,7 @@ import (
 	"gradientcontrol.com/omega/core/program"
 )
 
-func parseMockPackage(sources []string) (*program.Package, error) {
+func parseMockPackage(sources []string) (*program.ParseResult, error) {
 	if len(sources) == 0 {
 		return nil, fmt.Errorf("empty sources")
 	}
@@ -33,7 +33,7 @@ func parseMockPackage(sources []string) (*program.Package, error) {
 			},
 		})
 	}
-	return &program.Package{Files: files}, nil
+	return &program.ParseResult{Package: &program.Package{Files: files}}, nil
 }
 
 func TestCollect_Ordering(t *testing.T) {

@@ -26,8 +26,19 @@ const VAccessor = "v"
 const AnonFnPrefix = "gsl_anon"
 const InlinedFnPrefix = "gsl_inlined_"
 
-// ParsePackageFunc parses package source code into a program.Package.
-type ParsePackageFunc func(sources []string) (*Package, error)
+// ParseResult holds the parsed package and any structured parse errors.
+//
+// Invariants:
+//   - ParseResult and ParseResult.Package are never nil.
+//   - ParseResult.Package.Files always contains at least one non-nil *PackageFile
+//     (len(res.Package.Files) >= 1 and res.Package.Files[0] != nil).
+type ParseResult struct {
+	Package *Package
+	Errors  []Error
+}
+
+// ParsePackageFunc parses package source code into a ParseResult.
+type ParsePackageFunc func(sources []string) (*ParseResult, error)
 
 func (i *Import) SimpleName() string {
 	return i.Path[strings.LastIndex(i.Path, "/")+1:]

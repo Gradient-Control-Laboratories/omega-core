@@ -23,14 +23,14 @@ func warpImportsOf(pkg *program.Package) []*program.WarpImport {
 }
 
 func TestWarpImportNumberedForm(t *testing.T) {
-	pkg, err := ParsePackage([]string{`importStep 0 "p.hodge";
+	res, err := ParsePackage([]string{`importStep 0 "p.hodge";
 importWarp 0 "field.warp";
 return meshWarped(0, 0, 1);
 `})
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	imports := warpImportsOf(pkg)
+	imports := warpImportsOf(res.Package)
 	if len(imports) != 1 {
 		t.Fatalf("warp imports = %d, want 1", len(imports))
 	}
@@ -42,14 +42,14 @@ return meshWarped(0, 0, 1);
 // The expression form carries no slot — it lowers to a call the canvas agent
 // resolves — so the parser must accept it while leaving WarpImports empty.
 func TestWarpImportExpressionForm(t *testing.T) {
-	pkg, err := ParsePackage([]string{`importId = importStep "p.hodge";
+	res, err := ParsePackage([]string{`importId = importStep "p.hodge";
 warpID = importWarp "field.warp";
 return meshWarped(importId, warpID, -1);
 `})
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	if n := len(warpImportsOf(pkg)); n != 0 {
+	if n := len(warpImportsOf(res.Package)); n != 0 {
 		t.Errorf("the expression form should not populate WarpImports, got %d", n)
 	}
 }

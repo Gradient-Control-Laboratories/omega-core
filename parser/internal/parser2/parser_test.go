@@ -15,7 +15,6 @@ import (
 	src_test "gradientcontrol.com/omega/core/internal/srctest"
 	"gradientcontrol.com/omega/core/internal/test/assert"
 	lib "gradientcontrol.com/omega/core/parser"
-	api "gradientcontrol.com/omega/core/parser/internal/api"
 	"gradientcontrol.com/omega/core/parser/internal/parser2"
 	"gradientcontrol.com/omega/core/program"
 )
@@ -32,10 +31,10 @@ func TestParse(t *testing.T) {
 func TestParseMeshImport(t *testing.T) {
 	const src = "import . \"omega\";\nimportMesh 5 \"gear.stl\";\nreturn mesh(5);\n"
 
-	pkg, err := lib.ParsePackage([]string{src})
+	res, err := lib.ParsePackage([]string{src})
 	assert.NoError(t, err)
-	if assert.Equal(t, 1, len(pkg.Files[0].MeshImports)) {
-		imp := pkg.Files[0].MeshImports[0]
+	if assert.Equal(t, 1, len(res.Package.Files[0].MeshImports)) {
+		imp := res.Package.Files[0].MeshImports[0]
 		assert.Equal(t, int32(5), imp.Index)
 		assert.Equal(t, "gear.stl", imp.Path)
 	}
@@ -44,10 +43,10 @@ func TestParseMeshImport(t *testing.T) {
 func TestParseStepImport(t *testing.T) {
 	const src = "import . \"omega\";\nimportStep 5 \"gear.step\";\nreturn mesh(5);\n"
 
-	pkg, err := lib.ParsePackage([]string{src})
+	res, err := lib.ParsePackage([]string{src})
 	assert.NoError(t, err)
-	if assert.Equal(t, 1, len(pkg.Files[0].StepImports)) {
-		imp := pkg.Files[0].StepImports[0]
+	if assert.Equal(t, 1, len(res.Package.Files[0].StepImports)) {
+		imp := res.Package.Files[0].StepImports[0]
 		assert.Equal(t, int32(5), imp.Index)
 		assert.Equal(t, "gear.step", imp.Path)
 	}
@@ -57,7 +56,7 @@ func testParseOne(t *testing.T, srcFile string) {
 	src_test.RunSourceTest(t, srcFile, runTestParseOne, checkTestParseOne, true)
 }
 
-func runTestParseOne(t *testing.T, srcFile string, src []byte) (*api.ParseResult, error) {
+func runTestParseOne(t *testing.T, srcFile string, src []byte) (*parser2.Result, error) {
 	result, err := parser2.Parse([]string{string(src)})
 	if err != nil {
 		return result, err
@@ -78,7 +77,7 @@ func runTestParseOne(t *testing.T, srcFile string, src []byte) (*api.ParseResult
 	return result, nil
 }
 
-func checkTestParseOne(t *testing.T, srcFile string, src []byte, parseResult *api.ParseResult) error {
+func checkTestParseOne(t *testing.T, srcFile string, src []byte, parseResult *parser2.Result) error {
 	testName := strings.TrimSuffix(filepath.Base(srcFile), filepath.Ext(srcFile))
 	yamlFile := filepath.Join(filepath.Dir(srcFile), testName+".yaml")
 
@@ -367,26 +366,34 @@ func TestParseReturnInNonLastFile(t *testing.T) {
 		"import . \"omega\";\na = 2;\n",
 		"import . \"omega\";\nreturn 1;\n",
 	}
-	pkg2, err := lib.ParsePackage(sources2)
+	res2, err := lib.ParsePackage(sources2)
 	assert.NoError(t, err)
-	assert.NotNil(t, pkg2)
+	if assert.NotNil(t, res2) {
+		assert.NotNil(t, res2.Package)
+	}
 }
 
 func TestParseSingleElementCollection(t *testing.T) {
 	// Bracket literal without trailing comma
-	pkg1, err := lib.ParsePackage([]string{"import . \"omega\";\na = [1.0];\nreturn a;\n"})
+	res1, err := lib.ParsePackage([]string{"import . \"omega\";\na = [1.0];\nreturn a;\n"})
 	assert.NoError(t, err)
-	assert.NotNil(t, pkg1)
+	if assert.NotNil(t, res1) {
+		assert.NotNil(t, res1.Package)
+	}
 
 	// Bracket literal with trailing comma
-	pkg2, err := lib.ParsePackage([]string{"import . \"omega\";\nb = [2.0,];\nreturn b;\n"})
+	res2, err := lib.ParsePackage([]string{"import . \"omega\";\nb = [2.0,];\nreturn b;\n"})
 	assert.NoError(t, err)
-	assert.NotNil(t, pkg2)
+	if assert.NotNil(t, res2) {
+		assert.NotNil(t, res2.Package)
+	}
 
 	// collect() primitive call with 1 argument
-	pkg3, err := lib.ParsePackage([]string{"import . \"omega\";\nc = collect(3.0);\nreturn c;\n"})
+	res3, err := lib.ParsePackage([]string{"import . \"omega\";\nc = collect(3.0);\nreturn c;\n"})
 	assert.NoError(t, err)
-	assert.NotNil(t, pkg3)
+	if assert.NotNil(t, res3) {
+		assert.NotNil(t, res3.Package)
+	}
 
 	// Empty brackets should fail with "collections cannot be empty"
 	_, errEmpty := lib.ParsePackage([]string{"import . \"omega\";\nd = [];\nreturn d;\n"})
@@ -450,9 +457,11 @@ func TestMultiFileDeclarationCollisions(t *testing.T) {
 			"foo(a) { return a; }\n",
 			"foo(a, b) { return a + b; }\nreturn foo(1.0) + foo(2.0, 3.0);\n",
 		}
-		pkg, err := lib.ParsePackage(sources)
+		res, err := lib.ParsePackage(sources)
 		assert.NoError(t, err)
-		assert.NotNil(t, pkg)
+		if assert.NotNil(t, res) {
+			assert.NotNil(t, res.Package)
+		}
 	})
 }
 
