@@ -132,9 +132,6 @@ func ProgramSourceHash(prog *program.Program) string {
 	sources := make(map[string][]string, len(prog.Dependencies)+1)
 	// Invariant: prog.Primary and prog.Dependencies entries are guaranteed non-nil.
 	addPkg := func(pkg *program.Package) {
-		if pkg.Path == "" {
-			return
-		}
 		// Invariant: pkg.Files elements are guaranteed non-nil by the parser.
 		fileSources := make([]string, 0, len(pkg.Files))
 		for _, f := range pkg.Files {
