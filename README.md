@@ -69,8 +69,7 @@ omega-core/
 │   └── serve/                 # Local HTTP server and WebGPU viewer host
 │       └── main.go            # Entry point and HTTP server startup
 ├── examples/                  # Curated showcase GSL models and assets
-│   ├── gears.gsl              # Parametric helical gear pair showcase (from common/web/example/Gears.gsl)
-│   ├── glass.gsl              # Transmissive glass and refraction showcase (from common/web/example/Material - Glass.gsl)
+│   ├── *.gsl                  # Showcase models, one per file: mechanical (gears, fasteners, drivers, linkages), lattices and TPMS, blends, materials, noise, text, math. Each opens with @scene, sized to fit its viewing box
 │   ├── assets/                # Traditional CAD mesh assets (bracket.stl)
 │   └── viewer/                # Interactive WebGPU viewer web application
 │       ├── README.md          # Viewer usage and architecture overview
