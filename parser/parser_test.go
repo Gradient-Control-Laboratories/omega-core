@@ -4,11 +4,12 @@ import (
 	"testing"
 
 	"gradientcontrol.com/omega/core/parser"
+	"gradientcontrol.com/omega/core/program"
 )
 
 func TestParsePackage_Empty(t *testing.T) {
-	res, err := parser.ParsePackage(nil)
-	if err == nil {
+	res := parser.ParsePackage(nil)
+	if res.Error() == nil {
 		t.Fatal("expected error for empty sources, got nil")
 	}
 	if res == nil || res.Package == nil || len(res.Package.Files) != 1 || res.Package.Files[0] == nil {
@@ -22,11 +23,42 @@ func TestParsePackage_Empty(t *testing.T) {
 func TestParsePackage_Valid(t *testing.T) {
 	src := `x = 10;
 return x;`
-	res, err := parser.ParsePackage([]string{src})
-	if err != nil {
+	res := parser.ParsePackage([]string{src})
+	if err := res.Error(); err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
 	}
 	if res == nil || res.Package == nil {
 		t.Fatal("expected non-nil Result and Package")
+	}
+}
+
+func TestResult_Error(t *testing.T) {
+	var nilRes *parser.Result
+	if nilRes.Error() != nil {
+		t.Fatalf("expected nil for nil Result, got %v", nilRes.Error())
+	}
+
+	emptyRes := &parser.Result{Package: &program.Package{}}
+	if emptyRes.Error() != nil {
+		t.Fatalf("expected nil for empty Errors, got %v", emptyRes.Error())
+	}
+
+	singleRes := &parser.Result{
+		Package: &program.Package{},
+		Errors:  []program.Error{{LineNum: 1, Column: 1, Message: "first err"}},
+	}
+	if err := singleRes.Error(); err == nil || err.Error() != "1:1: first err" {
+		t.Fatalf("unexpected single error: %v", err)
+	}
+
+	multiRes := &parser.Result{
+		Package: &program.Package{},
+		Errors: []program.Error{
+			{LineNum: 1, Column: 1, Message: "first err"},
+			{LineNum: 2, Column: 3, Message: "second err"},
+		},
+	}
+	if err := multiRes.Error(); err == nil || err.Error() != "1:1: first err\n2:3: second err" {
+		t.Fatalf("unexpected joined error: %v", err)
 	}
 }

@@ -20,9 +20,8 @@ type Result = program.ParseResult
 //     always contains at least one non-nil *program.PackageFile
 //     (len(res.Package.Files) >= 1, res.Package.Files[0] != nil).
 //   - When a parse or build error occurs, ParsePackage returns the partially
-//     populated Result.Package, the structured Result.Errors, and a non-nil
-//     error (joining Result.Errors) without caching it.
-func ParsePackage(sources []string) (*Result, error) {
+//     populated Result.Package and the structured Result.Errors without caching it.
+func ParsePackage(sources []string) *Result {
 	return lib.ParsePackage(sources)
 }
 

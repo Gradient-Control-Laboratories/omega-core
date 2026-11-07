@@ -60,7 +60,7 @@ var options = []participle.Option{
 //   - If a syntax or semantic error occurs, res.Errors contains the error and
 //     res.Package preserves all files, scene metadata, imports, and declarations
 //     completed prior to the error.
-func Parse(sources []string) (*Result, error) {
+func Parse(sources []string) *Result {
 	pkg := &program.Package{
 		VersionMajor: program.VersionMajor,
 		VersionMinor: program.VersionMinor,
@@ -127,13 +127,13 @@ func Parse(sources []string) (*Result, error) {
 		}
 	}
 
-	return res, nil
+	return res
 }
 
-func recordFileError(res *Result, pkgFile *program.PackageFile, source string, err error) (*Result, error) {
+func recordFileError(res *Result, pkgFile *program.PackageFile, source string, err error) *Result {
 	pkgFile.Source = source
 	res.Errors = append(res.Errors, ParseError(source, err))
-	return res, nil
+	return res
 }
 
 func ParseError(source string, err error) program.Error {

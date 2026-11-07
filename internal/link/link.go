@@ -706,7 +706,7 @@ func (l *linker) resolveRef(op *program.Operand, ref *program.Reference, currSco
 					freshPkg = std
 				} else if l.srcMgr != nil && l.parsePackage != nil {
 					if sources, _, err := l.srcMgr.Sources(pkgPath); err == nil && len(sources) > 0 {
-						if freshRes, _ := l.parsePackage(sources); freshRes != nil {
+						if freshRes := l.parsePackage(sources); freshRes != nil && freshRes.Error() == nil {
 							freshPkg = freshRes.Package
 						}
 					}
@@ -784,8 +784,8 @@ func (l *linker) loadAndScopeDependency(
 		return nil, err
 	}
 
-	depRes, err := l.parsePackage(sources)
-	if err != nil {
+	depRes := l.parsePackage(sources)
+	if err := depRes.Error(); err != nil {
 		return nil, err
 	}
 	if depRes == nil || depRes.Package == nil {

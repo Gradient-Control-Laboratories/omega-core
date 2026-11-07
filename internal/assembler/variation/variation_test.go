@@ -16,8 +16,8 @@ s = vdbSdf(1, 64, 5);
 b = bvhSdf(2);
 return m, s, b;
 `
-	res, err := parser.ParsePackage([]string{src})
-	if err != nil {
+	res := parser.ParsePackage([]string{src})
+	if err := res.Error(); err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
 	}
 	pkg := res.Package
@@ -72,7 +72,7 @@ return m, s, b;
 }
 
 func TestVariationProgramPrunesDeadDeclarations(t *testing.T) {
-	res, err := parser.ParsePackage([]string{`
+	res := parser.ParsePackage([]string{`
 usedFn(r) {
 	return length(p) - r;
 }
@@ -83,7 +83,7 @@ usedSdf = vdbSdf(1, 64, 5) + usedFn(2.0);
 unusedSdf = bvhSdf(2) + unusedFn(3.0);
 return usedSdf, unusedSdf;
 `})
-	if err != nil {
+	if err := res.Error(); err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
 	}
 	prog := &program.Program{Primary: res.Package}
@@ -127,7 +127,7 @@ return usedSdf, unusedSdf;
 }
 
 func TestVariationProgramEmptyReturnsRetainsUIControls(t *testing.T) {
-	res, err := parser.ParsePackage([]string{`
+	res := parser.ParsePackage([]string{`
 r = 10;
 r.min = 1;
 r.max = 20;
@@ -136,7 +136,7 @@ unused = 42;
 m = mesh(0);
 return m;
 `})
-	if err != nil {
+	if err := res.Error(); err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
 	}
 	pkg := res.Package
@@ -184,8 +184,8 @@ s = vdbSdf(1, 64, 5) + geomFn(5);
 a = audioFn(freq * time);
 return s;
 `
-	res, err := parser.ParsePackage([]string{src})
-	if err != nil {
+	res := parser.ParsePackage([]string{src})
+	if err := res.Error(); err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
 	}
 	pkg := res.Package

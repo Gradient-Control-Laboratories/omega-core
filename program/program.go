@@ -1,6 +1,7 @@
 package program
 
 import (
+	"errors"
 	"math"
 	"strings"
 
@@ -37,8 +38,24 @@ type ParseResult struct {
 	Errors  []Error
 }
 
+// Error returns nil if there are no parse errors, the single error if there is
+// only one, or errors.Join of all errors if there are multiple.
+func (r *ParseResult) Error() error {
+	if r == nil || len(r.Errors) == 0 {
+		return nil
+	}
+	if len(r.Errors) == 1 {
+		return &r.Errors[0]
+	}
+	errs := make([]error, len(r.Errors))
+	for i := range r.Errors {
+		errs[i] = &r.Errors[i]
+	}
+	return errors.Join(errs...)
+}
+
 // ParsePackageFunc parses package source code into a ParseResult.
-type ParsePackageFunc func(sources []string) (*ParseResult, error)
+type ParsePackageFunc func(sources []string) *ParseResult
 
 func (i *Import) SimpleName() string {
 	return i.Path[strings.LastIndex(i.Path, "/")+1:]

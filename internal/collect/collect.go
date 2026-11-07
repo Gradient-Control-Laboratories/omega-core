@@ -21,8 +21,8 @@ func Program(primarySources []string, srcMgr source.Manager, parse program.Parse
 		return nil, fmt.Errorf("missing primary sources")
 	}
 
-	primaryRes, err := parse(primarySources)
-	if err != nil {
+	primaryRes := parse(primarySources)
+	if err := primaryRes.Error(); err != nil {
 		return nil, err
 	}
 	if primaryRes == nil || primaryRes.Package == nil {
@@ -78,8 +78,8 @@ func Package(primaryPkg *program.Package, srcMgr source.Manager, parse program.P
 					if err != nil {
 						return fmt.Errorf("failed to load package %s: %w", impPath, err)
 					}
-					depRes, err := parse(sources)
-					if err != nil {
+					depRes := parse(sources)
+					if err := depRes.Error(); err != nil {
 						return fmt.Errorf("failed to parse package %s: %w", impPath, err)
 					}
 					if depRes == nil || depRes.Package == nil {

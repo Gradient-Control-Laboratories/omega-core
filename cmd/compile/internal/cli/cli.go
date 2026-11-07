@@ -111,7 +111,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	}
 
 	// Validate parser on primary package
-	if _, parseErr := parser.ParsePackage(sourceTexts); parseErr != nil {
+	if parseErr := parser.ParsePackage(sourceTexts).Error(); parseErr != nil {
 		return fmt.Errorf("parsing primary package: %w", parseErr)
 	}
 

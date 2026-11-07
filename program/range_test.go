@@ -72,8 +72,8 @@ offset = scale + 1.0;
 staticVal = 42.0;
 return offset;
 `
-	res, err := parser.ParsePackage([]string{src})
-	if err != nil {
+	res := parser.ParsePackage([]string{src})
+	if err := res.Error(); err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
 	}
 

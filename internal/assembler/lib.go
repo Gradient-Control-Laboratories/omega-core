@@ -729,8 +729,8 @@ func DependenciesSha256(pkgPath string, srcMgr source.Manager) (string, error) {
 // expressions/returns, and call arguments while preserving the original AST
 // structure for template comparisons and bounds extraction.
 func AnalyzePackage(sourceText string, getImport program.GetImportFunc) (*program.Package, error) {
-	res, err := parser.ParsePackage([]string{sourceText})
-	if err != nil {
+	res := parser.ParsePackage([]string{sourceText})
+	if err := res.Error(); err != nil {
 		return nil, err
 	}
 	pkg := res.Package

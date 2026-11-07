@@ -4,7 +4,6 @@ import (
 	"container/list"
 	"crypto/sha256"
 	"encoding/binary"
-	"errors"
 	"sync"
 
 	"google.golang.org/protobuf/proto"
@@ -15,8 +14,8 @@ import (
 
 func init() {
 	for _, libInfo := range gsllibs.All() {
-		res, err := ParsePackage(libInfo.Sources)
-		if err == nil && res != nil && res.Package != nil {
+		res := ParsePackage(libInfo.Sources)
+		if res.Error() == nil && res != nil && res.Package != nil {
 			program.RegisterStdPackage(libInfo.ImportPath, res.Package)
 		}
 	}
@@ -37,35 +36,24 @@ type Result = program.ParseResult
 //     always contains at least one non-nil *program.PackageFile
 //     (len(res.Package.Files) >= 1, res.Package.Files[0] != nil).
 //   - When a parse or build error occurs, ParsePackage returns the partially
-//     populated Result.Package, the structured Result.Errors, and a non-nil
-//     error (joining Result.Errors) without caching it.
+//     populated Result.Package and the structured Result.Errors without caching it.
 //
 // Every assembly parses each package it imports, and parsing was the largest
 // share of assembling a typical document: about a microsecond per byte, so
 // 50–400 ms of library a compile. A package parsed before is cloned from the
 // cache instead, which costs about a twenty-fifth of that. The caller owns
 // the package it is given and may rewrite it in place.
-func ParsePackage(sources []string) (*Result, error) {
+func ParsePackage(sources []string) *Result {
 	key := sourcesKey(sources)
 	if pkg := parsed.get(key); pkg != nil {
-		return &Result{Package: pkg}, nil
+		return &Result{Package: pkg}
 	}
-	res, err := parser2.Parse(sources)
-	if err != nil {
-		return res, err
-	}
+	res := parser2.Parse(sources)
 	if len(res.Errors) > 0 {
-		if len(res.Errors) == 1 {
-			return res, &res.Errors[0]
-		}
-		errs := make([]error, len(res.Errors))
-		for i := range res.Errors {
-			errs[i] = &res.Errors[i]
-		}
-		return res, errors.Join(errs...)
+		return res
 	}
 	parsed.put(key, proto.Clone(res.Package).(*program.Package), sourcesSize(sources))
-	return res, nil
+	return res
 }
 
 // parseCacheLimit bounds the source bytes whose parses are kept. The standard

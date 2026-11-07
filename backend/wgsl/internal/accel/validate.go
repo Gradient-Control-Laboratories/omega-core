@@ -28,8 +28,8 @@ func ValidateDescriptor(desc *PackageDescriptor, gslSource string, expectedPkgNa
 		return fmt.Errorf("package mismatch: descriptor specifies %q but expected %q", desc.Package, expectedPkgName)
 	}
 
-	res, err := parser.ParsePackage([]string{gslSource})
-	if err != nil {
+	res := parser.ParsePackage([]string{gslSource})
+	if err := res.Error(); err != nil {
 		return fmt.Errorf("failed to parse GSL source for package %q: %w", desc.Package, err)
 	}
 	pkg := res.Package

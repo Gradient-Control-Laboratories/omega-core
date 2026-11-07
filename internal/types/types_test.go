@@ -22,8 +22,8 @@ func init() {
 
 func parseProgram(t *testing.T, src string) *program.Program {
 	t.Helper()
-	res, err := parser.ParsePackage([]string{src})
-	if err != nil {
+	res := parser.ParsePackage([]string{src})
+	if err := res.Error(); err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
 	}
 	return &program.Program{Primary: res.Package}

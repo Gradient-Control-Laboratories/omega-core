@@ -138,8 +138,8 @@ func (rp *returnPartition) AttachVariants(
 	lastFile := prog.Primary.Files[len(prog.Primary.Files)-1]
 	for _, name := range names {
 		retSrc := variants[name]
-		res, err := parser.ParsePackage([]string{retSrc})
-		if err != nil {
+		res := parser.ParsePackage([]string{retSrc})
+		if err := res.Error(); err != nil {
 			rp.variantErrors[name] = fmt.Sprintf("parse variant return %q: %v", retSrc, err)
 			continue
 		}

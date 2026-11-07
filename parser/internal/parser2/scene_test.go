@@ -8,10 +8,7 @@ import (
 
 func TestParseSceneDirective(t *testing.T) {
 	// Valid @scene(20) defaults grid to size / 10 = 2.0
-	res, err := parser2.Parse([]string{"@scene(20)\nreturn sphere(1);"})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	res := parser2.Parse([]string{"@scene(20)\nreturn sphere(1);"})
 	if len(res.Errors) > 0 {
 		t.Fatalf("unexpected parse errors: %v", res.Errors)
 	}
@@ -23,10 +20,7 @@ func TestParseSceneDirective(t *testing.T) {
 	}
 
 	// Valid @scene(20, 5)
-	res2, err := parser2.Parse([]string{"@scene(20, 5)\nreturn sphere(1);"})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	res2 := parser2.Parse([]string{"@scene(20, 5)\nreturn sphere(1);"})
 	if len(res2.Errors) > 0 {
 		t.Fatalf("unexpected parse errors: %v", res2.Errors)
 	}
@@ -38,10 +32,7 @@ func TestParseSceneDirective(t *testing.T) {
 	}
 
 	// Preceded by whitespace and comments
-	res3, err := parser2.Parse([]string{"\n  // A helpful header comment\n  @scene(30, 3)\nreturn sphere(1);"})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	res3 := parser2.Parse([]string{"\n  // A helpful header comment\n  @scene(30, 3)\nreturn sphere(1);"})
 	if len(res3.Errors) > 0 {
 		t.Fatalf("unexpected parse errors: %v", res3.Errors)
 	}
@@ -50,19 +41,19 @@ func TestParseSceneDirective(t *testing.T) {
 	}
 
 	// Semicolon after @scene is rejected
-	resSemi, _ := parser2.Parse([]string{"@scene(20);\nreturn sphere(1);"})
+	resSemi := parser2.Parse([]string{"@scene(20);\nreturn sphere(1);"})
 	if resSemi == nil || len(resSemi.Errors) == 0 {
 		t.Errorf("expected parse error for semicolon after @scene")
 	}
 
 	// @scene after import is rejected
-	resAfterImport, _ := parser2.Parse([]string{"import \"math.gsl\";\n@scene(20)\nreturn sphere(1);"})
+	resAfterImport := parser2.Parse([]string{"import \"math.gsl\";\n@scene(20)\nreturn sphere(1);"})
 	if resAfterImport == nil || len(resAfterImport.Errors) == 0 {
 		t.Errorf("expected parse error for @scene after import")
 	}
 
 	// @scene after declaration is rejected
-	resAfterDecl, _ := parser2.Parse([]string{"x = 1;\n@scene(20)\nreturn sphere(1);"})
+	resAfterDecl := parser2.Parse([]string{"x = 1;\n@scene(20)\nreturn sphere(1);"})
 	if resAfterDecl == nil || len(resAfterDecl.Errors) == 0 {
 		t.Errorf("expected parse error for @scene after declaration")
 	}
@@ -70,17 +61,14 @@ func TestParseSceneDirective(t *testing.T) {
 	// @scene in file index > 0 is rejected
 	file0 := "return sphere(1);"
 	file1 := "@scene(20)\nfoo = 1;"
-	resMulti, _ := parser2.Parse([]string{file0, file1})
+	resMulti := parser2.Parse([]string{file0, file1})
 	if resMulti == nil || len(resMulti.Errors) == 0 {
 		t.Errorf("expected parse error for @scene in file index > 0")
 	}
 
 	// Fallback to legacy comments in file 0 when @scene is absent
 	legacySrc := "// Scene Size: 40\n// Scene Grid: 4\nreturn sphere(1);"
-	resLegacy, err := parser2.Parse([]string{legacySrc})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	resLegacy := parser2.Parse([]string{legacySrc})
 	if len(resLegacy.Errors) > 0 {
 		t.Fatalf("unexpected parse errors: %v", resLegacy.Errors)
 	}
@@ -92,10 +80,7 @@ func TestParseSceneDirective(t *testing.T) {
 	}
 
 	// When neither @scene nor legacy comments exist, Scene is nil
-	resNone, err := parser2.Parse([]string{"return sphere(1);"})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	resNone := parser2.Parse([]string{"return sphere(1);"})
 	if len(resNone.Errors) > 0 {
 		t.Fatalf("unexpected parse errors: %v", resNone.Errors)
 	}
