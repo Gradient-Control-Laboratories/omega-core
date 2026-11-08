@@ -1,4 +1,4 @@
-// The render graph the GSL viewers draw with (webdm, webai, webedit), and
+// The render graph the GSL viewers draw with (webai, webedit), and
 // that the image-parity test builds headlessly: every WGSL function around
 // the compiled program -- visibility, gsl_min, the displaced field, normals,
 // shape colour, shading, glass, the standard raymarch fragment, the
@@ -68,8 +68,8 @@ ${switchCases.join("\n")}
 // in the primary march for why 4).
 const DISP_NEAR_MARGIN = "4.0";
 
-// No casting overlay: webdm passes its castingFieldInfo() in its place.
-const NO_CAST = Object.freeze({ active: false, paramsWGSL: "" });
+// No field overlay: an app that has one passes its own fieldInfo in its place.
+const NO_FIELD = Object.freeze({ active: false, paramsWGSL: "" });
 
 // buildRenderGraph builds the shaders for one compiled program.
 //   wgslCode         the codegen output (sdShape, and gsl_colorField /
@@ -79,7 +79,7 @@ const NO_CAST = Object.freeze({ active: false, paramsWGSL: "" });
 //                    (p, time), in the codegen's order: sliders, mesh-SDF
 //                    slots, warp field, noise tile
 //   extraArgsWGSL    the matching ", name, ..."
-//   castInfo         webdm's casting overlay ({active, paramsWGSL, rampWGSL}):
+//   fieldInfo        an app's simulated-field overlay ({active, paramsWGSL, rampWGSL}):
 //                    colours the standard frame's front faces by a simulated
 //                    field
 //   trace            also build the progressive fragment
@@ -94,7 +94,7 @@ const NO_CAST = Object.freeze({ active: false, paramsWGSL: "" });
 // The fragments take the per-shape colours as c1..cN (all but Simple, which
 // colours by return index) and the visibility flags as vis1..visN, after
 // their named parameters.
-export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraArgsWGSL, castInfo = NO_CAST, trace = true, materials = true,
+export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraArgsWGSL, fieldInfo = NO_FIELD, trace = true, materials = true,
                                   pixelWidthNode = new THREE.CodeNode("var<private> gsl_pw: f32 = 0.0;\nvar<private> gsl_pwScale: f32 = 1.0;", [], "wgsl") }) {
   // injectExtraArgs rewrites every sdShape(...) / gsl_calcNormal(...)
   // call site in a WGSL string to append the combined arguments in a
@@ -328,7 +328,7 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
             fieldHeight: f32,
             fieldNormal: vec3<f32>,
             ${colorParamsWGSL.join(", ")},
-            ${visParamsWGSL.join(", ")}${extraParamsWGSL}${castInfo.paramsWGSL}
+            ${visParamsWGSL.join(", ")}${extraParamsWGSL}${fieldInfo.paramsWGSL}
         ) -> vec4<f32> {
             ${visArgsWGSL.map((v, i) => visAssignWGSL(i, v)).join(" ")}
             ${partDetailSetupWGSL(wgslCode)}
@@ -571,18 +571,18 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
                   ? `${atScreenPw("gsl_cf", "let gsl_cf = gsl_colorField(hitPos, time, hitSd.shapeIndex);")}
                 var baseColor = select(gsl_shapeColor(hitSd.shapeIndex, ${colorArgsWGSL.join(", ")}), gsl_cf.rgb, gsl_cf.a > 0.5);`
                   : `var baseColor = gsl_shapeColor(hitSd.shapeIndex, ${colorArgsWGSL.join(", ")});`}
-                ${castInfo.active ? `
-                // Casting result: colour the surface by the simulated field at
+                ${fieldInfo.active ? `
+                // Field result: colour the surface by the simulated field at
                 // the hit point. Sampled clamped, so the geometry outside the
                 // baked bbox takes the boundary value rather than going black.
                 // Overrides an authored colorField: the overlay is switched on
                 // to be read, and a document that paints itself would otherwise
                 // show no result at all.
                 {
-                    let cUvw = (hitPos - castBMin) / castBSize;
-                    let cVal = textureSampleLevel(castTex, castSmp,
+                    let cUvw = (hitPos - fieldBMin) / fieldBSize;
+                    let cVal = textureSampleLevel(fieldTex, fieldSmp,
                         clamp(cUvw, vec3<f32>(0.0), vec3<f32>(1.0)), 0.0).r;
-                    baseColor = gsl_castingColor(cVal, castThr);
+                    baseColor = gsl_fieldColor(cVal, fieldThr);
                 }` : ""}
                 let gsl_mat = ${materialAt("hitPos", "hitSd")};
 
@@ -659,8 +659,8 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
             return vec4<f32>(0.0, 0.0, 0.0, 0.0);
         }
     `),
-    castInfo.active
-      ? [sdShape, gsl_material, gsl_calcNormal, gsl_shapeColor, gsl_shadeSurface, ...glassDeps, ...displaceDeps, ...partDetailDeps, gsl_isShapeVisible, wgslFn(castInfo.rampWGSL)]
+    fieldInfo.active
+      ? [sdShape, gsl_material, gsl_calcNormal, gsl_shapeColor, gsl_shadeSurface, ...glassDeps, ...displaceDeps, ...partDetailDeps, gsl_isShapeVisible, wgslFn(fieldInfo.rampWGSL)]
       : [sdShape, gsl_material, gsl_calcNormal, gsl_shapeColor, gsl_shadeSurface, ...glassDeps, ...displaceDeps, ...partDetailDeps, gsl_isShapeVisible],
   );
 

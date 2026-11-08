@@ -12,7 +12,7 @@
 // initBodyPanel({...}) takes the app's hooks:
 //   getSource() / setSource(next)   raw GSL in and out of the editor
 //   recompile()                     re-run the normal compile path
-//   afterAssign()                   optional (webdm saves the document)
+//   afterAssign()                   optional (e.g. to save the document)
 //   setStatus(msg, isError)         optional inline status line
 //   setShapeColor(i, r, g, b)       the viewer's default colour for shader slot i
 //   setShapeVisible(i, visible)     the viewer's visibility for body i, when

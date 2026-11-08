@@ -1709,7 +1709,7 @@ func (x *StepImport) GetPath() string {
 	return ""
 }
 
-// A casting simulation the document deforms geometry with. Shaped like the
+// A simulation the document deforms geometry with. Shaped like the
 // other asset imports so it moves through the pipeline the same way, but the
 // asset is a result rather than an input: it names the solve whose displacement
 // meshWarped and vdbSdfWarped bake into their geometry.

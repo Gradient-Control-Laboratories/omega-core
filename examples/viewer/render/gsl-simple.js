@@ -1,6 +1,6 @@
 // The Schematic render tier, `simple` in the code: the least a raymarched GSL
 // frame can be, drawn two ways from one spec so the pair can be compared. The GPU draws it from the
-// compiled WGSL (gsl-render-graph.js's simpleFragment); webdm's CPU tier
+// compiled WGSL (gsl-render-graph.js's simpleFragment); a CPU tier
 // draws it with fidget-wasm from the program's omega tape (fw_render_simple,
 // agent/fidget/internal/wasm), and shadeSimple below finishes that frame.
 //

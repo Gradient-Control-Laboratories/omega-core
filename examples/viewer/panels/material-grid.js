@@ -14,7 +14,7 @@
 //   bodiesKnown()                   whether a compile has reported any bodies
 //   getSource() / setSource(next)   raw GSL in and out of the editor
 //   recompile()                     re-run the normal compile path
-//   afterAssign()                   optional (webdm saves the document)
+//   afterAssign()                   optional (e.g. to save the document)
 //   setStatus(msg, isError)         optional inline status line
 //   getBodyGiven()                  optional, what the document gives the
 //                                   selected body (material-assign's surfaceOf)

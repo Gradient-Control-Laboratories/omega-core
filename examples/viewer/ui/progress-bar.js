@@ -23,7 +23,6 @@ export const operationKindLabels = {
     "import": "Fetching package imports",
     "wgsl-build": "Evaluating geometry SDF nodes",
     "render": "Compiling WebGPU shader",
-    "casting-sim": "Simulating casting",
 };
 
 export class ProgressBar {
@@ -84,24 +83,24 @@ export class ProgressBar {
         if (!container) return;
 
         this.el = document.createElement("div");
-        this.el.className = "webdm-progress-area";
+        this.el.className = "omega-progress-area";
         this.el.setAttribute("role", "progressbar");
         this.el.setAttribute("aria-valuemin", "0");
         this.el.setAttribute("aria-valuemax", "100");
         this.el.setAttribute("aria-live", "polite");
 
         const barWrapper = document.createElement("div");
-        barWrapper.className = "webdm-progress-bar-wrapper";
+        barWrapper.className = "omega-progress-bar-wrapper";
 
         this.barEl = document.createElement("div");
-        this.barEl.className = "webdm-progress-bar-fill";
+        this.barEl.className = "omega-progress-bar-fill";
         barWrapper.appendChild(this.barEl);
 
         const labelWrapper = document.createElement("div");
-        labelWrapper.className = "webdm-progress-label-wrapper";
+        labelWrapper.className = "omega-progress-label-wrapper";
 
         this.labelEl = document.createElement("span");
-        this.labelEl.className = "webdm-progress-label-text";
+        this.labelEl.className = "omega-progress-label-text";
         labelWrapper.appendChild(this.labelEl);
 
         this.el.appendChild(barWrapper);

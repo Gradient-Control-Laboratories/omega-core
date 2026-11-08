@@ -552,7 +552,7 @@ The Materials panel makes the structural edit once, and its controls under
 each effect adjust the value afterwards, persisting it in the document. The
 **datum** arguments — `axisOrigin`, `axisDir`, `direction`,
 `buildDir`, `flowOrigin` — are not sliders at all: they route to the point and
-normal pick tools webdm already has, since a turned finish's lay follows the
+normal pick tools the viewer already has, since a turned finish's lay follows the
 spindle axis and that is a pick, not a number.
 
 ## Planned: presets now, parameters later
@@ -731,7 +731,7 @@ Bodies chip's convention; the chip row converts the same way.
    from the origin otherwise. The compile result carries no per-body bounds
    today, so nothing defaults to a body's centre; that waits on the bounds.
 5. **`material-assign.js`** gains the expansion as another pure string → string
-   function, tested under Node in `webdm/test` like the rest.
+   function, tested under Node like the rest.
 
 ### Datums are two different things
 
@@ -796,7 +796,7 @@ numbers where an author writes `[0, 0, 1]`, so `@direction` stays its own kind.
    validators, parser tests. No library or golden changes.
 2. Viewer: the direction gizmo and the colour row; `uiControls` kinds.
 3. Libraries: annotate constructor parameters. Behaviour unchanged.
-4. Catalog and panel: parameters in `catalog.json`, Adjust, `webdm/test`.
+4. Catalog and panel: parameters in `catalog.json`, Adjust, unit tests.
 5. After: the operators (`@surface(n)`, parked above) use the same parameter
    annotations; swatch thumbnails that follow a changed colour, which needs a
    basis per coat as the finishes have; intrinsic datums read from `.u`/`.v`
@@ -1061,7 +1061,7 @@ displacement row, as `material.withDisplacement` does.
 2. Libraries: the 28 presets and `material`'s six parameter annotations.
    Behaviour unchanged; the docs show the new overloads.
 3. Catalog: `operators` with `adjust`, the probe compile, `-manifest-only`.
-4. Panel: Wrap, the stack rows, controls and Remove per layer; `webdm/test`.
+4. Panel: Wrap, the stack rows, controls and Remove per layer; unit tests.
 
 ## Parked: the lay at the axis a turned surface turns about
 
