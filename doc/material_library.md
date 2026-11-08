@@ -3,7 +3,7 @@
 A plan for growing the material catalog from 225 entries, 28 of them
 operators, into a library that covers what a part is made of and how it was
 made, across more processes than it does today. Written 2026-10-27 against the
-libraries in `common/source/package/material` and the catalog
+libraries in `stdlib/material` and the catalog
 `tool/materialswatch` renders from them, and revised the same day with the
 plans for relief, stand-ins, datums, animation and detail that every new entry
 follows. The architecture it builds on is in `material_composition.md`;
@@ -708,7 +708,7 @@ marked so, and the rest stand.
   feature fades below 7.5 mm and is gone below 3.8 mm; the 240 pixel preview
   fades below 3 mm. A quarter of the catalog, every machined, printed, powder,
   sand and wrinkle finish, is drawn from its stand-in in the grid by
-  construction. Say so in `common/web/materials`' README so nobody tunes a
+  construction. Say so in `examples/viewer/materials`' README so nobody tunes a
   preset against the thumbnail.
 - **Noise periods are fine.** A cellular field repeats every 64 cells; the
   shortest in the library is glitter's 1 mm flakes, every 64 mm, once across

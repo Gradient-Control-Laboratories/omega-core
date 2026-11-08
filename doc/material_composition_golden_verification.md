@@ -13,8 +13,8 @@ it belongs to (`doc/material_composition.md`) rather than under
 
 ## 1. Executive Summary
 
-Three scalar operators moved from `common/source/package/material/bulk/wood/wood.gsl`
-into `common/source/package/material/material.gsl`, where they are no longer
+Three scalar operators moved from `stdlib/material/bulk/wood/wood.gsl`
+into `stdlib/material/material.gsl`, where they are no longer
 specific to wood:
 
 - `filmKeeps(wavelength, build)` — how much of a relief a film leaves
@@ -35,14 +35,14 @@ was lost from any golden, and no arithmetic changed anywhere.
 ## 2. Inventory of Golden Changes
 
 ```
-M  agent/wgsl/internal/codegen/testdata/example/Material - Knotty Planks.wgsl
-M  agent/wgsl/internal/codegen/testdata/example/Material - Spalted and Wormy.wgsl
-M  agent/wgsl/internal/codegen/testdata/example/Material - Wood Finishes.wgsl
-M  agent/wgsl/internal/codegen/testdata/example/Material - Wood Planks.wgsl
-M  agent/wgsl/internal/codegen/testdata/example/Material - Wood Species.wgsl
+M  backend/wgsl/internal/lib/internal/codegen/testdata/example/Material - Knotty Planks.wgsl
+M  backend/wgsl/internal/lib/internal/codegen/testdata/example/Material - Spalted and Wormy.wgsl
+M  backend/wgsl/internal/lib/internal/codegen/testdata/example/Material - Wood Finishes.wgsl
+M  backend/wgsl/internal/lib/internal/codegen/testdata/example/Material - Wood Planks.wgsl
+M  backend/wgsl/internal/lib/internal/codegen/testdata/example/Material - Wood Species.wgsl
 ```
 
-`UPDATE_GOLDEN=1 go test ./agent/wgsl/internal/codegen/` touched exactly these
+`UPDATE_GOLDEN=1 go test ./backend/wgsl/internal/lib/internal/codegen/` touched exactly these
 five and no others. In particular every non-wood golden is byte-unchanged —
 `material_only`, `material_remap`, `material_blend`, `color_and_material`,
 `Drill` and `Thread_Relief` among them — which is the evidence that the three
@@ -185,8 +185,8 @@ claimed, because none was intended.
 
 ## 7. Determinism & Suite Sign-Off
 
-- `go test ./agent/wgsl/...` — green after regeneration
-- `go test ./common/program/preamble/...` — green
+- `go test ./backend/wgsl/internal/lib/...` — green after regeneration
+- `go test ./internal/preamble/...` — green
 - Re-running the codegen suite reproduces the regenerated goldens bitwise, with
   no further diff.
 

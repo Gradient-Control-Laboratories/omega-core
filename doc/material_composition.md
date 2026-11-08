@@ -34,7 +34,7 @@ the goal the earlier draft designed an architecture for.
 ### Conventions that matter, and one trap
 
 **Lobe widths are alpha, not roughness.** `alpha = roughness^2`
-(`gsl_layAlphas` in `common/web/gsl-shading.js`), so `alpha2 = roughness^4` and
+(`gsl_layAlphas` in `examples/viewer/render/gsl-shading.js`), so `alpha2 = roughness^4` and
 slope variance adds in `alpha^2`. `machined.layFinish(base, direction, along,
 across)` takes `along` and `across` as **alphas** and returns
 `withRoughness(base, sqrt(sqrt(along * across)))`.
@@ -245,7 +245,7 @@ them, which is the pattern the gap above wants generalised.
   The `(material, color, height, slope)` convention already is it.
 - **`material/process`, the prep parameter space and the two-primitive
   collapse.** It would be a fourth implementation of `machined`. An unreferenced
-  `common/source/package/material/process/process.gsl` exists on disk from that
+  `stdlib/material/process/process.gsl` exists on disk from that
   attempt; it is not registered in `pkg_info.go`, nothing imports it, and it
   should be deleted.
 - **The substance record.** A real question, but unrelated to the gap and far
@@ -516,7 +516,7 @@ naming was. So the form would be something like
 
 Annotation arguments already parse (`@range(…)` uses them). Adding a kind means
 one alternation in `parser2/grammar.go`, a case in `annotation.ValidateTarget`,
-and a validator in `common/program/annotation` — then 30 library annotations,
+and a validator in `internal/assembler/annotation` — then 30 library annotations,
 the generator emitting the operator list, and the stack UI.
 
 ### Two routes, smallest first
@@ -615,14 +615,14 @@ needs one.
 ### What the language already has, and does not use
 
 - `@range(min, max)` **on a function parameter** parses, validates
-  (`common/program/propval/validate.go`, `validateFnType`) and is consumed by
+  (`internal/assembler/propval/validate.go`, `validateFnType`) and is consumed by
   nothing: `Parameter.range` is cloned and carried and never read. No library
   uses it. Every constructor's range is prose — "`peel` from 0 (flat) to 1",
   "`layerHeight` 0.1 to 0.3", "`glossUnits`: PLA about 40, PETG 70, matte 10".
 - `@range`, `@point`, `@transform` and `@spline` **on a top-level variable**
   each give a live control: the slider, the point gizmo, the frame gizmo with
   its rotation arcs. They are lowered to `uiPoint`/`uiTransform`/`uiSpline`
-  calls (`agent/parser/internal/annotation.TargetBuiltin`), and the wgsl build
+  calls (`parser/internal/annotation.TargetBuiltin`), and the wgsl build
   lifts each component to a shader uniform (`codegen/build.go`, `uiParams`),
   so a drag never recompiles.
 - There is no direction gizmo, and no colour control anywhere but the Bodies
@@ -758,25 +758,25 @@ numbers where an author writes `[0, 0, 1]`, so `@direction` stays its own kind.
 
 ### Change sites
 
-- `agent/parser/internal/annotation`: kinds `Color`, `Direction`;
+- `parser/internal/annotation`: kinds `Color`, `Direction`;
   `ValidateTarget` admits `Point`, `Transform`, `Color`, `Direction` on
   `TargetParameter`; `TargetBuiltin` maps the two new kinds.
-- `agent/parser/internal/parser2/parse.go`: the parameter loop accepts the
+- `parser/internal/parser2/parse.go`: the parameter loop accepts the
   five kinds, not `range` alone; testdata gains cases.
-- `common/program/program.proto`: `Parameter` gains a kind beside `range`;
+- `program/program.proto`: `Parameter` gains a kind beside `range`;
   `scope.SetParamKind` records it.
-- `common/program/types`: `uiColor` and `uiDirection` take a vec3, as
+- `internal/types`: `uiColor` and `uiDirection` take a vec3, as
   `uiPoint` does. No value check: an emissive colour exceeds 1 on purpose
   (`natural.lava`'s `glowColor`), and a zero direction is for the gizmo that
   normalises it to refuse, not the compiler.
-- `agent/wgsl`: `uiColor` and `uiDirection` join `uiPoint` in `sanitycheck.go`
+- `backend/wgsl/internal/lib`: `uiColor` and `uiDirection` join `uiPoint` in `sanitycheck.go`
   and the `uiParams` extraction; `uiControls[]` carries the kind.
-- `common/web/gsl-ui.js`: kind `direction` — an arrow, drag on a sphere, snap
-  to axes, `formatVec` on commit. `common/web/slider-panel.js`: a chip row for
+- `examples/viewer/render/gsl-ui.js`: kind `direction` — an arrow, drag on a sphere, snap
+  to axes, `formatVec` on commit. `examples/viewer/panels/slider-panel.js`: a chip row for
   kind `color`, sharing the Bodies chip's widget and hex ↔ literal code.
 - `tool/materialswatch`: parameters and template per preset, read from the
   assembled program rather than the regex scan.
-- `common/web/material-grid.js` and `material-assign.js`: Adjust, and the
+- `examples/viewer/panels/material-grid.js` and `material-assign.js`: Adjust, and the
   controls under each effect.
 - The libraries: annotate the constructors. Colours are the `*Color`
   arguments and `tint`; directions are `direction`, `buildDir`, `axisDir`,
@@ -896,7 +896,7 @@ taking only what the panel can supply and baking the rest:
   goldens moved, all with redundant zero-lay blends). It now follows calls
   from the document's top level, through its own and the imported packages'
   functions and constants, so what no path reaches does not count
-  (`common/program/property/lay.go`, with `lay_test.go`).
+  (`internal/assembler/property/lay.go`, with `lay_test.go`).
 
 ### The defaults
 

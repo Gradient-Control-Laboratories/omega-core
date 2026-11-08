@@ -8,7 +8,7 @@ metal's reflectance. Galvanizing gains an overload over a base, which moved its
 stand-in into a helper, `galvanizedFlat`. Material - Coated calls galvanizing,
 and its WGSL differs from before only in the colors below.
 
-Nineteen goldens moved, all under `agent/wgsl/internal/codegen/testdata/`:
+Nineteen goldens moved, all under `backend/wgsl/internal/lib/internal/codegen/testdata/`:
 eighteen examples and the `TestBuild` fixture `color_and_material`. Regenerated
 with Blake's go.
 
