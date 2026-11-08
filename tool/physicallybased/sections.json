@@ -1,0 +1,105 @@
+{
+ "Metal": [
+  "Aluminum",
+  "Brass",
+  "Cast Iron",
+  "Chromium",
+  "Copper",
+  "Gold",
+  "Iron",
+  "Lead",
+  "Magnesium",
+  "Nickel",
+  "Silver",
+  "Stainless Steel",
+  "Titanium",
+  "Zinc"
+ ],
+ "Exotic metals": [
+  "Beryllium",
+  "Cesium",
+  "Cobalt",
+  "Germanium",
+  "Iridium",
+  "Lithium",
+  "Manganese",
+  "Mercury",
+  "Molybdenum",
+  "Palladium",
+  "Platinum",
+  "Potassium",
+  "Rubidium",
+  "Silicon",
+  "Sodium",
+  "Tungsten",
+  "Vanadium"
+ ],
+ "Anodized metals": [
+  "Aluminum (Anodized Red)",
+  "Titanium (Anodized)"
+ ],
+ "Glass": [
+  "Glass (Borosilicate)",
+  "Glass (Soda-lime)"
+ ],
+ "Crystal": [
+  "Diamond",
+  "Quartz",
+  "Salt",
+  "Sapphire"
+ ],
+ "Stone": [
+  "Marble"
+ ],
+ "Natural": [
+  "Ice",
+  "Sand",
+  "Snow"
+ ],
+ "Food": [
+  "Banana",
+  "Carrot",
+  "Chocolate",
+  "Honey (Crystallized)",
+  "Ketchup",
+  "Lemon",
+  "Orange"
+ ],
+ "Masonry": [
+  "Asphalt (Fresh)",
+  "Brick",
+  "Concrete"
+ ],
+ "Ceramic": [
+  "Clay",
+  "Porcelain",
+  "Terracotta"
+ ],
+ "Paper": [
+  "Cardboard",
+  "Office Paper",
+  "Toilet Paper"
+ ],
+ "Foams": [
+  "Polystyrene (Foam)"
+ ],
+ "Paint": [
+  "Blackboard",
+  "Car Paint",
+  "Whiteboard"
+ ],
+ "Plastic": [
+  "Tire"
+ ],
+ "Liquid": [
+  "Toothpaste"
+ ],
+ "Reference": [
+  "Gray Card",
+  "MIT Black",
+  "Musou Black",
+  "Rust",
+  "Spectralon",
+  "Toner (Black)"
+ ]
+}
