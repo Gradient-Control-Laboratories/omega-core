@@ -4,26 +4,12 @@ import (
 	"fmt"
 	"math"
 
+	"gradientcontrol.com/omega/core/assembler/warpfold"
 	"gradientcontrol.com/omega/core/internal/eval"
 	"gradientcontrol.com/omega/core/internal/meshfold"
-	"gradientcontrol.com/omega/core/internal/meshslots"
+	"gradientcontrol.com/omega/core/assembler/meshslots"
 	"gradientcontrol.com/omega/core/program"
 )
-
-// WarpResolver resolves simulation files and bakes or resolves derived warped mesh slots.
-type WarpResolver interface {
-	ResolveWarpedSlot(meshSlot int, pkgDir, warpPath string, scale float64) (int, error)
-}
-
-// WarpedAsset records a derived warped mesh slot resolved during FoldProgram so callers
-// can materialize or cache the deformed mesh asset at DerivedSlot.
-type WarpedAsset struct {
-	DerivedSlot int
-	MeshSlot    int
-	WarpDir     string
-	WarpPath    string
-	Scale       float64
-}
 
 // GraphPackages returns every package in the import graph rooted at root (with optional byte
 // overrides) that contains any warp-related import or builtin call.
@@ -282,7 +268,7 @@ func stringFromOperand(op *program.Operand) string {
 // FoldProgram folds all warp simulations and rewrites meshWarped/vdbSdfWarped calls across
 // the program graph using the provided WarpResolver, returning the folded program and the
 // deduplicated list of resolved WarpedAsset descriptors.
-func FoldProgram(prog *program.Program, resolver WarpResolver) (*program.Program, []WarpedAsset, error) {
+func FoldProgram(prog *program.Program, resolver warpfold.WarpResolver) (*program.Program, []warpfold.WarpedAsset, error) {
 	if prog == nil || resolver == nil {
 		return prog, nil, nil
 	}
@@ -337,7 +323,7 @@ func FoldProgram(prog *program.Program, resolver WarpResolver) (*program.Program
 		}
 	}
 
-	var warpedAssets []WarpedAsset
+	var warpedAssets []warpfold.WarpedAsset
 	seenDerived := make(map[int]bool)
 
 	for _, gp := range foldedPkgs {
@@ -363,11 +349,11 @@ type warpFolder struct {
 	prog         *program.Program
 	pkg          *program.Package
 	pkgPath      string
-	resolver     WarpResolver
+	resolver     warpfold.WarpResolver
 	warps        *WarpSlots
 	slotResolver meshslots.Resolver
 	seenDerived  map[int]bool
-	warpedAssets *[]WarpedAsset
+	warpedAssets *[]warpfold.WarpedAsset
 }
 
 func (f *warpFolder) foldPackage() error {
@@ -515,7 +501,7 @@ func (f *warpFolder) rewrite(fc *program.FnCall, op *program.Operand, plain stri
 	// Invariant: f.warpedAssets and f.seenDerived are guaranteed non-nil by FoldProgram.
 	if !f.seenDerived[derivedSlot] {
 		f.seenDerived[derivedSlot] = true
-		*f.warpedAssets = append(*f.warpedAssets, WarpedAsset{
+		*f.warpedAssets = append(*f.warpedAssets, warpfold.WarpedAsset{
 			DerivedSlot: derivedSlot,
 			MeshSlot:    meshSlot,
 			WarpDir:     ref.Dir,

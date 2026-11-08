@@ -1,7 +1,7 @@
 // Scene Size: 120
 // Scene Grid: 10
 
-// The surfaces printing leaves (material/printed), all built along +Z: fused
+// The surfaces printing leaves (material/process/printed), all built along +Z: fused
 // filament's beads, resin's fine layers, nylon powder beds and laser-melted
 // titanium. Spheres and cones show the layers spreading into stair-steps as
 // the surface tilts toward the build plate, and gone where it lies flat. Each

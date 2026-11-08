@@ -7,11 +7,20 @@ import (
 	participle "github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
 
+	"gradientcontrol.com/omega/core/internal"
 	"gradientcontrol.com/omega/core/internal/scope"
-	api "gradientcontrol.com/omega/core/parser/internal/api"
 	"gradientcontrol.com/omega/core/program"
-	"gradientcontrol.com/omega/core/program/scene"
 )
+
+// Result holds the parsed package.
+//
+// Invariants:
+//   - Result and Result.Package are never nil.
+//   - Result.Package.Files always contains at least one non-nil *program.PackageFile
+//     (len(res.Package.Files) >= 1 and res.Package.Files[0] != nil).
+type Result struct {
+	Package *program.Package
+}
 
 var gslLexer = lexer.MustSimple([]lexer.SimpleRule{
 	{Name: "Comment", Pattern: `//.*|/\*[\s\S]*?\*/`},
@@ -48,19 +57,19 @@ var options = []participle.Option{
 // Parse parses all source files in a package into a program.Package.
 //
 // Invariants:
-//   - The returned *api.ParseResult and its Package are never nil.
+//   - The returned *Result and its Package are never nil.
 //   - Package.Files always contains at least one non-nil *program.PackageFile
 //     (len(res.Package.Files) >= 1 and res.Package.Files[0] != nil).
-//   - If a syntax or semantic error occurs, res.Errors contains the error and
+//   - If a syntax or semantic error occurs, Parse returns the *program.Error and
 //     res.Package preserves all files, scene metadata, imports, and declarations
 //     completed prior to the error.
-func Parse(sources []string) (*api.ParseResult, error) {
+func Parse(sources []string) (*Result, error) {
 	pkg := &program.Package{
 		VersionMajor: program.VersionMajor,
 		VersionMinor: program.VersionMinor,
 		Files:        make([]*program.PackageFile, 0, max(1, len(sources))),
 	}
-	res := &api.ParseResult{
+	res := &Result{
 		Package: pkg,
 	}
 	if len(sources) == 0 {
@@ -88,14 +97,14 @@ func Parse(sources []string) (*api.ParseResult, error) {
 		topLevel, perr := parser.ParseString("", source)
 		if topLevel == nil {
 			if perr == nil {
-				perr = program.InternalErr(errors.New("nil AST with no parse error"))
+				perr = internal.Err(errors.New("nil AST with no parse error"))
 			}
 			return recordFileError(res, pkgFile, source, perr)
 		}
 
 		if i == 0 {
 			if topLevel.Scene != nil {
-				sc, err := scene.New(topLevel.Scene.Size, topLevel.Scene.Grid,
+				sc, err := newScene(topLevel.Scene.Size, topLevel.Scene.Grid,
 					posToLocation(topLevel.Scene.Pos), posToLocation(topLevel.Scene.EndPos))
 				if err != nil {
 					return recordFileError(res, pkgFile, source, participle.Errorf(topLevel.Scene.Pos, "%s", err.Error()))
@@ -124,10 +133,10 @@ func Parse(sources []string) (*api.ParseResult, error) {
 	return res, nil
 }
 
-func recordFileError(res *api.ParseResult, pkgFile *program.PackageFile, source string, err error) (*api.ParseResult, error) {
+func recordFileError(res *Result, pkgFile *program.PackageFile, source string, err error) (*Result, error) {
 	pkgFile.Source = source
-	res.Errors = append(res.Errors, ParseError(source, err))
-	return res, nil
+	pErr := ParseError(source, err)
+	return res, &pErr
 }
 
 func ParseError(source string, err error) program.Error {

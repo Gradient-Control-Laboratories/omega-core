@@ -1,4 +1,0 @@
-import "pkg2";
-
-t = pkg2.castArea(pkg2.castSize);
-return t;

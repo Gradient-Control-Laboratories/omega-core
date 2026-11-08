@@ -484,3 +484,102 @@ cubehelix(t) {
     s + a * (-0.29227 * cp - 0.90649 * sp),
     s + a * (1.97294 * cp)]);
 }
+
+// ===========================================================================
+// Thin-film interference — the colour of a film `thickness` nm thick on a
+// substrate, seen straight on: a colour field sees no view direction, so the
+// shift of a real film with angle is out of reach. A single layer's
+// reflectance spectrum (Airy's formula with real indices) is integrated
+// against the CIE 1931 colour matching functions, white-balanced so a film
+// reflecting everything is white, and written as sRGB.
+//
+// Sources:
+//   Wyman, C., Sloan, P.-P., Shirley, P. (2013). Simple analytic
+//     approximations to the CIE XYZ color matching functions. Journal of
+//     Computer Graphics Techniques, 2(2), 1-11. The multi-lobe fit (its
+//     equation 4), as the paper's listing writes it, with inverse widths.
+//     https://jcgt.org/published/0002/02/01/
+//   IEC 61966-2-1:1999. sRGB: the XYZ (D65) to linear sRGB matrix.
+// ===========================================================================
+
+// Every 10 nm across the visible band. The matching functions' narrowest lobe
+// is 11.8 nm wide, so every lobe is sampled; the sum is unrolled at compile
+// time and the matching functions fold to constants, leaving one cosine per
+// wavelength.
+filmWavelengths = [
+  380, 390, 400, 410, 420, 430, 440, 450, 460, 470, 480, 490,
+  500, 510, 520, 530, 540, 550, 560, 570, 580, 590, 600, 610,
+  620, 630, 640, 650, 660, 670, 680, 690, 700, 710, 720, 730];
+
+// One lobe of the fit: a Gaussian in the wavelength w (nm) with a width of
+// its own each side of the centre, the widths as inverse sigmas.
+cmfLobe(w, centre, left, right) {
+  t = (w - centre) * (w < centre ? left : right);
+  return exp(-0.5 * t * t);
+}
+
+// The CIE 1931 colour matching functions at w nm, [x, y, z].
+cmf(w) {
+  return [
+    0.362 * cmfLobe(w, 442.0, 0.0624, 0.0374) + 1.056 * cmfLobe(w, 599.8, 0.0264, 0.0323) - 0.065 * cmfLobe(w, 501.1, 0.0490, 0.0382),
+    0.821 * cmfLobe(w, 568.8, 0.0213, 0.0247) + 0.286 * cmfLobe(w, 530.9, 0.0613, 0.0322),
+    1.217 * cmfLobe(w, 437.0, 0.0845, 0.0278) + 0.681 * cmfLobe(w, 459.0, 0.0385, 0.0725)];
+}
+
+// filmReflectance(w, thickness, filmIndex, substrateIndex): the reflectance
+// at w nm, straight on, of a film `thickness` nm thick of index filmIndex on
+// a substrate of index substrateIndex, air above: the two interfaces'
+// Fresnel amplitudes summed over every bounce (Airy).
+filmReflectance(w, thickness, filmIndex, substrateIndex) {
+  r12 = (1 - filmIndex) / (1 + filmIndex);
+  r23 = (filmIndex - substrateIndex) / (filmIndex + substrateIndex);
+  c = cos(4 * pi * filmIndex * thickness / w);
+  return (r12 * r12 + r23 * r23 + 2 * r12 * r23 * c) / (1 + r12 * r12 * r23 * r23 + 2 * r12 * r23 * c);
+}
+
+// spectrumLinear(xyz): a reflectance spectrum's XYZ, summed over
+// filmWavelengths, as linear-light RGB, with a flat spectrum of 1 mapped to
+// sRGB's white: the XYZ of the flat spectrum is scaled to D65's, then the
+// sRGB matrix. Out of gamut is left as it is, for ratios.
+spectrumLinear(xyz) {
+  white = reduce([0, 0, 0], (acc, w) { return acc + cmf(w); }, filmWavelengths);
+  b = xyz / white * [0.9505, 1.0, 1.089];
+  return [
+    3.2406 * b.x - 1.5372 * b.y - 0.4986 * b.z,
+    -0.9689 * b.x + 1.8758 * b.y + 0.0415 * b.z,
+    0.0557 * b.x - 0.2040 * b.y + 1.0570 * b.z];
+}
+
+// thinFilmLinear: thinFilm in linear light, unclamped.
+thinFilmLinear(thickness, filmIndex, substrateIndex) {
+  xyz = reduce([0, 0, 0], (acc, w) { return acc + cmf(w) * filmReflectance(w, thickness, filmIndex, substrateIndex); }, filmWavelengths);
+  return spectrumLinear(xyz);
+}
+
+/// thinFilm(thickness, filmIndex, substrateIndex): the colour a film
+/// `thickness` nm thick of index filmIndex reflects, straight on, over a
+/// substrate of index substrateIndex, with air above, under a white light. A
+/// soap film is 1.33 over air (1), where zero thickness reflects nothing; an
+/// oxide on glass is about 2.4 over 1.5. A film that reflects everything is
+/// white, and a film too thick to colour (past about 400 nm) is grey. For a
+/// film on a metal, see thinFilmOver.
+thinFilm(thickness, filmIndex, substrateIndex) {
+  return gammaEncode(clampColor(thinFilmLinear(thickness, filmIndex, substrateIndex)));
+}
+
+/// thinFilmOver(thickness, filmIndex, baseColor): the colour of a metal of
+/// colour baseColor under a film `thickness` nm thick of index filmIndex:
+/// the metal's colour, tinted by the film's interference, as the temper
+/// colours of heated steel and anodized titanium are. The metal's reflection
+/// stands in as a real index with the colour's own luminance as its
+/// reflectance (about 13 for steel), which reflects the metal's amplitude and
+/// flips the phase as a metal does; the film's colour relative to the bare
+/// metal then tints the base in linear light. Zero thickness returns
+/// baseColor.
+thinFilmOver(thickness, filmIndex, baseColor) {
+  base = linearize(baseColor);
+  rootR = sqrt(clamp(dot([0.2126, 0.7152, 0.0722], base), 0.02, 0.98));
+  substrate = (1 + rootR) / (1 - rootR);
+  tint = thinFilmLinear(thickness, filmIndex, substrate) / thinFilmLinear(0, filmIndex, substrate);
+  return gammaEncode(clampColor(base * tint));
+}

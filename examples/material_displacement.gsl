@@ -1,0 +1,46 @@
+@scene(40)
+
+// Displacement: the third row of a material record carries a signed height in
+// millimetres, set with material.withDisplacement. The renderer marches the
+// displaced field, distance minus height, so the surface genuinely moves:
+// the silhouette follows the relief, the contact shading sees it, and looking
+// through displaced glass bends on it. Positive height pushes outward.
+//
+// It is a render-only finish. The mesher and every export path evaluate the
+// undisplaced shape, so what is manufactured does not change, and the section
+// plane still cuts the geometry as it is built. Relief that should be
+// manufactured is a geometry operation instead, and the mesher does see that:
+//
+//     ball = sphere(3) - 0.3 * noise.cellularEdges(1.5);
+//
+// The height is a field of p like any other, so it blends across booleans and
+// follows a remap with the shape it belongs to.
+
+stainlessMat, stainlessColor = metal.stainless();
+
+spacing = 9;
+
+// One cellular noise, three amplitudes, in millimetres on a 3 mm sphere.
+pebble = noise.cellularEdges(1.5);
+
+smoothBall = transform.translate(sphere(3), [-1.5 * spacing, 0, 0]);
+smoothBall.material = material.plastic;
+smoothBall.color = color.teal;
+
+peelBall = transform.translate(sphere(3), [-0.5 * spacing, 0, 0]);
+peelBall.material = material.withDisplacement(material.plastic, pebble * 0.2);
+peelBall.color = color.teal;
+
+roughBall = transform.translate(sphere(3), [0.5 * spacing, 0, 0]);
+roughBall.material = material.withDisplacement(material.plastic, pebble * 0.6);
+roughBall.color = color.teal;
+
+// Any field works, not only noise: a triangle wave of z cuts rings. The wave
+// returns +/- period/2, so this is a 0.3 mm groove depth.
+rings = map.triangleWave(p.z, 0.6);
+
+spool = transform.translate(cylinderCapped([0, 0, -3], [0, 0, 3], 2.5, intersectRound(0.3)), [1.5 * spacing, 0, 0]);
+spool.material = material.withDisplacement(stainlessMat, rings);
+spool.color = stainlessColor;
+
+return smoothBall, peelBall, roughBall, spool;

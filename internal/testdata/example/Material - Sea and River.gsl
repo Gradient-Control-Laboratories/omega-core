@@ -1,7 +1,7 @@
 // Scene Size: 70
 // Scene Grid: 10
 
-// Water that moves by its own physics (material/animated): a sphere of sea
+// Water that moves by its own physics (material/collection/animated): a sphere of sea
 // whose waves run at the speed their length gives them, and a river whose
 // ripples ride the current past standing waves and glassy boils.
 // Time runs in real seconds and only space is scaled, as in a miniature.
@@ -35,10 +35,11 @@ ball(column, row) {
   return transform.translate(sphere(12), [32 * column, -32 * row, 0]);
 }
 
-// A sea at 0.12 mm to the metre: at 10 m/s its waves are 83 m long, 10 mm
-// here, and 7 s apart. Its waves move the shape itself, divided by 1 + slope
+// A sea at 0.12 mm to the metre, whose waves grow with the square of the wind:
+// at 10 m/s they are 83 m long, 10 mm here, and 7 s apart. Its waves move the
+// shape itself, divided by 1 + slope
 // to stay a safe distance for the march. 60% of the light passes through it.
-seaMat, seaColor, seaHeight, seaSlope = animated.ocean(0.12, windSpeed, wind, choppiness);
+seaMat, seaColor, seaHeight, seaSlope = animated.ocean(0.1 * windSpeed * windSpeed, windSpeed, wind, choppiness);
 sea = (ball(-0.5, 0) - seaHeight) / (1 + seaSlope);
 sea.material = material.withTransmission(seaMat, 0.6, 24);
 sea.color = seaColor;

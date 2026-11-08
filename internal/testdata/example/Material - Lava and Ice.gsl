@@ -1,7 +1,7 @@
 // Scene Size: 70
 // Scene Grid: 10
 
-// Plates that drift, form and are swallowed (material/animated): the crust of
+// Plates that drift, form and are swallowed (material/collection/animated): the crust of
 // a lava lake tearing open along glowing seams, and pack ice drifting apart
 // over dark water.
 // Time runs in real seconds and only space is scaled, as in a miniature.

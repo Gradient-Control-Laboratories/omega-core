@@ -1,0 +1,32 @@
+@scene(300, 25)
+
+// A gallery of honeycomb (cell-wall) lattices: seven 2D cell patterns side by
+// side along X, each extruded straight through Z in its own 28 mm cube. A
+// honeycomb is returned infinitely thin (the distance to the skeleton of cell
+// walls); lattice.solidify grows that into walls of half-width `bias`, and each
+// cube is clipped to its box and returned as a separate object. Compare how the
+// cell shape (square, diagonal, hexagonal, triangular) and the joint blends
+// change the walls.
+
+bias = 0.5;    // wall half-width (mm)
+r = 14;        // specimen half-size (mm)
+step = 34;     // spacing along X (mm)
+
+// Solidify a thin wall field and clip it to a cube centered at x = off.
+specimen(field, off) {
+  return max(lattice.solidify(field, bias), boxCentered([off, 0, 0], [2 * r, 2 * r, 2 * r]));
+}
+
+// Left to right: plain square cells, square cells with diagonals, two
+// reinforced square cells (the second with sharp joins), the octet cell, and
+// the hexagonal and triangular honeycombs, the last three blended with
+// unionRound.
+sqr = specimen(honeycomb.squareHoneycomb([10, 10]),                       -3 * step);
+dia = specimen(honeycomb.squareDiagonalHoneycomb([10, 10]),              -2 * step);
+rf1 = specimen(honeycomb.squareHoneycombReinforced([10, 10], 0.25),       -1 * step);
+rf2 = specimen(honeycomb.squareHoneycombReinforced([10, 10], 0.25, 0.75, unionSharp), 0 * step);
+oct = specimen(honeycomb.octetHoneycomb([12, 12], unionRound(0.3)),                       1 * step);
+hex = specimen(honeycomb.hexagonalHoneycomb(8, unionRound(0.3)),                        2 * step);
+tri = specimen(honeycomb.triangularHoneycomb(8, unionRound(0.2)),                       3 * step);
+
+return sqr, dia, rf1, rf2, oct, hex, tri;

@@ -2,9 +2,9 @@ package meshfold
 
 import (
 	"google.golang.org/protobuf/proto"
+	"gradientcontrol.com/omega/core/assembler/meshslots"
 	"gradientcontrol.com/omega/core/internal/closure"
 	"gradientcontrol.com/omega/core/internal/eval"
-	"gradientcontrol.com/omega/core/internal/meshslots"
 	"gradientcontrol.com/omega/core/internal/types"
 	"gradientcontrol.com/omega/core/program"
 )

@@ -268,7 +268,7 @@ type AnnotatedExpr struct {
 }
 
 // ImportRef is the expression form of an asset import: `importStep "file.stp"`,
-// `importMesh "file.stl"`, `importWarp "run.castsim"`. Unlike the numbered
+// `importMesh "file.stl"`, `importWarp "run.warp"`. Unlike the numbered
 // statement forms (MeshImport/StepImport/WarpImport, which carry an
 // author-chosen slot), the expression evaluates to a compiler-assigned slot id,
 // so it can be assigned to a variable and returned (e.g.

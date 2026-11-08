@@ -63,6 +63,11 @@ ${switchCases.join("\n")}
 `;
 }
 
+// How close to a surface, in mm, a march starts paying for the displaced field:
+// the primary march and the secondary one agree on it (see gsl_dispNearMargin
+// in the primary march for why 4).
+const DISP_NEAR_MARGIN = "4.0";
+
 // No casting overlay: webdm passes its castingFieldInfo() in its place.
 const NO_CAST = Object.freeze({ active: false, paramsWGSL: "" });
 
@@ -258,9 +263,11 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
       : `let ${name} = gsl_shapeColor(${sd}.shapeIndex, ${colorArgsWGSL.join(", ")});`;
   // Built for every program, since the progressive pass marches with it too;
   // it only reaches the standard fragment through glassDeps.
-  const gsl_marchSecondary = wgslFn(marchDisplaced(injectExtraArgs(marchSecondaryWGSL(extraParamsWGSL,
-                                      { parts, displace: displaceActive }))),
-                                    [fieldDep, gsl_secondaryHit]);
+  // It writes its own near and far phases, as the primary march does, so it
+  // is not renamed wholesale.
+  const gsl_marchSecondary = wgslFn(injectExtraArgs(marchSecondaryWGSL(extraParamsWGSL,
+                                      { parts, displace: displaceActive, nearMargin: DISP_NEAR_MARGIN, extraArgsWGSL })),
+                                    [sdShape, gsl_secondaryHit, ...(displaceActive ? [gsl_displaceSample, gsl_displaceState] : [])]);
   const gsl_shadeGlass = hasMaterialField
     ? wgslFn(
         injectExtraArgs(shadeGlassWGSL({
@@ -270,7 +277,7 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
           colorStmt,
           materialAt,
         })),
-        [sdShape, gsl_material, gsl_calcNormal, gsl_shapeColor, gsl_shadeSurface, gsl_marchSecondary],
+        [sdShape, gsl_material, gsl_calcNormal, gsl_shapeColor, gsl_shadeSurface, gsl_marchSecondary, gsl_displaceState],
       )
     : null;
   const glassDeps = hasMaterialField ? [gsl_shadeGlass] : [];
@@ -391,13 +398,17 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
                 // The taps as one list, so the gradient below calls sdShape once
                 // in a loop (see gsl_calcNormal).
                 let kTaps = array<vec3<f32>, 4>(k0, k1, k2, k3);
-                ${displaceActive ? `// Height is render-only relief; every preset today displaces by
-                // well under 0.5 world units, so this is a generously
-                // conservative bound on how close a ray needs to be before
-                // the displaced (material-evaluating) field can matter.
-                // Farther out, the plain undisplaced field is a safe,
-                // much cheaper proxy for step-size purposes.
-                let gsl_dispNearMargin = 2.0;` : ""}
+                ${displaceActive ? `// Height is render-only relief. This is how close a ray has to
+                // be before the displaced (material-evaluating) field can
+                // matter; farther out, the plain undisplaced field is a safe,
+                // much cheaper proxy for step-size purposes. Its edge is a
+                // jump of the height in the marched field, and the crossed
+                // test below gives up on a jump past jumpSlack times the
+                // interval, so a height has to stay well under the margin:
+                // at 2.0 the peaks opened into holes from about 1.7 mm up
+                // (measured on natural.terrain). The largest preset height
+                // today is the terrain's 2.5 mm.
+                let gsl_dispNearMargin = ${DISP_NEAR_MARGIN};` : ""}
                 ${parts ? `// While it marches, a part far from the ray reads as its box
                 // (vanish.go): past four pixels at the far end of the ray and
                 // never under eight hit tolerances${displaceActive ? ", beyond the reach of\n                // displacement" : ""}. Shading below reads every part whole.
@@ -665,8 +676,9 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
         materialAt,
         texturePw,
         setDispDrawn: setHitState,
+        displace: displaceActive,
       })),
-      [sdShape, gsl_material, gsl_calcNormal, gsl_shapeColor, gsl_shadeSurface, gsl_marchSecondary, gsl_traceState, ...partDetailDeps],
+      [sdShape, gsl_material, gsl_calcNormal, gsl_shapeColor, gsl_shadeSurface, gsl_marchSecondary, gsl_traceState, ...partDetailDeps, ...(displaceActive ? [gsl_displaceState] : [])],
     );
     ptFragment = wgslFn(`
         fn gsl_progressiveFragment(
@@ -712,12 +724,12 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
     `, [gsl_traceSample, gsl_isShapeVisible, ...displaceDeps, ...partDetailDeps]);
   }
 
-  // The Simple tier (gsl-simple.js): a plain sphere trace and a headlight,
+  // The Schematic tier (gsl-simple.js): a plain sphere trace and a headlight,
   // on the undisplaced field.
   const simpleFragment = wgslFn(
-    injectExtraArgs(simpleFragmentWGSL({ visParamsWGSL, visArgsWGSL, extraParamsWGSL,
+    injectExtraArgs(simpleFragmentWGSL({ visParamsWGSL, visArgsWGSL, colorParamsWGSL, colorArgsWGSL, extraParamsWGSL,
       setupWGSL: partDetailSetupWGSL(wgslCode), parts })),
-    [sdShape, gsl_isShapeVisible, ...partDetailDeps],
+    [sdShape, gsl_isShapeVisible, gsl_shapeColor, ...partDetailDeps],
   );
 
   return {

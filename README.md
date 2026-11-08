@@ -69,8 +69,7 @@ omega-core/
 │   └── serve/                 # Local HTTP server and WebGPU viewer host
 │       └── main.go            # Entry point and HTTP server startup
 ├── examples/                  # Curated showcase GSL models and assets
-│   ├── gears.gsl              # Parametric helical gear pair showcase (from common/web/example/Gears.gsl)
-│   ├── glass.gsl              # Transmissive glass and refraction showcase (from common/web/example/Material - Glass.gsl)
+│   ├── *.gsl                  # Showcase models, one per file: mechanical (gears, fasteners, drivers, linkages), lattices and TPMS, blends, materials, noise, text, math. Each opens with @scene, sized to fit its viewing box
 │   ├── assets/                # Traditional CAD mesh assets (bracket.stl)
 │   └── viewer/                # Interactive WebGPU viewer web application
 │       ├── README.md          # Viewer usage and architecture overview
@@ -101,6 +100,7 @@ omega-core/
 │   │   ├── textures/          # Texture descriptor binding
 │   │   ├── topofold/          # Topological folding
 │   │   ├── unroll/            # Loop unrolling transformations
+│   │   ├── variation/         # Sub-program and variation slicing (from common/program/variation)
 │   │   └── warpfold/          # Warp fold transformations
 │   ├── build/                 # Shared AST visitor and builder copied from common/build
 │   ├── closure/               # Lambda closure analysis and capture binding
@@ -159,11 +159,15 @@ omega-core/
 │   ├── transform/
 │   └── vector/
 └── tool/                      # Developer build and automation scripts
-    ├── build.sh               # Builds compiler executables into bin/
+    ├── build-cli.sh          # Builds compiler CLI executables (gsl, compile, serve, fix) into bin/
+    ├── build-fidget.sh        # Builds Fidget and Manifold Rust/C++ native and WASM artifacts
+    ├── build-proto.sh         # Compiles program.proto and tape.proto into Go bindings
+    ├── build-wgsl-accel-ops.sh # Regenerates WGSL hardware acceleration ops table and inliner registry
     ├── check.sh               # Pre-commit quality gate (gofmt, go vet, tests)
     ├── clean.sh               # Cleans bin/ outputs, test cache, and scratch files
     ├── test.sh                # Runs unit, integration, and golden test suites
-    └── update-goldens.sh      # Regenerates reference test goldens
+    ├── update-goldens.sh      # Regenerates reference test goldens
+    └── run-go-tests/          # Go test suite runner, timing history, and golden size reporter (from tool/run-go-tests)
 ```
 
 ## Building the Toolchain
@@ -171,7 +175,7 @@ omega-core/
 Compile the `gsl`, `compile`, `serve`, and `fix` binaries into `bin/`:
 
 ```bash
-./tool/build.sh
+./tool/build-cli.sh
 ```
 
 Run pre-commit quality checks (gofmt, go vet, and tests):

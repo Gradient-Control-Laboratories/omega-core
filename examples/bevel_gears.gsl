@@ -1,0 +1,71 @@
+@scene(300, 30)
+
+// A pair of meshing bevel gears, all lengths in millimetres. A bevel pair
+// carries motion around a corner. Both pitch cones share one apex at the
+// origin, so shaftAngle is the angle between the shafts and the two pitch
+// angles always add up to it. Drag it and the pair stays in mesh -- and the
+// gears change size, because a bevel gear's cone distance is fixed by its
+// teeth, module and pitch angle rather than being free the way a spur gear's
+// thickness is. That is why faceWidth here is a fraction of the cone distance
+// instead of a length. Time turns the pair one tooth per second.
+
+// One tooth of travel per second; gear 1 forward, gear 2 back by the ratio.
+animate = mod(time, 1);
+
+// Tooth counts, and the module (mm): the tooth size at the outer end.
+@range(14, 30) numTeeth1 = 16;
+@range(14, 30) numTeeth2 = 24;
+@range(2, 10) moduleVal = 5.0;
+
+// Pressure angle of the tooth flanks, in radians (0.35 is about 20 degrees).
+@range(0.2, 0.5) pressureAngle = 0.35;
+
+// A right angle by default, but nothing here needs one. The range stops short
+// of the shaft angle that would drive the slower gear's pitch cone out toward
+// a flat crown, where the back-cone approximation these teeth are built on
+// gives out.
+@range(0.9, 1.75) shaftAngle = 1.5707963;
+
+// The angle the tooth trace makes with the cone element: 0 is a straight
+// bevel, anything else a spiral bevel. Gear 2 is given the opposite hand
+// automatically -- a same-hand pair collides instead of meshing.
+@range(-1, 1) spiralAngle = 0.5;
+
+// Face width as a fraction of the cone distance; gear practice keeps it
+// under about a third.
+@range(0.1, 0.4) faceFraction = 0.3;
+
+// The teeth run out on the two cones normal to the pitch cone, and each of
+// those is cut by a flat face set this many millimetres along the axis from
+// that end's outer tooth-tip corner. Take crownToBack to zero and the back
+// face flattens out level with the tips; open it and the face stands proud
+// with the tooth heels stepping down to it. recess does the mirror at the
+// small end, setting the face back so the teeth project toward the mate.
+@range(0, 15) crownToBack = 4.0;
+@range(0, 15) recess = 4.0;
+
+// The hub, which on a bevel gear rides the heel: standoffHeight is what it
+// projects past the back face, so zero (with the chamfer taken to zero too)
+// is a bare blank. Hub diameters, chamfer and bores are in mm.
+@range(0, 25) standoffHeight = 12.0;
+standoffDiam1 = 30;
+standoffDiam2 = 36;
+standoffChamfer = 1;
+
+// Running clearance between the teeth (mm), the through bores (mm), the extra
+// root depth as a fraction of the module, and the small chamfer (mm) that
+// breaks the tooth tips and edges.
+backlash = 0.25;
+boreDiam1 = 15;
+boreDiam2 = 20;
+dedendumClearance = 0.25;
+kSmall = 0.25;
+
+// The outer cone distance fixes the face width from the fraction above.
+pitchAngle1 = gears.bevelPitchAngle(numTeeth1, numTeeth2, shaftAngle);
+outerCone = numTeeth1 * moduleVal / (2 * sin(pitchAngle1));
+faceWidth = outerCone * faceFraction;
+
+g1, g2 = gears.bevelPair(numTeeth1, numTeeth2, moduleVal, pressureAngle, shaftAngle, spiralAngle, faceWidth, crownToBack, recess, backlash, standoffDiam1, standoffDiam2, standoffHeight, standoffChamfer, boreDiam1, boreDiam2, dedendumClearance, kSmall, animate);
+
+return g1, g2;

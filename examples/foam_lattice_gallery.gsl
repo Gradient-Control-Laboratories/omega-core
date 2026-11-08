@@ -1,0 +1,27 @@
+@scene(160, 20)
+
+// A gallery of foam (plate) lattices: four plate-lattice families side by
+// side along X, each repeated through its own 28 mm cube. A foam is returned
+// infinitely thin (the distance to the skeleton of walls); lattice.solidify
+// grows that into plates of half-width `bias`, and each cube is clipped to its
+// box and returned as a separate object. The argument to each foam is the join
+// that blends the plates where they meet.
+
+bias = 0.6;    // wall half-width (mm)
+r = 14;        // specimen half-size (mm)
+step = 34;     // spacing along X (mm)
+s = [12, 12, 12]; // unit-cell size (mm)
+
+// Solidify a thin wall field and clip it to a cube centered at x = off.
+specimen(field, off) {
+  return max(lattice.solidify(field, bias), boxCentered([off, 0, 0], [2 * r, 2 * r, 2 * r]));
+}
+
+// Left to right: simple cubic, cubic grid, BCC and FCC foams, each blended
+// where its plates meet by unionRound(0.5).
+cub = specimen(foam.cubic(s, unionRound(0.5)),     -1.5 * step);
+cgr = specimen(foam.cubicGrid(s, unionRound(0.5)), -0.5 * step);
+bcc = specimen(foam.bcc(s, unionRound(0.5)),        0.5 * step);
+fcc = specimen(foam.fcc(s, unionRound(0.5)),        1.5 * step);
+
+return cub, cgr, bcc, fcc;

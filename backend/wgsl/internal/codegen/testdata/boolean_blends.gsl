@@ -1,0 +1,125 @@
+
+// A gallery of boolean blends, ported from the variadic / partial-application
+// experiment. That machinery shipped instead as list-taking stdlib
+// booleans plus the no-initial reduce(fn, list), so each blend is a small
+// kernel and a generic stack() lays out intersection / union / difference of
+// three spheres along Z.
+
+rad = 0.25;
+offset = 5;
+stackOffset = [0, 0, offset * 1.5];
+
+// Three overlapping spheres, recomputed from p. A remap only re-evaluates p
+// inside the function it wraps (not values passed into it), so anything we
+// want to reposition must recompute its geometry from p — hence parts() and
+// the p-using wrappers below rather than a pre-evaluated list.
+parts() {
+  return [
+    length(p + vector.dirX) - 2,
+    length(p - vector.dirX) - 2,
+    length(p - vector.dirZ * sqrt3) - 2
+  ];
+}
+
+intersected(blend) {
+  return blend(parts());
+}
+
+unioned(blend) {
+  return neg(blend(map((value) {
+    return neg(value);
+  }, parts())));
+}
+
+differenced(blend) {
+  return blend(map((value, index) {
+    return (index == 0) ? value : neg(value);
+  }, parts()));
+}
+
+// Intersection on top, union in the middle, difference on the bottom.
+stack(blend) {
+  return min(
+    remap(intersected(blend), p - stackOffset),
+    unioned(blend),
+    remap(differenced(blend), p + stackOffset)
+  );
+}
+
+// Intersection-style blend kernels. Each binds its setbacks from rad.
+sharpKernel(list)           { return intersectSharp(list); }
+roundKernel(list)           { return intersectRound(list, rad); }
+lpThinKernel(list)          { return intersectLp(list, rad, 1); }
+lpFatKernel(list)           { return intersectLp(list, rad, 3); }
+expKernel(list)             { return intersectExponential(list, rad); }
+chamferEdgesKernel(list)    { return intersectChamferEdges(list, rad); }
+chamferVerticesKernel(list) { return intersectChamferVertices(list, rad); }
+chamferKernel(list)         { return intersectChamfer(list, [rad, 2 * rad]); }
+chamferBlendKernel(list)    { return intersectChamferRound(list, [rad, 2 * rad], rad * 1.2); }
+
+sharp  = stack(sharpKernel);
+lpThin = stack(lpThinKernel);
+rounded = stack(roundKernel);
+lpFat  = stack(lpFatKernel);
+
+chamferEdges    = stack(chamferEdgesKernel);
+chamferVertices = stack(chamferVerticesKernel);
+chamfer         = stack(chamferKernel);
+chamferBlend    = stack(chamferBlendKernel);
+
+exponential = stack(expKernel);
+
+// Edge-coordinate fillets: build a fillet field from a 2D profile with
+// remapEdges, then carve / add it through the same three-position layout.
+// Each position recomputes its geometry from p so the remaps reposition it.
+edgesIntersected(profile) {
+  return max(intersectSharp(parts()), neg(remapEdges(parts(), profile)));
+}
+
+edgesUnioned(profile) {
+  return min(unionSharp(parts()), remapEdges(parts(), profile));
+}
+
+edgesDifferenced(profile) {
+  body = intersectSharp(map((value, index) {
+    return (index == 0) ? value : neg(value);
+  }, parts()));
+  // Union the fillets, but keep only the ones lying on the difference body
+  // (within a fillet-radius band of its surface) so the fillet between the
+  // two subtracted spheres doesn't float free in the carved-away region.
+  return min(body, max(remapEdges(parts(), profile), body - 2 * rad));
+}
+
+stackEdges(profile) {
+  return min(
+    remap(edgesIntersected(profile), p - stackOffset),
+    edgesUnioned(profile),
+    remap(edgesDifferenced(profile), p + stackOffset)
+  );
+}
+
+edgesCircle  = stackEdges(() { return length(p.xy) - rad; });
+edgesDiamond = stackEdges(() { return max(abs(p.x), abs(p.y)) - rad; });
+edgesSquare  = stackEdges(() { return max(abs(p.x + p.y) * 0.5, abs(p.x - p.y) * 2) / sqrt2 - rad; });
+
+// Lay the twelve panels out in a 3 x 4 grid.
+y0 = offset * -1.5;
+y1 = offset * -0.5;
+y2 = offset * 0.5;
+y3 = offset * 1.5;
+
+return
+  remap(sharp, p - [0, y0, 0]),
+  remap(lpThin, p - [0, y1, 0]),
+  remap(rounded, p - [0, y2, 0]),
+  remap(lpFat, p - [0, y3, 0]),
+
+  remap(chamferEdges, p - [neg(offset), y0, 0]),
+  remap(chamferVertices, p - [neg(offset), y1, 0]),
+  remap(chamfer, p - [neg(offset), y2, 0]),
+  remap(chamferBlend, p - [neg(offset), y3, 0]),
+
+  remap(edgesCircle, p - [offset, y0, 0]),
+  remap(edgesDiamond, p - [offset, y1, 0]),
+  remap(edgesSquare, p - [offset, y2, 0]),
+  remap(exponential, p - [offset, y3, 0]);

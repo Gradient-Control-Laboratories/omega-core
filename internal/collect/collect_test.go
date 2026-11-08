@@ -6,38 +6,37 @@ import (
 	"testing"
 
 	"gradientcontrol.com/omega/core/internal/source"
+	"gradientcontrol.com/omega/core/parser"
 	"gradientcontrol.com/omega/core/program"
 )
 
-func parseMockPackage(sources []string) (*program.Package, error) {
+func parseMockPackage(sources []string) (*parser.Result, error) {
 	if len(sources) == 0 {
-		return nil, fmt.Errorf("empty sources")
+		return &parser.Result{
+			Package: &program.Package{Files: []*program.PackageFile{{}}},
+		}, fmt.Errorf("empty sources")
 	}
-	src := sources[0]
-	var imports []*program.Import
-
-	// Parse simple import declarations in the mock sources
-	if strings.Contains(src, `import "dep1"`) {
-		imports = append(imports, &program.Import{Path: "dep1"})
-	}
-	if strings.Contains(src, `import "dep2"`) {
-		imports = append(imports, &program.Import{Path: "dep2"})
-	}
-	if strings.Contains(src, `import "dep3"`) {
-		imports = append(imports, &program.Import{Path: "dep3"})
-	}
-
-	return &program.Package{
-		Files: []*program.PackageFile{
-			{
-				Source:  src,
-				Imports: imports,
-				Returns: []*program.Operand{
-					{T: &program.Operand_Value{Value: 1.0}},
-				},
+	files := make([]*program.PackageFile, 0, len(sources))
+	for _, src := range sources {
+		var imports []*program.Import
+		if strings.Contains(src, `import "dep1"`) {
+			imports = append(imports, &program.Import{Path: "dep1"})
+		}
+		if strings.Contains(src, `import "dep2"`) {
+			imports = append(imports, &program.Import{Path: "dep2"})
+		}
+		if strings.Contains(src, `import "dep3"`) {
+			imports = append(imports, &program.Import{Path: "dep3"})
+		}
+		files = append(files, &program.PackageFile{
+			Source:  src,
+			Imports: imports,
+			Returns: []*program.Operand{
+				{T: &program.Operand_Value{Value: 1.0}},
 			},
-		},
-	}, nil
+		})
+	}
+	return &parser.Result{Package: &program.Package{Files: files}}, nil
 }
 
 func TestCollect_Ordering(t *testing.T) {
@@ -104,44 +103,54 @@ func TestCollect_Ordering(t *testing.T) {
 	}
 }
 
-func TestCollect_NamedPrimaryPackage(t *testing.T) {
-	depSource := `return 1.0;`
-	primarySource := `import "dep1"; return 42.0;`
-
-	srcMgr := &source.MockManager{
-		PkgSources: map[string][]string{
-			"dep1": {depSource},
-		},
-	}
-
-	parseNamedMock := func(sources []string) (*program.Package, error) {
-		pkg, err := parseMockPackage(sources)
+func TestCollect_PrimaryWithoutReturnsAndErrorPaths(t *testing.T) {
+	t.Run("primary without returns succeeds", func(t *testing.T) {
+		pkg := &program.Package{
+			Path: "lib/module",
+			Files: []*program.PackageFile{
+				{Source: "fn helper() { return 1; }"},
+			},
+		}
+		prog, err := Package(pkg, &source.MockManager{}, parseMockPackage)
 		if err != nil {
-			return nil, err
+			t.Fatalf("expected primary package without returns to succeed, got: %v", err)
 		}
-		if sources[0] == primarySource {
-			pkg.Path = "custom/main_pkg"
+		if len(prog.Returns()) != 0 {
+			t.Fatalf("expected 0 returns, got %d", len(prog.Returns()))
 		}
-		return pkg, nil
-	}
+	})
 
-	prog, err := Program([]string{primarySource}, srcMgr, parseNamedMock)
-	if err != nil {
-		t.Fatalf("Collect failed: %v", err)
-	}
-
-	if prog.Primary == nil || prog.Primary.Path != "custom/main_pkg" {
-		t.Fatalf("expected primary package path 'custom/main_pkg', got %q", prog.Primary.GetPath())
-	}
-
-	foundDep1 := false
-	for _, dep := range prog.Dependencies {
-		if dep.Path == "dep1" {
-			foundDep1 = true
-			break
+	t.Run("missing primary sources and empty package errors", func(t *testing.T) {
+		if _, err := Program(nil, &source.MockManager{}, parseMockPackage); err == nil {
+			t.Fatal("expected error for empty primarySources")
 		}
-	}
-	if !foundDep1 {
-		t.Fatalf("expected dependency 'dep1' in %v", prog.Dependencies)
-	}
+		if _, err := Package(nil, &source.MockManager{}, parseMockPackage); err == nil {
+			t.Fatal("expected error for nil primaryPkg")
+		}
+		if _, err := Package(&program.Package{}, &source.MockManager{}, parseMockPackage); err == nil {
+			t.Fatal("expected error for primaryPkg with no files")
+		}
+	})
+
+	t.Run("self import and cyclic import errors", func(t *testing.T) {
+		selfPkg := &program.Package{
+			Path: "dep1",
+			Files: []*program.PackageFile{
+				{Imports: []*program.Import{{Path: "dep1"}}},
+			},
+		}
+		if _, err := Package(selfPkg, &source.MockManager{}, parseMockPackage); err == nil || !strings.Contains(err.Error(), "cannot import itself") {
+			t.Fatalf("expected self-import error, got: %v", err)
+		}
+
+		srcMgr := &source.MockManager{
+			PkgSources: map[string][]string{
+				"dep1": {`import "dep2"; return 1.0;`},
+				"dep2": {`import "dep1"; return 2.0;`},
+			},
+		}
+		if _, err := Program([]string{`import "dep1"; return 0.0;`}, srcMgr, parseMockPackage); err == nil || !strings.Contains(err.Error(), "cyclic package import") {
+			t.Fatalf("expected cyclic import error, got: %v", err)
+		}
+	})
 }

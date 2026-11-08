@@ -1,0 +1,32 @@
+@scene(80, 5)
+
+// Metal with a lay (material.withLay): grooves too fine to see that stretch
+// the highlight across them, as brushing, turning and grinding leave. Orbit
+// to watch the highlights run across the grain.
+
+// How much the grooves stretch the highlight, 0 to 1.
+
+stainlessMat, stainlessColor = metal.stainless();
+
+@range(0, 1) anisotropy = 0.8;
+
+// A plate brushed along x.
+plate = box([-35, -10, -2], [-5, 10, 2]);
+plate.material = material.withLay(stainlessMat, [1, 0, 0], anisotropy);
+plate.color = stainlessColor;
+
+// A turned bar: its face and its sides both carry the lathe's lay, running
+// round the axis, so the face shows a radial fan of light and the sides a
+// highlight along the bar.
+axis = [0, 0, 1];
+centre = [15, 0, 0];
+bar = max(cylinder(centre, axis, 10), max(p.z - 12, -p.z - 12));
+bar.material = material.withLay(stainlessMat, cross(axis, p - centre), anisotropy);
+bar.color = stainlessColor;
+
+// The same metal with no lay, for comparison.
+plain = transform.translate(sphere(8), [-20, 25, 0]);
+plain.material = stainlessMat;
+plain.color = stainlessColor;
+
+return plate, bar, plain;

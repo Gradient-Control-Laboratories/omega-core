@@ -14,7 +14,7 @@ checkerBall = transform.translate(sphere(25), [0, 0, 0]);
 checkerBall.material = material.matte;
 checkerBall.color = playful.checkerboard(10, color.white, color.black);
 
-skinColor = playful.cellSkin(5, 2.5, color.teal, color.white);
+skinColor = playful.cellSkin(5, 0.5, color.teal, color.white);
 skinBall = transform.translate(sphere(25), [50, 0, 0]);
 skinBall.material = material.matte;
 skinBall.color = skinColor;

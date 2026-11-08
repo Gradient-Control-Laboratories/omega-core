@@ -1,7 +1,7 @@
 // Scene Size: 50
 // Scene Grid: 10
 
-// Wind ripples on dry sand (material/animated), creeping downwind under
+// Wind ripples on dry sand (material/collection/animated), creeping downwind under
 // grains that stream over them, with dark heavy minerals in the troughs.
 // Time runs in real seconds and only space is scaled, as in a miniature.
 // Press play to start the clock.
@@ -20,9 +20,10 @@ slab(column, row) {
   return transform.translate(box([-12, -12, -4], [12, 12, 4]), [32 * column, -32 * row, 0]);
 }
 
-// Sand at 60 mm to the metre, where 12 cm ripples are 7 mm. At real speed
-// they creep a millimetre in half a minute.
-sandMat, sandColor, sandHeight, sandSlope = animated.sandRipples(60, windSpeed, wind);
+// Sand at 60 mm to the metre, whose ripples grow with the wind: at 10 m/s they
+// are 13.5 cm, 8.1 mm here. At real speed they creep a millimetre in half a
+// minute.
+sandMat, sandColor, sandHeight, sandSlope = animated.sandRipples(60 * (0.06 + 0.0075 * windSpeed), windSpeed, wind);
 sand = slab(0, 0) - sandHeight;
 sand.material = sandMat;
 sand.color = sandColor;

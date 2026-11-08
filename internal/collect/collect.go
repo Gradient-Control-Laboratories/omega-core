@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"gradientcontrol.com/omega/core/internal/source"
+	"gradientcontrol.com/omega/core/parser"
 	"gradientcontrol.com/omega/core/program"
 )
 
@@ -13,23 +14,36 @@ import (
 //
 // It returns a program composed of all packages
 // directly or indirectly referenced by the primarySources GSL code.
-func Program(primarySources []string, srcMgr source.Manager, parse program.ParsePackageFunc) (*program.Program, error) {
+func Program(primarySources []string, srcMgr source.Manager, parsePkg func(sources []string) (*parser.Result, error)) (*program.Program, error) {
 	if len(primarySources) == 0 {
 		return nil, fmt.Errorf("missing primary sources")
 	}
 
-	primaryPkg, err := parse(primarySources)
+	primaryRes, err := parsePkg(primarySources)
 	if err != nil {
 		return nil, err
 	}
-	if primaryPkg == nil {
+	if primaryRes == nil || primaryRes.Package == nil {
 		return nil, fmt.Errorf("no primary package returned")
 	}
-	return Package(primaryPkg, srcMgr, parse)
+	primaryPkg := primaryRes.Package
+	setPackageSources(primaryPkg, primarySources)
+	return Package(primaryPkg, srcMgr, parsePkg)
+}
+
+func setPackageSources(pkg *program.Package, sources []string) {
+	if pkg == nil {
+		return
+	}
+	for i := 0; i < len(pkg.Files) && i < len(sources); i++ {
+		if pkg.Files[i] != nil && pkg.Files[i].Source == "" {
+			pkg.Files[i].Source = sources[i]
+		}
+	}
 }
 
 // Package collects all packages starting from a pre-parsed primary package.
-func Package(primaryPkg *program.Package, srcMgr source.Manager, parse program.ParsePackageFunc) (*program.Program, error) {
+func Package(primaryPkg *program.Package, srcMgr source.Manager, parsePkg func(sources []string) (*parser.Result, error)) (*program.Program, error) {
 	if primaryPkg == nil {
 		return nil, fmt.Errorf("missing primary package")
 	}
@@ -37,10 +51,6 @@ func Package(primaryPkg *program.Package, srcMgr source.Manager, parse program.P
 
 	if len(primaryPkg.Files) == 0 {
 		return nil, fmt.Errorf("primary package must have at least one file")
-	}
-	lastFile := primaryPkg.Files[len(primaryPkg.Files)-1]
-	if len(lastFile.Returns) == 0 {
-		return nil, fmt.Errorf("primary package must have a return statement")
 	}
 
 	var collected []*program.Package
@@ -66,13 +76,15 @@ func Package(primaryPkg *program.Package, srcMgr source.Manager, parse program.P
 					if err != nil {
 						return fmt.Errorf("failed to load package %s: %w", impPath, err)
 					}
-					depPkg, err := parse(sources)
+					depRes, err := parsePkg(sources)
 					if err != nil {
 						return fmt.Errorf("failed to parse package %s: %w", impPath, err)
 					}
-					if depPkg == nil {
+					if depRes == nil || depRes.Package == nil {
 						return fmt.Errorf("package not found: %s", impPath)
 					}
+					depPkg := depRes.Package
+					setPackageSources(depPkg, sources)
 					program.UpdateImports(depPkg, impPath)
 					if depPkg.Path == "" {
 						depPkg.Path = impPath

@@ -89,7 +89,7 @@ import { EXPORT_PANEL_MARKUP } from "./export-panel-markup.js";
 const FidgetWasm = null;
 import { ProgressBar } from "../ui/progress-bar.js";
 const weldStl = null, writeThreeMf = null;
-const paletteColor = () => [0.5, 0.5, 0.5], rgbToHex = ([r, g, b]) => "#" + [r, g, b].map(v => Math.round(v * 255).toString(16).padStart(2, "0")).join("");
+import { paletteColor, rgbToHex } from "./body-palette.js";
 import { unzipSync, zipSync } from "three/addons/libs/fflate.module.js";
 
 let deps = {};

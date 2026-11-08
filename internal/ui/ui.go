@@ -1,38 +1,13 @@
 package ui
 
 import (
-	"gradientcontrol.com/omega/core/internal/edit"
+	"gradientcontrol.com/omega/core/assembler/ui"
+	"gradientcontrol.com/omega/core/program/edit"
 	"gradientcontrol.com/omega/core/internal/eval"
 	"gradientcontrol.com/omega/core/program"
 )
 
-const (
-	KindPoint     = "point"
-	KindTransform = "transform"
-	KindSpline    = "spline"
-	KindColor     = "color"
-	KindDirection = "direction"
-)
-
-type Control struct {
-	Kind     string    `json:"kind"`
-	Span     edit.Span `json:"span"`
-	Value    []float64 `json:"value"`
-	Params   []Param   `json:"params,omitempty"`
-	Controls []Control `json:"controls,omitempty"`
-	// Anchor is where a direction's arrow is drawn from, uiDirection's
-	// second argument evaluated as a constant; nil draws it from the origin.
-	Anchor []float64 `json:"anchor,omitempty"`
-}
-
-type Param struct {
-	ParamName string    `json:"paramName"`
-	Span      edit.Span `json:"span"`
-	Value     float64   `json:"value"`
-	operand   *program.Operand
-}
-
-func Extract(pkg *program.Package, getImport program.GetImportFunc) []Control {
+func Extract(pkg *program.Package, getImport program.GetImportFunc) []ui.Control {
 	controls, _ := ExtractWithOperands(pkg, getImport)
 	return controls
 }
@@ -40,16 +15,14 @@ func Extract(pkg *program.Package, getImport program.GetImportFunc) []Control {
 // ExtractWithOperands also binds editable literals to their actual AST operands.
 // Inlining can copy a control, or put an unrelated imported literal at the same
 // source span. Every control copy shares its parameter; other literals do not.
-func ExtractWithOperands(pkg *program.Package, getImport program.GetImportFunc) ([]Control, map[*program.Operand]edit.Span) {
+func ExtractWithOperands(pkg *program.Package, getImport program.GetImportFunc) ([]ui.Control, map[*program.Operand]edit.Span) {
 	operands := make(map[*program.Operand]edit.Span)
 	if pkg == nil {
 		return nil, operands
 	}
-	var out []Control
+	var out []ui.Control
+	// Invariant: pkg.Files, FnTypes, Groups, and Functions are guaranteed non-nil by the parser.
 	for _, f := range pkg.Files {
-		if f == nil {
-			continue
-		}
 		for _, assign := range f.Assignments {
 			collect(assign.Expression, pkg, getImport, &out, operands)
 		}
@@ -63,10 +36,7 @@ func ExtractWithOperands(pkg *program.Package, getImport program.GetImportFunc) 
 	return out, operands
 }
 
-func collectFunction(fn *program.Function, pkg *program.Package, getImport program.GetImportFunc, out *[]Control, operands map[*program.Operand]edit.Span) {
-	if fn == nil {
-		return
-	}
+func collectFunction(fn *program.Function, pkg *program.Package, getImport program.GetImportFunc, out *[]ui.Control, operands map[*program.Operand]edit.Span) {
 	pkg = &program.Package{Path: pkg.Path, Files: append([]*program.PackageFile{{Assignments: fn.Assignments, FnTypes: fn.FnTypes}}, pkg.Files...)}
 	for _, assign := range fn.Assignments {
 		collect(assign.Expression, pkg, getImport, out, operands)
@@ -79,21 +49,15 @@ func collectFunction(fn *program.Function, pkg *program.Package, getImport progr
 	}
 }
 
-func collectFnType(fnType *program.FnType, pkg *program.Package, getImport program.GetImportFunc, out *[]Control, operands map[*program.Operand]edit.Span) {
-	if fnType == nil {
-		return
-	}
+func collectFnType(fnType *program.FnType, pkg *program.Package, getImport program.GetImportFunc, out *[]ui.Control, operands map[*program.Operand]edit.Span) {
 	for _, group := range fnType.Groups {
-		if group == nil {
-			continue
-		}
 		for _, fn := range group.Functions {
 			collectFunction(fn, pkg, getImport, out, operands)
 		}
 	}
 }
 
-func collect(op *program.Operand, pkg *program.Package, getImport program.GetImportFunc, out *[]Control, operands map[*program.Operand]edit.Span) {
+func collect(op *program.Operand, pkg *program.Package, getImport program.GetImportFunc, out *[]ui.Control, operands map[*program.Operand]edit.Span) {
 	if op == nil {
 		return
 	}
@@ -103,8 +67,7 @@ func collect(op *program.Operand, pkg *program.Package, getImport program.GetImp
 		if fc == nil {
 			return
 		}
-		if c, ok := controlFromCall(fc, pkg, getImport); ok {
-			collectParamOperands(c, operands)
+		if c, ok := controlFromCall(fc, pkg, getImport, operands); ok {
 			duplicate := false
 			for _, existing := range *out {
 				if existing.Kind == c.Kind && existing.Span == c.Span {
@@ -129,40 +92,31 @@ func collect(op *program.Operand, pkg *program.Package, getImport program.GetImp
 	}
 }
 
-func collectParamOperands(control Control, operands map[*program.Operand]edit.Span) {
-	for _, param := range control.Params {
-		operands[param.operand] = param.Span
-	}
-	for _, child := range control.Controls {
-		collectParamOperands(child, operands)
-	}
-}
-
-func controlFromCall(fc *program.FnCall, pkg *program.Package, getImport program.GetImportFunc) (Control, bool) {
+func controlFromCall(fc *program.FnCall, pkg *program.Package, getImport program.GetImportFunc, operands map[*program.Operand]edit.Span) (ui.Control, bool) {
 	if fc == nil || fc.Reference == nil || fc.Reference.Prefix != "" || len(fc.Arguments) == 0 {
-		return Control{}, false
+		return ui.Control{}, false
 	}
 	kind := ""
 	want := 0
 	var anchor []float64
 	switch fc.Reference.Name {
 	case "uiPoint":
-		kind, want = KindPoint, 3
+		kind, want = ui.KindPoint, 3
 	case "uiTransform":
-		kind, want = KindTransform, 16
+		kind, want = ui.KindTransform, 16
 	case "uiColor":
-		kind, want = KindColor, 3
+		kind, want = ui.KindColor, 3
 	case "uiDirection":
-		kind, want = KindDirection, 3
+		kind, want = ui.KindDirection, 3
 		if len(fc.Arguments) == 2 {
 			if v, err := eval.ConstPkg(fc.Arguments[1], pkg, getImport); err == nil && len(v) == 3 {
 				anchor = append([]float64(nil), v...)
 			}
 		}
 	case "uiSpline":
-		return splineControl(fc.Arguments[0], pkg, getImport)
+		return splineControl(fc.Arguments[0], pkg, getImport, operands)
 	default:
-		return Control{}, false
+		return ui.Control{}, false
 	}
 	arg := fc.Arguments[0]
 	value := arg.ConstValues
@@ -170,17 +124,21 @@ func controlFromCall(fc *program.FnCall, pkg *program.Package, getImport program
 		var err error
 		value, err = eval.ConstPkg(arg, pkg, getImport)
 		if err != nil {
-			return Control{}, false
+			return ui.Control{}, false
 		}
 	}
 	if len(value) != want {
-		return Control{}, false
+		return ui.Control{}, false
 	}
-	params := literalParams(editableOperand(arg, pkg))
+	params, ops := literalParams(editableOperand(arg, pkg))
 	if len(params) != want {
 		params = nil
+	} else {
+		for i, op := range ops {
+			operands[op] = params[i].Span
+		}
 	}
-	return Control{
+	return ui.Control{
 		Kind:   kind,
 		Span:   editableSpan(arg, pkg),
 		Value:  append([]float64(nil), value...),
@@ -189,24 +147,28 @@ func controlFromCall(fc *program.FnCall, pkg *program.Package, getImport program
 	}, true
 }
 
-func splineControl(arg *program.Operand, pkg *program.Package, getImport program.GetImportFunc) (Control, bool) {
+func splineControl(arg *program.Operand, pkg *program.Package, getImport program.GetImportFunc, operands map[*program.Operand]edit.Span) (ui.Control, bool) {
 	list := editableOperand(arg, pkg)
 	expr := list.GetExpression()
 	if expr == nil || expr.Operation != program.Operation_COLLECT || len(expr.Operands) < 3 || len(expr.Operands)%2 != 1 {
-		return Control{}, false
+		return ui.Control{}, false
 	}
-	c := Control{Kind: KindSpline, Span: spanOf(list)}
+	c := ui.Control{Kind: ui.KindSpline, Span: spanOf(list)}
+	childOperands := make(map[*program.Operand]edit.Span)
 	for _, op := range expr.Operands {
 		fc := editableOperand(op, pkg).GetFnCall()
 		if fc == nil || fc.Reference == nil || fc.Reference.Name != "uiTransform" {
-			return Control{}, false
+			return ui.Control{}, false
 		}
-		child, ok := controlFromCall(fc, pkg, getImport)
+		child, ok := controlFromCall(fc, pkg, getImport, childOperands)
 		if !ok {
-			return Control{}, false
+			return ui.Control{}, false
 		}
 		c.Controls = append(c.Controls, child)
 		c.Value = append(c.Value, child.Value...)
+	}
+	for op, span := range childOperands {
+		operands[op] = span
 	}
 	return c, true
 }
@@ -219,7 +181,7 @@ func editableOperand(op *program.Operand, pkg *program.Package) *program.Operand
 	seen := map[string]bool{}
 	for name := getReferenceName(op); name != "" && !seen[name]; name = getReferenceName(op) {
 		seen[name] = true
-		assign := assignmentFor(name, pkg)
+		assign := program.TopLevelAssignment(pkg, name)
 		if assign == nil {
 			break
 		}
@@ -239,23 +201,6 @@ func getReferenceName(op *program.Operand) string {
 	return refOp.Reference.Name
 }
 
-func assignmentFor(name string, pkg *program.Package) *program.Operand {
-	for _, f := range pkg.Files {
-		if f == nil {
-			continue
-		}
-		for _, a := range f.Assignments {
-			if a == nil || len(a.Variables) != 1 || a.Variables[0] == nil {
-				continue
-			}
-			if a.Variables[0].Name == name {
-				return a.Expression
-			}
-		}
-	}
-	return nil
-}
-
 func spanOf(op *program.Operand) edit.Span {
 	if op == nil || op.Start == nil || op.End == nil {
 		return edit.Span{}
@@ -268,26 +213,28 @@ func spanOf(op *program.Operand) edit.Span {
 	}
 }
 
-func literalParams(op *program.Operand) []Param {
-	var out []Param
-	collectLiteralParams(op, &out)
-	return out
+func literalParams(op *program.Operand) ([]ui.Param, []*program.Operand) {
+	var out []ui.Param
+	var ops []*program.Operand
+	collectLiteralParams(op, &out, &ops)
+	return out, ops
 }
 
-func collectLiteralParams(op *program.Operand, out *[]Param) {
+func collectLiteralParams(op *program.Operand, out *[]ui.Param, ops *[]*program.Operand) {
 	if op == nil {
 		return
 	}
 	switch v := op.T.(type) {
 	case *program.Operand_Value:
 		span := spanOf(op)
-		*out = append(*out, Param{ParamName: span.VarName(), Span: span, Value: v.Value, operand: op})
+		*out = append(*out, ui.Param{ParamName: span.VarName(), Span: span, Value: v.Value})
+		*ops = append(*ops, op)
 	case *program.Operand_Expression:
 		if v.Expression == nil || v.Expression.Operation != program.Operation_COLLECT {
 			return
 		}
 		for _, child := range v.Expression.Operands {
-			collectLiteralParams(child, out)
+			collectLiteralParams(child, out, ops)
 		}
 	}
 }

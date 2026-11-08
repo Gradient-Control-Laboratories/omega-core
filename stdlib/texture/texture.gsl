@@ -1,8 +1,8 @@
 
 // Texture Library (texture)
 //
-// Shared helpers for the material family (material/stone, material/wood,
-// material/weathering, material/playful, material/natural): each preset in
+// Shared helpers for the material family (material/bulk/stone, material/bulk/wood,
+// material/coat/weathering, material/collection/playful, material/bulk/natural): each preset in
 // those packages composes noise + color + material via the same small set
 // of idioms defined here, so no preset re-derives its own threshold or
 // blend math.
@@ -19,6 +19,7 @@ import "noise";
 import "color";
 import "material";
 import "ease";
+import "map";
 
 /// mask(field, edge, width): a soft 0..1 threshold of `field` centered at
 /// `edge` with transition half-width `width` (ease.quadratic — smoothstep —
@@ -174,4 +175,209 @@ squareWave(x, period) {
 /// fadeDetail(size) alongside.
 reliefRoughness(roughness, slope, size) {
   return sqrt(roughness * roughness + (1 - fadeDetail(size) * displacementDrawn()) * slope * slope);
+}
+
+// --- Grain ---
+//
+// Grains packed on a surface, sand's and a sand coat's, as fine detail
+// (name.detail) the viewer draws only where a pixel can show one. Each is a
+// cell of cellular noise `size` mm across.
+
+/// grainRelief(size, height): the relief of grains `size` mm across, `height`
+/// mm at their crowns and 0 in the gaps between, as fine detail: a relief of
+/// 0 where the grains are too small to show, so a material displaced by it
+/// is flat there, and its stand-in carries the grains' slopes as roughness
+/// (reliefRoughness). Add it to a coarser relief or pass it alone.
+grainRelief(size, height) {
+  bump = clamp(1 - noise.cellular(size) / (0.45 * size), 0, 1);
+  relief = 0;
+  relief.detail = bump * bump * height * fadeDetail(size);
+  relief.detailSize = size;
+  return relief;
+}
+
+/// grainSpecks(size, share): the `share` of grains `size` mm across picked at
+/// random, 1 on those and 0 on the rest, as fine detail that fades to `share`
+/// where the grains are too small to show, so a colour mixed by it settles to
+/// the mix by share. For the dark heavy minerals in sand, or a lighter grain.
+grainSpecks(size, share) {
+  f1, f2, cell = noise.cellularCell(size);
+  pick = noiseHash3(cell + [23, 61, 7]);
+  specks = share;
+  specks.detail = fadeTo(pick.x < share ? 1 : 0, share, size);
+  specks.detailSize = size;
+  return specks;
+}
+
+/// grainShade(size, spread): a shade per grain `size` mm across, 1 - spread
+/// to 1 + spread at random and 1 on average, as fine detail that fades to 1
+/// where the grains are too small to show. Multiply a colour by it for the
+/// grain of a stone, a blasted skin or a sintered one.
+grainShade(size, spread) {
+  f1, f2, cell = noise.cellularCell(size);
+  pick = noiseHash3(cell + [47, 13, 29]);
+  shade = 1;
+  shade.detail = fadeTo(1 + spread * (2 * pick.x - 1), 1, size);
+  shade.detailSize = size;
+  return shade;
+}
+
+// --- Weave ---
+//
+// Cloth, composites, wicker and mesh are one function: tows crossing over
+// and under each other. It works on plane coordinates, as the dot plane
+// does, so a caller lays it on a part's frame with a whole count round the
+// part, or on a face's datums.
+
+// The crown of a tow `width` wide at `across` from its centre line: 1 at
+// the crown, 0 at and beyond its edges, a half ellipse.
+towCrown(across, width) {
+  s = 2 * across / width;
+  return sqrt(max(1 - s * s, 0));
+}
+
+/// weave(x, y, pitchU, pitchV, towWidth, over, under): a woven cloth at
+/// plane coordinates (x, y) in mm: warp tows run along y, `pitchU` apart
+/// across x, weft tows along x, `pitchV` apart across y, each `towWidth`
+/// wide (at most the pitch; less leaves gaps, a mesh), the warp passing
+/// over `over` wefts then under `under` (1 and 1 a plain weave, 2 and 2 a
+/// twill, whose diagonal runs up to the right). Returns three values: the
+/// height, 1 at the crown of the tow on top and falling to the tow beneath
+/// at half that and to 0 in a gap; 1 where the warp is on top and 0 where
+/// the weft is; and the index of the tow on top, for a shade or a lay of
+/// its own (the warp's index, or 1000 plus the weft's). The height is
+/// unitless: a caller scales it to the crimp in mm.
+weave(x, y, pitchU, pitchV, towWidth, over, under) {
+  i = floor(x / pitchU);
+  j = floor(y / pitchV);
+  repeat = over + under;
+  phase = (i - j) - repeat * floor((i - j) / repeat);
+  warpTop = phase < over ? 1 : 0;
+  warpCrown = towCrown(x - (i + 0.5) * pitchU, towWidth);
+  weftCrown = towCrown(y - (j + 0.5) * pitchV, towWidth);
+  height = warpTop > 0.5 ? max(warpCrown, 0.5 * weftCrown) : max(weftCrown, 0.5 * warpCrown);
+  tow = warpTop > 0.5 ? i : 1000 + j;
+  return height, warpTop, tow;
+}
+
+// --- Waves ---
+//
+// Bands and rings, Blender's Wave texture: the base of wood's rings, agate,
+// brushed rings and marble's veins. A wave is a phase, distorted by fractal
+// noise so its lines wander as grown things' do, through a profile.
+
+// The profile of a wave at `phase` (in periods): 0 a sine, 1 a saw, 2 a
+// triangle, each from 0 to 1.
+waveProfile(phase, profile) {
+  f = phase - floor(phase);
+  return profile < 0.5 ? 0.5 - 0.5 * cos(6.2831853 * phase) : (profile < 1.5 ? f : 1 - abs(2 * f - 1));
+}
+
+/// bands(size, direction, profile, distortion, detail): parallel bands
+/// `size` mm apart across `direction`, through a profile (0 sine, 1 saw, 2
+/// triangle), their lines wandering `distortion` of a period (0 to 2) by
+/// filtered fractal noise of `detail` octaves four bands across, so a line
+/// drifts over several of its neighbors' spacing, as growth rings and
+/// strata do, rather than wobbling at its own. From 0 to 1, settling to 0.5
+/// where the bands are too fine to show.
+bands(size, @direction direction, profile, @range(0, 2) distortion, @range(1, 6) detail) {
+  phase = dot(p, normalize(direction)) / size + distortion * noise.fbm(4 * size, detail, 0.5, 2);
+  return fadeTo(waveProfile(phase, profile), 0.5, size);
+}
+
+/// rings(size, axisOrigin, axisDir, profile, distortion, detail): rings
+/// `size` mm apart about an axis through `axisOrigin` along `axisDir`, as
+/// bands are about a direction: growth rings, turned rings, agate.
+rings(size, @point axisOrigin, @direction(axisOrigin) axisDir, profile, @range(0, 2) distortion, @range(1, 6) detail) {
+  a = normalize(axisDir);
+  q = p - axisOrigin;
+  phase = length(q - a * dot(q, a)) / size + distortion * noise.fbm(4 * size, detail, 0.5, 2);
+  return fadeTo(waveProfile(phase, profile), 0.5, size);
+}
+
+// --- Triplanar ---
+
+/// triplanarWeights(normal, sharpness): how much each of the three axis
+/// planes' projections should count at a surface facing `normal` (a
+/// shape's `name.dp`): weights for the YZ, XZ and XY planes, summing to 1,
+/// each |normal|^sharpness (1 soft, 4 the usual, 16 nearly a box). Evaluate a
+/// plane pattern three times, on [p.y, p.z], [p.x, p.z] and [p.x, p.y], and
+/// mix by these, and it wraps any part without datums or seams that show.
+triplanarWeights(normal, @range(1, 16) sharpness) {
+  n = abs(normalize(normal));
+  w = [pow(n.x, sharpness), pow(n.y, sharpness), pow(n.z, sharpness)];
+  return w / max(w.x + w.y + w.z, 0.000001);
+}
+
+// --- Tiles ---
+//
+// Bricks, tiles and blocks with a joint between them are one tessellation:
+// a grid of cells, each row slid along by a share of a cell, the joint a
+// band along the cell's edges. On plane coordinates, as the weave is.
+
+/// tiles(x, y, sizeU, sizeV, joint, bond): a tessellation at plane
+/// coordinates (x, y) in mm: cells `sizeU` along x by `sizeV` along y, joint
+/// included, each row slid along x by `bond` of a cell from the row below
+/// (0 a stack bond, 0.5 a running bond, 1/3 a third bond), with a joint
+/// `joint` mm wide between them. Returns two values: the cell, as [column,
+/// row, 0] for a shade or a hash of its own, and the distance to the
+/// joint's edge, positive on the cell's face and negative in the joint,
+/// -joint / 2 at its middle.
+tiles(x, y, sizeU, sizeV, joint, bond) {
+  j = floor(y / sizeV);
+  xs = x - bond * sizeU * j;
+  i = floor(xs / sizeU);
+  cx = xs - i * sizeU;
+  cy = y - j * sizeV;
+  half = 0.5 * joint;
+  toJoint = min(min(cx - half, sizeU - half - cx), min(cy - half, sizeV - half - cy));
+  return [i, j, 0], toJoint;
+}
+
+/// hexCells(x, y, across): a honeycomb of hexagonal cells `across` mm
+/// between opposite sides at plane coordinates (x, y): the cells are the
+/// Voronoi hexagons of map's triangular lattice with that spacing, a flat
+/// side facing each way along x. Returns two values: the offset from the cell's centre to
+/// the point, and the distance from the point to the cell's edge, positive
+/// inside.
+hexCells(x, y, across) {
+  cellP = remap(map.patternTriangularXY(across), [x, y, 0]);
+  q = [cellP.x, cellP.y];
+  reach = max(abs(dot(q, [1, 0])), max(abs(dot(q, [0.5, 0.8660254])), abs(dot(q, [-0.5, 0.8660254]))));
+  return cellP, 0.5 * across - reach;
+}
+
+/// herringbone(x, y, width, aspect, joint): blocks `width` mm wide and a
+/// whole `aspect` widths long (rounded: the pattern closes for no other
+/// length), laid in herringbone at plane coordinates (x, y), each block at
+/// 45 degrees to x and the chevrons they make pointing along it, with a
+/// joint `joint` mm wide between them. Returns five values: the block, as
+/// [band, step, way] for a hash of its own; the distance to the joint's
+/// edge, positive on the block's face and negative in the joint; 1 on the
+/// blocks that run up to the right (+x +y) and 0 on those that run up to
+/// the left; and the point's place on its block, along it from 0 to its
+/// length and across it from 0 to `width`, both in mm.
+herringbone(x, y, width, aspect, joint) {
+  n = max(1, round(aspect));
+  // Turned 45 degrees and measured in widths, the blocks lie along the axes.
+  // The plane is bands of 2n along the diagonal, each a staircase of blocks
+  // one way and a staircase the other way; a band's edge is a staircase too,
+  // so a point just past the diagonal belongs to the band before.
+  bx = (x + y) * 0.70710678 / width;
+  by = (y - x) * 0.70710678 / width;
+  s0 = floor((bx + by) / (2 * n));
+  k0 = floor(by - s0 * (n - 1));
+  r0 = bx - s0 * (n + 1) + k0;
+  wrap = r0 < 0 ? 1 : 0;
+  s = s0 - wrap;
+  k = k0 + wrap * (n - 1);
+  r = r0 + wrap * 2 * n;
+  ys = by - s * (n - 1);
+  upRight = r < n ? 1 : 0;
+  o = floor(r - n);
+  j = k - o;
+  along = upRight > 0.5 ? r : ys - j;
+  across = upRight > 0.5 ? ys - k : r - n - o;
+  edge = min(min(along, n - along), min(across, 1 - across)) * width;
+  return [s, upRight > 0.5 ? k : j, upRight], edge - 0.5 * joint, upRight, along * width, across * width;
 }
