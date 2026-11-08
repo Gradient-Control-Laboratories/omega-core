@@ -1,0 +1,598 @@
+@scene(750, 50)
+
+// A box-frame CoreXY printer in the style of the Voron Trident 300, built from
+// the parts such a machine is bought as.
+//
+// THE FRAME is a 460 mm cube of 2020 T-slot aluminum: four 500 mm posts and
+// three rings of 420 mm rails, at the floor, at the deck over the electronics
+// bay, and at the top. Every rail end is held by an M5 cap screw driven through
+// the post into the rail's tapped core, the "blind joint" these frames use.
+//
+// THE MOTION SYSTEM rides on top. Two MGN12 linear rails (12 x 8 mm, M3
+// counterbores every 25 mm) run front to back on the side rails, their MGN12H
+// carriages (27 x 45 mm) carrying the X gantry, a 2020 beam with an MGN9 rail
+// on its face. Two GT2 belts, one above the other, run CoreXY: each leaves its
+// motor at a rear corner, runs forward to an idler stack at the front corner,
+// back to the gantry's joint and across to the toolhead. The motors are NEMA 17
+// closed-loop servos: a 42.3 mm square with chamfered corners, black end bells
+// on a laminated steel stack, a 22 mm pilot and a 5 mm D-cut shaft, 31 mm bolt
+// pitch, and an encoder in an aluminum can behind.
+//
+// THE Z AXIS is three T8 lead screws, two in front and one behind, each on its
+// own servo under the deck, lifting a 310 mm cast aluminum bed on a 2020 frame.
+// The bed carries a silicone heater under it and a textured PEI spring-steel
+// sheet on top, its speckle a texture that fades with distance and its grain a
+// relief the renderer raises (Render > Detail's Textures and Relief handles).
+//
+// THE ELECTRONICS BAY under the deck holds the power supply, the controller
+// board with its stepper drivers, and the display on the front.
+//
+// Materials follow the parts: clear-anodized extrusion, black-anodized plate,
+// red and black printed ABS, black-oxide screws, polished rails, brass nozzle
+// and lead nuts. Each material is one object, so painting costs nothing per
+// part; every part inside is its own named value, so small ones shrink away as
+// the view pulls back.
+
+// Base finishes for the metal parts. The assembly at the end adjusts each one's
+// roughness and picks its colour.
+aluminumMat, aluminumColor = physical.aluminum();
+steelMat, steelColor = metal.steel();
+stainlessSteelMat, stainlessSteelColor = physical.stainlessSteel();
+brassMat, brassColor = physical.brass();
+
+// The floor under the frame, the top of the frame (500 mm above it), and the
+// three sliders: how high the bed sits over the floor, where the gantry is front
+// to back, and where the toolhead is along it. All lengths are in mm.
+z0 = -300.0;
+zt = z0 + 500.0;
+@range(180.0, 418.0) bedHeight = 300.0;
+@range(-130.0, 140.0) gantryY = 0.0;
+@range(-125.0, 125.0) carriageX = 0.0;
+bz = z0 + bedHeight;
+gy = gantryY;
+gx = carriageX;
+
+// The two belt planes, each 6 mm tall: A above the gantry beam, B above A.
+zA = zt + 43.0;
+zB = zt + 51.0;
+
+// tri: a triangle wave, 1 at whole numbers and 0 halfway between.
+tri(u) {
+  return abs(fract(u) - 0.5) * 2.0;
+}
+
+// =========================================================
+// Extrusion
+// =========================================================
+
+// slot: one T-slot, as a solid to take away. `u` is the distance from the core
+// toward the face (the face is at u = 10) and `v` runs along it: a 6.2 mm
+// opening behind a 1.8 mm lip into an 11 mm cavity.
+slot(u, v) {
+  opening = max(abs(u - 9.35) - 1.15, abs(v) - 3.1);
+  cavity = max(abs(u - 6.05) - 2.15, abs(v) - 5.5);
+  return min(opening, cavity);
+}
+
+// section2020: a 2020's section in the coordinates (a, b) across it, a slot in
+// every face and the 4.2 mm tapping bore through the core.
+section2020(a, b) {
+  return max(abs(a) - 10.0, abs(b) - 10.0,
+             -slot(abs(a), b), -slot(abs(b), a),
+             2.1 - length([a, b]));
+}
+
+// beam2020: the section run from t = 0 to t = span.
+beam2020(a, b, t, span) {
+  return max(section2020(a, b), abs(t - span / 2.0) - span / 2.0);
+}
+
+// =========================================================
+// Linear rails
+// =========================================================
+
+// rail: a miniature linear rail `w` wide and `h` tall, `a` across it and `b` up
+// from its base, run along t from 0 to span, with a ball groove down each side
+// and an M3 counterbore every `pitch`.
+rail(a, b, t, span, w, h, pitch) {
+  body = max(abs(a) - w / 2.0, abs(b - h / 2.0) - h / 2.0, abs(t - span / 2.0) - span / 2.0);
+  groove = length([abs(a) - w / 2.0, b - 0.7 * h]) - 0.1 * w;
+  k = (fract((t - pitch / 2.0) / pitch + 0.5) - 0.5) * pitch;
+  counterbore = max(length([a, k]) - 0.25 * w, 0.6 * h - b);
+  hole = length([a, k]) - 0.14 * w;
+  return max(body, -groove, -min(counterbore, hole));
+}
+
+// carriage: its block, `w` wide, reaching `h` above the rail's base and `len`
+// long, centered at t = 0, straddling a rail `railW` wide and `railH` tall,
+// with four tapped M3 holes on top.
+carriage(a, b, t, w, h, len, railW, railH) {
+  outer = max(abs(a) - w / 2.0, abs(b - (h + 3.0) / 2.0) - (h - 3.0) / 2.0, abs(t) - len / 2.0);
+  channel = max(abs(a) - (railW / 2.0 + 0.5), b - (railH + 0.5));
+  tapped = max(length([abs(a) - 0.37 * w, abs(t) - 0.22 * len]) - 1.3, (h - 4.0) - b);
+  return max(outer, -channel, -tapped);
+}
+
+// =========================================================
+// Servo motor
+// =========================================================
+
+// A NEMA 17 closed-loop servo drawn on its own axis: the front face at z = 0,
+// the body behind it toward -z and the shaft out along +z. Three objects, one
+// per material, so the case, the steel and the encoder can each be painted.
+
+// nemaSection: the 42.3 mm square with its corners chamfered.
+nemaSection(x, y) {
+  return max(abs(x) - 21.15, abs(y) - 21.15, (abs(x) + abs(y) - 36.3) * 0.7071);
+}
+
+// servoCase: the two black end bells, the 22 mm pilot, the connector and the
+// encoder's cable gland, with the four M3 holes in the front face.
+servoCase() {
+  front = max(nemaSection(p.x, p.y), abs(p.z + 5.0) - 5.0);
+  rear = max(nemaSection(p.x, p.y), abs(p.z + 43.0) - 5.0);
+  pilot = max(circleXY(vector.zero.xy, 11.0), abs(p.z - 1.0) - 1.0);
+  connector = box([21.15, -8.0, -47.0], [26.0, 8.0, -39.0]);
+  gland = cylinderCapped([18.0, 0.0, -58.0], [25.0, 0.0, -58.0], 4.0);
+  holes = max(length([abs(p.x) - 15.5, abs(p.y) - 15.5]) - 1.5, -4.5 - p.z);
+  return max(min(front, rear, pilot, connector, gland), -holes);
+}
+
+// servoCore: the laminated stack between the bells, ridged every 1.2 mm, and
+// the 5 mm shaft, D-cut over its last 15 mm.
+servoCore() {
+  s = nemaSection(p.x, p.y);
+  stack = max(s + 0.05, s + 0.05 + 0.3 * tri(p.z / 1.2), abs(p.z + 24.0) - 14.0);
+  shaft = max(circleXY(vector.zero.xy, 2.5), abs(p.z - 12.0) - 12.0, min(p.x - 2.0, p.z - 9.0));
+  return min(stack, shaft);
+}
+
+// servoEncoder: the encoder's aluminum can, its back edge chamfered.
+servoEncoder() {
+  r = circleXY(vector.zero.xy, 19.5);
+  return max(r, abs(p.z + 58.0) - 10.0, (r - (p.z + 68.0) + 1.5) * 0.7071);
+}
+
+motorCase = servoCase();
+motorCore = servoCore();
+motorEncoder = servoEncoder();
+
+// A part turned shaft down, or left shaft up, with its front face at `at`.
+facingDown(s, at) {
+  return transform.translate(transform.rotateX(s, pi), at);
+}
+facingUp(s, at) {
+  return transform.translate(s, at);
+}
+
+// =========================================================
+// Pulleys and belts
+// =========================================================
+
+// drivePulley: a GT2 20-tooth pulley centered on the belt plane cz, a flange
+// under the teeth and the set-screw hub above, toward its motor.
+drivePulley(cx, cy, cz) {
+  return min(cylinderCapped([cx, cy, cz - 3.5], [cx, cy, cz + 3.5], 6.1),
+             cylinderCapped([cx, cy, cz - 4.5], [cx, cy, cz - 3.5], 8.0),
+             cylinderCapped([cx, cy, cz + 3.5], [cx, cy, cz + 11.0], 8.0));
+}
+
+// idler: a flanged 12 mm idler centered on the belt plane cz.
+idler(cx, cy, cz) {
+  return min(cylinderCapped([cx, cy, cz - 3.5], [cx, cy, cz + 3.5], 6.0),
+             cylinderCapped([cx, cy, cz - 4.5], [cx, cy, cz - 3.5], 9.0),
+             cylinderCapped([cx, cy, cz + 3.5], [cx, cy, cz + 4.5], 9.0));
+}
+
+// beltY and beltX: a straight run of 6 mm belt on the plane cz, 1.5 mm thick.
+beltY(x, cz, y0, y1) {
+  return box([x - 0.75, y0, cz - 3.0], [x + 0.75, y1, cz + 3.0]);
+}
+beltX(y, cz, x0, x1) {
+  return box([x0, y - 0.75, cz - 3.0], [x1, y + 0.75, cz + 3.0]);
+}
+
+// =========================================================
+// The frame
+// =========================================================
+
+postFL = beam2020(p.x + 220.0, p.y + 220.0, p.z - z0, 500.0);
+postFR = beam2020(p.x - 220.0, p.y + 220.0, p.z - z0, 500.0);
+postBL = beam2020(p.x + 220.0, p.y - 220.0, p.z - z0, 500.0);
+postBR = beam2020(p.x - 220.0, p.y - 220.0, p.z - z0, 500.0);
+
+floorFront = beam2020(p.y + 220.0, p.z - (z0 + 10.0), p.x + 210.0, 420.0);
+floorBack = beam2020(p.y - 220.0, p.z - (z0 + 10.0), p.x + 210.0, 420.0);
+floorLeft = beam2020(p.x + 220.0, p.z - (z0 + 10.0), p.y + 210.0, 420.0);
+floorRight = beam2020(p.x - 220.0, p.z - (z0 + 10.0), p.y + 210.0, 420.0);
+
+deckFront = beam2020(p.y + 220.0, p.z - (z0 + 90.0), p.x + 210.0, 420.0);
+deckBack = beam2020(p.y - 220.0, p.z - (z0 + 90.0), p.x + 210.0, 420.0);
+deckLeft = beam2020(p.x + 220.0, p.z - (z0 + 90.0), p.y + 210.0, 420.0);
+deckRight = beam2020(p.x - 220.0, p.z - (z0 + 90.0), p.y + 210.0, 420.0);
+
+topFront = beam2020(p.y + 220.0, p.z - (zt - 10.0), p.x + 210.0, 420.0);
+topBack = beam2020(p.y - 220.0, p.z - (zt - 10.0), p.x + 210.0, 420.0);
+topLeft = beam2020(p.x + 220.0, p.z - (zt - 10.0), p.y + 210.0, 420.0);
+topRight = beam2020(p.x - 220.0, p.z - (zt - 10.0), p.y + 210.0, 420.0);
+
+// The gantry beam spans the two joints, and the bed rides on its own 2020
+// frame: two rails front to back and a cross member behind.
+gantryBeam = beam2020(p.y - gy, p.z - (zt + 23.0), p.x + 190.0, 380.0);
+bedRailL = beam2020(p.x + 100.0, p.z - (bz - 21.0), p.y + 190.0, 380.0);
+bedRailR = beam2020(p.x - 100.0, p.z - (bz - 21.0), p.y + 190.0, 380.0);
+bedCross = beam2020(p.y - 160.0, p.z - (bz - 21.0), p.x + 90.0, 180.0);
+
+// =========================================================
+// Motion system
+// =========================================================
+
+// MGN12 rails on the side rails' top faces, their carriages at the gantry, and
+// the MGN9 rail on the gantry's front face with the toolhead's carriage.
+railL = rail(p.x + 220.0, p.z - zt, p.y + 170.0, 340.0, 12.0, 8.0, 25.0);
+railR = rail(p.x - 220.0, p.z - zt, p.y + 170.0, 340.0, 12.0, 8.0, 25.0);
+railX = rail(p.z - (zt + 23.0), (gy - 10.0) - p.y, p.x + 175.0, 350.0, 9.0, 6.5, 20.0);
+carriageL = carriage(p.x + 220.0, p.z - zt, p.y - gy, 27.0, 13.0, 45.4, 12.0, 8.0);
+carriageR = carriage(p.x - 220.0, p.z - zt, p.y - gy, 27.0, 13.0, 45.4, 12.0, 8.0);
+carriageT = carriage(p.z - (zt + 23.0), (gy - 10.0) - p.y, p.x - gx, 20.0, 10.0, 39.9, 9.0, 6.5);
+
+// The A and B drive units at the rear corners: a printed base with four
+// pillars, the drive pulley on the belt plane between them, a black plate on
+// top and the servo standing on it shaft down; a red cover closes the back.
+driveBase(cx, cy) {
+  pillars = max(abs(abs(p.x - cx) - 20.0) - 4.0, abs(abs(p.y - cy) - 20.0) - 4.0, abs(p.z - (zt + 46.0)) - 10.0);
+  return min(box([cx - 26.0, cy - 26.0, zt], [cx + 26.0, cy + 26.0, zt + 36.0]), pillars);
+}
+motorPlate(cx, cy) {
+  return max(box([cx - 26.0, cy - 26.0, zt + 56.0], [cx + 26.0, cy + 26.0, zt + 60.0]),
+             11.5 - length([p.x - cx, p.y - cy]));
+}
+
+driveBaseA = driveBase(-200.0, 200.0);
+driveBaseB = driveBase(200.0, 200.0);
+drivePlateA = motorPlate(-200.0, 200.0);
+drivePlateB = motorPlate(200.0, 200.0);
+driveCoverA = box([-226.0, 226.0, zt], [-174.0, 230.0, zt + 56.0]);
+driveCoverB = box([174.0, 226.0, zt], [226.0, 230.0, zt + 56.0]);
+pulleyA = drivePulley(-200.0, 200.0, zA);
+pulleyB = drivePulley(200.0, 200.0, zB);
+
+motorCaseA = facingDown(motorCase, [-200.0, 200.0, zt + 60.0]);
+motorCoreA = facingDown(motorCore, [-200.0, 200.0, zt + 60.0]);
+encoderA = facingDown(motorEncoder, [-200.0, 200.0, zt + 60.0]);
+motorCaseB = facingDown(motorCase, [200.0, 200.0, zt + 60.0]);
+motorCoreB = facingDown(motorCore, [200.0, 200.0, zt + 60.0]);
+encoderB = facingDown(motorEncoder, [200.0, 200.0, zt + 60.0]);
+
+// The front idler stacks, one idler per belt plane, in printed blocks with a
+// red cap.
+idlerBaseL = driveBase(-200.0, -200.0);
+idlerBaseR = driveBase(200.0, -200.0);
+idlerCapL = box([-226.0, -226.0, zt + 56.0], [-174.0, -174.0, zt + 62.0]);
+idlerCapR = box([174.0, -226.0, zt + 56.0], [226.0, -174.0, zt + 62.0]);
+idlersL = min(idler(-200.0, -200.0, zA), idler(-200.0, -200.0, zB));
+idlersR = min(idler(200.0, -200.0, zA), idler(200.0, -200.0, zB));
+
+// The gantry's joints on the Y carriages, each with an idler stack and a red
+// cap, where the belts turn from front-to-back to across.
+jointBase(side) {
+  x0 = side * 190.0;
+  x1 = side * 236.0;
+  base = box([min(x0, x1), gy - 26.0, zt + 13.0], [max(x0, x1), gy + 26.0, zt + 38.0]);
+  pillars = max(abs(p.x - side * 213.0) - 4.0, abs(abs(p.y - gy) - 20.0) - 4.0, abs(p.z - (zt + 47.0)) - 9.0);
+  return min(base, pillars);
+}
+jointBaseL = jointBase(-1.0);
+jointBaseR = jointBase(1.0);
+jointCapL = box([-236.0, gy - 26.0, zt + 56.0], [-190.0, gy + 26.0, zt + 60.0]);
+jointCapR = box([190.0, gy - 26.0, zt + 56.0], [236.0, gy + 26.0, zt + 60.0]);
+jointIdlersL = min(idler(-200.0, gy, zA), idler(-200.0, gy, zB));
+jointIdlersR = min(idler(200.0, gy, zA), idler(200.0, gy, zB));
+
+// The belts. Each side carries both planes on its outer run, front idler to
+// motor; its inner run joins the joint to the motor on one plane and the front
+// idler to the joint on the other. Across the gantry both planes run from the
+// joints to the toolhead's belt clamp.
+beltLAo = beltY(-208.0, zA, -200.0, 200.0);
+beltLBo = beltY(-208.0, zB, -200.0, 200.0);
+beltLAi = beltY(-192.0, zA, gy, 200.0);
+beltLBi = beltY(-192.0, zB, -200.0, gy);
+beltRAo = beltY(208.0, zA, -200.0, 200.0);
+beltRBo = beltY(208.0, zB, -200.0, 200.0);
+beltRBi = beltY(192.0, zB, gy, 200.0);
+beltRAi = beltY(192.0, zA, -200.0, gy);
+beltXAL = beltX(gy - 8.0, zA, -192.0, gx - 30.0);
+beltXAR = beltX(gy - 8.0, zA, gx + 30.0, 192.0);
+beltXBL = beltX(gy - 8.0, zB, -192.0, gx - 30.0);
+beltXBR = beltX(gy - 8.0, zB, gx + 30.0, 192.0);
+
+// =========================================================
+// Toolhead
+// =========================================================
+
+// A Stealthburner-style toolhead on the X carriage: a black printed body with
+// chamfered corners, a red front cover around the hotend fan with its hub and
+// grille, an LED bar, part-cooling ducts either side, the belt clamp behind,
+// the extruder's pancake motor on top, and the heater block and nozzle below.
+headY = gy - 46.0;
+headBody = max(abs(p.x - gx) - 30.0, abs(p.y - headY) - 26.0, abs(p.z - (zt - 4.0)) - 60.0,
+               abs(p.x - gx) + abs(p.y - headY) - 50.0);
+headClamp = box([gx - 30.0, gy - 20.0, zt + 36.0], [gx + 30.0, gy - 4.0, zt + 58.0]);
+fanOpening = cylinderCapped([gx, gy - 76.0, zt + 18.0], [gx, gy - 70.0, zt + 18.0], 17.0);
+grille = max(abs(abs(p.z - (zt + 18.0)) - 6.0) - 1.0, abs(p.x - gx) - 16.0, abs(p.y - (gy - 74.0)) - 1.0);
+headCover = min(max(box([gx - 26.0, gy - 75.0, zt - 40.0], [gx + 26.0, gy - 72.0, zt + 50.0]), -fanOpening), grille);
+fanHub = cylinderCapped([gx, gy - 74.0, zt + 18.0], [gx, gy - 71.0, zt + 18.0], 7.0);
+ductL = box([gx - 38.0, gy - 64.0, zt - 72.0], [gx - 24.0, gy - 28.0, zt - 40.0]);
+ductR = box([gx + 24.0, gy - 64.0, zt - 72.0], [gx + 38.0, gy - 28.0, zt - 40.0]);
+ledBar = box([gx - 18.0, gy - 75.6, zt - 34.0], [gx + 18.0, gy - 74.8, zt - 30.0]);
+extruderMotor = cylinderCapped([gx, headY, zt + 56.0], [gx, headY, zt + 76.0], 18.0);
+heaterBlock = box([gx - 10.0, headY - 8.0, zt - 74.0], [gx + 10.0, headY + 8.0, zt - 64.0]);
+nozzle = min(cylinderCapped([gx, headY, zt - 78.0], [gx, headY, zt - 74.0], 4.0),
+             coneCapped([gx, headY, zt - 78.0], [gx, headY, zt - 82.0], 3.0, 0.5));
+
+// =========================================================
+// Z axis and bed
+// =========================================================
+
+// leadScrew: a T8 screw, 8 mm lead in four starts, from its coupler up to its
+// bearing block under the top rail.
+leadScrew(sx, sy) {
+  r = length([p.x - sx, p.y - sy]) - 4.0;
+  u = (p.z - z0 - 8.0 * atan(p.y - sy, p.x - sx) / tau) / 2.0;
+  return max(r, r + 0.4 * tri(u), abs(p.z - (z0 + 299.0)) - 171.0);
+}
+
+// leadNut: its brass flange on the bed arm and its body below.
+leadNut(sx, sy) {
+  return min(cylinderCapped([sx, sy, bz - 28.0], [sx, sy, bz - 24.5], 11.0),
+             cylinderCapped([sx, sy, bz - 43.0], [sx, sy, bz - 28.0], 5.1));
+}
+
+screwFL = leadScrew(-185.0, -185.0);
+screwFR = leadScrew(185.0, -185.0);
+screwB = leadScrew(0.0, 185.0);
+couplerFL = cylinderCapped([-185.0, -185.0, z0 + 103.0], [-185.0, -185.0, z0 + 128.0], 9.5);
+couplerFR = cylinderCapped([185.0, -185.0, z0 + 103.0], [185.0, -185.0, z0 + 128.0], 9.5);
+couplerB = cylinderCapped([0.0, 185.0, z0 + 103.0], [0.0, 185.0, z0 + 128.0], 9.5);
+nutFL = leadNut(-185.0, -185.0);
+nutFR = leadNut(185.0, -185.0);
+nutB = leadNut(0.0, 185.0);
+
+// Each screw's printed bearing block, fixed to the inside of a top rail.
+bearingFL = box([-202.0, -210.0, zt - 45.0], [-168.0, -168.0, zt - 20.0]);
+bearingFR = box([168.0, -210.0, zt - 45.0], [202.0, -168.0, zt - 20.0]);
+bearingB = box([-17.0, 168.0, zt - 45.0], [17.0, 210.0, zt - 20.0]);
+
+// The Z servos hang under the deck, shaft up into their couplers.
+zCaseFL = facingUp(motorCase, [-185.0, -185.0, z0 + 100.0]);
+zCoreFL = facingUp(motorCore, [-185.0, -185.0, z0 + 100.0]);
+zEncoderFL = facingUp(motorEncoder, [-185.0, -185.0, z0 + 100.0]);
+zCaseFR = facingUp(motorCase, [185.0, -185.0, z0 + 100.0]);
+zCoreFR = facingUp(motorCore, [185.0, -185.0, z0 + 100.0]);
+zEncoderFR = facingUp(motorEncoder, [185.0, -185.0, z0 + 100.0]);
+zCaseB = facingUp(motorCase, [0.0, 185.0, z0 + 100.0]);
+zCoreB = facingUp(motorCore, [0.0, 185.0, z0 + 100.0]);
+zEncoderB = facingUp(motorEncoder, [0.0, 185.0, z0 + 100.0]);
+
+// The bed: the PEI sheet on the aluminum plate, the heater under it, and the
+// black arms from its frame to the lead nuts.
+bedSheet = box([-155.0, -155.0, bz - 1.0], [155.0, 155.0, bz]);
+bedPlate = box([-155.0, -155.0, bz - 9.0], [155.0, 155.0, bz - 1.0]);
+bedHeater = box([-135.0, -135.0, bz - 10.5], [135.0, 135.0, bz - 9.0]);
+armFL = box([-200.0, -200.0, bz - 33.0], [-90.0, -170.0, bz - 28.0]);
+armFR = box([90.0, -200.0, bz - 33.0], [200.0, -170.0, bz - 28.0]);
+armB = box([-15.0, 150.0, bz - 33.0], [15.0, 200.0, bz - 28.0]);
+
+// =========================================================
+// Electronics bay
+// =========================================================
+
+// The deck, with a hole for each coupler, and the bay's floor.
+deckHole(sx, sy) {
+  return 11.0 - length([p.x - sx, p.y - sy]);
+}
+deckPlate = max(box([-210.0, -210.0, z0 + 100.0], [210.0, 210.0, z0 + 103.0]),
+                deckHole(-185.0, -185.0), deckHole(185.0, -185.0), deckHole(0.0, 185.0));
+bayFloor = box([-210.0, -210.0, z0 + 20.0], [210.0, 210.0, z0 + 23.0]);
+
+// The power supply, perforated on top, with its terminal strip.
+psuTop = z0 + 53.0;
+psuVents = max(abs(fract(p.x / 6.0) - 0.5) * 6.0 - 1.6, abs(fract(p.y / 6.0) - 0.5) * 6.0 - 1.6, (psuTop - 0.8) - p.z);
+psu = max(box([-200.0, 45.0, z0 + 23.0], [15.0, 160.0, psuTop]), -psuVents);
+psuTerminals = box([15.0, 55.0, z0 + 23.0], [27.0, 150.0, z0 + 40.0]);
+
+// The controller board on brass standoffs, its processor, four stepper driver
+// modules with finned heat sinks, and the display on the front.
+pcbTop = z0 + 34.6;
+pcb = box([0.0, -165.0, z0 + 33.0], [160.0, -65.0, pcbTop]);
+standoffs = min(cylinderCapped([6.0, -159.0, z0 + 23.0], [6.0, -159.0, z0 + 33.0], 2.5),
+                cylinderCapped([154.0, -159.0, z0 + 23.0], [154.0, -159.0, z0 + 33.0], 2.5),
+                cylinderCapped([6.0, -71.0, z0 + 23.0], [6.0, -71.0, z0 + 33.0], 2.5),
+                cylinderCapped([154.0, -71.0, z0 + 23.0], [154.0, -71.0, z0 + 33.0], 2.5));
+processor = box([110.0, -120.0, pcbTop], [124.0, -106.0, pcbTop + 1.5]);
+drivers = max(abs(fract((p.x - 10.0) / 25.0) * 25.0 - 7.5) - 7.5, abs(p.y + 140.0) - 10.0,
+              abs(p.z - (pcbTop + 5.0)) - 5.0, abs(p.x - 55.0) - 45.0);
+heatSinks = max(abs(fract((p.x - 10.0) / 25.0) * 25.0 - 7.5) - 6.0, abs(p.y + 140.0) - 6.0,
+                abs(p.z - (pcbTop + 14.0)) - 4.0, abs(p.x - 55.0) - 45.0,
+                -max(abs(fract(p.y / 2.4) - 0.5) * 2.4 - 0.5, (pcbTop + 12.0) - p.z));
+displayCase = box([-52.0, -250.0, z0 + 22.0], [52.0, -230.0, z0 + 82.0]);
+displayScreen = box([-38.0, -250.6, z0 + 44.0], [22.0, -249.9, z0 + 76.0]);
+displayKnob = cylinderCapped([36.0, -258.0, z0 + 50.0], [36.0, -250.0, z0 + 50.0], 7.0);
+
+// Rubber feet under the posts.
+footFL = cylinderCapped([-220.0, -220.0, z0 - 15.0], [-220.0, -220.0, z0], 15.0);
+footFR = cylinderCapped([220.0, -220.0, z0 - 15.0], [220.0, -220.0, z0], 15.0);
+footBL = cylinderCapped([-220.0, 220.0, z0 - 15.0], [-220.0, 220.0, z0], 15.0);
+footBR = cylinderCapped([220.0, 220.0, z0 - 15.0], [220.0, 220.0, z0], 15.0);
+
+// =========================================================
+// Screws
+// =========================================================
+
+// ISO 4762 M5 cap screws for the blind joints and the idler bolts, ISO 7380
+// M3 button heads for the plates. A screw's head is above its seat at z = 0,
+// so each is turned to point into the face it seats on.
+m5 = fastener.shcs(5.0, 12.0);
+m5long = fastener.shcs(5.0, 30.0);
+m3 = fastener.button(3.0, 8.0);
+
+seatedLeft(s, seat) {
+  return transform.translate(transform.rotateY(s, -pi / 2.0), seat);
+}
+seatedRight(s, seat) {
+  return transform.translate(transform.rotateY(s, pi / 2.0), seat);
+}
+seatedFront(s, seat) {
+  return transform.translate(transform.rotateX(s, pi / 2.0), seat);
+}
+seatedBack(s, seat) {
+  return transform.translate(transform.rotateX(s, -pi / 2.0), seat);
+}
+seatedUp(s, seat) {
+  return transform.translate(s, seat);
+}
+
+// Blind joints: at each ring, every rail end is held by a screw through the
+// post, its head on the post's outer face.
+lv0 = z0 + 10.0;
+lv1 = z0 + 90.0;
+lv2 = zt - 10.0;
+floorJ1 = seatedLeft(m5, [-230.0, -220.0, lv0]);
+floorJ2 = seatedLeft(m5, [-230.0, 220.0, lv0]);
+floorJ3 = seatedRight(m5, [230.0, -220.0, lv0]);
+floorJ4 = seatedRight(m5, [230.0, 220.0, lv0]);
+floorJ5 = seatedFront(m5, [-220.0, -230.0, lv0]);
+floorJ6 = seatedFront(m5, [220.0, -230.0, lv0]);
+floorJ7 = seatedBack(m5, [-220.0, 230.0, lv0]);
+floorJ8 = seatedBack(m5, [220.0, 230.0, lv0]);
+deckJ1 = seatedLeft(m5, [-230.0, -220.0, lv1]);
+deckJ2 = seatedLeft(m5, [-230.0, 220.0, lv1]);
+deckJ3 = seatedRight(m5, [230.0, -220.0, lv1]);
+deckJ4 = seatedRight(m5, [230.0, 220.0, lv1]);
+deckJ5 = seatedFront(m5, [-220.0, -230.0, lv1]);
+deckJ6 = seatedFront(m5, [220.0, -230.0, lv1]);
+deckJ7 = seatedBack(m5, [-220.0, 230.0, lv1]);
+deckJ8 = seatedBack(m5, [220.0, 230.0, lv1]);
+topJ1 = seatedLeft(m5, [-230.0, -220.0, lv2]);
+topJ2 = seatedLeft(m5, [-230.0, 220.0, lv2]);
+topJ3 = seatedRight(m5, [230.0, -220.0, lv2]);
+topJ4 = seatedRight(m5, [230.0, 220.0, lv2]);
+topJ5 = seatedFront(m5, [-220.0, -230.0, lv2]);
+topJ6 = seatedFront(m5, [220.0, -230.0, lv2]);
+topJ7 = seatedBack(m5, [-220.0, 230.0, lv2]);
+topJ8 = seatedBack(m5, [220.0, 230.0, lv2]);
+
+// The motor plates' corner screws into the drive units' pillars.
+plateA1 = seatedUp(m3, [-220.0, 180.0, zt + 60.0]);
+plateA2 = seatedUp(m3, [-180.0, 180.0, zt + 60.0]);
+plateA3 = seatedUp(m3, [-220.0, 220.0, zt + 60.0]);
+plateA4 = seatedUp(m3, [-180.0, 220.0, zt + 60.0]);
+plateB1 = seatedUp(m3, [180.0, 180.0, zt + 60.0]);
+plateB2 = seatedUp(m3, [220.0, 180.0, zt + 60.0]);
+plateB3 = seatedUp(m3, [180.0, 220.0, zt + 60.0]);
+plateB4 = seatedUp(m3, [220.0, 220.0, zt + 60.0]);
+
+// The idler bolts, down through each stack.
+idlerBoltL = seatedUp(m5long, [-200.0, -200.0, zt + 62.0]);
+idlerBoltR = seatedUp(m5long, [200.0, -200.0, zt + 62.0]);
+jointBoltL = seatedUp(m5long, [-200.0, gy, zt + 60.0]);
+jointBoltR = seatedUp(m5long, [200.0, gy, zt + 60.0]);
+
+// The toolhead cover's two screws.
+coverScrewL = seatedFront(m3, [gx - 20.0, gy - 75.0, zt + 44.0]);
+coverScrewR = seatedFront(m3, [gx + 20.0, gy - 75.0, zt + 44.0]);
+
+// =========================================================
+// Assembly, one object per material
+// =========================================================
+//
+// Ten materials, grouped by finish: every painted object is a return of its
+// own, and a color is resolved across all of them, so fewer is cheaper.
+
+// Clear-anodized 2020 extrusion.
+frame = min(postFL, postFR, postBL, postBR,
+            floorFront, floorBack, floorLeft, floorRight,
+            deckFront, deckBack, deckLeft, deckRight,
+            topFront, topBack, topLeft, topRight,
+            gantryBeam, bedRailL, bedRailR, bedCross);
+
+// Machined aluminum: encoders, pulleys, idlers, couplers, the bed, the heater
+// block, the power supply, the heat sinks and the display's knob.
+aluminumParts = min(encoderA, encoderB, zEncoderFL, zEncoderFR, zEncoderB,
+                    pulleyA, pulleyB, idlersL, idlersR, jointIdlersL, jointIdlersR,
+                    couplerFL, couplerFR, couplerB, bedPlate, heaterBlock, psu, heatSinks,
+                    displayKnob);
+
+aluminum = min(frame, aluminumParts);
+aluminum.material = material.withRoughness(aluminumMat, 0.35);
+aluminum.color = aluminumColor;
+
+// Black-anodized aluminum: the plates, and the servos' end bells and the
+// extruder's pancake motor.
+plates = min(drivePlateA, drivePlateB, deckPlate, bayFloor, armFL, armFR, armB);
+motorCases = min(motorCaseA, motorCaseB, zCaseFL, zCaseFR, zCaseB, extruderMotor, fanHub);
+
+blackMetal = min(plates, motorCases);
+blackMetal.material = material.withRoughness(aluminumMat, 0.5);
+blackMetal.color = [0.05, 0.05, 0.06];
+
+// Black plastic and rubber: the printed structure, the parts on the board and
+// the terminals, the belts and the feet.
+printedBlack = min(driveBaseA, driveBaseB, idlerBaseL, idlerBaseR, jointBaseL, jointBaseR,
+                   headBody, headClamp, ductL, ductR);
+chips = min(processor, drivers, psuTerminals);
+rubber = min(beltLAo, beltLBo, beltLAi, beltLBi, beltRAo, beltRBo, beltRBi, beltRAi,
+             beltXAL, beltXAR, beltXBL, beltXBR, footFL, footFR, footBL, footBR);
+
+darkParts = min(printedBlack, chips, rubber);
+darkParts.material = material.withRoughness(material.plastic, 0.6);
+darkParts.color = [0.06, 0.06, 0.07];
+
+// Red: the printed covers and caps, and the silicone heater under the bed.
+printedRed = min(driveCoverA, driveCoverB, idlerCapL, idlerCapR, jointCapL, jointCapR,
+                 headCover, bearingFL, bearingFR, bearingB, displayCase);
+
+red = min(printedRed, bedHeater);
+red.material = material.withRoughness(material.plastic, 0.55);
+red.color = [0.80, 0.07, 0.05];
+
+// Black-oxide screws.
+jointScrews = min(floorJ1, floorJ2, floorJ3, floorJ4, floorJ5, floorJ6, floorJ7, floorJ8,
+                  deckJ1, deckJ2, deckJ3, deckJ4, deckJ5, deckJ6, deckJ7, deckJ8,
+                  topJ1, topJ2, topJ3, topJ4, topJ5, topJ6, topJ7, topJ8);
+plateScrews = min(plateA1, plateA2, plateA3, plateA4, plateB1, plateB2, plateB3, plateB4);
+fasteners = min(jointScrews, plateScrews, idlerBoltL, idlerBoltR, jointBoltL, jointBoltR,
+                coverScrewL, coverScrewR);
+fasteners.material = material.withRoughness(steelMat, 0.3);
+fasteners.color = [0.12, 0.12, 0.13];
+
+// Bright steel: the polished rails and their carriages, and the motors'
+// laminated stacks, shafts and lead screws.
+rails = min(railL, railR, railX, carriageL, carriageR, carriageT);
+motorSteel = min(motorCoreA, motorCoreB, zCoreFL, zCoreFR, zCoreB, screwFL, screwFR, screwB);
+
+steel = min(rails, motorSteel);
+steel.material = material.withRoughness(stainlessSteelMat, 0.2);
+steel.color = stainlessSteelColor;
+
+// Brass: the nozzle, the lead nuts and the board's standoffs.
+brassParts = min(nozzle, nutFL, nutFR, nutB, standoffs);
+brassParts.material = material.withRoughness(brassMat, 0.25);
+brassParts.color = brassColor;
+
+// The controller board.
+pcb.material = material.withRoughness(material.plastic, 0.4);
+pcb.color = [0.05, 0.32, 0.14];
+
+// The textured PEI sheet: a gold powder coat whose speckle fades as it shrinks
+// on screen and whose grain the renderer raises.
+speck = noise.gradient(0.5) * texture.fadeDetail(0.5);
+bedSheet.material = material.withDisplacement(material.withRoughness(material.plastic, 0.75), 0.05 * speck);
+bedSheet.color = [0.80, 0.58, 0.24] * (1.0 + 0.2 * speck);
+
+// The toolhead's LED bar and the display, lit.
+lights = min(ledBar, displayScreen);
+lights.material = material.glowing([0.45, 0.72, 1.0], 3.0);
+lights.color = [0.45, 0.72, 1.0];
+
+return aluminum, blackMetal, darkParts, red, fasteners, steel, brassParts, pcb, bedSheet, lights;

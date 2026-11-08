@@ -1,5 +1,5 @@
-// The Simple render tier: the least a raymarched GSL frame can be, drawn two
-// ways from one spec so the pair can be compared. The GPU draws it from the
+// The Schematic render tier, `simple` in the code: the least a raymarched GSL
+// frame can be, drawn two ways from one spec so the pair can be compared. The GPU draws it from the
 // compiled WGSL (gsl-render-graph.js's simpleFragment); a CPU tier
 // draws it with fidget-wasm from the program's omega tape (fw_render_simple,
 // agent/fidget/internal/wasm), and shadeSimple below finishes that frame.
@@ -17,8 +17,9 @@
 //   - The normal is the tetrahedral difference of the composite's signed
 //     distance at the hit, over the larger of SIMPLE.normalFloor and
 //     SIMPLE.normalPixel pixels.
-//   - The colour is the return's SIMPLE_PALETTE entry lit by a headlight,
-//     palette * (ambient + (1 - ambient) * |n . v|), so a surface seen from
+//   - The colour is the return's schematic color, the viewer's palette, which
+//     the document's .color and materials never reach, lit by a headlight:
+//     color * (ambient + (1 - ambient) * |n . v|), so a surface seen from
 //     behind shades like one seen from the front, then times the Render
 //     panel's back-face brightness (renderKnobs.z) where n faces away from
 //     the camera, as the standard frame dims it.
@@ -38,14 +39,11 @@ export const SIMPLE = Object.freeze({
   ambient: 0.25,
 });
 
-function srgbToLinear(c) {
-  return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+// srgbToLinear decodes one channel of a schematic color, which the viewer holds
+// as sRGB, so a surface facing the headlight shows the color its chip does.
+export function srgbToLinear(c) {
+  return Math.fround(c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
 }
-
-// One colour per return, cycling: Tableau 10's first eight, as linear RGB.
-export const SIMPLE_PALETTE = Object.freeze([
-  0x4e79a7, 0xf28e2b, 0x59a14f, 0xe15759, 0x76b7b2, 0xedc948, 0xb07aa1, 0x9c755f,
-].map((hex) => Object.freeze([hex >> 16, (hex >> 8) & 0xff, hex & 0xff].map((v) => Math.fround(srgbToLinear(v / 255))))));
 
 const f = (v) => {
   const s = Math.fround(v).toPrecision(9);
@@ -54,14 +52,14 @@ const f = (v) => {
 
 // simpleFragmentWGSL is the GPU side of the spec, as one fragment function.
 // visParamsWGSL / visArgsWGSL are the visibility flags' parameter and
-// argument lists; extraParamsWGSL is ", name: type, ..." for sdShape's extra
+// argument lists, colorParamsWGSL / colorArgsWGSL the schematic colors', read
+// through gsl_shapeColor; extraParamsWGSL is ", name: type, ..." for sdShape's extra
 // arguments. The caller rewrites the sdShape call sites to pass them.
 // setupWGSL runs first, after the visibility flags (the camera and the detail
 // rungs for the program's part guards). parts is whether the program has
 // parts: while the ray marches, a part far from it reads as its box
 // (agent/wgsl/internal/codegen/vanish.go).
-export function simpleFragmentWGSL({ visParamsWGSL, visArgsWGSL, extraParamsWGSL, setupWGSL = "", parts = false }) {
-  const palette = SIMPLE_PALETTE.map((c) => `vec3<f32>(${c.map(f).join(", ")})`).join(",\n                ");
+export function simpleFragmentWGSL({ visParamsWGSL, visArgsWGSL, colorParamsWGSL, colorArgsWGSL, extraParamsWGSL, setupWGSL = "", parts = false }) {
   return `
         fn gsl_simpleFragment(
             uv: vec2<f32>,
@@ -81,7 +79,7 @@ export function simpleFragmentWGSL({ visParamsWGSL, visArgsWGSL, extraParamsWGSL
             renderKnobs: vec4<f32>,
             detailKnobs: vec4<f32>,
             detailKnobs2: vec4<f32>,
-            ${visParamsWGSL.join(", ")}${extraParamsWGSL}
+            ${[...visParamsWGSL, ...colorParamsWGSL].join(", ")}${extraParamsWGSL}
         ) -> vec4<f32> {
             ${visArgsWGSL.map((v, i) => visAssignWGSL(i, v)).join(" ")}
             ${setupWGSL}
@@ -136,10 +134,8 @@ export function simpleFragmentWGSL({ visParamsWGSL, visArgsWGSL, extraParamsWGSL
             }
             let n = normalize(g);
 
-            var palette = array<vec3<f32>, ${SIMPLE_PALETTE.length}>(
-                ${palette}
-            );
-            let base = palette[(hitIndex - 1u) % ${SIMPLE_PALETTE.length}u];
+            let schematic = gsl_shapeColor(hitIndex, ${colorArgsWGSL.join(", ")});
+            let base = select(pow((schematic + 0.055) / 1.055, vec3<f32>(2.4)), schematic / 12.92, schematic <= vec3<f32>(0.04045));
             let lit = base * (${f(SIMPLE.ambient)} + ${f(1 - SIMPLE.ambient)} * abs(dot(n, rayDir)))
                 * select(1.0, renderKnobs.z, dot(n, rayDir) > 0.0);
             let depth = dot(hitPos - rayOrigin, camFwd) / nearFar.y;
@@ -173,7 +169,8 @@ export function simpleRay(cam, x, y, width, height) {
 //   far    the far distance the depth is divided by
 //   field  the section plane: {active, normal: [x, y, z], height}
 //   backDim  the back-face brightness, renderKnobs.z
-export function shadeSimple({ gbuf, out, width, height, row0, rows, cam, far, field, backDim }) {
+//   colors   each return's schematic color, linear
+export function shadeSimple({ gbuf, out, width, height, row0, rows, cam, far, field, backDim, colors }) {
   const a = SIMPLE.ambient;
   for (let r = 0; r < rows; r++) {
     const y = row0 + r;
@@ -190,7 +187,7 @@ export function shadeSimple({ gbuf, out, width, height, row0, rows, cam, far, fi
       const { origin, dir } = simpleRay(cam, x, y, width, height);
       const nv = n[0] * dir[0] + n[1] * dir[1] + n[2] * dir[2];
       const lit = (a + (1 - a) * Math.abs(nv)) * (nv > 0 ? backDim : 1);
-      const base = SIMPLE_PALETTE[(index - 1) % SIMPLE_PALETTE.length];
+      const base = colors[index - 1] ?? [1, 1, 1];
       const hit = [origin[0] + dir[0] * t, origin[1] + dir[1] * t, origin[2] + dir[2] * t];
       const depth = ((hit[0] - origin[0]) * cam.fwd[0] + (hit[1] - origin[1]) * cam.fwd[1] + (hit[2] - origin[2]) * cam.fwd[2]) / far;
       const below = field.active && field.normal[0] * hit[0] + field.normal[1] * hit[1] + field.normal[2] * hit[2] < field.height;

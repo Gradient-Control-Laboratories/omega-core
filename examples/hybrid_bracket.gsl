@@ -1,3 +1,5 @@
+@scene(8, 0.4)
+
 // Hybrid Mechanical Bracket Showcase: CAD Polygon Mesh Shell + Procedural TPMS Infill
 infill_density = 2.5;
 infill_density.min = 1.0;

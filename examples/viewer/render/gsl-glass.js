@@ -47,7 +47,20 @@ struct gsl_secondaryHit {
 // the primary march, and whatever the margin was is restored after it.
 // displace widens that margin by the reach of displacement, which moves the
 // surface off the undisplaced part its box bounds.
-export function marchSecondaryWGSL(extraParamsWGSL, { parts = false, displace = false } = {}) {
+//
+// With displace the march pays for the displaced field only within nearMargin
+// of a surface, as the primary march does: far from one the undisplaced field
+// steps as safely and costs a fraction, a displaced sample evaluating the
+// material five times a step. Marching it everywhere made the path tracer lose
+// the GPU device on sand cast. The caller passes the source unrenamed, and
+// extraArgsWGSL for the gsl_displaceSample calls, which injectExtraArgs does
+// not know.
+export function marchSecondaryWGSL(extraParamsWGSL, { parts = false, displace = false, nearMargin = "4.0", extraArgsWGSL = "" } = {}) {
+  const sample = (pos, name) => displace
+    ? `let ${name}Plain = sdShape(${pos}, time);
+        var ${name} = ${name}Plain;
+        if (near) { ${name} = gsl_displaceSample(${pos}, ${name}Plain, time${extraArgsWGSL}); }`
+    : `let ${name} = sdShape(${pos}, time);`;
   return `
 fn gsl_marchSecondary(
     origin: vec3<f32>,
@@ -89,7 +102,7 @@ ${parts ? `
     // Past four pixels at the far end of the ray, and never under eight hit
     // tolerances${displace ? ", plus the reach of displacement (gsl_dispNearMargin)" : ""}.
     let marginWas = gsl_vanishView.w;
-    gsl_vanishView.w = ${displace ? "2.0 + " : ""}max(baseHitEps * 8.0, pixelScale * mix(max(camDist + tExit, 1.0), 1.0, camOrtho) * 4.0);
+    gsl_vanishView.w = ${displace ? "4.0 + " : ""}max(baseHitEps * 8.0, pixelScale * mix(max(camDist + tExit, 1.0), 1.0, camOrtho) * 4.0);
 ` : ""}
 
     var t = tStart;
@@ -101,7 +114,10 @@ ${parts ? `
     for (var i = 0u; i < 1024u; i = i + 1u) {
         if (i >= maxSteps || t > tExit) { break; }
         let p = origin + dir * t;
-        let sd = sdShape(p, time);
+        ${displace ? `let plain = sdShape(p, time);
+        let near = gsl_dispScale != 0.0 && abs(plain.distance) < ${nearMargin};
+        var sd = plain;
+        if (near) { sd = gsl_displaceSample(p, plain, time${extraArgsWGSL}); }` : "let sd = sdShape(p, time);"}
         let pixelWorld = pixelScale * mix(max(camDist + t, 1.0), 1.0, camOrtho);
         let hitEps = max(baseHitEps, pixelWorld * 0.5);
         if (abs(sd.distance) < hitEps) {
@@ -125,7 +141,8 @@ ${parts ? `
             let ge = max(baseGradEps, pixelWorld * 0.025);
             var g = vec3<f32>(0.0);
             for (var k = 0u; k < 4u; k = k + 1u) {
-                g = g + kTaps[k] * sdShape(p + kTaps[k] * ge, time).distance;
+                ${sample("p + kTaps[k] * ge", "tap")}
+                g = g + kTaps[k] * tap.distance;
             }
             let gradMag = max(length(g) / (4.0 * ge), 1.0);
             prev_t = t;
@@ -207,6 +224,19 @@ fn gsl_shadeGlass(
 
     // A smooth interface needs one ray; a rough one dithers over several.
     let nSamples = select(1u, maxSamples, rough0 > 0.02);
+
+    // Behind a rough interface the jittered rays spread whatever lies beyond
+    // it, so no relief there can be seen, and those rays march the undisplaced
+    // field. A displaced step pays for the relief five times over, and a body
+    // like coffee under sand cast ran the frame past the GPU's watchdog: the
+    // device was lost and the view stayed black. The rays start below the
+    // relief at the hit, so they do not find the undisplaced surface above it.
+    let dispWas = gsl_dispScale;
+    // The material's own roughness, not the cone the jitter is scaled by: a
+    // draft that turns the cone off still sees through a rough surface.
+    let roughInterface = mat.surface.x > 0.02;
+    let reliefDepth = select(0.0, abs(mat.volume.z) * dispWas, roughInterface);
+    if (roughInterface) { gsl_dispScale = 0.0; }
     var radiance = vec3<f32>(0.0);   // scene-referred light arriving through the glass
     var bgWeight = vec3<f32>(0.0);   // throughput of rays that escaped to the background
 
@@ -224,7 +254,7 @@ fn gsl_shadeGlass(
         // march declares a hit within an epsilon of a surface, and an
         // along-ray offset shrinks to nothing at grazing angles, so the ray
         // would re-find the interface it just left and burn a bounce on it.
-        var origin = hitPos - localNormal * gsl_surfaceOffset(camDist0, pixelScale, camOrtho);
+        var origin = hitPos - localNormal * (gsl_surfaceOffset(camDist0, pixelScale, camOrtho) + reliefDepth);
         var camDist = camDist0;
         var ior = ior0;   // index of the medium the ray is in (1 = air)
 
@@ -287,6 +317,8 @@ fn gsl_shadeGlass(
             }
         }
     }
+
+    gsl_dispScale = dispWas;
 
     // The scene is tone mapped; the background is already display-referred.
     let inv = 1.0 / f32(nSamples);

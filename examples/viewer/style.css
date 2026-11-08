@@ -2,6 +2,8 @@
 @import "./panels/detail-slider.css";
 @import "./panels/slider-panel.css";
 @import "./panels/mesh-import.css";
+@import "./panels/body-panel.css";
+@import "./panels/material-grid.css";
 @import "./ui/progress-bar.css";
 @import "./ui/notification.css";
 
@@ -549,26 +551,28 @@ body.resizing #stl-canvas-container {
     cursor: default;
 }
 
+#scene-panel,
 #render-panel,
 #field-panel,
-#slider-panel,
 #stl-bounds-panel,
-#animation-panel,
 #mesh-import-panel,
-#color-picker-panel {
+#body-panel,
+#material-panel,
+#slider-panel {
     background: #171717;
     border-radius: 8px;
     font-family: 'Public Sans', sans-serif;
     font-size: 12px;
 }
 
+#scene-panel-header,
 #render-panel-header,
 #field-panel-header,
-#slider-panel-header,
 #stl-bounds-header,
-#animation-panel-header,
 #mesh-import-header,
-#color-picker-header {
+#body-panel-header,
+#material-panel-header,
+#slider-panel-header {
     color: #d1d1d1;
     padding: 8px 10px;
     cursor: pointer;
@@ -579,24 +583,26 @@ body.resizing #stl-canvas-container {
     user-select: none;
 }
 
+#scene-panel-header:hover,
 #render-panel-header:hover,
 #field-panel-header:hover,
-#slider-panel-header:hover,
 #stl-bounds-header:hover,
-#animation-panel-header:hover,
 #mesh-import-header:hover,
-#color-picker-header:hover {
+#body-panel-header:hover,
+#material-panel-header:hover,
+#slider-panel-header:hover {
     background: #2d2d2d;
     color: #fff;
 }
 
+#scene-panel.open #scene-panel-header,
 #render-panel.open #render-panel-header,
 #field-panel.open #field-panel-header,
-#slider-panel.open #slider-panel-header,
 #stl-bounds-panel.open #stl-bounds-header,
-#animation-panel.open #animation-panel-header,
 #mesh-import-panel.open #mesh-import-header,
-#color-picker-panel.open #color-picker-header {
+#body-panel.open #body-panel-header,
+#material-panel.open #material-panel-header,
+#slider-panel.open #slider-panel-header {
     border-radius: 8px 8px 0 0;
     font-weight: bold;
     letter-spacing: 0.05em;
@@ -604,6 +610,18 @@ body.resizing #stl-canvas-container {
     color: #bababa;
     cursor: default;
     background: transparent;
+}
+
+#scene-panel.open #scene-panel-header:hover,
+#render-panel.open #render-panel-header:hover,
+#field-panel.open #field-panel-header:hover,
+#stl-bounds-panel.open #stl-bounds-header:hover,
+#mesh-import-panel.open #mesh-import-header:hover,
+#body-panel.open #body-panel-header:hover,
+#material-panel.open #material-panel-header:hover,
+#slider-panel.open #slider-panel-header:hover {
+    background: transparent;
+    color: #bababa;
 }
 
 .panel-close {
@@ -619,13 +637,14 @@ body.resizing #stl-canvas-container {
     color: #fff;
 }
 
+#scene-panel.open .panel-close,
 #render-panel.open .panel-close,
 #field-panel.open .panel-close,
-#slider-panel.open .panel-close,
 #stl-bounds-panel.open .panel-close,
-#animation-panel.open .panel-close,
 #mesh-import-panel.open .panel-close,
-#color-picker-panel.open .panel-close {
+#body-panel.open .panel-close,
+#material-panel.open .panel-close,
+#slider-panel.open .panel-close {
     display: block;
 }
 
@@ -635,14 +654,111 @@ body.resizing #stl-canvas-container {
     color: #d1d1d1;
 }
 
+#scene-panel.open .panel-body,
 #render-panel.open .panel-body,
 #field-panel.open .panel-body,
-#slider-panel.open .panel-body,
 #stl-bounds-panel.open .panel-body,
-#animation-panel.open .panel-body,
 #mesh-import-panel.open .panel-body,
-#color-picker-panel.open .panel-body {
+#body-panel.open .panel-body,
+#material-panel.open .panel-body,
+#slider-panel.open .panel-body {
     display: block;
+}
+
+/* Slider rows: name on the left, range + numeric input on the right.
+ * The numeric input accepts values outside [min, max] so the user can
+ * type a precise value; the range visually clamps but doesn't lose the
+ * typed value. */
+.slider-row {
+    /* 22px control cell sits between the name and the range slider —
+       animated rows host the play/pause toggle there, static rows host
+       an invisible spacer — so the toggle eats into the parameter
+       name's space rather than the slider's, and every row's range /
+       number column lines up across the panel. */
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 22px minmax(0, 1.4fr) 56px;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0;
+}
+.slider-row .slider-play-btn {
+    background: transparent;
+    border: 1px solid #2a2a2a;
+    border-radius: 3px;
+    color: #d1d1d1;
+    font-size: 11px;
+    line-height: 1;
+    padding: 1px 0;
+    width: 22px;
+    height: 18px;
+    cursor: pointer;
+}
+.slider-row .slider-play-btn:hover {
+    border-color: #4488ee;
+    color: #ffffff;
+}
+
+/* Transport cluster below the Time slider: the .anim-btn flex-grow
+   rule spreads rewind / play-pause / fast-forward across the row, and
+   the end-time number input on the right lines up with the per-slider
+   value column. */
+#anim-controls-row .anim-btns {
+    flex: 1;
+}
+
+/* Inside the Parameters panel, widen the field-panel-label number
+   inputs (Time, end-time) to match the slider grid's 56px value
+   column so anim rows align with slider rows. box-sizing makes the
+   declared width inclusive of padding + border, so the input fits
+   the grid cell exactly. */
+#slider-panel .field-panel-label {
+    box-sizing: border-box;
+    width: 56px;
+    text-align: right;
+    padding: 3px 6px;
+}
+.slider-row .slider-label {
+    color: #d1d1d1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.slider-row input[type="range"] {
+    width: 100%;
+    accent-color: #4488ee;
+}
+/* Number inputs across the Parameters panel — slider rows, Time row,
+   and end-time — share the .field-panel-label look. Hide the native
+   spin buttons (Chromium + Firefox) so the right-aligned monospace
+   number stays clean. */
+#slider-panel input[type="number"] {
+    -moz-appearance: textfield;
+}
+#slider-panel input[type="number"]::-webkit-outer-spin-button,
+#slider-panel input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.mesh-hint {
+    font-size: 11px;
+    color: #8a8a8a;
+    margin-top: 10px;
+    line-height: 1.4;
+    max-width: 230px;
+    word-wrap: break-word;
+}
+.mesh-hint code {
+    color: #aaa;
+    background: #1e1e1e;
+    padding: 1px 3px;
+    border-radius: 3px;
+    font-size: 10px;
+    line-height: 1.4;
+}
+
+#stl-sdf-controls.hidden {
+    display: none;
 }
 
 #animation-time-input {
@@ -659,10 +775,14 @@ body.resizing #stl-canvas-container {
     -moz-appearance: textfield;
 }
 
-.anim-unit {
-    color: #888;
-    font-size: 12px;
-    margin-left: -4px;
+#animation-time-input::-webkit-outer-spin-button,
+#animation-time-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+}
+
+#animation-time-input:not([readonly]) {
+    border-color: #888;
+    background: #252525;
 }
 
 .anim-btns {
@@ -678,6 +798,10 @@ body.resizing #stl-canvas-container {
     padding: 4px 0;
     font-size: 14px;
     line-height: 1;
+}
+
+.anim-glyph {
+    position: relative;
 }
 
 .checkbox-row {
@@ -785,145 +909,128 @@ body.resizing #stl-canvas-container {
     flex-shrink: 0;
 }
 
-#color-picker-panel {
-    display: none;
+.field-panel-label:focus {
+    border-color: #013566;
+    outline: none;
 }
 
-#color-picker-panel.open {
-    min-width: 180px;
+.stl-axis-labels {
+    margin-bottom: 2px;
 }
 
-#color-picker-panel.visible {
-    display: block;
-}
-
-#color-picker-panel.open .panel-body {
-    max-height: 260px;
-    overflow-y: auto;
-    padding: 0 10px 8px 10px;
-}
-
-#palette-strip {
-    display: flex;
-    gap: 2px;
-    margin-bottom: 10px;
-}
-
-#palette-popup {
-    position: fixed;
-    background: #1a1a1a;
-    border-radius: 8px;
-    padding: 10px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.6);
-    z-index: 1000;
-    display: none;
-    width: 220px;
-}
-
-#palette-popup.visible {
-    display: block;
-}
-
-#palette-popup-params {
-    display: flex;
-    gap: 4px;
-    margin-bottom: 10px;
-}
-
-.palette-param-col {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 3px;
-}
-
-.palette-param-swatch {
-    width: 100%;
-    height: 32px;
-    border-radius: 3px;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-}
-
-.palette-param-label {
-    font-family: 'Public Sans', sans-serif;
-    font-size: 9px;
+.stl-axis-label {
+    width: 36px;
     color: #666;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    padding-left: 4px;
 }
 
-#palette-popup-presets {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
+.stl-row-loose input[type="number"]::-webkit-inner-spin-button,
+.stl-row-loose input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
 }
 
-.palette-preset {
-    border-radius: 3px;
-    overflow: hidden;
-    border: 2px solid transparent;
+.stl-row-loose input[type="number"]:focus {
+    border-color: #013566;
+}
+
+.stl-row-loose input[type="range"] {
+    flex: 1;
+    accent-color: #d1d1d1;
+    height: 5px;
     cursor: pointer;
 }
 
-.palette-preset.selected {
-    border-color: #fff;
-}
-
-.palette-preset canvas {
-    display: block;
-    width: 100%;
-    height: 16px;
-}
-
-#palette-strip .palette-swatch {
+#stl-algorithm {
     flex: 1;
-    height: 12px;
-    border-radius: 2px;
-}
-
-.color-picker-row {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 8px;
-    margin: 10px 0;
-}
-
-.color-picker-row label {
+    padding: 8px 5px;
+    background: transparent;
     color: #d1d1d1;
+    border: none;
     font-family: 'Public Sans', sans-serif;
     font-size: 12px;
+    outline: none;
+    cursor: pointer;
 }
 
-.color-picker-row.selected label {
-    color: #ffff00;
+#stl-depth-label {
+    color: #d1d1d1;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    width: 36px;
+    text-align: center;
+    padding: 3px 4px;
+    background: #1e1e1e;
+    border: 1px solid #2d2d2d;
+    border-radius: 4px;
+    cursor: text;
+    overflow: hidden;
+    white-space: nowrap;
 }
 
-.color-picker-row.selected input[type="color"] {
-    outline: 2px solid #ffff00;
-    outline-offset: 1px;
+#stl-depth-label:focus {
+    border-color: #013566;
+    outline: none;
 }
 
-.color-picker-row input[type="color"] {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
+#stl-scale-label {
+    color: #d1d1d1;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    width: 36px;
+    text-align: center;
+    padding: 3px 4px;
+    background: #1e1e1e;
+    border: 1px solid #2d2d2d;
+    border-radius: 4px;
+    cursor: text;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+#stl-scale-label:focus {
+    border-color: #013566;
+    outline: none;
+}
+
+.thmub-btn {
     width: 22px;
     height: 22px;
-    cursor: pointer;
-    background: transparent;
-    border: none;
-    padding: 0;
     border-radius: 4px;
+    background: rgba(255,255,255,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #ddd;
 }
 
-.color-picker-row input[type="checkbox"] {
-    width: 14px;
-    height: 14px;
-    margin: 0;
-    cursor: pointer;
-    flex-shrink: 0;
+#stl-voxel-info,
+#scene-bbox-info,
+#scene-grid-info {
+    color: #888;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    text-align: right;
+    margin-bottom: 4px;
+}
+
+/* Bodies is only shown once the document has bodies. The rows and the
+ * palette are in panels/body-panel.css, and Materials, on the same
+ * terms, is panels/material-grid.css. */
+#body-panel,
+#material-panel {
+    display: none;
+}
+
+#body-panel.visible,
+#material-panel.visible {
+    display: block;
+}
+
+#body-panel.open,
+#material-panel.open {
+    min-width: 180px;
 }

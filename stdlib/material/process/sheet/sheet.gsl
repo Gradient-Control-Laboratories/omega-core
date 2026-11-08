@@ -1,0 +1,229 @@
+
+// Sheet Materials (material/process/sheet)
+//
+// The surfaces sheet and plate leave the mill with: hot rolled under its
+// blue-grey scale, flaking where it has been handled; cold rolled with the
+// faint lay of the rolls; pickled and oiled, the scale off and the steel dull
+// under oil; floor plate's raised lugs; and the pebble of stucco-embossed
+// aluminium. Each returns material, color, height and slope, as the machined
+// and coating materials do; the checker plate's lugs and the stucco's
+// pebbles are the height, which the Bodies panel applies as displacement
+// and the presets bake in, so it counts any relief already on the base.
+//
+// Doc convention follows builtin/base.gsl: `///` lines are public docs.
+
+import "material";
+import "texture";
+import "noise";
+import "color";
+import "material/bulk/metal";
+
+// --- Mill finishes ---
+
+// The scale's colour, a bluish grey (judged from the descriptions in the
+// references; the oxide is magnetite over wustite under a hematite crust).
+scaleColor = [0.31, 0.33, 0.37];
+
+/// hotRolled(baseMaterial, baseColor, flaking): steel as hot rolled, under
+/// its mill scale, the blue-grey oxide 5 to 40 um thick that the rolling
+/// leaves, a matte with no glint of the metal; `flaking` (0 to 1) is how much
+/// of it has flaked off in handling, patches 20 to 60 mm across showing the
+/// bright steel beneath, which keeps the base's lobe. The scale's own
+/// texture, a fine crazing, is below what a part shows. Returns material,
+/// color, height and slope.
+hotRolled(baseMaterial, @color baseColor, @range(0, 1) flaking) {
+  f = clamp(flaking, 0, 1);
+  // fbmBump4 is scaled to its size, about a twelfth of it either way; the
+  // threshold runs from above the field at flaking 0 to below it at 1.
+  blotch = noise.fbmBump4(40, 0.5, 2.0) / 3.3 + noise.gradient(8) * 0.15;
+  flaked = texture.mask(blotch, 1.1 - 2.2 * f, 0.15);
+  scaled = material.withLay(material.withRoughness(material.withMetallic(baseMaterial, 0), 0.65), [0, 0, 0], 0);
+  skin = material.blend(scaled, baseMaterial, flaked);
+  skin.simple = material.blend(scaled, baseMaterial, f * f);
+  tone = color.mixOklab(scaleColor, baseColor, flaked);
+  tone.simple = color.mixOklab(scaleColor, baseColor, f * f);
+  return skin, tone, 0, 0;
+}
+
+/// coldRolled(baseMaterial, baseColor, direction): steel or aluminium as
+/// cold rolled, bright, with the faint lay of the rolls along `direction`,
+/// the lobe 0.15 wide along it and 0.25 across (judged from a 2B finish).
+/// Returns material, color, height and slope.
+coldRolled(baseMaterial, @color baseColor, @direction direction) {
+  alpha = sqrt(0.15 * 0.25);
+  skin = material.withLay(material.withRoughness(baseMaterial, sqrt(alpha)), normalize(direction), 0.35);
+  return skin, baseColor, 0, 0;
+}
+
+/// pickledOiled(baseMaterial, baseColor, oiled): hot-rolled steel pickled of
+/// its scale and oiled against rust: a dull grey a shade darker than the
+/// metal, matte at oiled 0 and glossed by the oil film at 1 (judged).
+/// Returns material, color, height and slope.
+pickledOiled(baseMaterial, @color baseColor, @range(0, 1) oiled) {
+  o = clamp(oiled, 0, 1);
+  skin = material.withLay(material.withRoughness(baseMaterial, 0.55 - 0.3 * o), [0, 0, 0], 0);
+  return skin, baseColor * 0.8, 0, 0;
+}
+
+// --- Floor plate and stucco ---
+
+// The height of one raised lug: a rounded bar `span` long and `width` wide
+// at local (x, y) along and across it, `height` high at its crown.
+lugHeight(x, y, span, width, height) {
+  d = length([max(abs(x) - 0.5 * span + 0.5 * width, 0), y]);
+  t = clamp(1 - d / (0.5 * width), 0, 1);
+  return height * t * (2 - t);
+}
+
+/// checkerPlate(baseMaterial, baseColor, origin, along, normal, pitch,
+/// barLength, barHeight): floor plate's raised lugs on a face facing
+/// `normal` through `origin`, the pattern's rows along `along`: oblong lugs
+/// on a square grid `pitch` mm apart (about 25 on commercial plate), each
+/// turned 45 degrees to the rows and the other way in the next cell, so the
+/// lugs frame diamonds, the four-way pattern of ASTM A786, which leaves the
+/// dimensions to the mill. A lug is `barLength` of the pitch long (0.5 to
+/// 1.2), a fifth of that wide and `barHeight` mm high (0.5 to 3; 1 to 1.5 on
+/// commercial plate). The lugs are the returned height, with the base's
+/// material and colour. Returns material, color, height and slope.
+checkerPlate(baseMaterial, @color baseColor, @point origin, @direction(origin) along, @direction(origin) normal, @range(10, 60) pitch, @range(0.5, 1.2) barLength, @range(0.5, 3) barHeight) {
+  n = normalize(normal);
+  u = normalize(along - n * dot(along, n));
+  v = cross(n, u);
+  offset = p - origin;
+  x = dot(offset, u);
+  y = dot(offset, v);
+  i = floor(x / pitch);
+  j = floor(y / pitch);
+  cx = x - (i + 0.5) * pitch;
+  cy = y - (j + 0.5) * pitch;
+  // The lug's own axes, turned 45 degrees one way in cells where i + j is
+  // even and the other way where it is odd.
+  turn = fract(0.5 * (i + j)) < 0.25 ? 0.7071068 : -0.7071068;
+  bx = 0.7071068 * cx + turn * cy;
+  by = -turn * cx + 0.7071068 * cy;
+  lugLength = barLength * pitch;
+  height = lugHeight(bx, by, lugLength, 0.2 * lugLength, barHeight);
+  return baseMaterial, baseColor, height + material.displacement(baseMaterial), 2 * barHeight / (0.1 * lugLength);
+}
+
+/// stuccoEmbossed(baseMaterial, baseColor, pebble, depth): stucco-embossed
+/// aluminium, the pebble pattern rolled into sheet, pebbles `pebble` mm
+/// across (1 to 8) and `depth` mm deep (0.05 to 0.4, 0.1 to 0.25 as
+/// supplied), the sheet's own lobe kept. The pebbles are the returned
+/// height. Returns material, color, height and slope.
+stuccoEmbossed(baseMaterial, @color baseColor, @range(1, 8) pebble, @range(0.05, 0.4) depth) {
+  f1, f2, cell = noise.cellularCell(pebble);
+  bump = clamp(1 - f1 / (0.6 * pebble), 0, 1);
+  height = depth * bump * bump * texture.fadeDetail(pebble);
+  return baseMaterial, baseColor, height + material.displacement(baseMaterial), 2 * depth / pebble;
+}
+
+// ===========================================================================
+// Ready-made
+// ===========================================================================
+
+// One surface from each constructor above over the metal it comes on, so
+// the material browser can show it; the floor plate's lugs and the stucco's
+// pebbles are baked in as displacement here, where no body applies them.
+
+/// Hot-rolled steel under its mill scale, a fifth flaked off. Returns
+/// material and colour.
+@material hotRolledSteel() {
+  steelMat, steelColor = metal.steel();
+  skin, tone, height, slope = hotRolled(steelMat, steelColor, 0.2);
+  return skin, tone;
+}
+
+/// Cold-rolled steel, its lay along +X. Returns material and colour.
+@material coldRolledSteel() {
+  steelMat, steelColor = metal.steel();
+  skin, tone, height, slope = coldRolled(steelMat, steelColor, [1, 0, 0]);
+  return skin, tone;
+}
+
+/// Pickled and oiled steel. Returns material and colour.
+@material pickledOiledSteel() {
+  steelMat, steelColor = metal.steel();
+  skin, tone, height, slope = pickledOiled(steelMat, steelColor, 1);
+  return skin, tone;
+}
+
+/// Steel floor plate, 25 mm four-way pattern, lugs 1.2 mm high, on a +Z
+/// face through the origin, its lugs as displacement. Returns material and
+/// colour.
+@material checkerPlateSteel() {
+  steelMat, steelColor = metal.steel();
+  skin, tone, height, slope = checkerPlate(steelMat, steelColor, [0, 0, 0], [1, 0, 0], [0, 0, 1], 25, 1.0, 1.2);
+  plate = material.withDisplacement(skin, height);
+  plate.simple = skin;
+  return plate, tone;
+}
+
+/// Stucco-embossed aluminium, 4 mm pebbles 0.2 mm deep, as displacement.
+/// Returns material and colour.
+@material stuccoEmbossedAluminum() {
+  aluMat, aluColor = metal.aluminum();
+  skin, tone, height, slope = stuccoEmbossed(aluMat, aluColor, 4, 0.2);
+  embossed = material.withDisplacement(skin, height);
+  embossed.simple = material.withRoughness(skin, sqrt(texture.reliefRoughness(material.roughness(skin) * material.roughness(skin), 0.1, 4)));
+  return embossed, tone;
+}
+
+// One @surface overload per operator above, for the Bodies panel to wrap a
+// surface with: the part's material and colour, and the usual setting for
+// the rest. Adjust opens one back into the full form.
+
+/// hotRolled(baseMaterial, baseColor): hot rolled, a fifth of the scale
+/// flaked. Returns material, color, height and slope.
+@surface hotRolled(baseMaterial, @color baseColor) {
+  skin, tone, height, slope = hotRolled(baseMaterial, baseColor, 0.2);
+  return skin, tone, height, slope;
+}
+
+/// coldRolled(baseMaterial, baseColor): cold rolled, the lay along +X.
+/// Returns material, color, height and slope.
+@surface coldRolled(baseMaterial, @color baseColor) {
+  skin, tone, height, slope = coldRolled(baseMaterial, baseColor, [1, 0, 0]);
+  return skin, tone, height, slope;
+}
+
+/// pickledOiled(baseMaterial, baseColor): pickled and oiled. Returns
+/// material, color, height and slope.
+@surface pickledOiled(baseMaterial, @color baseColor) {
+  skin, tone, height, slope = pickledOiled(baseMaterial, baseColor, 1);
+  return skin, tone, height, slope;
+}
+
+/// checkerPlate(baseMaterial, baseColor): a 25 mm four-way pattern, lugs
+/// 1.2 mm high, rows along +X on a +Z face through the origin. Returns
+/// material, color, height and slope; the Bodies panel applies the height
+/// as displacement.
+@surface checkerPlate(baseMaterial, @color baseColor) {
+  skin, tone, height, slope = checkerPlate(baseMaterial, baseColor, [0, 0, 0], [1, 0, 0], [0, 0, 1], 25, 1.0, 1.2);
+  return skin, tone, height, slope;
+}
+
+/// stuccoEmbossed(baseMaterial, baseColor): 4 mm pebbles 0.2 mm deep.
+/// Returns material, color, height and slope; the Bodies panel applies the
+/// height as displacement.
+@surface stuccoEmbossed(baseMaterial, @color baseColor) {
+  skin, tone, height, slope = stuccoEmbossed(baseMaterial, baseColor, 4, 0.2);
+  return skin, tone, height, slope;
+}
+
+// References
+//   ASTM A786/A786M-15(2025). Hot-rolled carbon, low-alloy, high-strength
+//     low-alloy, and alloy steel floor plates: the raised figures are each
+//     mill's own. https://store.astm.org/a0786_a0786m-15r25.html
+//   Russel Metals. Aluminum tread plate: the raised four-way diamond pattern
+//     on about 1 inch centres.
+//     https://www.russelmetals.com/en/product/aluminum/aluminum-tread-plate/
+//   A supplier's diamond plate, lugs 1.0 to 1.5 mm high on 1.5 mm plate.
+//     https://www.goldsupplier.com/provide/p173837155.html
+//   ispatguru. Mill scale: the smooth bluish-grey surface hot rolling
+//     leaves, wustite, magnetite and hematite in layers, flaking in
+//     handling. https://www.ispatguru.com/mill-scale/
+//   Hot rolled steel sheet (US patent 12018352): the tertiary scale 5 to 40
+//     um thick. https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/12018352
+//   Adam Hall, stucco-embossed aluminium: the emboss 0.1 to 0.25 mm deep.
+//     https://www.adamhall.com/shop/en/flight-case-material/0210-0210

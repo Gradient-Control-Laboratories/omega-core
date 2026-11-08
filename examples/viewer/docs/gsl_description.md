@@ -48,8 +48,9 @@ x = max(x, 3);
 
 * **Return Values:**
 Functions can return multiple values.
-The top-level function's return values are automatically combined using a union operation (min) to produce the final shape.
-For example, "return s1, s2;" renders the union of shape "s1" and shape "s2".
+The top-level function's return values are the parts of an assembly: each value is its own part, and they are not combined.
+Merging them into one solid is only an option when exporting a mesh.
+To get one shape, combine them yourself, for example "return unionSharp(s1, s2);".
 
 * **Audio Output:**
 A top-level program can optionally output audio using
@@ -140,7 +141,7 @@ body's own frame, `[body.u, body.v]`, which a tool writing the call
 reads off the body rather than asks for. `@surface` marks a
 function that takes a surface first and returns the modified one, the
 overload of a surface operator that takes only those slots and bakes the
-operator's other arguments: what the Bodies panel wraps a surface with.
+operator's other arguments: what the Materials panel wraps a surface with.
 
 * **Shape Color (`name.color`):**
 A declaration property that gives a shape an RGB color:
@@ -162,8 +163,18 @@ Colors transport through `remap` with the shape they belong to.
 * **Shape Material (`name.material`):**
 A declaration property that gives a shape a surface finish, independent of its
 color: `name.material = material.chrome;` — a record from the
-`material` package (roughness, metallic, ior, emission; see its
-presets, `material.make`, and the `with…` modifiers).
+`material` package. It holds roughness, metallic and index of refraction
+(`material.make(rough, metal, ior)`); an emitted colour and strength
+(`material.glowing(rgb, strength)`); transmission, with the absorption distance
+in mm over which the shape's color comes through
+(`material.translucent(m, transmission, absorptionDistance)`); a displacement
+height in mm, drawn by the renderer only (`material.withDisplacement(m, height)`);
+and a lay, grooves too fine to see that stretch the highlight along a direction,
+as on brushed or turned metal (`material.withLay(m, direction, anisotropy)`).
+Each `with…` modifier returns a copy of `m` with one part replaced, and
+`material.blend(a, b, t)` mixes two records, `t` a field, so one field can drive
+every part at once. Build and read records with these functions rather than
+indexing their rows.
 A shape may set color, material, both, or neither; each is a field of
 `p`, blended and inherited across combinations exactly like color,
 and a shape that sets neither renders with `material.standard`.
@@ -181,6 +192,15 @@ through, and parts inside the glass are seen through it.
   bolt.color = boltColor;
   return bolt;
   ```
+  ```gsl
+  bar = max(cylinderZ(vector.zero, 4), abs(p.z) - 20);
+  barMat, barColor = metal.steel();
+  bar.material = material.withLay(barMat, bar.u.dp, 0.8);   // grooves run round the bar
+  bar.color = barColor;
+  return bar;
+  ```
+
+* **Surface frame (`name.u`, `name.v`):** two coordinates of a point on a shape's own surface. The primitives write them, so you rarely do: a cylinder's `u` is the angle round its axis in radians and its `v` the distance along it in mm, a sphere's are azimuth and polar angle, a box's are the in-plane distances across each face. Read one as `bar.u` to hand a material the frame of the shape it is on, rather than a direction you keep in step with the geometry by hand; `bar.u.dp` is the direction of increasing angle, round the axis. A shape with no frame reads 0. A sharp union hard-selects the nearer shape's frame, so it flips across an edge; only a blended boolean averages them. An angle jumps by 2 pi where it wraps but its gradient does not, so take `.dp` of it rather than indexing by its value. Declare your own with `name.u = expr;`.
 
 * **Shape Box (`name.box`):**
 A declaration property that says where a shape is: `name.box = [lo, hi];`,
@@ -219,6 +239,20 @@ less than what it stands in for.
   knob.simple = knobProxy;
   return knob;
   ```
+
+* **Properties carried out of a function:** a function that builds a shape, sets `.color`, `.material` or `.simple` on it and returns it hands those properties to the shape the caller gets, so the caller need not set them again. A property the caller sets on its own name wins.
+  ```gsl
+  finished(r) {
+    s = sphere(vector.zero, r);
+    s.material = material.chrome;
+    s.color = [0.9, 0.2, 0.2];
+    return s;
+  }
+  ball = finished(5);             // chrome and red
+  dull = finished(5);
+  dull.color = [0.2, 0.2, 0.9];   // the caller's color wins
+  ```
+  A function that returns several shapes keeps each one's own (`a, b = pair();`). The function must return a local variable, or a call to another function that carries; returning an expression built from one, such as `remap(s, q)`, carries nothing out.
 
 * **Function Definition:**
   ```gsl
@@ -280,7 +314,7 @@ read from the builtin primitives (`sphere`, `box`, `boxCentered`,
 axis cylinders, `octahedron`) and carried through `min` and the unions (the
 union of the boxes), `max`, the intersections and the differences (their
 intersection, or the target's box), offsets `f - r` (grown by `r`), scaling
-by a number, a complement `-f`, `abs` and ternaries. A `remap` clears it; to move a
+by a number, a complement `-f`, `abs` and ternaries. A hand-written `remap` clears it; to move a
 shape and keep its box, use the `transform` library (`transform.translate`,
 `rotateX` / `rotateY` / `rotateZ`, `rotate`, `scale`, `affine`). An axis
 it cannot bound reads as `-nothing` to `nothing`, and an empty box reads
@@ -290,6 +324,13 @@ with lo > hi. It follows sliders, and works in top-level expressions.
   placed = transform.rotateZ(transform.translate(bracket, [40, 0, 0]), pi / 6);
   proxy = box(placed.box[0], placed.box[1]);   // its bounding box, as geometry
   ```
+
+* **Replacement bounding box:** a field the box analysis cannot follow has no box, so the viewer cannot place the part or draw its stand-in when it is small on screen. Declare one with `name.box = [lo, hi]` for:
+  - a `remap` that is not a translation, rotation or scale: a warp, bend, twist, shear or taper, such as `[p.x, p.y + sin(p.x), p.z]`;
+  - a field written out in `p` that is not a plane, a distance to a point or a line, or one of those scaled by a number: `sin(p.x) * 0.1`, `f + g`, `f * g`;
+  - an offset `f - r` where `r` depends on `p`.
+
+  The corners must enclose the surface, because the viewer crops the surface to the box; one that is too large costs only speed. A declared box then flows through `transform`, the unions, the intersections and the differences like a primitive's, with one catch: it bounds the part's surface but not its solid, so cut holes in a shape first and add the declared part afterwards, as the example does.
 
 * **map / reduce:** `map(fn, collection)` applies `fn(value, index)`
 to each element and collects the results. A function that returns a vector
@@ -314,10 +355,13 @@ All of the math related to vectors in GSL is Hadamard or component-wise vector a
 Selects result based on whether value is positive, zero, or negative.  
 Use surrounding parentheses when nesting!
 
-* **CSG Operations (Constructive Solid Geometry):**
-  * **Union:** `min(shape1, shape2, shape3, ...)`
-  * **Intersection:** `max(shape1, shape2, shape3, ...)`
-  * **Difference:** `max(shape1, -shape2)` (subtracts shape2 from shape1)
+* **Booleans (CSG):** combine shapes with `unionSharp`, `intersectSharp` and `differenceSharp`, each taking the shapes as arguments or as one list: `differenceSharp(plate, holes)`. To blend the seam instead, change the name and add the blend's parameters as the last arguments: `unionRound(a, b, 2)` fillets it with radius 2, and `Lp`, `Exponential`, `Chamfer`, `ChamferRound` and `Rvachev` do likewise (a radius, a width or a setback), each with a matching `difference`.
+  * **A blend is a value.** Leave the shapes out and a blend returns the operator itself, which takes a list of shapes: `intersectRound(2)`. Hand it to anything that wants a blend. `boxCentered(vector.zero, [20, 20, 20], intersectRound(2))` rounds every edge of the box, and `intersectChamferBlend(a, b, setback, blend)` takes another blend to combine its chamfer planes. Take one as a parameter of your own function and it works with any blend; call it through the parameter's name:
+  ```gsl
+  joined(blend) { return blend([sphere(vector.zero, 10), sphere([8, 0, 0], 10)]); }
+  fused = joined(unionRound(2));
+  ```
+  * The sharp ones are `min`, `max` and `max(a, -b)` underneath.
 
 ### **Operator Precedence**
 
@@ -339,38 +383,40 @@ Use surrounding parentheses when nesting!
 ## **Example Program**
 
 ```gsl
-// Distance function for a sphere at the origin with a given radius
-sphere(radius) {
-	return length(p) - radius;
-}
+// A mounting plate with four bolt holes, a ball and a wavy rib, in
+// millimetres. Positions, sizes and offsets are vectors: write them as
+// [x, y, z] and combine them with +, -, * and the vector functions.
 
-// Distance function for a rectangular solid with given bounds
-// Note: p is the implicit point in space being evaluated (a 3D vector vec3<f32>)
-box(x1, y1, z1, x2, y2, z2) {
-	return max(
-		x1 - p.x, p.x - x2,
-		y1 - p.y, p.y - y2,
-		z1 - p.z, p.z - z2,
-	);
-}
+plateSize = [60, 40, 6];
+holeSpacing = [44, 24, 0];
+boltRadius = 3;
 
-// Distance function for a torus at the origin with given major and minor radii
-torus(majorRadius, minorRadius) {
-	// Use swizzling to access x and y components
-	q = [length(p.xy) - majorRadius, p.z];
-	return length(q) - minorRadius;
-}
+// Library shapes take a centre and a size; there is nothing to define.
+plate = boxCentered(vector.zero, plateSize);
 
-s = sphere(0.8);
-r = box(0.3, 0.3, 0.3, 1.2, 1.2, 1.2);
+// One hole per corner: scale the spacing by each corner's signs.
+corners = [[1, 1, 0], [1, -1, 0], [-1, 1, 0], [-1, -1, 0]];
+holes = unionSharp(map((signs) {
+  return cylinderZ(signs * holeSpacing / 2, boltRadius);
+}, corners));
 
-// Use remap to translate a torus by 1.0 along the Z axis
-// remap re-evaluates the given shape expression with a new implicit 'p'
-remappedTorus = remap(() { return torus(1.3, 0.2); }(), p - [0.0, 0.0, 1.0]);
+// Move shapes with transform.translate, not a hand-written remap. The ball
+// sits half sunk in the top face of the plate.
+topFace = vector.dirZ * plateSize.z / 2;
+ball = transform.translate(sphere(vector.zero, 10), topFace + [0, 0, 6]);
 
-// Intersect the sphere and the box (max is intersection)
-intersection = max(s, r);
+// A rib bent into a wave. The warp is a hand-written remap, which loses the
+// shape's bounding box, so declare one whose corners enclose the wave.
+rib = remap(boxCentered(vector.zero, [40, 4, 10]), [p.x, p.y - 2 * sin(p.x / 4), p.z]);
+rib.box = [[-20, -4, -5], [20, 4, 5]];
+ribOnPlate = transform.translate(rib, topFace + [0, 0, 5]);
 
-// The result is the union of the translated torus and the intersection shape
-return intersection, remappedTorus;
+// unionSharp and differenceSharp combine shapes. Cut the holes first, then add
+// the rib: a declared box bounds the rib's surface but not its solid.
+drilled = differenceSharp(unionSharp(plate, ball), holes);
+body = unionSharp(drilled, ribOnPlate);
+
+return body;
 ```
+
+**Prefer the library.** Combine shapes with `unionSharp`, `intersectSharp` and `differenceSharp` rather than `min`, `max` and `max(a, neg(b))`, and move them with `transform.translate`, `rotateX` / `rotateY` / `rotateZ`, `rotate`, `scale` and `affine` rather than `remap`. Each gives the same field as the hand-written form, says what you mean, and keeps the shape's bounding box. Write `min`, `max` or `remap` yourself only for something the library has no function for.

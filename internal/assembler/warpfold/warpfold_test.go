@@ -3,6 +3,7 @@ package warpfold
 import (
 	"testing"
 
+	"gradientcontrol.com/omega/core/assembler/warpfold"
 	"gradientcontrol.com/omega/core/program"
 )
 
@@ -68,7 +69,7 @@ func TestWarpFoldMeshWarped(t *testing.T) {
 	if len(warpedAssets) != 1 {
 		t.Fatalf("expected 1 WarpedAsset, got %d", len(warpedAssets))
 	}
-	wantAsset := WarpedAsset{
+	wantAsset := warpfold.WarpedAsset{
 		DerivedSlot: 42,
 		MeshSlot:    0,
 		WarpDir:     "pkg_primary",

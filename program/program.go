@@ -26,9 +26,6 @@ const VAccessor = "v"
 const AnonFnPrefix = "gsl_anon"
 const InlinedFnPrefix = "gsl_inlined_"
 
-// ParsePackageFunc parses package source code into a program.Package.
-type ParsePackageFunc func(sources []string) (*Package, error)
-
 func (i *Import) SimpleName() string {
 	return i.Path[strings.LastIndex(i.Path, "/")+1:]
 }
@@ -236,6 +233,18 @@ func NewLoc(line int32, col int32, offset int32) *Location {
 // or nil if no primary package or scene is defined.
 func (p *Program) Scene() *Scene {
 	return p.Primary.Scene
+}
+
+// ResolveWorldExtent returns the worldExtent (half-size of the scene bounding box)
+// based on the scene definition, or falls back to the requested fallback or default 10.0.
+func (s *Scene) ResolveWorldExtent(fallback float64) float64 {
+	if s != nil && s.Size > 0 {
+		return s.Size / 2.0
+	}
+	if fallback > 0 {
+		return fallback
+	}
+	return 10.0
 }
 
 // Returns returns the return operands of the package's last file,

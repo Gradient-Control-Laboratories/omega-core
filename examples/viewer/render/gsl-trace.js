@@ -92,7 +92,7 @@ export const GSL_TRACE_STATE_WGSL = `var<private> gsl_rngState: u32 = 0u;`;
 // textures fade their detail by (the detail ladder's, for a program with
 // parts; gsl-render-graph.js). setDispDrawn is the statement that tells a
 // program reading displacementDrawn() how much displacement was drawn there.
-export function traceSampleWGSL({ extraParamsWGSL, extraArgsWGSL, colorParamsWGSL, colorStmt, materialAt, texturePw = (pw) => pw, setDispDrawn = "" }) {
+export function traceSampleWGSL({ extraParamsWGSL, extraArgsWGSL, colorParamsWGSL, colorStmt, materialAt, texturePw = (pw) => pw, setDispDrawn = "", displace = false }) {
   const colorParams = colorParamsWGSL ? `,\n    ${colorParamsWGSL}` : "";
   return `
 fn gsl_traceSample(
@@ -165,6 +165,7 @@ fn gsl_traceSample(
     // environment panels a ray finds against the ones next-event estimation
     // already sampled; 0 after a refraction, which nothing else samples.
     var lastPdf = 0.0;
+    ${displace ? "let dispAtStart = gsl_dispScale;" : ""}
 
     for (var depth = 0u; depth < 16u; depth = depth + 1u) {
         if (depth >= maxDepth) { break; }
@@ -328,7 +329,16 @@ fn gsl_traceSample(
             }
             lastPdf = 0.0;
             dir = into;
-            origin = h.pos + N * select(-off, off, dot(into, N) > 0.0);
+            ${displace ? `// Past a rough interface the rest of the path marches the
+            // undisplaced field, starting below the relief, as gsl_shadeGlass
+            // does and for its reason: the relief beyond cannot be seen, and
+            // paying for it at every step lost the GPU device.
+            var below = 0.0;
+            if (hMat.surface.x > 0.02) {
+                below = abs(hMat.volume.z) * gsl_dispScale;
+                gsl_dispScale = 0.0;
+            }
+            origin = h.pos + N * select(-off - below, off, dot(into, N) > 0.0);` : `origin = h.pos + N * select(-off, off, dot(into, N) > 0.0);`}
         }
 
         // Russian roulette.
@@ -338,6 +348,7 @@ fn gsl_traceSample(
             throughput = throughput / survive;
         }
     }
+    ${displace ? "gsl_dispScale = dispAtStart;" : ""}
 
     return vec4<f32>(min(radiance, vec3<f32>(pathClamp)), 1.0);
 }
@@ -358,23 +369,32 @@ fn gsl_traceShadow(
     var transmit = vec3<f32>(1.0);
     var origin = p;
     var inside = false;
+    ${displace ? `// Past a rough transmissive surface the shadow ray marches the
+    // undisplaced field, as the path does (see the transmission lobe).
+    let dispAtStart = gsl_dispScale;` : ""}
     for (var k = 0u; k < 6u; k = k + 1u) {
         let pw = pixelScale * mix(max(camDist, 1.0), 1.0, camOrtho);
         let h = gsl_marchSecondary(origin, L, max(0.002, pw * 0.5), worldExtent, pixelScale, camOrtho,
                                    camDist, maxSteps, time${extraArgsWGSL});
-        if (h.hit < 0.5) { return transmit; }
+        if (h.hit < 0.5) { ${displace ? "gsl_dispScale = dispAtStart; " : ""}return transmit; }
         ${colorStmt("sColor", "h.pos", "h.sd")}
         let sMat = ${materialAt("h.pos", "h.sd")};
         let T = clamp(sMat.volume.x, 0.0, 1.0);
-        if (T <= 0.0) { return vec3<f32>(0.0); }
+        if (T <= 0.0) { ${displace ? "gsl_dispScale = dispAtStart; " : ""}return vec3<f32>(0.0); }
         if (inside) {
             transmit = transmit * gsl_absorb(sColor, h.t, sMat.volume.y);
         } else {
             transmit = transmit * T * (1.0 - clamp(sMat.surface.y, 0.0, 1.0));
         }
         inside = !inside;
-        origin = h.pos + L * gsl_traceOffset(camDist, pixelScale, camOrtho);
+        ${displace ? `var below = 0.0;
+        if (sMat.surface.x > 0.02 && gsl_dispScale != 0.0) {
+            below = abs(sMat.volume.z) * gsl_dispScale;
+            gsl_dispScale = 0.0;
+        }
+        origin = h.pos + L * (gsl_traceOffset(camDist, pixelScale, camOrtho) + below);` : "origin = h.pos + L * gsl_traceOffset(camDist, pixelScale, camOrtho);"}
     }
+    ${displace ? "gsl_dispScale = dispAtStart;" : ""}
     return vec3<f32>(0.0);
 }
 

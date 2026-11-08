@@ -60,3 +60,38 @@ func TestLegacySceneSizeMillimeters(t *testing.T) {
 		}
 	}
 }
+
+func TestNewScene(t *testing.T) {
+	s, err := newScene(20, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if s.Size != 20 || s.Grid != 2.0 {
+		t.Errorf("got size=%v grid=%v, want size=20 grid=2.0", s.Size, s.Grid)
+	}
+
+	g := 5.0
+	s2, err := newScene(20, &g, nil, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if s2.Size != 20 || s2.Grid != 5.0 {
+		t.Errorf("got size=%v grid=%v, want size=20 grid=5.0", s2.Size, s2.Grid)
+	}
+
+	if _, err := newScene(0, nil, nil, nil); err == nil {
+		t.Errorf("expected error for size=0")
+	}
+	if _, err := newScene(-10, nil, nil, nil); err == nil {
+		t.Errorf("expected error for size=-10")
+	}
+
+	negGrid := -1.0
+	if _, err := newScene(20, &negGrid, nil, nil); err == nil {
+		t.Errorf("expected error for negative grid")
+	}
+	zeroGrid := 0.0
+	if _, err := newScene(20, &zeroGrid, nil, nil); err == nil {
+		t.Errorf("expected error for zero grid")
+	}
+}

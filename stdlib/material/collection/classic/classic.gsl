@@ -1,0 +1,333 @@
+
+// Classic Materials (material/collection/classic)
+//
+// The textbook procedural textures, each after its paper and at about the
+// scale the paper drew it, for the pleasure of recognising them: Perlin's
+// marble and turbulence (1985), Peachey's solid wood (1985), Worley's
+// cellular basis as a mosaic and a crumple (1996), the demos' plasma, the
+// metaball lava lamp, Phong's plastic (1975), the Cornell box's walls
+// (Goral et al. 1984) and Truchet's tiles (Smith 1987), with the screen's
+// scanlines and pixels and the chrome ball every ray tracer began with.
+// Each is bulk but the scanlines, which are a finish, and none asks the
+// renderer for anything the libraries above do not have. The real
+// materials live in stone, wood, metal and playful; these are the
+// drawings of them.
+//
+// Doc convention follows builtin/base.gsl: `///` lines are public docs.
+
+import "material";
+import "texture";
+import "noise";
+import "color";
+import "material/bulk/metal";
+import "material/coat/plated";
+
+/// marble(scale, base, vein, turbulence): Perlin's marble: a sine along x
+/// with a period of `scale` mm, its phase turned by `turbulence` (0 to
+/// 10) times three octaves of turbulence at the same scale, raised to the
+/// sixth into a vein of `vein` through `base`; polished. Returns
+/// material, color, height and slope.
+marble(@range(5, 200) scale, @color base, @color vein, @range(0, 10) turbulence) {
+  swirl = sin(6.2831853 * p.x / scale + turbulence * noise.turbulence3(scale, 0.5, 2.0));
+  veined = pow(0.5 + 0.5 * swirl, 6);
+  tone = color.mixOklab(base, vein, veined);
+  // The mean of ((1 + sin) / 2)^6 over a period.
+  tone.simple = color.mixOklab(base, vein, 0.2256);
+  return material.make(0.1, 0, 1.55), tone, 0, 0;
+}
+
+/// turbulence(scale, cool, hot): Perlin's turbulence as a colour, three
+/// octaves of |noise| summed at `scale` mm, `cool` where it is low and
+/// `hot` where it is high, the fire and the cloud of the paper; matte.
+/// Returns material, color, height and slope.
+turbulence(@range(2, 200) scale, @color cool, @color hot) {
+  t = clamp(noise.turbulence3(scale, 0.5, 2.0) * turbulenceGain, 0, 1);
+  tone = color.mixOklab(cool, hot, t);
+  tone.simple = color.mixOklab(cool, hot, turbulenceMean);
+  return material.make(0.8, 0, 1.5), tone, 0, 0;
+}
+
+// turbulence3's scale to a unit range (its maximum over 4000 random points
+// was 0.83) and its mean there, 0.274 times the gain: measured.
+turbulenceGain = 1.2;
+turbulenceMean = 0.33;
+
+/// wood(ringSpacing, axisOrigin, axisDir, earlywood, latewood, wobble):
+/// Peachey's solid wood: rings `ringSpacing` mm apart as cylinders about
+/// a stem through `axisOrigin` along `axisDir`, the radius wobbled by
+/// `wobble` mm (0 to 5) of noise, the last third of each ring `latewood`
+/// and the rest `earlywood`; satin. The wood library grows the real
+/// thing. Returns material, color, height and slope.
+wood(@range(0.5, 10) ringSpacing, @point axisOrigin, @direction(axisOrigin) axisDir, @color earlywood, @color latewood, @range(0, 5) wobble) {
+  a = normalize(axisDir);
+  q = p - axisOrigin;
+  radius = length(q - a * dot(q, a)) + wobble * noise.gradient(4 * ringSpacing);
+  ring = radius / ringSpacing - floor(radius / ringSpacing);
+  late = texture.mask(ring, 0.67, 0.04);
+  tone = color.mixOklab(earlywood, latewood, late);
+  tone.simple = color.mixOklab(earlywood, latewood, 0.33);
+  return material.make(0.4, 0, 1.5), tone, 0, 0;
+}
+
+/// mosaic(cellSize, a, b, c): Worley's cellular basis as a mosaic: Voronoi
+/// cells `cellSize` mm across, each one of `a`, `b` or `c` by its own
+/// hash, the walls between them dark and a twentieth of a cell wide;
+/// glazed. Returns material, color, height and slope.
+mosaic(@range(2, 50) cellSize, @color a, @color b, @color c) {
+  f1, f2, cell = noise.cellularCell(cellSize);
+  pick = noiseHash3(cell + [11, 29, 7]);
+  tile = pick.x < 0.3333 ? a : (pick.x < 0.6667 ? b : c);
+  wall = 1 - texture.mask(f2 - f1, 0.05 * cellSize, max(0.01 * cellSize, pixelSize()));
+  tone = color.mixOklab(tile, [0.1, 0.1, 0.1], texture.fadeTo(wall, mosaicWallShare, cellSize));
+  tone.simple = color.mixOklab((a + b + c) / 3, [0.1, 0.1, 0.1], mosaicWallShare);
+  return material.make(0.15, 0, 1.5), tone, 0, 0;
+}
+
+// The walls' share of the face at a twentieth of a cell: measured over
+// 4000 random points.
+mosaicWallShare = 0.18;
+
+/// crumple(cellSize, depth): Worley's F2 - F1 as a relief, the crumpled
+/// foil of the paper: cells `cellSize` mm across, each a ridge `depth` mm
+/// high at its centre falling to the walls, in a brushed aluminium.
+/// Returns material, color, height and slope.
+crumple(@range(2, 50) cellSize, @range(0.1, 3) depth) {
+  f1, f2 = noise.cellularF1F2(cellSize);
+  ridge = depth * min(1, (f2 - f1) / (0.5 * cellSize));
+  foilMat, foilColor = metal.aluminum();
+  foil = material.withDisplacement(material.withRoughness(foilMat, 0.35), ridge * texture.fadeDetail(cellSize));
+  foil.simple = material.withDisplacement(material.withRoughness(foilMat, 0.35), depth * crumpleMean);
+  return foil, foilColor, 0, 0;
+}
+
+// The ridge's mean over the face: measured over 4000 random points.
+crumpleMean = 0.38;
+
+/// plasma(scale, speed): the demos' plasma, four sines of x, y, their sum
+/// and the distance from the axis at `scale` mm, drifting at `speed`
+/// cycles a second through the cyclic rainbow; matte. Returns material,
+/// color, height and slope.
+plasma(@range(5, 100) scale, @range(0, 2) speed) {
+  k = 6.2831853 / scale;
+  t = 6.2831853 * speed * time;
+  v = sin(k * p.x + t) + sin(k * p.y * 0.7 - 0.5 * t) + sin(k * (p.x + p.y) * 0.5 + 0.3 * t) + sin(k * length(p.xy) * 0.8 - t);
+  tone = color.cyclicRainbow(0.125 * v + 0.5);
+  tone.simple = [0.5, 0.5, 0.5];
+  return material.make(0.9, 0, 1.5), tone, 0, 0;
+}
+
+/// lavaLamp(blobSize, speed, wax, fluid): the metaball lava lamp: four
+/// blobs of wax `blobSize` mm across wandering a 100 mm column of `fluid`,
+/// rising and falling along z, each the field (blobSize / 2)^2 / r^2
+/// summed and cut at 1, at `speed` cycles a minute; glossy. A surface
+/// shows the blobs where it cuts them. Returns material, color, height and
+/// slope.
+lavaLamp(@range(5, 40) blobSize, @range(0, 5) speed, @color wax, @color fluid) {
+  w = 6.2831853 * speed / 60 * time;
+  // The blobs wander a 100 mm column, so a swatch's surface cuts them.
+  field = blobAt(blobSize, [38 * sin(w), 30 * cos(1.3 * w), 40 * sin(0.9 * w)])
+        + blobAt(blobSize, [-34 * cos(0.8 * w), 36 * sin(1.1 * w + 1), 40 * sin(0.7 * w + 2)])
+        + blobAt(blobSize, [32 * sin(1.2 * w + 3), -35 * cos(0.9 * w), 40 * sin(1.1 * w + 4)])
+        + blobAt(blobSize, [-30 * sin(0.7 * w + 5), -33 * cos(1.4 * w + 2), 40 * sin(0.8 * w + 1)]);
+  blob = texture.mask(field, 1, 0.15);
+  tone = color.mixOklab(fluid, wax, blob);
+  tone.simple = color.mixOklab(fluid, wax, 0.25);
+  return material.make(0.08, 0, 1.4), tone, 0, 0;
+}
+
+// A metaball's field at p: (size / 2)^2 over the squared distance.
+blobAt(size, centre) {
+  d = p - centre;
+  return 0.25 * size * size / max(dot(d, d), 0.01);
+}
+
+/// phongPlastic(plasticColor, shininess): Phong's plastic of
+/// `plasticColor` with a highlight exponent `shininess` (1 to 1000; 50 the
+/// usual), as a roughness of sqrt(2 / (shininess + 2)), which is the
+/// Beckmann width Phong's lobe matches. Returns material, color, height
+/// and slope.
+phongPlastic(@color plasticColor, @range(1, 1000) shininess) {
+  return material.make(sqrt(2 / (shininess + 2)), 0, 1.5), plasticColor, 0, 0;
+}
+
+/// truchet(tileSize, line, ground, width): Truchet's tiles as Smith drew
+/// them, two quarter circles on each square of `tileSize` mm in the XY
+/// plane, turned one way or the other by the tile's own hash, the arcs
+/// `line` coloured `width` of a tile wide (0.05 to 0.5) on `ground`;
+/// matte. Returns material, color, height and slope.
+truchet(@range(2, 50) tileSize, @color line, @color ground, @range(0.05, 0.5) width) {
+  cx = floor(p.x / tileSize);
+  cy = floor(p.y / tileSize);
+  u = p.x / tileSize - cx;
+  v = p.y / tileSize - cy;
+  flip = noiseHash3([cx + 3, cy + 17, 0]).x < 0.5 ? 1 : 0;
+  // The arcs sit on two opposite corners, which corners by the flip.
+  ua = flip > 0.5 ? 1 - u : u;
+  d1 = abs(length([ua, v]) - 0.5);
+  d2 = abs(length([1 - ua, 1 - v]) - 0.5);
+  toArc = min(d1, d2) * tileSize;
+  arc = texture.fadeTo(texture.mask(0.5 * width * tileSize - toArc, 0, max(0.02 * tileSize, pixelSize())), 1.5708 * width, tileSize);
+  tone = color.mixOklab(ground, line, arc);
+  // Two quarter circles of radius a half are pi / 2 of a tile long.
+  tone.simple = color.mixOklab(ground, line, 1.5708 * width);
+  return material.make(0.8, 0, 1.5), tone, 0, 0;
+}
+
+/// scanlines(baseMaterial, baseColor, pitch, darkness, direction): the
+/// screen's scanlines over a surface, dark lines across `direction` every
+/// `pitch` mm (0.3 to 3), `darkness` deep (0 to 1), as a finish. Returns
+/// material, color, height and slope.
+scanlines(baseMaterial, @color baseColor, @range(0.3, 3) pitch, @range(0, 1) darkness, @direction direction) {
+  across = dot(p, normalize(direction));
+  lines = 0.5 + 0.5 * cos(6.2831853 * across / pitch);
+  tone = baseColor * (1 - darkness * texture.fadeTo(lines, 0.5, pitch));
+  tone.simple = baseColor * (1 - 0.5 * darkness);
+  return baseMaterial, tone, 0, 0;
+}
+
+/// pixelArt(pixel, a, b, c, d): pixel art, a noise quantised to four
+/// colours on a grid of `pixel` mm (0.5 to 10), the darkest `a` to the
+/// lightest `d`, with a hairline between pixels; matte. Returns material,
+/// color, height and slope.
+pixelArt(@range(0.5, 10) pixel, @color a, @color b, @color c, @color d) {
+  centre = (floor(p / pixel) + 0.5) * pixel;
+  v = remap(noise.fbm3(12 * pixel, 0.5, 2.0), centre) * 3 + 0.5;
+  tone = v < 0.25 ? a : (v < 0.5 ? b : (v < 0.75 ? c : d));
+  tone.simple = (a + b + c + d) / 4;
+  return material.make(0.9, 0, 1.5), tone, 0, 0;
+}
+
+// ===========================================================================
+// Ready-made
+// ===========================================================================
+
+/// Perlin's marble, white with grey-blue veins, 40 mm. Returns material
+/// and colour.
+@material perlinMarble() {
+  stone, tone, height, slope = marble(40, [0.93, 0.93, 0.92], [0.3, 0.35, 0.45], 5);
+  return stone, tone;
+}
+
+/// Perlin's turbulence as a cloud, blue to white at 30 mm. Returns
+/// material and colour.
+@material perlinClouds() {
+  sky, tone, height, slope = turbulence(30, [0.35, 0.55, 0.9], [1, 1, 1]);
+  return sky, tone;
+}
+
+/// Peachey's solid wood, 2 mm rings about a stem along +Y. Returns
+/// material and colour.
+@material peacheyWood() {
+  log, tone, height, slope = wood(2, [0, 0, 0], [0, 1, 0], [0.75, 0.55, 0.32], [0.45, 0.28, 0.14], 1);
+  return log, tone;
+}
+
+/// Worley's cellular basis as a 12 mm mosaic in terracotta, cream and
+/// teal. Returns material and colour.
+@material worleyMosaic() {
+  floor_, tone, height, slope = mosaic(12, [0.7, 0.35, 0.25], [0.9, 0.85, 0.72], [0.2, 0.5, 0.5]);
+  return floor_, tone;
+}
+
+/// Worley's F2 - F1 as crumpled foil, 8 mm cells 0.8 mm high. Returns
+/// material and colour.
+@material worleyCrumple() {
+  foil, tone, height, slope = crumple(8, 0.8);
+  return foil, tone;
+}
+
+/// The plasma, 20 mm, half a cycle a second. Returns material and colour.
+@material plasma() {
+  screen, tone, height, slope = plasma(20, 0.5);
+  return screen, tone;
+}
+
+/// A lava lamp, orange wax in blue fluid, 15 mm blobs at two cycles a
+/// minute. Returns material and colour.
+@material lavaLamp() {
+  lamp, tone, height, slope = lavaLamp(15, 2, [1, 0.45, 0.1], [0.15, 0.25, 0.6]);
+  return lamp, tone;
+}
+
+/// Phong's plastic, red, shininess 50. Returns material and colour.
+@material phongPlastic() {
+  shell, tone, height, slope = phongPlastic([0.8, 0.1, 0.1], 50);
+  return shell, tone;
+}
+
+/// The Cornell box's red wall, Lambertian. Returns material and colour.
+@material cornellRed() {
+  return material.make(1, 0, 1.5), [0.63, 0.065, 0.05];
+}
+
+/// The Cornell box's green wall, Lambertian. Returns material and colour.
+@material cornellGreen() {
+  return material.make(1, 0, 1.5), [0.14, 0.45, 0.091];
+}
+
+/// The Cornell box's white walls, Lambertian. Returns material and colour.
+@material cornellWhite() {
+  return material.make(1, 0, 1.5), [0.725, 0.71, 0.68];
+}
+
+/// Truchet's tiles, black arcs a quarter of a 12 mm tile wide on white.
+/// Returns material and colour.
+@material truchetTiles() {
+  tiles, tone, height, slope = truchet(12, [0.1, 0.1, 0.1], [0.95, 0.95, 0.93], 0.25);
+  return tiles, tone;
+}
+
+/// Scanlines over a green phosphor plastic, 1 mm apart across +Z, half
+/// dark. Returns material and colour.
+@material scanlines() {
+  shell, tone, height, slope = scanlines(material.make(0.3, 0, 1.5), [0.2, 0.9, 0.3], 1, 0.5, [0, 0, 1]);
+  return shell, tone;
+}
+
+/// Pixel art in the four greens of the handheld, 4 mm pixels. Returns
+/// material and colour.
+@material pixelArt() {
+  screen, tone, height, slope = pixelArt(4, [0.06, 0.22, 0.06], [0.19, 0.38, 0.19], [0.55, 0.67, 0.06], [0.61, 0.74, 0.06]);
+  return screen, tone;
+}
+
+/// The chrome ball, a mirror over the checker floor the swatch already
+/// stands on. Returns material and colour.
+@material chromeBall() {
+  steelMat, steelColor = metal.steel();
+  mirror, tone, height, slope = plated.chrome(steelMat, 1);
+  return material.withRoughness(mirror, 0.02), tone;
+}
+
+// ===========================================================================
+// Operators
+// ===========================================================================
+
+/// Scanlines 1 mm apart across +Z, half dark, as an operator. Returns
+/// material, color, height and slope.
+@surface scanlines(baseMaterial, @color baseColor) {
+  shell, tone, height, slope = scanlines(baseMaterial, baseColor, 1, 0.5, [0, 0, 1]);
+  return shell, tone, height, slope;
+}
+
+// References
+//   Perlin, K. 1985. An image synthesizer. SIGGRAPH 85: marble as a sine
+//     turned by turbulence, turbulence as summed |noise| over octaves.
+//   Peachey, D. 1985. Solid texturing of complex surfaces. SIGGRAPH 85:
+//     wood as perturbed concentric cylinders.
+//   Worley, S. 1996. A cellular texture basis function. SIGGRAPH 96: F1,
+//     F2 and F2 - F1 as mosaics and crumples.
+//   Phong, B. T. 1975. Illumination for computer generated pictures.
+//     CACM 18(6). The roughness from the exponent is the Beckmann fit of
+//     Walter et al. 2007, Microfacet models for refraction, alpha =
+//     sqrt(2 / (n + 2)).
+//   Goral, Torrance, Greenberg and Battaile 1984. Modeling the interaction
+//     of light between diffuse surfaces. SIGGRAPH 84: the box. The wall
+//     colours are the usual sRGB readings of Cornell's measured spectra,
+//     red (0.63, 0.065, 0.05), green (0.14, 0.45, 0.091), white (0.725,
+//     0.71, 0.68), as the Mitsuba scene carries them.
+//   Smith, C. S. 1987. The tiling patterns of Sebastien Truchet and the
+//     topology of structural hierarchy. Leonardo 20(4): the quarter-circle
+//     tiles.
+//   The handheld's four greens are the well-known 0F380F, 306230, 8BAC0F,
+//     9BBC0F. The plasma and the lava lamp are the demos' and judged.

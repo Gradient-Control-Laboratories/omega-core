@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package program;
-option go_package = "gradientcontrol.com/omega_common/program";
+option go_package = "gradientcontrol.com/omega/core/program";
 
 message Operand {
     // The location containing the first character of the operand

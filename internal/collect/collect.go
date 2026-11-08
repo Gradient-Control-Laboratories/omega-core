@@ -1,12 +1,10 @@
 package collect
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
 	"fmt"
 
 	"gradientcontrol.com/omega/core/internal/source"
+	"gradientcontrol.com/omega/core/parser"
 	"gradientcontrol.com/omega/core/program"
 )
 
@@ -16,20 +14,21 @@ import (
 //
 // It returns a program composed of all packages
 // directly or indirectly referenced by the primarySources GSL code.
-func Program(primarySources []string, srcMgr source.Manager, parse program.ParsePackageFunc) (*program.Program, error) {
+func Program(primarySources []string, srcMgr source.Manager, parsePkg func(sources []string) (*parser.Result, error)) (*program.Program, error) {
 	if len(primarySources) == 0 {
 		return nil, fmt.Errorf("missing primary sources")
 	}
 
-	primaryPkg, err := parse(primarySources)
+	primaryRes, err := parsePkg(primarySources)
 	if err != nil {
 		return nil, err
 	}
-	if primaryPkg == nil {
+	if primaryRes == nil || primaryRes.Package == nil {
 		return nil, fmt.Errorf("no primary package returned")
 	}
+	primaryPkg := primaryRes.Package
 	setPackageSources(primaryPkg, primarySources)
-	return Package(primaryPkg, srcMgr, parse)
+	return Package(primaryPkg, srcMgr, parsePkg)
 }
 
 func setPackageSources(pkg *program.Package, sources []string) {
@@ -44,7 +43,7 @@ func setPackageSources(pkg *program.Package, sources []string) {
 }
 
 // Package collects all packages starting from a pre-parsed primary package.
-func Package(primaryPkg *program.Package, srcMgr source.Manager, parse program.ParsePackageFunc) (*program.Program, error) {
+func Package(primaryPkg *program.Package, srcMgr source.Manager, parsePkg func(sources []string) (*parser.Result, error)) (*program.Program, error) {
 	if primaryPkg == nil {
 		return nil, fmt.Errorf("missing primary package")
 	}
@@ -77,13 +76,14 @@ func Package(primaryPkg *program.Package, srcMgr source.Manager, parse program.P
 					if err != nil {
 						return fmt.Errorf("failed to load package %s: %w", impPath, err)
 					}
-					depPkg, err := parse(sources)
+					depRes, err := parsePkg(sources)
 					if err != nil {
 						return fmt.Errorf("failed to parse package %s: %w", impPath, err)
 					}
-					if depPkg == nil {
+					if depRes == nil || depRes.Package == nil {
 						return fmt.Errorf("package not found: %s", impPath)
 					}
+					depPkg := depRes.Package
 					setPackageSources(depPkg, sources)
 					program.UpdateImports(depPkg, impPath)
 					if depPkg.Path == "" {
@@ -120,51 +120,4 @@ func Package(primaryPkg *program.Package, srcMgr source.Manager, parse program.P
 		Primary:      primaryPkg,
 		Dependencies: collected,
 	}, nil
-}
-
-// ProgramSourceHash returns the deterministic SHA-256 hex digest of all GSL
-// package sources in prog (primary and transitive dependencies), preserving
-// each package's declared source file order.
-func ProgramSourceHash(prog *program.Program) string {
-	if prog == nil {
-		return ""
-	}
-	sources := make(map[string][]string, len(prog.Dependencies)+1)
-	addPkg := func(pkg *program.Package) {
-		if pkg == nil || pkg.Path == "" {
-			return
-		}
-		// Invariant: pkg.Files elements are guaranteed non-nil by the parser.
-		fileSources := make([]string, 0, len(pkg.Files))
-		for _, f := range pkg.Files {
-			fileSources = append(fileSources, f.Source)
-		}
-		sources[pkg.Path] = fileSources
-	}
-	addPkg(prog.Primary)
-	for _, dep := range prog.Dependencies {
-		addPkg(dep)
-	}
-	// JSON sorts package keys while preserving each package's declared source order.
-	data, err := json.Marshal(sources)
-	if err != nil {
-		return ""
-	}
-	sum := sha256.Sum256([]byte("gsl-dependencies-v1\n" + string(data)))
-	return hex.EncodeToString(sum[:])
-}
-
-// SourceHash collects primaryPkgPath and all its transitive GSL imports from
-// srcMgr and returns their deterministic SHA-256 hex digest.
-func SourceHash(primaryPkgPath string, srcMgr source.Manager, parse program.ParsePackageFunc) (string, error) {
-	primary, _, err := srcMgr.Sources(primaryPkgPath)
-	if err != nil {
-		return "", err
-	}
-	prog, err := Program(primary, srcMgr, parse)
-	if err != nil {
-		return "", err
-	}
-	prog.Primary.Path = primaryPkgPath
-	return ProgramSourceHash(prog), nil
 }

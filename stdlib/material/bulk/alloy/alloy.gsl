@@ -1,0 +1,40 @@
+
+// Alloys (material/bulk/alloy)
+//
+// The substances the measured library, physical, has no entry for. Like
+// physical's metals, each is a pair with no finish on it, roughness 0, and a
+// color that is the metal's reflectance as sRGB: what is done to the surface is
+// the finish's to say.
+//
+// Self-contained (no library dependencies). Doc convention follows
+// builtin/base.gsl: `///` lines are public docs.
+
+// ===========================================================================
+// Metal
+// ===========================================================================
+
+/// Plain carbon steel, with no finish. Its color is metal.steel's. Returns
+/// material and color.
+@material steel() {
+  return [[0, 1, 1.5, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], [0.77, 0.78, 0.78];
+}
+
+/// Tin, with no finish: a bright silvery white, a shade warmer and darker than
+/// aluminium. Returns material and color.
+// Judged. Neither the Physically Based database nor refractiveindex.info gives
+// tin's visible reflectance: the latter's room-temperature data starts at
+// 730 nm.
+//   https://github.com/polyanskiy/refractiveindex.info-database/blob/main/database/data/main/Sn/nk/Golovashkin-293K.yml
+@material tin() {
+  return [[0, 1, 1.5, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], [0.87, 0.87, 0.85];
+}
+
+/// Bronze, tin bronze of about 88 copper to 12 tin, with no finish: a golden
+/// brown, less red than copper and darker than brass. Returns material and
+/// color.
+// Judged, there being no measured visible reflectance in either database:
+// between physical's copper and brass, with the tin taking some of the red and
+// yellow out of the copper.
+@material bronze() {
+  return [[0, 1, 1.5, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], [0.89, 0.74, 0.56];
+}

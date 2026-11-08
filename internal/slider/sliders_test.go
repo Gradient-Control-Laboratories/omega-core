@@ -3,7 +3,7 @@ package slider_test
 import (
 	"testing"
 
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/internal/slider"
 	"gradientcontrol.com/omega/core/internal/source"
 	"gradientcontrol.com/omega/core/internal/test/assert"
@@ -14,7 +14,7 @@ import (
 // independent of the WGSL codegen.
 func runExtract(t *testing.T, src string) []sliderUnderTest {
 	t.Helper()
-	res, err := assembler.Assemble([]string{src}, &source.MockManager{})
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(&source.MockManager{}))
 	assert.NoError(t, err)
 	infos := slider.Extract(src, res.Program.Primary)
 	out := make([]sliderUnderTest, len(infos))
@@ -173,7 +173,7 @@ func TestExtractSliders_OnlyMin(t *testing.T) {
 	src := "radius = 5;\n" +
 		"radius.min = 0;\n" +
 		"return radius;\n"
-	_, err := assembler.Assemble([]string{src}, &source.MockManager{})
+	_, err := assembler.Assemble([]string{src}, assembler.SourceManager(&source.MockManager{}))
 	assert.Error(t, err)
 }
 
@@ -209,7 +209,7 @@ func TestExtractSliders_PeriodNonPositive(t *testing.T) {
 		"radius.max = 10;\n" +
 		"radius.period = 0;\n" +
 		"return radius;\n"
-	_, err := assembler.Assemble([]string{src}, &source.MockManager{})
+	_, err := assembler.Assemble([]string{src}, assembler.SourceManager(&source.MockManager{}))
 	assert.Error(t, err)
 }
 
@@ -218,7 +218,7 @@ func TestExtractSliders_PeriodWithoutMinMax(t *testing.T) {
 	src := "radius = 5;\n" +
 		"radius.period = 2.0;\n" +
 		"return radius;\n"
-	_, err := assembler.Assemble([]string{src}, &source.MockManager{})
+	_, err := assembler.Assemble([]string{src}, assembler.SourceManager(&source.MockManager{}))
 	assert.Error(t, err)
 }
 

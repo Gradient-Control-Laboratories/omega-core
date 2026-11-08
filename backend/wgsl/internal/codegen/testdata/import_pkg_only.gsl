@@ -1,0 +1,4 @@
+import "pkg2";
+
+t = pkg2.partArea(pkg2.partSize);
+return t;

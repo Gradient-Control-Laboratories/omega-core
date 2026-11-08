@@ -40,7 +40,7 @@ try {
 // The tier drawn once nothing moves: "standard"; "progressive", which
 // draws the standard frame and then accumulates path-traced samples on it
 // (gsl-trace.js); "color", the standard frame as if the program authored no
-// material; or "simple", the Simple frame (gsl-simple.js), which is also
+// material; or "simple", the Schematic frame (gsl-simple.js), which is also
 // drawn while moving.
 const REST_TIERS = ["simple", "color", "standard", "progressive"];
 let restTier = "standard";

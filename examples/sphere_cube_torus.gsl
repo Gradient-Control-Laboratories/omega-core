@@ -1,0 +1,21 @@
+@scene(200, 20)
+
+// Sphere, cube and torus joined with a sharp union. The seams where the
+// surfaces cross are picked out in white against a dark gray body, using the
+// distance to the nearest and second-nearest surface. Lengths are in mm.
+
+// Sphere of radius 40, a 75 x 75 x 60 box offset to one side, and a ring with
+// a 65 mm major radius and 10 mm tube radius.
+s = sphere(40);
+r = boxCentered([15, 15, 0], [75, 75, 60]);
+t = torus(65, 10);
+combined = unionSharp(s, r, t);
+
+// edges is small close to a crease, where two surfaces are nearly equally far
+// away. Scaling the ramp by how squarely the two surfaces meet keeps the line
+// width even at shallow and steep creases alike.
+edges = length([combined, combined.second]);
+scale = max(abs(dot(combined.dp, combined.second.dp)), 0.5);
+combined.color = ramp(edges, 0.25 * scale, 0.4 * scale, color.darkGray, color.white);
+
+return combined;
