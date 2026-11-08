@@ -8,9 +8,8 @@ import (
 	"strings"
 	"time"
 
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler"
 	fidgetlib "gradientcontrol.com/omega/core/internal/fidget/lib"
-	"gradientcontrol.com/omega/core/internal/source"
 )
 
 // The operators' thumbnails: each operator drawn over one stand-in surface, so
@@ -68,7 +67,7 @@ func writeThumbs(outDir string, operators map[string]*Operator, extent float64, 
 	sort.Strings(keys)
 	started := time.Now()
 	for i, key := range keys {
-		res, err := assembler.Assemble([]string{thumbDoc(operators[key])}, &source.MockManager{})
+		res, err := assembler.Assemble([]string{thumbDoc(operators[key])})
 		if err != nil {
 			return fmt.Errorf("%s: assemble: %w", key, err)
 		}

@@ -28,7 +28,7 @@ import (
 
 	"gradientcontrol.com/omega/core/internal/fidget/internal/convert"
 	"gradientcontrol.com/omega/core/internal/fidget/internal/fidget"
-	noise "gradientcontrol.com/omega/core/internal/noise"
+	noise "gradientcontrol.com/omega/core/program/noise"
 	"gradientcontrol.com/omega/core/program"
 )
 

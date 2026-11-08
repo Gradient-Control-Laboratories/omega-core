@@ -3,7 +3,7 @@ package eval
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/meshslots"
+	"gradientcontrol.com/omega/core/assembler/meshslots"
 	"gradientcontrol.com/omega/core/program"
 )
 

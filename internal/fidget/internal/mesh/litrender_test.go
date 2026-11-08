@@ -7,7 +7,7 @@ import (
 	"math"
 	"testing"
 
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/internal/source"
 	"gradientcontrol.com/omega/core/program"
 )
@@ -16,7 +16,7 @@ var testPkgMgr = source.NewLocalManager("../../../../stdlib")
 
 func litProgram(t *testing.T, src string) *program.Program {
 	t.Helper()
-	res, err := assembler.Assemble([]string{src}, testPkgMgr)
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(testPkgMgr))
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}

@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"math"
 
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler"
 	fidgetlib "gradientcontrol.com/omega/core/internal/fidget/lib"
-	"gradientcontrol.com/omega/core/internal/source"
 )
 
 // The finishes' recolouring basis. A finish has no colour, so the Bodies panel
@@ -37,7 +36,7 @@ func renderRadiance(e Entry, albedo [3]float64, width, height int, extent float6
 // renderRadianceDoc renders a swatch document and returns its PNG and its
 // radiance before tone mapping.
 func renderRadianceDoc(doc string, width, height int, extent float64, env string, light bool) ([]byte, []float32, error) {
-	res, err := assembler.Assemble([]string{doc}, &source.MockManager{})
+	res, err := assembler.Assemble([]string{doc})
 	if err != nil {
 		return nil, nil, fmt.Errorf("assemble: %w", err)
 	}

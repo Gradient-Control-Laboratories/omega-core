@@ -111,7 +111,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	}
 
 	// Validate parser on primary package
-	if parseErr := parser.ParsePackage(sourceTexts).Error(); parseErr != nil {
+	if _, parseErr := parser.ParsePackage(sourceTexts); parseErr != nil {
 		return fmt.Errorf("parsing primary package: %w", parseErr)
 	}
 
@@ -150,7 +150,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	switch cfg.Target {
 	case config.TargetWGSL:
 		wgslOpts := []wgsl.Option{
-			wgsl.WithStandalone(cfg.Standalone),
+			wgsl.Standalone(cfg.Standalone),
 		}
 		if cfg.Verbose {
 			wgslOpts = append(wgslOpts, wgsl.WithProgress(func(stage string, completed, total uint32) {

@@ -11,9 +11,8 @@ import (
 	"strings"
 	"time"
 
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler"
 	fidgetlib "gradientcontrol.com/omega/core/internal/fidget/lib"
-	"gradientcontrol.com/omega/core/internal/source"
 )
 
 // Manifest is what the browser panel reads: the sheet's geometry and the
@@ -337,7 +336,7 @@ func rewriteManifest(outDir string, entries []Entry, adjust map[string]*Adjustab
 // resolve from the embedded copy, so there is no source root to pass. extent
 // and checker are in sphere radii (see doc.go).
 func renderSwatch(e Entry, width, height int, extent float64, env string, light, ground bool, groundGrey, checker float64) ([]byte, error) {
-	res, err := assembler.Assemble([]string{swatchDoc(e, ground, groundGrey, checker)}, &source.MockManager{})
+	res, err := assembler.Assemble([]string{swatchDoc(e, ground, groundGrey, checker)})
 	if err != nil {
 		return nil, fmt.Errorf("assemble: %w", err)
 	}

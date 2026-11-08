@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/internal/source"
 	ui "gradientcontrol.com/omega/core/internal/ui"
 	"gradientcontrol.com/omega/core/program"
@@ -12,7 +12,7 @@ import (
 
 func TestExtractWithOperandsIncludesControlCopies(t *testing.T) {
 	src := `return uiPoint([1,2,3]);`
-	assembled, err := assembler.Assemble([]string{src}, &source.MockManager{})
+	assembled, err := assembler.Assemble([]string{src}, assembler.SourceManager(&source.MockManager{}))
 	if err != nil {
 		t.Fatal(err)
 	}

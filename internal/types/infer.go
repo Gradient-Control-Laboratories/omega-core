@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"gradientcontrol.com/omega/core/internal"
 	"gradientcontrol.com/omega/core/program"
 	gsllibs "gradientcontrol.com/omega/core/stdlib"
 )
@@ -655,21 +656,21 @@ func inferOperandType(op *program.Operand, env *TypeEnv, file *program.PackageFi
 		// operations must be desugared and expanded into core AST nodes by property.Expand beforehand.
 		case program.Operation_DERIV, program.Operation_SECONDCLOSEST, program.Operation_BOUNDINGBOX,
 			program.Operation_SURFACEU, program.Operation_SURFACEV:
-			return nil, program.InternalErr(fmt.Errorf("%s should be expanded by property.Expand before type analysis", expr.Operation))
+			return nil, internal.Err(fmt.Errorf("%s should be expanded by property.Expand before type analysis", expr.Operation))
 
 		// Unspecified operations: fail with an error because uninitialized or blank operation
 		// enum values indicate a malformed AST.
 		case program.Operation_UNSPECIFIED_OPERAND:
-			return nil, program.InternalErr(fmt.Errorf("unspecified operation"))
+			return nil, internal.Err(fmt.Errorf("unspecified operation"))
 
 		// Catch-all for unhandled operations: fail fast if new operation enum variants have been
 		// added to the AST without corresponding type inference rules.
 		default:
-			return nil, program.InternalErr(fmt.Errorf("type inference case for operation %s is not implemented", expr.Operation))
+			return nil, internal.Err(fmt.Errorf("type inference case for operation %s is not implemented", expr.Operation))
 		}
 
 	default:
-		return nil, program.InternalErr(fmt.Errorf("type inference case for operand type %T is not implemented", op.T))
+		return nil, internal.Err(fmt.Errorf("type inference case for operand type %T is not implemented", op.T))
 	}
 
 	if len(res) == 1 && pa.inUserFn == 0 {

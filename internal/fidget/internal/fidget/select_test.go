@@ -3,12 +3,12 @@ package fidget
 import (
 	"testing"
 
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/internal/source"
 )
 
 func TestSelectBranchOrder(t *testing.T) {
-	res, err := assembler.Assemble([]string{`return p.x ? p.y + 10 : p.y + 20 : p.y + 30;`}, &source.MockManager{})
+	res, err := assembler.Assemble([]string{`return p.x ? p.y + 10 : p.y + 20 : p.y + 30;`}, assembler.SourceManager(&source.MockManager{}))
 	if err != nil {
 		t.Fatal(err)
 	}

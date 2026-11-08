@@ -3,7 +3,7 @@ package fidget
 import (
 	"testing"
 
-	noise "gradientcontrol.com/omega/core/internal/noise"
+	noise "gradientcontrol.com/omega/core/program/noise"
 )
 
 // The one-octave hash — what noiseHash3(cell, 1) lowers to, and what the
