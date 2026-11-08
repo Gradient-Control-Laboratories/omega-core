@@ -3,6 +3,7 @@ package convert
 import (
 	"fmt"
 
+	"gradientcontrol.com/omega/core/internal"
 	"gradientcontrol.com/omega/core/internal/build"
 	"gradientcontrol.com/omega/core/internal/fidget/internal/fidget"
 	"gradientcontrol.com/omega/core/program"
@@ -37,7 +38,7 @@ func NewTreeNode(
 	// Sanity check
 	if len(trees) == 0 {
 		err := fmt.Errorf("number of trees %d must be >= 1", len(trees))
-		panic(program.InternalErr(err).Error())
+		panic(internal.InternalErr(err).Error())
 	}
 
 	return &TreeNode{
@@ -54,16 +55,16 @@ func NewListVecTreeNode(
 	// Sanity check
 	if len(trees) == 0 {
 		err := fmt.Errorf("number of trees %d must be >= 1", len(trees))
-		panic(program.InternalErr(err).Error())
+		panic(internal.InternalErr(err).Error())
 	}
 	if elemLen <= 1 {
 		err := fmt.Errorf("element length %d must be > 1", elemLen)
-		panic(program.InternalErr(err).Error())
+		panic(internal.InternalErr(err).Error())
 	}
 	listLen := len(trees) / elemLen
 	if listLen*elemLen != len(trees) {
 		err := fmt.Errorf("number of trees %d must be a multiple of elemLen %d", len(trees), elemLen)
-		panic(program.InternalErr(err).Error())
+		panic(internal.InternalErr(err).Error())
 	}
 
 	return &TreeNode{

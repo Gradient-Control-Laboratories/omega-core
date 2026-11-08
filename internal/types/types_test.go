@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"gradientcontrol.com/omega/core/internal"
 	parser "gradientcontrol.com/omega/core/parser"
 	"gradientcontrol.com/omega/core/program"
 )
@@ -543,7 +544,7 @@ func TestAnalyze_CrossAndBuiltinVec3(t *testing.T) {
 }
 
 func TestAnalyze_InternalErrors(t *testing.T) {
-	// 1. Unspecified operation returns *program.InternalError
+	// 1. Unspecified operation returns *internal.InternalError
 	unspecifiedExpr := program.NewExpression(program.Operation_UNSPECIFIED_OPERAND, nil, nil, nil)
 	prog1 := &program.Program{
 		Primary: &program.Package{
@@ -558,12 +559,12 @@ func TestAnalyze_InternalErrors(t *testing.T) {
 	if err1 == nil {
 		t.Fatal("expected error for UNSPECIFIED_OPERAND, got nil")
 	}
-	var internalErr1 *program.InternalError
+	var internalErr1 *internal.InternalError
 	if !errors.As(err1, &internalErr1) {
-		t.Fatalf("expected *program.InternalError, got %T (%v)", err1, err1)
+		t.Fatalf("expected *internal.InternalError, got %T (%v)", err1, err1)
 	}
 
-	// 2. Unexpanded Operation_DERIV returns *program.InternalError
+	// 2. Unexpanded Operation_DERIV returns *internal.InternalError
 	derivExpr := program.NewExpression(program.Operation_DERIV, []*program.Operand{val(1.0)}, nil, nil)
 	prog2 := &program.Program{
 		Primary: &program.Package{
@@ -578,8 +579,8 @@ func TestAnalyze_InternalErrors(t *testing.T) {
 	if err2 == nil {
 		t.Fatal("expected error for unexpanded DERIV, got nil")
 	}
-	var internalErr2 *program.InternalError
+	var internalErr2 *internal.InternalError
 	if !errors.As(err2, &internalErr2) {
-		t.Fatalf("expected *program.InternalError, got %T (%v)", err2, err2)
+		t.Fatalf("expected *internal.InternalError, got %T (%v)", err2, err2)
 	}
 }

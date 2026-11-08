@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"gradientcontrol.com/omega/core/backend/wgsl/internal/lib/internal/wgsl"
+	"gradientcontrol.com/omega/core/internal"
 	"gradientcontrol.com/omega/core/internal/build"
 	"gradientcontrol.com/omega/core/program"
 )
@@ -213,7 +214,7 @@ func (d *Delegate) addPredefinedFunc(fnName string, args []build.Expression, ret
 		var err error
 		fnDecl, err = d.rootBScope.RegisterFnDecl(fnName, decl, d.NewFnVar, d.GetScope())
 		if err != nil {
-			return program.InternalErr(err)
+			return internal.InternalErr(err)
 		}
 	} else {
 		for _, g := range fnDecl.Groups {
@@ -248,7 +249,7 @@ func (d *Delegate) addPredefinedFunc(fnName string, args []build.Expression, ret
 	// Add to the common build scope
 	err := d.rootBScope.AddFnInfo(fn, wgslFnInfo)
 	if err != nil {
-		return program.InternalErr(err)
+		return internal.InternalErr(err)
 	}
 
 	// Append content to root and register on module

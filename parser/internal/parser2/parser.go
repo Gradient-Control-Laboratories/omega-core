@@ -7,6 +7,7 @@ import (
 	participle "github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
 
+	"gradientcontrol.com/omega/core/internal"
 	"gradientcontrol.com/omega/core/internal/scope"
 	"gradientcontrol.com/omega/core/program"
 )
@@ -96,7 +97,7 @@ func Parse(sources []string) (*Result, error) {
 		topLevel, perr := parser.ParseString("", source)
 		if topLevel == nil {
 			if perr == nil {
-				perr = program.InternalErr(errors.New("nil AST with no parse error"))
+				perr = internal.InternalErr(errors.New("nil AST with no parse error"))
 			}
 			return recordFileError(res, pkgFile, source, perr)
 		}

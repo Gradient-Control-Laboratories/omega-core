@@ -3,6 +3,7 @@ package lower
 import (
 	"fmt"
 
+	"gradientcontrol.com/omega/core/internal"
 	"gradientcontrol.com/omega/core/program"
 )
 
@@ -319,7 +320,7 @@ func lowerBinaryOp(file *program.PackageFile, op program.Operation, acc, step *p
 	}
 
 	if result == nil {
-		return nil, program.InternalErr(fmt.Errorf("unhandled lowering for operation %v at operand %d", op, opIdx))
+		return nil, internal.InternalErr(fmt.Errorf("unhandled lowering for operation %v at operand %d", op, opIdx))
 	}
 
 	result.Type = derivedType

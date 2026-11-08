@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"gradientcontrol.com/omega/core/internal"
 	"gradientcontrol.com/omega/core/internal/build"
 	"gradientcontrol.com/omega/core/program"
 )
@@ -112,7 +113,7 @@ func (d *Delegate) BuildFuncReturn(fnInfo build.FnInfo, returnOps []*program.Ope
 	info, ok := fnInfo.(*jsFnInfo)
 	if !ok {
 		err := fmt.Errorf("expected *jsFnInfo, got %T", fnInfo)
-		return nil, program.InternalErr(err)
+		return nil, internal.InternalErr(err)
 	}
 
 	// Capture return expression
@@ -161,7 +162,7 @@ func (d *Delegate) BuildFuncCall(fnCallOp *program.Operand, fnCall *program.FnCa
 	info, ok := fnInfo.(*jsFnInfo)
 	if !ok {
 		err := fmt.Errorf("expected *jsFnInfo, got %T", fnInfo)
-		return nil, program.InternalErr(err)
+		return nil, internal.InternalErr(err)
 	}
 
 	argCodes := make([]string, len(args))

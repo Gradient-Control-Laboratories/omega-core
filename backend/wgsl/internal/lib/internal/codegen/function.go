@@ -7,6 +7,7 @@ import (
 	"gradientcontrol.com/omega/core/backend/wgsl/internal/lib/internal/accel"
 	"gradientcontrol.com/omega/core/backend/wgsl/internal/lib/internal/ir"
 	"gradientcontrol.com/omega/core/backend/wgsl/internal/lib/internal/wgsl"
+	"gradientcontrol.com/omega/core/internal"
 	"gradientcontrol.com/omega/core/internal/build"
 	"gradientcontrol.com/omega/core/program"
 )
@@ -212,7 +213,7 @@ func (d *Delegate) buildFunc(
 		} else {
 			if !g.Type().IsFunction() {
 				err := fmt.Errorf("global ref of type %v", g.Type())
-				return nil, "", program.InternalErr(err)
+				return nil, "", internal.InternalErr(err)
 			}
 		}
 	}
