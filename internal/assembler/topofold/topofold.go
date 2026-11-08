@@ -4,39 +4,12 @@ import (
 	"fmt"
 	"math"
 
+	"gradientcontrol.com/omega/core/assembler/meshslots"
+	"gradientcontrol.com/omega/core/assembler/topofold"
 	"gradientcontrol.com/omega/core/internal/eval"
 	"gradientcontrol.com/omega/core/internal/meshfold"
-	"gradientcontrol.com/omega/core/internal/meshslots"
 	"gradientcontrol.com/omega/core/program"
 )
-
-// MeshGeometry provides basic scalar measurements for a mesh.
-type MeshGeometry interface {
-	Area() float64
-	Volume() float64
-}
-
-// AnnotatedMesh provides B-rep topological queries and medial axis measurements.
-type AnnotatedMesh interface {
-	FacePoint(face int, u, v float64) ([3]float64, error)
-	EdgePoint(edge int, t float64) ([3]float64, error)
-	EdgePointComp(edge, comp int, t float64) ([3]float64, error)
-	VertexPoint(vertex int) ([3]float64, error)
-	CircleCenter(edge int) ([3]float64, error)
-	FacePointNormal(face int, u, v float64) ([3]float64, [3]float64, error)
-	EdgePointNormal(edge int, t float64) ([3]float64, [3]float64, error)
-	EdgePointNormalComp(edge, comp int, t float64) ([3]float64, [3]float64, error)
-	VertexPointNormal(vertex int) ([3]float64, [3]float64, error)
-	CircleCenterNormal(edge int) ([3]float64, [3]float64, error)
-	MedialMax() (float64, [3]float64, error)
-	MedialHotSpots(keep func([3]float64, [3]float64) bool, count int) ([][3]float64, error)
-}
-
-// GeometryResolver resolves mesh properties and annotated topology for body slots.
-type GeometryResolver interface {
-	GetMesh(slot int) (MeshGeometry, bool)
-	GetAnnotatedMesh(slot int) (AnnotatedMesh, bool, error)
-}
 
 var topoPointBuiltins = map[string]bool{
 	"facePoint":    true,
@@ -76,8 +49,8 @@ func isTopoCall(fc *program.FnCall) bool {
 		meshListQueryBuiltins[name]
 }
 
-// HasTopoCall returns true if the package contains any topology-builtin calls.
-func HasTopoCall(pkg *program.Package) bool {
+// hasTopoCall returns true if the package contains any topology-builtin calls.
+func hasTopoCall(pkg *program.Package) bool {
 	if pkg == nil {
 		return false
 	}
@@ -153,19 +126,19 @@ func HasTopoCall(pkg *program.Package) bool {
 
 // FoldProgram folds all topology and mesh-property builtin calls across the entire
 // program graph using the provided GeometryResolver.
-func FoldProgram(prog *program.Program, resolver GeometryResolver) (*program.Program, error) {
+func FoldProgram(prog *program.Program, resolver topofold.GeometryResolver) (*program.Program, error) {
 	if prog == nil || resolver == nil {
 		return prog, nil
 	}
 
 	// Fast path: check if any package has topology calls.
 	anyTopo := false
-	if prog.Primary != nil && HasTopoCall(prog.Primary) {
+	if prog.Primary != nil && hasTopoCall(prog.Primary) {
 		anyTopo = true
 	}
 	if !anyTopo {
 		for _, dep := range prog.Dependencies {
-			if dep != nil && HasTopoCall(dep) {
+			if dep != nil && hasTopoCall(dep) {
 				anyTopo = true
 				break
 			}
@@ -188,7 +161,7 @@ func FoldProgram(prog *program.Program, resolver GeometryResolver) (*program.Pro
 	foldingGI := meshfold.FoldingGetImport(gi, slotResolver)
 
 	// Fold Primary package if it has topo calls.
-	if foldedProg.Primary != nil && HasTopoCall(foldedProg.Primary) {
+	if foldedProg.Primary != nil && hasTopoCall(foldedProg.Primary) {
 		if err := foldPackage(foldedProg.Primary, "", slotTable, slotResolver, foldingGI, resolver); err != nil {
 			return nil, err
 		}
@@ -196,7 +169,7 @@ func FoldProgram(prog *program.Program, resolver GeometryResolver) (*program.Pro
 
 	// Fold dependent packages.
 	for _, dep := range foldedProg.Dependencies {
-		if dep != nil && HasTopoCall(dep) {
+		if dep != nil && hasTopoCall(dep) {
 			if err := foldPackage(dep, dep.Path, slotTable, slotResolver, foldingGI, resolver); err != nil {
 				return nil, err
 			}
@@ -213,7 +186,7 @@ func foldPackage(
 	slotTable []meshslots.Import,
 	slotResolver meshslots.Resolver,
 	gi program.GetImportFunc,
-	resolver GeometryResolver,
+	resolver topofold.GeometryResolver,
 ) error {
 	placements, placementCounts, err := extractPlacements(pkg, gi)
 	if err != nil {
@@ -229,7 +202,7 @@ func foldPackage(
 		placements:      placements,
 		placementCounts: placementCounts,
 		resolver:        resolver,
-		cachedMeshes:    make(map[int]AnnotatedMesh),
+		cachedMeshes:    make(map[int]topofold.AnnotatedMesh),
 	}
 
 	for _, file := range pkg.Files {
@@ -276,8 +249,8 @@ type topoFolder struct {
 	bodySlots       []int
 	placements      map[int][]float64
 	placementCounts map[int]int
-	resolver        GeometryResolver
-	cachedMeshes    map[int]AnnotatedMesh
+	resolver        topofold.GeometryResolver
+	cachedMeshes    map[int]topofold.AnnotatedMesh
 }
 
 func (f *topoFolder) errorAt(loc *program.Location, msg string) error {
@@ -713,7 +686,7 @@ func (f *topoFolder) evalMeshPointsQueryCall(fc *program.FnCall, op *program.Ope
 	return pts, nil
 }
 
-func (f *topoFolder) evalCommon(fc *program.FnCall, op *program.Operand, visibleAssignments []*program.Assignment, visibleFnTypes []*program.FnType) (int, AnnotatedMesh, [][]float64, []float64, error) {
+func (f *topoFolder) evalCommon(fc *program.FnCall, op *program.Operand, visibleAssignments []*program.Assignment, visibleFnTypes []*program.FnType) (int, topofold.AnnotatedMesh, [][]float64, []float64, error) {
 	if len(fc.Arguments) < 2 {
 		return 0, nil, nil, nil, f.errorAt(op.GetStart(), fmt.Sprintf("%s: expected at least a body and an entity id", fc.Reference.Name))
 	}
@@ -749,7 +722,7 @@ func (f *topoFolder) evalCommon(fc *program.FnCall, op *program.Operand, visible
 	return slot, mesh, args[1:], xf, nil
 }
 
-func (f *topoFolder) annotatedMesh(body int, fc *program.FnCall, op *program.Operand) (AnnotatedMesh, error) {
+func (f *topoFolder) annotatedMesh(body int, fc *program.FnCall, op *program.Operand) (topofold.AnnotatedMesh, error) {
 	if m, ok := f.cachedMeshes[body]; ok {
 		return m, nil
 	}

@@ -6,7 +6,7 @@ import (
 
 	"gradientcontrol.com/omega/core/internal/build"
 	"gradientcontrol.com/omega/core/internal/fidget/internal/fidget"
-	"gradientcontrol.com/omega/core/internal/noise/spinodoid"
+	"gradientcontrol.com/omega/core/program/noise/spinodoid"
 	"gradientcontrol.com/omega/core/program"
 )
 

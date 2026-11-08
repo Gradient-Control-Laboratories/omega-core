@@ -3,7 +3,7 @@ package mesh_test
 import (
 	"testing"
 
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/internal/fidget/internal/mesh"
 	"gradientcontrol.com/omega/core/internal/source"
 	"gradientcontrol.com/omega/core/internal/test/assert"
@@ -19,7 +19,7 @@ r = reduce(0.0, (acc, x) {
 s = sphere(10.0 + r);
 return s;
 `
-	res, err := assembler.Assemble([]string{src}, &source.MockManager{})
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(&source.MockManager{}))
 	require.NoError(t, err)
 
 	tape1, names1, err := mesh.GenerateTape(res.Program)
@@ -45,7 +45,7 @@ d = reduce(100.0, (acc, o) {
 s = unionSharp(sphere(5.0), d - 2.0);
 return s;
 `
-	res, err := assembler.Assemble([]string{src}, &source.MockManager{})
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(&source.MockManager{}))
 	require.NoError(t, err)
 
 	tape, names, err := mesh.GenerateTape(res.Program)

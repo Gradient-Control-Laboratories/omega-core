@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/internal/fidget/internal/convert"
 	"gradientcontrol.com/omega/core/internal/fidget/internal/fidget"
 	"gradientcontrol.com/omega/core/internal/source"
@@ -27,7 +27,7 @@ func TestFontConverts(t *testing.T) {
 	// A string literal at the origin, extruded to a solid plate.
 	src := string(font) + "\nreturn max(left(\"HI42\", [0, 0], 1), abs(p.z) - 1);\n"
 
-	res, err := assembler.Assemble([]string{src}, &source.MockManager{})
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(&source.MockManager{}))
 	require.NoError(t, err)
 
 	var trees []fidget.TreeIndex

@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"google.golang.org/protobuf/proto"
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/internal/fidget/internal/convert"
 	"gradientcontrol.com/omega/core/internal/fidget/internal/fidget"
 	"gradientcontrol.com/omega/core/internal/source"
@@ -35,7 +35,7 @@ second = bez([0, 0, -1.0], [0, 0, -2.0], [-2.0, 0, -3.0]);
 
 return min(first, second);
 `
-	res, err := assembler.Assemble([]string{src}, &source.MockManager{})
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(&source.MockManager{}))
 	require.NoError(t, err)
 
 	before, err := proto.Marshal(res.Program.Primary)
@@ -71,7 +71,7 @@ r = reduce(0.0, (acc, value) {
 
 return r;
 `
-	res, err := assembler.Assemble([]string{src}, &source.MockManager{})
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(&source.MockManager{}))
 	require.NoError(t, err)
 
 	var glsl string

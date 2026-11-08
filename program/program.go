@@ -1,7 +1,6 @@
 package program
 
 import (
-	"errors"
 	"math"
 	"strings"
 
@@ -26,36 +25,6 @@ const VAccessor = "v"
 
 const AnonFnPrefix = "gsl_anon"
 const InlinedFnPrefix = "gsl_inlined_"
-
-// ParseResult holds the parsed package and any structured parse errors.
-//
-// Invariants:
-//   - ParseResult and ParseResult.Package are never nil.
-//   - ParseResult.Package.Files always contains at least one non-nil *PackageFile
-//     (len(res.Package.Files) >= 1 and res.Package.Files[0] != nil).
-type ParseResult struct {
-	Package *Package
-	Errors  []Error
-}
-
-// Error returns nil if there are no parse errors, the single error if there is
-// only one, or errors.Join of all errors if there are multiple.
-func (r *ParseResult) Error() error {
-	if r == nil || len(r.Errors) == 0 {
-		return nil
-	}
-	if len(r.Errors) == 1 {
-		return &r.Errors[0]
-	}
-	errs := make([]error, len(r.Errors))
-	for i := range r.Errors {
-		errs[i] = &r.Errors[i]
-	}
-	return errors.Join(errs...)
-}
-
-// ParsePackageFunc parses package source code into a ParseResult.
-type ParsePackageFunc func(sources []string) *ParseResult
 
 func (i *Import) SimpleName() string {
 	return i.Path[strings.LastIndex(i.Path, "/")+1:]

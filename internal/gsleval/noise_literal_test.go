@@ -5,7 +5,7 @@ import (
 	"math"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/noise"
+	"gradientcontrol.com/omega/core/program/noise"
 	"gradientcontrol.com/omega/core/internal/source"
 )
 

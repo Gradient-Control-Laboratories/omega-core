@@ -3,8 +3,8 @@ package ui_test
 import (
 	"testing"
 
+	"gradientcontrol.com/omega/core/assembler/ui"
 	"gradientcontrol.com/omega/core/internal/test/assert"
-	ui "gradientcontrol.com/omega/core/internal/ui"
 )
 
 // A control's literal is a parameter, not a constant: the assembler's folding

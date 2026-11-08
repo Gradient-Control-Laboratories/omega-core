@@ -20,12 +20,12 @@ func TestRender_Sphere(t *testing.T) {
 		progressCalled = true
 	}
 
-	renderRes, err := wgsl.Render(src, res.Program, wgsl.WithStandalone(true), wgsl.WithProgress(progressFn))
+	renderRes, err := wgsl.Render(src, res.Program, wgsl.Standalone(true), wgsl.WithProgress(progressFn))
 	if err != nil {
 		t.Fatalf("wgsl.Render failed: %v", err)
 	}
 	if renderRes == nil {
-		t.Fatal("expected non-nil RenderResult")
+		t.Fatal("expected non-nil Result")
 	}
 	if !strings.Contains(renderRes.WGSL, "@compute") && !strings.Contains(renderRes.WGSL, "fn ") {
 		t.Errorf("expected WGSL output to contain function or compute shader, got: %s", renderRes.WGSL)

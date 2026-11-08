@@ -3,7 +3,7 @@ package build_test
 import (
 	"testing"
 
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/internal/build"
 )
 
@@ -11,7 +11,7 @@ func TestBuild_NestedConstantList(t *testing.T) {
 	res, err := assembler.Assemble([]string{`m = [[1,0,0,0],[0,1,0,0],[0,0,1,0],[3,4,5,1]];
 matrices = [m, m, m];
 last = matrices[2];
-return last;`}, mockMgr)
+return last;`}, assembler.SourceManager(mockMgr))
 	if err != nil {
 		t.Fatal(err)
 	}
