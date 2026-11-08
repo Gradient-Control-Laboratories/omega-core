@@ -3,6 +3,7 @@ package parser_test
 import (
 	"testing"
 
+	"google.golang.org/protobuf/proto"
 	"gradientcontrol.com/omega/core/parser"
 	"gradientcontrol.com/omega/core/program"
 )
@@ -29,6 +30,26 @@ return x;`
 	}
 	if res == nil || res.Package == nil {
 		t.Fatal("expected non-nil Result and Package")
+	}
+}
+
+func TestCachingParser(t *testing.T) {
+	cp := parser.NewCachingParser()
+	src := `x = 10;
+return x;`
+	first := cp.ParsePackage([]string{src})
+	if err := first.Error(); err != nil {
+		t.Fatalf("CachingParser.ParsePackage failed: %v", err)
+	}
+	want := proto.Clone(first.Package).(*program.Package)
+	first.Package.Files[0].Assignments = nil
+
+	second := cp.ParsePackage([]string{src})
+	if err := second.Error(); err != nil {
+		t.Fatalf("CachingParser.ParsePackage second call failed: %v", err)
+	}
+	if !proto.Equal(second.Package, want) {
+		t.Fatalf("expected unmodified clone from cache, got %+v", second.Package)
 	}
 }
 
