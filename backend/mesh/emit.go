@@ -1,7 +1,7 @@
 package mesh
 
 import (
-	lib "gradientcontrol.com/omega/core/backend/internal/fidget/lib"
+	lib "gradientcontrol.com/omega/core/internal/fidget/lib"
 	"gradientcontrol.com/omega/core/program"
 )
 

@@ -11,12 +11,13 @@ go run "${ROOT_DIR}/tool/run-go-tests" \
     --repo-root "${ROOT_DIR}" \
     --history-file "${HISTORY_FILE}" \
     --wgsl-testdata "backend/wgsl/internal/lib/internal/codegen/testdata" \
-    --fidget-testdata "backend/internal/fidget/internal/convert/testdata" \
+    --fidget-testdata "internal/fidget/internal/convert/testdata" \
     "${ROOT_DIR}/parser" \
     "${ROOT_DIR}/program" \
     "${ROOT_DIR}/stdlib" \
     "${ROOT_DIR}/internal" \
     "${ROOT_DIR}/assembler" \
+    "${ROOT_DIR}/eval" \
     "${ROOT_DIR}/backend" \
     "${ROOT_DIR}/cmd" \
     "${ROOT_DIR}/tool"

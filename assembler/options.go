@@ -4,6 +4,7 @@ import (
 	"gradientcontrol.com/omega/core/assembler/source"
 	lib "gradientcontrol.com/omega/core/internal/assembler"
 	internalsource "gradientcontrol.com/omega/core/internal/source"
+	"gradientcontrol.com/omega/core/program"
 )
 
 // Option configures program assembly.
@@ -12,6 +13,14 @@ type Option func(*config)
 type config struct {
 	managers []internalsource.Manager
 	libOpts  []lib.Option
+}
+
+// Parser supplies a custom package parser (such as parser.CachingParser.ParsePackage)
+// to use when parsing primary and imported packages during assembly.
+func Parser(parsePkg program.ParsePackageFunc) Option {
+	return func(c *config) {
+		c.libOpts = append(c.libOpts, lib.Parser(parsePkg))
+	}
 }
 
 // SourcePaths adds local directory root paths used to resolve imported packages and assets.

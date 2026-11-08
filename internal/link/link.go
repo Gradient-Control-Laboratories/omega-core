@@ -18,9 +18,9 @@ var errIsPropRef = errors.New("is property reference")
 func References(
 	origProg *program.Program,
 	srcMgr source.Manager,
-	parsePackage program.ParsePackageFunc,
+	parsePkg program.ParsePackageFunc,
 ) error {
-	_, err := ReferencesAndDiagnostics(origProg, srcMgr, parsePackage)
+	_, err := ReferencesAndDiagnostics(origProg, srcMgr, parsePkg)
 	return err
 }
 
@@ -29,7 +29,7 @@ func References(
 func ReferencesAndDiagnostics(
 	origProg *program.Program,
 	srcMgr source.Manager,
-	parsePackage program.ParsePackageFunc,
+	parsePkg program.ParsePackageFunc,
 ) ([]program.Diagnostic, error) {
 	progScope, err := scope.Init(origProg)
 	if err != nil {
@@ -37,33 +37,33 @@ func ReferencesAndDiagnostics(
 	}
 
 	sink := &diagnosticSink{}
-	l := newLinker(origProg, progScope, srcMgr, parsePackage, sink)
+	l := newLinker(origProg, progScope, srcMgr, parsePkg, sink)
 	err = l.link()
 	return sink.diags, err
 }
 
 // linker resolves references and performs diagnostic collection.
 type linker struct {
-	prog         *program.Program
-	progScope    *scope.ProgScope
-	srcMgr       source.Manager
-	parsePackage program.ParsePackageFunc
-	sink         *diagnosticSink
+	prog      *program.Program
+	progScope *scope.ProgScope
+	srcMgr    source.Manager
+	parsePkg  program.ParsePackageFunc
+	sink      *diagnosticSink
 }
 
 func newLinker(
 	origProg *program.Program,
 	progScope *scope.ProgScope,
 	srcMgr source.Manager,
-	parsePackage program.ParsePackageFunc,
+	parsePkg program.ParsePackageFunc,
 	sink *diagnosticSink,
 ) *linker {
 	return &linker{
-		prog:         origProg,
-		progScope:    progScope,
-		srcMgr:       srcMgr,
-		parsePackage: parsePackage,
-		sink:         sink,
+		prog:      origProg,
+		progScope: progScope,
+		srcMgr:    srcMgr,
+		parsePkg:  parsePkg,
+		sink:      sink,
 	}
 }
 
@@ -704,9 +704,9 @@ func (l *linker) resolveRef(op *program.Operand, ref *program.Reference, currSco
 				var freshPkg *program.Package
 				if std := program.GetStdPackage(pkgPath); std != nil {
 					freshPkg = std
-				} else if l.srcMgr != nil && l.parsePackage != nil {
+				} else if l.srcMgr != nil {
 					if sources, _, err := l.srcMgr.Sources(pkgPath); err == nil && len(sources) > 0 {
-						if freshRes := l.parsePackage(sources); freshRes != nil && freshRes.Error() == nil {
+						if freshRes := l.parsePkg(sources); freshRes != nil && freshRes.Error() == nil {
 							freshPkg = freshRes.Package
 						}
 					}
@@ -775,16 +775,13 @@ func (l *linker) loadAndScopeDependency(
 	if s, ok := l.progScope.Dependencies[pkgPath]; ok {
 		return s, nil
 	}
-	if l.parsePackage == nil {
-		return nil, fmt.Errorf("parser not injected")
-	}
 
 	sources, _, err := l.srcMgr.Sources(pkgPath)
 	if err != nil {
 		return nil, err
 	}
 
-	depRes := l.parsePackage(sources)
+	depRes := l.parsePkg(sources)
 	if err := depRes.Error(); err != nil {
 		return nil, err
 	}

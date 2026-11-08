@@ -9,7 +9,6 @@ import (
 	"gradientcontrol.com/omega/core/internal/link"
 	"gradientcontrol.com/omega/core/internal/scope"
 	"gradientcontrol.com/omega/core/internal/source"
-	parser "gradientcontrol.com/omega/core/parser"
 	"gradientcontrol.com/omega/core/program"
 )
 
@@ -124,6 +123,7 @@ func (rp *returnPartition) AttachVariants(
 	prog *program.Program,
 	srcMgr source.Manager,
 	variants map[string]string,
+	parsePkg program.ParsePackageFunc,
 ) {
 	if len(variants) == 0 {
 		return
@@ -138,7 +138,7 @@ func (rp *returnPartition) AttachVariants(
 	lastFile := prog.Primary.Files[len(prog.Primary.Files)-1]
 	for _, name := range names {
 		retSrc := variants[name]
-		res := parser.ParsePackage([]string{retSrc})
+		res := parsePkg([]string{retSrc})
 		if err := res.Error(); err != nil {
 			rp.variantErrors[name] = fmt.Sprintf("parse variant return %q: %v", retSrc, err)
 			continue
@@ -164,7 +164,7 @@ func (rp *returnPartition) AttachVariants(
 		combined = append(combined, varReturns...)
 		prog.SetReturns(combined)
 
-		if err := link.References(prog, srcMgr, parser.ParsePackage); err != nil {
+		if err := link.References(prog, srcMgr, parsePkg); err != nil {
 			rp.variantErrors[name] = err.Error()
 			prog.SetReturns(savedReturns)
 			lastFile.Imports = origImports
