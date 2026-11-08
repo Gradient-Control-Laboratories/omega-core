@@ -133,6 +133,86 @@ type inliner struct {
 	inUIMarker int
 }
 
+// deferredHoist is a property's temporaries that read a top-level variable
+// declared below the part the property belongs to, with the names they wait
+// for.
+type deferredHoist struct {
+	assignments []*program.Assignment
+	pending     map[string]bool
+}
+
+// readsUndeclared is the set of names in topNames not yet declared that the
+// assignments read, nil when there is none.
+func readsUndeclared(assignments []*program.Assignment, topNames []string, declared map[string]bool) map[string]bool {
+	var pending map[string]bool
+	for _, name := range topNames {
+		if declared[name] || pending[name] {
+			continue
+		}
+		for _, a := range assignments {
+			if readsName(a.Expression, name) {
+				if pending == nil {
+					pending = map[string]bool{}
+				}
+				pending[name] = true
+				break
+			}
+		}
+	}
+	return pending
+}
+
+// readsName reports whether op refers to the unqualified name. The member of
+// an access, the x of p.x, is a name of its own and not a read.
+func readsName(op *program.Operand, name string) bool {
+	if op == nil {
+		return false
+	}
+	switch t := op.T.(type) {
+	case *program.Operand_Reference:
+		return t.Reference.Prefix == "" && t.Reference.Name == name
+	case *program.Operand_PropRef:
+		return t.PropRef != nil && t.PropRef.Reference != nil && t.PropRef.Reference.Prefix == "" && t.PropRef.Reference.Name == name
+	case *program.Operand_Expression:
+		for i, child := range t.Expression.Operands {
+			if i == 1 && t.Expression.Operation == program.Operation_ACCESS {
+				continue
+			}
+			if readsName(child, name) {
+				return true
+			}
+		}
+	case *program.Operand_FnCall:
+		for _, arg := range t.FnCall.Arguments {
+			if readsName(arg, name) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// placeDeferred puts each deferred batch after the last assignment declaring
+// a name it waited for, the batches in their order.
+func placeDeferred(assignments []*program.Assignment, deferred []deferredHoist) []*program.Assignment {
+	for _, d := range deferred {
+		at := len(assignments) - 1
+		for i, a := range assignments {
+			for _, v := range a.Variables {
+				if d.pending[v.Name] {
+					at = i
+				}
+			}
+		}
+		placed := make([]*program.Assignment, 0, len(assignments)+len(d.assignments))
+		placed = append(placed, assignments[:at+1]...)
+		placed = append(placed, d.assignments...)
+		placed = append(placed, assignments[at+1:]...)
+		assignments = placed
+	}
+	return assignments
+}
+
 func (in *inliner) transformProgram() error {
 	in.buildCallCounts()
 	if in.prog.Primary != nil {
@@ -176,7 +256,16 @@ func (in *inliner) transformPackage(pkg *program.Package, pkgScope *scope.PkgSco
 			}
 		}
 
-		// Transform top-level assignments
+		// Transform top-level assignments. The file's names in order, and the
+		// ones declared so far, place a property's temporaries (below).
+		var topNames []string
+		for _, a := range file.Assignments {
+			for _, v := range a.Variables {
+				topNames = append(topNames, v.Name)
+			}
+		}
+		declared := map[string]bool{}
+		var deferred []deferredHoist
 		var newAssignments []*program.Assignment
 		for _, assign := range file.Assignments {
 			// Check if this assignment is a multi-return call that can be expanded
@@ -204,6 +293,9 @@ func (in *inliner) transformPackage(pkg *program.Package, pkgScope *scope.PkgSco
 									in.hoistedAssignments = nil
 								}
 								newAssignments = append(newAssignments, expAssign)
+								for _, v := range expAssign.Variables {
+									declared[v.Name] = true
+								}
 							}
 							continue
 						}
@@ -215,6 +307,10 @@ func (in *inliner) transformPackage(pkg *program.Package, pkgScope *scope.PkgSco
 			if err := in.transformOperand(assign.Expression, fileScope, file, currentPkgPath); err != nil {
 				return err
 			}
+			if len(in.hoistedAssignments) > 0 {
+				newAssignments = append(newAssignments, in.hoistedAssignments...)
+				in.hoistedAssignments = nil
+			}
 			for _, v := range assign.Variables {
 				for _, prop := range v.Properties {
 					if err := in.transformOperand(prop.Expression, fileScope, file, currentPkgPath); err != nil {
@@ -222,13 +318,25 @@ func (in *inliner) transformPackage(pkg *program.Package, pkgScope *scope.PkgSco
 					}
 				}
 			}
+			// A property is written below the part it belongs to and may read a
+			// top-level variable declared between the two, in order as written:
+			// a = sphere(5); x = 8; a.color = pattern(x). Its temporaries go in
+			// front of the part, as the expression's do, unless one reads a
+			// variable not yet declared; then they wait for its declaration.
 			if len(in.hoistedAssignments) > 0 {
-				newAssignments = append(newAssignments, in.hoistedAssignments...)
+				if pending := readsUndeclared(in.hoistedAssignments, topNames, declared); len(pending) > 0 {
+					deferred = append(deferred, deferredHoist{assignments: in.hoistedAssignments, pending: pending})
+				} else {
+					newAssignments = append(newAssignments, in.hoistedAssignments...)
+				}
 				in.hoistedAssignments = nil
 			}
 			newAssignments = append(newAssignments, assign)
+			for _, v := range assign.Variables {
+				declared[v.Name] = true
+			}
 		}
-		file.Assignments = newAssignments
+		file.Assignments = placeDeferred(newAssignments, deferred)
 
 		// Transform top-level returns
 		for _, ret := range file.Returns {

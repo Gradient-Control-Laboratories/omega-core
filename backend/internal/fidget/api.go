@@ -204,7 +204,7 @@ type RenderLitRequest struct {
 	WorldExtent float64      `json:"worldExtent"`
 	Camera      RenderCamera `json:"camera"`
 	// Colors is each return's colour where the program authors none: the
-	// viewer's per-shape colours. For "simple", the Simple palette.
+	// viewer's per-shape colours. For "simple", those colours decoded to linear.
 	Colors [][3]float64 `json:"colors,omitempty"`
 	// Mode is the viewer tier drawn: "standard" (or empty), "color" (the
 	// standard frame without the program's materials), or "simple" (the

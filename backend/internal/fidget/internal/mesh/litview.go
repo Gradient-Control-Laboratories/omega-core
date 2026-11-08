@@ -153,12 +153,12 @@ type litPartProxy struct {
 
 // litDispNearMargin is the viewer's gsl_dispNearMargin: how near a surface
 // its march displaces the field.
-const litDispNearMargin = 2.0
+const litDispNearMargin = 4.0
 
 // radius is the viewer's gsl_vanishView.w for a ray leaving the scene box at
 // tExit (gsl-render-graph.js): four pixels at the ray's far end and never
 // under eight hit tolerances, plus displacement's reach (gsl_dispNearMargin,
-// 2) where the field is displaced.
+// 4) where the field is displaced.
 func (pp litPartProxy) radius(pixelScale, ortho, tExit float64) float64 {
 	r := math.Max(viewHitEps*8, pixelScale*(math.Max(tExit, 1.0)*(1-ortho)+ortho)*4)
 	if pp.displaced {
