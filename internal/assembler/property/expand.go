@@ -14,10 +14,11 @@ import (
 // the program uses no property operators it is returned unchanged; otherwise a
 // deep copy is rewritten so the caller's (possibly cached) program is untouched.
 //
-// Today the only property operators are the derivatives .dtime and .dp. A DERIV
-// that survives inside a function body — which needs call-site context — is left
-// in place; the build pass reports a clear, located error if such a function is
-// actually used.
+// The property operators are the derivatives .dtime, .dp and .d(var), the
+// second-closest distance .second, the bounding box .box and the surface frame
+// .u / .v. A DERIV that survives inside a function body — which needs call-site
+// context — is left in place; the build pass reports a clear, located error if
+// such a function is actually used.
 func Expand(prog *program.Program) (*program.Program, error) {
 	return expand(prog, false)
 }

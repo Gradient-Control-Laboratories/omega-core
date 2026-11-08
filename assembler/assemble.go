@@ -251,7 +251,12 @@ func assembleWithOptions(primarySources []string, srcMgr internalsource.Manager,
 	var importSlots []meshslots.Import
 	if o.enableSlotFold {
 		var slotErr error
-		prog, importSlots, slotErr = meshfold.FoldProgramWithSlots(prog)
+		// With the parameter checker, so the fold that resolves slot variables
+		// leaves a slider live, as every other fold here does. Built for the
+		// package the fold sees: the slot folding clones the primary first.
+		prog, importSlots, slotErr = meshfold.FoldProgramWithSlotsChecked(prog, func(primary *program.Package) eval.ParameterChecker {
+			return newAssemblerParamChecker(primary)
+		})
 		if slotErr != nil {
 			return nil, slotErr
 		}

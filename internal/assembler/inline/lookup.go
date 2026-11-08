@@ -107,8 +107,62 @@ func (in *inliner) isBuiltinOrSpecial(fc *program.FnCall) bool {
 		return true
 	}
 	if fc.Reference.Prefix == "" {
+		if in.isNativeOrSpecial(fc) {
+			return true
+		}
+		if in.definesCalledName(fc) {
+			// The document's own sphere is that function, however many
+			// spheres the builtin package has: the name check below would
+			// call it builtin and skip inlining it (until, on a later pass,
+			// dead code had removed the builtin's unused ones).
+			return false
+		}
 		if in.isBuiltinOrSpecialName(fc.Reference.Name) {
 			return true
+		}
+	}
+	return false
+}
+
+// definesCalledName reports whether an enclosing function or the current
+// package — when that package is not the builtin package itself — defines a
+// function with the call's name and arity, so the call is to it and not to a
+// builtin of the same name. It mirrors the first stages of findFunctionUncached.
+func (in *inliner) definesCalledName(fc *program.FnCall) bool {
+	name, argc := fc.Reference.Name, len(fc.Arguments)
+	for i := len(in.enclosingFns) - 1; i >= 0; i-- {
+		if fnTypesDefine(in.enclosingFns[i].FnTypes, name, argc) {
+			return true
+		}
+	}
+	fs := in.currentFileScope
+	if fs == nil || fs.PkgScope() == nil || fs.PkgScope().Package == nil {
+		return false
+	}
+	if in.progScope != nil {
+		if builtinScope, ok := in.progScope.Dependencies["builtin"]; ok && builtinScope != nil && builtinScope.Package == fs.PkgScope().Package {
+			return false
+		}
+	}
+	for _, file := range fs.PkgScope().Package.Files {
+		if file != nil && fnTypesDefine(file.FnTypes, name, argc) {
+			return true
+		}
+	}
+	return false
+}
+
+// fnTypesDefine reports whether fts has a function named name taking argc
+// parameters.
+func fnTypesDefine(fts []*program.FnType, name string, argc int) bool {
+	for _, ft := range fts {
+		if ft == nil || ft.Name != name {
+			continue
+		}
+		for _, g := range ft.Groups {
+			if g != nil && int(g.ParamCount) == argc && len(g.Functions) > 0 {
+				return true
+			}
 		}
 	}
 	return false
