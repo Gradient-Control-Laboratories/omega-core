@@ -7,13 +7,12 @@ import (
 	"math"
 	"sync"
 
-	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/encoding/protowire"
 
 	"gradientcontrol.com/omega/core/internal/build"
 	"gradientcontrol.com/omega/core/internal/fidget/internal/fidget"
-	tapepb "gradientcontrol.com/omega/core/internal/fidget/internal/tape"
-	"gradientcontrol.com/omega/core/internal/noise/spinodoid"
 	"gradientcontrol.com/omega/core/program"
+	"gradientcontrol.com/omega/core/program/noise/spinodoid"
 )
 
 // builtinGaborSpinodoid lowers gaborSpinodoid / gaborSpinodoidGradient and
@@ -511,15 +510,15 @@ func (d *Delegate) preserveRemappedSpinodoids(trees []fidget.TreeIndex) error {
 	if err != nil {
 		return err
 	}
-	var tape tapepb.Tape
-	if err := proto.Unmarshal(data, &tape); err != nil {
+	oracles, err := extractTapeMeshOracles(data)
+	if err != nil {
 		return err
 	}
 	const oracleBase = uint32(0xE05B1000) // tape-core spinodoid::SPINODOID_ORACLE_ID_BASE
 	slots := map[uint32]bool{}
-	for _, node := range tape.Nodes {
-		if leaf, ok := node.N.(*tapepb.Node_MeshOracle); ok && leaf.MeshOracle >= oracleBase && leaf.MeshOracle < oracleBase+256*4 {
-			slots[(leaf.MeshOracle-oracleBase)/4] = true
+	for _, meshOracle := range oracles {
+		if meshOracle >= oracleBase && meshOracle < oracleBase+256*4 {
+			slots[(meshOracle-oracleBase)/4] = true
 		}
 	}
 	for callKey, baked := range d.spinodoidBakes {
@@ -565,4 +564,52 @@ func BakeSpinodoids(prog *program.Program) (map[string]BakedSpinodoid, error) {
 		return nil, build.ErrWithPkgSrc(prog, err)
 	}
 	return d.spinodoidBakes, nil
+}
+
+// extractTapeMeshOracles scans a serialized tape.Tape message (field 2 = repeated Node)
+// and returns the meshOracle leaf IDs (Node field 6 = uint32 meshOracle).
+func extractTapeMeshOracles(data []byte) ([]uint32, error) {
+	var ids []uint32
+	for len(data) > 0 {
+		num, typ, n := protowire.ConsumeTag(data)
+		if n < 0 {
+			return nil, protowire.ParseError(n)
+		}
+		data = data[n:]
+		if num == 2 && typ == protowire.BytesType {
+			nodeBytes, m := protowire.ConsumeBytes(data)
+			if m < 0 {
+				return nil, protowire.ParseError(m)
+			}
+			data = data[m:]
+			for len(nodeBytes) > 0 {
+				fnum, ftyp, fn := protowire.ConsumeTag(nodeBytes)
+				if fn < 0 {
+					return nil, protowire.ParseError(fn)
+				}
+				nodeBytes = nodeBytes[fn:]
+				if fnum == 6 && ftyp == protowire.VarintType {
+					v, vm := protowire.ConsumeVarint(nodeBytes)
+					if vm < 0 {
+						return nil, protowire.ParseError(vm)
+					}
+					ids = append(ids, uint32(v))
+					nodeBytes = nodeBytes[vm:]
+				} else {
+					vm := protowire.ConsumeFieldValue(fnum, ftyp, nodeBytes)
+					if vm < 0 {
+						return nil, protowire.ParseError(vm)
+					}
+					nodeBytes = nodeBytes[vm:]
+				}
+			}
+		} else {
+			m := protowire.ConsumeFieldValue(num, typ, data)
+			if m < 0 {
+				return nil, protowire.ParseError(m)
+			}
+			data = data[m:]
+		}
+	}
+	return ids, nil
 }

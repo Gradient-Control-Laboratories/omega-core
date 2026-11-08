@@ -8,7 +8,7 @@ local `gsl serve` HTTP server (`cmd/serve`).
 From the `omega-core` repository root, build and launch the viewer server:
 
 ```bash
-./tool/build.sh
+./tool/build-cmds.sh
 ./bin/gsl serve --open
 ```
 

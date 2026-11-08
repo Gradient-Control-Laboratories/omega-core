@@ -3,8 +3,8 @@ package ui_test
 import (
 	"testing"
 
+	"gradientcontrol.com/omega/core/assembler/ui"
 	"gradientcontrol.com/omega/core/internal/test/assert"
-	ui "gradientcontrol.com/omega/core/internal/ui"
 )
 
 // @direction(anchor) lowers to uiDirection(dir, anchor), and the anchor —

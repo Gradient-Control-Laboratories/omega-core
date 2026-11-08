@@ -95,4 +95,3 @@ func TestNewScene(t *testing.T) {
 		t.Errorf("expected error for zero grid")
 	}
 }
-

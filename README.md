@@ -159,7 +159,10 @@ omega-core/
 │   ├── transform/
 │   └── vector/
 └── tool/                      # Developer build and automation scripts
-    ├── build.sh               # Builds compiler executables into bin/
+    ├── build-cli.sh          # Builds compiler CLI executables (gsl, compile, serve, fix) into bin/
+    ├── build-fidget.sh        # Builds Fidget and Manifold Rust/C++ native and WASM artifacts
+    ├── build-proto.sh         # Compiles program.proto and tape.proto into Go bindings
+    ├── build-wgsl-accel-ops.sh # Regenerates WGSL hardware acceleration ops table and inliner registry
     ├── check.sh               # Pre-commit quality gate (gofmt, go vet, tests)
     ├── clean.sh               # Cleans bin/ outputs, test cache, and scratch files
     ├── test.sh                # Runs unit, integration, and golden test suites
@@ -172,7 +175,7 @@ omega-core/
 Compile the `gsl`, `compile`, `serve`, and `fix` binaries into `bin/`:
 
 ```bash
-./tool/build.sh
+./tool/build-cli.sh
 ```
 
 Run pre-commit quality checks (gofmt, go vet, and tests):

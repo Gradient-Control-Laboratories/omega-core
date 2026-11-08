@@ -3,7 +3,7 @@ package convert_test
 import (
 	"testing"
 
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/internal/fidget/internal/convert"
 	"gradientcontrol.com/omega/core/internal/fidget/internal/fidget"
 	"gradientcontrol.com/omega/core/internal/source"
@@ -22,7 +22,7 @@ vel = f.dtime;
 gradMag = length(f.dp);
 return f, vel, gradMag;
 `
-	res, err := assembler.Assemble([]string{src}, &source.MockManager{})
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(&source.MockManager{}))
 	require.NoError(t, err)
 
 	var treeCount int
@@ -52,7 +52,7 @@ ab = abs(remap(a, p - boundaryMap(b)));
 body = abs(max(a, b));
 return body, ab;
 `
-	res, err := assembler.Assemble([]string{src}, &source.MockManager{})
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(&source.MockManager{}))
 	require.NoError(t, err)
 
 	var treeCount int

@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/internal/fidget/internal/convert"
 	"gradientcontrol.com/omega/core/internal/fidget/internal/fidget"
 )
@@ -31,7 +31,7 @@ c.color = [0.0, 1.0, 0.0];
 d = remap(plainBall(1.0), p - [-5.0, 0.0, 0.0]);
 return a, b, c, d;
 `
-	res, err := assembler.Assemble([]string{src}, mockMgr)
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(mockMgr))
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}

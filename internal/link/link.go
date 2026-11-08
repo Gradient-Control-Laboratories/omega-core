@@ -7,6 +7,7 @@ import (
 
 	"gradientcontrol.com/omega/core/internal/scope"
 	"gradientcontrol.com/omega/core/internal/source"
+	"gradientcontrol.com/omega/core/parser"
 	"gradientcontrol.com/omega/core/program"
 	gsllibs "gradientcontrol.com/omega/core/stdlib"
 )
@@ -18,7 +19,7 @@ var errIsPropRef = errors.New("is property reference")
 func References(
 	origProg *program.Program,
 	srcMgr source.Manager,
-	parsePkg program.ParsePackageFunc,
+	parsePkg func(sources []string) (*parser.Result, error),
 ) error {
 	_, err := ReferencesAndDiagnostics(origProg, srcMgr, parsePkg)
 	return err
@@ -29,7 +30,7 @@ func References(
 func ReferencesAndDiagnostics(
 	origProg *program.Program,
 	srcMgr source.Manager,
-	parsePkg program.ParsePackageFunc,
+	parsePkg func(sources []string) (*parser.Result, error),
 ) ([]program.Diagnostic, error) {
 	progScope, err := scope.Init(origProg)
 	if err != nil {
@@ -47,7 +48,7 @@ type linker struct {
 	prog      *program.Program
 	progScope *scope.ProgScope
 	srcMgr    source.Manager
-	parsePkg  program.ParsePackageFunc
+	parsePkg  func(sources []string) (*parser.Result, error)
 	sink      *diagnosticSink
 }
 
@@ -55,7 +56,7 @@ func newLinker(
 	origProg *program.Program,
 	progScope *scope.ProgScope,
 	srcMgr source.Manager,
-	parsePkg program.ParsePackageFunc,
+	parsePkg func(sources []string) (*parser.Result, error),
 	sink *diagnosticSink,
 ) *linker {
 	return &linker{
@@ -706,7 +707,7 @@ func (l *linker) resolveRef(op *program.Operand, ref *program.Reference, currSco
 					freshPkg = std
 				} else if l.srcMgr != nil {
 					if sources, _, err := l.srcMgr.Sources(pkgPath); err == nil && len(sources) > 0 {
-						if freshRes := l.parsePkg(sources); freshRes != nil && freshRes.Error() == nil {
+						if freshRes, err := l.parsePkg(sources); err == nil && freshRes != nil {
 							freshPkg = freshRes.Package
 						}
 					}
@@ -781,8 +782,8 @@ func (l *linker) loadAndScopeDependency(
 		return nil, err
 	}
 
-	depRes := l.parsePkg(sources)
-	if err := depRes.Error(); err != nil {
+	depRes, err := l.parsePkg(sources)
+	if err != nil {
 		return nil, err
 	}
 	if depRes == nil || depRes.Package == nil {

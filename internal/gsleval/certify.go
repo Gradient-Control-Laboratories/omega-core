@@ -580,8 +580,8 @@ func (e *Evaluator) certifySearchParams(
 // document with no sliders is an error: "over every configuration" of a
 // document with none is a point proof the caller should ask for directly.
 func SliderRanges(code string) (map[string][2]float64, error) {
-	res := parser.ParsePackage([]string{code})
-	if err := res.Error(); err != nil {
+	res, err := parser.ParsePackage([]string{code})
+	if err != nil {
 		return nil, fmt.Errorf("parse document for sliders: %w", err)
 	}
 	sliders := slider.Extract(code, res.Package)

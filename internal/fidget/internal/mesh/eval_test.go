@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/internal/fidget/internal/mesh"
 	"gradientcontrol.com/omega/core/internal/source"
 	"gradientcontrol.com/omega/core/internal/test/require"
@@ -14,7 +14,7 @@ import (
 // parseProgram compiles GSL source to a program.Program for eval tests.
 func parseProgram(t *testing.T, gslSrc string) *program.Program {
 	t.Helper()
-	res, err := assembler.Assemble([]string{gslSrc}, &source.MockManager{})
+	res, err := assembler.Assemble([]string{gslSrc}, assembler.SourceManager(&source.MockManager{}))
 	require.NoError(t, err)
 	return res.Program
 }

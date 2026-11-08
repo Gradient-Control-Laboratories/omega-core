@@ -1,6 +1,6 @@
 package fidget
 
-import "gradientcontrol.com/omega/core/internal/noise/spinodoid"
+import "gradientcontrol.com/omega/core/program/noise/spinodoid"
 
 const (
 	// RequestPathMesh is fidget-only.

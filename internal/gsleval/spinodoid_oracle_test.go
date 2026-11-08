@@ -5,9 +5,9 @@ import (
 	"math"
 	"testing"
 
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/internal/fidget/lib"
-	"gradientcontrol.com/omega/core/internal/noise/spinodoid"
+	"gradientcontrol.com/omega/core/program/noise/spinodoid"
 	"gradientcontrol.com/omega/core/internal/source"
 )
 
@@ -146,7 +146,7 @@ func TestSpinodoidBuiltinsAreOneField(t *testing.T) {
 // and marked fast, so a reader that wants hodge's field knows to swap it in.
 func TestGaborSpinodoidTapeLeafIsFast(t *testing.T) {
 	res, err := assembler.Assemble([]string{gaborSpinodoidDoc},
-		source.NewLocalManager("../../stdlib"))
+		assembler.SourceManager(source.NewLocalManager("../../stdlib")))
 	if err != nil {
 		t.Fatalf("Assemble: %v", err)
 	}

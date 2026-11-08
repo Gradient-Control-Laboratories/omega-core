@@ -4,11 +4,11 @@ import (
 	"math"
 	"testing"
 
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/internal/fidget/internal/convert"
 	"gradientcontrol.com/omega/core/internal/fidget/internal/fidget"
 	"gradientcontrol.com/omega/core/internal/meshfold"
-	"gradientcontrol.com/omega/core/internal/noise"
+	"gradientcontrol.com/omega/core/program/noise"
 	"gradientcontrol.com/omega/core/program"
 )
 
@@ -38,7 +38,7 @@ specimen.color = slsColor;
 specimen.material = slsMat;
 return specimen;
 `
-	res, err := assembler.Assemble([]string{src}, mockMgr)
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(mockMgr))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -178,7 +178,7 @@ return remap(field, p + [0, 200, 0]);
 
 func bakeSingleSpinodoidForDomainTest(t *testing.T, src string) (*program.Program, convert.BakedSpinodoid) {
 	t.Helper()
-	res, err := assembler.Assemble([]string{src}, mockMgr)
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(mockMgr))
 	if err != nil {
 		t.Fatal(err)
 	}

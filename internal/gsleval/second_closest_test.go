@@ -3,7 +3,7 @@ package gsleval
 import (
 	"testing"
 
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler"
 	fidlib "gradientcontrol.com/omega/core/internal/fidget/lib"
 	"gradientcontrol.com/omega/core/internal/source"
 )
@@ -86,7 +86,7 @@ balls = unionRound([a, b], 0.5);
 	}
 	for _, tc := range cases {
 		src := base + "return " + tc.expr + ";\n"
-		res, err := assembler.Assemble([]string{src}, srcMgr)
+		res, err := assembler.Assemble([]string{src}, assembler.SourceManager(srcMgr))
 		if err != nil {
 			t.Errorf("%s: assemble: %v", tc.expr, err)
 			continue
@@ -120,7 +120,7 @@ a = sphere([-1,0,0], 1);
 b = sphere([1,0,0], 1);
 return unionRound([a,b], 0.6).second, unionSharp([a,b]), unionRound([a,b], 0.6);
 `
-	res, err := assembler.Assemble([]string{src}, srcMgr)
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(srcMgr))
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}

@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/internal/fidget/internal/convert"
 	"gradientcontrol.com/omega/core/internal/fidget/internal/fidget"
 )
@@ -49,7 +49,7 @@ screw, lid, base = fastened(max(abs(p.x) - 10.0, abs(p.y) - 10.0, p.z, -3.0 - p.
                             max(abs(p.x) - 10.0, abs(p.y) - 10.0, -3.0 - p.z, -15.0 - p.z));
 return a, b, c, d, screw, lid, base;
 `
-	res, err := assembler.Assemble([]string{src}, mockMgr)
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(mockMgr))
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
