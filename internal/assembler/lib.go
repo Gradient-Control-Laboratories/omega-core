@@ -31,6 +31,7 @@ import (
 )
 
 type options struct {
+	parsePkg              program.ParsePackageFunc
 	geometryResolver      topofold.GeometryResolver
 	warpResolver          warpfold.WarpResolver
 	foldWarpFieldToZero   bool
@@ -45,6 +46,14 @@ type options struct {
 
 // Option configures program assembly.
 type Option func(*options)
+
+// Parser supplies a custom package parser (such as parser.CachingParser.ParsePackage)
+// to use when parsing primary and imported packages during assembly.
+func Parser(parsePkg program.ParsePackageFunc) Option {
+	return func(o *options) {
+		o.parsePkg = parsePkg
+	}
+}
 
 // VariantResult holds the sliced MeshExportPlan, analytical SdfSubtrees, or
 // per-variant compilation error for a single caller-supplied variant return.
@@ -148,6 +157,7 @@ func WithProgress(fn ProgressFunc) Option {
 // assembles them into a single program along with the assigned import slot table.
 func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*Result, error) {
 	o := options{
+		parsePkg:              parser.ParsePackage,
 		enableSlotFold:        true,
 		enableDeadcodeRemoval: true,
 	}
@@ -171,7 +181,7 @@ func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*
 	// Parse the primary package and transitively collect imported packages into a Program AST,
 	// then resolve and link all symbol references across package boundaries.
 	report("Resolving package imports", 1)
-	prog, err := collect.Program(primarySources, srcMgr, parser.ParsePackage)
+	prog, err := collect.Program(primarySources, srcMgr, o.parsePkg)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +189,7 @@ func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*
 	if err != nil {
 		return nil, err
 	}
-	assemblyDiags, err := link.ReferencesAndDiagnostics(prog, srcMgr, parser.ParsePackage)
+	assemblyDiags, err := link.ReferencesAndDiagnostics(prog, srcMgr, o.parsePkg)
 	if err != nil {
 		return nil, err
 	}
@@ -190,10 +200,10 @@ func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*
 	if err = property.CarryReturnProperties(prog); err != nil {
 		return nil, err
 	}
-	if err = link.References(prog, srcMgr, parser.ParsePackage); err != nil {
+	if err = link.References(prog, srcMgr, o.parsePkg); err != nil {
 		return nil, err
 	}
-	rp.AttachVariants(prog, srcMgr, o.variants)
+	rp.AttachVariants(prog, srcMgr, o.variants, o.parsePkg)
 
 	// 2. Closure & Higher-Order Function Transformation
 	// Hoist anonymous closures to package level and convert higher-order function patterns
@@ -202,7 +212,7 @@ func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*
 	if err = closure.Transform(prog); err != nil {
 		return nil, err
 	}
-	if err = link.References(prog, srcMgr, parser.ParsePackage); err != nil {
+	if err = link.References(prog, srcMgr, o.parsePkg); err != nil {
 		return nil, err
 	}
 
@@ -242,7 +252,7 @@ func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*
 	if err != nil {
 		return nil, err
 	}
-	if err = link.References(prog, srcMgr, parser.ParsePackage); err != nil {
+	if err = link.References(prog, srcMgr, o.parsePkg); err != nil {
 		return nil, err
 	}
 	if err = types.Analyze(prog); err != nil {
@@ -272,7 +282,7 @@ func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*
 		return nil, err
 	}
 	if preFoldMod {
-		if err = link.References(prog, srcMgr, parser.ParsePackage); err != nil {
+		if err = link.References(prog, srcMgr, o.parsePkg); err != nil {
 			return nil, err
 		}
 		if err = types.Analyze(prog); err != nil {
@@ -287,7 +297,7 @@ func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*
 	if err = lower.Transform(prog); err != nil {
 		return nil, err
 	}
-	if err = link.References(prog, srcMgr, parser.ParsePackage); err != nil {
+	if err = link.References(prog, srcMgr, o.parsePkg); err != nil {
 		return nil, err
 	}
 	if err = types.Analyze(prog); err != nil {
@@ -296,7 +306,7 @@ func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*
 	if _, err = unroll.Transform(prog); err != nil {
 		return nil, err
 	}
-	if err = link.References(prog, srcMgr, parser.ParsePackage); err != nil {
+	if err = link.References(prog, srcMgr, o.parsePkg); err != nil {
 		return nil, err
 	}
 	if err = types.Analyze(prog); err != nil {
@@ -529,7 +539,7 @@ func optimizeProgram(prog *program.Program, o *options, srcMgr source.Manager) (
 		}
 
 		// 2. Re-link and type-check before constant folding
-		if err = link.References(prog, srcMgr, parser.ParsePackage); err != nil {
+		if err = link.References(prog, srcMgr, o.parsePkg); err != nil {
 			return nil, err
 		}
 		if err = types.Analyze(prog); err != nil {
@@ -556,7 +566,7 @@ func optimizeProgram(prog *program.Program, o *options, srcMgr source.Manager) (
 		}
 
 		// 4. Re-link and type-check before lowering
-		if err = link.References(prog, srcMgr, parser.ParsePackage); err != nil {
+		if err = link.References(prog, srcMgr, o.parsePkg); err != nil {
 			return nil, err
 		}
 		if err = types.Analyze(prog); err != nil {
@@ -567,7 +577,7 @@ func optimizeProgram(prog *program.Program, o *options, srcMgr source.Manager) (
 		if err = lower.Transform(prog); err != nil {
 			return nil, err
 		}
-		if err = link.References(prog, srcMgr, parser.ParsePackage); err != nil {
+		if err = link.References(prog, srcMgr, o.parsePkg); err != nil {
 			return nil, err
 		}
 		if err = types.Analyze(prog); err != nil {
@@ -580,7 +590,7 @@ func optimizeProgram(prog *program.Program, o *options, srcMgr source.Manager) (
 		if modUnroll {
 			modifiedAny = true
 		}
-		if err = link.References(prog, srcMgr, parser.ParsePackage); err != nil {
+		if err = link.References(prog, srcMgr, o.parsePkg); err != nil {
 			return nil, err
 		}
 		if err = types.Analyze(prog); err != nil {

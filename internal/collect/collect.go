@@ -16,12 +16,12 @@ import (
 //
 // It returns a program composed of all packages
 // directly or indirectly referenced by the primarySources GSL code.
-func Program(primarySources []string, srcMgr source.Manager, parse program.ParsePackageFunc) (*program.Program, error) {
+func Program(primarySources []string, srcMgr source.Manager, parsePkg program.ParsePackageFunc) (*program.Program, error) {
 	if len(primarySources) == 0 {
 		return nil, fmt.Errorf("missing primary sources")
 	}
 
-	primaryRes := parse(primarySources)
+	primaryRes := parsePkg(primarySources)
 	if err := primaryRes.Error(); err != nil {
 		return nil, err
 	}
@@ -30,7 +30,7 @@ func Program(primarySources []string, srcMgr source.Manager, parse program.Parse
 	}
 	primaryPkg := primaryRes.Package
 	setPackageSources(primaryPkg, primarySources)
-	return Package(primaryPkg, srcMgr, parse)
+	return Package(primaryPkg, srcMgr, parsePkg)
 }
 
 func setPackageSources(pkg *program.Package, sources []string) {
@@ -45,7 +45,7 @@ func setPackageSources(pkg *program.Package, sources []string) {
 }
 
 // Package collects all packages starting from a pre-parsed primary package.
-func Package(primaryPkg *program.Package, srcMgr source.Manager, parse program.ParsePackageFunc) (*program.Program, error) {
+func Package(primaryPkg *program.Package, srcMgr source.Manager, parsePkg program.ParsePackageFunc) (*program.Program, error) {
 	if primaryPkg == nil {
 		return nil, fmt.Errorf("missing primary package")
 	}
@@ -78,7 +78,7 @@ func Package(primaryPkg *program.Package, srcMgr source.Manager, parse program.P
 					if err != nil {
 						return fmt.Errorf("failed to load package %s: %w", impPath, err)
 					}
-					depRes := parse(sources)
+					depRes := parsePkg(sources)
 					if err := depRes.Error(); err != nil {
 						return fmt.Errorf("failed to parse package %s: %w", impPath, err)
 					}
@@ -161,12 +161,12 @@ func ProgramSourceHash(prog *program.Program) string {
 
 // SourceHash collects primaryPkgPath and all its transitive GSL imports from
 // srcMgr and returns their deterministic SHA-256 hex digest.
-func SourceHash(primaryPkgPath string, srcMgr source.Manager, parse program.ParsePackageFunc) (string, error) {
+func SourceHash(primaryPkgPath string, srcMgr source.Manager, parsePkg program.ParsePackageFunc) (string, error) {
 	primary, _, err := srcMgr.Sources(primaryPkgPath)
 	if err != nil {
 		return "", err
 	}
-	prog, err := Program(primary, srcMgr, parse)
+	prog, err := Program(primary, srcMgr, parsePkg)
 	if err != nil {
 		return "", err
 	}
