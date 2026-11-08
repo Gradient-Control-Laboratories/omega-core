@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/build"
+	"gradientcontrol.com/omega/core/program"
 )
 
 // Find all files matching [glob] in the current directory.
@@ -126,7 +126,7 @@ func RunSourceTest[R any](t *testing.T, srcFile string,
 
 			targetLineIdx := lineIdx + 1
 			actualMsg := err.Error()
-			if buildErr, isBuildErr := err.(*build.Error); isBuildErr {
+			if buildErr, isBuildErr := err.(*program.Error); isBuildErr {
 				actualMsg = buildErr.Message
 			}
 
@@ -137,7 +137,7 @@ func RunSourceTest[R any](t *testing.T, srcFile string,
 				t.Errorf("Expected error matching %q, got %q", expectedMsg, actualMsg)
 			}
 
-			if buildErr, isBuildErr := err.(*build.Error); isBuildErr {
+			if buildErr, isBuildErr := err.(*program.Error); isBuildErr {
 				assertErrorLineNum(t, buildErr, lines, targetLineIdx)
 			}
 		})
@@ -174,7 +174,7 @@ func sourceWithError(t *testing.T, lines []string, lineIdx int, errorIdx int) (s
 }
 
 // Assert that the error is on the expected line.
-func assertErrorLineNum(t *testing.T, buildErr *build.Error, lines []string, targetLine int) {
+func assertErrorLineNum(t *testing.T, buildErr *program.Error, lines []string, targetLine int) {
 	// Find the next line of code
 	nextLine := targetLine
 	for nextLine < len(lines) {
