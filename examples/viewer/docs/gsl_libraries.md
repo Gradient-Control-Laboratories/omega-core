@@ -796,7 +796,7 @@ import alias "path/to/pkg";  // aliased:   call as `alias.func(1)`
 - **`torxTip(tNumber, length)`** — A TORX (ISO 10664) tip of this T number, `length` long: the hexalobular section, straight-sided, at the recess's own dimensions.
 - **`hexTip(acrossFlats, length)`** — A HEX tip `acrossFlats` wide and `length` long — the key for a hex socket.
 - **`robertsonTip(sizeNo, length)`** — A ROBERTSON (square) tip of this size number, `length` long, ending in the four-sided point of the 1909 patent: drill.robertsonAt read as a solid.
-- **`slotTip(thickness, width, length)`** — A SLOTTED tip, ISO 2380 form A: a blade `thickness` by `width` at its end, `length` long. Its faces open at the standard's 10-degree wedge for the first 1.5, which is the part that sits in the slot, and then at 30 degrees, which is how the blade gets back to the bar it was ground from in the length of a bit rather than of a crowbar.
+- **`slotTip(thickness, width, length)`** — A SLOTTED tip, ISO 2380 form A: a blade `thickness` by `width` at its end, `length` long. Its faces open at the standard's 10-degree wedge for the first 1.5, which is the part that sits in the slot, and then at 30 degrees (included, like the first), which is how the blade gets back to the bar it was ground from in the length of a bit rather than of a crowbar. Each face leans half the included angle from the axis: 5 degrees, then 15.
 
 #### Shanks
 

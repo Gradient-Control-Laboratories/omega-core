@@ -1,0 +1,58 @@
+@scene(300, 25)
+
+// A gallery of triply periodic minimal surfaces (TPMS): the surface family that
+// divides space into two interpenetrating labyrinths, here made solid. Every
+// specimen is a 28 mm cube cut from a lattice with a 22 mm cell, clipped to its
+// own box and returned as a separate object (comma-separated, no boolean).
+//
+// Row 1 (back): all seven surfaces in their nominal form, the solid network at
+// the natural (balanced) threshold: gyroid, Schwarz P, diamond, lidinoid,
+// Neovius, IWP and split-P.
+// Row 2 (middle): one surface, the gyroid, in four solidification variants, all
+// through lattice.solidify: solid (bias only), sheet (bias plus a wall
+// thickness), and the inverses of each (the same call on the negated field).
+// Unlike the thin beam, honeycomb and foam lattices, a TPMS is already about
+// 50% solid at bias = 0; the bias only shifts the volume fraction.
+// Row 3 (front): one long block grading from gyroid to diamond along its
+// length with the diamond's gyroidBlend argument.
+
+cell = 22;     // lattice cell size (mm)
+wall = 1.4;    // sheet thickness for the thin-wall variant (mm)
+r = 14;        // specimen half-size (mm)
+step = 34;     // spacing along X (mm)
+yTop = 36;     // row positions along Y (mm)
+yMid = 0;
+yBot = -36;
+
+c = [cell, cell, cell];
+
+// Clip a field to a cube centered at (ox, oy).
+specimen(field, ox, oy) {
+  return max(field, boxCentered([ox, oy, 0], [2 * r, 2 * r, 2 * r]));
+}
+
+// Row 1: every surface in its nominal solid form.
+gyr = specimen(tpms.gyroid(c),               -3 * step, yTop);
+sch = specimen(tpms.schwarz(c),              -2 * step, yTop);
+dia = specimen(tpms.diamond(c),              -1 * step, yTop);
+lid = specimen(tpms.lidinoid(c),              0,        yTop);
+neo = specimen(tpms.neovius(c),              1 * step,  yTop);
+wp  = specimen(tpms.iwp(c),                  2 * step,  yTop);
+spl = specimen(tpms.splitP(c, 1, 0.5, 0.25), 3 * step,  yTop);
+
+// Row 2: the gyroid in four solidification variants, all through lattice.solidify.
+gf = tpms.gyroid(c);
+vThick   = specimen(lattice.solidify(gf, 0),                -1.5 * step, yMid);
+vThin    = specimen(lattice.solidify(gf, 0, wall),          -0.5 * step, yMid);
+vInverse = specimen(lattice.solidify(neg(gf), 0),            0.5 * step, yMid);
+vThinInv = specimen(neg(lattice.solidify(gf, 0, wall)),      1.5 * step, yMid);
+
+// Row 3: a long block grading from gyroid to diamond along X. The blend is 1
+// (gyroid) at the left end and 0 (diamond) at the right.
+blockLen = 7 * step;
+blockHalf = blockLen * 0.5;
+gyrToDia = ramp(p.x, -blockHalf, blockHalf, 1, 0);
+morph = max(tpms.diamond(c, [1, 1, 1], gyrToDia),
+            boxCentered([0, yBot, 0], [blockLen, 2 * r, 2 * r]));
+
+return gyr, sch, dia, lid, neo, wp, spl, vThick, vThin, vInverse, vThinInv, morph;
