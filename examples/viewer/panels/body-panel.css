@@ -2,7 +2,7 @@
  * The panel frame — #body-panel, its header, .panel-body, .panel-close — is
  * styled by each app's shared side-panel rules; this file carries the palette
  * and the body rows.
- * The palette rules moved here unchanged from webdm's and webai's style.css. */
+ * The palette rules moved here unchanged from webai's style.css. */
 
 #palette-strip {
     display: flex;

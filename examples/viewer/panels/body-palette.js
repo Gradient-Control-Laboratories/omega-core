@@ -8,7 +8,7 @@
 // header shows the current palette; clicking it opens the presets and the four
 // coefficients.
 //
-// This was the Shapes panel's palette in webdm's and webai's main.js, moved
+// This was the Shapes panel's palette in webai's main.js, moved
 // here unchanged when the two panels became the Bodies panel.
 
 import { srgbEncode } from "../render/gsl-shading.js";
