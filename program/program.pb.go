@@ -1709,7 +1709,7 @@ func (x *StepImport) GetPath() string {
 	return ""
 }
 
-// A casting simulation the document deforms geometry with. Shaped like the
+// A simulation the document deforms geometry with. Shaped like the
 // other asset imports so it moves through the pipeline the same way, but the
 // asset is a result rather than an input: it names the solve whose displacement
 // meshWarped and vdbSdfWarped bake into their geometry.
@@ -2659,7 +2659,7 @@ const file_program_proto_rawDesc = "" +
 	"\x04LIST\x10\x02\x12\n" +
 	"\n" +
 	"\x06MATRIX\x10\x03\x12\f\n" +
-	"\bFUNCTION\x10\x04B*Z(gradientcontrol.com/omega_common/programb\x06proto3"
+	"\bFUNCTION\x10\x04B(Z&gradientcontrol.com/omega/core/programb\x06proto3"
 
 var (
 	file_program_proto_rawDescOnce sync.Once

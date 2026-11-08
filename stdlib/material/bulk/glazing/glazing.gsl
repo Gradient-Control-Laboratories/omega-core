@@ -1,0 +1,122 @@
+
+// Glazing Materials (material/bulk/glazing)
+//
+// Architectural glass with a pattern in it: reeded, hammered, wired and
+// dichroic. The glass library holds the plain media and stays free of
+// imports, so the patterned sheets live here under the trade's word for
+// them. Each is a bulk transmissive material and returns material, color,
+// height and slope, as the coats do; a transmissive material's colour is
+// what comes through it, so the wire's shadow and the dichroic's tint are
+// drawn in that.
+//
+// Doc convention follows builtin/base.gsl: `///` lines are public docs.
+
+import "material";
+import "texture";
+import "noise";
+import "color";
+import "material/bulk/glass";
+
+/// reeded(origin, normal, along, pitch, depth): reeded glass, half-round
+/// flutes `pitch` mm apart (5 to 30; 13 to 15 the usual) running along
+/// `along` on the face through `origin`, `depth` mm deep (0.3 to 2),
+/// polished. Returns material, color, height and slope.
+reeded(@point origin, @direction(origin) normal, @direction(origin) along, @range(5, 30) pitch, @range(0.3, 2) depth) {
+  n = normalize(normal);
+  u = normalize(along - n * dot(along, n));
+  across = dot(p - origin, cross(n, u));
+  phase = across / pitch - floor(across / pitch) - 0.5;
+  flute = depth * (1 - 4 * phase * phase);
+  sheet = material.withDisplacement(glass.make(0.03, 1.52, 0), flute * texture.fadeDetail(pitch));
+  sheet.simple = material.withDisplacement(glass.make(0.03, 1.52, 0), 0.667 * depth);
+  return sheet, [1, 1, 1], 0, 0;
+}
+
+/// hammered(cellSize, depth): hammered glass, a dish in every cell of a
+/// Voronoi `cellSize` mm across (5 to 40), `depth` mm deep at its centre
+/// (0.2 to 1.5), polished. Returns material, color, height and slope.
+hammered(@range(5, 40) cellSize, @range(0.2, 1.5) depth) {
+  f1 = noise.cellular(cellSize);
+  dish = -depth * max(0, 1 - f1 * f1 / (0.2 * cellSize * cellSize));
+  sheet = material.withDisplacement(glass.make(0.03, 1.52, 0), dish * texture.fadeDetail(cellSize));
+  // The dish's mean over the face at that radius, measured (see the probe).
+  sheet.simple = material.withDisplacement(glass.make(0.03, 1.52, 0), -hammeredDishMean * depth);
+  return sheet, [1, 1, 1], 0, 0;
+}
+
+// Measured over 4000 random points at a 15 mm cell.
+hammeredDishMean = 0.145;
+
+/// wired(origin, normal, along, meshPitch, wireWidth): Georgian wired
+/// glass, a square welded steel mesh `meshPitch` mm (6 to 25; 13 the
+/// usual) of wire `wireWidth` mm (0.3 to 0.8) cast into the sheet, the
+/// mesh square to `along` on the face through `origin`; the wire shows as
+/// its shadow in what comes through. Returns material, color, height and
+/// slope.
+wired(@point origin, @direction(origin) normal, @direction(origin) along, @range(6, 25) meshPitch, @range(0.3, 0.8) wireWidth) {
+  n = normalize(normal);
+  u = normalize(along - n * dot(along, n));
+  x = dot(p - origin, u);
+  y = dot(p - origin, cross(n, u));
+  toWire = min(abs(x / meshPitch - floor(x / meshPitch) - 0.5), abs(y / meshPitch - floor(y / meshPitch) - 0.5)) * meshPitch;
+  wire = texture.fadeTo(1 - texture.mask(toWire, 0.5 * wireWidth, max(0.1, 0.5 * pixelSize())), 2 * wireWidth / meshPitch, meshPitch);
+  tone = color.mixOklab([1, 1, 1], [0.3, 0.3, 0.32], wire);
+  tone.simple = color.mixOklab([1, 1, 1], [0.3, 0.3, 0.32], 2 * wireWidth / meshPitch);
+  return glass.make(0.03, 1.52, 6), tone, 0, 0;
+}
+
+/// dichroic(thickness, filmIndex): dichroic glass, a film `thickness` nm
+/// (100 to 500) of index `filmIndex` (1.5 to 2.4; 2.0 to 2.4 the oxide
+/// stacks) on polished glass: what the film reflects is color.thinFilm's
+/// colour, and what comes through is its complement, drawn here as the
+/// sheet's tint over 40 mm, since the record has only a tint by depth for
+/// a film that tints once at the surface: a thick block reads it twice, a
+/// 6 mm sheet faintly. The reflection itself wants a film term in the
+/// renderer, which the material record has no row for yet. Returns
+/// material, color, height and slope.
+dichroic(@range(100, 500) thickness, @range(1.5, 2.4) filmIndex) {
+  reflected = color.thinFilm(thickness, filmIndex, 1.52);
+  return glass.make(0.02, 1.52, 40), clamp([1, 1, 1] - reflected, 0, 1), 0, 0;
+}
+
+// ===========================================================================
+// Glass
+// ===========================================================================
+
+/// Reeded glass, 13 mm flutes 1 mm deep along +X. Returns material and
+/// colour.
+@material reededGlass() {
+  sheet, tone, height, slope = reeded([0, 0, 0], [0, 0, 1], [1, 0, 0], 13, 1);
+  return sheet, tone;
+}
+
+/// Hammered glass, 15 mm dishes 0.6 mm deep. Returns material and colour.
+@material hammeredGlass() {
+  sheet, tone, height, slope = hammered(15, 0.6);
+  return sheet, tone;
+}
+
+/// Georgian wired glass, a 13 mm mesh of 0.5 mm wire square to +X.
+/// Returns material and colour.
+@material wiredGlass() {
+  sheet, tone, height, slope = wired([0, 0, 0], [0, 0, 1], [1, 0, 0], 13, 0.5);
+  return sheet, tone;
+}
+
+/// Dichroic glass, a 300 nm film of index 2.2, green in reflection and
+/// magenta through. Returns material and colour.
+@material dichroicGlass() {
+  sheet, tone, height, slope = dichroic(300, 2.2);
+  return sheet, tone;
+}
+
+// References
+//   Metro Performance Glass (archipro). Wired glass: a 13 mm square
+//     electrically welded steel wire mesh sandwiched in its centre.
+//     https://archipro.com.au/product/wired-glass-metro-performance-glass
+//   General Glass. Georgian polished wire: the mesh element 1/2 by 1/2 in.
+//     https://www.generalglass.com/?p=720
+//   Tintfit, 15 mm flutes, and Grafico, 13 mm reeds, for the flute pitch.
+//     https://tintfit.com/shop/15mm-flutes-smoked-reeded-glass-window-film
+//     https://www.grafico.com.au/?p=247767
+//   The flute depth, the hammered dish and the dichroic's film are judged.

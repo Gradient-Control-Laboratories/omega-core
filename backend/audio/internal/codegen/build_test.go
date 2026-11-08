@@ -9,8 +9,8 @@ import (
 
 	"gradientcontrol.com/omega/core/backend/audio/internal/codegen"
 	"gradientcontrol.com/omega/core/backend/audio/internal/extract"
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
-	"gradientcontrol.com/omega/core/internal/assembler/variation"
+	"gradientcontrol.com/omega/core/assembler"
+	"gradientcontrol.com/omega/core/assembler/variation"
 	"gradientcontrol.com/omega/core/internal/source"
 	"gradientcontrol.com/omega/core/internal/test/assert"
 	"gradientcontrol.com/omega/core/internal/test/require"
@@ -40,7 +40,7 @@ func TestAudioToJs(t *testing.T) {
 			gslAudioSrc, _, err := extract.ExtractAudio(string(gslSrc))
 			require.NoError(t, err)
 
-			res, err := assembler.Assemble([]string{string(gslAudioSrc)}, &source.MockManager{})
+			res, err := assembler.Assemble([]string{string(gslAudioSrc)}, assembler.SourceManager(&source.MockManager{}))
 			require.NoError(t, err)
 
 			jsSrc, _, err := codegen.AudioToJs(res.Program)
@@ -61,7 +61,7 @@ func TestAudioToJs(t *testing.T) {
 			}
 
 			// Verify single-pass assembler audio variation slicing produces identical JS.
-			singlePassRes, err := assembler.Assemble([]string{string(gslSrc)}, &source.MockManager{})
+			singlePassRes, err := assembler.Assemble([]string{string(gslSrc)}, assembler.SourceManager(&source.MockManager{}))
 			require.NoError(t, err)
 			require.True(t, len(singlePassRes.AudioReturns) > 0)
 			audioOps := make([]*program.Operand, len(singlePassRes.AudioReturns))
@@ -83,7 +83,7 @@ func TestAudioToJs_UnprunedProgram(t *testing.T) {
 		sampleRate = 44100.0;
 		return sin(time * 440.0);
 	`
-	res, err := assembler.Assemble([]string{src}, &source.MockManager{})
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(&source.MockManager{}))
 	require.NoError(t, err)
 
 	jsSrc, _, err := codegen.AudioToJs(res.Program)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"gradientcontrol.com/omega/core/internal"
 	"gradientcontrol.com/omega/core/internal/scope"
 	"gradientcontrol.com/omega/core/program"
 )
@@ -151,7 +152,7 @@ func (b *Builder) visitFnCallImpl(op *program.Operand, fnCall *program.FnCall) (
 // inline as separate assignments — built as a real call, each value becomes a
 // runtime struct field and stops being a compile-time constant, breaking any
 // downstream use that requires one (collection indexes, text, vdb params). The
-// fold case (e.g. `shaft, vents = sprue.labeled("Manifold", "A36")`, where
+// fold case (e.g. `shaft, vents = part.labeled("Manifold", "A36")`, where
 // labeled() routes the string into text()) must be inlined or the string stays
 // a runtime parameter and text() emits the entire font. Single-return inlining
 // lives in VisitFunctionCall; multi-return values are only ever consumed by a
@@ -320,7 +321,7 @@ func (b *Builder) buildFunction(op *program.Operand, fnDecl *program.FnType, fn 
 	}
 	if fnInfo == nil {
 		err := fmt.Errorf("missing info for function %q", fnCall.Reference.Name)
-		return nil, ErrLoc(b.delegate.GetScope(), op.Start, program.InternalErr(err))
+		return nil, ErrLoc(b.delegate.GetScope(), op.Start, internal.Err(err))
 	}
 	CheckScope(b, fnBodyScope)
 

@@ -1,0 +1,100 @@
+@scene(250, 25)
+
+// The Poincare disc model of the hyperbolic plane, tiled by geodesic arcs and
+// pushed around by a limit rotation (a parabolic Mobius automorphism). The
+// x and y axes are the real and imaginary axes, and everything is drawn in a
+// thin slab. Play the time slider: the horolation strength follows sin(time).
+// Don't remove: this is complex analysis visualized as geometry.
+//
+// The tiling is built on the unit disc. discRadius is the one length that
+// maps it to millimeters: p is divided by it going in and every distance is
+// multiplied by it coming out, so the disc is 200 mm across.
+discRadius = 100;
+
+t = sin(time) * 4;
+
+// Function that applies rotational symmetry to fold a point's angle
+// into one sector, then evaluates a geodesic arc in that sector.
+rotationalGeodesic(count, halfShift) {
+  sectorAngle = pi / count;
+  geoDistance = 1 / cos(sectorAngle);
+  geoRadius = tan(sectorAngle);
+
+  r = length(p.xy);
+  theta = atan(p.y, p.x);
+
+  sectorWidth = tau / count;
+  halfSector = sectorWidth / 2;
+
+  thetaAdjusted = theta - halfShift * halfSector;
+
+  thetaShifted = thetaAdjusted + halfSector;
+  thetaNorm = thetaShifted - floor(thetaShifted / sectorWidth) * sectorWidth;
+  thetaFolded = thetaNorm - halfSector;
+
+  thetaFinal = abs(thetaFolded);
+
+  px = r * cos(thetaFinal);
+  py = r * sin(thetaFinal);
+
+  geodesicDisc = length([px, py] - [geoDistance, 0]) - geoRadius;
+
+  insideDisc = circleXY(vector.zero.xy, 1);
+
+  return max(geodesicDisc, insideDisc, abs(p.z) - 0.05);
+}
+
+// All geometry packed into one function
+poincareTiling(n) {
+  // Unit circle boundary
+  unitCircle = circleXY(vector.zero.xy, 1);
+  slab = abs(p.z) - 0.05;
+  circleResult = max(unitCircle, slab);
+
+  // Geodesic arcs at various subdivision levels
+  g1 = remap(rotationalGeodesic(n, 0), p);
+  g2 = remap(rotationalGeodesic(2 * n, 1), p);
+  g3 = remap(rotationalGeodesic(4 * n, 1), p);
+  g4 = remap(rotationalGeodesic(8 * n, 1), p);
+  g5 = remap(rotationalGeodesic(16 * n, 1), p);
+  g6 = remap(rotationalGeodesic(32 * n, 1), p);
+  g7 = remap(rotationalGeodesic(64 * n, 1), p);
+  g8 = remap(rotationalGeodesic(128 * n, 1), p);
+
+  return circleResult, g1, g2, g3, g4, g5, g6, g7, g8;
+}
+
+// The point in unit-disc coordinates.
+ux = p.x / discRadius;
+uy = p.y / discRadius;
+uz = p.z / discRadius;
+
+// Limit rotation (parabolic Mobius automorphism) around boundary point (-1, 0)
+// T(z) = ((2 + it)z + it) / (-it z + (2 - it))
+// Inverse T^{-1}(z) = ((2 - it)z - it) / (it z + (2 + it))
+// with real parameter t controlling the horolation strength
+
+// Inverse Mobius applied to z = ux + i*uy
+// Numerator: (2 - it)*z - it = (2*zx + t*zy - 0) + i*(2*zy - t*zx - t)
+// using (2 - it)(zx + i*zy) = 2*zx + t*zy + i*(2*zy - t*zx)
+// then subtract it = (0 + i*t): real part unchanged, imag part subtract t
+nr = 2 * ux + t * uy;
+ni = 2 * uy - t * ux - t;
+
+// Denominator: it*z + (2 + it) = (-t*zy + 2) + i*(t*zx + t)
+// using it*(zx + i*zy) = -t*zy + i*t*zx
+// then add (2 + it) = (2 + i*t)
+dr = neg(t) * uy + 2;
+di = t * ux + t;
+
+denom2 = dr * dr + di * di;
+wx = (nr * dr + ni * di) / denom2;
+wy = (ni * dr - nr * di) / denom2;
+
+// Evaluate the tiling at the inverse-Mobius-transformed point
+t0, t1, t2, t3, t4, t5, t6, t7, t8 = remap(poincareTiling(3), [wx, wy, uz]);
+
+// Distances come back in unit-disc units; scale them to millimeters.
+return t0 * discRadius, t1 * discRadius, t2 * discRadius, t3 * discRadius,
+  t4 * discRadius, t5 * discRadius, t6 * discRadius, t7 * discRadius,
+  t8 * discRadius;

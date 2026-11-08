@@ -6,12 +6,15 @@ import (
 	"testing"
 
 	"gradientcontrol.com/omega/core/internal/source"
+	"gradientcontrol.com/omega/core/parser"
 	"gradientcontrol.com/omega/core/program"
 )
 
-func parseMockPackage(sources []string) (*program.Package, error) {
+func parseMockPackage(sources []string) (*parser.Result, error) {
 	if len(sources) == 0 {
-		return nil, fmt.Errorf("empty sources")
+		return &parser.Result{
+			Package: &program.Package{Files: []*program.PackageFile{{}}},
+		}, fmt.Errorf("empty sources")
 	}
 	files := make([]*program.PackageFile, 0, len(sources))
 	for _, src := range sources {
@@ -33,7 +36,7 @@ func parseMockPackage(sources []string) (*program.Package, error) {
 			},
 		})
 	}
-	return &program.Package{Files: files}, nil
+	return &parser.Result{Package: &program.Package{Files: files}}, nil
 }
 
 func TestCollect_Ordering(t *testing.T) {
@@ -100,48 +103,6 @@ func TestCollect_Ordering(t *testing.T) {
 	}
 }
 
-func TestCollect_NamedPrimaryPackage(t *testing.T) {
-	depSource := `return 1.0;`
-	primarySource := `import "dep1"; return 42.0;`
-
-	srcMgr := &source.MockManager{
-		PkgSources: map[string][]string{
-			"dep1": {depSource},
-		},
-	}
-
-	parseNamedMock := func(sources []string) (*program.Package, error) {
-		pkg, err := parseMockPackage(sources)
-		if err != nil {
-			return nil, err
-		}
-		if sources[0] == primarySource {
-			pkg.Path = "custom/main_pkg"
-		}
-		return pkg, nil
-	}
-
-	prog, err := Program([]string{primarySource}, srcMgr, parseNamedMock)
-	if err != nil {
-		t.Fatalf("Collect failed: %v", err)
-	}
-
-	if prog.Primary == nil || prog.Primary.Path != "custom/main_pkg" {
-		t.Fatalf("expected primary package path 'custom/main_pkg', got %q", prog.Primary.GetPath())
-	}
-
-	foundDep1 := false
-	for _, dep := range prog.Dependencies {
-		if dep.Path == "dep1" {
-			foundDep1 = true
-			break
-		}
-	}
-	if !foundDep1 {
-		t.Fatalf("expected dependency 'dep1' in %v", prog.Dependencies)
-	}
-}
-
 func TestCollect_PrimaryWithoutReturnsAndErrorPaths(t *testing.T) {
 	t.Run("primary without returns succeeds", func(t *testing.T) {
 		pkg := &program.Package{
@@ -192,66 +153,4 @@ func TestCollect_PrimaryWithoutReturnsAndErrorPaths(t *testing.T) {
 			t.Fatalf("expected cyclic import error, got: %v", err)
 		}
 	})
-}
-
-func TestCollect_SourceHashAndProgramSourceHash(t *testing.T) {
-	srcMgr := &source.MockManager{
-		PkgSources: map[string][]string{
-			"trees/test": {`import "dep1"; import "dep2"; return 42.0;`},
-			"dep1":       {`import "dep3"; return 1.0;`},
-			"dep2":       {`import "dep3"; return 2.0;`},
-			"dep3":       {`return 3.0;`},
-			"unrelated":  {`return 999.0;`},
-		},
-	}
-
-	hash1, err := SourceHash("trees/test", srcMgr, parseMockPackage)
-	if err != nil {
-		t.Fatalf("SourceHash failed: %v", err)
-	}
-	if len(hash1) != 64 {
-		t.Fatalf("expected 64-char sha256 hex digest, got %q", hash1)
-	}
-
-	prog, err := Program(srcMgr.PkgSources["trees/test"], srcMgr, parseMockPackage)
-	if err != nil {
-		t.Fatalf("Program failed: %v", err)
-	}
-	prog.Primary.Path = "trees/test"
-	if got := ProgramSourceHash(prog); got != hash1 {
-		t.Fatalf("ProgramSourceHash = %q, want %q", got, hash1)
-	}
-
-	// Modifying an unreferenced package must not change the digest.
-	srcMgr.PkgSources["unrelated"] = []string{`return -1.0;`}
-	hashUnrelated, err := SourceHash("trees/test", srcMgr, parseMockPackage)
-	if err != nil || hashUnrelated != hash1 {
-		t.Fatalf("unreferenced package changed digest: got %q, want %q (err=%v)", hashUnrelated, hash1, err)
-	}
-
-	// Modifying a transitive dependency must change the digest.
-	srcMgr.PkgSources["dep3"] = []string{`return 30.0;`}
-	hashChanged, err := SourceHash("trees/test", srcMgr, parseMockPackage)
-	if err != nil || hashChanged == hash1 {
-		t.Fatalf("transitive dependency edit did not change digest: %q (err=%v)", hashChanged, err)
-	}
-
-	// Changing file order within a package must change the digest.
-	srcMgr.PkgSources["trees/test"] = []string{`a = 1;`, `import "dep1"; return a;`}
-	hashOrderA, err := SourceHash("trees/test", srcMgr, parseMockPackage)
-	if err != nil {
-		t.Fatalf("SourceHash order A failed: %v", err)
-	}
-	srcMgr.PkgSources["trees/test"] = []string{`import "dep1"; return a;`, `a = 1;`}
-	hashOrderB, err := SourceHash("trees/test", srcMgr, parseMockPackage)
-	if err != nil {
-		t.Fatalf("SourceHash order B failed: %v", err)
-	}
-	if hashOrderA == hashOrderB {
-		t.Fatal("package file order was not preserved in SourceHash")
-	}
-
-	if got := ProgramSourceHash(nil); got != "" {
-		t.Fatalf("expected empty hash for nil program, got %q", got)
-	}
 }

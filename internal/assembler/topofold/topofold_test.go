@@ -3,6 +3,7 @@ package topofold
 import (
 	"testing"
 
+	"gradientcontrol.com/omega/core/assembler/topofold"
 	"gradientcontrol.com/omega/core/program"
 )
 
@@ -74,12 +75,12 @@ type mockResolver struct {
 	annotated map[int]*mockAnnotatedMesh
 }
 
-func (r *mockResolver) GetMesh(slot int) (MeshGeometry, bool) {
+func (r *mockResolver) GetMesh(slot int) (topofold.MeshGeometry, bool) {
 	m, ok := r.meshes[slot]
 	return m, ok
 }
 
-func (r *mockResolver) GetAnnotatedMesh(slot int) (AnnotatedMesh, bool, error) {
+func (r *mockResolver) GetAnnotatedMesh(slot int) (topofold.AnnotatedMesh, bool, error) {
 	am, ok := r.annotated[slot]
 	if !ok {
 		return nil, false, nil
@@ -158,8 +159,8 @@ func TestTopoFoldPointAndMeshQueries(t *testing.T) {
 		},
 	}
 
-	if !HasTopoCall(prog.Primary) {
-		t.Fatalf("expected HasTopoCall to be true")
+	if !hasTopoCall(prog.Primary) {
+		t.Fatalf("expected hasTopoCall to be true")
 	}
 
 	folded, err := FoldProgram(prog, resolver)

@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"math"
 
-	"gradientcontrol.com/omega/core/internal/meshslots"
+	"gradientcontrol.com/omega/core/assembler/meshslots"
 	"gradientcontrol.com/omega/core/internal/scope"
 	"gradientcontrol.com/omega/core/program"
 )

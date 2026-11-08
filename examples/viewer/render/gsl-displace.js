@@ -1,4 +1,4 @@
-// Displacement for the GSL raymarch viewers (webdm, webai, webedit).
+// Displacement for the GSL raymarch viewers (webai, webedit).
 //
 // The third row of a material record carries a signed height in millimetres
 // (`material.withDisplacement`). The renderer marches the displaced field,

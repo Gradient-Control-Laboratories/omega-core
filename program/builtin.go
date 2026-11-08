@@ -157,7 +157,7 @@ var builtinsMap = map[string]*BuiltinType{
 	"meshThickestPoints": {Name: "meshThickestPoints", MinArgs: 1, MaxArgs: 5},
 
 	// Simulated displacement field, sampled at a position. Unlike the mesh SDF
-	// oracles this is not per-asset: a casting simulation produces one field
+	// oracles this is not per-asset: a simulation produces one field
 	// for the whole scene, so there is no index to take.
 
 	"warpField": {Name: "warpField", MinArgs: 1, MaxArgs: 1},

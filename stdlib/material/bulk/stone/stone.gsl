@@ -1,0 +1,885 @@
+
+// Stone Materials (material/bulk/stone)
+//
+// Marble, granite, and flagstone: color-only presets (no displacement — see
+// each function's doc for the manufactured-relief alternative where one
+// exists). Marble follows what photographs of real slabs show: veins that
+// run along a direction, bend at every scale, taper, gather in zones and
+// carry smoky halos, over a clouded, grainy ground (calacatta, statuario,
+// carrara, or the directionless marble). Granite is a mosaic of crystals, one
+// mineral and one tone per Voronoi cell (Worley's cellular texture). Flagstone
+// darkens the joints between cells.
+//
+// Doc convention follows builtin/base.gsl: `///` lines are public docs.
+
+import "noise";
+import "color";
+import "material";
+import "texture";
+import "ease";
+import "material/coat/coating";
+
+/// stoneFinish(rough): shared non-metallic stone material — roughness
+/// `rough`, not metallic, ior 1.55 (typical for polished stone/mineral).
+stoneFinish(@range(0, 1) rough) {
+  return material.make(rough, 0, 1.55);
+}
+
+// Gradient noise at an explicit point rather than at p through remap: the
+// marble below samples several noise fields at one warped point, and keeping
+// the point an argument lets the compiler evaluate the warp once instead of
+// once per octave.
+gradientAt(q, size) {
+  return noise.gradientLattice(q / size);
+}
+
+// Three-octave fractal noise at q (noise.fbm3 at an explicit point).
+fbm3At(q, size, gain, lacunarity) {
+  return gradientAt(q, size) + gain * gradientAt(q, size / lacunarity) + gain * gain * gradientAt(q, size / (lacunarity * lacunarity));
+}
+
+// q moved by gradient noise size across and strength deep (texture.domainWarp
+// at an explicit point, with the same decorrelating offsets).
+warpAt(q, size, strength) {
+  return q + [gradientAt(q, size), gradientAt(q + [37.0, 0.0, 0.0], size), gradientAt(q + [0.0, 59.0, 0.0], size)] * strength;
+}
+
+// Veined marble, the model behind marble() and the named stones below. It
+// follows what photographs of real slabs show (Calacatta, Statuarietto,
+// Carrara), measured for vein cover, width, direction and clustering:
+//
+//   - Veins are either long sheets (Calacatta, Carrara), where fractal noise
+//     stretched along the vein direction crosses zero, or cracks (Statuario):
+//     the walls between Voronoi cells, straight runs that meet at angles,
+//     only some of them cracked and only those facing across the vein sheet,
+//     so they branch and end rather than outlining every cell.
+//   - They run along a direction: q is the point in a frame whose z axis is
+//     the vein direction, stretched so cells are longer along it.
+//   - A vein bends at every scale: large folds, then a fine jagged wander,
+//     warp the point before the cells are found.
+//   - A vein tapers and fades along its length, and veins gather in zones
+//     with clean stone between them.
+//   - Beside a vein is a soft smoky band, and cells a third the size give a
+//     finer, fainter network between the main veins.
+//   - The ground clouds faintly and has the sugary grain of the crystals.
+//
+// Widths and sizes are mm on the cut face; veinScale is the cell size.
+// `sheets` picks the vein kind: 1 for long continuous sheets (Calacatta,
+// Carrara), 0 for crack walls (Statuario's crazing). For crack walls,
+// crackShare is the share of walls that are veins; `facing` keeps only walls
+// whose normal lies within that cosine of the frame's x axis (-1 keeps all).
+// `sharpness` sets how crisp
+// a vein's edge is (1 crisp, lower softer, for feathery veins). clusterLevel
+// sets how much of the stone carries veins (about -0.4 all of it, 0 half, 0.4
+// a tenth). Mixed once in Oklab. Returns color.
+veinedMarble(q, sheets, foldSize, foldDepth, veinScale, veinWidth, sharpness, crackShare, facing, clusterSize, clusterLevel, haloStrength, fineStrength, groundColor, cloudColor, veinColor, accentColor) {
+  folded = warpAt(q, foldSize, foldDepth);
+  jagged = warpAt(folded, veinScale * 0.06, veinScale * 0.02);
+
+  // Main veins, as crack walls: f2 - f1 is about twice the distance to the
+  // wall, in cells.
+  f1, f2, nearCell, farCell = noise.cellularF1F2PairLattice(jagged / veinScale);
+  crackWall = (f2 - f1) * veinScale * 0.5;
+  // A wall's normal runs from one cell's feature point to the other's. Only
+  // walls facing across the sheet (q's x axis) by at least `facing` crack:
+  // a wall lying in the cut face would smear into a blotch, not a vein.
+  nearFeature = nearCell + noiseHash3(nearCell);
+  farFeature = farCell + noiseHash3(farCell);
+  wallNormal = normalize(farFeature - nearFeature);
+  sheetLike = texture.mask(abs(wallNormal.x), facing, 0.1);
+  // Whether the wall cracked comes from smooth noise read at the wall's own
+  // midpoint, so neighbouring walls decide alike and cracks chain into long
+  // veins instead of breaking into separate strokes; crackShare of the walls
+  // crack.
+  crackNoise = gradientAt((nearFeature + farFeature) * 0.5 * veinScale + [3, 11, 7], veinScale * 1.5);
+  crackGate = sheetLike * texture.mask(crackNoise, (0.5 - crackShare) * 0.6, 0.04);
+  // Or as sheets: where fractal noise crosses zero, long and continuous once
+  // the frame stretches it along the vein direction; |noise| grows at about
+  // 1.4 per veinScale across a surface, so this is the distance in mm.
+  // A gentle gain: where the broadest octave's slope flattens, strong finer
+  // octaves would take over and kink the vein into a zigzag.
+  sheetWall = abs(fbm3At(jagged, veinScale, 0.4, 2.1)) * veinScale / 1.4;
+  wall = sheets > 0.5 ? sheetWall : crackWall;
+  cracked = sheets > 0.5 ? 1 : crackGate;
+  // Width along the vein, from a fifth to about one and a half times
+  // veinWidth; the same noise shifts the vein's tint toward the accent.
+  along = gradientAt(q + [71, 13, 29], veinScale * 0.7);
+  halfWidth = 0.5 * veinWidth * (0.2 + 1.3 * texture.mask(along, -0.1, 0.5));
+  zone = texture.mask(gradientAt(q + [5, 101, 37], clusterSize), clusterLevel, 0.06);
+  vein = zone * cracked * (1 - texture.mask(wall, halfWidth, max(halfWidth / sharpness, pixelSize())));
+  // Kept close to the wall, where the pair of cells either side is still
+  // the pair that names it, so the band never ends at a hard edge.
+  halo = haloStrength * zone * cracked * (1 - texture.mask(wall, 2.5 * halfWidth, 1.5 * halfWidth));
+
+  // The finer network: cells a third the size, half their walls cracked,
+  // facing the same way a little more loosely, and strongest in the zones.
+  g1, g2, nearFine, farFine = noise.cellularF1F2PairLattice((jagged + [31, 17, 5]) / (veinScale / 3));
+  fineWall = (g2 - g1) * veinScale / 6;
+  fineNormal = normalize(farFine + noiseHash3(farFine) - nearFine - noiseHash3(nearFine));
+  fineCracked = (0.3 + 0.7 * zone) * texture.mask(abs(fineNormal.x), facing * 0.7, 0.1) * (noiseHash3(nearFine + farFine + [5, 2, 13]).x < 0.5 ? 1 : 0);
+  fineHalf = 0.3 * halfWidth;
+  fine = fineStrength * fineCracked * (1 - texture.mask(fineWall, fineHalf, max(fineHalf / sharpness, pixelSize())));
+
+  cloud = texture.mask(gradientAt(folded + [19, 3, 47], veinScale * 1.5) + 0.5 * gradientAt(folded + [19, 3, 47], veinScale * 0.75), 0.15, 0.35);
+  grain = (noiseHash3(floor(p / 0.35) + [9, 0, 0]).x - 0.5) * 0.025 * texture.fadeDetail(0.35);
+
+  groundLab = color.rgb2oklab(groundColor);
+  ground = groundLab + (color.rgb2oklab(cloudColor) - groundLab) * clamp(0.5 * cloud + halo, 0, 1) + [grain, 0, 0];
+  veinLab = color.rgb2oklab(veinColor);
+  tinted = veinLab + (color.rgb2oklab(accentColor) - veinLab) * texture.mask(along, 0.3, 0.25);
+  return color.oklab2rgb(ground + (tinted - ground) * max(vein, 0.7 * fine));
+}
+
+// The frame veined marble is read in: veins are sheets that contain
+// `direction` and the vertical (or, for a vertical direction, x), so on a
+// flat slab they cut the face as crisp traces along `direction` instead of
+// smearing where a sheet would lie nearly in the face. Cells are stretched
+// `stretch` times along both axes of the sheet.
+marbleFrame(direction, stretch) {
+  along = normalize(direction);
+  up = abs(along.z) > 0.9 ? [1, 0, 0] : [0, 0, 1];
+  across = normalize(cross(along, up));
+  sheet = cross(across, along);
+  return [dot(p, across), dot(p, sheet) / stretch, dot(p, along) / stretch];
+}
+
+/// marble(scale, veinSpacing, veinWidth, warp, baseColor, veinColor): veined
+/// marble with no preferred direction, the pattern similar at any `scale`:
+/// folds `scale` mm across and `warp` of that deep bend veins that sit
+/// `veinSpacing` of it apart and are about `veinWidth` of it wide (0.4, 0.016
+/// and 0.4 for the ready-made stone), tapering and fading along their length,
+/// with a finer network between them, gathered in zones over a faintly
+/// clouded, grainy baseColor ground. See calacatta, statuario and carrara for
+/// real stones, with a vein direction. Color only.
+marble(@range(5, 200) scale, @range(0.1, 1) veinSpacing, @range(0.002, 0.1) veinWidth, @range(0, 1) warp, @color baseColor, @color veinColor) {
+  veinScale = veinSpacing * scale;
+  veinThickness = veinWidth * scale;
+  // Stand-in: the ground takes 16.3% of its cloud colour on average and the
+  // veins cover 1 - exp(-1.9 veinThickness / veinScale) of it (sampled).
+  groundLab = color.rgb2oklab(baseColor);
+  meanGround = groundLab + (color.rgb2oklab(baseColor * 0.9) - groundLab) * 0.163;
+  veined = veinedMarble(p, 0, scale, warp * scale, veinScale, veinThickness, 0.8, 0.45, -1, veinScale * 3, -0.2, 0.25, 0.5, baseColor, baseColor * 0.9, veinColor, veinColor);
+  veined.simple = color.oklab2rgb(meanGround + (color.rgb2oklab(veinColor) - meanGround) * (1 - exp(-1.9 * veinThickness / veinScale)));
+  return veined;
+}
+
+/// calacatta(direction): Calacatta marble: warm white with sparse, long grey
+/// veins 2 to 14 mm wide running along `direction`, gold where they thin, with
+/// soft smoky bands beside them, gathered in zones about 300 mm across with
+/// clean stone between (about two thirds of the stone carries veins). Sized for slabs a
+/// metre or more across. Color only; pair it with physical.marble.
+calacatta(@direction direction) {
+  // The stand-in is its mean in Oklab, sampled.
+  slab = veinedMarble(marbleFrame(direction, 4), 1, 400, 35, 220, 9, 0.7, 0.6, 0.6, 300, -0.2, 0.7, 0.15, [0.94, 0.93, 0.91], [0.84, 0.83, 0.81], [0.45, 0.45, 0.46], [0.70, 0.58, 0.40]);
+  slab.simple = color.oklab2rgb([0.9265, 0.0007, 0.0069]);
+  return slab;
+}
+
+// The frame for a network of vein sheets: p in a frame whose z axis is
+// `direction`, divided by alongStretch along it and by sheetStretch along the
+// sheet axis (the vertical, or x for a vertical direction), so cell walls
+// stand across the face a slab is cut on rather than lying in it.
+veinFrame(direction, alongStretch, sheetStretch) {
+  along = normalize(direction);
+  up = abs(along.z) > 0.9 ? [1, 0, 0] : [0, 0, 1];
+  across = normalize(cross(along, up));
+  sheet = cross(across, along);
+  return [dot(p, across), dot(p, sheet) / sheetStretch, dot(p, along) / alongStretch];
+}
+
+// The feature point of 2D cell c at depth band zBand, blended toward the
+// next band's by t, so the cells drift and trade neighbors with depth.
+sheetPoint(c, zBand, t) {
+  lo = noiseHash3([c.x, c.y, zBand], 1);
+  hi = noiseHash3([c.x, c.y, zBand + 1], 1);
+  h = lo + (hi - lo) * t;
+  return c + [h.x, h.y];
+}
+
+// sheetEdge(q, size, depth): the distance in mm from q to the nearest wall of
+// a 2D Voronoi network in q's x and z, cells `size` across, whose cells drift
+// and trade neighbors over `depth` mm along q.y, and a random vec3 in
+// [0,1)^3 that is the same all along that wall, to crack some walls and not
+// others. The walls are sheets standing across the x-z face, so on that face
+// every wall keeps its width (a 3D network cut by a plane smears the walls
+// that lie nearly in it), and on a face along y they show as streaks, as a
+// vein sheet does on a slab's edge. Quilez's two-pass edge distance: the
+// nearest point over 3x3 cells, then the walls over 5x5 around it (3x3 left
+// seams where a wall two cells off went unfound).
+// (`depth` is in q's units; the frame may divide y.)
+sheetEdge(q, size, depth) {
+  uv = [q.x, q.z] / size;
+  base = floor(uv);
+  band = q.y / depth;
+  zBand = floor(band);
+  t = ease.cubic(fract(band));
+  offsets = [[-1, -1], [0, -1], [1, -1], [-1, 0], [0, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
+  nearest = reduce([64, 0, 0], (a, o) {
+    v = sheetPoint(base + o, zBand, t) - uv;
+    d = dot(v, v);
+    return d < a.x ? [d, v.x, v.y] : a;
+  }, offsets);
+  mr = [nearest.y, nearest.z];
+  // The walls are searched around the nearest point's own cell, so a wall
+  // two cells from the point's cell is still found.
+  home = floor(uv + mr);
+  wide = [[-2, -2], [-1, -2], [0, -2], [1, -2], [2, -2], [-2, -1], [-1, -1], [0, -1], [1, -1], [2, -1], [-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0], [-2, 1], [-1, 1], [0, 1], [1, 1], [2, 1], [-2, 2], [-1, 2], [0, 2], [1, 2], [2, 2]];
+  edge = reduce([64, 0, 0], (a, o) {
+    r = sheetPoint(home + o, zBand, t) - uv;
+    gap = r - mr;
+    toWall = dot(0.5 * (mr + r), normalize(gap + [0.000001, 0]));
+    return dot(gap, gap) > 0.00001 && toWall < a.x ? [toWall, r.x, r.y] : a;
+  }, wide);
+  // A feature point lies inside its own cell, so the cells either side of
+  // the wall are where the two points are.
+  pair = home + floor(uv + [edge.y, edge.z]);
+  return edge.x * size, noiseHash3([pair.x, pair.y, 17], 1);
+}
+
+// A line from the distance to its center: halfWidth mm either side, soft mm
+// of blur at its edges; under a pixel it is drawn a pixel wide and as much
+// fainter, so it keeps its share of the pixel.
+softLine(distance, halfWidth, soft) {
+  drawn = max(halfWidth, 0.5 * pixelSize());
+  blur = max(soft, 0.5 * pixelSize());
+  return (1 - texture.mask(distance, drawn, blur)) * halfWidth / drawn;
+}
+
+// Statuario's vein network, read at p in the vein frame: a main network of
+// cells 36 mm across, 70% of its walls cracked dark, and a finer one of 15 mm
+// cells, 70% cracked faint gray, both bent by folds and a jagged wander. Returns the vein
+// cover (0..1, how dark), and the halo (0..1).
+statuarioNetwork() {
+  folded = remap(noise.warp(16, 2.5), noise.warp(60, 9));
+  jagged = remap(noise.warp(1.3, 0.25), remap(noise.warp(3.5, 0.9), folded));
+  wall, wallHash = sheetEdge(jagged, 36, 30);
+  // What varies smoothly along a vein (its width, its tone, the smoke beside
+  // it) comes from noise; what belongs to one wall (whether it cracked)
+  // comes from its hash and touches only the line itself,
+  // since the nearest wall changes abruptly where two walls are equally near.
+  width = 0.12 + 1.0 * texture.mask(noise.gradient(25) + 0.5 * noise.gradient(9), 0.05, 0.3);
+  tone = 0.6 + 0.4 * texture.mask(noise.gradient(18), -0.1, 0.25);
+  cracked = wallHash.x < 0.7 ? 1 : 0.15;
+  fringe = tone * texture.mask(noise.gradient(2.5), -0.1, 0.25);
+  vein = max(cracked * tone * softLine(wall, width, 0.45 + 0.3 * width), 0.35 * fringe * softLine(wall, 1.5 * width, 0.3 + 0.5 * width));
+  smoke = texture.mask(noise.gradient(7), 0.05, 0.2);
+  halo = tone * (0.15 + 0.85 * smoke) * (1 - texture.mask(wall, 2 * width + 1, 1 + 1.5 * width)) + 0.5 * tone * smoke * (1 - texture.mask(wall, 3, 3));
+  midWall, midHash = sheetEdge(jagged + [31, 17, 5], 15, 15);
+  midTone = texture.mask(noise.gradient(9), -0.15, 0.2);
+  mid = (0.3 + 0.35 * midHash.z) * (midHash.x < 0.7 ? 1 : 0) * midTone * softLine(midWall, 0.15 + 0.3 * midHash.y, 0.6);
+  midHalo = 0.5 * midTone * smoke * (1 - texture.mask(midWall, 1.2, 1.2));
+  return max(vein, mid), max(halo, 0.6 * midHalo);
+}
+
+/// statuario(direction): Statuario-type marble (after Statuarietto tiles): a
+/// bright white ground crazed by a connected network of dark gray veins that
+/// branch, wander and vary from hairline to 2 mm across, enclosing irregular
+/// cells 20 to 50 mm across, with fainter gray veins between them and patchy
+/// gray smoke beside them, loosely following `direction`. The veins are
+/// sheets: a face across the sheet axis shows the network crisp, a face along
+/// it shows it drawn out. Sized for tiles and slabs from 300 mm up. Color
+/// only; pair it with physical.marble.
+statuario(@direction direction) {
+  vein, halo = remap(statuarioNetwork(), veinFrame(direction, 1.1, 1));
+  cloud = texture.mask(noise.fbm(30, 3, 0.5, 2), -0.05, 0.35);
+  grain = noise.fbm(0.8, 2, 0.5, 2) + (noiseHash3(floor(p / 0.25) + [9, 0, 0]).x - 0.5) * texture.fadeDetail(0.25);
+  groundLab = color.rgb2oklab([0.965, 0.965, 0.97]);
+  ground = groundLab + [-0.06 * cloud - 0.11 * halo + 0.012 * grain, 0, 0];
+  veinLab = color.rgb2oklab([0.20, 0.21, 0.22]);
+  slab = color.oklab2rgb(ground + (veinLab - ground) * vein);
+  // The stand-in is its mean in Oklab over 8000 points in a 400 mm cube:
+  // L 0.8904 a +0.0003 b -0.0018 along [1, 0.2, 0.1], L 0.8875 along +Z.
+  slab.simple = color.oklab2rgb([0.889, 0.0003, -0.0018]);
+  return slab;
+}
+
+// Carrara's wisps, read at p in the vein frame: the soft gray zones (0..1)
+// and the short darker dashes inside them (0..1).
+carraraWisps() {
+  w = noise.warp(30, 6);
+  zone = remap(texture.mask(noise.fbm(18, 3, 0.6, 2), 0.1, 0.35), w);
+  feathered = remap(noise.warp(2, 0.6), w);
+  dash = remap(texture.mask(noise.fbm(3.5, 3, 0.55, 2), 0.34, 0.25), [feathered.x, feathered.y, feathered.z / 2.5]);
+  return zone, dash;
+}
+
+/// carrara(direction): Carrara marble: a bright white ground, clouded softly
+/// at 15 to 40 mm, with gray wisps drawn out along `direction` that carry
+/// short darker feathered dashes, over the fine sugary grain of the crystals
+/// (0.3 mm). Low in contrast. Color only; pair it with physical.marble.
+carrara(@direction direction) {
+  zone, dash = remap(carraraWisps(), veinFrame(direction, 1.4, 4));
+  cloud = noise.fbm(16, 3, 0.45, 2);
+  grain = 0.3 * noise.fbm(1, 2, 0.6, 2) + (noiseHash3(floor(p / 0.3) + [9, 0, 0]).x - 0.5) * 1.3 * texture.fadeDetail(0.3);
+  groundLab = color.rgb2oklab([0.956, 0.957, 0.957]);
+  ground = groundLab + [0.035 * cloud + 0.03 * grain - 0.04 * zone - 0.13 * zone * zone * dash, 0.0005 * zone, -0.003 * zone - 0.004 * dash];
+  slab = color.oklab2rgb(ground);
+  // The stand-in is its mean in Oklab over 8000 points in a 400 mm cube:
+  // L 0.9493 a -0.0001 b -0.0016 along [1, 0.2, 0.1], L 0.9489 along +Z.
+  slab.simple = color.oklab2rgb([0.949, -0.0001, -0.0016]);
+  return slab;
+}
+
+// One level of the granite's grains: on a unit lattice at q, the distance to
+// the nearest feature point (f1), the distance to the wall between it and the
+// second nearest (the bisector, so a line drawn from it keeps one width,
+// where F2 - F1 swells), and the nearest and second-nearest lattice cells,
+// all in cells.
+grainAt(q) {
+  f1 = worleyF1(q, 1);
+  f2 = worleyF2(q, 1);
+  near = worleyNearCell(q, 1);
+  far = worleyFarCell(q, 1);
+  gap = length(far + noiseHash3(far, 1) - near - noiseHash3(near, 1));
+  return f1, (f2 * f2 - f1 * f1) / (2 * max(gap, 0.001)), near, far;
+}
+
+// The soft floor under the dark minerals' lightness: no mineral on a polished
+// face is darker than about 3% albedo (Oklab L 0.30). Biotite and hornblende
+// measure there in photographs of polished granite (the darkest 1% of Azul
+// Platino and Capao Bonito, 2.5 to 3% linear); pure black would read as a hole.
+darkFloor(L) {
+  return 0.5 * (L + 0.30 + sqrt((L - 0.30) * (L - 0.30) + 0.0064));
+}
+
+// Whether grain cell c (cells `size` across, crystals s across) holds a
+// mineral: where clustering noise read at the grain's center, zones `zone`
+// crystals across weighted zoneWeight and clumps `clump` across, beats the
+// grain's own hash (offset `seed`, weighted `scatter`) by `level`. A grain
+// decides as a whole, so the mineral's edge is the grain's.
+grainOf(c, size, s, zone, zoneWeight, clump, seed, scatter, level) {
+  at = (c + noiseHash3(c, 1)) * size;
+  cluster = zoneWeight * noise.gradientLattice(at / (zone * s) + seed) + 0.6 * noise.gradientLattice(at / (clump * s) + seed * 1.7);
+  return cluster - scatter * noiseHash3(c + seed).x > level ? 1 : 0;
+}
+
+// Quartz grains (cells g across): clumps about a crystal across, gathered in
+// zones four crystals across, about a third of the stone.
+quartzOf(c, g, s) {
+  return grainOf(c, g, s, 4, 0.75, 1.2, [7.3, 3.1, 11.7], 0.8, -0.31);
+}
+
+// Dark grains (cells t across): aggregates of small grains, a little likelier
+// beside the quartz, about 7% of the stone.
+maficOf(c, t, s, nearQuartz) {
+  return grainOf(c, t, s, 4, 0.25, 0.6, [13.1, 7.7, 2.3], 0.25, 0.17 - 0.15 * nearQuartz);
+}
+
+// The granite's grains, crystals s across, as photographs of polished
+// granite show them (Azul Platino, Capao Bonito, Rosa Porrino, Columbia
+// Pink): a ground of feldspar crystals s across, quartz in grains about half
+// that, clumped and zoned, and dark minerals in aggregates of grains about a
+// sixth of it. Every boundary is wavy (the lookups are warped) and a quartz
+// or dark grain's edge is soft across the wall, as a translucent crystal's
+// is. Returns, for the shading and the finishes: the quartz grain's lattice
+// point sq and its cell, f1 and wall distance (cells of g = 0.45 s); the
+// quartz weight (0 to 1, soft at the edges) and whether the grain is quartz;
+// the dark-mineral weight; whether the point is a plagioclase grain; the
+// feldspar crystal's wall distance (mm) and hash; and the dark grain's hash.
+graniteGrains(s) {
+  w = noise.warp(1.3 * s, 0.22 * s);
+  bf1, bwall, big, bigFar = grainAt(w / s);
+  bh = noiseHash3(big + [101, 0, 0]);
+  // A finer warp rounds the quartz: it is not cut in straight lines.
+  g = 0.45 * s;
+  sq = (w + noise.warp(0.5 * s, 0.08 * s) - p + [37.1, 11.3, 5.9] * s) / g;
+  sf1, swall, small, smallFar = grainAt(sq);
+  sh = noiseHash3(small + [7, 29, 0]);
+  sAcross = 2 * texture.mask(swall * g, 0, 0.05 * s) - 1;
+  quartzIn = quartzOf(small, g, s);
+  inQuartz = quartzIn * (0.5 + 0.5 * sAcross) + quartzOf(smallFar, g, s) * (0.5 - 0.5 * sAcross);
+  // Some of the other small grains are paler plagioclase among the feldspar.
+  plag = sh.x < 0.15 ? 1 - quartzIn : 0;
+  t = 0.15 * s;
+  tf1, twall, tiny, tinyFar = grainAt((w + [5.3, 61.7, 17.1] * s) / t);
+  th = noiseHash3(tiny + [3, 0, 41]);
+  tAcross = 2 * texture.mask(twall * t, 0, 0.05 * s) - 1;
+  mafic = maficOf(tiny, t, s, quartzIn) * (0.5 + 0.5 * tAcross) + maficOf(tinyFar, t, s, quartzIn) * (0.5 - 0.5 * tAcross);
+  return sq, small, sf1, swall * g, sh, inQuartz, mafic, plag, bwall * s, bh, th;
+}
+
+// The shaded mosaic in Oklab, unfaded, and the weights of its minerals:
+// feldspar, plagioclase, quartz and dark minerals, which sum to 1.
+graniteMosaic(s, @color baseColor, @color fleckColorA, @color fleckColorB) {
+  sq, small, sf1, swall, sh, inQuartz, mafic, plag, bwall, bh, th = graniteGrains(s);
+  // Feldspar: one tone a crystal, clouded, with faint cleavage streaks in the
+  // crystal's own direction, frosted white (its cloudy alteration) and paler
+  // and grayer at its rim. Fine terms fade under a pixel to their means.
+  feldLab = color.rgb2oklab(baseColor);
+  dir = normalize(bh - 0.5 + [0.0001, 0, 0]);
+  along = dot(p, dir);
+  streak = noise.gradientLattice((p - dir * along) / (0.08 * s) + dir * along / (0.8 * s)) * texture.fadeDetail(0.08 * s);
+  cloud = noise.gradientLattice(p / (0.3 * s) + [1.7, 9.1, 4.4]) + 0.15 * texture.fadeDetail(0.12 * s) * noise.gradientLattice(p / (0.12 * s) + [8.2, 2.6, 7.3]) + 0.4 * noise.gradientLattice(p / (0.9 * s) + [4.2, 6.6, 1.3]);
+  // |gradient noise| averages 0.157 (noise.absGradientMean), so frost
+  // averages 0.235 and fades to it.
+  frost = texture.fadeTo(abs(noise.gradientLattice(p / (0.15 * s) + [6.1, 4.9, 2.2])), 0.157, 0.15 * s) + 0.5 * texture.fadeTo(abs(noise.gradientLattice(p / (0.06 * s) + [1.1, 3.5, 8.8])), 0.157, 0.06 * s);
+  rim = 1 - texture.mask(bwall, 0.06 * s, 0.05 * s);
+  feldspar = feldLab + [(bh.y - 0.5) * 0.1 + 0.1 * cloud + 0.015 * streak + 0.04 * rim + 0.12 * (frost - 0.235) * (0.5 + rim), 0, 0] - [0, feldLab.y, feldLab.z] * (0.3 * rim);
+  // Plagioclase: paler than the feldspar and half its chroma.
+  plagLab = feldLab + [0.06 + (sh.y - 0.5) * 0.06 + 0.04 * cloud + 0.12 * (frost - 0.235), -0.5 * feldLab.y, -0.5 * feldLab.z];
+  // Quartz: clear, so it shows dark (its lightness pulled 0.45 of the way to
+  // 0.5, a fifth of its chroma lost), a tone and a tint a grain, darker
+  // toward each grain's core as a clear crystal looks when you see into it,
+  // lit across from one side, a little milky, with faint pale cracks between
+  // grains.
+  quartzLab = color.rgb2oklab(fleckColorB);
+  glass = [quartzLab.x + (0.5 - quartzLab.x) * 0.45, quartzLab.y * 0.8, quartzLab.z * 0.8];
+  core = 1 - texture.mask(sf1, 0.3, 0.25);
+  lean = dot(sq - small - noiseHash3(small, 1), normalize(sh - 0.5 + [0, 0.0001, 0]));
+  crack = (1 - texture.mask(swall, 0.02 * s, 0.015 * s)) * texture.fadeDetail(0.05 * s);
+  quartz = glass + [(sh.z - 0.5) * 0.12 - 0.1 * core + 0.05 * lean + 0.01 * crack + 0.02 * cloud + 0.06 * (frost - 0.235), -0.003 * core, -0.01 * core + (sh.y - 0.5) * 0.02];
+  // Dark minerals: no darker than 3% albedo, a tone a grain, one grain in
+  // twelve browned (altered biotite), one in twenty-five a flake catching
+  // the light.
+  darkLab = color.rgb2oklab(fleckColorA);
+  dark = [darkFloor(darkLab.x), darkLab.y, darkLab.z] + [(th.y - 0.5) * 0.06 + (th.z > 0.96 ? 0.12 : 0), 0, 0] + (th.z < 0.08 ? [0.03, 0.01, 0.02] : [0, 0, 0]);
+  // Broad clouding, ten crystals across and less, as a translucent stone
+  // looks in depth.
+  broad = 0.15 * noise.gradientLattice(p / (3 * s) + [2.9, 8.3, 6.1]) + 0.08 * noise.gradientLattice(p / (1.4 * s) + [9.4, 1.2, 3.8]);
+  ground = feldspar + (plagLab - feldspar) * plag;
+  felsic = ground + (quartz - ground) * inQuartz + [broad, 0, 0];
+  crystal = felsic + (dark - felsic) * mafic;
+  wQuartz = (1 - mafic) * inQuartz;
+  wPlag = (1 - mafic) * (1 - inQuartz) * plag;
+  return crystal, (1 - mafic) * (1 - inQuartz) * (1 - plag), wPlag, wQuartz, mafic;
+}
+
+// granite's average color in Oklab, the mosaic's mean, which it fades to
+// when too small to resolve: the minerals in their shares, feldspar 0.507,
+// plagioclase 0.087 (half the feldspar's chroma), quartz 0.330 (as glass)
+// and dark 0.076 (on the floor), and their shading, which is additive in
+// Oklab and so the same constant whatever the colors: +0.0076 L, -0.0001 a,
+// -0.0004 b over the stone (the feldspar's frost and paler rims, the
+// plagioclase's lift, the quartz's darker cores, the dark grains' glints and
+// browning), less 0.046 of the feldspar's chroma, grayed at its rims. Shares
+// and shading measured over 3 x 8000 points in a 400 mm cube with the gsl
+// CLI; the mean is affine in the three colors' Oklab (checked against a pink
+// feldspar to 1e-4).
+graniteAverage(@color baseColor, @color fleckColorA, @color fleckColorB) {
+  feldLab = color.rgb2oklab(baseColor);
+  quartzLab = color.rgb2oklab(fleckColorB);
+  darkLab = color.rgb2oklab(fleckColorA);
+  glass = [quartzLab.x + (0.5 - quartzLab.x) * 0.45, quartzLab.y * 0.8, quartzLab.z * 0.8];
+  return feldLab * 0.507 + (feldLab - [0, feldLab.y, feldLab.z] * 0.5) * 0.087 + glass * 0.330 + [darkFloor(darkLab.x), darkLab.y, darkLab.z] * 0.076 - [0, feldLab.y, feldLab.z] * 0.046 + [0.0076, -0.0001, -0.0004];
+}
+
+/// granite(cellSize, baseColor, fleckColorA, fleckColorB): polished granite
+/// as photographs of real slabs show it: a ground of feldspar crystals
+/// about cellSize mm across (baseColor), each its own tone, clouded and
+/// frosted white, paler at its rim, with some paler plagioclase grains;
+/// quartz (fleckColorB, seen as clear glass: darker and grayer) in grains
+/// about half that size, clumped and gathered in zones, about a third of
+/// the stone, each darker toward its core; and dark mica and hornblende
+/// (fleckColorA, never darker than 3% albedo) in ragged aggregates of small
+/// grains, about 7%. Boundaries are wavy and soft where a translucent
+/// crystal meets another. Color only; pair it with graniteFinish for glassier
+/// quartz and shinier mica.
+granite(@range(0.5, 30) cellSize, @color baseColor, @color fleckColorA, @color fleckColorB) {
+  crystal, wFeldspar, wPlag, wQuartz, wDark = graniteMosaic(cellSize, baseColor, fleckColorA, fleckColorB);
+  average = graniteAverage(baseColor, fleckColorA, fleckColorB);
+  crystals = color.oklab2rgb(average);
+  crystals.detail = color.oklab2rgb(average + (crystal - average) * texture.fadeDetail(0.6 * cellSize));
+  crystals.detailSize = 0.6 * cellSize;
+  crystals.simple = color.oklab2rgb(average);
+  return crystals;
+}
+
+/// graniteFinish(cellSize, rough): the material to go with granite(cellSize,
+/// ...): the polished stone finish at roughness `rough` on the feldspar, with
+/// each quartz grain glassier (a third of the roughness) and each dark grain
+/// shinier (half of it), grain by grain from the same mosaic.
+graniteFinish(@range(0.5, 30) cellSize, @range(0, 1) rough) {
+  sq, small, sf1, swall, sh, inQuartz, mafic, plag, bwall, bh, th = graniteGrains(cellSize);
+  finish = stoneFinish(rough * (1 - 0.67 * (1 - mafic) * inQuartz - 0.5 * mafic));
+  // Stand-in: the minerals in their shares (quartz 0.330, dark 0.076).
+  finish.simple = stoneFinish(rough * (1 - 0.67 * 0.330 - 0.5 * 0.076));
+  return finish;
+}
+
+/// graniteFacetFinish(cellSize, rough, tilt, gleam): graniteFinish for a
+/// granite whose quartz throws light back: each quartz grain is a small
+/// mirror tilted its own way (render-only displacement, rising `tilt` mm per
+/// mm across the grain), as a cleavage plane just under the polish catches
+/// the light, so the grains glint one by one as the view moves; the quartz is
+/// glassy (a fifth of `rough`) with a reflection strengthened by `gleam` (0 to
+/// 1, the metallic weight standing in for light reflected back from inside
+/// the crystal). Feldspar and dark minerals as in graniteFinish.
+graniteFacetFinish(@range(0.5, 30) cellSize, @range(0, 1) rough, tilt, @range(0, 1) gleam) {
+  sq, small, sf1, swall, sh, inQuartz, mafic, plag, bwall, bh, th = graniteGrains(cellSize);
+  g = 0.45 * cellSize;
+  quartz = (1 - mafic) * inQuartz;
+  facet = (noiseHash3(small + [17, 53, 0]) - 0.5) * 2;
+  lean = dot(sq - small - noiseHash3(small, 1), facet) * g * tilt;
+  base = stoneFinish(rough * (1 - 0.5 * mafic));
+  // Too small to resolve, the facets fade flat and their tilts, 0.816 tilt
+  // root mean square in the surface, widen the quartz's lobe instead.
+  glassy = sqrt(texture.reliefRoughness(rough * rough * 0.04, 0.816 * tilt, g));
+  facets = material.withDisplacement(material.blend(base, material.make(glassy, gleam, 1.55), quartz), quartz * lean * texture.fadeDetail(g));
+  // Stand-in: the minerals in their shares (quartz 0.330, dark 0.076), the
+  // quartz's facets too small to see, their tilts in its lobe.
+  facets.simple = material.make(rough * (1 - 0.330 - 0.5 * 0.076) + 0.330 * sqrt(sqrt(0.0016 * rough * rough * rough * rough + 0.666 * tilt * tilt)), gleam * 0.330, 1.55);
+  return facets;
+}
+
+// cellWall(q, size): the distance in mm from q to the nearest wall of a
+// Voronoi network of cells `size` across (the cellular builtins' lattice),
+// and the lattice cell of the nearest point, constant over the cell:
+// noise.voronoiEdge's two passes, keeping the cell, so a joint keeps one
+// width along every wall and each stone can take its own tone.
+cellWall(q, size) {
+  u = q / size;
+  base = floor(u);
+  nearest = reduce([64, 0, 0, 0], (a, o) {
+    v = noise.voronoiPoint(base + o, 1) - u;
+    d = dot(v, v);
+    return d < a.x ? [d, v.x, v.y, v.z] : a;
+  }, noise.cellularOffsets());
+  mr = [nearest.y, nearest.z, nearest.w];
+  wall = reduce(64, (a, o) {
+    r = noise.voronoiPoint(base + o, 1) - u;
+    gap = r - mr;
+    toWall = dot(0.5 * (mr + r), normalize(gap + [0.000001, 0, 0]));
+    return dot(gap, gap) > 0.00001 ? min(a, toWall) : a;
+  }, noise.cellularOffsets());
+  // A feature point lies inside its own lattice cell.
+  return wall * size, floor(u + mr);
+}
+
+/// flagstone(cellSize, baseColor, jointColor): irregular flagstone paving,
+/// after photographs of laid slabs: slabs about cellSize mm across
+/// (Voronoi cells, their walls bent and corners rounded), each its own
+/// shade and warmth about baseColor, clouded at a quarter and a twentieth
+/// of its size, with a worn, paler arris and a 0.8 mm grain; joints about
+/// a fifteenth of a slab wide, wider and narrower along their length, of
+/// gritty jointColor, darker down the middle. Every joint keeps its width
+/// along a wall (a true wall distance, where F2 - F1 swells). Color only;
+/// for manufactured joint relief subtract the joints from the slab's
+/// geometry yourself (`noise.voronoiEdge(cellSize, 1)` is the wall
+/// distance), which is the caller's own Lipschitz responsibility.
+flagstone(@range(20, 1000) cellSize, @color baseColor, @color jointColor) {
+  // Slabs a little out of true: the walls bend and the corners round.
+  q = remap(noise.warp(0.4 * cellSize, 0.03 * cellSize), p);
+  wall, cell = cellWall(q, cellSize);
+  pick = noiseHash3(cell + [31, 7, 59]);
+  // Joints about a thirtieth of the slab either side, wider and narrower
+  // along their length, with a soft edge.
+  half = 0.035 * cellSize * (1 + 0.6 * noise.gradient(0.4 * cellSize));
+  joint = 1 - texture.mask(wall, half, max(0.006 * cellSize, pixelSize()));
+  // Each slab its own shade and warmth; clouded at a quarter and a
+  // twentieth of its size; a worn, paler arris along its edge; grain 0.8 mm.
+  baseLab = color.rgb2oklab(baseColor);
+  mottle = 0.045 * noise.fbm(0.25 * cellSize, 3, 0.5, 2) + 0.04 * noise.fbm(0.04 * cellSize, 3, 0.6, 2);
+  arris = 1 - texture.mask(wall - half, 0.03 * cellSize, 0.02 * cellSize);
+  grain = (texture.grainShade(0.8, 1) - 1) * 0.03;
+  slab = [baseLab.x + 0.1 * (pick.x - 0.5) + mottle + 0.03 * arris + grain, baseLab.y * (0.75 + 0.5 * pick.y), baseLab.z * (0.75 + 0.5 * pick.y)];
+  // The joint: grit and soil, darker down its middle.
+  jointLab = color.rgb2oklab(jointColor);
+  grit = (texture.grainShade(1.5, 1) - 1) * 0.05 + 0.03 * noise.fbm(6, 2, 0.5, 2);
+  gap = 1 - texture.mask(wall, 0.4 * half, 0.4 * half);
+  fill = jointLab + [grit - 0.03 * gap, 0, 0];
+  paving = color.oklab2rgb(slab + (fill - slab) * joint);
+  // Stand-in: the joints cover 19.0% of it, and the shading lifts it by
+  // 0.0011 L, since only the arris is not centered (measured over 8000
+  // points in 400 mm cubes at cells of 10, 20 and 40 mm; the shares are
+  // the same at any size).
+  paving.simple = color.oklab2rgb(baseLab * 0.81 + jointLab * 0.19 + [0.0011, 0, 0]);
+  return paving;
+}
+
+// --- The mason's stones ---
+//
+// Beyond the granite, marble and flagstone above: riven slate, travertine
+// with its pores, vesicular basalt, obsidian, and the quartz slab that is
+// ground quartz in resin. Each returns material, color, height and slope,
+// as the coats do, where the presets above return material and colour.
+// A pore, a bubble or a flake is a cellular feature point with a radius,
+// as the concretes' stones are, and the share of a face inside them goes
+// as the cube of the radius over the spacing, 3.5 (r / spacing)^3 fitted
+// to the measurements under exposedAggregate; the spacing comes from the
+// share asked for.
+
+// poreSpacing(radius, share): the cellular spacing that puts pores of
+// `radius` over `share` of a face, by the fit above.
+poreSpacing(radius, share) {
+  return radius / pow(max(share, 0.002) / 3.5, 0.3333);
+}
+
+// Travertine's pores at p, in a frame drawn out `stretch` times along
+// `bed` (unit): pits on cells `size` across, of radius `radius` of a cell
+// at most, where `gate` (0..1) lets them, and only `share` of the cells,
+// each pit's radius its own and its outline ragged. Returns how much of the
+// point is pore (0..1), how deep into it (0 at the rim, 1 at the core), and
+// the cell's hash, to fill some pores and not others.
+travertinePits(bed, stretch, size, radius, share, gate) {
+  w = remap(noise.warp(0.5 * size, 0.3 * size), p);
+  q = w - bed * (dot(w, bed) * (1 - 1 / stretch));
+  f1, f2, cell = remap(noise.cellularCell(size), q);
+  pick = noiseHash3(cell + [17, 83, 5]);
+  r = size * radius * (0.3 + 0.7 * pick.y);
+  chosen = (pick.x < share ? 1 : 0) * gate;
+  pit = chosen * texture.mask(r - f1, 0, max(0.1 * r, 0.5 * pixelSize()));
+  core = chosen * texture.mask(r - f1, 0.35 * r, 0.35 * r);
+  return pit, core, pick;
+}
+
+/// travertine(stoneColor, bedding, poreSize, filled, gloss): travertine of
+/// `stoneColor` (cream to walnut) cut across its bedding, which runs along
+/// `bedding`: softly clouded and banded along it, paler in porous layers
+/// along it where small ragged pits gather, about a third of poreSize mm
+/// across and drawn out along the bedding, with here and there a cavity
+/// (poreSize 3 to 20; pores about 3% of the face), each pit dark and
+/// browner at its core and 1 mm deep, `filled` of them (0 to 1) grouted
+/// flush in a lighter, grayer filler; honed or polished to `gloss` units.
+/// Returns material, stoneColor, height and slope.
+travertine(@color stoneColor, @direction bedding, @range(3, 20) poreSize, @range(0, 1) filled, @range(0, 100) gloss) {
+  bed = normalize(bedding);
+  // The ground: soft clouds drawn out three times along the bedding, and
+  // finer bands drawn out eight times, both centered.
+  cloud = noise.anisotropic(5 * poreSize, bed, 3, 3);
+  band = noise.anisotropic(1.5 * poreSize, bed, 8, 2);
+  // Pores gather in porous layers along the bedding: small pits a fifth
+  // of the spacing across in the layers, and here and there a cavity.
+  layer = texture.mask(noise.anisotropic(3 * poreSize, bed, 4, 2), 0.05, 0.2);
+  pit, pitCore, pitPick = travertinePits(bed, 2.5, 0.3 * poreSize, 0.4, 0.7, layer);
+  cavity, cavityCore, cavityPick = travertinePits(bed, 2, 1.5 * poreSize, 0.3, 0.08, 1);
+  pore = texture.fadeTo(max(pit, cavity), travertinePoreShare, 0.3 * poreSize);
+  core = texture.fadeTo(max(pitCore, cavityCore), travertineCoreShare, 0.3 * poreSize);
+  pick = cavity > pit ? cavityPick : pitPick;
+  grouted = pick.z < filled ? 1 : 0;
+  stoneLab = color.rgb2oklab(stoneColor);
+  grain = (texture.grainShade(0.4, 1) - 1) * 0.03 + 0.015 * noise.fbm(1.5, 2, 0.5, 2);
+  // The porous layers are paler, crusted white around their pits.
+  ground = stoneLab + [0.025 * cloud + 0.015 * band + grain + 0.025 * layer, 0.002 * cloud, 0.006 * cloud];
+  // An open pore shows dark and browner inside (shadow and the dirt it
+  // holds); a filled one is grouted flush a shade lighter and grayer.
+  hollow = [(0.8 - 0.25 * core) * stoneLab.x, stoneLab.y + 0.012, stoneLab.z + 0.03];
+  grout = [stoneLab.x + 0.03, 0.6 * stoneLab.y, 0.6 * stoneLab.z];
+  poreLab = hollow + (grout - hollow) * grouted;
+  // Stand-in: the porous layers' crust over 0.40 of the face, and the
+  // pores over travertinePoreShare of it, their dark cores over
+  // travertineCoreShare, open or filled in their shares; everything else
+  // is centered.
+  hollowMean = [-0.2 * stoneLab.x * travertinePoreShare - 0.25 * stoneLab.x * travertineCoreShare, 0.012 * travertinePoreShare, 0.03 * travertinePoreShare];
+  groutMean = [0.03, -0.4 * stoneLab.y, -0.4 * stoneLab.z] * travertinePoreShare;
+  tone = color.oklab2rgb(ground + (poreLab - ground) * pore);
+  tone.simple = color.oklab2rgb(stoneLab + [0.025 * 0.40, 0, 0] + hollowMean * (1 - filled) + groutMean * filled);
+  rough = coating.glossRoughness(gloss);
+  unfilled = pore * (1 - grouted);
+  honed = material.withDisplacement(material.make(rough + 0.5 * unfilled, 0, 1.55), -unfilled * texture.fadeDetail(0.6 * poreSize));
+  honed.simple = material.withDisplacement(material.make(rough + 0.5 * travertinePoreShare * (1 - filled), 0, 1.55), -travertinePoreShare * (1 - filled));
+  return honed, tone, 0, 0;
+}
+
+// The share of a face inside travertine's pores, and inside their dark
+// cores, measured over 8000 points in a 400 mm cube at pores 3, 8 and 20
+// mm apart (0.030 to 0.033, and 0.009).
+travertinePoreShare = 0.031;
+travertineCoreShare = 0.009;
+
+// Riven slate's layers at p: where the face steps from one cleavage layer
+// to the next, as terraces of fractal noise rivenSize across, so a layer's
+// edge wanders and layers nest inside one another. Returns the level (in
+// steps, continuous: a whole number on each layer, rising over its riser)
+// and the layer's index.
+slateLayers(rivenSize) {
+  t = 1.5 + 2.4 * remap(noise.fbm(1.5 * rivenSize, 3, 0.55, 2), remap(noise.warp(0.3 * rivenSize, 0.05 * rivenSize), p));
+  layer = floor(t);
+  rise = texture.mask(t - layer, 0.94, 0.05);
+  return layer + rise, layer, t - layer;
+}
+
+/// slate(stoneColor, rivenSize, step): riven slate of `stoneColor` (blue-gray,
+/// green or purple), split along its cleavage into layers whose broken
+/// edges wander and nest, plates about `rivenSize` mm across (10 to 80),
+/// each layer rising half of `step` over the one below (0 to 1.5 mm, the
+/// face spanning about `step`), a shade and a tint off the next, its edge a
+/// paler lip; clouded at the plate size and split into fine flecks and
+/// paler streaks drawn out along x (the stone's grain), with sparse rust
+/// specks where pyrite weathered; grain 0.3 mm, a dull sheen. Returns
+/// material, stoneColor, height and slope.
+slate(@color stoneColor, @range(10, 80) rivenSize, @range(0, 1.5) step) {
+  level, layer, within = slateLayers(rivenSize);
+  stoneLab = color.rgb2oklab(stoneColor);
+  // Each layer a shade and a tint off the next; its broken edge a paler
+  // lip, ragged; clouded at the plate size; split along the cleavage into
+  // fine flecks and paler, warmer streaks drawn out two and a half times
+  // along x (1 and 2 mm across); and sparse rust specks, 0.8% of the face,
+  // where pyrite weathered.
+  layerPick = noiseHash3([layer, 7, 3]);
+  shade = [0.12 * (layerPick.x - 0.5), 0.012 * (layerPick.y - 0.5), 0.03 * (layerPick.y - 0.5)];
+  lip = texture.mask(within, 0.86, 0.06) * (1 - texture.mask(within, 0.985, 0.01));
+  cloud = noise.fbm(rivenSize, 3, 0.5, 2);
+  fleck = noise.anisotropic(1, [1, 0, 0], 2.5, 3);
+  streak = texture.mask(noise.anisotropic(2, [1, 0, 0], 2.5, 3), 0.25, 0.12);
+  rust = texture.grainSpecks(0.5, 0.008);
+  ragged = texture.mask(noise.fbm(0.15 * rivenSize, 2, 0.5, 2), -0.1, 0.3);
+  // Less what all that adds on average (measured over 8000 points in a 400
+  // mm cube at plates of 10, 40 and 80 mm, the same for any stone color),
+  // so the stone averages stoneColor, its stand-in.
+  tone = color.oklab2rgb(stoneLab + shade + [0.03 * lip * ragged + 0.06 * cloud + 0.025 * fleck + 0.045 * streak, 0.005 * cloud + 0.005 * streak, 0.012 * cloud + 0.012 * streak] + [0.03, 0.015, 0.035] * rust - [0.0359, 0.0019, 0.0047]);
+  tone.simple = stoneColor;
+  // Each layer rises half of `step` over the one below, so the face spans
+  // about `step`; centered on its measured mean level, 1.06. The flecks
+  // stand a few hundredths of a mm.
+  relief = step * (level - 1.06) / 2 * texture.fadeDetail(0.2 * rivenSize) + 0.03 * fleck * texture.fadeDetail(1) + texture.grainRelief(0.3, 0.05);
+  riven = material.withDisplacement(material.make(0.6, 0, 1.55), relief);
+  riven.simple = material.make(0.6, 0, 1.55);
+  return riven, tone, 0, 0;
+}
+
+/// basalt(stoneColor, vesicleSize, vesicleShare): basalt of `stoneColor` (near
+/// black), fine-grained at 0.3 mm, with the gas bubbles it set around,
+/// `vesicleSize` mm across (1 to 8) over `vesicleShare` of the face (0 to
+/// 0.3), each a round pit a third of its width deep; matte. Returns
+/// material, stoneColor, height and slope.
+basalt(@color stoneColor, @range(1, 8) vesicleSize, @range(0, 0.3) vesicleShare) {
+  radius = 0.5 * vesicleSize;
+  f1, f2, cell = noise.cellularCell(poreSpacing(radius, vesicleShare));
+  dome = f1 < radius ? sqrt(max(0, 1 - f1 * f1 / (radius * radius))) : 0;
+  pit = texture.fadeTo(texture.mask(radius - f1, 0, max(0.05 * vesicleSize, pixelSize())), vesicleShare, vesicleSize);
+  tone = stoneColor * (1 - 0.5 * pit) * texture.grainShade(0.3, 0.1);
+  tone.simple = stoneColor * (1 - 0.5 * vesicleShare);
+  // A dome's mean over the face is 0.6 of the share inside it (measured).
+  pitted = material.withDisplacement(material.make(0.85, 0, 1.55), -0.33 * vesicleSize * dome * texture.fadeDetail(vesicleSize));
+  pitted.simple = material.withDisplacement(material.make(0.85, 0, 1.55), -0.33 * vesicleSize * 0.6 * vesicleShare);
+  return pitted, tone, 0, 0;
+}
+
+/// obsidian(stoneColor, flow, banding, snowflakes): obsidian, volcanic glass of
+/// `stoneColor` (black) polished, index 1.49, flow-banded `banding` (0 to 1) in
+/// grey streaks drawn out eight to one along `flow`, with `snowflakes` of
+/// the face (0 to 0.4) in the grey-white radiating patches 6 mm across of
+/// a snowflake obsidian. Returns material, stoneColor, height and slope.
+obsidian(@color stoneColor, @direction flow, @range(0, 1) banding, @range(0, 0.4) snowflakes) {
+  f = normalize(flow);
+  drawn = p - f * (dot(p, f) * 0.875);
+  streak = max(0, remap(noise.fbmBump4(4, 0.6, 2.2), drawn) * 3);
+  banded = stoneColor + banding * 0.06 * streak;
+  banded.simple = stoneColor + banding * 0.02;
+  f1, f2, cell = noise.cellularCell(poreSpacing(3, snowflakes));
+  flake = (snowflakes > 0.001 ? 1 : 0) * texture.fadeTo(texture.mask(3 - f1, 0, max(0.3, pixelSize())), snowflakes, 6);
+  flakeColor = [0.7, 0.7, 0.68] * texture.grainShade(0.4, 0.15);
+  tone = color.mixOklab(banded, flakeColor, flake);
+  tone.simple = color.mixOklab(stoneColor + banding * 0.02, [0.7, 0.7, 0.68], snowflakes);
+  return material.make(0.05, 0, 1.49), tone, 0, 0;
+}
+
+/// engineeredQuartz(baseColor, chipColor, chipSize, chipShare, gloss): a
+/// quartz slab, ground quartz in resin, 93 to 7 by weight: the base
+/// `baseColor` with chips of `chipColor` `chipSize` mm across (0.5 to 5)
+/// over `chipShare` of the face (0 to 0.5) and a dusting half their size
+/// at half the share, polished to `gloss` units (80). Returns material,
+/// stoneColor, height and slope.
+engineeredQuartz(@color baseColor, @color chipColor, @range(0.5, 5) chipSize, @range(0, 0.5) chipShare, @range(0, 100) gloss) {
+  chips = texture.grainSpecks(chipSize, chipShare);
+  dust = texture.grainSpecks(0.5 * chipSize, 0.5 * chipShare);
+  tone = color.mixOklab(color.mixOklab(baseColor, chipColor, 0.5 * dust), chipColor, chips);
+  tone.simple = color.mixOklab(color.mixOklab(baseColor, chipColor, 0.25 * chipShare), chipColor, chipShare);
+  return material.make(coating.glossRoughness(gloss), 0, 1.55), tone, 0, 0;
+}
+
+// ===========================================================================
+// Ready-made
+// ===========================================================================
+
+// One surface from each constructor above, with the arguments the examples
+// use, so the material browser can show it. The constructors stay the way to
+// set the parameters; see doc/material_composition.md for the plan to adjust
+// them from the browser.
+
+// graniteFeldspar is the grey granites' feldspar, and their colors are
+// fitted to Lysippos's photograph of Azul Platino, its 10 mm scale bar 236 px
+// long: https://commons.wikimedia.org/wiki/File:Granite_Azul_Platino_-_es.jpg
+// (CC BY-SA 4.0).
+graniteFeldspar = [0.665, 0.66, 0.65];
+
+/// Gray granite: 4 mm feldspar crystals, white and frosted, with gray quartz
+/// grains and black mica in clusters, after Azul Platino (fitted to a
+/// photograph at 24 px/mm), matte polished. Returns material and color.
+@material greyGranite() {
+  return stoneFinish(0.6), granite(4, graniteFeldspar, color.black, [0.50, 0.515, 0.555]);
+}
+
+/// White marble with grey veins 25 mm across, honed. Returns material and
+/// colour.
+@material whiteMarble() {
+  return stoneFinish(0.15), marble(25, 0.4, 0.016, 0.4, color.white, color.gray);
+}
+
+/// Carrara marble, veins along +Z, honed. Returns material and colour.
+@material carrara() {
+  return stoneFinish(0.15), carrara([0, 0, 1]);
+}
+
+/// Statuario marble, veins along +Z, honed. Returns material and colour.
+@material statuario() {
+  return stoneFinish(0.15), statuario([0, 0, 1]);
+}
+
+/// Calacatta marble, veins along +Z, honed. Returns material and colour.
+@material calacatta() {
+  return stoneFinish(0.15), calacatta([0, 0, 1]);
+}
+
+/// Gray granite whose quartz glints, 4 mm crystals, polished. Returns material
+/// and color.
+@material glintingGranite() {
+  return graniteFacetFinish(4, 0.12, 0.05, 0.35), granite(4, graniteFeldspar, color.black, [0.50, 0.515, 0.555]);
+}
+
+/// Flagstone paving, 250 mm warm gray slabs with darker gritty joints,
+/// fitted to Poly Haven's monastery_stone_floor. Returns material and
+/// color.
+@material flagstone() {
+  return stoneFinish(0.8), flagstone(250, [0.393, 0.328, 0.272], [0.33, 0.285, 0.24]);
+}
+
+/// Blue-gray riven slate, 40 mm plates, layers stepped 0.4 mm. Returns
+/// material and color.
+@material slate() {
+  riven, tone, height, slope = slate([0.33, 0.36, 0.4], 40, 0.8);
+  return riven, tone;
+}
+
+/// Cream travertine, cross-cut, half its pores filled, honed, after a
+/// photograph of Classic travertine tiles. Returns material and color.
+@material travertine() {
+  honed, tone, height, slope = travertine([0.725, 0.69, 0.635], [1, 0, 0], 8, 0.5, 20);
+  return honed, tone;
+}
+
+/// Basalt, 3 mm vesicles over 8% of the face. Returns material and colour.
+@material basalt() {
+  pitted, tone, height, slope = basalt([0.14, 0.14, 0.15], 3, 0.08);
+  return pitted, tone;
+}
+
+/// Black obsidian, faintly flow-banded, polished. Returns material and
+/// colour.
+@material obsidian() {
+  polished, tone, height, slope = obsidian([0.03, 0.03, 0.035], [1, 0, 0], 0.5, 0);
+  return polished, tone;
+}
+
+/// Snowflake obsidian, a quarter of the face in grey-white flakes. Returns
+/// material and colour.
+@material snowflakeObsidian() {
+  polished, tone, height, slope = obsidian([0.03, 0.03, 0.035], [1, 0, 0], 0.3, 0.25);
+  return polished, tone;
+}
+
+/// White quartz slab with grey chips, a fifth of the face, polished.
+/// Returns material and colour.
+@material engineeredQuartz() {
+  slab, tone, height, slope = engineeredQuartz([0.93, 0.93, 0.91], [0.6, 0.6, 0.6], 1.5, 0.2, 80);
+  return slab, tone;
+}
+
+// References
+//   MFA Boston, CAMEO. Obsidian: refractive index 1.482 to 1.496 (CRC
+//     Handbook). https://cameo.mfa.org/wiki/Obsidian
+//   Slabwise. Engineered quartz countertops: about 93% ground quartz by
+//     weight in about 7% polymer resin, by the Bretonstone process.
+//     https://slabwise.com/guides/engineered-quartz-countertops
+//   The slate's plates, the travertine's pores and bands, the basalt's
+//     vesicles and the obsidian's banding and flakes are judged.

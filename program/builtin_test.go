@@ -2,11 +2,11 @@ package program
 
 import "testing"
 
-func TestBuiltins(t *testing.T) {
-	defer func() {
-		if r := recover(); r != nil {
-			t.Errorf("panic: %v", r)
+func TestSanityCheck(t *testing.T) {
+	// Ensure all built-in names are reserved words
+	for name := range builtinsMap {
+		if !IsReservedWord(name) {
+			t.Errorf("builtin %q is not a reserved word", name)
 		}
-	}()
-	SanityCheck()
+	}
 }

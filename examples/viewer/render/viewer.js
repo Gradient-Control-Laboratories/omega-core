@@ -35,12 +35,14 @@ function cosinePalette(t) {
 }
 
 const DRAG_THRESHOLD = 3; // pixels — distinguishes click from drag
-const WORLD_EXTENT = 4; // default half-size of the bounding volume and grid for showcase examples
+const WORLD_EXTENT = 200; // default half-size of the bounding volume and grid
 // Mutable current half-extent, adjustable via the Scene panel. This is a domain
 // bound, not a geometry scale.
 let worldExtent = WORLD_EXTENT;
-// Number of grid divisions across the full width — adjustable via the Scene panel.
-let gridDensity = 20;
+// Grid line spacing in millimeters (the scene's units) — adjustable via the
+// Scene panel. Absolute, so it survives a Scene Size change unchanged; the
+// number of divisions across the width is what follows from it.
+let gridSpacing = (2 * WORLD_EXTENT) / 20;
 const BG_COLOR = new THREE.Color(0x1e1e1e);
 
 // ── State ──
@@ -127,6 +129,8 @@ let mouseDownPos = null;
 let hoverPending = false;
 let outlinesEnabled = true;
 let savedSelectedShape = 0;
+// The Render panel's Resolution: a factor on the device pixel ratio.
+let renderScale = 1;
 
 const gsl_shapeColors = new Map();
 const shapeVisibles = new Map();
@@ -135,6 +139,10 @@ const hoveredShapeVec = new THREE.Vector2(0, 0);
 const compositePixelSizeVec = new THREE.Vector2();
 
 const container = document.getElementById("canvas-container");
+
+function effectivePixelRatio() {
+  return window.devicePixelRatio * renderScale;
+}
 
 function setActiveCamera(next) {
   camera = next;
@@ -184,12 +192,22 @@ uiZUpWorld = new THREE.Group();
 uiZUpWorld.rotation.copy(zUpWorld.rotation);
 uiScene.add(uiZUpWorld);
 
+// Ceiling on the line count, so a fine mm grid in a very large scene degrades
+// to a coarser one instead of building millions of segments.
+const MAX_GRID_DIVISIONS = 10000;
+
+// The spacing actually drawn at a given extent: the requested mm, coarsened if
+// it would put more than MAX_GRID_DIVISIONS lines across the width.
+function drawnGridSpacing(ext, spacing) {
+  return Math.max(spacing, (2 * ext) / MAX_GRID_DIVISIONS);
+}
+
 // Ruled grid on the XY plane
-function makeGrid(ext, density) {
-  // `density` evenly-spaced divisions across the full width, generated outward
-  // from a center line through the origin. When the spacing doesn't divide the
-  // extent evenly, the leftover partial cell sits at the far edge.
-  const spacing = (2 * ext) / density;
+function makeGrid(ext, requested) {
+  // Lines `spacing` mm apart, generated outward from a center line through the
+  // origin. When the spacing doesn't divide the extent evenly, the leftover
+  // partial cell sits at the far edge.
+  const spacing = drawnGridSpacing(ext, requested);
   const coords = [0];
   for (let c = spacing; c <= ext + 1e-6; c += spacing) { coords.push(c, -c); }
   if (!coords.some((c) => Math.abs(c - ext) < 1e-6)) { coords.push(ext, -ext); }
@@ -214,7 +232,7 @@ function makeGrid(ext, density) {
   return g;
 }
 
-let grid = makeGrid(WORLD_EXTENT, gridDensity);
+let grid = makeGrid(WORLD_EXTENT, gridSpacing);
 zUpWorld.add(grid);
 
 // ── WGSL types ──
@@ -400,7 +418,7 @@ function updateCameraUniforms() {
   zUpToViewMatVal.copy(viewMatrix).multiply(zUpRotation);
   zUpToViewMatU.value.copy(zUpToViewMatVal);
 
-  const h = container.clientHeight * window.devicePixelRatio;
+  const h = container.clientHeight * effectivePixelRatio();
 
   // Camera basis in Z-up world space (directions only). three's camera looks
   // down its local -Z, so the view direction is the negated Z basis vector.
@@ -659,8 +677,12 @@ function updateShader(wgslCode, shapeCount = 1, shapeNames = [], meshSdfBindings
     colorUniforms[`c${i}`] = u;
   }
 
-  // Per-shape visibility uniforms (1.0 = visible, 0.0 = hidden)
+  // Per-shape visibility uniforms (1.0 = visible, 0.0 = hidden). Rasterized
+  // meshes track the same per-shape state separately, so reset it here too —
+  // a recompile can renumber shapes, and stale hidden indices would hide the
+  // wrong body while the body list showed everything as visible.
   shapeVisibles.clear();
+  hiddenMeshShapes.clear();
   const visUniforms = {};
   const visParamsWGSL = [];
   const visArgsWGSL = [];
@@ -1140,7 +1162,7 @@ function progressiveStep() {
 // ── Renderer init ──
 
 renderer = new THREE.WebGPURenderer({ antialias: true });
-renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setPixelRatio(effectivePixelRatio());
 renderer.setSize(container.clientWidth, container.clientHeight);
 
 // Shape scene: full-screen quad with orthographic camera
@@ -1196,11 +1218,11 @@ function updateMeshLights() {
 function initComposite() {
   const w = Math.max(
     1,
-    Math.floor(container.clientWidth * window.devicePixelRatio),
+    Math.floor(container.clientWidth * effectivePixelRatio()),
   );
   const h = Math.max(
     1,
-    Math.floor(container.clientHeight * window.devicePixelRatio),
+    Math.floor(container.clientHeight * effectivePixelRatio()),
   );
 
   // shapeTarget: RGB = lit shape color, A = float(shapeIndex) + depth01
@@ -1515,7 +1537,7 @@ container.appendChild(renderer.domElement);
 await renderer.init();
 
 // Re-sync renderer size after init (canvas may have reflowed when appended)
-renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setPixelRatio(effectivePixelRatio());
 renderer.setSize(container.clientWidth, container.clientHeight);
 initComposite();
 
@@ -1596,7 +1618,7 @@ gslUiControls = new GslUiControls({
   domElement: renderer.domElement,
   orbitControls: controls,
   scheduleRender,
-  gridStep: () => (2 * worldExtent) / gridDensity,
+  gridStep: () => drawnGridSpacing(worldExtent, gridSpacing),
 });
 orthoViewHelper = new OrthoViewHelper({
   camera,
@@ -1608,11 +1630,10 @@ orthoViewHelper = new OrthoViewHelper({
 cameraRig.listenForRotation();
 
 function handleResize() {
-  const dpr = window.devicePixelRatio;
   const w = container.clientWidth;
   const h = container.clientHeight;
   if (w === 0 || h === 0) return;
-  renderer.setPixelRatio(dpr);
+  renderer.setPixelRatio(effectivePixelRatio());
   cameraRig?.resize();
   renderer.setSize(w, h);
   rebuildComposite();
@@ -1621,6 +1642,18 @@ function handleResize() {
 new ResizeObserver(handleResize).observe(container);
 matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`)
     .addEventListener("change", handleResize);
+
+document.querySelectorAll("[data-render-scale]").forEach((button) => {
+  button.addEventListener("click", () => {
+    renderScale = Number(button.dataset.renderScale);
+    document.querySelectorAll("[data-render-scale]").forEach((item) => {
+      const active = item === button;
+      item.classList.toggle("active", active);
+      item.setAttribute("aria-pressed", active);
+    });
+    handleResize();
+  });
+});
 
 bindTierButtons(() => scheduleRender());
 bindEnvironmentControls();
@@ -1691,11 +1724,11 @@ renderer.domElement.addEventListener("click", async (event) => {
 function getPixelCoords(event) {
   const rect = renderer.domElement.getBoundingClientRect();
   const x = Math.min(
-    Math.floor((event.clientX - rect.left) * window.devicePixelRatio),
+    Math.floor((event.clientX - rect.left) * shapeTarget.width / rect.width),
     shapeTarget.width - 1,
   );
   const y = Math.min(
-    Math.floor((event.clientY - rect.top) * window.devicePixelRatio),
+    Math.floor((event.clientY - rect.top) * shapeTarget.height / rect.height),
     shapeTarget.height - 1,
   );
   if (x < 0 || y < 0) return null;
@@ -1798,11 +1831,49 @@ export function setShapeColor(shapeIndex, r, g, b) {
   scheduleRender();
 }
 
+// setSlotVisible shows or hides one shader slot, and setMeshShapeVisible the
+// mesh() placements of one return: a program that returns meshes numbers the
+// two differently, so the Bodies panel's per-return rows drive each apart.
+export function setSlotVisible(slot, visible) {
+  const u = shapeVisibles.get(slot);
+  if (u) u.value = visible ? 1.0 : 0.0;
+  scheduleRender();
+}
+
+export function setMeshShapeVisible(shapeIndex, visible) {
+  applyMeshVisibility(shapeIndex, visible);
+  scheduleRender();
+}
+
 export function setShapeVisible(shapeIndex, visible) {
   const u = shapeVisibles.get(shapeIndex);
-  if (!u) return;
-  u.value = visible ? 1.0 : 0.0;
+  if (u) u.value = visible ? 1.0 : 0.0;
+  // A mesh() return owns a shape slot and gets its own checkbox, but it is
+  // rasterized in a separate three.js scene that never reads the shader's
+  // visibility uniforms — so hiding it has to happen here too, or the checkbox
+  // silently does nothing for imported bodies.
+  applyMeshVisibility(shapeIndex, visible);
   scheduleRender();
+}
+
+// Per-shape visibility for rasterized meshes, kept so instances created later
+// (an asset arriving after the compile) adopt the current state rather than
+// popping back into view.
+const hiddenMeshShapes = new Set();
+
+function applyMeshVisibility(shapeIndex, visible) {
+  if (visible) hiddenMeshShapes.delete(shapeIndex);
+  else hiddenMeshShapes.add(shapeIndex);
+  for (const inst of meshInstances) {
+    if (inst.shapeIndex === shapeIndex) inst.mesh.visible = visible;
+  }
+}
+
+// Re-apply the remembered visibility to whatever instances exist now.
+function refreshMeshVisibility() {
+  for (const inst of meshInstances) {
+    inst.mesh.visible = !hiddenMeshShapes.has(inst.shapeIndex);
+  }
 }
 
 export function setSelectedShape(shapeIndex) {
@@ -1871,26 +1942,40 @@ export function frameWorldExtent() {
   cameraRig.frame(framingPosition(worldExtent), new THREE.Vector3(0, 0, 0));
 }
 
-// Rebuild the grid geometry from the current extent + density (line positions
+// Rebuild the grid geometry from the current extent + spacing (line positions
 // are baked into geometry at construction, so a rebuild is required).
 function rebuildGrid() {
   zUpWorld.remove(grid);
   grid.geometry.dispose();
   grid.material.dispose();
-  grid = makeGrid(worldExtent, gridDensity);
+  grid = makeGrid(worldExtent, gridSpacing);
   zUpWorld.add(grid);
 }
 
+// Grid spacing in millimeters — the stored quantity. A Scene Size change leaves
+// it alone, so a 5 mm grid stays 5 mm however the domain is resized.
+export function getGridSpacing() {
+  return gridSpacing;
+}
+
+export function setGridSpacing(mm) {
+  const next = Math.min(5000, Math.max(0.01, mm));
+  if (next === gridSpacing) return;
+  gridSpacing = next;
+  rebuildGrid();
+  scheduleRender();
+}
+
+// Divisions across the full width — the way the grid used to be specified, kept
+// for documents whose header carries a bare count. Purely derived: it reads off
+// the current extent, so it moves when the scene resizes.
 export function getGridDensity() {
-  return gridDensity;
+  return (2 * worldExtent) / drawnGridSpacing(worldExtent, gridSpacing);
 }
 
 export function setGridDensity(density) {
   const next = Math.min(10000, Math.max(1, Math.round(density)));
-  if (next === gridDensity) return;
-  gridDensity = next;
-  rebuildGrid();
-  scheduleRender();
+  setGridSpacing((2 * worldExtent) / next);
 }
 
 export function setFieldEnabled(enabled) {
@@ -2713,17 +2798,18 @@ export function syncMeshInstances(decls) {
       applyTransform(group, decl);
       meshBodyXform.set(decl.index, group.matrix.clone());
       meshZUpWorld.add(group);
-      meshInstances.push({ mesh: group, annotated: true, objects, body: decl.index, baseMatrix });
+      meshInstances.push({ mesh: group, annotated: true, objects, body: decl.index, baseMatrix, shapeIndex: decl.shapeIndex || 0 });
     } else {
       const material = defaultMeshMaterial.clone();
       const mesh = new THREE.Mesh(entry.geometry, material);
       applyTransform(mesh, decl);
       meshZUpWorld.add(mesh);
-      meshInstances.push({ mesh, material, body: decl.index, baseMatrix });
+      meshInstances.push({ mesh, material, body: decl.index, baseMatrix, shapeIndex: decl.shapeIndex || 0 });
     }
   }
 
   mapUiMeshes();
+  refreshMeshVisibility();
   scheduleRender();
   return unknownIndices;
 }

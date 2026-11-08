@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 
 	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/assembler/source"
 	"gradientcontrol.com/omega/core/backend/audio"
 	"gradientcontrol.com/omega/core/backend/mesh"
 	"gradientcontrol.com/omega/core/backend/tape"
@@ -129,7 +128,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		srcPaths = []string{dir}
 	}
 	if len(srcPaths) > 0 {
-		asmOpts = append(asmOpts, assembler.SourceManager(source.NewLocalManager(srcPaths...)))
+		asmOpts = append(asmOpts, assembler.SourcePaths(srcPaths...))
 	}
 	if cfg.OptLevel == 0 {
 		asmOpts = append(asmOpts, assembler.DisableDeadcodeRemoval())
@@ -151,7 +150,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	switch cfg.Target {
 	case config.TargetWGSL:
 		wgslOpts := []wgsl.Option{
-			wgsl.WithStandalone(cfg.Standalone),
+			wgsl.Standalone(cfg.Standalone),
 		}
 		if cfg.Verbose {
 			wgslOpts = append(wgslOpts, wgsl.WithProgress(func(stage string, completed, total uint32) {

@@ -1,0 +1,128 @@
+@scene(400, 25)
+
+// A slider-crank style linkage drawn in three dimensions, all lengths in
+// millimetres. A large "slide" circle moves up and down past a fixed "base"
+// circle; the two circles cross at a point (the small sphere), and two arms
+// run from the circle centres to that crossing. A shaft with two couplers
+// ties the centres together, and the thin tube is the path where the
+// circles' outlines meet as the slide travels.
+//
+// Drag slidePos to move the slide (it also sweeps on its own over 10 seconds
+// while time runs), or change the two circle radii and watch the arms follow.
+
+// Radii of the moving and fixed circles.
+@range(40, 80) slideRadius = 60.00;
+@range(20, 60) baseRadius = 40.00;
+
+slideOffset = 40;
+
+// Slide position. Its limits depend on the two radii: it can only travel while
+// the circles still overlap, so its range follows them.
+slidePos = 20.2;
+slidePos.min = abs(slideRadius - baseRadius) - slideOffset;
+slidePos.max = slideRadius + baseRadius - slideOffset;
+slidePos.period = 10;
+
+// Shaft and fixture dimensions.
+shaftRadius = 5;
+shaftHalfLen = 65;
+shaftOffsetX = 33;
+shaftOffsetY = 17;
+zSlabHalf = 160;
+baseCenterX = -17;
+baseCenterY = -40;
+slideCenterX = -17;
+markerRadius = 3;
+armHalfWidth = 7;
+armHalfThick = 8;
+shaftCenterX = -33;
+couplerHeight = 16;
+couplerWidth = 14;
+
+cylinder_y(radius, halfLen) {
+  return max(cylinderY(vector.zero, radius), abs(p.y) - halfLen);
+}
+
+// Slab that bounds the (unused) full-length cylinders.
+zSlab = abs(p.z) - zSlabHalf;
+
+// The shaft, offset from the origin.
+shaft = transform.translate(cylinder_y(shaftRadius, shaftHalfLen), [-shaftOffsetX, shaftOffsetY, 0]);
+
+// The fixed circle and the moving circle, whose centre follows slidePos.
+baseCenter = [baseCenterX, baseCenterY];
+r1 = baseRadius;
+
+slideCenterF(v) {
+  return [slideCenterX, v];
+}
+
+slideCenter = remap(slideCenterF(slidePos), p - [0, 0, slidePos]);
+r2 = slideRadius;
+
+// Distance fields of the two circles; normalizeCurve turns their combined
+// outline into a single curve distance, drawn as a thin tube.
+cylBase = circleXY(baseCenter, r1);
+cylSlide = length(p.xy - slideCenter - [0, p.z]) - r2;
+cyls = min(cylBase, cylSlide);
+dist, angle = normalizeCurve(cylBase, cylSlide);
+cylpath = dist - 0.2;
+
+infCyl = max(abs(cyls) - 0.2, zSlab) * 0.5;
+
+// The point where the two circles cross (circle-circle intersection).
+dx_c = slideCenter.x - baseCenter.x;
+dy_c = slideCenter.y - baseCenter.y;
+d = sqrt(dx_c * dx_c + dy_c * dy_c);
+
+a = (r1 * r1 - r2 * r2 + d * d) / (2 * d);
+h = sqrt(r1 * r1 - a * a);
+
+mx = baseCenter.x + a * (dx_c / d);
+my = baseCenter.y + a * (dy_c / d);
+
+perpX = -(dy_c / d);
+perpY = (dx_c / d);
+
+intPt = [mx - h * perpX, my - h * perpY];
+
+intersectionMarker = transform.translate(sphere(markerRadius), [intPt.x, intPt.y, 0]);
+
+arm(ax, ay, bx, by, halfWidth, halfThick) {
+  va = [ax, ay];
+  vb = [bx, by];
+  ab = vb - va;
+  ap = p.xy - va;
+  t = clamp(dot(ap, ab) / dot(ab, ab), 0, 1);
+  np = va + t * ab;
+  d2d = length(p.xy - np);
+  dPerp = d2d - halfWidth;
+  dZ = abs(p.z) - halfThick;
+  return max(dPerp, dZ);
+}
+
+// 3D distance to a line segment (capsule), diameter = height
+coupler(x0, x1, y, height, width) {
+  va = [x0, y, 0];
+  vb = [x1, y, 0];
+  ab = vb - va;
+  ap = p - va;
+  t = clamp(dot(ap, ab) / dot(ab, ab), 0, 1);
+  np = va + t * ab;
+  cap0 = circleXY(np.xy, width / 2);
+  cap1 = length(p.zx - np.zx) - height/ 2;
+  slab0 = abs(p.z) - height / 2;
+  slab1 = abs(p.y - y) - width / 2;
+  return t > 0.5 ? max(cap0, slab0) : max(cap1, slab1);
+}
+
+// Arms from each circle centre to the crossing, and couplers tying the centres
+// to the shaft.
+lowerArm = arm(baseCenter.x, baseCenter.y, intPt.x, intPt.y, armHalfWidth, armHalfThick);
+upperArm = arm(slideCenter.x, slideCenter.y, intPt.x, intPt.y, armHalfWidth, armHalfThick);
+
+shaftCenter = [shaftCenterX, 0];
+couplerArmBase = coupler(shaftCenter.x, baseCenter.x, baseCenter.y, couplerHeight, couplerWidth);
+couplerArmSlider = coupler(shaftCenter.x, baseCenter.x, slideCenter.y, couplerHeight, couplerWidth);
+
+return shaft, intersectionMarker, lowerArm, upperArm, couplerArmSlider, couplerArmBase, cylpath; //, infCyl;

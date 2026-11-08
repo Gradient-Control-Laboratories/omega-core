@@ -1,0 +1,88 @@
+// Glass Library (material/bulk/glass)
+//
+// Transmissive materials. Each one is a zero-argument function returning a
+// PAIR: its material (the finish and the medium) and its colour, in that
+// order.
+//   lensMat, lensColor = glass.clear();
+//   lens.material = lensMat;
+//   lens.color = lensColor;
+// A transmissive material takes its tint from the shape's colour, so glass
+// needs both properties. They are returned together rather than named
+// separately so a medium cannot be paired with the wrong tint. For a
+// transmissive material the colour is the light that comes through after
+// `absorptionDistance` of the medium (a white colour, or a distance of 0, is
+// untinted), the way `name.color` always is the albedo of what the surface
+// itself scatters. Materials are `material` records (see the material
+// library); vary one with `material.withRoughness(lensMat, 0.3)` or replace
+// the tint distance with `material.withTransmission(lensMat, 1, 12)`.
+//
+// The viewer refracts the view ray into a transmissive shape and marches it,
+// so parts embedded in glass are seen through it, and a rough finish blurs
+// what is seen. Reflections are the studio lights and the sky.
+//
+// Self-contained (no library dependencies). Doc convention follows
+// builtin/base.gsl: `///` lines are public docs.
+
+/// A fully transmissive material: roughness in [0, 1], ior >= 1 (1.5 is
+/// glass), absorptionDistance in mm (the depth at which the shape's colour
+/// is what comes through; 0 = no tint). Same row layout material.make
+/// produces, spelled out so the library needs no imports.
+make(rough, index, absorptionDistance) {
+  return [[rough, 0, index, 0], [0, 0, 0, 0], [1, absorptionDistance, 0, 0], [0, 0, 0, 0]];
+}
+
+// ===========================================================================
+// Glass
+// ===========================================================================
+
+/// Clear polished glass. Returns material and colour.
+@material clear() {
+  return make(0.02, 1.52, 0), [1, 1, 1];
+}
+
+/// Frosted glass: sand-blasted or acid-etched, blurs what is behind it.
+/// Returns material and colour.
+@material frosted() {
+  return make(0.5, 1.52, 0), [1, 1, 1];
+}
+
+/// Smoked glass, neutral grey tint over 6 mm. Returns material and colour.
+@material smoked() {
+  return make(0.05, 1.52, 6), [0.35, 0.35, 0.37];
+}
+
+/// Amber glass, the bottle tint, over 5 mm. Returns material and colour.
+@material amber() {
+  return make(0.05, 1.55, 5), [0.95, 0.60, 0.15];
+}
+
+// ===========================================================================
+// Plastic
+// ===========================================================================
+
+/// Cast acrylic (PMMA), clearer than glass with a lower index. Returns
+/// material and colour.
+@material acrylic() {
+  return make(0.03, 1.49, 0), [1, 1, 1];
+}
+
+/// Polycarbonate, the high-index engineering plastic, with a faint haze.
+/// Returns material and colour.
+@material polycarbonate() {
+  return make(0.08, 1.585, 0), [1, 1, 1];
+}
+
+/// Clear SLA resin, a satin finish with a pale amber tint over 8 mm. Returns
+/// material and colour.
+@material resin() {
+  return make(0.15, 1.5, 8), [0.95, 0.85, 0.60];
+}
+
+// ===========================================================================
+// Liquid
+// ===========================================================================
+
+/// Water, with a faint cyan tint over 200 mm. Returns material and colour.
+@material water() {
+  return make(0, 1.333, 200), [0.80, 0.93, 0.97];
+}

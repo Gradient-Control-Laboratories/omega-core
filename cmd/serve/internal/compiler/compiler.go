@@ -5,13 +5,12 @@ import (
 	"strings"
 
 	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/assembler/source"
+	"gradientcontrol.com/omega/core/assembler/slider"
+	"gradientcontrol.com/omega/core/assembler/ui"
 	"gradientcontrol.com/omega/core/backend/audio"
 	"gradientcontrol.com/omega/core/backend/mesh"
 	"gradientcontrol.com/omega/core/backend/wgsl"
 	"gradientcontrol.com/omega/core/internal/build"
-	"gradientcontrol.com/omega/core/internal/slider"
-	"gradientcontrol.com/omega/core/internal/ui"
 	"gradientcontrol.com/omega/core/program"
 )
 
@@ -184,7 +183,7 @@ func buildAssemblerOptions(sourcePaths []string, progressFn ProgressFunc) []asse
 		assembler.ExtractUI(),
 	}
 	if len(sourcePaths) > 0 {
-		opts = append(opts, assembler.SourceManager(source.NewLocalManager(sourcePaths...)))
+		opts = append(opts, assembler.SourcePaths(sourcePaths...))
 	}
 	if progressFn != nil {
 		opts = append(opts, assembler.WithProgress(func(stage string, completed, total uint32) {

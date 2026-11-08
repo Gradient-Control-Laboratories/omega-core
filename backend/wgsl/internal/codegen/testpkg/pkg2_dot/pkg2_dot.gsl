@@ -1,0 +1,9 @@
+// mock_pkg2_dot.gsl - mock pkg2_dot source package for testing.
+
+import . "pkg1";
+
+partSize = [1, 2, somePi + 2];
+
+partArea(size) {
+    return boxCentered([1, 2, 3], size);
+}

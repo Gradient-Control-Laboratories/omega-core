@@ -1,11 +1,11 @@
-// Shared surface shading for the GSL raymarch viewers (webdm, webai, webedit).
+// Shared surface shading for the GSL raymarch viewers (webai, webedit).
 //
 // The three viewers embed the same raymarch fragment shader as a WGSL string
 // and used to carry identical copies of the lighting rig. The shading now
 // lives here, once, as a WGSL function the viewers splice in with wgslFn and
 // call from both the front-face and back-face hit paths. The caller still
 // owns everything that needs the compiled program (the march, the normal, the
-// SDF ambient-occlusion loop, the casting overlay) and hands the results in.
+// SDF ambient-occlusion loop, the field overlay) and hands the results in.
 //
 // Three's wgslFn requires the string to begin with the `fn` it wraps; helper
 // functions go after the main one (WGSL does not care about declaration

@@ -1,0 +1,50 @@
+@scene(250, 25)
+
+// Glyph showcase for the stroke font: rows of Latin letters, digits and
+// punctuation laid out as a thin extruded sheet. Letters are 7.5 mm tall and
+// rows are 15 mm apart; the sheet is 3 mm thick.
+//
+// The Greek, Cyrillic and symbol rows are built too, in eastern, but the sheet
+// returns only the Latin rows. Return eastern as well to see them below.
+
+height = 7.5;       // cap height, mm
+thickness = 0.04;   // stroke radius as a fraction of the cap height
+spacing = 0.3;      // gap between glyphs as a fraction of the cap height
+
+// Approx per-glyph advance: avg width is ~5 font-units and spacing
+// is in cap-height fractions, so each char advances ~size*(5/9 + spacing).
+// Used to roughly center each row around x = 0.
+advance = height * (5.0 / 9.0 + spacing);
+
+row(s, n, ry) {
+  return text.left(s, [-n * advance * 0.5, ry - height * 0.5],
+                   height, thickness, spacing);
+}
+
+// Vertical distance between rows.
+dy = 15;
+
+// Digits and punctuation, then upper and lower case Latin, then accented
+// Latin, from the top row down.
+l01 = row("0123456789", 10, 6.5 * dy);
+l02 = row("!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~", 32, 5.5 * dy);
+l03 = row("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 26, 4.5 * dy);
+l04 = row("abcdefghijklmnopqrstuvwxyz", 26, 3.5 * dy);
+l05 = row("ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞß", 30, 2.5 * dy);
+l06 = row("àáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ", 30, 1.5 * dy);
+l07 = row("ĀĂĄĆĈĊČĎĐĒĔĖĘĚĜĞĠĢĤĦĨĪĬĮİĲĴĶĹĻ", 30, 0.5 * dy);
+l08 = row("āăąćĉċčďđēĕėęěĝğġģĥħĩīĭįıĳĵķĺļ", 30, -0.5 * dy);
+
+// Greek, Cyrillic, arrows, math and symbols.
+l09 = row("ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ", 24, -1.5 * dy);
+l10 = row("αβγδεζηθικλμνξοπρστυφχψω", 24, -2.5 * dy);
+l11 = row("АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ", 33, -3.5 * dy);
+l12 = row("абвгдеёжзийклмнопрстуфхцчшщъыьэюя", 33, -4.5 * dy);
+l13 = row("←↑→↓⇒⇔∀∂∃∅∇∈∋√∝∞∠∥∧∨∩∪∫∬∵∽≒≠≡≦≧", 31, -5.5 * dy);
+l14 = row("≪≫⊂⊃⊆⊇⊥⌀⌒■□▲△▼▽◆◇○◎●◯★☆♀♂♪♭♯€℃", 30, -6.5 * dy);
+
+roman = min(l01, l02, l03, l04, l05, l06, l07, l08);
+eastern = min(l09, l10, l11, l12, l13, l14);
+
+// Clip the strokes to a thin sheet, 3 mm thick.
+return max(roman, abs(p.z) - 1.5);

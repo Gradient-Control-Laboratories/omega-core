@@ -3,7 +3,7 @@ package meshfold
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/meshslots"
+	"gradientcontrol.com/omega/core/assembler/meshslots"
 	"gradientcontrol.com/omega/core/program"
 )
 
@@ -50,8 +50,8 @@ func TestFoldingGetImportStripsImportStep(t *testing.T) {
 			{
 				Assignments: []*program.Assignment{
 					assignDecl("importId", importCall("importStep", "f.stp")),
-					// castVDB = vdbSdf(importId, 256, 3)
-					assignDecl("castVDB", &program.Operand{T: &program.Operand_FnCall{FnCall: &program.FnCall{
+					// partVDB = vdbSdf(importId, 256, 3)
+					assignDecl("partVDB", &program.Operand{T: &program.Operand_FnCall{FnCall: &program.FnCall{
 						Reference: &program.Reference{Name: "vdbSdf"},
 						Arguments: []*program.Operand{
 							refOp("importId"),
@@ -64,7 +64,7 @@ func TestFoldingGetImportStripsImportStep(t *testing.T) {
 		},
 	}
 	getImport := func(path string) (*program.Package, error) {
-		if path == "branches/x" {
+		if path == "parts/x" {
 			return branch, nil
 		}
 		return nil, nil
@@ -72,13 +72,13 @@ func TestFoldingGetImportStripsImportStep(t *testing.T) {
 	_, resolver := meshslots.Assign(&program.Package{
 		Files: []*program.PackageFile{
 			{
-				Imports: []*program.Import{{Path: "branches/x"}},
+				Imports: []*program.Import{{Path: "parts/x"}},
 			},
 		},
 	}, getImport)
-	slot, _ := resolver("branches/x", "step", "f.stp")
+	slot, _ := resolver("parts/x", "step", "f.stp")
 
-	folded, err := FoldingGetImport(getImport, resolver)("branches/x")
+	folded, err := FoldingGetImport(getImport, resolver)("parts/x")
 	if err != nil {
 		t.Fatalf("folding getImport: %v", err)
 	}

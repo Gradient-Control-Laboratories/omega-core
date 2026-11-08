@@ -1,4 +1,4 @@
-// Render tiers for the GSL raymarch viewers (webdm, webai, webedit).
+// Render tiers for the GSL raymarch viewers (webai, webedit).
 //
 // A viewer draws its shape pass at one of two tiers, chosen by whether
 // anything is moving:
@@ -40,7 +40,7 @@ try {
 // The tier drawn once nothing moves: "standard"; "progressive", which
 // draws the standard frame and then accumulates path-traced samples on it
 // (gsl-trace.js); "color", the standard frame as if the program authored no
-// material; or "simple", the Simple frame (gsl-simple.js), which is also
+// material; or "simple", the Schematic frame (gsl-simple.js), which is also
 // drawn while moving.
 const REST_TIERS = ["simple", "color", "standard", "progressive"];
 let restTier = "standard";
@@ -64,8 +64,8 @@ export function setRestTier(tier) {
   }
 }
 
-// What draws the tier at rest: "gpu", or "cpu" (webdm), the same tier redrawn
-// on the server by litrender once nothing moves, or "fidget" (webdm), fidget's
+// What draws the tier at rest: "gpu", or "cpu", the same tier redrawn
+// on the server by litrender once nothing moves, or "fidget", fidget's
 // own GPU pipeline run in the page on the program's tape. Progressive has
 // neither form.
 const REST_DEVICES = ["gpu", "cpu", "fidget"];
@@ -181,7 +181,7 @@ export class MotionTracker {
 // bindTierButtons wires the Render panel: its header opens and closes it
 // like the other viewer panels, its "Moving" and "At rest" button groups
 // (data-moving-tier, data-rest-tier) pick the tiers, and its "Draw on" group
-// (data-rest-device, webdm), GPU or CPU, which Progressive disables.
+// (data-rest-device), GPU or CPU, which Progressive disables.
 export function bindTierButtons(onChange) {
   const panel = document.getElementById("render-panel");
   document.getElementById("render-panel-header")?.addEventListener("click", (e) => {

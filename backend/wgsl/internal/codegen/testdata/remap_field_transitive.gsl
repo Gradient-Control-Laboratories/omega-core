@@ -1,0 +1,22 @@
+
+// Regression: a field remapped inside a map lambda whose definition calls a
+// function using top-level consts (count, radius) must re-derive those consts
+// inside each helper — not reference them unresolved (the armPortPatternCountA bug).
+count = 6;
+radius = 1.29;
+foldedXY(c) {
+  wedge = 2 * pi / c;
+  ang = atan(p.x, p.y);
+  rad = length(p.xy);
+  angmod = (ang + wedge * 0.5) % wedge - wedge * 0.5;
+  return rad * sin(angmod), rad * cos(angmod);
+}
+arc(c, r) {
+  fx, fy = foldedXY(c);
+  return intersectRound(abs(length(p.xy) - r) - 0.075, abs(fx) - 0.25, 0);
+}
+arcA() { return arc(count, radius); }
+side = remap(arcA(), [p.x - 4, p.y, p.z]);
+angles = [-pi / 3, -tau / 3, pi / 3, tau / 3];
+sides = map((ang) { return remap(side, map.rotateXY(p, ang)); }, angles);
+return unionSharp(sides);

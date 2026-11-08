@@ -1,0 +1,40 @@
+@scene(500, 50)
+
+// Color as a field. A checkerboard floor and a spiked ball colored by
+// Voronoi-edge noise, blended where they meet. The color travels with the
+// distance, so the smooth unions blend colors as well as shapes. Lengths are
+// in mm. Try the height slider (animated), the ballrad slider for the blend
+// radius, and the time slider to spin the ball.
+
+// Height of the big ball above the floor, and the blend radius of the unions.
+@range(-100, 100, 3) height = 14;
+@range(0, 100) ballrad = 26;
+
+// Floor: the z = 0 plane with a two-tone checkerboard, 40 mm squares.
+flr = p.z;
+period = 40;
+checkerboard = map.triangleWave(p.x, period) * map.triangleWave(p.y, period);
+flr.color = checkerboard ? color.gray : color.lightGray ;
+
+// Ball of radius 100 colored by the distance between noise cells (20 mm
+// cells), mapped through the viridis ramp. Dividing by the cell size keeps
+// the ramp input in the same 0 to 1 range at any scale.
+cellSize = 20;
+cellular = noise.cellularEdges(cellSize);
+ball = sphere(100);
+ball.color = color.viridis(cellular / cellSize * 1.2);
+
+// Roughen the ball with the same noise, spin it, and lift it by height.
+ballSpike = ball + cellular * 0.2;
+ballRot = remap(ballSpike, map.rotateZX(p, time * 0.5));
+ballTrans = transform.translate(ballRot, height * vector.dirZ);
+
+// A smaller ball to the side; both balls and the floor blend with radius ballrad.
+ball2 = sphere([120, 0, 40], 40);
+balls = unionRound([ballTrans, ball2], ballrad);
+body = unionRound([balls, flr], ballrad);
+
+// The same blend in one step; kept for comparison, not returned.
+bodyAlt = unionRound([ballTrans, ball2, flr], ballrad);
+
+return body;

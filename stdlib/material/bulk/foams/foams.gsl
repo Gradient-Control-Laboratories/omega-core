@@ -1,0 +1,123 @@
+
+// Foam Materials (material/bulk/foams)
+//
+// Plural because lattice/foam holds the foam lattices and a library's
+// last path segment is its prefix, so one of them had to differ.
+//
+// Foams as a cut or a skinned face shows them: open-cell foam's cells as
+// pits, closed-cell foam's skin with the cells faint beneath, expanded
+// polystyrene's beads, and silica aerogel, which is barely there. Each is
+// a bulk material and returns material, color, height and slope, as the
+// coats do. A cell is a cellular feature point with a radius, as the
+// stones of masonry are, and the share of a face inside them goes as
+// 3.5 (r / spacing)^3 (measured there).
+//
+// Doc convention follows builtin/base.gsl: `///` lines are public docs.
+
+import "material";
+import "texture";
+import "noise";
+import "color";
+
+/// openCell(foamColor, cellSize): open-cell foam of `foamColor`, a
+/// polyurethane, cut: its cells `cellSize` mm across (0.2 to 3) are pits
+/// over half the face, each a hemisphere, dark in the bottom, the struts
+/// between them matte. Returns material, color, height and slope.
+openCell(@color foamColor, @range(0.2, 3) cellSize) {
+  radius = 0.5 * cellSize;
+  // Half the face: r / spacing is the cube root of 0.5 / 3.5.
+  f1, f2, cell = noise.cellularCell(radius / 0.523);
+  dome = f1 < radius ? sqrt(max(0, 1 - f1 * f1 / (radius * radius))) : 0;
+  pit = texture.fadeTo(texture.mask(radius - f1, 0, max(0.1 * cellSize, pixelSize())), 0.5, cellSize);
+  tone = foamColor * (1 - 0.45 * pit) * texture.grainShade(0.3 * cellSize, 0.06);
+  tone.simple = foamColor * (1 - 0.45 * 0.5);
+  // A hemisphere's mean over the face is 0.6 of the share inside it.
+  cut = material.withDisplacement(material.make(0.9, 0, 1.45), -0.4 * cellSize * dome * texture.fadeDetail(cellSize));
+  cut.simple = material.withDisplacement(material.make(0.9, 0, 1.45), -0.4 * cellSize * 0.6 * 0.5);
+  return cut, tone, 0, 0;
+}
+
+/// closedCell(foamColor, cellSize): closed-cell foam of `foamColor`, an
+/// EVA or an extruded polystyrene, skinned: the skin smooth and a little
+/// soft, its cells `cellSize` mm across (0.2 to 2) showing through as a 4%
+/// shade each, a pit where 3% of them broke. Returns material, color,
+/// height and slope.
+closedCell(@color foamColor, @range(0.2, 2) cellSize) {
+  tone = foamColor * texture.grainShade(cellSize, 0.04) * (1 - 0.4 * texture.grainSpecks(cellSize, 0.03));
+  skinned = material.withDisplacement(material.make(0.7, 0, 1.45), -texture.grainRelief(cellSize, 0.05));
+  skinned.simple = material.make(0.7, 0, 1.45);
+  return skinned, tone, 0, 0;
+}
+
+/// beaded(foamColor, beadSize): expanded polystyrene of `foamColor`, its
+/// beads `beadSize` mm across (2 to 8) fused with a dark seam between
+/// them, each a shade off the next and domed a sixteenth of its width.
+/// Returns material, color, height and slope.
+beaded(@color foamColor, @range(2, 8) beadSize) {
+  f1, f2, cell = noise.cellularCell(beadSize);
+  pick = noiseHash3(cell + [29, 5, 67]);
+  seam = 1 - texture.mask(f2 - f1, 0.08 * beadSize, max(0.03 * beadSize, pixelSize()));
+  seamShare = 0.2;
+  tone = foamColor * (1 + 0.04 * (2 * pick.x - 1)) * (1 - 0.25 * texture.fadeTo(seam, seamShare, beadSize));
+  tone.simple = foamColor * (1 - 0.25 * seamShare);
+  crown = 0.0625 * beadSize * min(1, (f2 - f1) / (0.4 * beadSize));
+  fused = material.withDisplacement(material.make(0.5, 0, 1.6), crown * texture.fadeDetail(beadSize));
+  fused.simple = material.withDisplacement(material.make(0.5, 0, 1.6), 0.0625 * beadSize * 0.6);
+  return fused, tone, 0, 0;
+}
+
+/// aerogel(tint, haze): silica aerogel, index 1.03, passing most of the
+/// light and scattering the blue out of it, so it reads `tint` (a pale
+/// blue) against the dark and warm in transmission; `haze` (0 to 1) is how
+/// cloudy the block is, from a clear tile to a milky one. Returns
+/// material, color, height and slope.
+aerogel(@color tint, @range(0, 1) haze) {
+  block = material.withTransmission(material.make(0.15 + 0.5 * haze, 0, 1.03), 0.75 * (1 - 0.6 * haze), 30);
+  return block, tint, 0, 0;
+}
+
+// ===========================================================================
+// Ready-made
+// ===========================================================================
+
+/// Polyurethane foam, cut, 0.8 mm cells. Returns material and colour.
+@material polyurethaneFoam() {
+  cut, tone, height, slope = openCell([0.85, 0.78, 0.5], 0.8);
+  return cut, tone;
+}
+
+/// Memory foam, cut, 0.4 mm cells, off-white. Returns material and colour.
+@material memoryFoam() {
+  cut, tone, height, slope = openCell([0.9, 0.9, 0.88], 0.4);
+  return cut, tone;
+}
+
+/// Black EVA foam, skinned, 0.5 mm cells. Returns material and colour.
+@material evaFoam() {
+  skinned, tone, height, slope = closedCell([0.08, 0.08, 0.08], 0.5);
+  return skinned, tone;
+}
+
+/// Expanded polystyrene, physical's white, 4 mm beads. Returns material
+/// and colour.
+@material polystyreneFoam() {
+  fused, tone, height, slope = beaded([0.9257, 0.9253, 0.9266], 4);
+  return fused, tone;
+}
+
+/// Silica aerogel, a pale blue block, a little hazy. Returns material and
+/// colour.
+@material aerogel() {
+  block, tone, height, slope = aerogel([0.78, 0.88, 1], 0.4);
+  return block, tone;
+}
+
+// References
+//   Catholic University of America, Vitreous State Laboratory. Aerogel
+//     absorption length: aerogels in general have a refractive index around
+//     1.01 to 1.06. https://www.vsl.cua.edu/cua_phy/index.php/MainPage:Nuclear:Summer2014:AerogelAbsorptionLength
+//   PMC 8896977. Nearly all transparent silica aerogels look blue, the
+//     Rayleigh scattering of white light in their nanopores, the
+//     transmitted light orangish. https://pmc.ncbi.nlm.nih.gov/articles/PMC8896977
+//   Polystyrene foam's colour is physical's (physical.gsl cites it); the
+//     cell sizes, the pits, the seams and the aerogel's haze are judged.

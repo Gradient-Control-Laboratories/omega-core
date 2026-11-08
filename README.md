@@ -69,9 +69,7 @@ omega-core/
 │   └── serve/                 # Local HTTP server and WebGPU viewer host
 │       └── main.go            # Entry point and HTTP server startup
 ├── examples/                  # Curated showcase GSL models and assets
-│   ├── gears.gsl              # Parametric helical gear pair showcase (from common/web/example/Gears.gsl)
-│   ├── glass.gsl              # Transmissive glass and refraction showcase (from common/web/example/Material - Glass.gsl)
-│   ├── can.gsl                # Volume of a can at a fixed material budget, optimized with the .d(var) derivative
+│   ├── *.gsl                  # Showcase models, one per file: mechanical (gears, fasteners, drivers, linkages), lattices and TPMS, blends, materials, noise, text, math. Each opens with @scene, sized to fit its viewing box
 │   ├── assets/                # Traditional CAD mesh assets (bracket.stl)
 │   └── viewer/                # Interactive WebGPU viewer web application
 │       ├── README.md          # Viewer usage and architecture overview
@@ -161,7 +159,10 @@ omega-core/
 │   ├── transform/
 │   └── vector/
 └── tool/                      # Developer build and automation scripts
-    ├── build.sh               # Builds compiler executables into bin/
+    ├── build-cli.sh          # Builds compiler CLI executables (gsl, compile, serve, fix) into bin/
+    ├── build-fidget.sh        # Builds Fidget and Manifold Rust/C++ native and WASM artifacts
+    ├── build-proto.sh         # Compiles program.proto and tape.proto into Go bindings
+    ├── build-wgsl-accel-ops.sh # Regenerates WGSL hardware acceleration ops table and inliner registry
     ├── check.sh               # Pre-commit quality gate (gofmt, go vet, tests)
     ├── clean.sh               # Cleans bin/ outputs, test cache, and scratch files
     ├── test.sh                # Runs unit, integration, and golden test suites
@@ -174,7 +175,7 @@ omega-core/
 Compile the `gsl`, `compile`, `serve`, and `fix` binaries into `bin/`:
 
 ```bash
-./tool/build.sh
+./tool/build-cli.sh
 ```
 
 Run pre-commit quality checks (gofmt, go vet, and tests):
@@ -259,3 +260,10 @@ Refactor `.gsl` files or directories in-place (or preview with `-diff`):
 bin/gsl fix -diff examples
 bin/gsl fix examples
 ```
+
+## License
+
+The code and data authored for this repository are released under the [MIT License](LICENSE).
+Third-party components keep their own licenses: they are listed, with their license texts, in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md), and the vendored directories carry their own
+license files (for example `internal/fidget/vendor/`, which is MPL-2.0).

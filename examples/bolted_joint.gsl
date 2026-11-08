@@ -1,0 +1,92 @@
+@scene(100)
+
+// A BOLTED JOINT, one call each: an ISO 4762 M6 cap screw clamping a lid to a
+// base, its head down in a counterbore and its thread in a tapped hole.
+//
+// joint.bolted TAKES THE BODIES AND HANDS THEM BACK FINISHED. Given the part
+// it clamps, the part it threads into, the seat, the direction the shank runs,
+// the size, the grip and the fit, it returns the screw, the clamped part with
+// its counterbore and ISO 273 clearance cut, and the threaded part with its
+// tapped hole cut — every feature from one frame and one size, so nothing has
+// to be kept in step by hand. It picks the screw's length too: the shortest
+// ISO 4762 length that threads 1.5 diameters past the grip, an M6 x 20 here.
+//
+// The right-hand joint sits square to a 30-degree face; the only difference
+// between it and the upright one is the seat and direction it is handed.
+//
+// THE THREADS ARE RELIEF. The screw is the smooth shank at the major diameter
+// and the base is bored at the basic minor, their maximum-material forms, and
+// the joint puts each thread on its part's material. They interfere by the
+// annulus between those diameters where they share length — the engagement —
+// which is designed, and which the joint's claims allow for by name.
+//
+// PROVE IT WITH verifyJoints, which finds both joints and proves, for each over
+// its own region, that the screw clears the lid, overlaps the base only in its
+// thread, that the lid fills the grip under the head, that the base holds 1.5 d
+// of thread with a wall round it, and that the screw clears everything else
+// returned. A grip that is not the parts' grip, or a base too thin round the
+// thread, comes back disproven.
+//
+// The lids and bases are CUT AWAY in front of y = 0 to show the joint; the
+// screws are whole.
+
+aluminumMat, aluminumColor = metal.aluminum();
+steelMat, steelColor = metal.steel();
+
+d = 6.0;
+fit = fastener.fitMedium;
+
+// The lid under the head is `grip` thick, and the counterbore takes the 6 tall
+// head half a millimetre below the lid's face.
+grip = 7.5;
+cbDepth = 6.5;
+
+// The bodies before the joint, in its frame: seating plane z = 0, shank down.
+lidLocal = box([-15.0, -15.0, 0.0 - grip], [15.0, 15.0, cbDepth]);
+baseLocal = box([-15.0, -15.0, -30.0], [15.0, 15.0, 0.0 - grip]);
+
+// The upright joint: both bodies placed by the seat's own frame.
+seat1 = [-22.0, 0.0, 0.0];
+dir1 = [0.0, 0.0, -1.0];
+at1 = fastener.seatedAt(seat1, dir1);
+screw1, lidWhole1, baseWhole1 = joint.bolted(remap(lidLocal, at1), remap(baseLocal, at1),
+                                             seat1, dir1, d, grip, fit);
+
+// The tilted joint: a block whose top is a 30-degree face, built in the WORLD,
+// with the screw driven square into that face. The seat is the lid's thickness
+// out along the face's normal; the shank runs back along the normal's reverse.
+faceN = [0.5, 0.0, 0.8660254];
+facePt = [24.0, 0.0, 0.0];
+seat2 = facePt + faceN * grip;
+dir2 = neg(faceN);
+block = max(box([6.0, -15.0, -30.0], [42.0, 15.0, 20.0]), dot(p - facePt, faceN));
+screw2, lidWhole2, baseWhole2 = joint.bolted(remap(lidLocal, fastener.seatedAt(seat2, dir2)), block,
+                                             seat2, dir2, d, grip, fit);
+
+// The cutaway: everything in front of y = 0 is taken off the lids and bases.
+cutaway = neg(p.y);
+lid1 = max(lidWhole1, cutaway);
+lid2 = max(lidWhole2, cutaway);
+base1 = max(baseWhole1, cutaway);
+base2 = max(baseWhole2, cutaway);
+
+// The lids are aluminium. The bases keep the joint's thread, but a base is
+// tapped first and cut away after, the way it is made: its height is the cut
+// base less the cut THREADED base, so the renderer marches exactly the tapped
+// base cut at y = 0. The joint's relief laid straight on the cut base would
+// push the cut face back by its helix.
+pitchVal = thread.metricPitch(d);
+female = thread.femaleRelief(d, pitchVal, 0.0 - grip,
+                             0.0 - (joint.boltedLength(d, grip) + 3.0 * pitchVal));
+lid1.material = aluminumMat;
+lid1.color = aluminumColor;
+lid2.material = aluminumMat;
+lid2.color = aluminumColor;
+tapped1 = base1 - max(baseWhole1 - remap(female, at1), cutaway);
+tapped2 = base2 - max(baseWhole2 - remap(female, fastener.seatedAt(seat2, dir2)), cutaway);
+base1.material = material.withDisplacement(steelMat, tapped1);
+base1.color = thread.reliefColor([0.36, 0.38, 0.42], tapped1, pitchVal);
+base2.material = material.withDisplacement(steelMat, tapped2);
+base2.color = thread.reliefColor([0.36, 0.38, 0.42], tapped2, pitchVal);
+
+return screw1, lid1, base1, screw2, lid2, base2;

@@ -1,28 +1,11 @@
 package slider
 
 import (
-	"gradientcontrol.com/omega/core/internal/edit"
+	"gradientcontrol.com/omega/core/assembler/slider"
+	"gradientcontrol.com/omega/core/program/edit"
 	"gradientcontrol.com/omega/core/internal/eval"
 	"gradientcontrol.com/omega/core/program"
 )
-
-// SliderInfo describes a top-level variable declared with both a `.min` and `.max` property
-// whose assignment is a simple numeric literal.
-//
-// The editor renders a slider per entry. The slider's value drives a WGSL uniform.
-// The wgsl agent lifts the literal into a top-level `sdShape` parameter
-// with the name stored in the ParamName field so the host can update it without recompiling.
-// The editor literal at LiteralStart is also rewritten so the source persists the new value.
-type SliderInfo struct {
-	VariableName string    `json:"variableName"`
-	Min          float64   `json:"min"`
-	Max          float64   `json:"max"`
-	InitialValue float64   `json:"initialValue"`
-	Decimals     int       `json:"decimals"`         // Decimal-place count of the source literal (0 for "5", 1 for "0.5", 2 for "0.50") — drives slider rounding step (10^-decimals)
-	ParamName    string    `json:"paramName"`        // Codegen-emitted WGSL parameter name (gsl_param_<line>_<col>) — matches the lifted literal
-	Span         edit.Span `json:"span"`             // Full span of the literal token in source; on each drag we overwrite this range
-	Period       float64   `json:"period,omitempty"` // Optional .period (seconds): when > 0, the host drives the uniform as a sinusoid through [min, max] with the given period; 0/absent means static
-}
 
 // Extract walks the top-level declarations and returns one
 // SliderInfo per variable that satisfies all of:
@@ -35,12 +18,12 @@ type SliderInfo struct {
 // Anything more elaborate on the RHS (`x = 27 + 3` or a function call)
 // is skipped; the slider UI has nowhere unambiguous to commit the new
 // value back to.
-func Extract(source string, pkg *program.Package) []SliderInfo {
+func Extract(source string, pkg *program.Package) []slider.SliderInfo {
 	if pkg == nil {
 		return nil
 	}
 	assignments, fnTypes := topLevel(pkg)
-	var sliders []SliderInfo
+	var sliders []slider.SliderInfo
 	for _, a := range assignments {
 		if s, ok := sliderFromAssignment(source, a, assignments, fnTypes); ok {
 			sliders = append(sliders, s)
@@ -83,9 +66,9 @@ func topLevel(pkg *program.Package) ([]*program.Assignment, []*program.FnType) {
 }
 
 func sliderFromAssignment(source string, a *program.Assignment,
-	assignments []*program.Assignment, fnTypes []*program.FnType) (SliderInfo, bool) {
+	assignments []*program.Assignment, fnTypes []*program.FnType) (slider.SliderInfo, bool) {
 	if len(a.Variables) != 1 || a.Range == nil || a.Expression == nil {
-		return SliderInfo{}, false
+		return slider.SliderInfo{}, false
 	}
 	v := a.Variables[0]
 
@@ -98,17 +81,17 @@ func sliderFromAssignment(source string, a *program.Assignment,
 		maxVal, okMax = foldBound(a.Range.Max, assignments, fnTypes)
 	}
 	if !okMin || !okMax {
-		return SliderInfo{}, false
+		return slider.SliderInfo{}, false
 	}
 
 	// Only literal-valued assignments can be scrubbed in place.
 	op := a.Expression
 	if op.Start == nil || op.End == nil {
-		return SliderInfo{}, false
+		return slider.SliderInfo{}, false
 	}
 	valOp, isValue := op.T.(*program.Operand_Value)
 	if !isValue || valOp == nil {
-		return SliderInfo{}, false
+		return slider.SliderInfo{}, false
 	}
 
 	// span matches the parser's operand span exactly.
@@ -132,7 +115,7 @@ func sliderFromAssignment(source string, a *program.Assignment,
 		period = p
 	}
 
-	return SliderInfo{
+	return slider.SliderInfo{
 		VariableName: v.Name,
 		Min:          minVal,
 		Max:          maxVal,

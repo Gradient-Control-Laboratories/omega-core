@@ -54,7 +54,7 @@
 //                           reply goes to its mesh viewer).
 //   serverExportUnavailable optional; with no onServerExport, keeps Server
 //                           DC in the list, disabled, with this as its title
-//                           (webai, so its panel matches webdm's).
+//                           (webai, so its panel matches the other app's).
 //   getVisibleShapes()      optional; the 1-based returns the viewer shows, or
 //                           null for all. Exports mesh only those, and several
 //                           bodies download as a zip of one STL each.
@@ -64,7 +64,7 @@
 //                           body), and for each body's color in a 3MF (the
 //                           Bodies panel's "#rrggbb"). Without it that export
 //                           meshes the tape whole, and a 3MF takes the palette.
-//   getWorkOrder()          optional; the open document's work order, so the
+//   getDocument()           optional; the open document's name, so the
 //                           Browser MC export resolves its imports.
 //   onSaveTape()            optional; tape export, the Omega Tape format.
 //                           Without it Omega Tape is not offered (webedit).
@@ -89,7 +89,7 @@ import { EXPORT_PANEL_MARKUP } from "./export-panel-markup.js";
 const FidgetWasm = null;
 import { ProgressBar } from "../ui/progress-bar.js";
 const weldStl = null, writeThreeMf = null;
-const paletteColor = () => [0.5, 0.5, 0.5], rgbToHex = ([r, g, b]) => "#" + [r, g, b].map(v => Math.round(v * 255).toString(16).padStart(2, "0")).join("");
+import { paletteColor, rgbToHex } from "./body-palette.js";
 import { unzipSync, zipSync } from "three/addons/libs/fflate.module.js";
 
 let deps = {};
@@ -254,9 +254,9 @@ function requestExportPlan(source) {
         eventManager.addListener("canvas/errors", onErrors);
         timer = setTimeout(() => done(reject, new Error("timed out waiting for the export plan")), PLAN_TIMEOUT_MS);
 
-        // The document's imports (a branch's STEP part) resolve by its work order.
-        const workOrder = deps.getWorkOrder?.() || '';
-        if (!deps.send('canvas/mesh', { source, exportMode: 'plan', ...(workOrder ? { workOrder } : {}) }, ["canvas"])) {
+        // The document's imports (a branch's STEP part) resolve by its name.
+        const docName = deps.getDocument?.() || '';
+        if (!deps.send('canvas/mesh', { source, exportMode: 'plan', ...(docName ? { document: docName } : {}) }, ["canvas"])) {
             done(reject, new Error("not connected"));
         }
     });
