@@ -1,13 +1,14 @@
 
-// Machined Materials (material/machined)
+// Machined Materials (material/process/machined)
 //
 // The surfaces machining leaves on a part, from the process's own
 // parameters: a lathe's feed and tool nose, a face mill's cutter and feed, a
 // grinding wheel's or a brush's scratches, a blast's media, a knurl's pitch.
 // Each takes the part's material and colour, a metal from the metal library
 // usually, and returns material, color, height and slope, as the animated
-// materials do: the height is 0 but for knurling, whose teeth are real shape,
-// and the grooves the tools leave ride in the material, as its lay (the
+// materials do: the height is 0 but for knurling, whose teeth are real shape
+// (a knurl's height counts any relief already on the part, as the Bodies panel
+// applies it in place of the part's), and the grooves the tools leave ride in the material, as its lay (the
 // highlight streaked across them, material.withLay) and, where they are big
 // enough to see, as displacement.
 //
@@ -48,8 +49,8 @@ grooveFinish(baseMaterial, direction, s, spacing, radius) {
   fade = texture.fadeDetail(spacing);
   slope = 0.408 * spacing / radius;
   across = texture.reliefRoughness(0.02, slope, spacing);
-  finish = material.withDisplacement(layFinish(baseMaterial, direction, 0.02, across), -nosePitch(s, spacing, radius) * fade);
-  finish.simple = material.withDisplacement(layFinish(baseMaterial, direction, 0.02, sqrt(0.0004 + slope * slope)), -spacing * spacing / (12 * radius));
+  finish = material.addDisplacement(layFinish(baseMaterial, direction, 0.02, across), -nosePitch(s, spacing, radius) * fade);
+  finish.simple = material.addDisplacement(layFinish(baseMaterial, direction, 0.02, sqrt(0.0004 + slope * slope)), -spacing * spacing / (12 * radius));
   return finish;
 }
 
@@ -107,7 +108,7 @@ turned(baseMaterial, @color baseColor, frame, @range(0.05, 0.3) feed, @range(0.2
 /// round. The inserts leave arcs of the cutter's radius, one every feed, whose
 /// cusps are f^2 / (8 r) high: the highlight streaks across the arcs. Returns
 /// material, color, height and slope.
-faceMilled(baseMaterial, @color baseColor, @point origin, @direction(origin) feedDir, @direction(origin) normal, cutterRadius, feedPerRev, cornerRadius) {
+faceMilled(baseMaterial, @color baseColor, @point origin, @direction(origin) feedDir, @direction(origin) normal, @range(5, 100) cutterRadius, feedPerRev, cornerRadius) {
   n = normalize(normal);
   along = normalize(feedDir - n * dot(feedDir, n));
   side = cross(n, along);
@@ -148,10 +149,14 @@ brushed(baseMaterial, @color baseColor, @direction direction, @range(120, 240) g
 /// media's size, are never big enough to see: they scatter the highlight
 /// evenly into a satin to matte sheen, a lobe 0.3 to 0.5 wide for beads and
 /// 0.5 to 0.7 for sand, growing with the media (judged from Ra 0.8 to 3.4
-/// um). Returns material, color, height and slope.
+/// um). Up close the skin is a speckle, each dimple of the media's size a
+/// shade lighter or darker by a tenth, as fine detail that settles to the
+/// metal's colour. Returns material, color, height and slope.
 blasted(baseMaterial, @color baseColor, @range(50, 400) mediaSize, @range(0, 1) angular) {
   alpha = 0.3 + 0.2 * clamp((mediaSize - 50) / 350, 0, 1) + 0.2 * clamp(angular, 0, 1);
-  return material.withRoughness(baseMaterial, sqrt(alpha)), baseColor, 0, 0;
+  tone = baseColor * texture.grainShade(0.001 * mediaSize, 0.1);
+  tone.simple = baseColor;
+  return material.withRoughness(baseMaterial, sqrt(alpha)), tone, 0, 0;
 }
 
 // A 90 degree tooth's profile, 0 at its crest and -0.5 at its root, in
@@ -169,7 +174,7 @@ knurlTooth(u) {
 /// of teeth round it is whole, so the knurl closes on itself. The teeth are
 /// real shape, pitch / 2 deep: subtract the height from the part and divide
 /// by 1 + slope. Returns material, color, height and slope.
-knurled(baseMaterial, @color baseColor, @point axisOrigin, @direction(axisOrigin) axisDir, diameter, @range(0.4, 1.6) pitch, @range(0, 1) diamond, @range(0, 1) raised) {
+knurled(baseMaterial, @color baseColor, @point axisOrigin, @direction(axisOrigin) axisDir, @range(4, 100) diameter, @range(0.4, 1.6) pitch, @range(0, 1) diamond, @range(0, 1) raised) {
   axis = normalize(axisDir);
   offset = p - axisOrigin;
   radial = offset - axis * dot(offset, axis);
@@ -185,7 +190,7 @@ knurled(baseMaterial, @color baseColor, @point axisOrigin, @direction(axisOrigin
   right = knurlTooth(around - 0.57735 * axial);
   crossed = raised > 0.5 ? min(left, right) : max(left, right);
   height = (diamond > 0.5 ? crossed : straight) * pitch + 0.25 * pitch;
-  return baseMaterial, baseColor, height, 1.2;
+  return baseMaterial, baseColor, height + material.displacement(baseMaterial), 1.2;
 }
 
 /// knurled(baseMaterial, baseColor, frame, diameter, pitch, diamond, raised):
@@ -193,7 +198,7 @@ knurled(baseMaterial, @color baseColor, @point axisOrigin, @direction(axisOrigin
 /// are counted round u and spaced along v. The count round the part is whole,
 /// so the pattern runs on across u's seam, where u's value jumps by a turn.
 /// Returns material, color, height and slope.
-knurled(baseMaterial, @color baseColor, frame, diameter, @range(0.4, 1.6) pitch, @range(0, 1) diamond, @range(0, 1) raised) {
+knurled(baseMaterial, @color baseColor, frame, @range(4, 100) diameter, @range(0.4, 1.6) pitch, @range(0, 1) diamond, @range(0, 1) raised) {
   teeth = floor(3.14159265 * diameter / pitch + 0.5);
   around = frame.x / 6.2831853 * teeth;
   axial = frame.y / pitch;
@@ -203,7 +208,175 @@ knurled(baseMaterial, @color baseColor, frame, diameter, @range(0.4, 1.6) pitch,
   right = knurlTooth(around - 0.57735 * axial);
   crossed = raised > 0.5 ? min(left, right) : max(left, right);
   height = (diamond > 0.5 ? crossed : straight) * pitch + 0.25 * pitch;
-  return baseMaterial, baseColor, height, 1.2;
+  return baseMaterial, baseColor, height + material.displacement(baseMaterial), 1.2;
+}
+
+// --- Honed, engine turned and ball milled ---
+
+/// honed(baseMaterial, baseColor, frame, angle, grit): a bore honed on the
+/// part's own frame, `[bore.u, bore.v]`: the stones' scratches cross at
+/// `angle` degrees included (30 to 60; 45 is the usual target), half each
+/// way from the circumferential, cut by an abrasive of `grit` (120 to 400),
+/// Ra falling with it from about 0.8 to 0.2 um (judged from the brush). The
+/// lobe is the two lays' sum, round the bore and widened across by the
+/// crossing; up close the crosshatch shows, each set of scratches a faint
+/// stripe every 0.3 mm, as fine detail that settles to the metal's colour.
+/// Returns material, color, height and slope.
+honed(baseMaterial, @color baseColor, frame, @range(30, 60) angle, @range(120, 400) grit) {
+  half = radians(angle) / 2;
+  // A body with no frame has no direction to give, and normalizing nothing does
+  // not compile; the lay then has no direction either.
+  circumferential = frame.x.dp / max(length(frame.x.dp), 0.000001);
+  axial = frame.y.dp / max(length(frame.y.dp), 0.000001);
+  ra = 0.8 * pow(120 / grit, 1.2);
+  across = 0.3 * ra / 0.8 + 0.3 * sin(half);
+  // Each scratch set's stripes run across it, along the in-surface
+  // perpendicular to its direction.
+  acrossA = cos(half) * axial - sin(half) * circumferential;
+  acrossB = cos(half) * axial + sin(half) * circumferential;
+  stripes = texture.squareWave(dot(p, acrossA), 0.3) + texture.squareWave(dot(p, acrossB), 0.3);
+  shade = 1;
+  shade.detail = texture.fadeTo(1 - 0.04 * stripes, 0.96, 0.3);
+  shade.detailSize = 0.3;
+  tint = baseColor * shade;
+  tint.simple = baseColor * 0.96;
+  return layFinish(baseMaterial, circumferential, 0.03, across), tint, 0, 0;
+}
+
+/// engineTurned(baseMaterial, baseColor, origin, feedDir, normal, spot,
+/// stepover): engine turning (jewelling), overlapping circles of circular
+/// brushed lay: spots `spot` mm across laid in rows along feedDir on a face
+/// facing `normal` through `origin`, each `stepover` of the spot's width from
+/// the last (0.4 to 0.5), the next spot and the next row overlapping the one
+/// before, so each shows as a crescent of lay round its own centre, its rim
+/// a faint line where it overlaps the spot before, as fine detail. The lobe
+/// is the brush's, 0.3 across its lay; too small to show, the spots average
+/// to a round lobe and the rims to the metal's colour. Returns material,
+/// color, height and slope.
+engineTurned(baseMaterial, @color baseColor, @point origin, @direction(origin) feedDir, @direction(origin) normal, @range(3, 25) spot, @range(0.3, 0.6) stepover) {
+  n = normalize(normal);
+  along = normalize(feedDir - n * dot(feedDir, n));
+  side = cross(n, along);
+  offset = p - origin;
+  x = dot(offset, along);
+  y = dot(offset, side);
+  pitch = stepover * spot;
+  radius = 0.5 * spot;
+  i = floor(x / pitch);
+  j = floor(y / pitch);
+  // The spot that shows at a point is the last laid that covers it: the
+  // next row's, nearest first, then the next in its own row, then its own.
+  cA = [(i + 1.5) * pitch, (j + 1.5) * pitch];
+  cB = [(i + 0.5) * pitch, (j + 1.5) * pitch];
+  cC = [(i - 0.5) * pitch, (j + 1.5) * pitch];
+  cD = [(i + 1.5) * pitch, (j + 0.5) * pitch];
+  cE = [(i + 0.5) * pitch, (j + 0.5) * pitch];
+  here = [x, y];
+  c = length(here - cA) < radius ? cA : (length(here - cB) < radius ? cB : (length(here - cC) < radius ? cC : (length(here - cD) < radius ? cD : cE)));
+  layDir = cross(n, along * (x - c.x) + side * (y - c.y));
+  cut = layFinish(baseMaterial, layDir, 0.03, 0.3);
+  cut.simple = layFinish(baseMaterial, [0, 0, 0], 0.095, 0.095);
+  // The showing spot's rim, a band 0.04 of its width inside its edge, a
+  // shade darker: about 0.12 of a crescent (judged), so the mean is 0.99.
+  rim = 1 - texture.mask(radius - length(here - c), 0.04 * spot, 0.02 * spot);
+  shade = 1;
+  shade.detail = texture.fadeTo(1 - 0.08 * rim, 0.99, spot);
+  shade.detailSize = spot;
+  tint = baseColor * shade;
+  tint.simple = baseColor * 0.99;
+  return cut, tint, 0, 0;
+}
+
+/// ballMilled(baseMaterial, baseColor, origin, feedDir, normal, ballRadius,
+/// stepover): a surface finished by a ball-nose end mill `ballRadius` mm in
+/// radius, in parallel passes along feedDir `stepover` mm apart on a face
+/// facing `normal` through `origin`: the scallops between passes are arcs of
+/// the ball, cusps stepover^2 / (8 r) high, the lay along the feed. Returns
+/// material, color, height and slope.
+ballMilled(baseMaterial, @color baseColor, @point origin, @direction(origin) feedDir, @direction(origin) normal, @range(1, 10) ballRadius, @range(0.1, 3) stepover) {
+  n = normalize(normal);
+  along = normalize(feedDir - n * dot(feedDir, n));
+  side = cross(n, along);
+  s = fract(dot(p - origin, side) / stepover);
+  return grooveFinish(baseMaterial, along, s, stepover, ballRadius), baseColor, 0, 0;
+}
+
+// --- Scraped, lapped, spark eroded, tumbled and polished ---
+
+/// scraped(baseMaterial, baseColor, flakeSize): a way hand-scraped flat, its
+/// flaking the pattern of crescent flakes `flakeSize` mm across (5 to 25),
+/// each a shallow scrape with a lay of its own, so the highlight breaks into
+/// flakes, and each a shade lighter or darker by 3% with a faint edge where
+/// it meets the next, as fine detail at the flake's size. The lobe is a
+/// scrape's, 0.05 along its lay and 0.25 across (judged); too small to show,
+/// the flakes average to a round lobe and the metal's colour. Returns
+/// material, color, height and slope.
+scraped(baseMaterial, @color baseColor, @range(5, 25) flakeSize) {
+  f1, f2, cell = noise.cellularCell(flakeSize);
+  pick = noiseHash3(cell + [71, 19, 43]);
+  flakeLay = pick * 2 - 1;
+  cut = layFinish(baseMaterial, flakeLay, 0.05, 0.25);
+  cut.simple = layFinish(baseMaterial, [0, 0, 0], 0.112, 0.112);
+  edge = texture.coverageLine(f2 - f1, 0.03 * flakeSize);
+  shade = 1;
+  shade.detail = texture.fadeTo((1 + 0.06 * (pick.y - 0.5)) * (1 - 0.06 * edge), 0.995, flakeSize);
+  shade.detailSize = flakeSize;
+  tint = baseColor * shade;
+  tint.simple = baseColor * 0.995;
+  return cut, tint, 0, 0;
+}
+
+/// lapped(baseMaterial, baseColor, roughnessRa): a surface lapped flat, a
+/// mirror with no lay, to `roughnessRa` micrometres Ra (0.01 to 0.1): the
+/// lobe 0.03 wide at 0.01 and 0.08 at 0.1 (judged). Returns material, color,
+/// height and slope.
+lapped(baseMaterial, @color baseColor, @range(0.01, 0.1) roughnessRa) {
+  rough = 0.03 + 0.5 * clamp(roughnessRa - 0.01, 0, 0.1);
+  return material.withLay(material.withRoughness(baseMaterial, rough), [0, 0, 0], 0), baseColor, 0, 0;
+}
+
+/// sparkEroded(baseMaterial, baseColor, vdiGrade): the crater skin of
+/// spark erosion (EDM), graded to VDI 3400 (12 to 45): Ra = 10^(grade / 20)
+/// / 10 um, 0.4 at VDI 12 and 18 at VDI 45. The craters, tens of micrometres
+/// across and growing with the grade, are never big enough to see as relief:
+/// their slopes spread the highlight into a matte, by the relation laserMelted
+/// uses, and up close each crater is a shade lighter or darker by a tenth, as
+/// fine detail that settles to the metal's colour. Shared with molded's
+/// textured finish. Returns material, color, height and slope.
+sparkEroded(baseMaterial, @color baseColor, @range(12, 45) vdiGrade) {
+  ra = pow(10, clamp(vdiGrade, 12, 45) / 20) / 10;
+  skin = material.withLay(material.withRoughness(baseMaterial, sqrt(min(sqrt(0.09 + 0.0036 * ra * ra), 0.95))), [0, 0, 0], 0);
+  crater = 0.02 + 0.01 * ra;
+  tint = baseColor * texture.grainShade(crater, 0.1);
+  tint.simple = baseColor;
+  return skin, tint, 0, 0;
+}
+
+/// tumbled(baseMaterial, baseColor, mediaSize): a part mass-finished in
+/// tumbling media `mediaSize` mm across (1 to 10): its edges and micro-relief
+/// rounded off into a satin with no lay, the lobe 0.3 to 0.45 wide, duller
+/// with bigger media (judged), and up close the media's dimples, a shade
+/// lighter or darker by 5% a tenth of the media's size across, as fine
+/// detail that settles to the metal's colour. Returns material, color,
+/// height and slope.
+tumbled(baseMaterial, @color baseColor, @range(1, 10) mediaSize) {
+  m = clamp((mediaSize - 1) / 9, 0, 1);
+  skin = material.withLay(material.withRoughness(baseMaterial, 0.3 + 0.15 * m), [0, 0, 0], 0);
+  tint = baseColor * texture.grainShade(0.1 * mediaSize, 0.05);
+  tint.simple = baseColor;
+  return skin, tint, 0, 0;
+}
+
+/// polished(baseMaterial, baseColor, mirror): a surface buffed, from a satin
+/// polish (mirror 0, the lobe 0.12 wide) to a mirror (1, 0.05), the buffing
+/// wheel's swirls a lay that wanders over the part every 15 mm or so,
+/// fainter the nearer the mirror (judged). Returns material, color, height
+/// and slope.
+polished(baseMaterial, @color baseColor, @range(0, 1) mirror) {
+  m = clamp(mirror, 0, 1);
+  swirl = [noise.gradientLattice(p / 15 + [3, 7, 11]), noise.gradientLattice(p / 15 + [17, 23, 29]), noise.gradientLattice(p / 15 + [31, 37, 41])];
+  rough = 0.12 - 0.07 * m;
+  return layFinish(baseMaterial, swirl, rough, rough * (1 + 1.5 * (1 - m))), baseColor, 0, 0;
 }
 
 // ===========================================================================
@@ -263,9 +436,69 @@ knurled(baseMaterial, @color baseColor, frame, diameter, @range(0.4, 1.6) pitch,
 
 /// knurled(baseMaterial, baseColor, frame): a raised diamond knurl, 1.0 mm
 /// pitch on a 16 mm diameter, on the part's own frame. Returns material,
-/// color, height and slope.
+/// color, height and slope; the Bodies panel applies the height as
+/// displacement.
 @surface knurled(baseMaterial, @color baseColor, @frame frame) {
   cut, tone, height, slope = knurled(baseMaterial, baseColor, frame, 16, 1.0, 1, 1);
+  return cut, tone, height, slope;
+}
+
+/// honed(baseMaterial, baseColor, frame): honed at a 45 degree crosshatch
+/// with 220 grit, on the part's own frame. Returns material, color, height
+/// and slope.
+@surface honed(baseMaterial, @color baseColor, @frame frame) {
+  cut, tone, height, slope = honed(baseMaterial, baseColor, frame, 45, 220);
+  return cut, tone, height, slope;
+}
+
+/// engineTurned(baseMaterial, baseColor): 12 mm spots stepped 0.45 of their
+/// width, in rows along +X over a +Z face through the origin. Returns
+/// material, color, height and slope.
+@surface engineTurned(baseMaterial, @color baseColor) {
+  cut, tone, height, slope = engineTurned(baseMaterial, baseColor, [0, 0, 0], [1, 0, 0], [0, 0, 1], 12, 0.45);
+  return cut, tone, height, slope;
+}
+
+/// ballMilled(baseMaterial, baseColor): a 6 mm ball-nose end mill in passes
+/// 0.5 mm apart along +X over a +Z face through the origin. Returns
+/// material, color, height and slope.
+@surface ballMilled(baseMaterial, @color baseColor) {
+  cut, tone, height, slope = ballMilled(baseMaterial, baseColor, [0, 0, 0], [1, 0, 0], [0, 0, 1], 3, 0.5);
+  return cut, tone, height, slope;
+}
+
+/// scraped(baseMaterial, baseColor): hand-scraped flaking, 12 mm flakes.
+/// Returns material, color, height and slope.
+@surface scraped(baseMaterial, @color baseColor) {
+  cut, tone, height, slope = scraped(baseMaterial, baseColor, 12);
+  return cut, tone, height, slope;
+}
+
+/// lapped(baseMaterial, baseColor): lapped to a mirror, 0.025 um Ra.
+/// Returns material, color, height and slope.
+@surface lapped(baseMaterial, @color baseColor) {
+  cut, tone, height, slope = lapped(baseMaterial, baseColor, 0.025);
+  return cut, tone, height, slope;
+}
+
+/// sparkEroded(baseMaterial, baseColor): spark eroded to VDI 27, Ra 2.2 um.
+/// Returns material, color, height and slope.
+@surface sparkEroded(baseMaterial, @color baseColor) {
+  cut, tone, height, slope = sparkEroded(baseMaterial, baseColor, 27);
+  return cut, tone, height, slope;
+}
+
+/// tumbled(baseMaterial, baseColor): tumbled in 3 mm media. Returns
+/// material, color, height and slope.
+@surface tumbled(baseMaterial, @color baseColor) {
+  cut, tone, height, slope = tumbled(baseMaterial, baseColor, 3);
+  return cut, tone, height, slope;
+}
+
+/// polished(baseMaterial, baseColor): buffed to a mirror. Returns material,
+/// color, height and slope.
+@surface polished(baseMaterial, @color baseColor) {
+  cut, tone, height, slope = polished(baseMaterial, baseColor, 1);
   return cut, tone, height, slope;
 }
 
@@ -274,3 +507,17 @@ knurled(baseMaterial, @color baseColor, frame, diameter, @range(0.4, 1.6) pitch,
 //     notes.
 //   Euro Inox / IMOA. Surface roughness measurement of stainless steel.
 //   ISO 13444:2012. Knurling.
+//   A multiscale cylinder bore honing pattern lubrication model (2019). SAE
+//     International Journal of Fuels and Lubricants, 12(3), 155-166: the
+//     30, 45 and 60 degree included crosshatch angles.
+//   EngineLabs. Honing at home: 45 degrees included, 22.5 on the angle
+//     card. https://www.enginelabs.com/?p=6118
+//   Engine turning: metal jeweling process guide. The step-over of 0.4 to
+//     0.5 of the tool's width.
+//     https://industrialmonitordirect.com/blogs/knowledgebase/engine-turning-metal-jeweling-process-guide
+//   VDI 3400. Electrical discharge machining: surface texture grades, Ra 0.4
+//     um at VDI 12 to 18 um at VDI 45, with K = 20 log(10 Ra). EDM Today,
+//     Fall 2024, p. 12,
+//     https://www.edmtodaymagazine.com/main_archive/Fall_2024/files/basic-html/page12.html
+//     and the grade chart at
+//     https://hlhrapid.com/knowledge/injection-molding-vdi-surface-finish/

@@ -1,5 +1,5 @@
 
-// Weathering Materials (material/weathering)
+// Weathering Materials (material/coat/weathering)
 //
 // A generic corrosion/weathering modifier for any base material — new
 // package rather than an edit to metal.gsl, which declares itself
@@ -16,12 +16,16 @@ import "material";
 import "material/bulk/metal";
 import "texture";
 
-/// weathered(baseMaterial, baseColor, corrosionColor, amount): a broad
-/// noise.fbm3 blotch mask plus fine noise.cellularEdges pitting, thresholded
-/// via texture.paintMaterial (toward a dead-matte, non-metallic corroded
-/// material — corrosion both roughens and de-metallizes) and texture.paint
-/// together. `amount` in [0,1] raises how much of the surface reads as
-/// corroded. Returns material, color.
+/// weathered(baseMaterial, baseColor, corrosionColor, amount): corrosion in
+/// patches from 5 to 100 mm (blotches at 15 mm over a 60 mm field) broken at
+/// their edges by fine noise.cellularEdges pitting, thresholded crisply via
+/// texture.paintMaterial (toward a dead-matte, non-metallic corroded material
+/// — corrosion both roughens and de-metallizes) and texture.paint together.
+/// As rust does, the corrosion is thin, lighter and yellower at a patch's
+/// edge, deepening to corrosionColor inside it, and it stains the bare
+/// surface around it; inside, it is mottled and flecked with dark pits.
+/// `amount` in [0,1] raises how much of the surface reads as corroded.
+/// Returns material, color.
 ///
 /// Compiler note for any caller wrapping this: forward its result through an
 /// explicit destructure (`m, c = weathered(...); return m, c;`), never a bare
@@ -36,35 +40,95 @@ import "texture";
 /// show the working pattern.
 weathered(baseMaterial, @color baseColor, @color corrosionColor, @range(0, 1) amount) {
   corroded = material.withMetallic(material.withRoughness(baseMaterial, 0.92), 0);
-  // Rust blotches ~15 mm, pits ~1.5 mm. cellularEdges returns a length, so
-  // pit is divided by its cell size to mix with fbm3's unitless blotch.
-  blotch = noise.fbm3(15, 0.5, 2.0);
+  // Blotches ~15 mm over a 60 mm field, so patches range from 5 to 100 mm,
+  // scaled to keep the old field's spread; pits ~1.5 mm. cellularEdges
+  // returns a length, so pit is divided by its cell size to mix with the
+  // unitless blotch.
+  blotch = 0.5 * noise.fbm3(15, 0.5, 2.0) + 0.67 * noise.fbm(60, 3, 0.5, 2);
   // Pits settle to their measured average, 0.199, once too small to resolve.
   pit = texture.fadeTo(noise.cellularEdges(1.5) / 1.5, 0.199, 1.5);
   field = blotch - pit * 0.24;
   edge = 1.0 - amount * 2.0;
-  share = corrodedShare(amount);
-  mat = texture.paintMaterial(field, edge, 0.5, baseMaterial, corroded);
-  col = texture.paint(field, edge, 0.5, baseColor, corrosionColor);
-  mat.simple = material.blend(baseMaterial, corroded, share);
-  col.simple = color.mixOklab(baseColor, corrosionColor, share);
+  // Thin corrosion is lighter and yellower than thick (on steel, the ochre
+  // of fresh rust over the brown of old). It stains and dulls the bare
+  // surface up to 0.6 of the field below a patch's edge and deepens to
+  // corrosionColor over 0.5 above it.
+  stain = 0.35 * texture.mask(field, edge - 0.3, 0.3);
+  mat = texture.paintMaterial(field, edge, 0.08, material.blend(baseMaterial, corroded, stain), corroded);
+  ochre = thinCorrosion(corrosionColor);
+  stained = color.mixOklab(baseColor, ochre, stain);
+  rust = color.mixOklab(ochre, corrosionTone(corrosionColor), texture.mask(field, edge + 0.25, 0.25));
+  col = texture.paint(field, edge, 0.08, stained, rust);
+  mat.simple = material.blend(baseMaterial, corroded, patchShare(amount) + stainPart(amount));
+  col.simple = weatheredMean(baseColor, corrosionColor, amount);
   return mat, col;
 }
 
-// How much of the surface weathered corrodes at `amount`: its field, the
-// blotches less the pits, averages -0.047 and spreads by 0.216 (measured),
-// and the share over the edge follows a mask 0.67 wide about it, to 1.6%.
-corrodedShare(amount) {
-  return texture.mask(-0.047, 1.0 - amount * 2.0, 0.67);
+// thinCorrosion(corrosionColor): corrosion thin enough to be lighter and
+// yellower, as fresh rust is ochre over old rust's brown.
+thinCorrosion(@color corrosionColor) {
+  return color.oklab2rgb(color.rgb2oklab(corrosionColor) + [0.2, -0.025, 0.05]);
 }
 
-/// rustedSteel(amount): metal.steel weathered toward a rust-orange corrosion
-/// color. Returns material, color.
+// corrosionTone(corrosionColor): thick corrosion, mottled at 5 and 40 mm and
+// flecked with roundish dark pits clustered over 20 mm, matched to a rust
+// scan (Poly Haven rust_coarse_01: Oklab L spread 0.035, the variance mostly
+// between 3 and 12 mm). Both terms average to nothing: the mottle is
+// centered, and the pits, 0.159 of the surface (measured), have it taken
+// away; so the tone averages corrosionColor.
+corrosionTone(@color corrosionColor) {
+  grain = noise.fbm(5, 5, 0.6, 2) + 0.4 * noise.fbm(40, 3, 0.5, 2);
+  spot = remap(texture.mask(-noise.voronoi(5, 1, 0, 0) / 5, -0.38, 0.08), noise.warp(4, 1.2)) * texture.mask(noise.fbm(20, 3, 0.5, 2), -0.15, 0.2);
+  dark = texture.fadeTo(spot, 0.159, 3) - 0.159;
+  return color.oklab2rgb(color.rgb2oklab(corrosionColor) + [0.09 * grain - 0.11 * dark, 0.006 * grain - 0.01 * dark, 0.025 * grain - 0.02 * dark]);
+}
+
+// How much of the surface weathered corrodes at `amount`, and how much of it
+// is stained or deep: its field, the blotches less the pits, averages -0.049
+// and spreads by 0.22 (measured), and each share over its edge follows a
+// mask about that average, its width fitted to the measured share over
+// every amount, to 2%.
+patchShare(amount) {
+  return texture.mask(-0.049, 1.0 - amount * 2.0, 0.475);
+}
+
+stainedShare(amount) {
+  return texture.mask(-0.049, 0.7 - amount * 2.0, 0.555);
+}
+
+deepShare(amount) {
+  return texture.mask(-0.049, 1.25 - amount * 2.0, 0.525);
+}
+
+// weatheredMean(baseColor, corrosionColor, amount): weathered's mean color.
+// Each mix is linear in Oklab, and the stain lies wherever the corrosion
+// does not, so the mean is the shares' sum there.
+weatheredMean(@color baseColor, @color corrosionColor, amount) {
+  base = color.rgb2oklab(baseColor);
+  thick = color.rgb2oklab(corrosionColor);
+  thin = color.rgb2oklab(thinCorrosion(corrosionColor));
+  corrodedPart = patchShare(amount);
+  return color.oklab2rgb(base * (1 - corrodedPart) + (thin - base) * stainPart(amount) + thin * corrodedPart + (thick - thin) * deepShare(amount));
+}
+
+// stainPart(amount): the stain's weight over the surface, where it lies
+// outside the patches.
+stainPart(amount) {
+  return 0.35 * max(stainedShare(amount) - patchShare(amount), 0);
+}
+
+/// rustedSteel(amount): metal.steel weathered toward rust, the brown of a
+/// rust scan's mean. Returns material, color.
 rustedSteel(@range(0, 1) amount) {
   steelMat, steelColor = metal.steel();
-  m, c = weathered(steelMat, steelColor, color.hsv2rgb([0.045 * tau, 0.75, 0.55]), amount);
+  m, c = weathered(steelMat, steelColor, rustColor, amount);
   return m, c;
 }
+
+// rustColor is thick rust's mean color on Poly Haven's rust_coarse_01 scan
+// (https://polyhaven.com/a/rust_coarse_01, CC0): Oklab L 0.412, chroma
+// 0.078, hue 52 degrees.
+rustColor = [0.42, 0.24, 0.125];
 
 /// patinaBronze(amount): metal.copper weathered toward a verdigris-green
 /// patina, derived from the existing color.teal (mixed toward white in
@@ -86,28 +150,125 @@ patinaBronze(@range(0, 1) amount) {
   return m, c;
 }
 
+// The coarse part of weathered's corrosion field at q: its 60, 30 and 15 mm
+// octaves, the same lattices as the field itself, so a patch read upstream
+// is the patch drawn there.
+runoffSourceAt(q) {
+  return 0.766 * noise.gradientLattice(q / 60) + 0.383 * noise.gradientLattice(q / 30) + 0.69 * noise.gradientLattice(q / 15);
+}
+
+// How much corrosion lies upstream of q within a run of streakLength: the
+// coarse field's patches read at eight points upstream, a fifth of a run
+// apart (to 1.6 runs), each weighted down as exp(-distance / streakLength)
+// and joined as independent chances (one minus the product of their
+// complements), so one small patch above still sends a drip down. The
+// points shift along each drip by its own jitter, so the drips end at
+// different lengths instead of stacking copies of the patch. 0 to 1.
+runoffReach(q, edge, streakLength, jitter) {
+  step = 0.2 * streakLength;
+  clear = reduce(1, (a, k) {
+    d = step * (k + jitter);
+    return a * (1 - texture.mask(runoffSourceAt(q - [0, 0, d / runoffDrawn]), edge, 0.4) * exp(-d / streakLength));
+  }, [0, 1, 2, 3, 4, 5, 6, 7]);
+  return 1 - clear;
+}
+
+// How much the patches are drawn out along the flow: rust on a wet face
+// spreads down it.
+runoffDrawn = 1.8;
+
+// The runoff below the patches, read at q, the point in the flow frame
+// (z down the flow) drawn out by runoffDrawn: how far the corrosion reaches
+// (0 to 1) and the drips (0 to 1), zero crossings of noise 12 mm across
+// drawn out along the flow, widest under their source and thinning to
+// nothing.
+runoffWeights(q, edge, streakLength) {
+  // A drip runs straight, twelve times as long as it is apart from the
+  // next (in q, so twenty times on the face), and wanders a little.
+  drip = remap(noise.anisotropic(12, [0, 0, 1], 12, 2), remap(noise.warp(30, 2.5), q));
+  jitter = 0.5 + 0.5 * remap(noise.anisotropic(8, [0, 0, 1], 12, 1), q + [13, 7, 3]);
+  reach = runoffReach(q, edge, streakLength, jitter);
+  // |drip| grows about 0.05 a mm across a zero crossing (measured), so a
+  // drip is up to about 3 mm wide under its source, a fifth of the face
+  // there, and narrows as the reach falls.
+  half = 0.07 * reach;
+  line = reach * (1 - texture.mask(abs(drip), half, max(0.6 * half, 0.025 * pixelSize())));
+  return reach, line;
+}
+
 /// weatheredRunoff(baseMaterial, baseColor, corrosionColor, amount,
-/// flowOrigin, flowDir, streakLength): anisotropic rust-runoff streaking —
-/// corrosion visibly runs and pools downward along flowDir instead of
-/// forming isotropic blotches. Decomposes p via map.axisAt(flowOrigin,
-/// flowDir), compresses the along-flow noise coordinate before sampling
-/// (anisotropic noise via non-uniform domain scale), and adds a linear
-/// along-flow bias before thresholding. Returns material, color.
-weatheredRunoff(baseMaterial, @color baseColor, @color corrosionColor, @range(0, 1) amount, @point flowOrigin, @direction(flowOrigin) flowDir, streakLength) {
-  local = map.axisAt(flowOrigin, flowDir);
-  compressed = [local.x, local.y, local.z / streakLength];
-  blotch = remap(noise.fbm3(15, 0.5, 2.0), compressed);
-  pit = texture.fadeTo(remap(noise.cellularEdges(1.5), compressed) / 1.5, 0.199, 1.5);
-  flowBias = -local.z / streakLength * 0.6;
-  field = blotch - pit * 0.24 + flowBias;
+/// flowOrigin, flowDir, streakLength): rust that has run. The patches are
+/// weathered's (5 to 100 mm, crisp, thin and ochre at the edge, thick and
+/// mottled inside, flecked with pits), drawn out 1.8 times along flowDir
+/// as rust on a wet face spreads down it; below each, the runoff: drips
+/// about 3 mm wide that run straight down flowDir, wandering a little,
+/// browner near their source and thinning and fading over about
+/// `streakLength` mm (1.6 runs at most), over a faint ochre wash, crossing
+/// bare face and thin corrosion alike. `amount` in [0,1] raises how much
+/// corrodes, as weathered's does. The pattern is the same everywhere along
+/// the flow; flowOrigin only anchors it. Returns material, color.
+weatheredRunoff(baseMaterial, @color baseColor, @color corrosionColor, @range(0, 1) amount, @point flowOrigin, @direction(flowOrigin) flowDir, @range(5, 200) streakLength) {
+  f = normalize(flowDir);
+  local = map.axisAt(flowOrigin, f);
   corroded = material.withMetallic(material.withRoughness(baseMaterial, 0.92), 0);
+  // The patches: weathered's field and edge.
+  q = [local.x, local.y, local.z / runoffDrawn];
+  blotch = remap(0.5 * noise.fbm3(15, 0.5, 2.0) + 0.67 * noise.fbm(60, 3, 0.5, 2), q);
+  pit = texture.fadeTo(noise.cellularEdges(1.5) / 1.5, 0.199, 1.5);
   edge = 1.0 - amount * 2.0;
-  share = corrodedShare(amount);
-  mat = texture.paintMaterial(field, edge, 0.5, baseMaterial, corroded);
-  col = texture.paint(field, edge, 0.5, baseColor, corrosionColor);
-  mat.simple = material.blend(baseMaterial, corroded, share);
-  col.simple = color.mixOklab(baseColor, corrosionColor, share);
+  reach, line = runoffWeights(q, edge, streakLength);
+  // Wet rust creeps down below a patch before it dries: the patches reach
+  // further down the flow the more corrosion lies above.
+  field = blotch - pit * 0.24 + 0.12 * reach;
+  wash = 0.2 * reach;
+  ring = 0.35 * texture.mask(field, edge - 0.15, 0.15);
+  deep = texture.mask(field, edge + 0.25, 0.25);
+  // The drips run over the bare face and the thin corrosion alike; thick
+  // corrosion buries them.
+  run = 0.85 * line * (1 - deep);
+  stain = max(max(ring, wash), run);
+  mat = texture.paintMaterial(field, edge, 0.08, material.blend(baseMaterial, corroded, stain), corroded);
+  ochre = thinCorrosion(corrosionColor);
+  // The ring is thin, ochre corrosion; the runoff carries thicker, browner
+  // rust, browner near its source.
+  dripColor = color.mixOklab(ochre, corrosionColor, 0.3 + 0.6 * reach);
+  ringed = color.mixOklab(baseColor, ochre, ring);
+  washed = color.mixOklab(ringed, dripColor, wash);
+  rust = color.mixOklab(ochre, corrosionTone(corrosionColor), deep);
+  painted = texture.paint(field, edge, 0.08, washed, rust);
+  col = color.mixOklab(painted, dripColor, run);
+  mat.simple = material.blend(baseMaterial, corroded, runoffCorrodedShare(amount, streakLength));
+  col.simple = runoffMean(baseColor, corrosionColor, amount, streakLength);
   return mat, col;
+}
+
+// How much of weatheredRunoff's color is the bare face, how much the thick
+// corrosion (the rest is the thin, ochre corrosion), and how much of its
+// material is corroded, at `amount` and `streakLength`. The pattern is the
+// same everywhere along the flow, so each is a constant: measured over 8000
+// points in a 400 mm cube at amounts 0 to 1 by tenths and runs of 5, 20, 60
+// and 200 mm, and fitted, as weathered's shares are, by a mask about the
+// field whose edge moves a little with the run, to 2.7%.
+runoffBareShare(amount, streakLength) {
+  return 1 - texture.mask(0, 0.86 - 2 * amount - 0.01 * (sqrt(streakLength / 20) - 1), 0.47);
+}
+
+runoffThickShare(amount, streakLength) {
+  return texture.mask(0, 1.13 - 2 * amount - 0.01 * (sqrt(streakLength / 20) - 1), 0.61);
+}
+
+runoffCorrodedShare(amount, streakLength) {
+  return texture.mask(0, 0.885 - 2 * amount - 0.01 * (sqrt(streakLength / 20) - 1), 0.465);
+}
+
+// runoffMean(baseColor, corrosionColor, amount, streakLength):
+// weatheredRunoff's mean color. Every mix is linear in Oklab and the thick
+// corrosion's tone averages corrosionColor, so the mean is the three
+// colors in their shares.
+runoffMean(@color baseColor, @color corrosionColor, amount, streakLength) {
+  bare = runoffBareShare(amount, streakLength);
+  thick = runoffThickShare(amount, streakLength);
+  return color.oklab2rgb(color.rgb2oklab(baseColor) * bare + color.rgb2oklab(corrosionColor) * thick + color.rgb2oklab(thinCorrosion(corrosionColor)) * (1 - bare - thick));
 }
 
 // ===========================================================================
@@ -137,9 +298,9 @@ weatheredRunoff(baseMaterial, @color baseColor, @color corrosionColor, @range(0,
 // full form; see doc/material_composition.md, "Design: operators as presets".
 
 /// weathered(baseMaterial, baseColor): rusted halfway, toward rustedSteel's
-/// orange. Returns material and colour.
+/// rust. Returns material and colour.
 @surface weathered(baseMaterial, @color baseColor) {
-  m, c = weathered(baseMaterial, baseColor, color.hsv2rgb([0.045 * tau, 0.75, 0.55]), 0.5);
+  m, c = weathered(baseMaterial, baseColor, rustColor, 0.5);
   return m, c;
 }
 

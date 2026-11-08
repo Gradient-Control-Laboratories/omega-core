@@ -116,6 +116,9 @@ var materialSrc string
 //go:embed material/bulk/metal/metal.gsl
 var metalSrc string
 
+//go:embed material/bulk/alloy/alloy.gsl
+var alloySrc string
+
 //go:embed material/bulk/glass/glass.gsl
 var glassSrc string
 
@@ -148,6 +151,42 @@ var materialCoatingSrc string
 
 //go:embed material/process/printed/printed.gsl
 var materialPrintedSrc string
+
+//go:embed material/coat/plated/plated.gsl
+var materialPlatedSrc string
+
+//go:embed material/process/sheet/sheet.gsl
+var materialSheetSrc string
+
+//go:embed material/process/cast/cast.gsl
+var materialCastSrc string
+
+//go:embed material/process/molded/molded.gsl
+var materialMoldedSrc string
+
+//go:embed material/bulk/composite/composite.gsl
+var materialCompositeSrc string
+
+//go:embed material/bulk/masonry/masonry.gsl
+var materialMasonrySrc string
+
+//go:embed material/bulk/paper/paper.gsl
+var materialPaperSrc string
+
+//go:embed material/bulk/foams/foams.gsl
+var materialFoamsSrc string
+
+//go:embed material/bulk/ceramic/ceramic.gsl
+var materialCeramicSrc string
+
+//go:embed material/bulk/glazing/glazing.gsl
+var materialGlazingSrc string
+
+//go:embed material/collection/classic/classic.gsl
+var materialClassicSrc string
+
+//go:embed material/bulk/organic/organic.gsl
+var materialOrganicSrc string
 
 //go:embed material/bulk/physical/physical.gsl
 var physicalSrc string
@@ -203,6 +242,7 @@ func All() []PkgInfo {
 		{ImportPath: "color", Sources: []string{colorSrc}},
 		{ImportPath: "material", Sources: []string{materialSrc}},
 		{ImportPath: "material/bulk/metal", Sources: []string{metalSrc}},
+		{ImportPath: "material/bulk/alloy", Sources: []string{alloySrc}},
 		{ImportPath: "material/bulk/glass", Sources: []string{glassSrc}},
 		{ImportPath: "material/bulk/physical", Sources: []string{physicalSrc}},
 		{ImportPath: "texture", Sources: []string{textureSrc}},
@@ -215,6 +255,18 @@ func All() []PkgInfo {
 		{ImportPath: "material/process/machined", Sources: []string{materialMachinedSrc}},
 		{ImportPath: "material/coat/coating", Sources: []string{materialCoatingSrc}},
 		{ImportPath: "material/process/printed", Sources: []string{materialPrintedSrc}},
+		{ImportPath: "material/coat/plated", Sources: []string{materialPlatedSrc}},
+		{ImportPath: "material/process/sheet", Sources: []string{materialSheetSrc}},
+		{ImportPath: "material/process/cast", Sources: []string{materialCastSrc}},
+		{ImportPath: "material/process/molded", Sources: []string{materialMoldedSrc}},
+		{ImportPath: "material/bulk/composite", Sources: []string{materialCompositeSrc}},
+		{ImportPath: "material/bulk/masonry", Sources: []string{materialMasonrySrc}},
+		{ImportPath: "material/bulk/paper", Sources: []string{materialPaperSrc}},
+		{ImportPath: "material/bulk/foams", Sources: []string{materialFoamsSrc}},
+		{ImportPath: "material/bulk/ceramic", Sources: []string{materialCeramicSrc}},
+		{ImportPath: "material/bulk/glazing", Sources: []string{materialGlazingSrc}},
+		{ImportPath: "material/collection/classic", Sources: []string{materialClassicSrc}},
+		{ImportPath: "material/bulk/organic", Sources: []string{materialOrganicSrc}},
 	}
 }
 

@@ -826,9 +826,201 @@ driftingCellsLatticeXY(q, size, life, velocityFn) {
   return [wall.x, wall.y, firstAge, fract(dot(firstHash, [3.1, 7.7, 5.9]))], drift;
 }
 
+// ===========================================================================
+// Filtered fractals, warp, Voronoi by metric, anisotropic noise
+// ===========================================================================
+//
+// The fractals here differ from fbm2/3/4 and turbulence2/3 in one way that
+// matters on screen: every octave fades out as it shrinks under a pixel
+// (octaveFade, pixelSize() against the octave's size), so a distant or small
+// surface settles to the pattern's average instead of sparkling. A raymarcher
+// takes one sample a pixel, so an octave finer than the pixel is not detail,
+// it is aliasing; Blender hides it by taking hundreds. Off a screen
+// pixelSize() is 0 and every octave is drawn, so meshing and export see the
+// full field. Each takes `detail`, the number of octaves drawn, 1 to 6 and
+// fractional, as Blender's Noise node does: octave i is weighted by
+// clamp(detail - i, 0, 1), so detail 3.5 draws three and half of a fourth.
+// The cost is six gradient lattices whatever the detail.
+
+// octaveFade(size): 1 while a feature `size` across spans four pixels, 0 by
+// the time it spans two (texture.fadeDetail, restated here because texture
+// imports this library).
+octaveFade(size) {
+  return 1 - ease.quadratic(clamp((pixelSize() - 0.375 * size) / (0.125 * size) * 0.5 + 0.5, 0, 1));
+}
+
+/// fbm(size, detail, roughness, lacunarity): fractal gradient noise, filtered:
+/// `detail` octaves (1 to 6, fractional), each `lacunarity` times finer than
+/// the last (2 is usual) and `roughness` as strong (0.5 is usual), every one
+/// fading out as it falls under a pixel. Normalized by its weights so it
+/// stays within about [-1, 1] whatever the detail and the gain (the
+/// lattice's own swing is half that, so it is doubled; measured over 4000
+/// points, 98% of values fall inside +-0.5 and the extremes near +-0.75). Blender's Noise node's Detail,
+/// Roughness and Lacunarity, with the filtering.
+fbm(size, @range(1, 6) detail, @range(0, 1) roughness, @range(1.5, 4) lacunarity) {
+  acc = reduce([0, 0], (a, i) {
+    s = size / pow(lacunarity, i);
+    w = pow(roughness, i) * clamp(detail - i, 0, 1);
+    return [a.x + w * octaveFade(s) * gradient(s), a.y + w];
+  }, [0, 1, 2, 3, 4, 5]);
+  return 2 * acc.x / max(acc.y, 0.000001);
+}
+
+/// turbulence(size, detail, roughness, lacunarity): fbm of |noise|, filtered,
+/// the creased look of Perlin's turbulence, doubled to within about [0, 1]
+/// (mean 0.31). An octave too small to see settles to |noise|'s mean over
+/// the lattice rather than to 0, so the field keeps its brightness as it
+/// recedes.
+turbulence(size, @range(1, 6) detail, @range(0, 1) roughness, @range(1.5, 4) lacunarity) {
+  acc = reduce([0, 0], (a, i) {
+    s = size / pow(lacunarity, i);
+    w = pow(roughness, i) * clamp(detail - i, 0, 1);
+    shown = octaveFade(s);
+    return [a.x + w * (shown * abs(gradient(s)) + (1 - shown) * absGradientMean), a.y + w];
+  }, [0, 1, 2, 3, 4, 5]);
+  return 2 * acc.x / max(acc.y, 0.000001);
+}
+
+// The mean of |gradientLattice| over the lattice: measured over 4000 random
+// points with the gsl CLI.
+absGradientMean = 0.157;
+
+/// ridged(size, detail, roughness, lacunarity, offset): a ridged
+/// multifractal, Musgrave's: each octave is (offset - |noise|)^2, so its zero
+/// crossings become sharp crests, weighted by the octave before it, so the
+/// fine crests gather on the coarse ones as cracks, veins and rock ridges
+/// do. offset about 1 (0.5 to 1.5). Filtered as fbm is, within [0, 1]
+/// (mean 0.72 at offset 1).
+ridged(size, @range(1, 6) detail, @range(0, 1) roughness, @range(1.5, 4) lacunarity, @range(0.5, 1.5) offset) {
+  acc = reduce([0, 0, 1], (a, i) {
+    s = size / pow(lacunarity, i);
+    w = pow(roughness, i) * clamp(detail - i, 0, 1);
+    shown = octaveFade(s);
+    n = shown * abs(gradient(s)) + (1 - shown) * absGradientMean;
+    signal = (offset - n) * (offset - n);
+    weighted = signal * a.z;
+    return [a.x + w * weighted, a.y + w * offset * offset, clamp(signal * 2, 0, 1)];
+  }, [0, 1, 2, 3, 4, 5]);
+  return acc.x / max(acc.y, 0.000001);
+}
+
+/// hybrid(size, detail, roughness, lacunarity, offset): a hybrid
+/// multifractal, Musgrave's: each octave's (noise + offset) scaled by how
+/// high the octaves before it reached, so valleys stay smooth and peaks
+/// grow rough, as weathered stone and terrain do. offset about 0.7 (0 to
+/// 1.5). Filtered, within [0, 1] (mean 0.32, 0.07 to 0.61 at offset 0.7).
+hybrid(size, @range(1, 6) detail, @range(0, 1) roughness, @range(1.5, 4) lacunarity, @range(0, 1.5) offset) {
+  acc = reduce([0, 0, 1], (a, i) {
+    s = size / pow(lacunarity, i);
+    w = pow(roughness, i) * clamp(detail - i, 0, 1);
+    n = octaveFade(s) * gradient(s) + offset;
+    v = n * a.z;
+    return [a.x + w * v, a.y + w * (1 + offset), clamp(a.z * n, 0, 1)];
+  }, [0, 1, 2, 3, 4, 5]);
+  return clamp(acc.x / max(acc.y, 0.000001), 0, 1);
+}
+
+/// warp(size, amount): the point p moved by up to about `amount` mm (0.4
+/// of it on average, measured) of vector noise `size` across, two octaves, the finer fading under a pixel: Blender's
+/// Distortion, for `remap(pattern, noise.warp(size, amount))`. A pattern
+/// sampled at a warped point loses the grid and the straight lines every
+/// lattice noise has, which is most of what makes a procedural texture look
+/// grown rather than generated: marble's veins, wood's rings, rust's edges.
+/// The warp moves the lookup, not the surface, so it is safe on any field.
+warp(size, amount) {
+  coarse = gradientLatticeVector(p / size);
+  fine = gradientLatticeVector(p * 2.03 / size + [17.3, 5.1, 9.7]);
+  return p + amount * 1.2 * (coarse + 0.5 * octaveFade(0.5 * size) * fine);
+}
+
+/// anisotropic(size, direction, stretch, detail): fractal noise `size` across
+/// and `stretch` times longer along `direction` (1 to 50), filtered across
+/// its narrow way: streaks and fibers for brushed and hairline metal, wood
+/// figure, paper and cloth. `detail` octaves as fbm takes them, doubled as
+/// fbm is, within about [-1, 1].
+anisotropic(size, @direction direction, @range(1, 50) stretch, @range(1, 6) detail) {
+  a = normalize(direction);
+  along = dot(p, a);
+  across = p - a * along;
+  q = across + a * (along / stretch);
+  acc = reduce([0, 0], (c, i) {
+    s = size / pow(2, i);
+    w = pow(0.5, i) * clamp(detail - i, 0, 1);
+    return [c.x + w * octaveFade(s) * gradientLattice(q / s), c.y + w];
+  }, [0, 1, 2, 3, 4, 5]);
+  return 2 * acc.x / max(acc.y, 0.000001);
+}
+
+// The feature point of lattice cell c: the cellular builtins' (c + hash),
+// pulled toward the cell's centre as randomness falls.
+voronoiPoint(c, randomness) {
+  return c + 0.5 + (cellularHash(c) - 0.5) * randomness;
+}
+
+// The distance from v under metric 0 Euclidean, 1 Manhattan, 2 Chebyshev.
+voronoiMetric(v, metric) {
+  return metric < 0.5 ? length(v) : (metric < 1.5 ? abs(v.x) + abs(v.y) + abs(v.z) : max(abs(v.x), max(abs(v.y), abs(v.z))));
+}
+
+/// voronoi(size, randomness, metric, smoothness): F1, the distance to the
+/// nearest feature point in mm, on a lattice of cells `size` across, by a
+/// metric (0 Euclidean, 1 Manhattan for diamond cells, 2 Chebyshev for
+/// square ones), the points jittered `randomness` of a cell (0 a grid, 1 the
+/// cellular builtins' own lattice), and blended over the nearest points by
+/// `smoothness` (0 the plain F1, up to about 1 for soft, seamless cells;
+/// the smoothing pulls it below F1, and it is held at 0 or above):
+/// Blender's Voronoi with Smooth F1. A 27-cell scan in GSL, so costlier than
+/// cellular(size).
+voronoi(size, @range(0, 1) randomness, metric, @range(0, 1) smoothness) {
+  q = p / size;
+  base = floor(q);
+  k = max(smoothness, 0.0001);
+  // An exponential smooth minimum: -k ln(sum exp(-d / k)), with the sum
+  // carried scaled by exp(F1 / k) so it never under- or overflows.
+  acc = reduce([64, 0], (a, o) {
+    d = voronoiMetric(voronoiPoint(base + o, randomness) - q, metric);
+    m = min(a.x, d);
+    return [m, a.y * exp((m - a.x) / k) + exp((m - d) / k)];
+  }, cellularOffsets());
+  smoothed = acc.x - k * ln(acc.y);
+  return max(smoothness > 0 ? smoothed : acc.x, 0) * size;
+}
+
+/// voronoiEdge(size, randomness): the true distance in mm from the point to
+/// the nearest wall of its Voronoi cell, Euclidean, on cells `size` across
+/// jittered `randomness` of a cell. Unlike cellularEdges' F2 - F1, which
+/// swells where two points sit far apart, a line drawn by thresholding this
+/// keeps one width all along the wall: cracks, grout, crazing and cell
+/// membranes. Quilez's two-pass scan, 27 cells each.
+voronoiEdge(size, @range(0, 1) randomness) {
+  q = p / size;
+  base = floor(q);
+  nearest = reduce([64, 0, 0, 0], (a, o) {
+    v = voronoiPoint(base + o, randomness) - q;
+    d = dot(v, v);
+    return d < a.x ? [d, v.x, v.y, v.z] : a;
+  }, cellularOffsets());
+  mr = [nearest.y, nearest.z, nearest.w];
+  edge = reduce(64, (a, o) {
+    r = voronoiPoint(base + o, randomness) - q;
+    gap = r - mr;
+    toWall = dot(0.5 * (mr + r), normalize(gap + [0.000001, 0, 0]));
+    return dot(gap, gap) > 0.00001 ? min(a, toWall) : a;
+  }, cellularOffsets());
+  return edge * size;
+}
+
 // References
 //   Johnson, W. A., Mehl, R. F. (1939). Reaction kinetics in processes of
 //     nucleation and growth. Transactions of the American Institute of Mining
 //     and Metallurgical Engineers, 135, 416-442.
 //   Quilez, I. (2012). Voronoi edges.
 //     https://iquilezles.org/articles/voronoilines/
+//   Musgrave, F. K. (2003). Procedural fractal terrains. In Ebert et al.,
+//     Texturing and Modeling: A Procedural Approach, 3rd ed., chapter 16:
+//     the ridged and hybrid multifractals.
+//   Quilez, I. (2014). Smooth Voronoi.
+//     https://iquilezles.org/articles/smoothvoronoi/
+//   Blender manual. Noise, Voronoi and Wave texture nodes: detail,
+//     roughness, lacunarity, distortion, smooth F1, distance metrics.
+//     https://docs.blender.org/manual/en/latest/render/shader_nodes/textures/

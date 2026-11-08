@@ -1,5 +1,5 @@
 
-// Wood Materials (material/wood)
+// Wood Materials (material/bulk/wood)
 //
 // Solid wood as a growth field, after Larsson et al., "Procedural Texturing of
 // Solid Wood with Knots" (SIGGRAPH 2022), and the ring, pore, fibre and ray
@@ -44,6 +44,14 @@
 // sakura, horse chestnut, hinoki, sugi, ginkgo) come from the Mokume
 // dataset's cubes (MIT), three per species: ring width from the annotated
 // rings, pore size and placement from the end grain, and raw sanded colour.
+// The oaks' and black walnut's colors are Mokume's moved toward published
+// colorimetry and calibrated veneer scans, where Mokume's photographs fall
+// well outside both; see their blocks. Sources:
+// Halalisan et al. 2023, Forests 14(2):230, https://www.mdpi.com/1999-4907/14/2/230
+// Liu and Timar 2022, Coatings 12(11):1689, https://www.mdpi.com/2079-6412/12/11/1689
+// Poly Haven veneers (CC0): https://polyhaven.com/a/white_oak_veneer,
+// https://polyhaven.com/a/oak_veneer_01, https://polyhaven.com/a/red_oak_veneer,
+// https://polyhaven.com/a/walnut_veneer, https://polyhaven.com/a/black_walnut_veneer_01
 // The others (live oak, sugar maple, rosewood, the ebonies, yew, Douglas fir,
 // pine, poplar, butternut, English walnut, honey locust, hickory, teak,
 // padauk, mahogany, American and Dutch elm, the ashes, osage orange, European
@@ -1200,14 +1208,19 @@ westernRedCedarNumber = 46;
 aromaticCedarNumber = 47;
 hollyNumber = 48;
 
-// White oak, number 0.
+// White oak, number 0. Its structure is measured from Mokume's nara (Quercus
+// crispula); its color is Mokume's turned 7 degrees of Oklab hue toward yellow,
+// lightness and chroma kept, so a flat-sawn face averages Oklab L 0.60, chroma
+// 0.051, hue 67: Poly Haven's white oak and oak veneers (CC0, calibrated
+// albedo) are hue 66 and 69, and sanded European oaks hue 70 (Halalisan 2023),
+// where Mokume's photographs gave 61.
 whiteOakData = [
   [1.5, 0.6, 0.3, 0.09],   // rings: width mm, latewood share, softness, variation
-  [0.63, 0.51, 0.41, 0.5], // earlywood colour; pore size mm
-  [0.57, 0.46, 0.37, 1],   // latewood colour; ring-porosity
-  [0.45, 0.3, 0.2, 1],     // pore colour; ray strength
-  [0.35, 0.28, 0.22, 1],   // knot colour; ray size
-  [0.68, 0.56, 0.47, 20],  // sapwood colour; sapwood depth, rings
+  [0.621, 0.515, 0.403, 0.5], // earlywood colour; pore size mm
+  [0.562, 0.465, 0.363, 1], // latewood colour; ring-porosity
+  [0.442, 0.306, 0.187, 1], // pore colour; ray strength
+  [0.345, 0.283, 0.216, 1], // knot colour; ray size
+  [0.671, 0.565, 0.463, 20], // sapwood colour; sapwood depth, rings
   [0, 0, 0, 0],            // streak colour; streak strength
   [0.5, 0.4, 0, 0],        // roughness, weathered relief mm, knot spacing mm, resin canals
   [0.704, 0.592, 0.211, 0], // fully aged by light: gains on the colour in linear light
@@ -1216,14 +1229,21 @@ whiteOakData = [
   [1, 1, 1, 0]              // aged within weeks: gains on the colour in linear light
 ];
 
-// Red oak, number 1.
+// Red oak, number 1. Its structure is measured from Mokume's red oak (Quercus
+// rubra); its color is not. Mokume's photographs put it at Oklab L 0.61, hue 50,
+// darker and redder than both the published colorimetry, sanded Q. rubra at
+// L* 66.6 to 69.1, a* 6.7 to 6.9, b* 23.6 to 25.8 (Halalisan 2023; Oklab L
+// 0.72 to 0.74, hue 70), and Poly Haven's red oak veneer (CC0, calibrated
+// albedo: L 0.755, chroma 0.045, hue 70). Every color row is moved in Oklab by
+// L +0.131, chroma x0.97 and hue +20 degrees, so a flat-sawn face averages
+// L 0.74, chroma 0.056, hue 70; the sapwood keeps its offset from the earlywood.
 redOakData = [
   [1.9, 0.6, 0.3, 0.09],   // rings: width mm, latewood share, softness, variation
-  [0.68, 0.53, 0.44, 0.5], // earlywood colour; pore size mm
-  [0.62, 0.47, 0.39, 1],   // latewood colour; ring-porosity
-  [0.41, 0.23, 0.15, 1],   // pore colour; ray strength
-  [0.38, 0.28, 0.23, 0.8], // knot colour; ray size
-  [0.83, 0.7, 0.56, 8],    // sapwood colour; sapwood depth, rings
+  [0.814, 0.706, 0.574, 0.5], // earlywood colour; pore size mm
+  [0.755, 0.642, 0.519, 1], // latewood colour; ring-porosity
+  [0.539, 0.393, 0.252, 1], // pore colour; ray strength
+  [0.513, 0.435, 0.354, 0.8], // knot colour; ray size
+  [0.967, 0.883, 0.699, 8], // sapwood colour; sapwood depth, rings
   [0, 0, 0, 0],            // streak colour; streak strength
   [0.5, 0.4, 0, 0],        // roughness, weathered relief mm, knot spacing mm, resin canals
   [0.858, 0.739, 0.553, 0], // fully aged by light: gains on the colour in linear light
@@ -1264,19 +1284,27 @@ japaneseElmData = [
   [1, 1, 1, 0]              // aged within weeks: gains on the colour in linear light
 ];
 
-// Black walnut, number 4.
+// Black walnut, number 4. Its structure is measured from Mokume's black walnut
+// (Juglans nigra); its color is Mokume's moved in Oklab by L +0.045, chroma
+// x1.7 and hue +6 degrees, so a flat-sawn face averages L 0.535, chroma 0.048,
+// hue 57. Mokume's photographs gave a gray L 0.49, chroma 0.028: sanded
+// European walnut measures L* 56.8, a* 6.6, b* 13.0 (Liu and Timar 2022;
+// Oklab L 0.63, chroma 0.040, hue 58), black walnut being the darker, and Poly
+// Haven's walnut veneers (CC0, calibrated albedo) L 0.55, chroma 0.056, hue 58
+// and, a paler, steamed-looking lot, L 0.68, chroma 0.042, hue 65. The sapwood
+// keeps its measured offset from the earlywood (Huang 2016).
 walnutData = [
   [3.3, 0.45, 0.45, 0.15],  // rings: width mm, latewood share, softness, variation
-  [0.46, 0.39, 0.35, 0.29], // earlywood colour; pore size mm
-  [0.42, 0.35, 0.31, 0.5],  // latewood colour; ring-porosity
-  [0.29, 0.22, 0.18, 0.2],  // pore colour; ray strength
-  [0.25, 0.21, 0.18, 1],    // knot colour; ray size
-  [0.73, 0.64, 0.53, 13],   // sapwood colour; sapwood depth, rings
+  [0.543, 0.431, 0.35, 0.29], // earlywood colour; pore size mm
+  [0.502, 0.39, 0.309, 0.5], // latewood colour; ring-porosity
+  [0.369, 0.255, 0.172, 0.2], // pore colour; ray strength
+  [0.315, 0.251, 0.192, 1], // knot colour; ray size
+  [0.821, 0.685, 0.528, 13], // sapwood colour; sapwood depth, rings
   [0, 0, 0, 0],             // streak colour; streak strength
   [0.4, 0.25, 0, 0],        // roughness, weathered relief mm, knot spacing mm, resin canals
   [1.668, 1.777, 1.554, 0], // fully aged by light: gains on the colour in linear light
   [0, 0, 0, 0.3],           // latewood bands: strength, spacing mm; earlywood pore zone mm; sapwood transition, rings
-  [0.3, 0.24, 0.2, 0.4],    // sapwood boundary: line colour; line strength
+  [0.375, 0.279, 0.197, 0.4], // sapwood boundary: line colour; line strength
   [1, 1, 1, 0]              // aged within weeks: gains on the colour in linear light
 ];
 
@@ -2984,8 +3012,13 @@ speciesColor(number, @point axisOrigin, @direction(axisOrigin) axisDir, look, kn
   decay = speciesDecay(number, axisOrigin, axisDir, knotSpacing, barkRadius, spalting, wormholes, insects);
   spalt = decay[0];
   worm = decay[1];
-  decayed = decayedColor(sound, spalt, worm, decayTones(number, axisDir, look, normal, prep, stain, topcoat, fungi, insects), fungi);
-  return look.z > 0 ? weatheredColor(axisOrigin, axisDir, decayed, look.z) : decayed;
+  tones = decayTones(number, axisDir, look, normal, prep, stain, topcoat, fungi, insects);
+  decayed = decayedColor(sound, spalt, worm, tones, fungi);
+  wood = look.z > 0 ? weatheredColor(axisOrigin, axisDir, decayed, look.z) : decayed;
+  // Stand-in: the finished wood's, decayed on average (see decayedStandColor)
+  // and greyed as the wood is.
+  wood.simple = weatheredStandIn(decayedStandColor(finishedStandColor(number, axisDir, look, normal, prep, stain, topcoat), spalting, wormholes, insects, tones, fungi), look.z);
+  return wood;
 }
 
 /// speciesColor(number, axisOrigin, axisDir, look, knotSpacing, barkRadius,
@@ -2998,8 +3031,12 @@ speciesColor(number, @point axisOrigin, @direction(axisOrigin) axisDir, look, kn
   insects = decayInsects(number, decay);
   sound = speciesColor(number, axisOrigin, axisDir, [look.x, look.y, 0], knotSpacing, barkRadius);
   rot = speciesDecay(number, axisOrigin, axisDir, knotSpacing, barkRadius, head.x, head.y, insects);
-  decayed = decayedColor(sound, rot[0], rot[1], oiledDecayTones(number, look, fungi, insects), fungi);
-  return look.z > 0 ? weatheredColor(axisOrigin, axisDir, decayed, look.z) : decayed;
+  tones = oiledDecayTones(number, look, fungi, insects);
+  decayed = decayedColor(sound, rot[0], rot[1], tones, fungi);
+  wood = look.z > 0 ? weatheredColor(axisOrigin, axisDir, decayed, look.z) : decayed;
+  // Stand-in: the oiled wood's, decayed on average and greyed as the wood is.
+  wood.simple = weatheredStandIn(decayedStandColor(oiledStandColor(number, look), head.x, head.y, insects, tones, fungi), look.z);
+  return wood;
 }
 
 // The decay's colours under the look's oil (see finish), as decayTones gives
@@ -3064,7 +3101,12 @@ speciesMaterial(number, @point axisOrigin, @direction(axisOrigin) axisDir, look,
   sound = speciesMaterial(number, axisOrigin, axisDir, look, knotSpacing, normal, prep, topcoat);
   decay = speciesDecay(number, axisOrigin, axisDir, knotSpacing, barkRadius, spalting, wormholes, insects);
   coatFilm = topcoat[1];
-  return decayedMaterial(sound, decay[0], decay[1], fungi, coatFilm.x < 0.5 ? 1 : 0.3);
+  bare = coatFilm.x < 0.5 ? 1 : 0.3;
+  decayed = decayedMaterial(sound, decay[0], decay[1], fungi, bare);
+  // Stand-in: the finished wood's, softened by the average spalting; the
+  // holes, under 0.011 of the wood, are left out (see spaltStand).
+  decayed.simple = decayedMaterial(finishedStandMaterial(number, axisDir, look, normal, prep, topcoat), spaltStand(spalting), [0, 0, 0, 0], fungi, bare);
+  return decayed;
 }
 
 /// speciesMaterial(number, axisOrigin, axisDir, look, knotSpacing, barkRadius,
@@ -3078,7 +3120,11 @@ speciesMaterial(number, @point axisOrigin, @direction(axisOrigin) axisDir, look,
   insects = decayInsects(number, decay);
   sound = speciesMaterial(number, axisOrigin, axisDir, look, knotSpacing);
   rot = speciesDecay(number, axisOrigin, axisDir, knotSpacing, barkRadius, head.x, head.y, insects);
-  return decayedMaterial(sound, rot[0], rot[1], fungi, 1 - 0.7 * clamp(look.x, 0, 1));
+  bare = 1 - 0.7 * clamp(look.x, 0, 1);
+  decayed = decayedMaterial(sound, rot[0], rot[1], fungi, bare);
+  // Stand-in: the oiled wood's, softened by the average spalting.
+  decayed.simple = decayedMaterial(oiledStandMaterial(number, look), spaltStand(head.x), [0, 0, 0, 0], fungi, bare);
+  return decayed;
 }
 
 // Sound wood of material `sound` decayed (see speciesMaterial with spalting
@@ -3094,6 +3140,118 @@ decayedMaterial(sound, spalt, worm, fungi, bare) {
   return material.withDisplacement(decayed, material.displacement(sound) - 0.05 * punk + worm.y);
 }
 
+// ===========================================================================
+// The decayed wood's stand-ins: the sound wood's flat look (woodStandIn, and
+// speciesMaterial's stand) decayed by the average of the spalting and the worm
+// holes over a whole log. Measured over 12,288 points of a 300 mm round at
+// amount 1, where sugar maple, beech, chestnut and pine agree: the bleaching
+// covers 0.39 of the wood, the zone lines 0.016, the mold 0.06, the first
+// pigment 0.21 and the second 0.14; the pinhole borers' streaks cover 0.19 per
+// unit of their share (ambrosia maple's 0.126 at 0.67); the holes and the
+// frass under 0.011, which is left out. The decay spreads through the sapwood
+// by amount 0.5, and the sapwood is most of a round's area for the species
+// that spalt (maple's 0.89, whose shares at 0.5 measure 0.91 of the full
+// ones), so the shares are taken as reached by 0.5.
+// ===========================================================================
+
+// The average spalting at `amount`: spaltAt's bleaching, zone lines, mold and
+// first pigment.
+spaltStand(amount) {
+  return [0.39, 0.016, 0.06, 0.21] * clamp(2 * amount, 0, 1);
+}
+
+// The sound stand-in `stand` decayed on average: decayedColor over the
+// average spalting and the streaks, the second pigment first and as a negative
+// pigment of its own share, since one call carries one pigment's sign.
+decayedStandColor(stand, spalting, wormholes, insects, tones, fungi) {
+  pins = insects[0];
+  streak = 0.19 * pins.y * clamp(2 * wormholes, 0, 1);
+  second = decayedColor(stand, [0, 0, 0, -0.14 * clamp(2 * spalting, 0, 1)], [0, 0, 0, 0], tones, fungi);
+  return decayedColor(second, spaltStand(spalting), [0, 0, streak, 0], tones, fungi);
+}
+
+// A stand-in colour greyed as weatheredColor greys the wood: toward
+// [0.60, 0.58, 0.54] by 0.375 of the weathering, as woodStandIn does.
+weatheredStandIn(c, weather) {
+  lab = color.rgb2oklab(c);
+  return color.oklab2rgb(lab + (color.rgb2oklab([0.60, 0.58, 0.54]) - lab) * (0.375 * max(weather, 0)));
+}
+
+// The stand-in of the species' colour under the look's oil, as colorFromRows
+// declares it: the earlywood and latewood finished and aged, mixed at the
+// latewood fraction, before any weathering.
+oiledStandColor(number, look) {
+  rings = speciesRings(number);
+  early = speciesEarlywood(number);
+  late = speciesLatewood(number);
+  age = speciesAgeRow(number);
+  weeks = speciesWeeksRow(number);
+  aged = clamp(look.y, 0, 1);
+  aging = ([1, 1, 1] + (weeks.xyz - [1, 1, 1]) * (1 - pow(1 - aged, 37))) * ([1, 1, 1] + (age.xyz - [1, 1, 1]) * aged);
+  return woodStandIn(finish(early.xyz, look.x, aging), finish(late.xyz, look.x, aging), rings.y, 0);
+}
+
+// The stand-in of the species' finished colour, as colorFromRowsFinished
+// declares it, with the stain taken as decayTones takes it, its blotches
+// averaged out.
+finishedStandColor(number, axisDir, look, normal, prep, stain, topcoat) {
+  rings = speciesRings(number);
+  early = speciesEarlywood(number);
+  late = speciesLatewood(number);
+  age = speciesAgeRow(number);
+  weeks = speciesWeeksRow(number);
+  uptake = speciesStainRow(number);
+  aged = clamp(look.y, 0, 1);
+  aging = ([1, 1, 1] + (weeks.xyz - [1, 1, 1]) * (1 - pow(1 - aged, 37))) * ([1, 1, 1] + (age.xyz - [1, 1, 1]) * aged);
+  n = normal / max(length(normal), 0.000001);
+  endGrain = dot(n, axisDir) / max(length(axisDir), 0.000001);
+  stainLook = stain[0];
+  stainKind = stain[1];
+  coatLook = topcoat[0];
+  coatFilm = topcoat[1];
+  taken = stainLook.w * (1 + 1.5 * endGrain * endGrain) * (stainKind.x > 0.5 ? prepCoarseness(prep) : 1);
+  tint = color.linearize(coatLook.xyz) * ([1, 1, 1] + ([1, 0.9, 0.7] - [1, 1, 1]) * (coatFilm.w * aged));
+  chip = color.linearize(stainLook.xyz) / 1.042;
+  stainGain = min([pow(chip.x, 1 / 1.403), pow(chip.y, 1 / 1.403), pow(chip.z, 1 / 1.403)] / color.linearize([0.79, 0.67, 0.53]), [1, 1, 1]);
+  prepHead = prep[0];
+  charDepth = prepHead.x > 4.5 ? prepHead.y : 0;
+  return woodStandIn(finishedColor(early.xyz, aging, 1.4 * charDepth, stainGain, taken * uptake.x, coatFilm.z, tint), finishedColor(late.xyz, aging, 0.6 * charDepth, stainGain, taken * uptake.y, coatFilm.z, tint), rings.y, 0);
+}
+
+// The stand-in of the species' material under the look's oil, as
+// speciesMaterial declares it: the wood's own finish with its pores' slopes.
+oiledStandMaterial(number, look) {
+  early = speciesEarlywood(number);
+  surface = speciesSurfaceRow(number);
+  poreSize = early.w;
+  sheen = oiledRoughness(surface.x, look.x);
+  unfilled = (1 - clamp(look.x, 0, 1)) * (1 - clamp(look.x, 0, 1));
+  standPores = poreSize >= 0.25 ? 0.33 * 0.25 * unfilled : 0;
+  return woodFinish(sqrt(sqrt(sheen * sheen * sheen * sheen + standPores)));
+}
+
+// The stand-in of the species' finished material, as speciesMaterial with a
+// prep and topcoat declares it: the topcoat's sheen, the pores and the relief
+// too small to see.
+finishedStandMaterial(number, axisDir, look, normal, prep, topcoat) {
+  rings = speciesRings(number);
+  early = speciesEarlywood(number);
+  poreSize = early.w;
+  coatLook = topcoat[0];
+  coatFilm = topcoat[1];
+  kind = coatFilm.x;
+  build = coatFilm.y;
+  prepHead = prep[0];
+  charred = kind < 0.5 ? (prepHead.x > 4.5 ? min(prepHead.y, 1) : 0) : 0;
+  coatSheen = material.roughnessFromGloss(coatLook.w);
+  sheen = coatSheen + (0.85 - coatSheen) * charred;
+  grainDir = normalize(axisDir);
+  unit = normal / max(length(normal), 0.000001);
+  grainIn = 1 - dot(grainDir, unit) * dot(grainDir, unit);
+  feed = prep[1];
+  return hiddenSlopeFinish(sheen, normal, grainDir, feed.xyz, prepSlopes(prep, normal, grainIn, rings.x, build, 1) + poreSlopes(poreSize, [1, 1], grainIn, build, 1));
+}
+
 /// whiteOak(axisOrigin, axisDir, look): white oak, ring-porous: a row of big
 /// pores after each ring boundary, 1.5 mm rings, and broad rays that show as
 /// dashes on flat-sawn faces and flecks on quarter-sawn ones. Measured from
@@ -3106,7 +3264,7 @@ whiteOak(@point axisOrigin, @direction(axisOrigin) axisDir) {
 }
 
 /// redOak(axisOrigin, axisDir, look): red oak, ring-porous like white oak but
-/// pinker, with open pores that read darker and rays a little smaller.
+/// paler, with open pores that read darker and rays a little smaller.
 redOak(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
   return species(redOakNumber, axisOrigin, axisDir, look);
 }

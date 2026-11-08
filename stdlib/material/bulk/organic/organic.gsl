@@ -1,0 +1,338 @@
+
+// Organic Materials (material/bulk/organic)
+//
+// Skins and growths: an orange's pitted rind, bark in its plates and
+// fissures, cork's lenticels, a bamboo culm with its nodes, wicker's
+// weave, a coral's cups, an egg's speckled shell and a hide's grain as
+// leather. Each is bulk and
+// returns material, color, height and slope, as the coats do; the culm
+// takes a stem and the wicker a face's datums. A pore or a cup is a
+// cellular feature point with a radius, as masonry's stones are.
+//
+// Doc convention follows builtin/base.gsl: `///` lines are public docs.
+
+import "material";
+import "texture";
+import "noise";
+import "color";
+
+/// orangePeel(peelColor, poreSize): an orange's rind of `peelColor`, oil
+/// glands as pits `poreSize` mm across (0.3 to 2) over a third of the
+/// face, 0.1 mm deep and a shade darker, over a 5 mm swell of 0.2 mm;
+/// satin. Returns material, color, height and slope.
+orangePeel(@color peelColor, @range(0.3, 2) poreSize) {
+  radius = 0.5 * poreSize;
+  // A third of the face: r / spacing is the cube root of 0.33 / 3.5.
+  f1 = remap(noise.cellular(radius / 0.456), p + [17, 5, 29]);
+  pit = texture.fadeTo(texture.mask(radius - f1, 0, max(0.1 * poreSize, pixelSize())), 0.33, poreSize);
+  dip = max(0, 1 - f1 * f1 / (radius * radius));
+  swell = 0.2 * noise.gradient(5);
+  tone = peelColor * (1 - 0.15 * pit);
+  tone.simple = peelColor * (1 - 0.15 * 0.33);
+  rind = material.withDisplacement(material.make(0.45, 0, 1.5), swell - 0.1 * dip * texture.fadeDetail(poreSize));
+  rind.simple = material.withDisplacement(material.make(0.45, 0, 1.5), -0.1 * 0.33 * 0.5);
+  return rind, tone, 0, 0;
+}
+
+/// bark(outer, inner, plateSize, fissure): bark, plates of `outer`
+/// `plateSize` mm across (5 to 40) standing `fissure` mm (0.5 to 5)
+/// above the fissures between them, where `inner` shows; the plates
+/// ridged by turbulence at a fifth of their size and a shade apart;
+/// matte. Returns material, color, height and slope.
+bark(@color outer, @color inner, @range(5, 40) plateSize, @range(0.5, 5) fissure) {
+  f1, f2, cell = noise.cellularCell(plateSize);
+  pick = noiseHash3(cell + [41, 3, 19]);
+  plate = texture.mask(f2 - f1, 0.12 * plateSize, 0.06 * plateSize);
+  ridged = noise.turbulence3(0.2 * plateSize, 0.5, 2.0);
+  tone = color.mixOklab(inner, outer * (1 + 0.1 * (2 * pick.x - 1)) * (0.85 + 0.3 * ridged), plate);
+  tone.simple = color.mixOklab(inner, outer, barkPlateShare);
+  relief = fissure * (plate - 1) + 0.15 * fissure * ridged * plate;
+  rough = material.withDisplacement(material.make(0.95, 0, 1.5), relief * texture.fadeDetail(plateSize));
+  rough.simple = material.withDisplacement(material.make(0.95, 0, 1.5), -fissure * (1 - barkPlateShare));
+  return rough, tone, 0, 0;
+}
+
+// The plates' share of the face with the walls at 0.12 of the cell:
+// measured over 4000 random points.
+barkPlateShare = 0.6;
+
+/// cork(corkColor, lenticelSize): cork of `corkColor`, its lenticels dark
+/// pits `lenticelSize` mm across (0.5 to 4) drawn out three to one along
+/// z over a sixth of the face, 0.3 mm deep; matte and soft. Returns
+/// material, color, height and slope.
+cork(@color corkColor, @range(0.5, 4) lenticelSize) {
+  radius = 0.5 * lenticelSize;
+  // A sixth of the face: r / spacing is the cube root of 0.167 / 3.5.
+  f1 = remap(noise.cellular(radius / 0.363), [p.x, p.y, p.z / 3]);
+  pit = texture.fadeTo(texture.mask(radius - f1, 0, max(0.1 * lenticelSize, pixelSize())), 0.167, lenticelSize);
+  dip = max(0, 1 - f1 * f1 / (radius * radius));
+  tone = corkColor * (1 - 0.55 * pit) * texture.grainShade(0.4, 0.08);
+  tone.simple = corkColor * (1 - 0.55 * 0.167);
+  soft = material.withDisplacement(material.make(0.9, 0, 1.45), -0.3 * dip * texture.fadeDetail(lenticelSize));
+  soft.simple = material.withDisplacement(material.make(0.9, 0, 1.45), -0.3 * 0.167 * 0.5);
+  return soft, tone, 0, 0;
+}
+
+/// bamboo(axisOrigin, axisDir, nodeSpacing, age): a bamboo culm about a
+/// stem through `axisOrigin` along `axisDir`, its nodes `nodeSpacing` mm
+/// apart (100 to 400) as a ridge 1 mm high and 6 mm wide, the internodes
+/// darkening toward each node, striated along the stem; `age` 0 green and
+/// 1 the dry tan; satin, with a lay along the stem. Returns material,
+/// color, height and slope.
+bamboo(@point axisOrigin, @direction(axisOrigin) axisDir, @range(100, 400) nodeSpacing, @range(0, 1) age) {
+  a = normalize(axisDir);
+  along = dot(p - axisOrigin, a);
+  phase = along / nodeSpacing - floor(along / nodeSpacing);
+  toNode = min(phase, 1 - phase) * nodeSpacing;
+  node = 1 - texture.mask(toNode, 3, 1.5);
+  culm = color.mixOklab(bambooGreen, bambooTan, age);
+  streak = remap(noise.gradient(2), p + a * (dot(p, a) * 9));
+  tone = culm * (0.85 + 0.15 * min(1, toNode / 30)) * (1 + 0.05 * streak) * (1 - 0.1 * node);
+  tone.simple = culm * 0.95;
+  skin = material.withDisplacement(material.withLay(material.make(0.35, 0, 1.5), a, 0.4), node * texture.fadeDetail(6));
+  skin.simple = material.withDisplacement(material.withLay(material.make(0.35, 0, 1.5), a, 0.4), 6 / nodeSpacing);
+  return skin, tone, 0, 0;
+}
+
+// A culm's green and its dry tan, judged.
+bambooGreen = [0.45, 0.6, 0.25];
+bambooTan = [0.8, 0.68, 0.42];
+
+/// wicker(origin, normal, along, width, caneColor): wicker, canes `width`
+/// mm wide (3 to 15) in a plain weave on the face through `origin`, the
+/// warp along `along`, each cane crimped over the next by 0.3 of its width
+/// and a shade off its neighbour; matte. Returns material, color, height
+/// and slope.
+wicker(@point origin, @direction(origin) normal, @direction(origin) along, @range(3, 15) width, @color caneColor) {
+  n = normalize(normal);
+  u = normalize(along - n * dot(along, n));
+  x = dot(p - origin, u);
+  y = dot(p - origin, cross(n, u));
+  crown, warpTop, tow = texture.weave(x, y, 1.15 * width, 1.15 * width, width, 1, 1);
+  pick = noiseHash3([tow + 7, 13, 3]);
+  tone = caneColor * (1 + 0.08 * (2 * pick.x - 1)) * (0.7 + 0.3 * crown);
+  tone.simple = caneColor * 0.9;
+  woven = material.withDisplacement(material.make(0.8, 0, 1.5), 0.3 * width * crown * texture.fadeDetail(width));
+  woven.simple = material.withDisplacement(material.make(0.8, 0, 1.5), 0.3 * width * 0.65);
+  return woven, tone, 0, 0;
+}
+
+/// coral(coralColor, cupSize): a stony coral of `coralColor`, its polyps'
+/// cups `cupSize` mm across (1 to 10) over half the face, a third of
+/// their width deep with a raised rim, the skeleton between rough; matte.
+/// Returns material, color, height and slope.
+coral(@color coralColor, @range(1, 10) cupSize) {
+  radius = 0.5 * cupSize;
+  f1 = noise.cellular(radius / 0.523);
+  cup = max(0, 1 - f1 * f1 / (radius * radius));
+  rim = texture.mask(f1 - radius, 0, 0.15 * radius) * (1 - texture.mask(f1 - radius, 0.3 * radius, 0.15 * radius));
+  relief = -0.33 * cupSize * cup + 0.08 * cupSize * rim;
+  tone = coralColor * (1 - 0.3 * texture.fadeTo(cup, 0.27, cupSize)) * texture.grainShade(0.3, 0.1);
+  tone.simple = coralColor * (1 - 0.3 * 0.27);
+  stony = material.withDisplacement(material.make(0.95, 0, 1.5), relief * texture.fadeDetail(cupSize) - texture.grainRelief(0.3, 0.05));
+  // The cups' mean over the face, rim and all, is 0.14 of their depth:
+  // measured over 4000 random points.
+  stony.simple = material.withDisplacement(material.make(0.95, 0, 1.5), -0.33 * cupSize * 0.14);
+  return stony, tone, 0, 0;
+}
+
+/// eggshell(shell, speckle, speckSize, share): an egg's shell of `shell`,
+/// speckled `speckle` in spots `speckSize` mm across (0.2 to 4) over
+/// `share` of it (0 to 0.4), the shell's own pores 0.05 mm; matte. Returns
+/// material, color, height and slope.
+eggshell(@color shell, @color speckle, @range(0.2, 4) speckSize, @range(0, 0.4) share) {
+  spots = texture.grainSpecks(speckSize, share);
+  tone = color.mixOklab(shell, speckle, spots);
+  calcite = material.withDisplacement(material.make(0.55, 0, 1.55), -texture.grainRelief(0.3, 0.02));
+  calcite.simple = material.make(0.55, 0, 1.55);
+  return calcite, tone, 0, 0;
+}
+
+// grainWalls(q): the cellular walls at lattice point q: F2 - F1, in cells,
+// about twice the distance to the wall near it and continuous everywhere, so
+// a relief drawn from it has no step (the true distance to the pair's
+// bisector, and anything hashed from the pair, jumps where the
+// second-nearest point changes, which a relief draws as a slit); and a hash in
+// [0, 1) of the cell, for its tone. One cellular scan, the builtins sharing
+// it.
+grainWalls(q) {
+  f1, f2, a, b = noise.cellularF1F2PairLattice(q);
+  cell = noiseHash3(a + [7, 19, 3]);
+  return f2 - f1, cell.x;
+}
+
+// grainCreases(grainSize): a hide's two crease networks at a point, each 1
+// in its furrow and 0 on the cells: the fine creases round cells
+// `grainSize` across, broken here and there along their length, and the
+// wrinkles round cells 3.3 times that, both on one warped lookup so no wall
+// runs straight (the warp kept under a fold, which a relief draws as a slit).
+// Returns fine, major, a hash of the fine cell, in [0, 1), and how far into
+// its fine and its major cell the point lies, each 0 at the wall and 1 well
+// inside.
+grainCreases(grainSize) {
+  q = noise.warp(1.6 * grainSize, 0.25 * grainSize);
+  fineEdge, finePick = grainWalls(q / grainSize);
+  majorEdge, majorPick = grainWalls(q / (3.3 * grainSize) + [31.7, 11.3, 7.9]);
+  fd = 0.5 * fineEdge * grainSize;
+  md = 0.5 * majorEdge * 3.3 * grainSize;
+  broken = clamp(0.8 + 1.5 * noise.gradient(0.8 * grainSize), 0, 1);
+  fine = broken * exp(-(fd * fd) / (0.0036 * grainSize * grainSize));
+  major = clamp(0.8 + 3 * noise.gradient(3 * grainSize), 0, 1) * exp(-(md * md) / (0.0081 * grainSize * grainSize));
+  return fine, major, finePick, clamp(fineEdge / 0.5, 0, 1), clamp(majorEdge / 0.5, 0, 1);
+}
+
+// hidePores(): the hair follicles' mouths in a cowhide's grain, pits 0.08 mm
+// across, about three to the square millimetre, whatever the grain's size:
+// cellular feature points 0.3 mm apart, each a sphere of 0.04 mm that the
+// face cuts at its own depth. 1 at a pit's center falling to 0 at its rim,
+// a smooth bowl with no edge to its slope.
+hidePores() {
+  f1 = remap(noise.cellular(0.3), p + [13, 71, 5]);
+  bowl = max(0, 1 - f1 * f1 / 0.0016);
+  return bowl * bowl;
+}
+
+/// leather(hideColor, grainSize, depth, wrinkle, aniline): full-grain
+/// leather of `hideColor`: the grain's irregular cells `grainSize` mm across
+/// (0.5 to 4), each domed between fine creases, sunk `depth` mm (0.02 to
+/// 0.2), with the hair follicles' pores; and, by `wrinkle` (0 to 1), the
+/// hide's own wrinkles, deeper creases round cells 3.3 times larger, each
+/// cell between them a pillow. The creases draw a shade paler, as a fold
+/// opens the grain; each cell takes a shade of its own; the hide's fibers
+/// show at 0.3 and 0.12 mm and the tone is mottled at 10 and 40 mm.
+/// `aniline` 1 is a dye with no pigment over it, so the pores and the
+/// mottle run deeper, a lobe 0.62 wide; 0 a pigmented finish, evener in
+/// tone, a lobe 0.5 wide. Leather's soft second lobe, its sheen, waits on
+/// the renderer. Returns material, color, height and
+/// slope.
+leather(@color hideColor, @range(0.5, 4) grainSize, @range(0.02, 0.2) depth, @range(0, 1) wrinkle, @range(0, 1) aniline) {
+  fine, major, finePick, fineInside, inside = grainCreases(grainSize);
+  pit = hidePores();
+  w = clamp(wrinkle, 0, 1);
+  dye = clamp(aniline, 0, 1);
+  // Each cell is domed, and each wrinkle's cell a pillow, rounded up from
+  // its walls. Every term less its mean, so the relief averages to 0.
+  pillow = inside * inside * (3 - 2 * inside) - leatherPillowMean;
+  dome = fineInside * fineInside * (3 - 2 * fineInside) - leatherPillowMean;
+  relief = depth * (0.6 * w * pillow + 0.6 * dome + 0.3 * noise.gradient(0.5 * grainSize) - 0.4 * (fine - leatherFineMean) - 0.6 * w * (major - leatherMajorMean) - 0.2 * texture.fadeTo(pit, leatherPoreMean, 0.08) + 0.2 * leatherPoreMean) * texture.fadeDetail(grainSize);
+  sheen = 0.5 + 0.12 * dye;
+  // The relief's slope, rms, is about 2.8 times depth over grain: measured
+  // at 0.02 mm a pixel, 3.0, 2.6 and 2.7 on the brown, a tan and the black.
+  slope = 2.8 * depth / grainSize;
+  alpha = texture.reliefRoughness(sheen * sheen, slope, grainSize);
+  skin = material.withDisplacement(material.make(sqrt(alpha), 0, 1.5), relief);
+  skin.simple = material.make(sqrt(sqrt(sheen * sheen * sheen * sheen + slope * slope)), 0, 1.5);
+  // The tone's lightness moves by a share of the hide's: paler on the
+  // creases, darker on the cells' crowns and in the pores, a shade per
+  // cell, fibers and mottle; each term less its mean, so the tone averages
+  // to hideColor.
+  crease = 0.26 * (texture.fadeTo(fine, leatherFineMean, grainSize) - leatherFineMean) + 0.1 * w * (texture.fadeTo(major, leatherMajorMean, 3.3 * grainSize) - leatherMajorMean);
+  crown = 0.08 * (texture.fadeTo(fineInside, leatherInsideMean, grainSize) - leatherInsideMean) + (0.03 + 0.03 * dye) * w * (texture.fadeTo(inside, leatherInsideMean, 3.3 * grainSize) - leatherInsideMean);
+  pore = (0.15 + 0.2 * dye) * (texture.fadeTo(pit, leatherPoreMean, 0.08) - leatherPoreMean);
+  cellShade = texture.fadeTo(2 * finePick - 1, 0, grainSize) + 1.2 * w * noise.gradient(3 * grainSize);
+  // The hide's fibrous surface, 0.3 mm and 0.12 mm whatever the grain, each
+  // fading under a pixel.
+  fiber = 0.7 * texture.fadeDetail(0.3) * noise.gradient(0.3) + 2 * texture.fadeDetail(0.12) * remap(noise.gradient(0.12), p + [5, 37, 11]);
+  mottle = 0.6 * noise.gradient(10) + 1.4 * noise.gradient(40);
+  lift = crease - crown - pore + 0.03 * cellShade + 0.15 * fiber + (0.012 + 0.02 * dye) * mottle;
+  // Paler is a little yellower, a and b barely moving (measured over the
+  // scans' lightness deciles).
+  lab = color.rgb2oklab(hideColor);
+  dL = lab.x * lift;
+  tone = clamp(color.oklab2rgb([lab.x + dL, lab.y - 0.02 * dL, lab.z + 0.046 * dL]), 0, 1);
+  tone.simple = hideColor;
+  return skin, tone, 0, 0;
+}
+
+// The means of the leather's fields over the face, measured over 8000
+// random points in a 400 mm cube: the fine creases' and the wrinkles'
+// furrows, how far into a cell (the two are one field at two sizes), a
+// domed cell's height, and a pore's pit.
+leatherFineMean = 0.265;
+leatherMajorMean = 0.117;
+leatherInsideMean = 0.380;
+leatherPillowMean = 0.351;
+leatherPoreMean = 0.002;
+
+// ===========================================================================
+// Ready-made
+// ===========================================================================
+
+/// An orange's peel, 1 mm oil glands. Returns material and colour.
+@material orangePeel() {
+  rind, tone, height, slope = orangePeel([0.95, 0.5, 0.1], 1);
+  return rind, tone;
+}
+
+/// Bark, brown plates 20 mm across over dark fissures 2 mm deep. Returns
+/// material and colour.
+@material bark() {
+  rough, tone, height, slope = bark([0.45, 0.35, 0.25], [0.18, 0.12, 0.08], 20, 2);
+  return rough, tone;
+}
+
+/// Cork with 1.5 mm lenticels. Returns material and colour.
+@material cork() {
+  soft, tone, height, slope = cork([0.72, 0.58, 0.4], 1.5);
+  return soft, tone;
+}
+
+/// A green bamboo culm along +Z, nodes 250 mm apart. Returns material and
+/// colour.
+@material bamboo() {
+  skin, tone, height, slope = bamboo([0, 0, 0], [0, 0, 1], 250, 0.2);
+  return skin, tone;
+}
+
+/// Wicker, 6 mm canes in a plain weave on a face through the origin, the
+/// warp along +X. Returns material and colour.
+@material wicker() {
+  woven, tone, height, slope = wicker([0, 0, 0], [0, 0, 1], [1, 0, 0], 6, [0.78, 0.62, 0.38]);
+  return woven, tone;
+}
+
+/// A pink stony coral, 4 mm cups. Returns material and colour.
+@material coral() {
+  stony, tone, height, slope = coral([0.9, 0.55, 0.5], 4);
+  return stony, tone;
+}
+
+/// A hen's egg, cream with fine brown speckles. Returns material and
+/// colour.
+@material henEgg() {
+  calcite, tone, height, slope = eggshell([0.93, 0.87, 0.76], [0.55, 0.38, 0.25], 0.6, 0.05);
+  return calcite, tone;
+}
+
+/// A quail's egg, cream with brown blotches. Returns material and colour.
+@material quailEgg() {
+  calcite, tone, height, slope = eggshell([0.9, 0.86, 0.78], [0.35, 0.25, 0.18], 3, 0.3);
+  return calcite, tone;
+}
+
+/// A brown aniline leather, 1.1 mm grain 0.08 mm deep and fully wrinkled,
+/// in the color of a scanned brown hide. Returns material and color.
+@material brownLeather() {
+  skin, tone, height, slope = leather([0.322, 0.181, 0.064], 1.1, 0.08, 1, 1);
+  return skin, tone;
+}
+
+/// A black finished leather, 0.9 mm grain 0.06 mm deep, lightly wrinkled.
+/// Returns material and color.
+@material blackLeather() {
+  skin, tone, height, slope = leather([0.19, 0.18, 0.175], 0.9, 0.06, 0.3, 0);
+  return skin, tone;
+}
+
+// References
+//   The shares of a face inside cellular pores go as 3.5 (r / spacing)^3,
+//     measured under masonry's exposedAggregate; the pore sizes, the
+//     bark's plates, the culm's node and colours, the cane's crimp and the
+//     eggs' speckles are judged.
+//   Leather, measured against Poly Haven's CC0 scans by Rob Tuytel:
+//     brown_leather, 400 mm (the brown's color, spread and spectrum), and
+//     fabric_leather_01, 400 mm (the finished grain's spectrum and slope),
+//     https://polyhaven.com/a/brown_leather,
+//     https://polyhaven.com/a/fabric_leather_01. In every scan with a grain
+//     network the creases are paler than the cells, not darker. The pore
+//     size and density are a cowhide's, judged; the black's color is judged.

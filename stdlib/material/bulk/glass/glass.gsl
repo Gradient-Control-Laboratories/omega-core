@@ -1,4 +1,4 @@
-// Glass Library (glass)
+// Glass Library (material/bulk/glass)
 //
 // Transmissive materials. Each one is a zero-argument function returning a
 // PAIR: its material (the finish and the medium) and its colour, in that
@@ -57,7 +57,7 @@ make(rough, index, absorptionDistance) {
 }
 
 // ===========================================================================
-// Plastics and liquids
+// Plastic
 // ===========================================================================
 
 /// Cast acrylic (PMMA), clearer than glass with a lower index. Returns
@@ -77,6 +77,10 @@ make(rough, index, absorptionDistance) {
 @material resin() {
   return make(0.15, 1.5, 8), [0.95, 0.85, 0.60];
 }
+
+// ===========================================================================
+// Liquid
+// ===========================================================================
 
 /// Water, with a faint cyan tint over 200 mm. Returns material and colour.
 @material water() {

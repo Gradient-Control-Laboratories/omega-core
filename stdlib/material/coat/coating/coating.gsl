@@ -1,13 +1,15 @@
 
-// Coating Materials (material/coating)
+// Coating Materials (material/coat/coating)
 //
 // The finishes laid over a part: anodize and the conversion coatings black
 // oxide and phosphate, which grow out of the metal and keep its machining
-// beneath; powder coat, from glossy with its orange peel to the textured
-// wrinkle, sand and hammertone; paint over primer, chipped where the part
-// wears; and hot-dip galvanizing's spangle of zinc crystals. Each returns
-// material, color, height and slope, as the machined and animated materials
-// do; the height is 0, and relief rides in the material as displacement.
+// beneath; the interference films, steel's temper colours and anodized
+// titanium, that colour a metal without hiding it; powder coat, from glossy
+// with its orange peel to the textured wrinkle, sand and hammertone; paint
+// over primer, chipped where the part wears; and hot-dip galvanizing's
+// spangle of zinc crystals. Each returns material, color, height and slope,
+// as the machined and animated materials do; the height is 0, and relief
+// rides in the material as displacement.
 //
 // A coating is a layer, but a material here has one lobe: anodize is the metal
 // seen through its dyed oxide, a tinted metal whose own faint glint, about 6%
@@ -19,6 +21,7 @@ import "material";
 import "texture";
 import "noise";
 import "color";
+import "material/bulk/metal";
 
 // --- Anodize and conversion coatings ---
 
@@ -70,6 +73,47 @@ phosphate(baseMaterial, @range(0, 1) manganese) {
   return crust, tone, 0, 0;
 }
 
+// --- Interference films ---
+
+/// heatTint(baseMaterial, baseColor, celsius): steel tempered at `celsius`,
+/// wearing its temper colour: the magnetite film the heat grows (n 2.42),
+/// tens of nanometres thick, colours the metal by interference, faint yellow
+/// at 176 C, light straw at 205, dark straw at 226, brown at 260, purple at
+/// 282, dark blue at 310, light blue at 337 and grey-blue from 371, where the
+/// film grows too thick to colour. The film's thickness is read from a table
+/// 25 C apart, 29 nm at 175 C to 95 nm at 375 C, set so the model's colours
+/// fall at the tempering table's temperatures; they run about 10 nm under the
+/// literature's first-order anchors (46 nm light yellow, 72 nm blue), since a
+/// real index stands in for the metal's reflection phase. The film follows
+/// the surface, so the machining beneath is kept. Returns material, color,
+/// height and slope.
+heatTint(baseMaterial, @color baseColor, @range(150, 400) celsius) {
+  return material.withMetallic(baseMaterial, 1), color.thinFilmOver(temperFilm(celsius), 2.42, baseColor), 0, 0;
+}
+
+// The oxide's thickness in nm every 25 C from 175 C, read between rows by
+// hat weights, as color.sampleMap reads a palette.
+temperFilmTable = [29, 35, 42, 47, 54, 61, 72, 84, 95];
+
+temperFilm(celsius) {
+  t = clamp((celsius - 175) / 200, 0, 1);
+  weighted = map((d, k) { return d * max(0, 1 - abs(t * 8 - k)); }, temperFilmTable);
+  return reduce(0, (acc, d) { return acc + d; }, weighted);
+}
+
+/// anodizedTitanium(baseMaterial, baseColor, volts): titanium anodized at
+/// `volts`, its oxide (n 2.3, between the 2.1 and 2.5 measured) grown 2 nm
+/// per volt (1.6 to 2.8 in the sources) and colouring the metal by
+/// interference: bronze and gold by 20 V, purple at 30, blue at 35, pale by
+/// 50, the second order's yellow at 60, pink at 80, blue again at 95 and
+/// green at 110. The charts disagree on the voltages by half an order, so
+/// the rate is the sources' and the colours are the model's. The film
+/// follows the surface, so the machining beneath is kept. Returns material,
+/// color, height and slope.
+anodizedTitanium(baseMaterial, @color baseColor, @range(5, 110) volts) {
+  return material.withMetallic(baseMaterial, 1), color.thinFilmOver(2.0 * volts, 2.3, baseColor), 0, 0;
+}
+
 // --- Powder coat ---
 
 /// glossRoughness(glossUnits): the roughness of a coat whose 60 degree gloss
@@ -99,10 +143,12 @@ glossRoughness(glossUnits) {
 /// powderCoat(coatColor, glossUnits, peel): a powder coat of `coatColor`
 /// whose gloss is `glossUnits`, with orange peel: the coat flows out into
 /// gentle waves, `peel` from 0 (flat) to 1 (heavy), which a wave-scan
-/// measures in two bands, long waves of a few millimetres and short ones of a
-/// few tenths. A few micrometres high, they wobble reflections up close; seen
-/// smaller than a pixel their slopes widen the lobe instead. Returns material,
-/// color, height and slope.
+/// measures in two bands, long waves of a millimetre or two and short ones of
+/// a few tenths. A few micrometres high (1.3 um root mean square at peel 1,
+/// about 8 um peak to valley), they break a glossy highlight into the peel's
+/// dimpled wobble up close; seen smaller than a pixel their slopes widen the
+/// lobe instead. The color is the coat's, even: the peel shows in the
+/// reflection, not the albedo. Returns material, color, height and slope.
 powderCoat(@color coatColor, @range(0, 100) glossUnits, @range(0, 1) peel) {
   amount = clamp(peel, 0, 1);
   // Each band is fine detail (name.detail), worked out only where it shows.
@@ -110,15 +156,18 @@ powderCoat(@color coatColor, @range(0, 100) glossUnits, @range(0, 1) peel) {
   shortWave.detail = noise.gradient(0.3) * 0.0006 * amount * texture.fadeDetail(0.3);
   shortWave.detailSize = 0.3;
   waves = 0;
-  waves.detail = noise.fbm2(2.5, 0.5, 2.3) * 0.004 * amount * texture.fadeDetail(2.5) + shortWave;
-  waves.detailSize = 2.5;
-  alpha = 0.044 * sqrt(100 / clamp(glossUnits, 1, 99) - 1);
-  // The waves' slopes, a few thousandths, lost as they fade.
-  lobe = texture.reliefRoughness(alpha, 0.004 * amount, 0.3);
-  wide = texture.reliefRoughness(lobe, 0.004 * amount, 2.5);
+  waves.detail = (noise.gradient(1.5) + 0.5 * noise.gradient(0.65) * texture.fadeDetail(0.65)) * 0.0065 * amount * texture.fadeDetail(1.5) + shortWave;
+  waves.detailSize = 1.5;
+  rough = glossRoughness(glossUnits);
+  alpha = rough * rough;
+  // The waves' slopes, lost as they fade: 0.0032 root mean square for the
+  // long band and 0.0010 for the short at peel 1, measured by finite
+  // differences over four 3 mm patches.
+  lobe = texture.reliefRoughness(alpha, 0.0010 * amount, 0.3);
+  wide = texture.reliefRoughness(lobe, 0.0032 * amount, 1.5);
   coat = material.withDisplacement(material.make(sqrt(wide), 0, 1.5), waves);
   // Stand-in: the waves too small to see, both bands' slopes in the lobe.
-  coat.simple = material.make(sqrt(sqrt(alpha * alpha + 0.000032 * amount * amount)), 0, 1.5);
+  coat.simple = material.make(sqrt(sqrt(alpha * alpha + 0.00001124 * amount * amount)), 0, 1.5);
   return coat, coatColor, 0, 0;
 }
 
@@ -140,10 +189,7 @@ wrinkleCoat(@color coatColor, @range(0.3, 1) size) {
 /// across (0.1 to 0.3) standing out of a matte coat. Returns material, color,
 /// height and slope.
 sandCoat(@color coatColor, @range(0.1, 0.3) grain) {
-  bump = clamp(1 - noise.cellular(grain) / (0.45 * grain), 0, 1);
-  relief = 0;
-  relief.detail = bump * bump * 0.4 * grain * texture.fadeDetail(grain);
-  relief.detailSize = grain;
+  relief = texture.grainRelief(grain, 0.4 * grain);
   alpha = texture.reliefRoughness(0.3, 0.6, grain);
   coat = material.withDisplacement(material.make(sqrt(alpha), 0, 1.5), relief);
   // Stand-in: the grains too small to see, their slopes in the lobe.
@@ -187,25 +233,160 @@ edgeWear(faceA, faceB, width) {
 
 /// chippedPaint(baseMaterial, baseColor, paintColor, primerColor, glossUnits,
 /// wear, chipSize): paint of `paintColor` and `glossUnits` gloss over a primer
-/// of `primerColor` over the part, chipped where `wear` (0 to 1, see edgeWear)
-/// is high: chips about `chipSize` mm across show the primer at their rims and
-/// the bare part within, sunk by the coats' 0.08 mm. Chips too small to see
-/// settle to their share. Returns material, color, height and slope.
-chippedPaint(baseMaterial, @color baseColor, @color paintColor, @color primerColor, @range(0, 100) glossUnits, wear, chipSize) {
-  field = 1.3 * wear + 0.3 * noise.fbm3(chipSize, 0.55, 2.2);
-  soft = 0.03 + 0.2 * (1 - texture.fadeDetail(chipSize));
-  primer = texture.mask(field, 0.9, soft);
-  bare = texture.mask(field, 1, soft);
-  paintMat = material.make(glossRoughness(glossUnits), 0, 1.5);
+/// of `primerColor` over the part, chipped as painted steel in service is.
+/// The chips are sharp-edged and angular, clustered, and spread over sizes
+/// as real chips are, by a power law heavy toward the small: the count of
+/// chips wider than d falls as d^-1.7, as measured on two Poly Haven scans
+/// of painted plate, so each octave of size holds about the same area of
+/// them. `chipSize` (mm) is their typical size, the area-weighted median;
+/// the largest run to about three times it and the smallest to a quarter.
+/// A shallow chip shows the primer; the deeper ones, mostly the larger,
+/// show the bare part within a ring of primer, sunk by the topcoat's 0.05 mm
+/// and the primer's 0.03. `wear` (0 to 1, see edgeWear) sets how much is
+/// lost: even unworn paint carries a sprinkling, half a percent to one, as
+/// the scans do; 0.5 loses about an eighth, and by 1 the paint is gone. The
+/// paint itself is faintly mottled and chalked, lighter, grayer and duller
+/// in broad patches. Chips too small to see settle to their share. Returns
+/// material, color, height and slope.
+chippedPaint(baseMaterial, @color baseColor, @color paintColor, @color primerColor, @range(0, 100) glossUnits, wear, @range(0.5, 30) chipSize) {
+  reach = chipReach(wear);
+  paintGone, primerGone = chipCover(chipSize, reach);
+  chalk = paintMottle();
+  paintMat = material.make(glossRoughness(glossUnits) + 0.02 * chalk, 0, 1.5);
   primerMat = material.make(0.85, 0, 1.5);
-  coated = material.blend(paintMat, primerMat, primer);
-  worn = material.blend(coated, baseMaterial, bare);
-  chipped = material.withDisplacement(worn, -0.08 * primer * texture.fadeDetail(chipSize));
-  chipped.simple = paintMat;
-  coatColor = color.mixOklab(paintColor, primerColor, primer);
-  finish = color.mixOklab(coatColor, baseColor, bare);
-  finish.simple = paintColor;
+  // The primer shows where the paint is gone and the primer is not: of what
+  // the primer still covers, this share. Exact for crisp chips, and it keeps
+  // the faded mix the mean of the three.
+  primerShows = clamp((paintGone - primerGone) / max(1 - primerGone, 0.0001), 0, 1);
+  coated = material.blend(paintMat, primerMat, primerShows);
+  worn = material.blend(coated, baseMaterial, primerGone);
+  // The coats' steps, less their mean, so the stand-in's flat height is the
+  // relief's own average.
+  chipped = material.withDisplacement(worn, material.displacement(baseMaterial) + 0.05 * (chipUnion(reach, 0) - paintGone) + 0.03 * (chipUnion(reach, 1) - primerGone));
+  chipped.simple = chippedStandInMaterial(baseMaterial, glossUnits, wear);
+  // Chalking: lighter, and grayer by the same token, zero on average.
+  paintLab = color.rgb2oklab(paintColor);
+  dL = 0.009 * chalk;
+  mottled = color.oklab2rgb(paintLab + [dL, -8 * dL * paintLab.y, -8 * dL * paintLab.z]);
+  coatColor = color.mixOklab(mottled, primerColor, primerShows);
+  finish = color.mixOklab(coatColor, baseColor, primerGone);
+  finish.simple = chippedStandInColor(baseColor, paintColor, primerColor, wear);
   return chipped, finish, 0, 0;
+}
+
+// How far the chips reach into the paint for a `wear`, in standard
+// deviations of the chip field: slowly at first and fast toward 1, so an
+// edge's wear band is mostly bare at the arris and sparsely chipped across
+// most of its width (judged).
+chipReach(wear) {
+  return 4.2 * wear * wear;
+}
+
+// The share of a unit normal variable above y (Bowling et al. 2009, within
+// 0.00014).
+normalTail(y) {
+  return 1 / (1 + exp(1.5976 * y + 0.070566 * y * y * y));
+}
+
+// Where octave i (0 the coarsest) chips: its field's threshold, `extra` 1
+// for the primer, which only the deeper part of a chip takes. Finer octaves
+// chip less often and less deeply, so small chips mostly show primer.
+chipEdge(i, reach, extra) {
+  return 2.4 + 0.35 * i + (0.15 + 0.25 * i) * extra - reach;
+}
+
+// The share of the paint the chips take (extra 0), or of the primer (extra
+// 1), all octaves together: their union, which the octaves' clustering
+// makes smaller than independent octaves would. Fitted to the mean of
+// chipCover over 16000 random points at reach 0 to 4.2, within 0.005.
+chipUnion(reach, extra) {
+  return extra > 0.5 ? normalTail((2.40 - reach) / 0.98) : normalTail((2.06 - reach) / 0.90);
+}
+
+// What one octave leaves: its chips where it shows, and where it is too
+// small to see, its part of the union's share, split among the octaves by
+// their own shares (perShare is ln(1 - union) over their sum), so the
+// octaves faded together settle to the union exactly.
+chipKept(z, i, reach, extra, perShare, shown) {
+  edge = chipEdge(i, reach, extra);
+  target = 1 - exp(perShare * normalTail(edge));
+  return 1 - target - (texture.mask(z, edge, 0.04) - target) * shown;
+}
+
+// The share lost to the chips of all five octaves at a point.
+chipLayer(z0, z1, z2, z3, z4, w0, w1, w2, w3, w4, reach, extra) {
+  total = reduce(0, (a, i) { return a + normalTail(chipEdge(i, reach, extra)); }, [0, 1, 2, 3, 4]);
+  perShare = ln(max(1 - chipUnion(reach, extra), 0.000001)) / max(total, 0.000001);
+  return 1 - chipKept(z0, 0, reach, extra, perShare, w0) * chipKept(z1, 1, reach, extra, perShare, w1) * chipKept(z2, 2, reach, extra, perShare, w2) * chipKept(z3, 3, reach, extra, perShare, w3) * chipKept(z4, 4, reach, extra, perShare, w4);
+}
+
+// The paint and the primer the chips take, 0 to 1 each. Each octave of
+// size, from four times chipSize down by halves, chips where its own field
+// passes a threshold: gradient noise from that octave down, each finer one
+// 0.55 as strong, normalized to unit spread over the octaves still shown so
+// a threshold cuts the same share at any distance. The coarsest octave is
+// shared into the rest (0.35), so small chips cluster about large ones; the
+// next octave's |noise| creases each field (0.5), notching the edges; and a
+// random step per Voronoi cell chipSize across (0.7) sets the coarse
+// octaves' edges along the cell walls, in straight runs and sharp corners,
+// as paint breaks. The noise's spread, 0.189, is measured over 4000 points.
+chipCover(chipSize, reach) {
+  s0 = 4 * chipSize;
+  w0 = texture.fadeDetail(s0);
+  w1 = texture.fadeDetail(s0 / 2.07);
+  w2 = texture.fadeDetail(s0 / 4.21);
+  w3 = texture.fadeDetail(s0 / 8.6);
+  w4 = texture.fadeDetail(s0 / 17.3);
+  f1c, f2c, cell = noise.cellularCell(chipSize);
+  facet = 0.7 * (noiseHash3(cell + [29, 7, 43]).x - 0.5) * 3.464;
+  n0 = w0 * noise.gradient(s0) / 0.189;
+  n1 = w1 * noise.gradient(s0 / 2.07) / 0.189;
+  n2 = w2 * noise.gradient(s0 / 4.21) / 0.189;
+  n3 = w3 * noise.gradient(s0 / 8.6) / 0.189;
+  n4 = w4 * noise.gradient(s0 / 17.3) / 0.189;
+  f4 = n4;
+  e4 = w4 * w4;
+  f3 = n3 + 0.55 * f4;
+  e3 = w3 * w3 + 0.3025 * e4;
+  f2 = n2 + 0.55 * f3;
+  e2 = w2 * w2 + 0.3025 * e3;
+  f1 = n1 + 0.55 * f2;
+  e1 = w1 * w1 + 0.3025 * e2;
+  f0 = n0 + 0.55 * f1;
+  e0 = w0 * w0 + 0.3025 * e1;
+  // 1 / sqrt(1 + 0.35^2) and 1 / sqrt(1 + 0.7^2), holding each at unit spread;
+  // 0.83 is |noise|'s mean, 0.157 / 0.189, so the crease adds nothing on average.
+  z0 = (f0 / sqrt(max(e0, 0.000001)) + facet * w2) * 0.8192 - 0.5 * (abs(n1) - 0.83 * w1);
+  z1 = ((f1 / sqrt(max(e1, 0.000001)) + 0.35 * n0) * 0.9439 + facet * w2) * 0.8192 - 0.5 * (abs(n2) - 0.83 * w2);
+  z2 = ((f2 / sqrt(max(e2, 0.000001)) + 0.35 * n0) * 0.9439 + facet * w2) * 0.8192 - 0.5 * (abs(n3) - 0.83 * w3);
+  z3 = (f3 / sqrt(max(e3, 0.000001)) + 0.35 * n0) * 0.9439 - 0.5 * (abs(n4) - 0.83 * w4);
+  z4 = (f4 / sqrt(max(e4, 0.000001)) + 0.35 * n0) * 0.9439;
+  return chipLayer(z0, z1, z2, z3, z4, w0, w1, w2, w3, w4, reach, 0), chipLayer(z0, z1, z2, z3, z4, w0, w1, w2, w3, w4, reach, 1);
+}
+
+// The paint's mottle, unit spread and zero mean: broad patches 80 mm across
+// and finer ones 12, as near equal in strength as the scans' spectra are
+// flat (0.006 of lightness per octave from 1 to 300 mm on a weathered blue
+// plate; 0.003 on a fresh green container).
+paintMottle() {
+  return (noise.gradient(80) + 0.8 * noise.gradient(12) * texture.fadeDetail(12)) / (0.189 * 1.28);
+}
+
+// chippedPaint's stand-ins: the paint, primer and part mixed by the shares
+// the chips take of each.
+chippedStandInMaterial(baseMaterial, glossUnits, wear) {
+  reach = chipReach(wear);
+  share1 = chipUnion(reach, 0);
+  share2 = chipUnion(reach, 1);
+  coats = material.blend(material.make(glossRoughness(glossUnits), 0, 1.5), material.make(0.85, 0, 1.5), (share1 - share2) / max(1 - share2, 0.0001));
+  return material.withDisplacement(material.blend(coats, baseMaterial, share2), material.displacement(baseMaterial));
+}
+
+chippedStandInColor(baseColor, paintColor, primerColor, wear) {
+  reach = chipReach(wear);
+  share1 = chipUnion(reach, 0);
+  share2 = chipUnion(reach, 1);
+  return color.oklab2rgb(color.rgb2oklab(paintColor) * (1 - share1) + color.rgb2oklab(primerColor) * (share1 - share2) + color.rgb2oklab(baseColor) * share2);
 }
 
 // --- Galvanizing ---
@@ -229,12 +410,30 @@ galvanized(@range(1, 10) spangleSize, @range(0, 1) age) {
   crystal = material.withLay(material.make(rough, 1, 1.5), across * fade, stretch);
   weathered = material.make(0.65, 1, 1.5);
   zinc = material.blend(crystal, weathered, clamp(age, 0, 1));
-  zinc.simple = material.blend(material.withLay(material.make(0.325, 1, 1.5), [0, 0, 0], 0.55), weathered, clamp(age, 0, 1));
+  zinc.simple = galvanizedFlat(age);
   bright = texture.fadeTo(0.92 + 0.16 * grain.x, 1, spangleSize) * (1 - 0.5 * boundary);
   fresh = [0.80, 0.82, 0.84] * bright;
   tone = color.mixOklab(fresh, [0.58, 0.60, 0.61], clamp(age, 0, 1));
   tone.simple = color.mixOklab([0.80, 0.82, 0.84], [0.58, 0.60, 0.61], clamp(age, 0, 1));
   return zinc, tone, 0, 0;
+}
+
+// galvanizedFlat(age): galvanizing's stand-in, the spangle settled to its
+// average at `age`.
+galvanizedFlat(age) {
+  return material.blend(material.withLay(material.make(0.325, 1, 1.5), [0, 0, 0], 0.55), material.make(0.65, 1, 1.5), clamp(age, 0, 1));
+}
+
+/// galvanized(baseMaterial, spangleSize, age, build, underSize): hot-dip
+/// galvanizing over a part: the zinc's spangle, `build` mm of it over the
+/// part's relief `underSize` mm across, which it levels as a flowed film does
+/// (levelled). The zinc is opaque, so its color replaces the part's. Returns
+/// material, color, height and slope.
+galvanized(baseMaterial, @range(1, 10) spangleSize, @range(0, 1) age, build, underSize) {
+  zinc, tone, height, slope = galvanized(spangleSize, age);
+  result = levelled(zinc, baseMaterial, build, underSize);
+  result.simple = levelled(galvanizedFlat(age), baseMaterial, build, underSize);
+  return result, tone, 0, 0;
 }
 
 // --- Flowed films over a prepared surface ---
@@ -322,8 +521,8 @@ clearCoat(baseMaterial, @color baseColor, @color tint, @range(0, 100) glossUnits
 powderCoat(baseMaterial, @color coatColor, @range(0, 100) glossUnits, @range(0, 1) peel, build, underSize) {
   coat, tone, height, slope = powderCoat(coatColor, glossUnits, peel);
   amount = clamp(peel, 0, 1);
-  alpha = 0.044 * sqrt(100 / clamp(glossUnits, 1, 99) - 1);
-  flat = material.make(sqrt(sqrt(alpha * alpha + 0.000032 * amount * amount)), 0, 1.5);
+  rough = glossRoughness(glossUnits);
+  flat = material.make(sqrt(sqrt(rough * rough * rough * rough + 0.00001124 * amount * amount)), 0, 1.5);
   result = levelled(coat, baseMaterial, build, underSize);
   result.simple = levelled(flat, baseMaterial, build, underSize);
   return result, tone, height, slope;
@@ -407,6 +606,41 @@ hammertone(baseMaterial, @color coatColor, @range(2, 6) cellSize, build, underSi
   return zinc, tone;
 }
 
+/// Steel tempered to light straw, 205 C. Returns material and colour.
+@material strawTemperedSteel() {
+  steelMat, steelColor = metal.steel();
+  coat, tone, height, slope = heatTint(steelMat, steelColor, 205);
+  return coat, tone;
+}
+
+/// Steel tempered to dark blue, 310 C. Returns material and colour.
+@material blueTemperedSteel() {
+  steelMat, steelColor = metal.steel();
+  coat, tone, height, slope = heatTint(steelMat, steelColor, 310);
+  return coat, tone;
+}
+
+/// Titanium anodized gold, 20 V. Returns material and colour.
+@material goldAnodizedTitanium() {
+  titaniumMat, titaniumColor = metal.titanium();
+  coat, tone, height, slope = anodizedTitanium(titaniumMat, titaniumColor, 20);
+  return coat, tone;
+}
+
+/// Titanium anodized blue, 35 V. Returns material and colour.
+@material blueAnodizedTitanium() {
+  titaniumMat, titaniumColor = metal.titanium();
+  coat, tone, height, slope = anodizedTitanium(titaniumMat, titaniumColor, 35);
+  return coat, tone;
+}
+
+/// Titanium anodized green, 110 V. Returns material and colour.
+@material greenAnodizedTitanium() {
+  titaniumMat, titaniumColor = metal.titanium();
+  coat, tone, height, slope = anodizedTitanium(titaniumMat, titaniumColor, 110);
+  return coat, tone;
+}
+
 // One @surface overload per operator above, for the Bodies panel to wrap a
 // surface with: the slots a document supplies (the part's surface and its
 // colour) and the arguments the examples use for the rest. Adjust opens one
@@ -441,6 +675,20 @@ hammertone(baseMaterial, @color coatColor, @range(2, 6) cellSize, build, underSi
   return coat, tone, height, slope;
 }
 
+/// heatTint(baseMaterial, baseColor): tempered to blue, 310 C. Returns
+/// material, color, height and slope.
+@surface heatTint(baseMaterial, @color baseColor) {
+  coat, tone, height, slope = heatTint(baseMaterial, baseColor, 310);
+  return coat, tone, height, slope;
+}
+
+/// anodizedTitanium(baseMaterial, baseColor): anodized at 35 V, blue.
+/// Returns material, color, height and slope.
+@surface anodizedTitanium(baseMaterial, @color baseColor) {
+  coat, tone, height, slope = anodizedTitanium(baseMaterial, baseColor, 35);
+  return coat, tone, height, slope;
+}
+
 /// chippedPaint(baseMaterial, baseColor): green paint at 60 gloss units over
 /// a red oxide primer, chipped evenly in 1.5 mm chips. The full form takes
 /// the wear as a field (edgeWear). Returns material, color, height and slope.
@@ -454,6 +702,15 @@ hammertone(baseMaterial, @color coatColor, @range(2, 6) cellSize, build, underSi
 /// height and slope.
 @surface clearCoat(baseMaterial, @color baseColor) {
   coat, tone, height, slope = clearCoat(baseMaterial, baseColor, [1, 1, 1], 45, 0.08, 1.2);
+  return coat, tone, height, slope;
+}
+
+/// galvanized(baseMaterial): fresh hot-dip galvanizing, 1 mm spangles, 0.085 mm
+/// of zinc (ASTM A123's coating grade 85, judged typical) over relief 1.2 mm
+/// across; the zinc's color replaces the part's. Returns material, color,
+/// height and slope.
+@surface galvanized(baseMaterial) {
+  coat, tone, height, slope = galvanized(baseMaterial, 1, 0, 0.085, 1.2);
   return coat, tone, height, slope;
 }
 
@@ -496,3 +753,22 @@ hammertone(baseMaterial, @color coatColor, @range(2, 6) cellSize, build, underSi
 //   Sere, P. R. et al. (1999). Relationship between texture and corrosion
 //     resistance in hot-dip galvanized steel sheets. Surface and Coatings
 //     Technology.
+//   Tempering (metallurgy), "Tempering colors". Wikipedia. The temper colours
+//     and their temperatures. https://en.wikipedia.org/wiki/Tempering_(metallurgy)
+//   Peet, M., Bhadeshia, H. K. D. H. Oxide on steel and tempering colours.
+//     University of Cambridge. The colours as interference, after Evans
+//     (1925). https://www.phase-trans.msm.cam.ac.uk/2008/Oxide/Oxide.html
+//   finishing.com, letter 453/44. Blue as first-order interference from
+//     about 0.07 um of oxide on steel. https://finishing.com/453/44.shtml
+//   Magnetite's index, 2.42, from the materials table at
+//     https://steeldata.info/etch/demo/help/compounds/87.html
+//   Ohtsuka, T., Masuda, M., Sato, N. (1985). Ellipsometric study of anodic
+//     oxide films on titanium in hydrochloric acid, sulfuric acid, and
+//     phosphate solution. Journal of the Electrochemical Society, 132(4),
+//     787-792. The oxide's index about 2.1 at 546 nm and 2.4 to 2.8 nm/V.
+//     https://doi.org/10.1149/1.2097244
+//   Titanium anodizing: how it works. Urban EDC. 1.6 to 2.0 nm per volt and
+//     the colours by thickness and voltage.
+//     https://urbanedc.com/blogs/analog-field-guide/titanium-anodizing-how-it-works
+//   Titanium anodizing. Xometry. The colours by voltage.
+//     https://www.xometry.com/resources/machining/titanium-anodizing

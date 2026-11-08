@@ -21,8 +21,8 @@
 //     absorptionDistance in mm (0 = no absorption); displacement in mm.
 //   * a transmissive shape is refracted and seen through in the viewer, with
 //     the shape's colour as the tint that comes through absorptionDistance of
-//     it (see the glass library); displacement is stored and ignored until
-//     the relief pass lands.
+//     it (see the glass library); a displacement moves the rendered surface
+//     (withDisplacement); the mesher and every export ignore it.
 //   * Self-contained (no library dependencies). Doc convention follows
 //     builtin/base.gsl: `///` lines are public docs.
 
@@ -51,7 +51,7 @@ translucent(m, transmission, absorptionDistance) {
 }
 
 // ===========================================================================
-// Presets
+// Finishes - preserves underlying color
 // ===========================================================================
 
 /// The material a shape has when it sets none: roughness 0.5, not metallic,
@@ -61,7 +61,7 @@ translucent(m, transmission, absorptionDistance) {
 @finish matte = make(1.0, 0, 1.45);
 /// Soft, low-gloss: elastomers, grips, tyres.
 @finish rubber = make(0.8, 0, 1.52);
-/// Moulded plastic with a satin sheen: ABS, nylon, PLA.
+/// Molded plastic with a satin sheen: ABS, nylon, PLA.
 @finish plastic = make(0.35, 0, 1.46);
 /// Glossy plastic: polished acrylic, phone cases, car paint before clearcoat.
 @finish shinyPlastic = make(0.1, 0, 1.46);
@@ -208,10 +208,18 @@ withTransmission(m, @range(0, 1) transmission, absorptionDistance) {
   return r;
 }
 
-/// m with a displacement height (mm).
+/// m with a displacement height (mm): the viewer moves the rendered surface
+/// by it, within a few mm of the surface as built, so silhouettes and
+/// occlusion follow the relief; keep it under about 3 mm.
 withDisplacement(m, height) {
   volume = m[2];
   return [m[0], m[1], [volume.x, volume.y, height, volume.w], m[3]];
+}
+
+/// m with `height` (mm) added to its displacement, so relief already on m
+/// stays: a finish over a thread leaves the thread and adds its own marks.
+addDisplacement(m, height) {
+  return withDisplacement(m, displacement(m) + height);
 }
 
 /// m with a lay: grooves too fine to see, running along `direction` (a

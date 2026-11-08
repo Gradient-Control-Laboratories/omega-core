@@ -1,5 +1,5 @@
 
-// Printed Materials (material/printed)
+// Printed Materials (material/process/printed)
 //
 // The surfaces additive manufacturing leaves, from each process's own
 // parameters: fused filament's beads, resin's fine layers, the powder beds'
@@ -20,6 +20,7 @@ import "material";
 import "texture";
 import "noise";
 import "color";
+import "material/bulk/physical";
 
 // The lay along a print's layers: round the build direction about centre,
 // so on any wall facing away from it the lay is level, along its layers.
@@ -47,7 +48,7 @@ layerFinish(baseMaterial, up, center, layerHeight, relief, edgeAlpha, slope) {
   across = sqrt(edgeAlpha * edgeAlpha + (1 - shown) * slope * slope);
   stretch = (1 - clamp(edgeAlpha / across, 0.1, 1)) / 0.9;
   fineLay = stretch > 0 ? layDir : [0, 0, 0];
-  fine = material.withDisplacement(material.withLay(material.withRoughness(baseMaterial, sqrt(sqrt(edgeAlpha * across))), fineLay, stretch), relief * texture.fadeDetail(size));
+  fine = material.addDisplacement(material.withLay(material.withRoughness(baseMaterial, sqrt(sqrt(edgeAlpha * across))), fineLay, stretch), relief * texture.fadeDetail(size));
   finish = coarse;
   finish.detail = fine;
   finish.detailSize = size;
@@ -137,6 +138,26 @@ laserMelted(baseMaterial, @color baseColor, @range(5, 15) roughnessRa) {
   return skin, tint, 0, 0;
 }
 
+/// sintered(baseMaterial, baseColor, roughnessRa): metal printed by binder
+/// jetting and sintered, as built, `roughnessRa` micrometres Ra (3 to 12; as
+/// low as 4 at 98% density). Its skin is the sintered powder, grains about
+/// 0.03 mm across, finer than laser melting's half-melted spatter, so up
+/// close it is a speckle, each grain a shade lighter or darker by 8%, with
+/// the surface's porosity, up to 6% before infiltration, a sparse scatter of
+/// dark pores about 0.05 mm across, both fine detail settling to the metal's
+/// colour a little darkened by the pores. The grains' slopes spread the
+/// highlight evenly, by the relation laserMelted uses, 0.47 at Ra 6.
+/// Returns material, color, height and slope.
+sintered(baseMaterial, @color baseColor, @range(3, 12) roughnessRa) {
+  ra = clamp(roughnessRa, 1, 20);
+  skin = material.withRoughness(material.withMetallic(baseMaterial, 1), sqrt(sqrt(0.09 + 0.0036 * ra * ra)));
+  grain = texture.grainShade(0.03, 0.08);
+  pores = texture.grainSpecks(0.05, 0.03);
+  tint = baseColor * 0.85 * grain * (1 - 0.7 * pores);
+  tint.simple = baseColor * 0.85 * (1 - 0.7 * 0.03);
+  return skin, tint, 0, 0;
+}
+
 // ===========================================================================
 // Ready-made
 // ===========================================================================
@@ -173,6 +194,42 @@ laserMelted(baseMaterial, @color baseColor, @range(5, 15) roughnessRa) {
   return layered, tone;
 }
 
+// The binder-jet alloys below are a guess at the customer's catalogue, the
+// usual set, over physical's measured stainless and copper: the three
+// stainless alloys are told apart by name only until each is measured.
+
+/// 17-4PH stainless, binder jetted and sintered, Ra 6 um as built. Returns
+/// material and colour.
+@material sintered174PH() {
+  stainlessMat, stainlessColor = physical.stainlessSteel();
+  skin, tone, height, slope = sintered(stainlessMat, stainlessColor, 6);
+  return skin, tone;
+}
+
+/// 316L stainless, binder jetted and sintered, Ra 6 um as built. Returns
+/// material and colour.
+@material sintered316L() {
+  stainlessMat, stainlessColor = physical.stainlessSteel();
+  skin, tone, height, slope = sintered(stainlessMat, stainlessColor, 6);
+  return skin, tone;
+}
+
+/// 304L stainless, binder jetted and sintered, Ra 6 um as built. Returns
+/// material and colour.
+@material sintered304L() {
+  stainlessMat, stainlessColor = physical.stainlessSteel();
+  skin, tone, height, slope = sintered(stainlessMat, stainlessColor, 6);
+  return skin, tone;
+}
+
+/// Copper, binder jetted and sintered, Ra 6 um as built. Returns material
+/// and colour.
+@material sinteredCopper() {
+  copperMat, copperColor = physical.copper();
+  skin, tone, height, slope = sintered(copperMat, copperColor, 6);
+  return skin, tone;
+}
+
 // One @surface overload per operator above, for the Bodies panel to wrap a
 // surface with: the slots a document supplies and the arguments the examples
 // use for the rest. Adjust opens one back into the full form; see
@@ -185,9 +242,25 @@ laserMelted(baseMaterial, @color baseColor, @range(5, 15) roughnessRa) {
   return skin, tone, height, slope;
 }
 
+/// sintered(baseMaterial, baseColor): binder-jetted metal as sintered, 6 um
+/// Ra. Returns material, color, height and slope.
+@surface sintered(baseMaterial, @color baseColor) {
+  skin, tone, height, slope = sintered(baseMaterial, baseColor, 6);
+  return skin, tone, height, slope;
+}
+
 // References
 //   Ahn, D. et al. (2009). Representation of surface roughness in fused
 //     deposition modeling. Journal of Materials Processing Technology.
 //   Strano, G. et al. (2013). Surface roughness analysis, modelling and
 //     prediction in selective laser melting. Journal of Materials
 //     Processing Technology.
+//   Jamalkhani, M. et al. Fatigue behavior of vacuum-sintered binder jetted
+//     fine 316L stainless steel powder. Illinois Institute of Technology:
+//     as-sintered density about 99.8%, the surface roughness setting the
+//     fatigue life. https://par.nsf.gov/servlets/purl/10435928
+//   Binder jetting print speed and as-sintered surface (preprint, 2021):
+//     densities near 98% with as-sintered Ra as low as 4 um.
+//     https://www.preprints.org/manuscript/202101.0459/v1
+//   Kumar et al., binder-jetted 316L: high-cycle fatigue unhurt by porosity
+//     of up to 6%, the pores sintered's skin scatters.

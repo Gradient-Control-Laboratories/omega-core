@@ -1,4 +1,4 @@
-// Metal Library (metal)
+// Metal Library (material/bulk/metal)
 //
 // Standard metals. Each metal is a zero-argument function returning a PAIR:
 // its material (the finish) and its colour, in that order.
@@ -8,17 +8,20 @@
 // A material carries no albedo, so a metal needs both properties. They are
 // returned together rather than named separately so the two cannot be
 // mismatched: there is no way to take brass's material with steel's colour
-// by accident. Colours are the metal's reflectance (its F0) as sRGB in
-// [0, 1], the representation `name.color` expects, so a colour also works on
-// its own. Materials are `material` records (see the material library); vary
-// one with `material.withRoughness(boltMat, 0.1)`.
+// by accident. Materials are `material` records (see the material library);
+// vary one with `material.withRoughness(boltMat, 0.1)`.
 //
-// Self-contained (no library dependencies). Doc convention follows
-// builtin/base.gsl: `///` lines are public docs.
+// Each is a measured substance with a finish on it: the color is the
+// substance's own, from physical (the Physically Based database) or alloy, so
+// there is one brass, and the roughness is the finish this library names.
+// Doc convention follows builtin/base.gsl: `///` lines are public docs.
 
-// Every finish is [[roughness, 1, 1.5, 0], [0,0,0,0], [0,0,0,0]] — the same
-// row layout material.make produces — spelled out so the library needs no
-// imports.
+import "material/bulk/physical";
+import "material/bulk/alloy";
+
+// Every finish is [[roughness, 1, 1.5, 0], [0,0,0,0], [0,0,0,0]], the row
+// layout material.make produces and the substances' own with the roughness
+// set, spelled out so the finish has no parameter to adjust.
 finish(rough) {
   return [[rough, 1, 1.5, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]];
 }
@@ -29,18 +32,27 @@ finish(rough) {
 
 /// Mild steel, machined satin. Returns material and colour.
 @material steel() {
-  return finish(0.45), [0.77, 0.78, 0.78];
+  m, c = alloy.steel();
+  return finish(0.45), c;
 }
 
-/// Stainless steel, brushed. Its colour is a touch brighter and cooler than
+/// Stainless steel, brushed. Its colour is a touch brighter and warmer than
 /// mild steel's. Returns material and colour.
 @material stainless() {
-  return finish(0.35), [0.80, 0.81, 0.82];
+  m, c = physical.stainlessSteel();
+  return finish(0.35), c;
 }
 
-/// Cast iron, rough as-cast surface. Returns material and colour.
+/// Gray cast iron, rough as-cast surface. Returns material and colour.
+// Its color is iron's. Gray cast iron is iron with a few percent of graphite,
+// and the database's Cast Iron is no metal's reflectance: it is filed as
+// Manmade, from a spectrophotometer reading, with no refractive index, where
+// its metals take their color from one. Taken as a metal it draws nearly black.
+//   https://github.com/AntonPalmqvist/physically-based-api/tree/main/data/materials/cast-iron/
+//   https://refractiveindex.info/?shelf=3d&book=metals&page=iron
 @material castIron() {
-  return finish(0.85), [0.45, 0.45, 0.46];
+  m, c = physical.iron();
+  return finish(0.85), c;
 }
 
 // ===========================================================================
@@ -49,18 +61,21 @@ finish(rough) {
 
 /// Aluminium, machined satin. Returns material and colour.
 @material aluminum() {
-  return finish(0.40), [0.96, 0.96, 0.97];
+  m, c = physical.aluminum();
+  return finish(0.40), c;
 }
 
 /// Titanium, bead-blasted, a warm gray. Returns material and colour.
 @material titanium() {
-  return finish(0.50), [0.76, 0.74, 0.70];
+  m, c = physical.titanium();
+  return finish(0.50), c;
 }
 
 /// Zinc, as a galvanised or plated dull finish, a cool bluish gray. Returns
 /// material and colour.
 @material zinc() {
-  return finish(0.55), [0.80, 0.82, 0.84];
+  m, c = physical.zinc();
+  return finish(0.55), c;
 }
 
 // ===========================================================================
@@ -69,20 +84,24 @@ finish(rough) {
 
 /// Brass, polished. Returns material and colour.
 @material brass() {
-  return finish(0.30), [0.95, 0.90, 0.69];
+  m, c = physical.brass();
+  return finish(0.30), c;
 }
 
 /// Copper, polished. Returns material and colour.
 @material copper() {
-  return finish(0.35), [0.98, 0.82, 0.76];
+  m, c = physical.copper();
+  return finish(0.35), c;
 }
 
 /// Gold, polished. Returns material and colour.
 @material gold() {
-  return finish(0.25), [1.0, 0.89, 0.62];
+  m, c = physical.gold();
+  return finish(0.25), c;
 }
 
 /// Chromium plate, mirror finish. Returns material and colour.
 @material chromium() {
-  return finish(0.04), [0.77, 0.78, 0.77];
+  m, c = physical.chromium();
+  return finish(0.04), c;
 }

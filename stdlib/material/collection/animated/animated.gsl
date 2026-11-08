@@ -1,5 +1,5 @@
 
-// Animated Materials (material/animated)
+// Animated Materials (material/collection/animated)
 //
 // Surfaces that move in time, each by its own physics: an ocean whose waves
 // run at the speed their length gives them, and a lava lake whose crust
@@ -53,25 +53,31 @@ normalTail(share) {
   return t - (2.515517 + 0.802853 * t + 0.010328 * t * t) / (1 + 1.432788 * t + 0.189269 * t * t + 0.001308 * t * t * t);
 }
 
-/// ocean(scale, windSpeed, windDirection, choppiness): the open sea a wind
-/// has raised, as a model `scale` mm to the real metre. The waves are the
+/// ocean(wavelength, windSpeed, windDirection, choppiness): the open sea a
+/// wind has raised, as a scale model whose peak waves are `wavelength` mm
+/// long: in truth they are 2 pi U^2 / (0.877^2 g) m long, 83 m at 10 m/s, so
+/// 10 mm is 1:8300. The waves are the
 /// Pierson-Moskowitz spectrum of a fully developed sea under a wind of
 /// `windSpeed` m/s (Pierson and Moskowitz 1964), as eight wave trains spread
 /// about `windDirection` (a vector across the surface; waves run along it
 /// and turn about z), each running at the speed deep water gives its length,
 /// omega^2 = g k, in real seconds: long waves outrun short ones, so the
 /// crests keep forming and breaking up. At 10 m/s the peak waves are 83 m
-/// long and 7.3 s apart, and the significant height is 2.1 m, all times
-/// scale. choppiness, 0 to 1, pulls the crests sharp and the troughs wide as
+/// long and 7.3 s apart, and the significant height is 2.1 m, all at the
+/// model's scale. choppiness, 0 to 1, pulls the crests sharp and the troughs
+/// wide as
 /// Gerstner waves do (Tessendorf 2001), up to where they would fold.
 /// Whitecaps cover the share of the sea Monahan and O'Muircheartaigh (1980)
 /// measured for that wind, 1% at 10 m/s and 10% at 20 m/s, on the highest
 /// crests. The ripples too small to model roughen the water by the slopes Cox
 /// and Munk (1954) measured in sun glitter. Returns material, color, height
 /// and slope.
-ocean(scale, windSpeed, @direction windDirection, @range(0, 1) choppiness) {
+ocean(@range(1, 200) wavelength, windSpeed, @direction windDirection, @range(0, 1) choppiness) {
   g = 9.81;
   peak = 0.877 * g / windSpeed;
+  // The model's mm to the real metre: the peak wave, 2 pi g / peak^2 m long,
+  // is wavelength mm long here.
+  scale = wavelength * peak * peak / (2 * 3.14159265 * g);
   wind = normalize(windDirection);
   side = normalize(cross([0, 0, 1], wind));
   frequencies = oceanFrequencies();
@@ -166,7 +172,7 @@ incandescentStrength(celsius) {
 /// along it. The seams and wrinkles are the material's displacement, and the
 /// height is 0: the lake is flat at the scale of its plates. Returns
 /// material, color, height and slope.
-lavaLake(plateSize, life, velocityFn, glowStrength) {
+lavaLake(@range(5, 200) plateSize, life, velocityFn, glowStrength) {
   cells, drift = noise.driftingCellsLatticeXY(p / plateSize, [plateSize, plateSize, plateSize], life, velocityFn);
   wallAge = cells.y;
   age = cells.z;
@@ -341,7 +347,7 @@ mudBubble(r, phase, cycle, size, thinness) {
 /// paler and matte where it dries between them. The mud lies across z, as a
 /// pool does. The bubbles are the material's displacement, and the height is
 /// 0. Returns material, color, height and slope.
-mudPot(bubbleSize, @range(0.5, 5) period, @range(0, 1) thinness) {
+mudPot(@range(2, 20) bubbleSize, @range(0.5, 5) period, @range(0, 1) thinness) {
   cellSize = 3 * bubbleSize;
   base = floor([p.x / cellSize, p.y / cellSize, 0]);
   found = reduce([0.0, 1000], (acc, i) {
@@ -391,7 +397,7 @@ iceStage(stage, values) {
 /// life under half a floe. The ice lies across z. The floes' freeboard and
 /// rims are the material's displacement, and the height is 0. Returns
 /// material, color, height and slope.
-iceFloes(floeSize, life, velocityFn, @range(0, 1) stage, @range(0, 1) openWater) {
+iceFloes(@range(5, 200) floeSize, life, velocityFn, @range(0, 1) stage, @range(0, 1) openWater) {
   cells, drift = noise.driftingCellsLatticeXY(p / floeSize, [floeSize, floeSize, floeSize], life, velocityFn);
   leadHalf = floeSize * (0.02 + 0.2 * openWater);
   // The leads as lines 2 leadHalf wide, keeping their share of a pixel.
@@ -425,20 +431,24 @@ iceFloes(floeSize, life, velocityFn, @range(0, 1) stage, @range(0, 1) openWater)
 
 // --- Sand ---
 
-/// sandRipples(scale, windSpeed, windDirection): wind ripples on dry sand, as
-/// a model `scale` mm to the real metre, under a wind of `windSpeed` m/s
-/// along windDirection. Their wavelength grows with the wind, about 12 cm at
-/// 8 m/s, and they stand a seventeenth as high, a gentle stoss slope to the
+/// sandRipples(wavelength, windSpeed, windDirection): wind ripples on dry
+/// sand, as a scale model whose ripples are `wavelength` mm apart, under a
+/// wind of `windSpeed` m/s along windDirection. In truth their wavelength
+/// grows with the wind, about 12 cm at 8 m/s, which sets the model's scale;
+/// they stand a seventeenth as high, a gentle stoss slope to the
 /// wind and a steep lee (Nield et al. 2025). They creep downwind once the
 /// wind lifts sand, from about 5 m/s, at 0.35 mm/s at 8 m/s and with the
 /// cube of the wind, in real seconds, and saltating grains stream over them
 /// at about 1 m/s. Dark heavy minerals gather in the troughs. The crests
 /// wander and fork. The ripples are the material's displacement, and the
-/// height is 0. Returns material, color, height and slope.
-sandRipples(scale, windSpeed, @direction windDirection) {
+/// height is 0. Up close the sand is grains, 0.3 mm as real grains are at any
+/// model scale, with a twelfth of them dark, as fine detail. Returns
+/// material, color, height and slope.
+sandRipples(@range(1, 200) wavelength, windSpeed, @direction windDirection) {
   wind = normalize(windDirection);
   blowing = texture.mask(windSpeed, 5, 1);
-  wavelength = (0.06 + 0.0075 * windSpeed) * scale;
+  // The model's mm to the real metre, from the ripples' real wavelength.
+  scale = wavelength / (0.06 + 0.0075 * windSpeed);
   creep = 0.00035 * pow(windSpeed / 8, 3) * blowing * scale;
   carried = p - wind * (creep * time);
   wander = 0.35 * noise.gradientLattice(carried / (3 * wavelength) + [5, 23, 41]);
@@ -450,14 +460,21 @@ sandRipples(scale, windSpeed, @direction windDirection) {
   heavy = (1 - profile) * (1 - profile) * (1 - profile);
   sand = color.mixOklab([0.76, 0.64, 0.44], [0.30, 0.26, 0.22], 0.5 * heavy);
   col = color.mixOklab(sand, [0.86, 0.76, 0.58], 0.25 * blowing * texture.mask(streaks, 0.3, 0.2) * texture.fadeDetail(0.25 * wavelength));
+  // Stand-in of the rippled sand: the heavy minerals average (1 - sin)^3
+  // over a ripple, 0.166, and the streaks lighten 15% of the sand while the
+  // wind lifts it. Declared before the grained colour, whose stand-in reads it.
+  rippledStand = color.mixOklab(color.mixOklab([0.76, 0.64, 0.44], [0.30, 0.26, 0.22], 0.083), [0.86, 0.76, 0.58], 0.0375 * blowing);
+  // The sand's grains, 0.3 mm as grains are whatever the ripples' scale, and
+  // one in twelve a dark mineral, as fine detail drawn only up close.
+  grained = color.mixOklab(col, [0.30, 0.26, 0.22], texture.grainSpecks(0.3, 0.083));
   // Ripples too small to resolve roughen the sand by their slopes, about 0.2.
-  ground = material.withDisplacement(material.make(sqrt(texture.reliefRoughness(0.81, 0.2, wavelength)), 0, 1.54), relief);
-  // The ripples' profile averages 2 / pi of their height.
+  ground = material.withDisplacement(material.make(sqrt(texture.reliefRoughness(0.81, 0.2, wavelength)), 0, 1.54), relief + texture.grainRelief(0.3, 0.12));
+  // The ripples' profile averages 2 / pi of their height; the grains' mean
+  // height, 0.05 mm, is left out.
   ground.simple = material.withDisplacement(material.make(sqrt(sqrt(0.6561 + 0.04)), 0, 1.54), wavelength / 17 * 0.637);
-  // Stand-in: the heavy minerals average (1 - sin)^3 over a ripple, 0.166,
-  // and the streaks lighten 15% of the sand while the wind lifts it.
-  col.simple = color.mixOklab(color.mixOklab([0.76, 0.64, 0.44], [0.30, 0.26, 0.22], 0.083), [0.86, 0.76, 0.58], 0.0375 * blowing);
-  return ground, col, 0, 0;
+  // Stand-in: the rippled sand's, with a twelfth of the grains dark.
+  grained.simple = color.mixOklab(rippledStand, [0.30, 0.26, 0.22], 0.083);
+  return ground, grained, 0, 0;
 }
 
 // ===========================================================================
@@ -472,10 +489,10 @@ sandRipples(scale, windSpeed, @direction windDirection) {
 // before any call site, and a function-taking constructor has no generic
 // form then (the closure pass specializes it per call).
 
-/// Open sea under a 10 m/s wind along +X, a little across, choppy. Returns
-/// material and colour.
+/// Open sea under a 10 m/s wind along +X, a little across, choppy, its peak
+/// waves 10 mm long (1:8300). Returns material and colour.
 @material ocean() {
-  sea, tone, height, slope = ocean(0.12, 10, [1, 0.3, 0], 0.6);
+  sea, tone, height, slope = ocean(10, 10, [1, 0.3, 0], 0.6);
   return sea, tone;
 }
 
@@ -491,10 +508,10 @@ sandRipples(scale, windSpeed, @direction windDirection) {
   return mud, tone;
 }
 
-/// Sand rippled by a 10 m/s wind, at a model scale of 60. Returns material
-/// and colour.
+/// Sand rippled by a 10 m/s wind, ripples 8.1 mm apart (a model scale of 60).
+/// Returns material and colour.
 @material sandRipples() {
-  sand, tone, height, slope = sandRipples(60, 10, [0.94, 0.34, 0]);
+  sand, tone, height, slope = sandRipples(8.1, 10, [0.94, 0.34, 0]);
   return sand, tone;
 }
 

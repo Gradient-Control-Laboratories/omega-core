@@ -1,0 +1,304 @@
+
+// Molded Materials (material/process/molded)
+//
+// The surfaces injection molding leaves on plastics: the mold's own
+// spark-eroded grain, the leather grain cut into a mold, glass-filled
+// nylon's flecks of fibre under a matte skin, an overmolded rubber grip
+// with its dots or diamonds, and translucent silicone. The finishes take a
+// base and return material, color, height and slope, as the machined and
+// coating materials do; the grip's dots are the height, which the Bodies
+// panel applies as displacement and the preset bakes in, so it counts any
+// relief already on the base. Silicone is
+// transmissive, so it carries no relief (doc/material_library.md, Relief).
+//
+// Doc convention follows builtin/base.gsl: `///` lines are public docs.
+
+import "material";
+import "texture";
+import "noise";
+import "color";
+import "map";
+import "material/process/machined";
+import "material/coat/coating";
+
+// --- Mould textures ---
+
+/// textured(baseMaterial, baseColor, vdiGrade): a plastic molded in a
+/// spark-eroded mold, graded to VDI 3400 (12 to 45) like the mold: the
+/// machined package's sparkEroded skin, the craters' slopes a matte and
+/// each crater a shade as fine detail, on the plastic's own index. Returns
+/// material, color, height and slope.
+textured(baseMaterial, @color baseColor, @range(12, 45) vdiGrade) {
+  skin, tone, height, slope = machined.sparkEroded(baseMaterial, baseColor, vdiGrade);
+  return skin, tone, 0, 0;
+}
+
+/// leatherGrain(baseMaterial, baseColor, grainSize, depth): a plastic
+/// molded in a leather-grained mold: a network of creases round cells
+/// `grainSize` mm across (0.5 to 4), sunk `depth` mm (0.02 to 0.2; a
+/// leather-like texture draws about 6 degrees of draft at 0.013 mm a
+/// degree, so 0.08 is usual), the cells domed between them to half the
+/// depth, as relief in the material, the creases a shade darker. Matte, the
+/// lobe 0.7 wide. Returns material, color, height and slope.
+leatherGrain(baseMaterial, @color baseColor, @range(0.5, 4) grainSize, @range(0.02, 0.2) depth) {
+  f1, f2, cell = noise.cellularCell(grainSize);
+  dome = 1 - clamp(f1 / (0.6 * grainSize), 0, 1);
+  crease = 1 - texture.mask(f2 - f1, 0.12 * grainSize, 0.06 * grainSize);
+  relief = depth * (0.5 * dome * dome - crease) * texture.fadeDetail(grainSize);
+  alpha = texture.reliefRoughness(0.49, 0.5 * depth / (0.1 * grainSize), grainSize);
+  skin = material.addDisplacement(material.withLay(material.withRoughness(baseMaterial, sqrt(alpha)), [0, 0, 0], 0), relief);
+  skin.simple = material.withLay(material.withRoughness(baseMaterial, sqrt(sqrt(0.24 + 0.25 * depth * depth / (0.01 * grainSize * grainSize)))), [0, 0, 0], 0);
+  // The creases cover about a fifth of the grain (judged).
+  tone = baseColor * texture.fadeTo(1 - 0.15 * crease, 0.97, grainSize);
+  tone.simple = baseColor * 0.97;
+  return skin, tone, 0, 0;
+}
+
+/// glassFilled(fillColor, fibreShare): glass-filled nylon as molded, a
+/// matte skin (the lobe 0.6 wide, index 1.53) over `fillColor`, with the
+/// fibres that reach the surface, `fibreShare` of the compound by weight (0
+/// to 0.5, 0.3 the common grade), showing as pale flecks about 0.3 mm
+/// across, as fine detail that settles to the mix by share: about half the
+/// share's worth of the skin, judged. Returns material, color, height and
+/// slope.
+glassFilled(@color fillColor, @range(0, 0.5) fibreShare) {
+  share = 0.5 * clamp(fibreShare, 0, 1);
+  glassy = [0.88, 0.88, 0.84];
+  skin = material.make(0.6, 0, 1.53);
+  tone = color.mixOklab(fillColor, glassy, texture.grainSpecks(0.3, share));
+  tone.simple = color.mixOklab(fillColor, glassy, share);
+  return skin, tone, 0, 0;
+}
+
+// --- Grip and silicone ---
+
+// A ridge's height, 0 at its roots and 1 at its crest, at u pitches along.
+ridge(u) {
+  return 1 - 2 * abs(fract(u) - 0.5);
+}
+
+// gripRelief(x, y, pitch, height, diamond): the grip's relief at plane
+// coordinates (x, y) in mm: domed dots `height` high on a honeycomb `pitch`
+// apart (diamond 0), or crossed ridges at 30 degrees to y, `height` high at
+// their crossings (diamond 1).
+gripRelief(x, y, pitch, height, diamond) {
+  cellP = remap(map.patternHexagonalXY(pitch), [x, y, 0]);
+  dome = clamp(1 - length(cellP.xy) / (0.35 * pitch), 0, 1);
+  dots = height * dome * (2 - dome);
+  crossed = height * min(ridge(x / pitch + 0.577 * y / pitch), ridge(x / pitch - 0.577 * y / pitch));
+  return diamond > 0.5 ? crossed : dots;
+}
+
+// The overmolded rubber, matte, over a base whose relief it buries under 2
+// mm of elastomer (coating.levelled).
+rubberOver(baseMaterial) {
+  return coating.levelled(material.make(0.7, 0, 1.5), baseMaterial, 2, 1.2);
+}
+
+/// grip(baseMaterial, gripColor, frame, diameter, pitch, height, diamond):
+/// an elastomer overmolded on a handle, read from the part's own frame,
+/// `[bar.u, bar.v]`, round a part `diameter` mm across: a matte rubber of
+/// `gripColor` buried over the base's relief, with domed dots on a
+/// honeycomb `pitch` mm apart (diamond 0) or crossed ridges (diamond 1),
+/// `height` mm high, the honeycomb's cells counted whole round u so it
+/// closes across the seam. The dots are the returned height. Returns
+/// material, color, height and slope.
+grip(baseMaterial, @color gripColor, frame, @range(4, 200) diameter, @range(1, 6) pitch, @range(0.2, 1.5) height, @range(0, 1) diamond) {
+  cellWidth = 1.7320508 * pitch;
+  count = max(floor(3.14159265 * diameter / cellWidth + 0.5), 1);
+  around = frame.x / 6.2831853 * count * cellWidth;
+  relief = gripRelief(around, frame.y, pitch, height, diamond);
+  return rubberOver(baseMaterial), gripColor, relief + material.displacement(baseMaterial), 2 * height / (0.35 * pitch);
+}
+
+/// grip(baseMaterial, gripColor, origin, normal, along, pitch, height,
+/// diamond): the same grip on a face facing `normal` through `origin`, the
+/// honeycomb's rows along `along`, for a part without a frame. Returns
+/// material, color, height and slope.
+grip(baseMaterial, @color gripColor, @point origin, @direction(origin) normal, @direction(origin) along, @range(1, 6) pitch, @range(0.2, 1.5) height, @range(0, 1) diamond) {
+  n = normalize(normal);
+  u = normalize(along - n * dot(along, n));
+  v = cross(n, u);
+  offset = p - origin;
+  relief = gripRelief(dot(offset, u), dot(offset, v), pitch, height, diamond);
+  return rubberOver(baseMaterial), gripColor, relief + material.displacement(baseMaterial), 2 * height / (0.35 * pitch);
+}
+
+/// silicone(bodyColor, clarity): molded silicone, translucent and matte:
+/// the elastomer's index 1.41, the lobe 0.5 wide, light passing `clarity`
+/// of the way (0 to 1) and absorbed over 8 mm in `bodyColor`'s tint. It
+/// carries no relief, as a transmissive surface must not. Returns
+/// material, color, height and slope.
+silicone(@color bodyColor, @range(0, 1) clarity) {
+  body = material.withTransmission(material.make(0.5, 0, 1.41), 0.3 + 0.6 * clamp(clarity, 0, 1), 8);
+  return body, bodyColor, 0, 0;
+}
+
+// --- Engineering polymers ---
+//
+// The polymers machined and molded parts are made of, as molded: each a
+// substance with nothing to see at any scale, a lobe and an index over a
+// colour, pigmented to `color` or its natural shade. The lobes are judged
+// from the as-molded sheen; the indices are cited where found and judged
+// otherwise.
+
+/// acetal(color): acetal (POM, Delrin), as molded, a satin sheen (the lobe
+/// 0.35 wide) at index 1.48 (judged). Returns material, color, height and
+/// slope.
+acetal(@color color) {
+  return material.make(0.35, 0, 1.48), color, 0, 0;
+}
+
+/// ptfe(color): PTFE as molded, waxy and matte (the lobe 0.55 wide) at
+/// index 1.35. Returns material, color, height and slope.
+ptfe(@color color) {
+  return material.make(0.55, 0, 1.35), color, 0, 0;
+}
+
+/// peek(color): PEEK as molded, a satin sheen (the lobe 0.4 wide) at index
+/// 1.65, the low end of its 1.65 to 1.77. Returns material, color, height
+/// and slope.
+peek(@color color) {
+  return material.make(0.4, 0, 1.65), color, 0, 0;
+}
+
+/// uhmw(color): UHMW polyethylene as molded, waxy (the lobe 0.45 wide) at
+/// polyethylene's index, 1.50 at 633 nm. Returns material, color, height and
+/// slope.
+uhmw(@color color) {
+  return material.make(0.45, 0, 1.5), color, 0, 0;
+}
+
+/// absPlastic(color): ABS as molded, a gloss from a polished mold (the
+/// lobe 0.3 wide) at index 1.53 (judged). Named absPlastic because abs is
+/// the absolute value. Returns material, color, height and slope.
+absPlastic(@color color) {
+  return material.make(0.3, 0, 1.53), color, 0, 0;
+}
+
+// ===========================================================================
+// Ready-made
+// ===========================================================================
+
+// One surface from each constructor above, so the material browser can show
+// it; the grip's dots are baked in as displacement here.
+
+/// Dark grey plastic in a VDI 27 textured mold. Returns material and
+/// colour.
+@material texturedPlastic() {
+  skin, tone, height, slope = textured(material.make(0.5, 0, 1.5), [0.22, 0.22, 0.24], 27);
+  return skin, tone;
+}
+
+/// Black plastic in a leather-grained mold, 1.5 mm grain 0.08 mm deep.
+/// Returns material and colour.
+@material leatherGrainBlack() {
+  skin, tone, height, slope = leatherGrain(material.make(0.5, 0, 1.5), [0.08, 0.08, 0.085], 1.5, 0.08);
+  return skin, tone;
+}
+
+/// Off-white nylon with 30% glass fibre. Returns material and colour.
+@material glassFilledNylon() {
+  skin, tone, height, slope = glassFilled([0.86, 0.85, 0.81], 0.3);
+  return skin, tone;
+}
+
+/// A black rubber grip, 3 mm dots 0.8 mm high, rows along +X on a +Z face
+/// through the origin, its dots as displacement. Returns material and
+/// colour.
+@material rubberGrip() {
+  rubber, tone, height, slope = grip(material.make(0.5, 0, 1.5), [0.1, 0.1, 0.1], [0, 0, 0], [0, 0, 1], [1, 0, 0], 3, 0.8, 0);
+  dotted = material.withDisplacement(rubber, height);
+  dotted.simple = rubber;
+  return dotted, tone;
+}
+
+/// Translucent silicone, a warm white at six tenths clarity. Returns
+/// material and colour.
+@material silicone() {
+  body, tone, height, slope = silicone([0.95, 0.95, 0.93], 0.6);
+  return body, tone;
+}
+
+// The polymers in their natural shades, judged: acetal, PTFE and UHMW a
+// white, PEEK a tan, ABS an ivory.
+
+/// Natural acetal, white. Returns material and colour.
+@material acetal() {
+  body, tone, height, slope = acetal([0.93, 0.93, 0.90]);
+  return body, tone;
+}
+
+/// Natural PTFE, white. Returns material and colour.
+@material ptfe() {
+  body, tone, height, slope = ptfe([0.95, 0.95, 0.95]);
+  return body, tone;
+}
+
+/// Natural PEEK, tan. Returns material and colour.
+@material peek() {
+  body, tone, height, slope = peek([0.63, 0.58, 0.48]);
+  return body, tone;
+}
+
+/// Natural UHMW polyethylene, white. Returns material and colour.
+@material uhmw() {
+  body, tone, height, slope = uhmw([0.95, 0.95, 0.92]);
+  return body, tone;
+}
+
+/// Natural ABS, ivory. Returns material and colour.
+@material absPlastic() {
+  body, tone, height, slope = absPlastic([0.90, 0.88, 0.80]);
+  return body, tone;
+}
+
+// One @surface overload per operator above, for the Bodies panel to wrap a
+// surface with: the part's material, colour and frame, and the usual
+// setting for the rest. Adjust opens one back into the full form.
+
+/// textured(baseMaterial, baseColor): a VDI 27 mold texture. Returns
+/// material, color, height and slope.
+@surface textured(baseMaterial, @color baseColor) {
+  skin, tone, height, slope = textured(baseMaterial, baseColor, 27);
+  return skin, tone, height, slope;
+}
+
+/// leatherGrain(baseMaterial, baseColor): a 1.5 mm leather grain 0.08 mm
+/// deep. Returns material, color, height and slope.
+@surface leatherGrain(baseMaterial, @color baseColor) {
+  skin, tone, height, slope = leatherGrain(baseMaterial, baseColor, 1.5, 0.08);
+  return skin, tone, height, slope;
+}
+
+/// grip(baseMaterial, baseColor, frame): a rubber grip of the part's
+/// colour on its own frame, 3 mm dots 0.8 mm high round a 30 mm handle.
+/// Returns material, color, height and slope; the Bodies panel applies the
+/// height as displacement.
+@surface grip(baseMaterial, @color baseColor, @frame frame) {
+  rubber, tone, height, slope = grip(baseMaterial, baseColor, frame, 30, 3, 0.8, 0);
+  return rubber, tone, height, slope;
+}
+
+// References
+//   VDI 3400: see material/process/machined's references; the plastic copies the
+//     mold's grade.
+//   Protolabs. Mold texture standards and finishes: a degree of draft for
+//     each 0.0127 to 0.0152 mm of texture depth, 6 to 7 degrees for a
+//     leather-like finish.
+//     https://www.protolabs.com/resources/design-tips/mold-texture-standards-and-finishes/
+//   Texas Injection Molding. Glass-filled nylon: the fibres reach the
+//     surface and the finish coarsens as the loading rises.
+//     https://texasinjectionmolding.com/blog/glass-filled-nylon/
+//   Silicone's index, 1.41, and the leather grain's cell size and the
+//     flecks' size are judged.
+//   Fluoropolymers' indices, PTFE 1.35: Polymers 10(2), 161 (2018), table
+//     1. https://pmc.ncbi.nlm.nih.gov/articles/PMC6415094/table/polymers-10-00161-t001
+//   PEEK's index, 1.65 to 1.77: SpecialChem, low and ultra-low refractive
+//     index polymers.
+//     https://www.specialchem.com/plastics/guide/low-ultra-low-refractive-index-polymers
+//   Polyethylene's index, 1.4998 at 632.8 nm: SPTS refractive index
+//     database.
+//     https://www.spts.com/products/instruments/refractive-index-database/polyethylene/pe-polyethene
+//   Acetal's and ABS's indices and every polymer's lobe and natural shade are
+//     judged.
