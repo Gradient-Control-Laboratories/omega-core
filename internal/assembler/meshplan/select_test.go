@@ -11,12 +11,12 @@ import (
 )
 
 func TestSelectPrimaryAndBodySdfProgram(t *testing.T) {
-	res := parser.ParsePackage([]string{`
+	res, err := parser.ParsePackage([]string{`
 ball = sphere(1.0);
 cube = box([-1.0, -1.0, -1.0], [1.0, 1.0, 1.0]);
 return mesh(0), ball, cube;
 `})
-	if err := res.Error(); err != nil {
+	if err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
 	}
 	prog := &program.Program{Primary: res.Package}
@@ -53,11 +53,11 @@ return mesh(0), ball, cube;
 }
 
 func TestSdfSubtreeJSONAndLeafPrograms(t *testing.T) {
-	res := parser.ParsePackage([]string{`
+	res, err := parser.ParsePackage([]string{`
 ball = bvhSdf(2);
 return meshUnion(mesh(0), ball);
 `})
-	if err := res.Error(); err != nil {
+	if err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
 	}
 	prog := &program.Program{Primary: res.Package}

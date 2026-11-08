@@ -98,8 +98,8 @@ func TestSliceProgram_Empty(t *testing.T) {
 }
 
 func TestSliceProgram_PureSDF(t *testing.T) {
-	res := parser.ParsePackage([]string{"return sphere(1.0);"})
-	if err := res.Error(); err != nil {
+	res, err := parser.ParsePackage([]string{"return sphere(1.0);"})
+	if err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
 	}
 	prog := &program.Program{
@@ -129,8 +129,8 @@ func TestSliceProgram_PureSDF(t *testing.T) {
 }
 
 func TestSliceProgram_DiscreteMesh(t *testing.T) {
-	res := parser.ParsePackage([]string{"return mesh(0, [10, 20, 30]);"})
-	if err := res.Error(); err != nil {
+	res, err := parser.ParsePackage([]string{"return mesh(0, [10, 20, 30]);"})
+	if err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
 	}
 	prog := &program.Program{Primary: res.Package}
@@ -154,8 +154,8 @@ func TestSliceProgram_DiscreteMesh(t *testing.T) {
 }
 
 func TestSliceProgram_HybridCSG(t *testing.T) {
-	res := parser.ParsePackage([]string{"return meshUnion(mesh(0), sphere(1.0));"})
-	if err := res.Error(); err != nil {
+	res, err := parser.ParsePackage([]string{"return meshUnion(mesh(0), sphere(1.0));"})
+	if err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
 	}
 	prog := &program.Program{Primary: res.Package}
@@ -182,8 +182,8 @@ func TestSliceProgram_HybridCSG(t *testing.T) {
 }
 
 func TestSliceProgram_AdjacentSDFMerge(t *testing.T) {
-	res := parser.ParsePackage([]string{"return meshUnion(sphere(1.0), cylinder(2.0));"})
-	if err := res.Error(); err != nil {
+	res, err := parser.ParsePackage([]string{"return meshUnion(sphere(1.0), cylinder(2.0));"})
+	if err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
 	}
 	prog := &program.Program{Primary: res.Package}

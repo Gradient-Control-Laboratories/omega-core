@@ -12,9 +12,9 @@ import (
 // test on any parse error.
 func parseFile(t *testing.T, src string) *program.PackageFile {
 	t.Helper()
-	res := parser2.Parse([]string{src})
-	if len(res.Errors) > 0 {
-		t.Fatalf("unexpected parse errors: %v", res.Errors)
+	res, err := parser2.Parse([]string{src})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 	if res.Package == nil || len(res.Package.Files) != 1 {
 		t.Fatalf("expected one package file, got %+v", res.Package)
@@ -26,15 +26,11 @@ func parseFile(t *testing.T, src string) *program.PackageFile {
 // message so the caller can check which rule rejected it.
 func parseErr(t *testing.T, src string) string {
 	t.Helper()
-	res := parser2.Parse([]string{src})
-	if res == nil || len(res.Errors) == 0 {
+	_, err := parser2.Parse([]string{src})
+	if err == nil {
 		t.Fatalf("expected a parse error, got none")
 	}
-	msgs := make([]string, len(res.Errors))
-	for i, e := range res.Errors {
-		msgs[i] = e.Error()
-	}
-	return strings.Join(msgs, "; ")
+	return err.Error()
 }
 
 func TestMaterialAnnotationOnConstant(t *testing.T) {

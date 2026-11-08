@@ -1,4 +1,4 @@
-package lib
+package parser
 
 import (
 	"strings"
@@ -23,11 +23,11 @@ func warpImportsOf(pkg *program.Package) []*program.WarpImport {
 }
 
 func TestWarpImportNumberedForm(t *testing.T) {
-	res := ParsePackage([]string{`importStep 0 "p.hodge";
+	res, err := ParsePackage([]string{`importStep 0 "p.hodge";
 importWarp 0 "field.warp";
 return meshWarped(0, 0, 1);
 `})
-	if err := res.Error(); err != nil {
+	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
 	imports := warpImportsOf(res.Package)
@@ -42,11 +42,11 @@ return meshWarped(0, 0, 1);
 // The expression form carries no slot — it lowers to a call the canvas agent
 // resolves — so the parser must accept it while leaving WarpImports empty.
 func TestWarpImportExpressionForm(t *testing.T) {
-	res := ParsePackage([]string{`importId = importStep "p.hodge";
+	res, err := ParsePackage([]string{`importId = importStep "p.hodge";
 warpID = importWarp "field.warp";
 return meshWarped(importId, warpID, -1);
 `})
-	if err := res.Error(); err != nil {
+	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
 	if n := len(warpImportsOf(res.Package)); n != 0 {
@@ -55,9 +55,9 @@ return meshWarped(importId, warpID, -1);
 }
 
 func TestWarpImportRejectsNonSimulationFile(t *testing.T) {
-	err := ParsePackage([]string{`importWarp 0 "field.stl";
+	_, err := ParsePackage([]string{`importWarp 0 "field.stl";
 return 0;
-`}).Error()
+`})
 	if err == nil {
 		t.Fatal("importWarp must reject a path that is not a simulation")
 	}
@@ -79,13 +79,16 @@ func TestWarpedBuiltinArities(t *testing.T) {
 	}
 	prefix := "importMesh 0 \"p.stl\";\nimportWarp 0 \"c.warp\";\n"
 	for _, src := range ok {
-		if err := ParsePackage([]string{prefix + src + "\n"}).Error(); err != nil {
+		_, err := ParsePackage([]string{prefix + src + "\n"})
+		if err != nil {
 			t.Errorf("%s -> parse: %v", src, err)
 		}
 	}
 	// Too few arguments: the scale is required, because +1 and -1 are
 	// different manufacturing objects with identical geometry counts.
-	if err := ParsePackage([]string{prefix + "return meshWarped(0, 0);\n"}).Error(); err == nil {
+	_, err := ParsePackage([]string{prefix + "return meshWarped(0, 0);\n"})
+	if err == nil {
 		t.Error("meshWarped without a scale must be rejected")
 	}
 }
+

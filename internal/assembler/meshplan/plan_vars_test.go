@@ -16,8 +16,8 @@ refM = m;
 s = sphere(1.0);
 return meshUnion(refM, s);
 `
-	res := parser.ParsePackage([]string{src})
-	if err := res.Error(); err != nil {
+	res, err := parser.ParsePackage([]string{src})
+	if err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
 	}
 	prog := &program.Program{Primary: res.Package}

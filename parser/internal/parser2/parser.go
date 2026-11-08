@@ -11,13 +11,15 @@ import (
 	"gradientcontrol.com/omega/core/program"
 )
 
-// Result holds the parsed package and any structured parse errors.
+// Result holds the parsed package.
 //
 // Invariants:
 //   - Result and Result.Package are never nil.
 //   - Result.Package.Files always contains at least one non-nil *program.PackageFile
 //     (len(res.Package.Files) >= 1 and res.Package.Files[0] != nil).
-type Result = program.ParseResult
+type Result struct {
+	Package *program.Package
+}
 
 var gslLexer = lexer.MustSimple([]lexer.SimpleRule{
 	{Name: "Comment", Pattern: `//.*|/\*[\s\S]*?\*/`},
@@ -57,10 +59,10 @@ var options = []participle.Option{
 //   - The returned *Result and its Package are never nil.
 //   - Package.Files always contains at least one non-nil *program.PackageFile
 //     (len(res.Package.Files) >= 1 and res.Package.Files[0] != nil).
-//   - If a syntax or semantic error occurs, res.Errors contains the error and
+//   - If a syntax or semantic error occurs, Parse returns the *program.Error and
 //     res.Package preserves all files, scene metadata, imports, and declarations
 //     completed prior to the error.
-func Parse(sources []string) *Result {
+func Parse(sources []string) (*Result, error) {
 	pkg := &program.Package{
 		VersionMajor: program.VersionMajor,
 		VersionMinor: program.VersionMinor,
@@ -127,13 +129,13 @@ func Parse(sources []string) *Result {
 		}
 	}
 
-	return res
+	return res, nil
 }
 
-func recordFileError(res *Result, pkgFile *program.PackageFile, source string, err error) *Result {
+func recordFileError(res *Result, pkgFile *program.PackageFile, source string, err error) (*Result, error) {
 	pkgFile.Source = source
-	res.Errors = append(res.Errors, ParseError(source, err))
-	return res
+	pErr := ParseError(source, err)
+	return res, &pErr
 }
 
 func ParseError(source string, err error) program.Error {

@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"gradientcontrol.com/omega/core/internal/source"
+	"gradientcontrol.com/omega/core/parser"
 	"gradientcontrol.com/omega/core/program"
 )
 
@@ -16,13 +17,13 @@ import (
 //
 // It returns a program composed of all packages
 // directly or indirectly referenced by the primarySources GSL code.
-func Program(primarySources []string, srcMgr source.Manager, parsePkg program.ParsePackageFunc) (*program.Program, error) {
+func Program(primarySources []string, srcMgr source.Manager, parsePkg func(sources []string) (*parser.Result, error)) (*program.Program, error) {
 	if len(primarySources) == 0 {
 		return nil, fmt.Errorf("missing primary sources")
 	}
 
-	primaryRes := parsePkg(primarySources)
-	if err := primaryRes.Error(); err != nil {
+	primaryRes, err := parsePkg(primarySources)
+	if err != nil {
 		return nil, err
 	}
 	if primaryRes == nil || primaryRes.Package == nil {
@@ -45,7 +46,7 @@ func setPackageSources(pkg *program.Package, sources []string) {
 }
 
 // Package collects all packages starting from a pre-parsed primary package.
-func Package(primaryPkg *program.Package, srcMgr source.Manager, parsePkg program.ParsePackageFunc) (*program.Program, error) {
+func Package(primaryPkg *program.Package, srcMgr source.Manager, parsePkg func(sources []string) (*parser.Result, error)) (*program.Program, error) {
 	if primaryPkg == nil {
 		return nil, fmt.Errorf("missing primary package")
 	}
@@ -78,8 +79,8 @@ func Package(primaryPkg *program.Package, srcMgr source.Manager, parsePkg progra
 					if err != nil {
 						return fmt.Errorf("failed to load package %s: %w", impPath, err)
 					}
-					depRes := parsePkg(sources)
-					if err := depRes.Error(); err != nil {
+					depRes, err := parsePkg(sources)
+					if err != nil {
 						return fmt.Errorf("failed to parse package %s: %w", impPath, err)
 					}
 					if depRes == nil || depRes.Package == nil {
@@ -161,7 +162,7 @@ func ProgramSourceHash(prog *program.Program) string {
 
 // SourceHash collects primaryPkgPath and all its transitive GSL imports from
 // srcMgr and returns their deterministic SHA-256 hex digest.
-func SourceHash(primaryPkgPath string, srcMgr source.Manager, parsePkg program.ParsePackageFunc) (string, error) {
+func SourceHash(primaryPkgPath string, srcMgr source.Manager, parsePkg func(sources []string) (*parser.Result, error)) (string, error) {
 	primary, _, err := srcMgr.Sources(primaryPkgPath)
 	if err != nil {
 		return "", err

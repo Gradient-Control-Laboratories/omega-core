@@ -474,8 +474,8 @@ func (e *Evaluator) DescribeAssets(ctx context.Context, manifest map[string]stri
 	if e.fetchAssets == nil || !referencesMeshAssets(code) {
 		return "", nil
 	}
-	res := parser.ParsePackage([]string{code})
-	if res.Error() != nil || res == nil || res.Package == nil {
+	res, err := parser.ParsePackage([]string{code})
+	if err != nil || res == nil || res.Package == nil {
 		// A document that doesn't parse gets no digest; the chat proceeds.
 		return "", nil
 	}

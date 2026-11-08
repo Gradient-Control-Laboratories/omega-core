@@ -1,4 +1,4 @@
-package lib
+package parser
 
 import (
 	"container/list"
@@ -17,8 +17,8 @@ import (
 func TestCachingParserHandsOutIndependentCopies(t *testing.T) {
 	cp := NewCachingParser()
 	src := "r = 2.0;\nreturn length(p) - r;\n"
-	firstRes := cp.ParsePackage([]string{src})
-	if err := firstRes.Error(); err != nil {
+	firstRes, err := cp.ParsePackage([]string{src})
+	if err != nil {
 		t.Fatal(err)
 	}
 	first := firstRes.Package
@@ -27,8 +27,8 @@ func TestCachingParserHandsOutIndependentCopies(t *testing.T) {
 	first.Files[0].Assignments[0].Variables[0].Name = "rewritten"
 	first.Files[0].Assignments = nil
 
-	secondRes := cp.ParsePackage([]string{src})
-	if err := secondRes.Error(); err != nil {
+	secondRes, err := cp.ParsePackage([]string{src})
+	if err != nil {
 		t.Fatal(err)
 	}
 	second := secondRes.Package
@@ -47,16 +47,16 @@ func TestCachingParserHandsOutIndependentCopies(t *testing.T) {
 func TestCachingParserCachedStdPackagesMatchFreshParse(t *testing.T) {
 	cp := NewCachingParser()
 	for _, lib := range gsllibs.All() {
-		res := parser2.Parse(lib.Sources)
-		if len(res.Errors) > 0 {
+		res, err := parser2.Parse(lib.Sources)
+		if err != nil {
 			continue
 		}
 		if _, ok := cp.entries[sourcesKey(lib.Sources)]; !ok {
 			t.Errorf("%s: not cached in NewCachingParser", lib.ImportPath)
 			continue
 		}
-		cached := cp.ParsePackage(lib.Sources)
-		if err := cached.Error(); err != nil {
+		cached, err := cp.ParsePackage(lib.Sources)
+		if err != nil {
 			t.Fatalf("%s: %v", lib.ImportPath, err)
 		}
 		if !proto.Equal(cached.Package, res.Package) {
@@ -69,8 +69,8 @@ func TestCachingParserCachedStdPackagesMatchFreshParse(t *testing.T) {
 func TestCachingParserDoesNotCacheErrors(t *testing.T) {
 	cp := NewCachingParser()
 	src := "r = ;\nreturn r;\n"
-	res := cp.ParsePackage([]string{src})
-	if res.Error() == nil {
+	res, err := cp.ParsePackage([]string{src})
+	if err == nil {
 		t.Fatal("expected a parse error")
 	}
 	if res == nil || res.Package == nil || len(res.Package.Files) != 1 || res.Package.Files[0] == nil {
@@ -79,7 +79,7 @@ func TestCachingParserDoesNotCacheErrors(t *testing.T) {
 	if _, ok := cp.entries[sourcesKey([]string{src})]; ok {
 		t.Fatal("a failed parse was cached")
 	}
-	if cp.ParsePackage([]string{src}).Error() == nil {
+	if _, err := cp.ParsePackage([]string{src}); err == nil {
 		t.Fatal("expected the parse error again")
 	}
 }
@@ -120,3 +120,4 @@ func TestSourcesKeySeparatesFiles(t *testing.T) {
 		t.Fatal("file boundaries do not change the key")
 	}
 }
+

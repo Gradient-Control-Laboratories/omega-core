@@ -10,8 +10,8 @@ import (
 
 func sliceSource(t *testing.T, src string) *meshplan.MeshExportPlan {
 	t.Helper()
-	res := parser.ParsePackage([]string{src})
-	if err := res.Error(); err != nil {
+	res, err := parser.ParsePackage([]string{src})
+	if err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
 	}
 	plan, _, err := meshplan.SliceProgram(&program.Program{Primary: res.Package}, "leaf-")
@@ -97,8 +97,8 @@ a = sphere(1.0);
 b = sphere(2.0);
 return min(a, b), a, min(a, b);
 `
-	res := parser.ParsePackage([]string{src})
-	if err := res.Error(); err != nil {
+	res, err := parser.ParsePackage([]string{src})
+	if err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
 	}
 	plan, _, err := meshplan.SliceDocument(&program.Program{Primary: res.Package}, "leaf-", src)

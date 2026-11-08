@@ -1,4 +1,4 @@
-package lib
+package parser
 
 import (
 	"container/list"
@@ -65,17 +65,17 @@ func NewCachingParser() *CachingParser {
 
 // ParsePackage parses all of the sources in a package, returning a cloned
 // package from the cache when available and caching error-free parses.
-func (c *CachingParser) ParsePackage(sources []string) *Result {
+func (c *CachingParser) ParsePackage(sources []string) (*Result, error) {
 	key := sourcesKey(sources)
 	if pkg := c.get(key); pkg != nil {
-		return &Result{Package: pkg}
+		return &Result{Package: pkg}, nil
 	}
-	res := ParsePackage(sources)
-	if len(res.Errors) > 0 {
-		return res
+	res, err := ParsePackage(sources)
+	if err != nil {
+		return res, err
 	}
 	c.put(key, proto.Clone(res.Package).(*program.Package), sourcesSize(sources))
-	return res
+	return res, nil
 }
 
 func (c *CachingParser) get(key [sha256.Size]byte) *program.Package {
@@ -136,3 +136,4 @@ func sourcesSize(sources []string) int {
 	}
 	return n
 }
+

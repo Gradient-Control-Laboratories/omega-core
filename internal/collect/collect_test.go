@@ -1,19 +1,20 @@
 package collect
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
 	"gradientcontrol.com/omega/core/internal/source"
+	"gradientcontrol.com/omega/core/parser"
 	"gradientcontrol.com/omega/core/program"
 )
 
-func parseMockPackage(sources []string) *program.ParseResult {
+func parseMockPackage(sources []string) (*parser.Result, error) {
 	if len(sources) == 0 {
-		return &program.ParseResult{
+		return &parser.Result{
 			Package: &program.Package{Files: []*program.PackageFile{{}}},
-			Errors:  []program.Error{{LineNum: 1, Column: 1, Message: "empty sources"}},
-		}
+		}, fmt.Errorf("empty sources")
 	}
 	files := make([]*program.PackageFile, 0, len(sources))
 	for _, src := range sources {
@@ -35,7 +36,7 @@ func parseMockPackage(sources []string) *program.ParseResult {
 			},
 		})
 	}
-	return &program.ParseResult{Package: &program.Package{Files: files}}
+	return &parser.Result{Package: &program.Package{Files: files}}, nil
 }
 
 func TestCollect_Ordering(t *testing.T) {
