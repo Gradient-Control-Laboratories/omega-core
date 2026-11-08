@@ -260,3 +260,10 @@ Refactor `.gsl` files or directories in-place (or preview with `-diff`):
 bin/gsl fix -diff examples
 bin/gsl fix examples
 ```
+
+## License
+
+The code and data authored for this repository are released under the [MIT License](LICENSE).
+Third-party components keep their own licenses: they are listed, with their license texts, in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md), and the vendored directories carry their own
+license files (for example `internal/fidget/vendor/`, which is MPL-2.0).
