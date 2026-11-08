@@ -41,6 +41,7 @@ import {
     getGridDensity,
     setSliderValue,
     setUiControlValues,
+    syncUiControls,
 } from "./render/viewer.js";
 import {
     initEditor,
@@ -377,6 +378,9 @@ eventManager.addListener("canvas/update-shader", (event) => {
         if (unknowns.length > 0) {
             showError(`Unknown mesh index: ${unknowns.join(", ")}. Upload in the Imports panel first.`, false);
         }
+        // The scene gizmos: a handle for each @point, @direction and
+        // @transform the program declares.
+        syncUiControls(event.uiControls || []);
 
         renderSliderPanel(event.sliders || [], event.uiControls || []);
 
