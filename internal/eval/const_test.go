@@ -538,7 +538,7 @@ func TestConstMultiReturnDestructureImported(t *testing.T) {
 	getImport := mockImports(map[string]*program.Package{"shapes": shapes}, nil)
 
 	module := pkg([]*program.Import{dotImport("shapes")}, []*program.Assignment{
-		multiAssign([]string{"castPart", "dims"}, fc("branch", val(2))),
+		multiAssign([]string{"mainPart", "dims"}, fc("branch", val(2))),
 	}, nil)
 
 	got, err := ConstPkg(ref("dims"), module, getImport)
@@ -553,7 +553,7 @@ func TestConstMultiReturnDestructureImported(t *testing.T) {
 	}
 
 	// The p-dependent sibling still cannot fold.
-	if _, err := ConstPkg(ref("castPart"), module, getImport); err == nil {
+	if _, err := ConstPkg(ref("mainPart"), module, getImport); err == nil {
 		t.Fatalf("expected error folding a p-dependent destructured return")
 	}
 }

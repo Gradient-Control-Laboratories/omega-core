@@ -1,0 +1,45 @@
+// Minimal reproducer for WGSL vs Fidget divergence on multi-return
+// functions called from two sibling user-defined callers.
+// Mirrors the armPortFoldedXY/armPortArcA/armPortArcB shape from swirler.gsl.
+
+armPortPatternCount = 6;
+armPortAnnulusRadiusA = 3;
+armPortAnnulusThicknessA = 1;
+armPortXThicknessA = 0.5;
+armPortAnnulusRadiusB = 2;
+armPortAnnulusThicknessB = 0.8;
+armPortXThicknessB = 0.4;
+
+intersectRound2(d1, d2, k) {
+  c1 = max(d1 + k, 0);
+  c2 = max(d2 + k, 0);
+  return min(neg(k), max(d1, d2)) + length([c1, c2]);
+}
+
+armPortFoldedXY() {
+  count = armPortPatternCount;
+  wedge = 2 * 3.14159265358979 / count;
+  halfWedge = wedge * 0.5;
+  ang = atan(p.x, p.y);
+  rad = length(p.xy);
+  angmod = (ang + halfWedge) % wedge - halfWedge;
+  foldedX = rad * sin(angmod);
+  foldedY = rad * cos(angmod);
+  return foldedX, foldedY;
+}
+
+armPortArcA() {
+  foldedX, foldedY = armPortFoldedXY();
+  annulusFieldA = abs(length([foldedX, foldedY]) - armPortAnnulusRadiusA) - armPortAnnulusThicknessA * 0.5;
+  xSlabFieldA = abs(foldedX) - armPortXThicknessA * 0.5;
+  return intersectRound2(annulusFieldA, xSlabFieldA, 0);
+}
+
+armPortArcB() {
+  foldedX, foldedY = armPortFoldedXY();
+  annulusFieldB = abs(length([foldedX, foldedY]) - armPortAnnulusRadiusB) - armPortAnnulusThicknessB * 0.5;
+  xSlabFieldB = abs(foldedX) - armPortXThicknessB * 0.5;
+  return intersectRound2(annulusFieldB, xSlabFieldB, 0);
+}
+
+return armPortArcA(), armPortArcB();

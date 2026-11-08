@@ -1,7 +1,7 @@
 
 // Regression: a field remapped inside a map lambda whose definition calls a
 // function using top-level consts (count, radius) must re-derive those consts
-// inside each helper — not reference them unresolved (the gatePortPatternCountA bug).
+// inside each helper — not reference them unresolved (the armPortPatternCountA bug).
 count = 6;
 radius = 1.29;
 foldedXY(c) {
