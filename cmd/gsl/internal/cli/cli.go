@@ -82,7 +82,7 @@ func resolveToolBinary(binDir, target string) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("unknown command or missing tool binary %q (run ./tool/build-cmds.sh to build toolchain binaries)", target)
+	return "", fmt.Errorf("unknown command or missing tool binary %q (run ./tool/build-cli.sh to build toolchain binaries)", target)
 }
 
 // ExitCode extracts the process exit status from err, returning 0 if err is nil and 1 for non-exec errors.

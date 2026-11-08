@@ -85,3 +85,4 @@ pub unsafe extern "C" fn manifold_release(h: *mut ManifoldHandle) {
 pub unsafe extern "C" fn manifold_free_buffer(ptr: *mut u8, len: usize) {
     mglue_free_buffer(ptr, len)
 }
+

@@ -39,3 +39,4 @@ protoc \
   "${ROOT_DIR}/backend/tape/tape.proto"
 
 echo "build complete"
+

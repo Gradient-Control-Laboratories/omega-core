@@ -79,3 +79,4 @@ fn emit_static_link(install: &Path, libs: &[&str]) {
         println!("cargo:rustc-link-search=native={}", lib64_dir.display());
     }
 }
+

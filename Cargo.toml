@@ -41,3 +41,4 @@ fidget-wgpu = { path = "internal/fidget/vendor/fidget-wgpu" }
 
 [profile.release]
 strip = "none"
+

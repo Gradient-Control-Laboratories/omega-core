@@ -8,3 +8,4 @@ ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 echo "Generating WGSL ops table..."
 (cd "${ROOT_DIR}" && go generate ./backend/wgsl/internal/accel/generate.go)
+
