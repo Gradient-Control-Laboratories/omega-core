@@ -1,6 +1,6 @@
 // The Bodies side panel: every body the document returns, with its
-// visibility, its colour and its surface, and the swatch grid that assigns a
-// surface to the one selected.
+// visibility, its colour and its surface. The one selected here is the one the
+// Materials panel (material-grid.js) changes; this file sets that panel up.
 //
 // It replaces two panels that each kept a list of the same bodies — Shapes,
 // which coloured them in the viewer only, where the document's own .color
@@ -20,6 +20,8 @@
 //   setSlotVisible(slot, visible)   the viewer's visibility for one shader slot,
 //   setMeshShapeVisible(i, visible) and for return i's mesh() placements, when
 //                                   the program returns meshes (see setBodies)
+//   setSliderValue(name, value)     push a slider's live value to the viewer
+//   previewColor(name, rgb)         the same for a @color variable
 //   selectShape(i)                  optional, outline shader slot i in the viewer
 //   popupParent                     where the palette popup is attached
 //
@@ -29,11 +31,12 @@
 
 import { initBodyPalette, paletteColor, rgbToHex, hexToRgb } from "./body-palette.js";
 import { initMaterialGrid, showGridStatus, paintSwatch, paintTinted, paintTintedCoat, refreshTint, refreshReadout, catalogEntry, catalogColors, catalogOperators, coatOf } from "./material-grid.js";
-import { assignAdjustedColor, assignColor, isAssignableBody, stackOf, surfaceOf } from "./material-assign.js";
+import { assignAdjustedColor, assignColor, isAssignableBody, stackColorOf, stackColorSource, stackOf, surfaceOf } from "./material-assign.js";
 import { BODY_PANEL_MARKUP } from "./body-panel-markup.js";
 
 let deps = {};
 let panelEl = null;
+let materialPanelEl = null;
 let rowsEl = null;
 // [{ index, name, slots, mesh }], the document's returns: the 1-based return
 // index, its name, the shader slots it draws and whether it places meshes.
@@ -53,6 +56,8 @@ const THUMB_PX = 22;
 // The material a body has when its document sets none (material.gsl's
 // @finish standard, the viewer's default record).
 const DEFAULT_SURFACE = "material.standard";
+
+export { materialVariables } from "./material-grid.js";
 
 export function initBodyPanel(options) {
     deps = options || {};
@@ -81,7 +86,8 @@ export function initBodyPanel(options) {
         },
     });
 
-    initMaterialGrid(panelEl, {
+    materialPanelEl = document.getElementById("material-panel");
+    initMaterialGrid(materialPanelEl, {
         getBody: () => bodies.find((b) => b.index === selectedBody) || null,
         bodiesKnown: () => bodies.length > 0,
         getSource: deps.getSource,
@@ -95,6 +101,8 @@ export function initBodyPanel(options) {
             return body && isAssignableBody(source, body.name) ? surfaceOf(source, body.name) : null;
         },
         getBodyColor: selectedColor,
+        setSliderValue: deps.setSliderValue,
+        previewColor: deps.previewColor,
     });
 }
 
@@ -112,10 +120,12 @@ export function setBodies(names, returns = null) {
     if (!panelEl) return;
     if (bodies.length === 0) {
         panelEl.classList.remove("visible", "open");
+        materialPanelEl?.classList.remove("visible", "open");
         selectedBody = 0;
         return;
     }
     panelEl.classList.add("visible");
+    materialPanelEl?.classList.add("visible");
 
     // A new compile's shader starts from its defaults, so the palette and the
     // bodies hidden by hand are put back on it.
@@ -128,16 +138,16 @@ export function setBodies(names, returns = null) {
     drawRows();
 }
 
-// pickBody follows a pick in the 3D view: it opens the panel on the body, and
-// a pick of empty space clears the selection, as it clears the viewer's
-// outline — so the grid then changes nothing.
+// pickBody follows a pick in the 3D view: it selects the body here, whether
+// or not the panel is open, and a pick of empty space clears the selection,
+// as it clears the viewer's outline — so the grid then changes nothing. Only
+// the header opens the panel; a pick never brings it up.
 //
 // A pick names a shader slot, so it selects the body that draws it.
 export function pickBody(shapeIndex) {
     if (!panelEl) return;
     const body = shapeIndex > 0 ? bodies.find((b) => b.slots.includes(shapeIndex)) : null;
     if (body) {
-        panelEl.classList.add("open");
         selectedBody = body.index;
     } else {
         selectedBody = 0;
@@ -209,12 +219,16 @@ function rowEl(source, body) {
     const implicit = !given.surface;
     const stack = assignable ? stackOf(source, body.name, catalogOperators()) : { baseSurface: null, layers: [] };
     const layered = stack.layers.length > 0;
+    // A color picked for a body with layers sits in the layers, not on .color.
+    const stackRgb = layered ? stackColorOf(source, body.name, catalogOperators()) : null;
     const surfaceName = layered ? stack.baseSurface : (given.surface || DEFAULT_SURFACE);
     const entry = catalogEntry(surfaceName);
     // A colour that is the colour half of a catalog material's pair paints the
     // colours the catalog recorded, so the chip shows them rather than a
-    // stand-in — whichever pair it is, including one a finish was put over.
-    const painted = given.colorSource ? catalogColors(given.colorSource) : null;
+    // stand-in — whichever pair it is, including one a finish was put over,
+    // whose color comes up through the layers.
+    const colorSource = (layered && stackColorSource(source, body.name, catalogOperators())) || given.colorSource;
+    const painted = colorSource ? catalogColors(colorSource) : null;
     // A body adjusted from a single-colour preset wears the coat colour its
     // document declares: the chip shows it, picking one rewrites it, and the
     // thumbnail is the preset drawn in it.
@@ -242,7 +256,7 @@ function rowEl(source, body) {
     // marked rather than guessed at.
     const chip = document.createElement("input");
     chip.type = "color";
-    chip.value = rgbToHex(given.rgb || painted?.[0] || coat?.rgb || paletteColor(body.slots[0] || body.index));
+    chip.value = rgbToHex(given.rgb || stackRgb || painted?.[0] || coat?.rgb || paletteColor(body.slots[0] || body.index));
     if (coat) {
         chip.style.setProperty("--chip-paint", rgbToHex(coat.rgb));
         row.classList.add("surface-color");
@@ -253,14 +267,22 @@ function rowEl(source, body) {
         const hexes = painted.map(rgbToHex);
         chip.style.setProperty("--chip-paint", hexes.length > 1 ? `linear-gradient(90deg, ${hexes.join(", ")})` : hexes[0]);
         row.classList.add("surface-color");
-        chip.title = `${given.colorSource}'s color${hexes.length > 1 ? "s" : ""}: ${hexes.join(", ")}. Picking a color replaces it.`;
-    } else if (given.color && !given.rgb) {
+        chip.title = `${colorSource}'s color${hexes.length > 1 ? "s" : ""}: ${hexes.join(", ")}. Picking a color replaces it.`;
+    } else if (given.color && !given.rgb && !stackRgb) {
         row.classList.add("code-color");
         chip.title = `The document colors this body: ${given.color}. Picking a color replaces it.`;
     } else if (!assignable) {
         chip.title = "Viewer only: this body is not a name the document binds, so its color cannot be saved. Give the shape a name and return that.";
     } else {
         chip.title = given.color ? `${body.name}.color = ${given.color}` : "The palette's color. Picking one writes it to the document.";
+    }
+    // A color applied to the body hides its schematic color, the palette's,
+    // which section view still draws it in. The chip's border keeps it in sight.
+    if (given.color || stackRgb || painted || coat) {
+        const schematic = rgbToHex(paletteColor(body.slots[0] || body.index));
+        chip.style.setProperty("--chip-schematic", schematic);
+        row.classList.add("applied");
+        chip.title += ` The border is the schematic color, ${schematic}.`;
     }
     // While the picker is open the viewer previews the colour, as the Shapes
     // panel always did; it shows wherever the document sets no colour of its
@@ -309,7 +331,7 @@ function rowEl(source, body) {
         ? `${body.name} sets no material, so it has the default, ${DEFAULT_SURFACE}.`
         : layered
             ? `${body.name}.material = ${given.surface}: ${surfaceName} under ${stack.layers.map((l) => l.op).join(", ")}`
-            : `${body.name}.material = ${given.surface}${given.keeps?.length ? `, keeping its earlier ${given.keeps.join(" and ")}` : ""}`;
+            : `${body.name}.material = ${given.surface}`;
 
     row.append(vis, chip, thumb, name, surface);
     row.addEventListener("click", (e) => {
@@ -339,7 +361,7 @@ function selectedColor() {
 }
 
 function writeColor(body, rgb, hex) {
-    writeColorWith(body, hex, (source) => assignColor(source, body.name, rgb));
+    writeColorWith(body, hex, (source) => assignColor(source, body.name, rgb, catalogOperators()));
 }
 
 // writeCoatColor rewrites the literal of an adjusted body's colour variable,

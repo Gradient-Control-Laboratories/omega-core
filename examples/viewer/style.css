@@ -557,6 +557,7 @@ body.resizing #stl-canvas-container {
 #stl-bounds-panel,
 #mesh-import-panel,
 #body-panel,
+#material-panel,
 #slider-panel {
     background: #171717;
     border-radius: 8px;
@@ -570,6 +571,7 @@ body.resizing #stl-canvas-container {
 #stl-bounds-header,
 #mesh-import-header,
 #body-panel-header,
+#material-panel-header,
 #slider-panel-header {
     color: #d1d1d1;
     padding: 8px 10px;
@@ -587,6 +589,7 @@ body.resizing #stl-canvas-container {
 #stl-bounds-header:hover,
 #mesh-import-header:hover,
 #body-panel-header:hover,
+#material-panel-header:hover,
 #slider-panel-header:hover {
     background: #2d2d2d;
     color: #fff;
@@ -598,6 +601,7 @@ body.resizing #stl-canvas-container {
 #stl-bounds-panel.open #stl-bounds-header,
 #mesh-import-panel.open #mesh-import-header,
 #body-panel.open #body-panel-header,
+#material-panel.open #material-panel-header,
 #slider-panel.open #slider-panel-header {
     border-radius: 8px 8px 0 0;
     font-weight: bold;
@@ -614,6 +618,7 @@ body.resizing #stl-canvas-container {
 #stl-bounds-panel.open #stl-bounds-header:hover,
 #mesh-import-panel.open #mesh-import-header:hover,
 #body-panel.open #body-panel-header:hover,
+#material-panel.open #material-panel-header:hover,
 #slider-panel.open #slider-panel-header:hover {
     background: transparent;
     color: #bababa;
@@ -638,6 +643,7 @@ body.resizing #stl-canvas-container {
 #stl-bounds-panel.open .panel-close,
 #mesh-import-panel.open .panel-close,
 #body-panel.open .panel-close,
+#material-panel.open .panel-close,
 #slider-panel.open .panel-close {
     display: block;
 }
@@ -654,6 +660,7 @@ body.resizing #stl-canvas-container {
 #stl-bounds-panel.open .panel-body,
 #mesh-import-panel.open .panel-body,
 #body-panel.open .panel-body,
+#material-panel.open .panel-body,
 #slider-panel.open .panel-body {
     display: block;
 }
@@ -1011,16 +1018,19 @@ body.resizing #stl-canvas-container {
 }
 
 /* Bodies is only shown once the document has bodies. The rows and the
- * palette are in panels/body-panel.css, the grid in
- * panels/material-grid.css. */
-#body-panel {
+ * palette are in panels/body-panel.css, and Materials, on the same
+ * terms, is panels/material-grid.css. */
+#body-panel,
+#material-panel {
     display: none;
 }
 
-#body-panel.visible {
+#body-panel.visible,
+#material-panel.visible {
     display: block;
 }
 
-#body-panel.open {
+#body-panel.open,
+#material-panel.open {
     min-width: 180px;
 }

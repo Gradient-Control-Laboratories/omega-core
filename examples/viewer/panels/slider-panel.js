@@ -13,6 +13,8 @@
 //     onCommit()                   called when a drag/typed value is written back
 //                                  to the source (the app suppresses its
 //                                  "Compiling..." toast for that recompile)
+//     materialVariables()          optional, the variables the Materials panel
+//                                  shows, which get no row here
 //   renderSliderPanel(sliders, uiControls)
 //                                  rebuild rows from a compile's `sliders[]`,
 //                                  and colour rows from its `uiControls[]` of
@@ -145,16 +147,21 @@ function sliderAnimTick() {
     if (alive) requestAnimationFrame(sliderAnimTick);
 }
 
-function renderSliderPanel(sliders, uiControls = []) {
+function renderSliderPanel(allSliders, uiControls = []) {
     if (!sliderPanel) return;
-    const colours = colorControls(uiControls);
+    const allColours = colorControls(uiControls);
+    colourControlsByName = new Map(allColours.map((c) => [colorLabel(c), c]));
+    // An animated slider is driven from this panel's rows, so it keeps its row.
+    const elsewhere = deps.materialVariables?.() || new Set();
+    const sliders = allSliders.filter((s) => s.period > 0 || !elsewhere.has(s.variableName));
+    const colours = allColours.filter((c) => !elsewhere.has(colorLabel(c)));
 
     // Seed the audio worklet's slider map with the latest values.
     // The patched-const audio code reads from this map every sample;
     // without seeding, the first drag for a fresh slider name would
     // be the only way the worklet learned about it.
     const audioSliderMap = {};
-    for (const s of sliders) audioSliderMap[s.variableName] = s.initialValue;
+    for (const s of allSliders) audioSliderMap[s.variableName] = s.initialValue;
     deps.audioSystem?.setSliderMap(audioSliderMap);
 
     if (!sliders.length && !colours.length) {
@@ -207,6 +214,23 @@ function renderSliderPanel(sliders, uiControls = []) {
         else updateColorRow(row, c);
     }
     reconcileSliderAnim(sliders);
+}
+
+// colourControlsByName are the last compile's colour controls, by variable,
+// including the ones another panel shows.
+let colourControlsByName = new Map();
+
+// previewColor drives a `@color` variable's uniforms without touching the
+// source, as a colour row does while its chip is open.
+function previewColor(name, rgb) {
+    const c = colourControlsByName.get(name);
+    if (!c) return;
+    eventManager.dispatchEvent('gsl-ui/input', {
+        kind: 'color',
+        span: spanFromSliderInfo(c),
+        value: rgb,
+        params: c.params.map((p, i) => ({ paramName: p.paramName, value: rgb[i] })),
+    });
 }
 
 // colorControls are the compile's colour controls: a `@color` literal is
@@ -668,4 +692,4 @@ if (sliderPanelHeader) {
     });
 }
 
-export { renderSliderPanel, sliderAnimTick };
+export { renderSliderPanel, sliderAnimTick, previewColor };

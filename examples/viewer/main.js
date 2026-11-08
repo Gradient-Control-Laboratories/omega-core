@@ -60,10 +60,10 @@ import {
     setTabNames,
 } from "./editor/editor-tab.js";
 import { initHelpPanel } from "./docs/help-panel.js";
-import { initSliderPanel, renderSliderPanel, sliderAnimTick } from "./panels/slider-panel.js";
+import { initSliderPanel, renderSliderPanel, sliderAnimTick, previewColor } from "./panels/slider-panel.js";
 import { initMeshImport } from "./panels/mesh-import.js";
 import { initExportPanel } from "./panels/export-panel.js";
-import { initBodyPanel, setBodies, pickBody } from "./panels/body-panel.js";
+import { initBodyPanel, setBodies, pickBody, materialVariables } from "./panels/body-panel.js";
 
 const clientId = (typeof crypto !== "undefined" && crypto.randomUUID)
     ? crypto.randomUUID()
@@ -318,7 +318,7 @@ eventManager.addListener("shape/picked", (event) => {
     const shapeIndex = event.shapeIndex;
     setSelectedShape(shapeIndex);
 
-    // Select the picked body in the Bodies panel.
+    // Select the picked body in the Bodies panel, without opening it.
     pickBody(shapeIndex);
 
     if (shapeIndex === 0) {
@@ -753,6 +753,7 @@ initHelpPanel({
 
 initSliderPanel({
     setSliderValue,
+    materialVariables,
     getAnimTime,
     audioSystem,
     onCommit: () => {
@@ -828,6 +829,8 @@ initBodyPanel({
     setShapeVisible,
     setSlotVisible,
     setMeshShapeVisible,
+    setSliderValue,
+    previewColor,
     selectShape: setSelectedShape,
     popupParent: document.getElementById("canvas-container"),
 });

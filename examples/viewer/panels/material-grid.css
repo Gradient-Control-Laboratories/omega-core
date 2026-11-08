@@ -1,7 +1,44 @@
-/* The swatch grid in the Bodies panel (material-grid.js). The panel frame —
- * #body-panel, its header, .panel-body, .panel-close — is styled by each app's
- * shared side-panel rules and the rows by body-panel.css; this file carries
- * the grid. */
+/* The Materials panel (material-grid.js). The panel frame — #material-panel,
+ * its header, .panel-body, .panel-close — is styled by each app's shared
+ * side-panel rules; this file carries what is inside it. */
+
+/* A tab with two lists shares the panel's height between them. */
+.two-lists #material-grid {
+    max-height: 200px;
+}
+#material-substance-category,
+#material-finish-category {
+    margin: 6px 0 4px 0;
+}
+#material-finishes {
+    max-height: 170px;
+    overflow-y: auto;
+}
+/* The tabs over the grid. */
+#material-tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid #333;
+}
+.material-tab {
+    padding: 3px 8px;
+    font: inherit;
+    font-size: 11px;
+    color: #888;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    cursor: pointer;
+}
+.material-tab:hover {
+    color: #d1d1d1;
+}
+.material-tab.active {
+    color: #d1d1d1;
+    border-bottom-color: #d1d1d1;
+}
 
 #material-filter {
     width: 100%;
@@ -34,7 +71,8 @@
  * The width is six swatches across: six cells and the five gaps between them,
  * the panel's 10px padding either side, and room for the grid's scrollbar,
  * which is up to 16px where scrollbars are not overlaid. */
-#body-panel .panel-body {
+#body-panel .panel-body,
+#material-panel .panel-body {
     width: var(--material-panel-width,
         calc(6 * var(--material-swatch-px, 40px) + 5 * 4px + 2 * 10px + 16px));
     box-sizing: border-box;
@@ -132,6 +170,7 @@
     border: 1px solid #333;
     border-radius: 4px;
     background-color: #1e1e1e;
+    background-origin: border-box;
     background-repeat: no-repeat;
     cursor: pointer;
     transition: border-color 0.12s, box-shadow 0.12s;
@@ -192,7 +231,7 @@
 }
 
 /* Wrap, and the stack (material-grid.js): the operator menu, then the selected
- * body's base and its layers, innermost first, each with Adjust and Remove.
+ * body's base and its layers, innermost first, each with Remove and its sliders.
  * Below the readout, so it changes with the selection and never under the
  * pointer. */
 #material-stack {
@@ -210,6 +249,9 @@
     color: #d1d1d1;
     font-family: inherit;
     font-size: 11px;
+}
+.material-wrap + .material-wrap {
+    margin-top: 3px;
 }
 .material-wrap:focus {
     outline: none;
@@ -248,6 +290,30 @@
 .material-layer-button:hover {
     background: #3a3a3a;
     border-color: #777;
+}
+
+/* A layer's controls, indented under it. The columns are the Parameters panel's
+ * without its 22px control cell, which only an animated row uses. */
+.slider-row.material-layer-parameter {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) 52px;
+    padding: 1px 0 1px 12px;
+}
+.material-layer-parameter .slider-label {
+    color: #888;
+}
+.material-layer-parameter input[type="color"] {
+    justify-self: start;
+}
+.slider-row.color-row.material-layer-parameter .color-hex {
+    width: 52px;
+    font-size: 10px;
+    padding: 1px 2px;
+}
+.material-layer-parameter .field-panel-label {
+    box-sizing: border-box;
+    width: 52px;
+    text-align: right;
+    padding: 1px 4px;
 }
 
 /* The hover preview: a swatch's tooltip (tooltip.js) shows its material three
