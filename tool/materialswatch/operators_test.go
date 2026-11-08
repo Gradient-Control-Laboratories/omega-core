@@ -6,8 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
-	"gradientcontrol.com/omega/core/internal/source"
+	"gradientcontrol.com/omega/core/assembler"
 )
 
 // The operators are read off the @surface presets: the overload of each
@@ -127,7 +126,7 @@ func TestOnlyTheKnurlReturnsRelief(t *testing.T) {
 func TestEveryOperatorCompiles(t *testing.T) {
 	for name, op := range readOperators(t) {
 		doc := ProbeDoc(op)
-		if _, err := assembler.Assemble([]string{doc}, &source.MockManager{}); err != nil {
+		if _, err := assembler.Assemble([]string{doc}); err != nil {
 			t.Errorf("%s: %v\n%s", name, err, doc)
 		}
 	}
