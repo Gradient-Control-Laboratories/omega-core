@@ -33,11 +33,11 @@ func derivOf(t *testing.T, op *program.Operand) (*program.Operand, string) {
 // with the variable as the second operand, so `.d(p)` is `.dp`.
 func TestParseDerivWrtVariable(t *testing.T) {
 	src := "r = 2;\nf = sphere(r);\ng = f.d(r);\nh = sphere(r).d(r);\nk = (f + 1).d(p);\nreturn g, h, k;\n"
-	pkg, err := lib.ParsePackage([]string{src})
+	res, err := lib.ParsePackage([]string{src})
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	assigns := pkg.Files[0].Assignments
+	assigns := res.Package.Files[0].Assignments
 	if len(assigns) != 5 {
 		t.Fatalf("expected 5 assignments, got %d", len(assigns))
 	}

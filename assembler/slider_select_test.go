@@ -1,9 +1,8 @@
-package lib
+package assembler
 
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/source"
 	"gradientcontrol.com/omega/core/program"
 )
 
@@ -72,7 +71,7 @@ r.max = 2.0;
 b = sphere(r > 0.5 ? 5 : 2);
 return b;
 `
-	res, err := Assemble([]string{src}, &source.MockManager{}, ExtractUI())
+	res, err := Assemble([]string{src}, ExtractUI())
 	if err != nil {
 		t.Fatalf("Assemble: %v", err)
 	}
