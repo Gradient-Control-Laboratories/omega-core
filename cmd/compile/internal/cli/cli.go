@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 
 	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/assembler/source"
 	"gradientcontrol.com/omega/core/backend/audio"
 	"gradientcontrol.com/omega/core/backend/mesh"
 	"gradientcontrol.com/omega/core/backend/tape"
@@ -112,7 +111,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	}
 
 	// Validate parser on primary package
-	if _, parseErr := parser.ParsePackage(sourceTexts); parseErr != nil {
+	if parseErr := parser.ParsePackage(sourceTexts).Error(); parseErr != nil {
 		return fmt.Errorf("parsing primary package: %w", parseErr)
 	}
 
@@ -129,7 +128,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		srcPaths = []string{dir}
 	}
 	if len(srcPaths) > 0 {
-		asmOpts = append(asmOpts, assembler.SourceManager(source.NewLocalManager(srcPaths...)))
+		asmOpts = append(asmOpts, assembler.SourcePaths(srcPaths...))
 	}
 	if cfg.OptLevel == 0 {
 		asmOpts = append(asmOpts, assembler.DisableDeadcodeRemoval())

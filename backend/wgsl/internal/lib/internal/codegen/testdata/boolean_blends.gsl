@@ -1,6 +1,6 @@
 
 // A gallery of boolean blends, ported from the variadic / partial-application
-// experiment in PR #200. That machinery shipped instead as list-taking stdlib
+// experiment. That machinery shipped instead as list-taking stdlib
 // booleans plus the no-initial reduce(fn, list), so each blend is a small
 // kernel and a generic stack() lays out intersection / union / difference of
 // three spheres along Z.

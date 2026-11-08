@@ -22,8 +22,8 @@ import "lattice";
 import "lattice/spinodoid";
 import "material/printed";
 
-meshId = importMesh "long-sole.stl";
-midsole = vdbSdf(meshId);
+meshId = importMesh "part.stl";
+body = vdbSdf(meshId);
 loEnd = [0, 0, 10];
 hiEnd = [0, 264, 10];
 span = hiEnd - loEnd;
@@ -32,7 +32,7 @@ refineLine = mix(0.1, 4, t);
 refinePoints = 0;
 upright = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
 isotropic = spinodoid.fastGaborGraded(2, [pi / 2, pi / 2, pi / 2], refinePoints + refineLine, upright);
-specimen = intersectRound(midsole, lattice.solidify(isotropic, 0, 0.6), 0.1);
+specimen = intersectRound(body, lattice.solidify(isotropic, 0, 0.6), 0.1);
 slsMat, slsColor, slsHeight, slsSlope = printed.powderBed([0.86, 0.85, 0.81], 0.06);
 specimen.color = slsColor;
 specimen.material = slsMat;
@@ -43,7 +43,7 @@ return specimen;
 		t.Fatal(err)
 	}
 	prog, err := meshfold.FoldProgramMeshIndices(res.Program, func(_, kind, path string) (int, bool) {
-		return assetID, kind == "mesh" && path == "long-sole.stl"
+		return assetID, kind == "mesh" && path == "part.stl"
 	})
 	if err != nil {
 		t.Fatal(err)

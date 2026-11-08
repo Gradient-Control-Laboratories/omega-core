@@ -31,7 +31,6 @@ import (
 )
 
 type options struct {
-	primaryPackage        string
 	geometryResolver      topofold.GeometryResolver
 	warpResolver          warpfold.WarpResolver
 	foldWarpFieldToZero   bool
@@ -57,28 +56,20 @@ type VariantResult struct {
 
 // Result contains the assembled program AST and the assigned import slot table.
 type Result struct {
-	Program            *program.Program
-	DependenciesSha256 string
-	Slots              []meshslots.Import
-	WarpedAssets       []warpfold.WarpedAsset
-	MeshSdfSlots       []*program.MeshSdfSlot
-	GlobalTextures     *program.GlobalTextures
-	Diagnostics        []program.Diagnostic
-	Sliders            []slider.SliderInfo
-	UIControls         []ui.Control
-	Scene              *program.Scene
-	MeshPlan           *meshplan.MeshExportPlan
-	SdfSubtrees        []meshplan.SdfSubtree
-	PreviewBodies      []meshplan.PreviewBody
-	AudioReturns       []meshplan.SdfSubtree
-	Variants           map[string]VariantResult
-}
-
-// PrimaryPackage supplies a primary package path assigned to the assembled program's primary package.
-func PrimaryPackage(pkg string) Option {
-	return func(o *options) {
-		o.primaryPackage = pkg
-	}
+	Program        *program.Program
+	Slots          []meshslots.Import
+	WarpedAssets   []warpfold.WarpedAsset
+	MeshSdfSlots   []*program.MeshSdfSlot
+	GlobalTextures *program.GlobalTextures
+	Diagnostics    []program.Diagnostic
+	Sliders        []slider.SliderInfo
+	UIControls     []ui.Control
+	Scene          *program.Scene
+	MeshPlan       *meshplan.MeshExportPlan
+	SdfSubtrees    []meshplan.SdfSubtree
+	PreviewBodies  []meshplan.PreviewBody
+	AudioReturns   []meshplan.SdfSubtree
+	Variants       map[string]VariantResult
 }
 
 // GeometryResolver supplies a topology geometry resolver for folding STEP topology builtins.
@@ -134,7 +125,7 @@ func ExtractMeshPlan(idPrefix string) Option {
 }
 
 // WithVariants configures the assembler to compile and slice the named
-// alternative top-level return statements (e.g. map[string]string{"part": "return castPart();"})
+// alternative top-level return statements (e.g. map[string]string{"part": "return mainPart();"})
 // alongside the primary package in a single pass.
 func WithVariants(variants map[string]string) Option {
 	return func(o *options) {
@@ -184,8 +175,6 @@ func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*
 	if err != nil {
 		return nil, err
 	}
-	prog.Primary.Path = o.primaryPackage
-	dependenciesSha256 := collect.ProgramSourceHash(prog)
 	rp, err := partitionReturns(prog, primarySources, o.variants, o.enableDeadcodeRemoval)
 	if err != nil {
 		return nil, err
@@ -384,15 +373,14 @@ func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*
 	prog.GlobalTextures = globalTex
 
 	result := &Result{
-		Program:            prog,
-		DependenciesSha256: dependenciesSha256,
-		Slots:              importSlots,
-		WarpedAssets:       warpedAssets,
-		MeshSdfSlots:       sdfSlots,
-		GlobalTextures:     globalTex,
-		Diagnostics:        assemblyDiags,
-		AudioReturns:       audioReturns,
-		Variants:           variants,
+		Program:        prog,
+		Slots:          importSlots,
+		WarpedAssets:   warpedAssets,
+		MeshSdfSlots:   sdfSlots,
+		GlobalTextures: globalTex,
+		Diagnostics:    assemblyDiags,
+		AudioReturns:   audioReturns,
+		Variants:       variants,
 	}
 
 	if o.extractMeshPlan {
@@ -741,10 +729,11 @@ func DependenciesSha256(pkgPath string, srcMgr source.Manager) (string, error) {
 // expressions/returns, and call arguments while preserving the original AST
 // structure for template comparisons and bounds extraction.
 func AnalyzePackage(sourceText string, getImport program.GetImportFunc) (*program.Package, error) {
-	pkg, err := parser.ParsePackage([]string{sourceText})
-	if err != nil {
+	res := parser.ParsePackage([]string{sourceText})
+	if err := res.Error(); err != nil {
 		return nil, err
 	}
+	pkg := res.Package
 	stampPackageConstants(pkg, getImport)
 	return pkg, nil
 }

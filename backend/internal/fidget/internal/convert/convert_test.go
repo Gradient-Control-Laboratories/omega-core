@@ -149,7 +149,7 @@ func testOneConvert(t *testing.T, testDir, testName string) {
 			}
 
 			// Call GenerateSTL instead with each algorithm. The mesher takes a
-			// world-space bbox + octree subdivision level (DM fork); the old
+			// world-space bbox + octree subdivision level; the old
 			// center/scale [-5, 5]^3 region is the equivalent bbox below.
 			bbox := [6]float32{-5, -5, -5, 5, 5, 5}
 			_, err = mesh.GenerateSTL(treeIndices, 6, bbox, "marching-cubes",

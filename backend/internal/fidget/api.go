@@ -19,7 +19,7 @@ const (
 	// RequestPathMeasure asks for numeric geometry measurements of a compiled
 	// program (bounding box, volume, surface area) derived from a measuring
 	// mesh. It is the headless inspection surface behind the canvas agent's
-	// measurement bridge (the per-document .measure.json Carbon reads) and
+	// measurement bridge and
 	// carries the same program + oracle context as a mesh request, so any
 	// program the mesher accepts can be measured.
 	RequestPathMeasure  = "fidget/measure"
@@ -99,7 +99,7 @@ type MeshRequest struct {
 	// Inline (tape requests only) returns the serialized tape in the response
 	// as TapeB64 instead of writing it to the downloads dir and returning a
 	// URL. The browser's Save Tape wants a file to download; a server-side
-	// consumer (the casting simulation, which posts the tape to an out-of-
+	// consumer (a simulation, which posts the tape to an out-of-
 	// process service) wants the bytes, and canvas has no downloads dir to
 	// read them back from — nor would one exist if the two agents were ever
 	// split across containers.
@@ -114,7 +114,7 @@ type MeshRequest struct {
 	// every voxel of the band — so only a reader that needs it asks.
 	LevelSets bool `json:"levelSets,omitempty"`
 	// Filename specifies the explicit destination filename under downloads dir
-	// (e.g. "part-10492-a1b2c3d4.stl" or "leaf-a1b2c3d4.stl"). If empty, fidget
+	// (e.g. "part-a1b2c3d4.stl" or "leaf-a1b2c3d4.stl"). If empty, fidget
 	// falls back to generating a timestamped name.
 	Filename string `json:"filename,omitempty"`
 }

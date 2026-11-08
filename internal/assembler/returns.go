@@ -138,11 +138,12 @@ func (rp *returnPartition) AttachVariants(
 	lastFile := prog.Primary.Files[len(prog.Primary.Files)-1]
 	for _, name := range names {
 		retSrc := variants[name]
-		pkg, err := parser.ParsePackage([]string{retSrc})
-		if err != nil {
+		res := parser.ParsePackage([]string{retSrc})
+		if err := res.Error(); err != nil {
 			rp.variantErrors[name] = fmt.Sprintf("parse variant return %q: %v", retSrc, err)
 			continue
 		}
+		pkg := res.Package
 		if len(pkg.Returns()) == 0 {
 			rp.variantErrors[name] = fmt.Sprintf("variant %s return expression has no returns", name)
 			continue

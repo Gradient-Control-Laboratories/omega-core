@@ -2,5 +2,5 @@ import "pkg1";
 import "pkg2";
 
 s = pkg1.boxCentered([pkg1.somePi, 4, 5], [6, 7, 8]);
-t = pkg2.castArea(pkg2.castSize);
+t = pkg2.partArea(pkg2.partSize);
 return s, t;

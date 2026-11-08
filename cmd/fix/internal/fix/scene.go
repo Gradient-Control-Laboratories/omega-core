@@ -50,7 +50,8 @@ func applySceneFix(src string) (string, bool, error) {
 		normalized = strings.ReplaceAll(src, "\r\n", "\n")
 	}
 
-	pkg, _ := parser.ParsePackage([]string{normalized})
+	res := parser.ParsePackage([]string{normalized})
+	pkg := res.Package
 	if pkg.Scene == nil {
 		return src, false, nil
 	}
