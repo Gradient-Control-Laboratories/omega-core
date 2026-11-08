@@ -10,14 +10,14 @@ import (
 )
 
 func TestPreviewBodiesMapsReturnsToSlotsAndMeshes(t *testing.T) {
-	pkg, err := parser.ParsePackage([]string{`
+	res := parser.ParsePackage([]string{`
 ball = sphere(1.0);
 return mesh(0), ball, meshUnion(mesh(0), sphere(2.0));
 `})
-	if err != nil {
+	if err := res.Error(); err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
 	}
-	plan, subtrees, err := meshplan.SliceProgram(&program.Program{Primary: pkg}, "leaf-")
+	plan, subtrees, err := meshplan.SliceProgram(&program.Program{Primary: res.Package}, "leaf-")
 	if err != nil {
 		t.Fatalf("SliceProgram failed: %v", err)
 	}
@@ -34,16 +34,16 @@ return mesh(0), ball, meshUnion(mesh(0), sphere(2.0));
 
 func TestAdditiveSdfSubtreesAndPreviewProgram(t *testing.T) {
 	t.Run("drops subtracted and doubly subtracted SDF leaves", func(t *testing.T) {
-		pkg, err := parser.ParsePackage([]string{`
+		res := parser.ParsePackage([]string{`
 solid = box([-2.0, -2.0, -2.0], [2.0, 2.0, 2.0]);
 cavity = sphere(1.0);
 plug = box([-3.0, -0.5, -0.5], [3.0, 0.5, 0.5]);
 return meshDifference([mesh(0), solid], meshDifference([mesh(0), cavity], plug));
 `})
-		if err != nil {
+		if err := res.Error(); err != nil {
 			t.Fatalf("ParsePackage failed: %v", err)
 		}
-		prog := &program.Program{Primary: pkg}
+		prog := &program.Program{Primary: res.Package}
 		plan, subtrees, err := meshplan.SliceProgram(prog, "leaf-")
 		if err != nil {
 			t.Fatalf("SliceProgram failed: %v", err)
@@ -61,15 +61,15 @@ return meshDifference([mesh(0), solid], meshDifference([mesh(0), cavity], plug))
 	})
 
 	t.Run("preserves original program when no meshes are present", func(t *testing.T) {
-		pkg, err := parser.ParsePackage([]string{`
+		res := parser.ParsePackage([]string{`
 red = sphere(1.0);
 blue = sphere(2.0);
 return red, blue;
 `})
-		if err != nil {
+		if err := res.Error(); err != nil {
 			t.Fatalf("ParsePackage failed: %v", err)
 		}
-		prog := &program.Program{Primary: pkg}
+		prog := &program.Program{Primary: res.Package}
 		plan, subtrees, err := meshplan.SliceProgram(prog, "leaf-")
 		if err != nil {
 			t.Fatalf("SliceProgram failed: %v", err)
@@ -81,7 +81,7 @@ return red, blue;
 	})
 
 	t.Run("prunes subtracted SDF declarations while preserving slider and UI control assignments", func(t *testing.T) {
-		pkg, err := parser.ParsePackage([]string{`
+		res := parser.ParsePackage([]string{`
 uiTransform(m) {
 	return m;
 }
@@ -93,9 +93,10 @@ cavity = length(p) - radius + noiseHash3(p)[0];
 solid = length(p) - 2.0;
 return meshDifference([mesh(0, xf), solid], cavity);
 `})
-		if err != nil {
+		if err := res.Error(); err != nil {
 			t.Fatalf("ParsePackage failed: %v", err)
 		}
+		pkg := res.Package
 		// Synthesize Range on radius as lower.SynthesizeRanges does in the assembler.
 		for _, a := range pkg.Files[0].Assignments {
 			if len(a.Variables) == 1 && a.Variables[0].Name == "radius" {
@@ -134,15 +135,15 @@ return meshDifference([mesh(0, xf), solid], cavity);
 }
 
 func TestSubtreesInPlan(t *testing.T) {
-	pkg, err := parser.ParsePackage([]string{`
+	res := parser.ParsePackage([]string{`
 ball = sphere(1.0);
 cube = box([-1.0, -1.0, -1.0], [1.0, 1.0, 1.0]);
 return mesh(0), ball, cube;
 `})
-	if err != nil {
+	if err := res.Error(); err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
 	}
-	plan, subtrees, err := meshplan.SliceProgram(&program.Program{Primary: pkg}, "leaf-")
+	plan, subtrees, err := meshplan.SliceProgram(&program.Program{Primary: res.Package}, "leaf-")
 	if err != nil {
 		t.Fatalf("SliceProgram failed: %v", err)
 	}

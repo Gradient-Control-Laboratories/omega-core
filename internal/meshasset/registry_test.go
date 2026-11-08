@@ -92,14 +92,14 @@ func TestRegistryFindBySourceDisambiguatesFilename(t *testing.T) {
 	mesh := sampleMesh()
 	a, _ := r.PutStep(-1, "part.stl", "part.hodge", "part.step", mesh, "a", nil, nil, nil)
 	b, _ := r.PutStep(-1, "part.stl", "part.hodge", "part.step", mesh, "b", nil, nil, nil)
-	r.BindSource("branches/A", a, "part.stl", "part.hodge", "part.step")
-	r.BindSource("branches/B", b, "part.stl", "part.hodge", "part.step")
+	r.BindSource("parts/A", a, "part.stl", "part.hodge", "part.step")
+	r.BindSource("parts/B", b, "part.stl", "part.hodge", "part.step")
 
-	if got, ok := r.FindBySource("branches/A", "part.stp"); !ok || got != a {
-		t.Fatalf("branches/A resolved %v/%v, want first asset", got, ok)
+	if got, ok := r.FindBySource("parts/A", "part.stp"); !ok || got != a {
+		t.Fatalf("parts/A resolved %v/%v, want first asset", got, ok)
 	}
-	if got, ok := r.FindBySource("branches/B", "part.step"); !ok || got != b {
-		t.Fatalf("branches/B resolved %v/%v, want second asset", got, ok)
+	if got, ok := r.FindBySource("parts/B", "part.step"); !ok || got != b {
+		t.Fatalf("parts/B resolved %v/%v, want second asset", got, ok)
 	}
 }
 
@@ -107,17 +107,17 @@ func TestRegistryClaimUploadReplacesStoredSource(t *testing.T) {
 	r := NewRegistry()
 	mesh := sampleMesh()
 	stored, _ := r.PutStep(-1, "part.stl", "part.hodge", "part.step", mesh, "old", nil, nil, nil)
-	r.BindSource("branches/A", stored, "part.step")
+	r.BindSource("parts/A", stored, "part.step")
 	uploaded, _ := r.PutStep(0, "part.stl", "part.hodge", "part.step", mesh, "new", nil, nil, nil)
 	r.BindUpload(uploaded, "part.stl", "part.hodge", "part.step")
 
-	if got, ok := r.ClaimUpload("branches/A", "part.stp"); !ok || got != uploaded {
+	if got, ok := r.ClaimUpload("parts/A", "part.stp"); !ok || got != uploaded {
 		t.Fatalf("claimed %v/%v, want replacement upload", got, ok)
 	}
-	if got, ok := r.FindBySource("branches/A", "part.step"); !ok || got != uploaded {
+	if got, ok := r.FindBySource("parts/A", "part.step"); !ok || got != uploaded {
 		t.Fatalf("stored source is %v/%v, want replacement upload", got, ok)
 	}
-	if _, ok := r.ClaimUpload("branches/B", "part.step"); ok {
+	if _, ok := r.ClaimUpload("parts/B", "part.step"); ok {
 		t.Fatalf("claimed upload more than once")
 	}
 }
@@ -125,13 +125,13 @@ func TestRegistryClaimUploadReplacesStoredSource(t *testing.T) {
 func TestRegistryRemoveAsset(t *testing.T) {
 	r := NewRegistry()
 	placeholder := r.PutError(-1, "bracket.hodge", "missing file")
-	r.BindSource("branches/A", placeholder, "bracket.hodge", "bracket.step")
+	r.BindSource("parts/A", placeholder, "bracket.hodge", "bracket.step")
 	r.BindUpload(placeholder, "bracket.hodge")
 
 	if got, ok := r.FindByFilename("bracket.hodge"); !ok || got != placeholder {
 		t.Fatalf("placeholder not found by filename before remove")
 	}
-	if got, ok := r.FindBySource("branches/A", "bracket.step"); !ok || got != placeholder {
+	if got, ok := r.FindBySource("parts/A", "bracket.step"); !ok || got != placeholder {
 		t.Fatalf("placeholder not found by source before remove")
 	}
 
@@ -140,15 +140,15 @@ func TestRegistryRemoveAsset(t *testing.T) {
 	if _, ok := r.FindByFilename("bracket.hodge"); ok {
 		t.Fatalf("placeholder still found by filename after RemoveAsset")
 	}
-	if _, ok := r.FindBySource("branches/A", "bracket.step"); ok {
+	if _, ok := r.FindBySource("parts/A", "bracket.step"); ok {
 		t.Fatalf("placeholder still found by source after RemoveAsset")
 	}
 
 	mesh := sampleMesh()
 	replacement, _ := r.PutStep(-1, "bracket.stl", "bracket.hodge", "bracket.step", mesh, "hash1", nil, nil, nil)
-	r.BindSource("branches/A", replacement, "bracket.hodge", "bracket.step")
+	r.BindSource("parts/A", replacement, "bracket.hodge", "bracket.step")
 
-	if got, ok := r.FindBySource("branches/A", "bracket.step"); !ok || got != replacement {
+	if got, ok := r.FindBySource("parts/A", "bracket.step"); !ok || got != replacement {
 		t.Fatalf("replacement asset not found by source")
 	}
 }

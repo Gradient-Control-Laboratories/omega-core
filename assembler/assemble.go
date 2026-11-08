@@ -3,8 +3,8 @@ package assembler
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/assembler/source"
 	lib "gradientcontrol.com/omega/core/internal/assembler"
+	internalsource "gradientcontrol.com/omega/core/internal/source"
 )
 
 // Result contains the assembled program AST and compilation products.
@@ -24,13 +24,12 @@ func Assemble(primarySources []string, opts ...Option) (*Result, error) {
 		}
 	}
 
-	srcMgr := cfg.srcMgr
-	if srcMgr == nil {
-		if cfg.sourcePath != "" {
-			srcMgr = source.NewLocalManager(cfg.sourcePath)
-		} else {
-			srcMgr = source.NewLocalManager(".")
-		}
+	var srcMgr internalsource.Manager = internalsource.NewStdLibManager()
+	if len(cfg.managers) > 0 {
+		managers := make([]internalsource.Manager, 0, len(cfg.managers)+1)
+		managers = append(managers, cfg.managers...)
+		managers = append(managers, srcMgr)
+		srcMgr = internalsource.NewMultiSourceManager(managers...)
 	}
 
 	return lib.Assemble(primarySources, srcMgr, cfg.libOpts...)

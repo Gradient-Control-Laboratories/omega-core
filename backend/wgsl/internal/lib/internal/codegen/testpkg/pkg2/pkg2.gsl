@@ -2,8 +2,8 @@
 
 import "pkg1";
 
-castSize = [1, 2, pkg1.somePi + 2];
+partSize = [1, 2, pkg1.somePi + 2];
 
-castArea(size) {
+partArea(size) {
     return pkg1.boxCentered([1, 2, 3], size);
 }

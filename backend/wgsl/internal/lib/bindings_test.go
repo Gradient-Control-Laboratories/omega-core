@@ -13,10 +13,10 @@ import (
 )
 
 func TestPackSpinodoidBinding_VariableBandsAndMetadata(t *testing.T) {
-	slots := []SpinodoidSlot{{Slot: 0, Key: "sole"}, {Slot: 1, Key: "constant"}}
+	slots := []SpinodoidSlot{{Slot: 0, Key: "graded_part"}, {Slot: 1, Key: "constant"}}
 	tables := map[string]spinodoid.BakedTable{
-		"sole":     {ContentID: "graded", Rows: 2, Origin: [3]int{-17, -5, -6}, Size: [3]int{32, 90, 2}, Bounds: [6]float64{-55, -14, -8, 62, 277, 42}},
-		"constant": {ContentID: "periodic", Rows: 64, Origin: [3]int{-32, -32, -32}, Size: [3]int{64, 64, 64}, Periodic: true},
+		"graded_part": {ContentID: "graded", Rows: 2, Origin: [3]int{-17, -5, -6}, Size: [3]int{32, 90, 2}, Bounds: [6]float64{-55, -14, -8, 62, 277, 42}},
+		"constant":    {ContentID: "periodic", Rows: 64, Origin: [3]int{-32, -32, -32}, Size: [3]int{64, 64, 64}, Periodic: true},
 	}
 	raw := map[string][]byte{
 		"graded":   bytes.Repeat([]byte{0x3f}, spinodoid.GPUWidth*2*16),
@@ -54,9 +54,9 @@ func TestPackSpinodoidBinding_VariableBandsAndMetadata(t *testing.T) {
 	if err != nil || held.TexelsB64 != "" || held.Hash != binding.Hash {
 		t.Fatalf("held binding = %v, err %v", held, err)
 	}
-	moved := tables["sole"]
+	moved := tables["graded_part"]
 	moved.Origin[1]++
-	tables["sole"] = moved
+	tables["graded_part"] = moved
 	changed, err := PackSpinodoidBinding(slots, tables, raw, binding.Hash)
 	if err != nil || changed.Hash == binding.Hash || changed.TexelsB64 == "" {
 		t.Fatalf("changed domain retained old binding: %v, err %v", changed, err)

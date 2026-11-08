@@ -15,7 +15,6 @@ import (
 	src_test "gradientcontrol.com/omega/core/internal/srctest"
 	"gradientcontrol.com/omega/core/internal/test/assert"
 	lib "gradientcontrol.com/omega/core/parser"
-	api "gradientcontrol.com/omega/core/parser/internal/api"
 	"gradientcontrol.com/omega/core/parser/internal/parser2"
 	"gradientcontrol.com/omega/core/program"
 )
@@ -32,10 +31,10 @@ func TestParse(t *testing.T) {
 func TestParseMeshImport(t *testing.T) {
 	const src = "import . \"omega\";\nimportMesh 5 \"gear.stl\";\nreturn mesh(5);\n"
 
-	pkg, err := lib.ParsePackage([]string{src})
-	assert.NoError(t, err)
-	if assert.Equal(t, 1, len(pkg.Files[0].MeshImports)) {
-		imp := pkg.Files[0].MeshImports[0]
+	res := lib.ParsePackage([]string{src})
+	assert.NoError(t, res.Error())
+	if assert.Equal(t, 1, len(res.Package.Files[0].MeshImports)) {
+		imp := res.Package.Files[0].MeshImports[0]
 		assert.Equal(t, int32(5), imp.Index)
 		assert.Equal(t, "gear.stl", imp.Path)
 	}
@@ -44,10 +43,10 @@ func TestParseMeshImport(t *testing.T) {
 func TestParseStepImport(t *testing.T) {
 	const src = "import . \"omega\";\nimportStep 5 \"gear.step\";\nreturn mesh(5);\n"
 
-	pkg, err := lib.ParsePackage([]string{src})
-	assert.NoError(t, err)
-	if assert.Equal(t, 1, len(pkg.Files[0].StepImports)) {
-		imp := pkg.Files[0].StepImports[0]
+	res := lib.ParsePackage([]string{src})
+	assert.NoError(t, res.Error())
+	if assert.Equal(t, 1, len(res.Package.Files[0].StepImports)) {
+		imp := res.Package.Files[0].StepImports[0]
 		assert.Equal(t, int32(5), imp.Index)
 		assert.Equal(t, "gear.step", imp.Path)
 	}
@@ -57,16 +56,13 @@ func testParseOne(t *testing.T, srcFile string) {
 	src_test.RunSourceTest(t, srcFile, runTestParseOne, checkTestParseOne, true)
 }
 
-func runTestParseOne(t *testing.T, srcFile string, src []byte) (*api.ParseResult, error) {
-	result, err := parser2.Parse([]string{string(src)})
-	if err != nil {
-		return result, err
-	}
+func runTestParseOne(t *testing.T, srcFile string, src []byte) (*parser2.Result, error) {
+	result := parser2.Parse([]string{string(src)})
 	if result == nil {
 		return result, fmt.Errorf("no result returned")
 	}
 	if len(result.Errors) > 0 {
-		err = &result.Errors[0]
+		var err error = &result.Errors[0]
 		if _, isBuildErr := err.(*program.Error); !isBuildErr {
 			return result, fmt.Errorf("expected build error, got %T: %v", err, err)
 		}
@@ -78,7 +74,7 @@ func runTestParseOne(t *testing.T, srcFile string, src []byte) (*api.ParseResult
 	return result, nil
 }
 
-func checkTestParseOne(t *testing.T, srcFile string, src []byte, parseResult *api.ParseResult) error {
+func checkTestParseOne(t *testing.T, srcFile string, src []byte, parseResult *parser2.Result) error {
 	testName := strings.TrimSuffix(filepath.Base(srcFile), filepath.Ext(srcFile))
 	yamlFile := filepath.Join(filepath.Dir(srcFile), testName+".yaml")
 
@@ -356,7 +352,7 @@ func TestParseReturnInNonLastFile(t *testing.T) {
 		"import . \"omega\";\nreturn 1;\n",
 		"import . \"omega\";\na = 2;\n",
 	}
-	_, err := lib.ParsePackage(sources)
+	err := lib.ParsePackage(sources).Error()
 	assert.Error(t, err)
 	if err != nil {
 		assert.Contains(t, err.Error(), "return statement is only allowed in the last source file")
@@ -367,29 +363,37 @@ func TestParseReturnInNonLastFile(t *testing.T) {
 		"import . \"omega\";\na = 2;\n",
 		"import . \"omega\";\nreturn 1;\n",
 	}
-	pkg2, err := lib.ParsePackage(sources2)
-	assert.NoError(t, err)
-	assert.NotNil(t, pkg2)
+	res2 := lib.ParsePackage(sources2)
+	assert.NoError(t, res2.Error())
+	if assert.NotNil(t, res2) {
+		assert.NotNil(t, res2.Package)
+	}
 }
 
 func TestParseSingleElementCollection(t *testing.T) {
 	// Bracket literal without trailing comma
-	pkg1, err := lib.ParsePackage([]string{"import . \"omega\";\na = [1.0];\nreturn a;\n"})
-	assert.NoError(t, err)
-	assert.NotNil(t, pkg1)
+	res1 := lib.ParsePackage([]string{"import . \"omega\";\na = [1.0];\nreturn a;\n"})
+	assert.NoError(t, res1.Error())
+	if assert.NotNil(t, res1) {
+		assert.NotNil(t, res1.Package)
+	}
 
 	// Bracket literal with trailing comma
-	pkg2, err := lib.ParsePackage([]string{"import . \"omega\";\nb = [2.0,];\nreturn b;\n"})
-	assert.NoError(t, err)
-	assert.NotNil(t, pkg2)
+	res2 := lib.ParsePackage([]string{"import . \"omega\";\nb = [2.0,];\nreturn b;\n"})
+	assert.NoError(t, res2.Error())
+	if assert.NotNil(t, res2) {
+		assert.NotNil(t, res2.Package)
+	}
 
 	// collect() primitive call with 1 argument
-	pkg3, err := lib.ParsePackage([]string{"import . \"omega\";\nc = collect(3.0);\nreturn c;\n"})
-	assert.NoError(t, err)
-	assert.NotNil(t, pkg3)
+	res3 := lib.ParsePackage([]string{"import . \"omega\";\nc = collect(3.0);\nreturn c;\n"})
+	assert.NoError(t, res3.Error())
+	if assert.NotNil(t, res3) {
+		assert.NotNil(t, res3.Package)
+	}
 
 	// Empty brackets should fail with "collections cannot be empty"
-	_, errEmpty := lib.ParsePackage([]string{"import . \"omega\";\nd = [];\nreturn d;\n"})
+	errEmpty := lib.ParsePackage([]string{"import . \"omega\";\nd = [];\nreturn d;\n"}).Error()
 	assert.Error(t, errEmpty)
 	if errEmpty != nil {
 		assert.Contains(t, errEmpty.Error(), "collections cannot be empty")
@@ -402,7 +406,7 @@ func TestMultiFileDeclarationCollisions(t *testing.T) {
 			"x = 1.0;\n",
 			"x = 2.0;\nreturn x;\n",
 		}
-		_, err := lib.ParsePackage(sources)
+		err := lib.ParsePackage(sources).Error()
 		assert.Error(t, err)
 		if err != nil {
 			assert.Contains(t, err.Error(), `"x" is an existing variable`)
@@ -414,7 +418,7 @@ func TestMultiFileDeclarationCollisions(t *testing.T) {
 			"x = 1.0;\n",
 			"x() { return 2.0; }\nreturn x();\n",
 		}
-		_, err := lib.ParsePackage(sources)
+		err := lib.ParsePackage(sources).Error()
 		assert.Error(t, err)
 		if err != nil {
 			assert.Contains(t, err.Error(), `"x" is an existing variable`)
@@ -426,7 +430,7 @@ func TestMultiFileDeclarationCollisions(t *testing.T) {
 			"foo() { return 1.0; }\n",
 			"foo = 2.0;\nreturn foo;\n",
 		}
-		_, err := lib.ParsePackage(sources)
+		err := lib.ParsePackage(sources).Error()
 		assert.Error(t, err)
 		if err != nil {
 			assert.Contains(t, err.Error(), `"foo" is an existing function`)
@@ -438,7 +442,7 @@ func TestMultiFileDeclarationCollisions(t *testing.T) {
 			"foo(a) { return a; }\n",
 			"foo(b) { return b * 2.0; }\nreturn foo(1.0);\n",
 		}
-		_, err := lib.ParsePackage(sources)
+		err := lib.ParsePackage(sources).Error()
 		assert.Error(t, err)
 		if err != nil {
 			assert.Contains(t, err.Error(), `function "foo" with 1 parameters is already defined`)
@@ -450,16 +454,17 @@ func TestMultiFileDeclarationCollisions(t *testing.T) {
 			"foo(a) { return a; }\n",
 			"foo(a, b) { return a + b; }\nreturn foo(1.0) + foo(2.0, 3.0);\n",
 		}
-		pkg, err := lib.ParsePackage(sources)
-		assert.NoError(t, err)
-		assert.NotNil(t, pkg)
+		res := lib.ParsePackage(sources)
+		assert.NoError(t, res.Error())
+		if assert.NotNil(t, res) {
+			assert.NotNil(t, res.Package)
+		}
 	})
 }
 
 func TestParseEmptyAndBlankInputsGuaranteePackageFile(t *testing.T) {
 	t.Run("NilSources", func(t *testing.T) {
-		res, err := parser2.Parse(nil)
-		assert.NoError(t, err)
+		res := parser2.Parse(nil)
 		if assert.NotNil(t, res) && assert.NotNil(t, res.Package) {
 			assert.Equal(t, 1, len(res.Errors))
 			if assert.Equal(t, 1, len(res.Package.Files)) {
@@ -469,8 +474,7 @@ func TestParseEmptyAndBlankInputsGuaranteePackageFile(t *testing.T) {
 	})
 
 	t.Run("EmptySourcesSlice", func(t *testing.T) {
-		res, err := parser2.Parse([]string{})
-		assert.NoError(t, err)
+		res := parser2.Parse([]string{})
 		if assert.NotNil(t, res) && assert.NotNil(t, res.Package) {
 			assert.Equal(t, 1, len(res.Errors))
 			if assert.Equal(t, 1, len(res.Package.Files)) {
@@ -480,8 +484,7 @@ func TestParseEmptyAndBlankInputsGuaranteePackageFile(t *testing.T) {
 	})
 
 	t.Run("SingleBlankSource", func(t *testing.T) {
-		res, err := parser2.Parse([]string{""})
-		assert.NoError(t, err)
+		res := parser2.Parse([]string{""})
 		if assert.NotNil(t, res) && assert.NotNil(t, res.Package) {
 			if assert.Equal(t, 1, len(res.Package.Files)) {
 				assert.NotNil(t, res.Package.Files[0])
@@ -493,8 +496,7 @@ func TestParseEmptyAndBlankInputsGuaranteePackageFile(t *testing.T) {
 func TestParsePartialSceneHeaderOnLaterError(t *testing.T) {
 	t.Run("ValidSceneDirectiveFollowedBySyntaxError", func(t *testing.T) {
 		src := "@scene(20, 5)\nx = ;\n"
-		res, err := parser2.Parse([]string{src})
-		assert.NoError(t, err)
+		res := parser2.Parse([]string{src})
 		assert.Equal(t, 1, len(res.Errors))
 		if assert.NotNil(t, res.Package.Scene) {
 			assert.Equal(t, 20.0, res.Package.Scene.Size)
@@ -509,8 +511,7 @@ func TestParsePartialSceneHeaderOnLaterError(t *testing.T) {
 
 	t.Run("LegacySceneCommentsFollowedBySyntaxError", func(t *testing.T) {
 		src := "// Scene Size: 40\n// Scene Grid: 4\nx = ;\n"
-		res, err := parser2.Parse([]string{src})
-		assert.NoError(t, err)
+		res := parser2.Parse([]string{src})
 		assert.Equal(t, 1, len(res.Errors))
 		if assert.NotNil(t, res.Package.Scene) {
 			assert.Equal(t, 40.0, res.Package.Scene.Size)
@@ -525,8 +526,7 @@ func TestParsePartialSceneHeaderOnLaterError(t *testing.T) {
 
 	t.Run("MalformedSceneDirectivePopulatesSource", func(t *testing.T) {
 		src := "@scene(0)\nreturn sphere(1);\n"
-		res, err := parser2.Parse([]string{src})
-		assert.NoError(t, err)
+		res := parser2.Parse([]string{src})
 		assert.Equal(t, 1, len(res.Errors))
 		if assert.Equal(t, 1, len(res.Package.Files)) {
 			assert.Equal(t, src, res.Package.Files[0].Source)
@@ -537,8 +537,7 @@ func TestParsePartialSceneHeaderOnLaterError(t *testing.T) {
 func TestParsePartialImportsAndAssetImportsOnError(t *testing.T) {
 	t.Run("ValidImportsFollowedBySyntaxErrorInImport", func(t *testing.T) {
 		src := "@scene(25)\nimport \"math\";\nimport . \"omega\";\nimport bad_unquoted;\nreturn 1;\n"
-		res, err := parser2.Parse([]string{src})
-		assert.NoError(t, err)
+		res := parser2.Parse([]string{src})
 		assert.Equal(t, 1, len(res.Errors))
 		assert.NotNil(t, res.Package.Scene)
 		if assert.Equal(t, 1, len(res.Package.Files)) {
@@ -555,8 +554,7 @@ func TestParsePartialImportsAndAssetImportsOnError(t *testing.T) {
 
 	t.Run("ValidImportsFollowedBySemanticErrorInImport", func(t *testing.T) {
 		src := "import \"math\";\nimport \"invalid.gsl\";\nreturn 1;\n"
-		res, err := parser2.Parse([]string{src})
-		assert.NoError(t, err)
+		res := parser2.Parse([]string{src})
 		assert.Equal(t, 1, len(res.Errors))
 		if assert.Equal(t, 1, len(res.Package.Files)) {
 			file := res.Package.Files[0]
@@ -569,8 +567,7 @@ func TestParsePartialImportsAndAssetImportsOnError(t *testing.T) {
 
 	t.Run("ValidAssetImportsFollowedBySyntaxOrBuildError", func(t *testing.T) {
 		src := "import \"math\";\nimportStep 0 \"a.step\";\nimportMesh 1 \"b.stl\";\nimportWarp 2 \"c.warp\";\nimportStep 3 ;\n"
-		res, err := parser2.Parse([]string{src})
-		assert.NoError(t, err)
+		res := parser2.Parse([]string{src})
 		assert.Equal(t, 1, len(res.Errors))
 		if assert.Equal(t, 1, len(res.Package.Files)) {
 			file := res.Package.Files[0]
@@ -589,8 +586,7 @@ func TestParsePartialImportsAndAssetImportsOnError(t *testing.T) {
 
 	t.Run("ValidAssetImportsFollowedByDuplicateSlotBuildError", func(t *testing.T) {
 		src := "importStep 0 \"a.step\";\nimportStep 0 \"dup.step\";\nreturn 1;\n"
-		res, err := parser2.Parse([]string{src})
-		assert.NoError(t, err)
+		res := parser2.Parse([]string{src})
 		assert.Equal(t, 1, len(res.Errors))
 		if assert.Equal(t, 1, len(res.Package.Files)) {
 			file := res.Package.Files[0]
@@ -604,7 +600,7 @@ func TestParsePartialImportsAndAssetImportsOnError(t *testing.T) {
 func TestParsePartialDeclarationsAndReturnOnError(t *testing.T) {
 	t.Run("SyntaxErrorOnLaterDeclarationPreservesPrecedingDeclarations", func(t *testing.T) {
 		src := `@scene(30, 5)
-import "pkg/gate";
+import "lib/part";
 importStep 0 "stmt.step";
 importId = importStep "expr.stp";
 m = importMesh "expr.stl";
@@ -617,8 +613,7 @@ helper(a) {
 broken = ;
 return importId;
 `
-		res, err := parser2.Parse([]string{src})
-		assert.NoError(t, err)
+		res := parser2.Parse([]string{src})
 		assert.Equal(t, 1, len(res.Errors))
 		assert.NotNil(t, res.Package.Scene)
 		if assert.Equal(t, 1, len(res.Package.Files)) {
@@ -647,8 +642,7 @@ y = 2.0;
 x = 3.0;
 return x + y;
 `
-		res, err := parser2.Parse([]string{src})
-		assert.NoError(t, err)
+		res := parser2.Parse([]string{src})
 		assert.Equal(t, 1, len(res.Errors))
 		assert.Contains(t, res.Errors[0].Message, `"x" is an existing variable`)
 		if assert.Equal(t, 1, len(res.Package.Files)) {
@@ -666,8 +660,7 @@ import "math";
 a = 10;
 return ;
 `
-		res, err := parser2.Parse([]string{src})
-		assert.NoError(t, err)
+		res := parser2.Parse([]string{src})
 		assert.Equal(t, 1, len(res.Errors))
 		assert.Contains(t, res.Errors[0].Message, "expected at least one return element")
 		assert.NotNil(t, res.Package.Scene)
@@ -681,8 +674,7 @@ return ;
 	t.Run("MultiFileErrorInSecondFilePreservesFirstAndPartialSecond", func(t *testing.T) {
 		src0 := "@scene(20)\nimport \"math\";\na = 1;\n"
 		src1 := "import \"vector\";\nb = 2;\nbroken = ;\nreturn a + b;\n"
-		res, err := parser2.Parse([]string{src0, src1})
-		assert.NoError(t, err)
+		res := parser2.Parse([]string{src0, src1})
 		assert.Equal(t, 1, len(res.Errors))
 		assert.NotNil(t, res.Package.Scene)
 		if assert.Equal(t, 2, len(res.Package.Files)) {
@@ -698,24 +690,21 @@ return ;
 
 func TestParseDiagnosticMessageRegressions(t *testing.T) {
 	t.Run("MissingSemicolonBeforeReturn", func(t *testing.T) {
-		res, err := parser2.Parse([]string{"a = 1\nreturn a;\n"})
-		assert.NoError(t, err)
+		res := parser2.Parse([]string{"a = 1\nreturn a;\n"})
 		if assert.Equal(t, 1, len(res.Errors)) {
 			assert.Contains(t, res.Errors[0].Message, `missing ";" before return`)
 		}
 	})
 
 	t.Run("ForgotSemicolonAtEndOfPreviousStatement", func(t *testing.T) {
-		res, err := parser2.Parse([]string{"a = 1\n}\n"})
-		assert.NoError(t, err)
+		res := parser2.Parse([]string{"a = 1\n}\n"})
 		if assert.Equal(t, 1, len(res.Errors)) {
 			assert.Contains(t, res.Errors[0].Message, `perhaps forgot ";" at the end of a previous statement?`)
 		}
 	})
 
 	t.Run("ExpectedAssignmentNamedFunctionOrReturn", func(t *testing.T) {
-		res, err := parser2.Parse([]string{"a = 1;\n123;\n"})
-		assert.NoError(t, err)
+		res := parser2.Parse([]string{"a = 1;\n123;\n"})
 		if assert.Equal(t, 1, len(res.Errors)) {
 			assert.Contains(t, res.Errors[0].Message, "expected assignment, named function declaration, or return")
 		}
@@ -723,16 +712,14 @@ func TestParseDiagnosticMessageRegressions(t *testing.T) {
 	})
 
 	t.Run("ImportErrorHint", func(t *testing.T) {
-		res, err := parser2.Parse([]string{"import unquoted;\nreturn 1;\n"})
-		assert.NoError(t, err)
+		res := parser2.Parse([]string{"import unquoted;\nreturn 1;\n"})
 		if assert.Equal(t, 1, len(res.Errors)) {
 			assert.Contains(t, res.Errors[0].Message, `expected 'import <optional-prefix> "<path>";'`)
 		}
 	})
 
 	t.Run("NestedTernaryDecompositionHint", func(t *testing.T) {
-		res, err := parser2.Parse([]string{"return ?;\n"})
-		assert.NoError(t, err)
+		res := parser2.Parse([]string{"return ?;\n"})
 		if assert.Equal(t, 1, len(res.Errors)) {
 			assert.Contains(t, res.Errors[0].Message, "nested ternaries cannot be inlined")
 		}

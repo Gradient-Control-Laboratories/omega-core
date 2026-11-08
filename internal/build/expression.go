@@ -529,7 +529,7 @@ func (s *Scope) callReturnsAllConst(fc *program.FnCall, numReturns int, paramExp
 // fnBodyUnlocksConstUnroll threads a function's local assignments (so a forwarded
 // constant collection keeps its constant type) and reports whether any local or
 // return expression unlocks a constant fold. Handles multi-return functions
-// (the motivating sprue.labeled case) by checking every return.
+// (the motivating part.labeled case) by checking every return.
 func (s *Scope) fnBodyUnlocksConstUnroll(fn *program.Function, paramExprTypes map[string]ExpressionType, visited map[string]bool, localFns map[string]*program.Function) bool {
 	if fn == nil || len(fn.Returns) == 0 {
 		return false

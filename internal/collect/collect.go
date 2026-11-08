@@ -16,20 +16,21 @@ import (
 //
 // It returns a program composed of all packages
 // directly or indirectly referenced by the primarySources GSL code.
-func Program(primarySources []string, srcMgr source.Manager, parse program.ParsePackageFunc) (*program.Program, error) {
+func Program(primarySources []string, srcMgr source.Manager, parsePkg program.ParsePackageFunc) (*program.Program, error) {
 	if len(primarySources) == 0 {
 		return nil, fmt.Errorf("missing primary sources")
 	}
 
-	primaryPkg, err := parse(primarySources)
-	if err != nil {
+	primaryRes := parsePkg(primarySources)
+	if err := primaryRes.Error(); err != nil {
 		return nil, err
 	}
-	if primaryPkg == nil {
+	if primaryRes == nil || primaryRes.Package == nil {
 		return nil, fmt.Errorf("no primary package returned")
 	}
+	primaryPkg := primaryRes.Package
 	setPackageSources(primaryPkg, primarySources)
-	return Package(primaryPkg, srcMgr, parse)
+	return Package(primaryPkg, srcMgr, parsePkg)
 }
 
 func setPackageSources(pkg *program.Package, sources []string) {
@@ -44,7 +45,7 @@ func setPackageSources(pkg *program.Package, sources []string) {
 }
 
 // Package collects all packages starting from a pre-parsed primary package.
-func Package(primaryPkg *program.Package, srcMgr source.Manager, parse program.ParsePackageFunc) (*program.Program, error) {
+func Package(primaryPkg *program.Package, srcMgr source.Manager, parsePkg program.ParsePackageFunc) (*program.Program, error) {
 	if primaryPkg == nil {
 		return nil, fmt.Errorf("missing primary package")
 	}
@@ -77,13 +78,14 @@ func Package(primaryPkg *program.Package, srcMgr source.Manager, parse program.P
 					if err != nil {
 						return fmt.Errorf("failed to load package %s: %w", impPath, err)
 					}
-					depPkg, err := parse(sources)
-					if err != nil {
+					depRes := parsePkg(sources)
+					if err := depRes.Error(); err != nil {
 						return fmt.Errorf("failed to parse package %s: %w", impPath, err)
 					}
-					if depPkg == nil {
+					if depRes == nil || depRes.Package == nil {
 						return fmt.Errorf("package not found: %s", impPath)
 					}
+					depPkg := depRes.Package
 					setPackageSources(depPkg, sources)
 					program.UpdateImports(depPkg, impPath)
 					if depPkg.Path == "" {
@@ -126,18 +128,21 @@ func Package(primaryPkg *program.Package, srcMgr source.Manager, parse program.P
 // package sources in prog (primary and transitive dependencies), preserving
 // each package's declared source file order.
 func ProgramSourceHash(prog *program.Program) string {
-	if prog == nil {
+	if prog == nil || prog.Primary == nil {
 		return ""
 	}
 	sources := make(map[string][]string, len(prog.Dependencies)+1)
+	// Invariant: prog.Primary and prog.Dependencies entries are guaranteed non-nil.
 	addPkg := func(pkg *program.Package) {
-		if pkg == nil || pkg.Path == "" {
-			return
-		}
 		// Invariant: pkg.Files elements are guaranteed non-nil by the parser.
 		fileSources := make([]string, 0, len(pkg.Files))
 		for _, f := range pkg.Files {
-			fileSources = append(fileSources, f.Source)
+			if f.Source != "" {
+				fileSources = append(fileSources, f.Source)
+			}
+		}
+		if len(fileSources) == 0 {
+			return
 		}
 		sources[pkg.Path] = fileSources
 	}
@@ -156,12 +161,12 @@ func ProgramSourceHash(prog *program.Program) string {
 
 // SourceHash collects primaryPkgPath and all its transitive GSL imports from
 // srcMgr and returns their deterministic SHA-256 hex digest.
-func SourceHash(primaryPkgPath string, srcMgr source.Manager, parse program.ParsePackageFunc) (string, error) {
+func SourceHash(primaryPkgPath string, srcMgr source.Manager, parsePkg program.ParsePackageFunc) (string, error) {
 	primary, _, err := srcMgr.Sources(primaryPkgPath)
 	if err != nil {
 		return "", err
 	}
-	prog, err := Program(primary, srcMgr, parse)
+	prog, err := Program(primary, srcMgr, parsePkg)
 	if err != nil {
 		return "", err
 	}

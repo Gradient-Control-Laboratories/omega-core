@@ -16,11 +16,11 @@ refM = m;
 s = sphere(1.0);
 return meshUnion(refM, s);
 `
-	pkg, err := parser.ParsePackage([]string{src})
-	if err != nil {
+	res := parser.ParsePackage([]string{src})
+	if err := res.Error(); err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
 	}
-	prog := &program.Program{Primary: pkg}
+	prog := &program.Program{Primary: res.Package}
 
 	plan, subtrees, err := meshplan.SliceProgram(prog, "leaf-")
 	if err != nil {

@@ -3,7 +3,6 @@ package source
 import (
 	"os"
 	"path/filepath"
-	"sync"
 )
 
 // Manager provides access to package sources and assets.
@@ -16,14 +15,11 @@ type Manager interface {
 	Asset(pkg, filename string) ([]byte, error)
 }
 
-// LocalManager searches local filesystem root directories and embedded packages
+// LocalManager searches local filesystem root directories
 // for package sources and assets.
 type LocalManager struct {
 	// Read-only immutable fields set at construction
 	rootPaths []string
-
-	// Lock for accessing the fields below
-	mu sync.Mutex
 }
 
 var _ Manager = &LocalManager{}
@@ -46,9 +42,6 @@ func (m *LocalManager) Sources(path string) ([]string, []string, error) {
 				return sources, assetNames, nil
 			}
 		}
-	}
-	if sources, ok := embeddedSources(path); ok {
-		return sources, nil, nil
 	}
 	return nil, nil, wrapError(path, ErrPkgNotFound)
 }
