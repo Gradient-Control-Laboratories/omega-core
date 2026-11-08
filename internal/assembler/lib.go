@@ -31,7 +31,7 @@ import (
 )
 
 type options struct {
-	primaryPackage        string
+	parsePkg              program.ParsePackageFunc
 	geometryResolver      topofold.GeometryResolver
 	warpResolver          warpfold.WarpResolver
 	foldWarpFieldToZero   bool
@@ -47,6 +47,14 @@ type options struct {
 // Option configures program assembly.
 type Option func(*options)
 
+// Parser supplies a custom package parser (such as parser.CachingParser.ParsePackage)
+// to use when parsing primary and imported packages during assembly.
+func Parser(parsePkg program.ParsePackageFunc) Option {
+	return func(o *options) {
+		o.parsePkg = parsePkg
+	}
+}
+
 // VariantResult holds the sliced MeshExportPlan, analytical SdfSubtrees, or
 // per-variant compilation error for a single caller-supplied variant return.
 type VariantResult struct {
@@ -57,28 +65,20 @@ type VariantResult struct {
 
 // Result contains the assembled program AST and the assigned import slot table.
 type Result struct {
-	Program            *program.Program
-	DependenciesSha256 string
-	Slots              []meshslots.Import
-	WarpedAssets       []warpfold.WarpedAsset
-	MeshSdfSlots       []*program.MeshSdfSlot
-	GlobalTextures     *program.GlobalTextures
-	Diagnostics        []program.Diagnostic
-	Sliders            []slider.SliderInfo
-	UIControls         []ui.Control
-	Scene              *program.Scene
-	MeshPlan           *meshplan.MeshExportPlan
-	SdfSubtrees        []meshplan.SdfSubtree
-	PreviewBodies      []meshplan.PreviewBody
-	AudioReturns       []meshplan.SdfSubtree
-	Variants           map[string]VariantResult
-}
-
-// PrimaryPackage supplies a primary package path assigned to the assembled program's primary package.
-func PrimaryPackage(pkg string) Option {
-	return func(o *options) {
-		o.primaryPackage = pkg
-	}
+	Program        *program.Program
+	Slots          []meshslots.Import
+	WarpedAssets   []warpfold.WarpedAsset
+	MeshSdfSlots   []*program.MeshSdfSlot
+	GlobalTextures *program.GlobalTextures
+	Diagnostics    []program.Diagnostic
+	Sliders        []slider.SliderInfo
+	UIControls     []ui.Control
+	Scene          *program.Scene
+	MeshPlan       *meshplan.MeshExportPlan
+	SdfSubtrees    []meshplan.SdfSubtree
+	PreviewBodies  []meshplan.PreviewBody
+	AudioReturns   []meshplan.SdfSubtree
+	Variants       map[string]VariantResult
 }
 
 // GeometryResolver supplies a topology geometry resolver for folding STEP topology builtins.
@@ -134,7 +134,7 @@ func ExtractMeshPlan(idPrefix string) Option {
 }
 
 // WithVariants configures the assembler to compile and slice the named
-// alternative top-level return statements (e.g. map[string]string{"part": "return castPart();"})
+// alternative top-level return statements (e.g. map[string]string{"part": "return mainPart();"})
 // alongside the primary package in a single pass.
 func WithVariants(variants map[string]string) Option {
 	return func(o *options) {
@@ -157,6 +157,7 @@ func WithProgress(fn ProgressFunc) Option {
 // assembles them into a single program along with the assigned import slot table.
 func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*Result, error) {
 	o := options{
+		parsePkg:              parser.ParsePackage,
 		enableSlotFold:        true,
 		enableDeadcodeRemoval: true,
 	}
@@ -180,17 +181,15 @@ func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*
 	// Parse the primary package and transitively collect imported packages into a Program AST,
 	// then resolve and link all symbol references across package boundaries.
 	report("Resolving package imports", 1)
-	prog, err := collect.Program(primarySources, srcMgr, parser.ParsePackage)
+	prog, err := collect.Program(primarySources, srcMgr, o.parsePkg)
 	if err != nil {
 		return nil, err
 	}
-	prog.Primary.Path = o.primaryPackage
-	dependenciesSha256 := collect.ProgramSourceHash(prog)
 	rp, err := partitionReturns(prog, primarySources, o.variants, o.enableDeadcodeRemoval)
 	if err != nil {
 		return nil, err
 	}
-	assemblyDiags, err := link.ReferencesAndDiagnostics(prog, srcMgr, parser.ParsePackage)
+	assemblyDiags, err := link.ReferencesAndDiagnostics(prog, srcMgr, o.parsePkg)
 	if err != nil {
 		return nil, err
 	}
@@ -201,10 +200,10 @@ func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*
 	if err = property.CarryReturnProperties(prog); err != nil {
 		return nil, err
 	}
-	if err = link.References(prog, srcMgr, parser.ParsePackage); err != nil {
+	if err = link.References(prog, srcMgr, o.parsePkg); err != nil {
 		return nil, err
 	}
-	rp.AttachVariants(prog, srcMgr, o.variants)
+	rp.AttachVariants(prog, srcMgr, o.variants, o.parsePkg)
 
 	// 2. Closure & Higher-Order Function Transformation
 	// Hoist anonymous closures to package level and convert higher-order function patterns
@@ -213,7 +212,7 @@ func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*
 	if err = closure.Transform(prog); err != nil {
 		return nil, err
 	}
-	if err = link.References(prog, srcMgr, parser.ParsePackage); err != nil {
+	if err = link.References(prog, srcMgr, o.parsePkg); err != nil {
 		return nil, err
 	}
 
@@ -253,7 +252,7 @@ func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*
 	if err != nil {
 		return nil, err
 	}
-	if err = link.References(prog, srcMgr, parser.ParsePackage); err != nil {
+	if err = link.References(prog, srcMgr, o.parsePkg); err != nil {
 		return nil, err
 	}
 	if err = types.Analyze(prog); err != nil {
@@ -283,7 +282,7 @@ func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*
 		return nil, err
 	}
 	if preFoldMod {
-		if err = link.References(prog, srcMgr, parser.ParsePackage); err != nil {
+		if err = link.References(prog, srcMgr, o.parsePkg); err != nil {
 			return nil, err
 		}
 		if err = types.Analyze(prog); err != nil {
@@ -298,7 +297,7 @@ func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*
 	if err = lower.Transform(prog); err != nil {
 		return nil, err
 	}
-	if err = link.References(prog, srcMgr, parser.ParsePackage); err != nil {
+	if err = link.References(prog, srcMgr, o.parsePkg); err != nil {
 		return nil, err
 	}
 	if err = types.Analyze(prog); err != nil {
@@ -307,7 +306,7 @@ func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*
 	if _, err = unroll.Transform(prog); err != nil {
 		return nil, err
 	}
-	if err = link.References(prog, srcMgr, parser.ParsePackage); err != nil {
+	if err = link.References(prog, srcMgr, o.parsePkg); err != nil {
 		return nil, err
 	}
 	if err = types.Analyze(prog); err != nil {
@@ -384,15 +383,14 @@ func Assemble(primarySources []string, srcMgr source.Manager, opts ...Option) (*
 	prog.GlobalTextures = globalTex
 
 	result := &Result{
-		Program:            prog,
-		DependenciesSha256: dependenciesSha256,
-		Slots:              importSlots,
-		WarpedAssets:       warpedAssets,
-		MeshSdfSlots:       sdfSlots,
-		GlobalTextures:     globalTex,
-		Diagnostics:        assemblyDiags,
-		AudioReturns:       audioReturns,
-		Variants:           variants,
+		Program:        prog,
+		Slots:          importSlots,
+		WarpedAssets:   warpedAssets,
+		MeshSdfSlots:   sdfSlots,
+		GlobalTextures: globalTex,
+		Diagnostics:    assemblyDiags,
+		AudioReturns:   audioReturns,
+		Variants:       variants,
 	}
 
 	if o.extractMeshPlan {
@@ -541,7 +539,7 @@ func optimizeProgram(prog *program.Program, o *options, srcMgr source.Manager) (
 		}
 
 		// 2. Re-link and type-check before constant folding
-		if err = link.References(prog, srcMgr, parser.ParsePackage); err != nil {
+		if err = link.References(prog, srcMgr, o.parsePkg); err != nil {
 			return nil, err
 		}
 		if err = types.Analyze(prog); err != nil {
@@ -568,7 +566,7 @@ func optimizeProgram(prog *program.Program, o *options, srcMgr source.Manager) (
 		}
 
 		// 4. Re-link and type-check before lowering
-		if err = link.References(prog, srcMgr, parser.ParsePackage); err != nil {
+		if err = link.References(prog, srcMgr, o.parsePkg); err != nil {
 			return nil, err
 		}
 		if err = types.Analyze(prog); err != nil {
@@ -579,7 +577,7 @@ func optimizeProgram(prog *program.Program, o *options, srcMgr source.Manager) (
 		if err = lower.Transform(prog); err != nil {
 			return nil, err
 		}
-		if err = link.References(prog, srcMgr, parser.ParsePackage); err != nil {
+		if err = link.References(prog, srcMgr, o.parsePkg); err != nil {
 			return nil, err
 		}
 		if err = types.Analyze(prog); err != nil {
@@ -592,7 +590,7 @@ func optimizeProgram(prog *program.Program, o *options, srcMgr source.Manager) (
 		if modUnroll {
 			modifiedAny = true
 		}
-		if err = link.References(prog, srcMgr, parser.ParsePackage); err != nil {
+		if err = link.References(prog, srcMgr, o.parsePkg); err != nil {
 			return nil, err
 		}
 		if err = types.Analyze(prog); err != nil {
@@ -741,10 +739,11 @@ func DependenciesSha256(pkgPath string, srcMgr source.Manager) (string, error) {
 // expressions/returns, and call arguments while preserving the original AST
 // structure for template comparisons and bounds extraction.
 func AnalyzePackage(sourceText string, getImport program.GetImportFunc) (*program.Package, error) {
-	pkg, err := parser.ParsePackage([]string{sourceText})
-	if err != nil {
+	res := parser.ParsePackage([]string{sourceText})
+	if err := res.Error(); err != nil {
 		return nil, err
 	}
+	pkg := res.Package
 	stampPackageConstants(pkg, getImport)
 	return pkg, nil
 }

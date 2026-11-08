@@ -3,7 +3,7 @@ package tape
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/backend/internal/fidget"
+	"gradientcontrol.com/omega/core/internal/fidget"
 	"gradientcontrol.com/omega/core/program"
 )
 

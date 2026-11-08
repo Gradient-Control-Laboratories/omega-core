@@ -1,7 +1,6 @@
 package collect
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -9,9 +8,12 @@ import (
 	"gradientcontrol.com/omega/core/program"
 )
 
-func parseMockPackage(sources []string) (*program.Package, error) {
+func parseMockPackage(sources []string) *program.ParseResult {
 	if len(sources) == 0 {
-		return nil, fmt.Errorf("empty sources")
+		return &program.ParseResult{
+			Package: &program.Package{Files: []*program.PackageFile{{}}},
+			Errors:  []program.Error{{LineNum: 1, Column: 1, Message: "empty sources"}},
+		}
 	}
 	files := make([]*program.PackageFile, 0, len(sources))
 	for _, src := range sources {
@@ -33,7 +35,7 @@ func parseMockPackage(sources []string) (*program.Package, error) {
 			},
 		})
 	}
-	return &program.Package{Files: files}, nil
+	return &program.ParseResult{Package: &program.Package{Files: files}}
 }
 
 func TestCollect_Ordering(t *testing.T) {
@@ -97,48 +99,6 @@ func TestCollect_Ordering(t *testing.T) {
 	}
 	if idx2 >= idx3 {
 		t.Errorf("expected dep2 to be earlier than dep3, but index(dep2)=%d >= index(dep3)=%d", idx2, idx3)
-	}
-}
-
-func TestCollect_NamedPrimaryPackage(t *testing.T) {
-	depSource := `return 1.0;`
-	primarySource := `import "dep1"; return 42.0;`
-
-	srcMgr := &source.MockManager{
-		PkgSources: map[string][]string{
-			"dep1": {depSource},
-		},
-	}
-
-	parseNamedMock := func(sources []string) (*program.Package, error) {
-		pkg, err := parseMockPackage(sources)
-		if err != nil {
-			return nil, err
-		}
-		if sources[0] == primarySource {
-			pkg.Path = "custom/main_pkg"
-		}
-		return pkg, nil
-	}
-
-	prog, err := Program([]string{primarySource}, srcMgr, parseNamedMock)
-	if err != nil {
-		t.Fatalf("Collect failed: %v", err)
-	}
-
-	if prog.Primary == nil || prog.Primary.Path != "custom/main_pkg" {
-		t.Fatalf("expected primary package path 'custom/main_pkg', got %q", prog.Primary.GetPath())
-	}
-
-	foundDep1 := false
-	for _, dep := range prog.Dependencies {
-		if dep.Path == "dep1" {
-			foundDep1 = true
-			break
-		}
-	}
-	if !foundDep1 {
-		t.Fatalf("expected dependency 'dep1' in %v", prog.Dependencies)
 	}
 }
 

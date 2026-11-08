@@ -5,14 +5,13 @@ import (
 	"math"
 
 	"gradientcontrol.com/omega/core/program"
-	"gradientcontrol.com/omega/core/program/scene"
 )
 
 // ComputeSpinodoidBounds computes the 6-element [minX, minY, minZ, maxX, maxY, maxZ]
 // driver-baking domain for a program. Imported mesh bounding boxes and their
 // transformed 8-corner placements (padded by 5%) take precedence; otherwise an
 // explicit positive Scene.Size supplies [-extent, -extent, -extent, extent, extent, extent]
-// via scene.ResolveWorldExtent. Headerless analytical programs return nil, nil
+// via s.ResolveWorldExtent. Headerless analytical programs return nil, nil
 // so they preserve their legacy periodic domain.
 func ComputeSpinodoidBounds(s *program.Scene, meshBboxes map[int][6]float64, decls []MeshDecl) ([]float64, error) {
 	lo := [3]float64{math.Inf(1), math.Inf(1), math.Inf(1)}
@@ -69,7 +68,7 @@ func ComputeSpinodoidBounds(s *program.Scene, meshBboxes map[int][6]float64, dec
 		if s == nil || !(s.Size > 0) {
 			return nil, nil
 		}
-		extent := scene.ResolveWorldExtent(s, 0)
+		extent := s.ResolveWorldExtent(0)
 		lo = [3]float64{-extent, -extent, -extent}
 		hi = [3]float64{extent, extent, extent}
 	}

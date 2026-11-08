@@ -2,5 +2,5 @@ import "pkg2";
 import "pkg1";
 
 s = pkg1.sphere(pkg1.somePi);
-t = pkg2.castArea(pkg2.castSize);
+t = pkg2.partArea(pkg2.partSize);
 return s, t;

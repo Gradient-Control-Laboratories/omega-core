@@ -9,7 +9,7 @@ import (
 // exactly: kernels jittered inside the cells of its grid, its untapered
 // envelope, its SplitMix64 hash, and its drivers read once at every kernel
 // centre. A point agrees with hodge's Python to rounding (hodge_parity_test),
-// so a part baked from this is a part hodge or elasticam can rebuild from the
+// so a part baked from this is a part hodge can rebuild from the
 // same arguments — which is the whole reason to pay for it. The lattice form
 // beside it (kernels.go) is the same model, cheaper, and a different
 // realization.

@@ -11,7 +11,7 @@ import (
 // The warp field is a single global texture holding a simulated displacement,
 // threaded into every shader function that (transitively) calls warpField.
 // Mirrors the noise tile rather than the bvhSdf/vdbSdf slot machinery: those
-// are per-mesh-asset, whereas a casting simulation produces one displacement
+// are per-mesh-asset, whereas a simulation produces one displacement
 // field for the whole scene, so there is nothing to key slots on.
 //
 // Unlike the noise tile it needs a sampler (the field is interpolated, not
@@ -97,8 +97,8 @@ const warpSampleWGSL = `fn gsl_warpSample(pw: vec3<f32>` + warpParams + `) -> ve
 // not sheared; decoding is therefore (texel*2 - 1) * range per component.
 //
 // Outside the baked box the result is forced to zero rather than clamped to the
-// edge value. Clamping would drag everything the field does not cover — gates,
-// sprue, the grid — along with the boundary displacement, which reads as the
+// edge value. Clamping would drag everything the field does not cover — supports,
+// the grid — along with the boundary displacement, which reads as the
 // whole scene sliding.
 type WarpFieldExpr struct {
 	wgsl.Expression

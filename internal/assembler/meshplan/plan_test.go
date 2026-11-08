@@ -98,12 +98,12 @@ func TestSliceProgram_Empty(t *testing.T) {
 }
 
 func TestSliceProgram_PureSDF(t *testing.T) {
-	pkg, err := parser.ParsePackage([]string{"return sphere(1.0);"})
-	if err != nil {
+	res := parser.ParsePackage([]string{"return sphere(1.0);"})
+	if err := res.Error(); err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
 	}
 	prog := &program.Program{
-		Primary:      pkg,
+		Primary:      res.Package,
 		Dependencies: []*program.Package{{VersionMajor: 1}},
 	}
 
@@ -129,11 +129,11 @@ func TestSliceProgram_PureSDF(t *testing.T) {
 }
 
 func TestSliceProgram_DiscreteMesh(t *testing.T) {
-	pkg, err := parser.ParsePackage([]string{"return mesh(0, [10, 20, 30]);"})
-	if err != nil {
+	res := parser.ParsePackage([]string{"return mesh(0, [10, 20, 30]);"})
+	if err := res.Error(); err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
 	}
-	prog := &program.Program{Primary: pkg}
+	prog := &program.Program{Primary: res.Package}
 
 	plan, subtrees, err := meshplan.SliceProgram(prog, "leaf-")
 	if err != nil {
@@ -154,11 +154,11 @@ func TestSliceProgram_DiscreteMesh(t *testing.T) {
 }
 
 func TestSliceProgram_HybridCSG(t *testing.T) {
-	pkg, err := parser.ParsePackage([]string{"return meshUnion(mesh(0), sphere(1.0));"})
-	if err != nil {
+	res := parser.ParsePackage([]string{"return meshUnion(mesh(0), sphere(1.0));"})
+	if err := res.Error(); err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
 	}
-	prog := &program.Program{Primary: pkg}
+	prog := &program.Program{Primary: res.Package}
 
 	plan, subtrees, err := meshplan.SliceProgram(prog, "leaf-")
 	if err != nil {
@@ -182,11 +182,11 @@ func TestSliceProgram_HybridCSG(t *testing.T) {
 }
 
 func TestSliceProgram_AdjacentSDFMerge(t *testing.T) {
-	pkg, err := parser.ParsePackage([]string{"return meshUnion(sphere(1.0), cylinder(2.0));"})
-	if err != nil {
+	res := parser.ParsePackage([]string{"return meshUnion(sphere(1.0), cylinder(2.0));"})
+	if err := res.Error(); err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
 	}
-	prog := &program.Program{Primary: pkg}
+	prog := &program.Program{Primary: res.Package}
 
 	plan, subtrees, err := meshplan.SliceProgram(prog, "leaf-")
 	if err != nil {

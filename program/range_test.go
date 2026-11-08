@@ -72,12 +72,12 @@ offset = scale + 1.0;
 staticVal = 42.0;
 return offset;
 `
-	pkg, err := parser.ParsePackage([]string{src})
-	if err != nil {
+	res := parser.ParsePackage([]string{src})
+	if err := res.Error(); err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
 	}
 
-	sliderVars := program.ComputeSliderVars(pkg)
+	sliderVars := program.ComputeSliderVars(res.Package)
 	if !sliderVars["radius"] {
 		t.Errorf("expected radius to be in sliderVars")
 	}

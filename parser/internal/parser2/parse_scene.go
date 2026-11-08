@@ -6,7 +6,34 @@ import (
 
 	participle "github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
+
+	"gradientcontrol.com/omega/core/program"
 )
+
+// newScene constructs and validates a new Scene protobuf message.
+// If grid is nil, grid spacing defaults to size / 10.0.
+func newScene(size float64, grid *float64, start, end *program.Location) (*program.Scene, error) {
+	if size <= 0 {
+		return nil, fmt.Errorf("scene size must be greater than zero, got %v", size)
+	}
+
+	var g float64
+	if grid != nil {
+		if *grid <= 0 {
+			return nil, fmt.Errorf("scene grid spacing must be greater than zero, got %v", *grid)
+		}
+		g = *grid
+	} else {
+		g = size / 10.0
+	}
+
+	return &program.Scene{
+		Start: start,
+		End:   end,
+		Size:  size,
+		Grid:  g,
+	}, nil
+}
 
 func (d *TopLevel) parseScene(lex *lexer.PeekingLexer) error {
 	peek := lex.Peek()

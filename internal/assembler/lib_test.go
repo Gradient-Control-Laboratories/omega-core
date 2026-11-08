@@ -11,10 +11,9 @@ import (
 	"gradientcontrol.com/omega/core/internal/assembler/topofold"
 	"gradientcontrol.com/omega/core/internal/assembler/variation"
 	"gradientcontrol.com/omega/core/internal/assembler/warpfold"
-	"gradientcontrol.com/omega/core/internal/eval"
+	"gradientcontrol.com/omega/core/internal/collect"
 	"gradientcontrol.com/omega/core/internal/source"
 	src_test "gradientcontrol.com/omega/core/internal/srctest"
-	"gradientcontrol.com/omega/core/internal/types"
 	"gradientcontrol.com/omega/core/program"
 )
 
@@ -38,33 +37,6 @@ import "vector";
 return length(zero + dirX + dirY + dirZ + vector.zero);`}, pkgMgr)
 	if err != nil {
 		t.Fatalf("legacy omega constants: %v", err)
-	}
-}
-
-func TestAssemble_NamedPrimaryPackage(t *testing.T) {
-	pkgMgr := source.NewLocalManager("../../stdlib")
-	src := `
-import "vector";
-addOne(x) { return x + 1.0; }
-a = addOne(vector.zero.x);
-return a;
-`
-	res, err := Assemble([]string{src}, pkgMgr)
-	if err != nil {
-		t.Fatalf("assemble failed: %v", err)
-	}
-
-	// Explicitly assign primary package path and run reference linking, types, and folding
-	res.Program.Primary.Path = "test/root/pkg"
-	if err := types.Analyze(res.Program); err != nil {
-		t.Fatalf("types.Analyze failed with named primary path: %v", err)
-	}
-	if _, err := eval.Fold(res.Program, nil); err != nil {
-		t.Fatalf("eval.Fold failed with named primary path: %v", err)
-	}
-
-	if res.Program.Primary.Path != "test/root/pkg" {
-		t.Errorf("expected primary path 'test/root/pkg', got %q", res.Program.Primary.Path)
 	}
 }
 
@@ -233,16 +205,7 @@ func (m *mockWarpResolver) ResolveWarpedSlot(meshSlot int, pkgDir, warpPath stri
 func TestAssembleOptions(t *testing.T) {
 	pkgMgr := source.NewLocalManager("../../stdlib")
 
-	// 1. Test PrimaryPackage option
-	res, err := Assemble([]string{"return 123.0;"}, pkgMgr, PrimaryPackage("trees/pkg1"))
-	if err != nil {
-		t.Fatalf("PrimaryPackage option failed: %v", err)
-	}
-	if res == nil || res.Program == nil || res.Program.Primary == nil || res.Program.Primary.Path != "trees/pkg1" {
-		t.Fatalf("expected program with primary package path 'trees/pkg1', got: %v", res)
-	}
-
-	// 2. Test GeometryResolver option
+	// 1. Test GeometryResolver option
 	geomResolver := &mockGeometryResolver{volume: 100.0}
 	res2, err := Assemble([]string{"return 42.0;"}, pkgMgr, GeometryResolver(geomResolver))
 	if err != nil {
@@ -252,7 +215,7 @@ func TestAssembleOptions(t *testing.T) {
 		t.Fatalf("expected non-nil program")
 	}
 
-	// 3. Test WarpResolver option
+	// 2. Test WarpResolver option
 	warpRes := &mockWarpResolver{slot: 7}
 	res3, err := Assemble([]string{"return 42.0;"}, pkgMgr, WarpResolver(warpRes))
 	if err != nil {
@@ -262,7 +225,7 @@ func TestAssembleOptions(t *testing.T) {
 		t.Fatalf("expected non-nil program")
 	}
 
-	// 4. Test DisableMeshSlotFolding option
+	// 3. Test DisableMeshSlotFolding option
 	res4, err := Assemble([]string{"return 42.0;"}, pkgMgr, DisableMeshSlotFolding())
 	if err != nil {
 		t.Fatalf("DisableMeshSlotFolding option failed: %v", err)
@@ -271,7 +234,7 @@ func TestAssembleOptions(t *testing.T) {
 		t.Fatalf("expected non-nil program")
 	}
 
-	// 5. Test DisableDeadcodeRemoval option
+	// 4. Test DisableDeadcodeRemoval option
 	srcWithDead := "unused() { return 100.0; }\nreturn 42.0;\n"
 	res5, err := Assemble([]string{srcWithDead}, pkgMgr, DisableDeadcodeRemoval())
 	if err != nil {
@@ -363,41 +326,15 @@ func TestAssembleTextGlyphs(t *testing.T) {
 	}
 }
 
-func TestAssemble_PrimaryPackageMeshSlotFolding(t *testing.T) {
-	pkgMgr := source.NewLocalManager("../../stdlib")
-	src := `
-importId = importStep "A356-H01.STEP";
-partXf = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]];
-msh = mesh(importId, partXf);
-return msh;
-`
-	res, err := Assemble([]string{src}, pkgMgr, PrimaryPackage("branches/A356_H01"))
-	if err != nil {
-		t.Fatalf("Assemble failed: %v", err)
-	}
-	if res.Program.Primary == nil || res.Program.Primary.Path != "branches/A356_H01" {
-		t.Fatalf("expected primary package path 'branches/A356_H01', got: %v", res.Program)
-	}
-
-	// Verify importStep expression was folded to a constant value
-	for _, a := range res.Program.Primary.Files[0].Assignments {
-		if len(a.Variables) == 1 && a.Variables[0].Name == "importId" {
-			if _, ok := a.Expression.T.(*program.Operand_Value); !ok {
-				t.Fatalf("expected importId to fold to Operand_Value, got: %s", a.Expression.PrettyPrint(0))
-			}
-		}
-	}
-}
-
 func TestAssembleWithSlots(t *testing.T) {
 	pkgMgr := source.NewLocalManager("../../stdlib")
 	src := `
-importId = importStep "A356-H01.STEP";
+importId = importStep "PART-A.STEP";
 partXf = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]];
 msh = mesh(importId, partXf);
 return msh;
 `
-	res, err := Assemble([]string{src}, pkgMgr, PrimaryPackage("branches/A356_H01"))
+	res, err := Assemble([]string{src}, pkgMgr)
 	if err != nil {
 		t.Fatalf("Assemble failed: %v", err)
 	}
@@ -407,68 +344,17 @@ return msh;
 	if len(res.Slots) != 1 {
 		t.Fatalf("expected 1 import slot, got %d", len(res.Slots))
 	}
-	if res.Slots[0].Slot != 0 || res.Slots[0].Path != "A356-H01.STEP" {
+	if res.Slots[0].Slot != 0 || res.Slots[0].Path != "PART-A.STEP" {
 		t.Errorf("unexpected slot entry: %+v", res.Slots[0])
 	}
-}
 
-func TestAssembleTreesManifold(t *testing.T) {
-	commonRoot := "../../stdlib"
-	docRoot := "../../../../documents"
-	if _, err := os.Stat(docRoot); os.IsNotExist(err) {
-		t.Skipf("skipping: %s not present", docRoot)
-	}
-	src, err := os.ReadFile(docRoot + "/trees/manifold/manifold.gsl")
-	if err != nil {
-		t.Fatalf("read manifold: %v", err)
-	}
-	srcMgr := source.NewLocalManager(commonRoot, docRoot)
-	res, err := Assemble([]string{string(src)}, srcMgr)
-	if err != nil {
-		t.Fatalf("Assemble trees/manifold failed: %+v", err)
-	}
-	if res == nil || res.Program == nil {
-		t.Fatalf("expected non-nil program")
-	}
-}
-
-func TestAssembleS304_C02(t *testing.T) {
-	commonRoot := "../../stdlib"
-	docRoot := "../../../../documents"
-	if _, err := os.Stat(docRoot); os.IsNotExist(err) {
-		t.Skipf("skipping: %s not present", docRoot)
-	}
-	src, err := os.ReadFile(docRoot + "/branches/S304_C02/S304_C02.gsl")
-	if err != nil {
-		t.Fatalf("read S304_C02: %v", err)
-	}
-	srcMgr := source.NewLocalManager(commonRoot, docRoot)
-	res, err := Assemble([]string{string(src)}, srcMgr, PrimaryPackage("branches/S304_C02"))
-	if err != nil {
-		t.Fatalf("Assemble branches/S304_C02 failed: %+v", err)
-	}
-	if err := types.Analyze(res.Program); err != nil {
-		t.Fatalf("types.Analyze failed: %+v", err)
-	}
-}
-
-func TestAssembleS304_T001(t *testing.T) {
-	commonRoot := "../../stdlib"
-	docRoot := "../../../../documents"
-	if _, err := os.Stat(docRoot); os.IsNotExist(err) {
-		t.Skipf("skipping: %s not present", docRoot)
-	}
-	src, err := os.ReadFile(docRoot + "/trees/S304-T001/S304-T001.gsl")
-	if err != nil {
-		t.Fatalf("read S304-T001: %v", err)
-	}
-	srcMgr := source.NewLocalManager(commonRoot, docRoot)
-	res, err := Assemble([]string{string(src)}, srcMgr, PrimaryPackage("trees/S304-T001"))
-	if err != nil {
-		t.Fatalf("Assemble trees/S304-T001 failed: %+v", err)
-	}
-	if err := types.Analyze(res.Program); err != nil {
-		t.Fatalf("types.Analyze failed: %+v", err)
+	// Verify importStep expression was folded to a constant value
+	for _, a := range res.Program.Primary.Files[0].Assignments {
+		if len(a.Variables) == 1 && a.Variables[0].Name == "importId" {
+			if _, ok := a.Expression.T.(*program.Operand_Value); !ok {
+				t.Fatalf("expected importId to fold to Operand_Value, got: %s", a.Expression.PrettyPrint(0))
+			}
+		}
 	}
 }
 
@@ -805,12 +691,12 @@ makeMesh(id) {
 	partXf = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]];
 	return mesh(id, partXf);
 }
-id1 = importStep "A356-H01.STEP";
+id1 = importStep "PART-A.STEP";
 id2 = importStep "B123-H02.STEP";
 ids = [id1] + [id2];
 return map(makeMesh, ids);
 `
-	res, err := Assemble([]string{src}, pkgMgr, PrimaryPackage("branches/A356_H01"))
+	res, err := Assemble([]string{src}, pkgMgr)
 	if err != nil {
 		t.Fatalf("Assemble failed: %v", err)
 	}
@@ -1091,15 +977,14 @@ return meshWarped(0, 0, 1.0), remap(s, p + warpField(p));
 	res, err := Assemble(
 		[]string{src},
 		pkgMgr,
-		PrimaryPackage("pkg1"),
 		WarpResolver(warpRes),
 		ExtractMeshPlan("leaf-"),
 	)
 	if err != nil {
 		t.Fatalf("Assemble failed: %v", err)
 	}
-	if len(res.WarpedAssets) != 1 || res.WarpedAssets[0].DerivedSlot != 1048599 || res.WarpedAssets[0].WarpDir != "pkg1" {
-		t.Fatalf("res.WarpedAssets = %+v, want 1 entry with DerivedSlot=1048599 and WarpDir=pkg1", res.WarpedAssets)
+	if len(res.WarpedAssets) != 1 || res.WarpedAssets[0].DerivedSlot != 1048599 || res.WarpedAssets[0].WarpDir != "" {
+		t.Fatalf("res.WarpedAssets = %+v, want 1 entry with DerivedSlot=1048599 and empty WarpDir", res.WarpedAssets)
 	}
 	if len(res.MeshSdfSlots) != 1 || res.MeshSdfSlots[0].AssetIndex != 1048599 {
 		t.Fatalf("res.MeshSdfSlots = %+v, want AssetIndex=1048599", res.MeshSdfSlots)
@@ -1112,7 +997,6 @@ return meshWarped(0, 0, 1.0), remap(s, p + warpField(p));
 	resZero, err := Assemble(
 		[]string{src},
 		pkgMgr,
-		PrimaryPackage("pkg1"),
 		WarpResolver(warpRes),
 		FoldWarpFieldToZero(),
 		ExtractMeshPlan("leaf-"),
@@ -1436,7 +1320,7 @@ func TestAssemble_WithVariants(t *testing.T) {
 		src := `import . "omega";
 gates = sphere([0, 0, -10], 5);
 unusedVar = 999.0;
-castPart() {
+mainPart() {
   helper = sphere(10);
   return helper;
 }
@@ -1445,8 +1329,8 @@ s.color = [1, 0, 0];
 return s, audio(sin(time));
 `
 		variants := map[string]string{
-			"part":   "return castPart();",
-			"branch": "return min(gates, castPart());",
+			"part":   "return mainPart();",
+			"branch": "return min(gates, mainPart());",
 		}
 		res, err := Assemble([]string{src}, pkgMgr, ExtractUI(), ExtractMeshPlan("leaf-"), WithVariants(variants))
 		if err != nil {
@@ -1496,7 +1380,7 @@ return s, audio(sin(time));
 
 	t.Run("library_module_with_zero_primary_returns", func(t *testing.T) {
 		src := `import . "omega";
-castPart() {
+mainPart() {
   return sphere(10);
 }
 `
@@ -1505,7 +1389,7 @@ castPart() {
 		}
 
 		res, err := Assemble([]string{src}, pkgMgr, ExtractMeshPlan("leaf-"), WithVariants(map[string]string{
-			"part": "return castPart();",
+			"part": "return mainPart();",
 		}))
 		if err != nil {
 			t.Fatalf("Assemble return-less module with variants failed: %v", err)
@@ -1551,13 +1435,13 @@ return mesh(importId, partXf);
 
 	t.Run("per_variant_errors_isolated", func(t *testing.T) {
 		src := `import . "omega";
-castParts = sphere(10);
+mainParts = sphere(10);
 solidOutside = sphere(12);
-return castParts, solidOutside;
+return mainParts, solidOutside;
 `
 		res, err := Assemble([]string{src}, pkgMgr, ExtractMeshPlan("leaf-"), WithVariants(map[string]string{
-			"metal":        "return min(castParts, solidOutside);",
-			"printed":      "return max(min(castParts, solidOutside), -latticedInside);",
+			"metal":        "return min(mainParts, solidOutside);",
+			"printed":      "return max(min(mainParts, solidOutside), -latticedInside);",
 			"badSyntax":    "return (",
 			"noReturn":     "x = 1;",
 			"audioVariant": "return audio(1.0);",
@@ -1585,31 +1469,33 @@ return castParts, solidOutside;
 }
 
 func TestDependenciesSha256AndAnalyzePackage(t *testing.T) {
-	t.Run("DependenciesSha256MatchesAssembleResult", func(t *testing.T) {
+	t.Run("DependenciesSha256MatchesAssembledProgramSourceHash", func(t *testing.T) {
 		pkgMgr := &source.MockManager{
 			PkgSources: map[string][]string{
-				"trees/test":    {`import branch "branches/part"; return branch.solid();`},
-				"branches/part": {`import shared "pkg/shared"; solid() { return shared.solid(); }`},
-				"pkg/shared":    {`solid() { return sphere(2); }`},
+				"assemblies/test": {`import part "parts/part"; return part.solid();`},
+				"parts/part":      {`import shared "common/shared"; solid() { return shared.solid(); }`},
+				"common/shared":   {`solid() { return sphere(2); }`},
 			},
 		}
-		res, err := Assemble(pkgMgr.PkgSources["trees/test"], pkgMgr, PrimaryPackage("trees/test"))
+		res, err := Assemble(pkgMgr.PkgSources["assemblies/test"], pkgMgr)
 		if err != nil {
 			t.Fatalf("Assemble failed: %v", err)
 		}
-		if len(res.DependenciesSha256) != 64 {
-			t.Fatalf("expected 64-char DependenciesSha256, got %q", res.DependenciesSha256)
+		res.Program.Primary.Path = "assemblies/test"
+		assembledHash := collect.ProgramSourceHash(res.Program)
+		if len(assembledHash) != 64 {
+			t.Fatalf("expected 64-char ProgramSourceHash, got %q", assembledHash)
 		}
-		directHash, err := DependenciesSha256("trees/test", pkgMgr)
+		directHash, err := DependenciesSha256("assemblies/test", pkgMgr)
 		if err != nil {
 			t.Fatalf("DependenciesSha256 failed: %v", err)
 		}
-		if directHash != res.DependenciesSha256 {
-			t.Fatalf("DependenciesSha256 = %q, want %q", directHash, res.DependenciesSha256)
+		if directHash != assembledHash {
+			t.Fatalf("DependenciesSha256 = %q, want %q", directHash, assembledHash)
 		}
 
-		pkgMgr.PkgSources["pkg/shared"] = []string{`solid() { return sphere(5); }`}
-		changedHash, err := DependenciesSha256("trees/test", pkgMgr)
+		pkgMgr.PkgSources["common/shared"] = []string{`solid() { return sphere(5); }`}
+		changedHash, err := DependenciesSha256("assemblies/test", pkgMgr)
 		if err != nil {
 			t.Fatalf("DependenciesSha256 after edit failed: %v", err)
 		}
@@ -1619,7 +1505,7 @@ func TestDependenciesSha256AndAnalyzePackage(t *testing.T) {
 	})
 
 	t.Run("AnalyzePackageStampsConstantsAndPreservesUninlinedStructure", func(t *testing.T) {
-		src := `import "pkg/gate";
+		src := `import "mechanical";
 partScale = 1.018;
 verticalSpan = 100;
 sprueLength = verticalSpan * 1.5;
@@ -1628,7 +1514,7 @@ branch() {
   bend = uiTransform([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [15, 25, 35, 1]]);
   end = uiTransform([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [20, 30, 40, 1]]);
   controls = uiSpline([start, bend, end]);
-  manualGate1 = gate.splineSection(controls[0], controls[1], controls[2], 1, 6, 3, 2);
+  manualGate1 = mechanical.splineSection(controls[0], controls[1], controls[2], 1, 6, 3, 2);
   gates = manualGate1;
   return gates;
 }

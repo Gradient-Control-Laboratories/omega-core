@@ -217,3 +217,13 @@ func TestEqualModuloLocations(t *testing.T) {
 	assert.False(t, EqualModuloLocations(nil, b))
 	assert.False(t, EqualModuloLocations(nil, nil))
 }
+
+func TestSceneResolveWorldExtent(t *testing.T) {
+	s := &Scene{Size: 40, Grid: 4}
+	assert.Equal(t, 20.0, s.ResolveWorldExtent(100))
+
+	var nilScene *Scene
+	assert.Equal(t, 50.0, nilScene.ResolveWorldExtent(50.0))
+	assert.Equal(t, 10.0, nilScene.ResolveWorldExtent(0))
+}
+

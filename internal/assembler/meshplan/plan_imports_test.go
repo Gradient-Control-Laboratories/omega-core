@@ -10,19 +10,21 @@ import (
 )
 
 func TestSliceProgram_ImportedConstantsInMeshArgs(t *testing.T) {
-	importedPkg, err := parser.ParsePackage([]string{"myConst = 42.0;"})
-	if err != nil {
+	importedRes := parser.ParsePackage([]string{"myConst = 42.0;"})
+	if err := importedRes.Error(); err != nil {
 		t.Fatalf("ParsePackage imported failed: %v", err)
 	}
+	importedPkg := importedRes.Package
 	importedPkg.Path = "mathMod"
 
-	primaryPkg, err := parser.ParsePackage([]string{`
+	primaryRes := parser.ParsePackage([]string{`
 import "mathMod";
 return mesh(0, [mathMod.myConst, 0, 0]);
 `})
-	if err != nil {
+	if err := primaryRes.Error(); err != nil {
 		t.Fatalf("ParsePackage primary failed: %v", err)
 	}
+	primaryPkg := primaryRes.Package
 
 	prog := &program.Program{
 		Primary:      primaryPkg,
