@@ -1,0 +1,571 @@
+
+// Masonry Materials (material/bulk/masonry)
+//
+// Bricks, blocks and tiles with their joints, and the surfaces poured,
+// laid and trowelled: brick and block in their bonds under raked mortar,
+// glazed subway, hexagonal, penny and herringbone tile in grout, oak
+// parquet, terrazzo, concrete as its form or its grinder left it, plaster,
+// asphalt. Each is a bulk material, nothing beneath it, the coursed ones
+// on a face's datums, and returns material, color, height and slope, as
+// the coats do; a joint, a step or a stone rides in the material as
+// relief. The coursed ones sit on texture's tessellations. A size here is
+// the unit's own, the joint added to it for the pitch, as the trade gives
+// them.
+//
+// Doc convention follows builtin/base.gsl: `///` lines are public docs.
+
+import "material";
+import "texture";
+import "noise";
+import "color";
+import "material/coat/coating";
+import "material/bulk/wood";
+
+// A face's plane coordinates from its datums.
+faceX(origin, normal, along) {
+  n = normalize(normal);
+  u = normalize(along - n * dot(along, n));
+  return dot(p - origin, u);
+}
+
+faceY(origin, normal, along) {
+  n = normalize(normal);
+  u = normalize(along - n * dot(along, n));
+  return dot(p - origin, cross(n, u));
+}
+
+// jointShare(sizeU, sizeV, joint): the share of a tessellation of that
+// pitch that is joint, for the stand-ins.
+jointShare(sizeU, sizeV, joint) {
+  return 1 - (sizeU - joint) * (sizeV - joint) / (sizeU * sizeV);
+}
+
+// glazedTile(face, share, recess, soft): the material of glazed tile in
+// grout, `face` 1 on the glaze and 0 in the grout, which is a rough matte
+// `recess` mm down, the step fading out below `soft` mm; `share` is the
+// grout's share, for the stand-in.
+glazedTile(face, share, recess, soft) {
+  m = material.withDisplacement(material.make(0.15 + 0.7 * (1 - face), 0, 1.5), -recess * (1 - face) * texture.fadeDetail(soft));
+  m.simple = material.withDisplacement(material.make(0.15 + 0.7 * share, 0, 1.5), -recess * share);
+  return m;
+}
+
+// --- Brick ---
+
+/// brick(origin, normal, along, length, height, joint, recess, bond,
+/// brickColor, mortarColor): brickwork on a face facing `normal` through
+/// `origin`, the courses along `along`: bricks `length` mm long (100 to
+/// 400; 215 the UK brick, 194 the US modular) by `height` of that tall (0.2
+/// to 0.5; 65 of 215 is 0.3), the mortar joint `joint` mm wide between them
+/// (5 to 20; 10 is usual) and raked `recess` mm deep (0 to 5), laid in a
+/// `bond` (0.5 the running bond, 0 a stack bond, 1/3 a third). Each brick a
+/// shade off the next by 8%, matte; the mortar a rough matte. Returns
+/// material, color, height and slope.
+brick(@point origin, @direction(origin) normal, @direction(origin) along, @range(100, 400) length, @range(0.2, 0.5) height, @range(5, 20) joint, @range(0, 5) recess, @range(0, 0.5) bond, @color brickColor, @color mortarColor) {
+  pitchU = length + joint;
+  pitchV = height * length + joint;
+  cell, toJoint = texture.tiles(faceX(origin, normal, along), faceY(origin, normal, along), pitchU, pitchV, joint, bond);
+  pick = noiseHash3(cell + [31, 17, 5]);
+  face = texture.mask(toJoint, 0, max(0.5, 0.5 * pixelSize()));
+  share = jointShare(pitchU, pitchV, joint);
+  tone = color.mixOklab(mortarColor, brickColor * (1 + 0.08 * (2 * pick.x - 1)), face);
+  tone.simple = color.mixOklab(mortarColor, brickColor, 1 - share);
+  raked = material.withDisplacement(material.make(0.8 + 0.1 * (1 - face), 0, 1.5), -recess * (1 - face) * texture.fadeDetail(joint));
+  raked.simple = material.withDisplacement(material.make(0.8 + 0.1 * share, 0, 1.5), -recess * share);
+  return raked, tone, 0, 0;
+}
+
+// --- Tile ---
+
+/// subwayTile(origin, normal, along, length, grout, bond, tileColor,
+/// groutColor): glazed subway tile on a face, tiles `length` mm long (50 to
+/// 300; 152 the 3 by 6 inch tile) and half as tall, in `grout` mm of grout
+/// (1 to 5), laid in a `bond` (0.5 running, 0 stacked), the glaze a gloss
+/// and the grout a rough matte recessed 1 mm. Returns material, color,
+/// height and slope.
+subwayTile(@point origin, @direction(origin) normal, @direction(origin) along, @range(50, 300) length, @range(1, 5) grout, @range(0, 0.5) bond, @color tileColor, @color groutColor) {
+  pitchU = length + grout;
+  pitchV = 0.5 * length + grout;
+  cell, toJoint = texture.tiles(faceX(origin, normal, along), faceY(origin, normal, along), pitchU, pitchV, grout, bond);
+  face = texture.mask(toJoint, 0, max(0.3, 0.5 * pixelSize()));
+  share = jointShare(pitchU, pitchV, grout);
+  tone = color.mixOklab(groutColor, tileColor, face);
+  tone.simple = color.mixOklab(groutColor, tileColor, 1 - share);
+  return glazedTile(face, share, 1, grout), tone, 0, 0;
+}
+
+/// hexTile(origin, normal, along, across, grout, tileColor, groutColor):
+/// hexagonal tile on a face, `across` mm between flat sides (20 to 150), in
+/// `grout` mm of grout (1 to 5), glazed, each tile a shade off the next by
+/// 4%. Returns material, color, height and slope.
+hexTile(@point origin, @direction(origin) normal, @direction(origin) along, @range(20, 150) across, @range(1, 5) grout, @color tileColor, @color groutColor) {
+  pitch = across + grout;
+  cellP, toEdge = texture.hexCells(faceX(origin, normal, along), faceY(origin, normal, along), pitch);
+  pick = noiseHash3(floor(([faceX(origin, normal, along), faceY(origin, normal, along), 0] - cellP) / (0.1 * pitch)) + [7, 3, 1]);
+  face = texture.mask(toEdge - 0.5 * grout, 0, max(0.3, 0.5 * pixelSize()));
+  // A hexagon's joint share, from its inradius.
+  share = 1 - across * across / (pitch * pitch);
+  tone = color.mixOklab(groutColor, tileColor * (1 + 0.04 * (2 * pick.x - 1)), face);
+  tone.simple = color.mixOklab(groutColor, tileColor, 1 - share);
+  return glazedTile(face, share, 1, grout), tone, 0, 0;
+}
+
+/// pennyTile(origin, normal, along, diameter, tileColor, groutColor): penny
+/// tile on a face, round tiles `diameter` mm across (10 to 40; 19 the penny)
+/// packed on a honeycomb a tenth wider, in grout, glazed. Returns material,
+/// color, height and slope.
+pennyTile(@point origin, @direction(origin) normal, @direction(origin) along, @range(10, 40) diameter, @color tileColor, @color groutColor) {
+  cellP, toEdge = texture.hexCells(faceX(origin, normal, along), faceY(origin, normal, along), 1.1 * diameter);
+  toRim = 0.5 * diameter - length(cellP.xy);
+  face = texture.mask(toRim, 0, max(0.3, 0.5 * pixelSize()));
+  // A disc's share of its honeycomb cell, pi r^2 over 2 sqrt(3) r^2 at a
+  // tenth wider: 0.75.
+  share = 0.25;
+  tone = color.mixOklab(groutColor, tileColor, face);
+  tone.simple = color.mixOklab(groutColor, tileColor, 1 - share);
+  return glazedTile(face, share, 0.8, 0.1 * diameter), tone, 0, 0;
+}
+
+/// herringboneTile(origin, normal, along, width, aspect, grout, tileColor,
+/// groutColor): glazed tile laid in herringbone on a face, the chevrons
+/// pointing along `along`: tiles `width` mm wide (30 to 150; 76 the 3 by 12
+/// inch tile) and `aspect` widths long (2 to 6, a whole number), in `grout`
+/// mm of grout (1 to 5), the grout a rough matte recessed 1 mm. Returns
+/// material, color, height and slope.
+herringboneTile(@point origin, @direction(origin) normal, @direction(origin) along, @range(30, 150) width, @range(2, 6) aspect, @range(1, 5) grout, @color tileColor, @color groutColor) {
+  pitch = width + grout;
+  cell, toJoint, way, a, b = texture.herringbone(faceX(origin, normal, along), faceY(origin, normal, along), pitch, aspect, grout);
+  face = texture.mask(toJoint, 0, max(0.3, 0.5 * pixelSize()));
+  share = jointShare(round(aspect) * pitch, pitch, grout);
+  tone = color.mixOklab(groutColor, tileColor, face);
+  tone.simple = color.mixOklab(groutColor, tileColor, 1 - share);
+  return glazedTile(face, share, 1, grout), tone, 0, 0;
+}
+
+// --- Parquet ---
+
+/// parquet(origin, normal, along, width, aspect, gloss): white oak parquet
+/// in herringbone on a face, the chevrons pointing along `along`: blocks
+/// `width` mm wide (40 to 120; 70 the usual) and `aspect` widths long (3 to
+/// 6, a whole number; 280 by 70 is 4), each sawn flat from its own place in
+/// a log, sanded and under an oil polyurethane of `gloss` units (30 a
+/// satin), a shade apart block to block, with a hairline between them.
+/// Returns material, color, height and slope.
+parquet(@point origin, @direction(origin) normal, @direction(origin) along, @range(40, 120) width, @range(3, 6) aspect, @range(0, 100) gloss) {
+  n = normalize(normal);
+  u = normalize(along - n * dot(along, n));
+  v = cross(n, u);
+  cell, toJoint, way, a, b = texture.herringbone(dot(p - origin, u), dot(p - origin, v), width, aspect, 0.4);
+  pick = noiseHash3(cell + [19, 43, 7]);
+  // The block's way on the face, and its centre.
+  d = way > 0.5 ? normalize(u + v) : normalize(v - u);
+  e = cross(n, d);
+  blockLength = round(aspect) * width;
+  centre = p - (a - 0.5 * blockLength) * d - (b - 0.5 * width) * e;
+  // Its log: the stem runs along the block 60 to 120 mm under the face, the
+  // block cut from anywhere in the first metre of it.
+  stem = centre - n * (60 + 60 * pick.y) + d * (1000 * pick.z);
+  m, c = wood.species(wood.whiteOakNumber, stem, d, wood.defaultLook, -1, 0, n, wood.sanded(180), wood.noStain, wood.oilPolyurethane(gloss));
+  shade = 1 + 0.08 * (2 * pick.x - 1);
+  shade.simple = 1;
+  line = 0.55 + 0.45 * texture.mask(toJoint, 0, max(0.2, 0.5 * pixelSize()));
+  line.simple = 1 - 0.45 * jointShare(blockLength, width, 0.4);
+  return m, c * shade * line, 0, 0;
+}
+
+// --- Block ---
+
+/// concreteBlock(origin, normal, along, length, joint, recess, blockColor,
+/// mortarColor): concrete blockwork on a face, blocks `length` mm long (300
+/// to 500; 440 the metric block, 397 the US 16 inch) and half a course
+/// tall, a course being a block and its `joint` mm of mortar (5 to 20; 10
+/// is usual), the joint tooled `recess` mm in (0 to 5), in running bond.
+/// The face is open and coarse, 2 mm pits and grains, a shade off block to
+/// block; the mortar the same grain. Returns material, color, height and
+/// slope.
+concreteBlock(@point origin, @direction(origin) normal, @direction(origin) along, @range(300, 500) length, @range(5, 20) joint, @range(0, 5) recess, @color blockColor, @color mortarColor) {
+  pitchU = length + joint;
+  pitchV = 0.5 * pitchU;
+  cell, toJoint = texture.tiles(faceX(origin, normal, along), faceY(origin, normal, along), pitchU, pitchV, joint, 0.5);
+  pick = noiseHash3(cell + [5, 29, 11]);
+  face = texture.mask(toJoint, 0, max(0.5, 0.5 * pixelSize()));
+  share = jointShare(pitchU, pitchV, joint);
+  coarse = texture.grainShade(2, 0.12) * (1 - 0.35 * texture.grainSpecks(1.5, 0.12));
+  tone = color.mixOklab(mortarColor, blockColor * (1 + 0.05 * (2 * pick.x - 1)), face) * coarse;
+  tone.simple = color.mixOklab(mortarColor, blockColor, 1 - share) * (1 - 0.35 * 0.12);
+  pits = -texture.grainRelief(2, 0.3);
+  tooled = material.withDisplacement(material.make(0.95, 0, 1.5), pits - recess * (1 - face) * texture.fadeDetail(joint));
+  tooled.simple = material.withDisplacement(material.make(0.95, 0, 1.5), -recess * share);
+  return tooled, tone, 0, 0;
+}
+
+// --- Terrazzo ---
+
+/// terrazzo(chipSize, chipA, chipB, chipC, matrixColor, gloss): terrazzo,
+/// marble chips `chipSize` mm apart (2 to 25; 3 to 6 mm the trade's #1
+/// chip, 6 to 10 its #2), the sections the face cuts through them two
+/// thirds of that across on average (measured) and the largest about
+/// twice it, in three colours at random, set in a matrix of `matrixColor`
+/// and ground flat at `gloss` units (70 polished). The chips are about two
+/// thirds of the face, the matrix a little duller than they are. Returns
+/// material, color, height and slope.
+terrazzo(@range(2, 25) chipSize, @color chipA, @color chipB, @color chipC, @color matrixColor, @range(0, 100) gloss) {
+  f1, f2, cell = noise.cellularCell(chipSize);
+  pick = noiseHash3(cell + [37, 11, 53]);
+  chipColor = pick.x < 0.3333 ? chipA : (pick.x < 0.6667 ? chipB : chipC);
+  chip = texture.fadeTo(texture.mask(f2 - f1, 0.1 * chipSize, max(0.04 * chipSize, pixelSize())), terrazzoChipShare, chipSize);
+  tone = color.mixOklab(matrixColor, chipColor, chip);
+  tone.simple = color.mixOklab(matrixColor, (chipA + chipB + chipC) / 3, terrazzoChipShare);
+  rough = coating.glossRoughness(gloss);
+  ground = material.make(rough + 0.1 * (1 - chip), 0, 1.5);
+  ground.simple = material.make(rough + 0.1 * (1 - terrazzoChipShare), 0, 1.5);
+  return ground, tone, 0, 0;
+}
+
+// The share of the face that is chip with the wall band above at a tenth of
+// the chip size: measured, the mean of the mask over 4000 random points
+// (0.85 at 0.04, 0.71 at 0.08, 0.59 at 0.12, 0.52 at 0.15).
+terrazzoChipShare = 0.65;
+
+// --- Concrete ---
+//
+// Concrete is physical's measured grey, mottled at the trowel's scale and
+// pinholed, and then whatever the form or the grinder left: a board's step
+// and grain, the aggregate standing proud of a washed face, or cut through
+// by a polish. The stones are cellular noise's feature points with a
+// radius, so a face cuts each at its own depth and the stones come in
+// every size up to the radius, as a gravel does.
+
+// concreteSkin(color, scale): the concrete's own colour: `color` mottled
+// 6% at `scale` mm and a hair finer, with a dark pinhole in 3% of 0.8 mm
+// grains. Stands in as the colour, the pinholes' share taken.
+concreteSkin(color, scale) {
+  blotch = noise.fbmBump4(scale, 0.5, 2.0) / (scale / 12) + 0.5 * noise.gradient(0.2 * scale);
+  skin = color * (1 + 0.06 * blotch) * (1 - 0.5 * texture.grainSpecks(0.8, 0.03));
+  skin.simple = color * (1 - 0.5 * 0.03);
+  return skin;
+}
+
+// sparseSpecks(size, share): texture.grainSpecks for a share under the
+// cell hash's 1/255 step, where grainSpecks would round it up to 1/255:
+// two of the hash's channels make a pick in 1/65025 steps.
+sparseSpecks(size, share) {
+  f1, f2, cell = noise.cellularCell(size);
+  pick = noiseHash3(cell + [29, 83, 13]);
+  specks = share;
+  specks.detail = texture.fadeTo(pick.x + pick.y / 255 < share ? 1 : 0, share, size);
+  specks.detailSize = size;
+  return specks;
+}
+
+// boardSkin(color, scale): concrete cast against a board, `color` mottled
+// 3% at `scale` mm and a hair finer, with a bughole in 0.08% of 3 mm
+// cells; the form's face leaves fewer holes than concreteSkin's trowelled
+// one. Stands in as the color, the holes' share taken.
+boardSkin(color, scale) {
+  blotch = noise.fbmBump4(scale, 0.5, 2.0) / (scale / 12) + 0.5 * noise.gradient(0.2 * scale);
+  skin = color * (1 + 0.03 * blotch) * (1 - 0.4 * sparseSpecks(3, 0.0008));
+  skin.simple = color * (1 - 0.4 * 0.0008);
+  return skin;
+}
+
+/// boardFormed(origin, normal, along, boardWidth, step, concreteColor):
+/// board-formed concrete on a face, cast against rough-sawn boards
+/// `boardWidth` mm wide (60 to 250; 140 a 1 by 6, 184 a 1 by 8) running
+/// along `along`, each board standing up to `step` mm proud or shy of its
+/// neighbors (0 to 3) and its grain pressed 0.15 mm into the face, a fin
+/// where the concrete found the gap between boards. The face carries each
+/// board's mark: a shade of its own, its grain as fine streaks along it,
+/// a dark line at each seam, and the paste leached pale off some boards in
+/// blotches, rust-brown where the leaching is deepest, with a few
+/// bugholes. Returns material, color, height and slope.
+boardFormed(@point origin, @direction(origin) normal, @direction(origin) along, @range(60, 250) boardWidth, @range(0, 3) step, @color concreteColor) {
+  x = faceX(origin, normal, along);
+  y = faceY(origin, normal, along);
+  j = floor(y / boardWidth);
+  pick = noiseHash3([j + 7, 3, 11]);
+  toEdge = min(y - j * boardWidth, (j + 1) * boardWidth - y);
+  // The board's own level, its grain stretched twelve to one along it from
+  // its own place in the noise, and the fin at its edge.
+  level = step * (pick.x - 0.5);
+  grain = 0.15 * remap(noise.gradient(3), [0.08 * x, y + 1000 * pick.y, 0]);
+  fin = 0.6 * (1 - texture.mask(toEdge, 1, 0.5));
+  relief = level + grain * texture.fadeDetail(3) + fin * texture.fadeDetail(2);
+  // The color, in Oklab, along the board from its own place in the noise.
+  n = normalize(normal);
+  u = normalize(along - n * dot(along, n));
+  tint = noiseHash3([j + 19, 41, 5]);
+  q = p + u * (1000 * tint.z);
+  // Board by board, how weathered and how dark walk the golden ratio, a
+  // little jittered, so any few neighbors span the range and a small
+  // part's mean stays near the stand-in.
+  walkW = 0.618034 * j + 0.35 * tint.x;
+  weathered = walkW - floor(walkW);
+  walkS = 0.472136 * j + 0.35 * tint.y + 0.25;
+  shade = walkS - floor(walkS);
+  boardL = 0.028 * (2 * shade - 1);
+  // The board's grain, pressed in, and the streaks and bands it leaves.
+  imprint = remap(noise.anisotropic(1.5, u, 30, 2), q);
+  streak = remap(noise.anisotropic(5, u, 80, 3), q + [0, 0, 37]);
+  band = remap(noise.anisotropic(12, u, 40, 2), q + [0, 0, 59]);
+  // The paste: clouded, grimed, its sand and its small pits.
+  cloud = remap(noise.fbm(30, 2, 0.5, 2), q + [0, 0, 307]);
+  grime = remap(noise.fbm(18, 4, 0.65, 2), remap(noise.warp(6, 2), q + [0, 0, 401]));
+  sand = texture.grainShade(1.5, 1) - 1;
+  pits = sparseSpecks(1, 0.0015);
+  // The form release leached off in blotches drawn out along the board,
+  // flaking along its grain, rusty where deepest; and the seam.
+  blot = remap(noise.anisotropic(35, u, 3, 4), remap(noise.warp(10, 4), q + [0, 0, 91]));
+  leach = texture.mask(blot + 0.9 * (weathered - 0.6), 0.1, 0.12);
+  flake = remap(noise.anisotropic(3, u, 8, 4), q + [0, 0, 211]);
+  rust = texture.mask(remap(noise.fbm(30, 3, 0.6, 2), q + [0, 0, 173]), 0.2, 0.2) * leach;
+  seam = 1 - texture.mask(toEdge, 1.5, 1);
+  // Lightness is zero-mean, each term's mean taken out; the leaching and
+  // the rust warm the color, and the stand-in takes their shares.
+  dL = boardL + 0.012 * imprint + 0.016 * streak + 0.02 * band + 0.02 * cloud + 0.035 * grime + 0.016 * sand - 0.15 * (pits - 0.0015) + 0.06 * (leach * (0.5 + 1.4 * flake) - 0.5 * boardLeachShare) - 0.01 * (rust - boardRustShare) - 0.03 * (seam - 3 / boardWidth);
+  da = 0.002 * leach + 0.004 * rust;
+  db = 0.005 * leach + 0.007 * rust;
+  tone = color.oklab2rgb(color.rgb2oklab(boardSkin(concreteColor, 60)) + [dL, da, db]);
+  tone.simple = color.oklab2rgb(color.rgb2oklab(concreteColor * (1 - 0.4 * 0.0008)) + [0, 0.002 * boardLeachShare + 0.004 * boardRustShare, 0.005 * boardLeachShare + 0.007 * boardRustShare]);
+  cast = material.withDisplacement(material.make(0.75, 0, 1.5), relief);
+  cast.simple = material.withDisplacement(material.make(0.75, 0, 1.5), 0.6 * 2 / boardWidth);
+  return cast, tone, 0, 0;
+}
+
+// The share of a board-formed face leached, and the mean of the rust over
+// it, measured over 16000 points on a face 40 m across, 285 boards
+// (2026-11-03; standard error 0.003 and 0.002). Neither depends on the
+// parameters: the blotches are a fixed size and the walk is per board.
+boardLeachShare = 0.333;
+boardRustShare = 0.074;
+
+/// exposedAggregate(stoneSize, stoneA, stoneB, matrixColor, exposure):
+/// exposed-aggregate concrete, the gravel `stoneSize` mm apart (5 to 25;
+/// 10 the pavement's) in two colours mixed at random, washed out of the
+/// matrix `exposure` mm (0 to 3) so each stone stands proud as a dome, the
+/// matrix between them sandy and rough. Returns material, color, height
+/// and slope.
+exposedAggregate(@range(5, 25) stoneSize, @color stoneA, @color stoneB, @color matrixColor, @range(0, 3) exposure) {
+  f1, f2, cell = noise.cellularCell(stoneSize);
+  radius = 0.55 * stoneSize;
+  pick = noiseHash3(cell + [41, 9, 27]);
+  dome = max(0, 1 - f1 * f1 / (radius * radius));
+  stone = texture.mask(radius - f1, 0, max(0.03 * stoneSize, pixelSize()));
+  stoneColor = color.mixOklab(stoneA, stoneB, pick.x) * (1 + 0.1 * (2 * pick.y - 1));
+  tone = color.mixOklab(matrixColor, stoneColor, stone) * texture.grainShade(0.5, 0.1);
+  tone.simple = color.mixOklab(matrixColor, color.mixOklab(stoneA, stoneB, 0.5), exposedStoneShare);
+  washed = material.withDisplacement(material.make(0.95 - 0.45 * stone, 0, 1.5), exposure * dome * texture.fadeDetail(stoneSize) - texture.grainRelief(0.5, 0.1));
+  washed.simple = material.withDisplacement(material.make(0.95 - 0.45 * exposedStoneShare, 0, 1.5), exposure * exposedDomeMean);
+  return washed, tone, 0, 0;
+}
+
+// The share of a face inside stones of 0.55 of their spacing, and the mean
+// of their caps' height over the whole face, measured over 4000 random
+// points (shares 0.11 at 0.3, 0.24 at 0.4, 0.44 at 0.5 of the spacing). A
+// cap is parabolic, 1 - (f1 / r)^2: a hemisphere's rim stands vertical and
+// renders as a dark ring round every stone.
+exposedStoneShare = 0.557;
+exposedDomeMean = 0.242;
+
+/// polishedConcrete(stoneSize, gloss, exposure, concreteColor): polished
+/// concrete, ground flat and sealed to `gloss` units (70 a high polish),
+/// the grind taken `exposure` of the way into the aggregate (0 a cream
+/// polish showing none, 1 every stone cut through), the stones `stoneSize`
+/// mm apart (5 to 25), grey and brown. Returns material, color, height and
+/// slope.
+polishedConcrete(@range(5, 25) stoneSize, @range(0, 100) gloss, @range(0, 1) exposure, @color concreteColor) {
+  f1, f2, cell = noise.cellularCell(stoneSize);
+  radius = 0.5 * stoneSize * exposure;
+  pick = noiseHash3(cell + [13, 57, 3]);
+  stone = texture.mask(radius - f1, 0, max(0.03 * stoneSize, pixelSize()));
+  // The share cut through rises as the cube of the depth: 0.44 of the face
+  // at half the spacing, measured, and 3.5 (r / spacing)^3 fits the rest.
+  share = 0.4375 * exposure * exposure * exposure;
+  stoneColor = color.mixOklab([0.45, 0.43, 0.4], [0.6, 0.6, 0.58], pick.x) * (1 + 0.08 * (2 * pick.y - 1));
+  tone = color.mixOklab(concreteSkin(concreteColor, 80), stoneColor, texture.fadeTo(stone, share, stoneSize));
+  tone.simple = color.mixOklab(concreteColor * (1 - 0.5 * 0.03), [0.525, 0.515, 0.49], share);
+  return material.make(coating.glossRoughness(gloss), 0, 1.5), tone, 0, 0;
+}
+
+// --- Plaster ---
+
+/// plaster(color, trowel, burnish): a lime or Venetian plaster of `color`,
+/// laid in trowel strokes `trowel` mm across (50 to 400) that leave it
+/// mottled 7% and layered a little finer, burnished to `burnish` gloss
+/// units where the trowel pressed hardest and matte between (0 a lime
+/// wash, 35 a Venetian sheen), the strokes 0.08 mm of relief. Returns
+/// material, color, height and slope.
+plaster(@color color, @range(50, 400) trowel, @range(0, 100) burnish) {
+  blotch = noise.fbmBump4(trowel, 0.5, 2.0) / (trowel / 12);
+  layered = noise.fbmBump4(0.35 * trowel, 0.6, 2.2) / (0.35 * trowel / 12);
+  tone = color * (1 + 0.07 * blotch + 0.04 * layered);
+  tone.simple = color;
+  pressed = clamp(0.6 + 0.4 * layered, 0, 1);
+  trowelled = material.withDisplacement(material.make(coating.glossRoughness(burnish * pressed), 0, 1.5), 0.08 * noise.gradient(0.12 * trowel) * texture.fadeDetail(0.12 * trowel));
+  trowelled.simple = material.make(coating.glossRoughness(0.6 * burnish), 0, 1.5);
+  return trowelled, tone, 0, 0;
+}
+
+// --- Asphalt ---
+
+/// asphalt(stoneSize, wear): asphalt, stone `stoneSize` mm apart (5 to 20;
+/// 12.5 and 9.5 the dense-graded mixes) in bitumen. New, at `wear` 0, the
+/// binder coats everything, black with a slight sheen; worn, at 1, it has
+/// gone from the stones' crowns, which stand 0.8 mm proud and grey, the
+/// binder between them dull and sandy. Returns material, color, height and
+/// slope.
+asphalt(@range(5, 20) stoneSize, @range(0, 1) wear) {
+  f1, f2, cell = noise.cellularCell(stoneSize);
+  radius = 0.45 * stoneSize;
+  pick = noiseHash3(cell + [3, 71, 19]);
+  dome = max(0, 1 - f1 * f1 / (radius * radius));
+  stone = texture.mask(radius - f1, 0, max(0.03 * stoneSize, pixelSize()));
+  bare = wear * dome * stone;
+  stoneColor = [0.5, 0.49, 0.47] * (1 + 0.12 * (2 * pick.x - 1));
+  tone = color.mixOklab(asphaltBinder, stoneColor, bare) * texture.grainShade(1, 0.08);
+  tone.simple = color.mixOklab(asphaltBinder, [0.5, 0.49, 0.47], wear * asphaltDomeMean);
+  worn = material.withDisplacement(material.make(0.5 + 0.4 * wear, 0, 1.6), 0.8 * wear * dome * texture.fadeDetail(stoneSize) - wear * texture.grainRelief(1, 0.15));
+  worn.simple = material.withDisplacement(material.make(0.5 + 0.4 * wear, 0, 1.6), 0.8 * wear * asphaltDomeMean);
+  return worn, tone, 0, 0;
+}
+
+// Fresh asphalt's colour, physical's measurement, and the mean of the
+// stones' parabolic caps over the face at 0.45 of their spacing, measured
+// over 4000 random points (0.34 of the face is stone).
+asphaltBinder = [0.2291, 0.2249, 0.2212];
+asphaltDomeMean = 0.141;
+
+// ===========================================================================
+// Ready-made
+// ===========================================================================
+
+// One surface from each constructor above on a face through the origin,
+// its courses along +X, so the material browser can show it.
+
+/// Red brick in running bond, the UK brick with a 10 mm joint raked 3 mm.
+/// Returns material and colour.
+@material redBrick() {
+  wall, tone, height, slope = brick([0, 0, 0], [0, 0, 1], [1, 0, 0], 215, 0.3, 10, 3, 0.5, [0.62, 0.30, 0.22], [0.72, 0.70, 0.66]);
+  return wall, tone;
+}
+
+/// White subway tile, 3 by 6 inch, in running bond with 2 mm grey grout.
+/// Returns material and colour.
+@material whiteSubwayTile() {
+  wall, tone, height, slope = subwayTile([0, 0, 0], [0, 0, 1], [1, 0, 0], 152, 2, 0.5, [0.96, 0.96, 0.94], [0.55, 0.55, 0.53]);
+  return wall, tone;
+}
+
+/// White hexagonal tile, 50 mm across, 2 mm grey grout. Returns material
+/// and colour.
+@material whiteHexTile() {
+  laid, tone, height, slope = hexTile([0, 0, 0], [0, 0, 1], [1, 0, 0], 50, 2, [0.95, 0.95, 0.93], [0.5, 0.5, 0.48]);
+  return laid, tone;
+}
+
+/// Black penny tile, 19 mm, in white grout. Returns material and colour.
+@material blackPennyTile() {
+  laid, tone, height, slope = pennyTile([0, 0, 0], [0, 0, 1], [1, 0, 0], 19, [0.08, 0.08, 0.09], [0.9, 0.9, 0.88]);
+  return laid, tone;
+}
+
+/// White 3 by 12 inch tile in herringbone with 2 mm grey grout. Returns
+/// material and colour.
+@material herringboneTile() {
+  laid, tone, height, slope = herringboneTile([0, 0, 0], [0, 0, 1], [1, 0, 0], 76, 4, 2, [0.96, 0.96, 0.94], [0.55, 0.55, 0.53]);
+  return laid, tone;
+}
+
+/// Oak parquet in herringbone, 280 by 70 mm blocks under a satin
+/// polyurethane. Returns material and colour.
+@material oakParquet() {
+  laid, tone, height, slope = parquet([0, 0, 0], [0, 0, 1], [1, 0, 0], 70, 4, 30);
+  return laid, tone;
+}
+
+/// Grey concrete block, the 440 mm block with a 10 mm joint tooled 2 mm.
+/// Returns material and colour.
+@material concreteBlock() {
+  wall, tone, height, slope = concreteBlock([0, 0, 0], [0, 0, 1], [1, 0, 0], 440, 10, 2, [0.6, 0.6, 0.58], [0.68, 0.67, 0.64]);
+  return wall, tone;
+}
+
+/// Terrazzo, white, grey and black 8 mm chips in a warm white matrix,
+/// polished. Returns material and colour.
+@material terrazzo() {
+  ground, tone, height, slope = terrazzo(8, [0.92, 0.92, 0.9], [0.55, 0.55, 0.55], [0.12, 0.12, 0.13], [0.86, 0.84, 0.8], 70);
+  return ground, tone;
+}
+
+/// Board-formed concrete, 1 by 6 boards stepped up to 2 mm, in physical's
+/// concrete grey. Returns material and colour.
+@material boardFormedConcrete() {
+  cast, tone, height, slope = boardFormed([0, 0, 0], [0, 0, 1], [1, 0, 0], 140, 2, concreteGrey);
+  return cast, tone;
+}
+
+/// Exposed-aggregate concrete, 12 mm river gravel washed 2 mm proud.
+/// Returns material and colour.
+@material exposedAggregate() {
+  washed, tone, height, slope = exposedAggregate(12, [0.55, 0.5, 0.45], [0.42, 0.42, 0.42], concreteGrey, 2);
+  return washed, tone;
+}
+
+/// Polished concrete, ground into the 10 mm aggregate and sealed to a high
+/// polish. Returns material and colour.
+@material polishedConcrete() {
+  ground, tone, height, slope = polishedConcrete(10, 70, 0.6, concreteGrey);
+  return ground, tone;
+}
+
+/// Venetian plaster, warm white, burnished to a sheen. Returns material
+/// and colour.
+@material venetianPlaster() {
+  trowelled, tone, height, slope = plaster([0.9, 0.86, 0.78], 200, 35);
+  return trowelled, tone;
+}
+
+/// Asphalt, the 12.5 mm mix half worn, the stones showing through. Returns
+/// material and colour.
+@material asphalt() {
+  worn, tone, height, slope = asphalt(12.5, 0.5);
+  return worn, tone;
+}
+
+// Concrete's colour, physical's measurement (Feeding a Physically Based
+// Shading Model).
+concreteGrey = [0.7419, 0.7419, 0.7419];
+
+// References
+//   Designing Buildings. Brick sizes: the UK brick 215 x 102.5 x 65 mm with
+//     a 10 mm joint, a 225 by 75 mm repeat in stretcher bond.
+//     https://www.designingbuildings.co.uk/wiki/Brick_sizes
+//   Brick Industry Association, technical note 10. Dimensioning and
+//     estimating brick masonry: the modular brick and the half running bond.
+//     https://gobrick.com/media/file/10-dimensioning-and-estimating-brick-masonry.pdf
+//   Angelus Block. CMU basics, dimensions and sizes: the 8 x 8 x 16 nominal
+//     unit is 7 5/8 x 7 5/8 x 15 5/8 specified, nominal being specified plus
+//     the mortar joint. https://angelusblock.com/resources/cmu-basics/dimensions-and-sizes/
+//   Paterson's Quarries, Precon blocks, EN 771-3 declaration: the 440 x 215
+//     mm block. https://www.patersonsquarries.co.uk/wp-content/uploads/2023/03/Precon-Blocks-MM100.pdf
+//   Havwoods. Herringbone flooring blocks: widths 60 to 130 mm, lengths 280
+//     to 725 mm, 490 x 70 the commonest.
+//     https://www.havwoods.com/uk/selection/herringbone-flooring-blocks
+//   Terrazzo chip guide (NTMA grading): #0 passes 1/8 in and stays on 1/16,
+//     #1 1/4 on 1/8, #2 3/8 on 1/4, #3 1/2 on 3/8, up to #8 at 1 1/8 in.
+//     https://www.slideshare.net/slideshow/terrazzo-aggregate-chip-size-guide/234672658
+//   Spec Formliners. Wood patterns: rough-sawn random boards 1.625 to 8.75
+//     in wide at 0.25 in relief, the 6 in rough-sawn plank 5.5 in wide at
+//     0.75 in. https://specformliners.com/barnwood
+//   Indiana DOT, recurring special provision 401-R-701: dense-graded asphalt
+//     mixtures designated by nominal maximum aggregate size, 9.5 and 12.5 mm
+//     among them. https://www.in.gov/dot/div/contracts/standards/rsp/sep19/400/401-R-701%20200601.pdf
+//   SWOV. Road trial of a low-noise concrete pavement with exposed-aggregate
+//     surfacing: built with a 10 mm maximum aggregate.
+//     https://swov.nl/en/publicatie/road-trial-low-noise-concrete-pavement-exposed-aggregate-surfacing
+//   Concrete's and fresh asphalt's colours are physical's (physical.gsl
+//     cites them).
+//   The tile sizes are the trade's: the 3 by 6 inch subway tile, the 3 by
+//     12 inch tile and the 19 mm penny; the colours, the raked depths, the
+//     block face's grain, the parquet's log, the plaster, the stones' hues
+//     and the wear are judged.

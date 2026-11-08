@@ -1,0 +1,292 @@
+
+// Cast Materials (material/process/cast)
+//
+// The surfaces castings and forgings come out of the mold with: sand
+// casting's grainy matte, graded by the sand's AFS grain fineness; die
+// casting's fine skin with its flow lines; investment casting's smooth
+// matte; a forging's die finish under its scale; and the dimpled skin of
+// shot peening, graded by Almen intensity. Each takes a base metal and
+// returns material, color, height and slope, as the machined materials do;
+// the height is 0, and what relief these have is fine detail.
+//
+// Doc convention follows builtin/base.gsl: `///` lines are public docs.
+
+import "material";
+import "texture";
+import "noise";
+import "color";
+import "material/bulk/metal";
+
+// --- Casting ---
+
+/// sandCast(baseMaterial, baseColor, grainFineness): a sand casting as cast,
+/// the mold's sand graded by its AFS grain fineness number (40 coarse to
+/// 140 fine), its mean grain 15 / GFN mm across (0.375 mm at 40, 0.25 at 60,
+/// 0.11 at 140) and the casting's Ra about 1000 / GFN um (25 at 40, 17 at 60,
+/// 7 at 140; the sources give the range and the trend, the fit is judged).
+/// The casting is the mold's negative: each grain leaves a round bowl and
+/// the metal between grains stands as rounded ridges, with
+/// the rammed mold's unevenness ten grains across and a gas hole here and
+/// there, 0.15 to 0.4 mm. The skin is the metal's color a third darker and
+/// two fifths duller with a faint warm cast, mottled in patches 6 and 25 mm
+/// across, a shade per grain, and burnt-on sand grains standing light and
+/// warm. The lobe is 0.9 to 0.8 wide where the grains are too small to see,
+/// narrowing by their slopes where they are drawn, with no lay. Returns
+/// material, color, height and slope.
+sandCast(baseMaterial, @color baseColor, @range(40, 140) grainFineness) {
+  gfn = clamp(grainFineness, 40, 140);
+  t = (gfn - 40) / 100;
+  grain = 15 / gfn;
+  // Relief: the grains' imprints, the sand's finer fraction pressed in among
+  // them, the rammed mold's unevenness ten grains across, and the gas
+  // holes, each in mm.
+  pit = sandPits(3, 0.3);
+  relief = (4.5 / gfn) * sandImprint(grain) + (2 / gfn) * sandImprint(0.6 * grain) + (3 / gfn) * noise.fbm(10 * grain, 2, 0.5, 2) - 0.06 * pit;
+  // The lobe with the grains unseen is 0.9 to 0.8 wide (judged); where
+  // they show, their slopes are drawn and the lobe narrows by them.
+  rough = 0.9 - 0.1 * t;
+  micro = rough * rough - sandSlope * sandSlope;
+  skin = material.addDisplacement(material.withLay(material.withRoughness(baseMaterial, sqrt(texture.reliefRoughness(micro, sandSlope, grain))), [0, 0, 0], 0), relief);
+  skin.simple = material.withLay(material.withRoughness(baseMaterial, rough), [0, 0, 0], 0);
+  // Color: the skin's tone, mottled in patches (darker ones a little
+  // browner), a shade per grain, burnt-on sand light and warm, each mean
+  // zero, and the holes' shadow, too rare to move the mean.
+  skinColor = sandSkinColor(baseColor);
+  lab = color.rgb2oklab(skinColor);
+  coarse = noise.fbm(25, 2, 0.5, 2);
+  fine = noise.fbm(6, 3, 0.5, 2);
+  perGrain = texture.grainShade(grain, 0.025) - 1;
+  burnt = sandBeads(grain, 0.06) - sandBeadMean * 0.06;
+  tint = color.oklab2rgb(lab + [0.07 * coarse + 0.03 * fine + perGrain + 0.15 * burnt - 0.15 * pit, 0.004 * burnt - 0.001 * coarse, 0.02 * burnt - 0.003 * coarse]);
+  tint.simple = skinColor;
+  return skin, tint, 0, 0;
+}
+
+// The root mean square slope of the relief, measured over 4000 points with
+// the gsl CLI at 60 GFN (Ra 16 um there): 0.82 per unit height of
+// sandImprint a grain across, so 0.30 at every fineness, since the heights
+// and the grains scale together.
+sandSlope = 0.30;
+
+// The as-cast skin over a metal: its Oklab lightness down 13%, a third of its
+// light gone (oxide, burnt sand and the grains' shadows), its chroma down two
+// fifths, and a faint warm cast from the burnt sand (judged).
+sandSkinColor(@color baseColor) {
+  lab = color.rgb2oklab(baseColor);
+  return color.oklab2rgb([0.87 * lab.x, 0.6 * lab.y + 0.001, 0.6 * lab.z + 0.0025]);
+}
+
+// The sand's imprint: the casting is the mold's negative, so each grain
+// `size` mm across leaves a round bowl, and the metal that ran into the gaps
+// between grains, held back by its surface tension, stands between them as
+// rounded ridges. The bowls are paraboloids about each grain's center, the
+// nearer two joined by a smooth minimum, so the ridges round over rather
+// than crease; as fine detail, flat where the grains are too small to show.
+// Unit high a grain across, less its mean, 0.30 (measured over 4000 points
+// with the gsl CLI), so the surface stays where it was built on average.
+sandImprint(size) {
+  f1, f2 = noise.cellularF1F2(size);
+  q1 = f1 / size;
+  q2 = f2 / size;
+  k = 0.04;
+  bowls = -k * ln(exp(-q1 * q1 / k) + exp(-q2 * q2 / k));
+  bowl = 0;
+  bowl.detail = (bowls - 0.30) * texture.fadeDetail(size);
+  bowl.detailSize = size;
+  return bowl;
+}
+
+// Burnt-on sand: of grains `size` mm across, `share` stuck to the skin, each
+// a round bead at its grain's center a third of a grain across, 0.5 to 1.5
+// on it (1 on average) and 0 off, as fine detail fading to its mean,
+// sandBeadMean * share.
+sandBeads(size, share) {
+  f1, f2, cell = noise.cellularCell(size);
+  pick = noiseHash3(cell + [23, 61, 7]);
+  bead = pick.x < share ? (0.5 + pick.y) * (1 - texture.mask(f1, 0.3 * size, 0.06 * size)) : 0;
+  beads = sandBeadMean * share;
+  beads.detail = texture.fadeTo(bead, sandBeadMean * share, size);
+  beads.detailSize = size;
+  return beads;
+}
+
+// The mean of sandBeads(size, 1), measured over 4000 points with the gsl CLI.
+sandBeadMean = 0.118;
+
+// Gas holes: of cells `size` mm across, `share` hold a round pit 0.15 to
+// 0.4 mm across at the cell's point, 1 at its center and 0 outside, as fine
+// detail.
+sandPits(size, share) {
+  f1, f2, cell = noise.cellularCell(size);
+  pick = noiseHash3(cell + [71, 3, 37]);
+  r = 0.075 + 0.125 * pick.y;
+  s = clamp(f1 / r, 0, 1);
+  pit = 0;
+  pit.detail = texture.fadeTo(pick.x < share ? 1 - s * s : 0, 0, 0.3);
+  pit.detailSize = 0.3;
+  return pit;
+}
+
+/// dieCast(baseMaterial, baseColor, direction): a die casting as cast, the
+/// fine skin the steel die leaves, Ra 1 to 2 um, with the flow lines of the
+/// metal's fill along `direction`: faint streaks a millimetre or two apart,
+/// a few percent lighter or darker, stretched along the flow, as fine
+/// detail, and the lobe 0.35 wide drawn a little along the flow (judged).
+/// Returns material, color, height and slope.
+dieCast(baseMaterial, @color baseColor, @direction direction) {
+  flow = normalize(direction);
+  stretched = p - flow * dot(p, flow) * 0.92;
+  streak = noise.gradientLattice(stretched / 1.5 + [5, 11, 17]);
+  shade = 1;
+  shade.detail = texture.fadeTo(1 + 0.04 * streak, 1, 1.5);
+  shade.detailSize = 1.5;
+  tint = baseColor * 0.95 * shade;
+  tint.simple = baseColor * 0.95;
+  return material.withLay(material.withRoughness(baseMaterial, 0.35), flow, 0.25), tint, 0, 0;
+}
+
+/// investmentCast(baseMaterial, baseColor, roughnessRa): an investment
+/// casting as cast, the smooth matte of the ceramic shell, `roughnessRa`
+/// micrometres Ra (1 to 6; 1.6 to 3.2 is the usual), the lobe 0.35 wide at
+/// 1 and 0.55 at 6 (judged), no lay, the metal's colour a tenth dulled.
+/// Returns material, color, height and slope.
+investmentCast(baseMaterial, @color baseColor, @range(1, 6) roughnessRa) {
+  rough = 0.35 + 0.04 * clamp(roughnessRa - 1, 0, 5);
+  return material.withLay(material.withRoughness(baseMaterial, rough), [0, 0, 0], 0), baseColor * 0.9, 0, 0;
+}
+
+// The forging scale's colour, a dark grey-black (judged).
+forgeScaleColor = [0.17, 0.16, 0.16];
+
+/// forged(baseMaterial, baseColor, scale): a forging under its scale, the
+/// dark oxide the hot die leaves, `scale` (0 to 1) the share still on it,
+/// the rest flaked off in blotches 30 mm across to the die finish beneath,
+/// a matte of the metal's colour dulled a fifth. The scale is a rough matte
+/// with no glint. Returns material, color, height and slope.
+forged(baseMaterial, @color baseColor, @range(0, 1) scale) {
+  s = clamp(scale, 0, 1);
+  blotch = noise.fbmBump4(30, 0.5, 2.0) / 2.5 + noise.gradient(6) * 0.15;
+  kept = texture.mask(blotch, 1.1 - 2.2 * s, 0.15);
+  bare = material.withLay(material.withRoughness(baseMaterial, 0.6), [0, 0, 0], 0);
+  scaled = material.withRoughness(material.withMetallic(bare, 0), 0.8);
+  skin = material.blend(bare, scaled, kept);
+  skin.simple = material.blend(bare, scaled, s * s);
+  tone = color.mixOklab(baseColor * 0.8, forgeScaleColor, kept);
+  tone.simple = color.mixOklab(baseColor * 0.8, forgeScaleColor, s * s);
+  return skin, tone, 0, 0;
+}
+
+// --- Peening ---
+
+/// shotPeened(baseMaterial, baseColor, almenIntensity): a surface shot
+/// peened to full coverage at `almenIntensity`, thousandths of an inch on
+/// the A strip (4 to 20): a field of dimples that tile the surface, each
+/// 0.15 mm across at 4A and 0.4 at 20A (judged; a dimple follows the shot's
+/// size and the part's hardness, and the sources tie neither to intensity
+/// alone), its relief and a shade per dimple as fine detail, and the lobe
+/// 0.5 to 0.7 wide as the dimples' slopes spread the highlight. Returns
+/// material, color, height and slope.
+shotPeened(baseMaterial, @color baseColor, @range(4, 20) almenIntensity) {
+  a = clamp((almenIntensity - 4) / 16, 0, 1);
+  dimple = 0.15 + 0.25 * a;
+  skin = material.addDisplacement(material.withLay(material.withRoughness(baseMaterial, 0.5 + 0.2 * a), [0, 0, 0], 0), -texture.grainRelief(dimple, 0.08 * dimple));
+  skin.simple = material.withLay(material.withRoughness(baseMaterial, 0.5 + 0.2 * a), [0, 0, 0], 0);
+  tint = baseColor * texture.grainShade(dimple, 0.06);
+  tint.simple = baseColor;
+  return skin, tint, 0, 0;
+}
+
+// ===========================================================================
+// Ready-made
+// ===========================================================================
+
+// One surface from each constructor above over the metal it comes on, so
+// the material browser can show it.
+
+/// Grey cast iron, sand cast with 60 GFN sand. Returns material and colour.
+@material sandCastIron() {
+  ironMat, ironColor = metal.castIron();
+  skin, tone, height, slope = sandCast(ironMat, ironColor, 60);
+  return skin, tone;
+}
+
+
+/// Die-cast aluminium, its flow lines along +X. Returns material and colour.
+@material dieCastAluminum() {
+  aluMat, aluColor = metal.aluminum();
+  skin, tone, height, slope = dieCast(aluMat, aluColor, [1, 0, 0]);
+  return skin, tone;
+}
+
+/// Investment-cast stainless steel, 3 um Ra. Returns material and colour.
+@material investmentCastStainless() {
+  stainlessMat, stainlessColor = metal.stainless();
+  skin, tone, height, slope = investmentCast(stainlessMat, stainlessColor, 3);
+  return skin, tone;
+}
+
+/// Forged steel, half its scale still on. Returns material and colour.
+@material forgedSteel() {
+  steelMat, steelColor = metal.steel();
+  skin, tone, height, slope = forged(steelMat, steelColor, 0.5);
+  return skin, tone;
+}
+
+/// Shot-peened steel, 8A. Returns material and colour.
+@material shotPeenedSteel() {
+  steelMat, steelColor = metal.steel();
+  skin, tone, height, slope = shotPeened(steelMat, steelColor, 8);
+  return skin, tone;
+}
+
+// One @surface overload per operator above, for the Bodies panel to wrap a
+// surface with: the part's material and colour, and the usual setting for
+// the rest. Adjust opens one back into the full form.
+
+/// sandCast(baseMaterial, baseColor): sand cast with 60 GFN sand. Returns
+/// material, color, height and slope.
+@surface sandCast(baseMaterial, @color baseColor) {
+  skin, tone, height, slope = sandCast(baseMaterial, baseColor, 60);
+  return skin, tone, height, slope;
+}
+
+/// dieCast(baseMaterial, baseColor): die cast, the flow along +X. Returns
+/// material, color, height and slope.
+@surface dieCast(baseMaterial, @color baseColor) {
+  skin, tone, height, slope = dieCast(baseMaterial, baseColor, [1, 0, 0]);
+  return skin, tone, height, slope;
+}
+
+/// investmentCast(baseMaterial, baseColor): investment cast, 3 um Ra.
+/// Returns material, color, height and slope.
+@surface investmentCast(baseMaterial, @color baseColor) {
+  skin, tone, height, slope = investmentCast(baseMaterial, baseColor, 3);
+  return skin, tone, height, slope;
+}
+
+/// forged(baseMaterial, baseColor): forged, half the scale on. Returns
+/// material, color, height and slope.
+@surface forged(baseMaterial, @color baseColor) {
+  skin, tone, height, slope = forged(baseMaterial, baseColor, 0.5);
+  return skin, tone, height, slope;
+}
+
+/// shotPeened(baseMaterial, baseColor): shot peened to 8A. Returns
+/// material, color, height and slope.
+@surface shotPeened(baseMaterial, @color baseColor) {
+  skin, tone, height, slope = shotPeened(baseMaterial, baseColor, 8);
+  return skin, tone, height, slope;
+}
+
+// References
+//   Modern Casting. Critical characteristics affecting the surface finish of
+//     castings: roughness falls as the aggregate's AFS grain fineness rises,
+//     and round grains cast smoother than angular.
+//     https://www.moderncasting.com/node/263
+//   Alibaba seller guides to Ra 25 um cast finishes: green sand castings Ra
+//     6 to 25 um as cast (a trade source, the range only).
+//     https://seller.alibaba.com/blogs/2026/southeast-asia/metal-casting/ra-25-micron-rough-finish-guide-alibaba-b2b
+//   shotpeener.com. Frequently asked questions: Almen intensity from the
+//     saturation curve, coverage as the dimpled share with 98% full, dimples
+//     larger on softer parts. https://www.shotpeener.com/library/faq.php
+//   SAE J2277. Shot peening coverage determination.

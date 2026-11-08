@@ -154,7 +154,7 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
 
 fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32) -> vec4<f32> {
   if (gsl_colorIdx == 1u) { return vec4<f32>(vec3<f32>(1.0, 1.0, 1.0), 1.0); }
-  if (gsl_colorIdx == 2u) { return vec4<f32>(vec3<f32>(0.95, 0.9, 0.69), 1.0); }
+  if (gsl_colorIdx == 2u) { return vec4<f32>(vec3<f32>(0.9593, 0.8952, 0.6822), 1.0); }
   if (gsl_colorIdx == 3u) { return vec4<f32>(vec3<f32>(1.0, 1.0, 1.0), 1.0); }
   if (gsl_colorIdx == 4u) {
     let color_cherry = vec3<f32>(0.871, 0.192, 0.388);
@@ -162,7 +162,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32) -> vec4<f32> {
   }
   if (gsl_colorIdx == 5u) { return vec4<f32>(vec3<f32>(0.35, 0.35, 0.37), 1.0); }
   if (gsl_colorIdx == 6u) { return vec4<f32>(vec3<f32>(0.95, 0.85, 0.6), 1.0); }
-  if (gsl_colorIdx == 7u) { return vec4<f32>(vec3<f32>(0.8, 0.81, 0.82), 1.0); }
+  if (gsl_colorIdx == 7u) { return vec4<f32>(vec3<f32>(0.8373, 0.8204, 0.7966), 1.0); }
   if (gsl_colorIdx == 8u) { return vec4<f32>(select(vec3<f32>(0.12, 0.12, 0.12), vec3<f32>(0.85, 0.85, 0.85), 1.0 - 2.0 * gsl_floored((gsl_floored((floor(p.x / 2.0) + floor(p.y / 2.0)), 2.0) + 2.0), 2.0) > 0.0), 1.0); }
   return vec4<f32>(0.0, 0.0, 0.0, 0.0);
 }

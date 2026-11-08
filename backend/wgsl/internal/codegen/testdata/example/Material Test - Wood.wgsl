@@ -237,17 +237,17 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_
       gsl_detailValue_2 = (1.0 - texture_mask(gsl_tmp_154.x, 0.28, 0.06, noiseTex)) * gsl_tmp_155 + 0.05 * gsl_tmp_154.y * gsl_tmp_154.y * (1.0 - gsl_tmp_155);
       gsl_pw = gsl_detailOuterPw_2;
     }
-    var gsl_simpleValue = vec3<f32>(0.59386784, 0.47988868, 0.3859136);
+    var gsl_simpleValue = vec3<f32>(0.5854705, 0.48488966, 0.378912);
     if (gsl_simpleDetail > 0.0) {
       let gsl_tmp_157 = (atan2(gsl_tmp_136.y, gsl_tmp_136.x) + 3.1415927) / 6.2831855 * 250.0;
       let gsl_tmp_158 = gsl_floored(floor(gsl_tmp_157), 250.0);
       let gsl_tmp_159 = gsl_tmp_136.z / 12.0 + fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_158, gsl_tmp_158 + 17.0, 3.0 * gsl_tmp_158 + 5.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_158, gsl_tmp_158 + 17.0, 3.0 * gsl_tmp_158 + 5.0)) / 64.0)) & vec3<i32>(63), 0).rgb).y;
       let gsl_tmp_160 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_158, floor(gsl_tmp_159), gsl_tmp_158 + 401.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_158, floor(gsl_tmp_159), gsl_tmp_158 + 401.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
-      let gsl_tmp_161 = vec3<f32>(0.6289975, 0.025104912, 0.04613428) + vec3<f32>(-0.044705804, -0.0014734669, -0.0036211603) * gsl_tmp_149 + vec3<f32>((fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_146, gsl_tmp_146 + 5.0, 2.0 * gsl_tmp_146 + 29.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_146, gsl_tmp_146 + 5.0, 2.0 * gsl_tmp_146 + 29.0)) / 64.0)) & vec3<i32>(63), 0).rgb).x - 0.5) * 0.08 + gsl_detailValue + 0.1 * 1.0 * select(0.0, 1.0, gsl_tmp_160.z < 0.5) * (1.0 - texture_mask(abs(gsl_tmp_157 - floor(gsl_tmp_157) - 0.2 - 0.6 * gsl_tmp_160.x) * 6.2831855 * gsl_tmp_137 / 250.0, 0.15, 0.05, noiseTex)) * (1.0 - texture_mask(abs(gsl_tmp_159 - floor(gsl_tmp_159) - 0.5) * 2.0 / (0.35 + 0.65 * gsl_tmp_160.y), 1.0, 0.1, noiseTex)) * (1.0 - texture_mask(gsl_pw, 0.1125, 0.0375, noiseTex)) + 0.0, 0.0, 0.0) + vec3<f32>(0.042500425, 0.00060789636, -0.003918465) * texture_mask(gsl_tmp_138.x, 999979.3, 0.3, noiseTex);
+      let gsl_tmp_161 = vec3<f32>(0.62887883, 0.019482663, 0.048678815) + vec3<f32>(-0.044444397, -0.0012675361, -0.0034771787) * gsl_tmp_149 + vec3<f32>((fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_146, gsl_tmp_146 + 5.0, 2.0 * gsl_tmp_146 + 29.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_146, gsl_tmp_146 + 5.0, 2.0 * gsl_tmp_146 + 29.0)) / 64.0)) & vec3<i32>(63), 0).rgb).x - 0.5) * 0.08 + gsl_detailValue + 0.1 * 1.0 * select(0.0, 1.0, gsl_tmp_160.z < 0.5) * (1.0 - texture_mask(abs(gsl_tmp_157 - floor(gsl_tmp_157) - 0.2 - 0.6 * gsl_tmp_160.x) * 6.2831855 * gsl_tmp_137 / 250.0, 0.15, 0.05, noiseTex)) * (1.0 - texture_mask(abs(gsl_tmp_159 - floor(gsl_tmp_159) - 0.5) * 2.0 / (0.35 + 0.65 * gsl_tmp_160.y), 1.0, 0.1, noiseTex)) * (1.0 - texture_mask(gsl_pw, 0.1125, 0.0375, noiseTex)) + 0.0, 0.0, 0.0) + vec3<f32>(0.042521644, 0.0007117121, -0.0038856908) * texture_mask(gsl_tmp_138.x, 999979.3, 0.3, noiseTex);
       let gsl_tmp_162 = gsl_tmp_161 + (vec3<f32>(0.0, 0.0, 0.0) - gsl_tmp_161) * 0.0 * (1.0 - texture_mask(abs(gsl_tmp_138.x - 999979.3 + 0.3), 0.3, 0.1, noiseTex));
       let gsl_tmp_163 = gsl_tmp_162 + (vec3<f32>(0.0, 0.0, 0.0) - gsl_tmp_162) * 0.0;
-      let gsl_tmp_164 = gsl_tmp_163 + (vec3<f32>(0.45476237, 0.037886485, 0.05228309) - gsl_tmp_163) * 0.85 * gsl_detailValue_2 - vec3<f32>(0.0, 0.0, 0.0);
-      let gsl_tmp_116 = color_oklab2rgb(gsl_tmp_164 + (vec3<f32>(0.41366172, 0.0160504, 0.030504888) - gsl_tmp_164) * 0.8 * gsl_tmp_138.y, noiseTex);
+      let gsl_tmp_164 = gsl_tmp_163 + (vec3<f32>(0.4547599, 0.03102755, 0.056627084) - gsl_tmp_163) * 0.85 * gsl_detailValue_2 - vec3<f32>(0.0, 0.0, 0.0);
+      let gsl_tmp_116 = color_oklab2rgb(gsl_tmp_164 + (vec3<f32>(0.41371727, 0.012464928, 0.032169826) - gsl_tmp_164) * 0.8 * gsl_tmp_138.y, noiseTex);
       gsl_simpleValue = mix(gsl_simpleValue, gsl_tmp_116, gsl_simpleDetail);
     }
     let oakColor = gsl_simpleValue;

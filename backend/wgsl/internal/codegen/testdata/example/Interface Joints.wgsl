@@ -377,7 +377,8 @@ fn joint_boltedLength(nominalDia: f32, grip: f32) -> f32 {
 }
 
 fn joint_insert__color__0__spec1(p: vec3<f32>, iface: mat2x4<f32>, clamped: f32, threaded: f32, grip: f32) -> vec3<f32> {
-  let steelColor = vec3<f32>(0.77, 0.78, 0.78);
+  let c = vec3<f32>(0.77, 0.78, 0.78);
+  let steelColor = c;
   let seatPoint = joint_seat(iface);
   let shankDir = joint_direction(iface);
   let at = fastener_seatedAt(p, seatPoint, shankDir);
@@ -399,7 +400,8 @@ fn joint_insert__material__0__spec1(p: vec3<f32>, iface: mat2x4<f32>, clamped: f
 }
 
 fn joint_insert__color__2__spec1(p: vec3<f32>, iface: mat2x4<f32>, clamped: f32, threaded: f32, grip: f32) -> vec3<f32> {
-  let steelColor = vec3<f32>(0.77, 0.78, 0.78);
+  let c_3 = vec3<f32>(0.77, 0.78, 0.78);
+  let steelColor = c_3;
   let seatPoint = joint_seat(iface);
   let shankDir = joint_direction(iface);
   let at = fastener_seatedAt(p, seatPoint, shankDir);
@@ -449,7 +451,8 @@ fn joint_countersunkLength(nominalDia: f32, grip: f32) -> f32 {
 }
 
 fn joint_insert__color__0__spec2(p: vec3<f32>, iface: mat2x4<f32>, clamped: f32, threaded: f32, grip: f32) -> vec3<f32> {
-  let steelColor = vec3<f32>(0.77, 0.78, 0.78);
+  let c_6 = vec3<f32>(0.77, 0.78, 0.78);
+  let steelColor = c_6;
   let seatPoint = joint_seat(iface);
   let shankDir = joint_direction(iface);
   let at = fastener_seatedAt(p, seatPoint, shankDir);
@@ -473,7 +476,8 @@ fn joint_insert__material__0__spec2(p: vec3<f32>, iface: mat2x4<f32>, clamped: f
 }
 
 fn joint_insert__color__2__spec2(p: vec3<f32>, iface: mat2x4<f32>, clamped: f32, threaded: f32, grip: f32) -> vec3<f32> {
-  let steelColor = vec3<f32>(0.77, 0.78, 0.78);
+  let c_8 = vec3<f32>(0.77, 0.78, 0.78);
+  let steelColor = c_8;
   let seatPoint = joint_seat(iface);
   let shankDir = joint_direction(iface);
   let at = fastener_seatedAt(p, seatPoint, shankDir);
@@ -622,8 +626,8 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32) -> vec4<f32> {
     let gslCarry15 = joint_insert__color__2__spec2(p, mat2x4<f32>(vec4<f32>(30.0, -13.0, 3.0, 3.0), vec4<f32>(-0.0, -0.0, -1.0, 2.0)), cover1, base3, 3.0);
     return vec4<f32>(gslCarry15, 1.0);
   }
-  if (gsl_colorIdx == 2u) { return vec4<f32>(vec3<f32>(0.96, 0.96, 0.97), 1.0); }
-  if (gsl_colorIdx == 3u) { return vec4<f32>(vec3<f32>(0.96, 0.96, 0.97), 1.0); }
+  if (gsl_colorIdx == 2u) { return vec4<f32>(vec3<f32>(0.9621, 0.9654, 0.9658), 1.0); }
+  if (gsl_colorIdx == 3u) { return vec4<f32>(vec3<f32>(0.9621, 0.9654, 0.9658), 1.0); }
   if (gsl_colorIdx == 4u) { return vec4<f32>(vec3<f32>(0.15, 0.35, 0.65), 1.0); }
   if (gsl_colorIdx == 5u) {
     let lidBlank = max(builtin_gcl_closure_boxCentered(p, vec3<f32>(-40.0, 0.0, 14.0) * 0.5, abs(vec3<f32>(36.0, 36.0, 14.0))), -dot(p - vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(0.0, 0.0, 1.0)));

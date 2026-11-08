@@ -185,11 +185,11 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
 }
 
 fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32) -> vec4<f32> {
-  if (gsl_colorIdx == 1u) { return vec4<f32>(vec3<f32>(0.8, 0.81, 0.82), 1.0); }
-  if (gsl_colorIdx == 2u) { return vec4<f32>(vec3<f32>(0.8, 0.81, 0.82), 1.0); }
-  if (gsl_colorIdx == 3u) { return vec4<f32>(vec3<f32>(0.8, 0.81, 0.82), 1.0); }
-  if (gsl_colorIdx == 4u) { return vec4<f32>(vec3<f32>(0.8, 0.81, 0.82), 1.0); }
-  if (gsl_colorIdx == 5u) { return vec4<f32>(vec3<f32>(0.8, 0.81, 0.82), 1.0); }
+  if (gsl_colorIdx == 1u) { return vec4<f32>(vec3<f32>(0.8373, 0.8204, 0.7966), 1.0); }
+  if (gsl_colorIdx == 2u) { return vec4<f32>(vec3<f32>(0.8373, 0.8204, 0.7966), 1.0); }
+  if (gsl_colorIdx == 3u) { return vec4<f32>(vec3<f32>(0.8373, 0.8204, 0.7966), 1.0); }
+  if (gsl_colorIdx == 4u) { return vec4<f32>(vec3<f32>(0.8373, 0.8204, 0.7966), 1.0); }
+  if (gsl_colorIdx == 5u) { return vec4<f32>(vec3<f32>(0.8373, 0.8204, 0.7966), 1.0); }
   return vec4<f32>(0.0, 0.0, 0.0, 0.0);
 }
 fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32) -> gsl_material {

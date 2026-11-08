@@ -102,21 +102,21 @@ fn gsl_remap_4(p: vec3<f32>) -> vec3<f32> {
 }
 
 fn gsl_remap_5(p: vec3<f32>) -> vec3<f32> {
-  var gsl_simpleValue_2 = vec3<f32>(0.96, 0.96, 0.97);
+  var gsl_simpleValue_2 = vec3<f32>(0.9621, 0.9654, 0.9658);
   if (gsl_simpleDetail > 0.0) {
     let gsl_tmp_18 = 6.2831855 * p.z / 1.0;
     let gsl_tmp_17 = max(length(p.xy), 0.2);
-    gsl_simpleValue_2 = mix(gsl_simpleValue_2, color_mixOklab(vec3<f32>(0.96, 0.96, 0.97), vec3<f32>(0.336, 0.336, 0.3395), clamp(-(-min(max(0.5412659 - clamp((acos(clamp(cos(gsl_tmp_18) * p.x / gsl_tmp_17 + sin(gsl_tmp_18) * p.y / gsl_tmp_17, -1.0, 1.0)) / 3.1415927 * 0.5 - 0.0625) * 1.7320508, 0.0, 0.5412659), 0.0), max(0.0, 0.5 * min(min(8.0 - p.z, p.z - 0.0), 4.082532 - length(p.xy))))) / 0.5412659, 0.0, 1.0) * (1.0 - gsl_dispDrawn)), gsl_simpleDetail);
+    gsl_simpleValue_2 = mix(gsl_simpleValue_2, color_mixOklab(vec3<f32>(0.9621, 0.9654, 0.9658), vec3<f32>(0.336735, 0.33789, 0.33803), clamp(-(-min(max(0.5412659 - clamp((acos(clamp(cos(gsl_tmp_18) * p.x / gsl_tmp_17 + sin(gsl_tmp_18) * p.y / gsl_tmp_17, -1.0, 1.0)) / 3.1415927 * 0.5 - 0.0625) * 1.7320508, 0.0, 0.5412659), 0.0), max(0.0, 0.5 * min(min(8.0 - p.z, p.z - 0.0), 4.082532 - length(p.xy))))) / 0.5412659, 0.0, 1.0) * (1.0 - gsl_dispDrawn)), gsl_simpleDetail);
   }
   return gsl_simpleValue_2;
 }
 
 fn gsl_remap_6(p: vec3<f32>) -> vec3<f32> {
-  var gsl_simpleValue_3 = vec3<f32>(0.96, 0.96, 0.97);
+  var gsl_simpleValue_3 = vec3<f32>(0.9621, 0.9654, 0.9658);
   if (gsl_simpleDetail > 0.0) {
     let gsl_tmp_20 = 6.2831855 * p.z / 1.0;
     let gsl_tmp_19 = max(length(p.xy), 0.2);
-    gsl_simpleValue_3 = mix(gsl_simpleValue_3, color_mixOklab(vec3<f32>(0.96, 0.96, 0.97), vec3<f32>(0.336, 0.336, 0.3395), clamp(-(-min(max(0.5412659 - clamp((acos(clamp(cos(gsl_tmp_20) * p.x / gsl_tmp_19 + sin(gsl_tmp_20) * p.y / gsl_tmp_19, -1.0, 1.0)) / 3.1415927 * 0.5 - 0.0625) * 1.7320508, 0.0, 0.5412659), 0.0), max(0.0, 0.5 * min(min(8.0 - p.z, p.z - 0.0), 4.082532 - length(p.xy))))) / 0.5412659, 0.0, 1.0) * (1.0 - gsl_dispDrawn)), gsl_simpleDetail);
+    gsl_simpleValue_3 = mix(gsl_simpleValue_3, color_mixOklab(vec3<f32>(0.9621, 0.9654, 0.9658), vec3<f32>(0.336735, 0.33789, 0.33803), clamp(-(-min(max(0.5412659 - clamp((acos(clamp(cos(gsl_tmp_20) * p.x / gsl_tmp_19 + sin(gsl_tmp_20) * p.y / gsl_tmp_19, -1.0, 1.0)) / 3.1415927 * 0.5 - 0.0625) * 1.7320508, 0.0, 0.5412659), 0.0), max(0.0, 0.5 * min(min(8.0 - p.z, p.z - 0.0), 4.082532 - length(p.xy))))) / 0.5412659, 0.0, 1.0) * (1.0 - gsl_dispDrawn)), gsl_simpleDetail);
   }
   return gsl_simpleValue_3;
 }

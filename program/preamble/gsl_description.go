@@ -143,7 +143,7 @@ body's own frame, ` + "`[body.u, body.v]`" + `, which a tool writing the call
 reads off the body rather than asks for. ` + "`@surface`" + ` marks a
 function that takes a surface first and returns the modified one, the
 overload of a surface operator that takes only those slots and bakes the
-operator's other arguments: what the Bodies panel wraps a surface with.
+operator's other arguments: what the Materials panel wraps a surface with.
 
 * **Shape Color (` + "`name.color`" + `):**
 A declaration property that gives a shape an RGB color:

@@ -1,7 +1,7 @@
 // Scene Size: 70
 // Scene Grid: 10
 
-// Pools at true scale (material/animated): rain ringing on still water, and a
+// Pools at true scale (material/collection/animated): rain ringing on still water, and a
 // mud pot whose bubbles swell and burst.
 // Both are at true size, in real seconds.
 // Press play to start the clock.

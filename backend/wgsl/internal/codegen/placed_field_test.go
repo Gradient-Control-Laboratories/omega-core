@@ -14,7 +14,7 @@ import (
 // it is through a remap written out, and not about the world's origin.
 func TestPlacedFieldsMove(t *testing.T) {
 	const src = `
-import "metal";
+import "material/bulk/metal";
 steelMat, steelColor = metal.steel();
 place(s, o) {
   return transform.translate(s, o);

@@ -108,19 +108,6 @@ fn map_repeatCentered(x: vec2<f32>, period: vec2<f32>, noiseTex: texture_3d<f32>
   return gsl_floored_vec2((gsl_floored_vec2((x + half), period) + period), period) - half;
 }
 
-fn map_patternHexagonalXY(p: vec3<f32>, spacing: f32, noiseTex: texture_3d<f32>) -> vec3<f32> {
-  let cell = vec2<f32>(spacing * 1.7320508, spacing * 3.0);
-  let half = cell * 0.5;
-  let o3 = map_repeatCentered(p.xy - vec2<f32>(half.x, spacing * 2.5), cell, noiseTex);
-  let o2 = map_repeatCentered(p.xy - vec2<f32>(half.x, spacing * 1.5), cell, noiseTex);
-  let n23 = select(o3, o2, dot(o2, o2) < dot(o3, o3));
-  let o1 = map_repeatCentered(p.xy - vec2<f32>(0.0, spacing), cell, noiseTex);
-  let o0 = map_repeatCentered(p.xy, cell, noiseTex);
-  let n01 = select(o1, o0, dot(o0, o0) < dot(o1, o1));
-  let near = select(n23, n01, dot(n01, n01) < dot(n23, n23));
-  return vec3<f32>(near.x, near.y, p.z);
-}
-
 fn ease_quadratic(t: f32, noiseTex: texture_3d<f32>) -> f32 {
   return t * t * (3.0 - 2.0 * t);
 }
@@ -144,58 +131,143 @@ fn texture_fadeTo(gsl_var_value: f32, mean: f32, size: f32, noiseTex: texture_3d
   return mean + (gsl_var_value - mean) * texture_fadeDetail(size, noiseTex);
 }
 
+fn gsl_remap_3(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
+  let gsl_tmp_24 = map_repeatCentered(p.xy - vec2<f32>(0.8660254, 2.5), vec2<f32>(1.7320508, 3.0), noiseTex);
+  let gsl_tmp_23 = map_repeatCentered(p.xy - vec2<f32>(0.8660254, 1.5), vec2<f32>(1.7320508, 3.0), noiseTex);
+  let gsl_tmp_26 = select(gsl_tmp_24, gsl_tmp_23, dot(gsl_tmp_23, gsl_tmp_23) < dot(gsl_tmp_24, gsl_tmp_24));
+  let gsl_tmp_22 = map_repeatCentered(p.xy - vec2<f32>(0.0, 1.0), vec2<f32>(1.7320508, 3.0), noiseTex);
+  let gsl_tmp_21 = map_repeatCentered(p.xy, vec2<f32>(1.7320508, 3.0), noiseTex);
+  let gsl_tmp_25 = select(gsl_tmp_22, gsl_tmp_21, dot(gsl_tmp_21, gsl_tmp_21) < dot(gsl_tmp_22, gsl_tmp_22));
+  let gsl_tmp_27 = select(gsl_tmp_26, gsl_tmp_25, dot(gsl_tmp_25, gsl_tmp_25) < dot(gsl_tmp_26, gsl_tmp_26));
+  let gsl_tmp_28 = vec3<f32>(0.6151075, -0.05253712, -0.094294235) + vec3<f32>(0.38489252, 0.05253712, 0.09429427) * texture_fadeTo(texture_coverageDisc(length(vec3<f32>(gsl_tmp_27.x, gsl_tmp_27.y, p.z).xy), 0.25, noiseTex), 0.15114996, 1.0, noiseTex);
+  let gsl_tmp_29 = gsl_tmp_28.x + 0.39633778 * gsl_tmp_28.y + 0.21580376 * gsl_tmp_28.z;
+  let gsl_tmp_30 = gsl_tmp_28.x - 0.105561346 * gsl_tmp_28.y - 0.06385417 * gsl_tmp_28.z;
+  let gsl_tmp_31 = gsl_tmp_28.x - 0.08948418 * gsl_tmp_28.y - 1.2914855 * gsl_tmp_28.z;
+  let gsl_tmp_32 = vec3<f32>(gsl_tmp_29 * gsl_tmp_29 * gsl_tmp_29, gsl_tmp_30 * gsl_tmp_30 * gsl_tmp_30, gsl_tmp_31 * gsl_tmp_31 * gsl_tmp_31);
+  let gsl_tmp_166 = vec3<f32>(dot(vec3<f32>(4.0767417, -3.3077116, 0.23096994), gsl_tmp_32), dot(vec3<f32>(-1.268438, 2.6097574, -0.34131938), gsl_tmp_32), dot(vec3<f32>(-0.0041960864, -0.7034186, 1.7076147), gsl_tmp_32));
+  return vec3<f32>(color_linearToSrgbChannel(gsl_tmp_166.x, noiseTex), color_linearToSrgbChannel(gsl_tmp_166.y, noiseTex), color_linearToSrgbChannel(gsl_tmp_166.z, noiseTex));
+}
+
 fn ease_cubic(t: f32, noiseTex: texture_3d<f32>) -> f32 {
   return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
 }
 
-fn gsl_remap_3(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
+fn gsl_remap_4(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
   let gslCarry10 = fastener_screw(max(max(max(length(p.xy) - 3.5, -p.z), p.z - 4.0), (length(p.xy) - 3.5 + p.z - 4.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.0, -8.0 - p.z), p.z - 2.0), (length(p.xy) - 2.0 + -p.z - 8.0 + 0.6) * 0.7071), drill_prismVoid(p, 4.0, max(max(abs(p.x) - 1.5, abs(0.5 * p.x + 0.8660254 * p.y) - 1.5), abs(0.5 * p.x - 0.8660254 * p.y) - 1.5), 2.0, noiseTex), noiseTex);
   return gslCarry10;
 }
 
-fn gsl_remap_4(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
+fn gsl_remap_5(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
   let gslCarry7 = min(max(max(length(p.xy) - 3.5, -p.z), p.z - 4.0), max(max(length(p.xy) - 2.0, -8.0 - p.z), p.z - 2.0));
   return gslCarry7;
 }
 
-fn gsl_remap_5(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
+fn gsl_remap_6(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
+  let gsl_tmp_57 = map_repeatCentered(p.xy - vec2<f32>(1.7320508, 5.0), vec2<f32>(3.4641016, 6.0), noiseTex);
+  let gsl_tmp_56 = map_repeatCentered(p.xy - vec2<f32>(1.7320508, 3.0), vec2<f32>(3.4641016, 6.0), noiseTex);
+  let gsl_tmp_59 = select(gsl_tmp_57, gsl_tmp_56, dot(gsl_tmp_56, gsl_tmp_56) < dot(gsl_tmp_57, gsl_tmp_57));
+  let gsl_tmp_55 = map_repeatCentered(p.xy - vec2<f32>(0.0, 2.0), vec2<f32>(3.4641016, 6.0), noiseTex);
+  let gsl_tmp_54 = map_repeatCentered(p.xy, vec2<f32>(3.4641016, 6.0), noiseTex);
+  let gsl_tmp_58 = select(gsl_tmp_55, gsl_tmp_54, dot(gsl_tmp_54, gsl_tmp_54) < dot(gsl_tmp_55, gsl_tmp_55));
+  let gsl_tmp_60 = select(gsl_tmp_59, gsl_tmp_58, dot(gsl_tmp_58, gsl_tmp_58) < dot(gsl_tmp_59, gsl_tmp_59));
+  let gsl_tmp_61 = vec3<f32>(0.6151075, -0.05253712, -0.094294235) + vec3<f32>(0.38489252, 0.05253712, 0.09429427) * texture_fadeTo(texture_coverageDisc(length(vec3<f32>(gsl_tmp_60.x, gsl_tmp_60.y, p.z).xy), 0.5, noiseTex), 0.15114996, 2.0, noiseTex);
+  let gsl_tmp_62 = gsl_tmp_61.x + 0.39633778 * gsl_tmp_61.y + 0.21580376 * gsl_tmp_61.z;
+  let gsl_tmp_63 = gsl_tmp_61.x - 0.105561346 * gsl_tmp_61.y - 0.06385417 * gsl_tmp_61.z;
+  let gsl_tmp_64 = gsl_tmp_61.x - 0.08948418 * gsl_tmp_61.y - 1.2914855 * gsl_tmp_61.z;
+  let gsl_tmp_65 = vec3<f32>(gsl_tmp_62 * gsl_tmp_62 * gsl_tmp_62, gsl_tmp_63 * gsl_tmp_63 * gsl_tmp_63, gsl_tmp_64 * gsl_tmp_64 * gsl_tmp_64);
+  let gsl_tmp_171 = vec3<f32>(dot(vec3<f32>(4.0767417, -3.3077116, 0.23096994), gsl_tmp_65), dot(vec3<f32>(-1.268438, 2.6097574, -0.34131938), gsl_tmp_65), dot(vec3<f32>(-0.0041960864, -0.7034186, 1.7076147), gsl_tmp_65));
+  return vec3<f32>(color_linearToSrgbChannel(gsl_tmp_171.x, noiseTex), color_linearToSrgbChannel(gsl_tmp_171.y, noiseTex), color_linearToSrgbChannel(gsl_tmp_171.z, noiseTex));
+}
+
+fn gsl_remap_7(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
   let gslCarry16 = fastener_screw(max(max(max(length(p.xy) - 6.5, -p.z), p.z - 8.0), (length(p.xy) - 6.5 + p.z - 8.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 4.0, -16.0 - p.z), p.z - 4.0), (length(p.xy) - 4.0 + -p.z - 16.0 + 1.2) * 0.7071), drill_prismVoid(p, 8.0, max(max(abs(p.x) - 3.0, abs(0.5 * p.x + 0.8660254 * p.y) - 3.0), abs(0.5 * p.x - 0.8660254 * p.y) - 3.0), 4.0, noiseTex), noiseTex);
   return gslCarry16;
 }
 
-fn gsl_remap_6(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
+fn gsl_remap_8(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
   let gslCarry13 = min(max(max(length(p.xy) - 6.5, -p.z), p.z - 8.0), max(max(length(p.xy) - 4.0, -16.0 - p.z), p.z - 4.0));
   return gslCarry13;
 }
 
-fn gsl_remap_7(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
+fn gsl_remap_9(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
+  let gsl_tmp_90 = map_repeatCentered(p.xy - vec2<f32>(3.4641016, 10.0), vec2<f32>(6.928203, 12.0), noiseTex);
+  let gsl_tmp_89 = map_repeatCentered(p.xy - vec2<f32>(3.4641016, 6.0), vec2<f32>(6.928203, 12.0), noiseTex);
+  let gsl_tmp_92 = select(gsl_tmp_90, gsl_tmp_89, dot(gsl_tmp_89, gsl_tmp_89) < dot(gsl_tmp_90, gsl_tmp_90));
+  let gsl_tmp_88 = map_repeatCentered(p.xy - vec2<f32>(0.0, 4.0), vec2<f32>(6.928203, 12.0), noiseTex);
+  let gsl_tmp_87 = map_repeatCentered(p.xy, vec2<f32>(6.928203, 12.0), noiseTex);
+  let gsl_tmp_91 = select(gsl_tmp_88, gsl_tmp_87, dot(gsl_tmp_87, gsl_tmp_87) < dot(gsl_tmp_88, gsl_tmp_88));
+  let gsl_tmp_93 = select(gsl_tmp_92, gsl_tmp_91, dot(gsl_tmp_91, gsl_tmp_91) < dot(gsl_tmp_92, gsl_tmp_92));
+  let gsl_tmp_94 = vec3<f32>(0.6151075, -0.05253712, -0.094294235) + vec3<f32>(0.38489252, 0.05253712, 0.09429427) * texture_fadeTo(texture_coverageDisc(length(vec3<f32>(gsl_tmp_93.x, gsl_tmp_93.y, p.z).xy), 1.0, noiseTex), 0.15114996, 4.0, noiseTex);
+  let gsl_tmp_95 = gsl_tmp_94.x + 0.39633778 * gsl_tmp_94.y + 0.21580376 * gsl_tmp_94.z;
+  let gsl_tmp_96 = gsl_tmp_94.x - 0.105561346 * gsl_tmp_94.y - 0.06385417 * gsl_tmp_94.z;
+  let gsl_tmp_97 = gsl_tmp_94.x - 0.08948418 * gsl_tmp_94.y - 1.2914855 * gsl_tmp_94.z;
+  let gsl_tmp_98 = vec3<f32>(gsl_tmp_95 * gsl_tmp_95 * gsl_tmp_95, gsl_tmp_96 * gsl_tmp_96 * gsl_tmp_96, gsl_tmp_97 * gsl_tmp_97 * gsl_tmp_97);
+  let gsl_tmp_176 = vec3<f32>(dot(vec3<f32>(4.0767417, -3.3077116, 0.23096994), gsl_tmp_98), dot(vec3<f32>(-1.268438, 2.6097574, -0.34131938), gsl_tmp_98), dot(vec3<f32>(-0.0041960864, -0.7034186, 1.7076147), gsl_tmp_98));
+  return vec3<f32>(color_linearToSrgbChannel(gsl_tmp_176.x, noiseTex), color_linearToSrgbChannel(gsl_tmp_176.y, noiseTex), color_linearToSrgbChannel(gsl_tmp_176.z, noiseTex));
+}
+
+fn gsl_remap_10(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
   let gslCarry22 = fastener_screw(max(max(max(length(p.xy) - 12.0, -p.z), p.z - 16.0), (length(p.xy) - 12.0 + p.z - 16.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 8.0, -32.0 - p.z), p.z - 8.0), (length(p.xy) - 8.0 + -p.z - 32.0 + 2.4) * 0.7071), drill_prismVoid(p, 16.0, max(max(abs(p.x) - 7.0, abs(0.5 * p.x + 0.8660254 * p.y) - 7.0), abs(0.5 * p.x - 0.8660254 * p.y) - 7.0), 8.0, noiseTex), noiseTex);
   return gslCarry22;
 }
 
-fn gsl_remap_8(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
+fn gsl_remap_11(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
   let gslCarry19 = min(max(max(length(p.xy) - 12.0, -p.z), p.z - 16.0), max(max(length(p.xy) - 8.0, -32.0 - p.z), p.z - 8.0));
   return gslCarry19;
 }
 
-fn gsl_remap_9(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
+fn gsl_remap_12(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
+  let gsl_tmp_123 = map_repeatCentered(p.xy - vec2<f32>(6.928203, 20.0), vec2<f32>(13.856406, 24.0), noiseTex);
+  let gsl_tmp_122 = map_repeatCentered(p.xy - vec2<f32>(6.928203, 12.0), vec2<f32>(13.856406, 24.0), noiseTex);
+  let gsl_tmp_125 = select(gsl_tmp_123, gsl_tmp_122, dot(gsl_tmp_122, gsl_tmp_122) < dot(gsl_tmp_123, gsl_tmp_123));
+  let gsl_tmp_121 = map_repeatCentered(p.xy - vec2<f32>(0.0, 8.0), vec2<f32>(13.856406, 24.0), noiseTex);
+  let gsl_tmp_120 = map_repeatCentered(p.xy, vec2<f32>(13.856406, 24.0), noiseTex);
+  let gsl_tmp_124 = select(gsl_tmp_121, gsl_tmp_120, dot(gsl_tmp_120, gsl_tmp_120) < dot(gsl_tmp_121, gsl_tmp_121));
+  let gsl_tmp_126 = select(gsl_tmp_125, gsl_tmp_124, dot(gsl_tmp_124, gsl_tmp_124) < dot(gsl_tmp_125, gsl_tmp_125));
+  let gsl_tmp_127 = vec3<f32>(0.6151075, -0.05253712, -0.094294235) + vec3<f32>(0.38489252, 0.05253712, 0.09429427) * texture_fadeTo(texture_coverageDisc(length(vec3<f32>(gsl_tmp_126.x, gsl_tmp_126.y, p.z).xy), 2.0, noiseTex), 0.15114996, 8.0, noiseTex);
+  let gsl_tmp_128 = gsl_tmp_127.x + 0.39633778 * gsl_tmp_127.y + 0.21580376 * gsl_tmp_127.z;
+  let gsl_tmp_129 = gsl_tmp_127.x - 0.105561346 * gsl_tmp_127.y - 0.06385417 * gsl_tmp_127.z;
+  let gsl_tmp_130 = gsl_tmp_127.x - 0.08948418 * gsl_tmp_127.y - 1.2914855 * gsl_tmp_127.z;
+  let gsl_tmp_131 = vec3<f32>(gsl_tmp_128 * gsl_tmp_128 * gsl_tmp_128, gsl_tmp_129 * gsl_tmp_129 * gsl_tmp_129, gsl_tmp_130 * gsl_tmp_130 * gsl_tmp_130);
+  let gsl_tmp_181 = vec3<f32>(dot(vec3<f32>(4.0767417, -3.3077116, 0.23096994), gsl_tmp_131), dot(vec3<f32>(-1.268438, 2.6097574, -0.34131938), gsl_tmp_131), dot(vec3<f32>(-0.0041960864, -0.7034186, 1.7076147), gsl_tmp_131));
+  return vec3<f32>(color_linearToSrgbChannel(gsl_tmp_181.x, noiseTex), color_linearToSrgbChannel(gsl_tmp_181.y, noiseTex), color_linearToSrgbChannel(gsl_tmp_181.z, noiseTex));
+}
+
+fn gsl_remap_13(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
   let gslCarry28 = fastener_screw(max(max(max(length(p.xy) - 22.5, -p.z), p.z - 30.0), (length(p.xy) - 22.5 + p.z - 30.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 15.0, -60.0 - p.z), p.z - 15.0), (length(p.xy) - 15.0 + -p.z - 60.0 + 4.5) * 0.7071), drill_prismVoid(p, 30.0, max(max(abs(p.x) - 11.0, abs(0.5 * p.x + 0.8660254 * p.y) - 11.0), abs(0.5 * p.x - 0.8660254 * p.y) - 11.0), 15.5, noiseTex), noiseTex);
   return gslCarry28;
 }
 
-fn gsl_remap_10(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
+fn gsl_remap_14(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
   let gslCarry25 = min(max(max(length(p.xy) - 22.5, -p.z), p.z - 30.0), max(max(length(p.xy) - 15.0, -60.0 - p.z), p.z - 15.0));
   return gslCarry25;
 }
 
-fn gsl_remap_11(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
+fn gsl_remap_15(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
+  let gsl_tmp_156 = map_repeatCentered(p.xy - vec2<f32>(13.856406, 40.0), vec2<f32>(27.712812, 48.0), noiseTex);
+  let gsl_tmp_155 = map_repeatCentered(p.xy - vec2<f32>(13.856406, 24.0), vec2<f32>(27.712812, 48.0), noiseTex);
+  let gsl_tmp_158 = select(gsl_tmp_156, gsl_tmp_155, dot(gsl_tmp_155, gsl_tmp_155) < dot(gsl_tmp_156, gsl_tmp_156));
+  let gsl_tmp_154 = map_repeatCentered(p.xy - vec2<f32>(0.0, 16.0), vec2<f32>(27.712812, 48.0), noiseTex);
+  let gsl_tmp_153 = map_repeatCentered(p.xy, vec2<f32>(27.712812, 48.0), noiseTex);
+  let gsl_tmp_157 = select(gsl_tmp_154, gsl_tmp_153, dot(gsl_tmp_153, gsl_tmp_153) < dot(gsl_tmp_154, gsl_tmp_154));
+  let gsl_tmp_159 = select(gsl_tmp_158, gsl_tmp_157, dot(gsl_tmp_157, gsl_tmp_157) < dot(gsl_tmp_158, gsl_tmp_158));
+  let gsl_tmp_160 = vec3<f32>(0.6151075, -0.05253712, -0.094294235) + vec3<f32>(0.38489252, 0.05253712, 0.09429427) * texture_fadeTo(texture_coverageDisc(length(vec3<f32>(gsl_tmp_159.x, gsl_tmp_159.y, p.z).xy), 4.0, noiseTex), 0.15114996, 16.0, noiseTex);
+  let gsl_tmp_161 = gsl_tmp_160.x + 0.39633778 * gsl_tmp_160.y + 0.21580376 * gsl_tmp_160.z;
+  let gsl_tmp_162 = gsl_tmp_160.x - 0.105561346 * gsl_tmp_160.y - 0.06385417 * gsl_tmp_160.z;
+  let gsl_tmp_163 = gsl_tmp_160.x - 0.08948418 * gsl_tmp_160.y - 1.2914855 * gsl_tmp_160.z;
+  let gsl_tmp_164 = vec3<f32>(gsl_tmp_161 * gsl_tmp_161 * gsl_tmp_161, gsl_tmp_162 * gsl_tmp_162 * gsl_tmp_162, gsl_tmp_163 * gsl_tmp_163 * gsl_tmp_163);
+  let gsl_tmp_186 = vec3<f32>(dot(vec3<f32>(4.0767417, -3.3077116, 0.23096994), gsl_tmp_164), dot(vec3<f32>(-1.268438, 2.6097574, -0.34131938), gsl_tmp_164), dot(vec3<f32>(-0.0041960864, -0.7034186, 1.7076147), gsl_tmp_164));
+  return vec3<f32>(color_linearToSrgbChannel(gsl_tmp_186.x, noiseTex), color_linearToSrgbChannel(gsl_tmp_186.y, noiseTex), color_linearToSrgbChannel(gsl_tmp_186.z, noiseTex));
+}
+
+fn gsl_remap_16(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
   let gsl_tmp_10 = 6.2831855 * p.z / 0.4;
   let gsl_tmp_9 = max(length(p.xy), 0.2);
   let gslCarry5 = thread_reliefColor(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_10) * p.x / gsl_tmp_9 + sin(gsl_tmp_10) * p.y / gsl_tmp_9, -1.0, 1.0)) / 3.1415927 * 0.2 - 0.025) * 1.7320508, 0.0, 0.21650636), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -4.0), 1.2165064 - length(p.xy)))), max(0.0, length(p.xy) - 0.5669873)), 0.4, noiseTex);
   return gslCarry5;
 }
 
-fn gsl_remap_12(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
+fn gsl_remap_17(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
   let gsl_tmp_4 = 6.2831855 * p.z / 0.4;
   let gsl_tmp_3 = max(length(p.xy), 0.2);
   let gslCarry2 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_4) * p.x / gsl_tmp_3 + sin(gsl_tmp_4) * p.y / gsl_tmp_3, -1.0, 1.0)) / 3.1415927 * 0.2 - 0.025) * 1.7320508, 0.0, 0.21650636), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -4.0), 1.2165064 - length(p.xy)))), max(0.0, length(p.xy) - 0.5669873)), 0.4, noiseTex);
@@ -214,180 +286,180 @@ fn texture_squareWave(x: f32, period: f32, noiseTex: texture_3d<f32>) -> f32 {
   return select(exact, averaged, width > 0.0001 * period);
 }
 
-fn gsl_remap_13(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, color_black: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
-  let gsl_tmp_30 = 6.2831855 * p.z / 0.7;
-  let gsl_tmp_29 = max(length(p.xy), 0.2);
-  let gslCarry11 = thread_reliefColor(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_30) * p.x / gsl_tmp_29 + sin(gsl_tmp_30) * p.y / gsl_tmp_29, -1.0, 1.0)) / 3.1415927 * 0.35 - 0.04375) * 1.7320508, 0.0, 0.37888613), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -8.0), 2.3788862 - length(p.xy)))), max(0.0, length(p.xy) - 1.2422278)), 0.7, noiseTex);
+fn gsl_remap_18(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, color_white: vec3<f32>, color_black: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
+  let gsl_tmp_43 = 6.2831855 * p.z / 0.7;
+  let gsl_tmp_42 = max(length(p.xy), 0.2);
+  let gslCarry11 = thread_reliefColor(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_43) * p.x / gsl_tmp_42 + sin(gsl_tmp_43) * p.y / gsl_tmp_42, -1.0, 1.0)) / 3.1415927 * 0.35 - 0.04375) * 1.7320508, 0.0, 0.37888613), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -8.0), 2.3788862 - length(p.xy)))), max(0.0, length(p.xy) - 1.2422278)), 0.7, noiseTex);
   return gslCarry11;
 }
 
-fn gsl_remap_14(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, color_black: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
-  let gsl_tmp_24 = 6.2831855 * p.z / 0.7;
-  let gsl_tmp_23 = max(length(p.xy), 0.2);
-  let gslCarry8 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_24) * p.x / gsl_tmp_23 + sin(gsl_tmp_24) * p.y / gsl_tmp_23, -1.0, 1.0)) / 3.1415927 * 0.35 - 0.04375) * 1.7320508, 0.0, 0.37888613), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -8.0), 2.3788862 - length(p.xy)))), max(0.0, length(p.xy) - 1.2422278)), 0.7, noiseTex);
+fn gsl_remap_19(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, color_white: vec3<f32>, color_black: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
+  let gsl_tmp_37 = 6.2831855 * p.z / 0.7;
+  let gsl_tmp_36 = max(length(p.xy), 0.2);
+  let gslCarry8 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_37) * p.x / gsl_tmp_36 + sin(gsl_tmp_37) * p.y / gsl_tmp_36, -1.0, 1.0)) / 3.1415927 * 0.35 - 0.04375) * 1.7320508, 0.0, 0.37888613), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -8.0), 2.3788862 - length(p.xy)))), max(0.0, length(p.xy) - 1.2422278)), 0.7, noiseTex);
   return gslCarry8;
 }
 
-fn gsl_remap_15(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, color_black: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
-  let gsl_tmp_50 = 6.2831855 * p.z / 1.25;
-  let gsl_tmp_49 = max(length(p.xy), 0.2);
-  let gslCarry17 = thread_reliefColor(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_50) * p.x / gsl_tmp_49 + sin(gsl_tmp_50) * p.y / gsl_tmp_49, -1.0, 1.0)) / 3.1415927 * 0.625 - 0.078125) * 1.7320508, 0.0, 0.6765824), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 4.6765823 - length(p.xy)))), max(0.0, length(p.xy) - 2.6468353)), 1.25, noiseTex);
+fn gsl_remap_20(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, color_white: vec3<f32>, color_black: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
+  let gsl_tmp_76 = 6.2831855 * p.z / 1.25;
+  let gsl_tmp_75 = max(length(p.xy), 0.2);
+  let gslCarry17 = thread_reliefColor(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_76) * p.x / gsl_tmp_75 + sin(gsl_tmp_76) * p.y / gsl_tmp_75, -1.0, 1.0)) / 3.1415927 * 0.625 - 0.078125) * 1.7320508, 0.0, 0.6765824), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 4.6765823 - length(p.xy)))), max(0.0, length(p.xy) - 2.6468353)), 1.25, noiseTex);
   return gslCarry17;
 }
 
-fn gsl_remap_16(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, color_black: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
-  let gsl_tmp_44 = 6.2831855 * p.z / 1.25;
-  let gsl_tmp_43 = max(length(p.xy), 0.2);
-  let gslCarry14 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_44) * p.x / gsl_tmp_43 + sin(gsl_tmp_44) * p.y / gsl_tmp_43, -1.0, 1.0)) / 3.1415927 * 0.625 - 0.078125) * 1.7320508, 0.0, 0.6765824), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 4.6765823 - length(p.xy)))), max(0.0, length(p.xy) - 2.6468353)), 1.25, noiseTex);
+fn gsl_remap_21(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, color_white: vec3<f32>, color_black: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
+  let gsl_tmp_70 = 6.2831855 * p.z / 1.25;
+  let gsl_tmp_69 = max(length(p.xy), 0.2);
+  let gslCarry14 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_70) * p.x / gsl_tmp_69 + sin(gsl_tmp_70) * p.y / gsl_tmp_69, -1.0, 1.0)) / 3.1415927 * 0.625 - 0.078125) * 1.7320508, 0.0, 0.6765824), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 4.6765823 - length(p.xy)))), max(0.0, length(p.xy) - 2.6468353)), 1.25, noiseTex);
   return gslCarry14;
 }
 
-fn gsl_remap_17(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, color_black: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
-  let gsl_tmp_70 = 6.2831855 * p.z / 2.0;
-  let gsl_tmp_69 = max(length(p.xy), 0.2);
-  let gslCarry23 = thread_reliefColor(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_70) * p.x / gsl_tmp_69 + sin(gsl_tmp_70) * p.y / gsl_tmp_69, -1.0, 1.0)) / 3.1415927 * 1.0 - 0.125) * 1.7320508, 0.0, 1.0825318), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -32.0), 9.082532 - length(p.xy)))), max(0.0, length(p.xy) - 5.8349366)), 2.0, noiseTex);
+fn gsl_remap_22(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, color_white: vec3<f32>, color_black: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
+  let gsl_tmp_109 = 6.2831855 * p.z / 2.0;
+  let gsl_tmp_108 = max(length(p.xy), 0.2);
+  let gslCarry23 = thread_reliefColor(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_109) * p.x / gsl_tmp_108 + sin(gsl_tmp_109) * p.y / gsl_tmp_108, -1.0, 1.0)) / 3.1415927 * 1.0 - 0.125) * 1.7320508, 0.0, 1.0825318), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -32.0), 9.082532 - length(p.xy)))), max(0.0, length(p.xy) - 5.8349366)), 2.0, noiseTex);
   return gslCarry23;
 }
 
-fn gsl_remap_18(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, color_black: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
-  let gsl_tmp_64 = 6.2831855 * p.z / 2.0;
-  let gsl_tmp_63 = max(length(p.xy), 0.2);
-  let gslCarry20 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_64) * p.x / gsl_tmp_63 + sin(gsl_tmp_64) * p.y / gsl_tmp_63, -1.0, 1.0)) / 3.1415927 * 1.0 - 0.125) * 1.7320508, 0.0, 1.0825318), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -32.0), 9.082532 - length(p.xy)))), max(0.0, length(p.xy) - 5.8349366)), 2.0, noiseTex);
+fn gsl_remap_23(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, color_white: vec3<f32>, color_black: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
+  let gsl_tmp_103 = 6.2831855 * p.z / 2.0;
+  let gsl_tmp_102 = max(length(p.xy), 0.2);
+  let gslCarry20 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_103) * p.x / gsl_tmp_102 + sin(gsl_tmp_103) * p.y / gsl_tmp_102, -1.0, 1.0)) / 3.1415927 * 1.0 - 0.125) * 1.7320508, 0.0, 1.0825318), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -32.0), 9.082532 - length(p.xy)))), max(0.0, length(p.xy) - 5.8349366)), 2.0, noiseTex);
   return gslCarry20;
 }
 
-fn gsl_remap_19(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, color_black: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
-  let gsl_tmp_90 = 6.2831855 * p.z / 3.5;
-  let gsl_tmp_89 = max(length(p.xy), 0.2);
-  let gslCarry29 = thread_reliefColor(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_90) * p.x / gsl_tmp_89 + sin(gsl_tmp_90) * p.y / gsl_tmp_89, -1.0, 1.0)) / 3.1415927 * 1.75 - 0.21875) * 1.7320508, 0.0, 1.8944306), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -60.0), 16.89443 - length(p.xy)))), max(0.0, length(p.xy) - 11.211139)), 3.5, noiseTex);
+fn gsl_remap_24(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, color_white: vec3<f32>, color_black: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
+  let gsl_tmp_142 = 6.2831855 * p.z / 3.5;
+  let gsl_tmp_141 = max(length(p.xy), 0.2);
+  let gslCarry29 = thread_reliefColor(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_142) * p.x / gsl_tmp_141 + sin(gsl_tmp_142) * p.y / gsl_tmp_141, -1.0, 1.0)) / 3.1415927 * 1.75 - 0.21875) * 1.7320508, 0.0, 1.8944306), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -60.0), 16.89443 - length(p.xy)))), max(0.0, length(p.xy) - 11.211139)), 3.5, noiseTex);
   return gslCarry29;
 }
 
-fn gsl_remap_20(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, color_black: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
-  let gsl_tmp_84 = 6.2831855 * p.z / 3.5;
-  let gsl_tmp_83 = max(length(p.xy), 0.2);
-  let gslCarry26 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_84) * p.x / gsl_tmp_83 + sin(gsl_tmp_84) * p.y / gsl_tmp_83, -1.0, 1.0)) / 3.1415927 * 1.75 - 0.21875) * 1.7320508, 0.0, 1.8944306), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -60.0), 16.89443 - length(p.xy)))), max(0.0, length(p.xy) - 11.211139)), 3.5, noiseTex);
+fn gsl_remap_25(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, color_white: vec3<f32>, color_black: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
+  let gsl_tmp_136 = 6.2831855 * p.z / 3.5;
+  let gsl_tmp_135 = max(length(p.xy), 0.2);
+  let gslCarry26 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_136) * p.x / gsl_tmp_135 + sin(gsl_tmp_136) * p.y / gsl_tmp_135, -1.0, 1.0)) / 3.1415927 * 1.75 - 0.21875) * 1.7320508, 0.0, 1.8944306), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -60.0), 16.89443 - length(p.xy)))), max(0.0, length(p.xy) - 11.211139)), 3.5, noiseTex);
   return gslCarry26;
 }
 
-fn gsl_remap_21(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, color_black: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
+fn gsl_remap_26(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, color_white: vec3<f32>, color_black: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
   let gsl_tmp_14 = 6.2831855 * p.z / 0.4;
   let gsl_tmp_13 = max(length(p.xy), 0.2);
   let gslCarry6 = material_withDisplacement(material_brushedMetal, -min(min(clamp((acos(clamp(cos(gsl_tmp_14) * p.x / gsl_tmp_13 + sin(gsl_tmp_14) * p.y / gsl_tmp_13, -1.0, 1.0)) / 3.1415927 * 0.2 - 0.025) * 1.7320508, 0.0, 0.21650636), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -4.0), 1.2165064 - length(p.xy)))), max(0.0, length(p.xy) - 0.5669873)), noiseTex);
   return gslCarry6[0];
 }
 
-fn gsl_remap_22(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, color_black: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
+fn gsl_remap_27(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, color_white: vec3<f32>, color_black: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
   let gsl_tmp_14 = 6.2831855 * p.z / 0.4;
   let gsl_tmp_13 = max(length(p.xy), 0.2);
   let gslCarry6 = material_withDisplacement(material_brushedMetal, -min(min(clamp((acos(clamp(cos(gsl_tmp_14) * p.x / gsl_tmp_13 + sin(gsl_tmp_14) * p.y / gsl_tmp_13, -1.0, 1.0)) / 3.1415927 * 0.2 - 0.025) * 1.7320508, 0.0, 0.21650636), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -4.0), 1.2165064 - length(p.xy)))), max(0.0, length(p.xy) - 0.5669873)), noiseTex);
   return gslCarry6[1];
 }
 
-fn gsl_remap_23(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, color_black: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
+fn gsl_remap_28(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, color_white: vec3<f32>, color_black: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
   let gsl_tmp_14 = 6.2831855 * p.z / 0.4;
   let gsl_tmp_13 = max(length(p.xy), 0.2);
   let gslCarry6 = material_withDisplacement(material_brushedMetal, -min(min(clamp((acos(clamp(cos(gsl_tmp_14) * p.x / gsl_tmp_13 + sin(gsl_tmp_14) * p.y / gsl_tmp_13, -1.0, 1.0)) / 3.1415927 * 0.2 - 0.025) * 1.7320508, 0.0, 0.21650636), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -4.0), 1.2165064 - length(p.xy)))), max(0.0, length(p.xy) - 0.5669873)), noiseTex);
   return gslCarry6[2];
 }
 
-fn gsl_remap_24(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, color_black: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
+fn gsl_remap_29(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, color_white: vec3<f32>, color_black: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
   return vec4<f32>(0.45, 1.0, 1.5, 0.0);
 }
 
-fn gsl_remap_25(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, color_black: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
+fn gsl_remap_30(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, color_white: vec3<f32>, color_black: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
   return vec4<f32>(0.0, 0.0, 0.0, 0.0);
 }
 
-fn gsl_remap_26(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, color_black: vec3<f32>, material_matte: mat4x4<f32>, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
-  let gsl_tmp_34 = 6.2831855 * p.z / 0.7;
-  let gsl_tmp_33 = max(length(p.xy), 0.2);
-  let gslCarry12 = material_withDisplacement(material_brushedMetal, -min(min(clamp((acos(clamp(cos(gsl_tmp_34) * p.x / gsl_tmp_33 + sin(gsl_tmp_34) * p.y / gsl_tmp_33, -1.0, 1.0)) / 3.1415927 * 0.35 - 0.04375) * 1.7320508, 0.0, 0.37888613), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -8.0), 2.3788862 - length(p.xy)))), max(0.0, length(p.xy) - 1.2422278)), noiseTex);
+fn gsl_remap_31(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, color_white: vec3<f32>, color_black: vec3<f32>, material_matte: mat4x4<f32>, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
+  let gsl_tmp_47 = 6.2831855 * p.z / 0.7;
+  let gsl_tmp_46 = max(length(p.xy), 0.2);
+  let gslCarry12 = material_withDisplacement(material_brushedMetal, -min(min(clamp((acos(clamp(cos(gsl_tmp_47) * p.x / gsl_tmp_46 + sin(gsl_tmp_47) * p.y / gsl_tmp_46, -1.0, 1.0)) / 3.1415927 * 0.35 - 0.04375) * 1.7320508, 0.0, 0.37888613), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -8.0), 2.3788862 - length(p.xy)))), max(0.0, length(p.xy) - 1.2422278)), noiseTex);
   return gslCarry12[0];
 }
 
-fn gsl_remap_27(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, color_black: vec3<f32>, material_matte: mat4x4<f32>, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
-  let gsl_tmp_34 = 6.2831855 * p.z / 0.7;
-  let gsl_tmp_33 = max(length(p.xy), 0.2);
-  let gslCarry12 = material_withDisplacement(material_brushedMetal, -min(min(clamp((acos(clamp(cos(gsl_tmp_34) * p.x / gsl_tmp_33 + sin(gsl_tmp_34) * p.y / gsl_tmp_33, -1.0, 1.0)) / 3.1415927 * 0.35 - 0.04375) * 1.7320508, 0.0, 0.37888613), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -8.0), 2.3788862 - length(p.xy)))), max(0.0, length(p.xy) - 1.2422278)), noiseTex);
+fn gsl_remap_32(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, color_white: vec3<f32>, color_black: vec3<f32>, material_matte: mat4x4<f32>, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
+  let gsl_tmp_47 = 6.2831855 * p.z / 0.7;
+  let gsl_tmp_46 = max(length(p.xy), 0.2);
+  let gslCarry12 = material_withDisplacement(material_brushedMetal, -min(min(clamp((acos(clamp(cos(gsl_tmp_47) * p.x / gsl_tmp_46 + sin(gsl_tmp_47) * p.y / gsl_tmp_46, -1.0, 1.0)) / 3.1415927 * 0.35 - 0.04375) * 1.7320508, 0.0, 0.37888613), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -8.0), 2.3788862 - length(p.xy)))), max(0.0, length(p.xy) - 1.2422278)), noiseTex);
   return gslCarry12[1];
 }
 
-fn gsl_remap_28(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, color_black: vec3<f32>, material_matte: mat4x4<f32>, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
-  let gsl_tmp_34 = 6.2831855 * p.z / 0.7;
-  let gsl_tmp_33 = max(length(p.xy), 0.2);
-  let gslCarry12 = material_withDisplacement(material_brushedMetal, -min(min(clamp((acos(clamp(cos(gsl_tmp_34) * p.x / gsl_tmp_33 + sin(gsl_tmp_34) * p.y / gsl_tmp_33, -1.0, 1.0)) / 3.1415927 * 0.35 - 0.04375) * 1.7320508, 0.0, 0.37888613), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -8.0), 2.3788862 - length(p.xy)))), max(0.0, length(p.xy) - 1.2422278)), noiseTex);
+fn gsl_remap_33(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, color_white: vec3<f32>, color_black: vec3<f32>, material_matte: mat4x4<f32>, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
+  let gsl_tmp_47 = 6.2831855 * p.z / 0.7;
+  let gsl_tmp_46 = max(length(p.xy), 0.2);
+  let gslCarry12 = material_withDisplacement(material_brushedMetal, -min(min(clamp((acos(clamp(cos(gsl_tmp_47) * p.x / gsl_tmp_46 + sin(gsl_tmp_47) * p.y / gsl_tmp_46, -1.0, 1.0)) / 3.1415927 * 0.35 - 0.04375) * 1.7320508, 0.0, 0.37888613), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -8.0), 2.3788862 - length(p.xy)))), max(0.0, length(p.xy) - 1.2422278)), noiseTex);
   return gslCarry12[2];
 }
 
-fn gsl_remap_29(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, color_black: vec3<f32>, material_matte: mat4x4<f32>, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
+fn gsl_remap_34(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, color_white: vec3<f32>, color_black: vec3<f32>, material_matte: mat4x4<f32>, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
   return vec4<f32>(0.45, 1.0, 1.5, 0.0);
 }
 
-fn gsl_remap_30(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, color_black: vec3<f32>, material_matte: mat4x4<f32>, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
+fn gsl_remap_35(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, color_white: vec3<f32>, color_black: vec3<f32>, material_matte: mat4x4<f32>, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
   return vec4<f32>(0.0, 0.0, 0.0, 0.0);
 }
 
-fn gsl_remap_31(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, color_black: vec3<f32>, material_matte: mat4x4<f32>, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
-  let gsl_tmp_54 = 6.2831855 * p.z / 1.25;
-  let gsl_tmp_53 = max(length(p.xy), 0.2);
-  let gslCarry18 = material_withDisplacement(material_brushedMetal, -min(min(clamp((acos(clamp(cos(gsl_tmp_54) * p.x / gsl_tmp_53 + sin(gsl_tmp_54) * p.y / gsl_tmp_53, -1.0, 1.0)) / 3.1415927 * 0.625 - 0.078125) * 1.7320508, 0.0, 0.6765824), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 4.6765823 - length(p.xy)))), max(0.0, length(p.xy) - 2.6468353)), noiseTex);
+fn gsl_remap_36(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, color_white: vec3<f32>, color_black: vec3<f32>, material_matte: mat4x4<f32>, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
+  let gsl_tmp_80 = 6.2831855 * p.z / 1.25;
+  let gsl_tmp_79 = max(length(p.xy), 0.2);
+  let gslCarry18 = material_withDisplacement(material_brushedMetal, -min(min(clamp((acos(clamp(cos(gsl_tmp_80) * p.x / gsl_tmp_79 + sin(gsl_tmp_80) * p.y / gsl_tmp_79, -1.0, 1.0)) / 3.1415927 * 0.625 - 0.078125) * 1.7320508, 0.0, 0.6765824), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 4.6765823 - length(p.xy)))), max(0.0, length(p.xy) - 2.6468353)), noiseTex);
   return gslCarry18[0];
 }
 
-fn gsl_remap_32(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, color_black: vec3<f32>, material_matte: mat4x4<f32>, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
-  let gsl_tmp_54 = 6.2831855 * p.z / 1.25;
-  let gsl_tmp_53 = max(length(p.xy), 0.2);
-  let gslCarry18 = material_withDisplacement(material_brushedMetal, -min(min(clamp((acos(clamp(cos(gsl_tmp_54) * p.x / gsl_tmp_53 + sin(gsl_tmp_54) * p.y / gsl_tmp_53, -1.0, 1.0)) / 3.1415927 * 0.625 - 0.078125) * 1.7320508, 0.0, 0.6765824), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 4.6765823 - length(p.xy)))), max(0.0, length(p.xy) - 2.6468353)), noiseTex);
+fn gsl_remap_37(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, color_white: vec3<f32>, color_black: vec3<f32>, material_matte: mat4x4<f32>, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
+  let gsl_tmp_80 = 6.2831855 * p.z / 1.25;
+  let gsl_tmp_79 = max(length(p.xy), 0.2);
+  let gslCarry18 = material_withDisplacement(material_brushedMetal, -min(min(clamp((acos(clamp(cos(gsl_tmp_80) * p.x / gsl_tmp_79 + sin(gsl_tmp_80) * p.y / gsl_tmp_79, -1.0, 1.0)) / 3.1415927 * 0.625 - 0.078125) * 1.7320508, 0.0, 0.6765824), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 4.6765823 - length(p.xy)))), max(0.0, length(p.xy) - 2.6468353)), noiseTex);
   return gslCarry18[1];
 }
 
-fn gsl_remap_33(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, color_black: vec3<f32>, material_matte: mat4x4<f32>, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
-  let gsl_tmp_54 = 6.2831855 * p.z / 1.25;
-  let gsl_tmp_53 = max(length(p.xy), 0.2);
-  let gslCarry18 = material_withDisplacement(material_brushedMetal, -min(min(clamp((acos(clamp(cos(gsl_tmp_54) * p.x / gsl_tmp_53 + sin(gsl_tmp_54) * p.y / gsl_tmp_53, -1.0, 1.0)) / 3.1415927 * 0.625 - 0.078125) * 1.7320508, 0.0, 0.6765824), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 4.6765823 - length(p.xy)))), max(0.0, length(p.xy) - 2.6468353)), noiseTex);
+fn gsl_remap_38(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, color_white: vec3<f32>, color_black: vec3<f32>, material_matte: mat4x4<f32>, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
+  let gsl_tmp_80 = 6.2831855 * p.z / 1.25;
+  let gsl_tmp_79 = max(length(p.xy), 0.2);
+  let gslCarry18 = material_withDisplacement(material_brushedMetal, -min(min(clamp((acos(clamp(cos(gsl_tmp_80) * p.x / gsl_tmp_79 + sin(gsl_tmp_80) * p.y / gsl_tmp_79, -1.0, 1.0)) / 3.1415927 * 0.625 - 0.078125) * 1.7320508, 0.0, 0.6765824), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 4.6765823 - length(p.xy)))), max(0.0, length(p.xy) - 2.6468353)), noiseTex);
   return gslCarry18[2];
 }
 
-fn gsl_remap_34(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, color_black: vec3<f32>, material_matte: mat4x4<f32>, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
-  let gsl_tmp_74 = 6.2831855 * p.z / 2.0;
-  let gsl_tmp_73 = max(length(p.xy), 0.2);
-  let gslCarry24 = material_withDisplacement(material_brushedMetal, -min(min(clamp((acos(clamp(cos(gsl_tmp_74) * p.x / gsl_tmp_73 + sin(gsl_tmp_74) * p.y / gsl_tmp_73, -1.0, 1.0)) / 3.1415927 * 1.0 - 0.125) * 1.7320508, 0.0, 1.0825318), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -32.0), 9.082532 - length(p.xy)))), max(0.0, length(p.xy) - 5.8349366)), noiseTex);
+fn gsl_remap_39(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, color_white: vec3<f32>, color_black: vec3<f32>, material_matte: mat4x4<f32>, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
+  let gsl_tmp_113 = 6.2831855 * p.z / 2.0;
+  let gsl_tmp_112 = max(length(p.xy), 0.2);
+  let gslCarry24 = material_withDisplacement(material_brushedMetal, -min(min(clamp((acos(clamp(cos(gsl_tmp_113) * p.x / gsl_tmp_112 + sin(gsl_tmp_113) * p.y / gsl_tmp_112, -1.0, 1.0)) / 3.1415927 * 1.0 - 0.125) * 1.7320508, 0.0, 1.0825318), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -32.0), 9.082532 - length(p.xy)))), max(0.0, length(p.xy) - 5.8349366)), noiseTex);
   return gslCarry24[0];
 }
 
-fn gsl_remap_35(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, color_black: vec3<f32>, material_matte: mat4x4<f32>, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
-  let gsl_tmp_74 = 6.2831855 * p.z / 2.0;
-  let gsl_tmp_73 = max(length(p.xy), 0.2);
-  let gslCarry24 = material_withDisplacement(material_brushedMetal, -min(min(clamp((acos(clamp(cos(gsl_tmp_74) * p.x / gsl_tmp_73 + sin(gsl_tmp_74) * p.y / gsl_tmp_73, -1.0, 1.0)) / 3.1415927 * 1.0 - 0.125) * 1.7320508, 0.0, 1.0825318), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -32.0), 9.082532 - length(p.xy)))), max(0.0, length(p.xy) - 5.8349366)), noiseTex);
+fn gsl_remap_40(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, color_white: vec3<f32>, color_black: vec3<f32>, material_matte: mat4x4<f32>, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
+  let gsl_tmp_113 = 6.2831855 * p.z / 2.0;
+  let gsl_tmp_112 = max(length(p.xy), 0.2);
+  let gslCarry24 = material_withDisplacement(material_brushedMetal, -min(min(clamp((acos(clamp(cos(gsl_tmp_113) * p.x / gsl_tmp_112 + sin(gsl_tmp_113) * p.y / gsl_tmp_112, -1.0, 1.0)) / 3.1415927 * 1.0 - 0.125) * 1.7320508, 0.0, 1.0825318), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -32.0), 9.082532 - length(p.xy)))), max(0.0, length(p.xy) - 5.8349366)), noiseTex);
   return gslCarry24[1];
 }
 
-fn gsl_remap_36(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, color_black: vec3<f32>, material_matte: mat4x4<f32>, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
-  let gsl_tmp_74 = 6.2831855 * p.z / 2.0;
-  let gsl_tmp_73 = max(length(p.xy), 0.2);
-  let gslCarry24 = material_withDisplacement(material_brushedMetal, -min(min(clamp((acos(clamp(cos(gsl_tmp_74) * p.x / gsl_tmp_73 + sin(gsl_tmp_74) * p.y / gsl_tmp_73, -1.0, 1.0)) / 3.1415927 * 1.0 - 0.125) * 1.7320508, 0.0, 1.0825318), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -32.0), 9.082532 - length(p.xy)))), max(0.0, length(p.xy) - 5.8349366)), noiseTex);
+fn gsl_remap_41(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, color_white: vec3<f32>, color_black: vec3<f32>, material_matte: mat4x4<f32>, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
+  let gsl_tmp_113 = 6.2831855 * p.z / 2.0;
+  let gsl_tmp_112 = max(length(p.xy), 0.2);
+  let gslCarry24 = material_withDisplacement(material_brushedMetal, -min(min(clamp((acos(clamp(cos(gsl_tmp_113) * p.x / gsl_tmp_112 + sin(gsl_tmp_113) * p.y / gsl_tmp_112, -1.0, 1.0)) / 3.1415927 * 1.0 - 0.125) * 1.7320508, 0.0, 1.0825318), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -32.0), 9.082532 - length(p.xy)))), max(0.0, length(p.xy) - 5.8349366)), noiseTex);
   return gslCarry24[2];
 }
 
-fn gsl_remap_37(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, color_black: vec3<f32>, material_matte: mat4x4<f32>, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
-  let gsl_tmp_94 = 6.2831855 * p.z / 3.5;
-  let gsl_tmp_93 = max(length(p.xy), 0.2);
-  let gslCarry30 = material_withDisplacement(material_brushedMetal, -min(min(clamp((acos(clamp(cos(gsl_tmp_94) * p.x / gsl_tmp_93 + sin(gsl_tmp_94) * p.y / gsl_tmp_93, -1.0, 1.0)) / 3.1415927 * 1.75 - 0.21875) * 1.7320508, 0.0, 1.8944306), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -60.0), 16.89443 - length(p.xy)))), max(0.0, length(p.xy) - 11.211139)), noiseTex);
+fn gsl_remap_42(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, color_white: vec3<f32>, color_black: vec3<f32>, material_matte: mat4x4<f32>, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
+  let gsl_tmp_146 = 6.2831855 * p.z / 3.5;
+  let gsl_tmp_145 = max(length(p.xy), 0.2);
+  let gslCarry30 = material_withDisplacement(material_brushedMetal, -min(min(clamp((acos(clamp(cos(gsl_tmp_146) * p.x / gsl_tmp_145 + sin(gsl_tmp_146) * p.y / gsl_tmp_145, -1.0, 1.0)) / 3.1415927 * 1.75 - 0.21875) * 1.7320508, 0.0, 1.8944306), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -60.0), 16.89443 - length(p.xy)))), max(0.0, length(p.xy) - 11.211139)), noiseTex);
   return gslCarry30[0];
 }
 
-fn gsl_remap_38(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, color_black: vec3<f32>, material_matte: mat4x4<f32>, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
-  let gsl_tmp_94 = 6.2831855 * p.z / 3.5;
-  let gsl_tmp_93 = max(length(p.xy), 0.2);
-  let gslCarry30 = material_withDisplacement(material_brushedMetal, -min(min(clamp((acos(clamp(cos(gsl_tmp_94) * p.x / gsl_tmp_93 + sin(gsl_tmp_94) * p.y / gsl_tmp_93, -1.0, 1.0)) / 3.1415927 * 1.75 - 0.21875) * 1.7320508, 0.0, 1.8944306), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -60.0), 16.89443 - length(p.xy)))), max(0.0, length(p.xy) - 11.211139)), noiseTex);
+fn gsl_remap_43(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, color_white: vec3<f32>, color_black: vec3<f32>, material_matte: mat4x4<f32>, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
+  let gsl_tmp_146 = 6.2831855 * p.z / 3.5;
+  let gsl_tmp_145 = max(length(p.xy), 0.2);
+  let gslCarry30 = material_withDisplacement(material_brushedMetal, -min(min(clamp((acos(clamp(cos(gsl_tmp_146) * p.x / gsl_tmp_145 + sin(gsl_tmp_146) * p.y / gsl_tmp_145, -1.0, 1.0)) / 3.1415927 * 1.75 - 0.21875) * 1.7320508, 0.0, 1.8944306), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -60.0), 16.89443 - length(p.xy)))), max(0.0, length(p.xy) - 11.211139)), noiseTex);
   return gslCarry30[1];
 }
 
-fn gsl_remap_39(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, color_black: vec3<f32>, material_matte: mat4x4<f32>, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
-  let gsl_tmp_94 = 6.2831855 * p.z / 3.5;
-  let gsl_tmp_93 = max(length(p.xy), 0.2);
-  let gslCarry30 = material_withDisplacement(material_brushedMetal, -min(min(clamp((acos(clamp(cos(gsl_tmp_94) * p.x / gsl_tmp_93 + sin(gsl_tmp_94) * p.y / gsl_tmp_93, -1.0, 1.0)) / 3.1415927 * 1.75 - 0.21875) * 1.7320508, 0.0, 1.8944306), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -60.0), 16.89443 - length(p.xy)))), max(0.0, length(p.xy) - 11.211139)), noiseTex);
+fn gsl_remap_44(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, color_white: vec3<f32>, color_black: vec3<f32>, material_matte: mat4x4<f32>, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
+  let gsl_tmp_146 = 6.2831855 * p.z / 3.5;
+  let gsl_tmp_145 = max(length(p.xy), 0.2);
+  let gslCarry30 = material_withDisplacement(material_brushedMetal, -min(min(clamp((acos(clamp(cos(gsl_tmp_146) * p.x / gsl_tmp_145 + sin(gsl_tmp_146) * p.y / gsl_tmp_145, -1.0, 1.0)) / 3.1415927 * 1.75 - 0.21875) * 1.7320508, 0.0, 1.8944306), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -60.0), 16.89443 - length(p.xy)))), max(0.0, length(p.xy) - 11.211139)), noiseTex);
   return gslCarry30[2];
 }
 
@@ -424,22 +496,6 @@ fn noise_gradientLattice(q: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
     gsl_fold = noise_gradientLattice_gsl_anon(pi, pf, u, v, w, gsl_fold, gsl_foldK[gsl_i], noiseTex);
   }
   return gsl_fold;
-}
-
-fn playful_polkaShare(spacing: f32, dotRadius: f32, noiseTex: texture_3d<f32>) -> f32 {
-  return min(3.1415927 * dotRadius * dotRadius / (1.299038 * spacing * spacing), 1.0);
-}
-
-fn playful_polkaDot(p: vec3<f32>, spacing: f32, dotRadius: f32, baseColor: vec3<f32>, dotColor: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
-  let share = playful_polkaShare(spacing, dotRadius, noiseTex);
-  var gsl_simpleValue = color_mixOklab(baseColor, dotColor, share, noiseTex);
-  if (gsl_simpleDetail > 0.0) {
-    let cellP = map_patternHexagonalXY(p, spacing, noiseTex);
-    let disc = texture_coverageDisc(length(cellP.xy), dotRadius, noiseTex);
-    gsl_simpleValue = mix(gsl_simpleValue, color_mixOklab(baseColor, dotColor, texture_fadeTo(disc, share, spacing, noiseTex), noiseTex), gsl_simpleDetail);
-  }
-  let dots = gsl_simpleValue;
-  return dots;
 }
 
 fn playful_checkerboard(p: vec3<f32>, cellSize: f32, colorA: vec3<f32>, colorB: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
@@ -530,7 +586,6 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f
   let gsl_partHi_4 = vec3<f32>(-76.49, -43.49, 2.01);
   let gsl_partBox_4 = gsl_boxDistance(p, gsl_partLo_4, gsl_partHi_4);
   var gsl_part_4 = gsl_partBox_4;
-  let color_white = vec3<f32>(1.0, 1.0, 1.0);
   let color_gray = vec3<f32>(0.5, 0.5, 0.5);
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_4 <= gsl_vanishView.w) {
     let gsl_partVanish_4 = gsl_vanish(gsl_partLo_4, gsl_partHi_4);
@@ -538,10 +593,10 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f
     let gsl_simpleWeight_19 = gsl_simple(vec3<f32>(-83.51, -50.51, -10.01), vec3<f32>(-76.49, -43.49, 2.01));
     var gsl_simplePart_4 = 1e10;
     if (gsl_simpleWeight_19 > 0.0) {
-      gsl_simplePart_4 = gsl_remap_3(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_white, color_gray, noiseTex);
+      gsl_simplePart_4 = gsl_remap_4(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_gray, noiseTex);
     }
     if (gsl_simpleWeight_19 < 1.0) {
-      gsl_simplePart_4 = mix(max(gsl_remap_4(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_white, color_gray, noiseTex), gsl_boxSdf(p, vec3<f32>(-83.51, -50.51, -10.01), vec3<f32>(-76.49, -43.49, 2.01))), gsl_simplePart_4, gsl_simpleWeight_19);
+      gsl_simplePart_4 = mix(max(gsl_remap_5(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_gray, noiseTex), gsl_boxSdf(p, vec3<f32>(-83.51, -50.51, -10.01), vec3<f32>(-76.49, -43.49, 2.01))), gsl_simplePart_4, gsl_simpleWeight_19);
     }
     if (gsl_partVanish_4.x > 0.0) { gsl_part_4 = gsl_simplePart_4 + gsl_partVanish_4.y; }
     if (abs(gsl_part_4) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_4), gsl_partVanish_4.zw); }
@@ -595,10 +650,10 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f
     let gsl_simpleWeight_22 = gsl_simple(vec3<f32>(-86.51, -33.51, -20.01), vec3<f32>(-73.49, -20.49, 4.01));
     var gsl_simplePart_7 = 1e10;
     if (gsl_simpleWeight_22 > 0.0) {
-      gsl_simplePart_7 = gsl_remap_5(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_white, color_gray, noiseTex);
+      gsl_simplePart_7 = gsl_remap_7(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_gray, noiseTex);
     }
     if (gsl_simpleWeight_22 < 1.0) {
-      gsl_simplePart_7 = mix(max(gsl_remap_6(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_white, color_gray, noiseTex), gsl_boxSdf(p, vec3<f32>(-86.51, -33.51, -20.01), vec3<f32>(-73.49, -20.49, 4.01))), gsl_simplePart_7, gsl_simpleWeight_22);
+      gsl_simplePart_7 = mix(max(gsl_remap_8(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_gray, noiseTex), gsl_boxSdf(p, vec3<f32>(-86.51, -33.51, -20.01), vec3<f32>(-73.49, -20.49, 4.01))), gsl_simplePart_7, gsl_simpleWeight_22);
     }
     if (gsl_partVanish_7.x > 0.0) { gsl_part_7 = gsl_simplePart_7 + gsl_partVanish_7.y; }
     if (abs(gsl_part_7) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_7), gsl_partVanish_7.zw); }
@@ -652,10 +707,10 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f
     let gsl_simpleWeight_25 = gsl_simple(vec3<f32>(-92.01, -7.01, -40.01), vec3<f32>(-67.99, 17.01, 8.01));
     var gsl_simplePart_10 = 1e10;
     if (gsl_simpleWeight_25 > 0.0) {
-      gsl_simplePart_10 = gsl_remap_7(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_white, color_gray, noiseTex);
+      gsl_simplePart_10 = gsl_remap_10(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_gray, noiseTex);
     }
     if (gsl_simpleWeight_25 < 1.0) {
-      gsl_simplePart_10 = mix(max(gsl_remap_8(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_white, color_gray, noiseTex), gsl_boxSdf(p, vec3<f32>(-92.01, -7.01, -40.01), vec3<f32>(-67.99, 17.01, 8.01))), gsl_simplePart_10, gsl_simpleWeight_25);
+      gsl_simplePart_10 = mix(max(gsl_remap_11(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_gray, noiseTex), gsl_boxSdf(p, vec3<f32>(-92.01, -7.01, -40.01), vec3<f32>(-67.99, 17.01, 8.01))), gsl_simplePart_10, gsl_simpleWeight_25);
     }
     if (gsl_partVanish_10.x > 0.0) { gsl_part_10 = gsl_simplePart_10 + gsl_partVanish_10.y; }
     if (abs(gsl_part_10) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_10), gsl_partVanish_10.zw); }
@@ -709,10 +764,10 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f
     let gsl_simpleWeight_28 = gsl_simple(vec3<f32>(-102.51, 38.49, -75.01), vec3<f32>(-57.49, 83.51, 15.01));
     var gsl_simplePart_13 = 1e10;
     if (gsl_simpleWeight_28 > 0.0) {
-      gsl_simplePart_13 = gsl_remap_9(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_white, color_gray, noiseTex);
+      gsl_simplePart_13 = gsl_remap_13(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_gray, noiseTex);
     }
     if (gsl_simpleWeight_28 < 1.0) {
-      gsl_simplePart_13 = mix(max(gsl_remap_10(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_white, color_gray, noiseTex), gsl_boxSdf(p, vec3<f32>(-102.51, 38.49, -75.01), vec3<f32>(-57.49, 83.51, 15.01))), gsl_simplePart_13, gsl_simpleWeight_28);
+      gsl_simplePart_13 = mix(max(gsl_remap_14(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_gray, noiseTex), gsl_boxSdf(p, vec3<f32>(-102.51, 38.49, -75.01), vec3<f32>(-57.49, 83.51, 15.01))), gsl_simplePart_13, gsl_simpleWeight_28);
     }
     if (gsl_partVanish_13.x > 0.0) { gsl_part_13 = gsl_simplePart_13 + gsl_partVanish_13.y; }
     if (abs(gsl_part_13) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_13), gsl_partVanish_13.zw); }
@@ -781,12 +836,11 @@ fn sdShape(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
 fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_3d<f32>) -> vec4<f32> {
   if (gsl_colorIdx == 1u) {
     let material_brushedMetal = mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
-    let color_white = vec3<f32>(1.0, 1.0, 1.0);
     let color_gray = vec3<f32>(0.5, 0.5, 0.5);
     let gsl_simpleWeight = gsl_simple(vec3<f32>(-81.91, -62.91, -5.01), vec3<f32>(-78.09, -59.09, 1.01));
-    var gsl_simpleField = clamp(gsl_remap_12(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, color_white, color_gray, noiseTex) * 1.0, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0));
+    var gsl_simpleField = clamp(gsl_remap_17(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, color_gray, noiseTex) * 1.0, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0));
     if (gsl_simpleWeight > 0.0) {
-      gsl_simpleField = mix(gsl_simpleField, clamp(gsl_remap_11(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, color_white, color_gray, noiseTex) * 1.0, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0)), gsl_simpleWeight);
+      gsl_simpleField = mix(gsl_simpleField, clamp(gsl_remap_16(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, color_gray, noiseTex) * 1.0, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0)), gsl_simpleWeight);
     }
     return vec4<f32>(gsl_simpleField, 1.0);
   }
@@ -796,25 +850,29 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_
     return vec4<f32>(playful_checkerboard(p, 0.5, color_white, color_black, noiseTex), 1.0);
   }
   if (gsl_colorIdx == 3u) {
-    let color_white = vec3<f32>(1.0, 1.0, 1.0);
-    let dots4 = playful_polkaDot(p, 1.0, 0.25, vec3<f32>(0.25, 0.55, 0.75), color_white, noiseTex);
-    var gsl_simpleValue = dots4;
+    var gsl_simpleValue = vec3<f32>(0.37482947, 0.61767787, 0.7900267);
+    if (gsl_simpleDetail > 0.0) {
+      let material_brushedMetal = mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+      gsl_simpleValue = mix(gsl_simpleValue, gsl_remap_3(vec3<f32>(dot(p, vec3<f32>(1.0, 0.0, 0.0)), dot(p, vec3<f32>(0.0, 1.0, 0.0)), dot(p, vec3<f32>(0.0, 0.0, 1.0))), material_brushedMetal, noiseTex), gsl_simpleDetail);
+    }
+    let dots4 = gsl_simpleValue;
+    var gsl_simpleValue_2 = dots4;
     if (gsl_simpleDetail > 0.0) {
       let color_gray = vec3<f32>(0.5, 0.5, 0.5);
-      gsl_simpleValue = mix(gsl_simpleValue, color_mixOklab(dots4, color_gray, 0.3 + 0.15 * noise_gradientLattice(p / 0.25, noiseTex), noiseTex), gsl_simpleDetail);
+      gsl_simpleValue_2 = mix(gsl_simpleValue_2, color_mixOklab(dots4, color_gray, 0.3 + 0.15 * noise_gradientLattice(p / 0.25, noiseTex), noiseTex), gsl_simpleDetail);
     }
-    let reliefColor4 = gsl_simpleValue;
+    let reliefColor4 = gsl_simpleValue_2;
     return vec4<f32>(reliefColor4, 1.0);
   }
   if (gsl_colorIdx == 4u) {
     let material_brushedMetal = mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
-    let color_white = vec3<f32>(1.0, 1.0, 1.0);
     let color_gray = vec3<f32>(0.5, 0.5, 0.5);
+    let color_white = vec3<f32>(1.0, 1.0, 1.0);
     let color_black = vec3<f32>(0.0, 0.0, 0.0);
     let gsl_simpleWeight_2 = gsl_simple(vec3<f32>(-83.51, -50.51, -10.01), vec3<f32>(-76.49, -43.49, 2.01));
-    var gsl_simpleField_2 = clamp(gsl_remap_14(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_white, color_gray, color_black, noiseTex) * 1.0, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0));
+    var gsl_simpleField_2 = clamp(gsl_remap_19(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_gray, color_white, color_black, noiseTex) * 1.0, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0));
     if (gsl_simpleWeight_2 > 0.0) {
-      gsl_simpleField_2 = mix(gsl_simpleField_2, clamp(gsl_remap_13(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_white, color_gray, color_black, noiseTex) * 1.0, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0)), gsl_simpleWeight_2);
+      gsl_simpleField_2 = mix(gsl_simpleField_2, clamp(gsl_remap_18(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_gray, color_white, color_black, noiseTex) * 1.0, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0)), gsl_simpleWeight_2);
     }
     return vec4<f32>(gsl_simpleField_2, 1.0);
   }
@@ -824,25 +882,29 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_
     return vec4<f32>(playful_checkerboard(p, 1.0, color_white, color_black, noiseTex), 1.0);
   }
   if (gsl_colorIdx == 6u) {
-    let color_white = vec3<f32>(1.0, 1.0, 1.0);
-    let dots8 = playful_polkaDot(p, 2.0, 0.5, vec3<f32>(0.25, 0.55, 0.75), color_white, noiseTex);
-    var gsl_simpleValue_2 = dots8;
+    let color_gray = vec3<f32>(0.5, 0.5, 0.5);
+    var gsl_simpleValue_3 = vec3<f32>(0.37482947, 0.61767787, 0.7900267);
     if (gsl_simpleDetail > 0.0) {
-      let color_gray = vec3<f32>(0.5, 0.5, 0.5);
-      gsl_simpleValue_2 = mix(gsl_simpleValue_2, color_mixOklab(dots8, color_gray, 0.3 + 0.15 * noise_gradientLattice(p / 0.5, noiseTex), noiseTex), gsl_simpleDetail);
+      let material_brushedMetal = mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+      gsl_simpleValue_3 = mix(gsl_simpleValue_3, gsl_remap_6(vec3<f32>(dot(p, vec3<f32>(1.0, 0.0, 0.0)), dot(p, vec3<f32>(0.0, 1.0, 0.0)), dot(p, vec3<f32>(0.0, 0.0, 1.0))), material_brushedMetal, color_gray, noiseTex), gsl_simpleDetail);
     }
-    let reliefColor8 = gsl_simpleValue_2;
+    let dots8 = gsl_simpleValue_3;
+    var gsl_simpleValue_4 = dots8;
+    if (gsl_simpleDetail > 0.0) {
+      gsl_simpleValue_4 = mix(gsl_simpleValue_4, color_mixOklab(dots8, color_gray, 0.3 + 0.15 * noise_gradientLattice(p / 0.5, noiseTex), noiseTex), gsl_simpleDetail);
+    }
+    let reliefColor8 = gsl_simpleValue_4;
     return vec4<f32>(reliefColor8, 1.0);
   }
   if (gsl_colorIdx == 7u) {
     let material_brushedMetal = mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
-    let color_white = vec3<f32>(1.0, 1.0, 1.0);
     let color_gray = vec3<f32>(0.5, 0.5, 0.5);
+    let color_white = vec3<f32>(1.0, 1.0, 1.0);
     let color_black = vec3<f32>(0.0, 0.0, 0.0);
     let gsl_simpleWeight_3 = gsl_simple(vec3<f32>(-86.51, -33.51, -20.01), vec3<f32>(-73.49, -20.49, 4.01));
-    var gsl_simpleField_3 = clamp(gsl_remap_16(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_white, color_gray, color_black, noiseTex) * 1.0, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0));
+    var gsl_simpleField_3 = clamp(gsl_remap_21(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_gray, color_white, color_black, noiseTex) * 1.0, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0));
     if (gsl_simpleWeight_3 > 0.0) {
-      gsl_simpleField_3 = mix(gsl_simpleField_3, clamp(gsl_remap_15(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_white, color_gray, color_black, noiseTex) * 1.0, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0)), gsl_simpleWeight_3);
+      gsl_simpleField_3 = mix(gsl_simpleField_3, clamp(gsl_remap_20(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_gray, color_white, color_black, noiseTex) * 1.0, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0)), gsl_simpleWeight_3);
     }
     return vec4<f32>(gsl_simpleField_3, 1.0);
   }
@@ -852,25 +914,29 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_
     return vec4<f32>(playful_checkerboard(p, 2.0, color_white, color_black, noiseTex), 1.0);
   }
   if (gsl_colorIdx == 9u) {
-    let color_white = vec3<f32>(1.0, 1.0, 1.0);
-    let dots16 = playful_polkaDot(p, 4.0, 1.0, vec3<f32>(0.25, 0.55, 0.75), color_white, noiseTex);
-    var gsl_simpleValue_3 = dots16;
+    let color_gray = vec3<f32>(0.5, 0.5, 0.5);
+    var gsl_simpleValue_5 = vec3<f32>(0.37482947, 0.61767787, 0.7900267);
     if (gsl_simpleDetail > 0.0) {
-      let color_gray = vec3<f32>(0.5, 0.5, 0.5);
-      gsl_simpleValue_3 = mix(gsl_simpleValue_3, color_mixOklab(dots16, color_gray, 0.3 + 0.15 * noise_gradientLattice(p / 1.0, noiseTex), noiseTex), gsl_simpleDetail);
+      let material_brushedMetal = mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+      gsl_simpleValue_5 = mix(gsl_simpleValue_5, gsl_remap_9(vec3<f32>(dot(p, vec3<f32>(1.0, 0.0, 0.0)), dot(p, vec3<f32>(0.0, 1.0, 0.0)), dot(p, vec3<f32>(0.0, 0.0, 1.0))), material_brushedMetal, color_gray, noiseTex), gsl_simpleDetail);
     }
-    let reliefColor16 = gsl_simpleValue_3;
+    let dots16 = gsl_simpleValue_5;
+    var gsl_simpleValue_6 = dots16;
+    if (gsl_simpleDetail > 0.0) {
+      gsl_simpleValue_6 = mix(gsl_simpleValue_6, color_mixOklab(dots16, color_gray, 0.3 + 0.15 * noise_gradientLattice(p / 1.0, noiseTex), noiseTex), gsl_simpleDetail);
+    }
+    let reliefColor16 = gsl_simpleValue_6;
     return vec4<f32>(reliefColor16, 1.0);
   }
   if (gsl_colorIdx == 10u) {
     let material_brushedMetal = mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
-    let color_white = vec3<f32>(1.0, 1.0, 1.0);
     let color_gray = vec3<f32>(0.5, 0.5, 0.5);
+    let color_white = vec3<f32>(1.0, 1.0, 1.0);
     let color_black = vec3<f32>(0.0, 0.0, 0.0);
     let gsl_simpleWeight_4 = gsl_simple(vec3<f32>(-92.01, -7.01, -40.01), vec3<f32>(-67.99, 17.01, 8.01));
-    var gsl_simpleField_4 = clamp(gsl_remap_18(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_white, color_gray, color_black, noiseTex) * 1.0, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0));
+    var gsl_simpleField_4 = clamp(gsl_remap_23(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_gray, color_white, color_black, noiseTex) * 1.0, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0));
     if (gsl_simpleWeight_4 > 0.0) {
-      gsl_simpleField_4 = mix(gsl_simpleField_4, clamp(gsl_remap_17(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_white, color_gray, color_black, noiseTex) * 1.0, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0)), gsl_simpleWeight_4);
+      gsl_simpleField_4 = mix(gsl_simpleField_4, clamp(gsl_remap_22(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_gray, color_white, color_black, noiseTex) * 1.0, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0)), gsl_simpleWeight_4);
     }
     return vec4<f32>(gsl_simpleField_4, 1.0);
   }
@@ -880,25 +946,29 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_
     return vec4<f32>(playful_checkerboard(p, 4.0, color_white, color_black, noiseTex), 1.0);
   }
   if (gsl_colorIdx == 12u) {
-    let color_white = vec3<f32>(1.0, 1.0, 1.0);
-    let dots32 = playful_polkaDot(p, 8.0, 2.0, vec3<f32>(0.25, 0.55, 0.75), color_white, noiseTex);
-    var gsl_simpleValue_4 = dots32;
+    let color_gray = vec3<f32>(0.5, 0.5, 0.5);
+    var gsl_simpleValue_7 = vec3<f32>(0.37482947, 0.61767787, 0.7900267);
     if (gsl_simpleDetail > 0.0) {
-      let color_gray = vec3<f32>(0.5, 0.5, 0.5);
-      gsl_simpleValue_4 = mix(gsl_simpleValue_4, color_mixOklab(dots32, color_gray, 0.3 + 0.15 * noise_gradientLattice(p / 2.0, noiseTex), noiseTex), gsl_simpleDetail);
+      let material_brushedMetal = mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+      gsl_simpleValue_7 = mix(gsl_simpleValue_7, gsl_remap_12(vec3<f32>(dot(p, vec3<f32>(1.0, 0.0, 0.0)), dot(p, vec3<f32>(0.0, 1.0, 0.0)), dot(p, vec3<f32>(0.0, 0.0, 1.0))), material_brushedMetal, color_gray, noiseTex), gsl_simpleDetail);
     }
-    let reliefColor32 = gsl_simpleValue_4;
+    let dots32 = gsl_simpleValue_7;
+    var gsl_simpleValue_8 = dots32;
+    if (gsl_simpleDetail > 0.0) {
+      gsl_simpleValue_8 = mix(gsl_simpleValue_8, color_mixOklab(dots32, color_gray, 0.3 + 0.15 * noise_gradientLattice(p / 2.0, noiseTex), noiseTex), gsl_simpleDetail);
+    }
+    let reliefColor32 = gsl_simpleValue_8;
     return vec4<f32>(reliefColor32, 1.0);
   }
   if (gsl_colorIdx == 13u) {
     let material_brushedMetal = mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
-    let color_white = vec3<f32>(1.0, 1.0, 1.0);
     let color_gray = vec3<f32>(0.5, 0.5, 0.5);
+    let color_white = vec3<f32>(1.0, 1.0, 1.0);
     let color_black = vec3<f32>(0.0, 0.0, 0.0);
     let gsl_simpleWeight_5 = gsl_simple(vec3<f32>(-102.51, 38.49, -75.01), vec3<f32>(-57.49, 83.51, 15.01));
-    var gsl_simpleField_5 = clamp(gsl_remap_20(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_white, color_gray, color_black, noiseTex) * 1.0, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0));
+    var gsl_simpleField_5 = clamp(gsl_remap_25(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_gray, color_white, color_black, noiseTex) * 1.0, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0));
     if (gsl_simpleWeight_5 > 0.0) {
-      gsl_simpleField_5 = mix(gsl_simpleField_5, clamp(gsl_remap_19(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_white, color_gray, color_black, noiseTex) * 1.0, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0)), gsl_simpleWeight_5);
+      gsl_simpleField_5 = mix(gsl_simpleField_5, clamp(gsl_remap_24(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_gray, color_white, color_black, noiseTex) * 1.0, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0)), gsl_simpleWeight_5);
     }
     return vec4<f32>(gsl_simpleField_5, 1.0);
   }
@@ -908,14 +978,18 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_
     return vec4<f32>(playful_checkerboard(p, 8.0, color_white, color_black, noiseTex), 1.0);
   }
   if (gsl_colorIdx == 15u) {
-    let color_white = vec3<f32>(1.0, 1.0, 1.0);
-    let dots64 = playful_polkaDot(p, 16.0, 4.0, vec3<f32>(0.25, 0.55, 0.75), color_white, noiseTex);
-    var gsl_simpleValue_5 = dots64;
+    let color_gray = vec3<f32>(0.5, 0.5, 0.5);
+    var gsl_simpleValue_9 = vec3<f32>(0.37482947, 0.61767787, 0.7900267);
     if (gsl_simpleDetail > 0.0) {
-      let color_gray = vec3<f32>(0.5, 0.5, 0.5);
-      gsl_simpleValue_5 = mix(gsl_simpleValue_5, color_mixOklab(dots64, color_gray, 0.3 + 0.15 * noise_gradientLattice(p / 4.0, noiseTex), noiseTex), gsl_simpleDetail);
+      let material_brushedMetal = mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+      gsl_simpleValue_9 = mix(gsl_simpleValue_9, gsl_remap_15(vec3<f32>(dot(p, vec3<f32>(1.0, 0.0, 0.0)), dot(p, vec3<f32>(0.0, 1.0, 0.0)), dot(p, vec3<f32>(0.0, 0.0, 1.0))), material_brushedMetal, color_gray, noiseTex), gsl_simpleDetail);
     }
-    let reliefColor64 = gsl_simpleValue_5;
+    let dots64 = gsl_simpleValue_9;
+    var gsl_simpleValue_10 = dots64;
+    if (gsl_simpleDetail > 0.0) {
+      gsl_simpleValue_10 = mix(gsl_simpleValue_10, color_mixOklab(dots64, color_gray, 0.3 + 0.15 * noise_gradientLattice(p / 4.0, noiseTex), noiseTex), gsl_simpleDetail);
+    }
+    let reliefColor64 = gsl_simpleValue_10;
     return vec4<f32>(reliefColor64, 1.0);
   }
   return vec4<f32>(0.0, 0.0, 0.0, 0.0);
@@ -923,13 +997,13 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_
 fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, noiseTex: texture_3d<f32>) -> gsl_material {
   if (gsl_materialIdx == 1u) {
     let material_brushedMetal = mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
-    let color_white = vec3<f32>(1.0, 1.0, 1.0);
     let color_gray = vec3<f32>(0.5, 0.5, 0.5);
+    let color_white = vec3<f32>(1.0, 1.0, 1.0);
     let color_black = vec3<f32>(0.0, 0.0, 0.0);
     let gsl_simpleWeight_6 = gsl_simple(vec3<f32>(-81.91, -62.91, -5.01), vec3<f32>(-78.09, -59.09, 1.01));
-    var gsl_simpleField_6 = mat4x4<f32>(clamp(gsl_remap_24(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, color_white, color_gray, color_black, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_25(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, color_white, color_gray, color_black, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_25(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, color_white, color_gray, color_black, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    var gsl_simpleField_6 = mat4x4<f32>(clamp(gsl_remap_29(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, color_gray, color_white, color_black, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_30(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, color_gray, color_white, color_black, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_30(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, color_gray, color_white, color_black, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     if (gsl_simpleWeight_6 > 0.0) {
-      let gsl_simpleFull = mat4x4<f32>(clamp(gsl_remap_21(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, color_white, color_gray, color_black, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_22(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, color_white, color_gray, color_black, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_23(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, color_white, color_gray, color_black, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+      let gsl_simpleFull = mat4x4<f32>(clamp(gsl_remap_26(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, color_gray, color_white, color_black, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_27(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, color_gray, color_white, color_black, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_28(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, color_gray, color_white, color_black, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
       gsl_simpleField_6 = mat4x4<f32>(mix(gsl_simpleField_6[0], gsl_simpleFull[0], gsl_simpleWeight_6), mix(gsl_simpleField_6[1], gsl_simpleFull[1], gsl_simpleWeight_6), mix(gsl_simpleField_6[2], gsl_simpleFull[2], gsl_simpleWeight_6), mix(gsl_simpleField_6[3], gsl_simpleFull[3], gsl_simpleWeight_6));
     }
     let gsl_m = gsl_simpleField_6; return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
@@ -944,15 +1018,15 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, noiseTex: te
   }
   if (gsl_materialIdx == 4u) {
     let material_brushedMetal = mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
-    let color_white = vec3<f32>(1.0, 1.0, 1.0);
     let color_gray = vec3<f32>(0.5, 0.5, 0.5);
+    let color_white = vec3<f32>(1.0, 1.0, 1.0);
     let color_black = vec3<f32>(0.0, 0.0, 0.0);
     let material_matte = mat4x4<f32>(vec4<f32>(1.0, 0.0, 1.45, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     let material_plastic = mat4x4<f32>(vec4<f32>(0.35, 0.0, 1.46, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     let gsl_simpleWeight_7 = gsl_simple(vec3<f32>(-83.51, -50.51, -10.01), vec3<f32>(-76.49, -43.49, 2.01));
-    var gsl_simpleField_7 = mat4x4<f32>(clamp(gsl_remap_29(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_30(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_30(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    var gsl_simpleField_7 = mat4x4<f32>(clamp(gsl_remap_34(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_35(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_35(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     if (gsl_simpleWeight_7 > 0.0) {
-      let gsl_simpleFull_2 = mat4x4<f32>(clamp(gsl_remap_26(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_27(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_28(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+      let gsl_simpleFull_2 = mat4x4<f32>(clamp(gsl_remap_31(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_32(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_33(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
       gsl_simpleField_7 = mat4x4<f32>(mix(gsl_simpleField_7[0], gsl_simpleFull_2[0], gsl_simpleWeight_7), mix(gsl_simpleField_7[1], gsl_simpleFull_2[1], gsl_simpleWeight_7), mix(gsl_simpleField_7[2], gsl_simpleFull_2[2], gsl_simpleWeight_7), mix(gsl_simpleField_7[3], gsl_simpleFull_2[3], gsl_simpleWeight_7));
     }
     let gsl_m = gsl_simpleField_7; return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
@@ -967,15 +1041,15 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, noiseTex: te
   }
   if (gsl_materialIdx == 7u) {
     let material_brushedMetal = mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
-    let color_white = vec3<f32>(1.0, 1.0, 1.0);
     let color_gray = vec3<f32>(0.5, 0.5, 0.5);
+    let color_white = vec3<f32>(1.0, 1.0, 1.0);
     let color_black = vec3<f32>(0.0, 0.0, 0.0);
     let material_matte = mat4x4<f32>(vec4<f32>(1.0, 0.0, 1.45, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     let material_plastic = mat4x4<f32>(vec4<f32>(0.35, 0.0, 1.46, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     let gsl_simpleWeight_8 = gsl_simple(vec3<f32>(-86.51, -33.51, -20.01), vec3<f32>(-73.49, -20.49, 4.01));
-    var gsl_simpleField_8 = mat4x4<f32>(clamp(gsl_remap_29(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_30(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_30(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    var gsl_simpleField_8 = mat4x4<f32>(clamp(gsl_remap_34(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_35(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_35(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     if (gsl_simpleWeight_8 > 0.0) {
-      let gsl_simpleFull_3 = mat4x4<f32>(clamp(gsl_remap_31(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_32(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_33(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+      let gsl_simpleFull_3 = mat4x4<f32>(clamp(gsl_remap_36(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_37(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_38(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
       gsl_simpleField_8 = mat4x4<f32>(mix(gsl_simpleField_8[0], gsl_simpleFull_3[0], gsl_simpleWeight_8), mix(gsl_simpleField_8[1], gsl_simpleFull_3[1], gsl_simpleWeight_8), mix(gsl_simpleField_8[2], gsl_simpleFull_3[2], gsl_simpleWeight_8), mix(gsl_simpleField_8[3], gsl_simpleFull_3[3], gsl_simpleWeight_8));
     }
     let gsl_m = gsl_simpleField_8; return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
@@ -990,15 +1064,15 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, noiseTex: te
   }
   if (gsl_materialIdx == 10u) {
     let material_brushedMetal = mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
-    let color_white = vec3<f32>(1.0, 1.0, 1.0);
     let color_gray = vec3<f32>(0.5, 0.5, 0.5);
+    let color_white = vec3<f32>(1.0, 1.0, 1.0);
     let color_black = vec3<f32>(0.0, 0.0, 0.0);
     let material_matte = mat4x4<f32>(vec4<f32>(1.0, 0.0, 1.45, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     let material_plastic = mat4x4<f32>(vec4<f32>(0.35, 0.0, 1.46, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     let gsl_simpleWeight_9 = gsl_simple(vec3<f32>(-92.01, -7.01, -40.01), vec3<f32>(-67.99, 17.01, 8.01));
-    var gsl_simpleField_9 = mat4x4<f32>(clamp(gsl_remap_29(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_30(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_30(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    var gsl_simpleField_9 = mat4x4<f32>(clamp(gsl_remap_34(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_35(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_35(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     if (gsl_simpleWeight_9 > 0.0) {
-      let gsl_simpleFull_4 = mat4x4<f32>(clamp(gsl_remap_34(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_35(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_36(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+      let gsl_simpleFull_4 = mat4x4<f32>(clamp(gsl_remap_39(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_40(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_41(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
       gsl_simpleField_9 = mat4x4<f32>(mix(gsl_simpleField_9[0], gsl_simpleFull_4[0], gsl_simpleWeight_9), mix(gsl_simpleField_9[1], gsl_simpleFull_4[1], gsl_simpleWeight_9), mix(gsl_simpleField_9[2], gsl_simpleFull_4[2], gsl_simpleWeight_9), mix(gsl_simpleField_9[3], gsl_simpleFull_4[3], gsl_simpleWeight_9));
     }
     let gsl_m = gsl_simpleField_9; return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
@@ -1013,15 +1087,15 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, noiseTex: te
   }
   if (gsl_materialIdx == 13u) {
     let material_brushedMetal = mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
-    let color_white = vec3<f32>(1.0, 1.0, 1.0);
     let color_gray = vec3<f32>(0.5, 0.5, 0.5);
+    let color_white = vec3<f32>(1.0, 1.0, 1.0);
     let color_black = vec3<f32>(0.0, 0.0, 0.0);
     let material_matte = mat4x4<f32>(vec4<f32>(1.0, 0.0, 1.45, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     let material_plastic = mat4x4<f32>(vec4<f32>(0.35, 0.0, 1.46, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     let gsl_simpleWeight_10 = gsl_simple(vec3<f32>(-102.51, 38.49, -75.01), vec3<f32>(-57.49, 83.51, 15.01));
-    var gsl_simpleField_10 = mat4x4<f32>(clamp(gsl_remap_29(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_30(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_30(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    var gsl_simpleField_10 = mat4x4<f32>(clamp(gsl_remap_34(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_35(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_35(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     if (gsl_simpleWeight_10 > 0.0) {
-      let gsl_simpleFull_5 = mat4x4<f32>(clamp(gsl_remap_37(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_38(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_39(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+      let gsl_simpleFull_5 = mat4x4<f32>(clamp(gsl_remap_42(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_43(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_44(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
       gsl_simpleField_10 = mat4x4<f32>(mix(gsl_simpleField_10[0], gsl_simpleFull_5[0], gsl_simpleWeight_10), mix(gsl_simpleField_10[1], gsl_simpleFull_5[1], gsl_simpleWeight_10), mix(gsl_simpleField_10[2], gsl_simpleFull_5[2], gsl_simpleWeight_10), mix(gsl_simpleField_10[3], gsl_simpleFull_5[3], gsl_simpleWeight_10));
     }
     let gsl_m = gsl_simpleField_10; return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
@@ -1076,39 +1150,39 @@ const gsl_foldK = array<vec3<f32>, 8>(vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 0
 
 fn gsl_heights(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f32, 15> {
   let material_brushedMetal = mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
-  let color_white = vec3<f32>(1.0, 1.0, 1.0);
   let color_gray = vec3<f32>(0.5, 0.5, 0.5);
+  let color_white = vec3<f32>(1.0, 1.0, 1.0);
   let color_black = vec3<f32>(0.0, 0.0, 0.0);
   let gsl_simpleWeight_11 = gsl_simple(vec3<f32>(-81.91, -62.91, -5.01), vec3<f32>(-78.09, -59.09, 1.01));
-  var gsl_simpleField_11 = mat4x4<f32>(clamp(gsl_remap_24(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, color_white, color_gray, color_black, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_25(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, color_white, color_gray, color_black, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_25(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, color_white, color_gray, color_black, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+  var gsl_simpleField_11 = mat4x4<f32>(clamp(gsl_remap_29(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, color_gray, color_white, color_black, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_30(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, color_gray, color_white, color_black, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_30(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, color_gray, color_white, color_black, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
   if (gsl_simpleWeight_11 > 0.0) {
-    let gsl_simpleFull_6 = mat4x4<f32>(clamp(gsl_remap_21(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, color_white, color_gray, color_black, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_22(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, color_white, color_gray, color_black, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_23(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, color_white, color_gray, color_black, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    let gsl_simpleFull_6 = mat4x4<f32>(clamp(gsl_remap_26(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, color_gray, color_white, color_black, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_27(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, color_gray, color_white, color_black, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_28(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, color_gray, color_white, color_black, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     gsl_simpleField_11 = mat4x4<f32>(mix(gsl_simpleField_11[0], gsl_simpleFull_6[0], gsl_simpleWeight_11), mix(gsl_simpleField_11[1], gsl_simpleFull_6[1], gsl_simpleWeight_11), mix(gsl_simpleField_11[2], gsl_simpleFull_6[2], gsl_simpleWeight_11), mix(gsl_simpleField_11[3], gsl_simpleFull_6[3], gsl_simpleWeight_11));
   }
   let material_matte = mat4x4<f32>(vec4<f32>(1.0, 0.0, 1.45, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
   let material_plastic = mat4x4<f32>(vec4<f32>(0.35, 0.0, 1.46, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
   let gsl_simpleWeight_12 = gsl_simple(vec3<f32>(-83.51, -50.51, -10.01), vec3<f32>(-76.49, -43.49, 2.01));
-  var gsl_simpleField_12 = mat4x4<f32>(clamp(gsl_remap_29(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_30(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_30(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+  var gsl_simpleField_12 = mat4x4<f32>(clamp(gsl_remap_34(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_35(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_35(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
   if (gsl_simpleWeight_12 > 0.0) {
-    let gsl_simpleFull_7 = mat4x4<f32>(clamp(gsl_remap_26(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_27(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_28(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    let gsl_simpleFull_7 = mat4x4<f32>(clamp(gsl_remap_31(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_32(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_33(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     gsl_simpleField_12 = mat4x4<f32>(mix(gsl_simpleField_12[0], gsl_simpleFull_7[0], gsl_simpleWeight_12), mix(gsl_simpleField_12[1], gsl_simpleFull_7[1], gsl_simpleWeight_12), mix(gsl_simpleField_12[2], gsl_simpleFull_7[2], gsl_simpleWeight_12), mix(gsl_simpleField_12[3], gsl_simpleFull_7[3], gsl_simpleWeight_12));
   }
   let gsl_simpleWeight_13 = gsl_simple(vec3<f32>(-86.51, -33.51, -20.01), vec3<f32>(-73.49, -20.49, 4.01));
-  var gsl_simpleField_13 = mat4x4<f32>(clamp(gsl_remap_29(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_30(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_30(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+  var gsl_simpleField_13 = mat4x4<f32>(clamp(gsl_remap_34(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_35(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_35(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
   if (gsl_simpleWeight_13 > 0.0) {
-    let gsl_simpleFull_8 = mat4x4<f32>(clamp(gsl_remap_31(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_32(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_33(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    let gsl_simpleFull_8 = mat4x4<f32>(clamp(gsl_remap_36(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_37(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_38(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     gsl_simpleField_13 = mat4x4<f32>(mix(gsl_simpleField_13[0], gsl_simpleFull_8[0], gsl_simpleWeight_13), mix(gsl_simpleField_13[1], gsl_simpleFull_8[1], gsl_simpleWeight_13), mix(gsl_simpleField_13[2], gsl_simpleFull_8[2], gsl_simpleWeight_13), mix(gsl_simpleField_13[3], gsl_simpleFull_8[3], gsl_simpleWeight_13));
   }
   let gsl_simpleWeight_14 = gsl_simple(vec3<f32>(-92.01, -7.01, -40.01), vec3<f32>(-67.99, 17.01, 8.01));
-  var gsl_simpleField_14 = mat4x4<f32>(clamp(gsl_remap_29(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_30(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_30(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+  var gsl_simpleField_14 = mat4x4<f32>(clamp(gsl_remap_34(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_35(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_35(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
   if (gsl_simpleWeight_14 > 0.0) {
-    let gsl_simpleFull_9 = mat4x4<f32>(clamp(gsl_remap_34(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_35(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_36(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    let gsl_simpleFull_9 = mat4x4<f32>(clamp(gsl_remap_39(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_40(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_41(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     gsl_simpleField_14 = mat4x4<f32>(mix(gsl_simpleField_14[0], gsl_simpleFull_9[0], gsl_simpleWeight_14), mix(gsl_simpleField_14[1], gsl_simpleFull_9[1], gsl_simpleWeight_14), mix(gsl_simpleField_14[2], gsl_simpleFull_9[2], gsl_simpleWeight_14), mix(gsl_simpleField_14[3], gsl_simpleFull_9[3], gsl_simpleWeight_14));
   }
   let gsl_simpleWeight_15 = gsl_simple(vec3<f32>(-102.51, 38.49, -75.01), vec3<f32>(-57.49, 83.51, 15.01));
-  var gsl_simpleField_15 = mat4x4<f32>(clamp(gsl_remap_29(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_30(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_30(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+  var gsl_simpleField_15 = mat4x4<f32>(clamp(gsl_remap_34(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_35(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_35(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
   if (gsl_simpleWeight_15 > 0.0) {
-    let gsl_simpleFull_10 = mat4x4<f32>(clamp(gsl_remap_37(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_38(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_39(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_white, color_gray, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    let gsl_simpleFull_10 = mat4x4<f32>(clamp(gsl_remap_42(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_43(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_44(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_gray, color_white, color_black, material_matte, material_plastic, noiseTex) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     gsl_simpleField_15 = mat4x4<f32>(mix(gsl_simpleField_15[0], gsl_simpleFull_10[0], gsl_simpleWeight_15), mix(gsl_simpleField_15[1], gsl_simpleFull_10[1], gsl_simpleWeight_15), mix(gsl_simpleField_15[2], gsl_simpleFull_10[2], gsl_simpleWeight_15), mix(gsl_simpleField_15[3], gsl_simpleFull_10[3], gsl_simpleWeight_15));
   }
   return array<f32, 15>(gsl_simpleField_11[2].z, material_withDisplacement(material_matte, noise_gradientLattice(p / 0.5, noiseTex) * 0.5 / 4.0 * 0.03125, noiseTex)[2].z, material_withDisplacement(material_plastic, noise_gradientLattice(p / 1.0, noiseTex) * 1.0 / 4.0 * 0.0625, noiseTex)[2].z, gsl_simpleField_12[2].z, material_withDisplacement(material_matte, noise_gradientLattice(p / 1.0, noiseTex) * 1.0 / 4.0 * 0.0625, noiseTex)[2].z, material_withDisplacement(material_plastic, noise_gradientLattice(p / 2.0, noiseTex) * 2.0 / 4.0 * 0.125, noiseTex)[2].z, gsl_simpleField_13[2].z, material_withDisplacement(material_matte, noise_gradientLattice(p / 2.0, noiseTex) * 2.0 / 4.0 * 0.125, noiseTex)[2].z, material_withDisplacement(material_plastic, noise_gradientLattice(p / 4.0, noiseTex) * 4.0 / 4.0 * 0.25, noiseTex)[2].z, gsl_simpleField_14[2].z, material_withDisplacement(material_matte, noise_gradientLattice(p / 4.0, noiseTex) * 4.0 / 4.0 * 0.25, noiseTex)[2].z, material_withDisplacement(material_plastic, noise_gradientLattice(p / 8.0, noiseTex) * 8.0 / 4.0 * 0.5, noiseTex)[2].z, gsl_simpleField_15[2].z, material_withDisplacement(material_matte, noise_gradientLattice(p / 8.0, noiseTex) * 8.0 / 4.0 * 0.5, noiseTex)[2].z, material_withDisplacement(material_plastic, noise_gradientLattice(p / 16.0, noiseTex) * 16.0 / 4.0 * 1.0, noiseTex)[2].z);

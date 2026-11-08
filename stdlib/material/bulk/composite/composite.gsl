@@ -1,0 +1,230 @@
+
+// Composite Materials (material/bulk/composite)
+//
+// Fibre composites as laid up: carbon twill and plain weave under a clear
+// epoxy, forged carbon's chopped tows, the yellow-green glass laminate of
+// G10 and FR4, aramid's yellow weave, and a phenolic laminate's canvas
+// base. Each is a bulk material, nothing beneath it, and returns material,
+// color, height and slope, as the coats do; the weave's crimp rides in the
+// material as relief, levelled by the resin over it. A weave sits on a
+// part's own frame, [bar.u, bar.v], with a whole count of tows round a
+// given diameter so it closes across the seam, or on a face's datums.
+//
+// Doc convention follows builtin/base.gsl: `///` lines are public docs.
+
+import "material";
+import "texture";
+import "noise";
+import "color";
+import "material/coat/coating";
+
+// The cured epoxy over a laid-up fabric: a clear film `build` mm thick,
+// flowed over the weave, keeping its crimp and the tows' lay by what a film
+// that thick keeps of relief `pitch` across (coating.levelled).
+resinOver(woven, glossUnits, build, pitch) {
+  return coating.levelled(material.make(coating.glossRoughness(glossUnits), 0, 1.55), woven, build, pitch);
+}
+
+// fabric(x, y, uAxis, vAxis, pitch, towWidth, over, under, towColor, shade,
+// crimp, glossUnits): a resin-infused fabric at plane coordinates (x, y)
+// whose u axis runs along uAxis and v along vAxis in space: tows of
+// towColor, each a shade of its own by `shade`, with a lay along the tow on
+// top, their crimp `crimp` mm high as relief, under epoxy at glossUnits.
+// Returns material and colour.
+fabric(x, y, uAxis, vAxis, pitch, towWidth, over, under, towColor, shade, crimp, glossUnits) {
+  height, warpTop, tow = texture.weave(x, y, pitch, pitch, towWidth, over, under);
+  towDir = warpTop > 0.5 ? vAxis : uAxis;
+  pick = noiseHash3([tow, 3, 7]);
+  woven = material.withDisplacement(material.withLay(material.make(0.3, 0, 1.55), towDir, 0.7), crimp * height * texture.fadeDetail(pitch));
+  laid = resinOver(woven, glossUnits, 0.15, pitch);
+  // Stand-in: the tows too fine to see, their lay averaged out to a round
+  // lobe at the resin's gloss, the crimp's mean, 0.6 of its height, kept.
+  laid.simple = material.withDisplacement(material.make(coating.glossRoughness(glossUnits), 0, 1.55), 0.6 * crimp);
+  tone = towColor * (1 + shade * (2 * pick.x - 1));
+  tone.simple = towColor;
+  return laid, tone;
+}
+
+// The honeycomb of tows round a part: x along u with a whole count of
+// pitches round `diameter`, y along v.
+roundFabric(frame, diameter, pitch) {
+  count = max(floor(3.14159265 * diameter / pitch + 0.5), 1);
+  return frame.x / 6.2831853 * count * pitch;
+}
+
+// A face's plane coordinates and axes from its datums.
+faceX(origin, normal, along) {
+  n = normalize(normal);
+  u = normalize(along - n * dot(along, n));
+  return dot(p - origin, u);
+}
+
+faceY(origin, normal, along) {
+  n = normalize(normal);
+  u = normalize(along - n * dot(along, n));
+  return dot(p - origin, cross(n, u));
+}
+
+// --- Carbon ---
+
+carbonColor = [0.07, 0.07, 0.08];
+
+/// carbonTwill(frame, diameter, towWidth, gloss): carbon fibre in a 2x2
+/// twill under clear epoxy, on the part's own frame, `[bar.u, bar.v]`,
+/// round a part `diameter` mm across: tows `towWidth` mm wide (1 to 4; a
+/// 200 g 3K twill is 1.9 at a 2 mm pitch, five to the centimetre), nearly
+/// touching, counted whole round u, their lay along each tow so the
+/// highlight checkers with the weave and the diagonal runs up to the right,
+/// each tow a shade off the last, their crimp 0.1 mm as relief under the
+/// resin at `gloss` gloss units. Returns material, color, height and slope.
+carbonTwill(frame, @range(4, 200) diameter, @range(1, 4) towWidth, @range(0, 100) gloss) {
+  pitch = towWidth / 0.95;
+  laid, tone = fabric(roundFabric(frame, diameter, pitch), frame.y, normalize(frame.x.dp), normalize(frame.y.dp), pitch, towWidth, 2, 2, carbonColor, 0.12, 0.1, gloss);
+  return laid, tone, 0, 0;
+}
+
+/// carbonTwill(origin, normal, along, towWidth, gloss): the same twill on a
+/// face facing `normal` through `origin`, the warp along `along`, for a
+/// part without a frame. Returns material, color, height and slope.
+carbonTwill(@point origin, @direction(origin) normal, @direction(origin) along, @range(1, 4) towWidth, @range(0, 100) gloss) {
+  pitch = towWidth / 0.95;
+  n = normalize(normal);
+  u = normalize(along - n * dot(along, n));
+  laid, tone = fabric(faceX(origin, normal, along), faceY(origin, normal, along), u, cross(n, u), pitch, towWidth, 2, 2, carbonColor, 0.12, 0.1, gloss);
+  return laid, tone, 0, 0;
+}
+
+/// carbonPlain(frame, diameter, towWidth, gloss): carbon fibre in a plain
+/// weave, over one and under one, on the part's own frame, otherwise as
+/// carbonTwill. Returns material, color, height and slope.
+carbonPlain(frame, @range(4, 200) diameter, @range(1, 4) towWidth, @range(0, 100) gloss) {
+  pitch = towWidth / 0.95;
+  laid, tone = fabric(roundFabric(frame, diameter, pitch), frame.y, normalize(frame.x.dp), normalize(frame.y.dp), pitch, towWidth, 1, 1, carbonColor, 0.12, 0.1, gloss);
+  return laid, tone, 0, 0;
+}
+
+/// carbonPlain(origin, normal, along, towWidth, gloss): the plain weave on
+/// a face. Returns material, color, height and slope.
+carbonPlain(@point origin, @direction(origin) normal, @direction(origin) along, @range(1, 4) towWidth, @range(0, 100) gloss) {
+  pitch = towWidth / 0.95;
+  n = normalize(normal);
+  u = normalize(along - n * dot(along, n));
+  laid, tone = fabric(faceX(origin, normal, along), faceY(origin, normal, along), u, cross(n, u), pitch, towWidth, 1, 1, carbonColor, 0.12, 0.1, gloss);
+  return laid, tone, 0, 0;
+}
+
+/// forgedCarbon(chipSize, gloss): forged carbon, chopped tow pressed in
+/// resin, a marbled field of chips `chipSize` mm across (5 to 25; the tow
+/// is chopped at 12) each with a lay of its own and a shade off the next,
+/// under epoxy at `gloss`. Returns material, color, height and slope.
+forgedCarbon(@range(5, 25) chipSize, @range(0, 100) gloss) {
+  f1, f2, cell = noise.cellularCell(chipSize);
+  pick = noiseHash3(cell + [53, 29, 11]);
+  chipLay = pick * 2 - 1;
+  pressed = material.withLay(material.make(0.3, 0, 1.55), chipLay, 0.6);
+  laid = resinOver(pressed, gloss, 0.15, chipSize);
+  laid.simple = material.make(coating.glossRoughness(gloss), 0, 1.55);
+  tone = carbonColor * (1 + 0.25 * (pick.y - 0.5));
+  tone.simple = carbonColor;
+  return laid, tone, 0, 0;
+}
+
+// --- Glass, aramid and phenolic ---
+
+/// glassLaminate(origin, normal, along, towWidth): the glass-epoxy laminate
+/// of G10 and FR4, a plain weave of glass tows `towWidth` mm wide (0.5 to
+/// 2) in the resin's yellowish tan to pale green, opaque and satin, on a
+/// face facing `normal` through `origin` with the warp along `along`; the
+/// weave shows as the tows' shade and lay, its crimp 0.05 mm. Returns
+/// material, color, height and slope.
+glassLaminate(@point origin, @direction(origin) normal, @direction(origin) along, @range(0.5, 2) towWidth) {
+  pitch = towWidth / 0.9;
+  n = normalize(normal);
+  u = normalize(along - n * dot(along, n));
+  laid, tone = fabric(faceX(origin, normal, along), faceY(origin, normal, along), u, cross(n, u), pitch, towWidth, 1, 1, [0.62, 0.64, 0.33], 0.06, 0.05, 55);
+  return laid, tone, 0, 0;
+}
+
+/// aramid(origin, normal, along, towWidth, gloss): aramid (Kevlar) cloth in
+/// a 2x2 twill under clear resin, the fibre's own yellow, tows `towWidth`
+/// mm wide (1 to 4), on a face facing `normal` through `origin` with the
+/// warp along `along`. Returns material, color, height and slope.
+aramid(@point origin, @direction(origin) normal, @direction(origin) along, @range(1, 4) towWidth, @range(0, 100) gloss) {
+  pitch = towWidth / 0.95;
+  n = normalize(normal);
+  u = normalize(along - n * dot(along, n));
+  laid, tone = fabric(faceX(origin, normal, along), faceY(origin, normal, along), u, cross(n, u), pitch, towWidth, 2, 2, [0.85, 0.70, 0.22], 0.08, 0.1, gloss);
+  return laid, tone, 0, 0;
+}
+
+/// phenolicLaminate(laminateColor, origin, normal, along, weaveSize): a
+/// phenolic laminate on a canvas base, the cloth's plain weave `weaveSize`
+/// mm to the tow (0.3 to 1.5) showing through the brown or black resin as
+/// a faint checker of shade, satin, on a face facing `normal` through
+/// `origin`. Returns material, color, height and slope.
+phenolicLaminate(@color laminateColor, @point origin, @direction(origin) normal, @direction(origin) along, @range(0.3, 1.5) weaveSize) {
+  n = normalize(normal);
+  u = normalize(along - n * dot(along, n));
+  laid, tone = fabric(faceX(origin, normal, along), faceY(origin, normal, along), u, cross(n, u), weaveSize / 0.9, weaveSize, 1, 1, laminateColor, 0.05, 0.02, 40);
+  return laid, tone, 0, 0;
+}
+
+// ===========================================================================
+// Ready-made
+// ===========================================================================
+
+// One surface from each constructor above on a face through the origin, so
+// the material browser can show it; a round part takes the frame forms.
+
+/// Carbon twill under gloss epoxy, 1.9 mm tows, the warp along +X on a +Z
+/// face through the origin. Returns material and colour.
+@material carbonTwill() {
+  laid, tone, height, slope = carbonTwill([0, 0, 0], [0, 0, 1], [1, 0, 0], 1.9, 85);
+  return laid, tone;
+}
+
+/// Carbon plain weave under gloss epoxy, 1.9 mm tows. Returns material and
+/// colour.
+@material carbonPlain() {
+  laid, tone, height, slope = carbonPlain([0, 0, 0], [0, 0, 1], [1, 0, 0], 1.9, 85);
+  return laid, tone;
+}
+
+/// Forged carbon, 12 mm chips under gloss epoxy. Returns material and
+/// colour.
+@material forgedCarbon() {
+  laid, tone, height, slope = forgedCarbon(12, 85);
+  return laid, tone;
+}
+
+/// G10 glass laminate, 1 mm tows. Returns material and colour.
+@material glassLaminate() {
+  laid, tone, height, slope = glassLaminate([0, 0, 0], [0, 0, 1], [1, 0, 0], 1);
+  return laid, tone;
+}
+
+/// Aramid twill under gloss resin, 2 mm tows. Returns material and colour.
+@material aramid() {
+  laid, tone, height, slope = aramid([0, 0, 0], [0, 0, 1], [1, 0, 0], 2, 85);
+  return laid, tone;
+}
+
+/// Brown phenolic laminate on canvas, 0.6 mm tows. Returns material and
+/// colour.
+@material phenolicLaminate() {
+  laid, tone, height, slope = phenolicLaminate([0.38, 0.24, 0.13], [0, 0, 0], [0, 0, 1], [1, 0, 0], 0.6);
+  return laid, tone;
+}
+
+// References
+//   3K 2x2 twill carbon fabric, 200 g/m2: 12.5 to 13 ends and picks per
+//     inch, 0.28 mm thick (Purple Reflections, eBay listing 125532804927;
+//     Revchem greige specification https://www.revchem.com/?p=40438).
+//   Easy Composites. Virgin chopped carbon fibre tow, 12 mm, for forged
+//     carbon. https://www.easycomposites.eu/virgin-chopped-carbon-fibre-tow
+//   G10 epoxy sheet. CAMEO, Museum of Fine Arts Boston: the resin's colour,
+//     yellowish tan to pale green. https://cameo.mfa.org/wiki/G10_Epoxy_Sheet
+//   Easy Composites. 300 g 2x2 twill Kevlar cloth: the fibre's intrinsic
+//     yellow. https://www.easycomposites.co.uk/300g-22-twill-kevlar-cloth
+//   The tows' shades, the crimp heights and the laminates' colours are
+//     judged.

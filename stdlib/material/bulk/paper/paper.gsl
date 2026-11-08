@@ -1,0 +1,138 @@
+
+// Paper Materials (material/bulk/paper)
+//
+// Paper and board as a face shows them: kraft and chipboard with their
+// pulp, corrugated board's liner sagging over its flutes, the uncoated and
+// the clay-coated sheet, foam core's face. Each is a bulk material and
+// returns material, color, height and slope, as the coats do; the
+// corrugated one takes a face's datums for its flutes. Colours are
+// physical's where it measured them: cardboard, office paper.
+//
+// Doc convention follows builtin/base.gsl: `///` lines are public docs.
+
+import "material";
+import "texture";
+import "noise";
+import "color";
+import "material/coat/coating";
+
+// pulp(paperColor, mottle, size): paper's own look, `paperColor` mottled
+// `mottle` (0 to 0.1) at `size` mm as the pulp lay, with a fibre streak a
+// fifth as strong, three times finer and drawn four to one along x.
+// Stands in as the colour.
+pulp(paperColor, mottle, size) {
+  laid = noise.fbmBump4(size, 0.5, 2.0) / (size / 12);
+  streak = remap(noise.gradient(size / 3), [0.25 * p.x, p.y, p.z]);
+  tone = paperColor * (1 + mottle * laid + 0.2 * mottle * streak);
+  tone.simple = paperColor;
+  return tone;
+}
+
+/// kraft(paperColor, mottle): kraft paper or linerboard of `paperColor`,
+/// its pulp mottled `mottle` (0 to 0.1; 0.05 the usual) at 4 mm, matte.
+/// Returns material, color, height and slope.
+kraft(@color paperColor, @range(0, 0.1) mottle) {
+  return material.make(0.55, 0, 1.5), pulp(paperColor, mottle, 4), 0, 0;
+}
+
+/// chipboard(paperColor): recycled chipboard of `paperColor`, grey-brown,
+/// mottled 6% at 3 mm with a dark fleck in 4% of its 0.6 mm grains, matte.
+/// Returns material, color, height and slope.
+chipboard(@color paperColor) {
+  tone = pulp(paperColor, 0.06, 3) * (1 - 0.5 * texture.grainSpecks(0.6, 0.04));
+  return material.make(0.6, 0, 1.5), tone, 0, 0;
+}
+
+/// uncoated(paperColor): an uncoated sheet of `paperColor`, writing or
+/// copier paper: its pulp just visible, 1.5% at 2 mm, and rough, as
+/// physical measures office paper. Returns material, color, height and
+/// slope.
+uncoated(@color paperColor) {
+  return material.make(0.8, 0, 1.5), pulp(paperColor, 0.015, 2), 0, 0;
+}
+
+/// coated(paperColor, gloss): a clay-coated sheet of `paperColor` at
+/// `gloss` units (8 a matte coated stock, 60 a gloss one), its pulp all
+/// but hidden. Returns material, color, height and slope.
+coated(@color paperColor, @range(0, 100) gloss) {
+  return material.make(coating.glossRoughness(gloss), 0, 1.5), pulp(paperColor, 0.005, 2), 0, 0;
+}
+
+/// corrugated(origin, normal, along, flutePitch, sag, paperColor): the
+/// face of corrugated board, its liner over flutes that run along `along`
+/// at `flutePitch` mm (2 to 10: 2.4 the F flute, 3.4 E, 6.5 B, 7.8 C, 9.2
+/// A, a foot over the flutes per foot), the liner sagging `sag` mm (0 to
+/// 0.3) between them, its pulp mottled 5%. Returns material, color, height
+/// and slope.
+corrugated(@point origin, @direction(origin) normal, @direction(origin) along, @range(2, 10) flutePitch, @range(0, 0.3) sag, @color paperColor) {
+  n = normalize(normal);
+  u = normalize(along - n * dot(along, n));
+  across = dot(p - origin, cross(n, u));
+  dip = 0.5 * (1 - cos(6.2831853 * across / flutePitch));
+  liner = material.withDisplacement(material.make(0.5, 0, 1.5), -sag * dip * texture.fadeDetail(flutePitch));
+  liner.simple = material.withDisplacement(material.make(0.5, 0, 1.5), -0.5 * sag);
+  return liner, pulp(paperColor, 0.05, 4), 0, 0;
+}
+
+// ===========================================================================
+// Ready-made
+// ===========================================================================
+
+/// Kraft linerboard, physical's cardboard brown. Returns material and
+/// colour.
+@material kraft() {
+  sheet, tone, height, slope = kraft(cardboardBrown, 0.05);
+  return sheet, tone;
+}
+
+/// Grey chipboard. Returns material and colour.
+@material chipboard() {
+  sheet, tone, height, slope = chipboard([0.55, 0.5, 0.42]);
+  return sheet, tone;
+}
+
+/// Office paper, physical's measurement. Returns material and colour.
+@material officePaper() {
+  sheet, tone, height, slope = uncoated([0.9033, 0.9231, 0.9472]);
+  return sheet, tone;
+}
+
+/// Gloss coated stock, white, 60 gloss. Returns material and colour.
+@material glossPaper() {
+  sheet, tone, height, slope = coated([0.95, 0.95, 0.94], 60);
+  return sheet, tone;
+}
+
+/// Foam core board's face, a matte clay-coated white. Returns material
+/// and colour.
+@material foamCore() {
+  sheet, tone, height, slope = coated([0.95, 0.95, 0.94], 8);
+  return sheet, tone;
+}
+
+/// Cardboard, C flute, the liner sagging 0.15 mm over the flutes along +X.
+/// Returns material and colour.
+@material cardboard() {
+  board, tone, height, slope = corrugated([0, 0, 0], [0, 0, 1], [1, 0, 0], 7.8, 0.15, cardboardBrown);
+  return board, tone;
+}
+
+/// Micro-flute board, E flute, the flutes 3.4 mm apart along +X. Returns
+/// material and colour.
+@material microFlute() {
+  board, tone, height, slope = corrugated([0, 0, 0], [0, 0, 1], [1, 0, 0], 3.4, 0.08, cardboardBrown);
+  return board, tone;
+}
+
+// Cardboard's colour, physical's spectrophotometer measurement.
+cardboardBrown = [0.627, 0.4934, 0.3656];
+
+// References
+//   Packwire. Corrugated flute types, a technical guide: flute heights A
+//     4.7 mm, B 2.5, C 3.6, E 1.2, F 0.75, at about 33, 47, 38 to 39, 90
+//     and 125 to 128 flutes per foot. https://packwire.com/blog/corrugated-flute-types
+//   Packaging Corporation of America. A flute 4.8 mm at 33 flutes per
+//     foot, F flute 0.82 mm at 125. https://www.packagingcorp.com/?p=14043
+//   The colours of cardboard and office paper are physical's (physical.gsl
+//     cites them); the pulp's mottle, the streak and the liner's sag are
+//     judged.

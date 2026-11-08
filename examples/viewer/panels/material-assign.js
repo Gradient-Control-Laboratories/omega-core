@@ -133,8 +133,12 @@ function codeOf(line) {
 function findProperty(lines, body, prop) {
     const re = propertyStartRE(body, prop);
     const from = lines.findIndex((line) => re.test(line));
-    if (from < 0) return null;
+    return from < 0 ? null : statementAt(lines, from);
+}
 
+// statementAt reads the assignment starting on line `from`, returning its
+// inclusive line range and the text it assigns, or null.
+function statementAt(lines, from) {
     let depth = 0;
     let value = "";
     for (let i = from; i < lines.length; i++) {
@@ -150,6 +154,32 @@ function findProperty(lines, body, prop) {
         value += " ";
     }
     return null; // unterminated; treat as absent rather than guess at its extent
+}
+
+// inheritedMaterial is the material a body with no .material of its own wears,
+// as an expression, or null when the document does not say. The language cannot
+// read a material back, so this reads the document: a body takes the material of
+// the shape it is made from. `b = remap(a, q);` wears a's material moved by q, so
+// the relief written on it is remapped with it; a body made from several shapes
+// wears the material of the one that has one, and from two it is not one
+// expression.
+function inheritedMaterial(lines, body, seen = new Set()) {
+    if (seen.has(body)) return null;
+    seen.add(body);
+    const re = new RegExp(`^${escapeName(body)}\\s*=(?!=)`);
+    const from = lines.findIndex((line) => re.test(line));
+    const value = from < 0 ? null : statementAt(lines, from)?.value;
+    if (!value) return null;
+    const read = (name) => findProperty(lines, name, "material")?.value ?? inheritedMaterial(lines, name, seen);
+    if (callName(value) === "remap") {
+        const [shape, point] = callArguments(value);
+        const moved = /^[A-Za-z_]\w*$/.test(shape) ? read(shape) : null;
+        if (!moved) return null;
+        const { inner, carried } = unwrapCarried(lines, moved);
+        return wrapCarried(inner, carried.map((c) => (c.height ? reliefOf(`remap(${c.height}, ${point})`) : c)));
+    }
+    const found = [...new Set(value.match(/[A-Za-z_]\w*/g) || [])].map(read).filter(Boolean);
+    return found.length === 1 ? found[0] : null;
 }
 
 // returnLine is the line the document's top-level return starts on, or the end
@@ -174,9 +204,8 @@ function returnLine(source, lines) {
 // which keepColor needs when that colour is the half of a pair it is about to
 // rewrite (see assignMaterialOnly).
 //
-// options.keepDisplacement and options.keepLay carry the body's relief and its
-// lay over to the new surface (see bindKept and wrapKept): a thread's relief
-// survives a change of metal, a turned part keeps its grooves' direction.
+// This replaces the surface whole, what is written round it included; the panel
+// picks through assignBase, which leaves that and the layers where they are.
 export function assignSurface(source, body, entry, options = {}) {
     if (!isAssignableBody(source, body)) {
         throw new Error(`${body} is not a named body this document binds`);
@@ -184,12 +213,9 @@ export function assignSurface(source, body, entry, options = {}) {
     const call = entry.kind === "finish"
         ? `${entry.package}.${entry.symbol}`
         : `${entry.package}.${entry.symbol}()`;
-    let kept = null;
-    if (options.keepDisplacement || options.keepLay) ({ source, kept } = bindKept(source, body));
-    let next = entry.kind === "material" && options.keepColor
+    const next = entry.kind === "material" && options.keepColor
         ? assignMaterialOnly(source, body, call, options.colorLiteral)
         : assignWhole(source, body, entry, call);
-    if (kept) next = wrapKept(next, body, kept, options);
     return pruneOrphanPairs(next, body);
 }
 
@@ -210,8 +236,8 @@ function assignWhole(source, body, entry, call) {
     // A material sets both properties through a destructure. If the body's
     // .material and .color already read the two names of one pair line of the
     // panel's own naming, that line is a previous assignment of ours: rewrite
-    // its call and stop. A pair of any other name — an author's, or a kept
-    // surface — is not the panel's to rewrite.
+    // its call and stop. A pair of any other name, an author's, is not the
+    // panel's to rewrite.
     const mat = findProperty(lines, body, "material");
     const col = findProperty(lines, body, "color");
     if (mat && col) {
@@ -279,12 +305,23 @@ function assignWhole(source, body, entry, call) {
 // was — a literal, a library constant, or the colour half of a material's
 // pair — and leaves .material alone, so a material keeps its roughness and
 // metalness under a colour chosen for it.
-export function assignColor(source, body, rgb) {
+//
+// Given the catalog's operators, a body whose color comes up through layers
+// takes the pick at the bottom of them (colorOwner), so what the layers draw is
+// drawn over the new color rather than replaced by it.
+export function assignColor(source, body, rgb, operators) {
     if (!isAssignableBody(source, body)) {
         throw new Error(`${body} is not a named body this document binds`);
     }
-    const line = `${body}.color = ${colorLiteralText(rgb)};`;
     const lines = source.split("\n");
+    const layers = operators ? stackOf(source, body, operators).layers : [];
+    const owner = colorOwner(layers, operators);
+    if (owner) {
+        setLayerArgument(lines, owner.name, operators[owner.op].slots.color, colorLiteralText(rgb));
+        readTopColor(lines, body, layers, operators);
+        return lines.join("\n");
+    }
+    const line = `${body}.color = ${colorLiteralText(rgb)};`;
     const found = findProperty(lines, body, "color");
     if (found) {
         replaceStatement(lines, found, line);
@@ -349,7 +386,7 @@ export function expandSurface(source, body, entry, adjust) {
     // first of those places, so it lands where the surface was written.
     const mat = findProperty(lines, body, "material");
     const col = findProperty(lines, body, "color");
-    const inner = mat ? unwrapKept(mat.value, body).inner : null;
+    const { inner, carried } = mat ? unwrapCarried(lines, mat.value) : { inner: null, carried: [] };
     const pairIdx = inner === null ? -1 : lines.findIndex((line) => {
         const d = destructureOf(line);
         return d && d.names[0] === inner && oursRE(body).test(d.names[0]);
@@ -363,7 +400,7 @@ export function expandSurface(source, body, entry, adjust) {
     const at = ranges[ranges.length - 1].from;
     for (const r of ranges) lines.splice(r.from, r.to - r.from + 1);
     lines.splice(at, 0, ...block);
-    return pruneOrphanPairs(lines.join("\n"), body);
+    return pruneOrphanPairs(rewrapMaterial(lines.join("\n"), body, carried), body);
 }
 
 // declarationLines writes one parameter's variable with the control its kind
@@ -482,7 +519,7 @@ export function adjustedColorOf(source, body, adjust) {
     for (const prop of ["material", "color"]) {
         const found = findProperty(lines, body, prop);
         if (!found) continue;
-        const inner = prop === "material" ? unwrapKept(found.value, body).inner : found.value;
+        const inner = prop === "material" ? unwrapCarried(lines, found.value).inner : found.value;
         let value = inner;
         for (const line of lines) {
             const d = destructureOf(line);
@@ -562,12 +599,28 @@ function bindingLineOf(lines, name) {
 // the operator's catalog key, its arguments, and whether it is still the
 // preset form (one argument per slot), which is what Adjust can open.
 // baseSurface is the base named as surfaceOf names a surface: the call behind a
-// pair, else the text itself; null when the body sets no material.
+// pair, else the text itself; null when the body sets no material. carried is
+// what is written round the surface by hand (see unwrapCarried), wherever in the
+// stack it stands: a layer of the stack like the rest, innermost first, each with
+// `at`, the layer whose material slot holds it, or null for .material. A body
+// with no .material shows what is written round the one it inherits; the layers
+// there belong to the shape that has them, so they are not this body's to edit.
 export function stackOf(source, body, operators) {
     const lines = source.split("\n");
     const mat = findProperty(lines, body, "material");
-    if (!mat) return { base: null, baseSurface: null, layers: [] };
-    let current = unwrapKept(mat.value, body).inner;
+    if (!mat) {
+        const inherited = inheritedMaterial(lines, body);
+        if (!inherited) return { base: null, baseSurface: null, layers: [], carried: [] };
+        const { inner, carried } = unwrapCarried(lines, unwrapRelief(inherited).inner);
+        return { base: inner, baseSurface: inner, layers: [], carried: carried.map((c) => ({ ...c, at: null })) };
+    }
+    const carried = [];
+    const peel = (text, at) => {
+        const found = unwrapCarried(lines, text, operators);
+        carried.unshift(...found.carried.map((c) => ({ ...c, at })));
+        return found.inner;
+    };
+    let current = peel(unwrapRelief(mat.value).inner, null);
     const layers = [];
     const seen = new Set();
     while (/^[A-Za-z_]\w*$/.test(current) && !seen.has(current)) {
@@ -577,16 +630,17 @@ export function stackOf(source, body, operators) {
         if (!op) break;
         const args = callArguments(bind.value);
         layers.unshift({ name: current, names: bind.names, op: callName(bind.value), call: bind.value, args, preset: args.length === slotCount(op) });
-        current = args[op.slots.material] ?? "";
+        current = peel(args[op.slots.material] ?? "", current);
     }
     const pair = bindingLineOf(lines, current);
-    return { base: current, baseSurface: pair ? callName(pair.value) : current, layers };
+    return { base: current, baseSurface: pair ? callName(pair.value) : current, layers, carried };
 }
 
 // wrapSurface wraps the body's surface with the operator preset op, returning
 // the new source: one layer line binding what the preset returns, and the
 // body's properties repointed at it. The material slot is whatever .material
-// read, as text, or the default material when it read nothing; the colour
+// read, as text, or what it inherits (inheritedMaterial), or the default
+// material when it has neither; the colour
 // slot is .color's text, or options.colorLiteral (the colour the body is drawn
 // in) when the body sets none; the frame slot is the body's own frame. An
 // operator returning the material alone leaves .color as it is.
@@ -598,17 +652,14 @@ export function wrapSurface(source, body, op, options = {}) {
     const mat = findProperty(lines, body, "material");
     const col = findProperty(lines, body, "color");
 
-    const args = new Array(slotCount(op));
-    args[op.slots.material] = mat ? mat.value : DEFAULT_MATERIAL;
-    if (op.slots.color >= 0) {
-        args[op.slots.color] = col ? col.value : colorLiteralText(options.colorLiteral || [0.5, 0.5, 0.5]);
-    }
-    if (op.slots.frame >= 0) args[op.slots.frame] = `[${body}.u, ${body}.v]`;
-
-    const base = freshName(source, layerBase(body, op.call));
-    const names = LAYER_SUFFIXES.slice(0, op.arity).map((s) => `${base}${s}`);
-    const layerLine = `${names.join(", ")} = ${op.call}(${args.join(", ")});`;
-    const matLine = `${body}.material = ${names[0]};`;
+    // The relief of the layers already on the body stays outside the new
+    // layer, and the new layer's own joins it when its operator returns one.
+    const { inner: matInner, heights } = mat ? unwrapRelief(mat.value) : { inner: null, heights: [] };
+    const colorText = col ? col.value : colorLiteralText(options.colorLiteral || [0.5, 0.5, 0.5]);
+    const base = mat ? matInner : inheritedMaterial(lines, body) || DEFAULT_MATERIAL;
+    const { names, line: layerLine } = layerOf(source, body, op, base, colorText);
+    const reliefs = op.relief && op.arity >= 3 ? [...heights, names[2]] : heights;
+    const matLine = `${body}.material = ${wrapRelief(names[0], reliefs)};`;
     const colLine = op.arity >= 2 ? `${body}.color = ${names[1]};` : null;
 
     // Replace the properties where they stand, the later first, and put the
@@ -627,11 +678,194 @@ export function wrapSurface(source, body, op, options = {}) {
     return lines.join("\n");
 }
 
+// layerOf is the line binding operator op's preset over materialText and
+// colorText, with the names it binds.
+function layerOf(source, body, op, materialText, colorText) {
+    const args = new Array(slotCount(op));
+    args[op.slots.material] = materialText;
+    if (op.slots.color >= 0) args[op.slots.color] = colorText;
+    if (op.slots.frame >= 0) args[op.slots.frame] = `[${body}.u, ${body}.v]`;
+    const base = freshName(source, layerBase(body, op.call));
+    const names = LAYER_SUFFIXES.slice(0, op.arity).map((s) => `${base}${s}`);
+    return { names, line: `${names.join(", ")} = ${op.call}(${args.join(", ")});` };
+}
+
+// wrapUnder wraps the body's surface with operator op, returning the new
+// source. The layer goes under the body's first layer of the operators in
+// `over`, reading what that layer read, and that layer reads it; with none of
+// them on the body it is an ordinary wrap.
+export function wrapUnder(source, body, op, operators, over, options = {}) {
+    const above = stackOf(source, body, operators).layers.find((layer) => over.includes(layer.op));
+    if (!above) return wrapSurface(source, body, op, options);
+
+    const lines = source.split("\n");
+    const upper = operators[above.op];
+    const materialText = above.args[upper.slots.material];
+    const pair = bindingLineOf(lines, materialText);
+    const colorText = upper.slots.color >= 0 ? above.args[upper.slots.color]
+        : pair && pair.names.length >= 2 ? pair.names[1]
+        : colorLiteralText(options.colorLiteral || [0.5, 0.5, 0.5]);
+    const { names, line } = layerOf(source, body, op, materialText, colorText);
+
+    // The property is below that layer's line, so it is rewritten first.
+    const mat = findProperty(lines, body, "material");
+    if (op.relief && op.arity >= 3) {
+        const { inner, heights } = unwrapRelief(mat.value);
+        replaceStatement(lines, mat, `${body}.material = ${wrapRelief(inner, [...heights, names[2]])};`);
+    }
+    setLayerArgument(lines, above.name, upper.slots.material, names[0]);
+    if (upper.slots.color >= 0 && op.arity >= 2) setLayerArgument(lines, above.name, upper.slots.color, names[1]);
+    lines.splice(bindingLineOf(lines, above.name).at, 0, line);
+    return lines.join("\n");
+}
+
+// assignBase puts a surface under what is on the body, returning the new source:
+// the base changes, and the layers and what is written round the base stay, so a
+// thread is still there on the new metal. A finish replaces the base's material
+// and leaves its color, as it does on a bare body. With options.keepColor a
+// material does the same. options.replaceLayers takes the layers off with the old
+// base, for a surface that is finished already; what is written by hand stays.
+export function assignBase(source, body, entry, operators, options = {}) {
+    if (options.replaceLayers) source = removePanelLayers(source, body, operators);
+    const { base, layers, carried } = stackOf(source, body, operators);
+    if (!layers.length || options.replaceLayers) {
+        const bare = setMaterialValue(source, body, base, carried.length > 0);
+        return pruneOrphanPairs(rewrapMaterial(assignSurface(bare, body, entry, options), body, carried), body);
+    }
+
+    const lines = source.split("\n");
+    const inner = layers[0];
+    const slot = operators[inner.op].slots.material;
+    // What the innermost layer holds round the base stays there; anything
+    // written further out does not read the base.
+    const around = (value) => wrapCarried(value, carried.filter((c) => c.at === inner.name));
+
+    if (entry.kind === "finish") {
+        setLayerArgument(lines, inner.name, slot, around(`${entry.package}.${entry.symbol}`));
+        return pruneOrphanPairs(lines.join("\n"), body);
+    }
+
+    const call = `${entry.package}.${entry.symbol}()`;
+    // A pair of the panel's own naming is rewritten where it stands, as
+    // assignWhole does; any other may be read by other bodies.
+    const pair = bindingLineOf(lines, base);
+    if (pair && oursRE(body).test(base) && !options.keepColor) {
+        readBaseColor(lines, body, layers, operators, pair.names[1]);
+        setLayerArgument(lines, inner.name, slot, around(base));
+        return rewriteDestructure(lines, pair.at, body, call);
+    }
+    const [matName, colName] = surfaceNames(lines.join("\n"), body);
+    setLayerArgument(lines, inner.name, slot, around(matName));
+    if (!options.keepColor) readBaseColor(lines, body, layers, operators, colName);
+    lines.splice(bindingLineOf(lines, inner.name).at, 0, `${matName}, ${colName} = ${call};`);
+    return pruneOrphanPairs(lines.join("\n"), body);
+}
+
+// removePanelLayers takes off the layers of the panel's naming, outermost first,
+// with the parameters written for them. One an author wrote stays.
+function removePanelLayers(source, body, operators) {
+    const { layers } = stackOf(source, body, operators);
+    return [...layers].reverse().filter((layer) => isPanelLayer(layer, body)).reduce(
+        (next, layer) => removeLayer(next, body, layer.name, operators[layer.op]), source);
+}
+
+function isPanelLayer(layer, body) {
+    return new RegExp(`^${escapeName(layerBase(body, layer.op))}\\d*$`).test(layer.name);
+}
+
+// readBaseColor makes whatever reads the base's color read colorText: the lowest
+// layer taking a color, or .color when only modifiers sit on the base. A layer
+// making its own color hides the base's, and nothing changes.
+function readBaseColor(lines, body, layers, operators, colorText) {
+    if (colorOwner(layers, operators)) readTopColor(lines, body, layers, operators);
+    for (const layer of layers) {
+        const op = operators[layer.op];
+        if (op.slots.color >= 0) {
+            setLayerArgument(lines, layer.name, op.slots.color, colorText);
+            return;
+        }
+        if (op.arity >= 2) return;
+    }
+    const col = findProperty(lines, body, "color");
+    if (col) replaceStatement(lines, col, `${body}.color = ${colorText};`);
+}
+
+// stackColorOf is the color picked for a body through its layers, sRGB, when
+// colorOwner's argument is a literal; null otherwise.
+export function stackColorOf(source, body, operators) {
+    const { layers } = stackOf(source, body, operators);
+    const owner = colorOwner(layers, operators);
+    return owner ? parseColorLiteral(owner.args[operators[owner.op].slots.color]) : null;
+}
+
+// stackColorSource is the call whose color comes up through the body's layers:
+// the pair colorOwner's argument reads, so a turned body names its substance.
+// Null when no layer takes a color; a coat's own color names the coat.
+export function stackColorSource(source, body, operators) {
+    const { layers } = stackOf(source, body, operators);
+    const owner = colorOwner(layers, operators);
+    if (!owner) return null;
+    const color = owner.args[operators[owner.op].slots.color];
+    const pair = source.split("\n").map(bindingOf).find((bind) => bind?.names[1] === color);
+    return pair ? callName(pair.value) : null;
+}
+
+// colorOwner is the layer a picked color belongs in: walking down from the
+// outermost layer, the last one the color comes up through. A layer returning
+// the material alone leaves the color as it found it and is passed over; one
+// with no color slot makes its own color, so the walk stops above it. Null when
+// no layer takes a color, where a pick replaces .color.
+function colorOwner(layers, operators) {
+    let owner = null;
+    for (const layer of [...layers].reverse()) {
+        const op = operators[layer.op];
+        if (op.arity < 2) continue;
+        if (op.slots.color < 0) break;
+        owner = layer;
+    }
+    return owner;
+}
+
+// readTopColor points .color at the outermost layer that returns one, so a
+// color set by hand over the layers gives way to the one coming up through them.
+function readTopColor(lines, body, layers, operators) {
+    const top = [...layers].reverse().find((layer) => operators[layer.op].arity >= 2);
+    const col = findProperty(lines, body, "color");
+    if (top && col) replaceStatement(lines, col, `${body}.color = ${top.names[1]};`);
+}
+
+// setLayerArgument rewrites one argument of the layer bound to name.
+function setLayerArgument(lines, name, slot, text) {
+    const bind = bindingLineOf(lines, name);
+    const args = callArguments(bind.value);
+    args[slot] = text;
+    lines[bind.at] = `${bind.names.join(", ")} = ${callName(bind.value)}(${args.join(", ")});`;
+}
+
 // expandLayer opens the layer bound to layerName up into the operator's
 // parameters, as expandSurface opens a preset: one variable per parameter
 // above the layer, and the layer's line rewritten as the operator's full call
 // from the catalog template, its slots carried over from the preset call.
 export function expandLayer(source, body, layerName, op) {
+    return writeLayerOut(source, body, layerName, op, op.adjust?.parameters || []);
+}
+
+// The parameter kinds the Materials panel drives. A direction or a point is
+// dragged in the viewer instead, so it stays a literal until Adjust asks for it.
+const DRIVEN_KINDS = ["range", "color"];
+
+// openLayer opens the layer up as far as the panel drives it: a variable for
+// each range and color, so the uniforms are there before a slider is touched,
+// and the rest written as the preset's own values. A layer with nothing to drive
+// stays the preset.
+export function openLayer(source, body, layerName, op) {
+    const driven = (op.adjust?.parameters || []).filter((p) => DRIVEN_KINDS.includes(p.kind));
+    return driven.length ? writeLayerOut(source, body, layerName, op, driven) : source;
+}
+
+// writeLayerOut rewrites the layer's preset line as the operator's full call
+// with a variable for each of `declared`.
+function writeLayerOut(source, body, layerName, op, declared) {
     const lines = source.split("\n");
     const bind = bindingLineOf(lines, layerName);
     if (!bind || callName(bind.value) !== op.call) {
@@ -643,25 +877,207 @@ export function expandLayer(source, body, layerName, op) {
         throw new Error(`${op.call} has nothing to adjust`);
     }
 
-    const names = {};
-    let taken = source;
-    for (const p of op.adjust.parameters) {
-        names[p.name] = freshName(taken, `${body}${p.name[0].toUpperCase()}${p.name.slice(1)}`);
-        taken += ` ${names[p.name]}`;
-    }
+    const names = freshParameterNames(source, body, declared);
+    const literals = Object.fromEntries(op.adjust.parameters.map((p) => [p.name, parameterLiteral(p)]));
     const slots = {
         material: args[op.slots.material],
         color: op.slots.color >= 0 ? args[op.slots.color] : "",
         frame: op.slots.frame >= 0 ? args[op.slots.frame] : "",
     };
     const fill = (line) => line.replace(/\$\{(\w+)\}/g, (m, key) =>
-        key === "body" ? body : key === "layer" ? layerName : key in slots ? slots[key] : names[key] ?? m);
+        key === "body" ? body : key === "layer" ? layerName : key in slots ? slots[key] : names[key] ?? literals[key] ?? m);
     // The template's property lines already stand in the document, reading
     // the layer; only its binding lines replace the preset's one.
     const bindings = op.adjust.template.split("\n").filter((line) => !line.startsWith("${body}."));
-    const block = [...op.adjust.parameters.flatMap((p) => declarationLines(p, names)), ...bindings.map(fill)];
+    const block = [...declared.flatMap((p) => declarationLines(p, names)), ...bindings.map(fill)];
     lines.splice(bind.at, 1, ...block);
     return lines.join("\n");
+}
+
+// freshParameterNames names one variable per parameter, `<body><Param>`, fresh
+// against the document and each other.
+function freshParameterNames(source, body, parameters) {
+    const names = {};
+    let taken = source;
+    for (const p of parameters) {
+        names[p.name] = freshName(taken, parameterName(body, p));
+        taken += ` ${names[p.name]}`;
+    }
+    return names;
+}
+
+function parameterName(body, p) {
+    return `${body}${p.name[0].toUpperCase()}${p.name.slice(1)}`;
+}
+
+// parameterLiteral is a parameter's preset value as the text of an argument.
+function parameterLiteral(p) {
+    return p.default.length === 1 ? numberText(p.default[0]) : `[${p.default.map(numberText).join(", ")}]`;
+}
+
+// adjustLayer writes out what openLayer leaves in the call, so the viewer's
+// gizmos take over the directions and points, returning the new source. A
+// preset is opened all the way.
+export function adjustLayer(source, body, layerName, op) {
+    const lines = source.split("\n");
+    const args = callArguments(bindingLineOf(lines, layerName).value);
+    if (args.length === slotCount(op)) return expandLayer(source, body, layerName, op);
+    const left = op.adjust.parameters.filter((p) => isLeftLiteral(p, args));
+    const names = { ...Object.fromEntries(op.adjust.parameters.map((p) => [p.name, args[p.arg]])), ...freshParameterNames(source, body, left) };
+    const block = left.flatMap((p) => declarationLines({ ...p, default: parseColorLiteral(args[p.arg]) }, names));
+    for (const p of left) setLayerArgument(lines, layerName, p.arg, names[p.name]);
+    lines.splice(bindingLineOf(lines, layerName).at, 0, ...block);
+    return lines.join("\n");
+}
+
+// isLeftLiteral: the parameter is one the panel does not drive, written in the
+// call as numbers.
+function isLeftLiteral(p, args) {
+    return !DRIVEN_KINDS.includes(p.kind) && !!parseColorLiteral(args[p.arg] ?? "");
+}
+
+// layerHasMoreToAdjust: Adjust would write something out that the panel's
+// sliders and chips do not reach.
+export function layerHasMoreToAdjust(layer, op) {
+    const parameters = op.adjust?.parameters || [];
+    return parameters.some((p) => !DRIVEN_KINDS.includes(p.kind) && (layer.preset || isLeftLiteral(p, layer.args)));
+}
+
+// layerParameters are what the panel drives on a layer of stackOf: the
+// operator's ranges and colors, each with its name, kind and value, and a
+// range's bounds. A preset has them as the catalog's defaults, and `variable`
+// null. Opened up, each reads its argument: `variable` is the literal's name,
+// with the bounds the document gives it, and a value in the call has none. An
+// argument the document computes is left out, there being nothing to move.
+export function layerParameters(source, layer, op) {
+    const lines = source.split("\n");
+    return (op.adjust?.parameters || []).filter((p) => DRIVEN_KINDS.includes(p.kind)).flatMap((p) => {
+        const read = layer.preset ? { value: p.kind === "color" ? p.default : p.default[0], variable: null } : readParameter(lines, p, layer.args[p.arg] ?? "");
+        return read ? [{ name: p.name, kind: p.kind, min: p.min, max: p.max, ...read }] : [];
+    });
+}
+
+// readParameter reads the value a parameter's argument holds, or null when it
+// holds none the panel can write.
+function readParameter(lines, p, arg) {
+    const parse = p.kind === "color" ? parseColorLiteral : (text) => NUMBER_RE.test(text) ? Number(text) : null;
+    const written = parse(arg);
+    if (written !== null) return { value: written, variable: null };
+    const decl = lines.map((line) => line.match(declarationRE(arg))).find(Boolean);
+    const value = decl ? parse(decl[2].trim()) : null;
+    if (value === null) return null;
+    if (p.kind === "color") return { value, variable: arg };
+    return { value, variable: arg, min: numberProperty(lines, arg, "min") ?? p.min, max: numberProperty(lines, arg, "max") ?? p.max };
+}
+
+const NUMBER_RE = /^-?(\d+\.?\d*|\.\d+)$/;
+
+// numberProperty is the number a line `name.property = …;` sets, or null.
+function numberProperty(lines, name, property) {
+    const re = new RegExp(`^\\s*${escapeName(name)}\\.${property}\\s*=\\s*([^;]*);`);
+    const text = lines.map((line) => line.match(re)).find(Boolean)?.[1].trim();
+    return text !== undefined && NUMBER_RE.test(text) ? Number(text) : null;
+}
+
+// valueText writes a parameter's value as GSL: a number, or a color.
+function valueText(value) {
+    return Array.isArray(value) ? colorLiteralText(value) : numberText(value);
+}
+
+// setVariable gives the top-level variable `name` a new value, keeping its
+// annotation, returning the new source.
+export function setVariable(source, name, value) {
+    const lines = source.split("\n");
+    const at = lines.findIndex((line) => declarationRE(name).test(line));
+    if (at < 0) throw new Error(`${name} is not a variable this document declares`);
+    const prefix = lines[at].match(declarationRE(name))[1] || "";
+    lines[at] = `${prefix}${name} = ${valueText(value)};`;
+    return lines.join("\n");
+}
+
+// setLayerParameter gives a parameter of the layer bound to layerName a value,
+// returning the new source. A preset is opened up first.
+export function setLayerParameter(source, body, layerName, op, name, value) {
+    const param = op.adjust?.parameters?.find((p) => p.name === name);
+    if (!param) throw new Error(`${op.call} has no parameter ${name}`);
+    const bound = bindingLineOf(source.split("\n"), layerName);
+    if (!bound) throw new Error(`${layerName} is not a layer this document binds`);
+    const opened = callArguments(bound.value).length === slotCount(op) ? openLayer(source, body, layerName, op) : source;
+    const lines = opened.split("\n");
+    const arg = callArguments(bindingLineOf(lines, layerName).value)[param.arg] ?? "";
+    if (NUMBER_RE.test(arg) || parseColorLiteral(arg)) {
+        setLayerArgument(lines, layerName, param.arg, valueText(value));
+        return lines.join("\n");
+    }
+    return setVariable(opened, arg, value);
+}
+
+// wrapOpen is wrapUnder with the new layer opened up, which is what a pick in
+// the panel writes: a slider under it has a uniform from the first drag.
+export function wrapOpen(source, body, op, operators, over, options = {}) {
+    const before = stackOf(source, body, operators).layers.map((layer) => layer.name);
+    const next = wrapUnder(source, body, op, operators, over, options);
+    const added = stackOf(next, body, operators).layers.find((layer) => !before.includes(layer.name));
+    return added ? openLayer(next, body, added.name, op) : next;
+}
+
+// baseParameters are the parameters Adjust wrote for the surface under the
+// layers: those of the calls the base is built from, by adjust's records (the
+// catalog's, keyed by preset), held in variables of the panel's own naming, on a
+// pair of its naming. Anything else an author wrote, and its sliders are theirs.
+export function baseParameters(source, body, stack, adjust) {
+    if (!stack.base || !oursRE(body).test(stack.base)) return [];
+    const lines = source.split("\n");
+    const found = new Map();
+    const seen = new Set();
+    const walk = (name) => {
+        if (seen.has(name)) return;
+        seen.add(name);
+        const bind = bindingLineOf(lines, name);
+        if (!bind) return;
+        const args = callArguments(bind.value);
+        for (const record of Object.values(adjust || {})) {
+            for (const p of record.parameters) {
+                if (p.call !== callName(bind.value) || !DRIVEN_KINDS.includes(p.kind)) continue;
+                const arg = args[p.arg] ?? "";
+                if (!isPanelVariable(arg, body, p) || found.has(arg)) continue;
+                const read = readParameter(lines, p, arg);
+                if (read?.variable) found.set(arg, { name: p.name, kind: p.kind, min: p.min, max: p.max, ...read });
+            }
+        }
+        for (const arg of args) if (/^[A-Za-z_]\w*$/.test(arg)) walk(arg);
+    };
+    walk(stack.base);
+    return [...found.values()];
+}
+
+// isPanelVariable: `name` is the variable the panel writes for parameter p, by
+// its naming.
+function isPanelVariable(name, body, p) {
+    return new RegExp(`^${escapeName(parameterName(body, p))}\\d*$`).test(name);
+}
+
+// panelVariables are the variables the panel wrote and shows, so the Parameters
+// panel leaves them out.
+export function panelVariables(source, operators, adjust) {
+    return new Set(panelVariableList(source, operators, adjust));
+}
+
+export function panelVariableList(source, operators, adjust) {
+    const names = [];
+    for (const [, body] of source.matchAll(/^([A-Za-z_]\w*)\.material\s*=/gm)) {
+        const stack = stackOf(source, body, operators);
+        for (const layer of stack.layers) {
+            const op = operators[layer.op];
+            if (!isPanelLayer(layer, body)) continue;
+            for (const item of layerParameters(source, layer, op)) {
+                const p = op.adjust.parameters.find((each) => each.name === item.name);
+                if (item.variable && isPanelVariable(item.variable, body, p)) names.push(item.variable);
+            }
+        }
+        names.push(...baseParameters(source, body, stack, adjust).map((item) => item.variable));
+    }
+    return names;
 }
 
 // removeLayer takes the layer bound to layerName out of the body's stack,
@@ -688,9 +1104,12 @@ export function removeLayer(source, body, layerName, op) {
     lines.splice(bind.at, 1);
 
     const word = (name) => new RegExp(`\\b${escapeName(name)}\\b`, "g");
-    const [matName, colName] = bind.names;
+    const [matName, colName, heightName] = bind.names;
+    // The layer's relief, applied outside whatever read the layer, goes with it.
+    const relief = heightName ? new RegExp(`material\\.withDisplacement\\((.*), ${escapeName(heightName)}\\)`) : null;
     lines = lines.flatMap((line) => {
         let next = line;
+        if (relief && relief.test(next)) next = next.replace(relief, "$1");
         if (word(matName).test(codeOf(next))) next = next.replace(word(matName), materialText);
         if (colName && word(colName).test(codeOf(next))) {
             if (colorText) next = next.replace(word(colName), colorText);
@@ -719,9 +1138,9 @@ export function surfaceOf(source, body) {
     const mat = findProperty(lines, body, "material");
     const col = findProperty(lines, body, "color");
 
-    // Seen through the panel's own wrapping of a kept surface, the surface is
-    // the one inside it, and what it keeps from the kept one is listed.
-    const { inner, keeps } = mat ? unwrapKept(mat.value, body) : { inner: null, keeps: [] };
+    // Seen through the relief of its layers and what is written round it, the
+    // surface is the one inside.
+    const inner = mat ? unwrapCarried(lines, unwrapRelief(mat.value).inner).inner : null;
     let surface = inner;
     let colorIsSurface = false;
     if (mat) {
@@ -744,7 +1163,7 @@ export function surfaceOf(source, body) {
             }
         }
     }
-    return { surface, color: col ? col.value : null, rgb: col ? parseColorLiteral(col.value) : null, colorIsSurface, colorSource, keeps };
+    return { surface, color: col ? col.value : null, rgb: col ? parseColorLiteral(col.value) : null, colorIsSurface, colorSource };
 }
 
 function parseColorLiteral(text) {
@@ -760,105 +1179,122 @@ function oursRE(body) {
     return new RegExp(`^${escapeName(body)}Surface\\d*$`);
 }
 
-// keptRE matches the names the panel binds a body's kept surface to: boltKept,
-// boltKept2, ….
-function keptRE(body) {
-    return new RegExp(`^${escapeName(body)}Kept\\d*$`);
-}
-
 function freshName(source, base) {
     let name = base;
     for (let n = 2; new RegExp(`\\b${escapeName(name)}\\b`).test(source); n++) name = `${base}${n}`;
     return name;
 }
 
-// The wrappers wrapKept writes, and unwraps when it meets its own work again.
-function wrapDisplacement(inner, kept) {
-    return `material.withDisplacement(${inner}, material.displacement(${kept}))`;
-}
-function wrapLay(inner, kept) {
-    return `material.withLay(${inner}, material.lay(${kept}), material.anisotropy(${kept}))`;
-}
-
-// bindKept names the surface whose displacement and lay are to be kept, so the
-// assignment that follows can replace .material without losing them. It
-// returns the new source and the name, or a null name when the body has no
-// surface to keep.
-//
-//   - .material is the panel's own wrapping of a kept surface: the same kept
-//     surface stays, and .material is unwrapped to the surface inside, which
-//     the assignment then replaces as it would any.
-//   - .material reads one of the panel's pairs: the pair is renamed to the
-//     kept name, so the assignment writes a new pair rather than rewriting
-//     the call being kept — and a colour reading that pair goes on reading it.
-//   - Anything else — an author's own expression, a thread's relief, a
-//     finish: it is bound to the kept name, `boltKept = <expression>;`. That
-//     binding is the author's work, so it is never removed.
-function bindKept(source, body) {
-    const lines = source.split("\n");
-    const mat = findProperty(lines, body, "material");
-    if (!mat) return { source, kept: null };
-
-    const unwrapped = unwrapKept(mat.value, body);
-    if (unwrapped.kept) {
-        replaceStatement(lines, mat, `${body}.material = ${unwrapped.inner};`);
-        return { source: lines.join("\n"), kept: unwrapped.kept };
-    }
-
-    const kept = freshName(source, `${body}Kept`);
-    if (oursRE(body).test(mat.value)) {
-        const pairIdx = lines.findIndex((line) => {
-            const d = destructureOf(line);
-            return d && d.names[0] === mat.value;
-        });
-        if (pairIdx >= 0) {
-            const colName = destructureOf(lines[pairIdx]).names[1];
-            const renamed = lines.map((line) => line
-                .replace(new RegExp(`\\b${escapeName(mat.value)}\\b`, "g"), kept)
-                .replace(new RegExp(`\\b${escapeName(colName)}\\b`, "g"), `${kept}Color`));
-            return { source: renamed.join("\n"), kept };
-        }
-    }
-    replaceStatement(lines, mat, `${body}.material = ${kept};`);
-    lines.splice(mat.from, 0, `${kept} = ${mat.value};`);
-    return { source: lines.join("\n"), kept };
-}
-
-// unwrapKept undoes wrapKept: the surface inside the panel's wrapping, the kept
-// surface's name, and what is kept from it. A value the panel did not wrap
-// comes back as it is, with no kept name.
-function unwrapKept(value, body) {
-    const named = value.match(new RegExp(`\\b(${escapeName(body)}Kept\\d*)\\b`));
-    if (!named) return { inner: value, kept: null, keeps: [] };
-    const kept = named[1];
+// The relief of a body's layers: an operator that returns a height the layer
+// has to apply (a knurl's teeth; the catalog marks it `relief`) is applied as
+// displacement on the body's material, outside every layer,
+// material.withDisplacement(<layer>, <layer>Height), one wrapping per such
+// layer. unwrapRelief reads them off a .material value, innermost height
+// first; wrapRelief writes them back round inner.
+const reliefRE = /^material\.withDisplacement\((.*), ([A-Za-z_]\w*Height)\)$/;
+function unwrapRelief(value) {
     let inner = value;
-    const keeps = [];
+    const heights = [];
+    for (let m = inner.match(reliefRE); m; m = inner.match(reliefRE)) {
+        inner = m[1];
+        heights.unshift(m[2]);
+    }
+    return { inner, heights };
+}
+function wrapRelief(inner, heights) {
+    return heights.reduce((v, h) => `material.withDisplacement(${v}, ${h})`, inner);
+}
+
+// What is written round a surface by hand: relief, such as a thread,
+// material.withDisplacement(<surface>, <height>), and a lay. It is not the
+// surface's own, so it stays when the surface changes, as a layer does, until
+// Remove takes it off. A height a layer returns is that layer's (unwrapRelief).
+//
+// Each carried item is { call, rest, height }: the call that wraps, the arguments
+// after the surface, and for relief the height. Relief goes back as
+// material.addDisplacement, since the surface it now wraps may have its own.
+function reliefOf(height) {
+    return { call: "material.addDisplacement", rest: [height], height };
+}
+
+// unwrapCarried reads what is written round value: the surface inside, and the
+// carried items, innermost first. A name bound to such a value reads through,
+// since its text is the same value; the binding stays for whatever else reads it.
+// A name bound to one of `operators` is a layer of the stack, not carried: an
+// opened-up material.withLay reads like a lay written by hand.
+function unwrapCarried(lines, value, operators) {
+    let inner = value;
+    const carried = [];
     for (let changed = true; changed;) {
         changed = false;
-        for (const [wrap, what] of [[wrapLay, "lay"], [wrapDisplacement, "displacement"]]) {
-            const [pre, post] = wrap("\u0000", kept).split("\u0000");
-            if (inner.startsWith(pre) && inner.endsWith(post)) {
-                inner = inner.slice(pre.length, inner.length - post.length);
-                keeps.unshift(what);
-                changed = true;
-            }
+        const name = callName(inner);
+        const args = callArguments(inner);
+        if ((name === "material.withDisplacement" || name === "material.addDisplacement") && args.length === 2) {
+            carried.unshift(reliefOf(args[1]));
+        } else if (name === "material.withLay" && args.length === 3) {
+            carried.unshift({ call: name, rest: args.slice(1) });
+        } else {
+            const bind = /^[A-Za-z_]\w*$/.test(inner) ? bindingLineOf(lines, inner) : null;
+            if (!bind || bind.names.length !== 1 || operators?.[callName(bind.value)] || !unwrapCarried(lines, bind.value, operators).carried.length) continue;
+            inner = bind.value;
+            changed = true;
+            continue;
         }
+        inner = args[0];
+        changed = true;
     }
-    // A kept name that is not the panel's wrapping is an author's expression
-    // that happens to read it; it is left whole.
-    return keeps.length ? { inner, kept, keeps } : { inner: value, kept: null, keeps: [] };
+    return { inner, carried };
 }
 
-// wrapKept carries the kept surface's displacement and lay over to whatever
-// .material now is.
-function wrapKept(source, body, kept, options) {
+// wrapCarried writes carried back round inner, innermost first.
+function wrapCarried(inner, carried) {
+    return carried.reduce((v, c) => `${c.call}(${[v, ...c.rest].join(", ")})`, inner);
+}
+
+// setMaterialValue points .material at value, writing the line when the body
+// inherits. With nothing to change it leaves the source alone.
+function setMaterialValue(source, body, value, change) {
+    if (!change) return source;
+    const lines = source.split("\n");
+    const mat = findProperty(lines, body, "material");
+    if (!mat) return insertBlock(source, lines, [`${body}.material = ${value};`]);
+    replaceStatement(lines, mat, `${body}.material = ${value};`);
+    return lines.join("\n");
+}
+
+// rewrapMaterial writes carried round whatever .material now is.
+function rewrapMaterial(source, body, carried) {
+    if (!carried.length) return source;
     const lines = source.split("\n");
     const mat = findProperty(lines, body, "material");
     if (!mat) return source;
-    let value = mat.value;
-    if (options.keepDisplacement) value = wrapDisplacement(value, kept);
-    if (options.keepLay) value = wrapLay(value, kept);
-    replaceStatement(lines, mat, `${body}.material = ${value};`);
+    replaceStatement(lines, mat, `${body}.material = ${wrapCarried(mat.value, carried)};`);
+    return lines.join("\n");
+}
+
+// removeCarried takes one carried item off the body, returning the new source;
+// `index` is its place in stackOf's carried. A body that inherits gets a .material
+// of its own, the inherited surface without the item.
+export function removeCarried(source, body, index, operators) {
+    const { carried } = stackOf(source, body, operators);
+    const item = carried[index];
+    if (!item) throw new Error(`${body} has no such layer`);
+    const lines = source.split("\n");
+    const without = (text) => {
+        const found = unwrapCarried(lines, text, operators);
+        const at = found.carried.findIndex((c) => c.call === item.call && c.rest.join() === item.rest.join());
+        return wrapCarried(found.inner, found.carried.filter((c, i) => i !== at));
+    };
+    if (item.at) {
+        const bind = bindingLineOf(lines, item.at);
+        const op = operators[callName(bind.value)];
+        setLayerArgument(lines, item.at, op.slots.material, without(callArguments(bind.value)[op.slots.material]));
+        return lines.join("\n");
+    }
+    const mat = findProperty(lines, body, "material");
+    if (!mat) return setMaterialValue(source, body, without(inheritedMaterial(lines, body)), true);
+    const { inner, heights } = unwrapRelief(mat.value);
+    replaceStatement(lines, mat, `${body}.material = ${wrapRelief(without(inner), heights)};`);
     return lines.join("\n");
 }
 
@@ -906,22 +1342,19 @@ function assignMaterialOnly(source, body, call, colorLiteral) {
 }
 
 // pruneOrphanPairs removes the body's panel-written pair lines that nothing
-// reads any more — the line a pinned colour or a second pair left behind, a
-// kept catalog surface no longer kept — so trying surfaces leaves no litter. A
-// single kept binding, `boltKept = <expression>;`, is an author's own work and
-// stays.
+// reads any more — the line a pinned colour or a second pair left behind — so
+// trying surfaces leaves no litter.
 function pruneOrphanPairs(source, body) {
     const lines = source.split("\n");
     const ours = oursRE(body);
     const readElsewhere = (name, at) => lines.some((line, i) =>
         i !== at && new RegExp(`\\b${escapeName(name)}\\b`).test(codeOf(line)));
-    const keptPair = keptRE(body);
     // The parameter variables a dropped destructure read go with it, when
     // nothing else reads them.
     let lifted = [];
     const remaining = lines.filter((line, i) => {
         const d = destructureOf(line);
-        if (!d || !(ours.test(d.names[0]) || keptPair.test(d.names[0]))) return true;
+        if (!d || !ours.test(d.names[0])) return true;
         if (d.names.some((name) => readElsewhere(name, i))) return true;
         lifted = lifted.concat(liftedNames(d.value, body));
         return false;

@@ -811,7 +811,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32) -> vec4<f32> {
   if (gsl_colorIdx == 26u) { return vec4<f32>(thread_reliefColor(vec3<f32>(0.77, 0.78, 0.78), gsl_threadColorOn_remap_3(vec3<f32>(p.x - 24.0, p.y - -44.0, p.z)), 1.0), 1.0); }
   if (gsl_colorIdx == 27u) { return vec4<f32>(thread_reliefColor(vec3<f32>(0.22, 0.22, 0.24), gsl_threadColorOn_remap_3(vec3<f32>(p.x - 40.0, p.y - -44.0, p.z)), 1.0), 1.0); }
   if (gsl_colorIdx == 28u) { return vec4<f32>(vec3<f32>(0.93, 0.91, 0.85), 1.0); }
-  if (gsl_colorIdx == 29u) { return vec4<f32>(thread_reliefColor(vec3<f32>(0.8, 0.82, 0.84), gsl_threadColorOn_remap_3(vec3<f32>(p.x - 56.0, p.y - -44.0, p.z)), 1.0), 1.0); }
+  if (gsl_colorIdx == 29u) { return vec4<f32>(thread_reliefColor(vec3<f32>(0.9103, 0.928, 0.9381), gsl_threadColorOn_remap_3(vec3<f32>(p.x - 56.0, p.y - -44.0, p.z)), 1.0), 1.0); }
   if (gsl_colorIdx == 30u) { return vec4<f32>(vec3<f32>(0.77, 0.78, 0.78), 1.0); }
   return vec4<f32>(0.0, 0.0, 0.0, 0.0);
 }

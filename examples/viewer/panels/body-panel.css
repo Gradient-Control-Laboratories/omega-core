@@ -1,7 +1,7 @@
 /* Bodies side panel (body-panel.js / body-panel-markup.js / body-palette.js).
  * The panel frame — #body-panel, its header, .panel-body, .panel-close — is
  * styled by each app's shared side-panel rules; this file carries the palette
- * and the body rows, and material-grid.css the swatch grid beneath them.
+ * and the body rows.
  * The palette rules moved here unchanged from webdm's and webai's style.css. */
 
 #palette-strip {
@@ -213,6 +213,25 @@
 
 .body-row.surface-color input[type="color"]::-moz-color-swatch {
     background: var(--chip-paint) !important;
+}
+
+/* A color applied to the body fills the chip; the border is the schematic color
+ * under it, the palette's, which section view draws the body in. */
+.body-row.applied input[type="color"] {
+    box-sizing: border-box;
+    border: 1.5px solid var(--chip-schematic);
+}
+
+/* The swatch fills what the border leaves, its corners the border's inner curve,
+ * with a thin black line between the two colors. */
+.body-row.applied input[type="color"]::-webkit-color-swatch {
+    border: 0.5px solid #000;
+    border-radius: 2.5px;
+}
+
+.body-row.applied input[type="color"]::-moz-color-swatch {
+    border: 0.5px solid #000;
+    border-radius: 2.5px;
 }
 
 /* The body's surface, drawn from the swatch sheet (material-grid.js's

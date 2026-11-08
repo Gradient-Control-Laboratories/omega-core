@@ -5,12 +5,12 @@
 // Library.gsl (marble, granite, rustedSteel, patinaBronze, glitter,
 // checkerboard, cellSkin), none of them using material.withDisplacement.
 // If this renders fine but the full Texture Library does not, the GPU
-// crash is specific to combining it with wood/water/lavaHero displacement
+// crash is specific to combining it with wood/water/lava-crust displacement
 // rather than "too many noise-heavy presets in one scene."
 
 spacing = 75;
 
-marbleColor = stone.marble(25, 10, 0.4, 10, color.white, color.gray);
+marbleColor = stone.marble(25, 0.4, 0.016, 0.4, color.white, color.gray);
 marbleBall = transform.translate(sphere(25), [-3 * spacing, 0, 0]);
 marbleBall.material = stone.stoneFinish(0.15);
 marbleBall.color = marbleColor;
@@ -39,7 +39,7 @@ checkerBall = transform.translate(sphere(25), [2 * spacing, 0, 0]);
 checkerBall.material = material.matte;
 checkerBall.color = playful.checkerboard(10, color.white, color.black);
 
-skinColor = playful.cellSkin(5, 2.5, color.teal, color.white);
+skinColor = playful.cellSkin(5, 0.5, color.teal, color.white);
 skinBall = transform.translate(sphere(25), [3 * spacing, 0, 0]);
 skinBall.material = material.matte;
 skinBall.color = skinColor;

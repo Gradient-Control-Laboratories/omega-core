@@ -1,0 +1,841 @@
+
+// Playful Materials (material/collection/playful)
+//
+// Confetti, dots, checkerboards, glitter, a spatial rainbow sweep, and a
+// scutoid-inspired organic "skin" pattern. Color/material fun built on the
+// same noise + texture.paint/paintMaterial idioms as the rest of the
+// family.
+//
+// Doc convention follows builtin/base.gsl: `///` lines are public docs.
+
+import "noise";
+import "map";
+import "color";
+import "material";
+import "texture";
+
+/// checkerboard(cellSize, colorA, colorB): a sharp 3D checkerboard, colorA on
+/// the cells of map.checker's even parity. Each axis's squares are averaged
+/// over the pixel (texture.squareWave) and the three combined as the chance
+/// their parity is odd, so the edges blur by what a pixel sees and a board
+/// too fine to resolve settles to the two colours' even mix.
+checkerboard(@range(0.5, 100) cellSize, @color colorA, @color colorB) {
+  x = texture.squareWave(p.x, 2 * cellSize);
+  y = texture.squareWave(p.y, 2 * cellSize);
+  z = texture.squareWave(p.z, 2 * cellSize);
+  xy = x + y - 2 * x * y;
+  odd = xy + z - 2 * xy * z;
+  board = color.mixOklab(colorA, colorB, odd);
+  // Half the cells are each colour, so seen too small to resolve, it is
+  // their even mix.
+  board.simple = color.mixOklab(colorA, colorB, 0.5);
+  return board;
+}
+
+/// checkerboard(cellSize, colorA, colorB, frame, diameter): the checker laid
+/// on the part's own frame, `[bar.u, bar.v]`, round a part `diameter` mm
+/// across: squares `cellSize` mm along v and counted round u, an even count
+/// nearest the circumference's, so the board closes on itself across u's
+/// seam. On a capped cylinder one call checks the side and its caps, where
+/// the squares run out from the axis in wedges. Returns the colour.
+checkerboard(@range(0.5, 100) cellSize, @color colorA, @color colorB, frame, @range(4, 200) diameter) {
+  count = 2 * max(floor(3.14159265 * diameter / (2 * cellSize) + 0.5), 1);
+  around = frame.x / 6.2831853 * count * cellSize;
+  x = texture.squareWave(around, 2 * cellSize);
+  y = texture.squareWave(frame.y, 2 * cellSize);
+  board = color.mixOklab(colorA, colorB, x + y - 2 * x * y);
+  board.simple = color.mixOklab(colorA, colorB, 0.5);
+  return board;
+}
+
+// The share of the honeycomb the dots cover: each owns 3 sqrt(3) / 4
+// spacing^2 and covers pi r^2 of it.
+polkaShare(spacing, dotRadius) {
+  return min(3.14159265 * dotRadius * dotRadius / (1.299038 * spacing * spacing), 1);
+}
+
+// polkaFrame(direction): the point in the frame of a dot plane facing
+// `direction`, the identity for +Z, so a pattern written for the XY plane
+// keeps its look there and turns with the direction elsewhere.
+polkaFrame(direction) {
+  along = normalize(direction);
+  up = abs(along.z) > 0.9 ? [0, 1, 0] : [0, 0, 1];
+  across = normalize(cross(up, along));
+  sheet = cross(along, across);
+  return [dot(p, across), dot(p, sheet), dot(p, along)];
+}
+
+// polkaPlane: the dots in the XY plane, as columns along z.
+polkaPlane(spacing, dotRadius, share, baseColor, dotColor) {
+  cellP = map.patternHexagonalXY(spacing);
+  disc = texture.coverageDisc(length(cellP.xy), dotRadius);
+  return color.mixOklab(baseColor, dotColor, texture.fadeTo(disc, share, spacing));
+}
+
+/// polkaDot(spacing, dotRatio, direction, baseColor, dotColor): a
+/// hexagonally-packed dot pattern in the plane facing `direction`, dots
+/// `spacing` mm apart with a radius `dotRatio` of that (0.25 for dots half as
+/// wide as they are apart; at 0.5 they touch) — map.patternHexagonalXY gives
+/// the offset to the nearest dot center, and texture.coverageDisc draws the
+/// dot there, a pixel soft at its edge. Dots too small or too close to resolve
+/// settle to their share of the honeycomb, pi r^2 over 3 sqrt(3) / 4 spacing^2.
+polkaDot(@range(0.5, 50) spacing, @range(0.05, 0.5) dotRatio, @direction direction, @color baseColor, @color dotColor) {
+  dotRadius = dotRatio * spacing;
+  share = polkaShare(spacing, dotRadius);
+  dots = remap(polkaPlane(spacing, dotRadius, share, baseColor, dotColor), polkaFrame(direction));
+  dots.simple = color.mixOklab(baseColor, dotColor, share);
+  return dots;
+}
+
+/// confetti(cellSize, paletteFn): a scattered per-region color sweep —
+/// combines noise.cellular and noise.gradient at the same p into a pseudo-id
+/// fed through paletteFn (e.g. color.cyclicRainbow). An honest
+/// approximation, not a true per-cell constant (the per-cell hash itself
+/// isn't public) — the id drifts smoothly within a region rather than
+/// jumping cleanly at cell walls, which reads as confetti-scatter rather
+/// than flat-per-cell color, and is arguably the more festive result anyway.
+confetti(@range(1, 50) cellSize, paletteFn) {
+  regionId = fract(noise.cellular(cellSize) * 3.7 + noise.gradient(cellSize) * 1.3 + 0.5);
+  // Taken into a local first: a property's value is not searched for calls
+  // that pass a function, so paletteMean would not be specialized there.
+  mean = paletteMean(paletteFn);
+  scatter = paletteFn(regionId);
+  scatter.simple = mean;
+  return scatter;
+}
+
+// The average colour of a palette over [0, 1), taken in Oklab from eight
+// evenly spaced samples, for the stand-in of a pattern that sweeps it evenly.
+paletteMean(paletteFn) {
+  sum = color.rgb2oklab(paletteFn(0.0625)) + color.rgb2oklab(paletteFn(0.1875))
+      + color.rgb2oklab(paletteFn(0.3125)) + color.rgb2oklab(paletteFn(0.4375))
+      + color.rgb2oklab(paletteFn(0.5625)) + color.rgb2oklab(paletteFn(0.6875))
+      + color.rgb2oklab(paletteFn(0.8125)) + color.rgb2oklab(paletteFn(0.9375));
+  return color.oklab2rgb(sum / 8);
+}
+
+/// glitter(baseMaterial, baseColor, flakeCellSize, flakeColor, density):
+/// sparse bright metallic flecks, one candidate per Voronoi cell — uses
+/// cellularF1F2's F1 channel (distance to the nearest feature point, NOT
+/// F2-F1 edges) tightly thresholded near 0, since F1 alone is the right
+/// primitive for "a bright dot per cell" (edges is for cracks/joints
+/// between cells, not points within them). `density` is the flake radius as
+/// a fraction of flakeCellSize, so the look holds at any cell size. Returns
+/// material, color.
+glitter(baseMaterial, @color baseColor, @range(0.2, 10) flakeCellSize, @color flakeColor, @range(0, 1) density) {
+  f1, f2 = noise.cellularF1F2(flakeCellSize);
+  flakes = glitterFlakes(f1, flakeCellSize, density);
+  flakeMaterial = material.withRoughness(material.withMetallic(baseMaterial, 1), 0.08);
+  share = glitterShare(density);
+  mat = material.blend(baseMaterial, flakeMaterial, flakes);
+  col = color.mixOklab(baseColor, flakeColor, flakes);
+  mat.simple = material.blend(baseMaterial, flakeMaterial, share);
+  col.simple = color.mixOklab(baseColor, flakeColor, share);
+  return mat, col;
+}
+
+// The share of the surface flakes `density` of a cell across cover, 1 -
+// exp(-4/3 pi density^3): the share of a slice through balls one to a cell.
+glitterShare(density) {
+  return 1 - exp(-4.18879 * density * density * density);
+}
+
+// How much of a point is flake, 0 to 1, a distance f1 from the nearest flake's
+// centre: a disc `density` of a cell across (texture.coverageDisc), settling
+// to the share of the surface flakes cover once they are too small to resolve,
+// 1 - exp(-4/3 pi density^3), the share of a slice through balls one to a cell.
+glitterFlakes(f1, flakeCellSize, density) {
+  return texture.fadeTo(texture.coverageDisc(f1, density * flakeCellSize), glitterShare(density), flakeCellSize);
+}
+
+/// rainbowSheen(scale, cmapFn): a rainbow swept along Z, one period every
+/// `scale` — explicitly "rainbow-in-space," not true angle-dependent
+/// iridescence: material/color fields see only p and time, never a normal
+/// or view direction, so real iridescence isn't achievable here.
+rainbowSheen(@range(1, 200) scale, cmapFn) {
+  t = fract(p.z / scale);
+  mean = paletteMean(cmapFn);
+  sheen = cmapFn(t);
+  sheen.simple = mean;
+  return sheen;
+}
+
+/// rainbowSheen(scale, direction, cmapFn): the bands run along `direction`
+/// instead of z.
+rainbowSheen(@range(1, 200) scale, @direction direction, cmapFn) {
+  t = fract(dot(p, normalize(direction)) / scale);
+  mean = paletteMean(cmapFn);
+  sheen = cmapFn(t);
+  sheen.simple = mean;
+  return sheen;
+}
+
+/// cellSkin(size, zBandRatio, colorA, colorB): colors
+/// noise.cellularEdgesZBlend, cells `size` mm across whose walls reorganise
+/// over a depth `zBandRatio` of that — an organic "dragon scale / epithelial
+/// tissue" surface pattern whose cell-wall topology visibly reorganizes
+/// through depth, evoking (not reproducing — see noise.gsl's doc comment on
+/// cellularEdgesZBlend) the topology-changing mechanism behind real
+/// scutoids.
+cellSkin(@range(0.5, 50) size, @range(0.1, 2) zBandRatio, @color colorA, @color colorB) {
+  edges = noise.cellularEdgesZBlend(size, zBandRatio * size);
+  // The walls, colorA, as lines a fifth of a cell wide, settling to the 22.8%
+  // of the skin they cover, measured, once the cells are too small to resolve.
+  wall = texture.fadeTo(texture.coverageLine(edges, 0.2 * size), 0.228, size);
+  skin = color.mixOklab(colorB, colorA, wall);
+  skin.simple = color.mixOklab(colorB, colorA, 0.228);
+  return skin;
+}
+
+/// glitterTwinkle(baseMaterial, baseColor, flakeCellSize, flakeColor, density,
+/// sparkle): glitter whose flakes glint as they would under a moving light.
+/// Each flake of glitter() is a tiny mirror at an angle of its own, and it
+/// glints only while the half-way vector between the light and the eye lies
+/// within a few degrees of its normal, the discrete microfacet picture of
+/// glints (Jakob et al. 2014). A colour field sees neither the light nor the
+/// eye, so a half-way vector of its own turns slowly through every direction
+/// in time instead: flakes facing alike flash together and the share of them
+/// alight at once is the real one, about 0.5% for a 8 degree glint. Each
+/// glint is emitted at `sparkle` times white paper. Returns material, color.
+glitterTwinkle(baseMaterial, @color baseColor, @range(0.2, 10) flakeCellSize, @color flakeColor, @range(0, 1) density, sparkle) {
+  f1, f2, cell = noise.cellularCell(flakeCellSize);
+  flake = glitterFlakes(f1, flakeCellSize, density);
+  facing = normalize(noiseHash3(cell + [17, 5, 3]) * 2 - 1);
+  halfway = normalize([sin(0.7 * time), cos(0.49 * time), sin(0.91 * time + 1)]);
+  // A glint averages 1/402 over every way a flake can face, which is what the
+  // flakes under a pixel too coarse to single them out add up to.
+  glint = texture.fadeTo(pow(max(dot(facing, halfway), 0), 200), 1 / 402, flakeCellSize) * flake;
+  flakeMaterial = material.withRoughness(material.withMetallic(baseMaterial, 1), 0.08);
+  share = glitterShare(density);
+  mat = material.withEmissive(material.blend(baseMaterial, flakeMaterial, flake), flakeColor, sparkle * glint);
+  col = color.mixOklab(baseColor, flakeColor, flake);
+  mat.simple = material.withEmissive(material.blend(baseMaterial, flakeMaterial, share), flakeColor, sparkle * share / 402);
+  col.simple = color.mixOklab(baseColor, flakeColor, share);
+  return mat, col;
+}
+
+/// rainbowCycle(scale, period, cmapFn): rainbowSheen that runs along Z, one
+/// band every `scale`, moving up one band every `period` seconds.
+rainbowCycle(@range(1, 200) scale, period, cmapFn) {
+  mean = paletteMean(cmapFn);
+  bands = cmapFn(fract(p.z / scale - time / period));
+  bands.simple = mean;
+  return bands;
+}
+
+/// rainbowCycle(scale, period, direction, cmapFn): the bands run and move
+/// along `direction` instead of z.
+rainbowCycle(@range(1, 200) scale, period, @direction direction, cmapFn) {
+  mean = paletteMean(cmapFn);
+  bands = cmapFn(fract(dot(p, normalize(direction)) / scale - time / period));
+  bands.simple = mean;
+  return bands;
+}
+
+/// polkaDot(spacing, dotRatio, baseColor, dotColor, frame, diameter): the
+/// dots laid on the part's own frame, `[bar.u, bar.v]`, round a part
+/// `diameter` mm across: the honeycomb's cells, sqrt(3) spacing wide, are
+/// counted round u, the whole count nearest the circumference's, so the
+/// pattern closes on itself across u's seam, and its rows run along v. On a
+/// capped cylinder one call dots the side and its caps, where the rows run
+/// out from the axis. Returns the colour.
+polkaDot(@range(0.5, 50) spacing, @range(0.05, 0.5) dotRatio, @color baseColor, @color dotColor, frame, @range(4, 200) diameter) {
+  dotRadius = dotRatio * spacing;
+  share = polkaShare(spacing, dotRadius);
+  cellWidth = 1.7320508 * spacing;
+  count = max(floor(3.14159265 * diameter / cellWidth + 0.5), 1);
+  around = frame.x / 6.2831853 * count * cellWidth;
+  dots = remap(polkaPlane(spacing, dotRadius, share, baseColor, dotColor), [around, frame.y, 0]);
+  dots.simple = color.mixOklab(baseColor, dotColor, share);
+  return dots;
+}
+
+/// polkaDot(spacing, dotRatio, origin, direction, baseColor, dotColor,
+/// velocity): the dot plane through `origin` facing `direction`, its dots
+/// carried along at `velocity`, in mm per second. The animated tier of
+/// polkaDot: it reads time, so the viewer renders it every frame.
+polkaDot(@range(0.5, 50) spacing, @range(0.05, 0.5) dotRatio, @point origin, @direction(origin) direction, @color baseColor, @color dotColor, @point velocity) {
+  dots = remap(polkaDot(spacing, dotRatio, direction, baseColor, dotColor), p - origin - velocity * time);
+  dots.simple = color.mixOklab(baseColor, dotColor, polkaShare(spacing, dotRatio * spacing));
+  return dots;
+}
+
+// ===========================================================================
+// Ready-made
+// ===========================================================================
+
+// One surface from each constructor above, with the arguments the examples
+// use, so the material browser can show it. The constructors stay the way to
+// set the parameters; see doc/material_composition.md for the plan to adjust
+// them from the browser.
+
+/// A black and white checkerboard of 10 mm squares, matte. Returns material
+/// and colour.
+@material blackWhiteChecker() {
+  return material.matte, checkerboard(10, color.white, color.black);
+}
+
+/// Teal cell walls on white, 5 mm cells, matte. Returns material and colour.
+@material tealCellSkin() {
+  return material.matte, cellSkin(5, 0.5, color.teal, color.white);
+}
+
+/// White polka dots 4 mm across every 8 mm on blue plastic, drifting 2 mm/s
+/// along +X. Returns material and colour.
+@material polkaDotDrift() {
+  return material.plastic, polkaDot(8, 0.25, [0, 0, 0], [0, 0, 1], [0.25, 0.55, 0.75], color.white, [2, 0, 0]);
+}
+
+// One @surface overload per operator above, for the Bodies panel to wrap a
+// surface with: the slots a document supplies (the part's surface and its
+// colour) and the arguments the examples use for the rest. Adjust opens one
+// back into the full form; see doc/material_composition.md, "Design:
+// operators as presets".
+
+/// glitter(baseMaterial, baseColor): white flakes in 1 mm cells, a quarter
+/// of a cell across. Returns material and colour.
+@surface glitter(baseMaterial, @color baseColor) {
+  m, c = glitter(baseMaterial, baseColor, 1.0, color.white, 0.25);
+  return m, c;
+}
+
+/// glitterTwinkle(baseMaterial, baseColor): the same flakes, each glint 8
+/// times white paper. Returns material and colour.
+@surface glitterTwinkle(baseMaterial, @color baseColor) {
+  m, c = glitterTwinkle(baseMaterial, baseColor, 1.0, color.white, 0.25, 8);
+  return m, c;
+}
+
+// ===========================================================================
+// Patterns of colour, the second batch
+// ===========================================================================
+//
+// Stripes along a direction and the things made of them, the prints in
+// their fixed palettes, and the gradients: each a colour on a plain satin,
+// every one bulk, every stand-in the pattern's mean by its shares.
+
+/// stripes(width, direction, a, b): bands `width` mm wide (1 to 100)
+/// across `direction`, `a` and `b` turn about; satin. Returns material,
+/// color, height and slope.
+stripes(@range(1, 100) width, @direction direction, @color a, @color b) {
+  along = dot(p, normalize(direction));
+  phase = along / (2 * width) - floor(along / (2 * width));
+  band = texture.mask(abs(phase - 0.5), 0.25, max(0.01, 0.25 * pixelSize() / width));
+  tone = color.mixOklab(a, b, texture.fadeTo(band, 0.5, width));
+  tone.simple = color.mixOklab(a, b, 0.5);
+  return material.make(0.5, 0, 1.5), tone, 0, 0;
+}
+
+/// candyStripes(width, direction, ground, stripe, share): a stripe of
+/// `stripe` `share` of each `width` mm (1 to 100) across `direction` on
+/// `ground`; satin. Returns material, color, height and slope.
+candyStripes(@range(1, 100) width, @direction direction, @color ground, @color stripe, @range(0.1, 0.9) share) {
+  along = dot(p, normalize(direction));
+  phase = along / width - floor(along / width);
+  band = texture.mask(abs(phase - 0.5), 0.5 - 0.5 * share, max(0.01, 0.5 * pixelSize() / width));
+  tone = color.mixOklab(stripe, ground, texture.fadeTo(band, 1 - share, width));
+  tone.simple = color.mixOklab(stripe, ground, 1 - share);
+  return material.make(0.5, 0, 1.5), tone, 0, 0;
+}
+
+/// barberPole(frame, pitch, turnsPerSecond, a, b, c): the barber's pole on
+/// the part's own frame, `[bar.u, bar.v]`: three stripes of `a`, `b` and
+/// `c` wound round it, each advancing `pitch` mm along it per turn (2 to
+/// 60), the whole turning `turnsPerSecond` (0 to 2); glossy. Returns
+/// material, color, height and slope.
+barberPole(frame, @range(2, 60) pitch, @range(0, 2) turnsPerSecond, @color a, @color b, @color c) {
+  s = frame.y / pitch - frame.x / 6.2831853 - turnsPerSecond * time;
+  phase = s - floor(s);
+  tone = phase < 0.3333 ? a : (phase < 0.6667 ? b : c);
+  tone.simple = (a + b + c) / 3;
+  return material.make(0.15, 0, 1.5), tone, 0, 0;
+}
+
+/// chevrons(width, origin, normal, along, a, b): chevrons `width` mm wide
+/// (5 to 200) pointing along `along` on the face through `origin`, `a`
+/// and `b` turn about: hazard tape when they are yellow and black; satin.
+/// Returns material, color, height and slope.
+chevrons(@range(5, 200) width, @point origin, @direction(origin) normal, @direction(origin) along, @color a, @color b) {
+  n = normalize(normal);
+  u = normalize(along - n * dot(along, n));
+  x = dot(p - origin, u);
+  y = dot(p - origin, cross(n, u));
+  s = (x + abs(y)) / (2 * width);
+  phase = s - floor(s);
+  band = texture.mask(abs(phase - 0.5), 0.25, max(0.01, 0.25 * pixelSize() / width));
+  tone = color.mixOklab(a, b, texture.fadeTo(band, 0.5, width));
+  tone.simple = color.mixOklab(a, b, 0.5);
+  return material.make(0.5, 0, 1.5), tone, 0, 0;
+}
+
+/// camouflage(blobSize, a, b, c, d): camouflage, four colours laid as
+/// blobs about `blobSize` mm across (20 to 200), `a` the ground and `b`,
+/// `c`, `d` over it in turn by thresholds of noise at the size and at
+/// half of it; matte. Returns material, color, height and slope.
+camouflage(@range(20, 200) blobSize, @color a, @color b, @color c, @color d) {
+  coarse = noise.fbmBump4(blobSize, 0.5, 2.0) / (blobSize / 12);
+  fine = remap(noise.fbmBump4(0.5 * blobSize, 0.5, 2.0), p + [73, 31, 17]) / (blobSize / 24);
+  soft = max(0.02, 0.5 * pixelSize() / blobSize);
+  // One mix per line: the recursion guard misreads a mix nested in a mix.
+  firstMean = color.mixOklab(a, b, 0.45);
+  secondMean = color.mixOklab(firstMean, c, 0.3);
+  first = color.mixOklab(a, b, texture.mask(coarse, 0.1, soft));
+  second = color.mixOklab(first, c, texture.mask(fine, 0.35, soft));
+  tone = color.mixOklab(second, d, texture.mask(coarse + fine, 1.1, soft));
+  tone.simple = color.mixOklab(secondMean, d, 0.15);
+  return material.make(0.85, 0, 1.5), tone, 0, 0;
+}
+
+/// leopard(spotSize, coat, ring, spot): a leopard's rosettes `spotSize`
+/// mm across (5 to 60) on `coat`: a dark `ring` broken by noise round a
+/// centre a shade darker, `spot`; satin. Returns material, color, height
+/// and slope.
+leopard(@range(5, 60) spotSize, @color coat, @color ring, @color spot) {
+  f1 = noise.cellular(0.9 * spotSize);
+  soft = max(0.03 * spotSize, pixelSize());
+  core = texture.mask(0.22 * spotSize - f1, 0, soft);
+  halo = texture.mask(f1 - 0.26 * spotSize, 0, soft) * texture.mask(0.42 * spotSize - f1, 0, soft);
+  broken = texture.mask(noise.gradient(0.3 * spotSize), -0.05, 0.1);
+  centred = color.mixOklab(coat, spot, core);
+  centredMean = color.mixOklab(coat, spot, 0.06);
+  tone = color.mixOklab(centred, ring, halo * broken);
+  tone.simple = color.mixOklab(centredMean, ring, 0.2);
+  return material.make(0.6, 0, 1.5), tone, 0, 0;
+}
+
+/// zebra(stripeWidth, direction, a, b, wobble): a zebra's stripes
+/// `stripeWidth` mm wide (5 to 60) across `direction`, their edges
+/// wandering `wobble` mm (0 to 30) with noise; satin. Returns material,
+/// color, height and slope.
+zebra(@range(5, 60) stripeWidth, @direction direction, @color a, @color b, @range(0, 30) wobble) {
+  along = dot(p, normalize(direction)) + wobble * noise.gradient(4 * stripeWidth);
+  phase = along / (2 * stripeWidth) - floor(along / (2 * stripeWidth));
+  band = texture.mask(abs(phase - 0.5), 0.25, max(0.01, 0.25 * pixelSize() / stripeWidth));
+  tone = color.mixOklab(a, b, band);
+  tone.simple = color.mixOklab(a, b, 0.5);
+  return material.make(0.6, 0, 1.5), tone, 0, 0;
+}
+
+/// giraffe(patchSize, coat, seam): a giraffe's patches `patchSize` mm
+/// across (10 to 120) of `coat` with `seam` between them a tenth as wide;
+/// satin. Returns material, color, height and slope.
+giraffe(@range(10, 120) patchSize, @color coat, @color seam) {
+  f1, f2, cell = noise.cellularCell(patchSize);
+  pick = noiseHash3(cell + [53, 7, 31]);
+  wall = 1 - texture.mask(f2 - f1, 0.1 * patchSize, max(0.02 * patchSize, pixelSize()));
+  tone = color.mixOklab(coat * (1 + 0.06 * (2 * pick.x - 1)), seam, texture.fadeTo(wall, giraffeSeamShare, patchSize));
+  tone.simple = color.mixOklab(coat, seam, giraffeSeamShare);
+  return material.make(0.6, 0, 1.5), tone, 0, 0;
+}
+
+// The seams' share at a tenth of a patch: the mosaic's walls at a
+// twentieth measured 0.18 under classic, so about twice.
+giraffeSeamShare = 0.33;
+
+/// tieDye(scale, centre, spirals): a spiral tie-dye about `centre`, the
+/// cyclic rainbow wound `spirals` times (1 to 8) round it over `scale` mm
+/// (20 to 300) and crumpled by noise; matte. Returns material, color,
+/// height and slope.
+tieDye(@range(20, 300) scale, @point centre, @range(1, 8) spirals) {
+  q = p - centre;
+  turn = atan(q.y, q.x) / 6.2831853;
+  v = spirals * turn + length(q.xy) / scale + 0.3 * noise.fbmBump4(0.3 * scale, 0.5, 2.0) / (0.3 * scale / 12);
+  tone = color.cyclicRainbow(v - floor(v));
+  tone.simple = [0.5, 0.5, 0.5];
+  return material.make(0.85, 0, 1.5), tone, 0, 0;
+}
+
+/// halftone(origin, normal, along, pitch, ink, paper): a halftone on the
+/// face through `origin`, `ink` dots on `paper` on a grid `pitch` mm
+/// (0.5 to 10) square to `along`, each dot's size the tone of a noise
+/// 20 pitches across, so the field shades from light to dark; matte.
+/// Returns material, color, height and slope.
+halftone(@point origin, @direction(origin) normal, @direction(origin) along, @range(0.5, 10) pitch, @color ink, @color paper) {
+  n = normalize(normal);
+  u = normalize(along - n * dot(along, n));
+  x = dot(p - origin, u);
+  y = dot(p - origin, cross(n, u));
+  cx = (floor(x / pitch) + 0.5) * pitch;
+  cy = (floor(y / pitch) + 0.5) * pitch;
+  shade = 0.5 + 0.5 * remap(noise.gradient(20 * pitch), [cx, cy, 0]);
+  radius = 0.5642 * pitch * sqrt(shade);
+  dot_ = texture.mask(radius - length([x - cx, y - cy]), 0, max(0.03 * pitch, 0.5 * pixelSize()));
+  tone = color.mixOklab(paper, ink, texture.fadeTo(dot_, 0.5, pitch));
+  tone.simple = color.mixOklab(paper, ink, 0.5);
+  return material.make(0.85, 0, 1.5), tone, 0, 0;
+}
+
+/// hexGrid(origin, normal, along, across, lineShare, line, ground): a
+/// hexagonal grid on the face through `origin`, cells `across` mm between
+/// flats (2 to 50), the lines `lineShare` of that wide (0.05 to 0.5) in
+/// `line` on `ground`; satin. Returns material, color, height and slope.
+hexGrid(@point origin, @direction(origin) normal, @direction(origin) along, @range(2, 50) across, @range(0.05, 0.5) lineShare, @color line, @color ground) {
+  n = normalize(normal);
+  u = normalize(along - n * dot(along, n));
+  cellP, toEdge = texture.hexCells(dot(p - origin, u), dot(p - origin, cross(n, u)), across);
+  ruled = 1 - texture.mask(toEdge, 0.5 * lineShare * across, max(0.02 * across, 0.5 * pixelSize()));
+  // A line of that width along a hexagon's edges covers about twice its
+  // share of the width, less the corners.
+  share = min(1, 1.9 * lineShare);
+  tone = color.mixOklab(ground, line, texture.fadeTo(ruled, share, across));
+  tone.simple = color.mixOklab(ground, line, share);
+  return material.make(0.4, 0, 1.5), tone, 0, 0;
+}
+
+/// ombre(start, direction, span, a, b): an ombre from `a` at `start` to
+/// `b` `span` mm along `direction` (10 to 500), clamped beyond; satin.
+/// Returns material, color, height and slope.
+ombre(@point start, @direction(start) direction, @range(10, 500) span, @color a, @color b) {
+  t = clamp(dot(p - start, normalize(direction)) / span, 0, 1);
+  tone = color.mixOklab(a, b, t);
+  tone.simple = color.mixOklab(a, b, 0.5);
+  return material.make(0.5, 0, 1.5), tone, 0, 0;
+}
+
+
+/// Navy and white stripes 10 mm wide across +Z. Returns material and
+/// colour.
+@material stripes() {
+  cloth, tone, height, slope = stripes(10, [0, 0, 1], [0.1, 0.15, 0.35], [0.95, 0.95, 0.93]);
+  return cloth, tone;
+}
+
+/// Candy stripes, red a third of each 12 mm on white across +Z. Returns
+/// material and colour.
+@material candyStripes() {
+  cloth, tone, height, slope = candyStripes(12, [0, 0, 1], [0.97, 0.97, 0.95], [0.85, 0.1, 0.1], 0.33);
+  return cloth, tone;
+}
+
+/// The barber's pole in red, white and blue round +Z, a 30 mm pitch, a
+/// quarter turn a second. Returns material and colour.
+@material barberPole() {
+  pole, tone, height, slope = barberPole([atan(p.y, p.x), p.z], 30, 0.25, [0.85, 0.1, 0.1], [0.97, 0.97, 0.95], [0.1, 0.2, 0.6]);
+  return pole, tone;
+}
+
+/// Hazard chevrons, yellow and black, 30 mm, pointing along +X on a face
+/// through the origin. Returns material and colour.
+@material hazardChevrons() {
+  tape, tone, height, slope = chevrons(30, [0, 0, 0], [0, 0, 1], [1, 0, 0], [0.95, 0.75, 0.05], [0.08, 0.08, 0.08]);
+  return tape, tone;
+}
+
+/// Woodland camouflage, 60 mm blobs. Returns material and colour.
+@material woodlandCamouflage() {
+  cloth, tone, height, slope = camouflage(60, [0.45, 0.5, 0.3], [0.25, 0.35, 0.2], [0.4, 0.3, 0.18], [0.12, 0.12, 0.1]);
+  return cloth, tone;
+}
+
+/// Desert camouflage, 60 mm blobs. Returns material and colour.
+@material desertCamouflage() {
+  cloth, tone, height, slope = camouflage(60, [0.8, 0.72, 0.55], [0.65, 0.55, 0.4], [0.5, 0.42, 0.3], [0.35, 0.3, 0.22]);
+  return cloth, tone;
+}
+
+/// A leopard's coat, 25 mm rosettes. Returns material and colour.
+@material leopard() {
+  coat, tone, height, slope = leopard(25, [0.85, 0.68, 0.4], [0.15, 0.1, 0.06], [0.7, 0.5, 0.25]);
+  return coat, tone;
+}
+
+/// A zebra's stripes, 20 mm across +Z. Returns material and colour.
+@material zebra() {
+  coat, tone, height, slope = zebra(20, [0, 0, 1], [0.95, 0.95, 0.93], [0.08, 0.08, 0.08], 8);
+  return coat, tone;
+}
+
+/// A giraffe's patches, 40 mm. Returns material and colour.
+@material giraffe() {
+  coat, tone, height, slope = giraffe(40, [0.6, 0.38, 0.18], [0.92, 0.85, 0.68]);
+  return coat, tone;
+}
+
+/// A spiral tie-dye about the origin, 100 mm, three spirals. Returns
+/// material and colour.
+@material tieDye() {
+  cloth, tone, height, slope = tieDye(100, [0, 0, 0], 3);
+  return cloth, tone;
+}
+
+/// A halftone, black on white at a 2 mm pitch on a face through the
+/// origin. Returns material and colour.
+@material halftone() {
+  print, tone, height, slope = halftone([0, 0, 0], [0, 0, 1], [1, 0, 0], 2, [0.08, 0.08, 0.08], [0.96, 0.96, 0.94]);
+  return print, tone;
+}
+
+/// A hexagonal grid, cyan lines on near-black, 10 mm cells on a face
+/// through the origin. Returns material and colour.
+@material hexGrid() {
+  panel, tone, height, slope = hexGrid([0, 0, 0], [0, 0, 1], [1, 0, 0], 10, 0.12, [0.2, 0.9, 1], [0.05, 0.06, 0.08]);
+  return panel, tone;
+}
+
+/// An ombre from pink to blue over 100 mm along +Z from the origin.
+/// Returns material and colour.
+@material ombre() {
+  cloth, tone, height, slope = ombre([0, 0, -50], [0, 0, 1], 100, [0.95, 0.5, 0.7], [0.3, 0.5, 0.9]);
+  return cloth, tone;
+}
+
+// ===========================================================================
+// Things with relief and substance, the third batch
+// ===========================================================================
+//
+// Sprinkles, studs, bubble wrap, scales and a wrinkle are relief in the
+// material, under the 4 mm the viewer displaces; swirl is paint; slime,
+// gummy and neon are what light does in the substance; the holographic
+// film is a thin-film sweep. Every one bulk, every stand-in by its share.
+
+/// sprinkles(direction, width, cellSize, icing, a, b, c, d): sugar strands
+/// `width` mm thick (0.5 to 3) and six widths long, one to each cell of
+/// `cellSize` mm (4 to 20) of the plane facing `direction`, turned and
+/// placed at random, in four colours, lying on `icing`; the strands
+/// glossy, the icing satin. Returns material, color, height and slope.
+sprinkles(@direction direction, @range(0.5, 3) width, @range(4, 20) cellSize, @color icing, @color a, @color b, @color c, @color d) {
+  q = polkaFrame(direction);
+  ix = floor(q.x / cellSize);
+  iy = floor(q.y / cellSize);
+  pick = noiseHash3([ix + 11, iy + 5, 3]);
+  centre = [(ix + 0.3 + 0.4 * pick.x) * cellSize, (iy + 0.3 + 0.4 * pick.y) * cellSize];
+  angle = 3.14159265 * pick.z;
+  axis = [cos(angle), sin(angle)];
+  rel = [q.x, q.y] - centre;
+  along = clamp(dot(rel, axis), -3 * width, 3 * width);
+  toStrand = length(rel - axis * along);
+  radius = 0.5 * width;
+  strand = texture.mask(radius - toStrand, 0, max(0.1 * width, 0.5 * pixelSize()));
+  crown = radius * sqrt(max(0, 1 - toStrand * toStrand / (radius * radius)));
+  hue = noiseHash3([iy + 29, ix + 17, 7]).x;
+  strandColor = hue < 0.25 ? a : (hue < 0.5 ? b : (hue < 0.75 ? c : d));
+  share = (6 * width * width + 0.7854 * radius * radius) / (cellSize * cellSize);
+  tone = color.mixOklab(icing, strandColor, texture.fadeTo(strand, share, width));
+  tone.simple = color.mixOklab(icing, (a + b + c + d) / 4, share);
+  sugar = material.withDisplacement(material.make(0.35 - 0.2 * strand, 0, 1.5), crown * texture.fadeDetail(width));
+  sugar.simple = material.withDisplacement(material.make(0.35 - 0.2 * share, 0, 1.5), 0.7854 * radius * share);
+  return sugar, tone, 0, 0;
+}
+
+/// studs(origin, normal, along, pitch, height, studColor): round studs on
+/// the face through `origin`, on a grid `pitch` mm (3 to 30) square to
+/// `along`, each a dome 0.8 of the pitch across and `height` mm high (0.5
+/// to 3; a steep stud darkens at its crown in the swatch, so keep the
+/// height under a sixth of the pitch), in `studColor`; glossy. Returns material, color, height and
+/// slope.
+studs(@point origin, @direction(origin) normal, @direction(origin) along, @range(3, 30) pitch, @range(0.5, 3) height, @color studColor) {
+  n = normalize(normal);
+  u = normalize(along - n * dot(along, n));
+  x = dot(p - origin, u);
+  y = dot(p - origin, cross(n, u));
+  cx = (floor(x / pitch) + 0.5) * pitch;
+  cy = (floor(y / pitch) + 0.5) * pitch;
+  r = length([x - cx, y - cy]);
+  radius = 0.4 * pitch;
+  cap = height * max(0, 1 - r * r / (radius * radius));
+  stud = texture.mask(radius - r, 0, max(0.03 * pitch, 0.5 * pixelSize()));
+  tone = studColor * (1 - 0.08 * texture.fadeTo(stud, 0.503, pitch));
+  tone.simple = studColor * (1 - 0.08 * 0.503);
+  // A cap's mean over its disc is half its height; the disc is 0.503 of the cell.
+  studded = material.withDisplacement(material.make(0.2, 0, 1.5), cap * texture.fadeDetail(pitch));
+  studded.simple = material.withDisplacement(material.make(0.2, 0, 1.5), 0.5 * height * 0.503);
+  return studded, tone, 0, 0;
+}
+
+/// bubbleWrap(bubble, tint): bubble wrap, bubbles `bubble` mm across (5
+/// to 30) hex-packed in the XY plane, each a dome a quarter as high as it
+/// is wide, in a clear film tinted `tint`; glossy and transmissive.
+/// Returns material, color, height and slope.
+bubbleWrap(@range(5, 30) bubble, @color tint) {
+  cellP, toEdge = texture.hexCells(p.x, p.y, 1.1 * bubble);
+  r = length(cellP.xy);
+  radius = 0.5 * bubble;
+  height = min(3, 0.25 * bubble);
+  dome = height * max(0, 1 - r * r / (radius * radius));
+  film = material.withTransmission(material.make(0.08, 0, 1.5), 0.85, 20);
+  // A disc of the bubble's size is 0.75 of its cell, and a cap's mean is half its height.
+  wrapped = material.withDisplacement(film, dome * texture.fadeDetail(bubble));
+  wrapped.simple = material.withDisplacement(film, 0.5 * height * 0.75);
+  return wrapped, tint, 0, 0;
+}
+
+/// scales(origin, normal, along, scale, a, b): scales `scale` mm across
+/// (2 to 30) on the face through `origin`, rows across `along` with each
+/// row lapping the one behind it by half, each scale `a` or `b` by its
+/// own hash, shaded to its free edge and stepped 0.05 of its width;
+/// glossy. Returns material, color, height and slope.
+scales(@point origin, @direction(origin) normal, @direction(origin) along, @range(2, 30) scale, @color a, @color b) {
+  n = normalize(normal);
+  u = normalize(along - n * dot(along, n));
+  x = dot(p - origin, u);
+  y = dot(p - origin, cross(n, u));
+  half = 0.5 * scale;
+  row = floor(y / half);
+  // The point's own row and the one ahead of it, which laps it.
+  ownOff = (row - 2 * floor(row / 2)) * half;
+  aheadOff = half - ownOff;
+  ownCx = (floor((x - ownOff) / scale) + 0.5) * scale + ownOff;
+  aheadCx = (floor((x - aheadOff) / scale) + 0.5) * scale + aheadOff;
+  ownR = length([x - ownCx, y - row * half]);
+  aheadR = length([x - aheadCx, y - (row + 1) * half]);
+  covered = texture.mask(half - aheadR, 0, max(0.03 * scale, 0.5 * pixelSize()));
+  // The visible scale and the distance to its free edge.
+  seedX = covered > 0.5 ? aheadCx : ownCx;
+  seedRow = covered > 0.5 ? row + 1 : row;
+  edge = half - (covered > 0.5 ? aheadR : ownR);
+  pick = noiseHash3([floor(seedX / scale) + 7, seedRow + 3, 0]);
+  base = color.mixOklab(a, b, pick.x);
+  tone = base * (0.75 + 0.25 * texture.mask(edge, 0.1 * scale, 0.1 * scale));
+  tone.simple = color.mixOklab(a, b, 0.5) * 0.93;
+  lapped = material.withDisplacement(material.make(0.2, 0, 1.5), 0.05 * scale * texture.mask(edge, 0.03 * scale, 0.03 * scale) * texture.fadeDetail(scale));
+  lapped.simple = material.withDisplacement(material.make(0.2, 0, 1.5), 0.05 * scale * 0.9);
+  return lapped, tone, 0, 0;
+}
+
+/// wrinkle(scale, depth, cloth): crumpled cloth of `cloth`, folds about
+/// `scale` mm across (5 to 50) and `depth` mm deep (0.2 to 3), with finer
+/// creases at a third of that; satin. Returns material, color, height and
+/// slope.
+wrinkle(@range(5, 50) scale, @range(0.2, 3) depth, @color cloth) {
+  folds = noise.fbmBump4(scale, 0.5, 2.0) / (scale / 12);
+  creases = noise.turbulence2(scale / 3, 0.5, 2.0);
+  relief = depth * (0.6 * folds - 0.4 * creases + 0.2);
+  tone = cloth * (1 - 0.15 * creases);
+  tone.simple = cloth * 0.96;
+  crumpled = material.withDisplacement(material.make(0.7, 0, 1.5), relief * texture.fadeDetail(scale / 3));
+  crumpled.simple = material.withDisplacement(material.make(0.7, 0, 1.5), 0.1 * depth);
+  return crumpled, tone, 0, 0;
+}
+
+/// swirl(scale, a, b): two paints `a` and `b` swirled together about the
+/// z axis, the bands winding out over `scale` mm (10 to 200) and warped
+/// by noise; glossy. Returns material, color, height and slope.
+swirl(@range(10, 200) scale, @color a, @color b) {
+  turn = atan(p.y, p.x) / 6.2831853;
+  v = 2 * turn + length(p.xy) / scale + 0.4 * noise.fbmBump4(0.5 * scale, 0.5, 2.0) / (0.5 * scale / 12);
+  band = 0.5 + 0.5 * sin(6.2831853 * v);
+  tone = color.mixOklab(a, b, band);
+  tone.simple = color.mixOklab(a, b, 0.5);
+  return material.make(0.1, 0, 1.5), tone, 0, 0;
+}
+
+/// slime(goo): slime of `goo`, a translucent gel passing half the light
+/// over 15 mm, glossy, with a bubble in a hundredth of its 1 mm grains.
+/// Returns material, color, height and slope.
+slime(@color goo) {
+  bubbles = texture.grainSpecks(1, 0.01);
+  tone = goo * (1 - 0.5 * bubbles);
+  gel = material.withTransmission(material.make(0.05, 0, 1.4), 0.5, 15);
+  return gel, tone, 0, 0;
+}
+
+/// gummy(candy, sugared): a gummy sweet of `candy`, translucent over 10
+/// mm with a sugar haze, `sugared` (0 to 1) rolled in sugar crystals 0.3
+/// mm across. Returns material, color, height and slope.
+gummy(@color candy, @range(0, 1) sugared) {
+  // Linearly toward white: the coat basis runs a one-colour preset at
+  // white, where an Oklab mix folds a hair over 1 and the colour checker
+  // refuses it; candy + (white - candy) t is exactly white there.
+  sugar = 0.3 * sugared * texture.grainSpecks(0.3, 0.6);
+  tone = candy + ([1, 1, 1] - candy) * sugar;
+  tone.simple = candy + ([1, 1, 1] - candy) * (0.3 * sugared * 0.6);
+  jelly = material.withTransmission(material.make(0.25 + 0.5 * sugared, 0, 1.45), 0.6 * (1 - 0.5 * sugared), 10);
+  sweet = material.withDisplacement(jelly, sugared * texture.grainRelief(0.3, 0.1));
+  sweet.simple = jelly;
+  return sweet, tone, 0, 0;
+}
+
+/// neon(glow, brightness): a neon tube of `glow`, lit `brightness` (0 to
+/// 5; 0 the tube off, a glossy glass showing the colour faintly). Returns
+/// material, color, height and slope.
+neon(@color glow, @range(0, 5) brightness) {
+  tube = material.withEmissive(material.make(0.1, 0, 1.5), glow, brightness);
+  return tube, color.mixOklab(glow * 0.4, [1, 1, 1], 0.6 * min(1, brightness)), 0, 0;
+}
+
+/// holographicFilm(direction, pitch, thickness): a holographic foil, a
+/// mirror whose film colour sweeps through the spectrum every `pitch` mm
+/// (10 to 300) along `direction`, as a thin film of index 1.5 on the foil
+/// from `thickness` nm (100 to 600) to twice it would; the sweep is drawn
+/// in place, where the real foil's turns with the view. Returns material,
+/// color, height and slope.
+holographicFilm(@direction direction, @range(10, 300) pitch, @range(100, 600) thickness) {
+  along = dot(p, normalize(direction));
+  phase = along / pitch - floor(along / pitch);
+  film = color.thinFilmOver(thickness * (1 + phase), 1.5, [0.9, 0.9, 0.9]);
+  tone = film;
+  tone.simple = [0.75, 0.75, 0.75];
+  return material.make(0.05, 1, 1.5), tone, 0, 0;
+}
+
+
+/// Sprinkles on white icing, 1 mm strands in 8 mm cells on the plane
+/// facing +Z. Returns material and colour.
+@material sprinkles() {
+  sugar, tone, height, slope = sprinkles([0, 0, 1], 1, 8, [0.97, 0.96, 0.94], [0.9, 0.2, 0.3], [0.95, 0.75, 0.1], [0.2, 0.6, 0.9], [0.3, 0.75, 0.3]);
+  return sugar, tone;
+}
+
+/// Red studs on an 8 mm grid, 1 mm high, on a face through the origin.
+/// Returns material and colour.
+@material studs() {
+  studded, tone, height, slope = studs([0, 0, 0], [0, 0, 1], [1, 0, 0], 8, 1, [0.8, 0.1, 0.1]);
+  return studded, tone;
+}
+
+/// Bubble wrap, 10 mm bubbles in a clear film. Returns material and
+/// colour.
+@material bubbleWrap() {
+  wrapped, tone, height, slope = bubbleWrap(10, [0.95, 0.97, 1]);
+  return wrapped, tone;
+}
+
+/// Teal and blue scales, 8 mm, on a face through the origin. Returns
+/// material and colour.
+@material scales() {
+  lapped, tone, height, slope = scales([0, 0, 0], [0, 0, 1], [1, 0, 0], 8, [0.15, 0.55, 0.55], [0.2, 0.35, 0.65]);
+  return lapped, tone;
+}
+
+/// Crumpled linen, 20 mm folds 1 mm deep. Returns material and colour.
+@material wrinkle() {
+  crumpled, tone, height, slope = wrinkle(20, 1, [0.88, 0.84, 0.74]);
+  return crumpled, tone;
+}
+
+/// Blue and white paint swirled about +Z over 40 mm. Returns material and
+/// colour.
+@material swirl() {
+  paint, tone, height, slope = swirl(40, [0.2, 0.4, 0.85], [0.97, 0.97, 0.95]);
+  return paint, tone;
+}
+
+/// Green slime. Returns material and colour.
+@material slime() {
+  gel, tone, height, slope = slime([0.35, 0.9, 0.2]);
+  return gel, tone;
+}
+
+/// A red gummy, lightly sugared. Returns material and colour.
+@material gummy() {
+  sweet, tone, height, slope = gummy([0.9, 0.15, 0.2], 0.3);
+  return sweet, tone;
+}
+
+/// A pink neon tube, lit. Returns material and colour.
+@material neon() {
+  tube, tone, height, slope = neon([1, 0.3, 0.7], 2);
+  return tube, tone;
+}
+
+/// Holographic foil, the spectrum every 30 mm along +Z. Returns material
+/// and colour.
+@material holographicFilm() {
+  foil, tone, height, slope = holographicFilm([0, 0, 1], 30, 250);
+  return foil, tone;
+}
+
+// References
+//   Jakob, W., Hasan, M., Yan, L.-Q., Lawrence, J., Ramamoorthi, R., Marschner,
+//     S. (2014). Discrete stochastic microfacet models. ACM Transactions on
+//     Graphics, 33(4).

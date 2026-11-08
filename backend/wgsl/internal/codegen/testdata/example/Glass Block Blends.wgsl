@@ -159,8 +159,8 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_23_5: f32, noiseTex: texture_3d<f3
 fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_23_5: f32, noiseTex: texture_3d<f32>) -> vec4<f32> {
   if (gsl_colorIdx == 1u) { return vec4<f32>(vec3<f32>(1.0, 1.0, 1.0), 1.0); }
   if (gsl_colorIdx == 2u) { return vec4<f32>(vec3<f32>(1.0, 1.0, 1.0), 1.0); }
-  if (gsl_colorIdx == 3u) { return vec4<f32>(vec3<f32>(0.8, 0.81, 0.82), 1.0); }
-  if (gsl_colorIdx == 4u) { return vec4<f32>(vec3<f32>(0.8, 0.81, 0.82), 1.0); }
+  if (gsl_colorIdx == 3u) { return vec4<f32>(vec3<f32>(0.8373, 0.8204, 0.7966), 1.0); }
+  if (gsl_colorIdx == 4u) { return vec4<f32>(vec3<f32>(0.8373, 0.8204, 0.7966), 1.0); }
   if (gsl_colorIdx == 5u) {
     let lodge = p.x + 3.0 * abs(2.0 * fract(p.y / 6.0) - 1.0);
     return vec4<f32>(select(vec3<f32>(0.1, 0.035, 0.035), vec3<f32>(0.84, 0.86, 0.9), fract(lodge / 2.0) < 0.5), 1.0);
