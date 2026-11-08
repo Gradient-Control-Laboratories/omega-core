@@ -4,9 +4,10 @@ import (
 	"strings"
 	"testing"
 
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler/ui"
+	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/internal/source"
-	"gradientcontrol.com/omega/core/internal/ui"
+	internalui "gradientcontrol.com/omega/core/internal/ui"
 )
 
 func TestExtractLocalSpline(t *testing.T) {
@@ -55,7 +56,7 @@ return branch();`
 func TestSplineRejectsInvalidShapes(t *testing.T) {
 	matrix := "[[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]]"
 	for _, list := range []string{"[1,2,3]", "[m,m]", "[m,m,m,m]", "[[1,2,3],[4,5,6],[7,8,9]]"} {
-		_, err := assembler.Assemble([]string{"m = " + matrix + "; return uiSpline(" + list + ");"}, &source.MockManager{})
+		_, err := assembler.Assemble([]string{"m = " + matrix + "; return uiSpline(" + list + ");"}, assembler.SourceManager(&source.MockManager{}))
 		if err == nil || !strings.Contains(err.Error(), "uiSpline expects") {
 			t.Fatalf("%s: expected spline type error, got %v", list, err)
 		}
@@ -176,7 +177,7 @@ return length(p - p4.xyz);`
 	if err != nil {
 		t.Fatalf("AnalyzePackage: %v", err)
 	}
-	if got := ui.Extract(analyzed, nil); len(got) == 0 {
+	if got := internalui.Extract(analyzed, nil); len(got) == 0 {
 		t.Fatal("expected ui.Extract on un-inlined analyzed package to extract controls")
 	}
 

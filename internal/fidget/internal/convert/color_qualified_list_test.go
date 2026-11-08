@@ -3,7 +3,7 @@ package convert_test
 import (
 	"testing"
 
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/internal/fidget/internal/convert"
 )
 
@@ -17,7 +17,7 @@ func TestColorBlendWithFastenerTable(t *testing.T) {
 		"b = remap(a, p - [12.0, 0.0, 0.0]);\n" +
 		"b.color = [0.0, 1.0, 0.0];\n" +
 		"return min(a, b);\n"
-	res, err := assembler.Assemble([]string{src}, mockMgr)
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(mockMgr))
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
@@ -50,7 +50,7 @@ func TestColorBlendWithDirectMapOverQualifiedList(t *testing.T) {
 		"b = remap(a, p - [12.0, 0.0, 0.0]);\n" +
 		"b.color = [0.0, 1.0, 0.0];\n" +
 		"return min(a, b);\n"
-	res, err := assembler.Assemble([]string{src}, mockMgr)
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(mockMgr))
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}

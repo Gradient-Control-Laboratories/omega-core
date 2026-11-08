@@ -1,9 +1,6 @@
 package collect
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
 	"fmt"
 
 	"gradientcontrol.com/omega/core/internal/source"
@@ -123,54 +120,4 @@ func Package(primaryPkg *program.Package, srcMgr source.Manager, parsePkg func(s
 		Primary:      primaryPkg,
 		Dependencies: collected,
 	}, nil
-}
-
-// ProgramSourceHash returns the deterministic SHA-256 hex digest of all GSL
-// package sources in prog (primary and transitive dependencies), preserving
-// each package's declared source file order.
-func ProgramSourceHash(prog *program.Program) string {
-	if prog == nil || prog.Primary == nil {
-		return ""
-	}
-	sources := make(map[string][]string, len(prog.Dependencies)+1)
-	// Invariant: prog.Primary and prog.Dependencies entries are guaranteed non-nil.
-	addPkg := func(pkg *program.Package) {
-		// Invariant: pkg.Files elements are guaranteed non-nil by the parser.
-		fileSources := make([]string, 0, len(pkg.Files))
-		for _, f := range pkg.Files {
-			if f.Source != "" {
-				fileSources = append(fileSources, f.Source)
-			}
-		}
-		if len(fileSources) == 0 {
-			return
-		}
-		sources[pkg.Path] = fileSources
-	}
-	addPkg(prog.Primary)
-	for _, dep := range prog.Dependencies {
-		addPkg(dep)
-	}
-	// JSON sorts package keys while preserving each package's declared source order.
-	data, err := json.Marshal(sources)
-	if err != nil {
-		return ""
-	}
-	sum := sha256.Sum256([]byte("gsl-dependencies-v1\n" + string(data)))
-	return hex.EncodeToString(sum[:])
-}
-
-// SourceHash collects primaryPkgPath and all its transitive GSL imports from
-// srcMgr and returns their deterministic SHA-256 hex digest.
-func SourceHash(primaryPkgPath string, srcMgr source.Manager, parsePkg func(sources []string) (*parser.Result, error)) (string, error) {
-	primary, _, err := srcMgr.Sources(primaryPkgPath)
-	if err != nil {
-		return "", err
-	}
-	prog, err := Program(primary, srcMgr, parsePkg)
-	if err != nil {
-		return "", err
-	}
-	prog.Primary.Path = primaryPkgPath
-	return ProgramSourceHash(prog), nil
 }

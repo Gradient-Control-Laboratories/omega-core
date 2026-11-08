@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/internal/source"
 	"gradientcontrol.com/omega/core/internal/test/assert"
 	"gradientcontrol.com/omega/core/internal/test/require"
@@ -42,7 +42,7 @@ func TestConvert(t *testing.T) {
 			gslSrc, err := os.ReadFile(gslFile)
 			require.NoError(t, err)
 
-			res, err := assembler.Assemble([]string{string(gslSrc)}, &source.MockManager{})
+			res, err := assembler.Assemble([]string{string(gslSrc)}, assembler.SourceManager(&source.MockManager{}))
 			require.NoError(t, err)
 
 			expectedFile := filepath.Join(testDir, testName+".glsl")

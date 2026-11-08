@@ -8,10 +8,10 @@ import (
 	"gradientcontrol.com/omega/core/internal/eval"
 	"gradientcontrol.com/omega/core/internal/link"
 	"gradientcontrol.com/omega/core/internal/meshfold"
-	"gradientcontrol.com/omega/core/internal/refs"
 	"gradientcontrol.com/omega/core/internal/test/assert"
 	"gradientcontrol.com/omega/core/internal/types"
 	"gradientcontrol.com/omega/core/program"
+	"gradientcontrol.com/omega/core/program/refs"
 )
 
 func TestAutoImport_ColorAndMaterialReturns(t *testing.T) {

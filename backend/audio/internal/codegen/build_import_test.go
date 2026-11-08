@@ -6,7 +6,7 @@ import (
 
 	"gradientcontrol.com/omega/core/backend/audio/internal/codegen"
 	"gradientcontrol.com/omega/core/backend/audio/internal/extract"
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/internal/source"
 	"gradientcontrol.com/omega/core/internal/test/require"
 )
@@ -28,7 +28,7 @@ return audio(tone, tone);
 	require.NoError(t, err)
 
 	mgr := &source.MockManager{PkgSources: srcs}
-	res, err := assembler.Assemble([]string{primaryAudioSrc}, mgr)
+	res, err := assembler.Assemble([]string{primaryAudioSrc}, assembler.SourceManager(mgr))
 	require.NoError(t, err)
 
 	js, _, err := codegen.AudioToJs(res.Program)
@@ -56,7 +56,7 @@ return audio(note, note);
 	require.NoError(t, err)
 
 	mgr := &source.MockManager{PkgSources: srcs}
-	res, err := assembler.Assemble([]string{primaryAudioSrc}, mgr)
+	res, err := assembler.Assemble([]string{primaryAudioSrc}, assembler.SourceManager(mgr))
 	require.NoError(t, err)
 
 	js, _, err := codegen.AudioToJs(res.Program)
@@ -83,7 +83,7 @@ return audio(both, both);
 	require.NoError(t, err)
 
 	mgr := &source.MockManager{PkgSources: srcs}
-	res, err := assembler.Assemble([]string{primaryAudioSrc}, mgr)
+	res, err := assembler.Assemble([]string{primaryAudioSrc}, assembler.SourceManager(mgr))
 	require.NoError(t, err)
 
 	js, _, err := codegen.AudioToJs(res.Program)

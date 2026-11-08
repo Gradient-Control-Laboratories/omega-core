@@ -3,7 +3,7 @@ package gsleval
 import (
 	"testing"
 
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler"
 	fidlib "gradientcontrol.com/omega/core/internal/fidget/lib"
 	"gradientcontrol.com/omega/core/internal/source"
 )
@@ -29,7 +29,7 @@ u = unionRoundExact(
   n1, n2);
 return u, u.dp.x, u.dp.y, u.dp.z;
 `
-	res, err := assembler.Assemble([]string{src}, srcMgr)
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(srcMgr))
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}

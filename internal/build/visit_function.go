@@ -321,7 +321,7 @@ func (b *Builder) buildFunction(op *program.Operand, fnDecl *program.FnType, fn 
 	}
 	if fnInfo == nil {
 		err := fmt.Errorf("missing info for function %q", fnCall.Reference.Name)
-		return nil, ErrLoc(b.delegate.GetScope(), op.Start, internal.InternalErr(err))
+		return nil, ErrLoc(b.delegate.GetScope(), op.Start, internal.Err(err))
 	}
 	CheckScope(b, fnBodyScope)
 

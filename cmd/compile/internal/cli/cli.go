@@ -150,7 +150,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	switch cfg.Target {
 	case config.TargetWGSL:
 		wgslOpts := []wgsl.Option{
-			wgsl.WithStandalone(cfg.Standalone),
+			wgsl.Standalone(cfg.Standalone),
 		}
 		if cfg.Verbose {
 			wgslOpts = append(wgslOpts, wgsl.WithProgress(func(stage string, completed, total uint32) {

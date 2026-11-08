@@ -38,7 +38,7 @@ func NewTreeNode(
 	// Sanity check
 	if len(trees) == 0 {
 		err := fmt.Errorf("number of trees %d must be >= 1", len(trees))
-		panic(internal.InternalErr(err).Error())
+		panic(internal.Err(err).Error())
 	}
 
 	return &TreeNode{
@@ -55,16 +55,16 @@ func NewListVecTreeNode(
 	// Sanity check
 	if len(trees) == 0 {
 		err := fmt.Errorf("number of trees %d must be >= 1", len(trees))
-		panic(internal.InternalErr(err).Error())
+		panic(internal.Err(err).Error())
 	}
 	if elemLen <= 1 {
 		err := fmt.Errorf("element length %d must be > 1", elemLen)
-		panic(internal.InternalErr(err).Error())
+		panic(internal.Err(err).Error())
 	}
 	listLen := len(trees) / elemLen
 	if listLen*elemLen != len(trees) {
 		err := fmt.Errorf("number of trees %d must be a multiple of elemLen %d", len(trees), elemLen)
-		panic(internal.InternalErr(err).Error())
+		panic(internal.Err(err).Error())
 	}
 
 	return &TreeNode{

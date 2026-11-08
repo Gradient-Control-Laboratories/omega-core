@@ -8,8 +8,27 @@ import (
 	"gradientcontrol.com/omega/core/program"
 )
 
+// MeshSdfOracle holds the triangle soup for a bvhSdf(AssetID) leaf.
+type MeshSdfOracle struct {
+	AssetID   uint32
+	Vertices  []float32
+	Triangles []uint32
+}
+
+// VdbOracle holds the triangle soup and narrow-band level-set parameters for a vdbSdf(AssetID) leaf.
+type VdbOracle struct {
+	AssetID        uint32
+	Vertices       []float32
+	Triangles      []uint32
+	VoxelSize      float32
+	HalfBandVoxels float32
+}
+
 // SpinodoidOracle is a re-export of convert.SpinodoidOracle.
 type SpinodoidOracle = convert.SpinodoidOracle
+
+// BakedSpinodoid is a re-export of convert.BakedSpinodoid.
+type BakedSpinodoid = convert.BakedSpinodoid
 
 // SpinodoidDistance is a re-export of fidget.SpinodoidDistance.
 const SpinodoidDistance = fidget.SpinodoidDistance
@@ -33,6 +52,33 @@ func RegisterVdbOracle(assetID uint32, vertices []float32, triangles []uint32, v
 	return fidget.RegisterVdbOracle(assetID, vertices, triangles, voxelSize, halfBandVoxels)
 }
 
+// ExtractVdbDenseBytes samples the registered VDB level set for assetID into a uniform dense grid.
+func ExtractVdbDenseBytes(assetID, dimsX, dimsY, dimsZ uint32) ([]byte, error) {
+	return fidget.ExtractVdbDenseBytes(assetID, dimsX, dimsY, dimsZ)
+}
+
+// ExtractVdbLevelSet returns the level set registered under assetID as an encoded tape.VdbLevelSet message.
+func ExtractVdbLevelSet(assetID uint32) ([]byte, error) {
+	return fidget.ExtractVdbLevelSet(assetID)
+}
+
+// BakeAndExtractVdbWithProgress bakes a triangle soup into an OpenVDB level set,
+// registers the oracle, and samples it onto a uniform dense grid.
+func BakeAndExtractVdbWithProgress(
+	assetID uint32,
+	vertices []float32, triangles []uint32,
+	voxelSize, halfBandVoxels float32,
+	dimsX, dimsY, dimsZ uint32,
+	progressFn func(completed, total uint32),
+) ([]byte, error) {
+	return fidget.BakeAndExtractVdbWithProgress(assetID, vertices, triangles, voxelSize, halfBandVoxels, dimsX, dimsY, dimsZ, progressFn)
+}
+
+// BakeSpinodoids builds prog and returns the spinodoid table each of its gaborSpinodoid calls reads.
+func BakeSpinodoids(prog *program.Program) (map[string]BakedSpinodoid, error) {
+	return convert.BakeSpinodoids(prog)
+}
+
 // SpinodoidOracleID returns the mesh-oracle leaf id for one component of slot.
 func SpinodoidOracleID(slot, comp uint32) uint32 {
 	return fidget.SpinodoidOracleID(slot, comp)
@@ -41,6 +87,11 @@ func SpinodoidOracleID(slot, comp uint32) uint32 {
 // GenerateTapeWithSpinodoids serializes a parsed program into an omega tape and returns bound spinodoid oracles.
 func GenerateTapeWithSpinodoids(prog *program.Program) ([]byte, []string, []SpinodoidOracle, error) {
 	return mesh.GenerateTapeWithSpinodoids(prog)
+}
+
+// GenerateTapeWithAppearanceAndSpinodoids is GenerateTapeWithSpinodoids with each return's colour and material fields.
+func GenerateTapeWithAppearanceAndSpinodoids(prog *program.Program) ([]byte, []string, []SpinodoidOracle, error) {
+	return mesh.GenerateTapeWithAppearanceAndSpinodoids(prog)
 }
 
 // Mesh converts a program strictly to an STL using the new convert logic.
@@ -189,6 +240,23 @@ func RenderFramed(prog *program.Program) ([]byte, *api.RenderGlslResponse, error
 // authored color fields — by sphere-tracing the field on the CPU.
 func RenderLit(prog *program.Program, opts mesh.LitOptions) ([]byte, error) {
 	return mesh.RenderLit(prog, opts)
+}
+
+// LitOptions controls a lit CPU render.
+type LitOptions = mesh.LitOptions
+
+// LitCamera places the camera in world Z-up coordinates.
+type LitCamera = mesh.LitCamera
+
+// LitSimple holds the Simple render tier's constants.
+type LitSimple = mesh.LitSimple
+
+// LitLinear is a lit render before display encoding.
+type LitLinear = mesh.LitLinear
+
+// RenderLitLinear renders prog to linear-light RGB, per-pixel shape index, and depth.
+func RenderLitLinear(prog *program.Program, opts LitOptions) (*LitLinear, error) {
+	return mesh.RenderLitLinear(prog, opts)
 }
 
 // RenderLitSized is RenderLit for callers outside this module: it takes the

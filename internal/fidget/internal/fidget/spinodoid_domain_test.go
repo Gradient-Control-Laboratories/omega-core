@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/noise/spinodoid"
+	"gradientcontrol.com/omega/core/program/noise/spinodoid"
 )
 
 func TestSpinodoidFiniteDomainNativePointsAndIntervals(t *testing.T) {

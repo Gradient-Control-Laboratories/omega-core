@@ -320,7 +320,7 @@ func lowerBinaryOp(file *program.PackageFile, op program.Operation, acc, step *p
 	}
 
 	if result == nil {
-		return nil, internal.InternalErr(fmt.Errorf("unhandled lowering for operation %v at operand %d", op, opIdx))
+		return nil, internal.Err(fmt.Errorf("unhandled lowering for operation %v at operand %d", op, opIdx))
 	}
 
 	result.Type = derivedType

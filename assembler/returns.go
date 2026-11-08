@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 
-	"gradientcontrol.com/omega/core/internal/assembler/meshplan"
+	"gradientcontrol.com/omega/core/assembler/meshplan"
 	"gradientcontrol.com/omega/core/internal/build"
 	"gradientcontrol.com/omega/core/internal/link"
 	"gradientcontrol.com/omega/core/internal/scope"
@@ -378,4 +378,3 @@ func findAudioCallInOperand(op *program.Operand) *program.Operand {
 	}
 	return nil
 }
-

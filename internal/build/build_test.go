@@ -3,7 +3,7 @@ package build_test
 import (
 	"testing"
 
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/internal/build"
 	"gradientcontrol.com/omega/core/internal/source"
 	"gradientcontrol.com/omega/core/internal/test/assert"
@@ -149,7 +149,7 @@ func (m *mockConstExpr) ConstValues() []float64       { return []float64{m.val} 
 
 func TestBuild_NativeProgramType(t *testing.T) {
 	src := "return 42.0;"
-	res, err := assembler.Assemble([]string{src}, mockMgr)
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(mockMgr))
 	assert.NoError(t, err)
 
 	d := newMockDelegate()
@@ -187,7 +187,7 @@ target = [1.0, 2.0, 3.0];
 target.color = [1.0, 0.0, 0.0];
 return target;
 `
-	res, err := assembler.Assemble([]string{src}, mockMgr)
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(mockMgr))
 	assert.NoError(t, err)
 
 	d := &mockColorDelegate{mockDelegate: newMockDelegate()}
@@ -204,7 +204,7 @@ target = [1.0, 2.0, 3.0];
 target.material = [0.2, 0.4, 0.6];
 return target;
 `
-	res, err := assembler.Assemble([]string{src}, mockMgr)
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(mockMgr))
 	assert.NoError(t, err)
 
 	d := &mockMaterialDelegate{mockDelegate: newMockDelegate()}
@@ -217,7 +217,7 @@ return target;
 
 func TestBuild_NeitherColorNorMaterial(t *testing.T) {
 	src := "return 42.0;"
-	res, err := assembler.Assemble([]string{src}, mockMgr)
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(mockMgr))
 	assert.NoError(t, err)
 
 	d := &mockColorDelegate{mockDelegate: newMockDelegate()}

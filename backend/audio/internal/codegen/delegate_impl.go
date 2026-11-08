@@ -113,7 +113,7 @@ func (d *Delegate) BuildFuncReturn(fnInfo build.FnInfo, returnOps []*program.Ope
 	info, ok := fnInfo.(*jsFnInfo)
 	if !ok {
 		err := fmt.Errorf("expected *jsFnInfo, got %T", fnInfo)
-		return nil, internal.InternalErr(err)
+		return nil, internal.Err(err)
 	}
 
 	// Capture return expression
@@ -162,7 +162,7 @@ func (d *Delegate) BuildFuncCall(fnCallOp *program.Operand, fnCall *program.FnCa
 	info, ok := fnInfo.(*jsFnInfo)
 	if !ok {
 		err := fmt.Errorf("expected *jsFnInfo, got %T", fnInfo)
-		return nil, internal.InternalErr(err)
+		return nil, internal.Err(err)
 	}
 
 	argCodes := make([]string, len(args))

@@ -4,30 +4,34 @@ import (
 	"fmt"
 	"strings"
 
+	"gradientcontrol.com/omega/core/assembler/meshplan"
+	"gradientcontrol.com/omega/core/assembler/meshslots"
+	"gradientcontrol.com/omega/core/assembler/slider"
+	"gradientcontrol.com/omega/core/assembler/topofold"
+	"gradientcontrol.com/omega/core/assembler/ui"
+	"gradientcontrol.com/omega/core/assembler/warpfold"
 	"gradientcontrol.com/omega/core/internal/assembler/annotation"
 	"gradientcontrol.com/omega/core/internal/assembler/constspec"
 	"gradientcontrol.com/omega/core/internal/assembler/deadcode"
 	"gradientcontrol.com/omega/core/internal/assembler/inline"
-	"gradientcontrol.com/omega/core/internal/assembler/meshplan"
 	"gradientcontrol.com/omega/core/internal/assembler/property"
 	"gradientcontrol.com/omega/core/internal/assembler/propval"
-	"gradientcontrol.com/omega/core/internal/assembler/textures"
-	"gradientcontrol.com/omega/core/internal/assembler/topofold"
+	internaltopofold "gradientcontrol.com/omega/core/internal/assembler/topofold"
 	"gradientcontrol.com/omega/core/internal/assembler/unroll"
-	"gradientcontrol.com/omega/core/internal/assembler/warpfold"
+	internalwarpfold "gradientcontrol.com/omega/core/internal/assembler/warpfold"
 	"gradientcontrol.com/omega/core/internal/closure"
 	"gradientcontrol.com/omega/core/internal/collect"
 	"gradientcontrol.com/omega/core/internal/eval"
 	"gradientcontrol.com/omega/core/internal/link"
 	"gradientcontrol.com/omega/core/internal/lower"
 	"gradientcontrol.com/omega/core/internal/meshfold"
-	"gradientcontrol.com/omega/core/internal/meshslots"
-	"gradientcontrol.com/omega/core/internal/slider"
+	internalslider "gradientcontrol.com/omega/core/internal/slider"
 	internalsource "gradientcontrol.com/omega/core/internal/source"
 	"gradientcontrol.com/omega/core/internal/types"
-	ui "gradientcontrol.com/omega/core/internal/ui"
+	internalui "gradientcontrol.com/omega/core/internal/ui"
 	"gradientcontrol.com/omega/core/parser"
 	"gradientcontrol.com/omega/core/program"
+	"gradientcontrol.com/omega/core/program/textures"
 )
 
 // ParsePackageFunc parses all source files in a package into a *parser.Result.
@@ -81,20 +85,6 @@ func Assemble(primarySources []string, opts ...Option) (*Result, error) {
 		srcMgr = internalsource.NewMultiSourceManager(managers...)
 	}
 
-	return assembleWithOptions(primarySources, srcMgr, &o)
-}
-
-// AssembleWithSource collects the packages directly and indirectly referenced by
-// primarySources using srcMgr directly, executes compiler passes and pluggable fold
-// passes, and assembles them into a single program along with the assigned import
-// slot table.
-func AssembleWithSource(primarySources []string, srcMgr internalsource.Manager, opts ...Option) (*Result, error) {
-	o := defaultOptions()
-	for _, opt := range opts {
-		if opt != nil {
-			opt(&o)
-		}
-	}
 	return assembleWithOptions(primarySources, srcMgr, &o)
 }
 
@@ -271,7 +261,7 @@ func assembleWithOptions(primarySources []string, srcMgr internalsource.Manager,
 		if si, ok := o.geometryResolver.(interface{ SetImportSlots([]meshslots.Import) }); ok {
 			si.SetImportSlots(importSlots)
 		}
-		prog, err = topofold.FoldProgram(prog, o.geometryResolver)
+		prog, err = internaltopofold.FoldProgram(prog, o.geometryResolver)
 		if err != nil {
 			return nil, err
 		}
@@ -279,13 +269,13 @@ func assembleWithOptions(primarySources []string, srcMgr internalsource.Manager,
 
 	var warpedAssets []warpfold.WarpedAsset
 	if o.warpResolver != nil {
-		prog, warpedAssets, err = warpfold.FoldProgram(prog, o.warpResolver)
+		prog, warpedAssets, err = internalwarpfold.FoldProgram(prog, o.warpResolver)
 		if err != nil {
 			return nil, err
 		}
 	}
 	if o.foldWarpFieldToZero {
-		prog, err = warpfold.FoldWarpFieldToZero(prog)
+		prog, err = internalwarpfold.FoldWarpFieldToZero(prog)
 		if err != nil {
 			return nil, err
 		}
@@ -359,8 +349,8 @@ func assembleWithOptions(primarySources []string, srcMgr internalsource.Manager,
 
 	if o.extractUI {
 		sourceText := strings.Join(primarySources, "\n")
-		result.Sliders = slider.Extract(sourceText, prog.Primary)
-		result.UIControls = ui.Extract(prog.Primary, prog.GetImport)
+		result.Sliders = internalslider.Extract(sourceText, prog.Primary)
+		result.UIControls = internalui.Extract(prog.Primary, prog.GetImport)
 		result.Scene = prog.Scene()
 	}
 
@@ -635,13 +625,6 @@ func (c *assemblerParamChecker) IsParameter(op *program.Operand) bool {
 		return c.sliderVars[ref.Reference.Name]
 	}
 	return false
-}
-
-// DependenciesSha256 computes the deterministic SHA-256 hex digest of pkgPath
-// and all its transitive GSL package dependencies from srcMgr without reading
-// mesh assets.
-func DependenciesSha256(pkgPath string, srcMgr internalsource.Manager) (string, error) {
-	return collect.SourceHash(pkgPath, srcMgr, parser.ParsePackage)
 }
 
 // AnalyzePackage parses source into an un-inlined *program.Package and stamps

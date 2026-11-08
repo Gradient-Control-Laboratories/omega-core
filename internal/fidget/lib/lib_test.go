@@ -3,13 +3,13 @@ package lib
 import (
 	"testing"
 
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/internal/source"
 	"gradientcontrol.com/omega/core/internal/test/require"
 )
 
 func TestMesh(t *testing.T) {
-	res, err := assembler.Assemble([]string{"return length(p) - 1.0;"}, &source.MockManager{})
+	res, err := assembler.Assemble([]string{"return length(p) - 1.0;"}, assembler.SourceManager(&source.MockManager{}))
 	require.NoError(t, err)
 
 	bbox := [6]float32{-2, -2, -2, 2, 2, 2}

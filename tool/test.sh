@@ -10,7 +10,7 @@ echo "==> Running omega-core test suite..."
 go run "${ROOT_DIR}/tool/run-go-tests" \
     --repo-root "${ROOT_DIR}" \
     --history-file "${HISTORY_FILE}" \
-    --wgsl-testdata "backend/wgsl/internal/lib/internal/codegen/testdata" \
+    --wgsl-testdata "backend/wgsl/internal/codegen/testdata" \
     --fidget-testdata "internal/fidget/internal/convert/testdata" \
     "${ROOT_DIR}/parser" \
     "${ROOT_DIR}/program" \

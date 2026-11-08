@@ -1,0 +1,334 @@
+syntax = "proto3";
+
+package tape;
+option go_package = "gradientcontrol.com/omega/core/backend/tape";
+
+// The omega tape: a serialized, post-GSL-lowering fidget-tree DAG for an
+// implicit field, produced by omega and replayed by other runtimes (notably
+// hodge, in-process via the omega_tape Python module). Its *content* is a
+// fidget `TreeOp` graph (see agent/fidget/vendor/fidget-core/src/context/tree.rs)
+// plus omega's `MeshOracle` leaves — but the format is omega's, not fidget's
+// (fidget's own bytecode tape is unstable and can't carry oracle leaves).
+//
+// All GSL semantics (function inlining, map/reduce unrolling, const-eval) are
+// already burned out by the Go `build.Build` pass, so the tape only carries
+// fidget primitives plus oracle leaves. `pow` is not a node because `Tree::pow`
+// expands to square/mul at construction.
+//
+// An oracle leaf carries only an asset id; what the id denotes travels in
+// `Tape.oracles`, one `OraclePayload` per id — triangles for bvhSdf/vdbSdf, the
+// field's arguments for a spinodoid. (The ids themselves are assigned per bake
+// and mean nothing in another process, which is why the payloads are here. A
+// noiseHash3 leaf is the exception: its tile is a build-time constant in every
+// runtime, so its id is globally meaningful and needs no payload.) A consumer
+// may also bind a payload out-of-band by id before replay — register_mesh_oracle
+// / register_vdb_oracle / register_hodge_spinodoid.
+message Tape {
+  uint32 version = 1;
+
+  // Nodes in topological order: a node's argument fields are indices into
+  // this list and always refer to earlier entries.
+  repeated Node nodes = 2;
+
+  // Node indices of the returned fields. A single output is the field itself;
+  // multiple outputs are combined by `min` (matching the mesh path), so the
+  // tape can represent the same multi-return shape the mesher consumes.
+  repeated uint32 outputs = 3;
+
+  // Optional world-space scene bounding box the field lives in, packed as
+  // [xmin, ymin, zmin, xmax, ymax, zmax] — the meshing region omega derived
+  // for this export. Empty when unknown. Consumers (e.g. hodge) use it to seed
+  // a sampling / Walk-on-Spheres domain without having to bound the field
+  // themselves.
+  repeated float bbox = 4;
+
+  // Oracle payloads (bvhSdf/vdbSdf mesh data) referenced by MeshOracle leaves,
+  // embedded so the tape is self-contained: a consumer registers these by
+  // asset id on load and the oracle leaves resolve in-process. One entry per
+  // asset id the program references.
+  repeated OraclePayload oracles = 5;
+
+  // Human-readable name per output (parallel to `outputs`), matching the names
+  // the omega UI shows for each shape — the return's variable or function name
+  // (e.g. `return body, lid` -> ["body", "lid"]). Empty entries fall back to a
+  // positional name on the consumer side. May be empty/short if names weren't
+  // available; consumers index defensively.
+  repeated string outputNames = 6;
+
+  // The noiseHash3 oracle needs no payload here: its baked tile is a build-time
+  // constant baked into the render lib (the same bytes as the GPU texture), so a
+  // noise field serializes as plain MeshOracle leaf ids and the reader registers
+  // the channel oracles from the library-baked tile. (Field 7 is reserved — an
+  // earlier draft embedded the 1 MB tile here.)
+  reserved 7;
+
+  // How each output looks (parallel to `outputs`; may be empty or short): the
+  // node indices of its colour and material fields, as the viewer's
+  // colour/material properties lower them. Kept apart from `outputs`, which
+  // are combined by `min`; a reader that only wants the field ignores it.
+  repeated Appearance appearance = 8;
+}
+
+// One output's colour and material fields, each channel a node index.
+message Appearance {
+  // sRGB colour, [r, g, b] in [0, 1]. Empty when the output has no colour.
+  repeated uint32 color = 1;
+
+  // The material record, three rows of four flattened row-major (12 entries):
+  //   surface  [roughness, metallic, ior, reserved]
+  //   emissive [sRGB r, g, b, strength]
+  //   volume   [transmission, absorptionDistance, displacement, reserved]
+  // Empty when the output has no material.
+  repeated uint32 material = 2;
+
+  // The material's displacement (volume row, third entry) is not a constant
+  // zero: the rendered surface is the field minus it.
+  bool displaced = 3;
+}
+
+// OraclePayload carries the triangle data for one bvhSdf/vdbSdf asset so a tape
+// can be evaluated standalone (no external asset registry needed).
+message OraclePayload {
+  OracleKind kind = 1;
+
+  // Asset id the MeshOracle leaf references (Node.meshOracle == this id; for
+  // VDB the runtime keys the registry on id | 0x8000_0000 internally).
+  uint32 assetId = 2;
+
+  // Flat xyz vertex positions (length 3 * vertexCount).
+  repeated float vertices = 3;
+  // Flat triangle vertex indices (length 3 * triangleCount).
+  repeated uint32 triangles = 4;
+
+  // VDB-only narrow-band level-set parameters (ignored for MESH_BVH).
+  float voxelSize       = 5;
+  float halfBandVoxels  = 6;
+
+  // Axis-aligned bbox of this oracle's mesh [xmin,ymin,zmin,xmax,ymax,zmax],
+  // so a consumer knows the asset's spatial extent (e.g. the region a vdbSdf
+  // narrow-band level set covers) without scanning the triangles. Empty if not
+  // computed.
+  repeated float bbox = 7;
+
+  // SPINODOID only: the field's arguments. There is no mesh for this kind, so
+  // `vertices` / `triangles` are empty and this is the payload.
+  SpinodoidParams spinodoid = 8;
+
+  // VDB only, and only when the tape was asked for it: the level set the
+  // writer baked from `vertices` / `triangles`, so a reader without OpenVDB
+  // (the browser) samples the same values instead of rebuilding them.
+  VdbLevelSet levelSet = 9;
+}
+
+// VdbLevelSet is a baked OpenVDB float grid as plain arrays: every 8^3 leaf the
+// tree holds, and the value of each 8^3 block that has none (a tile, or the
+// background). Within the block table that reproduces the tree's getValue
+// at every voxel; outside it the value is `background`.
+message VdbLevelSet {
+  // The index-to-world scale (a uniform scale, no offset): voxel (i, j, k)
+  // sits at (i, j, k) * voxelSize.
+  double voxelSize = 1;
+  float background = 2;
+
+  // World-space box of the active voxels [xmin,ymin,zmin,xmax,ymax,zmax], as
+  // the writer's oracle measures it (the bound its distance extension uses).
+  repeated float activeBbox = 3;
+
+  // The block table: blockDims[0] x [1] x [2] blocks of 8^3 voxels, x fastest,
+  // the first at voxel blockOrigin * 8.
+  repeated int32 blockOrigin = 4;
+  repeated uint32 blockDims = 5;
+  // Per block: the index of its leaf in `leafValues`, or -1 for none.
+  repeated int32 blockLeaf = 6;
+  // Per block without a leaf: its value. Zero where the block has a leaf.
+  repeated float blockValue = 7;
+
+  // 512 values per leaf, in OpenVDB's order: voxel (i, j, k) of the leaf at
+  // offset (i & 7) << 6 | (j & 7) << 3 | (k & 7).
+  repeated float leafValues = 8;
+}
+
+enum OracleKind {
+  MESH_BVH  = 0;  // exact BVH closest-point + winding-number sign (bvhSdf)
+  VDB       = 1;  // OpenVDB narrow-band level set (vdbSdf)
+  SPINODOID = 2;  // Gabor spinodoid, described by `spinodoid` (no mesh)
+}
+
+// SpinodoidParams describes a Gabor spinodoid leaf, so a consumer can rebuild
+// the field rather than be handed a table.
+//
+// This is why the kind exists at all. A noiseHash3 leaf needs no payload: its
+// tile is one build-time constant compiled into every runtime, so the leaf id
+// (channel, octaves) means the same thing everywhere. A spinodoid's table is a
+// function of these parameters, so its leaf id is only a slot index handed out
+// during one bake — meaningless in any other process, exactly like a bvhSdf
+// asset id. Hence a payload, and these are the arguments rather than the
+// 8 x 32^3 kernel table, because both sides already compute the field from
+// them: omega's common/noise/spinodoid and hodge's spinodoid_gabor, pinned to
+// each other bit-exactly on the direction pool and to 2e-14 on the field
+// (common/noise/spinodoid/hodge_parity_test.go). Carrying arguments keeps that
+// agreement checkable; carrying a table would hide a divergence.
+//
+// Maps onto hodge's `spinodoid_gabor_field(theta, bias=..., poles=...,
+// packet_width=..., impulses_per_cell=..., n_pool=..., seed=...,
+// normalize=...)` argument for argument, in hodge's own units: hodge-release
+// #45 or later.
+message SpinodoidParams {
+  // Which of the two fields this leaf is. False is hodge's `spinodoid_gabor`
+  // exactly — jittered kernels, untapered envelope — and is what a consumer
+  // that has to agree with hodge wants. True is omega's cheaper lattice form
+  // (`fastGaborSpinodoid`): the same model and the same density, kernels on a
+  // regular lattice with tapered envelopes, a different realization. The two
+  // measure alike and are not the same field pointwise, so this is not a hint.
+  bool fast = 1;
+
+  // Reference wavelength, in the tape's length units. `scale` multiplies it.
+  double period = 2;
+
+  // Cone half-angles of the direction ODF, one per pole, in **RADIANS**
+  // ([pi/2, pi/2, pi/2] is isotropic), as hodge takes them (`theta`, since
+  // hodge-release #44). The unit is in the field name because the field was
+  // once in degrees and hodge was too: a stale degree value cannot pass as
+  // this one.
+  repeated double thetaRadians = 3;
+
+  // Cone axes, flat xyz, three per entry in `thetaRadians`. Empty means the
+  // Cartesian axes (the paper's poles).
+  repeated double poles = 4;
+
+  // Envelope width in wavelengths at scale 1 (hodge's packet_width, 3).
+  double packetWidth = 5;
+  // Kernels per cell of the kernel grid (hodge's impulses_per_cell, 8).
+  uint32 impulses = 6;
+  // Size of the sampled direction pool (hodge's n_pool, 4096).
+  uint32 pool = 7;
+  // Seed for both the pool draw and the spatial hash.
+  int64 seed = 8;
+
+  // DEPRECATED, never written: the old quantile form of `bias`, where 0.5 was
+  // the median. A reader refuses a tape that sets it, since read as a bias it
+  // would be a different lattice. Regenerate such a tape.
+  double levelBias = 9 [deprecated = true];
+  // True divides by the wavenumber carried at each point (hodge's
+  // normalize="local"), so lengths stay real under a graded scale; false
+  // divides by the wavenumber of `period` ("base").
+  bool localNormalize = 10;
+
+  // A CONSTANT scale / orientation, when the call's drivers are constants.
+  // `scale` empty means 1; `orientation` is 9 row-major entries, empty meaning
+  // identity. These are the common case and travel completely.
+  repeated double scale = 11;
+  repeated double orientation = 12;
+
+  // A FIELD scale / orientation — read once at every kernel centre, which is
+  // what lets wavelength and anisotropy vary without the drift that warping
+  // coordinates causes. A driver is an implicit tree like any other, so it
+  // travels in this DAG: these are node indices into `Tape.nodes` (one for
+  // scale; nine for orientation, row-major), the same way `Appearance` carries
+  // its colour and material trees. Evaluate the node at a kernel centre's
+  // world (x, y, z) to get the driver there. Exactly one of `scale` /
+  // `scaleNodes` is set, and likewise for orientation.
+  repeated uint32 scaleNodes = 13;
+  repeated uint32 orientationNodes = 14;
+  // SHA-256 of the serialized driver trees, hex. Empty when both drivers are
+  // constants. It is omega's table-cache fingerprint, so equal fingerprints
+  // mean the same drivers.
+  string driverFingerprint = 15;
+
+  // True when the table is the stationary periodic window (no field driver).
+  // False means it was baked over a finite domain, given as
+  // [xmin, ymin, zmin, xmax, ymax, zmax] in `domain` when known. hodge builds
+  // its table from the query points instead and needs neither; they are here
+  // so a consumer can tell what omega's own bake covered.
+  bool periodic = 16;
+  repeated double domain = 17;
+
+  // The threshold the level set sits at, in units of the field's standard
+  // deviation, as a TPMS level t is: 0 is the median (the balanced
+  // interface), and +-1 leaves about 84% / 16% of the field below it. A
+  // document that asked for a solid fraction (spinodoid ...BySolidFraction)
+  // arrives here already converted, as sqrt(2) * erfinv(2 * fraction - 1).
+  // hodge takes it as `bias` (hodge-release #45).
+  double bias = 18;
+}
+
+message Node {
+  oneof n {
+    Axis   axis       = 1;  // X / Y / Z leaf
+    double constant   = 2;  // Const(f64) leaf
+    Input  input      = 3;  // named runtime input (e.g. time) leaf
+    Unary  unary      = 4;
+    Binary binary     = 5;
+    uint32 meshOracle = 6;  // MeshOracle(asset_id) leaf — payload bound by id
+    Remap  remap      = 7;  // RemapAxes: substitute x/y/z within target
+  }
+}
+
+enum Axis {
+  X = 0;
+  Y = 1;
+  Z = 2;
+}
+
+// A named, non-spatial input variable (anything that is not X/Y/Z), carrying
+// the value it was bound to at lowering time.
+message Input {
+  string name    = 1;
+  double default = 2;
+}
+
+message Unary {
+  UnaryOp op  = 1;
+  uint32  arg = 2;
+}
+
+message Binary {
+  BinaryOp op  = 1;
+  uint32   lhs = 2;
+  uint32   rhs = 3;
+}
+
+message Remap {
+  uint32 target = 1;
+  uint32 x      = 2;
+  uint32 y      = 3;
+  uint32 z      = 4;
+}
+
+// Mirrors fidget-core UnaryOpcode (context/op.rs). RECIP is fidget's reciprocal
+// leaf; it is preserved here so round-tripping is exact.
+enum UnaryOp {
+  NEG    = 0;
+  ABS    = 1;
+  RECIP  = 2;
+  SQRT   = 3;
+  SQUARE = 4;
+  FLOOR  = 5;
+  CEIL   = 6;
+  ROUND  = 7;
+  SIN    = 8;
+  COS    = 9;
+  TAN    = 10;
+  ASIN   = 11;
+  ACOS   = 12;
+  ATAN   = 13;
+  EXP    = 14;
+  LN     = 15;
+  NOT    = 16;
+}
+
+// Mirrors fidget-core BinaryOpcode (context/op.rs). ATAN2 is fidget's binary
+// `Atan` (two-argument atan); COMPARE is the 3-way <=> ; MOD is modulo.
+enum BinaryOp {
+  ADD     = 0;
+  SUB     = 1;
+  MUL     = 2;
+  DIV     = 3;
+  ATAN2   = 4;
+  MIN     = 5;
+  MAX     = 6;
+  COMPARE = 7;
+  MOD     = 8;
+  AND     = 9;
+  OR      = 10;
+}

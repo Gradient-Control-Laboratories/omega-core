@@ -2659,7 +2659,7 @@ const file_program_proto_rawDesc = "" +
 	"\x04LIST\x10\x02\x12\n" +
 	"\n" +
 	"\x06MATRIX\x10\x03\x12\f\n" +
-	"\bFUNCTION\x10\x04B*Z(gradientcontrol.com/omega_common/programb\x06proto3"
+	"\bFUNCTION\x10\x04B(Z&gradientcontrol.com/omega/core/programb\x06proto3"
 
 var (
 	file_program_proto_rawDescOnce sync.Once

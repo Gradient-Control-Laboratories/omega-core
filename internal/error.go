@@ -2,12 +2,12 @@ package internal
 
 import "fmt"
 
-type InternalError struct {
-	err error
+func Err(err error) *InternalError {
+	return &InternalError{err: err}
 }
 
-func InternalErr(err error) *InternalError {
-	return &InternalError{err: err}
+type InternalError struct {
+	err error
 }
 
 func (e *InternalError) Error() string {
@@ -17,3 +17,4 @@ func (e *InternalError) Error() string {
 func (e *InternalError) Unwrap() error {
 	return e.err
 }
+

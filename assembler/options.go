@@ -2,9 +2,10 @@ package assembler
 
 import (
 	"gradientcontrol.com/omega/core/assembler/source"
-	"gradientcontrol.com/omega/core/internal/assembler/topofold"
-	"gradientcontrol.com/omega/core/internal/assembler/warpfold"
+	"gradientcontrol.com/omega/core/assembler/topofold"
+	"gradientcontrol.com/omega/core/assembler/warpfold"
 	internalsource "gradientcontrol.com/omega/core/internal/source"
+	"gradientcontrol.com/omega/core/program/progress"
 )
 
 // Option configures program assembly.
@@ -22,7 +23,7 @@ type options struct {
 	extractMeshPlan       bool
 	meshPlanIdPrefix      string
 	variants              map[string]string
-	progressFn            ProgressFunc
+	progressFn            progress.Callback
 }
 
 // Parser supplies a custom package parser (such as parser.CachingParser.ParsePackage)
@@ -112,11 +113,8 @@ func WithVariants(variants map[string]string) Option {
 	}
 }
 
-// ProgressFunc is invoked at discrete compilation milestones during program assembly.
-type ProgressFunc func(stage string, completed, total uint32)
-
 // WithProgress supplies a progress callback to report compiler pass progress.
-func WithProgress(fn ProgressFunc) Option {
+func WithProgress(fn progress.Callback) Option {
 	return func(o *options) {
 		o.progressFn = fn
 	}

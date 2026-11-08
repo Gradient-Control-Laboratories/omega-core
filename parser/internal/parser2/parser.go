@@ -97,7 +97,7 @@ func Parse(sources []string) (*Result, error) {
 		topLevel, perr := parser.ParseString("", source)
 		if topLevel == nil {
 			if perr == nil {
-				perr = internal.InternalErr(errors.New("nil AST with no parse error"))
+				perr = internal.Err(errors.New("nil AST with no parse error"))
 			}
 			return recordFileError(res, pkgFile, source, perr)
 		}

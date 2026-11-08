@@ -8,7 +8,7 @@ import (
 
 func TestInternalError(t *testing.T) {
 	baseErr := fmt.Errorf("unexpected failure")
-	ie := InternalErr(baseErr)
+	ie := Err(baseErr)
 
 	if ie == nil {
 		t.Fatal("expected non-nil InternalError")
@@ -32,3 +32,4 @@ func TestInternalError(t *testing.T) {
 		t.Error("expected errors.As to match *InternalError")
 	}
 }
+

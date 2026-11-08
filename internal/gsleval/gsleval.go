@@ -22,14 +22,14 @@ import (
 	"sync"
 
 	"google.golang.org/protobuf/proto"
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler"
 	fidgetapi "gradientcontrol.com/omega/core/internal/fidget"
 	"gradientcontrol.com/omega/core/internal/fidget/lib"
 	"gradientcontrol.com/omega/core/internal/meshfold"
-	noise "gradientcontrol.com/omega/core/internal/noise"
 	"gradientcontrol.com/omega/core/internal/source"
 	parser "gradientcontrol.com/omega/core/parser"
 	"gradientcontrol.com/omega/core/program"
+	noise "gradientcontrol.com/omega/core/program/noise"
 	gsllibs "gradientcontrol.com/omega/core/stdlib"
 	"log"
 )
@@ -41,7 +41,6 @@ type AssetFetcher func(ctx context.Context, manifest map[string]string, module [
 
 // Evaluator evaluates GSL query expressions against a document via fidget.
 type Evaluator struct {
-	srcMgr          source.Manager
 	fetchAssets     AssetFetcher
 	assembleOptions []assembler.Option
 
@@ -144,15 +143,9 @@ func New(srcMgr source.Manager, fetchAssets AssetFetcher, options ...assembler.O
 			log.Printf("gsleval: register noise tile: %v", err)
 		}
 	})
-	if srcMgr == nil {
-		srcMgr = source.NewStdLibManager()
-	} else {
-		srcMgr = source.NewMultiSourceManager(srcMgr, source.NewStdLibManager())
-	}
 	cp := parser.NewCachingParser()
-	opts := append([]assembler.Option{assembler.Parser(cp.ParsePackage)}, options...)
+	opts := append([]assembler.Option{assembler.Parser(cp.ParsePackage), assembler.SourceManager(srcMgr)}, options...)
 	return &Evaluator{
-		srcMgr:          srcMgr,
 		fetchAssets:     fetchAssets,
 		assembleOptions: opts,
 	}
@@ -237,7 +230,7 @@ func (e *Evaluator) prepareQuery(ctx context.Context, manifest map[string]string
 		}
 	}
 
-	res, err := assembler.Assemble([]string{gslSource}, e.srcMgr, e.assembleOptions...)
+	res, err := assembler.Assemble([]string{gslSource}, e.assembleOptions...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to assemble query: %w", err)
 	}
