@@ -3,7 +3,7 @@ package mesh
 import (
 	"testing"
 
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/internal/fidget/internal/convert"
 	"gradientcontrol.com/omega/core/internal/fidget/internal/fidget"
 )
@@ -12,7 +12,7 @@ import (
 // the clock set to timeAt.
 func timeAtPoints(t *testing.T, src string, timeAt float64, xs, ys, zs []float32) []float32 {
 	t.Helper()
-	res, err := assembler.Assemble([]string{src}, testPkgMgr)
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(testPkgMgr))
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}

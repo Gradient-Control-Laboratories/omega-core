@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/internal/fidget/internal/convert"
 	"gradientcontrol.com/omega/core/internal/fidget/internal/fidget"
 )
@@ -17,7 +17,7 @@ import (
 // unlit, unreflecting parts.
 func TestPartProxyShadesAsItsShape(t *testing.T) {
 	src := "ball = sphere(2);\nreturn ball;\n"
-	res, err := assembler.Assemble([]string{src}, mockMgr)
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(mockMgr))
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}

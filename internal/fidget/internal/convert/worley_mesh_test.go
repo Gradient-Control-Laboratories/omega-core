@@ -3,11 +3,11 @@ package convert_test
 import (
 	"testing"
 
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/internal/fidget/internal/convert"
 	"gradientcontrol.com/omega/core/internal/fidget/internal/fidget"
 	"gradientcontrol.com/omega/core/internal/fidget/internal/mesh"
-	noise "gradientcontrol.com/omega/core/internal/noise"
+	noise "gradientcontrol.com/omega/core/program/noise"
 	"gradientcontrol.com/omega/core/internal/test/require"
 )
 
@@ -21,7 +21,7 @@ func TestWorleyMeshesViaNoiseOracle(t *testing.T) {
 	const src = `import "noise";
 return max(noise.cellular(3) - 1.5, length(p) - 4);`
 
-	res, err := assembler.Assemble([]string{src}, mockMgr)
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(mockMgr))
 	require.NoError(t, err)
 
 	bbox := [6]float32{-5, -5, -5, 5, 5, 5}
@@ -48,7 +48,7 @@ func TestRemappedCellularMeshes(t *testing.T) {
 edges = max(noise.cellularEdges(4) - 0.6, length(p) - 4);
 return min(remap(edges, [p.x + 6, p.y, p.z]), remap(edges, [p.x - 6, p.y, p.z]));`
 
-	res, err := assembler.Assemble([]string{src}, mockMgr)
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(mockMgr))
 	require.NoError(t, err)
 
 	bbox := [6]float32{-12, -8, -8, 12, 8, 8}

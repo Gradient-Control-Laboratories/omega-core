@@ -8,9 +8,6 @@ import (
 	"gradientcontrol.com/omega/core/program"
 )
 
-// Error is a type alias for program.Error to maintain backwards compatibility.
-type Error = program.Error
-
 // Convert an error to a build error with source code context.
 func ErrWithPkgSrc(
 	prog *program.Program,

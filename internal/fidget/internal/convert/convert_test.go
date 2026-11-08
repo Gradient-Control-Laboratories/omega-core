@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/internal/fidget/internal/convert"
 	"gradientcontrol.com/omega/core/internal/fidget/internal/fidget"
 	"gradientcontrol.com/omega/core/internal/fidget/internal/mesh"
@@ -89,7 +89,7 @@ func testOneConvert(t *testing.T, testDir, testName string) {
 	gslSrc, err := os.ReadFile(gslFile)
 	require.NoError(t, err)
 
-	res, err := assembler.Assemble([]string{string(gslSrc)}, mockMgr)
+	res, err := assembler.Assemble([]string{string(gslSrc)}, assembler.SourceManager(mockMgr))
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join(testDir, testName+".glsl")
@@ -216,7 +216,7 @@ func TestConvert_UnprunedProgram(t *testing.T) {
 		r = 10.0;
 		return sphere(p, r);
 	`
-	res, err := assembler.Assemble([]string{src}, mockMgr)
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(mockMgr))
 	require.NoError(t, err)
 
 	err = convert.ToTrees(res.Program, func(treeIndices []fidget.TreeIndex, outputNames []string) error {
@@ -231,7 +231,7 @@ func TestConvert_SingleElementList(t *testing.T) {
 		rad = [10.0];
 		return sphere(p, rad[0]);
 	`
-	res, err := assembler.Assemble([]string{src}, mockMgr)
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(mockMgr))
 	require.NoError(t, err)
 
 	err = convert.ToTrees(res.Program, func(treeIndices []fidget.TreeIndex, outputNames []string) error {

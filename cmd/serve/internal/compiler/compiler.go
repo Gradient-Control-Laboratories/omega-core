@@ -5,12 +5,12 @@ import (
 	"strings"
 
 	"gradientcontrol.com/omega/core/assembler"
+	"gradientcontrol.com/omega/core/assembler/slider"
+	"gradientcontrol.com/omega/core/assembler/ui"
 	"gradientcontrol.com/omega/core/backend/audio"
 	"gradientcontrol.com/omega/core/backend/mesh"
 	"gradientcontrol.com/omega/core/backend/wgsl"
 	"gradientcontrol.com/omega/core/internal/build"
-	"gradientcontrol.com/omega/core/internal/slider"
-	"gradientcontrol.com/omega/core/internal/ui"
 	"gradientcontrol.com/omega/core/program"
 )
 

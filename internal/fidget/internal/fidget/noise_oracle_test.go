@@ -3,7 +3,7 @@ package fidget
 import (
 	"testing"
 
-	noise "gradientcontrol.com/omega/core/internal/noise"
+	noise "gradientcontrol.com/omega/core/program/noise"
 )
 
 // The Rust noiseHash3 oracle must reproduce the Go reference (common/noise.Hash3)

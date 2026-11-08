@@ -226,4 +226,3 @@ func TestSceneResolveWorldExtent(t *testing.T) {
 	assert.Equal(t, 50.0, nilScene.ResolveWorldExtent(50.0))
 	assert.Equal(t, 10.0, nilScene.ResolveWorldExtent(0))
 }
-

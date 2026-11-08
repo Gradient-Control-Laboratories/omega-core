@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	assembler "gradientcontrol.com/omega/core/internal/assembler"
+	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/internal/source"
 )
 
@@ -15,7 +15,7 @@ last = path[2];
 position = last[3];
 return length(p - position.xyz) - 2;`
 	for _, src := range []string{strings.Replace(code, "uiSpline([m, m, m])", "[m, m, m]", 1), code} {
-		res, err := assembler.Assemble([]string{src}, &source.MockManager{})
+		res, err := assembler.Assemble([]string{src}, assembler.SourceManager(&source.MockManager{}))
 		if err != nil {
 			t.Fatal(err)
 		}

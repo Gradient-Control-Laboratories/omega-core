@@ -1,10 +1,11 @@
-package fidget
+package fidget_test
 
 import (
 	"testing"
 
 	"google.golang.org/protobuf/proto"
-	tape "gradientcontrol.com/omega/core/internal/fidget/internal/tape"
+	"gradientcontrol.com/omega/core/backend/tape"
+	"gradientcontrol.com/omega/core/internal/fidget/internal/fidget"
 )
 
 // Build a unit-sphere SDF (sqrt(x^2+y^2+z^2) - 1) via the tree FFI, serialize it
@@ -12,17 +13,17 @@ import (
 // output is the SUB node — i.e. the Go cgo SerializeTape wrapper and the
 // generated Go tape bindings agree on the wire format.
 func TestSerializeTapeSphere(t *testing.T) {
-	Lock()
-	defer Unlock()
-	Clear() // seeds X=0, Y=1, Z=2
+	fidget.Lock()
+	defer fidget.Unlock()
+	fidget.Clear() // seeds X=0, Y=1, Z=2
 
-	x, y, z := NewX(), NewY(), NewZ()
-	s := Add(Add(Square(x), Square(y)), Square(z))
-	r := Sqrt(s)
-	one := NewConst(1.0)
-	sphere := Sub(r, one)
+	x, y, z := fidget.NewX(), fidget.NewY(), fidget.NewZ()
+	s := fidget.Add(fidget.Add(fidget.Square(x), fidget.Square(y)), fidget.Square(z))
+	r := fidget.Sqrt(s)
+	one := fidget.NewConst(1.0)
+	sphere := fidget.Sub(r, one)
 
-	bytes, err := SerializeTape([]TreeIndex{sphere})
+	bytes, err := fidget.SerializeTape([]fidget.TreeIndex{sphere})
 	if err != nil {
 		t.Fatalf("SerializeTape: %v", err)
 	}
