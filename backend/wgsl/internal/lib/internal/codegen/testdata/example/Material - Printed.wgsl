@@ -20,9 +20,18 @@ fn texture_fadeDetail(size: f32, noiseTex: texture_3d<f32>) -> f32 {
   return 1.0 - texture_mask(gsl_pw, 0.375 * size, 0.125 * size, noiseTex);
 }
 
+fn material_displacement(m: mat4x4<f32>, noiseTex: texture_3d<f32>) -> f32 {
+  let volume = m[2];
+  return volume.z;
+}
+
 fn material_withDisplacement(m: mat4x4<f32>, height: f32, noiseTex: texture_3d<f32>) -> mat4x4<f32> {
   let volume = m[2];
   return mat4x4<f32>(m[0], m[1], vec4<f32>(volume.x, volume.y, height, volume.w), m[3]);
+}
+
+fn material_addDisplacement(m: mat4x4<f32>, height: f32, noiseTex: texture_3d<f32>) -> mat4x4<f32> {
+  return material_withDisplacement(m, material_displacement(m, noiseTex) + height, noiseTex);
 }
 
 fn builtin_coneCapped(p: vec3<f32>, pointA: vec3<f32>, pointB: vec3<f32>, radiusA: f32, radiusB: f32, noiseTex: texture_3d<f32>) -> f32 {
@@ -147,7 +156,7 @@ fn printed_layerFinish(p: vec3<f32>, baseMaterial: mat4x4<f32>, up: vec3<f32>, c
     let across = sqrt(edgeAlpha * edgeAlpha + (1.0 - shown) * slope * slope);
     let stretch = (1.0 - clamp(edgeAlpha / across, 0.1, 1.0)) / 0.9;
     let fineLay = select(vec3<f32>(0.0, 0.0, 0.0), layDir, stretch > 0.0);
-    let fine = material_withDisplacement(material_withLay(material_withRoughness(baseMaterial, sqrt(sqrt(edgeAlpha * across)), noiseTex), fineLay, stretch, noiseTex), relief * texture_fadeDetail(size, noiseTex), noiseTex);
+    let fine = material_addDisplacement(material_withLay(material_withRoughness(baseMaterial, sqrt(sqrt(edgeAlpha * across)), noiseTex), fineLay, stretch, noiseTex), relief * texture_fadeDetail(size, noiseTex), noiseTex);
     gsl_detailValue = fine;
     gsl_pw = gsl_detailOuterPw;
   }
@@ -308,9 +317,9 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_
       gsl_detailValue_3 = texture_fadeTo(0.88 + 0.24 * fract(textureLoad(noiseTex, vec3<i32>(floor(floor(p / 0.04) + vec3<f32>(31.0, 5.0, 59.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((floor(p / 0.04) + vec3<f32>(31.0, 5.0, 59.0)) / 64.0)) & vec3<i32>(63), 0).rgb).x, 1.0, 0.04, noiseTex);
       gsl_pw = gsl_detailOuterPw_3;
     }
-    var gsl_simpleValue_3 = vec3<f32>(0.646, 0.629, 0.595);
+    var gsl_simpleValue_3 = vec3<f32>(0.590835, 0.56542, 0.53975);
     if (gsl_simpleDetail > 0.0) {
-      gsl_simpleValue_3 = mix(gsl_simpleValue_3, vec3<f32>(0.76, 0.74, 0.7) * 0.85 * gsl_detailValue_3, gsl_simpleDetail);
+      gsl_simpleValue_3 = mix(gsl_simpleValue_3, vec3<f32>(0.6951, 0.6652, 0.635) * 0.85 * gsl_detailValue_3, gsl_simpleDetail);
     }
     let tiBallColor = gsl_simpleValue_3;
     return vec4<f32>(tiBallColor, 1.0);
@@ -321,9 +330,9 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_
       gsl_detailValue_4 = texture_fadeTo(0.88 + 0.24 * fract(textureLoad(noiseTex, vec3<i32>(floor(floor(p / 0.04) + vec3<f32>(31.0, 5.0, 59.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((floor(p / 0.04) + vec3<f32>(31.0, 5.0, 59.0)) / 64.0)) & vec3<i32>(63), 0).rgb).x, 1.0, 0.04, noiseTex);
       gsl_pw = gsl_detailOuterPw_4;
     }
-    var gsl_simpleValue_4 = vec3<f32>(0.646, 0.629, 0.595);
+    var gsl_simpleValue_4 = vec3<f32>(0.590835, 0.56542, 0.53975);
     if (gsl_simpleDetail > 0.0) {
-      gsl_simpleValue_4 = mix(gsl_simpleValue_4, vec3<f32>(0.76, 0.74, 0.7) * 0.85 * gsl_detailValue_4, gsl_simpleDetail);
+      gsl_simpleValue_4 = mix(gsl_simpleValue_4, vec3<f32>(0.6951, 0.6652, 0.635) * 0.85 * gsl_detailValue_4, gsl_simpleDetail);
     }
     let tiConeColor = gsl_simpleValue_4;
     return vec4<f32>(tiConeColor, 1.0);

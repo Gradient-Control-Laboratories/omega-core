@@ -112,7 +112,7 @@ func TestRenderLitTransmissionDimsTheDiffuseLobe(t *testing.T) {
 // sphere happens to be red".
 func TestRenderLitSeesThroughGlass(t *testing.T) {
 	doc := func(prelude, shellMaterial string) string {
-		return "import \"glass\";\nimport \"material\";\n" +
+		return "import \"material/bulk/glass\";\nimport \"material\";\n" +
 			prelude +
 			"shell = length(p) - 4.0;\n" +
 			"shell.material = " + shellMaterial + ";\n" +

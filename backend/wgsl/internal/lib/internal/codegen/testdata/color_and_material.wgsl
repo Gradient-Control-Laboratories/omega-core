@@ -23,7 +23,7 @@ fn gsl_remap(p: vec3<f32>, color_red: vec3<f32>) -> vec3<f32> {
 }
 
 fn gsl_remap_2(p: vec3<f32>, color_red: vec3<f32>) -> vec3<f32> {
-  return vec3<f32>(0.95, 0.9, 0.69);
+  return vec3<f32>(0.9593, 0.8952, 0.6822);
 }
 
 fn gsl_remap_3(p: vec3<f32>, color_red: vec3<f32>) -> f32 {

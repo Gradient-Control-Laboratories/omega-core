@@ -24,9 +24,18 @@ fn material_withLay(m: mat4x4<f32>, direction: vec3<f32>, anisotropy: f32, noise
   return mat4x4<f32>(m[0], m[1], m[2], vec4<f32>(direction.x, direction.y, direction.z, anisotropy));
 }
 
+fn material_displacement(m: mat4x4<f32>, noiseTex: texture_3d<f32>) -> f32 {
+  let volume = m[2];
+  return volume.z;
+}
+
 fn material_withDisplacement(m: mat4x4<f32>, height: f32, noiseTex: texture_3d<f32>) -> mat4x4<f32> {
   let volume = m[2];
   return mat4x4<f32>(m[0], m[1], vec4<f32>(volume.x, volume.y, height, volume.w), m[3]);
+}
+
+fn material_addDisplacement(m: mat4x4<f32>, height: f32, noiseTex: texture_3d<f32>) -> mat4x4<f32> {
+  return material_withDisplacement(m, material_displacement(m, noiseTex) + height, noiseTex);
 }
 
 fn material_roughness(m: mat4x4<f32>, noiseTex: texture_3d<f32>) -> f32 {
@@ -314,12 +323,28 @@ fn builtin_gcl_closure_boxCentered_7(p: vec3<f32>, center: vec3<f32>, size: vec3
   return solid;
 }
 
-fn noise_gradient(p: vec3<f32>, size: f32, noiseTex: texture_3d<f32>) -> f32 {
-  return noise_gradientLattice(p / size, noiseTex);
+fn noise_cellularF1F2CellLattice(q: vec3<f32>, noiseTex: texture_3d<f32>) -> gsl_struct_2 {
+  var gsl_result : gsl_struct_2;
+  gsl_result.v_1 = gsl_cellularScan(q, 1, noiseTex).f1;
+  gsl_result.v_2 = gsl_cellularScan(q, 1, noiseTex).f2;
+  gsl_result.v_3 = gsl_cellularScan(q, 1, noiseTex).nearCell;
+  return gsl_result;
 }
 
-fn noise_fbm3(p: vec3<f32>, size: f32, gain: f32, lacunarity: f32, noiseTex: texture_3d<f32>) -> f32 {
-  return noise_gradient(p, size, noiseTex) + gain * noise_gradient(p, size / lacunarity, noiseTex) + gain * gain * noise_gradient(p, size / (lacunarity * lacunarity), noiseTex);
+fn noise_cellularCell(p: vec3<f32>, size: f32, noiseTex: texture_3d<f32>) -> gsl_struct_2 {
+  let gsl_result_7 = noise_cellularF1F2CellLattice(p / size, noiseTex);
+  let f1 = gsl_result_7.v_1;
+  let f2 = gsl_result_7.v_2;
+  let cell = gsl_result_7.v_3;
+  var gsl_result : gsl_struct_2;
+  gsl_result.v_1 = f1 * size;
+  gsl_result.v_2 = f2 * size;
+  gsl_result.v_3 = cell;
+  return gsl_result;
+}
+
+fn noise_gradient(p: vec3<f32>, size: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return noise_gradientLattice(p / size, noiseTex);
 }
 
 fn material_roughnessFromGloss(gloss: f32, noiseTex: texture_3d<f32>) -> f32 {
@@ -346,26 +371,6 @@ fn builtin_gcl_closure_box_4(p: vec3<f32>, pointA: vec3<f32>, pointB: vec3<f32>,
   let center = (pointA + pointB) * 0.5;
   let size = abs(pointB - pointA);
   return builtin_gcl_closure_boxCentered_8(p, center, size, noiseTex);
-}
-
-fn noise_cellularF1F2CellLattice(q: vec3<f32>, noiseTex: texture_3d<f32>) -> gsl_struct_2 {
-  var gsl_result : gsl_struct_2;
-  gsl_result.v_1 = gsl_cellularScan(q, 1, noiseTex).f1;
-  gsl_result.v_2 = gsl_cellularScan(q, 1, noiseTex).f2;
-  gsl_result.v_3 = gsl_cellularScan(q, 1, noiseTex).nearCell;
-  return gsl_result;
-}
-
-fn noise_cellularCell(p: vec3<f32>, size: f32, noiseTex: texture_3d<f32>) -> gsl_struct_2 {
-  let gsl_result_8 = noise_cellularF1F2CellLattice(p / size, noiseTex);
-  let f1 = gsl_result_8.v_1;
-  let f2 = gsl_result_8.v_2;
-  let cell = gsl_result_8.v_3;
-  var gsl_result : gsl_struct_2;
-  gsl_result.v_1 = f1 * size;
-  gsl_result.v_2 = f2 * size;
-  gsl_result.v_3 = cell;
-  return gsl_result;
 }
 
 fn builtin_gcl_closure_intersectRound_5(fields: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
@@ -404,11 +409,6 @@ fn builtin_gcl_closure_boxCentered_11(p: vec3<f32>, center: vec3<f32>, size: vec
 fn material_filmKeeps(wavelength: f32, build: f32, noiseTex: texture_3d<f32>) -> f32 {
   let x = wavelength / (15.0 * max(build, 0.0001));
   return 1.0 - exp(-x * x);
-}
-
-fn material_displacement(m: mat4x4<f32>, noiseTex: texture_3d<f32>) -> f32 {
-  let volume = m[2];
-  return volume.z;
 }
 
 fn material_lay(m: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
@@ -532,28 +532,120 @@ fn coating_edgeWear(faceA: f32, faceB: f32, width: f32, noiseTex: texture_3d<f32
   return 1.0 - clamp(-min(faceA, faceB) / width, 0.0, 1.0);
 }
 
+fn coating_chipReach(wear: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return 4.2 * wear * wear;
+}
+
+fn coating_chipEdge(i: f32, reach: f32, extra: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return 2.4 + 0.35 * i + (0.15 + 0.25 * i) * extra - reach;
+}
+
+fn coating_normalTail(y: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return 1.0 / (1.0 + exp(1.5976 * y + 0.070566 * y * y * y));
+}
+
+fn coating_chipUnion(reach: f32, extra: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return select(coating_normalTail((2.06 - reach) / 0.9, noiseTex), coating_normalTail((2.4 - reach) / 0.98, noiseTex), extra > 0.5);
+}
+
+fn coating_chipKept(z: f32, i: f32, reach: f32, extra: f32, perShare: f32, shown: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let edge = coating_chipEdge(i, reach, extra, noiseTex);
+  let gsl_var_target = 1.0 - exp(perShare * coating_normalTail(edge, noiseTex));
+  return 1.0 - gsl_var_target - (texture_mask(z, edge, 0.04, noiseTex) - gsl_var_target) * shown;
+}
+
+fn coating_chipLayer(z0: f32, z1: f32, z2: f32, z3: f32, z4: f32, w0: f32, w1: f32, w2: f32, w3: f32, w4: f32, reach: f32, extra: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let total = 0.0 + coating_normalTail(coating_chipEdge(0.0, reach, extra, noiseTex), noiseTex) + coating_normalTail(coating_chipEdge(1.0, reach, extra, noiseTex), noiseTex) + coating_normalTail(coating_chipEdge(2.0, reach, extra, noiseTex), noiseTex) + coating_normalTail(coating_chipEdge(3.0, reach, extra, noiseTex), noiseTex) + coating_normalTail(coating_chipEdge(4.0, reach, extra, noiseTex), noiseTex);
+  let perShare = log(max(1.0 - coating_chipUnion(reach, extra, noiseTex), 0.000001)) / max(total, 0.000001);
+  return 1.0 - coating_chipKept(z0, 0.0, reach, extra, perShare, w0, noiseTex) * coating_chipKept(z1, 1.0, reach, extra, perShare, w1, noiseTex) * coating_chipKept(z2, 2.0, reach, extra, perShare, w2, noiseTex) * coating_chipKept(z3, 3.0, reach, extra, perShare, w3, noiseTex) * coating_chipKept(z4, 4.0, reach, extra, perShare, w4, noiseTex);
+}
+
+fn coating_chipCover(p: vec3<f32>, chipSize: f32, reach: f32, noiseTex: texture_3d<f32>) -> gsl_struct_3 {
+  let s0 = 4.0 * chipSize;
+  let w0 = texture_fadeDetail(s0, noiseTex);
+  let n0 = w0 * noise_gradient(p, s0, noiseTex) / 0.189;
+  let w1 = texture_fadeDetail(s0 / 2.07, noiseTex);
+  let n1 = w1 * noise_gradient(p, s0 / 2.07, noiseTex) / 0.189;
+  let w2 = texture_fadeDetail(s0 / 4.21, noiseTex);
+  let n2 = w2 * noise_gradient(p, s0 / 4.21, noiseTex) / 0.189;
+  let w3 = texture_fadeDetail(s0 / 8.6, noiseTex);
+  let n3 = w3 * noise_gradient(p, s0 / 8.6, noiseTex) / 0.189;
+  let w4 = texture_fadeDetail(s0 / 17.3, noiseTex);
+  let n4 = w4 * noise_gradient(p, s0 / 17.3, noiseTex) / 0.189;
+  let f4 = n4;
+  let f3 = n3 + 0.55 * f4;
+  let f2 = n2 + 0.55 * f3;
+  let f1 = n1 + 0.55 * f2;
+  let f0 = n0 + 0.55 * f1;
+  let e4 = w4 * w4;
+  let e3 = w3 * w3 + 0.3025 * e4;
+  let e2 = w2 * w2 + 0.3025 * e3;
+  let e1 = w1 * w1 + 0.3025 * e2;
+  let e0 = w0 * w0 + 0.3025 * e1;
+  let gsl_result_8 = noise_cellularCell(p, chipSize, noiseTex);
+  let cell = gsl_result_8.v_3;
+  let facet = 2.4248 * (fract(textureLoad(noiseTex, vec3<i32>(floor(cell + vec3<f32>(29.0, 7.0, 43.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((cell + vec3<f32>(29.0, 7.0, 43.0)) / 64.0)) & vec3<i32>(63), 0).rgb).x - 0.5);
+  let z0 = (f0 / sqrt(max(e0, 0.000001)) + facet * w2) * 0.8192 - 0.5 * (abs(n1) - 0.83 * w1);
+  let z1 = ((f1 / sqrt(max(e1, 0.000001)) + 0.35 * n0) * 0.9439 + facet * w2) * 0.8192 - 0.5 * (abs(n2) - 0.83 * w2);
+  let z2 = ((f2 / sqrt(max(e2, 0.000001)) + 0.35 * n0) * 0.9439 + facet * w2) * 0.8192 - 0.5 * (abs(n3) - 0.83 * w3);
+  let z3 = (f3 / sqrt(max(e3, 0.000001)) + 0.35 * n0) * 0.9439 - 0.5 * (abs(n4) - 0.83 * w4);
+  let z4 = (f4 / sqrt(max(e4, 0.000001)) + 0.35 * n0) * 0.9439;
+  var gsl_result : gsl_struct_3;
+  gsl_result.v_1 = coating_chipLayer(z0, z1, z2, z3, z4, w0, w1, w2, w3, w4, reach, 0.0, noiseTex);
+  gsl_result.v_2 = coating_chipLayer(z0, z1, z2, z3, z4, w0, w1, w2, w3, w4, reach, 1.0, noiseTex);
+  return gsl_result;
+}
+
 fn coating_glossRoughness(glossUnits: f32, noiseTex: texture_3d<f32>) -> f32 {
   return material_roughnessFromGloss(glossUnits, noiseTex);
 }
 
+fn coating_chipUnion__spec1(reach: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return coating_normalTail((2.06 - reach) / 0.9, noiseTex);
+}
+
+fn coating_chipUnion__spec2(reach: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return coating_normalTail((2.4 - reach) / 0.98, noiseTex);
+}
+
+fn coating_chippedStandInMaterial(baseMaterial: mat4x4<f32>, glossUnits: f32, wear: f32, noiseTex: texture_3d<f32>) -> mat4x4<f32> {
+  let reach = coating_chipReach(wear, noiseTex);
+  let share1 = coating_chipUnion__spec1(reach, noiseTex);
+  let share2 = coating_chipUnion__spec2(reach, noiseTex);
+  let coats = material_blend(material_make(coating_glossRoughness(glossUnits, noiseTex), 0.0, 1.5, noiseTex), mat4x4<f32>(vec4<f32>(0.85, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), (share1 - share2) / max(1.0 - share2, 0.0001), noiseTex);
+  return material_withDisplacement(material_blend(coats, baseMaterial, share2, noiseTex), material_displacement(baseMaterial, noiseTex), noiseTex);
+}
+
+fn coating_chippedStandInColor(baseColor: vec3<f32>, paintColor: vec3<f32>, primerColor: vec3<f32>, wear: f32, noiseTex: texture_3d<f32>) -> vec3<f32> {
+  let reach = coating_chipReach(wear, noiseTex);
+  let share1 = coating_chipUnion__spec1(reach, noiseTex);
+  let share2 = coating_chipUnion__spec2(reach, noiseTex);
+  return color_oklab2rgb(color_rgb2oklab(paintColor, noiseTex) * (1.0 - share1) + color_rgb2oklab(primerColor, noiseTex) * (share1 - share2) + color_rgb2oklab(baseColor, noiseTex) * share2, noiseTex);
+}
+
 fn coating_chippedPaint(p: vec3<f32>, baseMaterial: mat4x4<f32>, baseColor: vec3<f32>, paintColor: vec3<f32>, primerColor: vec3<f32>, glossUnits: f32, wear: f32, chipSize: f32, noiseTex: texture_3d<f32>) -> gsl_struct {
-  let paintMat = material_make(coating_glossRoughness(glossUnits, noiseTex), 0.0, 1.5, noiseTex);
-  let field = 1.3 * wear + 0.3 * noise_fbm3(p, chipSize, 0.55, 2.2, noiseTex);
-  let soft = 0.03 + 0.2 * (1.0 - texture_fadeDetail(chipSize, noiseTex));
-  let primer = texture_mask(field, 0.9, soft, noiseTex);
-  let bare = texture_mask(field, 1.0, soft, noiseTex);
-  var gsl_simpleValue = paintMat;
+  let chalk = (noise_gradientLattice(p / 80.0, noiseTex) + 0.8 * noise_gradientLattice(p / 12.0, noiseTex) * (1.0 - texture_mask(gsl_pw, 4.5, 1.5, noiseTex))) / 0.24192;
+  let reach = coating_chipReach(wear, noiseTex);
+  let gsl_result_9 = coating_chipCover(p, chipSize, reach, noiseTex);
+  let paintGone = gsl_result_9.v_1;
+  let primerGone = gsl_result_9.v_2;
+  let primerShows = clamp((paintGone - primerGone) / max(1.0 - primerGone, 0.0001), 0.0, 1.0);
+  var gsl_simpleValue = coating_chippedStandInMaterial(baseMaterial, glossUnits, wear, noiseTex);
   if (gsl_simpleDetail > 0.0) {
-    let coated = material_blend(paintMat, mat4x4<f32>(vec4<f32>(0.85, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), primer, noiseTex);
-    let worn = material_blend(coated, baseMaterial, bare, noiseTex);
-    let gsl_simpleFull = material_withDisplacement(worn, -0.08 * primer * texture_fadeDetail(chipSize, noiseTex), noiseTex);
+    let paintMat = material_make(coating_glossRoughness(glossUnits, noiseTex) + 0.02 * chalk, 0.0, 1.5, noiseTex);
+    let coated = material_blend(paintMat, mat4x4<f32>(vec4<f32>(0.85, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), primerShows, noiseTex);
+    let worn = material_blend(coated, baseMaterial, primerGone, noiseTex);
+    let gsl_simpleFull = material_withDisplacement(worn, material_displacement(baseMaterial, noiseTex) + 0.05 * (coating_chipUnion__spec1(reach, noiseTex) - paintGone) + 0.03 * (coating_chipUnion__spec2(reach, noiseTex) - primerGone), noiseTex);
     gsl_simpleValue = mat4x4<f32>(mix(gsl_simpleValue[0], gsl_simpleFull[0], gsl_simpleDetail), mix(gsl_simpleValue[1], gsl_simpleFull[1], gsl_simpleDetail), mix(gsl_simpleValue[2], gsl_simpleFull[2], gsl_simpleDetail), mix(gsl_simpleValue[3], gsl_simpleFull[3], gsl_simpleDetail));
   }
   let chipped = gsl_simpleValue;
-  var gsl_simpleValue_2 = paintColor;
+  var gsl_simpleValue_2 = coating_chippedStandInColor(baseColor, paintColor, primerColor, wear, noiseTex);
   if (gsl_simpleDetail > 0.0) {
-    let coatColor = color_mixOklab(paintColor, primerColor, primer, noiseTex);
-    gsl_simpleValue_2 = mix(gsl_simpleValue_2, color_mixOklab(coatColor, baseColor, bare, noiseTex), gsl_simpleDetail);
+    let paintLab = color_rgb2oklab(paintColor, noiseTex);
+    let dL = 0.009 * chalk;
+    let mottled = color_oklab2rgb(paintLab + vec3<f32>(dL, -8.0 * dL * paintLab.y, -8.0 * dL * paintLab.z), noiseTex);
+    let coatColor = color_mixOklab(mottled, primerColor, primerShows, noiseTex);
+    gsl_simpleValue_2 = mix(gsl_simpleValue_2, color_mixOklab(coatColor, baseColor, primerGone, noiseTex), gsl_simpleDetail);
   }
   let finish = gsl_simpleValue_2;
   var gsl_result : gsl_struct;
@@ -588,7 +680,8 @@ fn coating_clearCoat(baseMaterial: mat4x4<f32>, baseColor: vec3<f32>, tint: vec3
 }
 
 fn coating_powderCoat_2(p: vec3<f32>, coatColor: vec3<f32>, glossUnits: f32, peel: f32, noiseTex: texture_3d<f32>) -> gsl_struct {
-  let alpha = 0.044 * sqrt(100.0 / clamp(glossUnits, 1.0, 99.0) - 1.0);
+  let rough = coating_glossRoughness(glossUnits, noiseTex);
+  let alpha = rough * rough;
   let amount = clamp(peel, 0.0, 1.0);
   var gsl_detailValue_2 = 0.0;
   if (max(gsl_pw, gsl_detailPw) < 0.15) { let gsl_detailOuterPw_2 = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
@@ -596,15 +689,15 @@ fn coating_powderCoat_2(p: vec3<f32>, coatColor: vec3<f32>, glossUnits: f32, pee
     gsl_pw = gsl_detailOuterPw_2;
   }
   var gsl_detailValue = 0.0;
-  if (max(gsl_pw, gsl_detailPw) < 1.25) { let gsl_detailOuterPw = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
+  if (max(gsl_pw, gsl_detailPw) < 0.75) { let gsl_detailOuterPw = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
     let shortWave = gsl_detailValue_2;
-    gsl_detailValue = (noise_gradientLattice(p / 2.5, noiseTex) + 0.5 * noise_gradientLattice(p / 1.0869565, noiseTex)) * 0.004 * amount * (1.0 - texture_mask(gsl_pw, 0.9375, 0.3125, noiseTex)) + shortWave;
+    gsl_detailValue = (noise_gradientLattice(p / 1.5, noiseTex) + 0.5 * noise_gradientLattice(p / 0.65, noiseTex) * (1.0 - texture_mask(gsl_pw, 0.24375, 0.08125, noiseTex))) * 0.0065 * amount * (1.0 - texture_mask(gsl_pw, 0.5625, 0.1875, noiseTex)) + shortWave;
     gsl_pw = gsl_detailOuterPw;
   }
-  var gsl_simpleValue = material_make(sqrt(sqrt(alpha * alpha + 0.000032 * amount * amount)), 0.0, 1.5, noiseTex);
+  var gsl_simpleValue = material_make(sqrt(sqrt(alpha * alpha + 0.00001124 * amount * amount)), 0.0, 1.5, noiseTex);
   if (gsl_simpleDetail > 0.0) {
-    let lobe = texture_reliefRoughness(alpha, 0.004 * amount, 0.3, noiseTex);
-    let wide = texture_reliefRoughness(lobe, 0.004 * amount, 2.5, noiseTex);
+    let lobe = texture_reliefRoughness(alpha, 0.001 * amount, 0.3, noiseTex);
+    let wide = texture_reliefRoughness(lobe, 0.0032 * amount, 1.5, noiseTex);
     let waves = gsl_detailValue;
     let gsl_simpleFull = material_withDisplacement(material_make(sqrt(wide), 0.0, 1.5, noiseTex), waves, noiseTex);
     gsl_simpleValue = mat4x4<f32>(mix(gsl_simpleValue[0], gsl_simpleFull[0], gsl_simpleDetail), mix(gsl_simpleValue[1], gsl_simpleFull[1], gsl_simpleDetail), mix(gsl_simpleValue[2], gsl_simpleFull[2], gsl_simpleDetail), mix(gsl_simpleValue[3], gsl_simpleFull[3], gsl_simpleDetail));
@@ -619,20 +712,20 @@ fn coating_powderCoat_2(p: vec3<f32>, coatColor: vec3<f32>, glossUnits: f32, pee
 }
 
 fn coating_powderCoat(p: vec3<f32>, baseMaterial: mat4x4<f32>, coatColor: vec3<f32>, glossUnits: f32, peel: f32, build: f32, underSize: f32, noiseTex: texture_3d<f32>) -> gsl_struct {
-  let alpha = 0.044 * sqrt(100.0 / clamp(glossUnits, 1.0, 99.0) - 1.0);
+  let rough = coating_glossRoughness(glossUnits, noiseTex);
   let amount = clamp(peel, 0.0, 1.0);
-  let flat = material_make(sqrt(sqrt(alpha * alpha + 0.000032 * amount * amount)), 0.0, 1.5, noiseTex);
-  let gsl_result_13 = coating_powderCoat_2(p, coatColor, glossUnits, peel, noiseTex);
+  let flat = material_make(sqrt(sqrt(rough * rough * rough * rough + 0.00001124 * amount * amount)), 0.0, 1.5, noiseTex);
+  let gsl_result_15 = coating_powderCoat_2(p, coatColor, glossUnits, peel, noiseTex);
   var gsl_simpleValue = coating_levelled(flat, baseMaterial, build, underSize, noiseTex);
   if (gsl_simpleDetail > 0.0) {
-    let coat = gsl_result_13.v_1;
+    let coat = gsl_result_15.v_1;
     let gsl_simpleFull = coating_levelled(coat, baseMaterial, build, underSize, noiseTex);
     gsl_simpleValue = mat4x4<f32>(mix(gsl_simpleValue[0], gsl_simpleFull[0], gsl_simpleDetail), mix(gsl_simpleValue[1], gsl_simpleFull[1], gsl_simpleDetail), mix(gsl_simpleValue[2], gsl_simpleFull[2], gsl_simpleDetail), mix(gsl_simpleValue[3], gsl_simpleFull[3], gsl_simpleDetail));
   }
   let result = gsl_simpleValue;
-  let tone = gsl_result_13.v_2;
-  let height = gsl_result_13.v_3;
-  let slope = gsl_result_13.v_4;
+  let tone = gsl_result_15.v_2;
+  let height = gsl_result_15.v_3;
+  let slope = gsl_result_15.v_4;
   var gsl_result : gsl_struct;
   gsl_result.v_1 = result;
   gsl_result.v_2 = tone;
@@ -656,11 +749,11 @@ fn machined_nosePitch(s: f32, spacing: f32, radius: f32, noiseTex: texture_3d<f3
 
 fn machined_grooveFinish(baseMaterial: mat4x4<f32>, direction: vec3<f32>, s: f32, spacing: f32, radius: f32, noiseTex: texture_3d<f32>) -> mat4x4<f32> {
   let slope = 0.408 * spacing / radius;
-  var gsl_simpleValue = material_withDisplacement(machined_layFinish(baseMaterial, direction, 0.02, sqrt(0.0004 + slope * slope), noiseTex), -spacing * spacing / (12.0 * radius), noiseTex);
+  var gsl_simpleValue = material_addDisplacement(machined_layFinish(baseMaterial, direction, 0.02, sqrt(0.0004 + slope * slope), noiseTex), -spacing * spacing / (12.0 * radius), noiseTex);
   if (gsl_simpleDetail > 0.0) {
     let across = texture_reliefRoughness(0.02, slope, spacing, noiseTex);
     let fade = texture_fadeDetail(spacing, noiseTex);
-    let gsl_simpleFull = material_withDisplacement(machined_layFinish(baseMaterial, direction, 0.02, across, noiseTex), -machined_nosePitch(s, spacing, radius, noiseTex) * fade, noiseTex);
+    let gsl_simpleFull = material_addDisplacement(machined_layFinish(baseMaterial, direction, 0.02, across, noiseTex), -machined_nosePitch(s, spacing, radius, noiseTex) * fade, noiseTex);
     gsl_simpleValue = mat4x4<f32>(mix(gsl_simpleValue[0], gsl_simpleFull[0], gsl_simpleDetail), mix(gsl_simpleValue[1], gsl_simpleFull[1], gsl_simpleDetail), mix(gsl_simpleValue[2], gsl_simpleFull[2], gsl_simpleDetail), mix(gsl_simpleValue[3], gsl_simpleFull[3], gsl_simpleDetail));
   }
   let finish = gsl_simpleValue;
@@ -896,34 +989,34 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_
   if (gsl_colorIdx == 1u) {
     let gsl_tmp_1 = p - vec3<f32>(0.0, 0.0, 0.0);
     let turnedMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.4, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(vec3<f32>(0.0, 1.0, 0.0), gsl_tmp_1), fract(dot(gsl_tmp_1, vec3<f32>(0.0, 1.0, 0.0)) / 0.15), 0.15, 0.8, noiseTex);
-    let gsl_result = coating_anodized(turnedMat, vec3<f32>(0.96, 0.96, 0.97), vec3<f32>(1.0, 1.0, 1.0), noiseTex);
+    let gsl_result = coating_anodized(turnedMat, vec3<f32>(0.9621, 0.9654, 0.9658), vec3<f32>(1.0, 1.0, 1.0), noiseTex);
     let clearColor = gsl_result.v_2;
     return vec4<f32>(clearColor, 1.0);
   }
   if (gsl_colorIdx == 2u) {
     let gsl_tmp_1 = p - vec3<f32>(0.0, 0.0, 0.0);
     let turnedMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.4, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(vec3<f32>(0.0, 1.0, 0.0), gsl_tmp_1), fract(dot(gsl_tmp_1, vec3<f32>(0.0, 1.0, 0.0)) / 0.15), 0.15, 0.8, noiseTex);
-    let gsl_result_2 = coating_anodized(turnedMat, vec3<f32>(0.96, 0.96, 0.97), vec3<f32>(0.15, 0.35, 0.85), noiseTex);
+    let gsl_result_2 = coating_anodized(turnedMat, vec3<f32>(0.9621, 0.9654, 0.9658), vec3<f32>(0.15, 0.35, 0.85), noiseTex);
     let blueColor = gsl_result_2.v_2;
     return vec4<f32>(blueColor, 1.0);
   }
   if (gsl_colorIdx == 3u) {
     let gsl_tmp_1 = p - vec3<f32>(0.0, 0.0, 0.0);
     let turnedMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.4, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(vec3<f32>(0.0, 1.0, 0.0), gsl_tmp_1), fract(dot(gsl_tmp_1, vec3<f32>(0.0, 1.0, 0.0)) / 0.15), 0.15, 0.8, noiseTex);
-    let gsl_result_3 = coating_anodized(turnedMat, vec3<f32>(0.96, 0.96, 0.97), vec3<f32>(0.85, 0.12, 0.12), noiseTex);
+    let gsl_result_3 = coating_anodized(turnedMat, vec3<f32>(0.9621, 0.9654, 0.9658), vec3<f32>(0.85, 0.12, 0.12), noiseTex);
     let redColor = gsl_result_3.v_2;
     return vec4<f32>(redColor, 1.0);
   }
   if (gsl_colorIdx == 4u) {
     let gsl_tmp_1 = p - vec3<f32>(0.0, 0.0, 0.0);
     let turnedMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.4, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(vec3<f32>(0.0, 1.0, 0.0), gsl_tmp_1), fract(dot(gsl_tmp_1, vec3<f32>(0.0, 1.0, 0.0)) / 0.15), 0.15, 0.8, noiseTex);
-    let gsl_result_4 = coating_anodized(turnedMat, vec3<f32>(0.96, 0.96, 0.97), vec3<f32>(0.06, 0.06, 0.07), noiseTex);
+    let gsl_result_4 = coating_anodized(turnedMat, vec3<f32>(0.9621, 0.9654, 0.9658), vec3<f32>(0.06, 0.06, 0.07), noiseTex);
     let blackColor = gsl_result_4.v_2;
     return vec4<f32>(blackColor, 1.0);
   }
   if (gsl_colorIdx == 5u) {
     let millMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.4, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0))))) * sqrt(625.0 - clamp(dot(p - vec3<f32>(20.0, 30.0, 6.0), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))))), -24.975, 24.975) * clamp(dot(p - vec3<f32>(20.0, 30.0, 6.0), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))))), -24.975, 24.975)) - normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))) * clamp(dot(p - vec3<f32>(20.0, 30.0, 6.0), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))))), -24.975, 24.975), fract((dot(p - vec3<f32>(20.0, 30.0, 6.0), normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0))))) - sqrt(625.0 - clamp(dot(p - vec3<f32>(20.0, 30.0, 6.0), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))))), -24.975, 24.975) * clamp(dot(p - vec3<f32>(20.0, 30.0, 6.0), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))))), -24.975, 24.975))) / 0.3), 0.3, 0.8, noiseTex);
-    let gsl_result_5 = coating_hardAnodized(millMat, vec3<f32>(0.96, 0.96, 0.97), 50.0, noiseTex);
+    let gsl_result_5 = coating_hardAnodized(millMat, vec3<f32>(0.9621, 0.9654, 0.9658), 50.0, noiseTex);
     let hardColor = gsl_result_5.v_2;
     return vec4<f32>(hardColor, 1.0);
   }
@@ -956,17 +1049,17 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_
     let slabY = max(p.y - -12.0, -38.0 - p.y);
     let slabZ = max(p.z - 12.0, -8.0 - p.z);
     let wear = max(coating_edgeWear(slabX, slabY, 3.0, noiseTex), max(coating_edgeWear(slabX, slabZ, 3.0, noiseTex), coating_edgeWear(slabY, slabZ, 3.0, noiseTex)));
-    let gsl_result_7 = coating_chippedPaint(p, mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), vec3<f32>(0.77, 0.78, 0.78), vec3<f32>(0.14, 0.32, 0.18), vec3<f32>(0.55, 0.22, 0.14), 60.0, wear, 1.5, noiseTex);
-    let paintColor = gsl_result_7.v_2;
+    let gsl_result_10 = coating_chippedPaint(p, mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), vec3<f32>(0.77, 0.78, 0.78), vec3<f32>(0.14, 0.32, 0.18), vec3<f32>(0.55, 0.22, 0.14), 60.0, wear, 1.5, noiseTex);
+    let paintColor = gsl_result_10.v_2;
     return vec4<f32>(paintColor, 1.0);
   }
   if (gsl_colorIdx == 13u) {
     var gsl_simpleValue_2 = color_mixOklab(vec3<f32>(0.8, 0.82, 0.84), vec3<f32>(0.58, 0.6, 0.61), clamp(0.0, 0.0, 1.0), noiseTex);
     if (gsl_simpleDetail > 0.0) {
-      let gsl_result_9 = noise_cellularCell(p, 1.0, noiseTex);
-      let spangleCell = gsl_result_9.v_3;
-      let spangleF2 = gsl_result_9.v_2;
-      let spangleF1 = gsl_result_9.v_1;
+      let gsl_result_11 = noise_cellularCell(p, 1.0, noiseTex);
+      let spangleCell = gsl_result_11.v_3;
+      let spangleF2 = gsl_result_11.v_2;
+      let spangleF1 = gsl_result_11.v_1;
       gsl_simpleValue_2 = mix(gsl_simpleValue_2, color_mixOklab(vec3<f32>(0.8, 0.82, 0.84) * texture_fadeTo(0.92 + 0.16 * fract(textureLoad(noiseTex, vec3<i32>(floor(spangleCell + vec3<f32>(17.0, 53.0, 5.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((spangleCell + vec3<f32>(17.0, 53.0, 5.0)) / 64.0)) & vec3<i32>(63), 0).rgb).x, 1.0, 1.0, noiseTex) * (1.0 - 0.5 * texture_coverageLine(spangleF2 - spangleF1, 0.02, noiseTex)), vec3<f32>(0.58, 0.6, 0.61), clamp(0.0, 0.0, 1.0), noiseTex), gsl_simpleDetail);
     }
     let freshColor = gsl_simpleValue_2;
@@ -975,32 +1068,32 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_
   if (gsl_colorIdx == 14u) {
     var gsl_simpleValue_3 = color_mixOklab(vec3<f32>(0.8, 0.82, 0.84), vec3<f32>(0.58, 0.6, 0.61), clamp(0.7, 0.0, 1.0), noiseTex);
     if (gsl_simpleDetail > 0.0) {
-      let gsl_result_10 = noise_cellularCell(p, 1.0, noiseTex);
-      let spangleCell_2 = gsl_result_10.v_3;
-      let spangleF2_2 = gsl_result_10.v_2;
-      let spangleF1_2 = gsl_result_10.v_1;
+      let gsl_result_12 = noise_cellularCell(p, 1.0, noiseTex);
+      let spangleCell_2 = gsl_result_12.v_3;
+      let spangleF2_2 = gsl_result_12.v_2;
+      let spangleF1_2 = gsl_result_12.v_1;
       gsl_simpleValue_3 = mix(gsl_simpleValue_3, color_mixOklab(vec3<f32>(0.8, 0.82, 0.84) * texture_fadeTo(0.92 + 0.16 * fract(textureLoad(noiseTex, vec3<i32>(floor(spangleCell_2 + vec3<f32>(17.0, 53.0, 5.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((spangleCell_2 + vec3<f32>(17.0, 53.0, 5.0)) / 64.0)) & vec3<i32>(63), 0).rgb).x, 1.0, 1.0, noiseTex) * (1.0 - 0.5 * texture_coverageLine(spangleF2_2 - spangleF1_2, 0.02, noiseTex)), vec3<f32>(0.58, 0.6, 0.61), clamp(0.7, 0.0, 1.0), noiseTex), gsl_simpleDetail);
     }
     let agedColor = gsl_simpleValue_3;
     return vec4<f32>(agedColor, 1.0);
   }
-  if (gsl_colorIdx == 15u) { return vec4<f32>(vec3<f32>(0.96, 0.96, 0.97), 1.0); }
+  if (gsl_colorIdx == 15u) { return vec4<f32>(vec3<f32>(0.9621, 0.9654, 0.9658), 1.0); }
   if (gsl_colorIdx == 16u) {
     let fineCutMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.4, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), p - vec3<f32>(-20.0, 0.0, 3.0)), fract(length(p - vec3<f32>(-20.0, 0.0, 3.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(p - vec3<f32>(-20.0, 0.0, 3.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))) / 0.15), 0.15, 0.8, noiseTex);
-    let gsl_result_11 = coating_clearCoat(fineCutMat, vec3<f32>(0.96, 0.96, 0.97), vec3<f32>(1.0, 1.0, 1.0), 45.0, 0.08, 0.15, noiseTex);
-    let lacqCol = gsl_result_11.v_2;
+    let gsl_result_13 = coating_clearCoat(fineCutMat, vec3<f32>(0.9621, 0.9654, 0.9658), vec3<f32>(1.0, 1.0, 1.0), 45.0, 0.08, 0.15, noiseTex);
+    let lacqCol = gsl_result_13.v_2;
     return vec4<f32>(lacqCol, 1.0);
   }
   if (gsl_colorIdx == 17u) {
     let coarseCutMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.4, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), p - vec3<f32>(5.0, 0.0, 3.0)), fract(length(p - vec3<f32>(5.0, 0.0, 3.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(p - vec3<f32>(5.0, 0.0, 3.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))) / 1.2), 1.2, 0.8, noiseTex);
-    let gsl_result_12 = coating_clearCoat(coarseCutMat, vec3<f32>(0.96, 0.96, 0.97), vec3<f32>(1.0, 1.0, 1.0), 45.0, 0.08, 1.2, noiseTex);
-    let coarseLacqCol = gsl_result_12.v_2;
+    let gsl_result_14 = coating_clearCoat(coarseCutMat, vec3<f32>(0.9621, 0.9654, 0.9658), vec3<f32>(1.0, 1.0, 1.0), 45.0, 0.08, 1.2, noiseTex);
+    let coarseLacqCol = gsl_result_14.v_2;
     return vec4<f32>(coarseLacqCol, 1.0);
   }
   if (gsl_colorIdx == 18u) {
     let coarsePowderBase = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), p - vec3<f32>(30.0, 0.0, 3.0)), fract(length(p - vec3<f32>(30.0, 0.0, 3.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(p - vec3<f32>(30.0, 0.0, 3.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))) / 1.2), 1.2, 0.8, noiseTex);
-    let gsl_result_14 = coating_powderCoat(p, coarsePowderBase, vec3<f32>(0.16, 0.3, 0.42), 85.0, 0.5, 0.08, 1.2, noiseTex);
-    let coarsePowderCol = gsl_result_14.v_2;
+    let gsl_result_16 = coating_powderCoat(p, coarsePowderBase, vec3<f32>(0.16, 0.3, 0.42), 85.0, 0.5, 0.08, 1.2, noiseTex);
+    let coarsePowderCol = gsl_result_16.v_2;
     return vec4<f32>(coarsePowderCol, 1.0);
   }
   return vec4<f32>(0.0, 0.0, 0.0, 0.0);
@@ -1009,34 +1102,34 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, noiseTex: te
   if (gsl_materialIdx == 1u) {
     let gsl_tmp_1 = p - vec3<f32>(0.0, 0.0, 0.0);
     let turnedMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.4, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(vec3<f32>(0.0, 1.0, 0.0), gsl_tmp_1), fract(dot(gsl_tmp_1, vec3<f32>(0.0, 1.0, 0.0)) / 0.15), 0.15, 0.8, noiseTex);
-    let gsl_result = coating_anodized(turnedMat, vec3<f32>(0.96, 0.96, 0.97), vec3<f32>(1.0, 1.0, 1.0), noiseTex);
+    let gsl_result = coating_anodized(turnedMat, vec3<f32>(0.9621, 0.9654, 0.9658), vec3<f32>(1.0, 1.0, 1.0), noiseTex);
     let clearMat = gsl_result.v_1;
     let gsl_m = clearMat; return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
   }
   if (gsl_materialIdx == 2u) {
     let gsl_tmp_1 = p - vec3<f32>(0.0, 0.0, 0.0);
     let turnedMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.4, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(vec3<f32>(0.0, 1.0, 0.0), gsl_tmp_1), fract(dot(gsl_tmp_1, vec3<f32>(0.0, 1.0, 0.0)) / 0.15), 0.15, 0.8, noiseTex);
-    let gsl_result_2 = coating_anodized(turnedMat, vec3<f32>(0.96, 0.96, 0.97), vec3<f32>(0.15, 0.35, 0.85), noiseTex);
+    let gsl_result_2 = coating_anodized(turnedMat, vec3<f32>(0.9621, 0.9654, 0.9658), vec3<f32>(0.15, 0.35, 0.85), noiseTex);
     let blueMat = gsl_result_2.v_1;
     let gsl_m = blueMat; return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
   }
   if (gsl_materialIdx == 3u) {
     let gsl_tmp_1 = p - vec3<f32>(0.0, 0.0, 0.0);
     let turnedMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.4, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(vec3<f32>(0.0, 1.0, 0.0), gsl_tmp_1), fract(dot(gsl_tmp_1, vec3<f32>(0.0, 1.0, 0.0)) / 0.15), 0.15, 0.8, noiseTex);
-    let gsl_result_3 = coating_anodized(turnedMat, vec3<f32>(0.96, 0.96, 0.97), vec3<f32>(0.85, 0.12, 0.12), noiseTex);
+    let gsl_result_3 = coating_anodized(turnedMat, vec3<f32>(0.9621, 0.9654, 0.9658), vec3<f32>(0.85, 0.12, 0.12), noiseTex);
     let redMat = gsl_result_3.v_1;
     let gsl_m = redMat; return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
   }
   if (gsl_materialIdx == 4u) {
     let gsl_tmp_1 = p - vec3<f32>(0.0, 0.0, 0.0);
     let turnedMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.4, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(vec3<f32>(0.0, 1.0, 0.0), gsl_tmp_1), fract(dot(gsl_tmp_1, vec3<f32>(0.0, 1.0, 0.0)) / 0.15), 0.15, 0.8, noiseTex);
-    let gsl_result_4 = coating_anodized(turnedMat, vec3<f32>(0.96, 0.96, 0.97), vec3<f32>(0.06, 0.06, 0.07), noiseTex);
+    let gsl_result_4 = coating_anodized(turnedMat, vec3<f32>(0.9621, 0.9654, 0.9658), vec3<f32>(0.06, 0.06, 0.07), noiseTex);
     let blackMat = gsl_result_4.v_1;
     let gsl_m = blackMat; return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
   }
   if (gsl_materialIdx == 5u) {
     let millMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.4, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0))))) * sqrt(625.0 - clamp(dot(p - vec3<f32>(20.0, 30.0, 6.0), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))))), -24.975, 24.975) * clamp(dot(p - vec3<f32>(20.0, 30.0, 6.0), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))))), -24.975, 24.975)) - normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))) * clamp(dot(p - vec3<f32>(20.0, 30.0, 6.0), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))))), -24.975, 24.975), fract((dot(p - vec3<f32>(20.0, 30.0, 6.0), normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0))))) - sqrt(625.0 - clamp(dot(p - vec3<f32>(20.0, 30.0, 6.0), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))))), -24.975, 24.975) * clamp(dot(p - vec3<f32>(20.0, 30.0, 6.0), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))))), -24.975, 24.975))) / 0.3), 0.3, 0.8, noiseTex);
-    let gsl_result_5 = coating_hardAnodized(millMat, vec3<f32>(0.96, 0.96, 0.97), 50.0, noiseTex);
+    let gsl_result_5 = coating_hardAnodized(millMat, vec3<f32>(0.9621, 0.9654, 0.9658), 50.0, noiseTex);
     let hardMat = gsl_result_5.v_1;
     let gsl_m = hardMat; return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
   }
@@ -1054,13 +1147,13 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, noiseTex: te
       gsl_pw = gsl_detailOuterPw_3;
     }
     var gsl_detailValue_2 = 0.0;
-    if (max(gsl_pw, gsl_detailPw) < 1.25) { let gsl_detailOuterPw_2 = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
-      gsl_detailValue_2 = (noise_gradientLattice(p / 2.5, noiseTex) + 0.5 * noise_gradientLattice(p / 1.0869565, noiseTex)) * 0.004 * clamp(0.7, 0.0, 1.0) * (1.0 - texture_mask(gsl_pw, 0.9375, 0.3125, noiseTex)) + gsl_detailValue_3;
+    if (max(gsl_pw, gsl_detailPw) < 0.75) { let gsl_detailOuterPw_2 = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
+      gsl_detailValue_2 = (noise_gradientLattice(p / 1.5, noiseTex) + 0.5 * noise_gradientLattice(p / 0.65, noiseTex) * (1.0 - texture_mask(gsl_pw, 0.24375, 0.08125, noiseTex))) * 0.0065 * clamp(0.7, 0.0, 1.0) * (1.0 - texture_mask(gsl_pw, 0.5625, 0.1875, noiseTex)) + gsl_detailValue_3;
       gsl_pw = gsl_detailOuterPw_2;
     }
-    var gsl_simpleValue_4 = material_make(sqrt(sqrt(0.044 * sqrt(100.0 / clamp(85.0, 1.0, 99.0) - 1.0) * 0.044 * sqrt(100.0 / clamp(85.0, 1.0, 99.0) - 1.0) + 0.000032 * clamp(0.7, 0.0, 1.0) * clamp(0.7, 0.0, 1.0))), 0.0, 1.5, noiseTex);
+    var gsl_simpleValue_4 = material_make(sqrt(sqrt(clamp(0.647 - 0.1243 * log(clamp(85.0, 0.5, 90.0)) + 0.008 * log(1.0 - clamp(85.0, 0.5, 90.0) / 91.5), 0.045, 1.0) * clamp(0.647 - 0.1243 * log(clamp(85.0, 0.5, 90.0)) + 0.008 * log(1.0 - clamp(85.0, 0.5, 90.0) / 91.5), 0.045, 1.0) * clamp(0.647 - 0.1243 * log(clamp(85.0, 0.5, 90.0)) + 0.008 * log(1.0 - clamp(85.0, 0.5, 90.0) / 91.5), 0.045, 1.0) * clamp(0.647 - 0.1243 * log(clamp(85.0, 0.5, 90.0)) + 0.008 * log(1.0 - clamp(85.0, 0.5, 90.0) / 91.5), 0.045, 1.0) + 0.00001124 * clamp(0.7, 0.0, 1.0) * clamp(0.7, 0.0, 1.0))), 0.0, 1.5, noiseTex);
     if (gsl_simpleDetail > 0.0) {
-      let gsl_simpleFull = material_withDisplacement(material_make(sqrt(texture_reliefRoughness(texture_reliefRoughness(0.044 * sqrt(100.0 / clamp(85.0, 1.0, 99.0) - 1.0), 0.004 * clamp(0.7, 0.0, 1.0), 0.3, noiseTex), 0.004 * clamp(0.7, 0.0, 1.0), 2.5, noiseTex)), 0.0, 1.5, noiseTex), gsl_detailValue_2, noiseTex);
+      let gsl_simpleFull = material_withDisplacement(material_make(sqrt(texture_reliefRoughness(texture_reliefRoughness(clamp(0.647 - 0.1243 * log(clamp(85.0, 0.5, 90.0)) + 0.008 * log(1.0 - clamp(85.0, 0.5, 90.0) / 91.5), 0.045, 1.0) * clamp(0.647 - 0.1243 * log(clamp(85.0, 0.5, 90.0)) + 0.008 * log(1.0 - clamp(85.0, 0.5, 90.0) / 91.5), 0.045, 1.0), 0.001 * clamp(0.7, 0.0, 1.0), 0.3, noiseTex), 0.0032 * clamp(0.7, 0.0, 1.0), 1.5, noiseTex)), 0.0, 1.5, noiseTex), gsl_detailValue_2, noiseTex);
       gsl_simpleValue_4 = mat4x4<f32>(mix(gsl_simpleValue_4[0], gsl_simpleFull[0], gsl_simpleDetail), mix(gsl_simpleValue_4[1], gsl_simpleFull[1], gsl_simpleDetail), mix(gsl_simpleValue_4[2], gsl_simpleFull[2], gsl_simpleDetail), mix(gsl_simpleValue_4[3], gsl_simpleFull[3], gsl_simpleDetail));
     }
     let glossMat = gsl_simpleValue_4;
@@ -1116,15 +1209,15 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, noiseTex: te
     let slabY = max(p.y - -12.0, -38.0 - p.y);
     let slabZ = max(p.z - 12.0, -8.0 - p.z);
     let wear = max(coating_edgeWear(slabX, slabY, 3.0, noiseTex), max(coating_edgeWear(slabX, slabZ, 3.0, noiseTex), coating_edgeWear(slabY, slabZ, 3.0, noiseTex)));
-    let gsl_result_7 = coating_chippedPaint(p, mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), vec3<f32>(0.77, 0.78, 0.78), vec3<f32>(0.14, 0.32, 0.18), vec3<f32>(0.55, 0.22, 0.14), 60.0, wear, 1.5, noiseTex);
-    let paintMat = gsl_result_7.v_1;
+    let gsl_result_10 = coating_chippedPaint(p, mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), vec3<f32>(0.77, 0.78, 0.78), vec3<f32>(0.14, 0.32, 0.18), vec3<f32>(0.55, 0.22, 0.14), 60.0, wear, 1.5, noiseTex);
+    let paintMat = gsl_result_10.v_1;
     let gsl_m = paintMat; return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
   }
   if (gsl_materialIdx == 13u) {
     var gsl_simpleValue_8 = material_blend(mat4x4<f32>(vec4<f32>(0.325, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.55)), mat4x4<f32>(vec4<f32>(0.65, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), clamp(0.0, 0.0, 1.0), noiseTex);
     if (gsl_simpleDetail > 0.0) {
-      let gsl_result_9 = noise_cellularCell(p, 1.0, noiseTex);
-      let spangleCell = gsl_result_9.v_3;
+      let gsl_result_11 = noise_cellularCell(p, 1.0, noiseTex);
+      let spangleCell = gsl_result_11.v_3;
       let gsl_simpleFull_5 = material_blend(material_withLay(material_make(texture_fadeTo(0.25 + 0.15 * fract(textureLoad(noiseTex, vec3<i32>(floor(spangleCell + vec3<f32>(17.0, 53.0, 5.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((spangleCell + vec3<f32>(17.0, 53.0, 5.0)) / 64.0)) & vec3<i32>(63), 0).rgb).z, 0.325, 1.0, noiseTex), 1.0, 1.5, noiseTex), normalize(fract(textureLoad(noiseTex, vec3<i32>(floor(spangleCell + vec3<f32>(17.0, 53.0, 5.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((spangleCell + vec3<f32>(17.0, 53.0, 5.0)) / 64.0)) & vec3<i32>(63), 0).rgb) - vec3<f32>(0.5, 0.5, 0.5) + vec3<f32>(0.0001, 0.0, 0.0)) * (1.0 - texture_mask(gsl_pw, 0.375, 0.125, noiseTex)), texture_fadeTo(0.3 + 0.5 * fract(textureLoad(noiseTex, vec3<i32>(floor(spangleCell + vec3<f32>(17.0, 53.0, 5.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((spangleCell + vec3<f32>(17.0, 53.0, 5.0)) / 64.0)) & vec3<i32>(63), 0).rgb).y, 0.55, 1.0, noiseTex), noiseTex), mat4x4<f32>(vec4<f32>(0.65, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), clamp(0.0, 0.0, 1.0), noiseTex);
       gsl_simpleValue_8 = mat4x4<f32>(mix(gsl_simpleValue_8[0], gsl_simpleFull_5[0], gsl_simpleDetail), mix(gsl_simpleValue_8[1], gsl_simpleFull_5[1], gsl_simpleDetail), mix(gsl_simpleValue_8[2], gsl_simpleFull_5[2], gsl_simpleDetail), mix(gsl_simpleValue_8[3], gsl_simpleFull_5[3], gsl_simpleDetail));
     }
@@ -1134,8 +1227,8 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, noiseTex: te
   if (gsl_materialIdx == 14u) {
     var gsl_simpleValue_9 = material_blend(mat4x4<f32>(vec4<f32>(0.325, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.55)), mat4x4<f32>(vec4<f32>(0.65, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), clamp(0.7, 0.0, 1.0), noiseTex);
     if (gsl_simpleDetail > 0.0) {
-      let gsl_result_10 = noise_cellularCell(p, 1.0, noiseTex);
-      let spangleCell_2 = gsl_result_10.v_3;
+      let gsl_result_12 = noise_cellularCell(p, 1.0, noiseTex);
+      let spangleCell_2 = gsl_result_12.v_3;
       let gsl_simpleFull_6 = material_blend(material_withLay(material_make(texture_fadeTo(0.25 + 0.15 * fract(textureLoad(noiseTex, vec3<i32>(floor(spangleCell_2 + vec3<f32>(17.0, 53.0, 5.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((spangleCell_2 + vec3<f32>(17.0, 53.0, 5.0)) / 64.0)) & vec3<i32>(63), 0).rgb).z, 0.325, 1.0, noiseTex), 1.0, 1.5, noiseTex), normalize(fract(textureLoad(noiseTex, vec3<i32>(floor(spangleCell_2 + vec3<f32>(17.0, 53.0, 5.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((spangleCell_2 + vec3<f32>(17.0, 53.0, 5.0)) / 64.0)) & vec3<i32>(63), 0).rgb) - vec3<f32>(0.5, 0.5, 0.5) + vec3<f32>(0.0001, 0.0, 0.0)) * (1.0 - texture_mask(gsl_pw, 0.375, 0.125, noiseTex)), texture_fadeTo(0.3 + 0.5 * fract(textureLoad(noiseTex, vec3<i32>(floor(spangleCell_2 + vec3<f32>(17.0, 53.0, 5.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((spangleCell_2 + vec3<f32>(17.0, 53.0, 5.0)) / 64.0)) & vec3<i32>(63), 0).rgb).y, 0.55, 1.0, noiseTex), noiseTex), mat4x4<f32>(vec4<f32>(0.65, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), clamp(0.7, 0.0, 1.0), noiseTex);
       gsl_simpleValue_9 = mat4x4<f32>(mix(gsl_simpleValue_9[0], gsl_simpleFull_6[0], gsl_simpleDetail), mix(gsl_simpleValue_9[1], gsl_simpleFull_6[1], gsl_simpleDetail), mix(gsl_simpleValue_9[2], gsl_simpleFull_6[2], gsl_simpleDetail), mix(gsl_simpleValue_9[3], gsl_simpleFull_6[3], gsl_simpleDetail));
     }
@@ -1148,20 +1241,20 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, noiseTex: te
   }
   if (gsl_materialIdx == 16u) {
     let fineCutMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.4, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), p - vec3<f32>(-20.0, 0.0, 3.0)), fract(length(p - vec3<f32>(-20.0, 0.0, 3.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(p - vec3<f32>(-20.0, 0.0, 3.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))) / 0.15), 0.15, 0.8, noiseTex);
-    let gsl_result_11 = coating_clearCoat(fineCutMat, vec3<f32>(0.96, 0.96, 0.97), vec3<f32>(1.0, 1.0, 1.0), 45.0, 0.08, 0.15, noiseTex);
-    let lacqMat = gsl_result_11.v_1;
+    let gsl_result_13 = coating_clearCoat(fineCutMat, vec3<f32>(0.9621, 0.9654, 0.9658), vec3<f32>(1.0, 1.0, 1.0), 45.0, 0.08, 0.15, noiseTex);
+    let lacqMat = gsl_result_13.v_1;
     let gsl_m = lacqMat; return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
   }
   if (gsl_materialIdx == 17u) {
     let coarseCutMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.4, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), p - vec3<f32>(5.0, 0.0, 3.0)), fract(length(p - vec3<f32>(5.0, 0.0, 3.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(p - vec3<f32>(5.0, 0.0, 3.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))) / 1.2), 1.2, 0.8, noiseTex);
-    let gsl_result_12 = coating_clearCoat(coarseCutMat, vec3<f32>(0.96, 0.96, 0.97), vec3<f32>(1.0, 1.0, 1.0), 45.0, 0.08, 1.2, noiseTex);
-    let coarseLacqMat = gsl_result_12.v_1;
+    let gsl_result_14 = coating_clearCoat(coarseCutMat, vec3<f32>(0.9621, 0.9654, 0.9658), vec3<f32>(1.0, 1.0, 1.0), 45.0, 0.08, 1.2, noiseTex);
+    let coarseLacqMat = gsl_result_14.v_1;
     let gsl_m = coarseLacqMat; return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
   }
   if (gsl_materialIdx == 18u) {
     let coarsePowderBase = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), p - vec3<f32>(30.0, 0.0, 3.0)), fract(length(p - vec3<f32>(30.0, 0.0, 3.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(p - vec3<f32>(30.0, 0.0, 3.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))) / 1.2), 1.2, 0.8, noiseTex);
-    let gsl_result_14 = coating_powderCoat(p, coarsePowderBase, vec3<f32>(0.16, 0.3, 0.42), 85.0, 0.5, 0.08, 1.2, noiseTex);
-    let coarsePowderMat = gsl_result_14.v_1;
+    let gsl_result_16 = coating_powderCoat(p, coarsePowderBase, vec3<f32>(0.16, 0.3, 0.42), 85.0, 0.5, 0.08, 1.2, noiseTex);
+    let coarsePowderMat = gsl_result_16.v_1;
     let gsl_m = coarsePowderMat; return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
   }
   return gsl_material(vec4<f32>(0.5, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), 0.0);
@@ -1255,16 +1348,16 @@ const gsl_foldK = array<vec3<f32>, 8>(vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 0
 fn gsl_heights(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f32, 18> {
   let gsl_tmp_1 = p - vec3<f32>(0.0, 0.0, 0.0);
   let turnedMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.4, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(vec3<f32>(0.0, 1.0, 0.0), gsl_tmp_1), fract(dot(gsl_tmp_1, vec3<f32>(0.0, 1.0, 0.0)) / 0.15), 0.15, 0.8, noiseTex);
-  let gsl_result = coating_anodized(turnedMat, vec3<f32>(0.96, 0.96, 0.97), vec3<f32>(1.0, 1.0, 1.0), noiseTex);
+  let gsl_result = coating_anodized(turnedMat, vec3<f32>(0.9621, 0.9654, 0.9658), vec3<f32>(1.0, 1.0, 1.0), noiseTex);
   let clearMat = gsl_result.v_1;
-  let gsl_result_2 = coating_anodized(turnedMat, vec3<f32>(0.96, 0.96, 0.97), vec3<f32>(0.15, 0.35, 0.85), noiseTex);
+  let gsl_result_2 = coating_anodized(turnedMat, vec3<f32>(0.9621, 0.9654, 0.9658), vec3<f32>(0.15, 0.35, 0.85), noiseTex);
   let blueMat = gsl_result_2.v_1;
-  let gsl_result_3 = coating_anodized(turnedMat, vec3<f32>(0.96, 0.96, 0.97), vec3<f32>(0.85, 0.12, 0.12), noiseTex);
+  let gsl_result_3 = coating_anodized(turnedMat, vec3<f32>(0.9621, 0.9654, 0.9658), vec3<f32>(0.85, 0.12, 0.12), noiseTex);
   let redMat = gsl_result_3.v_1;
-  let gsl_result_4 = coating_anodized(turnedMat, vec3<f32>(0.96, 0.96, 0.97), vec3<f32>(0.06, 0.06, 0.07), noiseTex);
+  let gsl_result_4 = coating_anodized(turnedMat, vec3<f32>(0.9621, 0.9654, 0.9658), vec3<f32>(0.06, 0.06, 0.07), noiseTex);
   let blackMat = gsl_result_4.v_1;
   let millMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.4, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0))))) * sqrt(625.0 - clamp(dot(p - vec3<f32>(20.0, 30.0, 6.0), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))))), -24.975, 24.975) * clamp(dot(p - vec3<f32>(20.0, 30.0, 6.0), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))))), -24.975, 24.975)) - normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))) * clamp(dot(p - vec3<f32>(20.0, 30.0, 6.0), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))))), -24.975, 24.975), fract((dot(p - vec3<f32>(20.0, 30.0, 6.0), normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0))))) - sqrt(625.0 - clamp(dot(p - vec3<f32>(20.0, 30.0, 6.0), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))))), -24.975, 24.975) * clamp(dot(p - vec3<f32>(20.0, 30.0, 6.0), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))))), -24.975, 24.975))) / 0.3), 0.3, 0.8, noiseTex);
-  let gsl_result_5 = coating_hardAnodized(millMat, vec3<f32>(0.96, 0.96, 0.97), 50.0, noiseTex);
+  let gsl_result_5 = coating_hardAnodized(millMat, vec3<f32>(0.9621, 0.9654, 0.9658), 50.0, noiseTex);
   let hardMat = gsl_result_5.v_1;
   let steelMillMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0))))) * sqrt(625.0 - clamp(dot(p - vec3<f32>(45.0, 30.0, 6.0), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))))), -24.975, 24.975) * clamp(dot(p - vec3<f32>(45.0, 30.0, 6.0), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))))), -24.975, 24.975)) - normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))) * clamp(dot(p - vec3<f32>(45.0, 30.0, 6.0), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))))), -24.975, 24.975), fract((dot(p - vec3<f32>(45.0, 30.0, 6.0), normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0))))) - sqrt(625.0 - clamp(dot(p - vec3<f32>(45.0, 30.0, 6.0), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))))), -24.975, 24.975) * clamp(dot(p - vec3<f32>(45.0, 30.0, 6.0), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), normalize(vec3<f32>(1.0, 0.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(vec3<f32>(1.0, 0.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))))), -24.975, 24.975))) / 0.3), 0.3, 0.8, noiseTex);
   let gsl_result_6 = coating_blackOxide(steelMillMat, 1.0, noiseTex);
@@ -1275,13 +1368,13 @@ fn gsl_heights(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f32,
     gsl_detailValue_8 = noise_gradientLattice(p / 0.3, noiseTex) * 0.0006 * clamp(0.7, 0.0, 1.0) * (1.0 - texture_mask(gsl_pw, 0.1125, 0.0375, noiseTex));
     gsl_pw = gsl_detailOuterPw_8;
   }
-  if (max(gsl_pw, gsl_detailPw) < 1.25) { let gsl_detailOuterPw_7 = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
-    gsl_detailValue_7 = (noise_gradientLattice(p / 2.5, noiseTex) + 0.5 * noise_gradientLattice(p / 1.0869565, noiseTex)) * 0.004 * clamp(0.7, 0.0, 1.0) * (1.0 - texture_mask(gsl_pw, 0.9375, 0.3125, noiseTex)) + gsl_detailValue_8;
+  if (max(gsl_pw, gsl_detailPw) < 0.75) { let gsl_detailOuterPw_7 = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
+    gsl_detailValue_7 = (noise_gradientLattice(p / 1.5, noiseTex) + 0.5 * noise_gradientLattice(p / 0.65, noiseTex) * (1.0 - texture_mask(gsl_pw, 0.24375, 0.08125, noiseTex))) * 0.0065 * clamp(0.7, 0.0, 1.0) * (1.0 - texture_mask(gsl_pw, 0.5625, 0.1875, noiseTex)) + gsl_detailValue_8;
     gsl_pw = gsl_detailOuterPw_7;
   }
-  var gsl_simpleValue_10 = material_make(sqrt(sqrt(0.044 * sqrt(100.0 / clamp(85.0, 1.0, 99.0) - 1.0) * 0.044 * sqrt(100.0 / clamp(85.0, 1.0, 99.0) - 1.0) + 0.000032 * clamp(0.7, 0.0, 1.0) * clamp(0.7, 0.0, 1.0))), 0.0, 1.5, noiseTex);
+  var gsl_simpleValue_10 = material_make(sqrt(sqrt(clamp(0.647 - 0.1243 * log(clamp(85.0, 0.5, 90.0)) + 0.008 * log(1.0 - clamp(85.0, 0.5, 90.0) / 91.5), 0.045, 1.0) * clamp(0.647 - 0.1243 * log(clamp(85.0, 0.5, 90.0)) + 0.008 * log(1.0 - clamp(85.0, 0.5, 90.0) / 91.5), 0.045, 1.0) * clamp(0.647 - 0.1243 * log(clamp(85.0, 0.5, 90.0)) + 0.008 * log(1.0 - clamp(85.0, 0.5, 90.0) / 91.5), 0.045, 1.0) * clamp(0.647 - 0.1243 * log(clamp(85.0, 0.5, 90.0)) + 0.008 * log(1.0 - clamp(85.0, 0.5, 90.0) / 91.5), 0.045, 1.0) + 0.00001124 * clamp(0.7, 0.0, 1.0) * clamp(0.7, 0.0, 1.0))), 0.0, 1.5, noiseTex);
   if (gsl_simpleDetail > 0.0) {
-    let gsl_simpleFull_7 = material_withDisplacement(material_make(sqrt(texture_reliefRoughness(texture_reliefRoughness(0.044 * sqrt(100.0 / clamp(85.0, 1.0, 99.0) - 1.0), 0.004 * clamp(0.7, 0.0, 1.0), 0.3, noiseTex), 0.004 * clamp(0.7, 0.0, 1.0), 2.5, noiseTex)), 0.0, 1.5, noiseTex), gsl_detailValue_7, noiseTex);
+    let gsl_simpleFull_7 = material_withDisplacement(material_make(sqrt(texture_reliefRoughness(texture_reliefRoughness(clamp(0.647 - 0.1243 * log(clamp(85.0, 0.5, 90.0)) + 0.008 * log(1.0 - clamp(85.0, 0.5, 90.0) / 91.5), 0.045, 1.0) * clamp(0.647 - 0.1243 * log(clamp(85.0, 0.5, 90.0)) + 0.008 * log(1.0 - clamp(85.0, 0.5, 90.0) / 91.5), 0.045, 1.0), 0.001 * clamp(0.7, 0.0, 1.0), 0.3, noiseTex), 0.0032 * clamp(0.7, 0.0, 1.0), 1.5, noiseTex)), 0.0, 1.5, noiseTex), gsl_detailValue_7, noiseTex);
     gsl_simpleValue_10 = mat4x4<f32>(mix(gsl_simpleValue_10[0], gsl_simpleFull_7[0], gsl_simpleDetail), mix(gsl_simpleValue_10[1], gsl_simpleFull_7[1], gsl_simpleDetail), mix(gsl_simpleValue_10[2], gsl_simpleFull_7[2], gsl_simpleDetail), mix(gsl_simpleValue_10[3], gsl_simpleFull_7[3], gsl_simpleDetail));
   }
   let glossMat = gsl_simpleValue_10;
@@ -1325,18 +1418,18 @@ fn gsl_heights(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f32,
   let slabY = max(p.y - -12.0, -38.0 - p.y);
   let slabZ = max(p.z - 12.0, -8.0 - p.z);
   let wear = max(coating_edgeWear(slabX, slabY, 3.0, noiseTex), max(coating_edgeWear(slabX, slabZ, 3.0, noiseTex), coating_edgeWear(slabY, slabZ, 3.0, noiseTex)));
-  let gsl_result_7 = coating_chippedPaint(p, mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), vec3<f32>(0.77, 0.78, 0.78), vec3<f32>(0.14, 0.32, 0.18), vec3<f32>(0.55, 0.22, 0.14), 60.0, wear, 1.5, noiseTex);
-  let paintMat = gsl_result_7.v_1;
-  let gsl_result_9 = noise_cellularCell(p, 1.0, noiseTex);
-  let spangleCell = gsl_result_9.v_3;
+  let gsl_result_10 = coating_chippedPaint(p, mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), vec3<f32>(0.77, 0.78, 0.78), vec3<f32>(0.14, 0.32, 0.18), vec3<f32>(0.55, 0.22, 0.14), 60.0, wear, 1.5, noiseTex);
+  let paintMat = gsl_result_10.v_1;
+  let gsl_result_11 = noise_cellularCell(p, 1.0, noiseTex);
+  let spangleCell = gsl_result_11.v_3;
   var gsl_simpleValue_14 = material_blend(mat4x4<f32>(vec4<f32>(0.325, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.55)), mat4x4<f32>(vec4<f32>(0.65, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), clamp(0.0, 0.0, 1.0), noiseTex);
   if (gsl_simpleDetail > 0.0) {
     let gsl_simpleFull_11 = material_blend(material_withLay(material_make(texture_fadeTo(0.25 + 0.15 * fract(textureLoad(noiseTex, vec3<i32>(floor(spangleCell + vec3<f32>(17.0, 53.0, 5.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((spangleCell + vec3<f32>(17.0, 53.0, 5.0)) / 64.0)) & vec3<i32>(63), 0).rgb).z, 0.325, 1.0, noiseTex), 1.0, 1.5, noiseTex), normalize(fract(textureLoad(noiseTex, vec3<i32>(floor(spangleCell + vec3<f32>(17.0, 53.0, 5.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((spangleCell + vec3<f32>(17.0, 53.0, 5.0)) / 64.0)) & vec3<i32>(63), 0).rgb) - vec3<f32>(0.5, 0.5, 0.5) + vec3<f32>(0.0001, 0.0, 0.0)) * (1.0 - texture_mask(gsl_pw, 0.375, 0.125, noiseTex)), texture_fadeTo(0.3 + 0.5 * fract(textureLoad(noiseTex, vec3<i32>(floor(spangleCell + vec3<f32>(17.0, 53.0, 5.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((spangleCell + vec3<f32>(17.0, 53.0, 5.0)) / 64.0)) & vec3<i32>(63), 0).rgb).y, 0.55, 1.0, noiseTex), noiseTex), mat4x4<f32>(vec4<f32>(0.65, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), clamp(0.0, 0.0, 1.0), noiseTex);
     gsl_simpleValue_14 = mat4x4<f32>(mix(gsl_simpleValue_14[0], gsl_simpleFull_11[0], gsl_simpleDetail), mix(gsl_simpleValue_14[1], gsl_simpleFull_11[1], gsl_simpleDetail), mix(gsl_simpleValue_14[2], gsl_simpleFull_11[2], gsl_simpleDetail), mix(gsl_simpleValue_14[3], gsl_simpleFull_11[3], gsl_simpleDetail));
   }
   let freshMat = gsl_simpleValue_14;
-  let gsl_result_10 = noise_cellularCell(p, 1.0, noiseTex);
-  let spangleCell_2 = gsl_result_10.v_3;
+  let gsl_result_12 = noise_cellularCell(p, 1.0, noiseTex);
+  let spangleCell_2 = gsl_result_12.v_3;
   var gsl_simpleValue_15 = material_blend(mat4x4<f32>(vec4<f32>(0.325, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.55)), mat4x4<f32>(vec4<f32>(0.65, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), clamp(0.7, 0.0, 1.0), noiseTex);
   if (gsl_simpleDetail > 0.0) {
     let gsl_simpleFull_12 = material_blend(material_withLay(material_make(texture_fadeTo(0.25 + 0.15 * fract(textureLoad(noiseTex, vec3<i32>(floor(spangleCell_2 + vec3<f32>(17.0, 53.0, 5.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((spangleCell_2 + vec3<f32>(17.0, 53.0, 5.0)) / 64.0)) & vec3<i32>(63), 0).rgb).z, 0.325, 1.0, noiseTex), 1.0, 1.5, noiseTex), normalize(fract(textureLoad(noiseTex, vec3<i32>(floor(spangleCell_2 + vec3<f32>(17.0, 53.0, 5.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((spangleCell_2 + vec3<f32>(17.0, 53.0, 5.0)) / 64.0)) & vec3<i32>(63), 0).rgb) - vec3<f32>(0.5, 0.5, 0.5) + vec3<f32>(0.0001, 0.0, 0.0)) * (1.0 - texture_mask(gsl_pw, 0.375, 0.125, noiseTex)), texture_fadeTo(0.3 + 0.5 * fract(textureLoad(noiseTex, vec3<i32>(floor(spangleCell_2 + vec3<f32>(17.0, 53.0, 5.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((spangleCell_2 + vec3<f32>(17.0, 53.0, 5.0)) / 64.0)) & vec3<i32>(63), 0).rgb).y, 0.55, 1.0, noiseTex), noiseTex), mat4x4<f32>(vec4<f32>(0.65, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), clamp(0.7, 0.0, 1.0), noiseTex);
@@ -1345,14 +1438,14 @@ fn gsl_heights(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f32,
   let agedMat = gsl_simpleValue_15;
   let fineMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.4, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), p - vec3<f32>(-45.0, 0.0, 3.0)), fract(length(p - vec3<f32>(-45.0, 0.0, 3.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(p - vec3<f32>(-45.0, 0.0, 3.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))) / 0.15), 0.15, 0.8, noiseTex);
   let fineCutMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.4, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), p - vec3<f32>(-20.0, 0.0, 3.0)), fract(length(p - vec3<f32>(-20.0, 0.0, 3.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(p - vec3<f32>(-20.0, 0.0, 3.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))) / 0.15), 0.15, 0.8, noiseTex);
-  let gsl_result_11 = coating_clearCoat(fineCutMat, vec3<f32>(0.96, 0.96, 0.97), vec3<f32>(1.0, 1.0, 1.0), 45.0, 0.08, 0.15, noiseTex);
-  let lacqMat = gsl_result_11.v_1;
+  let gsl_result_13 = coating_clearCoat(fineCutMat, vec3<f32>(0.9621, 0.9654, 0.9658), vec3<f32>(1.0, 1.0, 1.0), 45.0, 0.08, 0.15, noiseTex);
+  let lacqMat = gsl_result_13.v_1;
   let coarseCutMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.4, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), p - vec3<f32>(5.0, 0.0, 3.0)), fract(length(p - vec3<f32>(5.0, 0.0, 3.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(p - vec3<f32>(5.0, 0.0, 3.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))) / 1.2), 1.2, 0.8, noiseTex);
-  let gsl_result_12 = coating_clearCoat(coarseCutMat, vec3<f32>(0.96, 0.96, 0.97), vec3<f32>(1.0, 1.0, 1.0), 45.0, 0.08, 1.2, noiseTex);
-  let coarseLacqMat = gsl_result_12.v_1;
+  let gsl_result_14 = coating_clearCoat(coarseCutMat, vec3<f32>(0.9621, 0.9654, 0.9658), vec3<f32>(1.0, 1.0, 1.0), 45.0, 0.08, 1.2, noiseTex);
+  let coarseLacqMat = gsl_result_14.v_1;
   let coarsePowderBase = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), p - vec3<f32>(30.0, 0.0, 3.0)), fract(length(p - vec3<f32>(30.0, 0.0, 3.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(p - vec3<f32>(30.0, 0.0, 3.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))) / 1.2), 1.2, 0.8, noiseTex);
-  let gsl_result_14 = coating_powderCoat(p, coarsePowderBase, vec3<f32>(0.16, 0.3, 0.42), 85.0, 0.5, 0.08, 1.2, noiseTex);
-  let coarsePowderMat = gsl_result_14.v_1;
+  let gsl_result_16 = coating_powderCoat(p, coarsePowderBase, vec3<f32>(0.16, 0.3, 0.42), 85.0, 0.5, 0.08, 1.2, noiseTex);
+  let coarsePowderMat = gsl_result_16.v_1;
   return array<f32, 18>(clearMat[2].z, blueMat[2].z, redMat[2].z, blackMat[2].z, hardMat[2].z, oxideMat[2].z, 0.0, glossMat[2].z, wrinkleMat[2].z, sandMat[2].z, hammerMat[2].z, paintMat[2].z, freshMat[2].z, agedMat[2].z, fineMat[2].z, lacqMat[2].z, coarseLacqMat[2].z, coarsePowderMat[2].z);
 }
 
@@ -1390,4 +1483,8 @@ struct gsl_struct_2 {
   v_1 : f32,
   v_2 : f32,
   v_3 : vec3<f32>,
+}
+struct gsl_struct_3 {
+  v_1 : f32,
+  v_2 : f32,
 }

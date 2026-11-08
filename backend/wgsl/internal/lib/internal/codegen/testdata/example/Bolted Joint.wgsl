@@ -321,7 +321,8 @@ fn joint_boltedLength(nominalDia: f32, grip: f32) -> f32 {
 }
 
 fn joint_bolted__color__0(p: vec3<f32>, clamped: f32, threaded: f32, seatPoint: vec3<f32>, shankDir: vec3<f32>, nominalDia: f32, grip: f32, fit: f32) -> vec3<f32> {
-  let steelColor = vec3<f32>(0.77, 0.78, 0.78);
+  let c = vec3<f32>(0.77, 0.78, 0.78);
+  let steelColor = c;
   let at = fastener_seatedAt(p, seatPoint, shankDir);
   let pitchVal = thread_metricPitch(nominalDia);
   let len = joint_boltedLength(nominalDia, grip);
@@ -337,7 +338,8 @@ fn joint_bolted__material__0(p: vec3<f32>, clamped: f32, threaded: f32, seatPoin
 }
 
 fn joint_bolted__color__2(p: vec3<f32>, clamped: f32, threaded: f32, seatPoint: vec3<f32>, shankDir: vec3<f32>, nominalDia: f32, grip: f32, fit: f32) -> vec3<f32> {
-  let steelColor = vec3<f32>(0.77, 0.78, 0.78);
+  let c_3 = vec3<f32>(0.77, 0.78, 0.78);
+  let steelColor = c_3;
   let at = fastener_seatedAt(p, seatPoint, shankDir);
   let pitchVal = thread_metricPitch(nominalDia);
   let len = joint_boltedLength(nominalDia, grip);
@@ -406,7 +408,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32) -> vec4<f32> {
     let gslCarry1 = joint_bolted__color__0(p, gsl_remap(at1, mechanical_fastener_fitMedium), gsl_remap_2(at1, mechanical_fastener_fitMedium), vec3<f32>(-22.0, 0.0, 0.0), vec3<f32>(0.0, 0.0, -1.0), 6.0, 7.5, 2.0);
     return vec4<f32>(gslCarry1, 1.0);
   }
-  if (gsl_colorIdx == 2u) { return vec4<f32>(vec3<f32>(0.96, 0.96, 0.97), 1.0); }
+  if (gsl_colorIdx == 2u) { return vec4<f32>(vec3<f32>(0.9621, 0.9654, 0.9658), 1.0); }
   if (gsl_colorIdx == 3u) {
     let vector_zero = vec3<f32>(0.0, 0.0, 0.0);
     let vector_dirZ = vec3<f32>(0.0, 0.0, 1.0);
@@ -427,7 +429,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32) -> vec4<f32> {
     let gslCarry5 = joint_bolted__color__0(p, gsl_remap_3(map_axisAt(p, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(0.5, 0.0, 0.8660254)), mechanical_fastener_fitMedium, vector_zero, vector_dirZ), block, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(-0.5, -0.0, -0.8660254), 6.0, 7.5, 2.0);
     return vec4<f32>(gslCarry5, 1.0);
   }
-  if (gsl_colorIdx == 5u) { return vec4<f32>(vec3<f32>(0.96, 0.96, 0.97), 1.0); }
+  if (gsl_colorIdx == 5u) { return vec4<f32>(vec3<f32>(0.9621, 0.9654, 0.9658), 1.0); }
   if (gsl_colorIdx == 6u) {
     let vector_zero = vec3<f32>(0.0, 0.0, 0.0);
     let vector_dirZ = vec3<f32>(0.0, 0.0, 1.0);

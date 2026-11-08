@@ -4,7 +4,7 @@
 // domainWarp + fbm3 + cellularEdges (marble's ~9-10 combined taps) from
 // everything else in the "No Displacement" scene, which crashed the GPU.
 
-marbleColor = stone.marble(25, 10, 0.4, 10, color.white, color.gray);
+marbleColor = stone.marble(25, 0.4, 0.016, 0.4, color.white, color.gray);
 ball = sphere(25);
 ball.material = stone.stoneFinish(0.15);
 ball.color = marbleColor;

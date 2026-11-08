@@ -20,7 +20,7 @@ func TestImportedGradedSpinodoidWithPrintedMaterialKeepsFiniteDomain(t *testing.
 	const src = `// Scene Size: 600 mm
 import "lattice";
 import "lattice/spinodoid";
-import "material/printed";
+import "material/process/printed";
 
 meshId = importMesh "long-sole.stl";
 midsole = vdbSdf(meshId);

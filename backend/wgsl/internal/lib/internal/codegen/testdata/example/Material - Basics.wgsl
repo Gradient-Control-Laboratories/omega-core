@@ -76,7 +76,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32) -> vec4<f32> {
     let color_teal = vec3<f32>(0.0, 0.5, 0.5);
     return vec4<f32>(color_teal, 1.0);
   }
-  if (gsl_colorIdx == 3u) { return vec4<f32>(vec3<f32>(0.95, 0.9, 0.69), 1.0); }
+  if (gsl_colorIdx == 3u) { return vec4<f32>(vec3<f32>(0.9593, 0.8952, 0.6822), 1.0); }
   if (gsl_colorIdx == 4u) { return vec4<f32>(vec3<f32>(0.77, 0.78, 0.78), 1.0); }
   if (gsl_colorIdx == 5u) {
     let color_orange = vec3<f32>(1.0, 0.5, 0.0);

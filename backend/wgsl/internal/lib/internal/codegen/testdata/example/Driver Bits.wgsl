@@ -898,16 +898,16 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32) -> vec4<f32> {
   if (gsl_colorIdx == 16u) { return vec4<f32>(vec3<f32>(0.46, 0.47, 0.5), 1.0); }
   if (gsl_colorIdx == 17u) { return vec4<f32>(vec3<f32>(0.46, 0.47, 0.5), 1.0); }
   if (gsl_colorIdx == 18u) { return vec4<f32>(vec3<f32>(0.46, 0.47, 0.5), 1.0); }
-  if (gsl_colorIdx == 19u) { return vec4<f32>(thread_reliefColor(vec3<f32>(0.8, 0.82, 0.84), thread_maleRelief(vec3<f32>(p.x + 30.0, p.y - 5.0, p.z - 10.0), 4.0, 0.7, 0.0, -10.0), 0.7), 1.0); }
-  if (gsl_colorIdx == 20u) { return vec4<f32>(thread_reliefColor(vec3<f32>(0.8, 0.82, 0.84), thread_maleRelief(vec3<f32>(p.x, p.y - 5.0, p.z - 10.0), 4.0, 0.7, 0.0, -10.0), 0.7), 1.0); }
-  if (gsl_colorIdx == 21u) { return vec4<f32>(thread_reliefColor(vec3<f32>(0.8, 0.82, 0.84), thread_maleRelief(vec3<f32>(p.x - 30.0, p.y - 5.0, p.z - 10.0), 5.0, 0.8, 0.0, -10.0), 0.8), 1.0); }
+  if (gsl_colorIdx == 19u) { return vec4<f32>(thread_reliefColor(vec3<f32>(0.9103, 0.928, 0.9381), thread_maleRelief(vec3<f32>(p.x + 30.0, p.y - 5.0, p.z - 10.0), 4.0, 0.7, 0.0, -10.0), 0.7), 1.0); }
+  if (gsl_colorIdx == 20u) { return vec4<f32>(thread_reliefColor(vec3<f32>(0.9103, 0.928, 0.9381), thread_maleRelief(vec3<f32>(p.x, p.y - 5.0, p.z - 10.0), 4.0, 0.7, 0.0, -10.0), 0.7), 1.0); }
+  if (gsl_colorIdx == 21u) { return vec4<f32>(thread_reliefColor(vec3<f32>(0.9103, 0.928, 0.9381), thread_maleRelief(vec3<f32>(p.x - 30.0, p.y - 5.0, p.z - 10.0), 5.0, 0.8, 0.0, -10.0), 0.8), 1.0); }
   if (gsl_colorIdx == 22u) { return vec4<f32>(vec3<f32>(0.46, 0.47, 0.5), 1.0); }
   if (gsl_colorIdx == 23u) { return vec4<f32>(vec3<f32>(0.46, 0.47, 0.5), 1.0); }
   if (gsl_colorIdx == 24u) { return vec4<f32>(vec3<f32>(0.46, 0.47, 0.5), 1.0); }
-  if (gsl_colorIdx == 25u) { return vec4<f32>(vec3<f32>(0.77, 0.78, 0.77), 1.0); }
-  if (gsl_colorIdx == 26u) { return vec4<f32>(vec3<f32>(0.77, 0.78, 0.77), 1.0); }
-  if (gsl_colorIdx == 27u) { return vec4<f32>(vec3<f32>(0.77, 0.78, 0.77), 1.0); }
-  if (gsl_colorIdx == 28u) { return vec4<f32>(vec3<f32>(0.77, 0.78, 0.77), 1.0); }
+  if (gsl_colorIdx == 25u) { return vec4<f32>(vec3<f32>(0.8289, 0.8461, 0.8548), 1.0); }
+  if (gsl_colorIdx == 26u) { return vec4<f32>(vec3<f32>(0.8289, 0.8461, 0.8548), 1.0); }
+  if (gsl_colorIdx == 27u) { return vec4<f32>(vec3<f32>(0.8289, 0.8461, 0.8548), 1.0); }
+  if (gsl_colorIdx == 28u) { return vec4<f32>(vec3<f32>(0.8289, 0.8461, 0.8548), 1.0); }
   if (gsl_colorIdx == 29u) {
     let color_red = vec3<f32>(1.0, 0.0, 0.0);
     return vec4<f32>(color_red, 1.0);

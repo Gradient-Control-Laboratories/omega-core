@@ -1,7 +1,7 @@
 // Scene Size: 70
 // Scene Grid: 10
 
-// Playful textures that move (material/playful): glitter that glints as a
+// Playful textures that move (material/collection/playful): glitter that glints as a
 // moving light would catch it, and polka dots drifting over a climbing
 // rainbow.
 // Press play to start the clock.
@@ -21,6 +21,6 @@ glitter.color = glitterColor;
 rainbow = playful.rainbowCycle(10, 5, color.cyclicRainbow);
 dots = ball(0.5, 0);
 dots.material = material.plastic;
-dots.color = playful.polkaDotDrift(6, 2, rainbow, color.white, [2, 0, 0]);
+dots.color = playful.polkaDot(6, 1 / 3, [0, 0, 0], [0, 0, 1], rainbow, color.white, [2, 0, 0]);
 
 return glitter, dots;
