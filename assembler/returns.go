@@ -1,4 +1,4 @@
-package lib
+package assembler
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"gradientcontrol.com/omega/core/internal/build"
 	"gradientcontrol.com/omega/core/internal/link"
 	"gradientcontrol.com/omega/core/internal/scope"
-	"gradientcontrol.com/omega/core/internal/source"
+	internalsource "gradientcontrol.com/omega/core/internal/source"
 	"gradientcontrol.com/omega/core/program"
 )
 
@@ -121,9 +121,9 @@ func partitionReturns(
 // prog.Returns()[geomCount+audioCount : geomCount+audioCount+totalVariantCount].
 func (rp *returnPartition) AttachVariants(
 	prog *program.Program,
-	srcMgr source.Manager,
+	srcMgr internalsource.Manager,
 	variants map[string]string,
-	parsePkg program.ParsePackageFunc,
+	parsePkg ParsePackageFunc,
 ) {
 	if len(variants) == 0 {
 		return
@@ -138,8 +138,8 @@ func (rp *returnPartition) AttachVariants(
 	lastFile := prog.Primary.Files[len(prog.Primary.Files)-1]
 	for _, name := range names {
 		retSrc := variants[name]
-		res := parsePkg([]string{retSrc})
-		if err := res.Error(); err != nil {
+		res, err := parsePkg([]string{retSrc})
+		if err != nil {
 			rp.variantErrors[name] = fmt.Sprintf("parse variant return %q: %v", retSrc, err)
 			continue
 		}
@@ -378,3 +378,4 @@ func findAudioCallInOperand(op *program.Operand) *program.Operand {
 	}
 	return nil
 }
+
