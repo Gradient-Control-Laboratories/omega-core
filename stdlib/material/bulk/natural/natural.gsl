@@ -14,10 +14,10 @@
 import "noise";
 import "color";
 import "material";
-import "glass";
-import "physical";
+import "material/bulk/glass";
+import "material/bulk/physical";
 import "texture";
-import "material/stone";
+import "material/bulk/stone";
 
 /// water(rippleScale, rippleTimeScale, rippleAmount): glass.water with an
 /// animated ripple, via a SINGLE noise.gradientBump4 tap. Water is

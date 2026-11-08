@@ -13,7 +13,7 @@ import "noise";
 import "map";
 import "color";
 import "material";
-import "metal";
+import "material/bulk/metal";
 import "texture";
 
 /// weathered(baseMaterial, baseColor, corrosionColor, amount): a broad

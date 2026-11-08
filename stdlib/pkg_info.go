@@ -113,43 +113,43 @@ var colorSrc string
 //go:embed material/material.gsl
 var materialSrc string
 
-//go:embed metal/metal.gsl
+//go:embed material/bulk/metal/metal.gsl
 var metalSrc string
 
-//go:embed glass/glass.gsl
+//go:embed material/bulk/glass/glass.gsl
 var glassSrc string
 
 //go:embed texture/texture.gsl
 var textureSrc string
 
-//go:embed material/stone/stone.gsl
+//go:embed material/bulk/stone/stone.gsl
 var textureStoneSrc string
 
-//go:embed material/wood/wood.gsl
+//go:embed material/bulk/wood/wood.gsl
 var textureWoodSrc string
 
-//go:embed material/weathering/weathering.gsl
+//go:embed material/coat/weathering/weathering.gsl
 var textureWeatheringSrc string
 
-//go:embed material/playful/playful.gsl
+//go:embed material/collection/playful/playful.gsl
 var texturePlayfulSrc string
 
-//go:embed material/natural/natural.gsl
+//go:embed material/bulk/natural/natural.gsl
 var textureNaturalSrc string
 
-//go:embed material/animated/animated.gsl
+//go:embed material/collection/animated/animated.gsl
 var textureAnimatedSrc string
 
-//go:embed material/machined/machined.gsl
+//go:embed material/process/machined/machined.gsl
 var materialMachinedSrc string
 
-//go:embed material/coating/coating.gsl
+//go:embed material/coat/coating/coating.gsl
 var materialCoatingSrc string
 
-//go:embed material/printed/printed.gsl
+//go:embed material/process/printed/printed.gsl
 var materialPrintedSrc string
 
-//go:embed physical/physical.gsl
+//go:embed material/bulk/physical/physical.gsl
 var physicalSrc string
 
 // PkgInfo is one canonical library package: the import path users write
@@ -202,19 +202,19 @@ func All() []PkgInfo {
 		{ImportPath: "vector", Sources: []string{vectorSrc}},
 		{ImportPath: "color", Sources: []string{colorSrc}},
 		{ImportPath: "material", Sources: []string{materialSrc}},
-		{ImportPath: "metal", Sources: []string{metalSrc}},
-		{ImportPath: "glass", Sources: []string{glassSrc}},
-		{ImportPath: "physical", Sources: []string{physicalSrc}},
+		{ImportPath: "material/bulk/metal", Sources: []string{metalSrc}},
+		{ImportPath: "material/bulk/glass", Sources: []string{glassSrc}},
+		{ImportPath: "material/bulk/physical", Sources: []string{physicalSrc}},
 		{ImportPath: "texture", Sources: []string{textureSrc}},
-		{ImportPath: "material/stone", Sources: []string{textureStoneSrc}},
-		{ImportPath: "material/wood", Sources: []string{textureWoodSrc}},
-		{ImportPath: "material/weathering", Sources: []string{textureWeatheringSrc}},
-		{ImportPath: "material/playful", Sources: []string{texturePlayfulSrc}},
-		{ImportPath: "material/natural", Sources: []string{textureNaturalSrc}},
-		{ImportPath: "material/animated", Sources: []string{textureAnimatedSrc}},
-		{ImportPath: "material/machined", Sources: []string{materialMachinedSrc}},
-		{ImportPath: "material/coating", Sources: []string{materialCoatingSrc}},
-		{ImportPath: "material/printed", Sources: []string{materialPrintedSrc}},
+		{ImportPath: "material/bulk/stone", Sources: []string{textureStoneSrc}},
+		{ImportPath: "material/bulk/wood", Sources: []string{textureWoodSrc}},
+		{ImportPath: "material/coat/weathering", Sources: []string{textureWeatheringSrc}},
+		{ImportPath: "material/collection/playful", Sources: []string{texturePlayfulSrc}},
+		{ImportPath: "material/bulk/natural", Sources: []string{textureNaturalSrc}},
+		{ImportPath: "material/collection/animated", Sources: []string{textureAnimatedSrc}},
+		{ImportPath: "material/process/machined", Sources: []string{materialMachinedSrc}},
+		{ImportPath: "material/coat/coating", Sources: []string{materialCoatingSrc}},
+		{ImportPath: "material/process/printed", Sources: []string{materialPrintedSrc}},
 	}
 }
 
