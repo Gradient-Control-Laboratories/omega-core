@@ -1,0 +1,24 @@
+[package]
+name = "gpu-eval"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# A headless WGSL compute runner for the GPU field-parity test
+# (agent/fidget/internal/gpuparity): it runs one compute shader over a list
+# of points and writes back what the shader stores. It knows nothing about
+# GSL; the test assembles the shader.
+#
+# Its own workspace, with its own Cargo.lock, so wgpu's dependency floor does
+# not move the crates the render dylib is locked to. tool/build-fidget builds
+# it into the shared target directory with --target-dir, where the test looks.
+
+[workspace]
+
+[[bin]]
+name = "gpu-eval"
+path = "src/main.rs"
+
+[dependencies]
+pollster = "0.4"
+wgpu = "25"

@@ -49,6 +49,20 @@ if [ $RESULT -ne 0 ]; then
 fi
 echo ""
 
+# gpu-eval: the headless WGSL runner the GPU field-parity test drives
+# (internal/fidget/internal/gpuparity), which skips when the binary is missing.
+cd "${ROOT_DIR}/internal/fidget/internal/gpu-eval"
+set +e
+cargo build --release --target-dir "${ROOT_DIR}/target"
+RESULT=$?
+set -e
+if [ $RESULT -ne 0 ]; then
+  echo ""
+  echo "Failed to build gpu-eval"
+  confirmOrExit "Continue anyway? (Y/n): "
+fi
+echo ""
+
 # fidget-wasm: fidget for the browser (dual contouring, and the field oracle
 # the viewer's debug API compares against), served from
 # examples/viewer/vendor/fidget-wasm.
