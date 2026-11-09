@@ -872,12 +872,10 @@ func RegisterMeshOracle(assetID uint32, vertices []float32, triangles []uint32) 
 	return nil
 }
 
-var defaultNoiseTileOnce sync.Once
-
-func ensureDefaultNoiseTile() {
-	defaultNoiseTileOnce.Do(func() {
-		_ = RegisterNoiseTile(noise.Bake())
-	})
+func init() {
+	if err := RegisterNoiseTile(noise.Bake()); err != nil {
+		panic(err)
+	}
 }
 
 // RegisterNoiseTile installs the baked noise tile (from program/noise.Bake())
@@ -897,7 +895,6 @@ func RegisterNoiseTile(bytes []byte) error {
 // cell (x, y, z). Mirrors common/noise.Hash3; used to verify the Rust port
 // matches the Go reference on the same baked bytes.
 func NoiseHash3(x, y, z float32) [3]float32 {
-	ensureDefaultNoiseTile()
 	var out [3]C.float
 	C.noise_hash3(C.float(x), C.float(y), C.float(z), (*C.float)(unsafe.Pointer(&out[0])))
 	return [3]float32{float32(out[0]), float32(out[1]), float32(out[2])}
@@ -907,7 +904,6 @@ func NoiseHash3(x, y, z float32) [3]float32 {
 // hash the one-octave oracle evaluates, reachable from the host so it can be
 // checked against common/noise.Hash3Octaves.
 func NoiseHash3Octaves(x, y, z float32, octaves uint32) [3]float32 {
-	ensureDefaultNoiseTile()
 	var out [3]C.float
 	C.noise_hash3_octaves(C.float(x), C.float(y), C.float(z), C.uint32_t(octaves),
 		(*C.float)(unsafe.Pointer(&out[0])))
@@ -919,7 +915,6 @@ func NoiseHash3Octaves(x, y, z float32, octaves uint32) [3]float32 {
 // noiseHash3 builtin's octaves argument selects); the convert layer remaps the
 // implicit coordinates to the cell.
 func NoiseChannelTree(channel, octaves uint32) TreeIndex {
-	ensureDefaultNoiseTile()
 	return TreeIndex(C.tree_noise_channel(C.uint32_t(channel), C.uint32_t(octaves)))
 }
 
@@ -943,7 +938,6 @@ const (
 // for the distances, in place of the 81 hash leaves the unrolled 27-neighbour
 // scan used to produce.
 func WorleyTree(comp, octaves uint32) TreeIndex {
-	ensureDefaultNoiseTile()
 	return TreeIndex(C.tree_cellular(C.uint32_t(comp), C.uint32_t(octaves)))
 }
 

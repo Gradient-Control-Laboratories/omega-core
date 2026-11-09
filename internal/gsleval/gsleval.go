@@ -29,9 +29,7 @@ import (
 	"gradientcontrol.com/omega/core/internal/source"
 	parser "gradientcontrol.com/omega/core/parser"
 	"gradientcontrol.com/omega/core/program"
-	noise "gradientcontrol.com/omega/core/program/noise"
 	gsllibs "gradientcontrol.com/omega/core/stdlib"
-	"log"
 )
 
 // AssetFetcher returns the mesh-asset context (import slots + oracle
@@ -114,8 +112,6 @@ func (e *Evaluator) SetCertifyBudget(n int) {
 	e.certifyBudget = n
 }
 
-var noiseTileOnce sync.Once
-
 // Queries retain exclusive ownership of the process-wide oracle slots until evaluation finishes.
 var querySlot = make(chan struct{}, 1)
 var registeredOracles = make(map[uint32]string)
@@ -136,13 +132,6 @@ func endQuery() { <-querySlot }
 // `fetchAssets` supplies mesh-asset payloads for documents that reference
 // them; pass nil if mesh assets are not supported.
 func New(srcMgr source.Manager, fetchAssets AssetFetcher, options ...assembler.Option) *Evaluator {
-	// The noiseHash3 oracle samples a fixed baked tile that survives
-	// fidget.Clear(); register it once so noise fields evaluate.
-	noiseTileOnce.Do(func() {
-		if err := lib.RegisterNoiseTile(noise.Bake()); err != nil {
-			log.Printf("gsleval: register noise tile: %v", err)
-		}
-	})
 	cp := parser.NewCachingParser()
 	opts := append([]assembler.Option{assembler.Parser(cp.ParsePackage), assembler.SourceManager(srcMgr)}, options...)
 	return &Evaluator{
