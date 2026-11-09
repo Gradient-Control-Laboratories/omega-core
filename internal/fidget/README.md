@@ -11,7 +11,7 @@ You need:
   - macOS: `brew install cmake`
   - Debian/Ubuntu: `apt-get install cmake build-essential`
 - A C++17 toolchain — clang on macOS, g++/clang on Linux.
-- **Git submodules** — the C++ deps are pinned under `vendor/` in the repo root. They must be initialized with:
+- **Git submodules** — the C++ deps are pinned under `internal/fidget/vendor/` (beside the vendored fidget crates). They must be initialized with:
 
 ```sh
 # from the repo root
@@ -19,20 +19,18 @@ git submodule update --init --recursive
 ```
 
 ## Build
-- **[webedit](../../webedit/README.md)** launches the fidget agent for server-side meshing alongside the [manifold](../manifold) package for boolean composition.
-
-The launch scripts for both these agents already invoke cargo builds for you — the manual build steps below are only needed if you're working on the agent itself or you want to verify a fresh setup. The first build of OpenVDB + its transitive dependencies takes several minutes, builds after that are incremental.
+[`tool/build-fidget.sh`](../../tool/build-fidget.sh) builds this crate and the [manifold](../../backend/mesh/manifold) glue that `backend/mesh` uses for boolean composition. The steps below build the fidget crate on its own, for working on it or verifying a fresh setup. The first build of OpenVDB + its transitive dependencies takes several minutes, builds after that are incremental.
 
 ```sh
 # from the repo root
-cd agent/fidget/internal/rust
+cd internal/fidget/internal/rust
 cargo build --release
 ```
 
-This produces `omega/target/release/librender.{dylib,so}`, which the Go side of the agent links via `cgo` (`#cgo LDFLAGS: -L../../../../target/release -lrender`). A debug build (`cargo build`) is very slow at `bvhSdf()`, so the launch scripts default to `cargo build --release`.
+This produces `target/release/librender.{dylib,so}` at the repo root, which the Go side links via `cgo` (`#cgo LDFLAGS: -L../../../../target/release -lrender`). A debug build (`cargo build`) is very slow at `bvhSdf()`, so `tool/build-fidget.sh` uses `cargo build --release`.
 
-After the Rust lib is in place, the Go agent compiles normally:
+After the Rust lib is in place, the Go package compiles normally:
 
 ```sh
-go build ./agent/fidget/...
+go build ./internal/fidget/...
 ```

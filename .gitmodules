@@ -1,0 +1,18 @@
+[submodule "internal/fidget/vendor/zlib"]
+	path = internal/fidget/vendor/zlib
+	url = https://github.com/madler/zlib.git
+[submodule "internal/fidget/vendor/imath"]
+	path = internal/fidget/vendor/imath
+	url = https://github.com/AcademySoftwareFoundation/Imath.git
+[submodule "internal/fidget/vendor/blosc"]
+	path = internal/fidget/vendor/blosc
+	url = https://github.com/Blosc/c-blosc.git
+[submodule "internal/fidget/vendor/tbb"]
+	path = internal/fidget/vendor/tbb
+	url = https://github.com/oneapi-src/oneTBB.git
+[submodule "internal/fidget/vendor/openvdb"]
+	path = internal/fidget/vendor/openvdb
+	url = https://github.com/AcademySoftwareFoundation/openvdb.git
+[submodule "backend/mesh/manifold/vendor/manifold"]
+	path = backend/mesh/manifold/vendor/manifold
+	url = https://github.com/elalish/manifold.git

@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-// Build manifold from vendor/manifold as a static lib, then compile our thin
+// Build manifold from backend/mesh/manifold/vendor/manifold as a static lib, then compile our thin
 // C-ABI glue (manifold_glue.cpp) and link it all together. The resulting
 // dylib exposes a flat C interface that the Go package calls via cgo.
 //
@@ -14,11 +14,11 @@ fn main() {
         .ancestors()
         .nth(5)
         .expect("workspace root above backend/mesh/manifold/internal/rust");
-    let vendor = workspace_root.join("vendor");
+    let vendor = workspace_root.join("backend/mesh/manifold/vendor");
 
     if !vendor.join("manifold").join("CMakeLists.txt").exists() {
         panic!(
-            "vendor/manifold submodule not initialized. Run:\n  \
+            "backend/mesh/manifold/vendor/manifold submodule not initialized. Run:\n  \
              git submodule update --init --recursive\n\
              from {}",
             workspace_root.display()

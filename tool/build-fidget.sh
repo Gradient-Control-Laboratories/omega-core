@@ -27,9 +27,9 @@ confirmOrExit() {
   fi
 }
 
-if [ ! -f "${ROOT_DIR}/vendor/manifold/CMakeLists.txt" ]; then
+if [ ! -f "${ROOT_DIR}/backend/mesh/manifold/vendor/manifold/CMakeLists.txt" ]; then
   echo ""
-  echo "vendor/manifold appears empty. Run:"
+  echo "backend/mesh/manifold/vendor/manifold appears empty. Run:"
   echo "    (cd ${ROOT_DIR} && git submodule update --init --recursive)"
   confirmOrExit "Continue anyway? (Y/n): "
 fi
@@ -97,7 +97,7 @@ echo ""
 
 # Release profile is mandatory for manifold: backend/mesh/manifold cgo LDFLAGS
 # link against target/release/libmanifold_glue, and build.rs CMake-builds the
-# vendor/manifold C++ submodule.
+# backend/mesh/manifold/vendor/manifold C++ submodule.
 cd "${ROOT_DIR}/backend/mesh/manifold/internal/rust"
 set +e
 cargo build --release --target-dir "${ROOT_DIR}/target"

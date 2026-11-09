@@ -6,11 +6,11 @@ fn main() {
         .ancestors()
         .nth(4)
         .expect("workspace root above agent/fidget/internal/rust");
-    let vendor = workspace_root.join("vendor");
+    let vendor = workspace_root.join("internal/fidget/vendor");
 
     if !vendor.join("openvdb").join("CMakeLists.txt").exists() {
         panic!(
-            "vendor submodules not initialized. Run:\n  \
+            "internal/fidget/vendor submodules not initialized. Run:\n  \
              git submodule update --init --recursive\n\
              from {}",
             workspace_root.display()
