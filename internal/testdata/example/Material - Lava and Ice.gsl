@@ -1,0 +1,43 @@
+// Scene Size: 70
+// Scene Grid: 10
+
+// Plates that drift, form and are swallowed (material/collection/animated): the crust of
+// a lava lake tearing open along glowing seams, and pack ice drifting apart
+// over dark water.
+// Time runs in real seconds and only space is scaled, as in a miniature.
+// Press play to start the clock.
+
+// The direction the wind blows, in degrees from x. It drifts the floes and
+// the lava's plates.
+windAngle = 20;
+windAngle.min = -180;
+windAngle.max = 180;
+wind = [cos(windAngle * 3.14159265 / 180), sin(windAngle * 3.14159265 / 180), 0];
+
+// The ice's stage: grease ice 0, nilas 0.2 to 0.35, pancakes 0.5, grey ice
+// 0.65, first-year ice 0.8, snow 1.
+iceStage = 0.5;
+iceStage.min = 0;
+iceStage.max = 1;
+
+// Each piece is a slab 24 mm square, 32 mm apart.
+slab(column, row) {
+  return transform.translate(box([-12, -12, -4], [12, 12, 4]), [32 * column, -32 * row, 0]);
+}
+
+// A lava lake: plates 8 mm across that drift the way the wind blows at
+// 0.15 mm/s, tear open and are swallowed, each in 20 s. A plate may drift
+// under half its size in its life.
+lavaMat, lavaColor, lavaHeight, lavaSlope = animated.lavaLake(8, 20, (x) { return 0.15 * wind; }, 20);
+lava = slab(-0.5, 0) - lavaHeight;
+lava.material = lavaMat;
+lava.color = lavaColor;
+
+// Pack ice, floes 8 mm across drifting with the wind at 0.02 mm/s, each
+// lasting two minutes, with some open water between them.
+iceMat, iceColor, iceHeight, iceSlope = animated.iceFloes(8, 120, (x) { return 0.02 * wind; }, iceStage, 0.3);
+ice = slab(0.5, 0) - iceHeight;
+ice.material = iceMat;
+ice.color = iceColor;
+
+return lava, ice;

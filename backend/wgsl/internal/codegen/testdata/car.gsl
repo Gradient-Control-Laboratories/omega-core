@@ -1,0 +1,88 @@
+
+// GCL Shape Language for a Mustang-like Toy Car
+
+// Signed distance function for a box centered at the origin.
+// size: a vector with the half-dimensions of the box.
+sdBox(size) {
+    q = abs(p) - size;
+    return length(max(q, 0)) + min(max(q.x, max(q.y, q.z)), 0);
+}
+
+// Signed distance function for a box with rounded corners.
+// size: a vector with the half-dimensions.
+// radius: the corner radius.
+sdRoundedBox(size, radius) {
+    return length(max(abs(p) - size, 0)) - radius;
+}
+
+// Signed distance function for a cylinder oriented along the Y-axis.
+// halfHeight: half of the cylinder's height (its extent along Y).
+// radius: the cylinder's radius in the XZ plane.
+sdCylinderY(halfHeight, radius) {
+    d = abs([length(p.xz), p.y]) - [radius, halfHeight];
+    return min(max(d.x, d.y), 0) + length(max(d, 0));
+}
+
+
+// --- Main Car Assembly ---
+
+// Body dimensions (using half-extents for easier centering)
+bodySize = [2.0, 0.9, 0.5];
+bodyRoundness = 0.2;
+
+// Main lower body chassis
+body = sdRoundedBox(bodySize, bodyRoundness);
+
+// Cabin dimensions
+cabinSize = [1.2, 0.8, 0.6];
+cabinRoundness = 0.2;
+cabinPos = [-0.3, 0.0, 0.8];
+
+// Create the cabin using remap to translate it into position
+cabin = remap(sdRoundedBox(cabinSize, cabinRoundness), p - cabinPos);
+
+// Define a shape to be subtracted for the windows
+windowCutoutSize = [1.0, 0.81, 0.5];
+windowCutoutPos = [-0.3, 0.0, 0.9];
+windowCutout = remap(sdBox(windowCutoutSize), p - windowCutoutPos);
+
+
+// --- Wheel Assembly ---
+
+// Wheel dimensions
+wheelRadius = 0.6;
+wheelWidth = 0.3; // Full width of the tire
+
+// Wheel positioning constants
+wheelX = 1.5;  // Front/rear position from center
+wheelY = bodySize.y; // Outward position from center
+wheelZ = -bodySize.z + wheelRadius - 0.2; // Vertical position
+
+// Define a reusable anonymous function for a single wheel SDF
+wheel = () {
+    return sdCylinderY(wheelWidth, wheelRadius);
+};
+
+// Create four wheels by remapping the base wheel shape
+wheel_fr = remap(wheel(), p - [ wheelX,  wheelY, wheelZ]); // Front-Right
+wheel_fl = remap(wheel(), p - [ wheelX, -wheelY, wheelZ]); // Front-Left
+wheel_rr = remap(wheel(), p - [-wheelX,  wheelY, wheelZ]); // Rear-Right
+wheel_rl = remap(wheel(), p - [-wheelX, -wheelY, wheelZ]); // Rear-Left
+
+// Combine all wheels into a single SDF using min (union)
+allWheels = min(wheel_fr, wheel_fl, wheel_rr, wheel_rl);
+
+
+// --- Final Combination using CSG operations ---
+
+// 1. Union the body and cabin
+carChassis = min(body, cabin);
+
+// 2. Subtract the window area from the chassis
+//    (max(A, -B) is equivalent to A - B)
+carWithWindows = max(carChassis, -windowCutout);
+
+// 3. Union the final body with the wheels
+finalCar = min(carWithWindows, allWheels);
+
+return finalCar;

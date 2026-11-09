@@ -1,0 +1,383 @@
+
+// Texture Library (texture)
+//
+// Shared helpers for the material family (material/bulk/stone, material/bulk/wood,
+// material/coat/weathering, material/collection/playful, material/bulk/natural): each preset in
+// those packages composes noise + color + material via the same small set
+// of idioms defined here, so no preset re-derives its own threshold or
+// blend math.
+//
+// Taxonomy discipline, applied throughout the whole family: gradient/fbm ->
+// broad color blotches and banding; cellular/cellularF1F2 (F1, cell
+// membership) -> speckle/grain per-region tone; cellularEdges -> crack,
+// joint, and vein networks. Each preset uses exactly one of these per
+// effect, so techniques don't duplicate across presets with different names.
+//
+// Doc convention follows builtin/base.gsl: `///` lines are public docs.
+
+import "noise";
+import "color";
+import "material";
+import "ease";
+import "map";
+
+/// mask(field, edge, width): a soft 0..1 threshold of `field` centered at
+/// `edge` with transition half-width `width` (ease.quadratic — smoothstep —
+/// over a clamp), i.e. 0 well below edge, 1 well above, smooth between. The
+/// shared threshold every paint/paintMaterial call below is built on.
+mask(field, edge, width) {
+  t = clamp((field - edge) / width * 0.5 + 0.5, 0, 1);
+  return ease.quadratic(t);
+}
+
+/// fadeDetail(size): how much of a feature `size` mm across the screen can
+/// show where it is being drawn: 1 while it spans four pixels or more, falling
+/// to 0 by the time it spans two (pixelSize() against size). Multiply a fine
+/// feature's contrast by it, or blend the feature toward its average color, so
+/// detail too small to resolve fades instead of shimmering. It is 1 wherever
+/// nothing is drawn to a screen (meshing, export), so those keep full detail.
+fadeDetail(size) {
+  return 1 - mask(pixelSize(), 0.375 * size, 0.125 * size);
+}
+
+/// coverageLine(distance, width): a line `width` wide, 0 to 1, from the
+/// distance to its centre, both in world units. A line thinner than a pixel is
+/// drawn a pixel wide (pixelSize()) and as much fainter, so it keeps its share
+/// of the pixel rather than fading away or breaking into dashes. Wherever
+/// nothing is drawn to a screen it is the line itself.
+coverageLine(distance, width) {
+  half = max(0.5 * width, 0.5 * pixelSize());
+  return (1 - mask(distance, half, 0.25 * half)) * 0.5 * width / half;
+}
+
+/// paint(field, edge, width, colorA, colorB): colorA below `edge`, colorB
+/// above, blended across `width` via mask() and mixed perceptually
+/// (color.mixOklab) — the generalized form of the existing
+/// `color.mixOklab(steel, dark, thread.stripe(...))` idiom, so every texture
+/// preset paints a scalar field the same way.
+paint(field, edge, width, colorA, colorB) {
+  return color.mixOklab(colorA, colorB, mask(field, edge, width));
+}
+
+/// paintMaterial(field, edge, width, matA, matB): matA below `edge`, matB
+/// above, blended across `width` via mask() and material.blend — the
+/// material-record sibling of paint().
+paintMaterial(field, edge, width, matA, matB) {
+  return material.blend(matA, matB, mask(field, edge, width));
+}
+
+/// domainWarp(size, strength): a warped point, for use as remap()'s second
+/// argument, built from three noise.gradient taps at fixed decorrelating
+/// offsets (the same shear-offset rationale as noise.gsl's cellHash4: avoid
+/// aliasing with the hash tile's period). FOR COLOR AND RENDER-ONLY
+/// DISPLACEMENT INPUTS ONLY: this warps the sample point, not a certified
+/// distance value, so feeding the warped point into real subtractive SDF
+/// geometry needs its own fresh Lipschitz analysis — it does not inherit any
+/// bound from noise.gradient/gradientBump.
+domainWarp(size, strength) {
+  wx = noise.gradient(size);
+  wy = remap(noise.gradient(size), p + [37.0, 0.0, 0.0]);
+  wz = remap(noise.gradient(size), p + [0.0, 59.0, 0.0]);
+  return p + [wx, wy, wz] * strength;
+}
+
+/// flow(velocity, period, sampleFn): a pattern carried along by a flow that
+/// may vary from place to place, without the pattern smearing. sampleFn(q)
+/// gives the pattern at a point q in world units; velocity is the flow at p in
+/// world units per second, a constant or a field. Two copies of the pattern
+/// ride the flow, each for one `period` of seconds before it starts again where
+/// it began, half a period apart, and each fades out as it restarts (Vlachos
+/// 2010), so neither is ever stretched by more than a period's travel. Each
+/// restart draws the copy from a new part of the pattern, so it never repeats.
+/// The mix is divided by the root of its weights' sum of squares, so a
+/// zero-mean pattern keeps its contrast through the crossfade instead of
+/// dimming at its middle: give sampleFn a pattern around zero and add its mean
+/// afterwards. A shorter period stretches less and pulses more. The mix is up
+/// to 1.42 times as steep as the pattern, and more where the flow shears.
+/// Inside a library function, use flowPoints and flowMix instead: a lambda
+/// passed from one there captures every local before it.
+flow(velocity, period, sampleFn) {
+  a, b, weight = flowPoints(velocity, period);
+  return flowMix(sampleFn(a), sampleFn(b), weight);
+}
+
+/// flowPoints(velocity, period): the two points flow samples its pattern at,
+/// and the first one's weight: sample the pattern at both and pass the two
+/// values and the weight to flowMix, as flow does. Returns a, b and weight.
+flowPoints(velocity, period) {
+  cycles = time / period;
+  phase = fract(cycles);
+  phaseB = fract(cycles + 0.5);
+  cycle = floor(cycles);
+  cycleB = floor(cycles + 0.5);
+  a = p - velocity * period * phase + [cycle * 37.3, cycle * 11.9, cycle * 23.1];
+  b = p - velocity * period * phaseB + [cycleB * 37.3 + 17.7, cycleB * 11.9 + 5.3, cycleB * 23.1 + 29.9];
+  return a, b, 1 - abs(1 - 2 * phase);
+}
+
+/// flowMix(a, b, weight): flow's mix of the pattern sampled at flowPoints' two
+/// points, a with `weight` and b with the rest, divided by the root of the
+/// weights' sum of squares.
+flowMix(a, b, weight) {
+  return (weight * a + (1 - weight) * b) / sqrt(weight * weight + (1 - weight) * (1 - weight));
+}
+
+// --- Filtering at the pixel ---
+//
+// Each kind of pattern loses its detail at the pixel in its own way: a line
+// or a dot keeps its share of the pixel's area, a periodic step is averaged
+// over the pixel exactly, any other feature fades to its own average, and
+// relief finer than the pixel turns into the roughness its hidden slopes
+// make. Off a screen pixelSize() is 0, and each of these is the pattern
+// itself.
+
+/// fadeTo(value, mean, size): value where a feature `size` mm across shows on
+/// screen, fading to `mean`, its average over the pattern, as it shrinks past
+/// a few pixels (fadeDetail), so detail too small to resolve settles to what
+/// it averages to rather than shimmering.
+fadeTo(value, mean, size) {
+  return mean + (value - mean) * fadeDetail(size);
+}
+
+/// coverageDisc(distance, radius): a dot `radius` mm across, 0 to 1, from the
+/// distance to its centre, with an edge half a pixel soft. A dot smaller than
+/// a pixel is drawn a pixel wide and as much fainter, so it keeps its share of
+/// the pixel's area, as coverageLine does for a line.
+coverageDisc(distance, radius) {
+  drawn = max(radius, 0.5 * pixelSize());
+  soft = max(0.5 * pixelSize(), 0.01 * radius);
+  return (1 - mask(distance, drawn, soft)) * (radius / drawn) * (radius / drawn);
+}
+
+// The integral from 0 to x of a square wave of `period`, 0 over the first
+// half of each period and 1 over the second.
+squareWaveIntegral(x, period) {
+  whole = floor(x / period);
+  return whole * 0.5 * period + max(x - whole * period - 0.5 * period, 0);
+}
+
+/// squareWave(x, period): a square wave of `period`, 0 over the first half of
+/// each period and 1 over the second, averaged exactly over a pixel's width
+/// about x, so its steps blur by what a pixel sees and settle to 0.5 once the
+/// period is under a pixel.
+squareWave(x, period) {
+  width = pixelSize();
+  exact = fract(x / period) < 0.5 ? 0 : 1;
+  averaged = (squareWaveIntegral(x + 0.5 * width, period) - squareWaveIntegral(x - 0.5 * width, period)) / max(width, 0.000001);
+  return width > 0.0001 * period ? averaged : exact;
+}
+
+/// reliefRoughness(roughness, slope, size): the roughness of a surface whose
+/// relief, `size` mm across with slopes of `slope` (rise over run, root mean
+/// square), is too small to resolve or not drawn (displacementDrawn()): its
+/// slopes, lost with it, spread the highlight as roughness does (Toksvig
+/// 2005). The roughness itself while the relief shows. Fade the relief with
+/// fadeDetail(size) alongside.
+reliefRoughness(roughness, slope, size) {
+  return sqrt(roughness * roughness + (1 - fadeDetail(size) * displacementDrawn()) * slope * slope);
+}
+
+// --- Grain ---
+//
+// Grains packed on a surface, sand's and a sand coat's, as fine detail
+// (name.detail) the viewer draws only where a pixel can show one. Each is a
+// cell of cellular noise `size` mm across.
+
+/// grainRelief(size, height): the relief of grains `size` mm across, `height`
+/// mm at their crowns and 0 in the gaps between, as fine detail: a relief of
+/// 0 where the grains are too small to show, so a material displaced by it
+/// is flat there, and its stand-in carries the grains' slopes as roughness
+/// (reliefRoughness). Add it to a coarser relief or pass it alone.
+grainRelief(size, height) {
+  bump = clamp(1 - noise.cellular(size) / (0.45 * size), 0, 1);
+  relief = 0;
+  relief.detail = bump * bump * height * fadeDetail(size);
+  relief.detailSize = size;
+  return relief;
+}
+
+/// grainSpecks(size, share): the `share` of grains `size` mm across picked at
+/// random, 1 on those and 0 on the rest, as fine detail that fades to `share`
+/// where the grains are too small to show, so a colour mixed by it settles to
+/// the mix by share. For the dark heavy minerals in sand, or a lighter grain.
+grainSpecks(size, share) {
+  f1, f2, cell = noise.cellularCell(size);
+  pick = noiseHash3(cell + [23, 61, 7]);
+  specks = share;
+  specks.detail = fadeTo(pick.x < share ? 1 : 0, share, size);
+  specks.detailSize = size;
+  return specks;
+}
+
+/// grainShade(size, spread): a shade per grain `size` mm across, 1 - spread
+/// to 1 + spread at random and 1 on average, as fine detail that fades to 1
+/// where the grains are too small to show. Multiply a colour by it for the
+/// grain of a stone, a blasted skin or a sintered one.
+grainShade(size, spread) {
+  f1, f2, cell = noise.cellularCell(size);
+  pick = noiseHash3(cell + [47, 13, 29]);
+  shade = 1;
+  shade.detail = fadeTo(1 + spread * (2 * pick.x - 1), 1, size);
+  shade.detailSize = size;
+  return shade;
+}
+
+// --- Weave ---
+//
+// Cloth, composites, wicker and mesh are one function: tows crossing over
+// and under each other. It works on plane coordinates, as the dot plane
+// does, so a caller lays it on a part's frame with a whole count round the
+// part, or on a face's datums.
+
+// The crown of a tow `width` wide at `across` from its centre line: 1 at
+// the crown, 0 at and beyond its edges, a half ellipse.
+towCrown(across, width) {
+  s = 2 * across / width;
+  return sqrt(max(1 - s * s, 0));
+}
+
+/// weave(x, y, pitchU, pitchV, towWidth, over, under): a woven cloth at
+/// plane coordinates (x, y) in mm: warp tows run along y, `pitchU` apart
+/// across x, weft tows along x, `pitchV` apart across y, each `towWidth`
+/// wide (at most the pitch; less leaves gaps, a mesh), the warp passing
+/// over `over` wefts then under `under` (1 and 1 a plain weave, 2 and 2 a
+/// twill, whose diagonal runs up to the right). Returns three values: the
+/// height, 1 at the crown of the tow on top and falling to the tow beneath
+/// at half that and to 0 in a gap; 1 where the warp is on top and 0 where
+/// the weft is; and the index of the tow on top, for a shade or a lay of
+/// its own (the warp's index, or 1000 plus the weft's). The height is
+/// unitless: a caller scales it to the crimp in mm.
+weave(x, y, pitchU, pitchV, towWidth, over, under) {
+  i = floor(x / pitchU);
+  j = floor(y / pitchV);
+  repeat = over + under;
+  phase = (i - j) - repeat * floor((i - j) / repeat);
+  warpTop = phase < over ? 1 : 0;
+  warpCrown = towCrown(x - (i + 0.5) * pitchU, towWidth);
+  weftCrown = towCrown(y - (j + 0.5) * pitchV, towWidth);
+  height = warpTop > 0.5 ? max(warpCrown, 0.5 * weftCrown) : max(weftCrown, 0.5 * warpCrown);
+  tow = warpTop > 0.5 ? i : 1000 + j;
+  return height, warpTop, tow;
+}
+
+// --- Waves ---
+//
+// Bands and rings, Blender's Wave texture: the base of wood's rings, agate,
+// brushed rings and marble's veins. A wave is a phase, distorted by fractal
+// noise so its lines wander as grown things' do, through a profile.
+
+// The profile of a wave at `phase` (in periods): 0 a sine, 1 a saw, 2 a
+// triangle, each from 0 to 1.
+waveProfile(phase, profile) {
+  f = phase - floor(phase);
+  return profile < 0.5 ? 0.5 - 0.5 * cos(6.2831853 * phase) : (profile < 1.5 ? f : 1 - abs(2 * f - 1));
+}
+
+/// bands(size, direction, profile, distortion, detail): parallel bands
+/// `size` mm apart across `direction`, through a profile (0 sine, 1 saw, 2
+/// triangle), their lines wandering `distortion` of a period (0 to 2) by
+/// filtered fractal noise of `detail` octaves four bands across, so a line
+/// drifts over several of its neighbors' spacing, as growth rings and
+/// strata do, rather than wobbling at its own. From 0 to 1, settling to 0.5
+/// where the bands are too fine to show.
+bands(size, @direction direction, profile, @range(0, 2) distortion, @range(1, 6) detail) {
+  phase = dot(p, normalize(direction)) / size + distortion * noise.fbm(4 * size, detail, 0.5, 2);
+  return fadeTo(waveProfile(phase, profile), 0.5, size);
+}
+
+/// rings(size, axisOrigin, axisDir, profile, distortion, detail): rings
+/// `size` mm apart about an axis through `axisOrigin` along `axisDir`, as
+/// bands are about a direction: growth rings, turned rings, agate.
+rings(size, @point axisOrigin, @direction(axisOrigin) axisDir, profile, @range(0, 2) distortion, @range(1, 6) detail) {
+  a = normalize(axisDir);
+  q = p - axisOrigin;
+  phase = length(q - a * dot(q, a)) / size + distortion * noise.fbm(4 * size, detail, 0.5, 2);
+  return fadeTo(waveProfile(phase, profile), 0.5, size);
+}
+
+// --- Triplanar ---
+
+/// triplanarWeights(normal, sharpness): how much each of the three axis
+/// planes' projections should count at a surface facing `normal` (a
+/// shape's `name.dp`): weights for the YZ, XZ and XY planes, summing to 1,
+/// each |normal|^sharpness (1 soft, 4 the usual, 16 nearly a box). Evaluate a
+/// plane pattern three times, on [p.y, p.z], [p.x, p.z] and [p.x, p.y], and
+/// mix by these, and it wraps any part without datums or seams that show.
+triplanarWeights(normal, @range(1, 16) sharpness) {
+  n = abs(normalize(normal));
+  w = [pow(n.x, sharpness), pow(n.y, sharpness), pow(n.z, sharpness)];
+  return w / max(w.x + w.y + w.z, 0.000001);
+}
+
+// --- Tiles ---
+//
+// Bricks, tiles and blocks with a joint between them are one tessellation:
+// a grid of cells, each row slid along by a share of a cell, the joint a
+// band along the cell's edges. On plane coordinates, as the weave is.
+
+/// tiles(x, y, sizeU, sizeV, joint, bond): a tessellation at plane
+/// coordinates (x, y) in mm: cells `sizeU` along x by `sizeV` along y, joint
+/// included, each row slid along x by `bond` of a cell from the row below
+/// (0 a stack bond, 0.5 a running bond, 1/3 a third bond), with a joint
+/// `joint` mm wide between them. Returns two values: the cell, as [column,
+/// row, 0] for a shade or a hash of its own, and the distance to the
+/// joint's edge, positive on the cell's face and negative in the joint,
+/// -joint / 2 at its middle.
+tiles(x, y, sizeU, sizeV, joint, bond) {
+  j = floor(y / sizeV);
+  xs = x - bond * sizeU * j;
+  i = floor(xs / sizeU);
+  cx = xs - i * sizeU;
+  cy = y - j * sizeV;
+  half = 0.5 * joint;
+  toJoint = min(min(cx - half, sizeU - half - cx), min(cy - half, sizeV - half - cy));
+  return [i, j, 0], toJoint;
+}
+
+/// hexCells(x, y, across): a honeycomb of hexagonal cells `across` mm
+/// between opposite sides at plane coordinates (x, y): the cells are the
+/// Voronoi hexagons of map's triangular lattice with that spacing, a flat
+/// side facing each way along x. Returns two values: the offset from the cell's centre to
+/// the point, and the distance from the point to the cell's edge, positive
+/// inside.
+hexCells(x, y, across) {
+  cellP = remap(map.patternTriangularXY(across), [x, y, 0]);
+  q = [cellP.x, cellP.y];
+  reach = max(abs(dot(q, [1, 0])), max(abs(dot(q, [0.5, 0.8660254])), abs(dot(q, [-0.5, 0.8660254]))));
+  return cellP, 0.5 * across - reach;
+}
+
+/// herringbone(x, y, width, aspect, joint): blocks `width` mm wide and a
+/// whole `aspect` widths long (rounded: the pattern closes for no other
+/// length), laid in herringbone at plane coordinates (x, y), each block at
+/// 45 degrees to x and the chevrons they make pointing along it, with a
+/// joint `joint` mm wide between them. Returns five values: the block, as
+/// [band, step, way] for a hash of its own; the distance to the joint's
+/// edge, positive on the block's face and negative in the joint; 1 on the
+/// blocks that run up to the right (+x +y) and 0 on those that run up to
+/// the left; and the point's place on its block, along it from 0 to its
+/// length and across it from 0 to `width`, both in mm.
+herringbone(x, y, width, aspect, joint) {
+  n = max(1, round(aspect));
+  // Turned 45 degrees and measured in widths, the blocks lie along the axes.
+  // The plane is bands of 2n along the diagonal, each a staircase of blocks
+  // one way and a staircase the other way; a band's edge is a staircase too,
+  // so a point just past the diagonal belongs to the band before.
+  bx = (x + y) * 0.70710678 / width;
+  by = (y - x) * 0.70710678 / width;
+  s0 = floor((bx + by) / (2 * n));
+  k0 = floor(by - s0 * (n - 1));
+  r0 = bx - s0 * (n + 1) + k0;
+  wrap = r0 < 0 ? 1 : 0;
+  s = s0 - wrap;
+  k = k0 + wrap * (n - 1);
+  r = r0 + wrap * 2 * n;
+  ys = by - s * (n - 1);
+  upRight = r < n ? 1 : 0;
+  o = floor(r - n);
+  j = k - o;
+  along = upRight > 0.5 ? r : ys - j;
+  across = upRight > 0.5 ? ys - k : r - n - o;
+  edge = min(min(along, n - along), min(across, 1 - across)) * width;
+  return [s, upRight > 0.5 ? k : j, upRight], edge - 0.5 * joint, upRight, along * width, across * width;
+}

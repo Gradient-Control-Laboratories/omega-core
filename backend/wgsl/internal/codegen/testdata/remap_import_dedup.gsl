@@ -1,0 +1,26 @@
+// Regression: an imported global (somePi from pkg1) referenced inside a
+// subtree that is wrapped in a gsl_remap helper must be passed to that
+// helper as a parameter, NOT re-declared in the helper body. Because the
+// remapped `side` calls useProf (which forwards somePi), the gsl_remap
+// helper takes somePi as a parameter; the codegen previously ALSO emitted
+// `let pkg1_somePi = ...` in the helper body, colliding with that
+// parameter and producing WGSL "redeclaration of 'pkg1_somePi'" errors
+// once `side` was remapped. See Delegate.Remap.
+
+import . "pkg1";
+
+profA() {
+  return sphere(somePi);
+}
+
+useProf(profFn) {
+  base = remap(profFn(), [p.x, p.y, p.z]);
+  return base + somePi * 0.0;
+}
+
+side = remap(useProf(profA), [p.x - 1.0, p.y, p.z]);
+
+s1 = remap(side, [p.x, p.y, p.z]);
+s2 = remap(side, [p.x + 0.5, p.y, p.z]);
+
+return min(s1, s2);

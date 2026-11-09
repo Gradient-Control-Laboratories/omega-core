@@ -1,0 +1,26 @@
+@scene(8, 0.4)
+
+// Triply Periodic Minimal Surface (Gyroid TPMS) Showcase
+scale = 1.5;
+scale.min = 0.5;
+scale.max = 4.0;
+
+thickness = 0.3;
+thickness.min = 0.05;
+thickness.max = 0.8;
+
+boundary_radius = 2.5;
+boundary_radius.min = 1.0;
+boundary_radius.max = 4.0;
+
+// Coordinate scaling
+sp = p * scale;
+
+// Gyroid surface: sin(x)*cos(y) + sin(y)*cos(z) + sin(z)*cos(x) = 0
+gyroid_val = sin(sp.x) * cos(sp.y) + sin(sp.y) * cos(sp.z) + sin(sp.z) * cos(sp.x);
+d_lattice = (abs(gyroid_val) - thickness) / scale;
+
+// Spherical boundary mask
+d_sphere = sphere(boundary_radius);
+
+return max(d_lattice, d_sphere);

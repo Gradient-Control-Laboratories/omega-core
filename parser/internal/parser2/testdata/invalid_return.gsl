@@ -1,0 +1,7 @@
+x = 1 ;
+
+// return 1; return 2; // ERROR: 1 unexpected token "return"
+// return 1, ; // ERROR: 4 unexpected token
+// return ; // ERROR: 5 expected at least one return element
+
+return 1;

@@ -1,0 +1,7 @@
+import . "builtin";
+
+foo(x) {
+   return x;
+}
+
+return foo(1);

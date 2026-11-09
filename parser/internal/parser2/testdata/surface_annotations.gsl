@@ -1,0 +1,21 @@
+// @surface matte = 1.0;                                 // ERROR: 1 @surface annotation can only be applied to function declarations
+// @surface(4) coated(m) { return m; }                    // ERROR: 2 @surface annotation does not take arguments
+// errFn1(@surface m) { return m; }                       // ERROR: 3 unsupported parameter annotation @surface
+// @frame bad = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];       // ERROR: 4 @frame annotation can only be applied to function parameters
+// errFn2(@frame(x) f) { return f; }                      // ERROR: 5 @frame annotation does not take arguments
+
+// A @surface preset is an overload of the operator it bakes defaults for. It
+// takes only the slots a document supplies, the substrate first, its colour
+// and the body's frame, and the annotation marks the name, so one entry covers
+// both arities. @frame is a parameter kind alone, recorded like @color.
+@surface turned(baseMaterial, @color baseColor, @frame frame) {
+    cut, tone = turned(baseMaterial, baseColor, frame, 0.15);
+    return cut, tone;
+}
+
+turned(baseMaterial, baseColor, frame, feed) {
+    return baseMaterial + feed, baseColor[0] + frame.x;
+}
+
+mat, col = turned(1.0, [0.5, 0.5, 0.5], [1.0, 2.0]);
+return mat + col;

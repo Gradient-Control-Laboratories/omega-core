@@ -1,0 +1,26 @@
+// A copy of the shipped gallery `common/web/example/Foam Lattice Gallery.gsl`.
+// The galleries are not otherwise compiled by anything, so a library change
+// that breaks one goes unnoticed. Keep this in step when that gallery changes.
+
+// Scene Size: 150
+// Every wall (plate) lattice from the `lattice/foam` library, shown side by
+// side. Each is returned infinitely thin (distance to the wall skeleton);
+// lattice.thicken gives the walls a thickness, and each is clipped to its own
+// cube and returned as a separate object. `radius` fillets the wall junctions.
+
+bias = 0.6;    // wall half-width
+r = 14;        // specimen half-size
+step = 34;     // spacing along X
+s = [12, 12, 12]; // cell size
+
+// Solidify a thin wall field and clip it to a cube centered at x = off.
+specimen(field, off) {
+  return max(lattice.solidify(field, bias), boxCentered([off, 0, 0], [2 * r, 2 * r, 2 * r]));
+}
+
+cub = specimen(foam.cubic(s, unionRound(0.5)),     -1.5 * step);
+cgr = specimen(foam.cubicGrid(s, unionRound(0.5)), -0.5 * step);
+bcc = specimen(foam.bcc(s, unionRound(0.5)),        0.5 * step);
+fcc = specimen(foam.fcc(s, unionRound(0.5)),        1.5 * step);
+
+return cub, cgr, bcc, fcc;

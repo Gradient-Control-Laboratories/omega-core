@@ -1,0 +1,37 @@
+[package]
+name = "fidget-core"
+version = "0.5.0"
+edition = "2024"
+rust-version = "1.95"
+authors = ["Matt Keeter <matt.j.keeter@gmail.com>"]
+description = "Core infrastructure for Fidget (vendored fork with MeshOracle op)"
+readme = "README.md"
+license = "MPL-2.0"
+repository = "https://github.com/mkeeter/fidget"
+build = false
+publish = false
+
+[lib]
+name = "fidget_core"
+path = "src/lib.rs"
+
+[features]
+eval-tests = []
+
+[dependencies]
+facet = { version = "0.46", features = ["reflect", "doc"] }
+nalgebra = { version = "0.35", features = ["std", "serde-serialize"], default-features = false }
+ordered-float = "5"
+rand = "0.10"
+rayon = "1.10"
+serde = { version = "1.0", features = ["derive", "rc"] }
+strum = { version = "0.28", features = ["derive"] }
+thiserror = "2"
+
+[target."cfg(target_arch = \"wasm32\")".dependencies]
+getrandom-02 = { version = "0.2", features = ["js"], package = "getrandom" }
+getrandom-03 = { version = "0.3", features = ["wasm_js"], package = "getrandom" }
+# Fork: no wasm_js here. getrandom 0.4.3 fails to compile with both wasm_js
+# and the custom backend omega's browser build selects; 0.4 calls the same
+# __getrandom_v03_custom hook agent/fidget/internal/wasm supplies.
+getrandom-04 = { version = "0.4", package = "getrandom" }

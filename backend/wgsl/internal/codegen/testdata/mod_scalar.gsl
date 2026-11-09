@@ -1,0 +1,21 @@
+// Mixed scalar/vector mod broadcasts: the scalar operand is splatted to the
+// result type in the generated WGSL (the gsl_floored helpers take both
+// operands at the result type).
+
+a1 = [2, 3, 4];
+b1 = p.x;
+c1 = a1 % b1;
+
+a2 = p.y;
+b2 = [5, 6, 7];
+c2 = a2 % b2;
+
+a3 = [2, 3];
+b3 = p.z;
+c3 = a3 % b3;
+
+a4 = p.x;
+b4 = [2, 3, 4, 5];
+c4 = a4 % b4;
+
+return c1, c2, c3, c4;

@@ -1,0 +1,42 @@
+@scene(500, 50)
+
+// Showcase of the easing functions: every easing curve plotted as y = f(x)
+// over x in [0, 1], arranged in a 3-column grid. Columns are ease-in,
+// ease-out, and the symmetric S-curve; rows are the quadratic, cubic,
+// exponential, and circular families, with linear (the identity) on its own
+// row. Each plot is a 40 mm square, drawn as a thin sheet. Lengths are in mm.
+
+cell = 40;      // plot box size
+gap = 12;       // gap between plots
+lineR = 1.4;    // curve half-thickness
+frameR = 0.48;  // cell frame half-thickness
+
+// Plot y = easeFn(x), x and y in [0, 1], inside the grid cell at (col, row).
+plot(col, row, easeFn) {
+  ox = col * (cell + gap);
+  oy = -row * (cell + gap);
+  u = (p.x - ox) / cell;
+  v = (p.y - oy) / cell;
+
+  // Vertical distance to the curve (approximate, fine for a thin line),
+  // clipped to the unit cell box.
+  box = max(abs(u - 0.5) - 0.5, abs(v - 0.5) - 0.5) * cell;
+  curve = max(abs(v - easeFn(clamp(u, 0, 1))) * cell - lineR, box);
+
+  // Thin frame around the cell for reference.
+  frame = abs(box) - frameR;
+
+  return min(curve, frame);
+}
+
+// Three columns (in, out, in-out) by four families, then linear on its own.
+grid = min(
+  plot(0, 0, ease.inQuadratic),   plot(1, 0, ease.outQuadratic),   plot(2, 0, ease.quadratic),
+  plot(0, 1, ease.inCubic),       plot(1, 1, ease.outCubic),       plot(2, 1, ease.cubic),
+  plot(0, 2, ease.inExponential), plot(1, 2, ease.outExponential), plot(2, 2, ease.exponential),
+  plot(0, 3, ease.inCircular),    plot(1, 3, ease.outCircular),    plot(2, 3, ease.circular),
+  plot(1, 4, ease.linear)
+);
+
+// Extrude the 2D plot into a thin sheet, 3.2 mm thick.
+return max(grid, abs(p.z) - 1.6);

@@ -1,0 +1,26 @@
+
+// WGSL should only generate code
+// for variables that are referenced
+// and for functions that are called
+
+unused_global = 7;
+
+unused_top_level_func(one) {
+  return one + 2.5;
+}
+
+foo(one) {
+  unused_local = 2;
+
+  unused_local_func(v, f) {
+    return f(v) + unused_local;
+  }
+
+  sphere(radius) {
+    return length(p) - radius;
+  }
+
+  return sphere(one);
+}
+
+return foo(1);

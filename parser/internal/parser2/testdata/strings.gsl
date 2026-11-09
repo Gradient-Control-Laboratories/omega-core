@@ -1,0 +1,11 @@
+a = "x";
+b = "xyz";
+c = ["ab", 3];
+d = "©";
+e = "©®";
+
+// err1 = ""; // ERROR: 1 empty strings are not allowed
+// err2 = ["", 3]; // ERROR: 2 empty strings are not allowed
+// err3 = []; // ERROR: 3 collections cannot be empty
+
+return a, b, c, d, e;

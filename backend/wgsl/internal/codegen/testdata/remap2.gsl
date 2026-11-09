@@ -1,0 +1,13 @@
+sphere(radius) {
+  return sqrt(p.x * p.x + p.y * p.y + p.z * p.z) - radius;
+}
+
+offset(f) {
+  return remap(f(0.8), [p.x - 1, p.y, p.z]);
+}
+
+offset2() {
+  return remap(offset(sphere), [p.x - 1, p.y, p.z]);
+}
+
+return offset2();

@@ -1,0 +1,25 @@
+[package]
+name = "fidget-raster"
+version = "0.5.1"
+edition = "2024"
+rust-version = "1.95"
+authors = ["Matt Keeter <matt.j.keeter@gmail.com>"]
+description = "Bitmap and heightmap rendering for Fidget (vendored at fidget e329a898)"
+readme = "README.md"
+license = "MPL-2.0"
+repository = "https://github.com/mkeeter/fidget"
+build = false
+publish = false
+
+[lib]
+name = "fidget_raster"
+path = "src/lib.rs"
+
+[dependencies]
+fidget-core = { path = "../fidget-core", version = "=0.5.0" }
+nalgebra = { version = "0.35", features = ["std", "serde-serialize"], default-features = false }
+ordered-float = "5"
+rand = "0.10"
+rayon = "1.10"
+thiserror = "2"
+zerocopy = { version = "0.8", features = ["derive"] }

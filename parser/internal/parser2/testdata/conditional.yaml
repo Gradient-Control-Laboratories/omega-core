@@ -1,0 +1,260 @@
+Expected:
+  files:
+    - assignments:
+        - expression:
+            value: 1
+          variables:
+            - name: a
+        - expression:
+            value: 2
+          variables:
+            - name: b
+        - expression:
+            expression:
+              operands:
+                - reference:
+                    name: a
+                - reference:
+                    name: b
+              operation: LT
+          variables:
+            - name: c
+        - expression:
+            expression:
+              operands:
+                - reference:
+                    name: a
+                - reference:
+                    name: b
+              operation: COMPARE
+          variables:
+            - name: d
+        - expression:
+            expression:
+              operands:
+                - reference:
+                    name: a
+                - reference:
+                    name: b
+              operation: LT
+          variables:
+            - name: e
+        - expression:
+            expression:
+              operands:
+                - expression:
+                    operands:
+                      - reference:
+                          name: a
+                      - reference:
+                          name: b
+                    operation: LT
+                - value: 4
+                - value: 5
+              operation: SELECT
+          variables:
+            - name: f
+        - expression:
+            expression:
+              operands:
+                - expression:
+                    operands:
+                      - reference:
+                          name: a
+                      - reference:
+                          name: b
+                    operation: COMPARE
+                - value: 4
+                - value: 5
+                - value: 6
+              operation: SELECT
+          variables:
+            - name: g
+        - expression:
+            expression:
+              operands:
+                - expression:
+                    operands:
+                      - reference:
+                          name: a
+                      - reference:
+                          name: b
+                    operation: LT
+                - expression:
+                    operands:
+                      - expression:
+                          operands:
+                            - reference:
+                                name: c
+                            - reference:
+                                name: b
+                          operation: LT
+                      - value: 0
+                      - value: 1
+                    operation: SELECT
+                - expression:
+                    operands:
+                      - expression:
+                          operands:
+                            - reference:
+                                name: d
+                            - reference:
+                                name: b
+                          operation: LT
+                      - expression:
+                          operands:
+                            - expression:
+                                operands:
+                                  - reference:
+                                      name: e
+                                  - reference:
+                                      name: b
+                                operation: LT
+                            - value: 2
+                            - value: 3
+                          operation: SELECT
+                      - expression:
+                          operands:
+                            - expression:
+                                operands:
+                                  - reference:
+                                      name: f
+                                  - reference:
+                                      name: b
+                                operation: LT
+                            - value: 4
+                            - value: 5
+                          operation: SELECT
+                    operation: SELECT
+              operation: SELECT
+          variables:
+            - name: h
+        - expression:
+            expression:
+              operands:
+                - expression:
+                    operands:
+                      - reference:
+                          name: a
+                      - reference:
+                          name: b
+                    operation: LT
+                - expression:
+                    operands:
+                      - expression:
+                          operands:
+                            - reference:
+                                name: c
+                            - reference:
+                                name: b
+                          operation: LT
+                      - value: 0
+                      - value: 1
+                    operation: SELECT
+                - expression:
+                    operands:
+                      - expression:
+                          operands:
+                            - reference:
+                                name: d
+                            - reference:
+                                name: b
+                          operation: LT
+                      - expression:
+                          operands:
+                            - expression:
+                                operands:
+                                  - reference:
+                                      name: e
+                                  - reference:
+                                      name: b
+                                operation: LT
+                            - value: 2
+                            - value: 3
+                          operation: SELECT
+                      - expression:
+                          operands:
+                            - expression:
+                                operands:
+                                  - reference:
+                                      name: f
+                                  - reference:
+                                      name: b
+                                operation: LT
+                            - value: 4
+                            - value: 5
+                          operation: SELECT
+                    operation: SELECT
+              operation: SELECT
+          variables:
+            - name: i
+        - expression:
+            expression:
+              operands:
+                - expression:
+                    operands:
+                      - reference:
+                          name: a
+                      - value: 0.5
+                    operation: LT
+                - reference:
+                    name: b
+                - expression:
+                    operands:
+                      - expression:
+                          operands:
+                            - reference:
+                                name: a
+                            - value: 1.5
+                          operation: LT
+                      - reference:
+                          name: c
+                      - expression:
+                          operands:
+                            - expression:
+                                operands:
+                                  - reference:
+                                      name: a
+                                  - value: 2.5
+                                operation: LT
+                            - reference:
+                                name: d
+                            - expression:
+                                operands:
+                                  - expression:
+                                      operands:
+                                        - reference:
+                                            name: a
+                                        - value: 3.5
+                                      operation: LT
+                                  - reference:
+                                      name: f
+                                  - expression:
+                                      operands:
+                                        - expression:
+                                            operands:
+                                              - reference:
+                                                  name: a
+                                              - value: 7.5
+                                            operation: LT
+                                        - reference:
+                                            name: g
+                                        - reference:
+                                            name: h
+                                      operation: SELECT
+                                operation: SELECT
+                          operation: SELECT
+                    operation: SELECT
+              operation: SELECT
+          variables:
+            - name: k
+      returns:
+        - reference:
+            name: g
+        - reference:
+            name: h
+        - reference:
+            name: i
+        - reference:
+            name: k
+Source: ""

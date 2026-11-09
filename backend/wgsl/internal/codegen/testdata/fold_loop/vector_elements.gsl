@@ -1,0 +1,10 @@
+// A fold over vectors from a named list: they become a constant array, one
+// for both functions that fold it.
+corners(q) {
+  offsets = [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [0, 0, 1], [1, 0, 1], [0, 1, 1], [1, 1, 1]];
+  return reduce([0, 0, 0], (acc, o) { return acc + (q - o) * length(q - o); }, offsets);
+}
+nearest(q) {
+  return reduce(1000.0, (best, o) { return min(best, length(q - o)); }, [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [0, 0, 1], [1, 0, 1], [0, 1, 1], [1, 1, 1]]);
+}
+return sphere(p, 10 + corners(p / 10).x + nearest(p / 10));

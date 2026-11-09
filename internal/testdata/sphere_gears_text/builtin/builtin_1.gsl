@@ -1,0 +1,25 @@
+intersectRound(d1, d2, radius) {
+   inset1 = max((d1 + radius), 0)
+   inset2 = max((d2 + radius), 0)
+
+   return (min(neg(radius), max(d1, d2)) + length(collect(inset1, inset2)));
+}
+
+unionRound(d1, d2, radius) {
+   return neg(intersectRound(neg(d1), neg(d2), radius));
+}
+
+intersectChamfer(d1, d2, setback) {
+   face = max(d1, d2)
+   edge = ((d1 + d2 + setback) / sqrt2)
+
+   return max(face, edge);
+}
+
+unionChamfer(d1, d2, setback) {
+   return neg(intersectChamfer(neg(d1), neg(d2), setback));
+}
+
+differenceChamfer(target, tool, setback) {
+   return intersectChamfer(target, neg(tool), setback);
+}

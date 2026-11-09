@@ -1,0 +1,44 @@
+[workspace]
+resolver = "2"
+members = [
+    "internal/fidget/internal/rust",
+    "internal/fidget/internal/tape-core",
+    "internal/fidget/internal/tape-py",
+    "backend/mesh/manifold/internal/rust",
+    "internal/fidget/vendor/fidget",
+    "internal/fidget/vendor/fidget-core",
+    "internal/fidget/vendor/fidget-bytecode",
+    "internal/fidget/vendor/fidget-gui",
+    "internal/fidget/vendor/fidget-jit",
+    "internal/fidget/vendor/fidget-mesh",
+    "internal/fidget/vendor/fidget-raster",
+    "internal/fidget/vendor/fidget-rhai",
+    "internal/fidget/vendor/fidget-shapes",
+    "internal/fidget/vendor/fidget-solver",
+    "internal/fidget/vendor/fidget-wgpu",
+]
+
+# All of fidget is vendored from mkeeter/fidget@e329a898 (unreleased 0.5.1,
+# which carries the all-GPU fidget-wgpu pipeline), so every fidget crate comes
+# from one revision. Four of them are our forks:
+# fidget-core adds the Op::MeshOracle leaf for bvhSdf()/vdbSdf() integration,
+# the bytecode/jit backends add a match arm that panics on MeshOracle
+# (programs containing one must use the VM evaluator), and fidget-mesh
+# adds a per-mille progress callback to Settings so callers
+# can drive a live progress bar during Octree::build / walk_dual.
+[patch.crates-io]
+fidget = { path = "internal/fidget/vendor/fidget" }
+fidget-core = { path = "internal/fidget/vendor/fidget-core" }
+fidget-bytecode = { path = "internal/fidget/vendor/fidget-bytecode" }
+fidget-gui = { path = "internal/fidget/vendor/fidget-gui" }
+fidget-jit = { path = "internal/fidget/vendor/fidget-jit" }
+fidget-mesh = { path = "internal/fidget/vendor/fidget-mesh" }
+fidget-raster = { path = "internal/fidget/vendor/fidget-raster" }
+fidget-rhai = { path = "internal/fidget/vendor/fidget-rhai" }
+fidget-shapes = { path = "internal/fidget/vendor/fidget-shapes" }
+fidget-solver = { path = "internal/fidget/vendor/fidget-solver" }
+fidget-wgpu = { path = "internal/fidget/vendor/fidget-wgpu" }
+
+[profile.release]
+strip = "none"
+

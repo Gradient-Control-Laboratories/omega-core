@@ -1,0 +1,22 @@
+
+// Exercises map and reduce over collections, feeding the audio output.
+
+partials = [time, time * 2.0, time * 3.0, time * 4.0];
+
+// map: a sine partial per element, producing a new collection.
+voices = map((value, index) {
+  return sin(value) / (index + 1.0);
+}, partials);
+
+// reduce: mix the partials into a single signal.
+mixed = reduce(0.0, (acc, value) {
+  return acc + value;
+}, voices);
+
+// singleton: mapping over a scalar is equivalent to a list of length one,
+// so this yields a scalar.
+quieter = map((value, index) {
+  return value * 0.5;
+}, mixed);
+
+return audio(mixed, quieter);

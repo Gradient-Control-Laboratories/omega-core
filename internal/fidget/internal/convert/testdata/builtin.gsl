@@ -1,0 +1,8 @@
+
+a = clamp(p.x, p.y, p.z);
+
+b = cross(a, p);
+
+c = tanh(b);
+
+return c.x;

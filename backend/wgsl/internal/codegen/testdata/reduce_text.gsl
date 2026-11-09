@@ -1,0 +1,6 @@
+
+d = reduce(1000000, (acc, code) {
+    return min(acc, text.glyph(code));
+}, "hello");
+
+return d;

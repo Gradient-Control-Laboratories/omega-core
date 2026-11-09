@@ -1,0 +1,111 @@
+Expected:
+  files:
+    - assignments:
+        - expression:
+            value: 3
+          variables:
+            - name: aValue
+        - expression:
+            expression:
+              operands:
+                - value: 2
+                - value: 3
+              operation: ADD
+          range:
+            max:
+              expression:
+                operands:
+                  - value: 12
+                  - reference:
+                      name: aValue
+                operation: ADD
+            min:
+              expression:
+                operands:
+                  - value: -7
+                  - reference:
+                      name: aValue
+                operation: SUB
+          variables:
+            - name: someValue
+              properties:
+                - expression:
+                    expression:
+                      operands:
+                        - value: -7
+                        - reference:
+                            name: aValue
+                      operation: SUB
+                  name: min
+                - expression:
+                    expression:
+                      operands:
+                        - value: 12
+                        - reference:
+                            name: aValue
+                      operation: ADD
+                  name: max
+        - expression:
+            value: 42
+          range:
+            max:
+              value: 100
+            min:
+              value: 10
+          variables:
+            - name: someValue2
+              properties:
+                - expression:
+                    value: 10
+                  name: min
+                - expression:
+                    value: 100
+                  name: max
+        - expression:
+            value: 7
+          variables:
+            - name: anotherValue
+      fnTypes:
+        - groups:
+            - functions:
+                - parameters:
+                    - name: one
+                  returns:
+                    - expression:
+                        operands:
+                          - reference:
+                              name: one
+                          - value: 2.5
+                          - reference:
+                              name: p
+                        operation: ADD
+                    - expression:
+                        operands:
+                          - expression:
+                              operands:
+                                - reference:
+                                    name: one
+                                - expression:
+                                    operands:
+                                      - value: 2
+                                      - expression:
+                                          operands:
+                                            - reference:
+                                                name: p
+                                            - reference:
+                                                name: x
+                                          operation: ACCESS
+                                    operation: MUL
+                              operation: DIV
+                          - value: 1
+                        operation: SUB
+              paramCount: 1
+          name: foo
+      returns:
+        - fnCall:
+            arguments:
+              - reference:
+                  name: someValue
+            reference:
+              name: foo
+Source: ""

@@ -1,0 +1,27 @@
+// errFn1(@spline s) { return s; }               // ERROR: 1 unsupported parameter annotation @spline
+// errFn2(@color(1) c) { return c; }             // ERROR: 2 @color annotation does not take arguments
+// errFn3(@values v) { return v; }               // ERROR: 3 @values annotation can only be applied to variable assignments
+// errFn4(@material m) { return m; }             // ERROR: 4 unsupported parameter annotation @material
+// errFn5(@foo x) { return x; }                  // ERROR: 5 unsupported annotation @foo
+// errFn6(@direction(0, 0, 1) d) { return d; }   // ERROR: 6 @direction annotation takes at most one argument: @direction(anchor)
+// errFn7(@direction(elsewhere) d) { return d; } // ERROR: 7 @direction's anchor on a parameter must name another parameter of the function
+// errFn8(@direction(d) d) { return d; }         // ERROR: 8 @direction's anchor on a parameter must name another parameter of the function
+// errFn9(@direction([0, 0, 0]) d) { return d; } // ERROR: 9 @direction's anchor on a parameter must name another parameter of the function
+
+// A control annotation on a parameter declares what the argument is: a colour,
+// a point, a direction or a frame, or a scalar with a range. It is recorded on
+// the parameter and changes nothing about how the function computes.
+coat(@color coatColor, @range(0, 100) glossUnits, @range(0, 1) peel) {
+    return coatColor[0] + glossUnits + peel;
+}
+
+// A direction parameter's argument names the sibling parameter its arrow is
+// drawn from.
+placed(@point center, @direction(center) axis, @transform frame) {
+    row = frame[0];
+    return center[0] + axis[2] + row[0];
+}
+
+identity = [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]];
+
+return coat([0.8, 0.1, 0.1], 60, 0.3) + placed([0.0, 0.0, 0.0], [0.0, 0.0, 1.0], identity);

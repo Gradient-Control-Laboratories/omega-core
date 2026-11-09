@@ -1,0 +1,24 @@
+import "omega";
+
+// The motivating list-of-vectors user story: map each angle to a rotated
+// placement vector, then map the placements to shapes and union them.
+
+partPlacementShift = 1.5;
+dirX = [1.0, 0.0, 0.0];
+
+angles = map((value, index) {
+  return index * omega.tau / 4.0;
+}, [0.0, 0.0, 0.0, 0.0]);
+
+// Each result is a vector, so radials is a list of vectors.
+radials = map(
+  (ang, index) { return map.rotateXY(dirX * partPlacementShift, ang); },
+  angles
+);
+
+// Map the placement vectors back down to scalar SDFs.
+spheres = map((center, index) {
+  return length(p - center) - 0.4;
+}, radials);
+
+return reduce(1000.0, (acc, d) { return min(acc, d); }, spheres);

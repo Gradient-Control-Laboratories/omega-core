@@ -1,0 +1,4 @@
+import . "builtin";
+
+dirX = collect(1, 0, 0)
+dirZ = collect(0, 0, 1)

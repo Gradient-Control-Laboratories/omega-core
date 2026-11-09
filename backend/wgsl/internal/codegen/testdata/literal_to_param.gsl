@@ -1,0 +1,10 @@
+@range(0, 10)
+globalOffset = 7;
+
+sphere(radius) {
+  localOffset = [8, 9, 10]; // LiteralToParameter column 21
+
+  return length(p + localOffset + globalOffset) - radius;
+}
+
+return sphere(2.5); // LiteralToParameter column 15

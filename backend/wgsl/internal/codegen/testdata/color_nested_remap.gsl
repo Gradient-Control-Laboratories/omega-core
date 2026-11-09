@@ -1,0 +1,15 @@
+
+// A colored shape transported through TWO nested remaps: a reflection in x, then
+// a translation. Its color must compose BOTH — sampling ball.color at
+// reflect(p - offset) = [4 - p.x, p.y, p.z] — not just the inner reflect. Guards
+// the nested-remap flatten in the color resolver (flattenRemaps): the
+// compositional resolver emits nested inline remaps, and the backend drops a
+// nested remap's OUTER coordinate unless they are composed first. A single-remap
+// program (color_remap.gsl) has an identity outer coordinate, so it can't catch
+// this — the dropped coordinate there is harmless.
+ball = sphere(1);
+ball.color = [clamp(p.x, 0, 1), 0, 0];
+
+reflected = remap(ball, [-p.x, p.y, p.z]);
+moved = remap(reflected, p - [4, 0, 0]);
+return moved;

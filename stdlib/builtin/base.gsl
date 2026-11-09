@@ -1,0 +1,98 @@
+
+// Base Omega Library
+//
+// Doc convention:
+//   - `///` lines are public docs — extracted into the AI preamble
+//     (common/program/preamble/libraries.go) and shown in the Libraries
+//     panel. Write them for users.
+//   - Plain `//` lines are internal notes — they stay in the source
+//     for library authors but never reach the preamble. Use them for
+//     implementation details, attributions, TODOs, etc.
+//   - A blank line ends a doc block; a `//` line in the middle of one
+//     is ignored (doesn't break or appear).
+
+// The transform helpers (rotateXY, eulerAngles, patternPolarXY, ...) live in
+// the `map` package, and builtin does not import it: the one internal rotation
+// (in arcTwoPointTangentExtendedXY) is inlined below instead. The constant
+// vectors (zero, dirX, dirY, dirZ) live in the `vector` package, which 3d.gsl
+// imports for its axis-aligned primitives — mutual dependency with a library
+// that dot-imports builtin is fine, but keep it to that one case.
+
+// =========================================================
+// CONSTANTS
+// =========================================================
+pi = atan(1) * 4;
+tau = pi * 2;
+sqrt2 = sqrt(2);
+sqrt3 = sqrt(3);
+e = exp(1);
+
+/// Millimeters are the unit; these convert into them. Write 2.0 * inch rather
+/// than 50.8, so the drawing's number stays visible in the source. `in` is a
+/// reserved word, hence `inch`, and there is no `mm` because 1.0 * mm says
+/// nothing that 1.0 does not.
+inch = 25.4;
+/// Feet to millimeters.
+foot = 304.8;
+/// Meters to millimeters.
+meter = 1000.0;
+
+/// The empty solid: far from everything, so min(d, nothing) and
+/// max(d, -nothing) are just d. It is finite on purpose: the mesher lowers
+/// c ? a : b as c * a + (1 - c) * b, which drops the branch not taken by
+/// multiplying it by 0, and 0 times infinity is not 0.
+nothing = 1e5;
+
+/// How far past a declared name.box its crop reaches: ten times the
+/// raycaster's hit floor, so a box computed from a part's nominal dimensions
+/// never shaves float-level overshoot off a face that touches it.
+boxPad = 0.01;
+
+/// First element of a list. A scalar behaves as a list of length one, so
+/// firstOf(x) == x — handy for arguments that broadcast a single value or
+/// accept a per-slot list. Pairs with lastOf().
+// The no-initial reduce seeds the accumulator with the first element, so
+// keeping it yields the first and overwriting it yields the last.
+firstOf(list) {
+  return reduce((first, element) {
+    return first;
+  }, list);
+}
+
+/// Last element of a list. A scalar behaves as a list of length one, so
+/// lastOf(x) == x. Pairs with firstOf() for broadcast-or-per-slot arguments.
+lastOf(list) {
+  return reduce((previous, element) {
+    return element;
+  }, list);
+}
+
+// Internal: a value that draws as `stand` when its part is small on screen: a
+// colour or material's name.simple = stand, a texture's flat look for one
+// (property.Expand, property.MarkParts). It is the value wherever it is built;
+// the viewer's WGSL draws the stand-in instead, without evaluating the value,
+// below the Detail slider's Textures rung, a colour's and a material's alike,
+// blending across the octave below it (agent/wgsl/internal/codegen/simple.go).
+simpleValue(value, stand) {
+  return value;
+}
+
+// Internal: a value with fine detail, name.detail = fine, of features
+// name.detailSize = size mm across (0.15, wood's fibre, without one), its
+// coarse look otherwise (property.Expand). The viewer's WGSL draws fine where
+// a pixel is under 0.5 of the size, where fadeDetail(size) is above 0, and
+// coarse elsewhere, without evaluating fine; the Render panel's Pixel filter
+// scales the pixel (agent/wgsl/internal/codegen/simple.go). Fine detail fades
+// to its coarse look by that pixel, as fadeDetail(size) fades it, so fine is
+// the value wherever it is built, as simpleValue's is.
+detailValue(coarse, fine, size) {
+  return fine;
+}
+
+// Internal: simpleValue for a stand-in that has a stand-in of its own, a
+// simpler texture before the flat look (property.MarkParts). The viewer
+// switches both below the Textures rung, so the simpler texture shows only
+// while the value blends to the flat look.
+simpleTexture(value, stand) {
+  return value;
+}

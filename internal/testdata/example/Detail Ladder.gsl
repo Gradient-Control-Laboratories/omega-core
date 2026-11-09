@@ -1,0 +1,119 @@
+// Scene Size: 400
+
+// The Detail ladder, one rung per column: three treatments on parts of five
+// sizes, each double the last, so one frame spans five octaves of size on
+// screen. Every texture and relief scales with its part, so a row differs
+// from the next only in size. Drag a handle of the Render panel's Detail slider, or zoom out,
+// and the smallest row gives each thing up first:
+//
+//   Relief    the screws' thread turns to paint, and the checker and blue
+//             bumps flatten
+//   Simple    the screws lose their socket and chamfers, their thread painted
+//             on, and the knobs their groove and dimples, keeping their colours
+//   Textures  every texture goes flat: checks gray, dots to their mix, the
+//             screws' thread plain steel
+//   Gone      the part shrinks away
+//
+// The dots' .simple is the next simpler texture, whose own .simple, declared
+// in the texture library, is its flat look; both switch at the Textures rung,
+// so the plain dots show only as the mottled ones blend to the mix. Every part
+// is placed with transform.translate, so it keeps its box.
+
+// A small knob: a ball with a groove around its waist and four dimples on
+// top, the detail its sphere stand-in leaves out.
+knob(r) {
+  groove = torus(0.8 * r, 0.125 * r);
+  dimples = min(min(sphere([0.6 * r, 0, 0.8 * r], 0.2 * r), sphere([-0.6 * r, 0, 0.8 * r], 0.2 * r)),
+                min(sphere([0, 0.6 * r, 0.8 * r], 0.2 * r), sphere([0, -0.6 * r, 0.8 * r], 0.2 * r)));
+  return max(sphere(r), -min(groove, dimples));
+}
+
+// The screws are finished (fastener.shcs with a finish and a thread form): the
+// thread is relief, the material's displacement, painted on in their colour
+// wherever the relief is not drawn (thread.reliefColor). Each brings its
+// stand-in from the library: its head and shank as plain cylinders, with the
+// thread painted on (mechanical/fastener, Stand-ins).
+
+// 4 mm
+screw4 = transform.translate(fastener.shcs(2, 4, material.brushedMetal, fastener.threadIso), [-80, -61, -1]);
+
+checker4 = transform.translate(knob(2), [0, -61, 0]);
+checker4.simple = transform.translate(sphere(2), [0, -61, 0]);
+checker4.material = material.withDisplacement(material.matte, noise.gradientBump(0.5) * 0.03125);
+checker4.color = playful.checkerboard(0.5, color.white, color.black);
+
+relief4 = transform.translate(knob(2), [80, -61, 0]);
+relief4.simple = transform.translate(sphere(2), [80, -61, 0]);
+relief4.material = material.withDisplacement(material.plastic, noise.gradientBump(1) * 0.0625);
+dots4 = playful.polkaDot(1, 0.25, [0, 0, 1], [0.25, 0.55, 0.75], color.white);
+reliefColor4 = color.mixOklab(dots4, color.gray, 0.3 + 0.15 * noise.gradient(0.25));
+reliefColor4.simple = dots4;
+relief4.color = reliefColor4;
+
+// 8 mm
+screw8 = transform.translate(fastener.shcs(4, 8, material.brushedMetal, fastener.threadIso), [-80, -47, -2]);
+
+checker8 = transform.translate(knob(4), [0, -47, 0]);
+checker8.simple = transform.translate(sphere(4), [0, -47, 0]);
+checker8.material = material.withDisplacement(material.matte, noise.gradientBump(1) * 0.0625);
+checker8.color = playful.checkerboard(1, color.white, color.black);
+
+relief8 = transform.translate(knob(4), [80, -47, 0]);
+relief8.simple = transform.translate(sphere(4), [80, -47, 0]);
+relief8.material = material.withDisplacement(material.plastic, noise.gradientBump(2) * 0.125);
+dots8 = playful.polkaDot(2, 0.25, [0, 0, 1], [0.25, 0.55, 0.75], color.white);
+reliefColor8 = color.mixOklab(dots8, color.gray, 0.3 + 0.15 * noise.gradient(0.5));
+reliefColor8.simple = dots8;
+relief8.color = reliefColor8;
+
+// 16 mm
+screw16 = transform.translate(fastener.shcs(8, 16, material.brushedMetal, fastener.threadIso), [-80, -27, -4]);
+
+checker16 = transform.translate(knob(8), [0, -27, 0]);
+checker16.simple = transform.translate(sphere(8), [0, -27, 0]);
+checker16.material = material.withDisplacement(material.matte, noise.gradientBump(2) * 0.125);
+checker16.color = playful.checkerboard(2, color.white, color.black);
+
+relief16 = transform.translate(knob(8), [80, -27, 0]);
+relief16.simple = transform.translate(sphere(8), [80, -27, 0]);
+relief16.material = material.withDisplacement(material.plastic, noise.gradientBump(4) * 0.25);
+dots16 = playful.polkaDot(4, 0.25, [0, 0, 1], [0.25, 0.55, 0.75], color.white);
+reliefColor16 = color.mixOklab(dots16, color.gray, 0.3 + 0.15 * noise.gradient(1));
+reliefColor16.simple = dots16;
+relief16.color = reliefColor16;
+
+// 32 mm
+screw32 = transform.translate(fastener.shcs(16, 32, material.brushedMetal, fastener.threadIso), [-80, 5, -8]);
+
+checker32 = transform.translate(knob(16), [0, 5, 0]);
+checker32.simple = transform.translate(sphere(16), [0, 5, 0]);
+checker32.material = material.withDisplacement(material.matte, noise.gradientBump(4) * 0.25);
+checker32.color = playful.checkerboard(4, color.white, color.black);
+
+relief32 = transform.translate(knob(16), [80, 5, 0]);
+relief32.simple = transform.translate(sphere(16), [80, 5, 0]);
+relief32.material = material.withDisplacement(material.plastic, noise.gradientBump(8) * 0.5);
+dots32 = playful.polkaDot(8, 0.25, [0, 0, 1], [0.25, 0.55, 0.75], color.white);
+reliefColor32 = color.mixOklab(dots32, color.gray, 0.3 + 0.15 * noise.gradient(2));
+reliefColor32.simple = dots32;
+relief32.color = reliefColor32;
+
+// 64 mm
+screw64 = transform.translate(fastener.shcs(30, 60, material.brushedMetal, fastener.threadIso), [-80, 61, -15]);
+
+checker64 = transform.translate(knob(32), [0, 61, 0]);
+checker64.simple = transform.translate(sphere(32), [0, 61, 0]);
+checker64.material = material.withDisplacement(material.matte, noise.gradientBump(8) * 0.5);
+checker64.color = playful.checkerboard(8, color.white, color.black);
+
+relief64 = transform.translate(knob(32), [80, 61, 0]);
+relief64.simple = transform.translate(sphere(32), [80, 61, 0]);
+relief64.material = material.withDisplacement(material.plastic, noise.gradientBump(16) * 1);
+dots64 = playful.polkaDot(16, 0.25, [0, 0, 1], [0.25, 0.55, 0.75], color.white);
+reliefColor64 = color.mixOklab(dots64, color.gray, 0.3 + 0.15 * noise.gradient(4));
+reliefColor64.simple = dots64;
+relief64.color = reliefColor64;
+
+return screw4, checker4, relief4, screw8, checker8, relief8, screw16,
+  checker16, relief16, screw32, checker32, relief32, screw64, checker64,
+  relief64;

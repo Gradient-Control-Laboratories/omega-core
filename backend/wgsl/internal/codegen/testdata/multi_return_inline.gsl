@@ -1,0 +1,23 @@
+
+// A const multi-return function destructured by a multi-value assignment must
+// inline to separate constant assignments (point = [1, 2, 3]; normal = [1, 0, 0];),
+// not build as a runtime struct call — struct fields are not compile-time
+// constants and break downstream uses that require one.
+
+pointNormal() {
+  return [1, 2, 3], [1, 0, 0];
+}
+
+scaled(s) {
+  base, dir = pointNormal();
+  return base * s, dir;
+}
+
+point, normal = scaled(2);
+
+// Regression guard: a collection index requires a compile-time constant, so
+// this fails to build if the destructured values stop const-folding.
+radii = [4, 5];
+r = radii[normal.x];
+
+return sphere(r + length(point - normal));

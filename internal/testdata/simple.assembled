@@ -1,0 +1,26 @@
+import . "builtin";
+
+return sphere(6.583185307179586);
+
+
+// ==================
+// Package: builtin
+
+
+
+
+
+
+import "vector";
+
+sphere(radius) {
+   return (length(p) - radius);
+}
+
+
+
+
+// ==================
+// Package: vector
+
+import . "builtin";

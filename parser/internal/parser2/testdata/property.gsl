@@ -1,0 +1,26 @@
+
+aValue = 3;
+
+someValue = 2 + 3;
+someValue.min = -7 - aValue;
+someValue.max = 12 + aValue;
+
+// someValue.max = 10; // ERROR: 1 property someValue.max already assigned
+// someValue.foo = 5;  // ERROR: 2 only "min", "max", "period", "color", "material", "box", "simple", "detail", "detailSize", "u", "v" properties may be assigned, got "foo"
+
+someValue2 = 42;
+someValue2.min = 10;
+someValue2.max = 100;
+// unknown.min = 5;         // ERROR: 5 variable "unknown" is not defined in this scope
+
+anotherValue = 7;
+
+foo(one) {
+  // one.min = -2; // ERROR: 7 variable "one" is not defined in this scope
+  // one.max = 2;  // ERROR: 8 variable "one" is not defined in this scope
+  return one + 2.5 + p, one / (2 * p.x) - 1;
+}
+
+// foo.min = 5; // ERROR: 6 variable "foo" is not defined in this scope
+
+return foo(someValue);

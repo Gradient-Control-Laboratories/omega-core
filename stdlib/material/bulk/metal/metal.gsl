@@ -1,0 +1,107 @@
+// Metal Library (material/bulk/metal)
+//
+// Standard metals. Each metal is a zero-argument function returning a PAIR:
+// its material (the finish) and its colour, in that order.
+//   boltMat, boltColor = metal.steel();
+//   bolt.material = boltMat;
+//   bolt.color = boltColor;
+// A material carries no albedo, so a metal needs both properties. They are
+// returned together rather than named separately so the two cannot be
+// mismatched: there is no way to take brass's material with steel's colour
+// by accident. Materials are `material` records (see the material library);
+// vary one with `material.withRoughness(boltMat, 0.1)`.
+//
+// Each is a measured substance with a finish on it: the color is the
+// substance's own, from physical (the Physically Based database) or alloy, so
+// there is one brass, and the roughness is the finish this library names.
+// Doc convention follows builtin/base.gsl: `///` lines are public docs.
+
+import "material/bulk/physical";
+import "material/bulk/alloy";
+
+// Every finish is [[roughness, 1, 1.5, 0], [0,0,0,0], [0,0,0,0]], the row
+// layout material.make produces and the substances' own with the roughness
+// set, spelled out so the finish has no parameter to adjust.
+finish(rough) {
+  return [[rough, 1, 1.5, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]];
+}
+
+// ===========================================================================
+// Ferrous
+// ===========================================================================
+
+/// Mild steel, machined satin. Returns material and colour.
+@material steel() {
+  m, c = alloy.steel();
+  return finish(0.45), c;
+}
+
+/// Stainless steel, brushed. Its colour is a touch brighter and warmer than
+/// mild steel's. Returns material and colour.
+@material stainless() {
+  m, c = physical.stainlessSteel();
+  return finish(0.35), c;
+}
+
+/// Gray cast iron, rough as-cast surface. Returns material and colour.
+// Its color is iron's. Gray cast iron is iron with a few percent of graphite,
+// and the database's Cast Iron is no metal's reflectance: it is filed as
+// Manmade, from a spectrophotometer reading, with no refractive index, where
+// its metals take their color from one. Taken as a metal it draws nearly black.
+//   https://github.com/AntonPalmqvist/physically-based-api/tree/main/data/materials/cast-iron/
+//   https://refractiveindex.info/?shelf=3d&book=metals&page=iron
+@material castIron() {
+  m, c = physical.iron();
+  return finish(0.85), c;
+}
+
+// ===========================================================================
+// Light metals
+// ===========================================================================
+
+/// Aluminium, machined satin. Returns material and colour.
+@material aluminum() {
+  m, c = physical.aluminum();
+  return finish(0.40), c;
+}
+
+/// Titanium, bead-blasted, a warm gray. Returns material and colour.
+@material titanium() {
+  m, c = physical.titanium();
+  return finish(0.50), c;
+}
+
+/// Zinc, as a galvanised or plated dull finish, a cool bluish gray. Returns
+/// material and colour.
+@material zinc() {
+  m, c = physical.zinc();
+  return finish(0.55), c;
+}
+
+// ===========================================================================
+// Copper alloys and precious
+// ===========================================================================
+
+/// Brass, polished. Returns material and colour.
+@material brass() {
+  m, c = physical.brass();
+  return finish(0.30), c;
+}
+
+/// Copper, polished. Returns material and colour.
+@material copper() {
+  m, c = physical.copper();
+  return finish(0.35), c;
+}
+
+/// Gold, polished. Returns material and colour.
+@material gold() {
+  m, c = physical.gold();
+  return finish(0.25), c;
+}
+
+/// Chromium plate, mirror finish. Returns material and colour.
+@material chromium() {
+  m, c = physical.chromium();
+  return finish(0.04), c;
+}

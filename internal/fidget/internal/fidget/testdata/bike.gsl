@@ -1,0 +1,139 @@
+
+// Helper function for a capsule SDF (a cylinder with spherical ends).
+// It computes the distance from point 'p' to a line segment between a and b.
+// a: start point vector
+// b: end point vector
+// r: radius
+capsuleSDF(a, b, r) {
+    pa = p - a;
+    ba = b - a;
+    h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+    return length(pa - ba * h) - r;
+}
+
+// Helper for a Torus oriented parallel to the XZ plane (revolving around the Y-axis).
+// This is suitable for a standard upright wheel.
+// pos: center position
+// R: major radius (radius of the wheel itself)
+// r: minor radius (radius of the tire)
+torusY(pos, R, r) {
+    q = p - pos;
+    t = [length(q.xz) - R, q.y];
+    return length(t) - r;
+}
+
+// Helper to create a pair of parallel tubes, used for stays and forks.
+// The tubes are offset from the central XZ plane along the Y-axis.
+// p1: start point of the centerline
+// p2: end point of the centerline
+// yOffset: distance of each tube from the center plane
+// r: radius of tubes
+doubleTube(p1, p2, yOffset, r) {
+    // Tube on the negative Y side
+    p1_l = p1 - [0, yOffset, 0];
+    p2_l = p2 - [0, yOffset, 0];
+    d_l = capsuleSDF(p1_l, p2_l, r);
+
+    // Tube on the positive Y side
+    p1_r = p1 + [0, yOffset, 0];
+    p2_r = p2 + [0, yOffset, 0];
+    d_r = capsuleSDF(p1_r, p2_r, r);
+
+    return min(d_l, d_r);
+}
+
+// --- Define Bicycle Dimensions ---
+wheelRadius = 0.35;
+tireRadius = 0.03;
+tubeRadius = 0.025;
+wheelbase = 1.0;
+stayWidth = 0.08; // Half-width of frame at bottom bracket
+forkWidth = 0.06; // Half-width of frame at fork crown
+handlebarWidth = 0.4;
+
+// --- Define Hub/Dropout Widths ---
+// Width from centerline to dropout; must be > tireRadius + tubeRadius for clearance.
+rearHubWidth = tireRadius + tubeRadius + 0.01;
+frontHubWidth = tireRadius + tubeRadius + 0.01;
+
+
+// --- Define Key Frame Points (Anchors for Tubes) ---
+// The frame is oriented in the XZ plane. Y is the sideways axis.
+// Axles are at the center of the wheels.
+rearAxle = [-wheelbase / 2, 0, wheelRadius];
+frontAxle = [wheelbase / 2, 0, wheelRadius];
+
+// Bottom bracket (where pedals attach)
+bottomBracket = [-0.2, 0, 0.25];
+
+// Seat tube connection points
+seatTubeTop = [-0.25, 0, 0.7];
+seatPostTop = seatTubeTop + [0.02, 0, 0.15]; // Top of seat post
+
+// Head tube (front, where fork/handlebars attach)
+headTubeBottom = [0.3, 0, 0.65];
+headTubeTop = headTubeBottom + [0.05, 0, 0.1];
+
+// --- Define Dropout Points (at Axles, but spread on Y-axis for clearance) ---
+rearDropout_l = rearAxle - [0, rearHubWidth, 0];
+rearDropout_r = rearAxle + [0, rearHubWidth, 0];
+frontDropout_l = frontAxle - [0, frontHubWidth, 0];
+frontDropout_r = frontAxle + [0, frontHubWidth, 0];
+
+
+// --- Build Bicycle Components using SDFs ---
+
+// 1. Wheels (Oriented in the XZ plane)
+rearWheel = torusY(rearAxle, wheelRadius, tireRadius);
+frontWheel = torusY(frontAxle, wheelRadius, tireRadius);
+wheels = min(rearWheel, frontWheel);
+
+// 2. Frame (Main Triangle)
+seatTube = capsuleSDF(bottomBracket, seatTubeTop, tubeRadius);
+downTube = capsuleSDF(bottomBracket, headTubeBottom, tubeRadius * 1.2); // Usually thicker
+topTube = capsuleSDF(seatTubeTop, headTubeTop, tubeRadius);
+headTube = capsuleSDF(headTubeBottom, headTubeTop, tubeRadius * 1.4);
+mainFrame = min(seatTube, min(downTube, min(topTube, headTube)));
+
+// 3. Frame (Rear Triangle) - Connect to the new dropout points
+// Chainstays connect dropouts to the bottom bracket.
+bb_l = bottomBracket - [0, stayWidth, 0];
+bb_r = bottomBracket + [0, stayWidth, 0];
+chainStay_l = capsuleSDF(rearDropout_l, bb_l, tubeRadius);
+chainStay_r = capsuleSDF(rearDropout_r, bb_r, tubeRadius);
+chainStays = min(chainStay_l, chainStay_r);
+
+// Seatstays connect dropouts to the top of the seat tube.
+seatStay_l = capsuleSDF(rearDropout_l, seatTubeTop, tubeRadius * 0.8); // Usually thinner
+seatStay_r = capsuleSDF(rearDropout_r, seatTubeTop, tubeRadius * 0.8);
+seatStays = min(seatStay_l, seatStay_r);
+
+rearFrame = min(chainStays, seatStays);
+
+// 4. Fork - Connect to front dropouts and model as a V-shape
+fork_l = capsuleSDF(frontDropout_l, headTubeBottom, tubeRadius);
+fork_r = capsuleSDF(frontDropout_r, headTubeBottom, tubeRadius);
+fork = min(fork_l, fork_r);
+
+// 5. Handlebars & Stem
+stemEnd = headTubeTop + [0.1, 0, 0.05];
+stem = capsuleSDF(headTubeTop, stemEnd, tubeRadius);
+
+handlebarLeft = stemEnd + [0, -handlebarWidth / 2, 0];
+handlebarRight = stemEnd + [0, handlebarWidth / 2, 0];
+handlebars = capsuleSDF(handlebarLeft, handlebarRight, tubeRadius * 0.9);
+
+handlebarAssembly = min(stem, handlebars);
+
+// 6. Seat & Seat Post
+seatPos = seatPostTop;
+seat = capsuleSDF(seatPos - [0.1, 0, 0], seatPos + [0.1, 0, 0], 0.04);
+seatPost = capsuleSDF(seatTubeTop, seatPos, tubeRadius);
+seatAssembly = min(seat, seatPost);
+
+// --- Combine All Components into the Final Shape ---
+// The 'min' function acts as a union operation for SDFs.
+frame = min(mainFrame, rearFrame, seatAssembly, fork);
+
+// The final result is the SDF of the entire bicycle.
+return frame, handlebarAssembly, wheels;

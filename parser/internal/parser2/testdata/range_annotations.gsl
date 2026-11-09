@@ -1,0 +1,31 @@
+// @range(1) err1 = 5;                       // ERROR: 1 @range annotation requires 2 or 3 arguments: @range(min, max[, period])
+// @range(1, 2, 3, 4) err2 = 5;             // ERROR: 2 @range annotation requires 2 or 3 arguments: @range(min, max[, period])
+// @range(1, 10) errFn1() { return 1; }     // ERROR: 3 @range annotation can only be applied to variable assignments
+// errFn2(@range(1) x) { return x; }        // ERROR: 4 @range annotation on a parameter requires exactly 2 arguments: @range(min, max)
+// errFn3(@range(1, 2, 3) x) { return x; }   // ERROR: 5 @range annotation on a parameter requires exactly 2 arguments: @range(min, max)
+// errExpr = @values(1, 2) 1;                  // ERROR: 7 unsupported expression annotation @values
+// @range err0 = 5;                          // ERROR: 8 @range annotation requires 2 or 3 arguments: @range(min, max[, period])
+// errFn5(@range x) { return x; }            // ERROR: 9 @range annotation on a parameter requires exactly 2 arguments: @range(min, max)
+// errExpr1 = @range 1;                      // ERROR: 10 @range annotation requires 2 or 3 arguments: @range(min, max[, period])
+// errExpr2 = @range(1) 1;                   // ERROR: 11 @range annotation requires 2 or 3 arguments: @range(min, max[, period])
+// errExpr3 = @range(1, 2, 3, 4) 1;          // ERROR: 12 @range annotation requires 2 or 3 arguments: @range(min, max[, period])
+
+@range(1.0, 10.0)
+radius = 5.0;
+
+@range(0.0, 100.0, 5.0)
+speed = 50.0;
+
+scaleRadius(@range(0.5, 2.0) factor, @range(1.0, 10.0) step) {
+    return factor * step;
+}
+
+width = 2.0;
+width.min = 1.0;
+width.max = 10.0;
+width.period = 2.0;
+
+inlineVal = @range(1.0, 5.0) 2.5;
+inlineAnim = @range(0.0, 10.0, 2.0) 5.0;
+
+return radius + speed + scaleRadius(1.0, 2.0) + width + inlineVal + inlineAnim;

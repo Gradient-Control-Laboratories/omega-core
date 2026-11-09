@@ -1,0 +1,19 @@
+// A chain in which an inner closure's parameter shadows the name of an outer
+// one. The innermost body must see the inner binding (0.5), not the outer
+// one (0.1): captures are resolved by the parameter they belong to, not by
+// the name they happen to share.
+
+blend(d1, d2, k) {
+  h = max(k - abs(d1 - d2), 0) / k;
+  return min(d1, d2) - h * h * k * 0.25;
+}
+
+mk(k) {
+  return (k) {
+    return (a, b) { return blend(a, b, k); };
+  };
+}
+
+outerBound = mk(0.1);
+op = outerBound(0.5);
+return op(p.x, p.y);

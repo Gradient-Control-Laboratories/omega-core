@@ -1,0 +1,29 @@
+// A copy of the shipped gallery `common/web/example/Honeycomb Lattice Gallery.gsl`.
+// The galleries are not otherwise compiled by anything, so a library change
+// that breaks one goes unnoticed. Keep this in step when that gallery changes.
+
+// Scene Size: 300
+// Every cell-wall lattice from the `lattice/honeycomb` library, shown side by
+// side. Each is returned infinitely thin (distance to the cell-wall skeleton);
+// lattice.thicken gives the walls a width, and each is clipped to its own cube
+// and returned as a separate object. The honeycombs are 2D cells extruded
+// through Z.
+
+bias = 0.5;    // wall half-width
+r = 14;        // specimen half-size
+step = 34;     // spacing along X
+
+// Solidify a thin wall field and clip it to a cube centered at x = off.
+specimen(field, off) {
+  return max(lattice.solidify(field, bias), boxCentered([off, 0, 0], [2 * r, 2 * r, 2 * r]));
+}
+
+sqr = specimen(honeycomb.squareHoneycomb([10, 10]),                       -3 * step);
+dia = specimen(honeycomb.squareDiagonalHoneycomb([10, 10]),              -2 * step);
+rf1 = specimen(honeycomb.squareHoneycombReinforced([10, 10], 0.25),       -1 * step);
+rf2 = specimen(honeycomb.squareHoneycombReinforced([10, 10], 0.25, 0.75, unionSharp), 0 * step);
+oct = specimen(honeycomb.octetHoneycomb([12, 12], unionRound(0.3)),                       1 * step);
+hex = specimen(honeycomb.hexagonalHoneycomb(8, unionRound(0.3)),                        2 * step);
+tri = specimen(honeycomb.triangularHoneycomb(8, unionRound(0.2)),                       3 * step);
+
+return sqr, dia, rf1, rf2, oct, hex, tri;

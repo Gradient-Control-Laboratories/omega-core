@@ -1,0 +1,11 @@
+// Scene Size: 100
+
+// Debug scene: stone.granite alone, one ball, small scene — isolates two
+// decorrelated gradient() fields thresholded via texture.paint.
+
+graniteColor = stone.granite(4, color.gray, color.black, color.white);
+ball = sphere(25);
+ball.material = stone.stoneFinish(0.6);
+ball.color = graniteColor;
+
+return ball;

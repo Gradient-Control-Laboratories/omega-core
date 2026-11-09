@@ -1,0 +1,43 @@
+@scene(250, 25)
+
+// A pair of meshing helical spur gears, all lengths in millimetres. The gears
+// sit side by side with their pitch circles touching and turn in step as time
+// runs. Try the tooth counts, the module (tooth size), the pressure angle and
+// the helix angle: each gear stays in mesh as you drag.
+
+// One full tooth of travel per second; both gears advance by this phase.
+animate = mod(time, 1);
+
+// Tooth counts. The larger count turns more slowly.
+@range(9, 100) numTeeth1 = 20;
+@range(9, 100) numTeeth2 = 26;
+
+// The module is the pitch diameter divided by the tooth count, so it sets how
+// big the teeth (and therefore the whole gear) are.
+@range(1, 10) moduleVal = 4.0;
+
+// Pressure angle of the tooth flanks, in radians (0.26 is about 15 degrees).
+@range(0, 0.5) pressureAngle = 0.26;
+
+thickness = 35;
+
+// Extra root depth, as a fraction of the module, and the small chamfer (mm)
+// that breaks the tooth tips and edges.
+dedendumClearance = 0.25;
+kSmall = 0.25;
+
+// Helix angle of the teeth in radians; zero is a plain spur gear. The two
+// gears take opposite hands automatically.
+@range(-1, 1) helixAngle = 0.5;
+
+// Hub on the front face of each gear, and the through bore, all in mm.
+standoffHeight = 25;
+standoffChamfer = 1;
+standoffDiam1 = 30;
+standoffDiam2 = 40;
+boreDiam1 = 12;
+boreDiam2 = 16;
+
+g1, g2 = gears.gearPair(numTeeth1, numTeeth2, moduleVal, pressureAngle, thickness, helixAngle, standoffDiam1, standoffDiam2, standoffHeight, standoffChamfer, boreDiam1, boreDiam2, dedendumClearance, kSmall, animate);
+
+return g1, g2;

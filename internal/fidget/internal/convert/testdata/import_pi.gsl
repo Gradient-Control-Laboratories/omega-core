@@ -1,0 +1,6 @@
+// Regression: a bounded SDF using a dot-imported constant must build and
+// mesh — the canvas slicer ships subtree modules whose imports must resolve
+// through fidget's source manager (no "variable not found" and no skip stl).
+import . "omega";
+
+return length(p) - pi;

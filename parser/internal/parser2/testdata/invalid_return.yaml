@@ -1,0 +1,10 @@
+Expected:
+  files:
+    - assignments:
+        - expression:
+            value: 1
+          variables:
+            - name: x
+      returns:
+        - value: 1
+Source: ""

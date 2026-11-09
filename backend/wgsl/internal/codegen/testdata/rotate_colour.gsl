@@ -1,0 +1,9 @@
+// A part's colour turns with it through each of transform's rotations: the
+// colour reads the rotated coordinate, as it does the translated one.
+s = box([0, 0, 0], [10, 20, 30]);
+s.color = [clamp(p.x / 10, 0, 1), clamp(p.y / 20, 0, 1), 1];
+a = transform.rotateX(s, 0.5);
+b = transform.rotateY(transform.translate(s, [40, 0, 0]), 0.5);
+c = transform.rotateZ(transform.translate(s, [80, 0, 0]), 0.5);
+d = transform.rotate(transform.translate(s, [120, 0, 0]), [120, 0, 0], [1, 1, 0], 0.5);
+return a, b, c, d;

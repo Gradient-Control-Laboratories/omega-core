@@ -1,0 +1,22 @@
+
+// Exercises map and reduce over collections.
+
+values = [p.x, p.y, p.z, 1.0];
+
+// map: double each element, producing a new collection.
+doubled = map((value, index) {
+  return value * 2.0;
+}, values);
+
+// reduce: sum the doubled elements into a scalar.
+sum = reduce(0.0, (acc, value) {
+  return acc + value;
+}, doubled);
+
+// singleton: mapping over a scalar is equivalent to a list of length one,
+// so this yields a scalar.
+single = map((value, index) {
+  return value + 1.0;
+}, p.x);
+
+return sum + single;

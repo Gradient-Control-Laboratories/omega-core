@@ -1,0 +1,23 @@
+Expected:
+  files:
+    - assignments:
+        - expression:
+            value: 10
+          variables:
+            - name: x
+        - expression:
+            value: 20
+          variables:
+            - name: "y"
+      returns:
+        - expression:
+            operands:
+              - reference:
+                  name: x
+              - reference:
+                  name: "y"
+            operation: ADD
+  scene:
+    grid: 5
+    size: 50
+Source: ""

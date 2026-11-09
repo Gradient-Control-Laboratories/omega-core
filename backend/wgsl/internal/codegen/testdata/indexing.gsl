@@ -1,0 +1,22 @@
+
+a = [1, 2, 3];
+s = [0];
+
+foo(value) {
+    return [value, value + 1, value + 2, value + 3, value + 4, value + 5];
+}
+
+c = 1.0;
+cx = 1.5;
+
+return
+// a[-1] +          // ERROR: 50 index must be in range [0, 3), got -1
+// a[3] +           // ERROR: 51 index must be in range [0, 3), got 3
+// foo(2)[-1] +     // ERROR: 52 index must be in range [0, 6), got -1
+// foo(2)[6] +      // ERROR: 53 index must be in range [0, 6), got 6
+// a[0.5] +         // ERROR: 54 index must be an integer, got 0.500000
+// a[1 + cx] +      // ERROR: 55 index must be an integer, got 2.500000
+// a[p.x + 7] +     // ERROR: 56 index must be a constant expression
+// s[-1] +          // ERROR: 57 index must be in range [0, 1), got -1
+// s[1] +           // ERROR: 58 index must be in range [0, 1), got 1
+a[0 + c] + a[2.0] + foo(2)[0] + foo(3)[5] + s[0];

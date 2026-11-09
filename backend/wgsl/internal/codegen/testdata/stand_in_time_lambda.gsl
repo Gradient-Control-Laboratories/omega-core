@@ -1,0 +1,14 @@
+// A constant stand-in folds to a literal even when another function keeps a
+// reduce whose lambda reads time and subtracts vectors: that lambda is not
+// vector.subtractVector's, so the stand-in's colour conversion does not read
+// time.
+zzf(q) {
+  r = reduce(0, (acc, i) { return acc + sin(time + i); }, [0, 1, 2, 3, 4, 5, 6, 7]);
+  return color.linearize(q - [r, 0, 0]);
+}
+ball = sphere(25);
+ball.material = material.matte;
+ball.color = playful.checkerboard(10, color.white, color.black);
+b = sphere(10);
+b.color = zzf(p);
+return b, ball;

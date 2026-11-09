@@ -1,0 +1,79 @@
+Expected:
+  files:
+    - assignments:
+        - expression:
+            fnCall:
+              arguments:
+                - expression:
+                    operands:
+                      - value: 0.804
+                      - value: 0.098
+                      - value: 0.098
+                    operation: COLLECT
+              reference:
+                name: uiColor
+          variables:
+            - name: coat
+        - expression:
+            fnCall:
+              arguments:
+                - expression:
+                    operands:
+                      - value: 0
+                      - value: 0.5
+                      - value: 1
+                    operation: COLLECT
+              reference:
+                name: uiColor
+          variables:
+            - name: inlineColor
+        - expression:
+            fnCall:
+              arguments:
+                - fnCall:
+                    arguments:
+                      - expression:
+                          operands:
+                            - value: 0.2
+                            - value: 0.2
+                            - value: 0.2
+                          operation: COLLECT
+                    reference:
+                      name: uiColor
+              reference:
+                name: applyColor
+          variables:
+            - name: callColor
+      fnTypes:
+        - groups:
+            - functions:
+                - parameters:
+                    - name: c
+                  returns:
+                    - expression:
+                        operands:
+                          - reference:
+                              name: c
+                          - value: 0
+                        operation: INDEX
+              paramCount: 1
+          name: applyColor
+      returns:
+        - expression:
+            operands:
+              - expression:
+                  operands:
+                    - reference:
+                        name: coat
+                    - value: 0
+                  operation: INDEX
+              - expression:
+                  operands:
+                    - reference:
+                        name: inlineColor
+                    - value: 1
+                  operation: INDEX
+              - reference:
+                  name: callColor
+            operation: ADD
+Source: ""

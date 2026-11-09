@@ -1,0 +1,20 @@
+// The De Morgan dual of unionRoundExact. Negating a field flips its gradient,
+// so the normals are negated alongside the fields; the result must come back
+// as an intersection, staying at or above the union everywhere.
+
+import . "builtin";
+
+n1 = normalize(p);
+n2 = normalize(p - [1.2, 0, 0]);
+
+lens = intersectRoundExact(
+  () { return sphere([0, 0, 0], 1); },
+  () { return sphere([1.2, 0, 0], 1); },
+  n1, n2);
+
+blob = intersectRoundExact(
+  () { return boxCentered([0, 0, 0], [1.6, 1.6, 1.6]); },
+  () { return sphere([0.8, 0, 0], 1); },
+  n1, n2);
+
+return unionSharp([lens, remap(blob, p - [4, 0, 0])]);

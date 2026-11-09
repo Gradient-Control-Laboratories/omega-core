@@ -1,0 +1,10 @@
+
+sphere(radius) {
+  return length(p) - radius;
+}
+
+sphere(center, radius) {
+  return remap(sphere(radius), p - center);
+}
+
+return sphere([1, 2, 3], 2.5);

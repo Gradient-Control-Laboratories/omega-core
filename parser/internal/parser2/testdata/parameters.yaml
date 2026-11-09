@@ -1,0 +1,121 @@
+Expected:
+  files:
+    - assignments:
+        - expression:
+            fnCall:
+              arguments:
+                - reference:
+                    name: gsl_anon
+              reference:
+                name: myFunc1
+          variables:
+            - name: a0
+        - expression:
+            fnCall:
+              arguments:
+                - reference:
+                    name: gsl_anon_2
+              reference:
+                name: myFunc1
+          variables:
+            - name: a1
+        - expression:
+            fnCall:
+              arguments:
+                - reference:
+                    name: gsl_anon_3
+              reference:
+                name: myFunc1
+          variables:
+            - name: a2
+        - expression:
+            fnCall:
+              arguments:
+                - reference:
+                    name: gsl_anon_4
+              reference:
+                name: myFunc1
+          variables:
+            - name: a3
+      fnTypes:
+        - groups:
+            - functions:
+                - returns:
+                    - value: 7
+          name: myFunc0
+        - groups:
+            - functions:
+                - parameters:
+                    - name: one
+                  returns:
+                    - fnCall:
+                        reference:
+                          name: one
+              paramCount: 1
+          name: myFunc1
+        - groups:
+            - functions:
+                - assignments:
+                    - expression:
+                        expression:
+                          operands:
+                            - reference:
+                                name: one
+                            - reference:
+                                name: two
+                          operation: ADD
+                      variables:
+                        - name: three
+                    - expression:
+                        value: 3
+                      variables:
+                        - name: b
+                  parameters:
+                    - name: one
+                    - name: two
+                  returns:
+                    - expression:
+                        operands:
+                          - reference:
+                              name: three
+                          - reference:
+                              name: b
+                        operation: OR
+              paramCount: 2
+          name: myFunc2
+        - groups:
+            - functions:
+                - returns:
+                    - value: 7
+          name: gsl_anon
+        - groups:
+            - functions:
+                - parameters:
+                    - name: bar
+                  returns:
+                    - value: 8
+              paramCount: 1
+          name: gsl_anon_2
+        - groups:
+            - functions:
+                - parameters:
+                    - name: bar
+                    - name: bax
+                  returns:
+                    - value: 9
+              paramCount: 2
+          name: gsl_anon_3
+        - groups:
+            - functions:
+                - parameters:
+                    - name: bar
+                    - name: bax
+                    - name: baz
+                  returns:
+                    - value: 10
+              paramCount: 3
+          name: gsl_anon_4
+      returns:
+        - reference:
+            name: a3
+Source: ""

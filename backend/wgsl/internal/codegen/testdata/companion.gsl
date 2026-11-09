@@ -1,0 +1,18 @@
+// Function-internal derivative: boundaryMap uses v.dp on its parameter, so it
+// lowers to a companion that receives the gradient of the argument.
+plane(c, n) {
+  return dot(p - c, normalize(n));
+}
+
+boundaryMap(v) {
+  return v * v.dp;
+}
+
+zero = [0, 0, 0];
+a = p.x;
+b = plane(zero, [1, 1, 0]);
+
+ab = abs(remap(a, p - boundaryMap(b)));
+body = abs(max(a, b));
+
+return body, ab;

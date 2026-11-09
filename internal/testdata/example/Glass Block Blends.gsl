@@ -1,0 +1,69 @@
+// Scene Size: 25
+// Scene Grid: 10
+
+// The block from the Glass example in clear glass, twice, each rounded by an
+// intersection blend of its six faces: on the left an Lp blend whose exponent
+// is P and whose width is 0.25 * P mm, on the right the exponential
+// (log-sum-exp) blend at 0.5 mm, the Lp width at P = 2. P = 2 is the round
+// fillet; a higher exponent squares the edge off toward sharp, and the
+// exponential blend rounds by a smooth maximum instead. Each block holds a
+// stainless M1.2 pin, threaded its whole length, seen through the glass. The
+// blocks stand on the Black Lodge's floor from Twin Peaks, so there is
+// something to see through them.
+
+// A whole number of the floor's stripe periods (2 * stripeWidth), so both
+// blocks stand on the same stripes.
+
+clearMat, clearColor = glass.clear();
+stainlessMat, stainlessColor = metal.stainless();
+
+spacing = 10;
+
+// The Lp blend's exponent.
+P = 2.00;
+P.min = 1;
+P.max = 11;
+
+block(x, blend) {
+  return remap(box([-3.5, -3.5, -3.5], [3.5, 3.5, 3.5], blend), p - [x, 0, 0]);
+}
+
+// An M1.2 x 0.25 thread (ISO 68-1 form) bounded to 5 mm, both ends
+// chamfered.
+pin(x) {
+  return remap(max(thread.male(1.2, 0.25), abs(p.z) - 2.5, (length(p.xy) - 0.6 + abs(p.z) - 2.5 + 0.15) * 0.7071), p - [x, 0, 0]);
+}
+
+lp = block(-spacing / 2, intersectLp(0.25 * P, P));
+exponential = block(spacing / 2, intersectExponential(0.5));
+
+lp.material = clearMat;
+lp.color = clearColor;
+exponential.material = clearMat;
+exponential.color = clearColor;
+
+pinLp = pin(-spacing / 2);
+pinExp = pin(spacing / 2);
+
+pinLp.material = stainlessMat;
+pinLp.color = stainlessColor;
+pinExp.material = stainlessMat;
+pinExp.color = stainlessColor;
+
+// The Black Lodge's floor: slightly blue white and slightly red black stripes
+// of equal width, zigzagging at 45 degrees, in a vinyl whose sheen is mottled
+// by noise in its roughness and, with Perlin noise in its index of refraction,
+// its reflectance.
+stripeWidth = 1;
+zigzag = 3;
+lodge = p.x + zigzag * abs(2 * fract(p.y / (2 * zigzag)) - 1);
+
+// The noise is taken relative to the nearer block, so both blocks see the
+// same mottling; it jumps along x = 0, between them.
+floorPoint = p - [p.x < 0 ? -spacing / 2 : spacing / 2, 0, 0];
+
+board = boxCentered([0, 0, -3.99], [24, 14, 1]);
+board.material = material.withIor(material.withRoughness(material.plastic, 0.22 + 0.25 * remap(noise.fbm2(4, 0.5, 3), floorPoint)), 1.5 + 0.5 * remap(noise.gradient(4), floorPoint));
+board.color = fract(lodge / (2 * stripeWidth)) < 0.5 ? [0.84, 0.86, 0.9] : [0.1, 0.035, 0.035];
+
+return lp, exponential, pinLp, pinExp, board;

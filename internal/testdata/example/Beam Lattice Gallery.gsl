@@ -1,0 +1,32 @@
+// Scene Size: 500
+// Every strut lattice from the `lattice/beam` library, shown as beams side by
+// side. Each lattice is returned infinitely thin (distance to the strut
+// skeleton); lattice.thicken gives the struts a width, and each is clipped to
+// its own cube and returned as a separate object (comma-separated, no boolean).
+
+bias = 0.6;    // strut half-width (radius)
+r = 14;        // specimen half-size
+step = 34;     // spacing along X
+s = [12, 12, 12]; // cell size
+
+// Solidify a thin strut field and clip it to a cube centered at x = off.
+specimen(field, off) {
+  return max(lattice.solidify(field, bias), boxCentered([off, 0, 0], [2 * r, 2 * r, 2 * r]));
+}
+
+oct = specimen(beam.octet(s),                  -6.5 * step);
+toc = specimen(beam.truncatedOctahedral(s),    -5.5 * step);
+bcc = specimen(beam.bcc(s),                     -4.5 * step);
+fcc = specimen(beam.fcc(s),                     -3.5 * step);
+tcu = specimen(beam.truncatedCubic(s, 0.5),    -2.5 * step);
+kel = specimen(beam.kelvinCell(s, 0.5),        -1.5 * step);
+flu = specimen(beam.fluorite(s),               -0.5 * step);
+iso = specimen(beam.isotruss(s),                0.5 * step);
+ree = specimen(beam.reentrant(s, 0.3),          1.5 * step);
+cub = specimen(beam.cubic(s, unionRound(0.4)),              2.5 * step);
+cud = specimen(beam.cubicDouble(s),             3.5 * step);
+colR = specimen(beam.columnRectangular(s),      4.5 * step);
+colT = specimen(beam.columnTriangular(12),      5.5 * step);
+colH = specimen(beam.columnHexagonal(8),        6.5 * step);
+
+return oct, toc, bcc, fcc, tcu, kel, flu, iso, ree, cub, cud, colR, colT, colH;

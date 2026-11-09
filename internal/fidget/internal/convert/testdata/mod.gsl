@@ -1,0 +1,19 @@
+// skip stl
+// does not enclose a full 3D boundary domain
+a = 3;
+b = p.x;
+c = a % b;
+
+a2 = [2, 3];
+b2 = [5, 6];
+c2 = a2 % b2;
+
+a3 = [2, 3, 4];
+b3 = [5, 6, 7];
+c3 = a3 % b3;
+
+a4 = [2, 3, 4, 5];
+b4 = [6, 7, 8, 9];
+c4 = a4 % b4;
+
+return c, c2.x, c3.y, c4.z;

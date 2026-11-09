@@ -1,0 +1,150 @@
+Expected:
+  files:
+    - assignments:
+        - expression:
+            expression:
+              operands:
+                - expression:
+                    operands:
+                      - value: 1
+                      - value: 0
+                      - value: 0
+                      - value: 0
+                    operation: COLLECT
+                - expression:
+                    operands:
+                      - value: 0
+                      - value: 1
+                      - value: 0
+                      - value: 0
+                    operation: COLLECT
+                - expression:
+                    operands:
+                      - value: 0
+                      - value: 0
+                      - value: 1
+                      - value: 0
+                    operation: COLLECT
+                - expression:
+                    operands:
+                      - value: 0
+                      - value: 0
+                      - value: 0
+                      - value: 1
+                    operation: COLLECT
+              operation: COLLECT
+          variables:
+            - name: identity
+      fnTypes:
+        - groups:
+            - functions:
+                - parameters:
+                    - kind: color
+                      name: coatColor
+                    - name: glossUnits
+                      range:
+                        max:
+                          value: 100
+                        min:
+                          value: 0
+                    - name: peel
+                      range:
+                        max:
+                          value: 1
+                        min:
+                          value: 0
+                  returns:
+                    - expression:
+                        operands:
+                          - expression:
+                              operands:
+                                - reference:
+                                    name: coatColor
+                                - value: 0
+                              operation: INDEX
+                          - reference:
+                              name: glossUnits
+                          - reference:
+                              name: peel
+                        operation: ADD
+              paramCount: 3
+          name: coat
+        - groups:
+            - functions:
+                - assignments:
+                    - expression:
+                        expression:
+                          operands:
+                            - reference:
+                                name: frame
+                            - value: 0
+                          operation: INDEX
+                      variables:
+                        - name: row
+                  parameters:
+                    - kind: point
+                      name: center
+                    - anchor: center
+                      kind: direction
+                      name: axis
+                    - kind: transform
+                      name: frame
+                  returns:
+                    - expression:
+                        operands:
+                          - expression:
+                              operands:
+                                - reference:
+                                    name: center
+                                - value: 0
+                              operation: INDEX
+                          - expression:
+                              operands:
+                                - reference:
+                                    name: axis
+                                - value: 2
+                              operation: INDEX
+                          - expression:
+                              operands:
+                                - reference:
+                                    name: row
+                                - value: 0
+                              operation: INDEX
+                        operation: ADD
+              paramCount: 3
+          name: placed
+      returns:
+        - expression:
+            operands:
+              - fnCall:
+                  arguments:
+                    - expression:
+                        operands:
+                          - value: 0.8
+                          - value: 0.1
+                          - value: 0.1
+                        operation: COLLECT
+                    - value: 60
+                    - value: 0.3
+                  reference:
+                    name: coat
+              - fnCall:
+                  arguments:
+                    - expression:
+                        operands:
+                          - value: 0
+                          - value: 0
+                          - value: 0
+                        operation: COLLECT
+                    - expression:
+                        operands:
+                          - value: 0
+                          - value: 0
+                          - value: 1
+                        operation: COLLECT
+                    - reference:
+                        name: identity
+                  reference:
+                    name: placed
+            operation: ADD
+Source: ""

@@ -1,0 +1,12 @@
+import "omega";
+
+partPlacementShift = 1.5;
+dirX = [1.0, 0.0, 0.0];
+angles = [0.0, 1.5707963, 3.14159265, 4.7123890];
+
+radials = map(
+  (ang, index) { return map.rotateXY(dirX * partPlacementShift, ang); },
+  angles
+);
+
+return length(p - radials[1]) - 0.4;

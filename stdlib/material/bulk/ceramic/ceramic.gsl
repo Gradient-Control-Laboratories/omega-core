@@ -1,0 +1,257 @@
+
+// Ceramic Materials (material/bulk/ceramic)
+//
+// Glazes over a clay body, and the engineering ceramics. A glaze is a coat:
+// it takes the body's material and colour and returns material, color,
+// height and slope, as the coats do, so each wraps a body as an operator;
+// the glaze is flowed over the body's relief by coating's levelling. The
+// engineering ceramics, alumina, zirconia and silicon nitride, are bulk,
+// as sintered or polished.
+//
+// Doc convention follows builtin/base.gsl: `///` lines are public docs.
+
+import "material";
+import "texture";
+import "noise";
+import "color";
+import "material/coat/coating";
+import "material/bulk/physical";
+
+// glazeFilm(gloss, build, baseMaterial): a glaze at `gloss` units, `build`
+// mm thick, flowed over the body, whose relief is taken as 0.5 mm across.
+glazeFilm(gloss, build, baseMaterial) {
+  film = material.withDisplacement(material.make(coating.glossRoughness(gloss), 0, 1.5), 0);
+  return coating.levelled(film, baseMaterial, build, 0.5);
+}
+
+/// glazed(baseMaterial, baseColor, glazeColor, opacity, gloss): a plain
+/// glaze of `glazeColor` over the body, `opacity` of it (0 a clear glaze
+/// showing the body, 1 an opaque one), at `gloss` units, 0.4 mm thick.
+/// Returns material, color, height and slope.
+glazed(baseMaterial, @color baseColor, @color glazeColor, @range(0, 1) opacity, @range(0, 100) gloss) {
+  return glazeFilm(gloss, 0.4, baseMaterial), color.mixOklab(baseColor, glazeColor, opacity), 0, 0;
+}
+
+/// celadon(baseMaterial, baseColor, depth): a celadon over the body, the
+/// grey-green of iron in a reduction glaze, `depth` of it (0 a thin wash
+/// that shows the body, 1 the full jade), pooling 5% deeper and lighter
+/// in a 20 mm mottle, at a high gloss, 0.5 mm thick. Returns material,
+/// color, height and slope.
+celadon(baseMaterial, @color baseColor, @range(0, 1) depth) {
+  pooled = noise.fbmBump4(20, 0.5, 2.0) / (20 / 12);
+  tone = color.mixOklab(baseColor, celadonGreen * (1 + 0.05 * pooled), 0.45 + 0.5 * depth);
+  tone.simple = color.mixOklab(baseColor, celadonGreen, 0.45 + 0.5 * depth);
+  return glazeFilm(85, 0.5, baseMaterial), tone, 0, 0;
+}
+
+// Celadon's green, judged against Longquan ware.
+celadonGreen = [0.62, 0.74, 0.64];
+
+/// crackle(baseMaterial, baseColor, glazeColor, spacing, stain): a crackle
+/// glaze of `glazeColor` over the body, crazed into a network of cells
+/// about `spacing` mm across (3 to 30) with a finer network inside them
+/// at half the strength, the lines 0.1 mm wide and stained `stain` (0 to
+/// 1; tea or ink rubbed in), at a high gloss. The spacing is the glaze's
+/// misfit: the more the glaze shrinks past the body, the closer the lines.
+/// Returns material, color, height and slope.
+crackle(baseMaterial, @color baseColor, @color glazeColor, @range(3, 30) spacing, @range(0, 1) stain) {
+  halfWidth = max(0.05, 0.5 * pixelSize());
+  coarse = 1 - texture.mask(noise.cellularEdges(spacing), halfWidth, halfWidth);
+  fine = 1 - texture.mask(remap(noise.cellularEdges(0.45 * spacing), p + [37, 11, 5]), halfWidth, halfWidth);
+  lines = texture.fadeTo(max(coarse, 0.5 * fine), crackleLineShare / spacing, spacing);
+  tone = color.mixOklab(glazeColor, glazeColor * (1 - 0.7 * stain) * [0.9, 0.85, 0.8], lines);
+  tone.simple = color.mixOklab(glazeColor, glazeColor * (1 - 0.7 * stain) * [0.9, 0.85, 0.8], crackleLineShare / spacing);
+  return glazeFilm(85, 0.4, baseMaterial), tone, 0, 0;
+}
+
+// The share of a face on the crackle lines, times the spacing: the coarse
+// network's share at 10 mm, 0.0207, measured over 4000 random points, plus
+// the fine one's at half strength and 0.45 of the spacing.
+crackleLineShare = 0.44;
+
+/// speckled(baseMaterial, baseColor, glazeColor, speckSize, share): a
+/// speckled stoneware glaze of `glazeColor` over the body, iron spots
+/// `speckSize` mm across (0.3 to 3) over `share` of the face (0 to 0.1),
+/// dark brown and bleeding a little, at a satin gloss. Returns material,
+/// color, height and slope.
+speckled(baseMaterial, @color baseColor, @color glazeColor, @range(0.3, 3) speckSize, @range(0, 0.1) share) {
+  spots = texture.grainSpecks(speckSize, share);
+  tone = color.mixOklab(color.mixOklab(baseColor, glazeColor, 0.9), ironSpot, spots);
+  return glazeFilm(50, 0.4, baseMaterial), tone, 0, 0;
+}
+
+// An iron spot's brown, judged.
+ironSpot = [0.25, 0.15, 0.1];
+
+/// matteGlaze(baseMaterial, baseColor, glazeColor, opacity): a matte glaze
+/// of `glazeColor` over the body, `opacity` of it, at 8 gloss units with
+/// a 3% mottle at 15 mm, 0.4 mm thick. Returns material, color, height and
+/// slope.
+matteGlaze(baseMaterial, @color baseColor, @color glazeColor, @range(0, 1) opacity) {
+  mottle = noise.fbmBump4(15, 0.5, 2.0) / (15 / 12);
+  tone = color.mixOklab(baseColor, glazeColor, opacity) * (1 + 0.03 * mottle);
+  tone.simple = color.mixOklab(baseColor, glazeColor, opacity);
+  return glazeFilm(8, 0.4, baseMaterial), tone, 0, 0;
+}
+
+// --- Engineering ceramics ---
+
+/// alumina(polish): alumina, sintered, ivory white, `polish` 0 as fired
+/// and 1 lapped to a shine. Returns material, color, height and slope.
+alumina(@range(0, 1) polish) {
+  return material.make(0.6 - 0.5 * polish, 0, 1.76), [0.92, 0.9, 0.84], 0, 0;
+}
+
+/// zirconia(polish): yttria-stabilised zirconia, sintered, a warm white,
+/// `polish` 0 as fired and 1 polished. Returns material, color, height and
+/// slope.
+zirconia(@range(0, 1) polish) {
+  return material.make(0.5 - 0.42 * polish, 0, 2.15), [0.95, 0.94, 0.9], 0, 0;
+}
+
+/// siliconNitride(polish): silicon nitride, sintered, grey-black, `polish`
+/// 0 as fired and 1 lapped. Returns material, color, height and slope.
+siliconNitride(@range(0, 1) polish) {
+  return material.make(0.55 - 0.45 * polish, 0, 2.0), [0.2, 0.2, 0.21], 0, 0;
+}
+
+// --- Terracotta ---
+
+/// terracotta(clayColor, grogSize): unglazed terracotta, a fired clay body
+/// of `clayColor`, matte, its grog showing as a shade per grain `grogSize`
+/// mm across (0.3 to 3; 1 a fine tile body) over a soft 30 mm mottle, and
+/// a cream inclusion in 2 grains of 255 and a dark one in 1. Where the
+/// body is paler it is also grayer: its chroma falls a quarter as fast as
+/// its lightness rises, as measured on a tile, and a faint tint wanders 15
+/// mm across. Pattern (the mottle) and detail (the grog); no relief, a
+/// pressed or extruded face being flat under its grog. Returns material,
+/// color, height and slope.
+terracotta(@color clayColor, @range(0.3, 3) grogSize) {
+  bodyMat, bodyColor = physical.terracotta();
+  base = color.rgb2oklab(clayColor);
+  chroma = max(sqrt(base.y * base.y + base.z * base.z), 0.001);
+  mottle = noise.fbm(30, 3, 0.6, 2);
+  grog = texture.grainShade(1.2 * grogSize, 1) - 1;
+  fine = noise.fbm(0.8 * grogSize, 3, 0.6, 2);
+  // The cell hash picks in steps of 1/255, so a share is a whole count of
+  // them; each speck's mean is taken back out.
+  pale = texture.grainSpecks(0.85 * grogSize, 2 / 255);
+  dark = texture.grainSpecks(0.5 * grogSize, 1 / 255);
+  dL = 0.011 * mottle + 0.011 * grog + 0.02 * fine + 0.09 * (pale - 2 / 255) - 0.03 * (dark - 1 / 255);
+  grayed = -0.25 * dL / chroma;
+  tintA = remap(noise.fbm(15, 3, 0.5, 2), p + [131, 57, 19]);
+  tintB = remap(noise.fbm(15, 3, 0.5, 2), p + [-71, 29, 113]);
+  // Every term is zero-mean in Oklab, so the body's color stands in.
+  tone = color.oklab2rgb([base.x + dL, base.y * (1 + grayed) + 0.006 * tintA - 0.012 * (pale - 2 / 255), base.z * (1 + grayed) + 0.006 * tintB]);
+  tone.simple = clayColor;
+  return bodyMat, tone, 0, 0;
+}
+
+// ===========================================================================
+// Ready-made
+// ===========================================================================
+
+/// Celadon over porcelain, the full jade. Returns material and colour.
+@material celadon() {
+  bodyMat, bodyColor = physical.porcelain();
+  glaze, tone, height, slope = celadon(bodyMat, bodyColor, 0.8);
+  return glaze, tone;
+}
+
+/// A crackle glaze, cream, crazed at 10 mm and tea-stained. Returns
+/// material and colour.
+@material crackleGlaze() {
+  bodyMat, bodyColor = physical.porcelain();
+  glaze, tone, height, slope = crackle(bodyMat, bodyColor, [0.93, 0.9, 0.82], 10, 0.6);
+  return glaze, tone;
+}
+
+/// Speckled stoneware, an oatmeal glaze over a buff body with 1 mm iron
+/// spots. Returns material and colour.
+@material speckledStoneware() {
+  glaze, tone, height, slope = speckled(material.make(0.6, 0, 1.5), stonewareBuff, [0.88, 0.84, 0.76], 1, 0.04);
+  return glaze, tone;
+}
+
+/// A matte glaze, slate blue over a buff body. Returns material and
+/// colour.
+@material matteGlaze() {
+  glaze, tone, height, slope = matteGlaze(material.make(0.6, 0, 1.5), stonewareBuff, [0.45, 0.52, 0.6], 0.95);
+  return glaze, tone;
+}
+
+/// Alumina as fired. Returns material and colour.
+@material alumina() {
+  sintered, tone, height, slope = alumina(0);
+  return sintered, tone;
+}
+
+/// Zirconia, polished. Returns material and colour.
+@material zirconia() {
+  sintered, tone, height, slope = zirconia(1);
+  return sintered, tone;
+}
+
+/// Silicon nitride as fired. Returns material and colour.
+@material siliconNitride() {
+  sintered, tone, height, slope = siliconNitride(0);
+  return sintered, tone;
+}
+
+/// Unglazed terracotta tile, a fine grog, in physical's measured terracotta
+/// color. Returns material and color.
+@material terracotta() {
+  bodyMat, bodyColor = physical.terracotta();
+  body, tone, height, slope = terracotta(bodyColor, 1);
+  return body, tone;
+}
+
+// A stoneware body's buff, judged.
+stonewareBuff = [0.75, 0.68, 0.58];
+
+// ===========================================================================
+// Operators
+// ===========================================================================
+
+/// The celadon at its full depth, as an operator. Returns material, color,
+/// height and slope.
+@surface celadon(baseMaterial, @color baseColor) {
+  glaze, tone, height, slope = celadon(baseMaterial, baseColor, 0.8);
+  return glaze, tone, height, slope;
+}
+
+/// A cream crackle glaze at 10 mm, tea-stained, as an operator. Returns
+/// material, color, height and slope.
+@surface crackle(baseMaterial, @color baseColor) {
+  glaze, tone, height, slope = crackle(baseMaterial, baseColor, [0.93, 0.9, 0.82], 10, 0.6);
+  return glaze, tone, height, slope;
+}
+
+/// An oatmeal speckled glaze with 1 mm iron spots, as an operator. Returns
+/// material, color, height and slope.
+@surface speckled(baseMaterial, @color baseColor) {
+  glaze, tone, height, slope = speckled(baseMaterial, baseColor, [0.88, 0.84, 0.76], 1, 0.04);
+  return glaze, tone, height, slope;
+}
+
+/// A slate-blue matte glaze, as an operator. Returns material, color,
+/// height and slope.
+@surface matteGlaze(baseMaterial, @color baseColor) {
+  glaze, tone, height, slope = matteGlaze(baseMaterial, baseColor, [0.45, 0.52, 0.6], 0.95);
+  return glaze, tone, height, slope;
+}
+
+// References
+//   Digitalfire. Crazing: a reduction celadon crazes from its high
+//     feldspar, whose K2O and Na2O bring the gloss and the colour and the
+//     highest thermal expansion. https://digitalfire.com/picture/2116
+//   Digitalfire, glossary. Crackle glaze: the proximity of the crack lines
+//     follows the KNaO-sourcing materials in the recipe.
+//     https://digitalfire.com/glossary/27
+//   US patent 7722246. As the expansion mismatch between glaze and body
+//     grows, the average spacing between cracks shrinks.
+//     https://patents.google.com/patent/US7722246
+//   Porcelain's colour is physical's (physical.gsl cites it). The celadon's
+//     green, the iron spot, the buff body, the glaze thicknesses, the
+//     engineering ceramics' colours and their indices as judged from
+//     sapphire 1.76, zirconia 2.15 and silicon nitride about 2.0.

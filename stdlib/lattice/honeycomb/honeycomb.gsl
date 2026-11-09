@@ -1,0 +1,199 @@
+
+// Honeycomb Lattice Library (lattice/honeycomb)
+//
+// Periodic 2D cell-wall lattices in the XY plane — square, diagonal, hexagonal,
+// triangular, octet, and reinforced variants. Each returns the unsigned distance
+// to the cell-wall skeleton; give the walls width with
+// `lattice.thicken(field, thickness)` (or subtract a beam radius), then intersect
+// with a body to infill it.
+//
+// `size` is the cell size (vec2 for the square/diagonal grids, scalar cellSize
+// for hex/triangular which derive the sqrt(3) aspect internally). `combine` is
+// the operator that joins the wall families where they meet — `unionRound(k)`
+// to fillet the junctions by k, or any other operator over a list of fields.
+// Each lattice has a form without it that joins them sharply.
+//
+// The square/octet grids are built from map's triangle-wave plane families
+// (triangleWaveOddPositive = center-phased, triangleWaveEvenPositive =
+// boundary-phased). Migrated from the flat lattice package, plus the GCL
+// Cubic-Baldwin-Reinforced honeycomb.
+//
+// Doc convention follows builtin/base.gsl: `///` lines are public docs.
+
+import "map";
+
+// --- internal helpers ---
+
+// Distance from a 2D/3D `point` to the segment a->b (explicit point, for the
+// folded hex/triangular cell coordinates).
+segmentDistance(point, a, b) {
+  pa = point - a;
+  ba = b - a;
+  h = clamp(dot(pa, ba) / dot(ba, ba), 0, 1);
+  return length(pa - ba * h);
+}
+
+// Three-armed Y star used to tile a hexagonal cell.
+hexStar(point, starCenter, transition, topY, combine) {
+  lineV = segmentDistance(point, starCenter, [0, topY]);
+  lineR = segmentDistance(point, starCenter, transition);
+  lineL = segmentDistance(point, starCenter, [-transition.x, transition.y]);
+  return combine([lineV, lineR, lineL]);
+}
+
+// Three planes meeting at 60 degrees, used to tile a triangular cell.
+triStar(point, sx, sy, combine) {
+  distH = abs(point.y);
+  distP60 = abs(dot(point, normalize([sy, sx])));
+  distN60 = abs(dot(point, normalize([sy, -sx])));
+  return combine([distH, distP60, distN60]);
+}
+
+// --- public lattices ---
+
+/// Square honeycomb in the XY plane: two orthogonal plane families spaced by
+/// the vec2 `size` (z ignored), joined by `combine`.
+squareHoneycomb(size, combine) {
+  dx = map.triangleWaveOddPositive(p.x, size.x);
+  dy = map.triangleWaveOddPositive(p.y, size.y);
+  return combine([dx, dy]);
+}
+
+/// Square honeycomb with the plane families joined sharply.
+squareHoneycomb(size) {
+  return squareHoneycomb(size, unionSharp);
+}
+
+/// Diagonal (diamond) honeycomb: two 45-degree plane families, independently
+/// spaced by size.x and size.y along each diagonal, so the rhombi tile cleanly
+/// for any aspect ratio. The diagonal coordinates are unit-speed, so the field
+/// stays a true distance.
+squareDiagonalHoneycomb(size, combine) {
+  distPos = map.triangleDistance((p.x + p.y) / sqrt2, size.x);
+  distNeg = map.triangleDistance((p.x - p.y) / sqrt2, size.y);
+  return combine([distPos, distNeg]);
+}
+
+/// Diagonal honeycomb with the two plane families joined sharply.
+squareDiagonalHoneycomb(size) {
+  return squareDiagonalHoneycomb(size, unionSharp);
+}
+
+/// Square honeycomb with one diagonal reinforcement beam per cell. `rotation`
+/// is the diagonal angle as a fraction of pi (0.25 = 45 degrees); `combine`
+/// joins both the grid and the diagonal.
+squareHoneycombReinforced(size, rotation, combine) {
+  squareGrid = combine([map.triangleWaveOddPositive(p.x, size.x), map.triangleWaveOddPositive(p.y, size.y)]);
+  prep = [map.repeatCentered(p.x, size.x), map.repeatCentered(p.y, size.y)];
+  angle = pi * rotation;
+  diagonal = abs(dot(prep, normalize([cos(angle), sin(angle)])));
+  return combine([squareGrid, diagonal]);
+}
+
+/// Reinforced square honeycomb with everything joined sharply. There is no
+/// matching convenience for the two-diagonal form below: with the operator
+/// dropped it would take three arguments too, and GSL overloads on arity alone
+/// — pass `unionSharp` explicitly there.
+squareHoneycombReinforced(size, rotation) {
+  return squareHoneycombReinforced(size, rotation, unionSharp);
+}
+
+/// Square honeycomb with two crossed diagonal reinforcement beams (an X in each
+/// cell). `rotation` and `rotation2` are the diagonal angles as fractions of pi;
+/// `combine` joins the grid and both diagonals.
+squareHoneycombReinforced(size, rotation, rotation2, combine) {
+  squareGrid = combine([map.triangleWaveOddPositive(p.x, size.x), map.triangleWaveOddPositive(p.y, size.y)]);
+  prep = [map.repeatCentered(p.x, size.x), map.repeatCentered(p.y, size.y)];
+  a1 = pi * rotation;
+  a2 = pi * rotation2;
+  diag1 = abs(dot(prep, normalize([cos(a1), sin(a1)])));
+  diag2 = abs(dot(prep, normalize([cos(a2), sin(a2)])));
+  return combine([squareGrid, diag1, diag2]);
+}
+
+/// Octet honeycomb (after Martha Baldwin, CMU): a stretch-dominated lattice
+/// combining the square grid, a half-cell-phased plane grid, and a 45-degree
+/// rotated grid. vec2 `size`, z ignored.
+octetHoneycomb(size, combine) {
+  sq = squareHoneycomb(size, combine);
+  planeGrid = combine([map.triangleWaveEvenPositive(p.x, size.x), map.triangleWaveEvenPositive(p.y, size.y)]);
+  diagPeriod = length(size) * 0.5;
+  u = (p.x + p.y) / sqrt2;
+  v = (p.x - p.y) / sqrt2;
+  diagGrid = combine([map.triangleWaveEvenPositive(u, diagPeriod), map.triangleWaveEvenPositive(v, diagPeriod)]);
+  return combine([sq, planeGrid, diagGrid]);
+}
+
+/// Octet honeycomb with every family joined sharply.
+octetHoneycomb(size) {
+  return octetHoneycomb(size, unionSharp);
+}
+
+/// Hexagonal honeycomb: a three-armed Y-star at each cell, reflected to tile.
+/// `cellSize` sets the hex pitch (the cell is [cellSize, cellSize*sqrt3]);
+/// `setback` in [0, 1] positions the star branch point (default 1/3).
+hexagonalHoneycomb(cellSize, setback, combine) {
+  sx = cellSize;
+  sy = cellSize * sqrt3;
+  halfX = sx * 0.5;
+  halfY = sy * 0.5;
+  quarterX = sx * 0.25;
+  starCenter = [0, (1 - setback) * halfY];
+  transition = [halfX, setback * halfY];
+  fx = abs(map.repeatCentered(p.x, sx));
+  fy = abs(map.repeatCentered(p.y, sy));
+  resultA = hexStar([fx, fy], starCenter, transition, sy, combine);
+  resultB = hexStar([fx - halfX, halfY - fy], starCenter, transition, sy, combine);
+  return fx < quarterX ? resultA : resultB;
+}
+
+/// Hexagonal honeycomb with the default 1/3 setback.
+hexagonalHoneycomb(cellSize, combine) {
+  return hexagonalHoneycomb(cellSize, 1.0 / 3.0, combine);
+}
+
+/// Hexagonal honeycomb with the default 1/3 setback and sharp junctions.
+hexagonalHoneycomb(cellSize) {
+  return hexagonalHoneycomb(cellSize, unionSharp);
+}
+
+/// Triangular honeycomb: three 60-degree plane families, reflected to tile.
+/// `cellSize` sets the pitch (the cell is [cellSize, cellSize*sqrt3]).
+triangularHoneycomb(cellSize, combine) {
+  sx = cellSize;
+  sy = cellSize * sqrt3;
+  halfX = sx * 0.5;
+  halfY = sy * 0.5;
+  quarterY = sy * 0.25;
+  fx = abs(map.repeatCentered(p.x, sx));
+  fy = abs(map.repeatCentered(p.y, sy));
+  resultA = triStar([fx, fy], sx, sy, combine);
+  resultB = triStar([fx - halfX, fy - halfY], sx, sy, combine);
+  return fy < quarterY ? resultA : resultB;
+}
+
+/// Triangular honeycomb with the three plane families joined sharply.
+triangularHoneycomb(cellSize) {
+  return triangularHoneycomb(cellSize, unionSharp);
+}
+
+/* WIP. TODO.
+/// Cubic-Baldwin-reinforced honeycomb (after Martha Baldwin, CMU): a square cell
+/// grid plus axis-aligned and diagonal plane reinforcements, each combined with a
+/// Euclidean rounded union of fillet `radius`. The per-family biases
+/// (biasX, biasY along the axes; biasU, biasV along the diagonals) offset each
+/// plane family independently for anisotropic reinforcement — pass 0 for a uniform
+/// thin grid. vec2 `size`.
+cubicBaldwinReinforced(size, radius, biasX, biasY, biasU, biasV) {
+  sq = unionRound([map.triangleWaveOddPositive(p.x, size.x), map.triangleWaveOddPositive(p.y, size.y)], radius);
+  planeX = map.triangleWaveEvenPositive(p.x, size.x) - biasX * 0.5;
+  planeY = map.triangleWaveEvenPositive(p.y, size.y) - biasY * 0.5;
+  axisGrid = unionRound([planeX, planeY], radius);
+  diag = length([size.x, size.y]);
+  planeU = map.triangleWaveEvenPositive((p.x + p.y) / sqrt2, diag) - biasU * 0.5;
+  planeV = map.triangleWaveEvenPositive((p.x - p.y) / sqrt2, diag) - biasV * 0.5;
+  diagGrid = unionRound([planeU, planeV], radius);
+  grid = unionRound([sq, axisGrid], radius);
+  return unionRound([grid, diagGrid], radius);
+}
+*/

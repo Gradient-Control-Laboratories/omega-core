@@ -1,0 +1,54 @@
+// Scene Size: 70
+// Scene Grid: 10
+
+// Water that moves by its own physics (material/collection/animated): a sphere of sea
+// whose waves run at the speed their length gives them, and a river whose
+// ripples ride the current past standing waves and glassy boils.
+// Time runs in real seconds and only space is scaled, as in a miniature.
+// Press play to start the clock.
+
+// The wind, in m/s, and the direction it blows, in degrees from x. It raises
+// the sea.
+windSpeed = 10;
+windSpeed.min = 3;
+windSpeed.max = 25;
+windAngle = 20;
+windAngle.min = -180;
+windAngle.max = 180;
+wind = [cos(windAngle * 3.14159265 / 180), sin(windAngle * 3.14159265 / 180), 0];
+
+// How sharp the sea's crests are, 0 to 1.
+choppiness = 0.6;
+choppiness.min = 0;
+choppiness.max = 1;
+
+// How silty the river is, clear 0 to brown 1.
+turbidity = 0.4;
+turbidity.min = 0;
+turbidity.max = 1;
+
+// Each piece is a slab 24 mm square, or a sphere as wide, 32 mm apart.
+slab(column, row) {
+  return transform.translate(box([-12, -12, -4], [12, 12, 4]), [32 * column, -32 * row, 0]);
+}
+ball(column, row) {
+  return transform.translate(sphere(12), [32 * column, -32 * row, 0]);
+}
+
+// A sea at 0.12 mm to the metre, whose waves grow with the square of the wind:
+// at 10 m/s they are 83 m long, 10 mm here, and 7 s apart. Its waves move the
+// shape itself, divided by 1 + slope
+// to stay a safe distance for the march. 60% of the light passes through it.
+seaMat, seaColor, seaHeight, seaSlope = animated.ocean(0.1 * windSpeed * windSpeed, windSpeed, wind, choppiness);
+sea = (ball(-0.5, 0) - seaHeight) / (1 + seaSlope);
+sea.material = material.withTransmission(seaMat, 0.6, 24);
+sea.color = seaColor;
+
+// A river at 2 mm to the metre, running at 2.5 m/s along x and swinging from
+// side to side.
+riverMat, riverColor, riverHeight, riverSlope = animated.river(2, (x) { return [2.5, 0.8 * sin(x.y / 6), 0]; }, turbidity);
+river = slab(0.5, 0) - riverHeight;
+river.material = riverMat;
+river.color = riverColor;
+
+return sea, river;

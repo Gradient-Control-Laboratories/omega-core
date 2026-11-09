@@ -1,0 +1,37 @@
+// Exercises the matrix + vector libraries: 3x3 inverse, matrix product,
+// matrix-vector product, transpose, and the outer product, all lowered to
+// scalar/vector arithmetic.
+
+// A 3x3 matrix as a list of column vectors.
+a = [[2, 0, 1], [1, 1, 0], [0, 1, 1]];
+
+ai = matrix.inverse3(a);
+
+// a * inverse(a) is the identity, so transforming p by it returns p.
+prod = matrix.multiply(a, ai);
+q = vector.multiply(prod, p);
+
+// A*transpose(A) is symmetric; pT (A AT) p is a real quadratic form that
+// also exercises transpose3, outer, and the matrix-vector product.
+sym = matrix.multiply(a, matrix.transpose3(a));
+form = dot(p, vector.multiply(sym, p));
+op = matrix.outer(p, q);
+op0 = op[0];
+
+// 4x4 affine path: rotate about a line, then invert it two ways.
+rot = matrix.rotation([0, 1, 0], [0, 0, 1], 0.7);
+roti = matrix.inverse(rot);          // cheap homogeneous-affine inverse
+back = matrix.multiply(rot, roti);   // ~ identity4
+ph = [p.x, p.y, p.z, 1];
+r4 = vector.multiply(back, ph);
+
+// general 4x4 inverse + determinant + transpose + identity, for coverage.
+gi = matrix.inverse4(rot);
+det4 = matrix.determinant4(rot);     // ~ 1 for a rotation
+rt = matrix.transpose4(rot);
+id4 = matrix.identity4();
+gi0 = gi[0];
+rt0 = rt[0];
+id0 = id4[0];
+
+return length(q) + form + op0[0] + r4[0] + gi0[0] + rt0[0] + id0[0] + det4 - 9.0;

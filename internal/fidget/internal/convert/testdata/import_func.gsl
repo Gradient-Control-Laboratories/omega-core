@@ -1,0 +1,4 @@
+// skip stl
+import "omega";
+
+return omega.sphere(2.5);

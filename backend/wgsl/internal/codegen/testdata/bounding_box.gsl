@@ -1,0 +1,11 @@
+// .box reads a field's bounding box as [lo, hi]; here it becomes geometry.
+a = sphere([1, 2, 3], 0.5);
+b = box([0, 0, 0], [1, 2, 3]);
+both = unionRound(a, b, 0.25) - 0.1;
+r = 0.5;
+r.min = 0.1;
+r.max = 2.0;
+ball = sphere(r);
+hull = box(both.box[0], both.box[1]);
+reach = box(ball.box[0], ball.box[1]);
+return hull, reach;

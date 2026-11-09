@@ -1,0 +1,72 @@
+Expected:
+  files:
+    - fnTypes:
+        - groups:
+            - functions:
+                - parameters:
+                    - name: radius
+                  returns:
+                    - expression:
+                        operands:
+                          - fnCall:
+                              arguments:
+                                - reference:
+                                    name: p
+                              reference:
+                                name: length
+                          - reference:
+                              name: radius
+                        operation: SUB
+              paramCount: 1
+          name: sphere
+        - groups:
+            - functions:
+                - parameters:
+                    - name: z
+                  returns:
+                    - expression:
+                        operands:
+                          - value: 2
+                          - reference:
+                              name: z
+                        operation: MUL
+              paramCount: 1
+          name: gsl_anon
+      returns:
+        - expression:
+            operands:
+              - fnCall:
+                  arguments:
+                    - value: 2.5
+                  reference:
+                    name: sphere
+              - expression:
+                  operands:
+                    - expression:
+                        operands:
+                          - reference:
+                              name: p
+                          - reference:
+                              name: x
+                        operation: ACCESS
+                    - expression:
+                        operands:
+                          - reference:
+                              name: p
+                          - reference:
+                              name: "y"
+                        operation: ACCESS
+                    - fnCall:
+                        arguments:
+                          - expression:
+                              operands:
+                                - reference:
+                                    name: p
+                                - reference:
+                                    name: z
+                              operation: ACCESS
+                        reference:
+                          name: gsl_anon
+                  operation: COLLECT
+            operation: REMAP
+Source: ""

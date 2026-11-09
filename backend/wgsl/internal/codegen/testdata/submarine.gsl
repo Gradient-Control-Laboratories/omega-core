@@ -1,0 +1,77 @@
+
+// GCL Shape Language (GSL) code for a submarine.
+// The submarine is composed of a main hull, a conning tower,
+// a set of tail fins, and two propellers.
+// The overall size has been reduced by 20%.
+
+// --- SDF Primitives ---
+
+// Signed distance function for a box centered at the origin
+// with half-extents given by vector b.
+sdBox(b) {
+    // Move to the first octant
+    q = abs(p) - b;
+    
+    // Calculate distance. max_q is max(q, 0.0) on each component.
+    max_q = [max(q.x, 0.0), max(q.y, 0.0), max(q.z, 0.0)];
+    return length(max_q) + min(max(q.x, q.y, q.z), 0.0);
+}
+
+// Signed distance function for a torus centered at the origin in the XY plane.
+// t.x is the major radius, and t.y is the minor radius.
+sdTorus(t) {
+    q = [length(p.xy) - t.x, p.z];
+    return length(q) - t.y;
+}
+
+
+// --- Submarine Component Definitions ---
+
+// The main hull, modeled as an ellipsoid stretched along the X-axis.
+radii_hull = [4.8, 1.2, 1.2];
+q_hull = p / radii_hull;
+hull = (length(q_hull) - 1.0) * min(radii_hull.x, radii_hull.y, radii_hull.z);
+
+// The conning tower, a box positioned on top of the hull.
+pos_tower = [0.8, 0.0, 1.2];
+size_tower = [1.2, 0.56, 0.8];
+conningTower = remap(sdBox(size_tower), p - pos_tower);
+
+// The tail fins, a cross shape made of two thin, intersecting boxes.
+// Horizontal fin
+pos_h_fin = [-4.4, 0.0, 0.0];
+size_h_fin = [0.8, 2.4, 0.08];
+fin_h = remap(sdBox(size_h_fin), p - pos_h_fin);
+
+// Vertical fin
+pos_v_fin = [-4.4, 0.0, 0.0];
+size_v_fin = [0.8, 0.08, 1.44];
+fin_v = remap(sdBox(size_v_fin), p - pos_v_fin);
+
+// Union of the two fins.
+tail = min(fin_h, fin_v);
+
+// The two propellers at the stern, modeled as rotated toruses.
+radii_prop = [0.48, 0.08];
+
+// Propeller 1 (right/starboard side)
+pos_prop1 = [-4.96, 0.64, 0.0];
+p1_prop = p - pos_prop1;
+// remap translates and rotates p. The .yzx swizzle orients the torus in the YZ plane.
+prop1 = remap(sdTorus(radii_prop), p1_prop.yzx);
+
+// Propeller 2 (left/port side)
+pos_prop2 = [-4.96, -0.64, 0.0];
+p2_prop = p - pos_prop2;
+prop2 = remap(sdTorus(radii_prop), p2_prop.yzx);
+
+// Union of the two propellers.
+props = min(prop1, prop2);
+
+
+// --- Final Scene Assembly ---
+
+// Combine all parts of the submarine using the union operation (min).
+submarine = min(hull, conningTower, tail, props);
+
+return submarine;

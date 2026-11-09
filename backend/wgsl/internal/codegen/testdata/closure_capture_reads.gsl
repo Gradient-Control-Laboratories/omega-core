@@ -1,0 +1,10 @@
+// A lambda handed to a higher-order call captures only the locals assigned
+// before the call that it reads, not the assignment that holds the call.
+apply(f, x) { return f(x); }
+grow(q) {
+  a = 2;
+  unused = 3;
+  b = apply((v) { return v * a; }, q);
+  return b;
+}
+return sphere(p, grow(5));

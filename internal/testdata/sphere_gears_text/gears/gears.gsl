@@ -1,0 +1,88 @@
+import . "builtin";
+import "vector";
+
+involuteRadial(radius) {
+   rho = length(access(p, xy))
+   tanLen = sqrt(max(((rho * rho) - (radius * radius)), 0))
+   ang = atan2(access(p, y), access(p, x))
+   ratioVal = (radius / max(rho, radius))
+   invField = (tanLen - ((acos(ratioVal) + ang) * radius))
+   radialField = neg(access(p, y))
+   result = select((rho > radius), invField, radialField)
+
+   return result;
+}
+
+gearProfile(numTeeth, moduleVal, pressureAngle, rotOffset, dedendumClearance, kSmall) {
+   pitchRadius = ((numTeeth / 2) * moduleVal)
+   baseRadius = (pitchRadius * cos(pressureAngle))
+   addendumRadius = (pitchRadius + moduleVal)
+   dedendumRadius = (pitchRadius - ((1 + dedendumClearance) * moduleVal))
+   roundK = (dedendumClearance * moduleVal)
+   pitchAngle = (pi / numTeeth)
+   halfPitchAngle = (pitchAngle / 2)
+   prRatio = (pitchRadius / baseRadius)
+   gammaP = sqrt(((prRatio * prRatio) - 1))
+   contactAngle = (gammaP - atan(gammaP))
+   rotAngle = (halfPitchAngle - contactAngle)
+   cosR = cos(rotAngle)
+   sinR = sin(rotAngle)
+   cosO = cos(rotOffset)
+   sinO = sin(rotOffset)
+   opx = ((access(p, x) * cosO) + (access(p, y) * sinO))
+   opy = ((neg(access(p, x)) * sinO) + (access(p, y) * cosO))
+   pRho = length(collect(opx, opy))
+   pAngle = atan2(opy, opx)
+   pAngleShifted = (pAngle + pitchAngle)
+   twicePitchAngle = (pitchAngle * 2)
+   pAngleMod = modulo((modulo(pAngleShifted, twicePitchAngle) + twicePitchAngle), twicePitchAngle)
+   pAngleCentered = (pAngleMod - pitchAngle)
+   rpx = (pRho * cos(pAngleCentered))
+   rpy = (pRho * sin(pAngleCentered))
+   repeatedTooth = remap(singleTooth(), collect(rpx, rpy, access(p, z)))
+   addClip = remap(circleXY(collect(0, 0), addendumRadius), collect(opx, opy, access(p, z)))
+   toothProfile = intersectChamfer(repeatedTooth, addClip, kSmall)
+   dedBody = remap(circleXY(collect(0, 0), dedendumRadius), collect(opx, opy, access(p, z)))
+
+   rotInv() {
+      rx = ((access(p, x) * cosR) + (access(p, y) * sinR))
+      ry = ((neg(access(p, x)) * sinR) + (access(p, y) * cosR))
+
+      return remap(involuteRadial(baseRadius), collect(rx, ry, access(p, z)));
+   }
+
+   reflInv() {
+      return remap(rotInv(), collect(access(p, x), neg(access(p, y)), access(p, z)));
+   }
+
+   singleTooth() {
+      left = rotInv()
+      right = reflInv()
+
+      return min(left, right);
+   }
+
+   return unionRound(toothProfile, dedBody, roundK);
+}
+
+gear(numTeeth, moduleVal, pressureAngle, rotOffset, thickness, helixAngle, standoffDiameter, standoffHeight, standoffChamfer, boreDiameter, dedendumClearance, kSmall) {
+   pitchRadius = ((numTeeth / 2) * moduleVal)
+   twistRate = (tan(helixAngle) / pitchRadius)
+   twistAngle = (access(p, z) * twistRate)
+   cosTw = cos(twistAngle)
+   sinTw = sin(twistAngle)
+   tpx = ((access(p, x) * cosTw) + (access(p, y) * sinTw))
+   tpy = ((neg(access(p, x)) * sinTw) + (access(p, y) * cosTw))
+   profile = remap(gearProfile(numTeeth, moduleVal, pressureAngle, rotOffset, dedendumClearance, kSmall), collect(tpx, tpy, access(p, z)))
+   slab = (abs(access(p, z)) - (thickness / 2))
+   gearBody = intersectChamfer(profile, slab, kSmall)
+   standoffRadius = (standoffDiameter / 2)
+   standoffCyl = cylinderZ(vector.zero, standoffRadius)
+   standoffSlabZ = intersectChamfer(neg(access(p, z)), (access(p, z) - standoffHeight), kSmall)
+   standoffSolid = intersectChamfer(standoffCyl, standoffSlabZ, kSmall)
+   withStandoff = unionChamfer(gearBody, standoffSolid, standoffChamfer)
+   boreRadius = (boreDiameter / 2)
+   bore = cylinderZ(vector.zero, boreRadius)
+
+   return differenceChamfer(withStandoff, bore, kSmall);
+}

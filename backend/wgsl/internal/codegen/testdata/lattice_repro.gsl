@@ -1,0 +1,17 @@
+cylinder(radius, halfHeight) {
+  radialDist = length(p.xy) - radius;
+  heightDist = abs(p.z) - halfHeight;
+  return max(radialDist, heightDist);
+}
+
+smin(a, b, k) {
+  h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+  return b + (a - b) * h - k * h * (1.0 - h);
+}
+
+meshDist = vdbSdf(0, 1024, 30);
+tree = min(remap(meshDist, [p.x - 1.0, p.y, p.z]), cylinder(1.1, 8.0));
+innerShell = tree + 0.01;
+inner = smin(innerShell, innerShell, 0.02);
+
+return meshIntersect(meshUnion(mesh(0, [-1, 0, 0], 0.5, [0, 0, 0]), cylinder(1.1, 8.0)), -inner);

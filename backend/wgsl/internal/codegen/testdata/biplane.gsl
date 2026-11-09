@@ -1,0 +1,163 @@
+
+// GSL Shape Language representation of a biplane.
+
+// --- SDF Primitive Helpers ---
+
+// Signed distance to a box centered at the origin with size s (a vec3).
+sdBox(s) {
+    q = abs(p) - s / 2.0;
+    return length(max(q, 0.0)) + min(max(q.x, q.y, q.z), 0.0);
+}
+
+// Signed distance to a sphere centered at the origin with radius r.
+sdSphere(r) {
+    return length(p) - r;
+}
+
+// Signed distance to a cylinder aligned with the Z-axis, with radius r and height h.
+sdCylinderZ(r, h) {
+    d = abs([length(p.xy), p.z]) - [r, h / 2.0];
+    return min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
+}
+
+// Signed distance to a torus aligned with the Y-axis (for wheels).
+// R is the major radius, r is the minor radius.
+sdTorusY(R, r) {
+    q = [length(p.xz) - R, p.y];
+    return length(q) - r;
+}
+
+// --- SDF Operation Helpers ---
+
+// Subtracts shape b from shape a.
+opSubtract(a, b) {
+    return max(a, -b);
+}
+
+
+// --- Fuselage and Cockpit ---
+
+// The main body of the aircraft, with a cutout for the cockpit.
+fuselage_body = sdBox([7.0, 1.2, 1.0]);
+cockpit_hole = remap(
+    sdSphere(0.5),
+    p - [-0.5, 0.0, 0.3]
+);
+fuselage = opSubtract(fuselage_body, cockpit_hole);
+
+
+// --- Wings and Struts ---
+
+// The upper and lower wings of the biplane.
+wing_upper = remap(
+    sdBox([1.8, 9.0, 0.2]),
+    p - [0.0, 0.0, 1.0]
+);
+wing_lower = remap(
+    sdBox([1.5, 8.0, 0.2]),
+    p - [0.0, 0.0, -0.5]
+);
+
+// The struts connecting the upper and lower wings.
+strut_y_pos = 3.0;
+strut_x_offset = 0.3;
+strut_center_z = 0.25; // Vertically centered between the wings.
+
+strut1 = remap(
+    sdCylinderZ(0.08, 1.5),
+    p - [ strut_x_offset,  strut_y_pos, strut_center_z]
+);
+strut2 = remap(
+    sdCylinderZ(0.08, 1.5),
+    p - [ strut_x_offset, -strut_y_pos, strut_center_z]
+);
+strut3 = remap(
+    sdCylinderZ(0.08, 1.5),
+    p - [-strut_x_offset,  strut_y_pos, strut_center_z]
+);
+strut4 = remap(
+    sdCylinderZ(0.08, 1.5),
+    p - [-strut_x_offset, -strut_y_pos, strut_center_z]
+);
+
+
+// --- Tail Assembly ---
+
+// The vertical and horizontal stabilizers at the rear.
+tail_v = remap(
+    sdBox([1.2, 0.15, 1.8]),
+    p - [3.0, 0.0, 0.6]
+);
+tail_h = remap(
+    sdBox([1.5, 3.5, 0.15]),
+    p - [3.0, 0.0, -0.1]
+);
+
+
+// --- Propeller Assembly ---
+
+prop_nose_pos = [-3.6, 0.0, 0.0];
+
+// The central hub of the propeller.
+prop_hub = remap(
+    sdSphere(0.2),
+    p - prop_nose_pos
+);
+
+// Defines the shape of two crossed propeller blades.
+propeller_blades_shape() {
+    blade1 = sdBox([0.1, 3.0, 0.3]);
+    blade2 = sdBox([0.1, 0.3, 3.0]);
+    return min(blade1, blade2);
+}
+
+// The two blades of the propeller, modeled as two intersecting boxes.
+prop_blades = remap(
+    propeller_blades_shape(),
+    p - prop_nose_pos
+);
+
+
+// --- Landing Gear ---
+
+gear_y_pos = 1.0;
+gear_wheel_z = -1.2;
+gear_strut_z = -0.85;
+
+// The wheels.
+wheel_left = remap(
+    sdTorusY(0.4, 0.1),
+    p - [0.0, -gear_y_pos, gear_wheel_z]
+);
+wheel_right = remap(
+    sdTorusY(0.4, 0.1),
+    p - [0.0,  gear_y_pos, gear_wheel_z]
+);
+
+// The struts connecting the wheels to the fuselage.
+gear_strut_left = remap(
+    sdCylinderZ(0.1, 0.7),
+    p - [0.0, -gear_y_pos, gear_strut_z]
+);
+gear_strut_right = remap(
+    sdCylinderZ(0.1, 0.7),
+    p - [0.0,  gear_y_pos, gear_strut_z]
+);
+
+// A simple tail skid for balance.
+tail_skid = remap(
+    sdCylinderZ(0.05, 0.8),
+    p - [3.2, 0.0, -0.9]
+);
+
+
+// Combine all the parts into the final shape.
+// The GSL runtime will automatically union all returned values.
+return fuselage,
+       wing_upper, wing_lower,
+       strut1, strut2, strut3, strut4,
+       tail_v, tail_h,
+       prop_hub, prop_blades,
+       wheel_left, wheel_right,
+       gear_strut_left, gear_strut_right,
+       tail_skid;

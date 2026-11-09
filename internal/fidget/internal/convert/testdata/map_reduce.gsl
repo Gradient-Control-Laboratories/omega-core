@@ -1,0 +1,20 @@
+
+// A sphere SDF whose distance is computed with map and reduce.
+
+center = [0.5, 0.0, 0.0];
+radius = 1.0;
+
+// Offset from the sphere center (a vec3).
+v = p - center;
+
+// map: square each component, producing a new collection.
+squares = map((value, index) {
+  return value * value;
+}, v);
+
+// reduce: sum the squared components into a scalar.
+sumSquares = reduce(0.0, (acc, value) {
+  return acc + value;
+}, squares);
+
+return sqrt(sumSquares) - radius;

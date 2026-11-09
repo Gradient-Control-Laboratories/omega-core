@@ -1,0 +1,23 @@
+// Exercises constant matrix/array code generation, ensuring that the
+// folded constant list of vectors is printed using nested vector
+// constructor calls rather than a flat list of scalar floats.
+//
+// We map over a dynamic list (dependent on p) and index the constant
+// matrix using the map's index. This prevents future optimizer passes
+// from dead-code eliminating or fully constant-folding the matrix.
+
+constMatrix = [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [10.0, 20.0, 30.0, 1.0]];
+
+myVec = [p.x, p.y, p.z, time];
+
+rows = map(
+  (val, index) {
+    return val + myVec;
+  },
+  constMatrix
+);
+
+row0 = rows[0];
+row1 = rows[1];
+
+return p.x + row0.x + row1.y;

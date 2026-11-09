@@ -1,0 +1,112 @@
+// Scene Size: 900
+// Scene Grid: 50
+
+// Four woods, finished thirteen ways, as 40 mm cubes cut from stems standing
+// upright, so the top is end grain and the sides face grain. Back to front,
+// one row per wood, each showing a stain differently: white oak, ring-porous,
+// its big pores taking a pigment; black cherry and sugar maple, which blotch;
+// and pine, a softwood, whose soft earlywood takes more stain than its
+// latewood, so a stain turns its rings the other way round.
+//
+// Left to right, one column per finish:
+//   - bare wood, prepared six ways: sanded with P80 and with P220, planed
+//     with knife marks 1.5 mm apart, bandsawn, chainsawn, and ripped on a
+//     table saw whose blade runs out 0.05 mm, every one fed along the grain;
+//   - on P220: tung oil, boiled linseed oil, oil-based polyurethane at a
+//     gloss, water-based polyurethane at a satin, a brown pigment stain under
+//     the satin water-based polyurethane, and a cherry-red dye stain under amber
+//     shellac;
+//   - torched 0.8 mm deep, shou sugi ban: the earlywood charred black, the
+//     latewood brown between.
+//
+// The scratches, tool marks, torn fibres and open pores are relief, drawn
+// with Displacement on; the film finishes level what is finer than they are
+// thick. age is how far indoor light has changed the colour, from fresh (0) to
+// fully aged (1), which also yellows the oils, the oil-based polyurethane and
+// the shellac; weather how long the wood has stood outdoors, from fresh (0)
+// to years (1).
+
+age = 0.00;
+age.min = 0;
+age.max = 1;
+weather = 0.00;
+weather.min = 0;
+weather.max = 1;
+look = [0, age, weather];
+
+up = [0, 0, 1];
+pitch = 60;
+rowPitch = 70;
+columns = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+
+// Each cube has three flat faces, right, back and top, as the tools left
+// them, their edges chamfered 2 mm, and three that turn into one another in
+// an exponential blend 8 mm soft, left, front and bottom, where the grain
+// can be seen turning.
+cube(x, y) {
+  flat = intersectChamfer(p.x - (x + 20), p.y - (y + 20), p.z - 40, 2);
+  blended = intersectExponential([x - 20 - p.x, y - 20 - p.y, -p.z], 8);
+  return max(flat, blended);
+}
+
+// The thirteen cubes of the row at y.
+row(y) {
+  return reduce(1000, (nearest, i) {
+    return min(nearest, cube((i - 6) * pitch, y));
+  }, columns);
+}
+
+cubes = min(min(row(1.5 * rowPitch), row(0.5 * rowPitch)), min(row(-0.5 * rowPitch), row(-1.5 * rowPitch)));
+
+// The cube the point is in, its column 0 to 12 from left to right and its
+// row 0 to 3 from the back, and the wood in it.
+column = clamp(floor(p.x / pitch + 6.5), 0, 12);
+rank = clamp(floor((2 * rowPitch - p.y) / rowPitch), 0, 3);
+centre = [(column - 6) * pitch, (1.5 - rank) * rowPitch];
+// The surface's normal, for the finishes: the gradient of the cube the point
+// is in alone, the same at its surface as all the cubes' and far cheaper.
+normal = cube(centre.x, centre.y).dp;
+number = rank < 0.5 ? wood.whiteOakNumber : (rank < 1.5 ? wood.cherryNumber : (rank < 2.5 ? wood.sugarMapleNumber : wood.pineNumber));
+
+// Each column's prep, stain and topcoat, a row of each record at a time, so
+// the finish can be picked from the point.
+p80 = wood.sanded(80);
+p220 = wood.sanded(220);
+planedRow = wood.planed(up, 1.5);
+bandsawRow = wood.sawn(up, 0);
+chainsawRow = wood.sawn(up, 1);
+ripRow = wood.tableSawn(up, 0.05);
+torchRow = wood.torched(0.8);
+preps = [p80[0], p220[0], planedRow[0], bandsawRow[0], chainsawRow[0], ripRow[0], p220[0], p220[0], p220[0], p220[0], p220[0], p220[0], torchRow[0]];
+none = wood.noStain;
+brown = wood.stain([0.55, 0.36, 0.22], 0.8);
+red = wood.dyeStain([0.62, 0.3, 0.2], 1);
+stains = [none[0], none[0], none[0], none[0], none[0], none[0], none[0], none[0], none[0], none[0], brown[0], red[0], none[0]];
+stainKinds = [none[1], none[1], none[1], none[1], none[1], none[1], none[1], none[1], none[1], none[1], brown[1], red[1], none[1]];
+bare = wood.unfinished;
+tung = wood.tungOil;
+linseed = wood.linseedOil;
+oilPoly = wood.oilPolyurethane(85);
+waterPoly = wood.waterPolyurethane(30);
+shellac = wood.shellac;
+coats = [bare[0], bare[0], bare[0], bare[0], bare[0], bare[0], tung[0], linseed[0], oilPoly[0], waterPoly[0], waterPoly[0], shellac[0], bare[0]];
+coatKinds = [bare[1], bare[1], bare[1], bare[1], bare[1], bare[1], tung[1], linseed[1], oilPoly[1], waterPoly[1], waterPoly[1], shellac[1], bare[1]];
+pick(list) {
+  return reduce([0, 0, 0, 0], (found, i) {
+    return i == column ? list[i] : found;
+  }, columns);
+}
+// The table saw's blade rises across both flat sides, diagonally, its centre
+// 92 mm below the cube's middle, so each side is cut 64 to 120 mm from it.
+prep = [pick(preps), [0, 0, 1, 0], [0.7071, 0.7071, 0, 92 - 0.7071 * (centre.x + centre.y)]];
+stain = [pick(stains), pick(stainKinds)];
+topcoat = [pick(coats), pick(coatKinds)];
+
+// Each stem stands 60 mm left of and 35 mm in front of its cube's centre.
+stem = [centre.x - 60, centre.y - 35, 0];
+// No knots; see Knotty Planks.
+cubes.material = wood.speciesMaterial(number, stem, up, look, 0, normal, prep, topcoat);
+// The heartwood runs 80 mm from the pith, past all but the cube's far corner.
+cubes.color = wood.speciesColor(number, stem, up, look, 0, 80 + wood.sapwoodDepth(number), normal, prep, stain, topcoat);
+
+return cubes;

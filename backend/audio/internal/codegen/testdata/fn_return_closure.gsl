@@ -1,0 +1,24 @@
+// Functions returning functions in the audio backend. Captured values become
+// leading parameters of the emitted JS function rather than being baked into
+// its body, so two closures made by the same factory stay distinguishable at
+// their call sites.
+
+scaleBy(k) {
+  return (a) { return a * k; };
+}
+
+// A chain: each call binds one more value.
+ramp(base) {
+  return (rate) {
+    return (t) { return base + rate * t; };
+  };
+}
+
+soft = scaleBy(0.25);
+loud = scaleBy(4.0);
+// Chained calls have to be written one step at a time: the grammar has no
+// form for calling a returned function directly, as in ramp(110)(2).
+sweepBase = ramp(110.0);
+sweep = sweepBase(2.0);
+
+return audio(soft(sin(time)) + loud(sin(time * 2.0)), sin(sweep(time)));

@@ -1,0 +1,3 @@
+// mesh(index, M): 4x4 homogeneous placement. In the wgsl preview mesh()
+// lowers to a sentinel, so this just verifies the matrix arg builds.
+return mesh(0, [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [3, 0, 0, 1]]);

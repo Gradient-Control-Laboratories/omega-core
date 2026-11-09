@@ -1,0 +1,26 @@
+@scene(8, 0.4)
+
+// Hybrid Mechanical Bracket Showcase: CAD Polygon Mesh Shell + Procedural TPMS Infill
+infill_density = 2.5;
+infill_density.min = 1.0;
+infill_density.max = 5.0;
+
+infill_thickness = 0.25;
+infill_thickness.min = 0.05;
+infill_thickness.max = 0.6;
+
+// Structural bracket boundary (L-bracket profile)
+d_base = max(max(abs(p.x - 1.0) - 1.0, abs(p.y) - 1.0), abs(p.z - 0.25) - 0.25);
+d_upright = max(max(abs(p.x - 0.25) - 0.25, abs(p.y) - 1.0), abs(p.z - 1.0) - 1.0);
+d_shell = min(d_base, d_upright);
+
+// Internal TPMS gyroid infill lattice
+sp = p * infill_density;
+gyroid = sin(sp.x)*cos(sp.y) + sin(sp.y)*cos(sp.z) + sin(sp.z)*cos(sp.x);
+d_gyroid = (abs(gyroid) - infill_thickness) / infill_density;
+
+// Conformal internal infill bounded within the shell
+d_infill = max(d_gyroid, d_shell + 0.08);
+
+// Union: Solid outer skin with lightweight conformal lattice infill
+return min(d_shell, d_infill);

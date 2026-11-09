@@ -1,0 +1,31 @@
+// A remap of a declared box moves the shape with the box: the crop is
+// re-derived under the remapped point, shape and all, whether the shape is a
+// call that takes the point (the ring's torus) or written out in it, as the
+// bolt's cap and stem are, each cropped to its own box inside the bolt's.
+ring(r) {
+  s = torus(r, 0.25);
+  s.box = [[-r - 0.25, -r - 0.25, -0.25], [r + 0.25, r + 0.25, 0.25]];
+  return s;
+}
+cap(r) {
+  s = max(length(p.xy) - r, -p.z, p.z - 1);
+  s.box = [[-r, -r, 0], [r, r, 1]];
+  return s;
+}
+stem(r) {
+  s = max(length(p.xy) - r, -3 - p.z, p.z);
+  s.box = [[-r, -r, -3], [r, r, 0]];
+  return s;
+}
+bolt(r) {
+  s = min(cap(r), stem(r / 2));
+  s.box = [[-r, -r, -3], [r, r, 1]];
+  return s;
+}
+ball = sphere(1);
+ball.box = [[-1, -1, -1], [1, 1, 1]];
+a = remap(ring(3), [p.x - 5, p.y, p.z]);
+b = transform.translate(ring(2), [0, 5, 0]);
+c = remap(ball, [p.x, p.y, p.z - 4]);
+d = remap(bolt(2), [p.x + 8, p.y, p.z]);
+return a, b, c, d;

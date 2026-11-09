@@ -1,0 +1,29 @@
+// x = max() ;                         // ERROR: 2 expected at least 2 arguments, got 0
+// x = mesh() ;                        // ERROR: 4 mesh requires between 1 and 4 arguments, got 0
+// x = bvhSdf() ;                      // ERROR: 4a bvhSdf requires exactly 1 argument, got 0
+// x = vdbSdf() ;                      // ERROR: 4b vdbSdf requires between 1 and 3 arguments, got 0
+// x = vdbSdf(0, foo) ;                // ERROR: 4c vdbSdf() second argument (voxelDivisor) must be a positive integer literal
+// x = vdbSdf(0, 256, foo) ;           // ERROR: 4d vdbSdf() third argument (halfBandVoxels) must be a positive numeric literal
+// x = vdbSdf(0, 0.5) ;                // ERROR: 4e vdbSdf() second argument (voxelDivisor) must be a positive integer literal
+// x = vdbSdf(0, 0) ;                  // ERROR: 4f vdbSdf() second argument (voxelDivisor) must be a positive integer literal
+// x = 1 ? 2 3 ;                       // ERROR: 5 Expected ":" after expression after "?"
+// x = ? 1 : 2 ;                       // ERROR: 6 unexpected token "?"
+// x = 1 ? : 2 ;                       // ERROR: 7 unexpected token ":"
+// x = 1 ? 2 ;                         // ERROR: 8 Expected ":" after expression after "?"
+// x = (1).foo ;                       // ERROR: 9 invalid accessor: foo
+// 1 + 1 ;                             // ERROR: 12 expected assignment
+// x = 1 y = 2                         // ERROR: 13 unexpected token "y" (expected ";")
+// x = ( ) ;                           // ERROR: 14 unexpected token ")"
+// x = 1 2 ;                           // ERROR: 15 unexpected token "2"
+// myFunc0(...four) { return 1; }      // ERROR: 16 varargs (...) are not supported
+// myFunc1(one, ...five) { return 1; } // ERROR: 17 varargs (...) are not supported
+
+foo() {
+    // The following statement is missing a semicolon
+    // x = 1 + 2 + 3                   // ERROR: 98 missing ";" before return
+    return 1;
+}
+
+// The following statement is missing a semicolon
+// x = 1 + 2 + 3                       // ERROR: 99 missing ";" before return
+return 1;

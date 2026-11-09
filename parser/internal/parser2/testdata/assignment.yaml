@@ -1,0 +1,144 @@
+Expected:
+  files:
+    - assignments:
+        - expression:
+            expression:
+              operands:
+                - fnCall:
+                    arguments:
+                      - value: -7
+                      - value: 8
+                    reference:
+                      name: dot
+              operation: NEG
+          variables:
+            - name: radius
+        - expression:
+            expression:
+              operands:
+                - expression:
+                    operands:
+                      - reference:
+                          name: p
+                      - expression:
+                          operands:
+                            - value: 0.45
+                            - value: 0.1
+                            - value: -0.6
+                          operation: COLLECT
+                    operation: SUB
+                - reference:
+                    name: xzy
+              operation: ACCESS
+          variables:
+            - name: offset
+        - expression:
+            expression:
+              operands:
+                - value: 0.45
+                - value: 0.1
+                - value: -0.6
+                - value: 0.2
+                - value: 0.3
+              operation: COLLECT
+          variables:
+            - name: offset5
+        - expression:
+            fnCall:
+              arguments:
+                - value: 27
+              reference:
+                name: foo
+          variables:
+            - name: result
+            - name: r
+        - expression:
+            reference:
+              name: foo
+          variables:
+            - name: bar
+        - expression:
+            reference:
+              name: gsl_anon
+          variables:
+            - name: baz
+        - expression:
+            fnCall:
+              arguments:
+                - reference:
+                    name: baz
+                - value: 2
+              reference:
+                name: apply
+          variables:
+            - name: goo
+      fnTypes:
+        - groups:
+            - functions:
+                - parameters:
+                    - name: one
+                  returns:
+                    - expression:
+                        operands:
+                          - reference:
+                              name: one
+                          - value: 2.5
+                          - reference:
+                              name: p
+                        operation: ADD
+                    - expression:
+                        operands:
+                          - expression:
+                              operands:
+                                - reference:
+                                    name: one
+                                - expression:
+                                    operands:
+                                      - value: 2
+                                      - expression:
+                                          operands:
+                                            - reference:
+                                                name: p
+                                            - reference:
+                                                name: x
+                                          operation: ACCESS
+                                    operation: MUL
+                              operation: DIV
+                          - reference:
+                              name: radius
+                        operation: SUB
+              paramCount: 1
+          name: foo
+        - groups:
+            - functions:
+                - parameters:
+                    - name: one
+                  returns:
+                    - expression:
+                        operands:
+                          - reference:
+                              name: one
+                          - value: 2.5
+                          - reference:
+                              name: p
+                        operation: ADD
+              paramCount: 1
+          name: gsl_anon
+        - groups:
+            - functions:
+                - parameters:
+                    - name: fun
+                    - name: arg
+                  returns:
+                    - fnCall:
+                        arguments:
+                          - reference:
+                              name: arg
+                        reference:
+                          name: fun
+              paramCount: 2
+          name: apply
+      returns:
+        - reference:
+            name: goo
+Source: ""

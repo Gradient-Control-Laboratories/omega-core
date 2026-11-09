@@ -1,0 +1,131 @@
+// Scene Size: 80
+// Scene Grid: 10
+
+// The six ways this library will draw a thread, on one M5 x 16 socket head cap
+// screw at the ISO 4762 dimensions and one ISO 4032 nut — each way three
+// times: the screw along the front, the nut along the back, and the two put
+// together in between, the nut run up the screw.
+//
+//   plain          no thread at all. The smooth nominal: the screw at its major
+//                  diameter, the nut bored at the basic minor. The only form to
+//                  prove a fit against — certified here, it holds for every
+//                  column to its right.
+//   paint          the same smooth parts FINISHED with fastener.threadPaint:
+//                  the ISO 68-1 thread as paint on the finish and nothing
+//                  else, no displacement for the renderer to march.
+//   relief         the same smooth parts, FINISHED: fastener.shcs and
+//                  fastener.nut given a material and a thread form hand back
+//                  one body whose material draws the ISO 68-1 thread as a
+//                  displacement. Meshes, exports and proofs see the plain part;
+//                  the renderer draws the thread, silhouette and all.
+//   sin relief     the same finish with the thread a cosmetic sinusoid: no
+//                  corners, so it stays smooth where the V would alias.
+//   sin geometry   a sinusoid at the standard depth, cut into the field.
+//   ISO geometry   the real thing, the ISO 68-1 truncated V as the exact
+//                  distance to that profile.
+//
+// The profile and the coarse pitch both come from the thread package, so each
+// screw and the nut in its column are one curve read from opposite sides: the
+// assembled pair meets flank to flank. The nut sits a whole number of pitches
+// up the screw so the two helices are in step.
+//
+// Every part brings its simpler stand-in, which the viewer draws once the part
+// is small on screen: zoom out, or drag the Detail slider's Simple handle. It
+// is plain cylinders and prisms, no chamfer and no socket, with the thread one
+// way of drawing simpler: geometry and relief turn to paint, and paint to plain
+// steel. The Textures handle takes every painted thread to plain steel.
+
+steelMat, steelColor = metal.steel();
+
+shankLength = 16.0;
+
+d = 5.0;
+pitchVal = thread.metricPitch(d);
+col = 12.0;
+
+// The rows: screws stand with their tips on the floor, nuts rest on it, and
+// the assembled nut rides four pitches up its screw.
+front = -16.0;
+middle = 0.0;
+back = 16.0;
+nutUp = 4.0 * pitchVal;
+
+steelLight = [0.62, 0.64, 0.68];
+
+// place: a part set down where it stands. A move that says where the part went
+// keeps its box, where a remap would clear it, so each part is its own box and
+// the viewer can let one go as it gets small.
+place(shape, offset) {
+  return transform.translate(shape, offset);
+}
+
+// =========================================================
+// plain
+// =========================================================
+
+plainScrew = place(fastener.shcs(d, shankLength), [-2.5 * col, front, shankLength]);
+plainScrew.color = steelLight;
+plainPairScrew = place(fastener.shcs(d, shankLength), [-2.5 * col, middle, shankLength]);
+plainPairScrew.color = steelLight;
+plainPairNut = place(fastener.nut(d), [-2.5 * col, middle, nutUp]);
+plainPairNut.color = steelLight;
+plainNut = place(fastener.nut(d), [-2.5 * col, back, 0.0]);
+plainNut.color = steelLight;
+
+// =========================================================
+// paint
+// =========================================================
+
+paintScrew = place(fastener.shcs(d, shankLength, steelMat, fastener.threadPaint),
+                   [-1.5 * col, front, shankLength]);
+paintPairScrew = place(fastener.shcs(d, shankLength, steelMat, fastener.threadPaint),
+                       [-1.5 * col, middle, shankLength]);
+paintPairNut = place(fastener.nut(d, steelMat, fastener.threadPaint), [-1.5 * col, middle, nutUp]);
+paintNut = place(fastener.nut(d, steelMat, fastener.threadPaint), [-1.5 * col, back, 0.0]);
+
+// =========================================================
+// relief and sin relief: the finished parts
+// =========================================================
+//
+// One call, one body, its material the finish with the thread in it. The
+// material comes back with the part and moves with it, and so does its colour:
+// steel with the thread painted on, showing wherever the thread is not drawn
+// as displacement — zoom out past the Detail slider's displacement rung and
+// the relief turns to paint.
+
+reliefScrew = place(fastener.shcs(d, shankLength, steelMat, fastener.threadIso),
+                    [-0.5 * col, front, shankLength]);
+reliefPairScrew = place(fastener.shcs(d, shankLength, steelMat, fastener.threadIso),
+                        [-0.5 * col, middle, shankLength]);
+reliefPairNut = place(fastener.nut(d, steelMat, fastener.threadIso),
+                      [-0.5 * col, middle, nutUp]);
+reliefNut = place(fastener.nut(d, steelMat, fastener.threadIso), [-0.5 * col, back, 0.0]);
+
+sinScrew = place(fastener.shcs(d, shankLength, steelMat, fastener.threadSin),
+                 [0.5 * col, front, shankLength]);
+sinPairScrew = place(fastener.shcs(d, shankLength, steelMat, fastener.threadSin),
+                     [0.5 * col, middle, shankLength]);
+sinPairNut = place(fastener.nut(d, steelMat, fastener.threadSin), [0.5 * col, middle, nutUp]);
+sinNut = place(fastener.nut(d, steelMat, fastener.threadSin), [0.5 * col, back, 0.0]);
+
+// =========================================================
+// sin geometry and ISO geometry: the thread in the field
+// =========================================================
+
+sinGeomScrew = place(fastener.shcsThreadedSin(d, shankLength), [1.5 * col, front, shankLength]);
+sinGeomPairScrew = place(fastener.shcsThreadedSin(d, shankLength),
+                         [1.5 * col, middle, shankLength]);
+sinGeomPairNut = place(fastener.nutThreadedSin(d), [1.5 * col, middle, nutUp]);
+sinGeomNut = place(fastener.nutThreadedSin(d), [1.5 * col, back, 0.0]);
+
+isoGeomScrew = place(fastener.shcsThreaded(d, shankLength), [2.5 * col, front, shankLength]);
+isoGeomPairScrew = place(fastener.shcsThreaded(d, shankLength), [2.5 * col, middle, shankLength]);
+isoGeomPairNut = place(fastener.nutThreaded(d), [2.5 * col, middle, nutUp]);
+isoGeomNut = place(fastener.nutThreaded(d), [2.5 * col, back, 0.0]);
+
+return plainScrew, plainPairScrew, plainPairNut, plainNut,
+       paintScrew, paintPairScrew, paintPairNut, paintNut,
+       reliefScrew, reliefPairScrew, reliefPairNut, reliefNut,
+       sinScrew, sinPairScrew, sinPairNut, sinNut,
+       sinGeomScrew, sinGeomPairScrew, sinGeomPairNut, sinGeomNut,
+       isoGeomScrew, isoGeomPairScrew, isoGeomPairNut, isoGeomNut;

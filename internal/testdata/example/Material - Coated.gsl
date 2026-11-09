@@ -1,0 +1,133 @@
+// Scene Size: 120
+// Scene Grid: 10
+
+// The coatings laid over parts (material/coat/coating): anodize over turned
+// aluminium, black oxide and phosphate on steel, powder coats from gloss to
+// hammertone, paint chipped at a box's edges, and galvanized spangle.
+
+// Four turned aluminium bars anodized: clear, blue, red and black. The oxide
+// is clear, so the lathe's lay shows through the dye.
+
+aluminumMat, aluminumColor = metal.aluminum();
+steelMat, steelColor = metal.steel();
+
+barAxis = [0, 1, 0];
+turnedMat, turnedColor, turnedHeight, turnedSlope = machined.turned(aluminumMat, aluminumColor, [0, 0, 0], barAxis, 0.15, 0.8);
+clearMat, clearColor, clearHeight, clearSlope = coating.anodized(turnedMat, aluminumColor, [1, 1, 1]);
+blueMat, blueColor, blueHeight, blueSlope = coating.anodized(turnedMat, aluminumColor, [0.15, 0.35, 0.85]);
+redMat, redColor, redHeight, redSlope = coating.anodized(turnedMat, aluminumColor, [0.85, 0.12, 0.12]);
+blackMat, blackColor, blackHeight, blackSlope = coating.anodized(turnedMat, aluminumColor, [0.06, 0.06, 0.07]);
+clearBar = cylinderCapped([-50, 15, 0], [-50, 45, 0], 6, intersectChamfer(0.5));
+clearBar.material = clearMat;
+clearBar.color = clearColor;
+blueBar = cylinderCapped([-35, 15, 0], [-35, 45, 0], 6, intersectChamfer(0.5));
+blueBar.material = blueMat;
+blueBar.color = blueColor;
+redBar = cylinderCapped([-20, 15, 0], [-20, 45, 0], 6, intersectChamfer(0.5));
+redBar.material = redMat;
+redBar.color = redColor;
+blackBar = cylinderCapped([-5, 15, 0], [-5, 45, 0], 6, intersectChamfer(0.5));
+blackBar.material = blackMat;
+blackBar.color = blackColor;
+
+// A block hard anodized 50 um, and steel blocks blackened with oiled black
+// oxide over a face mill's marks, and manganese phosphated.
+millMat, millColor, millHeight, millSlope = machined.faceMilled(aluminumMat, aluminumColor, [20, 30, 6], [1, 0, 0], [0, 0, 1], 25, 0.3, 0.8);
+hardMat, hardColor, hardHeight, hardSlope = coating.hardAnodized(millMat, aluminumColor, 50);
+hardBlock = box([10, 18, -6], [30, 42, 6], intersectChamfer(0.5));
+hardBlock.material = hardMat;
+hardBlock.color = hardColor;
+steelMillMat, steelMillColor, steelMillHeight, steelMillSlope = machined.faceMilled(steelMat, steelColor, [45, 30, 6], [1, 0, 0], [0, 0, 1], 25, 0.3, 0.8);
+oxideMat, oxideColor, oxideHeight, oxideSlope = coating.blackOxide(steelMillMat, 1);
+oxideBlock = box([35, 18, -6], [55, 42, 6], intersectChamfer(0.5));
+oxideBlock.material = oxideMat;
+oxideBlock.color = oxideColor;
+phosMat, phosColor, phosHeight, phosSlope = coating.phosphate(steelMat, 1);
+phosBlock = box([60, 18, -6], [80, 42, 6], intersectChamfer(0.5));
+phosBlock.material = phosMat;
+phosBlock.color = phosColor;
+
+// Four powder-coated plates: a glossy red with orange peel, black wrinkle,
+// green sand and blue hammertone.
+glossMat, glossColor, glossHeight, glossSlope = coating.powderCoat([0.62, 0.06, 0.05], 85, 0.7);
+glossPlate = boxCentered([-45, -25, 0], [20, 20, 6], intersectRound(1.5));
+glossPlate.material = glossMat;
+glossPlate.color = glossColor;
+wrinkleMat, wrinkleColor, wrinkleHeight, wrinkleSlope = coating.wrinkleCoat([0.04, 0.04, 0.045], 0.6);
+wrinklePlate = boxCentered([-20, -25, 0], [20, 20, 6], intersectRound(1.5));
+wrinklePlate.material = wrinkleMat;
+wrinklePlate.color = wrinkleColor;
+sandMat, sandColor, sandHeight, sandSlope = coating.sandCoat([0.12, 0.22, 0.12], 0.2);
+sandPlate = boxCentered([5, -25, 0], [20, 20, 6], intersectRound(1.5));
+sandPlate.material = sandMat;
+sandPlate.color = sandColor;
+hammerMat, hammerColor, hammerHeight, hammerSlope = coating.hammertone([0.18, 0.32, 0.45], 4);
+hammerPlate = boxCentered([30, -25, 0], [20, 20, 6], intersectRound(1.5));
+hammerPlate.material = hammerMat;
+hammerPlate.color = hammerColor;
+
+// A steel box painted green over red-oxide primer, chipped along its
+// vertical edges and its top's, where hands and knocks wear it.
+lo = [50, -38, -8];
+hi = [75, -12, 12];
+slabX = max(p.x - hi.x, lo.x - p.x);
+slabY = max(p.y - hi.y, lo.y - p.y);
+slabZ = max(p.z - hi.z, lo.z - p.z);
+wear = max(coating.edgeWear(slabX, slabY, 3), max(coating.edgeWear(slabX, slabZ, 3), coating.edgeWear(slabY, slabZ, 3)));
+paintMat, paintColor, paintHeight, paintSlope = coating.chippedPaint(steelMat, steelColor, [0.14, 0.32, 0.18], [0.55, 0.22, 0.14], 60, wear, 1.5);
+paintBox = box(lo, hi, intersectChamfer(1));
+paintBox.material = paintMat;
+paintBox.color = paintColor;
+
+// Galvanized sheet, fresh and weathered, its spangle 1 mm across.
+freshMat, freshColor, freshHeight, freshSlope = coating.galvanized(1, 0);
+freshSheet = boxCentered([-30, -60, 0], [50, 22, 2], intersectRound(0.5));
+freshSheet.material = freshMat;
+freshSheet.color = freshColor;
+agedMat, agedColor, agedHeight, agedSlope = coating.galvanized(1, 0.7);
+agedSheet = boxCentered([30, -60, 0], [50, 22, 2], intersectRound(0.5));
+agedSheet.material = agedMat;
+agedSheet.color = agedColor;
+
+// Four faced plates showing what a FLOWED film does to the surface under it
+// (coating.levelled). A film fills what is finer than it is thick, so the
+// same 0.08 mm coat erases a fine lathe finish and leaves a coarse one
+// standing. The last argument of each coat is that surface's own feed, the
+// scale the film has to fill; the one before it is the film's thickness.
+plateAxis = [0, 0, 1];
+al = aluminumColor;
+
+// A fine facing cut, 0.15 mm a turn: concentric rings you can just see.
+fineMat, fineCol, fineH, fineS = machined.faced(aluminumMat, al, [-45, 0, 3], plateAxis, 0.15, 0.8);
+finePlate = boxCentered([-45, 0, 0], [20, 20, 6], intersectRound(1.5));
+finePlate.material = fineMat;
+finePlate.color = fineCol;
+
+// The same cut under three coats of polyurethane. 0.08 mm against a 0.15 mm
+// feed leaves about a sixtieth of the lay: the rings all but vanish and the
+// highlight goes round.
+fineCutMat, fineCutCol, fcH, fcS = machined.faced(aluminumMat, al, [-20, 0, 3], plateAxis, 0.15, 0.8);
+lacqMat, lacqCol, lqH, lqS = coating.clearCoat(fineCutMat, al, [1, 1, 1], 45, 0.08, 0.15);
+lacqPlate = boxCentered([-20, 0, 0], [20, 20, 6], intersectRound(1.5));
+lacqPlate.material = lacqMat;
+lacqPlate.color = lacqCol;
+
+// A deliberately coarse 1.2 mm facing cut under the SAME 0.08 mm film. The
+// film is far too thin to fill it, so the rings and their streaked highlight
+// read straight through the gloss.
+coarseCutMat, coarseCutCol, ccH, ccS = machined.faced(aluminumMat, al, [5, 0, 3], plateAxis, 1.2, 0.8);
+coarseLacqMat, coarseLacqCol, clH, clS = coating.clearCoat(coarseCutMat, al, [1, 1, 1], 45, 0.08, 1.2);
+coarseLacqPlate = boxCentered([5, 0, 0], [20, 20, 6], intersectRound(1.5));
+coarseLacqPlate.material = coarseLacqMat;
+coarseLacqPlate.color = coarseLacqCol;
+
+// An opaque powder coat over that same coarse cut. The colour is the coat's,
+// but the machining underneath still shows in the sheen -- which the
+// three-argument powderCoat above cannot do, having no substrate to level.
+coarsePowderBase, cpbCol, cpbH, cpbS = machined.faced(steelMat, steelColor, [30, 0, 3], plateAxis, 1.2, 0.8);
+coarsePowderMat, coarsePowderCol, cpH, cpS = coating.powderCoat(coarsePowderBase, [0.16, 0.30, 0.42], 85, 0.5, 0.08, 1.2);
+coarsePowderPlate = boxCentered([30, 0, 0], [20, 20, 6], intersectRound(1.5));
+coarsePowderPlate.material = coarsePowderMat;
+coarsePowderPlate.color = coarsePowderCol;
+
+return clearBar, blueBar, redBar, blackBar, hardBlock, oxideBlock, phosBlock, glossPlate, wrinklePlate, sandPlate, hammerPlate, paintBox, freshSheet, agedSheet, finePlate, lacqPlate, coarseLacqPlate, coarsePowderPlate;

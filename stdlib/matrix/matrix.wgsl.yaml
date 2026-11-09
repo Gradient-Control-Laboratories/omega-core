@@ -1,0 +1,88 @@
+package: matrix
+accelerations:
+  - name: multiply
+    kind: operator
+    symbol: "*"
+    precedence: Multiplication
+    signatures:
+      - args: [mat, mat]
+        return: mat
+      - args: [mat, scalar]
+        return: mat
+      - args: [scalar, mat]
+        return: mat
+
+  - name: scale
+    kind: operator
+    symbol: "*"
+    precedence: Multiplication
+    signatures:
+      - args: [scalar, mat]
+        return: mat
+
+  - name: plus
+    kind: operator
+    symbol: "+"
+    precedence: Addition
+    signatures:
+      - args: [mat, mat]
+        return: mat
+
+  - name: minus
+    kind: operator
+    symbol: "-"
+    precedence: Addition
+    signatures:
+      - args: [mat, mat]
+        return: mat
+
+  - name: negate
+    kind: operator
+    symbol: "-"
+    precedence: Unary
+    unary: true
+    signatures:
+      - args: [mat]
+        return: mat
+
+  - name: transpose2
+    kind: builtin
+    builtin: transpose
+    signatures:
+      - args: [mat2x2]
+        return: mat2x2
+
+  - name: transpose3
+    kind: builtin
+    builtin: transpose
+    signatures:
+      - args: [mat3x3]
+        return: mat3x3
+
+  - name: transpose4
+    kind: builtin
+    builtin: transpose
+    signatures:
+      - args: [mat4x4]
+        return: mat4x4
+
+  - name: determinant2
+    kind: builtin
+    builtin: determinant
+    signatures:
+      - args: [mat2x2]
+        return: f32
+
+  - name: determinant3
+    kind: builtin
+    builtin: determinant
+    signatures:
+      - args: [mat3x3]
+        return: f32
+
+  - name: determinant4
+    kind: builtin
+    builtin: determinant
+    signatures:
+      - args: [mat4x4]
+        return: f32

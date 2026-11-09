@@ -1,0 +1,25 @@
+
+a = 3;
+b = p.x;
+c = a * 2 / 3 % 6 + 4 - b;
+
+d = min(a, b, c);
+
+e = !d + -b + (c < 7);
+
+f = square(e);
+g = square(f - 7);
+h = abs(g);
+
+i = h <=> d;
+
+j = i > h ? b : c;
+k = j ? b : c : d;
+
+a2 = [j, k];
+a3 = [a2.x, a2.y, d];
+a4 = [a3.x, a3.y, a3.z, d];
+a5 = [a4.x, a4.y, a4.z, a4.w, h];
+a6 = [a5.x, a5.y, a5.z, a5.w, a5.w, j];
+
+return a6; // ERROR: 25 primary package must have a return statement

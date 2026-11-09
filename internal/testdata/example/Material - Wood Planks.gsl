@@ -1,0 +1,74 @@
+// Scene Size: 1100
+// Scene Grid: 100
+
+// The wood library's simple model, oak, walnut and pine left to right, four
+// ways (their colours are measured; see the wood library). The rings are
+// uneven year to year, and
+// each turns gradually from pale earlywood into darker latewood and ends
+// sharply; oak has big pores in each ring's earlywood and broad rays, walnut
+// scattered pores, pine none but knots, whorls of branches every 450 mm, a
+// year's height growth, with the rings bending around them, so a 300 mm board
+// shows one now and then. Front to back:
+//
+//   - flat-sawn boards, the stem 80 mm below each, so the rings cross the top
+//     as long stripes opening into cathedral arches;
+//   - quarter-sawn boards, the stem beside each at mid-thickness, so the rings
+//     stand straight through the board and run as straight grain, and oak's
+//     rays lie flat in the face as broad flecks;
+//   - end-grain chunks cut across the stem, its pith off one corner, so the
+//     top shows the rings as arcs and the pores as dots;
+//   - the flat-sawn boards again, weathered: silver grey, the latewood
+//     standing proud of the worn earlywood, with drying checks along the grain
+//     (render-only relief).
+//
+// The boards are one shape, and each point takes its species, stem and look
+// from the board it is in, so the wood is computed once wherever it is drawn
+// rather than once per board everywhere (see wood.speciesColor).
+
+pitch = 330;
+
+board(x, y) {
+  return boxCentered([x, y, 10], [300, 100, 20], intersectRound(1));
+}
+
+chunk(x, y) {
+  return boxCentered([x, y, 35], [100, 100, 70], intersectRound(1.5));
+}
+
+// Flat-sawn at y = -225, quarter-sawn at y = -75, end-grain chunks at y = 75
+// and weathered flat-sawn at y = 225.
+flat = min(min(board(-pitch, -225), board(0, -225)), board(pitch, -225));
+quarter = min(min(board(-pitch, -75), board(0, -75)), board(pitch, -75));
+ends = min(min(chunk(-pitch, 75), chunk(0, 75)), chunk(pitch, 75));
+old = min(min(board(-pitch, 225), board(0, 225)), board(pitch, 225));
+planks = min(min(flat, quarter), min(ends, old));
+
+// The board the point is in: its column, 0 to 2 for oak, walnut and pine, and
+// its row, 0 to 3 front to back.
+column = clamp(floor(p.x / pitch + 1.5), 0, 2);
+row = clamp(floor((p.y + 300) / 150), 0, 3);
+x = (column - 1) * pitch;
+number = column < 0.5 ? wood.whiteOakNumber : (column < 1.5 ? wood.walnutNumber : wood.pineNumber);
+
+// The stem: flat-sawn, 80 mm below the board; quarter-sawn, 150 mm to one side
+// at mid-thickness; end grain, upright with its pith 70 mm off a corner; and
+// weathered, flat-sawn again.
+endGrain = row > 1.5 && row < 2.5 ? 1 : 0;
+origin = [x - 70 * endGrain, row < 1.5 ? -225 : (row < 2.5 ? 5 : 225), row < 0.5 ? -80 : (row < 1.5 ? 10 : (row < 2.5 ? 0 : -80))];
+axis = endGrain > 0 ? [0, 0, 1] : [1, 0, 0];
+
+// The back row is weathered, bare; the others are sanded to P180 and oiled
+// with boiled linseed: wet-looking but matte, about 4 gloss units.
+look = [0, 0, row > 2.5 ? 1 : 0];
+oiled = wood.linseedOil;
+bare = wood.unfinished;
+topcoat = [row > 2.5 ? bare[0] : oiled[0], row > 2.5 ? bare[1] : oiled[1]];
+prep = wood.sanded(180);
+// The surface's normal, for the finish: the gradient of the board or chunk
+// the point is in alone.
+normal = endGrain > 0 ? chunk(x, 75).dp : board(x, -225 + 150 * row).dp;
+
+planks.material = wood.speciesMaterial(number, origin, axis, look, -1, normal, prep, topcoat);
+planks.color = wood.speciesColor(number, origin, axis, look, -1, -1, normal, prep, wood.noStain, topcoat);
+
+return planks;

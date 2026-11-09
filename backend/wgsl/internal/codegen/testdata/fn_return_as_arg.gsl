@@ -1,0 +1,19 @@
+// A closure produced by one call and passed as an argument to another. The
+// capture (radius = 0.25) has to travel through the parameter `combine` and
+// reach the call made through it inside boxWith's body.
+
+blend(d1, d2, k) {
+  h = max(k - abs(d1 - d2), 0) / k;
+  return min(d1, d2) - h * h * k * 0.25;
+}
+
+blendWith(radius) {
+  return (a, b) { return blend(a, b, radius); };
+}
+
+boxWith(size, combine) {
+  d = abs(p) - size * 0.5;
+  return combine(combine(d.x, d.y), d.z);
+}
+
+return boxWith(2.0, blendWith(0.25));

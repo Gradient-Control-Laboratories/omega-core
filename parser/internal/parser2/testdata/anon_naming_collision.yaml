@@ -1,0 +1,124 @@
+Expected:
+  files:
+    - assignments:
+        - expression:
+            fnCall:
+              arguments:
+                - fnCall:
+                    reference:
+                      name: list
+                - reference:
+                    name: gsl_anon
+              reference:
+                name: remapEdges
+          variables:
+            - name: circle
+        - expression:
+            fnCall:
+              arguments:
+                - fnCall:
+                    reference:
+                      name: list
+                - reference:
+                    name: gsl_anon_2
+              reference:
+                name: remapEdges
+          variables:
+            - name: diamond
+      fnTypes:
+        - groups:
+            - functions:
+                - returns:
+                    - expression:
+                        operands:
+                          - expression:
+                              operands:
+                                - fnCall:
+                                    arguments:
+                                      - reference:
+                                          name: p
+                                    reference:
+                                      name: length
+                                - value: 1
+                              operation: SUB
+                          - expression:
+                              operands:
+                                - fnCall:
+                                    arguments:
+                                      - reference:
+                                          name: p
+                                    reference:
+                                      name: length
+                                - value: 2
+                              operation: SUB
+                          - expression:
+                              operands:
+                                - fnCall:
+                                    arguments:
+                                      - reference:
+                                          name: p
+                                    reference:
+                                      name: length
+                                - value: 3
+                              operation: SUB
+                        operation: COLLECT
+          name: list
+        - groups:
+            - functions:
+                - returns:
+                    - expression:
+                        operands:
+                          - fnCall:
+                              arguments:
+                                - expression:
+                                    operands:
+                                      - reference:
+                                          name: p
+                                      - reference:
+                                          name: xy
+                                    operation: ACCESS
+                              reference:
+                                name: length
+                          - value: 0.2
+                        operation: SUB
+          name: gsl_anon
+        - groups:
+            - functions:
+                - returns:
+                    - expression:
+                        operands:
+                          - expression:
+                              operands:
+                                - expression:
+                                    operands:
+                                      - expression:
+                                          operands:
+                                            - reference:
+                                                name: p
+                                            - reference:
+                                                name: x
+                                          operation: ACCESS
+                                    operation: ABS
+                                - expression:
+                                    operands:
+                                      - expression:
+                                          operands:
+                                            - reference:
+                                                name: p
+                                            - reference:
+                                                name: "y"
+                                          operation: ACCESS
+                                    operation: ABS
+                              operation: MAX
+                          - value: 0.2
+                        operation: SUB
+          name: gsl_anon_2
+      returns:
+        - expression:
+            operands:
+              - reference:
+                  name: circle
+              - reference:
+                  name: diamond
+            operation: MIN
+Source: ""

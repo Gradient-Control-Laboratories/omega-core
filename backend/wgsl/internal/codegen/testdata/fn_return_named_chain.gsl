@@ -1,0 +1,23 @@
+// Named functions returning function references, and a returned function
+// that is a plain reference to an existing declaration rather than a
+// closure. `pick()` names sphereAt directly, so it captures nothing.
+
+mul2(a, b) {
+  return a * b;
+}
+
+bindFirst(x) {
+  return (y) { return mul2(x, y); };
+}
+
+sphereAt(radius) {
+  return length(p) - radius;
+}
+
+pick() {
+  return sphereAt;
+}
+
+step1 = bindFirst(7);
+ball = pick();
+return step1(3) + ball(2.0);

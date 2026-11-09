@@ -1,0 +1,30 @@
+import other "mechanical/gears";
+
+buildGears() {
+  numTeeth = 20.0;
+  moduleVal = 0.4;
+  pressureAngle = 0.26;
+  rotOffset = 0.0;
+  thickness = 1.0;
+  helixAngle = 0.0;
+  standoffDiameter = 0.0;
+  standoffHeight = 0.0;
+  standoffChamfer = 0.0;
+  boreDiameter = 0.0;
+  dedendumClearance = 0.25;
+  kSmall = 0.025;
+
+  g_raw = other.gear(numTeeth, moduleVal, pressureAngle, rotOffset, thickness, helixAngle, standoffDiameter, standoffHeight, standoffChamfer, boreDiameter, dedendumClearance, kSmall);
+  return remap(g_raw, p - [0.0, 0.0, pi + 2.5]);
+}
+
+buildText() {
+  t2d = text.center("hello", [0.0, 0.0], 1.0);
+  return max(t2d, abs(p.z - (pi + 3.1)) - 0.1);
+}
+
+s = sphere(pi + 2.0);
+g = buildGears();
+t = buildText();
+
+return s, g, t;

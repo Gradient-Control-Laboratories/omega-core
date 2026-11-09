@@ -1,0 +1,12 @@
+
+// A colored shape moved by remap: its color region must move with it. ball is
+// translated +2 in x; box stays at the origin. Exercises re-derivation of a
+// named colored field under remap in the color gradient.
+ball = sphere(1);
+ball.color = [1, 0, 0];
+
+box = sphere(1);
+box.color = [0, 0, 1];
+
+moved = remap(ball, p - [2, 0, 0]);
+return unionSharp([moved, box]);

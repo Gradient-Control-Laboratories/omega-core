@@ -1,0 +1,39 @@
+Expected:
+  files:
+    - assignments:
+        - expression:
+            value: 8
+          variables:
+            - name: foo
+        - expression:
+            reference:
+              name: someName
+              prefix: somePrefix
+          variables:
+            - name: qual
+        - expression:
+            expression:
+              operands:
+                - value: 3.1
+                - reference:
+                    name: foo
+                - value: 2.7
+              operation: COLLECT
+          variables:
+            - name: someArray
+        - expression:
+            expression:
+              operands:
+                - reference:
+                    name: someArray
+                - reference:
+                    name: zyx
+              operation: ACCESS
+          variables:
+            - name: swizzel
+      imports:
+        - path: somePrefix
+      returns:
+        - reference:
+            name: swizzel
+Source: ""

@@ -1,0 +1,179 @@
+
+// TPMS Library (tpms)
+//
+// Triply periodic minimal surfaces — implicit fields whose zero set is a
+// smooth, space-filling surface. Each returns a scalar field of the implicit
+// point p; threshold it (e.g. `tpms.gyroid([10,10,10]) - wall`) to give the
+// surface a wall thickness, or use it directly as an infill field intersected
+// with a body.
+//
+// These are approximate distance fields, not exact SDFs: each is the analytic
+// surface function scaled by sum(period)/N so its gradient is ~unit near the
+// zero set. `period` is a vec3 cell size per axis (pass [s, s, s] for cubic);
+// `drop` is a per-axis anisotropy weight (pass [1, 1, 1] for isotropic). Many
+// surfaces also take a `blend` in [0, 1] that morphs toward a sibling surface.
+//
+// Ported from the Unit Gradient Field numpy library. Uses builtin's tau.
+//
+// Doc convention follows builtin/base.gsl: `///` lines are public docs.
+
+import "lattice";
+
+// Sum of a vec3's three components — TPMS fields collapse three axis terms.
+sum3(v) {
+  return v.x + v.y + v.z;
+}
+
+// --- solidification variants ---
+// A raw TPMS field splits space into two interpenetrating labyrinths either
+// side of the zero surface. These four helpers turn a field into a solid, all
+// routed through the shared lattice.solidify utility (TPMS fields are
+// unit-normalized like the other lattices, but start at ~50% volume rather than
+// thin):
+
+/// thick(field, t): the solid network on the negative side of the surface
+/// (field <= t). `t` shifts the volume fraction; t = 0 is the balanced split,
+/// t > 0 grows the solid.
+thick(field, t) {
+  return lattice.solidify(field, t);
+}
+
+/// thin(field, t): a sheet straddling the surface itself — a wall of total
+/// thickness ~2t following the minimal surface.
+thin(field, t) {
+  return lattice.solidify(field, 0, 2 * t);
+}
+
+/// inverse(field, t): the complementary solid network (field >= -t) — the
+/// other labyrinth, the inverse of thick.
+inverse(field, t) {
+  return lattice.solidify(neg(field), t);
+}
+
+/// thinInverse(field, t): the complement of the thin sheet — the two voids
+/// either side of the wall, joined where the wall is absent.
+thinInverse(field, t) {
+  return neg(lattice.solidify(field, 0, 2 * t));
+}
+
+/// Gyroid: sin(x)cos(y) + sin(y)cos(z) + sin(z)cos(x). The most common TPMS —
+/// fully connected, no straight channels. `period` is the vec3 cell size,
+/// `drop` per-axis anisotropy.
+gyroid(period, drop) {
+  freq = tau / period;
+  xyz = p * freq;
+  yzx = [xyz.y, xyz.z, xyz.x];
+  terms = drop * sin(xyz) * cos(yzx);
+  return sum3(terms) * sum3(period) / 18;
+}
+
+/// Isotropic gyroid (drop = [1, 1, 1]).
+gyroid(period) {
+  return gyroid(period, [1, 1, 1]);
+}
+
+/// Schwarz P morphed toward Gyroid. `gyroidBlend` 0 = Schwarz P (cos x + cos y
+/// + cos z), 1 = Gyroid.
+schwarz(period, drop, gyroidBlend) {
+  freq = tau / period;
+  xyz = p * freq;
+  yzx = [xyz.y, xyz.z, xyz.x];
+  blendFactor = 1 - gyroidBlend;
+  mix = sin(xyz) * gyroidBlend - blendFactor;
+  terms = drop * cos(yzx) * mix;
+  return sum3(terms) * sum3(period) / 36;
+}
+
+/// Isotropic Schwarz P (drop = [1, 1, 1], no gyroid blend).
+schwarz(period) {
+  return schwarz(period, [1, 1, 1], 0);
+}
+
+/// Diamond (Schwarz D) morphed toward Gyroid. `gyroidBlend` 0 = Diamond, 1 =
+/// Gyroid.
+diamond(period, drop, gyroidBlend) {
+  freq = tau / period;
+  xyz = p * freq;
+  yzx = [xyz.y, xyz.z, xyz.x];
+  sinXyz = sin(xyz);
+  cosYzx = cos(yzx);
+  cosZxy = [cosYzx.y, cosYzx.z, cosYzx.x];
+  blendFactor = 1 - gyroidBlend;
+  term1 = blendFactor * (sinXyz.x * sinXyz.y * sinXyz.z);
+  mix = cosZxy * blendFactor + gyroidBlend;
+  term2 = sum3(drop * sinXyz * cosYzx * mix);
+  return (term1 + term2) * sum3(period) / (24 * sqrt2);
+}
+
+/// Isotropic Diamond (drop = [1, 1, 1], no gyroid blend).
+diamond(period) {
+  return diamond(period, [1, 1, 1], 0);
+}
+
+/// Lidinoid (Schoen) morphed toward Gyroid. `gyroidBlend` 0 = Lidinoid, 1 =
+/// Gyroid.
+lidinoid(period, drop, gyroidBlend) {
+  freq = tau / period;
+  xyz = p * freq;
+  yzx = [xyz.y, xyz.z, xyz.x];
+  zxy = [xyz.z, xyz.x, xyz.y];
+  sin2 = sin(2 * xyz);
+  cos2 = cos(2 * xyz);
+  cos2Yzx = [cos2.y, cos2.z, cos2.x];
+  blendFactor = 1 - gyroidBlend;
+  mix = sin2 * blendFactor + gyroidBlend;
+  term1 = sum3(drop * sin(zxy) * cos(yzx) * mix);
+  term2 = blendFactor * sum3(cos2 * cos2Yzx);
+  return (term1 - term2) * sum3(period) / 72;
+}
+
+/// Isotropic Lidinoid (drop = [1, 1, 1], no gyroid blend).
+lidinoid(period) {
+  return lidinoid(period, [1, 1, 1], 0);
+}
+
+/// Neovius morphed toward Schwarz P. `schwarzBlend` 0 = Neovius, 1 = Schwarz P.
+neovius(period, drop, schwarzBlend) {
+  freq = tau / period;
+  xyz = p * freq;
+  cosDrop = cos(xyz) * drop;
+  term1 = -sum3(cosDrop);
+  term2 = (1 - schwarzBlend) * (4.0 / 3.0) * (cosDrop.x * cosDrop.y * cosDrop.z);
+  return (term1 - term2) * sum3(period) / (6.0 * 26.0 / 3.0);
+}
+
+/// Isotropic Neovius (drop = [1, 1, 1], no schwarz blend).
+neovius(period) {
+  return neovius(period, [1, 1, 1], 0);
+}
+
+/// I-WP (Schoen). `drop` per-axis anisotropy.
+iwp(period, drop) {
+  freq = tau / period;
+  xyz = p * freq;
+  yzx = [xyz.y, xyz.z, xyz.x];
+  term1 = 2 * sum3(drop * cos(xyz) * cos(yzx));
+  term2 = sum3(cos(2 * xyz));
+  return (term1 - term2) * sum3(period) / 48;
+}
+
+/// Isotropic I-WP (drop = [1, 1, 1]).
+iwp(period) {
+  return iwp(period, [1, 1, 1]);
+}
+
+/// Split-P: a multi-octave surface mixing Lidinoid, Gyroid, and Schwarz terms.
+/// `lidinoidBlend`, `gyroidOctave`, `schwarzOctave` weight the three octave
+/// families independently.
+splitP(period, lidinoidBlend, gyroidOctave, schwarzOctave) {
+  freq = tau / period;
+  xyz = p * freq;
+  yzx = [xyz.y, xyz.z, xyz.x];
+  zxy = [xyz.z, xyz.x, xyz.y];
+  sin2 = sin(2 * xyz);
+  cos2 = cos(2 * xyz);
+  term1 = -lidinoidBlend * sum3(sin2 * cos(yzx) * sin(zxy));
+  term2 = gyroidOctave * sum3(sin2 * cos2);
+  term3 = schwarzOctave * sum3(cos2);
+  return (term1 + term2 + term3) * sum3(period) / 36;
+}

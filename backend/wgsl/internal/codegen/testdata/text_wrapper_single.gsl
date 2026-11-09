@@ -1,0 +1,11 @@
+// A single-return module-style wrapper that forwards a constant string
+// through a local assignment into text(): inlining must keep the string
+// constant so it folds to glyphs instead of emitting the whole font.
+import font "text";
+
+label(codes, position, size) {
+  d = font.left(codes, position, size);
+  return d;
+}
+
+return label("Hi", [0, 0], 10);

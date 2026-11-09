@@ -1,0 +1,24 @@
+// A function-internal derivative taken through a function-valued parameter.
+// A companion is generated from the body alone, so it has no call-site context
+// and sdf() names no body; the companion is specialized per thunk instead, once
+// for each function the parameter is called with.
+gradOf(sdf) {
+  return sdf().dp;
+}
+
+// Two different thunks through the same combiner: one companion each, or the
+// second silently differentiates the first's field.
+sphereNormal = gradOf(() { return sphere(1.0); });
+torusNormal = gradOf(() { return torus(2.0, 0.5); });
+
+// The payoff: an exact rounded union that derives its own normals rather than
+// having them handed in.
+unionRoundExactAuto(sdf1, sdf2) {
+  return unionRoundExact(sdf1, sdf2, sdf1().dp, sdf2().dp);
+}
+
+blended = unionRoundExactAuto(
+  () { return sphere([-0.5, 0, 0], 1); },
+  () { return sphere([0.5, 0, 0], 1); });
+
+return blended + 0 * (sphereNormal.x + torusNormal.z);

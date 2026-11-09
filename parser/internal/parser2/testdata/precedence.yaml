@@ -1,0 +1,111 @@
+Expected:
+  files:
+    - assignments:
+        - expression:
+            expression:
+              operands:
+                - expression:
+                    operands:
+                      - value: 1
+                      - expression:
+                          operands:
+                            - value: 2
+                            - value: 3
+                          operation: MUL
+                    operation: ADD
+                - expression:
+                    operands:
+                      - expression:
+                          operands:
+                            - value: 4
+                            - expression:
+                                operands:
+                                  - value: 5
+                                  - value: 6
+                                operation: ADD
+                          operation: DIV
+                      - fnCall:
+                          arguments:
+                            - value: 7
+                            - value: 8
+                            - value: 9
+                          reference:
+                            name: foo
+                    operation: MUL
+              operation: SUB
+          variables:
+            - name: radius
+        - expression:
+            expression:
+              operands:
+                - expression:
+                    operands:
+                      - value: 1
+                      - value: 2
+                    operation: ADD
+                - expression:
+                    operands:
+                      - value: 3
+                      - value: 4
+                    operation: SUB
+              operation: SUB
+          variables:
+            - name: a
+        - expression:
+            expression:
+              operands:
+                - expression:
+                    operands:
+                      - value: 1
+                      - value: 2
+                    operation: MUL
+                - expression:
+                    operands:
+                      - value: 3
+                      - value: 4
+                    operation: DIV
+              operation: DIV
+          variables:
+            - name: b
+        - expression:
+            expression:
+              operands:
+                - value: -1
+                - value: 2
+              operation: ADD
+          variables:
+            - name: c
+        - expression:
+            expression:
+              operands:
+                - expression:
+                    operands:
+                      - value: 1
+                      - value: 2
+                    operation: ADD
+              operation: NEG
+          variables:
+            - name: d
+      fnTypes:
+        - groups:
+            - functions:
+                - parameters:
+                    - name: a
+                    - name: b
+                    - name: c
+                  returns:
+                    - value: 7
+              paramCount: 3
+          name: foo
+      returns:
+        - reference:
+            name: a
+        - reference:
+            name: b
+        - reference:
+            name: c
+        - reference:
+            name: d
+        - reference:
+            name: radius
+Source: ""

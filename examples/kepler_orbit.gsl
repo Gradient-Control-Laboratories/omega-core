@@ -1,0 +1,69 @@
+@scene(650, 50)
+
+// A body on a Kepler orbit around a focus, solving Kepler's equation each frame
+// with a few Newton steps. The velocity (tangent) and acceleration arrows come
+// from the derivatives of the body's position with respect to time. Play the
+// time slider to watch the body speed up near the focus and slow down far away.
+// Try the two sliders: semiMajor (mm) sets the orbit's size and ecc its
+// eccentricity, from a circle at 0 to a long ellipse near 1. Lengths are in mm.
+
+// Orbit shape: semi-major axis in mm and eccentricity (0 = circle).
+@range(40, 160) semiMajor = 80.0;
+@range(0, .95) ecc       = 0.68;
+
+// Mean anomaly advances uniformly with time.
+meanAnomaly = time;
+
+// One Newton step on Kepler's equation E - e sin E = M.
+keplerStep(prevE, meanAnom, eccen) {
+  fVal = prevE - eccen * sin(prevE) - meanAnom;
+  fPrime = 1 - eccen * cos(prevE);
+  return prevE - fVal / fPrime;
+}
+
+// Four steps from E = M converge for every eccentricity the slider allows.
+eccAnom0 = meanAnomaly;
+eccAnom1 = keplerStep(eccAnom0, meanAnomaly, ecc);
+eccAnom2 = keplerStep(eccAnom1, meanAnomaly, ecc);
+eccAnom3 = keplerStep(eccAnom2, meanAnomaly, ecc);
+eccAnom4 = keplerStep(eccAnom3, meanAnomaly, ecc);
+eccAnom = eccAnom4;
+
+semiMinor = semiMajor * sqrt(1 - ecc * ecc);
+focusOffset = semiMajor * ecc;
+
+// Position on the ellipse for eccentric anomaly E, with the focus at the origin.
+orbitPos(E) {
+  xc = semiMajor * cos(E);
+  yc = semiMinor * sin(E);
+  return [xc - focusOffset, yc, 0];
+}
+
+center = orbitPos(eccAnom);
+
+// The orbiting body, a ball of radius 5.
+body = sphere(center, 5);
+
+// Velocity arrow: the position's first time derivative, drawn from the body.
+tanPoint = center + 0.5 * center.dtime;
+tangent = cylinderRounded(center, tanPoint, 2);
+
+// Acceleration arrow: the second time derivative; it always points at the focus.
+accPoint = center + 0.1 * center.dtime.dtime;
+acc = cylinderRounded(center, accPoint, 2);
+
+// The central body at the focus.
+focusMarker = sphere(vector.zero, 10);
+
+// --- Orbit ellipse path ---
+// Ellipse centered at [-focusOffset, 0, 0], semi-axes semiMajor (X) and semiMinor (Y).
+// Map into normalized space where the ellipse becomes a unit circle, then build a
+// thin ring and rescale by the smaller semi-axis to keep the distance well-behaved.
+ellipsePathRadius = 0.8;
+ellipseSlab = abs(p.z) - 0.8;
+ellipseQ = [(p.x + focusOffset) / semiMajor, p.y / semiMinor];
+ellipseRing = (length(ellipseQ) - 1) * semiMinor;
+ellipseTrack = abs(ellipseRing) - ellipsePathRadius;
+ellipse = max(ellipseTrack, ellipseSlab);
+
+return body, tangent, acc, focusMarker, ellipse;

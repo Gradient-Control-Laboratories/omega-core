@@ -1,0 +1,118 @@
+numTeeth = 13;
+pressureAngle = 0.261799;
+module_val = 1;
+dedendumClearance = 0.25;
+
+PI = 3.14159265;
+pitchRadius = (numTeeth / 2.0) * module_val;
+baseRadius = pitchRadius * cos(pressureAngle);
+addendumRadius = pitchRadius + module_val;
+dedendumRadius = pitchRadius - (1 + dedendumClearance) * module_val;
+
+roundK = dedendumClearance * module_val;
+
+circle(radius) {
+    return length(p.xy) - radius;
+}
+
+// User-supplied involute function
+// *** NEVER CHANGE THIS ***
+involute(radius) {
+    rho = length(p.xy);
+    tanLen = sqrt(rho * rho - radius * radius);
+    ang = atan(p.y, p.x);
+    ratioVal = radius / rho;
+    invField = tanLen - (acos(ratioVal) + ang) * radius;
+    circumField = neg(ang) * radius;
+    result = (rho > radius) ? invField : circumField;
+    return result;
+}
+
+// Alternative involute: inside the base circle, uses distance to the
+// radial line from origin through the involute start point (radius, 0)
+// instead of the circumferential arc field.
+involute_radial(radius) {
+    rho = length(p.xy);
+    tanLen = sqrt(rho * rho - radius * radius);
+    ang = atan(p.y, p.x);
+    ratioVal = radius / rho;
+    invField = tanLen - (acos(ratioVal) + ang) * radius;
+    // Distance to the line from origin along +x direction (the radial
+    // line to the involute source point at (radius, 0)).
+    // Signed so that the positive side matches the involute convention.
+    radialField = neg(p.y);
+    result = (rho > radius) ? invField : radialField;
+    return result;
+}
+
+// Rounded intersection (L2 norm fillet)
+intersect_round(a, b, k) {
+    ca = max(a + k, 0);
+    cb = max(b + k, 0);
+    return min(neg(k), max(a, b)) + sqrt(ca * ca + cb * cb);
+}
+
+// Rounded union via De Morgan's law
+union_round(a, b, k) {
+    return neg(remap(intersect_round(neg(a), neg(b), k), p));
+}
+
+pitchAngle = PI / numTeeth;
+halfPitchAngle = pitchAngle / 2;
+
+prRatio = pitchRadius / baseRadius;
+gammaP = sqrt(prRatio * prRatio - 1);
+contactAngle = gammaP - atan(gammaP);
+
+rotAngle = halfPitchAngle - contactAngle;
+cosR = cos(rotAngle);
+sinR = sin(rotAngle);
+
+rotInvolute() {
+    rx = p.x * cosR + p.y * sinR;
+    ry = neg(p.x) * sinR + p.y * cosR;
+    return remap(involute_radial(baseRadius), [rx, ry, p.z]);
+}
+
+reflectInvolute() {
+    return remap(rotInvolute(), [p.x, -p.y, p.z]);
+}
+
+singleTooth() {
+    left = rotInvolute();
+    right = reflectInvolute();
+    return min(left, right);
+}
+
+// --- Angular repetition using % operator ---
+pRho = length(p.xy);
+pAngle = atan(p.y, p.x);
+
+pAngleShifted = pAngle + pitchAngle;
+
+twicePitchAngle = pitchAngle * 2;
+
+// Double-mod to handle negative angles
+pAngleMod = ((pAngleShifted % twicePitchAngle) + twicePitchAngle) % twicePitchAngle;
+
+pAngleCentered = pAngleMod - pitchAngle;
+
+rpx = pRho * cos(pAngleCentered);
+rpy = pRho * sin(pAngleCentered);
+
+// Evaluate repeated tooth pattern, then rounded intersect with addendum circle
+repeatedTooth = remap(singleTooth(), [rpx, rpy, p.z]);
+addClip = circle(addendumRadius);
+teeth = max(repeatedTooth, addClip);
+
+// Dedendum circle (gear body)
+dedBody = circle(dedendumRadius);
+
+// Rounded union of teeth with gear body
+gearProfile = union_round(teeth, dedBody, roundK);
+
+// Extrude as thin slab
+slab = abs(p.z) - 0.4;
+result = max(gearProfile, slab);
+
+return result;

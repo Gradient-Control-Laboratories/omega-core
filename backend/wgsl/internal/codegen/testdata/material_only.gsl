@@ -1,0 +1,12 @@
+
+// Two shapes with materials and no color: gsl_materialField is emitted and
+// gsl_colorField is not. Exercises a library list constant (material.chrome),
+// a modifier over a preset, and the per-row blend of the three vec4 rows
+// through a smooth union.
+ball = sphere(1);
+ball.material = material.chrome;
+
+box = remap(sphere(1), p - [1.5, 0, 0]);
+box.material = material.withRoughness(material.plastic, 0.2);
+
+return unionExponential([ball, box], 0.5);

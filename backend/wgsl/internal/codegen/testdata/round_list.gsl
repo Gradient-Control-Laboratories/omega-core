@@ -1,0 +1,45 @@
+
+// Verifies the round booleans' list overloads match their explicit n-arg forms.
+
+intersectRound(d1, d2, d3, k) {
+  c1 = max(d1 + k, 0);
+  c2 = max(d2 + k, 0);
+  c3 = max(d3 + k, 0);
+  return min(neg(k), max(d1, d2, d3)) + length([c1, c2, c3]);
+}
+
+intersectRound(list, k) {
+  maxAll = reduce(list[0],
+    (acc, value) {
+      return max(acc, value);
+    },
+    list);
+  sumSquares = reduce(0,
+    (acc, value) {
+      c = max(value + k, 0);
+      return acc + c * c;
+    },
+    list);
+  return min(neg(k), maxAll) + sqrt(sumSquares);
+}
+
+unionRound(d1, d2, d3, k) {
+  return neg(intersectRound(neg(d1), neg(d2), neg(d3), k));
+}
+
+unionRound(list, k) {
+  negated = map((value, index) {
+    return neg(value);
+  }, list);
+  return neg(intersectRound(negated, k));
+}
+
+k = 0.2;
+
+viaList = intersectRound([p.x, p.y, p.z], k);
+viaArgs = intersectRound(p.x, p.y, p.z, k);
+
+uViaList = unionRound([p.x, p.y, p.z], k);
+uViaArgs = unionRound(p.x, p.y, p.z, k);
+
+return viaList, viaArgs, uViaList, uViaArgs;

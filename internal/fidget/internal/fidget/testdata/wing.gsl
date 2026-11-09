@@ -1,0 +1,82 @@
+// NACA 4-digit 2-panel wing with camber
+// Inputs:
+leSweepDeg = 40;       // leading edge sweep angle (degrees)
+teSweepDeg = 10;       // trailing edge sweep angle (degrees)
+panelBreakPct = 30;    // panel break as % of semi-span
+rootChord = 8.0;
+semiSpan = 6.0;
+maxCamberPct = 4;      // NACA first digit: max camber as % of chord
+camberPosPct = 40;     // NACA second digit: position of max camber as % of chord (times 10)
+maxThicknessPct = 12;  // NACA last two digits: thickness as % of chord
+
+// Derived
+leSweep = radians(leSweepDeg);
+teSweep = radians(teSweepDeg);
+breakY = semiSpan * panelBreakPct / 100;
+thk = maxThicknessPct / 100;
+m = maxCamberPct / 100;       // max camber (fraction of chord)
+pp = camberPosPct / 100;      // chordwise position of max camber (fraction of chord)
+
+// NACA symmetric thickness half-profile (normalized 0..1 chord)
+nacaHalfT(xn) {
+    return 5 * thk * (0.2969 * sqrt(abs(xn)) - 0.126 * xn - 0.3516 * xn * xn + 0.2843 * xn * xn * xn - 0.1015 * xn * xn * xn * xn);
+}
+
+// Camber line (normalized 0..1 chord)
+camberY(xn) {
+    fore = m / (pp * pp) * (2 * pp * xn - xn * xn);
+    aft = m / ((1 - pp) * (1 - pp)) * (1 - 2 * pp + 2 * pp * xn - xn * xn);
+    return (pp > 0 && m > 0) ? ((xn <= pp) ? fore : aft) : 0;
+}
+
+// Camber line slope (normalized 0..1 chord)
+camberDY(xn) {
+    fore = 2 * m / (pp * pp) * (pp - xn);
+    aft = 2 * m / ((1 - pp) * (1 - pp)) * (pp - xn);
+    return (pp > 0 && m > 0) ? ((xn <= pp) ? fore : aft) : 0;
+}
+
+// 2D cambered airfoil SDF in XZ plane, chord along X from 0..chord
+airfoilSDF(chord) {
+    xn = clamp(p.x / chord, 0.0001, 0.9999);
+    ht = nacaHalfT(xn) * chord;
+    yc = camberY(xn) * chord;
+    dyc = camberDY(xn);
+    theta = atan(dyc);
+    cosT = cos(theta);
+    sinT = sin(theta);
+
+    // Upper surface point at this xn
+    zupper = yc + ht * cosT;
+    // Lower surface point at this xn
+    zlower = yc - ht * cosT;
+
+    // Signed distance in z relative to camber-normal thickness envelope
+    dzUpper = p.z - zupper;
+    dzLower = zlower - p.z;
+    dz = max(dzUpper, dzLower);
+
+    // Chordwise bounds
+    dx = max(-p.x, p.x - chord);
+
+    // Approximate 2D SDF
+    inside = max(dx, dz);
+    outside = length([max(dx, 0), max(dz, 0)]);
+    return (inside < 0) ? inside : outside;
+}
+
+// Wing SDF: evaluate airfoil at each span station
+wing() {
+    yAbs = abs(p.y);
+    spanDist = max(-yAbs, yAbs - semiSpan);
+
+    leX = yAbs * tan(leSweep);
+    teX = rootChord + yAbs * tan(teSweep);
+    localChord = teX - leX;
+
+    af = remap(airfoilSDF(localChord), [p.x - leX, p.y, p.z]);
+
+    return max(af, spanDist);
+}
+
+return wing();

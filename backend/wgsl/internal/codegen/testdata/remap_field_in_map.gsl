@@ -1,0 +1,8 @@
+
+// Regression: a p-dependent field (`side`) remapped inside a map lambda must be
+// re-derived under each rotated coordinate, not captured as the outer-p value.
+// The four rotations must produce four distinct remapped fields.
+side = max(abs(p.x) - 2, abs(p.y) - 0.5);
+angles = [-pi / 3, -tau / 3, pi / 3, tau / 3];
+sides = map((ang) { return remap(side, map.rotateXY(p, ang)); }, angles);
+return unionSharp(sides);

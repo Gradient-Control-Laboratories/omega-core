@@ -1,0 +1,49 @@
+Expected:
+  files:
+    - assignments:
+        - expression:
+            value: 120
+          variables:
+            - name: a
+        - expression:
+            expression:
+              operands:
+                - value: 120
+                - value: 121
+                - value: 122
+              operation: COLLECT
+          variables:
+            - name: b
+        - expression:
+            expression:
+              operands:
+                - value: 97
+                - value: 98
+                - value: 3
+              operation: COLLECT
+          variables:
+            - name: c
+        - expression:
+            value: 169
+          variables:
+            - name: d
+        - expression:
+            expression:
+              operands:
+                - value: 169
+                - value: 174
+              operation: COLLECT
+          variables:
+            - name: e
+      returns:
+        - reference:
+            name: a
+        - reference:
+            name: b
+        - reference:
+            name: c
+        - reference:
+            name: d
+        - reference:
+            name: e
+Source: ""

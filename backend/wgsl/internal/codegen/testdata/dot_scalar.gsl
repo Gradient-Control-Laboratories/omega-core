@@ -1,0 +1,9 @@
+
+// dot of two scalars is their product: both constant folds, both runtime
+// lowers to multiplication, and a mixed constant/runtime scalar dot lowers with
+// the constant operand in place. Regression for the lineSegment(scalar cell)
+// path (dot(ba, ba) with ba scalar).
+konst = dot(2.0, 3.0);
+runtime = dot(p.x, p.y);
+mixed = dot(4.0, p.z);
+return sphere(konst + runtime + mixed);

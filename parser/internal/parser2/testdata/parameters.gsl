@@ -1,0 +1,18 @@
+myFunc0() {
+  return 7;
+}
+myFunc1(one) {
+  return one();
+}
+myFunc2(one, two) {
+  three = one + two;
+  b = 3;
+  return three || b;
+}
+// Allow trailing commas
+a0 = myFunc1( () { return 7; }, );
+a1 = myFunc1( (bar) { return 8; } );
+a2 = myFunc1( (bar, bax) { return 9; } );
+a3 = myFunc1( (bar, bax, baz) { return 10; } );
+
+return a3;

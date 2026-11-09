@@ -1,0 +1,11 @@
+
+// unionChamfer previously hard-selected color (a seam); with autodiff-derived
+// weights its facet blends. Drives the gradient color path through an
+// import-resolved, reduce-free combiner.
+ball = sphere(1);
+ball.color = [1, 0, 0];
+
+box = sphere([1.4, 0, 0], 1);
+box.color = [0, 0, 1];
+
+return unionChamfer(ball, box, 0.5);

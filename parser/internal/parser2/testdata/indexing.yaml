@@ -1,0 +1,144 @@
+Expected:
+  files:
+    - assignments:
+        - expression:
+            expression:
+              operands:
+                - value: 1
+              operation: COLLECT
+          variables:
+            - name: a1
+        - expression:
+            expression:
+              operands:
+                - value: 1
+                - value: 2
+              operation: COLLECT
+          variables:
+            - name: a2
+        - expression:
+            expression:
+              operands:
+                - value: 1
+                - value: 2
+                - value: 3
+              operation: COLLECT
+          variables:
+            - name: a3
+        - expression:
+            expression:
+              operands:
+                - value: 1
+                - value: 2
+                - value: 3
+                - value: 4
+              operation: COLLECT
+          variables:
+            - name: a4
+        - expression:
+            expression:
+              operands:
+                - value: 1
+                - value: 2
+                - value: 3
+                - value: 4
+                - value: 5
+              operation: COLLECT
+          variables:
+            - name: a5
+        - expression:
+            expression:
+              operands:
+                - value: 1
+                - value: 2
+                - value: 3
+                - value: 4
+                - value: 5
+                - value: 6
+              operation: COLLECT
+          variables:
+            - name: a6
+      fnTypes:
+        - groups:
+            - functions:
+                - parameters:
+                    - name: value
+                  returns:
+                    - expression:
+                        operands:
+                          - reference:
+                              name: value
+                          - expression:
+                              operands:
+                                - reference:
+                                    name: value
+                                - value: 1
+                              operation: ADD
+                          - expression:
+                              operands:
+                                - reference:
+                                    name: value
+                                - value: 2
+                              operation: ADD
+                          - expression:
+                              operands:
+                                - reference:
+                                    name: value
+                                - value: 3
+                              operation: ADD
+                          - expression:
+                              operands:
+                                - reference:
+                                    name: value
+                                - value: 4
+                              operation: ADD
+                          - expression:
+                              operands:
+                                - reference:
+                                    name: value
+                                - value: 5
+                              operation: ADD
+                        operation: COLLECT
+              paramCount: 1
+          name: foo
+      returns:
+        - expression:
+            operands:
+              - expression:
+                  operands:
+                    - reference:
+                        name: a1
+                    - value: 0
+                  operation: INDEX
+              - expression:
+                  operands:
+                    - reference:
+                        name: a3
+                    - value: 0
+                  operation: INDEX
+              - expression:
+                  operands:
+                    - reference:
+                        name: a3
+                    - value: 2
+                  operation: INDEX
+              - expression:
+                  operands:
+                    - fnCall:
+                        arguments:
+                          - value: 2
+                        reference:
+                          name: foo
+                    - value: 0
+                  operation: INDEX
+              - expression:
+                  operands:
+                    - fnCall:
+                        arguments:
+                          - value: 3
+                        reference:
+                          name: foo
+                    - value: 5
+                  operation: INDEX
+            operation: ADD
+Source: ""

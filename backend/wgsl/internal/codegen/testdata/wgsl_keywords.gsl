@@ -1,0 +1,20 @@
+
+// Assignment to each WGSL keyword
+// that is not a GSL reserved keyword
+// to ensure that they are valid identifiers
+
+cast = 1.0;
+
+stage(uniform, inline) {
+  one = uniform(inline);
+  two = remap(uniform(inline), p + 7);
+  return one, two;
+}
+
+sampler(impl) {
+    return p + impl;
+}
+
+subgroupInclusiveAdd, subgroupInclusiveMul = stage(sampler, cast);
+
+return subgroupInclusiveAdd, subgroupInclusiveMul;

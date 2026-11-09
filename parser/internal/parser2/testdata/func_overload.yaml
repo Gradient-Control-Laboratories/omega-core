@@ -1,0 +1,56 @@
+Expected:
+  files:
+    - fnTypes:
+        - groups:
+            - functions:
+                - parameters:
+                    - name: radius
+                  returns:
+                    - expression:
+                        operands:
+                          - fnCall:
+                              arguments:
+                                - reference:
+                                    name: p
+                              reference:
+                                name: length
+                          - reference:
+                              name: radius
+                        operation: SUB
+              paramCount: 1
+            - functions:
+                - parameters:
+                    - name: center
+                    - name: radius
+                  returns:
+                    - expression:
+                        operands:
+                          - fnCall:
+                              arguments:
+                                - reference:
+                                    name: radius
+                              reference:
+                                name: sphere
+                          - expression:
+                              operands:
+                                - reference:
+                                    name: p
+                                - reference:
+                                    name: center
+                              operation: SUB
+                        operation: REMAP
+              paramCount: 2
+          name: sphere
+      returns:
+        - fnCall:
+            arguments:
+              - expression:
+                  operands:
+                    - value: 1
+                    - value: 2
+                    - value: 3
+                  operation: COLLECT
+              - value: 2.5
+            reference:
+              name: sphere
+Source: ""

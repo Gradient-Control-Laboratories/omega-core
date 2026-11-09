@@ -1,0 +1,12 @@
+// Scene Size: 100
+
+// Debug scene: one natural.lava ball with its crustDepth tier, alone, at a
+// small scene size — isolates the cost of the crust-roughness displacement
+// (the opt-in sixth argument on top of the free lava() material/color effect).
+
+lavaMat, lavaColor = natural.lava(15, [0.12, 0.09, 0.08], [1.0, 0.4, 0.05], 4.0, 5.0, 0.1);
+ball = sphere(25);
+ball.material = lavaMat;
+ball.color = lavaColor;
+
+return ball;

@@ -1,0 +1,11 @@
+
+// Two colored spheres joined by a smooth (exponential) union. The seam
+// interpolates each surface's color by the same softmin weight the distance
+// uses — Inigo Quilez's smooth-min color blend. Drives gsl_colorField codegen.
+ball = sphere(1);
+ball.color = [1, 0, 0];
+
+box = sphere([1.5, 0, 0], 1);
+box.color = [0, 0, 1];
+
+return unionExponential([ball, box], 0.5);

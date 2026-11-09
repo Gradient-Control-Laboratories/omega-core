@@ -1,0 +1,13 @@
+// @scene(20);                              // ERROR: 1 @scene directive must not end with a semicolon
+// @scene(0)                               // ERROR: 2 scene size must be greater than zero, got 0
+// @scene(20, 0)                           // ERROR: 3 scene grid spacing must be greater than zero, got 0
+// @scene 20                               // ERROR: 4 unexpected token "20"
+// @scene(foo)                             // ERROR: 5 unexpected token "foo" (expected number)
+// @scene(20, bar)                         // ERROR: 6 unexpected token "bar" (expected number)
+
+@scene(50.0, 5.0)
+
+x = 10.0;
+y = 20.0;
+
+return x + y;

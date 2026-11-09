@@ -1,0 +1,87 @@
+Expected:
+  files:
+    - assignments:
+        - expression:
+            reference:
+              name: bar
+              prefix: foo
+          variables:
+            - name: a
+        - expression:
+            fnCall:
+              arguments:
+                - value: 2
+              reference:
+                name: baz
+                prefix: foo
+          variables:
+            - name: b
+        - expression:
+            reference:
+              name: bar
+              prefix: thing
+          variables:
+            - name: c
+        - expression:
+            fnCall:
+              arguments:
+                - value: 2
+              reference:
+                name: baz
+                prefix: thing
+          variables:
+            - name: d
+        - expression:
+            reference:
+              name: something
+              prefix: thunk
+          variables:
+            - name: e
+        - expression:
+            reference:
+              name: else
+              prefix: thunk
+          variables:
+            - name: f
+        - expression:
+            fnCall:
+              arguments:
+                - value: 17
+              reference:
+                name: somethingDotImported
+          variables:
+            - name: g
+        - expression:
+            expression:
+              operands:
+                - reference:
+                    name: anotherSomethingDotImported
+                - value: 17
+              operation: ADD
+          variables:
+            - name: h
+        - expression:
+            expression:
+              operands:
+                - reference:
+                    name: definedElsewhere
+                - reference:
+                    name: xyz
+              operation: ACCESS
+          variables:
+            - name: i
+      imports:
+        - path: foo
+        - path: some/other/thing
+        - path: example.com/some/goo
+          prefix: thunk
+        - path: new/other
+          prefix: .
+        - path: new/other2
+          prefix: .
+      returns:
+        - reference:
+            name: a
+        - reference:
+            name: b
+Source: ""

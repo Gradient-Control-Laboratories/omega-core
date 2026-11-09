@@ -1,0 +1,41 @@
+// @spline fn1() { return 1; }              // ERROR: 1 @spline annotation can only be applied to variable assignments
+// fn2(@spline s) { return s; }             // ERROR: 2 unsupported parameter annotation @spline
+// fn3(@spline(1) s) { return s; }          // ERROR: 3 unsupported parameter annotation @spline
+
+@transform
+m0 = [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]];
+
+@spline
+path = [
+  m0,
+  [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [5.0, 0.0, 0.0, 1.0]],
+  [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [10.0, 0.0, 0.0, 1.0]]
+];
+
+@spline
+pathSimple = [m0, m0];
+// @spline(3, 4) invalidStuff = [m0, m0];   // ERROR: 4 @spline annotation does not take arguments
+
+@spline
+idempotentPath = [
+  m0,
+  uiTransform([[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [5.0, 0.0, 0.0, 1.0]]),
+  [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [10.0, 0.0, 0.0, 1.0]]
+];
+
+inlinePath = @spline [m0, m0];
+
+inlinePromoted = @spline [
+  [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]],
+  m0
+];
+// inlineErr = @spline(1) [m0, m0];          // ERROR: 5 @spline annotation does not take arguments
+
+applySpline(s) {
+    return s[0];
+}
+
+callSpline = applySpline(@spline [m0, m0, m0]);
+
+return path[0] + pathSimple[0] + idempotentPath[0] + inlinePath[0] + inlinePromoted[0] + callSpline[0];
+

@@ -1,0 +1,13 @@
+// Euler constructors: rotationEuler matches map.eulerAngles (validated
+// numerically), and compose builds a T*R*S placement passed to mesh(index, M).
+
+angles = [0.3, -0.7, 1.1];
+
+// rotationEuler applied to p equals map.eulerAngles(p, angles) -> difference ~ 0.
+viaMatrix = vector.multiplyVector(matrix.rotationEuler(angles), p);
+viaEuler = map.eulerAngles(p, angles);
+diff = viaMatrix - viaEuler;
+
+// compose -> mesh placement matrix (sentinel in preview).
+xf = matrix.compose([60, 0, -40], angles, [1, 1, 1]);
+return mesh(0, xf) + length(diff);

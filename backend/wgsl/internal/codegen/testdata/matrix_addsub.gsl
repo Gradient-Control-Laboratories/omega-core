@@ -1,0 +1,10 @@
+// Stage 3: elementwise +, -, and unary - on matrices (auto-imported).
+A = [[p.x, 0, 0], [0, p.y, 0], [0, 0, p.z]];
+B = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
+
+S = A + B;   // matrix.plus
+D = A - B;   // matrix.minus
+N = -A;      // matrix.negate
+
+s0 = S[0]; d0 = D[0]; n0 = N[0];
+return s0[0] + d0[0] + n0[0] - 1;

@@ -1,0 +1,36 @@
+// Scene Size: 80
+// Scene Grid: 10
+
+// Surface frames, read off plain primitives. Every part is the same stainless
+// steel, its lay streaked along one frame coordinate's gradient, so the
+// highlight shows which way that coordinate runs on each face.
+steel, steelColor = metal.stainless();
+
+// Lathe-turned: the lay runs round the axis (u), on the side and the caps.
+turned = cylinderCapped([-15.0, 0.0, -6.0], [-15.0, 0.0, 6.0], 4.0);
+turned.material = material.withLay(steel, turned.u.dp, 0.8);
+turned.color = steelColor;
+
+// Brushed lengthwise: the lay runs along the axis on the side (v), and
+// turns to run across it, outward, on the caps.
+brushed = cylinderCapped([-5.0, 0.0, -6.0], [-5.0, 0.0, 6.0], 4.0);
+brushed.material = material.withLay(steel, brushed.v.dp, 0.8);
+brushed.color = steelColor;
+
+// A block: each face brushed along its own u, turning a right angle at
+// every edge.
+block = box([3.0, -4.0, -4.0], [11.0, 4.0, 4.0]);
+block.material = material.withLay(steel, block.u.dp, 0.8);
+block.color = steelColor;
+
+// A sphere: lines of latitude (the azimuth's gradient), pinching at the poles.
+ball = sphere([20.0, 0.0, 0.0], 4.0);
+ball.material = material.withLay(steel, ball.u.dp, 0.8);
+ball.color = steelColor;
+
+// A torus, moved: its frame moves with it. The lay runs round the tube (v).
+ring = remap(torus(4.0, 1.5), p - [33.0, 0.0, 0.0]);
+ring.material = material.withLay(steel, ring.v.dp, 0.8);
+ring.color = steelColor;
+
+return turned, brushed, block, ball, ring;

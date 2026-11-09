@@ -1,0 +1,6 @@
+import "pkg1";
+import "pkg2";
+
+s = pkg1.sphere(pkg1.somePi);
+t = pkg2.partArea(pkg2.partSize);
+return s, t;

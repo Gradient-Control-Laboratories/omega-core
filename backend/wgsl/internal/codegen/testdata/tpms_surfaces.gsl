@@ -1,0 +1,12 @@
+// Exercises every tpms surface: isotropic overloads, an anisotropic+blend
+// form, and the multi-octave split-P. Thresholded into walls and intersected.
+import "lattice/tpms";
+
+gyr = tpms.gyroid([10, 10, 10]) - 1;
+sch = tpms.schwarz([8, 8, 8], [1, 1, 2], 0.5) - 1;
+dia = tpms.diamond([12, 12, 12]) - 1;
+lid = tpms.lidinoid([10, 10, 10]) - 1;
+neo = tpms.neovius([9, 9, 9]) - 1;
+iwp = tpms.iwp([11, 11, 11]) - 1;
+spl = tpms.splitP([10, 10, 10], 1, 0.5, 0.25) - 1;
+return min(min(min(gyr, sch), min(dia, lid)), min(min(neo, iwp), spl));

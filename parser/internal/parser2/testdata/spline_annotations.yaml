@@ -1,0 +1,355 @@
+Expected:
+  files:
+    - assignments:
+        - expression:
+            fnCall:
+              arguments:
+                - expression:
+                    operands:
+                      - expression:
+                          operands:
+                            - value: 1
+                            - value: 0
+                            - value: 0
+                            - value: 0
+                          operation: COLLECT
+                      - expression:
+                          operands:
+                            - value: 0
+                            - value: 1
+                            - value: 0
+                            - value: 0
+                          operation: COLLECT
+                      - expression:
+                          operands:
+                            - value: 0
+                            - value: 0
+                            - value: 1
+                            - value: 0
+                          operation: COLLECT
+                      - expression:
+                          operands:
+                            - value: 0
+                            - value: 0
+                            - value: 0
+                            - value: 1
+                          operation: COLLECT
+                    operation: COLLECT
+              reference:
+                name: uiTransform
+          variables:
+            - name: m0
+        - expression:
+            fnCall:
+              arguments:
+                - expression:
+                    operands:
+                      - reference:
+                          name: m0
+                      - fnCall:
+                          arguments:
+                            - expression:
+                                operands:
+                                  - expression:
+                                      operands:
+                                        - value: 1
+                                        - value: 0
+                                        - value: 0
+                                        - value: 0
+                                      operation: COLLECT
+                                  - expression:
+                                      operands:
+                                        - value: 0
+                                        - value: 1
+                                        - value: 0
+                                        - value: 0
+                                      operation: COLLECT
+                                  - expression:
+                                      operands:
+                                        - value: 0
+                                        - value: 0
+                                        - value: 1
+                                        - value: 0
+                                      operation: COLLECT
+                                  - expression:
+                                      operands:
+                                        - value: 5
+                                        - value: 0
+                                        - value: 0
+                                        - value: 1
+                                      operation: COLLECT
+                                operation: COLLECT
+                          reference:
+                            name: uiTransform
+                      - fnCall:
+                          arguments:
+                            - expression:
+                                operands:
+                                  - expression:
+                                      operands:
+                                        - value: 1
+                                        - value: 0
+                                        - value: 0
+                                        - value: 0
+                                      operation: COLLECT
+                                  - expression:
+                                      operands:
+                                        - value: 0
+                                        - value: 1
+                                        - value: 0
+                                        - value: 0
+                                      operation: COLLECT
+                                  - expression:
+                                      operands:
+                                        - value: 0
+                                        - value: 0
+                                        - value: 1
+                                        - value: 0
+                                      operation: COLLECT
+                                  - expression:
+                                      operands:
+                                        - value: 10
+                                        - value: 0
+                                        - value: 0
+                                        - value: 1
+                                      operation: COLLECT
+                                operation: COLLECT
+                          reference:
+                            name: uiTransform
+                    operation: COLLECT
+              reference:
+                name: uiSpline
+          variables:
+            - name: path
+        - expression:
+            fnCall:
+              arguments:
+                - expression:
+                    operands:
+                      - reference:
+                          name: m0
+                      - reference:
+                          name: m0
+                    operation: COLLECT
+              reference:
+                name: uiSpline
+          variables:
+            - name: pathSimple
+        - expression:
+            fnCall:
+              arguments:
+                - expression:
+                    operands:
+                      - reference:
+                          name: m0
+                      - fnCall:
+                          arguments:
+                            - expression:
+                                operands:
+                                  - expression:
+                                      operands:
+                                        - value: 1
+                                        - value: 0
+                                        - value: 0
+                                        - value: 0
+                                      operation: COLLECT
+                                  - expression:
+                                      operands:
+                                        - value: 0
+                                        - value: 1
+                                        - value: 0
+                                        - value: 0
+                                      operation: COLLECT
+                                  - expression:
+                                      operands:
+                                        - value: 0
+                                        - value: 0
+                                        - value: 1
+                                        - value: 0
+                                      operation: COLLECT
+                                  - expression:
+                                      operands:
+                                        - value: 5
+                                        - value: 0
+                                        - value: 0
+                                        - value: 1
+                                      operation: COLLECT
+                                operation: COLLECT
+                          reference:
+                            name: uiTransform
+                      - fnCall:
+                          arguments:
+                            - expression:
+                                operands:
+                                  - expression:
+                                      operands:
+                                        - value: 1
+                                        - value: 0
+                                        - value: 0
+                                        - value: 0
+                                      operation: COLLECT
+                                  - expression:
+                                      operands:
+                                        - value: 0
+                                        - value: 1
+                                        - value: 0
+                                        - value: 0
+                                      operation: COLLECT
+                                  - expression:
+                                      operands:
+                                        - value: 0
+                                        - value: 0
+                                        - value: 1
+                                        - value: 0
+                                      operation: COLLECT
+                                  - expression:
+                                      operands:
+                                        - value: 10
+                                        - value: 0
+                                        - value: 0
+                                        - value: 1
+                                      operation: COLLECT
+                                operation: COLLECT
+                          reference:
+                            name: uiTransform
+                    operation: COLLECT
+              reference:
+                name: uiSpline
+          variables:
+            - name: idempotentPath
+        - expression:
+            fnCall:
+              arguments:
+                - expression:
+                    operands:
+                      - reference:
+                          name: m0
+                      - reference:
+                          name: m0
+                    operation: COLLECT
+              reference:
+                name: uiSpline
+          variables:
+            - name: inlinePath
+        - expression:
+            fnCall:
+              arguments:
+                - expression:
+                    operands:
+                      - fnCall:
+                          arguments:
+                            - expression:
+                                operands:
+                                  - expression:
+                                      operands:
+                                        - value: 1
+                                        - value: 0
+                                        - value: 0
+                                        - value: 0
+                                      operation: COLLECT
+                                  - expression:
+                                      operands:
+                                        - value: 0
+                                        - value: 1
+                                        - value: 0
+                                        - value: 0
+                                      operation: COLLECT
+                                  - expression:
+                                      operands:
+                                        - value: 0
+                                        - value: 0
+                                        - value: 1
+                                        - value: 0
+                                      operation: COLLECT
+                                  - expression:
+                                      operands:
+                                        - value: 0
+                                        - value: 0
+                                        - value: 0
+                                        - value: 1
+                                      operation: COLLECT
+                                operation: COLLECT
+                          reference:
+                            name: uiTransform
+                      - reference:
+                          name: m0
+                    operation: COLLECT
+              reference:
+                name: uiSpline
+          variables:
+            - name: inlinePromoted
+        - expression:
+            fnCall:
+              arguments:
+                - fnCall:
+                    arguments:
+                      - expression:
+                          operands:
+                            - reference:
+                                name: m0
+                            - reference:
+                                name: m0
+                            - reference:
+                                name: m0
+                          operation: COLLECT
+                    reference:
+                      name: uiSpline
+              reference:
+                name: applySpline
+          variables:
+            - name: callSpline
+      fnTypes:
+        - groups:
+            - functions:
+                - parameters:
+                    - name: s
+                  returns:
+                    - expression:
+                        operands:
+                          - reference:
+                              name: s
+                          - value: 0
+                        operation: INDEX
+              paramCount: 1
+          name: applySpline
+      returns:
+        - expression:
+            operands:
+              - expression:
+                  operands:
+                    - reference:
+                        name: path
+                    - value: 0
+                  operation: INDEX
+              - expression:
+                  operands:
+                    - reference:
+                        name: pathSimple
+                    - value: 0
+                  operation: INDEX
+              - expression:
+                  operands:
+                    - reference:
+                        name: idempotentPath
+                    - value: 0
+                  operation: INDEX
+              - expression:
+                  operands:
+                    - reference:
+                        name: inlinePath
+                    - value: 0
+                  operation: INDEX
+              - expression:
+                  operands:
+                    - reference:
+                        name: inlinePromoted
+                    - value: 0
+                  operation: INDEX
+              - expression:
+                  operands:
+                    - reference:
+                        name: callSpline
+                    - value: 0
+                  operation: INDEX
+            operation: ADD
+Source: ""

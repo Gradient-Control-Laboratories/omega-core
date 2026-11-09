@@ -1,0 +1,20 @@
+// Every parameterized boolean has a partial-application form that binds its
+// parameters and returns the operator, so any of them can be handed to a
+// primitive as its blend. Each one must specialize separately, carrying its
+// own captured parameters to the call site.
+
+import . "builtin";
+
+a = boxCentered([0,0,0], [2,2,2], intersectRound(0.2));
+b = boxCentered([3,0,0], [2,2,2], intersectChamfer(0.2));
+c = boxCentered([6,0,0], [2,2,2], intersectChamferRound(0.2, 0.1));
+d = boxCentered([9,0,0], [2,2,2], intersectLp(0.2, 4));
+e = boxCentered([12,0,0], [2,2,2], intersectExponential(0.2));
+f = boxCentered([15,0,0], [2,2,2], intersectRvachev(0.2));
+g = boxCentered([18,0,0], [2,2,2], unionRound(0.2));
+h = boxCentered([21,0,0], [2,2,2], unionChamfer(0.2));
+i = boxCentered([24,0,0], [2,2,2], unionChamferRound(0.2, 0.1));
+j = boxCentered([27,0,0], [2,2,2], unionLp(0.2, 4));
+k = boxCentered([30,0,0], [2,2,2], unionExponential(0.2));
+l = boxCentered([33,0,0], [2,2,2], unionRvachev(0.2));
+return unionSharp([a,b,c,d,e,f,g,h,i,j,k,l]);

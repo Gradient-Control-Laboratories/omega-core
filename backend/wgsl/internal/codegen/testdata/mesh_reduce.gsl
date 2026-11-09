@@ -1,0 +1,26 @@
+sphere(r) {
+  return length(p) - r;
+}
+
+a = sphere(1.0);
+b = sphere(1.0) + 0.5;
+c = sphere(1.0) - 0.5;
+
+// List form: meshUnion reduces a list of meshes (lowers to min(min(a, b), c)).
+shapes = [a, b, c];
+unioned = meshUnion(shapes);
+
+// Variadic form: meshIntersect over several meshes (lowers to max(max(a, b), c)).
+intersected = meshIntersect(a, b, c);
+
+// meshDifference takes two args; either may be a singleton or a list.
+// Singleton both sides lowers to max(a, -b).
+diffOne = meshDifference(a, b);
+// List second arg subtracts each: max(max(a, -b), -c).
+diffSubList = meshDifference(a, [b, c]);
+// List first arg unions the base: max(min(a, b), -c).
+diffBaseList = meshDifference([a, b], c);
+// List on both sides: max(max(min(a, b), -c), -...) over the union/subtrahends.
+diffBoth = meshDifference([a, b], [c, b]);
+
+return meshUnion(unioned, intersected, diffOne, diffSubList, diffBaseList, diffBoth);

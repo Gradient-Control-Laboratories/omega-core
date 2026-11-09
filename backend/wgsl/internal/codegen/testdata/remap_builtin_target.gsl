@@ -1,0 +1,26 @@
+// A remap whose target lowers to a builtin or operator expression must still
+// re-derive under the remapped point. Each of these reads p directly (rather
+// than through a call that takes the remapped p as its first argument), so the
+// coordinate has to travel through a re-derivation helper — before the fix they
+// silently ignored it and evaluated at the original p.
+
+shift = [2, 0, 0];
+n = normalize([1, 0, 1]);
+pt = [0.5, 0, 0];
+
+// builtin call target
+viaBuiltin = remap(length(p), p - shift);
+
+// operator expression over a builtin
+viaExpr = remap(dot(p - pt, n), [abs(p.x), p.y, p.z]);
+
+// a user function whose body is a remap, called directly: the body inlines to
+// an operator tree that reads p, which is how the Aerospace Bracket's mirrored
+// side draft (a thunk passed to unionRoundExact) lost its abs.
+mirrored() { return remap(plane(pt, n), [abs(p.x), p.y, p.z]); }
+viaFn = mirrored();
+
+// for contrast: a library call threads the remapped p as its first argument
+viaLib = remap(sphere(0), p - shift);
+
+return viaBuiltin, viaExpr, viaFn, viaLib;

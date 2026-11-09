@@ -1,0 +1,219 @@
+Expected:
+  files:
+    - assignments:
+        - expression:
+            fnCall:
+              arguments:
+                - expression:
+                    operands:
+                      - value: 1
+                      - value: 0
+                      - value: 0
+                      - value: 0
+                      - value: 0
+                      - value: 1
+                      - value: 0
+                      - value: 0
+                      - value: 0
+                      - value: 0
+                      - value: 1
+                      - value: 0
+                      - value: 0
+                      - value: 0
+                      - value: 0
+                      - value: 1
+                    operation: COLLECT
+              reference:
+                name: uiTransform
+          variables:
+            - name: identity
+        - expression:
+            fnCall:
+              arguments:
+                - expression:
+                    operands:
+                      - value: 1
+                      - value: 0
+                      - value: 0
+                      - value: 5
+                      - value: 0
+                      - value: 1
+                      - value: 0
+                      - value: 2
+                      - value: 0
+                      - value: 0
+                      - value: 1
+                      - value: 0
+                      - value: 0
+                      - value: 0
+                      - value: 0
+                      - value: 1
+                    operation: COLLECT
+              reference:
+                name: uiTransform
+          variables:
+            - name: offsetMat
+        - expression:
+            fnCall:
+              arguments:
+                - expression:
+                    operands:
+                      - expression:
+                          operands:
+                            - value: 1
+                            - value: 0
+                            - value: 0
+                            - value: 0
+                          operation: COLLECT
+                      - expression:
+                          operands:
+                            - value: 0
+                            - value: 1
+                            - value: 0
+                            - value: 0
+                          operation: COLLECT
+                      - expression:
+                          operands:
+                            - value: 0
+                            - value: 0
+                            - value: 1
+                            - value: 0
+                          operation: COLLECT
+                      - expression:
+                          operands:
+                            - value: 0
+                            - value: 0
+                            - value: 0
+                            - value: 1
+                          operation: COLLECT
+                    operation: COLLECT
+              reference:
+                name: uiTransform
+          variables:
+            - name: nestedMat
+        - expression:
+            fnCall:
+              arguments:
+                - expression:
+                    operands:
+                      - value: 1
+                      - value: 0
+                      - value: 0
+                      - value: 0
+                      - value: 0
+                      - value: 1
+                      - value: 0
+                      - value: 0
+                      - value: 0
+                      - value: 0
+                      - value: 1
+                      - value: 0
+                      - value: 0
+                      - value: 0
+                      - value: 0
+                      - value: 1
+                    operation: COLLECT
+              reference:
+                name: uiTransform
+          variables:
+            - name: inlineMat
+        - expression:
+            fnCall:
+              arguments:
+                - fnCall:
+                    arguments:
+                      - expression:
+                          operands:
+                            - expression:
+                                operands:
+                                  - value: 1
+                                  - value: 0
+                                  - value: 0
+                                  - value: 0
+                                operation: COLLECT
+                            - expression:
+                                operands:
+                                  - value: 0
+                                  - value: 1
+                                  - value: 0
+                                  - value: 0
+                                operation: COLLECT
+                            - expression:
+                                operands:
+                                  - value: 0
+                                  - value: 0
+                                  - value: 1
+                                  - value: 0
+                                operation: COLLECT
+                            - expression:
+                                operands:
+                                  - value: 0
+                                  - value: 0
+                                  - value: 0
+                                  - value: 1
+                                operation: COLLECT
+                          operation: COLLECT
+                    reference:
+                      name: uiTransform
+              reference:
+                name: applyTransform
+          variables:
+            - name: callMat
+        - expression:
+            expression:
+              operands:
+                - reference:
+                    name: nestedMat
+                - value: 0
+              operation: INDEX
+          variables:
+            - name: row
+      fnTypes:
+        - groups:
+            - functions:
+                - parameters:
+                    - name: m
+                  returns:
+                    - expression:
+                        operands:
+                          - reference:
+                              name: m
+                          - value: 0
+                        operation: INDEX
+              paramCount: 1
+          name: applyTransform
+      returns:
+        - expression:
+            operands:
+              - expression:
+                  operands:
+                    - reference:
+                        name: identity
+                    - value: 0
+                  operation: INDEX
+              - expression:
+                  operands:
+                    - reference:
+                        name: offsetMat
+                    - value: 3
+                  operation: INDEX
+              - expression:
+                  operands:
+                    - reference:
+                        name: row
+                    - value: 0
+                  operation: INDEX
+              - expression:
+                  operands:
+                    - reference:
+                        name: inlineMat
+                    - value: 0
+                  operation: INDEX
+              - expression:
+                  operands:
+                    - reference:
+                        name: callMat
+                    - value: 0
+                  operation: INDEX
+            operation: ADD
+Source: ""

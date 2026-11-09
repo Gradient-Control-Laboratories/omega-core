@@ -1,0 +1,54 @@
+// Scene Size: 120
+// Scene Grid: 10
+
+// The surfaces printing leaves (material/process/printed), all built along +Z: fused
+// filament's beads, resin's fine layers, nylon powder beds and laser-melted
+// titanium. Spheres and cones show the layers spreading into stair-steps as
+// the surface tilts toward the build plate, and gone where it lies flat. Each
+// is a part, placed with transform.translate so it keeps its box, so the Render
+// panel's Detail slider takes its fine detail away as it gets small on screen.
+
+// Fused filament at 0.2 mm layers: an orange PLA cone and a blue PETG sphere.
+
+titaniumMat, titaniumColor = metal.titanium();
+
+plaMat, plaColor, plaHeight, plaSlope = printed.fdm([0.85, 0.33, 0.08], [0, 0, 1], [-40, 25, 0], 0.2, 40);
+plaCone = transform.translate(coneCapped([0, 0, -15], [0, 0, 15], 16.4, 0), [-40, 25, 0]);
+plaCone.material = plaMat;
+plaCone.color = plaColor;
+petgMat, petgColor, petgHeight, petgSlope = printed.fdm([0.12, 0.3, 0.75], [0, 0, 1], [-10, 25, 0], 0.2, 70);
+petgBall = transform.translate(sphere(14), [-10, 25, 0]);
+petgBall.material = petgMat;
+petgBall.color = petgColor;
+
+// Resin at 0.05 mm layers: a grey sphere and a clear one.
+greyMat, greyColor, greyHeight, greySlope = printed.resin([0.55, 0.57, 0.6], [0, 0, 1], [20, 25, 0], 0.05, 0);
+greyBall = transform.translate(sphere(12), [20, 25, 0]);
+greyBall.material = greyMat;
+greyBall.color = greyColor;
+clearMat, clearColor, clearHeight, clearSlope = printed.resin([0.9, 0.93, 0.96], [0, 0, 1], [48, 25, 0], 0.05, 0.9);
+clearBall = transform.translate(sphere(12), [48, 25, 0]);
+clearBall.material = clearMat;
+clearBall.color = clearColor;
+
+// Nylon from powder beds: white SLS and black-dyed MJF blocks with a hole.
+slsMat, slsColor, slsHeight, slsSlope = printed.powderBed([0.86, 0.85, 0.81], 0.06);
+slsBlock = transform.translate(differenceSharp(boxCentered([0, 0, 0], [20, 20, 20]) - 2, cylinderCapped([0, -13, 0], [0, 13, 0], 7)), [-35, -25, 0]);
+slsBlock.material = slsMat;
+slsBlock.color = slsColor;
+mjfMat, mjfColor, mjfHeight, mjfSlope = printed.powderBed([0.07, 0.07, 0.075], 0.06);
+mjfBlock = transform.translate(differenceSharp(boxCentered([0, 0, 0], [20, 20, 20]) - 2, cylinderCapped([0, -13, 0], [0, 13, 0], 7)), [-5, -25, 0]);
+mjfBlock.material = mjfMat;
+mjfBlock.color = mjfColor;
+
+// Titanium laser-melted (DMLS), as built: a sphere and a cone.
+tiBallMat, tiBallColor, tiBallHeight, tiBallSlope = printed.laserMelted(titaniumMat, titaniumColor, 10);
+tiBall = transform.translate(sphere(12), [25, -25, 0]);
+tiBall.material = tiBallMat;
+tiBall.color = tiBallColor;
+tiConeMat, tiConeColor, tiConeHeight, tiConeSlope = printed.laserMelted(titaniumMat, titaniumColor, 10);
+tiCone = transform.translate(coneCapped([0, 0, -15], [0, 0, 15], 16.4, 0), [50, -25, 0]);
+tiCone.material = tiConeMat;
+tiCone.color = tiConeColor;
+
+return plaCone, petgBall, greyBall, clearBall, slsBlock, mjfBlock, tiBall, tiCone;

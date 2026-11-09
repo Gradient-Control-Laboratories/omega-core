@@ -1,0 +1,35 @@
+Expected:
+  files:
+    - assignments:
+        - expression:
+            expression:
+              operands:
+                - expression:
+                    operands:
+                      - value: 1
+                      - value: 2
+                      - value: 3
+                    operation: ADD
+                - value: 4
+                - value: 5
+                - expression:
+                    operands:
+                      - expression:
+                          operands:
+                            - value: 6
+                            - value: 7
+                            - value: 8
+                            - value: 9
+                          operation: MUL
+                      - value: 10.1
+                      - value: 11.2
+                      - value: 12
+                      - value: 3
+                    operation: DIV
+              operation: SUB
+          variables:
+            - name: radius
+      returns:
+        - reference:
+            name: radius
+Source: ""

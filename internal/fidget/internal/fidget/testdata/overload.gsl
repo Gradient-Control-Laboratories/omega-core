@@ -1,0 +1,12 @@
+addThree(a) {
+  return a + 3;
+}
+
+x = addThree(1);
+y = addThree([1, 2, 3]);
+
+a3 = [2, 3, 4];
+b3 = [5, 6, 7];
+c3 = a3 % b3;
+
+return x, y, c3;

@@ -1,0 +1,295 @@
+
+// Plated Materials (material/coat/plated)
+//
+// Electroplated finishes over a metal: zinc under its clear, yellow or black
+// chromate, nickel bright or electroless, chrome decorative or hard, tin,
+// cadmium under yellow chromate, a gold flash and silver. A plate is thin, 5
+// to 25 um, so it keeps the part's relief and lay and replaces its material
+// and colour with the plated metal's, the measured metals of physical; the
+// chromates are films the thin-film colour draws. Each returns material,
+// color, height and slope, as the coats do; the height is 0.
+//
+// A plate's lobe is judged: bright zinc, tin and cadmium about 0.25 rough
+// and matte ones 0.5; bright nickel 0.12 and electroless 0.3; decorative
+// chrome 0.08 and hard chrome 0.25; silver 0.15 bright and 0.45 matte. A
+// levelling plate (bright nickel, decorative chrome, the gold flash over
+// bright nickel) sets the lobe itself; the others widen the base's.
+//
+// Doc convention follows builtin/base.gsl: `///` lines are public docs.
+
+import "material";
+import "color";
+import "material/bulk/physical";
+import "material/bulk/metal";
+
+// plate(baseMaterial, rough, levelling): the base's record under a plated
+// metal's lobe, metallic, `rough` for a levelling plate and the base's
+// roughness widened by `rough` otherwise, the relief and lay kept.
+plate(baseMaterial, rough, levelling) {
+  base = material.roughness(baseMaterial);
+  widened = sqrt(base * base + rough * rough);
+  return material.withMetallic(material.withRoughness(baseMaterial, levelling * rough + (1 - levelling) * widened), 1);
+}
+
+// Two sRGB colours multiplied in linear light.
+tinted(a, b) {
+  return color.gammaEncode(color.linearize(a) * color.linearize(b));
+}
+
+// chromate(metalColor, thickness, tint): a chromate conversion film
+// `thickness` nm thick (n 1.7, judged for a hydrated chromium chromate) over
+// a plated metal, its interference sheen and the chromium compounds' own
+// `tint`: white for a clear film, yellow for the iridescent yellow one.
+chromate(metalColor, thickness, tint) {
+  return tinted(color.thinFilmOver(thickness, 1.7, metalColor), tint);
+}
+
+// --- Zinc ---
+
+/// zinc(baseMaterial, bright): electroplated zinc under a clear chromate
+/// (ASTM B633 Type III), the blue-bright finish of hardware: zinc's measured
+/// colour under a 20 nm film that casts the faint blue, bright (1) or matte
+/// (0). Returns material, color, height and slope.
+zinc(baseMaterial, @range(0, 1) bright) {
+  zincMat, zincColor = physical.zinc();
+  return plate(baseMaterial, 0.5 - 0.25 * clamp(bright, 0, 1), 0), chromate(zincColor, 20, [1, 1, 1]), 0, 0;
+}
+
+/// zincYellow(baseMaterial, bright): electroplated zinc under the yellow
+/// chromate (ASTM B633 Type II), the iridescent greenish-yellow film: a 65 nm
+/// film's sheen under the chromium compounds' golden tint (judged), bright
+/// (1) or matte (0). Returns material, color, height and slope.
+zincYellow(baseMaterial, @range(0, 1) bright) {
+  zincMat, zincColor = physical.zinc();
+  return plate(baseMaterial, 0.5 - 0.25 * clamp(bright, 0, 1), 0), chromate(zincColor, 65, [1.0, 0.82, 0.38]), 0, 0;
+}
+
+/// zincBlack(baseMaterial, bright): electroplated zinc under a black
+/// chromate, the thickest of the chromate films, a near-black that keeps a
+/// metal's glint (judged), bright (1) or matte (0). Returns material, color,
+/// height and slope.
+zincBlack(baseMaterial, @range(0, 1) bright) {
+  return plate(baseMaterial, 0.55 - 0.25 * clamp(bright, 0, 1), 0), [0.07, 0.07, 0.08], 0, 0;
+}
+
+// --- Nickel and chrome ---
+
+/// nickel(baseMaterial, bright): nickel plate, bright (1), the levelling
+/// mirror finish under decorative chrome, or electroless (0), the satin
+/// nickel-phosphorus plate a little greyer than the metal (judged). Returns
+/// material, color, height and slope.
+nickel(baseMaterial, @range(0, 1) bright) {
+  nickelMat, nickelColor = physical.nickel();
+  b = clamp(bright, 0, 1);
+  tone = color.mixOklab([0.78, 0.78, 0.76], nickelColor, b);
+  return plate(baseMaterial, 0.3 - 0.18 * b, b), tone, 0, 0;
+}
+
+/// chrome(baseMaterial, decorative): chrome plate, decorative (1), the thin
+/// blue-white mirror over bright nickel, or hard (0), the thick engineering
+/// chrome at a satin. Chromium's measured colour for both. Returns material,
+/// color, height and slope.
+chrome(baseMaterial, @range(0, 1) decorative) {
+  chromeMat, chromeColor = physical.chromium();
+  d = clamp(decorative, 0, 1);
+  return plate(baseMaterial, 0.25 - 0.17 * d, d), chromeColor, 0, 0;
+}
+
+// --- Tin, cadmium, gold and silver ---
+
+// Tin's colour: its reflectance at 632.8 nm is 0.72 (n 2.384, k 4.727), 0.86
+// encoded, and the measured constants below 730 nm are not tabulated, so the
+// green and blue channels are judged a shade duller, tin being a slightly
+// warm silver-white.
+tinColor = [0.86, 0.85, 0.84];
+
+/// tin(baseMaterial, bright): tin plate, the solderable finish on copper and
+/// steel, a silvery white a little greyer than zinc, bright (1) or matte (0).
+/// Returns material, color, height and slope.
+tin(baseMaterial, @range(0, 1) bright) {
+  return plate(baseMaterial, 0.55 - 0.25 * clamp(bright, 0, 1), 0), tinColor, 0, 0;
+}
+
+/// cadmium(baseMaterial, bright): cadmium plate under the yellow chromate of
+/// aerospace hardware (QQ-P-416 Type II): a bluish white (judged; no measured
+/// constants) under the iridescent yellow film, bright (1) or dull (0).
+/// Returns material, color, height and slope.
+cadmium(baseMaterial, @range(0, 1) bright) {
+  return plate(baseMaterial, 0.5 - 0.25 * clamp(bright, 0, 1), 0), chromate([0.86, 0.88, 0.90], 65, [1.0, 0.82, 0.38]), 0, 0;
+}
+
+/// goldFlash(baseMaterial, microns): a gold flash `microns` thick (0.1 to 1)
+/// over bright nickel: gold's measured colour, the nickel showing through the
+/// thinnest flashes (judged as 1 - exp(-microns / 0.1)), at bright nickel's
+/// lobe. Returns material, color, height and slope.
+goldFlash(baseMaterial, @range(0.1, 1) microns) {
+  goldMat, goldColor = physical.gold();
+  nickelMat, nickelColor = physical.nickel();
+  tone = color.mixOklab(nickelColor, goldColor, 1 - exp(-clamp(microns, 0, 2) / 0.1));
+  return plate(baseMaterial, 0.12, 1), tone, 0, 0;
+}
+
+/// silver(baseMaterial, bright): silver plate, silver's measured colour,
+/// bright (1), levelled by its brighteners, or matte (0). Returns material,
+/// color, height and slope.
+silver(baseMaterial, @range(0, 1) bright) {
+  silverMat, silverColor = physical.silver();
+  b = clamp(bright, 0, 1);
+  return plate(baseMaterial, 0.45 - 0.3 * b, b), silverColor, 0, 0;
+}
+
+// ===========================================================================
+// Ready-made
+// ===========================================================================
+
+// One surface from each constructor above, over the metal the plate is
+// usually on, so the material browser can show it; Adjust opens the
+// finish's parameter.
+
+/// Zinc-plated steel, bright, clear chromate. Returns material and colour.
+@material zincPlatedSteel() {
+  steelMat, steelColor = metal.steel();
+  plated, tone, height, slope = zinc(steelMat, 1);
+  return plated, tone;
+}
+
+/// Zinc-plated steel, bright, yellow chromate. Returns material and colour.
+@material yellowZincPlatedSteel() {
+  steelMat, steelColor = metal.steel();
+  plated, tone, height, slope = zincYellow(steelMat, 1);
+  return plated, tone;
+}
+
+/// Zinc-plated steel, bright, black chromate. Returns material and colour.
+@material blackZincPlatedSteel() {
+  steelMat, steelColor = metal.steel();
+  plated, tone, height, slope = zincBlack(steelMat, 1);
+  return plated, tone;
+}
+
+/// Bright nickel-plated steel. Returns material and colour.
+@material nickelPlatedSteel() {
+  steelMat, steelColor = metal.steel();
+  plated, tone, height, slope = nickel(steelMat, 1);
+  return plated, tone;
+}
+
+/// Decorative chrome-plated steel. Returns material and colour.
+@material chromePlatedSteel() {
+  steelMat, steelColor = metal.steel();
+  plated, tone, height, slope = chrome(steelMat, 1);
+  return plated, tone;
+}
+
+/// Bright tin-plated copper. Returns material and colour.
+@material tinPlatedCopper() {
+  copperMat, copperColor = metal.copper();
+  plated, tone, height, slope = tin(copperMat, 1);
+  return plated, tone;
+}
+
+/// Cadmium-plated steel, bright, yellow chromate. Returns material and
+/// colour.
+@material cadmiumPlatedSteel() {
+  steelMat, steelColor = metal.steel();
+  plated, tone, height, slope = cadmium(steelMat, 1);
+  return plated, tone;
+}
+
+/// Gold-flashed brass, 0.25 um over bright nickel. Returns material and
+/// colour.
+@material goldFlashedBrass() {
+  brassMat, brassColor = metal.brass();
+  plated, tone, height, slope = goldFlash(brassMat, 0.25);
+  return plated, tone;
+}
+
+/// Bright silver-plated brass. Returns material and colour.
+@material silverPlatedBrass() {
+  brassMat, brassColor = metal.brass();
+  plated, tone, height, slope = silver(brassMat, 1);
+  return plated, tone;
+}
+
+// One @surface overload per operator above, for the Bodies panel to wrap a
+// surface with: the part's material, and the finish's usual setting for the
+// rest. Adjust opens one back into the full form.
+
+/// zinc(baseMaterial): bright zinc, clear chromate. Returns material, color,
+/// height and slope.
+@surface zinc(baseMaterial) {
+  plated, tone, height, slope = zinc(baseMaterial, 1);
+  return plated, tone, height, slope;
+}
+
+/// zincYellow(baseMaterial): bright zinc, yellow chromate. Returns material,
+/// color, height and slope.
+@surface zincYellow(baseMaterial) {
+  plated, tone, height, slope = zincYellow(baseMaterial, 1);
+  return plated, tone, height, slope;
+}
+
+/// zincBlack(baseMaterial): bright zinc, black chromate. Returns material,
+/// color, height and slope.
+@surface zincBlack(baseMaterial) {
+  plated, tone, height, slope = zincBlack(baseMaterial, 1);
+  return plated, tone, height, slope;
+}
+
+/// nickel(baseMaterial): bright nickel. Returns material, color, height and
+/// slope.
+@surface nickel(baseMaterial) {
+  plated, tone, height, slope = nickel(baseMaterial, 1);
+  return plated, tone, height, slope;
+}
+
+/// chrome(baseMaterial): decorative chrome. Returns material, color, height
+/// and slope.
+@surface chrome(baseMaterial) {
+  plated, tone, height, slope = chrome(baseMaterial, 1);
+  return plated, tone, height, slope;
+}
+
+/// tin(baseMaterial): bright tin. Returns material, color, height and slope.
+@surface tin(baseMaterial) {
+  plated, tone, height, slope = tin(baseMaterial, 1);
+  return plated, tone, height, slope;
+}
+
+/// cadmium(baseMaterial): bright cadmium, yellow chromate. Returns material,
+/// color, height and slope.
+@surface cadmium(baseMaterial) {
+  plated, tone, height, slope = cadmium(baseMaterial, 1);
+  return plated, tone, height, slope;
+}
+
+/// goldFlash(baseMaterial): a 0.25 um gold flash over bright nickel. Returns
+/// material, color, height and slope.
+@surface goldFlash(baseMaterial) {
+  plated, tone, height, slope = goldFlash(baseMaterial, 0.25);
+  return plated, tone, height, slope;
+}
+
+/// silver(baseMaterial): bright silver. Returns material, color, height and
+/// slope.
+@surface silver(baseMaterial) {
+  plated, tone, height, slope = silver(baseMaterial, 1);
+  return plated, tone, height, slope;
+}
+
+// References
+//   ASTM B633-19. Electrodeposited coatings of zinc on iron and steel: the
+//     chromate types, clear (III), yellow (II) and black.
+//   QQ-P-416F. Plating, cadmium (electrodeposited): Type II, with the yellow
+//     chromate.
+//   Chromate conversion coating. Wikipedia. The colours from clear and blue
+//     through yellow to olive drab and black, and the films' thickness.
+//     https://en.wikipedia.org/wiki/Chromate_conversion_coating
+//   finishing.com, letter 212/50. The chromate's colours as interference in
+//     a thin film. https://www.finishing.com/212/50.shtml
+//   The plated metals' colours are physical's, from the refractive index
+//     database. Tin's red is from SPTS's refractive index database, n 2.384
+//     and k 4.727 at 632.8 nm, https://www.spts.com/products/instruments/
+//     refractive-index-database/sn/tin (Golovashkin and Motulevich's 1964
+//     constants in the refractive index database start at 0.73 um); its
+//     other channels and cadmium's colour are judged.

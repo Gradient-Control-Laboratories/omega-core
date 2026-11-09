@@ -1,0 +1,5 @@
+import vector "vector";
+
+circleXY(center, radius) {
+   return (length(vector.subtractVector(access(p, xy), center)) - radius);
+}

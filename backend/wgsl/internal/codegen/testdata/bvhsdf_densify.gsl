@@ -1,0 +1,1 @@
+return min(bvhSdf(2), bvhSdf(7));
