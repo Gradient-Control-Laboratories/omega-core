@@ -484,8 +484,8 @@ function decodeBase64ToUint16(b64) {
 // sdfSmpN / sdfBMinN / sdfBSizeN where N is the densified slot number.
 // Baked noise tile for the noiseHash3 builtin: a 64^3 rgba8unorm 3D texture the
 // shader reads via textureLoad (exact texel fetch — no sampler/filtering). These
-// are the same bytes common/noise.Bake() ships to the Fidget oracle (served from
-// common/web/noise_tile.bin), so the WGSL preview matches the mesh. The texture
+// are the same bytes program/noise.Bake() ships to the Fidget oracle (served from
+// render/noise_tile.bin), so the WGSL preview matches the mesh. The texture
 // is created up front and its data filled in when the fetch resolves, so a shader
 // compiled before the tile arrives binds cleanly and self-corrects on load.
 const NOISE_TILE_SIZE = 64;

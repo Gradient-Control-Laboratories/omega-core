@@ -31,7 +31,7 @@ pub const NOISE_ORACLE_ID_BASE: u32 = 0xE0_15E_000;
 const ONE_OCTAVE_OFFSET: u32 = 4;
 
 // The tile baked into the library at build time — the same bytes
-// common/noise.Bake() ships (gen/main.go writes them here) and the GPU path
+// program/noise.Bake() ships (program/noise/gen writes them here) and the GPU path
 // loads as a texture. Embedding it makes the render lib self-sufficient: a
 // process with no Go startup path (e.g. hodge replaying a tape) still has the
 // tile, and the tape itself only needs to carry the noise leaf id. The omega
@@ -39,7 +39,7 @@ const ONE_OCTAVE_OFFSET: u32 = 4;
 // this to the exact Bake() output.
 static EMBEDDED_TILE: &[u8] = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/../../../../common/web/noise_tile.bin"
+    "/../../../../examples/viewer/render/noise_tile.bin"
 ));
 
 /// The active tile, shared by all channels. Defaults to the library-baked tile;
