@@ -1,0 +1,171 @@
+name: Wheels
+
+# The omega-gsl wheel (python/omega-gsl): omega-core's gsl and compile for one platform each, compile linked with the
+# render library statically (tool/build-wheel.sh). Each platform's wheel is built on its own runner -- Linux inside
+# the manylinux_2_28 image, so the programs need nothing newer than glibc 2.28 -- then installed and tested on a
+# plain runner of that platform, so a wheel that needs anything the build machine had and a user's does not fails
+# here. Every pull request and push to main builds and tests them all.
+#
+# Publishing is explicit, never a merge: pushing a tag v<version> whose version is the toolchain's
+# (internal/version/version.go), or running the workflow on main with `publish` set (which tags the commit
+# v<version> itself), publishes the wheels to PyPI through trusted publishing (the `pypi` environment; no token is
+# stored). PyPI must list this repository and workflow as omega-gsl's trusted publisher first.
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish this commit of main to PyPI as the toolchain's version, and tag it v<version>.
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wheels-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    name: Build (${{ matrix.tag }})
+    runs-on: ${{ matrix.runner }}
+    container: ${{ matrix.container }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { tag: macosx_11_0_arm64, runner: macos-latest }
+          - { tag: macosx_11_0_x86_64, runner: macos-15-intel }
+          - { tag: manylinux_2_28_x86_64, runner: ubuntu-latest, container: "quay.io/pypa/manylinux_2_28_x86_64" }
+          - { tag: manylinux_2_28_aarch64, runner: ubuntu-24.04-arm, container: "quay.io/pypa/manylinux_2_28_aarch64" }
+    env:
+      OMEGA_GSL_TAG: ${{ matrix.tag }}
+    steps:
+      - name: Linux image tools on PATH (Python, cargo)
+        if: matrix.container
+        run: |
+          echo "/opt/python/cp312-cp312/bin" >> "$GITHUB_PATH"
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Trust the checkout (the wheel's manifest names its commit)
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - uses: actions/setup-python@v7
+        if: ${{ !matrix.container }}
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - name: Rust and CMake
+        run: |
+          command -v cargo || curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+          command -v cmake || python3 -m pip install cmake
+          python3 -m pip install build
+          cargo --version; cmake --version | head -1; go version; python3 --version
+      - name: The submodules' revisions (the cache key)
+        id: submodules
+        run: echo "hash=$(git ls-tree -r HEAD | awk '$2 == "commit"' | cksum | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/static
+          key: static-${{ matrix.tag }}-${{ hashFiles('Cargo.lock') }}-${{ steps.submodules.outputs.hash }}
+          restore-keys: static-${{ matrix.tag }}-${{ hashFiles('Cargo.lock') }}-
+      - name: Build the programs and the wheel
+        run: tool/build-wheel.sh
+      - uses: actions/upload-artifact@v7
+        with:
+          name: wheel-${{ matrix.tag }}
+          path: dist/*.whl
+          if-no-files-found: error
+
+  test:
+    name: Test (${{ matrix.runner }}, Python ${{ matrix.python }})
+    needs: build
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { runner: ubuntu-latest, python: "3.9" }
+          - { runner: ubuntu-latest, python: "3.14" }
+          - { runner: ubuntu-24.04-arm, python: "3.12" }
+          - { runner: macos-15-intel, python: "3.12" }
+          - { runner: macos-latest, python: "3.12" }
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: wheel-*
+          merge-multiple: true
+          path: dist
+      # pip takes the one wheel this platform can install, from the built ones alone.
+      - name: Install this platform's wheel
+        run: |
+          python -m pip install --only-binary :all: --no-index --find-links dist omega-gsl
+          python -m pip install pytest
+      - name: Test it
+        working-directory: python/omega-gsl
+        run: python -m pytest -q tests
+
+  publish:
+    name: Publish to PyPI
+    needs: [build, test]
+    if: >-
+      startsWith(github.ref, 'refs/tags/v') ||
+      (github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: pypi
+    permissions:
+      contents: write  # the tag a dispatched publish makes
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: The release is the toolchain's version, and not one already tagged
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(sed -n 's/^var Version = "\(.*\)"$/\1/p' internal/version/version.go)
+          test -n "$version" || { echo "no version in internal/version/version.go"; exit 1; }
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            test "v$version" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME is not v$version"; exit 1; }
+          elif gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/v$version" > /dev/null 2>&1; then
+            echo "v$version is tagged already: raise the version to publish"; exit 1
+          fi
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: wheel-*
+          merge-multiple: true
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist
+      # A dispatched release tags what it published. A tag the workflow's token makes starts no run of its own.
+      - name: Tag the published commit
+        if: github.ref_type != 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api "repos/$GITHUB_REPOSITORY/git/refs" -f "ref=refs/tags/v${{ steps.version.outputs.version }}" -f "sha=$GITHUB_SHA"
