@@ -38,7 +38,10 @@ CHOICES = ("Apache-2.0", "MIT", "MPL-2.0")  # in order of preference, for a crat
 
 
 def run(*args: str) -> str:
-    return subprocess.run(args, cwd=ROOT, capture_output=True, text=True, check=True).stdout
+    done = subprocess.run(args, cwd=ROOT, capture_output=True, text=True)
+    if done.returncode != 0:
+        raise SystemExit(f"third_party_licenses: {' '.join(args)} failed (exit {done.returncode}):\n{done.stderr}")
+    return done.stdout
 
 
 def licence_files(folder: Path) -> list[Path]:
@@ -129,8 +132,9 @@ def go(texts: Texts) -> None:
 
 def rust(texts: Texts) -> None:
     host = re.search(r"^host: (\S+)", run("rustc", "-vV"), re.MULTILINE).group(1)
-    meta = json.loads(run("cargo", "metadata", "--format-version", "1", "--locked", "--offline",
-                          "--filter-platform", host))
+    # Every package Cargo.lock names is read, for every platform, though a build fetched only its own: this may
+    # fetch the rest. --locked refuses any change to the lock file.
+    meta = json.loads(run("cargo", "metadata", "--format-version", "1", "--locked", "--filter-platform", host))
     packages = {p["id"]: p for p in meta["packages"]}
     nodes = {n["id"]: n for n in meta["resolve"]["nodes"]}
     members = set(meta["workspace_members"])
