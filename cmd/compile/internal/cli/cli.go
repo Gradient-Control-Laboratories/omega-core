@@ -1,12 +1,14 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/backend/audio"
@@ -14,6 +16,8 @@ import (
 	"gradientcontrol.com/omega/core/backend/tape"
 	"gradientcontrol.com/omega/core/backend/wgsl"
 	"gradientcontrol.com/omega/core/cmd/compile/internal/config"
+	"gradientcontrol.com/omega/core/eval"
+	"gradientcontrol.com/omega/core/internal/version"
 	"gradientcontrol.com/omega/core/parser"
 )
 
@@ -45,7 +49,8 @@ func PrintUsage(w io.Writer) {
 	fmt.Fprintf(w, "      --subdivision int\n")
 	fmt.Fprintf(w, "        Octree subdivision depth for mesh polygonization (default 4)\n")
 	fmt.Fprintf(w, "      --bbox string\n")
-	fmt.Fprintf(w, "        Bounding box as minX,minY,minZ,maxX,maxY,maxZ\n")
+	fmt.Fprintf(w, "        Bounding box as minX,minY,minZ,maxX,maxY,maxZ, or auto: the box the field fills,\n")
+	fmt.Fprintf(w, "        found within 1024 mm of the origin and grown by two cells (default -10..10 on each axis)\n")
 	fmt.Fprintf(w, "      --algo string\n")
 	fmt.Fprintf(w, "        Meshing algorithm (marching-cubes or mdc) (default \"marching-cubes\")\n")
 	fmt.Fprintf(w, "      --time float\n")
@@ -56,6 +61,8 @@ func PrintUsage(w io.Writer) {
 	fmt.Fprintf(w, "        Append complete WebGPU raymarching runner harness to WGSL\n")
 	fmt.Fprintf(w, "  -v, --verbose\n")
 	fmt.Fprintf(w, "        Verbose diagnostic logging\n")
+	fmt.Fprintf(w, "      --version\n")
+	fmt.Fprintf(w, "        Print the version and exit\n")
 	fmt.Fprintf(w, "  -h, --help\n")
 	fmt.Fprintf(w, "        Display usage instructions\n")
 }
@@ -73,6 +80,10 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 
 	if cfg.Help {
 		PrintUsage(stdout)
+		return nil
+	}
+	if cfg.Version {
+		fmt.Fprintf(stdout, "compile %s\n", version.Version)
 		return nil
 	}
 
@@ -172,6 +183,19 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		if cfg.HasBbox {
 			meshOpts = append(meshOpts, mesh.WithBbox(cfg.Bbox))
 		}
+		if cfg.AutoBbox {
+			if len(sourceTexts) > 1 {
+				return fmt.Errorf("--bbox auto takes one source file, not %d: name the box outright", len(sourceTexts))
+			}
+			box, boxErr := autoBbox(primarySourceText, srcPaths)
+			if boxErr != nil {
+				return boxErr
+			}
+			if cfg.Verbose {
+				fmt.Fprintf(stderr, "[mesh] --bbox auto: %g,%g,%g,%g,%g,%g\n", box[0], box[1], box[2], box[3], box[4], box[5])
+			}
+			meshOpts = append(meshOpts, mesh.WithBbox(box))
+		}
 		if cfg.Verbose {
 			meshOpts = append(meshOpts, mesh.WithProgress(func(stage string, completed, total uint32) {
 				fmt.Fprintf(stderr, "[mesh] %s (%d/%d)\n", stage, completed, total)
@@ -256,4 +280,37 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	}
 
 	return nil
+}
+
+// autoBbox is --bbox auto: the box the program's field fills -- eval's Bounds, a grid fit of where the union of
+// its returns is negative, searched within 1024 mm of the origin -- grown by two of the fit's cells on every side,
+// so the surface lies inside the meshed box with room for the mesher's cells around it.
+func autoBbox(code string, srcPaths []string) ([6]float32, error) {
+	var box [6]float32
+	returns := eval.TopLevelReturnExprs(code)
+	if len(returns) == 0 {
+		return box, fmt.Errorf("--bbox auto: the program returns nothing to mesh")
+	}
+	expr := returns[0]
+	if len(returns) > 1 {
+		expr = "min(" + strings.Join(returns, ", ") + ")"
+	}
+	var opts []eval.Option
+	if len(srcPaths) > 0 {
+		opts = append(opts, assembler.SourcePaths(srcPaths...))
+	}
+	found, err := eval.New(nil, nil, opts...).Bounds(context.Background(), nil, code, "", expr, [6]float64{}, 64)
+	if err != nil {
+		return box, fmt.Errorf("--bbox auto: %w", err)
+	}
+	if !found.Found {
+		return box, fmt.Errorf("--bbox auto: the field is nowhere inside within 1024 mm of the origin (its least value %g, at %v)",
+			found.MinValue, found.MinAt)
+	}
+	for k := 0; k < 3; k++ {
+		pad := 2 * found.CellSize[k]
+		box[k] = float32(found.BboxMin[k] - pad)
+		box[k+3] = float32(found.BboxMax[k] + pad)
+	}
+	return box, nil
 }

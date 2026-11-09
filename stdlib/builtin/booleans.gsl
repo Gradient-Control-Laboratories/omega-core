@@ -73,7 +73,14 @@ intersectRound(fields, radius) {
       return runningSum + inset * inset;
     },
     fields);
-  return min(neg(radius), intersectSharp(fields)) + sqrt(sumOfSquares);
+  // Written for its gradient as well as its value. Where every field is deeper than radius (all of a sharp
+  // primitive's inside, at radius 0) the sum is 0, and sqrt's derivative there, 0 times infinity, made the
+  // gradient NaN: the root is floored far below float precision, where max's derivative is 0. And
+  // min(sharp, -radius) is written sharp - max(sharp + radius, 0), its value the same: at radius 0 the two
+  // tie all over the surface, where min took the constant's zero gradient; this takes the sharp
+  // intersection's, the face's normal, which meshing and lighting read there.
+  sharp = intersectSharp(fields);
+  return sharp - max(sharp + radius, 0) + sqrt(max(sumOfSquares, 1e-30));
 }
 
 /// Partial application: binds the fillet radius and returns the intersection

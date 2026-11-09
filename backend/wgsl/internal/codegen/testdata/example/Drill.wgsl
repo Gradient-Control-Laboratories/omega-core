@@ -147,8 +147,9 @@ fn builtin_intersectSharp(fields: vec3<f32>) -> f32 {
 }
 
 fn builtin_intersectRound(fields: vec3<f32>, radius: f32) -> f32 {
+  let sharp = builtin_intersectSharp(fields);
   let sumOfSquares = 0.0 + max(fields.x + radius, 0.0) * max(fields.x + radius, 0.0) + max(fields.y + radius, 0.0) * max(fields.y + radius, 0.0) + max(fields.z + radius, 0.0) * max(fields.z + radius, 0.0);
-  return min(-radius, builtin_intersectSharp(fields)) + sqrt(sumOfSquares);
+  return sharp - max(sharp + radius, 0.0) + sqrt(max(sumOfSquares, 0.000000000000000000000000000001));
 }
 
 fn builtin_gcl_closure_intersectRound(fields: vec3<f32>) -> f32 {

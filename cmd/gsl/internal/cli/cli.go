@@ -9,6 +9,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+
+	"gradientcontrol.com/omega/core/internal/version"
 )
 
 // PrintUsage writes the unified gsl CLI help message to w.
@@ -23,6 +25,7 @@ The commands are:
     serve       launch local HTTP server and interactive WebGPU viewer
     fix         refactor GSL source files to current syntax
     help        display help for gsl or a specific subcommand
+    version     print the version
 
 Use "gsl help <command>" or "gsl <command> --help" for more information about a command.
 `)
@@ -108,6 +111,9 @@ func Run(ctx context.Context, binDir string, args []string, stdin io.Reader, std
 	switch subcmd {
 	case "-h", "-help", "--help":
 		PrintUsage(stdout)
+		return nil
+	case "version", "-version", "--version":
+		fmt.Fprintf(stdout, "gsl %s\n", version.Version)
 		return nil
 	case "help":
 		if len(args) == 1 {
