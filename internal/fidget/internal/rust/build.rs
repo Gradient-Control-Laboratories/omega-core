@@ -163,6 +163,11 @@ fn build_blosc(vendor: &Path, zlib_install: &Path) -> PathBuf {
 fn emit_static_link(install_prefix: &Path, libs: &[&str]) {
     let lib_dir = install_prefix.join("lib");
     println!("cargo:rustc-link-search=native={}", lib_dir.display());
+    // RHEL-family CMake (the manylinux image) installs into lib64.
+    let lib64_dir = install_prefix.join("lib64");
+    if lib64_dir.exists() {
+        println!("cargo:rustc-link-search=native={}", lib64_dir.display());
+    }
     for lib in libs {
         println!("cargo:rustc-link-lib=static={lib}");
     }
