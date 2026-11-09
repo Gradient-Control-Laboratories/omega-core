@@ -40,10 +40,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { tag: macosx_11_0_arm64, runner: macos-latest }
-          - { tag: macosx_11_0_x86_64, runner: macos-15-intel }
-          - { tag: manylinux_2_28_x86_64, runner: ubuntu-latest, container: "quay.io/pypa/manylinux_2_28_x86_64" }
-          - { tag: manylinux_2_28_aarch64, runner: ubuntu-24.04-arm, container: "quay.io/pypa/manylinux_2_28_aarch64" }
+          - { tag: macosx_11_0_arm64, runner: macos-latest, protoc: osx-aarch_64, protoc_sha256: 45444963204757fd3e2fbe304bc1fdadfb488d8556ff099c4cc06575eab88976 }
+          - { tag: macosx_11_0_x86_64, runner: macos-15-intel, protoc: osx-x86_64, protoc_sha256: 3580c2d115fccb5b0239960c8f70f8da14787b1973a46b2f39c315ad71c11e01 }
+          - { tag: manylinux_2_28_x86_64, runner: ubuntu-latest, container: "quay.io/pypa/manylinux_2_28_x86_64", protoc: linux-x86_64, protoc_sha256: a45cda0989c17dd950db55f6fbe1e5814c50fda08e87aa422980ac1f89dddbbc }
+          - { tag: manylinux_2_28_aarch64, runner: ubuntu-24.04-arm, container: "quay.io/pypa/manylinux_2_28_aarch64", protoc: linux-aarch_64, protoc_sha256: 36b518ac14d90351cc6598228ed2bbe5afe4e357b1af470b07e0ec1609875de2 }
     env:
       OMEGA_GSL_TAG: ${{ matrix.tag }}
     steps:
@@ -72,6 +72,21 @@ jobs:
           command -v cmake || python3 -m pip install cmake
           python3 -m pip install build
           cargo --version; cmake --version | head -1; go version; python3 --version
+      # tape-core's build compiles backend/tape/tape.proto with prost-build, which runs protoc: the release's own
+      # binary, pinned and checked.
+      - name: protoc
+        env:
+          PROTOC_VERSION: "35.0"
+          PROTOC_ASSET: ${{ matrix.protoc }}
+          PROTOC_SHA256: ${{ matrix.protoc_sha256 }}
+        run: |
+          curl -sSfL -o "$RUNNER_TEMP/protoc.zip" \
+            "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-${PROTOC_ASSET}.zip"
+          python3 -c 'import hashlib, sys; d = hashlib.sha256(open(sys.argv[1], "rb").read()).hexdigest(); sys.exit(None if d == sys.argv[2] else f"protoc sha256 {d}, pinned {sys.argv[2]}")' "$RUNNER_TEMP/protoc.zip" "$PROTOC_SHA256"
+          python3 -m zipfile -e "$RUNNER_TEMP/protoc.zip" "$RUNNER_TEMP/protoc"
+          chmod +x "$RUNNER_TEMP/protoc/bin/protoc"
+          echo "PROTOC=$RUNNER_TEMP/protoc/bin/protoc" >> "$GITHUB_ENV"
+          "$RUNNER_TEMP/protoc/bin/protoc" --version
       - name: The submodules' revisions (the cache key)
         id: submodules
         run: echo "hash=$(git ls-tree -r HEAD | awk '$2 == "commit"' | cksum | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
