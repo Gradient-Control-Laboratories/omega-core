@@ -42,14 +42,17 @@ type Config struct {
 	Subdivision int
 	Bbox        [6]float32
 	HasBbox     bool
-	Algo        string
-	Time        float64
-	OptLevel    int
-	Standalone  bool
-	Verbose     bool
-	Help        bool
-	Sources     []string
-	IsStdin     bool
+	// AutoBbox: --bbox auto, the box the field fills, worked out from the program (a mesh target's).
+	AutoBbox   bool
+	Algo       string
+	Time       float64
+	OptLevel   int
+	Standalone bool
+	Verbose    bool
+	Help       bool
+	Version    bool
+	Sources    []string
+	IsStdin    bool
 }
 
 // defaultExt returns the file extension corresponding to the configured target.
@@ -124,6 +127,7 @@ func ParseFlags(args []string) (*Config, error) {
 		standalone  bool
 		verbose     bool
 		help        bool
+		showVersion bool
 	)
 
 	// Target flag (-t, --target)
@@ -145,7 +149,7 @@ func ParseFlags(args []string) (*Config, error) {
 
 	// Meshing flags
 	fs.IntVar(&subdivision, "subdivision", 4, "Octree subdivision depth for mesh polygonization")
-	fs.StringVar(&bboxStr, "bbox", "", "Bounding box as minX,minY,minZ,maxX,maxY,maxZ")
+	fs.StringVar(&bboxStr, "bbox", "", "Bounding box as minX,minY,minZ,maxX,maxY,maxZ, or auto: the box the field fills")
 	fs.StringVar(&algo, "algo", "marching-cubes", "Meshing algorithm (marching-cubes or mdc)")
 	fs.Float64Var(&timeSec, "time", 0.0, "Animation time in seconds")
 
@@ -159,6 +163,7 @@ func ParseFlags(args []string) (*Config, error) {
 	// Help
 	fs.BoolVar(&help, "h", false, "Display usage instructions")
 	fs.BoolVar(&help, "help", false, "Display usage instructions")
+	fs.BoolVar(&showVersion, "version", false, "Print the version and exit")
 
 	if err := fs.Parse(args); err != nil {
 		return nil, err
@@ -176,10 +181,13 @@ func ParseFlags(args []string) (*Config, error) {
 	}
 
 	var (
-		bbox    [6]float32
-		hasBbox bool
+		bbox     [6]float32
+		hasBbox  bool
+		autoBbox bool
 	)
-	if bboxStr != "" {
+	if strings.EqualFold(strings.TrimSpace(bboxStr), "auto") {
+		autoBbox = true
+	} else if bboxStr != "" {
 		parts := strings.Split(bboxStr, ",")
 		if len(parts) != 6 {
 			return nil, fmt.Errorf("invalid --bbox %q; expected 6 comma-separated floats (minX,minY,minZ,maxX,maxY,maxZ)", bboxStr)
@@ -209,12 +217,14 @@ func ParseFlags(args []string) (*Config, error) {
 		Subdivision: subdivision,
 		Bbox:        bbox,
 		HasBbox:     hasBbox,
+		AutoBbox:    autoBbox,
 		Algo:        algo,
 		Time:        timeSec,
 		OptLevel:    optLevel,
 		Standalone:  standalone,
 		Verbose:     verbose,
 		Help:        help,
+		Version:     showVersion,
 		Sources:     sources,
 		IsStdin:     isStdin,
 	}, nil
