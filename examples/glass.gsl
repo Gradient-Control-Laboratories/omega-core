@@ -1,10 +1,10 @@
-@scene(40)
+@scene(50)
 
-// Transmissive materials from the glass library. A glass shape sets a
-// material (its finish and medium) and a colour (the tint that comes
-// through), and the viewer refracts the view ray into it and marches on, so
-// what is behind or inside the glass is seen through it. Everything stands on
-// a checkerboard so there is something to see through the glass.
+// Transmissive glasses. A glass shape sets a material (its finish and medium)
+// and a colour (the tint that comes through), and the viewer refracts the
+// view ray into it and marches on, so what is behind or inside the glass is
+// seen through it. Everything stands on a checkerboard so there is something
+// to see through the glass.
 
 clearMat, clearColor = glass.clear();
 brassMat, brassColor = metal.brass();
