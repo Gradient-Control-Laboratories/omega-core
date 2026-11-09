@@ -222,3 +222,9 @@ func Const(op *program.Operand, assignments []*program.Assignment, fnTypes []*pr
 func ConstPkg(op *program.Operand, pkg *program.Package, getImport program.GetImportFunc) ([]float64, error) {
 	return internaleval.ConstPkg(op, pkg, getImport)
 }
+
+// ConstElementsPkg evaluates an operand as a collection and returns one
+// float64 slice per element.
+func ConstElementsPkg(op *program.Operand, pkg *program.Package, getImport program.GetImportFunc) ([][]float64, error) {
+	return internaleval.ConstElementsPkg(op, pkg, getImport)
+}

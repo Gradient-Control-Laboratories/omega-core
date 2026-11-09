@@ -1,5 +1,10 @@
 package source
 
+import "errors"
+
+// ErrPkgNotFound is returned by Manager implementations when a requested package or asset does not exist.
+var ErrPkgNotFound = errors.New("package not found")
+
 // Manager provides access to package sources and assets.
 type Manager interface {
 	// Return the sources in the order that they should be parsed,
