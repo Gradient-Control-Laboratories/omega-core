@@ -65,10 +65,8 @@ export function setRestTier(tier) {
 }
 
 // What draws the tier at rest: "gpu", or "cpu", the same tier redrawn
-// on the server by litrender once nothing moves, or "fidget", fidget's
-// own GPU pipeline run in the page on the program's tape. Progressive has
-// neither form.
-const REST_DEVICES = ["gpu", "cpu", "fidget"];
+// on the server by litrender once nothing moves. Progressive is GPU only.
+const REST_DEVICES = ["gpu", "cpu"];
 let restDevice = "gpu";
 try {
   const saved = localStorage.getItem(REST_DEVICE_KEY);
@@ -237,23 +235,6 @@ export function bindTierButtons(onChange) {
   // A tier saved by a viewer that offers it, in one that does not.
   if (rest.length && ![...rest].some((b) => b.dataset.restTier === restTier)) setRestTier("standard");
   sync();
-  // The Fidget device runs fidget-wgpu, which tool/build-fidget builds and the
-  // deployed image does not: it is offered only where the module is there, and
-  // a saved choice of it falls back to the GPU where it is not.
-  const fidget = [...device].find((b) => b.dataset.restDevice === "fidget");
-  if (fidget) {
-    fidget.hidden = true;
-    fetch(new URL("../vendor/fidget-wgpu/fidget_wgpu.js", import.meta.url), { method: "HEAD" })
-      .then((r) => r.ok, () => false)
-      .then((built) => {
-        fidget.hidden = !built;
-        if (!built && restDevice === "fidget") {
-          setRestDevice("gpu");
-          sync();
-          onChange();
-        }
-      });
-  }
 }
 
 // The Render image size, as a multiple of the view's.

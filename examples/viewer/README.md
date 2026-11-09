@@ -73,4 +73,4 @@ in your default WebGPU-capable browser (Chrome 113+, Edge 113+, or Safari 18+ on
 - `editor/`: CodeMirror 6 GSL/WGSL editor, syntax diagnostics, search panel, and buffer tabs.
 - `docs/`: Built-in GSL language guide and standard library reference viewer.
 - `vendor/`: Bundled browser dependencies (Three.js WebGPU/TSL, CodeMirror 6, `three-mesh-bvh`,
-  `fidget-wgpu`).
+  Manifold).

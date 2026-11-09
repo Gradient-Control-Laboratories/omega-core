@@ -2,18 +2,39 @@
 set -euo pipefail
 
 #
-# usage: build-fidget.sh [--no-prompt]
-#   build fidget and manifold Rust/C++ dependencies in omega-core
+# usage: build-fidget.sh [--no-prompt] [--wasm-out <dir>]
+#   build fidget and manifold Rust/C++ dependencies in omega-core.
+#   when --wasm-out <dir> is provided, also build fidget-wasm and fidget-wgpu-web
+#   into <dir>/fidget-wasm and <dir>/fidget-wgpu.
 #
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 NO_PROMPT=false
-for arg in "$@"; do
-  if [ "$arg" = "--no-prompt" ]; then
-    NO_PROMPT=true
-  fi
+WASM_OUT=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --no-prompt)
+      NO_PROMPT=true
+      shift
+      ;;
+    --wasm-out)
+      if [ $# -lt 2 ]; then
+        echo "Error: --wasm-out requires a directory argument" >&2
+        exit 1
+      fi
+      WASM_OUT="$2"
+      shift 2
+      ;;
+    --wasm-out=*)
+      WASM_OUT="${1#--wasm-out=}"
+      shift
+      ;;
+    *)
+      shift
+      ;;
+  esac
 done
 
 confirmOrExit() {
@@ -49,51 +70,73 @@ if [ $RESULT -ne 0 ]; then
 fi
 echo ""
 
-# fidget-wasm: fidget for the browser (dual contouring, and the field oracle
-# the viewer's debug API compares against), served from
-# examples/viewer/vendor/fidget-wasm.
-if rustup target list --installed 2>/dev/null | grep -q '^wasm32-unknown-unknown$'; then
-  cd "${ROOT_DIR}/internal/fidget/internal/wasm"
-  set +e
-  cargo build --release --target wasm32-unknown-unknown --target-dir "${ROOT_DIR}/target"
-  RESULT=$?
-  set -e
-  if [ $RESULT -ne 0 ]; then
-    echo ""
-    echo "Failed to build fidget-wasm"
-    confirmOrExit "Continue anyway? (Y/n): "
-  else
-    mkdir -p "${ROOT_DIR}/examples/viewer/vendor/fidget-wasm"
-    cp "${ROOT_DIR}/target/wasm32-unknown-unknown/release/fidget_wasm.wasm" \
-      "${ROOT_DIR}/examples/viewer/vendor/fidget-wasm/fidget.wasm"
-  fi
-else
-  echo "Skipping fidget-wasm: rustup target add wasm32-unknown-unknown to build it"
+# gpu-eval: the headless WGSL runner the GPU field-parity test drives
+# (internal/fidget/internal/gpuparity), which skips when the binary is missing.
+cd "${ROOT_DIR}/internal/fidget/internal/gpu-eval"
+set +e
+cargo build --release --target-dir "${ROOT_DIR}/target"
+RESULT=$?
+set -e
+if [ $RESULT -ne 0 ]; then
+  echo ""
+  echo "Failed to build gpu-eval"
+  confirmOrExit "Continue anyway? (Y/n): "
 fi
 echo ""
 
-# fidget-wgpu-web: fidget's all-GPU pipeline for the browser, served from
-# examples/viewer/vendor/fidget-wgpu.
-WB_VERSION="$(grep -A1 '^name = "wasm-bindgen"$' "${ROOT_DIR}/internal/fidget/internal/wgpu-web/Cargo.lock" | sed -n 's/version = "\(.*\)"/\1/p')"
-if ! rustup target list --installed 2>/dev/null | grep -q '^wasm32-unknown-unknown$'; then
-  echo "Skipping fidget-wgpu-web: rustup target add wasm32-unknown-unknown to build it"
-elif [ "$(wasm-bindgen --version 2>/dev/null || true)" != "wasm-bindgen ${WB_VERSION}" ]; then
-  echo "Skipping fidget-wgpu-web: cargo install wasm-bindgen-cli --version ${WB_VERSION} to build it"
-else
-  cd "${ROOT_DIR}/internal/fidget/internal/wgpu-web"
-  set +e
-  cargo build --release --target wasm32-unknown-unknown --target-dir "${ROOT_DIR}/target" &&
-    wasm-bindgen --target web --out-dir "${ROOT_DIR}/examples/viewer/vendor/fidget-wgpu" --out-name fidget_wgpu \
-      "${ROOT_DIR}/target/wasm32-unknown-unknown/release/fidget_wgpu_web.wasm"
-  RESULT=$?
-  set -e
-  if [ $RESULT -ne 0 ]; then
+# fidget-wasm and fidget-wgpu-web: browser WebAssembly bundles, built only when
+# --wasm-out <dir> is provided (used by omega web applications).
+if [ -n "$WASM_OUT" ]; then
+  WB_VERSION="$(grep -A1 '^name = "wasm-bindgen"$' "${ROOT_DIR}/internal/fidget/internal/wgpu-web/Cargo.lock" | sed -n 's/version = "\(.*\)"/\1/p')"
+  if ! rustup target list --installed 2>/dev/null | grep -q '^wasm32-unknown-unknown$'; then
+    echo "WARNING: Rust target 'wasm32-unknown-unknown' is not installed."
+    echo "  Skipping fidget-wasm (required for 'Browser DC' mesh export in omega web apps)"
+    echo "  and fidget-wgpu-web (optional 'Fidget' WebGPU render device)."
     echo ""
-    echo "Failed to build fidget-wgpu-web"
-    confirmOrExit "Continue anyway? (Y/n): "
+    echo "  To enable them, install the Rust WASM target and re-run:"
+    echo "    rustup target add wasm32-unknown-unknown"
+    confirmOrExit "Continue without building WASM targets? (Y/n): "
+  else
+    cd "${ROOT_DIR}/internal/fidget/internal/wasm"
+    set +e
+    cargo build --release --target wasm32-unknown-unknown --target-dir "${ROOT_DIR}/target"
+    RESULT=$?
+    set -e
+    if [ $RESULT -ne 0 ]; then
+      echo ""
+      echo "Failed to build fidget-wasm"
+      confirmOrExit "Continue anyway? (Y/n): "
+    else
+      mkdir -p "${WASM_OUT}/fidget-wasm"
+      cp "${ROOT_DIR}/target/wasm32-unknown-unknown/release/fidget_wasm.wasm" \
+        "${WASM_OUT}/fidget-wasm/fidget.wasm"
+    fi
+    echo ""
+
+    if [ "$(wasm-bindgen --version 2>/dev/null || true)" != "wasm-bindgen ${WB_VERSION}" ]; then
+      echo "WARNING: 'wasm-bindgen-cli' ${WB_VERSION} is not installed."
+      echo "  Skipping fidget-wgpu-web (optional 'Fidget' WebGPU render device in omega web apps)."
+      echo ""
+      echo "  To enable it, install wasm-bindgen-cli ${WB_VERSION} and re-run:"
+      echo "    cargo install wasm-bindgen-cli --version ${WB_VERSION}"
+      confirmOrExit "Continue without fidget-wgpu-web? (Y/n): "
+    else
+      cd "${ROOT_DIR}/internal/fidget/internal/wgpu-web"
+      set +e
+      cargo build --release --target wasm32-unknown-unknown --target-dir "${ROOT_DIR}/target" &&
+        wasm-bindgen --target web --out-dir "${WASM_OUT}/fidget-wgpu" --out-name fidget_wgpu \
+          "${ROOT_DIR}/target/wasm32-unknown-unknown/release/fidget_wgpu_web.wasm"
+      RESULT=$?
+      set -e
+      if [ $RESULT -ne 0 ]; then
+        echo ""
+        echo "Failed to build fidget-wgpu-web"
+        confirmOrExit "Continue anyway? (Y/n): "
+      fi
+    fi
   fi
+  echo ""
 fi
-echo ""
 
 # Release profile is mandatory for manifold: backend/mesh/manifold cgo LDFLAGS
 # link against target/release/libmanifold_glue, and build.rs CMake-builds the

@@ -1,11 +1,12 @@
 package source
 
 import (
-	"errors"
 	"fmt"
+
+	pubsource "gradientcontrol.com/omega/core/assembler/source"
 )
 
-var ErrPkgNotFound = errors.New("package not found")
+var ErrPkgNotFound = pubsource.ErrPkgNotFound
 
 type PackageError struct {
 	Path string

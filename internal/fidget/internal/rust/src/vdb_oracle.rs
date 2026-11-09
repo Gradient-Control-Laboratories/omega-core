@@ -988,7 +988,7 @@ mod level_set_parity {
         let (v, t) = box_mesh([0.6, -0.4, 0.2], [1.3, 0.9, 0.7]);
         let oracle = Arc::new(VdbOracle::from_triangles(&v, &t, 0.05, 3.0));
         let read = Arc::new(LevelSetOracle::new(&oracle.level_set().expect("level set")).expect("read"));
-        let key = 91 | VDB_ASSET_BIT;
+        let key = 93 | VDB_ASSET_BIT;
         let stl = |o: Arc<dyn MeshOracleTrait>| {
             mesh_oracle::register(key, o);
             let (x, y, z) = Tree::axes();

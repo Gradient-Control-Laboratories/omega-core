@@ -165,7 +165,9 @@ omega-core/
     ├── build-wgsl-accel-ops.sh # Regenerates WGSL hardware acceleration ops table and inliner registry
     ├── check.sh               # Pre-commit quality gate (gofmt, go vet, tests)
     ├── clean.sh               # Cleans bin/ outputs, test cache, and scratch files
-    ├── test.sh                # Runs unit, integration, and golden test suites
+    ├── test-go.sh             # Runs Go unit, integration, and golden test suites
+    ├── test-rust.sh           # Runs Rust unit and doc test suites
+    ├── test.sh                # Runs both Go and Rust test suites
     ├── update-goldens.sh      # Regenerates reference test goldens
     └── run-go-tests/          # Go test suite runner, timing history, and golden size reporter (from tool/run-go-tests)
 ```
