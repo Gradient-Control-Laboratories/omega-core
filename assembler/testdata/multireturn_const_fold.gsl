@@ -1,0 +1,23 @@
+// Regression for PR #399: a destructuring assignment binds `trans` to the
+// constant return of a multi-return function, and mesh() placement folds that
+// destructured constant to position the assets. Before the fix `trans` could
+// not be folded (buildScope skipped multi-name assignments and there was no
+// way to evaluate one return of a multi-return function), so the mesh map
+// unroll silently dropped — producing zero asset nodes. Mirrors the
+// manifold.branch() / positions = map(... rotateXY(trans, ...) ...) shape.
+branch() {
+  field = length(p) - 5;   // p-dependent return (stand-in SDF)
+  trans = [60, 0, -40];    // constant return
+  return field, trans;
+}
+
+castPart, trans = branch();
+
+// A map over the destructured constant produces the placement list; each
+// element must fold so the mesh map can unroll to one asset per position.
+positions = map((ang) { return trans + [ang * 10, 0, 0]; }, [0, 1]);
+
+return meshUnion(map(
+  (value, index) { return mesh(0, value); },
+  positions
+));
