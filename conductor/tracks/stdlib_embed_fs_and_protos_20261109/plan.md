@@ -33,44 +33,44 @@ public API** in `omega-core` (and removes `program.RegisterStdPackage`):
 
 ---
 
-## Phase 1: Internal `stdpkg` Foundation & `embed.FS` Migration in `stdlib`
+## Phase 1: Internal `stdpkg` Foundation & `embed.FS` Migration in `stdlib` [checkpoint: b04bdb0]
 
 - [x] Task: Calculate and record active **Spec Creation** and **Plan Creation** times
   - [x] Compute active collaboration time from conversation transcript turn deltas (with a 10-minute
     idle cutoff per turn), display the turn breakdown table in chat, and record active durations and
     implementation start time in `plan.md`.
-- [~] Task: Write failing unit tests for `internal/stdpkg` and `stdlib` package layout invariants (Red Phase)
-  - [ ] Create `internal/stdpkg/stdpkg_test.go` testing `SourcesHash` determinism and boundary
+- [x] Task: Write failing unit tests for `internal/stdpkg` and `stdlib` package layout invariants (Red Phase) b04bdb0
+  - [x] Create `internal/stdpkg/stdpkg_test.go` testing `SourcesHash` determinism and boundary
     collision resistance (`["ab", "c"]` vs. `["a", "bc"]`), `LoadSources` over in-memory `fstest.MapFS`
     (`package.yaml` source ordering, single `<dirname>.gsl` loading, rejection of unlisted or extra
     `*.gsl` files, and missing source errors), and `Proto` / `RawProto` / `ImportPathByHash`
     validation (valid 32-byte SHA-256 header, truncated `< 32` byte rejection, and stale hash
     mismatch rejection).
-  - [ ] Update `stdlib/pkg_info_test.go` to assert that every standard library directory on disk
+  - [x] Update `stdlib/pkg_info_test.go` to assert that every standard library directory on disk
     contains either a `package.yaml` file (whose `sources:` exist on disk and cover all `*.gsl`
     files in that directory) or a single `<dirname>.gsl` file matching the directory's base name.
-  - [ ] Confirm new tests fail before implementation.
-- [ ] Task: Implement `internal/stdpkg` and migrate `stdlib/pkg_info.go` to `embed.FS` (Green & Refactor Phase)
-  - [ ] Implement `internal/stdpkg` (`RegisterFS`, `LoadSources`, `SourcesHash`, `Proto`,
+  - [x] Confirm new tests fail before implementation.
+- [x] Task: Implement `internal/stdpkg` and migrate `stdlib/pkg_info.go` to `embed.FS` (Green & Refactor Phase) b04bdb0
+  - [x] Implement `internal/stdpkg` (`RegisterFS`, `LoadSources`, `SourcesHash`, `Proto`,
     `RawProto`, `ImportPathByHash`) with zero imports of `program` or `parser`, documenting *what*
     and *why* for the 32-byte SHA-256 header layout, length-prefixed source hashing, stale-hash
     rejection, and acyclic package boundary.
-  - [ ] Replace the 50+ `//go:embed` string variables in `stdlib/pkg_info.go` with a single
+  - [x] Replace the 50+ `//go:embed` string variables in `stdlib/pkg_info.go` with a single
     `embed.FS` directive over the top-level library directories, register `stdlibFS` and curated
     package entries with `internal/stdpkg` in `init()` (zero file reads at `init()`), and load
     `All()` via `internal/stdpkg` while keeping `stdlib`'s public API (`PkgInfo`, `All`,
     `PathForPrefix`, `Prefixes`) 100% unchanged.
-  - [ ] Add *what*-and-*why* comments in `stdlib/pkg_info.go` explaining recursive directory
+  - [x] Add *what*-and-*why* comments in `stdlib/pkg_info.go` explaining recursive directory
     embedding (`text/_tools/` exclusion), curated `All()` documentation order, and zero-I/O `init()`.
-  - [ ] Run `gofmt` and verify targeted tests pass:
+  - [x] Run `gofmt` and verify targeted tests pass:
     `go test -v ./internal/stdpkg/... ./stdlib/... ./internal/source/...`.
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`) b04bdb0
 
 ---
 
 ## Phase 2: Single-Source-of-Truth `package.pb` Generator & `tool/build-stdlib.sh` Automation
 
-- [ ] Task: Write failing tests for `stdlib/internal/gen` and `parser` `.pb` freshness check (Red Phase)
+- [~] Task: Write failing tests for `stdlib/internal/gen` and `parser` `.pb` freshness check (Red Phase)
   - [ ] Create `stdlib/internal/gen/gen_test.go` testing importable generator functions on a
     temporary copy/fixture directory: initial `<ImportPath>/package.pb` creation, default
     incremental SHA-256 skip (verifying unchanged packages are neither re-parsed nor rewritten),
