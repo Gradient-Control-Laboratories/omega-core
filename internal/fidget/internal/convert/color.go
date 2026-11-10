@@ -144,7 +144,7 @@ func toColorShapes(
 	defer fidget.Unlock()
 	defer fidget.Clear()
 
-	if err := build.Build(&colorDelegate{d}, prog, true); err != nil {
+	if err := build.Build(&colorDelegate{d}, buildCopy(prog), true); err != nil {
 		return build.ErrWithPkgSrc(prog, err)
 	}
 	if len(d.outputs) == 0 {
