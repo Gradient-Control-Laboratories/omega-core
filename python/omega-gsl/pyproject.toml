@@ -1,0 +1,46 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "omega-gsl"
+# The toolchain's own version (internal/version/version.go), so the wheel and `gsl --version` agree.
+dynamic = ["version"]
+description = "omega-core's gsl program (GSL implicit models: compile, mesh), packaged as a wheel, with a small launcher."
+readme = "README.md"
+requires-python = ">=3.9"
+# omega-core and the launcher are MIT. The programs link the Go and Rust standard libraries, three Go modules, and
+# omega's render library: Fidget and dynasm (MPL-2.0), OpenVDB and oneTBB (Apache-2.0), Imath and c-blosc
+# (BSD-3-Clause), zlib, about 200 Rust crates, and egui's default fonts. The wheel's
+# omega_gsl/licenses/THIRD_PARTY_LICENSES.txt carries every one's texts (tool/third_party_licenses.py writes it from
+# the build's own sources); the MPL-2.0 source is omega-core's repository and crates.io.
+license = "MIT AND Apache-2.0 AND MPL-2.0 AND BSD-3-Clause AND Zlib AND ISC AND CC0-1.0 AND Unicode-3.0 AND OFL-1.1 AND Bitstream-Vera AND LicenseRef-UFL-1.0"
+keywords = ["gsl", "implicit modeling", "signed distance field", "sdf", "cad", "mesh"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "Operating System :: MacOS",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Topic :: Scientific/Engineering",
+]
+
+[project.scripts]
+gsl = "omega_gsl.__main__:main"
+
+[project.urls]
+Source = "https://github.com/Gradient-Control-Laboratories/omega-core"
+Issues = "https://github.com/Gradient-Control-Laboratories/omega-core/issues"
+
+[tool.hatch.version]
+path = "../../internal/version/version.go"
+pattern = 'var Version = "(?P<version>[^"]+)"'
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/omega_gsl"]
+
+[tool.hatch.build.targets.wheel.hooks.custom]
+path = "hatch_build.py"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
