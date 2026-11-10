@@ -166,6 +166,79 @@ bin/gsl fix -diff examples
 bin/gsl fix examples
 ```
 
+## Roadmap
+
+Here is what has been changed in the [current language specification](doc/gsl_lang_spec_current.md)
+and what is planned in the [future language specification](doc/gsl_lang_spec_future.md):
+
+### Completed:
+- **Functions, closures, and multiple returns**: Added first-class named and anonymous
+  functions (`(params) { ... }`), lexical closures, arity-based overloading across package files,
+  multi-value `return` statements, and multi-variable call destructuring (`a, b = fn();`), while
+  removing legacy `...` varargs.
+- **Trailing commas**: Allowed optional trailing commas in parameter lists, call arguments,
+  `return` statements, multi-variable assignments, annotation arguments, and `[...]` literals.
+- **Lists, matrices, indexing, and strings**: Expanded `[...]` literals and `collect(...)` to
+  arbitrary compile-time sizes (including 1-element lists and lists/matrices wider than 4), with
+  bracket indexing (`v[i]`, `m[c][r]`), scalar broadcasting, algebraic matrix multiplication, and
+  rune-list string literals.
+- **Higher-order `map` and `reduce`**: Added `map(fn, collection)` and standardized
+  function-first `reduce(fn, collection [, initial])` over scalar lists and matrices.
+- **Package imports and `builtin` prelude**: Added qualified (`import "pkg";`), aliased
+  (`import alias "pkg";`), and dot (`import . "pkg";`) imports, optional top-level `return` for
+  library files, implicit `builtin` dot-import with shadowing warnings, auto-imported standard
+  package qualifiers, and dot-import ambiguity diagnostics.
+- **Asset imports (`importMesh`, `importStep`, `importWarp`)**: Added slot-numbered top-level
+  declarations and compiler-assigned inline import expressions for `.stl`, `.step`/`.stp`/`.hodge`,
+  and `.warp`/`.castsim` assets.
+- **Top-level `audio(...)` return**: Replaced `returnAudio` statements with `audio(signal)`
+  (mono) and `audio(left, right)` (stereo) as the trailing top-level `return` element.
+- **Automatic differentiation and shape accessors**: Added postfix `.dp` (spatial gradient),
+  `.dtime` (time derivative), and `.d(var)` (partial derivative with respect to a top-level
+  variable) operators, along with `.second`, `.box`, `.u`, and `.v` shape accessors.
+- **Declaration properties, `auto` bounds, and cycle detection**: Added `.box` (including
+  `auto` analytical bounds inference), `.color`, `.material`, `.u`, `.v`, `.simple`, `.detail`, and
+  `.detailSize` properties alongside `.min`, `.max`, and `.period`, with function property
+  carry-out and transitive dependency cycle detection.
+- **Scene directive (`@scene`)**: Added the top-level `@scene(size [, grid])` package directive
+  along with `gsl fix` migration from legacy `// Scene Size:` and `// Scene Grid:` header comments.
+- **Slider `@range` annotations**: Added `@range(min, max [, period])` on variable declarations
+  and inline expressions and `@range(min, max)` on function parameters, normalizing `.min`, `.max`,
+  and `.period` properties into AST range metadata.
+- **Viewport, parameter, and catalog annotations**: Added `@point`, `@transform`, `@spline`,
+  `@color`, and `@direction([anchor])` on assignments and inline expressions, parameter control
+  annotations (`@point`, `@transform`, `@color`, `@direction`, `@frame`), and catalog preset
+  annotations (`@material`, `@finish`, `@surface`).
+
+### Future:
+
+Language changes will happen in phases:
+- add new syntax or capability
+- enhance `gsl fix` to upgrade existing GSL source to the newer syntax
+- add warnings to the compiler output pointing out source that needs to be updated
+- after some time, retire the legacy syntax
+
+Planned
+- **First-class AST annotations**: Preserve all annotations directly as structured AST metadata
+  across declarations, functions, parameters, and inline expressions (including dynamic slider
+  registration for inline `@range` expressions) instead of desugaring viewport annotations into
+  synthetic `ui*` calls, and enforce literal-element constraints on `@point` and `@transform`.
+- **Discrete option annotations (`@values`)**: Support `@values(v1, v2, ..., vn)` with two or
+  more compile-time constant scalar arguments on scalar variable declarations, function parameters,
+  and inline scalar literals for discrete UI selection and parameter presets.
+- **Retire slider dot-properties (`.min`, `.max`, `.period`)**: Remove legacy `.min`, `.max`,
+  and `.period` property assignments in favor of `@range(min, max [, period])`.
+- **Retire viewport manipulator built-ins (`uiPoint`, `uiTransform`, `uiSpline`)**: Remove
+  direct calls to `uiPoint`, `uiTransform`, and `uiSpline` from the language surface in favor of
+  `@point`, `@transform`, and `@spline` annotations, with compiler migration diagnostics.
+- **Retire legacy scene header comments**: Drop fallback support for `// Scene Size:` and
+  `// Scene Grid:` comments once migration to `@scene(size [, grid])` is complete.
+- **Unified asset import syntax**: Replace `importMesh`, `importStep`, and `importWarp`
+  numbered-slot statements and inline import expressions with unified `import <name> "<asset>";`
+  declarations.
+- **Compilation cancellation API**: Accept cancellation contexts across compilation entry
+  points so host applications can cleanly abort long-running builds.
+
 ## License
 
 The code and data authored for this repository are released under the [MIT License](LICENSE).
