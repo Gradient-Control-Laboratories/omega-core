@@ -16,21 +16,22 @@ type GetImportFunc func(path string) (*Package, error)
 // stdLoaders builds a read-only map of per-package sync.OnceValue unmarshalers
 // on first lookup.
 //
-// Why lazy per-package unmarshaling shared with CachingParser:
+// Why lazy per-package unmarshaling shared with parser:
 //   - Package init() performs zero I/O or protobuf decoding.
 //   - Only the specific standard library packages actually referenced by a
 //     compilation or test are unmarshaled, and each is unmarshaled at most once
 //     per process without lock contention on subsequent lookups.
 //   - (*Program).GetImport returns the shared read-only *Package directly,
-//     whereas GetStdPackage (also used by parser.CachingParser) hands out a
-//     proto.Clone copy because callers rewrite returned Package ASTs in place.
+//     whereas GetStdPackage (used by parser.ParsePackage and CachingParser)
+//     hands out a proto.Clone copy because callers rewrite returned Package
+//     ASTs in place.
 var stdLoaders = sync.OnceValue(func() map[string]func() *Package {
-	pkgs := stdpkg.All()
+	pkgs := stdpkg.StdLibRegistry.All()
 	loaders := make(map[string]func() *Package, len(pkgs))
 	for _, pd := range pkgs {
 		importPath := pd.ImportPath
 		loaders[importPath] = sync.OnceValue(func() *Package {
-			data, ok := stdpkg.Proto(importPath)
+			data, ok := stdpkg.StdLibRegistry.Proto(importPath)
 			if !ok {
 				return nil
 			}

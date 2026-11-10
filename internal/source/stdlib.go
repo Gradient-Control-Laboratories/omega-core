@@ -31,7 +31,7 @@ func (m *StdLibManager) Asset(pkg, filename string) ([]byte, error) {
 }
 
 func embeddedSources(path string) ([]string, bool) {
-	srcs, ok := stdpkg.Sources(path)
+	srcs, ok := stdpkg.StdLibRegistry.Sources(path)
 	if !ok {
 		return nil, false
 	}

@@ -7,11 +7,12 @@ import (
 
 	"google.golang.org/protobuf/proto"
 	"gradientcontrol.com/omega/core/internal/stdpkg"
+	"gradientcontrol.com/omega/core/parser/internal/parser2"
 	"gradientcontrol.com/omega/core/program"
 )
 
-// defaultCacheLimit bounds the source bytes whose parses are kept by default (32 MiB).
-const defaultCacheLimit = 32 << 20
+// defaultCacheLimit bounds the non-stdlib source bytes whose parses are kept by default (4 MiB).
+const defaultCacheLimit = 4 << 20
 
 // CachingParser wraps ParsePackage with an in-memory LRU cache keyed by source
 // content hash. It hands out clones of cached packages and never its own copy,
@@ -50,23 +51,24 @@ func (c *CachingParser) ParsePackage(sources []string) (*Result, error) {
 	key := stdpkg.SourcesHash(sources)
 	// Resolve unmodified standard library packages through the shared lazy
 	// cache in package program before touching c.mu. This avoids lock
-	// contention, keeps the ~1.44 MB standard library out of the 32 MiB LRU
-	// eviction budget, and falls through automatically to live ParsePackage if
-	// a developer edited a .gsl file in stdlib/ before regenerating package.pb.
+	// contention, keeps the ~1.44 MB standard library out of the LRU eviction
+	// budget, and falls through automatically to live parsing if a developer
+	// edited a .gsl file in stdlib/ before regenerating package.pb.
 	// Invariant: ImportPathByHash only succeeds when importPath has a
 	// hash-validated package.pb payload, so GetStdPackage is non-nil.
-	if importPath, ok := stdpkg.ImportPathByHash(key); ok {
-		return &Result{Package: program.GetStdPackage(importPath)}, nil
+	if stdpkg.StdLibRegistry != nil {
+		if importPath, ok := stdpkg.StdLibRegistry.ImportPathByHash(key); ok {
+			return &Result{Package: program.GetStdPackage(importPath)}, nil
+		}
 	}
 	if pkg := c.get(key); pkg != nil {
 		return &Result{Package: pkg}, nil
 	}
-	res, err := ParsePackage(sources)
-	if err != nil {
-		return res, err
+	res, err := parser2.Parse(sources)
+	if err == nil {
+		c.put(key, proto.Clone(res.Package).(*program.Package), sourcesSize(sources))
 	}
-	c.put(key, proto.Clone(res.Package).(*program.Package), sourcesSize(sources))
-	return res, nil
+	return res, err
 }
 
 func (c *CachingParser) get(key [sha256.Size]byte) *program.Package {

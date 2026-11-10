@@ -73,6 +73,12 @@ func TestCachingParserSharedStdlibFastPathAndLiveFallback(t *testing.T) {
 		if err != nil || !proto.Equal(again.Package, want) {
 			t.Fatalf("%s: mutating returned stdlib package leaked into shared cache", lib.ImportPath)
 		}
+
+		// Stateless ParsePackage also resolves stdlib packages via the shared cache.
+		directRes, err := ParsePackage(lib.Sources)
+		if err != nil || directRes.Package == want || !proto.Equal(directRes.Package, want) {
+			t.Fatalf("%s: ParsePackage did not return an independent clone from program.GetStdPackage", lib.ImportPath)
+		}
 	}
 
 	if cp.size != 0 || len(cp.entries) != 0 {

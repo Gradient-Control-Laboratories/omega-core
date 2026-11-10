@@ -109,27 +109,18 @@ func TestRegistry_ProtoAndHashValidation(t *testing.T) {
 		"ease/package.pb":   &fstest.MapFile{Data: []byte("short")},
 	}
 
-	reg := stdpkg.NewRegistry(fsys, []stdpkg.Entry{
-		{ImportPath: "color"},
-		{ImportPath: "vector"},
-		{ImportPath: "map"},
-		{ImportPath: "ease"},
-	})
+	reg := stdpkg.NewRegistry(fsys, []string{"color", "vector", "map", "ease"})
 
 	// 1. Valid package.pb matches SourcesHash and returns sliced payload + hash lookup.
 	payload, ok := reg.Proto("color")
 	if !ok || string(payload) != string(validPayload) {
 		t.Fatalf("Proto(\"color\") = (%q, %v), want (%q, true)", payload, ok, validPayload)
 	}
-	raw, ok := reg.RawProto("color")
-	if !ok || len(raw) != len(validPB) {
-		t.Fatalf("RawProto(\"color\") len = %d, ok = %v, want %d, true", len(raw), ok, len(validPB))
-	}
 	if imp, ok := reg.ImportPathByHash(colorHash); !ok || imp != "color" {
 		t.Fatalf("ImportPathByHash(colorHash) = (%q, %v), want (\"color\", true)", imp, ok)
 	}
 
-	// 2. Stale package.pb must be rejected by Proto and ImportPathByHash, while RawProto still returns raw bytes.
+	// 2. Stale package.pb must be rejected by Proto and ImportPathByHash.
 	if _, ok := reg.Proto("vector"); ok {
 		t.Fatal("Proto(\"vector\") succeeded on stale package.pb, want false")
 	}
@@ -138,9 +129,6 @@ func TestRegistry_ProtoAndHashValidation(t *testing.T) {
 	}
 	if _, ok := reg.ImportPathByHash(otherHash); ok {
 		t.Fatal("ImportPathByHash matched stale header hash, want false")
-	}
-	if rawVec, ok := reg.RawProto("vector"); !ok || len(rawVec) != len(stalePB) {
-		t.Fatalf("RawProto(\"vector\") = (%d bytes, %v), want (%d bytes, true)", len(rawVec), ok, len(stalePB))
 	}
 
 	// 3. Missing package.pb (bootstrap case) still serves Sources cleanly.
@@ -151,9 +139,6 @@ func TestRegistry_ProtoAndHashValidation(t *testing.T) {
 	if _, ok := reg.Proto("map"); ok {
 		t.Fatal("Proto(\"map\") returned true when package.pb is missing")
 	}
-	if _, ok := reg.RawProto("map"); ok {
-		t.Fatal("RawProto(\"map\") returned true when package.pb is missing")
-	}
 
 	// 4. Truncated (< 32 bytes) package.pb is rejected by Proto.
 	if _, ok := reg.Proto("ease"); ok {
@@ -161,19 +146,21 @@ func TestRegistry_ProtoAndHashValidation(t *testing.T) {
 	}
 }
 
-func TestDefaultRegisteredStdlib(t *testing.T) {
-	all := stdpkg.All()
+func TestStdLibRegistry(t *testing.T) {
+	if stdpkg.StdLibRegistry == nil {
+		t.Fatal("stdpkg.StdLibRegistry is nil")
+	}
+	all := stdpkg.StdLibRegistry.All()
 	if len(all) == 0 {
-		t.Fatal("stdpkg.All() returned 0 packages")
+		t.Fatal("stdpkg.StdLibRegistry.All() returned 0 packages")
 	}
-	srcs, ok := stdpkg.Sources("builtin")
+	srcs, ok := stdpkg.StdLibRegistry.Sources("builtin")
 	if !ok || len(srcs) == 0 {
-		t.Fatalf("stdpkg.Sources(\"builtin\") = (%d files, %v), want (>0, true)", len(srcs), ok)
+		t.Fatalf("stdpkg.StdLibRegistry.Sources(\"builtin\") = (%d files, %v), want (>0, true)", len(srcs), ok)
 	}
-	if _, ok := stdpkg.Sources("nonexistent"); ok {
-		t.Fatal("stdpkg.Sources(\"nonexistent\") returned true")
+	if _, ok := stdpkg.StdLibRegistry.Sources("nonexistent"); ok {
+		t.Fatal("stdpkg.StdLibRegistry.Sources(\"nonexistent\") returned true")
 	}
-	_, _ = stdpkg.Proto("builtin")
-	_, _ = stdpkg.RawProto("builtin")
-	_, _ = stdpkg.ImportPathByHash([stdpkg.HashSize]byte{})
+	_, _ = stdpkg.StdLibRegistry.Proto("builtin")
+	_, _ = stdpkg.StdLibRegistry.ImportPathByHash([stdpkg.HashSize]byte{})
 }

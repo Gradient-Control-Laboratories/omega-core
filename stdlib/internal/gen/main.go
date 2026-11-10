@@ -70,6 +70,15 @@ func resolveStdlibDir(explicit string) (string, error) {
 }
 
 func generatePackages(stdlibDir string, libs []gsllibs.PkgInfo, force bool, parse parseFunc) (int, error) {
+	// Disable StdLibRegistry during generation so parser.ParsePackage always
+	// parses .gsl source text from scratch rather than returning already-embedded
+	// package.pb payloads when --force is used.
+	savedRegistry := stdpkg.StdLibRegistry
+	stdpkg.StdLibRegistry = nil
+	defer func() {
+		stdpkg.StdLibRegistry = savedRegistry
+	}()
+
 	marshalOpts := proto.MarshalOptions{Deterministic: true}
 	generated := 0
 

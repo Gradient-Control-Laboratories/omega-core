@@ -27,28 +27,25 @@ import (
 //	Bytes 32..N : Deterministic marshaled *program.Package protobuf payload
 const HashSize = sha256.Size
 
-// Entry describes one registered standard library package in curated order.
-type Entry struct {
-	ImportPath string
-	Domain     string
-}
+// StdLibRegistry is the process-wide embedded standard library registry,
+// initialized by gradientcontrol.com/omega/core/stdlib at init time without
+// performing any eager file reads or hashing.
+var StdLibRegistry *Registry
 
-// PackageData holds the loaded source text and optional pre-parsed protobuf
-// bytes for one standard library package.
+// PackageData holds the loaded source text and optional validated pre-parsed
+// protobuf payload for one standard library package.
 type PackageData struct {
 	ImportPath string
-	Domain     string
 	Sources    []string
-	rawProto   []byte
-	validProto []byte
+	proto      []byte
 }
 
 // Registry indexes embedded standard library sources and pre-parsed protobufs
 // lazily on first access so package init() performs zero file reads or hashing.
 type Registry struct {
 	// Read-only immutable fields set at construction
-	fsys    fs.FS
-	entries []Entry
+	fsys        fs.FS
+	importPaths []string
 
 	// Synchronization for lazy one-time loading of the fields below
 	once   sync.Once
@@ -58,30 +55,29 @@ type Registry struct {
 }
 
 // NewRegistry creates a lazy standard library registry backed by fsys.
-func NewRegistry(fsys fs.FS, entries []Entry) *Registry {
-	copied := make([]Entry, len(entries))
-	copy(copied, entries)
+func NewRegistry(fsys fs.FS, importPaths []string) *Registry {
+	copied := make([]string, len(importPaths))
+	copy(copied, importPaths)
 	return &Registry{
-		fsys:    fsys,
-		entries: copied,
+		fsys:        fsys,
+		importPaths: copied,
 	}
 }
 
 func (r *Registry) init() {
 	r.once.Do(func() {
-		r.pkgs = make([]PackageData, len(r.entries))
-		r.byPath = make(map[string]*PackageData, len(r.entries))
-		r.byHash = make(map[[HashSize]byte]string, len(r.entries))
+		r.pkgs = make([]PackageData, len(r.importPaths))
+		r.byPath = make(map[string]*PackageData, len(r.importPaths))
+		r.byHash = make(map[[HashSize]byte]string, len(r.importPaths))
 
-		for i, entry := range r.entries {
-			srcs, err := LoadSources(r.fsys, entry.ImportPath)
+		for i, importPath := range r.importPaths {
+			srcs, err := LoadSources(r.fsys, importPath)
 			if err != nil {
-				panic(fmt.Sprintf("stdpkg: loading %q: %v", entry.ImportPath, err))
+				panic(fmt.Sprintf("stdpkg: loading %q: %v", importPath, err))
 			}
 			hash := SourcesHash(srcs)
 			pd := PackageData{
-				ImportPath: entry.ImportPath,
-				Domain:     entry.Domain,
+				ImportPath: importPath,
 				Sources:    srcs,
 			}
 
@@ -90,19 +86,18 @@ func (r *Registry) init() {
 			// Validating the 32-byte SHA-256 header against the current .gsl
 			// sources ensures that if a developer edits a .gsl file locally and
 			// runs tests before regenerating package.pb, stale AST bytes are
-			// never served.
-			if raw, err := fs.ReadFile(r.fsys, path.Join(entry.ImportPath, "package.pb")); err == nil {
-				pd.rawProto = raw
+			// never retained or served.
+			if raw, err := fs.ReadFile(r.fsys, path.Join(importPath, "package.pb")); err == nil {
 				if len(raw) >= HashSize && [HashSize]byte(raw[:HashSize]) == hash {
-					pd.validProto = raw[HashSize:]
-					r.byHash[hash] = entry.ImportPath
+					pd.proto = raw[HashSize:]
+					r.byHash[hash] = importPath
 				}
 			} else if !errors.Is(err, fs.ErrNotExist) {
-				panic(fmt.Sprintf("stdpkg: reading %q/package.pb: %v", entry.ImportPath, err))
+				panic(fmt.Sprintf("stdpkg: reading %q/package.pb: %v", importPath, err))
 			}
 
 			r.pkgs[i] = pd
-			r.byPath[entry.ImportPath] = &r.pkgs[i]
+			r.byPath[importPath] = &r.pkgs[i]
 		}
 	})
 }
@@ -129,22 +124,10 @@ func (r *Registry) Sources(importPath string) ([]string, bool) {
 func (r *Registry) Proto(importPath string) ([]byte, bool) {
 	r.init()
 	pd, ok := r.byPath[importPath]
-	if !ok || pd.validProto == nil {
+	if !ok || pd.proto == nil {
 		return nil, false
 	}
-	return pd.validProto, true
-}
-
-// RawProto returns the raw contents of <importPath>/package.pb (including the
-// 32-byte header) when the file exists, regardless of whether the header hash
-// matches current sources, so freshness tests can report exact mismatches.
-func (r *Registry) RawProto(importPath string) ([]byte, bool) {
-	r.init()
-	pd, ok := r.byPath[importPath]
-	if !ok || pd.rawProto == nil {
-		return nil, false
-	}
-	return pd.rawProto, true
+	return pd.proto, true
 }
 
 // ImportPathByHash resolves a length-prefixed source hash to its standard
@@ -153,50 +136,6 @@ func (r *Registry) ImportPathByHash(hash [HashSize]byte) (string, bool) {
 	r.init()
 	imp, ok := r.byHash[hash]
 	return imp, ok
-}
-
-var defaultRegistry *Registry
-
-// RegisterFS registers the embedded standard library filesystem and curated
-// package list from gradientcontrol.com/omega/core/stdlib at init time without
-// performing any eager file reads or hashing.
-func RegisterFS(fsys fs.FS, entries []Entry) {
-	defaultRegistry = NewRegistry(fsys, entries)
-}
-
-func mustDefault() *Registry {
-	if defaultRegistry == nil {
-		panic("stdpkg: standard library FS not registered (import gradientcontrol.com/omega/core/stdlib)")
-	}
-	return defaultRegistry
-}
-
-// All returns all registered standard library packages in curated order.
-func All() []PackageData {
-	return mustDefault().All()
-}
-
-// Sources returns the ordered .gsl source strings for importPath.
-func Sources(importPath string) ([]string, bool) {
-	return mustDefault().Sources(importPath)
-}
-
-// Proto returns the validated marshaled *program.Package protobuf payload for
-// importPath when its 32-byte SHA-256 header matches current .gsl sources.
-func Proto(importPath string) ([]byte, bool) {
-	return mustDefault().Proto(importPath)
-}
-
-// RawProto returns the raw <importPath>/package.pb bytes (including the 32-byte
-// header) when present in the embedded filesystem.
-func RawProto(importPath string) ([]byte, bool) {
-	return mustDefault().RawProto(importPath)
-}
-
-// ImportPathByHash resolves a SourcesHash digest to its standard library import
-// path when that package has a valid, hash-matching package.pb.
-func ImportPathByHash(hash [HashSize]byte) (string, bool) {
-	return mustDefault().ImportPathByHash(hash)
 }
 
 // SourcesHash computes a SHA-256 digest over sources, prefixing each file's

@@ -27,66 +27,66 @@ import (
 //go:embed builtin color ease lattice map material matrix mechanical noise text texture transform vector
 var stdlibFS embed.FS
 
-// curatedEntries defines the canonical order in which standard library packages
-// appear in All() and generated documentation. Adding a library under an
-// existing top-level category only requires adding its ImportPath here.
-var curatedEntries = []stdpkg.Entry{
-	{ImportPath: "builtin"},
-	{ImportPath: "map"},
-	{ImportPath: "transform"},
-	{ImportPath: "lattice"},
-	{ImportPath: "lattice/beam"},
-	{ImportPath: "lattice/honeycomb"},
-	{ImportPath: "lattice/foam"},
-	{ImportPath: "lattice/tpms"},
-	{ImportPath: "lattice/spinodoid"},
-	{ImportPath: "mechanical"},
-	{ImportPath: "mechanical/catalog"},
-	{ImportPath: "mechanical/gears"},
-	{ImportPath: "mechanical/fastener"},
-	{ImportPath: "mechanical/thread"},
-	{ImportPath: "mechanical/drill"},
-	{ImportPath: "mechanical/driver"},
-	{ImportPath: "mechanical/joint"},
-	{ImportPath: "text"},
-	{ImportPath: "ease"},
-	{ImportPath: "noise"},
-	{ImportPath: "matrix"},
-	{ImportPath: "vector"},
-	{ImportPath: "color"},
-	{ImportPath: "material"},
-	{ImportPath: "material/bulk/metal"},
-	{ImportPath: "material/bulk/alloy"},
-	{ImportPath: "material/bulk/glass"},
-	{ImportPath: "material/bulk/physical"},
-	{ImportPath: "texture"},
-	{ImportPath: "material/bulk/stone"},
-	{ImportPath: "material/bulk/wood"},
-	{ImportPath: "material/coat/weathering"},
-	{ImportPath: "material/collection/playful"},
-	{ImportPath: "material/bulk/natural"},
-	{ImportPath: "material/collection/animated"},
-	{ImportPath: "material/process/machined"},
-	{ImportPath: "material/coat/coating"},
-	{ImportPath: "material/process/printed"},
-	{ImportPath: "material/coat/plated"},
-	{ImportPath: "material/process/sheet"},
-	{ImportPath: "material/process/cast"},
-	{ImportPath: "material/process/molded"},
-	{ImportPath: "material/bulk/composite"},
-	{ImportPath: "material/bulk/masonry"},
-	{ImportPath: "material/bulk/paper"},
-	{ImportPath: "material/bulk/foams"},
-	{ImportPath: "material/bulk/ceramic"},
-	{ImportPath: "material/bulk/glazing"},
-	{ImportPath: "material/collection/classic"},
-	{ImportPath: "material/bulk/organic"},
+// curatedImportPaths defines the canonical order in which standard library
+// packages appear in All() and generated documentation. Adding a library under
+// an existing top-level category only requires adding its ImportPath here.
+var curatedImportPaths = []string{
+	"builtin",
+	"map",
+	"transform",
+	"lattice",
+	"lattice/beam",
+	"lattice/honeycomb",
+	"lattice/foam",
+	"lattice/tpms",
+	"lattice/spinodoid",
+	"mechanical",
+	"mechanical/catalog",
+	"mechanical/gears",
+	"mechanical/fastener",
+	"mechanical/thread",
+	"mechanical/drill",
+	"mechanical/driver",
+	"mechanical/joint",
+	"text",
+	"ease",
+	"noise",
+	"matrix",
+	"vector",
+	"color",
+	"material",
+	"material/bulk/metal",
+	"material/bulk/alloy",
+	"material/bulk/glass",
+	"material/bulk/physical",
+	"texture",
+	"material/bulk/stone",
+	"material/bulk/wood",
+	"material/coat/weathering",
+	"material/collection/playful",
+	"material/bulk/natural",
+	"material/collection/animated",
+	"material/process/machined",
+	"material/coat/coating",
+	"material/process/printed",
+	"material/coat/plated",
+	"material/process/sheet",
+	"material/process/cast",
+	"material/process/molded",
+	"material/bulk/composite",
+	"material/bulk/masonry",
+	"material/bulk/paper",
+	"material/bulk/foams",
+	"material/bulk/ceramic",
+	"material/bulk/glazing",
+	"material/collection/classic",
+	"material/bulk/organic",
 }
 
 func init() {
-	// Register stdlibFS and curatedEntries with internal/stdpkg without reading
-	// or hashing any embedded files during package initialization.
-	stdpkg.RegisterFS(stdlibFS, curatedEntries)
+	// Initialize stdpkg.StdLibRegistry with stdlibFS and curatedImportPaths
+	// without reading or hashing any embedded files during package initialization.
+	stdpkg.StdLibRegistry = stdpkg.NewRegistry(stdlibFS, curatedImportPaths)
 }
 
 // PkgInfo is one canonical library package: the import path users write
@@ -105,7 +105,7 @@ type PkgInfo struct {
 // generated documentation. Don't depend on map iteration order for output
 // stability.
 func All() []PkgInfo {
-	loaded := stdpkg.All()
+	loaded := stdpkg.StdLibRegistry.All()
 	out := make([]PkgInfo, len(loaded))
 	for i, pd := range loaded {
 		srcs := make([]string, len(pd.Sources))
@@ -113,7 +113,6 @@ func All() []PkgInfo {
 		out[i] = PkgInfo{
 			ImportPath: pd.ImportPath,
 			Sources:    srcs,
-			Domain:     pd.Domain,
 		}
 	}
 	return out
@@ -129,15 +128,15 @@ func All() []PkgInfo {
 // last segment the global identity of a library: two libraries may not share
 // one, however deeply their paths differ. Registering a duplicate panics here
 // rather than binding the prefix to whichever library happens to be first in
-// curatedEntries — an explicit import is the escape hatch for a name that must
-// collide.
+// curatedImportPaths — an explicit import is the escape hatch for a name that
+// must collide.
 //
 // builtin is excluded: it is implicitly dot-imported, so it is never named by
 // a prefix.
 var pathByPrefix = func() map[string]string {
-	infos := make([]PkgInfo, len(curatedEntries))
-	for i, e := range curatedEntries {
-		infos[i] = PkgInfo{ImportPath: e.ImportPath, Domain: e.Domain}
+	infos := make([]PkgInfo, len(curatedImportPaths))
+	for i, imp := range curatedImportPaths {
+		infos[i] = PkgInfo{ImportPath: imp}
 	}
 	byPrefix, err := indexByPrefix(infos)
 	if err != nil {

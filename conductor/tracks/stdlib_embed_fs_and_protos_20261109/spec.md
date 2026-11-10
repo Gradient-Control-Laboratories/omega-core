@@ -55,9 +55,8 @@ exported in `omega-core`'s public API:
      `map`, `material`, `matrix`, `mechanical`, `noise`, `text`, `texture`, `transform`, `vector`).
    - Go's `embed.FS` directory embedding recursively includes nested subpackages while excluding
      `_`-prefixed helper directories such as `text/_tools/`.
-   - In `stdlib`'s `init()`, pass `stdlibFS` and the curated `(ImportPath, Domain)` descriptor
-     slice to `stdpkg.RegisterFS(stdlibFS, entries)` (a constant-time pointer assignment performing
-     zero file reads or allocations at startup).
+   - In `stdlib`'s `init()`, initialize `stdpkg.StdLibRegistry = stdpkg.NewRegistry(stdlibFS, curatedImportPaths)`
+     (a constant-time pointer assignment performing zero file reads or allocations at startup).
 2. **Curated Package Order & Strict Source File Convention:**
    - Preserve the curated package list (`ImportPath` and `Domain`) in `stdlib/pkg_info.go` so
      `All()` maintains deterministic documentation order.
@@ -80,16 +79,16 @@ exported in `omega-core`'s public API:
        |            |                        ^
        +------------+------------------------+
      ```
-   - `internal/stdpkg` lazily indexes packages once via `sync.Once` and provides internal helpers:
+   - `internal/stdpkg` exposes `var StdLibRegistry *Registry` (lazily indexing packages once via
+     `sync.Once`) and provides internal helpers/methods:
      - `SourcesHash(sources []string) [32]byte`: computes the canonical length-prefixed SHA-256 of
        package source strings.
-     - `Proto(importPath string) ([]byte, bool)`: returns `<ImportPath>/package.pb`'s marshaled
-       `Package` payload (`raw[32:]`) if and only if `len(raw) >= 32` and
+     - `(*Registry).Proto(importPath string) ([]byte, bool)`: returns `<ImportPath>/package.pb`'s
+       marshaled `Package` payload (`raw[32:]`) if and only if `len(raw) >= 32` and
        `[32]byte(raw[:32]) == SourcesHash(sources)`.
-     - `RawProto(importPath string) ([]byte, bool)`: returns the raw `<ImportPath>/package.pb`
-       bytes (including the 32-byte header) for freshness verification in `parser` tests.
-     - `ImportPathByHash(hash [32]byte) (string, bool)`: O(1) lookup from `SourcesHash(sources)` to
-       `ImportPath` for packages with a valid, hash-matching `package.pb`.
+     - `(*Registry).ImportPathByHash(hash [32]byte) (string, bool)`: O(1) lookup from
+       `SourcesHash(sources)` to `ImportPath` for packages with a valid, hash-matching
+       `package.pb`.
 
 ### 3.2 Binary Format of `<pkg>/package.pb` (32-Byte Source-Hash Prefix)
 
@@ -123,16 +122,18 @@ Bytes 32..N  : Deterministic proto.MarshalOptions{Deterministic: true} bytes of 
      - `(*Program).GetImport(path)` returns that shared read-only `*program.Package` directly.
      - `program.GetStdPackage(path)` returns `proto.Clone(pkg).(*program.Package)` so callers may
        mutate the returned copy safely.
-3. **Share `program.GetStdPackage` with `parser.CachingParser` & Delete `parser.init()`:**
-   - Delete `init()` from `parser/parser.go` and remove `stdCachedPkg`, `stdCachedPkgs`,
-     `sourcesKey`, and the 50-package pre-warm loop from `parser/caching.go`.
-   - In `(*CachingParser).ParsePackage(sources []string)`:
-     1. Compute `key := stdpkg.SourcesHash(sources)`.
-     2. Check `if importPath, ok := stdpkg.ImportPathByHash(key); ok` — if matched, return
-        `&Result{Package: program.GetStdPackage(importPath)}, nil` directly without acquiring
-        `c.mu`, without consuming `CachingParser`'s LRU byte limit, and without duplicating
-        unmarshaled `*program.Package` structs between `program` and `parser`.
-     3. Otherwise, proceed through `c.get(key)` -> `ParsePackage(sources)` -> `c.put(...)` as usual.
+3. **Share `program.GetStdPackage` Across `parser.ParsePackage` and `parser.CachingParser` & Delete `parser.init()`:**
+   - Alias `type Result = parser2.Result` in `parser/parser.go`, delete `init()` from
+     `parser/parser.go`, and remove `stdCachedPkg`, `stdCachedPkgs`, `sourcesKey`, and the
+     50-package pre-warm loop from `parser/caching.go` (lowering `defaultCacheLimit` from `32 MiB`
+     to `4 MiB` now that `stdlib` no longer resides in the LRU cache).
+   - Both `parser.ParsePackage(sources)` and `(*CachingParser).ParsePackage(sources)` check
+     `stdpkg.StdLibRegistry.ImportPathByHash(stdpkg.SourcesHash(sources))` and return
+     `&Result{Package: program.GetStdPackage(importPath)}, nil` directly without acquiring `c.mu`,
+     without consuming `CachingParser`'s LRU byte limit, and without re-parsing `stdlib` from
+     `.gsl` text on `assembler.Assemble` calls.
+   - Otherwise, `ParsePackage` tails into `parser2.Parse(sources)`, and `(*CachingParser).ParsePackage`
+     proceeds through `c.get(key)` -> `parser2.Parse(sources)` -> `c.put(...)`.
    - **Live Edit Fallback:** If a developer edits a `.gsl` file in `stdlib/` and runs `go test`
      before `package.pb` is regenerated, `stdpkg.ImportPathByHash(key)` misses because `SourcesHash`
      no longer matches `raw[:32]`, so `CachingParser.ParsePackage` automatically falls through to
@@ -170,10 +171,9 @@ Bytes 32..N  : Deterministic proto.MarshalOptions{Deterministic: true} bytes of 
      and `./tool/build-proto.sh` (with `--force` after `protoc` regenerates `program.pb.go`).
 3. **Freshness Unit Test (`parser`):**
    - Add `TestStdlibProtosUpToDate` in `parser` that parses every package in `gsllibs.All()` from
-     `.gsl` sources and verifies via `stdpkg.RawProto(lib.ImportPath)` that:
-     1. `len(raw) >= 32` and `[32]byte(raw[:32]) == stdpkg.SourcesHash(lib.Sources)`.
-     2. Unmarshaling `raw[32:]` yields a `*program.Package` that is `proto.Equal` to the freshly
-        parsed `res.Package`.
+     `.gsl` sources via `parser2.Parse` and verifies via `program.GetStdPackage(lib.ImportPath)`
+     (backed by `stdpkg.StdLibRegistry.Proto`) that the 32-byte SHA-256 header matches
+     `lib.Sources` and the unmarshaled `*program.Package` is `proto.Equal` to `fresh.Package`.
    - On mismatch, fail with an explicit message instructing the caller to run
      `./tool/build-stdlib.sh --force`.
 
