@@ -42,6 +42,7 @@ cargo rustc -p render --release --crate-type staticlib --target-dir "${ROOT_DIR}
   -- --print native-static-libs
 
 mkdir -p "${OUT}"
+"${SCRIPT_DIR}/build-stdlib.sh"
 echo "==> compile (omega_static) and gsl"
 go build -tags omega_static -trimpath -ldflags "-s -w" -o "${OUT}/compile" ./cmd/compile
 CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o "${OUT}/gsl" ./cmd/gsl

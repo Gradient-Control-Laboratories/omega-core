@@ -3,7 +3,8 @@ package source
 import (
 	"fmt"
 
-	gsllibs "gradientcontrol.com/omega/core/stdlib"
+	"gradientcontrol.com/omega/core/internal/stdpkg"
+	_ "gradientcontrol.com/omega/core/stdlib"
 )
 
 // StdLibManager provides access to embedded standard library packages.
@@ -30,11 +31,11 @@ func (m *StdLibManager) Asset(pkg, filename string) ([]byte, error) {
 }
 
 func embeddedSources(path string) ([]string, bool) {
-	for _, lib := range gsllibs.All() {
-		if lib.ImportPath == path {
-			return lib.Sources, true
-		}
+	srcs, ok := stdpkg.StdLibRegistry.Sources(path)
+	if !ok {
+		return nil, false
 	}
-	return nil, false
+	copied := make([]string, len(srcs))
+	copy(copied, srcs)
+	return copied, true
 }
-

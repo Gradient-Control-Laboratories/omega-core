@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
 // Every registered library must be reachable by the prefix a reference uses,
@@ -167,5 +169,68 @@ func TestRegistryMatchesFilesystem(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatalf("failed to walk filesystem: %v", err)
+	}
+}
+
+// TestPackageDirectoryLayout enforces that every standard library package
+// directory contains either a package.yaml manifest (listing every .gsl file in
+// that directory) or a single <dirname>.gsl file matching its directory name.
+func TestPackageDirectoryLayout(t *testing.T) {
+	for _, lib := range All() {
+		dir := filepath.FromSlash(lib.ImportPath)
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			t.Fatalf("failed to read directory %q: %v", dir, err)
+		}
+
+		var gslFiles []string
+		hasPkgYaml := false
+		for _, entry := range entries {
+			if entry.IsDir() {
+				continue
+			}
+			if entry.Name() == "package.yaml" {
+				hasPkgYaml = true
+			} else if filepath.Ext(entry.Name()) == ".gsl" {
+				gslFiles = append(gslFiles, entry.Name())
+			}
+		}
+
+		if hasPkgYaml {
+			yamlBytes, err := os.ReadFile(filepath.Join(dir, "package.yaml"))
+			if err != nil {
+				t.Fatalf("failed to read %q/package.yaml: %v", dir, err)
+			}
+			var cfg struct {
+				Sources []string `yaml:"sources"`
+			}
+			if err := yaml.Unmarshal(yamlBytes, &cfg); err != nil {
+				t.Fatalf("failed to parse %q/package.yaml: %v", dir, err)
+			}
+			if len(cfg.Sources) == 0 {
+				t.Errorf("%q/package.yaml must list at least one source file", dir)
+			}
+			listed := make(map[string]bool, len(cfg.Sources))
+			for _, src := range cfg.Sources {
+				if listed[src] {
+					t.Errorf("%q/package.yaml lists duplicate source %q", dir, src)
+				}
+				listed[src] = true
+				info, err := os.Stat(filepath.Join(dir, src))
+				if err != nil || info.IsDir() {
+					t.Errorf("%q/package.yaml references missing file %q", dir, src)
+				}
+			}
+			for _, f := range gslFiles {
+				if !listed[f] {
+					t.Errorf("%q contains unlisted .gsl file %q alongside package.yaml", dir, f)
+				}
+			}
+		} else {
+			wantFile := filepath.Base(dir) + ".gsl"
+			if len(gslFiles) != 1 || gslFiles[0] != wantFile {
+				t.Errorf("%q without package.yaml must contain solely %q, found %v", dir, wantFile, gslFiles)
+			}
+		}
 	}
 }

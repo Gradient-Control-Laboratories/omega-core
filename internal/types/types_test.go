@@ -10,17 +10,6 @@ import (
 	"gradientcontrol.com/omega/core/program"
 )
 
-func init() {
-	program.RegisterStdPackage("builtin", &program.Package{
-		Path: "builtin",
-		Files: []*program.PackageFile{
-			{
-				Path: "builtin.gsl",
-			},
-		},
-	})
-}
-
 func parseProgram(t *testing.T, src string) *program.Program {
 	t.Helper()
 	res, err := parser.ParsePackage([]string{src})

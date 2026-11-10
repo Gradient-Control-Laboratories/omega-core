@@ -1,195 +1,93 @@
 // Package gsllibs exposes the canonical GSL library packages — their
 // import paths and source text — as compile-time embedded data. Tools that
 // need to introspect, document, or include the libraries (e.g. the AI
-// preamble in common/program/preamble) read them through this package so
-// they don't need a source/manager and filesystem layout to do so.
+// preamble in program/preamble) read them through this package so they don't
+// need a source/manager and filesystem layout to do so.
 //
-// The set is hand-curated rather than discovered — adding a new library
-// means adding a //go:embed line and an entry to All(). That's the
-// trade-off for not needing a filesystem at runtime.
-//
-// The directory holding this file is named "package" (it's the root of
-// the GSL package tree), which would shadow Go's `package` keyword as a
-// directory-derived name, so the Go package name is gsllibs instead.
+// Package ordering is hand-curated rather than discovered by walking the
+// filesystem so generated documentation in program/preamble always renders in
+// a deterministic, intentional sequence. Individual .gsl files and pre-parsed
+// package.pb artifacts inside each package directory are loaded via embed.FS.
 package gsllibs
 
 import (
-	_ "embed"
+	"embed"
 	"fmt"
 	"sort"
 	"strings"
+
+	"gradientcontrol.com/omega/core/internal/stdpkg"
 )
 
-//go:embed builtin/base.gsl
-var baseSrc string
+// Embed all top-level GSL library directories recursively. Go's embed.FS
+// automatically includes nested subpackages (such as lattice/beam or
+// material/bulk/metal) while excluding '_'-prefixed helper directories such as
+// text/_tools/ so offline font generation assets do not bloat compiled binaries.
+//
+//go:embed builtin color ease lattice map material matrix mechanical noise text texture transform vector
+var stdlibFS embed.FS
 
-//go:embed builtin/booleans.gsl
-var booleansSrc string
+// curatedImportPaths defines the canonical order in which standard library
+// packages appear in All() and generated documentation. Adding a library under
+// an existing top-level category only requires adding its ImportPath here.
+var curatedImportPaths = []string{
+	"builtin",
+	"map",
+	"transform",
+	"lattice",
+	"lattice/beam",
+	"lattice/honeycomb",
+	"lattice/foam",
+	"lattice/tpms",
+	"lattice/spinodoid",
+	"mechanical",
+	"mechanical/catalog",
+	"mechanical/gears",
+	"mechanical/fastener",
+	"mechanical/thread",
+	"mechanical/drill",
+	"mechanical/driver",
+	"mechanical/joint",
+	"text",
+	"ease",
+	"noise",
+	"matrix",
+	"vector",
+	"color",
+	"material",
+	"material/bulk/metal",
+	"material/bulk/alloy",
+	"material/bulk/glass",
+	"material/bulk/physical",
+	"texture",
+	"material/bulk/stone",
+	"material/bulk/wood",
+	"material/coat/weathering",
+	"material/collection/playful",
+	"material/bulk/natural",
+	"material/collection/animated",
+	"material/process/machined",
+	"material/coat/coating",
+	"material/process/printed",
+	"material/coat/plated",
+	"material/process/sheet",
+	"material/process/cast",
+	"material/process/molded",
+	"material/bulk/composite",
+	"material/bulk/masonry",
+	"material/bulk/paper",
+	"material/bulk/foams",
+	"material/bulk/ceramic",
+	"material/bulk/glazing",
+	"material/collection/classic",
+	"material/bulk/organic",
+}
 
-//go:embed builtin/util.gsl
-var utilSrc string
-
-//go:embed builtin/offsets.gsl
-var offsetsSrc string
-
-//go:embed builtin/2d.gsl
-var _2dSrc string
-
-//go:embed builtin/3d.gsl
-var _3dSrc string
-
-//go:embed builtin/quad_bezier_curves.gsl
-var quadBezierCurvesSrc string
-
-//go:embed builtin/sweep.gsl
-var sweepSrc string
-
-//go:embed map/map.gsl
-var mapSrc string
-
-//go:embed transform/transform.gsl
-var transformSrc string
-
-//go:embed lattice/lattice.gsl
-var latticeSrc string
-
-//go:embed lattice/beam/beam.gsl
-var latticeBeamSrc string
-
-//go:embed lattice/honeycomb/honeycomb.gsl
-var latticeHoneycombSrc string
-
-//go:embed lattice/foam/foam.gsl
-var latticeFoamSrc string
-
-//go:embed lattice/tpms/tpms.gsl
-var latticeTpmsSrc string
-
-//go:embed lattice/spinodoid/spinodoid.gsl
-var latticeSpinodoidSrc string
-
-//go:embed mechanical/mechanical.gsl
-var mechanicalSrc string
-
-//go:embed mechanical/catalog/catalog.gsl
-var catalogSrc string
-
-//go:embed mechanical/gears/gears.gsl
-var gearsSrc string
-
-//go:embed mechanical/fastener/fastener.gsl
-var fastenerSrc string
-
-//go:embed mechanical/drill/drill.gsl
-var drillSrc string
-
-//go:embed mechanical/thread/thread.gsl
-var threadSrc string
-
-//go:embed mechanical/driver/driver.gsl
-var driverSrc string
-
-//go:embed mechanical/joint/joint.gsl
-var jointSrc string
-
-//go:embed text/text.gsl
-var textSrc string
-
-//go:embed ease/ease.gsl
-var easeSrc string
-
-//go:embed noise/noise.gsl
-var noiseSrc string
-
-//go:embed matrix/matrix.gsl
-var matrixSrc string
-
-//go:embed vector/vector.gsl
-var vectorSrc string
-
-//go:embed color/color.gsl
-var colorSrc string
-
-//go:embed material/material.gsl
-var materialSrc string
-
-//go:embed material/bulk/metal/metal.gsl
-var metalSrc string
-
-//go:embed material/bulk/alloy/alloy.gsl
-var alloySrc string
-
-//go:embed material/bulk/glass/glass.gsl
-var glassSrc string
-
-//go:embed texture/texture.gsl
-var textureSrc string
-
-//go:embed material/bulk/stone/stone.gsl
-var textureStoneSrc string
-
-//go:embed material/bulk/wood/wood.gsl
-var textureWoodSrc string
-
-//go:embed material/coat/weathering/weathering.gsl
-var textureWeatheringSrc string
-
-//go:embed material/collection/playful/playful.gsl
-var texturePlayfulSrc string
-
-//go:embed material/bulk/natural/natural.gsl
-var textureNaturalSrc string
-
-//go:embed material/collection/animated/animated.gsl
-var textureAnimatedSrc string
-
-//go:embed material/process/machined/machined.gsl
-var materialMachinedSrc string
-
-//go:embed material/coat/coating/coating.gsl
-var materialCoatingSrc string
-
-//go:embed material/process/printed/printed.gsl
-var materialPrintedSrc string
-
-//go:embed material/coat/plated/plated.gsl
-var materialPlatedSrc string
-
-//go:embed material/process/sheet/sheet.gsl
-var materialSheetSrc string
-
-//go:embed material/process/cast/cast.gsl
-var materialCastSrc string
-
-//go:embed material/process/molded/molded.gsl
-var materialMoldedSrc string
-
-//go:embed material/bulk/composite/composite.gsl
-var materialCompositeSrc string
-
-//go:embed material/bulk/masonry/masonry.gsl
-var materialMasonrySrc string
-
-//go:embed material/bulk/paper/paper.gsl
-var materialPaperSrc string
-
-//go:embed material/bulk/foams/foams.gsl
-var materialFoamsSrc string
-
-//go:embed material/bulk/ceramic/ceramic.gsl
-var materialCeramicSrc string
-
-//go:embed material/bulk/glazing/glazing.gsl
-var materialGlazingSrc string
-
-//go:embed material/collection/classic/classic.gsl
-var materialClassicSrc string
-
-//go:embed material/bulk/organic/organic.gsl
-var materialOrganicSrc string
-
-//go:embed material/bulk/physical/physical.gsl
-var physicalSrc string
+func init() {
+	// Initialize stdpkg.StdLibRegistry with stdlibFS and curatedImportPaths
+	// without reading or hashing any embedded files during package initialization.
+	stdpkg.StdLibRegistry = stdpkg.NewRegistry(stdlibFS, curatedImportPaths)
+}
 
 // PkgInfo is one canonical library package: the import path users write
 // in `import . "<path>";` and the source text of that package's .gsl.
@@ -207,67 +105,17 @@ type PkgInfo struct {
 // generated documentation. Don't depend on map iteration order for output
 // stability.
 func All() []PkgInfo {
-	return []PkgInfo{
-		{ImportPath: "builtin", Sources: []string{
-			baseSrc,
-			booleansSrc,
-			utilSrc,
-			offsetsSrc,
-			_2dSrc,
-			_3dSrc,
-			quadBezierCurvesSrc,
-			sweepSrc,
-		}},
-		{ImportPath: "map", Sources: []string{mapSrc}},
-		{ImportPath: "transform", Sources: []string{transformSrc}},
-		{ImportPath: "lattice", Sources: []string{latticeSrc}},
-		{ImportPath: "lattice/beam", Sources: []string{latticeBeamSrc}},
-		{ImportPath: "lattice/honeycomb", Sources: []string{latticeHoneycombSrc}},
-		{ImportPath: "lattice/foam", Sources: []string{latticeFoamSrc}},
-		{ImportPath: "lattice/tpms", Sources: []string{latticeTpmsSrc}},
-		{ImportPath: "lattice/spinodoid", Sources: []string{latticeSpinodoidSrc}},
-		{ImportPath: "mechanical", Sources: []string{mechanicalSrc}},
-		{ImportPath: "mechanical/catalog", Sources: []string{catalogSrc}},
-		{ImportPath: "mechanical/gears", Sources: []string{gearsSrc}},
-		{ImportPath: "mechanical/fastener", Sources: []string{fastenerSrc}},
-		{ImportPath: "mechanical/thread", Sources: []string{threadSrc}},
-		{ImportPath: "mechanical/drill", Sources: []string{drillSrc}},
-		{ImportPath: "mechanical/driver", Sources: []string{driverSrc}},
-		{ImportPath: "mechanical/joint", Sources: []string{jointSrc}},
-		{ImportPath: "text", Sources: []string{textSrc}},
-		{ImportPath: "ease", Sources: []string{easeSrc}},
-		{ImportPath: "noise", Sources: []string{noiseSrc}},
-		{ImportPath: "matrix", Sources: []string{matrixSrc}},
-		{ImportPath: "vector", Sources: []string{vectorSrc}},
-		{ImportPath: "color", Sources: []string{colorSrc}},
-		{ImportPath: "material", Sources: []string{materialSrc}},
-		{ImportPath: "material/bulk/metal", Sources: []string{metalSrc}},
-		{ImportPath: "material/bulk/alloy", Sources: []string{alloySrc}},
-		{ImportPath: "material/bulk/glass", Sources: []string{glassSrc}},
-		{ImportPath: "material/bulk/physical", Sources: []string{physicalSrc}},
-		{ImportPath: "texture", Sources: []string{textureSrc}},
-		{ImportPath: "material/bulk/stone", Sources: []string{textureStoneSrc}},
-		{ImportPath: "material/bulk/wood", Sources: []string{textureWoodSrc}},
-		{ImportPath: "material/coat/weathering", Sources: []string{textureWeatheringSrc}},
-		{ImportPath: "material/collection/playful", Sources: []string{texturePlayfulSrc}},
-		{ImportPath: "material/bulk/natural", Sources: []string{textureNaturalSrc}},
-		{ImportPath: "material/collection/animated", Sources: []string{textureAnimatedSrc}},
-		{ImportPath: "material/process/machined", Sources: []string{materialMachinedSrc}},
-		{ImportPath: "material/coat/coating", Sources: []string{materialCoatingSrc}},
-		{ImportPath: "material/process/printed", Sources: []string{materialPrintedSrc}},
-		{ImportPath: "material/coat/plated", Sources: []string{materialPlatedSrc}},
-		{ImportPath: "material/process/sheet", Sources: []string{materialSheetSrc}},
-		{ImportPath: "material/process/cast", Sources: []string{materialCastSrc}},
-		{ImportPath: "material/process/molded", Sources: []string{materialMoldedSrc}},
-		{ImportPath: "material/bulk/composite", Sources: []string{materialCompositeSrc}},
-		{ImportPath: "material/bulk/masonry", Sources: []string{materialMasonrySrc}},
-		{ImportPath: "material/bulk/paper", Sources: []string{materialPaperSrc}},
-		{ImportPath: "material/bulk/foams", Sources: []string{materialFoamsSrc}},
-		{ImportPath: "material/bulk/ceramic", Sources: []string{materialCeramicSrc}},
-		{ImportPath: "material/bulk/glazing", Sources: []string{materialGlazingSrc}},
-		{ImportPath: "material/collection/classic", Sources: []string{materialClassicSrc}},
-		{ImportPath: "material/bulk/organic", Sources: []string{materialOrganicSrc}},
+	loaded := stdpkg.StdLibRegistry.All()
+	out := make([]PkgInfo, len(loaded))
+	for i, pd := range loaded {
+		srcs := make([]string, len(pd.Sources))
+		copy(srcs, pd.Sources)
+		out[i] = PkgInfo{
+			ImportPath: pd.ImportPath,
+			Sources:    srcs,
+		}
 	}
+	return out
 }
 
 // pathByPrefix inverts the import statement: it maps the prefix a reference
@@ -280,12 +128,17 @@ func All() []PkgInfo {
 // last segment the global identity of a library: two libraries may not share
 // one, however deeply their paths differ. Registering a duplicate panics here
 // rather than binding the prefix to whichever library happens to be first in
-// All() — an explicit import is the escape hatch for a name that must collide.
+// curatedImportPaths — an explicit import is the escape hatch for a name that
+// must collide.
 //
 // builtin is excluded: it is implicitly dot-imported, so it is never named by
 // a prefix.
 var pathByPrefix = func() map[string]string {
-	byPrefix, err := indexByPrefix(All())
+	infos := make([]PkgInfo, len(curatedImportPaths))
+	for i, imp := range curatedImportPaths {
+		infos[i] = PkgInfo{ImportPath: imp}
+	}
+	byPrefix, err := indexByPrefix(infos)
 	if err != nil {
 		panic("gsllibs: " + err.Error())
 	}

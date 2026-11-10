@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/parser/internal/parser2"
+	"gradientcontrol.com/omega/core/internal/stdpkg"
 	"gradientcontrol.com/omega/core/program"
 	gsllibs "gradientcontrol.com/omega/core/stdlib"
 )
@@ -38,30 +38,64 @@ func TestCachingParserHandsOutIndependentCopies(t *testing.T) {
 	if !proto.Equal(second, want) {
 		t.Fatalf("the second parse saw the first caller's edits:\n got %v\nwant %v", second, want)
 	}
-	if _, ok := cp.entries[sourcesKey([]string{src})]; !ok {
+	if _, ok := cp.entries[stdpkg.SourcesHash([]string{src})]; !ok {
 		t.Fatal("the package was not cached")
 	}
 }
 
-// Every standard package cached in a default CachingParser matches a fresh parse.
-func TestCachingParserCachedStdPackagesMatchFreshParse(t *testing.T) {
+// Standard library packages resolve via the shared lock-free program cache
+// without consuming CachingParser's LRU capacity, while diverged/edited sources
+// fall back to live parsing and LRU caching.
+func TestCachingParserSharedStdlibFastPathAndLiveFallback(t *testing.T) {
 	cp := NewCachingParser()
+	if cp.size != 0 || len(cp.entries) != 0 {
+		t.Fatalf("NewCachingParser initial LRU state: size=%d entries=%d, want 0, 0", cp.size, len(cp.entries))
+	}
+
 	for _, lib := range gsllibs.All() {
-		res, err := parser2.Parse(lib.Sources)
-		if err != nil {
-			continue
+		want := program.GetStdPackage(lib.ImportPath)
+		if want == nil {
+			t.Fatalf("%s: program.GetStdPackage returned nil", lib.ImportPath)
 		}
-		if _, ok := cp.entries[sourcesKey(lib.Sources)]; !ok {
-			t.Errorf("%s: not cached in NewCachingParser", lib.ImportPath)
-			continue
-		}
-		cached, err := cp.ParsePackage(lib.Sources)
+		gotRes, err := cp.ParsePackage(lib.Sources)
 		if err != nil {
 			t.Fatalf("%s: %v", lib.ImportPath, err)
 		}
-		if !proto.Equal(cached.Package, res.Package) {
-			t.Errorf("%s: the cached package differs from a fresh parse", lib.ImportPath)
+		if gotRes.Package == want {
+			t.Fatalf("%s: CachingParser did not return an independent clone", lib.ImportPath)
 		}
+		if !proto.Equal(gotRes.Package, want) {
+			t.Errorf("%s: CachingParser package differs from program.GetStdPackage", lib.ImportPath)
+		}
+		// Mutating returned stdlib clone must not corrupt subsequent parses.
+		gotRes.Package.Files = nil
+		again, err := cp.ParsePackage(lib.Sources)
+		if err != nil || !proto.Equal(again.Package, want) {
+			t.Fatalf("%s: mutating returned stdlib package leaked into shared cache", lib.ImportPath)
+		}
+
+		// Stateless ParsePackage also resolves stdlib packages via the shared cache.
+		directRes, err := ParsePackage(lib.Sources)
+		if err != nil || directRes.Package == want || !proto.Equal(directRes.Package, want) {
+			t.Fatalf("%s: ParsePackage did not return an independent clone from program.GetStdPackage", lib.ImportPath)
+		}
+	}
+
+	if cp.size != 0 || len(cp.entries) != 0 {
+		t.Fatalf("stdlib hits consumed LRU capacity: size=%d entries=%d, want 0, 0", cp.size, len(cp.entries))
+	}
+
+	// Diverged/edited stdlib source misses the hash-matched .pb fast path and falls back to live ParsePackage.
+	editedColor := []string{"customColor = [0.2, 0.4, 0.8];\n"}
+	editedRes, err := cp.ParsePackage(editedColor)
+	if err != nil {
+		t.Fatalf("ParsePackage on edited source failed: %v", err)
+	}
+	if len(editedRes.Package.Files) == 0 || len(editedRes.Package.Files[0].Assignments) != 1 {
+		t.Fatalf("expected live-parsed assignment on diverged source, got %v", editedRes.Package)
+	}
+	if _, ok := cp.entries[stdpkg.SourcesHash(editedColor)]; !ok {
+		t.Fatal("expected diverged source to be stored in CachingParser LRU map")
 	}
 }
 
@@ -76,7 +110,7 @@ func TestCachingParserDoesNotCacheErrors(t *testing.T) {
 	if res == nil || res.Package == nil || len(res.Package.Files) != 1 || res.Package.Files[0] == nil {
 		t.Fatalf("expected non-nil partial Package with 1 PackageFile, got %+v", res)
 	}
-	if _, ok := cp.entries[sourcesKey([]string{src})]; ok {
+	if _, ok := cp.entries[stdpkg.SourcesHash([]string{src})]; ok {
 		t.Fatal("a failed parse was cached")
 	}
 	if _, err := cp.ParsePackage([]string{src}); err == nil {
@@ -91,7 +125,7 @@ func TestCachingParserEvictsLeastRecentlyUsed(t *testing.T) {
 		entries: make(map[[sha256.Size]byte]*list.Element),
 		order:   list.New(),
 	}
-	key := func(s string) [32]byte { return sourcesKey([]string{s}) }
+	key := func(s string) [32]byte { return stdpkg.SourcesHash([]string{s}) }
 	pkg := &program.Package{}
 	c.put(key("a"), pkg, 4)
 	c.put(key("b"), pkg, 4)
@@ -113,11 +147,3 @@ func TestCachingParserEvictsLeastRecentlyUsed(t *testing.T) {
 		t.Fatal("a package larger than the limit should not be cached")
 	}
 }
-
-// Two lists of files with the same concatenation are different packages.
-func TestSourcesKeySeparatesFiles(t *testing.T) {
-	if sourcesKey([]string{"ab", "c"}) == sourcesKey([]string{"a", "bc"}) {
-		t.Fatal("file boundaries do not change the key")
-	}
-}
-
