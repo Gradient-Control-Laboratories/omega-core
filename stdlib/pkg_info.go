@@ -15,7 +15,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"sync"
 
 	"gradientcontrol.com/omega/core/internal/stdpkg"
 )
@@ -102,36 +101,19 @@ type PkgInfo struct {
 	Domain     string
 }
 
-var (
-	allOnce sync.Once
-	allPkgs []PkgInfo
-)
-
 // All returns every embedded library in the order they should appear in
 // generated documentation. Don't depend on map iteration order for output
 // stability.
 func All() []PkgInfo {
-	allOnce.Do(func() {
-		loaded := stdpkg.All()
-		allPkgs = make([]PkgInfo, len(loaded))
-		for i, pd := range loaded {
-			srcs := make([]string, len(pd.Sources))
-			copy(srcs, pd.Sources)
-			allPkgs[i] = PkgInfo{
-				ImportPath: pd.ImportPath,
-				Sources:    srcs,
-				Domain:     pd.Domain,
-			}
-		}
-	})
-	out := make([]PkgInfo, len(allPkgs))
-	for i, p := range allPkgs {
-		srcs := make([]string, len(p.Sources))
-		copy(srcs, p.Sources)
+	loaded := stdpkg.All()
+	out := make([]PkgInfo, len(loaded))
+	for i, pd := range loaded {
+		srcs := make([]string, len(pd.Sources))
+		copy(srcs, pd.Sources)
 		out[i] = PkgInfo{
-			ImportPath: p.ImportPath,
+			ImportPath: pd.ImportPath,
 			Sources:    srcs,
-			Domain:     p.Domain,
+			Domain:     pd.Domain,
 		}
 	}
 	return out

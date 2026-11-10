@@ -53,10 +53,10 @@ func (c *CachingParser) ParsePackage(sources []string) (*Result, error) {
 	// contention, keeps the ~1.44 MB standard library out of the 32 MiB LRU
 	// eviction budget, and falls through automatically to live ParsePackage if
 	// a developer edited a .gsl file in stdlib/ before regenerating package.pb.
+	// Invariant: ImportPathByHash only succeeds when importPath has a
+	// hash-validated package.pb payload, so GetStdPackage is non-nil.
 	if importPath, ok := stdpkg.ImportPathByHash(key); ok {
-		if pkg := program.GetStdPackage(importPath); pkg != nil {
-			return &Result{Package: pkg}, nil
-		}
+		return &Result{Package: program.GetStdPackage(importPath)}, nil
 	}
 	if pkg := c.get(key); pkg != nil {
 		return &Result{Package: pkg}, nil

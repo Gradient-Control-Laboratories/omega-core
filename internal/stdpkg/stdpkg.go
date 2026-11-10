@@ -39,7 +39,6 @@ type PackageData struct {
 	ImportPath string
 	Domain     string
 	Sources    []string
-	Hash       [HashSize]byte
 	rawProto   []byte
 	validProto []byte
 }
@@ -84,7 +83,6 @@ func (r *Registry) init() {
 				ImportPath: entry.ImportPath,
 				Domain:     entry.Domain,
 				Sources:    srcs,
-				Hash:       hash,
 			}
 
 			// <ImportPath>/package.pb is optional so `stdlib/internal/gen` can
