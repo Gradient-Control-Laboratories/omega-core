@@ -11,7 +11,11 @@ func init() {
 		res, err := ParsePackage(libInfo.Sources)
 		if err == nil && res != nil && res.Package != nil {
 			program.RegisterStdPackage(libInfo.ImportPath, res.Package)
-			registerStdCachedPkg(libInfo.Sources, res.Package)
+			stdCachedPkgs = append(stdCachedPkgs, stdCachedPkg{
+				key:  sourcesKey(libInfo.Sources),
+				pkg:  res.Package,
+				size: sourcesSize(libInfo.Sources),
+			})
 		}
 	}
 }

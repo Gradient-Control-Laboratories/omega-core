@@ -18,14 +18,6 @@ type stdCachedPkg struct {
 
 var stdCachedPkgs []stdCachedPkg
 
-func registerStdCachedPkg(sources []string, pkg *program.Package) {
-	stdCachedPkgs = append(stdCachedPkgs, stdCachedPkg{
-		key:  sourcesKey(sources),
-		pkg:  proto.Clone(pkg).(*program.Package),
-		size: sourcesSize(sources),
-	})
-}
-
 // defaultCacheLimit bounds the source bytes whose parses are kept by default (32 MiB).
 // The standard library is about 1 MB; the rest is room for documents and their packages.
 const defaultCacheLimit = 32 << 20
