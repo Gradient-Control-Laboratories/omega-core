@@ -218,7 +218,7 @@ impl Assembler for GradSliceAssembler {
         // Grad::sqrt, called: it takes a zero derivative where the value and
         // that component of the input's derivative are both zero, where the
         // inline quotient was 0 / 0 (NaN).
-        extern "C" fn grad_sqrt(v: Grad) -> Grad {
+        extern "sysv64" fn grad_sqrt(v: Grad) -> Grad {
             v.sqrt()
         }
         self.call_fn_unary(out_reg, lhs_reg, grad_sqrt);
