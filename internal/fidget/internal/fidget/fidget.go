@@ -1,11 +1,8 @@
 package fidget
 
 /*
-// Link against the release build of the rust wrapper. The bvhSdf oracle's
-// BSP traversal + Fast GWN is a performance-critical inner loop, and the
-// debug profile is ~10x slower. The launcher script does `cargo build
-// --release` to match.
-#cgo LDFLAGS: -L../../../../target/release -lrender
+// How the rust wrapper is linked is in link_dynamic.go (development builds)
+// and link_static.go (the omega_static tag: release binaries).
 #include <stdlib.h>  // include for C.CString
 #include <stddef.h>  // include for size_t
 #include <stdint.h>  // include for int64_t

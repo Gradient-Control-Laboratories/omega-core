@@ -190,12 +190,12 @@ BSD and ISC copyright notices of the crates they link.
 ## 5. Linked into built binaries, not included in this repository
 
 The `render` crate (`librender`, and the `omega_tape` Python extension that
-embeds it) is built against the following, which `build.rs` expects under a
-top-level `vendor/` directory:
+embeds it) is built against the following, which `build.rs` expects as git
+submodules under `internal/fidget/vendor/`:
 
 | Component | License |
 |---|---|
-| [OpenVDB](https://github.com/AcademySoftwareFoundation/openvdb) | MPL-2.0 |
+| [OpenVDB](https://github.com/AcademySoftwareFoundation/openvdb) | Apache-2.0 |
 | [oneTBB](https://github.com/uxlfoundation/oneTBB) | Apache-2.0 |
 | [Imath](https://github.com/AcademySoftwareFoundation/Imath) | BSD-3-Clause |
 | [c-blosc](https://github.com/Blosc/c-blosc) | BSD-3-Clause |
@@ -205,7 +205,7 @@ The `backend/mesh/manifold` Go package links `manifold_glue`, which wraps
 the [Manifold](https://github.com/elalish/manifold) C++ library (Apache-2.0).
 
 Anyone distributing those binaries must make the corresponding MPL-2.0 source
-(Fidget, OpenVDB, dynasmrt) available and ship the notices above.
+(Fidget, dynasmrt) available and ship the notices above.
 
 ---
 

@@ -84,6 +84,8 @@ func ToTreesWithParams(
 	if len(prog.Primary.Files) > 0 {
 		gslSource = prog.Primary.Files[0].Source
 	}
+	// Mark and build the same copy: markParamLiterals keys operands by pointer.
+	prog = buildCopy(prog)
 	d := NewDelegate(gslSource)
 	d.SetParamVars(params)
 	d.markParamLiterals(prog)
