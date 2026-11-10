@@ -115,7 +115,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { runner: ubuntu-latest, python: "3.9" }
+          - { runner: ubuntu-24.04, python: "3.9" }  # the oldest Python the wheel takes; ubuntu-latest has none
           - { runner: ubuntu-latest, python: "3.14" }
           - { runner: ubuntu-24.04-arm, python: "3.12" }
           - { runner: macos-15-intel, python: "3.12" }
