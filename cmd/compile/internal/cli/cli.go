@@ -19,6 +19,7 @@ import (
 	"gradientcontrol.com/omega/core/eval"
 	"gradientcontrol.com/omega/core/internal/version"
 	"gradientcontrol.com/omega/core/parser"
+	"gradientcontrol.com/omega/core/program"
 )
 
 // companionMeta defines the structure of the JSON metadata file emitted alongside compiled targets.
@@ -37,7 +38,7 @@ func PrintUsage(w io.Writer) {
 	fmt.Fprintf(w, "  compile [flags] [source1.gsl source2.gsl ...]\n\n")
 	fmt.Fprintf(w, "Flags:\n")
 	fmt.Fprintf(w, "  -t, --target string\n")
-	fmt.Fprintf(w, "        Compilation output target (wgsl, stl, tape, audio, ast) (default \"wgsl\")\n")
+	fmt.Fprintf(w, "        Compilation output target (wgsl, stl, tape, audio, ast, png) (default \"wgsl\")\n")
 	fmt.Fprintf(w, "  -o, --output string\n")
 	fmt.Fprintf(w, "        Output destination path ('-' for stdout)\n")
 	fmt.Fprintf(w, "  -m, --meta string\n")
@@ -55,6 +56,15 @@ func PrintUsage(w io.Writer) {
 	fmt.Fprintf(w, "        Meshing algorithm (marching-cubes or mdc) (default \"marching-cubes\")\n")
 	fmt.Fprintf(w, "      --time float\n")
 	fmt.Fprintf(w, "        Animation time in seconds (default 0)\n")
+	fmt.Fprintf(w, "      --views string\n")
+	fmt.Fprintf(w, "        Cameras for png: presets (%s) or x,y,z directions,\n", strings.Join(eval.ViewPresetNames(), ", "))
+	fmt.Fprintf(w, "        comma-separated; several tile two across into one image (default \"iso\")\n")
+	fmt.Fprintf(w, "      --size string\n")
+	fmt.Fprintf(w, "        One png panel's size as WxH pixels (default \"640x480\")\n")
+	fmt.Fprintf(w, "      --extent float\n")
+	fmt.Fprintf(w, "        The png scene's half-size in mm; 0 frames the geometry (default 0)\n")
+	fmt.Fprintf(w, "      --light\n")
+	fmt.Fprintf(w, "        A light studio ground for png instead of the dark canvas\n")
 	fmt.Fprintf(w, "  -O, --opt-level int\n")
 	fmt.Fprintf(w, "        Optimization level (0 = debug, 1 = standard) (default 1)\n")
 	fmt.Fprintf(w, "      --standalone\n")
@@ -227,6 +237,13 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		}
 		outBytes = []byte(jsCode)
 
+	case config.TargetPNG:
+		pngBytes, pngErr := renderPNG(res.Program, cfg)
+		if pngErr != nil {
+			return pngErr
+		}
+		outBytes = pngBytes
+
 	case config.TargetAST:
 		astJson, jsonErr := json.MarshalIndent(res.Program, "", "  ")
 		if jsonErr != nil {
@@ -280,6 +297,34 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	}
 
 	return nil
+}
+
+// renderPNG is the png target: the program's field raymarched on the CPU by the viewer's lit renderer, from each
+// of cfg.Views, tiled two across into one image. It draws the field itself, never a mesh of it.
+func renderPNG(prog *program.Program, cfg *config.Config) ([]byte, error) {
+	views, err := eval.ParseViews(cfg.Views)
+	if err != nil {
+		return nil, fmt.Errorf("--views: %w", err)
+	}
+	if len(views) == 0 {
+		return nil, fmt.Errorf("--views names no camera")
+	}
+	panels := make([][]byte, 0, len(views))
+	for i, v := range views {
+		v.Light = cfg.Light
+		panel, renderErr := eval.RenderLitSizedView(prog, cfg.Width, cfg.Height, cfg.Extent, cfg.Time, v)
+		if renderErr != nil {
+			return nil, fmt.Errorf("rendering view %d: %w", i+1, renderErr)
+		}
+		if len(panel) == 0 {
+			return nil, fmt.Errorf("rendering view %d: the renderer returned no image", i+1)
+		}
+		panels = append(panels, panel)
+	}
+	if len(panels) == 1 {
+		return panels[0], nil
+	}
+	return eval.ComposeSheet(panels, 2)
 }
 
 // autoBbox is --bbox auto: the box the program's field fills -- eval's Bounds, a grid fit of where the union of

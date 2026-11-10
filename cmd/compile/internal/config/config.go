@@ -18,6 +18,7 @@ const (
 	TargetTape  Target = "tape"
 	TargetAudio Target = "audio"
 	TargetAST   Target = "ast"
+	TargetPNG   Target = "png"
 )
 
 // multiStringFlag collects multiple instances of a flag into a string slice.
@@ -43,7 +44,14 @@ type Config struct {
 	Bbox        [6]float32
 	HasBbox     bool
 	// AutoBbox: --bbox auto, the box the field fills, worked out from the program (a mesh target's).
-	AutoBbox   bool
+	AutoBbox bool
+	// Views, Width, Height, Extent and Light are the png target's: the cameras, one panel's size in pixels,
+	// the scene's half-size (0 frames the geometry) and the light studio ground.
+	Views      string
+	Width      int
+	Height     int
+	Extent     float64
+	Light      bool
 	Algo       string
 	Time       float64
 	OptLevel   int
@@ -68,6 +76,8 @@ func (c *Config) defaultExt() string {
 		return ".js"
 	case TargetAST:
 		return ".ast.json"
+	case TargetPNG:
+		return ".png"
 	default:
 		return ".out"
 	}
@@ -128,11 +138,15 @@ func ParseFlags(args []string) (*Config, error) {
 		verbose     bool
 		help        bool
 		showVersion bool
+		views       string
+		sizeStr     string
+		extent      float64
+		light       bool
 	)
 
 	// Target flag (-t, --target)
-	fs.StringVar(&targetStr, "t", "wgsl", "Compilation output target (wgsl, stl, tape, audio, ast)")
-	fs.StringVar(&targetStr, "target", "wgsl", "Compilation output target (wgsl, stl, tape, audio, ast)")
+	fs.StringVar(&targetStr, "t", "wgsl", "Compilation output target (wgsl, stl, tape, audio, ast, png)")
+	fs.StringVar(&targetStr, "target", "wgsl", "Compilation output target (wgsl, stl, tape, audio, ast, png)")
 
 	// Output flag (-o, --output)
 	fs.StringVar(&outputStr, "o", "", "Output destination path ('-' for stdout)")
@@ -152,6 +166,10 @@ func ParseFlags(args []string) (*Config, error) {
 	fs.StringVar(&bboxStr, "bbox", "", "Bounding box as minX,minY,minZ,maxX,maxY,maxZ, or auto: the box the field fills")
 	fs.StringVar(&algo, "algo", "marching-cubes", "Meshing algorithm (marching-cubes or mdc)")
 	fs.Float64Var(&timeSec, "time", 0.0, "Animation time in seconds")
+	fs.StringVar(&views, "views", "iso", "Cameras for the png target: presets or x,y,z directions, comma-separated")
+	fs.StringVar(&sizeStr, "size", "640x480", "One png panel's size as WxH pixels")
+	fs.Float64Var(&extent, "extent", 0, "The png scene's half-size in mm; 0 frames the geometry")
+	fs.BoolVar(&light, "light", false, "A light studio ground for the png target instead of the dark canvas")
 
 	// Optimization & diagnostics
 	fs.IntVar(&optLevel, "O", 1, "Optimization level (0 = debug, 1 = standard)")
@@ -171,9 +189,17 @@ func ParseFlags(args []string) (*Config, error) {
 
 	target := Target(strings.ToLower(strings.TrimSpace(targetStr)))
 	switch target {
-	case TargetWGSL, TargetSTL, TargetTape, TargetAudio, TargetAST:
+	case TargetWGSL, TargetSTL, TargetTape, TargetAudio, TargetAST, TargetPNG:
 	default:
-		return nil, fmt.Errorf("unsupported target %q; must be one of wgsl, stl, tape, audio, ast", targetStr)
+		return nil, fmt.Errorf("unsupported target %q; must be one of wgsl, stl, tape, audio, ast, png", targetStr)
+	}
+
+	var width, height int
+	if _, err := fmt.Sscanf(sizeStr, "%dx%d", &width, &height); err != nil || width < 1 || height < 1 {
+		return nil, fmt.Errorf("invalid --size %q; expected WxH in pixels, such as 640x480", sizeStr)
+	}
+	if extent < 0 {
+		return nil, fmt.Errorf("invalid --extent %g; expected 0 (frame the geometry) or a half-size in mm", extent)
 	}
 
 	if subdivision < 1 {
@@ -218,6 +244,11 @@ func ParseFlags(args []string) (*Config, error) {
 		Bbox:        bbox,
 		HasBbox:     hasBbox,
 		AutoBbox:    autoBbox,
+		Views:       views,
+		Width:       width,
+		Height:      height,
+		Extent:      extent,
+		Light:       light,
 		Algo:        algo,
 		Time:        timeSec,
 		OptLevel:    optLevel,
