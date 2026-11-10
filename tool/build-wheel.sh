@@ -10,7 +10,8 @@ set -euo pipefail
 #   --programs-only stops before packaging.
 #
 #   env: OMEGA_GSL_TAG    the wheel's platform tag (CI: manylinux_2_28_<arch>); default this machine's
-#        OMEGA_GSL_GLIBC  the newest glibc symbol version compile may need (default 2.28), Linux only
+#        OMEGA_GSL_GLIBC  the newest glibc symbol version compile may need (default 2.28), Linux only;
+#                         libstdc++'s are capped as manylinux_2_28 caps them (GLIBCXX 3.4.25, CXXABI 1.3.11)
 #
 # The development build (tool/build.sh, target/release) is not touched: this builds in target/static.
 #
@@ -58,13 +59,16 @@ case "$(uname -s)" in
   Linux)
     readelf -d "${OUT}/compile" | grep NEEDED
     foreign="$(readelf -d "${OUT}/compile" | awk '/NEEDED/{print $NF}' | tr -d '[]' |
-      grep -vE '^(libc|libm|libdl|libpthread|librt|ld-linux[-a-z0-9_]*)\.so' || true)"
-    [ -z "${foreign}" ] || fail "compile loads libraries outside glibc: ${foreign}"
-    newest="$(objdump -T "${OUT}/compile" | grep -o 'GLIBC_[0-9.]*' | sed 's/GLIBC_//' | sort -V | tail -1)"
-    limit="${OMEGA_GSL_GLIBC:-2.28}"
-    echo "newest glibc symbol: ${newest} (limit ${limit})"
-    [ "$(printf '%s\n%s\n' "${newest}" "${limit}" | sort -V | tail -1)" = "${limit}" ] ||
-      fail "compile needs glibc ${newest}, newer than ${limit}"
+      grep -vE '^(libc|libm|libdl|libpthread|librt|libstdc\+\+|ld-linux[-a-z0-9_]*)\.so' || true)"
+    [ -z "${foreign}" ] || fail "compile loads libraries outside glibc and libstdc++: ${foreign}"
+    # The newest version of each symbol family compile needs, against manylinux_2_28's.
+    for family_limit in "GLIBC ${OMEGA_GSL_GLIBC:-2.28}" "GLIBCXX 3.4.25" "CXXABI 1.3.11"; do
+      set -- ${family_limit}
+      newest="$(objdump -T "${OUT}/compile" | grep -o "$1_[0-9][0-9.]*" | sed "s/^$1_//" | sort -V | tail -1)"
+      echo "newest $1 symbol: ${newest:-none} (limit $2)"
+      [ -z "${newest}" ] || [ "$(printf '%s\n%s\n' "${newest}" "$2" | sort -V | tail -1)" = "$2" ] ||
+        fail "compile needs $1 ${newest}, newer than $2"
+    done
     ;;
 esac
 "${OUT}/gsl" --version

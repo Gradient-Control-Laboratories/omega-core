@@ -8,10 +8,12 @@ package fidget
 // loads only the system's libraries. tool/build-wheel.sh builds it with
 //   cargo rustc -p render --release --crate-type staticlib --target-dir target/static
 // which bundles OpenVDB, TBB, Imath, blosc and zlib into librender.a. What
-// else it needs is the system's: rustc --print native-static-libs, plus the
-// C++ runtime (static on Linux, so a wheel needs no particular libstdc++).
+// else it needs is the system's: rustc --print native-static-libs. The C++
+// runtime is the system's (libc++ on macOS, libstdc++ on Linux, where the
+// manylinux image's toolchain keeps compile within manylinux_2_28's symbol
+// versions, which tool/build-wheel.sh checks); libgcc is linked in.
 #cgo LDFLAGS: ${SRCDIR}/../../../../target/static/release/librender.a
 #cgo darwin LDFLAGS: -lc++ -liconv
-#cgo linux LDFLAGS: -static-libstdc++ -static-libgcc -lstdc++ -ldl -lpthread -lm
+#cgo linux LDFLAGS: -static-libgcc -lstdc++ -ldl -lpthread -lm
 */
 import "C"

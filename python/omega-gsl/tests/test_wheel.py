@@ -55,8 +55,7 @@ def test_compile_loads_only_the_system_libraries() -> None:
         foreign = [line.strip() for line in libraries if not line.strip().startswith(("/usr/lib/", "/System/"))]
     elif shutil.which("ldd"):
         libraries = run("ldd", compile_).splitlines()
-        foreign = [line.strip() for line in libraries if "not found" in line or "render" in line or "c++" in line
-                   or "stdc++" in line]
+        foreign = [line.strip() for line in libraries if "not found" in line or "render" in line]
     else:
         pytest.skip("no otool or ldd here")
     assert not foreign, foreign
