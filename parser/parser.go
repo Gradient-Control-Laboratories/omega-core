@@ -3,22 +3,7 @@ package parser
 import (
 	"gradientcontrol.com/omega/core/parser/internal/parser2"
 	"gradientcontrol.com/omega/core/program"
-	gsllibs "gradientcontrol.com/omega/core/stdlib"
 )
-
-func init() {
-	for _, libInfo := range gsllibs.All() {
-		res, err := ParsePackage(libInfo.Sources)
-		if err == nil && res != nil && res.Package != nil {
-			program.RegisterStdPackage(libInfo.ImportPath, res.Package)
-			stdCachedPkgs = append(stdCachedPkgs, stdCachedPkg{
-				key:  sourcesKey(libInfo.Sources),
-				pkg:  res.Package,
-				size: sourcesSize(libInfo.Sources),
-			})
-		}
-	}
-}
 
 // Result holds the parsed package.
 //
