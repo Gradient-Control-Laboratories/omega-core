@@ -23,13 +23,13 @@ public API** in `omega-core` (and removes `program.RegisterStdPackage`):
 
 ## Execution Metrics & Effort Tracking
 
-| Metric             | Elapsed Time |
-| :----------------- | :----------- |
-| **Spec Creation**  | `~60 mins`   |
-| **Plan Creation**  | `~24 mins`   |
-| **Implementation** | `TBD`        |
-| **Code Review**    | `TBD`        |
-| **Effort**         | `TBD tokens` |
+| Metric             | Elapsed Time      |
+| :----------------- | :---------------- |
+| **Spec Creation**  | `~60 mins`        |
+| **Plan Creation**  | `~24 mins`        |
+| **Implementation** | `~23 mins`        |
+| **Code Review**    | `~2 mins`         |
+| **Effort**         | `~200,000 tokens` |
 
 ---
 
@@ -132,20 +132,20 @@ public API** in `omega-core` (and removes `program.RegisterStdPackage`):
 
 ---
 
-## Phase 4: Repository-Wide Verification, Guard Cleanup & Metrics Finalization
+## Phase 4: Repository-Wide Verification, Guard Cleanup & Metrics Finalization [checkpoint: 729fed3]
 
-- [~] Task: Run full quality checks and repository-wide test suites
-  - [ ] Execute `./tool/check.sh` and `./tool/test.sh` across `omega-core`, verifying all Go and
+- [x] Task: Run full quality checks and repository-wide test suites 729fed3
+  - [x] Execute `./tool/check.sh` and `./tool/test.sh` across `omega-core`, verifying all Go and
     Rust tests pass with zero regressions and zero compiler golden diffs.
-  - [ ] Verify `./tool/build-stdlib.sh` is a fast no-op on clean state and `git status` shows
+  - [x] Verify `./tool/build-stdlib.sh` is a fast no-op on clean state and `git status` shows
     deterministic `stdlib/**/package.pb` files.
-- [ ] Task: Audit created and modified Go code with `clean-go-test-guards`
-  - [ ] Follow `.agents/skills/clean-go-test-guards/SKILL.md` across `internal/stdpkg`, `stdlib`,
+- [x] Task: Audit created and modified Go code with `clean-go-test-guards` 729fed3
+  - [x] Follow `.agents/skills/clean-go-test-guards/SKILL.md` across `internal/stdpkg`, `stdlib`,
     `program`, `parser`, and `stdlib/internal/gen` to remove any test-induced defensive checks,
     unused parameters, or dead unexported helpers while preserving boundary invariants and
     *what*-and-*why* comments.
-  - [ ] Re-run `./tool/check.sh`.
-- [ ] Task: Finalize Execution Metrics & Effort Tracking
-  - [ ] Calculate total active **Implementation** time, accumulated **Code Review** time, and
+  - [x] Re-run `./tool/check.sh`.
+- [x] Task: Finalize Execution Metrics & Effort Tracking 729fed3
+  - [x] Calculate total active **Implementation** time, accumulated **Code Review** time, and
     estimated **Effort** tokens across track transcripts, and record them in `plan.md`.
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`) 729fed3
