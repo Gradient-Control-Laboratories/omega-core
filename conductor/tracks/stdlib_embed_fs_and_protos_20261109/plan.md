@@ -68,43 +68,43 @@ public API** in `omega-core` (and removes `program.RegisterStdPackage`):
 
 ---
 
-## Phase 2: Single-Source-of-Truth `package.pb` Generator & `tool/build-stdlib.sh` Automation
+## Phase 2: Single-Source-of-Truth `package.pb` Generator & `tool/build-stdlib.sh` Automation [checkpoint: 90580e7]
 
-- [~] Task: Write failing tests for `stdlib/internal/gen` and `parser` `.pb` freshness check (Red Phase)
-  - [ ] Create `stdlib/internal/gen/gen_test.go` testing importable generator functions on a
+- [x] Task: Write failing tests for `stdlib/internal/gen` and `parser` `.pb` freshness check (Red Phase) 90580e7
+  - [x] Create `stdlib/internal/gen/gen_test.go` testing importable generator functions on a
     temporary copy/fixture directory: initial `<ImportPath>/package.pb` creation, default
     incremental SHA-256 skip (verifying unchanged packages are neither re-parsed nor rewritten),
     `--force` full rebuild (verifying packages are rewritten even when `.gsl` hashes match), and
     byte-for-byte determinism across repeated runs.
-  - [ ] Create `parser/stdlib_proto_test.go` (`TestStdlibProtosUpToDate`) asserting that every
+  - [x] Create `parser/stdlib_proto_test.go` (`TestStdlibProtosUpToDate`) asserting that every
     package in `gsllibs.All()` has a non-empty `stdpkg.RawProto(lib.ImportPath)` whose 32-byte
     header equals `stdpkg.SourcesHash(lib.Sources)` and whose unmarshaled `*program.Package` is
     `proto.Equal` to `ParsePackage(lib.Sources)` (failing initially because `<pkg>/package.pb` files
     do not exist yet).
-- [ ] Task: Implement `stdlib/internal/gen`, `tool/build-stdlib.sh`, and build/test hooks (Green & Refactor Phase)
-  - [ ] Create `stdlib/generate.go` (`//go:generate go run ./internal/gen`) and
+- [x] Task: Implement `stdlib/internal/gen`, `tool/build-stdlib.sh`, and build/test hooks (Green & Refactor Phase) 90580e7
+  - [x] Create `stdlib/generate.go` (`//go:generate go run ./internal/gen`) and
     `stdlib/internal/gen/main.go` implementing single-source-of-truth `package.pb` generation with
     incremental SHA-256 skip by default, `--force` full rebuild, deterministic `proto.MarshalOptions`,
     atomic writes, and clear *what*-and-*why* comments.
-  - [ ] Create executable `tool/build-stdlib.sh` with `--force` support and fast shell `mtime`
+  - [x] Create executable `tool/build-stdlib.sh` with `--force` support and fast shell `mtime`
     guards (`< 50 ms` no-op when `stdlib/`, `parser/`, and `program/program.pb.go` are older than
     `package.pb`; incremental `go run ./stdlib/internal/gen` when only `stdlib/` changed;
     `go run ./stdlib/internal/gen --force` when `--force` is passed or `parser/`,
     `program/program.pb.go`, or `stdlib/internal/gen/` changed), including *what*-and-*why*
     comments.
-  - [ ] Run `./tool/build-stdlib.sh --force` to generate all 50 `stdlib/**/package.pb` files.
-  - [ ] Hook `./tool/build-stdlib.sh` into `tool/build.sh`, `tool/build-cli.sh`,
+  - [x] Run `./tool/build-stdlib.sh --force` to generate all 50 `stdlib/**/package.pb` files.
+  - [x] Hook `./tool/build-stdlib.sh` into `tool/build.sh`, `tool/build-cli.sh`,
     `tool/build-wheel.sh`, `tool/test-go.sh`, `tool/check.sh`, `tool/update-goldens.sh`, and
     `tool/build-proto.sh` (`--force`).
-  - [ ] Run `gofmt` and verify targeted tests and generator idempotence:
+  - [x] Run `gofmt` and verify targeted tests and generator idempotence:
     `./tool/build-stdlib.sh --force && ./tool/build-stdlib.sh && go test -v ./stdlib/... ./parser/...`.
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`) 90580e7
 
 ---
 
 ## Phase 3: Shared Lazy Stdlib Cache in `program` & `CachingParser`, Removing `RegisterStdPackage` and `parser.init()`
 
-- [ ] Task: Write failing tests for standalone `program` stdlib resolution and shared `CachingParser` fast path (Red Phase)
+- [~] Task: Write failing tests for standalone `program` stdlib resolution and shared `CachingParser` fast path (Red Phase)
   - [ ] Update `program/get_import_test.go` to remove `RegisterStdPackage` calls and test standalone
     resolution of real embedded standard library packages (`"builtin"`, `"vector"`) via both
     `(*Program).GetImport` and `GetStdPackage` (without importing `parser`), including mutation
