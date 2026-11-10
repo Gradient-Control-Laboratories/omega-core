@@ -560,7 +560,7 @@ func BakeSpinodoids(prog *program.Program) (map[string]BakedSpinodoid, error) {
 	defer fidget.Unlock()
 	defer fidget.Clear()
 
-	if err := build.Build(d, prog, true); err != nil {
+	if err := build.Build(d, buildCopy(prog), true); err != nil {
 		return nil, build.ErrWithPkgSrc(prog, err)
 	}
 	return d.spinodoidBakes, nil

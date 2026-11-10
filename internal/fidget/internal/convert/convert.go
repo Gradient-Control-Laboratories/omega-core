@@ -71,7 +71,7 @@ func toTreesAtTime(
 	defer fidget.Unlock()
 	defer fidget.Clear()
 
-	err := build.Build(d, prog, true)
+	err := build.Build(d, buildCopy(prog), true)
 	if err != nil {
 		return build.ErrWithPkgSrc(prog, err)
 	}
@@ -129,7 +129,7 @@ func ToTreeGroups(
 	defer fidget.Unlock()
 	defer fidget.Clear()
 
-	err := build.Build(d, prog, true)
+	err := build.Build(d, buildCopy(prog), true)
 	if err != nil {
 		return build.ErrWithPkgSrc(prog, err)
 	}
