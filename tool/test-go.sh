@@ -6,6 +6,8 @@ ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 PROJ_DIR="$(cd "${ROOT_DIR}/.." && pwd)"
 HISTORY_FILE="${PROJ_DIR}/.test-history/omega-core-test.jsonl"
 
+"${SCRIPT_DIR}/build-stdlib.sh"
+
 echo "==> Running omega-core Go test suite..."
 cd "${ROOT_DIR}"
 go run "${ROOT_DIR}/tool/run-go-tests" \

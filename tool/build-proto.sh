@@ -38,5 +38,8 @@ protoc \
   -I "${ROOT_DIR}/backend/tape" \
   "${ROOT_DIR}/backend/tape/tape.proto"
 
+echo ""
+"${SCRIPT_DIR}/build-stdlib.sh" --force
+
 echo "build complete"
 
