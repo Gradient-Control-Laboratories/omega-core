@@ -52,7 +52,16 @@ impl QuadraticErrorSolver {
     ) {
         // TODO: correct for non-zero distance value in grad.w
         self.mass_point += nalgebra::Vector4::new(pos.x, pos.y, pos.z, 1.0);
-        let norm = grad.xyz().normalize();
+        // A zero gradient names no plane: an exact tie of min or max with a
+        // constant (min(face, 0) where the face is at 0, as a box with round
+        // dimensions puts it) takes the constant's. Normalized, it is NaN and
+        // the vertex is lost; it keeps its place in the mass point only, and
+        // the cell's other intersections place the vertex.
+        let len = grad.xyz().norm();
+        if !(len > 0.0) {
+            return;
+        }
+        let norm = grad.xyz() / len;
         self.ata += norm * norm.transpose();
         self.atb += norm * norm.dot(&pos);
         self.btb += norm.dot(&pos).powi(2);
