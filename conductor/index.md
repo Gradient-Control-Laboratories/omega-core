@@ -15,3 +15,7 @@
 
 -   [Agent Skills](../.agents/skills/)
 
+## Tracks
+
+-   [Tracks Registry](./tracks.md)
+-   [Tracks Directory](./tracks/)
