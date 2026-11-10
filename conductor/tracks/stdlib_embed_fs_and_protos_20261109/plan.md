@@ -27,9 +27,9 @@ public API** in `omega-core` (and removes `program.RegisterStdPackage`):
 | :----------------- | :---------------- |
 | **Spec Creation**  | `~60 mins`        |
 | **Plan Creation**  | `~24 mins`        |
-| **Implementation** | `~23 mins`        |
-| **Code Review**    | `~2 mins`         |
-| **Effort**         | `~200,000 tokens` |
+| **Implementation** | `~31 mins`        |
+| **Code Review**    | `~33 mins`        |
+| **Effort**         | `~240,000 tokens` |
 
 ---
 
@@ -149,3 +149,9 @@ public API** in `omega-core` (and removes `program.RegisterStdPackage`):
   - [x] Calculate total active **Implementation** time, accumulated **Code Review** time, and
     estimated **Effort** tokens across track transcripts, and record them in `plan.md`.
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`) 729fed3
+
+---
+
+## Phase: Review Fixes
+
+- [x] Task: Apply review suggestions (`StdLibRegistry`, remove `RawProto`/`Domain`, `ParsePackage` stdlib fast path, `type Result = parser2.Result`, and `4 MiB` `defaultCacheLimit`) 162e1fd
