@@ -165,9 +165,9 @@ Bytes 32..N  : Deterministic proto.MarshalOptions{Deterministic: true} bytes of 
        `go run ./stdlib/internal/gen` (incremental mode, parsing only the modified stdlib
        packages).
      - Otherwise, exit immediately (~10 ms shell check without invoking `go`).
-   - Hook `./tool/build-stdlib.sh` into `./tool/build.sh`, `./tool/build-cli.sh`, `./tool/build-wheel.sh`,
-     `./tool/test-go.sh`, `./tool/check.sh`, `./tool/update-goldens.sh`, and
-     `./tool/build-proto.sh` (with `--force` after `protoc` regenerates `program.pb.go`).
+   - Hook `./tool/build-stdlib.sh` into `./tool/build.sh`, `./tool/build-cli.sh`,
+     `./tool/build-wheel.sh`, `./tool/test-go.sh`, `./tool/check.sh`, `./tool/update-goldens.sh`,
+     and `./tool/build-proto.sh` (with `--force` after `protoc` regenerates `program.pb.go`).
 3. **Freshness Unit Test (`parser`):**
    - Add `TestStdlibProtosUpToDate` in `parser` that parses every package in `gsllibs.All()` from
      `.gsl` sources and verifies via `stdpkg.RawProto(lib.ImportPath)` that:
@@ -244,7 +244,7 @@ way MUST be included at every non-obvious boundary:
 - [ ] `stdlib/internal/gen` skips unchanged packages via the 32-byte SHA-256 header by default and
   rebuilds all packages when `--force` is passed; `./tool/build-stdlib.sh` delegates exclusively to
   `go run ./stdlib/internal/gen` with fast `mtime` guards and is wired into
-  `./tool/{build,build-cli,test-go,check,update-goldens,build-proto}.sh`.
+  `./tool/{build,build-cli,build-wheel,test-go,check,update-goldens,build-proto}.sh`.
 - [ ] Code comments explaining *what* and *why* are present across `stdlib/pkg_info.go`,
   `internal/stdpkg`, `program/get_import.go`, `parser/caching.go`, `stdlib/internal/gen`, and
   `tool/build-stdlib.sh`.
