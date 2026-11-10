@@ -34,6 +34,8 @@
 
 ## Build & Verification Tooling (`tool/`)
 
+- `./tool/build-stdlib.sh`: Generates and validates pre-parsed standard library `package.pb`
+  protobufs.
 - `./tool/build-cli.sh`: Builds `bin/{gsl,compile,serve,fix}`.
 - `./tool/build-proto.sh`: Compiles `program.proto` and `tape.proto`.
 - `./tool/build-fidget.sh`: Builds native Rust/C++ Fidget and Manifold libraries.
