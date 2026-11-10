@@ -102,39 +102,39 @@ public API** in `omega-core` (and removes `program.RegisterStdPackage`):
 
 ---
 
-## Phase 3: Shared Lazy Stdlib Cache in `program` & `CachingParser`, Removing `RegisterStdPackage` and `parser.init()`
+## Phase 3: Shared Lazy Stdlib Cache in `program` & `CachingParser`, Removing `RegisterStdPackage` and `parser.init()` [checkpoint: fcd2cab]
 
-- [~] Task: Write failing tests for standalone `program` stdlib resolution and shared `CachingParser` fast path (Red Phase)
-  - [ ] Update `program/get_import_test.go` to remove `RegisterStdPackage` calls and test standalone
+- [x] Task: Write failing tests for standalone `program` stdlib resolution and shared `CachingParser` fast path (Red Phase) fcd2cab
+  - [x] Update `program/get_import_test.go` to remove `RegisterStdPackage` calls and test standalone
     resolution of real embedded standard library packages (`"builtin"`, `"vector"`) via both
     `(*Program).GetImport` and `GetStdPackage` (without importing `parser`), including mutation
     isolation on `GetStdPackage` clones.
-  - [ ] Update `parser/parse_cache_test.go` to assert that `(*CachingParser).ParsePackage` serves
+  - [x] Update `parser/parse_cache_test.go` to assert that `(*CachingParser).ParsePackage` serves
     standard library packages via the shared `program.GetStdPackage` fast path without increasing
     `CachingParser`'s internal LRU `size` counter, preserves clone mutation safety, and falls back
     to live `ParsePackage` + LRU caching when `.gsl` source text does not match a pre-baked stdlib
     hash.
-  - [ ] Remove the obsolete `init()` stub calling `program.RegisterStdPackage("builtin", ...)` in
+  - [x] Remove the obsolete `init()` stub calling `program.RegisterStdPackage("builtin", ...)` in
     `internal/types/types_test.go`.
-- [ ] Task: Implement lazy unmarshaling in `program` and lock-free stdlib lookup in `CachingParser` (Green & Refactor Phase)
-  - [ ] Update `program/get_import.go` to delete `RegisterStdPackage` and `stdPkgs`, lazily
+- [x] Task: Implement lazy unmarshaling in `program` and lock-free stdlib lookup in `CachingParser` (Green & Refactor Phase) fcd2cab
+  - [x] Update `program/get_import.go` to delete `RegisterStdPackage` and `stdPkgs`, lazily
     unmarshal each standard library package at most once per process (`sync.OnceValue` over
     `stdpkg.Proto(path)`), return the shared read-only `*Package` from `(*Program).GetImport`, and
     return `proto.Clone(pkg).(*Package)` from `GetStdPackage`, with clear *what*-and-*why* comments.
-  - [ ] Delete `init()` (and unused imports) from `parser/parser.go`.
-  - [ ] Update `parser/caching.go` to delete `stdCachedPkg`, `stdCachedPkgs`, `sourcesKey`, and the
+  - [x] Delete `init()` (and unused imports) from `parser/parser.go`.
+  - [x] Update `parser/caching.go` to delete `stdCachedPkg`, `stdCachedPkgs`, `sourcesKey`, and the
     pre-warm loop in `NewCachingParser()`, routing `(*CachingParser).ParsePackage` through
     `stdpkg.SourcesHash` -> `stdpkg.ImportPathByHash` -> `program.GetStdPackage` before checking
     the LRU cache, with clear *what*-and-*why* comments.
-  - [ ] Run `gofmt` and verify targeted package tests pass with near-zero startup overhead:
+  - [x] Run `gofmt` and verify targeted package tests pass with near-zero startup overhead:
     `go test -v ./program/... ./parser/... ./internal/types/... ./internal/link/... ./assembler/...`.
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`) fcd2cab
 
 ---
 
 ## Phase 4: Repository-Wide Verification, Guard Cleanup & Metrics Finalization
 
-- [ ] Task: Run full quality checks and repository-wide test suites
+- [~] Task: Run full quality checks and repository-wide test suites
   - [ ] Execute `./tool/check.sh` and `./tool/test.sh` across `omega-core`, verifying all Go and
     Rust tests pass with zero regressions and zero compiler golden diffs.
   - [ ] Verify `./tool/build-stdlib.sh` is a fast no-op on clean state and `git status` shows
