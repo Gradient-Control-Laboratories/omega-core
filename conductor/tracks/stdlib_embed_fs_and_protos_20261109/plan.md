@@ -25,8 +25,8 @@ public API** in `omega-core` (and removes `program.RegisterStdPackage`):
 
 | Metric             | Elapsed Time |
 | :----------------- | :----------- |
-| **Spec Creation**  | `TBD`        |
-| **Plan Creation**  | `TBD`        |
+| **Spec Creation**  | `~60 mins`   |
+| **Plan Creation**  | `~24 mins`   |
 | **Implementation** | `TBD`        |
 | **Code Review**    | `TBD`        |
 | **Effort**         | `TBD tokens` |
@@ -35,11 +35,11 @@ public API** in `omega-core` (and removes `program.RegisterStdPackage`):
 
 ## Phase 1: Internal `stdpkg` Foundation & `embed.FS` Migration in `stdlib`
 
-- [ ] Task: Calculate and record active **Spec Creation** and **Plan Creation** times
-  - [ ] Compute active collaboration time from conversation transcript turn deltas (with a 10-minute
+- [x] Task: Calculate and record active **Spec Creation** and **Plan Creation** times
+  - [x] Compute active collaboration time from conversation transcript turn deltas (with a 10-minute
     idle cutoff per turn), display the turn breakdown table in chat, and record active durations and
     implementation start time in `plan.md`.
-- [ ] Task: Write failing unit tests for `internal/stdpkg` and `stdlib` package layout invariants (Red Phase)
+- [~] Task: Write failing unit tests for `internal/stdpkg` and `stdlib` package layout invariants (Red Phase)
   - [ ] Create `internal/stdpkg/stdpkg_test.go` testing `SourcesHash` determinism and boundary
     collision resistance (`["ab", "c"]` vs. `["a", "bc"]`), `LoadSources` over in-memory `fstest.MapFS`
     (`package.yaml` source ordering, single `<dirname>.gsl` loading, rejection of unlisted or extra
