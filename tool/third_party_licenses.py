@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Write the licence texts of everything linked into the omega-gsl programs (gsl and compile).
+"""Write the licence texts of everything linked into the omega-core programs (gsl and compile).
 
 THIRD_PARTY_NOTICES.md says what a binary distribution of omega's render library must carry: the MPL-2.0 terms,
 and the MIT, BSD and ISC notices of what it links. This collects them from the sources the programs were built
@@ -69,7 +69,7 @@ class Texts:
 
     def write(self, out: Path) -> None:
         number = {digest: i + 1 for i, digest in enumerate(self.texts)}
-        lines = ["Third-party licences of the omega-gsl programs (gsl and compile)", "",
+        lines = ["Third-party licences of the omega-core programs (gsl and compile)", "",
                  "Everything below is linked into the two programs this wheel ships. Each component names the",
                  "texts that are its terms; each text follows once, with the components it covers. Written by",
                  "omega-core's tool/third_party_licenses.py from the sources the programs were built from. The",

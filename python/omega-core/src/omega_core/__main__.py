@@ -6,7 +6,7 @@ import os
 import subprocess
 import sys
 
-from omega_gsl import executable
+from omega_core import executable
 
 
 def main() -> None:
