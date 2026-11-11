@@ -1,3 +1,7 @@
+/// Shared base for the lattice family: `solidify` gives the thin skeleton
+/// fields of beam, honeycomb, foam and tpms a thickness, plus a body-centered
+/// cubic lattice.
+
 
 // Lattice Library (lattice)
 //

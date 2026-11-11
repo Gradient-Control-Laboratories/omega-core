@@ -1,3 +1,6 @@
+/// Shared helpers the material libraries build presets from: noise thresholds,
+/// blends, bands, rings and triplanar weights.
+
 
 // Texture Library (texture)
 //

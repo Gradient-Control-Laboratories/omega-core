@@ -1,3 +1,6 @@
+/// Vector constants (zero, dirX, dirY, dirZ) and matrix-times-vector operations
+/// that return vectors, such as `vector.multiplyPoint`.
+
 
 // Vector Library (vector)
 //

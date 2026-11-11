@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"gradientcontrol.com/omega/core/cmd/serve/internal/config"
+	"gradientcontrol.com/omega/core/program/preamble"
 )
 
 // ProgressEvent represents a single NDJSON progress update pushed over GET /api/progress.
@@ -60,9 +61,23 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("POST /api/compile", s.handleCompile)
 	s.mux.HandleFunc("POST /api/mesh", s.handleMesh)
 
+	// The Help panel's GSL reference, generated from the standard library
+	// this server compiles; ahead of the static files so it cannot go stale.
+	s.mux.HandleFunc("GET /docs/gsl_description.md", serveDoc(func() string { return preamble.GSLDescription }))
+	s.mux.HandleFunc("GET /docs/gsl_libraries.md", serveDoc(func() string { return preamble.LibrariesDescriptiveText() }))
+
 	assetsDir := filepath.Join(s.cfg.ExamplesDir, "assets")
 	s.mux.Handle("GET /assets/", noCacheMiddleware(http.StripPrefix("/assets/", http.FileServer(http.Dir(assetsDir)))))
 	s.mux.Handle("GET /", noCacheMiddleware(http.FileServer(http.Dir(s.cfg.ViewerDir))))
+}
+
+// serveDoc answers with a markdown document text generates.
+func serveDoc(text func() string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-cache")
+		_, _ = w.Write([]byte(text()))
+	}
 }
 
 func noCacheMiddleware(next http.Handler) http.Handler {

@@ -1,3 +1,6 @@
+/// Triply periodic minimal surfaces (gyroid, Schwarz, diamond, lidinoid,
+/// Neovius, I-WP, split P) as approximate distance fields for walls and infill.
+
 
 // TPMS Library (tpms)
 //
