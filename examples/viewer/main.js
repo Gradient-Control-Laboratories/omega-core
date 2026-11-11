@@ -438,7 +438,9 @@ async function compileGsl(source) {
     }
 }
 
-async function requestStlExport(detail, surfaceBbox) {
+// requestStlExport asks the server to mesh the source by algo: "mdc" (the Export panel's Server DC) or
+// "marching-cubes" (Server MC).
+async function requestStlExport(detail, surfaceBbox, algo) {
     const source = getGslSourceForServer();
     if (!source || source.trim() === "") {
         showNotification(true, "No code to export");
@@ -465,7 +467,7 @@ async function requestStlExport(detail, surfaceBbox) {
                 source,
                 subdivision,
                 bbox,
-                algo: "marching-cubes",
+                algo,
                 time: getAnimTime(),
             }),
         });
@@ -802,9 +804,10 @@ initExportPanel({
     getWorldExtent,
     getSource: getGslSourceForServer,
     clearError,
-    onServerExport: (detail, surfaceBbox) => {
-        return requestStlExport(detail, surfaceBbox);
+    onServerExport: (detail, surfaceBbox, _bodyBoxes, algo) => {
+        return requestStlExport(detail, surfaceBbox, algo);
     },
+    serverMarchingCubes: true,
 });
 
 // ── Bodies Panel ──
