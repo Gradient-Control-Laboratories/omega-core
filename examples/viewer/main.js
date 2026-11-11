@@ -448,7 +448,7 @@ async function requestStlExport(detail, surfaceBbox, algo) {
     }
 
     const reqId = `mesh-${Date.now()}`;
-    const subdivision = detail ?? 7;
+    const subdivision = detail ?? 9;
     const ext = getWorldExtent();
     const bbox = Array.isArray(surfaceBbox) && surfaceBbox.length === 6
         ? surfaceBbox

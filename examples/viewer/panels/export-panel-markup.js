@@ -16,8 +16,8 @@ export const EXPORT_PANEL_MARKUP = `
     </div>
     <div class="field-panel-row export-detail">
         <label>Detail</label>
-        <input type="range" id="stl-depth" min="3" max="12" value="7" step="1">
-        <span id="stl-depth-label">7</span>
+        <input type="range" id="stl-depth" min="3" max="12" value="9" step="1">
+        <span id="stl-depth-label">9</span>
     </div>
     <div id="stl-voxel-info"></div>
     <div class="field-panel-row export-choice">
