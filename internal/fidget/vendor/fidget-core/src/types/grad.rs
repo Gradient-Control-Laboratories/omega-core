@@ -58,11 +58,18 @@ impl Grad {
     #[inline]
     pub fn sqrt(self) -> Self {
         let v = self.v.sqrt();
+        // d/dx sqrt(f) = f' / (2 sqrt(f)). Where f and a component of f' are
+        // both zero -- the root of a sum of squared clamped terms, such as
+        // length(max(d, 0)), which is identically zero wherever every clamp
+        // is -- that quotient is 0 / 0, and one NaN gradient breaks a mesh.
+        // The derivative there is zero: take it, as omega's own symbolic
+        // derivative does (internal/assembler/property/derivative.go).
+        let d = |g: f32| if g == 0.0 { 0.0 } else { g / (2.0 * v) };
         Grad {
             v,
-            dx: self.dx / (2.0 * v),
-            dy: self.dy / (2.0 * v),
-            dz: self.dz / (2.0 * v),
+            dx: d(self.dx),
+            dy: d(self.dy),
+            dz: d(self.dz),
         }
     }
 

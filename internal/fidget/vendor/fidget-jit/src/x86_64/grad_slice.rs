@@ -215,29 +215,13 @@ impl Assembler for GradSliceAssembler {
         );
     }
     fn build_sqrt(&mut self, out_reg: u8, lhs_reg: u8) {
-        // d/dx sqrt(f(x)) = f'(x) / (2 * sqrt(f(x)))
-        dynasm!(self.0.ops
-            // Calculate xmm0[0] = f(x)**2
-            ; vsqrtss xmm0, xmm0, Rx(reg(lhs_reg))
-
-            // Multiply it by 2
-            // TODO is this the best way to make 2.0?
-            ; mov eax, 2.0f32.to_bits() as i32
-            ; vmovd xmm1, eax
-            ; vmulss xmm0, xmm0, xmm1
-
-            // Set every element in xmm0 to 2 * sqrt(f(x))
-            ; vbroadcastss xmm0, xmm0
-
-            // Set every element in xmm0 to -f'(x) / f(x)**2
-            ; vdivps xmm0, Rx(reg(lhs_reg)), xmm0
-
-            // Compute the actual square root into xmm1
-            ; vsqrtss xmm1, xmm1, Rx(reg(lhs_reg))
-
-            ; vmovups Rx(reg(out_reg)), xmm0
-            ; vmovss Rx(reg(out_reg)), Rx(reg(out_reg)), xmm1
-        );
+        // Grad::sqrt, called: it takes a zero derivative where the value and
+        // that component of the input's derivative are both zero, where the
+        // inline quotient was 0 / 0 (NaN).
+        extern "sysv64" fn grad_sqrt(v: Grad) -> Grad {
+            v.sqrt()
+        }
+        self.call_fn_unary(out_reg, lhs_reg, grad_sqrt);
     }
     fn build_square(&mut self, out_reg: u8, lhs_reg: u8) {
         // d/dx f(x)**2 = 2 * f(x) * f'(x)
