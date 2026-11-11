@@ -15,7 +15,7 @@ func TopLevelNames(source string) map[string]bool {
 // with the names a case's checks were written against.
 func TopLevelReturnExprs(source string) []string {
 	for _, s := range topLevelStatements(source) {
-		name, _ := leadingIdentifier(s.text)
+		name, _, _ := leadingIdentifier(s.text)
 		if name != "return" {
 			continue
 		}

@@ -1,5 +1,6 @@
 """The installed omega-core wheel: its programs are there, report the package's version, load only the system's
-libraries, mesh a model right and draw it. Standard library and pytest only, so it runs against a bare install."""
+libraries, mesh a model right, draw it and answer questions of its field (gsl eval, omega_core.Session). Standard
+library and pytest only, so it runs against a bare install."""
 
 from __future__ import annotations
 
@@ -127,3 +128,74 @@ def test_a_model_is_drawn_from_each_view_tiled_two_across(tmp_path: Path) -> Non
     # The box is drawn, its faces shaded: an empty scene's iso view holds the ground and the axes, 4 colours.
     colours = {rows[y][3 * x:3 * x + 3] for y in range(height) for x in range(160)}
     assert len(colours) >= 20, len(colours)
+
+
+# A sphere of radius r about the origin; r is a slider, the first name declared.
+BALL = "@scene(40)\n@range(5, 15) r = 10.0;\nball = length(p) - r;\nreturn ball;\n"
+
+
+@pytest.fixture
+def ball(tmp_path: Path):
+    (tmp_path / "ball.gsl").write_text(BALL)
+    with omega_core.Session() as gsl:
+        yield gsl.document(tmp_path / "ball.gsl")
+
+
+def test_a_session_answers_values_gradients_and_derivatives(ball) -> None:
+    fields = ball.eval(["ball", "ball.dp", "ball.d(r)"], points=[(20, 0, 0), (0, 0, 4)])
+    assert fields["ball"].type == "num"
+    assert fields["ball"].values == pytest.approx((10, -6))
+    assert fields["ball"].gradients[1] == pytest.approx((0, 0, 1))
+    assert fields["ball.dp"].values[0] == pytest.approx((1, 0, 0))  # a vec3 at each point
+    assert fields["ball.d(r)"].values == pytest.approx((-1, -1))
+    # defs naming a slider set it for that question only.
+    assert ball.eval("ball", points=[(20, 0, 0)], defs="r = 12.0;")["ball"].values == pytest.approx((8,))
+    assert ball.eval("ball", points=[(20, 0, 0)])[0].values == pytest.approx((10,))
+
+
+def test_a_proof_over_the_sliders_names_where_it_fails(ball) -> None:
+    outside = (12, -2, -2, 16, 2, 2)
+    assert ball.certify(region=outside, threshold=0).proven
+    over = ball.certify(region=outside, threshold=0, over_sliders=True)
+    assert over.verdict == "disproven"
+    assert over.params == {"r": (5, 15)}
+    assert over.counter_params["r"][0] >= 12
+    assert ball.certify(region=outside, threshold=0, params={"r": (5, 11)}).proven
+
+
+def test_an_extremum_says_the_lipschitz_constant_its_bound_assumes(ball) -> None:
+    found = ball.extremum(region=(-20, -20, -20, 20, 20, 20))
+    assert found.assumed_lipschitz == 1
+    assert found.min == pytest.approx(-10, abs=0.1)
+    assert found.min_conditional_bound <= found.min
+    assert found.max is None
+
+
+def test_a_question_that_fails_raises_in_gsls_words_and_the_session_goes_on(ball) -> None:
+    with pytest.raises(omega_core.EvalError, match="undefined identifier: nope"):
+        ball.eval("nope", points=[(0, 0, 0)])
+    assert ball.describe().sliders == {"r": (5, 15)}
+
+
+def test_gsl_eval_answers_one_request_with_its_exit_code(tmp_path: Path) -> None:
+    (tmp_path / "ball.gsl").write_text(BALL)
+    gsl = str(omega_core.executable())
+    request = '{"op": "eval", "source": "ball.gsl", "exprs": ["ball"], "points": [[20, 0, 0]]}'
+    done = subprocess.run([gsl, "eval", "-"], input=request, capture_output=True, text=True, cwd=tmp_path, timeout=60)
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert '"ok":true' in done.stdout
+    done = subprocess.run([gsl, "eval", "-"], input='{"op": "spin"}', capture_output=True, text=True, cwd=tmp_path,
+                          timeout=60)
+    assert done.returncode == 2
+    assert '"ok":false' in done.stdout
+
+
+def test_a_session_draws_what_gsl_compile_draws_with_a_slider_set(ball, tmp_path: Path) -> None:
+    picture = ball.render(tmp_path / "pics" / "ball.png", views="iso,top", width=160, height=120, light=True,
+                          extent=20, defs="r = 6.0;")
+    assert (picture.width, picture.height) == (2 * 160 + 4, 120)
+    width, height, rows = read_png(Path(picture.path))
+    assert (width, height) == (324, 120)
+    assert len({rows[y][3 * x:3 * x + 3] for y in range(height) for x in range(160)}) >= 20
+    whole = ball.render(tmp_path / "whole.png", views=["iso", "top"], width=160, height=120, light=True, extent=20)
+    assert Path(whole.path).read_bytes() != Path(picture.path).read_bytes()  # at one extent, r = 6 draws smaller

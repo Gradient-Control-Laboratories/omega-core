@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "omega-core"
 # The toolchain's own version (internal/version/version.go), so the wheel and `gsl --version` agree.
 dynamic = ["version"]
-description = "omega-core's gsl program (GSL implicit models: compile, mesh), packaged as a wheel, with a small launcher."
+description = "omega-core's gsl program (GSL implicit models: compile, mesh, query), packaged as a wheel, with a small launcher."
 readme = "README.md"
 requires-python = ">=3.9"
 # omega-core and the launcher are MIT. The programs link the Go and Rust standard libraries, three Go modules, and

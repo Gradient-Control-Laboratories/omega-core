@@ -200,7 +200,7 @@ func (e *Evaluator) prepareQuery(ctx context.Context, manifest map[string]string
 	var appended strings.Builder
 	for _, s := range defStmts {
 		if s.name != "" && docNames[s.name] {
-			overrides[s.name] = s.text
+			overrides[s.name] = s.text[s.keep:]
 		} else {
 			appended.WriteString(s.text)
 			appended.WriteString("\n")
@@ -799,6 +799,7 @@ func decodePackedTriangles(verticesB64 string) ([]float32, []uint32, error) {
 type gslStmt struct {
 	text     string // raw text, including leading whitespace and terminator
 	name     string // leading identifier ("" if none)
+	keep     int    // where the declaration begins in text (leadingIdentifier)
 	isImport bool   // leading keyword is "import"
 }
 
@@ -824,8 +825,8 @@ func topLevelStatements(source string) []gslStmt {
 			}
 			return
 		}
-		name, isImport := leadingIdentifier(text)
-		stmts = append(stmts, gslStmt{text: text, name: name, isImport: isImport})
+		name, keep, isImport := leadingIdentifier(text)
+		stmts = append(stmts, gslStmt{text: text, name: name, keep: keep, isImport: isImport})
 	}
 
 	depth := 0
@@ -887,10 +888,17 @@ func topLevelStatements(source string) []gslStmt {
 	return stmts
 }
 
-// leadingIdentifier returns the first identifier in a statement (skipping
-// leading whitespace and comments) and whether it is the `import` keyword.
-func leadingIdentifier(stmt string) (name string, isImport bool) {
+// leadingIdentifier returns the first identifier in a statement and whether
+// it is the `import` keyword, skipping leading whitespace, comments, the
+// `@scene(...)` directive (which ends without a `;`, so it leads the
+// statement after it) and the declaration's own annotations (`@range(5, 15)
+// r = 10.0;`). A statement that sets a property (`r.min = 5.0;`) declares
+// nothing: its name is "". keep is where the declaration begins, its
+// annotations included: what precedes it (whitespace, comments, `@scene`)
+// stays when the declaration is replaced.
+func leadingIdentifier(stmt string) (name string, keep int, isImport bool) {
 	i, n := 0, len(stmt)
+	annotated := -1 // where the declaration's first annotation starts
 	for i < n {
 		c := stmt[i]
 		switch {
@@ -899,31 +907,89 @@ func leadingIdentifier(stmt string) (name string, isImport bool) {
 		case c == '/' && i+1 < n && stmt[i+1] == '/':
 			e := strings.IndexByte(stmt[i:], '\n')
 			if e < 0 {
-				return "", false
+				return "", n, false
 			}
 			i += e
 		case c == '/' && i+1 < n && stmt[i+1] == '*':
 			e := strings.Index(stmt[i+2:], "*/")
 			if e < 0 {
-				return "", false
+				return "", n, false
 			}
 			i += 2 + e + 2
+		case c == '@':
+			at := i
+			var directive string
+			directive, i = skipAnnotation(stmt, i)
+			if directive != "scene" && annotated < 0 {
+				annotated = at
+			}
 		default:
 			goto ident
 		}
 	}
 ident:
 	start := i
-	for i < n {
-		c := stmt[i]
+	i = identifierEnd(stmt, i)
+	name = stmt[start:i]
+	keep = start
+	if annotated >= 0 {
+		keep = annotated
+	}
+	if name == "import" {
+		return name, keep, true // `import . "omega";` is a dot import, not a property
+	}
+	if name != "" && i < n && stmt[i] == '.' {
+		return "", keep, false
+	}
+	return name, keep, false
+}
+
+// identifierEnd is the end of the identifier starting at i (i when none does).
+func identifierEnd(s string, i int) int {
+	start := i
+	for i < len(s) {
+		c := s[i]
 		if c == '_' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || (i > start && c >= '0' && c <= '9') {
 			i++
 		} else {
 			break
 		}
 	}
-	name = stmt[start:i]
-	return name, name == "import"
+	return i
+}
+
+// skipAnnotation reads the `@name` or `@name(args)` at s[i]: its name and the
+// index after it. Strings in the arguments are opaque.
+func skipAnnotation(s string, i int) (string, int) {
+	end := identifierEnd(s, i+1)
+	name := s[i+1 : end]
+	j := end
+	for j < len(s) && (s[j] == ' ' || s[j] == '\t') {
+		j++
+	}
+	if j >= len(s) || s[j] != '(' {
+		return name, end
+	}
+	depth := 0
+	for j < len(s) {
+		switch s[j] {
+		case '(':
+			depth++
+		case ')':
+			depth--
+			if depth == 0 {
+				return name, j + 1
+			}
+		case '"':
+			for j++; j < len(s) && s[j] != '"'; j++ {
+				if s[j] == '\\' {
+					j++
+				}
+			}
+		}
+		j++
+	}
+	return name, len(s)
 }
 
 // dedupDefs cleans a defs block for splicing: it drops `import` statements
@@ -980,6 +1046,11 @@ func substituteTopLevelDecls(source string, repl map[string]string) string {
 	for _, s := range topLevelStatements(source) {
 		if s.name != "" && !used[s.name] {
 			if r, ok := repl[s.name]; ok {
+				// What precedes the declaration (whitespace, comments, the
+				// @scene directive) stays; the declaration, its annotations
+				// included, is replaced, so an override is not held to the
+				// slider range it replaces.
+				out.WriteString(s.text[:s.keep])
 				out.WriteString(r)
 				used[s.name] = true
 				continue
