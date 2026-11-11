@@ -3,19 +3,21 @@ package source
 import (
 	"errors"
 	"fmt"
+
+	"gradientcontrol.com/omega/core/assembler/source"
 )
 
 // MultiSourceManager delegates package source and asset lookups across an ordered list of Managers.
 type MultiSourceManager struct {
 	// Read-only immutable fields set at construction
-	managers []Manager
+	managers []source.Manager
 }
 
-var _ Manager = &MultiSourceManager{}
+var _ source.Manager = &MultiSourceManager{}
 
 // NewMultiSourceManager creates a Manager that queries each non-nil Manager in order.
-func NewMultiSourceManager(managers ...Manager) *MultiSourceManager {
-	var filtered []Manager
+func NewMultiSourceManager(managers ...source.Manager) *MultiSourceManager {
+	var filtered []source.Manager
 	for _, mgr := range managers {
 		if mgr != nil {
 			filtered = append(filtered, mgr)
@@ -30,7 +32,7 @@ func (m *MultiSourceManager) Sources(path string) ([]string, []string, error) {
 		srcs, assets, err := mgr.Sources(path)
 		if err != nil {
 			// TODO this is inefficient... change Sources to return nil rather than error when package not found
-			if errors.Is(err, ErrPkgNotFound) {
+			if errors.Is(err, source.ErrPkgNotFound) {
 				continue
 			}
 			return nil, nil, err
@@ -39,7 +41,7 @@ func (m *MultiSourceManager) Sources(path string) ([]string, []string, error) {
 			return srcs, assets, nil
 		}
 	}
-	return nil, nil, wrapError(path, ErrPkgNotFound)
+	return nil, nil, wrapError(path, source.ErrPkgNotFound)
 }
 
 // Asset queries each Manager in order until the asset is found or a non-not-found error occurs.
@@ -48,7 +50,7 @@ func (m *MultiSourceManager) Asset(pkg, filename string) ([]byte, error) {
 		data, err := mgr.Asset(pkg, filename)
 		if err != nil {
 			// TODO this is inefficient... change Asset to return nil rather than error when package not found
-			if errors.Is(err, ErrPkgNotFound) {
+			if errors.Is(err, source.ErrPkgNotFound) {
 				continue
 			}
 			return nil, err
@@ -57,6 +59,5 @@ func (m *MultiSourceManager) Asset(pkg, filename string) ([]byte, error) {
 			return data, nil
 		}
 	}
-	return nil, wrapError(pkg, fmt.Errorf("asset %q: %w", filename, ErrPkgNotFound))
+	return nil, wrapError(pkg, fmt.Errorf("asset %q: %w", filename, source.ErrPkgNotFound))
 }
-

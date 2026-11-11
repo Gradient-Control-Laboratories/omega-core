@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"testing"
+
+	"gradientcontrol.com/omega/core/assembler/source"
 )
 
 type errManager struct {
@@ -67,7 +69,7 @@ func TestMultiSourceManagerSources(t *testing.T) {
 
 	// Returns ErrPkgNotFound when no manager has the package.
 	_, _, err = multi.Sources("missing/pkg")
-	if !errors.Is(err, ErrPkgNotFound) {
+	if !errors.Is(err, source.ErrPkgNotFound) {
 		t.Fatalf("expected ErrPkgNotFound for missing/pkg, got %v", err)
 	}
 }
@@ -94,7 +96,7 @@ func TestMultiSourceManagerAssets(t *testing.T) {
 
 	// Missing asset across all managers returns ErrPkgNotFound.
 	_, err = multi.Asset("pkg/a", "missing.stl")
-	if !errors.Is(err, ErrPkgNotFound) {
+	if !errors.Is(err, source.ErrPkgNotFound) {
 		t.Fatalf("expected ErrPkgNotFound for missing asset, got %v", err)
 	}
 }
@@ -113,4 +115,3 @@ func TestMultiSourceManagerPropagatesNonNotFoundError(t *testing.T) {
 		t.Fatalf("expected disk I/O failure to propagate from Asset, got %v", err)
 	}
 }
-

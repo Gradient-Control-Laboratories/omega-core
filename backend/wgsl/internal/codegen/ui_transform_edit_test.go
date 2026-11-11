@@ -5,10 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler/ui"
 	"gradientcontrol.com/omega/core/assembler"
+	"gradientcontrol.com/omega/core/assembler/ui"
 	"gradientcontrol.com/omega/core/program/edit"
-	internalui "gradientcontrol.com/omega/core/internal/ui"
 )
 
 func TestSplineTransformEdits(t *testing.T) {
@@ -41,7 +40,7 @@ return branch();`
 				}
 				var spline ui.Control
 				var spans []edit.Span
-				for _, control := range internalui.Extract(res.Program.Primary, res.Program.GetImport) {
+				for _, control := range ui.Extract(res.Program.Primary, res.Program.GetImport) {
 					if control.Kind == ui.KindSpline {
 						spline = control
 					}

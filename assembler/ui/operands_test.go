@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"gradientcontrol.com/omega/core/assembler"
+	"gradientcontrol.com/omega/core/assembler/ui"
 	"gradientcontrol.com/omega/core/internal/source"
-	ui "gradientcontrol.com/omega/core/internal/ui"
 	"gradientcontrol.com/omega/core/program"
 )
 

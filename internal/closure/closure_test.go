@@ -4,16 +4,17 @@ import (
 	"strings"
 	"testing"
 
+	"gradientcontrol.com/omega/core/assembler/source"
 	"gradientcontrol.com/omega/core/internal/closure"
 	"gradientcontrol.com/omega/core/internal/collect"
 	"gradientcontrol.com/omega/core/internal/link"
-	"gradientcontrol.com/omega/core/internal/source"
+	internalsource "gradientcontrol.com/omega/core/internal/source"
 	parser "gradientcontrol.com/omega/core/parser"
 	"gradientcontrol.com/omega/core/program"
 )
 
 func runPipeline(src string) (*program.Program, error) {
-	srcMgr := &source.MockManager{}
+	srcMgr := &internalsource.MockManager{}
 	prog, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
 	if err != nil {
 		return nil, err
@@ -437,8 +438,8 @@ scaleBy(k) {
 }
 `
 
-func libManager(src string) *source.MockManager {
-	return &source.MockManager{PkgSources: map[string][]string{"geom/lib": {src}}}
+func libManager(src string) *internalsource.MockManager {
+	return &internalsource.MockManager{PkgSources: map[string][]string{"geom/lib": {src}}}
 }
 
 func depFile(t *testing.T, prog *program.Program, path string) *program.PackageFile {

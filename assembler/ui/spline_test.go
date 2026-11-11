@@ -4,10 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler/ui"
 	"gradientcontrol.com/omega/core/assembler"
+	"gradientcontrol.com/omega/core/assembler/ui"
 	"gradientcontrol.com/omega/core/internal/source"
-	internalui "gradientcontrol.com/omega/core/internal/ui"
 )
 
 func TestExtractLocalSpline(t *testing.T) {
@@ -177,7 +176,7 @@ return length(p - p4.xyz);`
 	if err != nil {
 		t.Fatalf("AnalyzePackage: %v", err)
 	}
-	if got := internalui.Extract(analyzed, nil); len(got) == 0 {
+	if got := ui.Extract(analyzed, nil); len(got) == 0 {
 		t.Fatal("expected ui.Extract on un-inlined analyzed package to extract controls")
 	}
 

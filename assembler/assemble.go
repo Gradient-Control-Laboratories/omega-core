@@ -7,6 +7,7 @@ import (
 	"gradientcontrol.com/omega/core/assembler/meshplan"
 	"gradientcontrol.com/omega/core/assembler/meshslots"
 	"gradientcontrol.com/omega/core/assembler/slider"
+	"gradientcontrol.com/omega/core/assembler/source"
 	"gradientcontrol.com/omega/core/assembler/topofold"
 	"gradientcontrol.com/omega/core/assembler/ui"
 	"gradientcontrol.com/omega/core/assembler/warpfold"
@@ -25,10 +26,8 @@ import (
 	"gradientcontrol.com/omega/core/internal/link"
 	"gradientcontrol.com/omega/core/internal/lower"
 	"gradientcontrol.com/omega/core/internal/meshfold"
-	internalslider "gradientcontrol.com/omega/core/internal/slider"
 	internalsource "gradientcontrol.com/omega/core/internal/source"
 	"gradientcontrol.com/omega/core/internal/types"
-	internalui "gradientcontrol.com/omega/core/internal/ui"
 	"gradientcontrol.com/omega/core/parser"
 	"gradientcontrol.com/omega/core/program"
 	"gradientcontrol.com/omega/core/program/textures"
@@ -77,9 +76,9 @@ func Assemble(primarySources []string, opts ...Option) (*Result, error) {
 		}
 	}
 
-	var srcMgr internalsource.Manager = internalsource.NewStdLibManager()
+	var srcMgr source.Manager = internalsource.NewStdLibManager()
 	if len(o.managers) > 0 {
-		managers := make([]internalsource.Manager, 0, len(o.managers)+1)
+		managers := make([]source.Manager, 0, len(o.managers)+1)
 		managers = append(managers, o.managers...)
 		managers = append(managers, srcMgr)
 		srcMgr = internalsource.NewMultiSourceManager(managers...)
@@ -96,7 +95,7 @@ func defaultOptions() options {
 	}
 }
 
-func assembleWithOptions(primarySources []string, srcMgr internalsource.Manager, o *options) (*Result, error) {
+func assembleWithOptions(primarySources []string, srcMgr source.Manager, o *options) (*Result, error) {
 	// The mesh plan is sliced after step 7 without a step of its own: it is
 	// plumbing (the preview's mesh placements, the export's leaves), not
 	// something to show a person waiting on a compile.
@@ -354,8 +353,8 @@ func assembleWithOptions(primarySources []string, srcMgr internalsource.Manager,
 
 	if o.extractUI {
 		sourceText := strings.Join(primarySources, "\n")
-		result.Sliders = internalslider.Extract(sourceText, prog.Primary)
-		result.UIControls = internalui.Extract(prog.Primary, prog.GetImport)
+		result.Sliders = slider.Extract(sourceText, prog.Primary)
+		result.UIControls = ui.Extract(prog.Primary, prog.GetImport)
 		result.Scene = prog.Scene()
 	}
 
@@ -434,7 +433,7 @@ func resolveAssemblerSpinodoidInputs(
 	return meshBboxes, decls
 }
 
-func optimizeProgram(prog *program.Program, o *options, srcMgr internalsource.Manager) (*program.Program, error) {
+func optimizeProgram(prog *program.Program, o *options, srcMgr source.Manager) (*program.Program, error) {
 	const maxIterations = 1000
 	for i := 0; i < maxIterations; i++ {
 		if o.progressFn != nil {

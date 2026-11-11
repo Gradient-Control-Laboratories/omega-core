@@ -5,13 +5,14 @@ import (
 	"testing"
 
 	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/internal/source"
+	"gradientcontrol.com/omega/core/assembler/source"
+	internalsource "gradientcontrol.com/omega/core/internal/source"
 	"gradientcontrol.com/omega/core/internal/test/assert"
 	"gradientcontrol.com/omega/core/program"
 )
 
 func newTestMockManager() source.Manager {
-	return &source.MockManager{
+	return &internalsource.MockManager{
 		PkgSources: map[string][]string{
 			"pkgA": {`
 x = 10.0;

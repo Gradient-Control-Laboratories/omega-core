@@ -4,19 +4,18 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler/ui"
 	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/program/edit"
+	"gradientcontrol.com/omega/core/assembler/ui"
 	"gradientcontrol.com/omega/core/internal/source"
 	"gradientcontrol.com/omega/core/internal/test/assert"
-	internalui "gradientcontrol.com/omega/core/internal/ui"
+	"gradientcontrol.com/omega/core/program/edit"
 )
 
 func extract(t *testing.T, src string) []ui.Control {
 	t.Helper()
 	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(&source.MockManager{}))
 	assert.NoError(t, err)
-	return internalui.Extract(res.Program.Primary, nil)
+	return ui.Extract(res.Program.Primary, nil)
 }
 
 func textAt(src string, span edit.Span) string {

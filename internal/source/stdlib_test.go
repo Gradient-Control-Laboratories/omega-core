@@ -3,6 +3,8 @@ package source
 import (
 	"errors"
 	"testing"
+
+	"gradientcontrol.com/omega/core/assembler/source"
 )
 
 func TestStdLibManagerSources(t *testing.T) {
@@ -20,7 +22,7 @@ func TestStdLibManagerSources(t *testing.T) {
 	}
 
 	_, _, err = mgr.Sources("nonexistent/pkg")
-	if !errors.Is(err, ErrPkgNotFound) {
+	if !errors.Is(err, source.ErrPkgNotFound) {
 		t.Fatalf("expected ErrPkgNotFound for unknown package, got %v", err)
 	}
 }
@@ -32,8 +34,7 @@ func TestStdLibManagerAsset(t *testing.T) {
 	if data != nil {
 		t.Fatalf("expected nil asset data, got %v", data)
 	}
-	if !errors.Is(err, ErrPkgNotFound) {
+	if !errors.Is(err, source.ErrPkgNotFound) {
 		t.Fatalf("expected ErrPkgNotFound for stdlib asset, got %v", err)
 	}
 }
-

@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	"gradientcontrol.com/omega/core/assembler"
+	"gradientcontrol.com/omega/core/assembler/slider"
+	"gradientcontrol.com/omega/core/assembler/ui"
 	"gradientcontrol.com/omega/core/assembler/variation"
-	"gradientcontrol.com/omega/core/internal/slider"
 	"gradientcontrol.com/omega/core/internal/source"
 	"gradientcontrol.com/omega/core/internal/test/require"
-	"gradientcontrol.com/omega/core/internal/ui"
 	"gradientcontrol.com/omega/core/program"
 )
 
