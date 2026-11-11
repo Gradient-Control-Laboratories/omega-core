@@ -15,12 +15,16 @@ command, `gsl eval`, that speaks JSON, and a standard-library Python client for 
 
 ---
 
-## 2. Public API Surface Policy (Zero New Go Public API)
+## 2. Public API Surface Policy (One New Go Method)
 
 - **`eval` (`gradientcontrol.com/omega/core/eval`):** unchanged. `gsl eval` is a thin JSON layer
   over `eval.New(...)` and the methods it already has (`EvalGsl`, `Extremum`, `Certify`,
   `CertifyParams`, `CertifyOverSliders`, `Bounds`, `SurfacePoint`, `Volume`, `SliderRanges`,
   `TopLevelNames`, `TopLevelReturnExprs`).
+- **`Evaluator.RenderViews`** (new): `Render` from any cameras (`lib.LitView`: presets or `x,y,z`
+  directions, each with its ground) over a scene of half-size `extent` at animation time `timeAt`,
+  so `render` matches `compile -t png`. `Render` now calls it, unchanged in behaviour (a test pins
+  that both draw the same bytes for the same cameras).
 - **New, outside Go:** the `gsl eval` command and its JSON request/response schema (Section 4),
   and `omega_core.Session` in the wheel's Python package (Section 6).
 
@@ -78,6 +82,7 @@ gsl eval [-I DIR]... --stdio             # a session: one JSON request per line 
 | `surface` | `points`, `maxIters`, `tolerance` | `samples: [{point, normal, value, converged}]`. |
 | `volume` | `relativeTolerance`; no `defs` (`Evaluator.Volume` takes none) | `{lowerMm3, upperMm3, evals}`. |
 | `describe` | (none) | `sliders: {name: [min, max]}`, `names: [...]`, `returns: [...]`. |
+| `render` | `out` (required), `views` (compile's `--views` syntax), `width`, `height` (640 by 480), `light`, `extent`, `time`; `expr` defaults to the returns, each in its own colour | `{out, width, height, bytes}`: the PNG written, byte for byte what `compile -t png` writes with the same options. |
 
 Every response is `{id, ok: true, ...}` or `{id, ok: false, error}`, with `error` the evaluator's
 message verbatim (GSL parse and build errors already read as ordinary GSL errors). Field names are
@@ -103,7 +108,6 @@ camelCase, matching the JSON tags `GradSample` and `VolumeBounds` already carry.
 
 ### 4.5 Out of Scope (v1)
 
-- Rendering: `compile -t png` covers it.
 - Documents with mesh assets (`importStep`, `importMesh`, `bvhSdf`, `vdbSdf`): they need the canvas
   agent's `AssetFetcher`. Refused with a sentence naming the asset call.
 - Certify budget knobs (`SetCertifyBudget`): the default budget, reported through `reason`.
@@ -148,6 +152,8 @@ with omega_core.Session(source_paths=[]) as gsl:
 
     c = part.certify("wall - 1.2", region=box, threshold=0, params={"skin": (1.2, 4.0)})
     c.verdict, c.counter_box, c.counter_params     # "disproven", box, {"skin": (1.2, 1.4)}
+
+    part.render("cut.png", "max(body, p.y)", views="iso,top", light=True, defs="skin = 1.6;")
 ```
 
 - Results are frozen dataclasses of tuples and floats (no NumPy dependency). An eval's `Field` is
@@ -176,6 +182,9 @@ with omega_core.Session(source_paths=[]) as gsl:
   returns as the default expr; a GSL error relayed verbatim (exit 1) and each malformed request
   (exit 2); `defs` overriding an `@range` slider declared first; `.d(var)`; a session answering a failed request and a bad
   line and then good ones; non-finite numbers as `null`.
+- Go, `render`: the picture at `out` (views tiled two across, a direction, the light ground, the
+  default size); `defs` and `expr` reach it; refusals write nothing; and `cmd/compile` pins that it
+  is byte for byte `compile -t png`'s. `internal/gsleval`: `Render` and `RenderViews` draw the same.
 - Go, `cmd/gsl/internal/cli`: `gsl eval ARGS` and `gsl help eval` run `compile eval`.
 - Wheel, `test_wheel.py`, on every platform: `omega_core.Session` against the real program (values,
   gradients, `.d(var)`, `defs`, certify over sliders, extremum's assumption, a failure that the

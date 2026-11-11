@@ -17,8 +17,8 @@ import tempfile
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, Tuple, Union
 
-__all__ = ["Bounds", "Certificate", "Description", "Document", "EvalError", "Extremum", "Field", "Fields", "Session",
-           "SurfaceSample", "Volume"]
+__all__ = ["Bounds", "Certificate", "Description", "Document", "EvalError", "Extremum", "Field", "Fields", "Picture",
+           "Session", "SurfaceSample", "Volume"]
 
 Vec3 = Tuple[float, float, float]
 Region = Sequence[float]
@@ -168,6 +168,15 @@ class Volume:
     lower_mm3: float
     upper_mm3: float
     evals: int
+
+
+@dataclass(frozen=True)
+class Picture:
+    """A PNG written at ``path``: the whole sheet's ``width`` and ``height`` in pixels (views tiled two across)."""
+
+    path: str
+    width: int
+    height: int
 
 
 @dataclass(frozen=True)
@@ -330,6 +339,19 @@ class Document:
                       tolerance=tolerance or None, defs=defs)
         return tuple(SurfaceSample(_vec(s["point"]), _vec(s["normal"]), s.get("value"), s["converged"])  # type: ignore[arg-type]
                      for s in r["samples"])
+
+    def render(self, out: Union[str, "os.PathLike[str]"], expr: Optional[str] = None, *,
+               views: Union[str, Sequence[str]] = "iso", width: int = 640, height: int = 480, light: bool = False,
+               extent: float = 0.0, time: float = 0.0, defs: str = "") -> Picture:
+        """Draw ``expr`` -- or the document's returns, each in its own colour -- into the PNG ``out``, as ``gsl compile
+        -t png`` draws it: from ``views`` (presets such as ``"iso"``, ``"top"``, or ``"x,y,z"`` directions; several
+        tile two across), each ``width`` by ``height``, on the light ground if ``light``, over a scene of half-size
+        ``extent`` mm (0 frames the geometry) at animation ``time``. ``defs`` set sliders for this picture alone, and
+        ``expr`` can cut it open (``"max(body, p.y)"``)."""
+        cameras = views if isinstance(views, str) else ",".join(views)
+        r = self._ask("render", out=os.path.abspath(os.fspath(out)), expr=expr, views=cameras, width=int(width),
+                      height=int(height), light=light or None, extent=extent or None, time=time or None, defs=defs)
+        return Picture(r["out"], r["width"], r["height"])
 
     def volume(self, expr: Optional[str] = None, *, region: Region, relative_tolerance: float = 0.0) -> Volume:
         """The volume inside the region, bracketed (``relative_tolerance`` 0.05 is quick; 0.01 takes seconds)."""

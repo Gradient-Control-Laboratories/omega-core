@@ -29,11 +29,13 @@ with omega_core.Session() as gsl:
     f["body"].values[0], f["body"].gradients[0]    # value and (dx, dy, dz) at each point
     part.certify("body", region=(-60, -60, 0, 60, 60, 50), threshold=0, over_sliders=True).verdict
     part.extremum("body", region=(-60, -60, 0, 60, 60, 50), mode="min")
+    part.render("cut.png", "max(body, p.y)", views="iso,top", light=True, defs="skin = 1.6;")
 ```
 
 `certify` is a sound proof by interval arithmetic. `extremum`'s bound holds only under the Lipschitz
 constant it assumed (`assumed_lipschitz`, 1 unless given): right for a distance field, not for a sum of
-two, a lattice or a blend that overstates distance. Also `bounds`, `surface` and `volume`.
+two, a lattice or a blend that overstates distance. `render` draws what `gsl compile -t png` draws, with
+`defs` and an `expr` of its own. Also `bounds`, `surface` and `volume`.
 
 ## Platforms
 

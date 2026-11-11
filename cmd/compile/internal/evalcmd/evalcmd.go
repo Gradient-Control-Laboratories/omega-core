@@ -1,6 +1,6 @@
 // Package evalcmd is `compile eval`, which `gsl eval` runs: questions asked of a GSL document's field -- its values
-// and gradients at points, an extremum, a sound proof over a region, its bounds, points on its surface, its volume --
-// as JSON requests, each answered by the eval package.
+// and gradients at points, an extremum, a sound proof over a region, its bounds, points on its surface, its volume,
+// a picture of it -- as JSON requests, each answered by the eval package.
 //
 // One request is read from a file or stdin and answered on stdout; or, with --stdio, a session answers one request
 // per line for as long as stdin is open, keeping one evaluator (and its query cache) for each set of source paths.
@@ -10,6 +10,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -61,9 +62,12 @@ A request names its op and its document, by path ("source") or text ("code"):
   surface    expr, points, maxIters, tolerance        each point moved onto expr = 0
   volume     expr, region, relativeTolerance          the volume where expr < 0, bracketed (no defs)
   describe                                            the sliders, top-level names and returns
+  render     out, expr, views, width, height, light,   a PNG at out, as compile -t png draws it; expr defaults
+             extent, time                              to the returns, each in its own colour
 
 "defs" are GSL statements in the document's scope; one naming a declared name replaces it ("skin = 1.6;").
 "expr" defaults to the union of the document's returns. "region" is [x0, y0, z0, x1, y1, z1] in mm.
+render's "views" is compile's --views ("iso,top,-1,1,0.6"), its size 640 by 480 unless named.
 Each response is {"id", "ok": true, ...} or {"id", "ok": false, "error"}. A value that is not finite is null.
 Exit codes (one request): 0 answered, 1 the query failed, 2 a malformed request.
 `
@@ -189,6 +193,13 @@ type request struct {
 	Resolution        int                   `json:"resolution"`
 	MaxIters          int                   `json:"maxIters"`
 	RelativeTolerance float64               `json:"relativeTolerance"`
+	Out               string                `json:"out"`
+	Views             string                `json:"views"`
+	Width             int                   `json:"width"`
+	Height            int                   `json:"height"`
+	Light             bool                  `json:"light"`
+	Extent            float64               `json:"extent"`
+	Time              float64               `json:"time"`
 }
 
 // malformed is a request the command cannot read or that lacks what its op needs: exit 2, not a query that failed.
@@ -236,11 +247,11 @@ func failure(id json.RawMessage, msg string) map[string]any {
 
 func (s *server) dispatch(ctx context.Context, req *request) (map[string]any, error) {
 	switch req.Op {
-	case "eval", "extremum", "certify", "bounds", "surface", "volume", "describe":
+	case "eval", "extremum", "certify", "bounds", "surface", "volume", "describe", "render":
 	case "":
-		return nil, malformedf("name an op: eval, extremum, certify, bounds, surface, volume or describe")
+		return nil, malformedf("name an op: eval, extremum, certify, bounds, surface, volume, describe or render")
 	default:
-		return nil, malformedf("op %q: one of eval, extremum, certify, bounds, surface, volume or describe", req.Op)
+		return nil, malformedf("op %q: one of eval, extremum, certify, bounds, surface, volume, describe or render", req.Op)
 	}
 	if req.Op != "eval" && len(req.Exprs) > 0 {
 		return nil, malformedf("exprs is eval's; %s takes one expr", req.Op)
@@ -263,6 +274,8 @@ func (s *server) dispatch(ctx context.Context, req *request) (map[string]any, er
 		return surface(ctx, e, code, req)
 	case "volume":
 		return volume(ctx, e, code, req)
+	case "render":
+		return render(ctx, e, code, req)
 	default:
 		return describe(code)
 	}
@@ -537,6 +550,68 @@ func volume(ctx context.Context, e *eval.Evaluator, code string, req *request) (
 		return nil, err
 	}
 	return map[string]any{"expr": x, "lowerMm3": f64(r.Lower), "upperMm3": f64(r.Upper), "evals": r.Evals}, nil
+}
+
+// The panel size render draws when the request names none: compile -t png's.
+const (
+	renderWidth  = 640
+	renderHeight = 480
+)
+
+// render draws expr, or the document's returns each in its own colour, into the PNG at req.Out: compile -t png's
+// picture, with defs and expr.
+func render(ctx context.Context, e *eval.Evaluator, code string, req *request) (map[string]any, error) {
+	if req.Out == "" {
+		return nil, malformedf("render names out, the PNG to write")
+	}
+	views := req.Views
+	if views == "" {
+		views = "iso"
+	}
+	cameras, err := eval.ParseViews(views)
+	if err != nil {
+		return nil, malformedf("views: %v", err)
+	}
+	width, height := req.Width, req.Height
+	if width == 0 {
+		width = renderWidth
+	}
+	if height == 0 {
+		height = renderHeight
+	}
+	if width < 1 || height < 1 {
+		return nil, malformedf("a panel of %dx%d pixels: each side is at least 1", width, height)
+	}
+	if err := nonNegative("extent", req.Extent); err != nil {
+		return nil, err
+	}
+	for i := range cameras {
+		cameras[i].Light = req.Light
+	}
+	data, err := e.RenderViews(ctx, nil, code, req.Defs, req.Expr, cameras, width, height, req.Extent, req.Time)
+	if err != nil {
+		return nil, err
+	}
+	out, err := filepath.Abs(req.Out)
+	if err != nil {
+		return nil, err
+	}
+	if err := os.MkdirAll(filepath.Dir(out), 0o755); err != nil {
+		return nil, err
+	}
+	if err := os.WriteFile(out, data, 0o644); err != nil {
+		return nil, err
+	}
+	sheetWidth, sheetHeight := pngSize(data)
+	return map[string]any{"out": out, "width": sheetWidth, "height": sheetHeight, "bytes": len(data)}, nil
+}
+
+// pngSize is a PNG's width and height, read from its header.
+func pngSize(data []byte) (int, int) {
+	if len(data) < 24 {
+		return 0, 0
+	}
+	return int(binary.BigEndian.Uint32(data[16:20])), int(binary.BigEndian.Uint32(data[20:24]))
 }
 
 func describe(code string) (map[string]any, error) {

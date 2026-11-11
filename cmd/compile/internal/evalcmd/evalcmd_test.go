@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"image/png"
 	"math"
 	"os"
 	"path/filepath"
@@ -253,4 +254,84 @@ func TestUsage(t *testing.T) {
 	assert.Contains(t, stdout.String(), "gsl eval [-I DIR]... --stdio")
 	assert.Equal(t, 2, evalcmd.Run(context.Background(), nil, nil, &stdout, &stderr))
 	assert.Contains(t, stderr.String(), "name one request file")
+}
+
+// pngOf decodes the PNG at path: its size and how many colours it holds (sampled every 2 pixels).
+func pngOf(t *testing.T, path string) (int, int, int) {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	img, err := png.Decode(bytes.NewReader(data))
+	require.NoError(t, err)
+	b := img.Bounds()
+	colours := map[[3]uint32]bool{}
+	for y := b.Min.Y; y < b.Max.Y; y += 2 {
+		for x := b.Min.X; x < b.Max.X; x += 2 {
+			r, g, bl, _ := img.At(x, y).RGBA()
+			colours[[3]uint32{r >> 8, g >> 8, bl >> 8}] = true
+		}
+	}
+	return b.Dx(), b.Dy(), len(colours)
+}
+
+// render writes the picture compile -t png draws -- views tiled two across, a direction among them, the light
+// ground -- at out, and says its size.
+func TestRender_WritesThePictureAtOut(t *testing.T) {
+	source := document(t, ball)
+	out := filepath.Join(t.TempDir(), "pics", "ball.png")
+	r, code := ask(t, source, map[string]any{"op": "render", "out": out, "views": "iso,-1,1,0.6", "width": 160,
+		"height": 120, "light": true})
+	require.Equal(t, 0, code, r)
+	assert.Equal(t, out, r["out"])
+	assert.Equal(t, 2.0*160+4, r["width"]) // two panels and the 4-pixel gap
+	assert.Equal(t, 120.0, r["height"])
+	w, h, colours := pngOf(t, out)
+	assert.Equal(t, 324, w)
+	assert.Equal(t, 120, h)
+	assert.True(t, colours >= 20, "a shaded ball, not a blank canvas: %d colours", colours)
+
+	r, _ = ask(t, source, map[string]any{"op": "render", "out": out})
+	assert.Equal(t, 640.0, r["width"]) // compile -t png's size when none is named
+	assert.Equal(t, 480.0, r["height"])
+}
+
+// defs and expr reach the picture: a slider's value at a fixed extent, a section cut by an expression.
+func TestRender_DrawsDefsAndExpr(t *testing.T) {
+	source := document(t, ball)
+	dir := t.TempDir()
+	draw := func(name string, extra map[string]any) []byte {
+		t.Helper()
+		req := map[string]any{"op": "render", "out": filepath.Join(dir, name), "width": 96, "height": 72, "extent": 20}
+		for k, v := range extra {
+			req[k] = v
+		}
+		r, code := ask(t, source, req)
+		require.Equal(t, 0, code, r)
+		data, err := os.ReadFile(filepath.Join(dir, name))
+		require.NoError(t, err)
+		return data
+	}
+	whole := draw("whole.png", nil)
+	assert.False(t, bytes.Equal(whole, draw("small.png", map[string]any{"defs": "r = 5.0;"})))
+	assert.False(t, bytes.Equal(whole, draw("cut.png", map[string]any{"expr": "max(ball, p.y)"})))
+}
+
+func TestRender_RefusesWhatItCannotDraw(t *testing.T) {
+	source := document(t, ball)
+	out := filepath.Join(t.TempDir(), "x.png")
+	for _, c := range []struct {
+		req  map[string]any
+		says string
+	}{
+		{map[string]any{"op": "render"}, "names out"},
+		{map[string]any{"op": "render", "out": out, "views": "sideways"}, "views:"},
+		{map[string]any{"op": "render", "out": out, "width": -3}, "each side is at least 1"},
+		{map[string]any{"op": "render", "out": out, "extent": -1}, "extent -1"},
+	} {
+		r, code := ask(t, source, c.req)
+		assert.Equal(t, 2, code, c.req)
+		assert.Contains(t, r["error"].(string), c.says)
+	}
+	_, err := os.Stat(out)
+	assert.True(t, os.IsNotExist(err), "nothing is written for a refused request")
 }

@@ -188,3 +188,14 @@ def test_gsl_eval_answers_one_request_with_its_exit_code(tmp_path: Path) -> None
                           timeout=60)
     assert done.returncode == 2
     assert '"ok":false' in done.stdout
+
+
+def test_a_session_draws_what_gsl_compile_draws_with_a_slider_set(ball, tmp_path: Path) -> None:
+    picture = ball.render(tmp_path / "pics" / "ball.png", views="iso,top", width=160, height=120, light=True,
+                          extent=20, defs="r = 6.0;")
+    assert (picture.width, picture.height) == (2 * 160 + 4, 120)
+    width, height, rows = read_png(Path(picture.path))
+    assert (width, height) == (324, 120)
+    assert len({rows[y][3 * x:3 * x + 3] for y in range(height) for x in range(160)}) >= 20
+    whole = ball.render(tmp_path / "whole.png", views=["iso", "top"], width=160, height=120, light=True, extent=20)
+    assert Path(whole.path).read_bytes() != Path(picture.path).read_bytes()  # at one extent, r = 6 draws smaller
