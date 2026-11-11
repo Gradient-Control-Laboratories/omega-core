@@ -14,7 +14,7 @@ import omega_core
 
 omega_core.executable()            # Path to gsl
 omega_core.executable("compile")   # Path to compile, which `gsl compile` runs
-omega_core.version()               # "0.1.0"
+omega_core.version()               # "0.1.1"
 ```
 
 ## Asking a document's field
