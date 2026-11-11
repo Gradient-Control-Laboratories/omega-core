@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	main "gradientcontrol.com/omega/core/cmd/compile"
+	"gradientcontrol.com/omega/core/cmd/compile/internal/cli"
 	"gradientcontrol.com/omega/core/internal/test/assert"
 	"gradientcontrol.com/omega/core/internal/test/require"
 	"gradientcontrol.com/omega/core/internal/version"
@@ -42,7 +42,7 @@ func TestRun_STL_BboxAuto(t *testing.T) {
 
 	out := filepath.Join(dir, "auto.stl")
 	var stdout, stderr bytes.Buffer
-	require.NoError(t, main.Run([]string{"-t", "stl", "--algo", "mdc", "--subdivision", "6", "--bbox", "auto", "--no-meta",
+	require.NoError(t, cli.Run([]string{"-t", "stl", "--algo", "mdc", "--subdivision", "6", "--bbox", "auto", "--no-meta",
 		"-o", out, source}, nil, &stdout, &stderr))
 	data, err := os.ReadFile(out)
 	require.NoError(t, err)
@@ -54,7 +54,7 @@ func TestRun_STL_BboxAuto(t *testing.T) {
 	}
 
 	clipped := filepath.Join(dir, "default.stl")
-	require.NoError(t, main.Run([]string{"-t", "stl", "--algo", "mdc", "--subdivision", "6", "--no-meta", "-o", clipped,
+	require.NoError(t, cli.Run([]string{"-t", "stl", "--algo", "mdc", "--subdivision", "6", "--no-meta", "-o", clipped,
 		source}, nil, &stdout, &stderr))
 	data, err = os.ReadFile(clipped)
 	require.NoError(t, err)
@@ -67,7 +67,7 @@ func TestRun_STL_BboxAutoNothingInside(t *testing.T) {
 	source := filepath.Join(dir, "empty.gsl")
 	require.NoError(t, os.WriteFile(source, []byte("return 1.0;\n"), 0644))
 	var stdout, stderr bytes.Buffer
-	err := main.Run([]string{"-t", "stl", "--bbox", "auto", "--no-meta", "-o", filepath.Join(dir, "x.stl"), source},
+	err := cli.Run([]string{"-t", "stl", "--bbox", "auto", "--no-meta", "-o", filepath.Join(dir, "x.stl"), source},
 		nil, &stdout, &stderr)
 	require.True(t, err != nil)
 	assert.True(t, strings.Contains(err.Error(), "--bbox auto: the field is nowhere inside"))
@@ -75,6 +75,6 @@ func TestRun_STL_BboxAutoNothingInside(t *testing.T) {
 
 func TestRun_Version(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	require.NoError(t, main.Run([]string{"--version"}, nil, &stdout, &stderr))
+	require.NoError(t, cli.Run([]string{"--version"}, nil, &stdout, &stderr))
 	assert.Equal(t, "compile "+version.Version+"\n", stdout.String())
 }

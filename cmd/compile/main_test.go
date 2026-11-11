@@ -8,14 +8,14 @@ import (
 	"strings"
 	"testing"
 
-	main "gradientcontrol.com/omega/core/cmd/compile"
+	"gradientcontrol.com/omega/core/cmd/compile/internal/cli"
 	"gradientcontrol.com/omega/core/internal/test/assert"
 	"gradientcontrol.com/omega/core/internal/test/require"
 )
 
 func TestRun_Help(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	err := main.Run([]string{"--help"}, nil, &stdout, &stderr)
+	err := cli.Run([]string{"--help"}, nil, &stdout, &stderr)
 	require.NoError(t, err)
 	assert.Contains(t, stdout.String(), "Usage of compile")
 	assert.Contains(t, stdout.String(), "--target")
@@ -31,7 +31,7 @@ func TestRun_WGSL_File(t *testing.T) {
 	metaPath := filepath.Join(tempDir, "out_sphere.json")
 
 	var stdout, stderr bytes.Buffer
-	err = main.Run([]string{"-o", outPath, sourcePath}, nil, &stdout, &stderr)
+	err = cli.Run([]string{"-o", outPath, sourcePath}, nil, &stdout, &stderr)
 	require.NoError(t, err)
 
 	// Verify WGSL file created
@@ -55,7 +55,7 @@ func TestRun_WGSL_Stdin(t *testing.T) {
 	stdin := strings.NewReader("return sqrt(p.x*p.x + p.y*p.y + p.z*p.z) - 1.0;\n")
 	var stdout, stderr bytes.Buffer
 
-	err := main.Run([]string{"-o", "-"}, stdin, &stdout, &stderr)
+	err := cli.Run([]string{"-o", "-"}, stdin, &stdout, &stderr)
 	require.NoError(t, err)
 	assert.Contains(t, stdout.String(), "sdShape")
 }
@@ -68,7 +68,7 @@ func TestRun_WGSL_Standalone(t *testing.T) {
 
 	outPath := filepath.Join(tempDir, "standalone.wgsl")
 	var stdout, stderr bytes.Buffer
-	err = main.Run([]string{"--standalone", "-o", outPath, sourcePath}, nil, &stdout, &stderr)
+	err = cli.Run([]string{"--standalone", "-o", outPath, sourcePath}, nil, &stdout, &stderr)
 	require.NoError(t, err)
 
 	wgslBytes, err := os.ReadFile(outPath)
@@ -87,7 +87,7 @@ func TestRun_STL(t *testing.T) {
 
 	outPath := filepath.Join(tempDir, "model.stl")
 	var stdout, stderr bytes.Buffer
-	err = main.Run([]string{"-t", "stl", "--subdivision", "3", "-o", outPath, sourcePath}, nil, &stdout, &stderr)
+	err = cli.Run([]string{"-t", "stl", "--subdivision", "3", "-o", outPath, sourcePath}, nil, &stdout, &stderr)
 	require.NoError(t, err)
 
 	stlBytes, err := os.ReadFile(outPath)
@@ -104,7 +104,7 @@ func TestRun_Tape(t *testing.T) {
 
 	outPath := filepath.Join(tempDir, "tape.tape")
 	var stdout, stderr bytes.Buffer
-	err = main.Run([]string{"-t", "tape", "-o", outPath, sourcePath}, nil, &stdout, &stderr)
+	err = cli.Run([]string{"-t", "tape", "-o", outPath, sourcePath}, nil, &stdout, &stderr)
 	require.NoError(t, err)
 
 	tapeBytes, err := os.ReadFile(outPath)
@@ -120,7 +120,7 @@ func TestRun_AST(t *testing.T) {
 
 	outPath := filepath.Join(tempDir, "ast.json")
 	var stdout, stderr bytes.Buffer
-	err = main.Run([]string{"-t", "ast", "-o", outPath, sourcePath}, nil, &stdout, &stderr)
+	err = cli.Run([]string{"-t", "ast", "-o", outPath, sourcePath}, nil, &stdout, &stderr)
 	require.NoError(t, err)
 
 	astBytes, err := os.ReadFile(outPath)
@@ -141,7 +141,7 @@ func TestRun_NoMeta(t *testing.T) {
 	metaPath := filepath.Join(tempDir, "nometa.json")
 
 	var stdout, stderr bytes.Buffer
-	err = main.Run([]string{"--no-meta", "-o", outPath, sourcePath}, nil, &stdout, &stderr)
+	err = cli.Run([]string{"--no-meta", "-o", outPath, sourcePath}, nil, &stdout, &stderr)
 	require.NoError(t, err)
 
 	_, err = os.Stat(outPath)
@@ -153,6 +153,6 @@ func TestRun_NoMeta(t *testing.T) {
 
 func TestRun_InvalidFile(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	err := main.Run([]string{"nonexistent_xyz.gsl"}, nil, &stdout, &stderr)
+	err := cli.Run([]string{"nonexistent_xyz.gsl"}, nil, &stdout, &stderr)
 	require.Error(t, err)
 }
