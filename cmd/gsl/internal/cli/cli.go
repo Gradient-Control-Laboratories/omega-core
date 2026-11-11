@@ -22,7 +22,9 @@ Usage: gsl <command> [arguments]
 The commands are:
 
     compile     compile GSL sources to target outputs
-    serve       launch local HTTP server and interactive WebGPU viewer
+    eval        query a document's field: values, gradients, extrema, proofs, pictures (JSON)
+    render      draw GSL sources into a PNG on the CPU (compile -t png)
+    serve      launch local HTTP server and interactive WebGPU viewer
     fix         refactor GSL source files to current syntax
     help        display help for gsl or a specific subcommand
     version     print the version
@@ -120,21 +122,34 @@ func Run(ctx context.Context, binDir string, args []string, stdin io.Reader, std
 			PrintUsage(stdout)
 			return nil
 		}
-		target := MapSubcommand(args[1])
+		target, lead := toolFor(args[1])
 		binPath, err := resolveToolBinary(binDir, target)
 		if err != nil {
 			return err
 		}
-		return execSubprocess(ctx, binPath, []string{"--help"}, stdin, stdout, stderr)
+		return execSubprocess(ctx, binPath, append(lead, "--help"), stdin, stdout, stderr)
 	}
 
-	target := MapSubcommand(subcmd)
+	target, lead := toolFor(subcmd)
 	binPath, err := resolveToolBinary(binDir, target)
 	if err != nil {
 		return err
 	}
 
-	return execSubprocess(ctx, binPath, args[1:], stdin, stdout, stderr)
+	return execSubprocess(ctx, binPath, append(lead, args[1:]...), stdin, stdout, stderr)
+}
+
+// toolFor is the sibling binary a subcommand runs and the arguments it leads with: `gsl eval ARGS` is
+// `compile eval ARGS`, which keeps one Fidget-linked program in the toolchain, and `gsl render ARGS` is
+// `compile -t png ARGS`.
+func toolFor(subcmd string) (string, []string) {
+	switch subcmd {
+	case "eval":
+		return "compile", []string{"eval"}
+	case "render":
+		return "compile", []string{"-t", "png"}
+	}
+	return MapSubcommand(subcmd), nil
 }
 
 func execSubprocess(ctx context.Context, binPath string, subArgs []string, stdin io.Reader, stdout, stderr io.Writer) error {

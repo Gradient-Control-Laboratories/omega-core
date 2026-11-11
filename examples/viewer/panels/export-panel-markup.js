@@ -16,8 +16,8 @@ export const EXPORT_PANEL_MARKUP = `
     </div>
     <div class="field-panel-row export-detail">
         <label>Detail</label>
-        <input type="range" id="stl-depth" min="3" max="12" value="7" step="1">
-        <span id="stl-depth-label">7</span>
+        <input type="range" id="stl-depth" min="3" max="12" value="9" step="1">
+        <span id="stl-depth-label">9</span>
     </div>
     <div id="stl-voxel-info"></div>
     <div class="field-panel-row export-choice">
@@ -26,6 +26,7 @@ export const EXPORT_PANEL_MARKUP = `
             <option value="mc" title="Marching cubes in this browser, with the program's mesh booleans composed by Manifold">Browser MC</option>
             <option value="dc" title="Dual contouring in this browser with fidget: the implicit returns as the server's mesher sees them, without mesh booleans or imported meshes">Browser DC</option>
             <option value="server" title="Dual contouring on the server">Server DC</option>
+            <option value="server-mc" title="Marching cubes on the server">Server MC</option>
         </select>
     </div>
     <div class="field-panel-row">

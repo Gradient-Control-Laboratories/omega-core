@@ -42,6 +42,25 @@ clampColor(c) {
   return clamp(c, [0, 0, 0], [1, 1, 1]);
 }
 
+/// The sRGB color a hex code names, ready for `name.color`:
+/// `part.color = color.fromHex("#8fa3b8");`. Six hex digits, in either case,
+/// with or without the leading `#`. Any other character reads as a wrong
+/// digit, not an error.
+fromHex(code) {
+  // A string is the list of its characters' codes. The six digits fold into
+  // one 24-bit number, exact in a float32; '#' (35) is skipped.
+  value = reduce(0,
+    (running, c) {
+      digit = (c <= 57) ? (c - 48) : ((c <= 70) ? (c - 55) : (c - 87));
+      return (c == 35) ? running : running * 16 + digit;
+    },
+    code);
+  r = floor(value / 65536);
+  g = floor((value - r * 65536) / 256);
+  b = value - r * 65536 - g * 256;
+  return [r, g, b] / 255;
+}
+
 // ===========================================================================
 // Gamma — sRGB <-> linear light. Color math (blending, Oklab) is only correct
 // in linear light; palette values and the viewer are sRGB.

@@ -34,7 +34,7 @@ func stlBounds(t *testing.T, data []byte) (int, [6]float64) {
 	return n, box
 }
 
-// A part well outside the default [-10, 10] box is meshed whole with --bbox auto, and clipped without it.
+// A part reaching past its @scene box is meshed whole with --bbox auto, and clipped by the @scene box without it.
 func TestRun_STL_BboxAuto(t *testing.T) {
 	dir := t.TempDir()
 	source := filepath.Join(dir, "plate.gsl")
@@ -59,7 +59,7 @@ func TestRun_STL_BboxAuto(t *testing.T) {
 	data, err = os.ReadFile(clipped)
 	require.NoError(t, err)
 	_, box = stlBounds(t, data)
-	assert.True(t, box[3] <= 10.001) // the default box cuts it at x = 10
+	assert.True(t, box[3] <= 30.001) // @scene(60)'s box, -30..30, cuts it at x = 30
 }
 
 func TestRun_STL_BboxAutoNothingInside(t *testing.T) {

@@ -14,9 +14,12 @@ import (
 type STLStats struct {
 	TriangleCount int
 	Bbox          [6]float32 // xmin, ymin, zmin, xmax, ymax, zmax
-	Volume        float64
-	SurfaceArea   float64
-	Center        [3]float32
+	Volume        float64    // the enclosed volume's magnitude
+	// SignedVolume is the enclosed volume with its sign: positive when the
+	// triangles face outward, negative when the mesh is inside out.
+	SignedVolume float64
+	SurfaceArea  float64
+	Center       [3]float32
 }
 
 // Empty reports whether the mesh had no triangles.
@@ -117,6 +120,7 @@ func MeasureSTL(stl []byte) (STLStats, error) {
 	}
 	s.SurfaceArea = area
 	s.Volume = math.Abs(signedVol)
+	s.SignedVolume = signedVol
 	if math.Abs(signedVol) > 1e-9 {
 		s.Center = [3]float32{
 			float32(origin[0] + cx/signedVol),

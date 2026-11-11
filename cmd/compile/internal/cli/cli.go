@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -35,7 +36,8 @@ type companionMeta struct {
 // PrintUsage outputs formatted CLI help information.
 func PrintUsage(w io.Writer) {
 	fmt.Fprintf(w, "Usage of compile:\n")
-	fmt.Fprintf(w, "  compile [flags] [source1.gsl source2.gsl ...]\n\n")
+	fmt.Fprintf(w, "  compile [flags] [source1.gsl source2.gsl ...]\n")
+	fmt.Fprintf(w, "  compile eval [flags] REQUEST.json | --stdio   (query a document's field: compile eval --help)\n\n")
 	fmt.Fprintf(w, "Flags:\n")
 	fmt.Fprintf(w, "  -t, --target string\n")
 	fmt.Fprintf(w, "        Compilation output target (wgsl, stl, tape, audio, ast, png) (default \"wgsl\")\n")
@@ -48,12 +50,13 @@ func PrintUsage(w io.Writer) {
 	fmt.Fprintf(w, "  -I, --source-path string\n")
 	fmt.Fprintf(w, "        Root directory for package resolution (may be specified multiple times)\n")
 	fmt.Fprintf(w, "      --subdivision int\n")
-	fmt.Fprintf(w, "        Octree subdivision depth for mesh polygonization (default 4)\n")
+	fmt.Fprintf(w, "        Octree subdivision depth for mesh polygonization (default 9)\n")
 	fmt.Fprintf(w, "      --bbox string\n")
 	fmt.Fprintf(w, "        Bounding box as minX,minY,minZ,maxX,maxY,maxZ, or auto: the box the field fills,\n")
-	fmt.Fprintf(w, "        found within 1024 mm of the origin and grown by two cells (default -10..10 on each axis)\n")
+	fmt.Fprintf(w, "        found within 1024 mm of the origin and grown by two cells (default: the @scene box, an edge of\n")
+	fmt.Fprintf(w, "        its size centred on the origin, as the viewer frames it; auto when there is no @scene)\n")
 	fmt.Fprintf(w, "      --algo string\n")
-	fmt.Fprintf(w, "        Meshing algorithm (marching-cubes or mdc) (default \"marching-cubes\")\n")
+	fmt.Fprintf(w, "        Meshing algorithm (marching-cubes or mdc) (default \"mdc\")\n")
 	fmt.Fprintf(w, "      --time float\n")
 	fmt.Fprintf(w, "        Animation time in seconds (default 0)\n")
 	fmt.Fprintf(w, "      --views string\n")
@@ -190,12 +193,16 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 			mesh.WithAlgorithm(cfg.Algo),
 			mesh.WithTime(cfg.Time),
 		}
-		if cfg.HasBbox {
+		switch {
+		case cfg.HasBbox:
 			meshOpts = append(meshOpts, mesh.WithBbox(cfg.Bbox))
-		}
-		if cfg.AutoBbox {
+		case cfg.AutoBbox || res.Scene.GetSize() <= 0:
+			// --bbox auto, or no box named and no @scene to take one from: the box the field fills.
 			if len(sourceTexts) > 1 {
-				return fmt.Errorf("--bbox auto takes one source file, not %d: name the box outright", len(sourceTexts))
+				if cfg.AutoBbox {
+					return fmt.Errorf("--bbox auto takes one source file, not %d: name the box outright", len(sourceTexts))
+				}
+				return fmt.Errorf("%d source files and no @scene to take a box from: name the box with --bbox", len(sourceTexts))
 			}
 			box, boxErr := autoBbox(primarySourceText, srcPaths)
 			if boxErr != nil {
@@ -203,6 +210,14 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 			}
 			if cfg.Verbose {
 				fmt.Fprintf(stderr, "[mesh] --bbox auto: %g,%g,%g,%g,%g,%g\n", box[0], box[1], box[2], box[3], box[4], box[5])
+			}
+			meshOpts = append(meshOpts, mesh.WithBbox(box))
+		default:
+			// No box named: the @scene box, an edge of its size centred on the origin, as the viewer frames it.
+			half := float32(res.Scene.GetSize() / 2)
+			box := [6]float32{-half, -half, -half, half, half, half}
+			if cfg.Verbose {
+				fmt.Fprintf(stderr, "[mesh] @scene box: %g,%g,%g,%g,%g,%g\n", box[0], box[1], box[2], box[3], box[4], box[5])
 			}
 			meshOpts = append(meshOpts, mesh.WithBbox(box))
 		}
@@ -327,9 +342,22 @@ func renderPNG(prog *program.Program, cfg *config.Config) ([]byte, error) {
 	return eval.ComposeSheet(panels, 2)
 }
 
-// autoBbox is --bbox auto: the box the program's field fills -- eval's Bounds, a grid fit of where the union of
-// its returns is negative, searched within 1024 mm of the origin -- grown by two of the fit's cells on every side,
-// so the surface lies inside the meshed box with room for the mesher's cells around it.
+// autoReach is how far from the origin --bbox auto looks for the field: eval's Bounds' default search region.
+const autoReach = 1024.0
+
+// autoRescans bounds how many times --bbox auto widens its search around the box it has found.
+const autoRescans = 8
+
+// autoBbox is --bbox auto: the box the program's field fills, searched within autoReach of the origin, grown by two
+// cells on every side so the surface lies inside the meshed box with room for the mesher's cells around it.
+//
+// eval's Bounds, a grid fit of where the union of its returns is negative, gives the first box. Its first pass samples
+// cells 32 mm across, and its second looks again only within a cell of what the first caught: a part thinner than
+// those cells can be caught by a few samples and the rest of it missed, the box stopping at the edge of where the
+// second pass looked. So the search is widened around the box -- Bounds again, over the box grown on every side by
+// its own size, where the grid's cells are a few mm -- and the box grows by what it finds, until it no longer reaches
+// the edge of the region searched. It is a fit by sampling, not a proof: a field's interval bounds through its
+// gradient-scaled blends (unionRoundExact and the like) are unbounded, so a box cannot be proven for them.
 func autoBbox(code string, srcPaths []string) ([6]float32, error) {
 	var box [6]float32
 	returns := eval.TopLevelReturnExprs(code)
@@ -344,7 +372,9 @@ func autoBbox(code string, srcPaths []string) ([6]float32, error) {
 	if len(srcPaths) > 0 {
 		opts = append(opts, assembler.SourcePaths(srcPaths...))
 	}
-	found, err := eval.New(nil, nil, opts...).Bounds(context.Background(), nil, code, "", expr, [6]float64{}, 64)
+	ev := eval.New(nil, nil, opts...)
+	ctx := context.Background()
+	found, err := ev.Bounds(ctx, nil, code, "", expr, [6]float64{}, 64)
 	if err != nil {
 		return box, fmt.Errorf("--bbox auto: %w", err)
 	}
@@ -352,10 +382,41 @@ func autoBbox(code string, srcPaths []string) ([6]float32, error) {
 		return box, fmt.Errorf("--bbox auto: the field is nowhere inside within 1024 mm of the origin (its least value %g, at %v)",
 			found.MinValue, found.MinAt)
 	}
+	fit := [6]float64{found.BboxMin[0], found.BboxMin[1], found.BboxMin[2],
+		found.BboxMax[0], found.BboxMax[1], found.BboxMax[2]}
+	cell := found.CellSize
+	for range autoRescans {
+		var region [6]float64
+		for k := 0; k < 3; k++ {
+			grow := math.Max(fit[k+3]-fit[k], 4*cell[k])
+			region[k] = math.Max(fit[k]-grow, -autoReach)
+			region[k+3] = math.Min(fit[k+3]+grow, autoReach)
+		}
+		wider, err := ev.Bounds(ctx, nil, code, "", expr, region, 64)
+		if err != nil {
+			return box, fmt.Errorf("--bbox auto: %w", err)
+		}
+		if !wider.Found {
+			break
+		}
+		cell = wider.CellSize
+		reaches := false
+		for k := 0; k < 3; k++ {
+			fit[k] = math.Min(fit[k], wider.BboxMin[k])
+			fit[k+3] = math.Max(fit[k+3], wider.BboxMax[k])
+			if (region[k] > -autoReach && fit[k] < region[k]+cell[k]) ||
+				(region[k+3] < autoReach && fit[k+3] > region[k+3]-cell[k]) {
+				reaches = true
+			}
+		}
+		if !reaches {
+			break
+		}
+	}
 	for k := 0; k < 3; k++ {
-		pad := 2 * found.CellSize[k]
-		box[k] = float32(found.BboxMin[k] - pad)
-		box[k+3] = float32(found.BboxMax[k] + pad)
+		pad := 2 * cell[k]
+		box[k] = float32(fit[k] - pad)
+		box[k+3] = float32(fit[k+3] + pad)
 	}
 	return box, nil
 }

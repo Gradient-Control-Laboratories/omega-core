@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added `gsl eval` (`compile eval`) JSON query CLI (`eval`, `extremum`, `certify`, `bounds`,
+  `surface`, `volume`, `describe`, and `render` operations, plus `--stdio` persistent sessions),
+  `gsl render` shorthand for `compile -t png`, Python `omega_core.Session`, and
+  `(*eval.Evaluator).RenderViews`.
+- Added `STLStats.SignedVolume` in `backend/mesh/measure.go` so `mesh.MeasureClosedSTL` rejects
+  inside-out meshes.
 - Added canonical pure-Go oracle structs `meshasset.MeshSdfOracle` and `meshasset.VdbOracle` in
   `program/meshasset/oracle.go`, plus `spinodoid.Baked` and `spinodoid.Oracle` in
   `program/noise/spinodoid/oracle.go`.
@@ -21,11 +27,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Changed `compile -t stl` defaults to `--subdivision 9`, `--algo mdc`, and the `@scene` box
+  (`--bbox auto` when no `@scene` is declared), matching the viewer.
 - Updated `mesh.MeshOracles`, `mesh.VdbOracles`, and `mesh.BakeSpinodoids` in `backend/mesh/emit.go`
   along with `tape.MeshOracles`, `tape.VdbOracles`, `tape.GenerateTapeWithSpinodoids`,
   `tape.GenerateTapeWithAppearanceAndSpinodoids`, `tape.StampSpinodoids`, and `tape.EmbedLevelSets`
   in `backend/tape/emit.go` to reference the canonical `meshasset` and `spinodoid` oracle types
   (compatible with existing callers via Go type aliases).
+
+### Fixed
+
+- Fixed marching-cubes triangle winding (`marching_cubes.rs`) so exported meshes and normals face
+  outward, and wired the standalone viewer's `Server DC` / `Server MC` export options to `mdc` and
+  `marching-cubes` respectively.
+- Fixed `compile --bbox auto` clipping thin or tilted geometry by iteratively widening and
+  rescanning the search region until the fitted box stops reaching the search boundary.
+- Fixed degenerate `0/0` NaN gradients at `sqrt(0)` and NaN QEF vertices from zero-gradient cells
+  in Fidget (`fidget-core`, `fidget-jit`, and `fidget-mesh`), keeping shelled exact boxes closed.
+- Fixed `eval` query `defs` overrides to match declarations preceded by `@scene(...)` or
+  `@range(...)` annotations (replacing slider range annotations so queries can test out-of-range
+  values) and ignore `.prop = ...` property statements.
 
 ### Deprecated
 

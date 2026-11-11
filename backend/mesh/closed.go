@@ -6,7 +6,7 @@ import (
 	"math"
 )
 
-// MeasureClosedSTL rejects non-finite, open and inconsistently wound surfaces.
+// MeasureClosedSTL rejects non-finite, open, inconsistently wound and inside-out surfaces.
 func MeasureClosedSTL(stl []byte) (STLStats, error) {
 	stats, err := MeasureSTL(stl)
 	if err != nil || stats.Empty() {
@@ -45,6 +45,11 @@ func MeasureClosedSTL(stl []byte) (STLStats, error) {
 		if direction != 0 {
 			return STLStats{}, fmt.Errorf("mesh is not a closed consistently oriented surface")
 		}
+	}
+	// Volume is a magnitude: the winding's sign is SignedVolume's. A closed,
+	// consistent surface wound inward encloses a negative volume.
+	if stats.SignedVolume < 0 {
+		return STLStats{}, fmt.Errorf("closed mesh is inside out: its triangles face inward (signed volume %g)", stats.SignedVolume)
 	}
 	if stats.Volume <= 0 {
 		return STLStats{}, fmt.Errorf("closed mesh has no positive volume")

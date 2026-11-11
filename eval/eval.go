@@ -185,7 +185,7 @@ func (e *Evaluator) prepareQuery(ctx context.Context, manifest map[string]string
 	var appended strings.Builder
 	for _, s := range defStmts {
 		if s.name != "" && docNames[s.name] {
-			overrides[s.name] = s.text
+			overrides[s.name] = s.text[s.keep:]
 		} else {
 			appended.WriteString(s.text)
 			appended.WriteString("\n")
@@ -807,6 +807,11 @@ func substituteTopLevelDecls(source string, repl map[string]string) string {
 	for _, s := range topLevelStatements(source) {
 		if s.name != "" && !used[s.name] {
 			if r, ok := repl[s.name]; ok {
+				// What precedes the declaration (whitespace, comments, the
+				// @scene directive) stays; the declaration, its annotations
+				// included, is replaced, so an override is not held to the
+				// slider range it replaces.
+				out.WriteString(s.text[:s.keep])
 				out.WriteString(r)
 				used[s.name] = true
 				continue

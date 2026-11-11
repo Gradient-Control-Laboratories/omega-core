@@ -257,14 +257,13 @@ impl Assembler for GradSliceAssembler {
         )
     }
     fn build_sqrt(&mut self, out_reg: u8, lhs_reg: u8) {
-        dynasm!(self.0.ops
-            ; fsqrt s6, S(reg(lhs_reg))
-            ; fmov s7, 2.0
-            ; fmul s7, s6, s7
-            ; dup v7.s4, v7.s[0]
-            ; fdiv V(reg(out_reg)).s4, V(reg(lhs_reg)).s4, v7.s4
-            ; mov V(reg(out_reg)).S[0], v6.S[0]
-        )
+        // Grad::sqrt, called: it takes a zero derivative where the value and
+        // that component of the input's derivative are both zero, where the
+        // inline quotient was 0 / 0 (NaN).
+        extern "C" fn grad_sqrt(v: Grad) -> Grad {
+            v.sqrt()
+        }
+        self.call_fn_unary(out_reg, lhs_reg, grad_sqrt);
     }
     fn build_square(&mut self, out_reg: u8, lhs_reg: u8) {
         dynasm!(self.0.ops

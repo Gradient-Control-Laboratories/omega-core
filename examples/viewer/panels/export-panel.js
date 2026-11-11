@@ -36,12 +36,17 @@
 //   getWorldExtent()     viewer.getWorldExtent — scales the voxel-size estimate
 //   clearError()         optional; cleared after a successful union export
 //   track(name, params)  optional analytics hook
-//   onServerExport(detail, surfaceBbox, bodyBoxes)  optional; server-side STL
-//                           export. bodyBoxes maps each visible body's return
+//   onServerExport(detail, surfaceBbox, bodyBoxes, algo)  optional; server-side
+//                           STL export. bodyBoxes maps each visible body's return
 //                           index to its measured box (see measureBodyBoxes),
-//                           or is null when they could not be measured.
+//                           or is null when they could not be measured. algo is
+//                           the mesher picked: "mdc" (Server DC) or
+//                           "marching-cubes" (Server MC).
 //                           Without it the Server DC mesher is not offered,
 //                           unless serverExportUnavailable is given.
+//   serverMarchingCubes     optional; true when onServerExport meshes by the
+//                           algo it is given, so Server MC is offered beside
+//                           Server DC. Without it Server MC is not offered.
 //                           surfaceBbox is the measured bound on
 //                           the implicit surface as [xmin,ymin,zmin,xmax,ymax,
 //                           zmax], or null when it could not be measured.
@@ -727,7 +732,7 @@ export function claimServerStl(event) {
     }
     finishServerExport(event, options).catch((err) => {
         exportDone();
-        console.error("Server DC export failed:", err);
+        console.error("Server export failed:", err);
         showNotification(true, "Export failed: " + (err instanceof Error ? err.message : String(err)));
     });
     return true;
@@ -932,6 +937,7 @@ export function initExportPanel(hooks) {
             mesherOption('server').remove();
         }
     }
+    if (!deps.onServerExport || !deps.serverMarchingCubes) mesherOption('server-mc').remove();
     if (!deps.onSaveTape) formatSelect.querySelector('option[value="tape"]').remove();
     const SERVER_STL_ONLY = "This app's server export comes back as one STL";
     const NOT_MESHED = "A tape is the implicit field itself; nothing is meshed";
@@ -949,7 +955,8 @@ export function initExportPanel(hooks) {
         // A tape is not meshed, so Detail, the mesher and Clean have nothing
         // to do.
         const tape = formatSelect.value === 'tape';
-        const stlOnly = !tape && mesherSelect.value === 'server' && !deps.serverResults;
+        const onServer = mesherSelect.value === 'server' || mesherSelect.value === 'server-mc';
+        const stlOnly = !tape && onServer && !deps.serverResults;
         if (stlOnly) {
             formatSelect.value = 'stl';
             cleanBox.checked = false;
@@ -980,7 +987,8 @@ export function initExportPanel(hooks) {
         switch (mesherSelect.value) {
             case 'mc': return exportBrowserMc(options);
             case 'dc': return exportBrowserDc(options);
-            case 'server': return exportServerDc(options);
+            case 'server': return exportServer(options, 'mdc');
+            case 'server-mc': return exportServer(options, 'marching-cubes');
         }
     });
 
@@ -1017,11 +1025,13 @@ export function initExportPanel(hooks) {
         }
     }
 
-    // Server DC: the server meshes, and the reply comes back on canvas/stl.
-    // The app downloads an STL reply itself; one to be cleaned or written as
-    // 3MF the app hands to claimServerStl.
-    async function exportServerDc(options) {
-        deps.track?.("mesh_export", { mode: 'server-dc', resolution: 1 << currentDetail() });
+    // Server DC and Server MC: the server meshes by algo ("mdc" or
+    // "marching-cubes"), and the reply comes back on canvas/stl. The app
+    // downloads an STL reply itself; one to be cleaned or written as 3MF the
+    // app hands to claimServerStl.
+    async function exportServer(options, algo) {
+        const mode = algo === 'mdc' ? 'server-dc' : 'server-mc';
+        deps.track?.("mesh_export", { mode, resolution: 1 << currentDetail() });
         // The export bar shows the export from here to the server's reply.
         if (deps.serverResults) {
             serverExportShown = true;
@@ -1041,7 +1051,7 @@ export function initExportPanel(hooks) {
             : null;
         const surfaceBbox = await measureSurfaceBbox();
         pendingServerExport = deps.serverResults && (options.format !== 'stl' || options.clean) ? options : null;
-        if (deps.onServerExport(currentDetail(), surfaceBbox, boxes) === false) {
+        if (deps.onServerExport(currentDetail(), surfaceBbox, boxes, algo) === false) {
             // The app sent nothing, and has said why.
             pendingServerExport = null;
             serverExportShown = false;
