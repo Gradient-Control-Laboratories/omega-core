@@ -56,24 +56,21 @@ func testParseOne(t *testing.T, srcFile string) {
 	src_test.RunSourceTest(t, srcFile, runTestParseOne, checkTestParseOne, true)
 }
 
-func runTestParseOne(t *testing.T, srcFile string, src []byte) (*parser2.Result, error) {
-	result, err := parser2.Parse([]string{string(src)})
-	if result == nil {
-		return result, fmt.Errorf("no result returned")
+func runTestParseOne(t *testing.T, srcFile string, src []byte) (*program.Package, error) {
+	pkg, err := parser2.Parse([]string{string(src)})
+	if pkg == nil {
+		return pkg, fmt.Errorf("no package returned")
 	}
 	if err != nil {
 		if _, isBuildErr := err.(*program.Error); !isBuildErr {
-			return result, fmt.Errorf("expected build error, got %T: %v", err, err)
+			return pkg, fmt.Errorf("expected build error, got %T: %v", err, err)
 		}
-		return result, err
+		return pkg, err
 	}
-	if result.Package == nil {
-		return result, fmt.Errorf("no package returned")
-	}
-	return result, nil
+	return pkg, nil
 }
 
-func checkTestParseOne(t *testing.T, srcFile string, src []byte, parseResult *parser2.Result) error {
+func checkTestParseOne(t *testing.T, srcFile string, src []byte, pkg *program.Package) error {
 	testName := strings.TrimSuffix(filepath.Base(srcFile), filepath.Ext(srcFile))
 	yamlFile := filepath.Join(filepath.Dir(srcFile), testName+".yaml")
 
@@ -91,7 +88,7 @@ func checkTestParseOne(t *testing.T, srcFile string, src []byte, parseResult *pa
 	}
 
 	// Marshal the actual result from Parse to YAML
-	actualYaml, err := marshallYaml(parseResult.Package)
+	actualYaml, err := marshallYaml(pkg)
 	if err != nil {
 		return fmt.Errorf("failed to marshal actual result to yaml: %s, error: %w", srcFile, err)
 	}
@@ -109,10 +106,10 @@ func checkTestParseOne(t *testing.T, srcFile string, src []byte, parseResult *pa
 	}
 
 	// Marshal the expected part to get a canonical YAML string
-	testMarshalYaml(t, tc, actualYaml, parseResult.Package)
+	testMarshalYaml(t, tc, actualYaml, pkg)
 
 	// Traverse the pkg and test attributes
-	testPackageAttributes(t, parseResult.Package)
+	testPackageAttributes(t, pkg)
 
 	return nil
 }
@@ -463,31 +460,31 @@ func TestMultiFileDeclarationCollisions(t *testing.T) {
 
 func TestParseEmptyAndBlankInputsGuaranteePackageFile(t *testing.T) {
 	t.Run("NilSources", func(t *testing.T) {
-		res, err := parser2.Parse(nil)
+		pkg, err := parser2.Parse(nil)
 		assert.Error(t, err)
-		if assert.NotNil(t, res) && assert.NotNil(t, res.Package) {
-			if assert.Equal(t, 1, len(res.Package.Files)) {
-				assert.NotNil(t, res.Package.Files[0])
+		if assert.NotNil(t, pkg) {
+			if assert.Equal(t, 1, len(pkg.Files)) {
+				assert.NotNil(t, pkg.Files[0])
 			}
 		}
 	})
 
 	t.Run("EmptySourcesSlice", func(t *testing.T) {
-		res, err := parser2.Parse([]string{})
+		pkg, err := parser2.Parse([]string{})
 		assert.Error(t, err)
-		if assert.NotNil(t, res) && assert.NotNil(t, res.Package) {
-			if assert.Equal(t, 1, len(res.Package.Files)) {
-				assert.NotNil(t, res.Package.Files[0])
+		if assert.NotNil(t, pkg) {
+			if assert.Equal(t, 1, len(pkg.Files)) {
+				assert.NotNil(t, pkg.Files[0])
 			}
 		}
 	})
 
 	t.Run("SingleBlankSource", func(t *testing.T) {
-		res, err := parser2.Parse([]string{""})
+		pkg, err := parser2.Parse([]string{""})
 		assert.NoError(t, err)
-		if assert.NotNil(t, res) && assert.NotNil(t, res.Package) {
-			if assert.Equal(t, 1, len(res.Package.Files)) {
-				assert.NotNil(t, res.Package.Files[0])
+		if assert.NotNil(t, pkg) {
+			if assert.Equal(t, 1, len(pkg.Files)) {
+				assert.NotNil(t, pkg.Files[0])
 			}
 		}
 	})
@@ -496,40 +493,40 @@ func TestParseEmptyAndBlankInputsGuaranteePackageFile(t *testing.T) {
 func TestParsePartialSceneHeaderOnLaterError(t *testing.T) {
 	t.Run("ValidSceneDirectiveFollowedBySyntaxError", func(t *testing.T) {
 		src := "@scene(20, 5)\nx = ;\n"
-		res, err := parser2.Parse([]string{src})
+		pkg, err := parser2.Parse([]string{src})
 		assert.Error(t, err)
-		if assert.NotNil(t, res.Package.Scene) {
-			assert.Equal(t, 20.0, res.Package.Scene.Size)
-			assert.Equal(t, 5.0, res.Package.Scene.Grid)
-			assert.True(t, isValidLocation(res.Package.Scene.Start))
-			assert.True(t, isValidLocation(res.Package.Scene.End))
+		if assert.NotNil(t, pkg.Scene) {
+			assert.Equal(t, 20.0, pkg.Scene.Size)
+			assert.Equal(t, 5.0, pkg.Scene.Grid)
+			assert.True(t, isValidLocation(pkg.Scene.Start))
+			assert.True(t, isValidLocation(pkg.Scene.End))
 		}
-		if assert.Equal(t, 1, len(res.Package.Files)) {
-			assert.Equal(t, src, res.Package.Files[0].Source)
+		if assert.Equal(t, 1, len(pkg.Files)) {
+			assert.Equal(t, src, pkg.Files[0].Source)
 		}
 	})
 
 	t.Run("LegacySceneCommentsFollowedBySyntaxError", func(t *testing.T) {
 		src := "// Scene Size: 40\n// Scene Grid: 4\nx = ;\n"
-		res, err := parser2.Parse([]string{src})
+		pkg, err := parser2.Parse([]string{src})
 		assert.Error(t, err)
-		if assert.NotNil(t, res.Package.Scene) {
-			assert.Equal(t, 40.0, res.Package.Scene.Size)
-			assert.Equal(t, 10.0, res.Package.Scene.Grid)
-			assert.Nil(t, res.Package.Scene.Start)
-			assert.Nil(t, res.Package.Scene.End)
+		if assert.NotNil(t, pkg.Scene) {
+			assert.Equal(t, 40.0, pkg.Scene.Size)
+			assert.Equal(t, 10.0, pkg.Scene.Grid)
+			assert.Nil(t, pkg.Scene.Start)
+			assert.Nil(t, pkg.Scene.End)
 		}
-		if assert.Equal(t, 1, len(res.Package.Files)) {
-			assert.Equal(t, src, res.Package.Files[0].Source)
+		if assert.Equal(t, 1, len(pkg.Files)) {
+			assert.Equal(t, src, pkg.Files[0].Source)
 		}
 	})
 
 	t.Run("MalformedSceneDirectivePopulatesSource", func(t *testing.T) {
 		src := "@scene(0)\nreturn sphere(1);\n"
-		res, err := parser2.Parse([]string{src})
+		pkg, err := parser2.Parse([]string{src})
 		assert.Error(t, err)
-		if assert.Equal(t, 1, len(res.Package.Files)) {
-			assert.Equal(t, src, res.Package.Files[0].Source)
+		if assert.Equal(t, 1, len(pkg.Files)) {
+			assert.Equal(t, src, pkg.Files[0].Source)
 		}
 	})
 }
@@ -537,11 +534,11 @@ func TestParsePartialSceneHeaderOnLaterError(t *testing.T) {
 func TestParsePartialImportsAndAssetImportsOnError(t *testing.T) {
 	t.Run("ValidImportsFollowedBySyntaxErrorInImport", func(t *testing.T) {
 		src := "@scene(25)\nimport \"math\";\nimport . \"omega\";\nimport bad_unquoted;\nreturn 1;\n"
-		res, err := parser2.Parse([]string{src})
+		pkg, err := parser2.Parse([]string{src})
 		assert.Error(t, err)
-		assert.NotNil(t, res.Package.Scene)
-		if assert.Equal(t, 1, len(res.Package.Files)) {
-			file := res.Package.Files[0]
+		assert.NotNil(t, pkg.Scene)
+		if assert.Equal(t, 1, len(pkg.Files)) {
+			file := pkg.Files[0]
 			if assert.Equal(t, 2, len(file.Imports)) {
 				assert.Equal(t, "math", file.Imports[0].Path)
 				assertImport(t, file.Imports[0])
@@ -554,10 +551,10 @@ func TestParsePartialImportsAndAssetImportsOnError(t *testing.T) {
 
 	t.Run("ValidImportsFollowedBySemanticErrorInImport", func(t *testing.T) {
 		src := "import \"math\";\nimport \"invalid.gsl\";\nreturn 1;\n"
-		res, err := parser2.Parse([]string{src})
+		pkg, err := parser2.Parse([]string{src})
 		assert.Error(t, err)
-		if assert.Equal(t, 1, len(res.Package.Files)) {
-			file := res.Package.Files[0]
+		if assert.Equal(t, 1, len(pkg.Files)) {
+			file := pkg.Files[0]
 			if assert.Equal(t, 1, len(file.Imports)) {
 				assert.Equal(t, "math", file.Imports[0].Path)
 				assertImport(t, file.Imports[0])
@@ -567,10 +564,10 @@ func TestParsePartialImportsAndAssetImportsOnError(t *testing.T) {
 
 	t.Run("ValidAssetImportsFollowedBySyntaxOrBuildError", func(t *testing.T) {
 		src := "import \"math\";\nimportStep 0 \"a.step\";\nimportMesh 1 \"b.stl\";\nimportWarp 2 \"c.warp\";\nimportStep 3 ;\n"
-		res, err := parser2.Parse([]string{src})
+		pkg, err := parser2.Parse([]string{src})
 		assert.Error(t, err)
-		if assert.Equal(t, 1, len(res.Package.Files)) {
-			file := res.Package.Files[0]
+		if assert.Equal(t, 1, len(pkg.Files)) {
+			file := pkg.Files[0]
 			assert.Equal(t, 1, len(file.Imports))
 			if assert.Equal(t, 1, len(file.StepImports)) {
 				assert.Equal(t, "a.step", file.StepImports[0].Path)
@@ -586,10 +583,10 @@ func TestParsePartialImportsAndAssetImportsOnError(t *testing.T) {
 
 	t.Run("ValidAssetImportsFollowedByDuplicateSlotBuildError", func(t *testing.T) {
 		src := "importStep 0 \"a.step\";\nimportStep 0 \"dup.step\";\nreturn 1;\n"
-		res, err := parser2.Parse([]string{src})
+		pkg, err := parser2.Parse([]string{src})
 		assert.Error(t, err)
-		if assert.Equal(t, 1, len(res.Package.Files)) {
-			file := res.Package.Files[0]
+		if assert.Equal(t, 1, len(pkg.Files)) {
+			file := pkg.Files[0]
 			if assert.Equal(t, 1, len(file.StepImports)) {
 				assert.Equal(t, "a.step", file.StepImports[0].Path)
 			}
@@ -613,11 +610,11 @@ helper(a) {
 broken = ;
 return importId;
 `
-		res, err := parser2.Parse([]string{src})
+		pkg, err := parser2.Parse([]string{src})
 		assert.Error(t, err)
-		assert.NotNil(t, res.Package.Scene)
-		if assert.Equal(t, 1, len(res.Package.Files)) {
-			file := res.Package.Files[0]
+		assert.NotNil(t, pkg.Scene)
+		if assert.Equal(t, 1, len(pkg.Files)) {
+			file := pkg.Files[0]
 			assert.Equal(t, src, file.Source)
 			assert.Equal(t, 1, len(file.Imports))
 			assert.Equal(t, 1, len(file.StepImports))
@@ -632,7 +629,7 @@ return importId;
 			if assert.Equal(t, 1, len(file.FnTypes)) {
 				assert.Equal(t, "helper", file.FnTypes[0].Name)
 			}
-			testPackageAttributes(t, res.Package)
+			testPackageAttributes(t, pkg)
 		}
 	})
 
@@ -642,12 +639,12 @@ y = 2.0;
 x = 3.0;
 return x + y;
 `
-		res, err := parser2.Parse([]string{src})
+		pkg, err := parser2.Parse([]string{src})
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), `"x" is an existing variable`)
 		}
-		if assert.Equal(t, 1, len(res.Package.Files)) {
-			file := res.Package.Files[0]
+		if assert.Equal(t, 1, len(pkg.Files)) {
+			file := pkg.Files[0]
 			if assert.Equal(t, 2, len(file.Assignments)) {
 				assert.Equal(t, "x", file.Assignments[0].Variables[0].Name)
 				assert.Equal(t, "y", file.Assignments[1].Variables[0].Name)
@@ -661,13 +658,13 @@ import "math";
 a = 10;
 return ;
 `
-		res, err := parser2.Parse([]string{src})
+		pkg, err := parser2.Parse([]string{src})
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "expected at least one return element")
 		}
-		assert.NotNil(t, res.Package.Scene)
-		if assert.Equal(t, 1, len(res.Package.Files)) {
-			file := res.Package.Files[0]
+		assert.NotNil(t, pkg.Scene)
+		if assert.Equal(t, 1, len(pkg.Files)) {
+			file := pkg.Files[0]
 			assert.Equal(t, 1, len(file.Imports))
 			assert.Equal(t, 1, len(file.Assignments))
 		}
@@ -676,16 +673,16 @@ return ;
 	t.Run("MultiFileErrorInSecondFilePreservesFirstAndPartialSecond", func(t *testing.T) {
 		src0 := "@scene(20)\nimport \"math\";\na = 1;\n"
 		src1 := "import \"vector\";\nb = 2;\nbroken = ;\nreturn a + b;\n"
-		res, err := parser2.Parse([]string{src0, src1})
+		pkg, err := parser2.Parse([]string{src0, src1})
 		assert.Error(t, err)
-		assert.NotNil(t, res.Package.Scene)
-		if assert.Equal(t, 2, len(res.Package.Files)) {
-			assert.Equal(t, 1, len(res.Package.Files[0].Imports))
-			assert.Equal(t, 1, len(res.Package.Files[0].Assignments))
-			assert.Equal(t, 1, len(res.Package.Files[1].Imports))
-			assert.Equal(t, 1, len(res.Package.Files[1].Assignments))
-			assert.Equal(t, "b", res.Package.Files[1].Assignments[0].Variables[0].Name)
-			assert.Equal(t, src1, res.Package.Files[1].Source)
+		assert.NotNil(t, pkg.Scene)
+		if assert.Equal(t, 2, len(pkg.Files)) {
+			assert.Equal(t, 1, len(pkg.Files[0].Imports))
+			assert.Equal(t, 1, len(pkg.Files[0].Assignments))
+			assert.Equal(t, 1, len(pkg.Files[1].Imports))
+			assert.Equal(t, 1, len(pkg.Files[1].Assignments))
+			assert.Equal(t, "b", pkg.Files[1].Assignments[0].Variables[0].Name)
+			assert.Equal(t, src1, pkg.Files[1].Source)
 		}
 	})
 }
@@ -706,11 +703,11 @@ func TestParseDiagnosticMessageRegressions(t *testing.T) {
 	})
 
 	t.Run("ExpectedAssignmentNamedFunctionOrReturn", func(t *testing.T) {
-		res, err := parser2.Parse([]string{"a = 1;\n123;\n"})
+		pkg, err := parser2.Parse([]string{"a = 1;\n123;\n"})
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "expected assignment, named function declaration, or return")
 		}
-		assert.Equal(t, 1, len(res.Package.Files[0].Assignments))
+		assert.Equal(t, 1, len(pkg.Files[0].Assignments))
 	})
 
 	t.Run("ImportErrorHint", func(t *testing.T) {
