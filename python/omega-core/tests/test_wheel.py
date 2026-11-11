@@ -81,3 +81,63 @@ def test_a_sharp_box_meshes_watertight_to_its_volume(tmp_path: Path) -> None:
     key = lambda point: tuple(round(value, 4) for value in point)  # noqa: E731
     edges = Counter(tuple(sorted((key(p), key(q)))) for t in triangles for p, q in zip(t, t[1:] + t[:1]))
     assert set(edges.values()) == {2}
+
+
+# A sphere of radius r about the origin; r is a slider, the first name declared.
+BALL = "@scene(40)\n@range(5, 15) r = 10.0;\nball = length(p) - r;\nreturn ball;\n"
+
+
+@pytest.fixture
+def ball(tmp_path: Path):
+    (tmp_path / "ball.gsl").write_text(BALL)
+    with omega_core.Session() as gsl:
+        yield gsl.document(tmp_path / "ball.gsl")
+
+
+def test_a_session_answers_values_gradients_and_derivatives(ball) -> None:
+    fields = ball.eval(["ball", "ball.dp", "ball.d(r)"], points=[(20, 0, 0), (0, 0, 4)])
+    assert fields["ball"].type == "num"
+    assert fields["ball"].values == pytest.approx((10, -6))
+    assert fields["ball"].gradients[1] == pytest.approx((0, 0, 1))
+    assert fields["ball.dp"].values[0] == pytest.approx((1, 0, 0))  # a vec3 at each point
+    assert fields["ball.d(r)"].values == pytest.approx((-1, -1))
+    # defs naming a slider set it for that question only.
+    assert ball.eval("ball", points=[(20, 0, 0)], defs="r = 12.0;")["ball"].values == pytest.approx((8,))
+    assert ball.eval("ball", points=[(20, 0, 0)])[0].values == pytest.approx((10,))
+
+
+def test_a_proof_over_the_sliders_names_where_it_fails(ball) -> None:
+    outside = (12, -2, -2, 16, 2, 2)
+    assert ball.certify(region=outside, threshold=0).proven
+    over = ball.certify(region=outside, threshold=0, over_sliders=True)
+    assert over.verdict == "disproven"
+    assert over.params == {"r": (5, 15)}
+    assert over.counter_params["r"][0] >= 12
+    assert ball.certify(region=outside, threshold=0, params={"r": (5, 11)}).proven
+
+
+def test_an_extremum_says_the_lipschitz_constant_its_bound_assumes(ball) -> None:
+    found = ball.extremum(region=(-20, -20, -20, 20, 20, 20))
+    assert found.assumed_lipschitz == 1
+    assert found.min == pytest.approx(-10, abs=0.1)
+    assert found.min_conditional_bound <= found.min
+    assert found.max is None
+
+
+def test_a_question_that_fails_raises_in_gsls_words_and_the_session_goes_on(ball) -> None:
+    with pytest.raises(omega_core.EvalError, match="undefined identifier: nope"):
+        ball.eval("nope", points=[(0, 0, 0)])
+    assert ball.describe().sliders == {"r": (5, 15)}
+
+
+def test_gsl_eval_answers_one_request_with_its_exit_code(tmp_path: Path) -> None:
+    (tmp_path / "ball.gsl").write_text(BALL)
+    gsl = str(omega_core.executable())
+    request = '{"op": "eval", "source": "ball.gsl", "exprs": ["ball"], "points": [[20, 0, 0]]}'
+    done = subprocess.run([gsl, "eval", "-"], input=request, capture_output=True, text=True, cwd=tmp_path, timeout=60)
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert '"ok":true' in done.stdout
+    done = subprocess.run([gsl, "eval", "-"], input='{"op": "spin"}', capture_output=True, text=True, cwd=tmp_path,
+                          timeout=60)
+    assert done.returncode == 2
+    assert '"ok":false' in done.stdout

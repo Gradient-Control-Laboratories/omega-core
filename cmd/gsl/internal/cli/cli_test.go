@@ -100,3 +100,26 @@ func TestRun_ExitCodePropagationAndMissingBinary(t *testing.T) {
 	// ResolveExecutableDir returns a non-empty path
 	assert.NotEqual(t, "", cli.ResolveExecutableDir())
 }
+
+// `gsl eval ARGS` is `compile eval ARGS`: the toolchain keeps one Fidget-linked program.
+func TestRun_EvalRunsCompileEval(t *testing.T) {
+	binDir := t.TempDir()
+	createMockTool(t, binDir, "compile", `echo "MOCK_COMPILE:$@"`)
+
+	for _, tc := range []struct {
+		args []string
+		want string
+	}{
+		{[]string{"eval", "--stdio"}, "MOCK_COMPILE:eval --stdio"},
+		{[]string{"eval", "-I", "lib", "req.json"}, "MOCK_COMPILE:eval -I lib req.json"},
+		{[]string{"help", "eval"}, "MOCK_COMPILE:eval --help"},
+	} {
+		var stdout, stderr bytes.Buffer
+		require.NoError(t, cli.Run(context.Background(), binDir, tc.args, nil, &stdout, &stderr))
+		assert.Equal(t, tc.want, strings.TrimSpace(stdout.String()))
+	}
+
+	var stdout bytes.Buffer
+	cli.PrintUsage(&stdout)
+	assert.Contains(t, stdout.String(), "eval        query a document's field")
+}

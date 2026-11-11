@@ -35,7 +35,8 @@ type companionMeta struct {
 // PrintUsage outputs formatted CLI help information.
 func PrintUsage(w io.Writer) {
 	fmt.Fprintf(w, "Usage of compile:\n")
-	fmt.Fprintf(w, "  compile [flags] [source1.gsl source2.gsl ...]\n\n")
+	fmt.Fprintf(w, "  compile [flags] [source1.gsl source2.gsl ...]\n")
+	fmt.Fprintf(w, "  compile eval [flags] REQUEST.json | --stdio   (query a document's field: compile eval --help)\n\n")
 	fmt.Fprintf(w, "Flags:\n")
 	fmt.Fprintf(w, "  -t, --target string\n")
 	fmt.Fprintf(w, "        Compilation output target (wgsl, stl, tape, audio, ast, png) (default \"wgsl\")\n")
