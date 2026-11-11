@@ -1,5 +1,6 @@
 """The installed omega-core wheel: its programs are there, report the package's version, load only the system's
-libraries, and mesh a model right. Standard library and pytest only, so it runs against a bare install."""
+libraries, mesh a model right, draw it and answer questions of its field (gsl eval, omega_core.Session). Standard
+library and pytest only, so it runs against a bare install."""
 
 from __future__ import annotations
 
@@ -7,6 +8,7 @@ import shutil
 import struct
 import subprocess
 import sys
+import zlib
 from collections import Counter
 from pathlib import Path
 
@@ -81,6 +83,51 @@ def test_a_sharp_box_meshes_watertight_to_its_volume(tmp_path: Path) -> None:
     key = lambda point: tuple(round(value, 4) for value in point)  # noqa: E731
     edges = Counter(tuple(sorted((key(p), key(q)))) for t in triangles for p, q in zip(t, t[1:] + t[:1]))
     assert set(edges.values()) == {2}
+
+
+def read_png(path: Path) -> tuple[int, int, list[bytes]]:
+    """An 8-bit RGB PNG's width, height and rows of pixels, its filters undone."""
+    data = path.read_bytes()
+    assert data[:8] == b"\x89PNG\r\n\x1a\n", "a PNG"
+    at, idat = 8, b""
+    while at < len(data):
+        (length,) = struct.unpack_from(">I", data, at)
+        kind, body = data[at + 4:at + 8], data[at + 8:at + 8 + length]
+        if kind == b"IHDR":
+            width, height, depth, colour = struct.unpack_from(">IIBB", body)
+            assert (depth, colour) == (8, 2), "8-bit RGB"
+        elif kind == b"IDAT":
+            idat += body
+        at += 12 + length
+    raw, stride, rows, previous = zlib.decompress(idat), 3 * width, [], bytes(3 * width)
+    for y in range(height):
+        kind, line = raw[y * (stride + 1)], bytearray(raw[y * (stride + 1) + 1:(y + 1) * (stride + 1)])
+        for x in range(stride):
+            left = line[x - 3] if x >= 3 else 0
+            up, corner = previous[x], previous[x - 3] if x >= 3 else 0
+            if kind == 1:
+                line[x] = (line[x] + left) & 255
+            elif kind == 2:
+                line[x] = (line[x] + up) & 255
+            elif kind == 3:
+                line[x] = (line[x] + (left + up) // 2) & 255
+            elif kind == 4:
+                p = left + up - corner
+                guess = min((abs(p - left), 0, left), (abs(p - up), 1, up), (abs(p - corner), 2, corner))[2]
+                line[x] = (line[x] + guess) & 255
+        rows.append(previous := bytes(line))
+    return width, height, rows
+
+
+def test_a_model_is_drawn_from_each_view_tiled_two_across(tmp_path: Path) -> None:
+    (tmp_path / "box.gsl").write_text(BOX)
+    run(str(omega_core.executable()), "compile", "-t", "png", "--views", "iso,top", "--size", "160x120", "--light",
+        "--no-meta", "-o", "box.png", "box.gsl", cwd=tmp_path)
+    width, height, rows = read_png(tmp_path / "box.png")
+    assert (width, height) == (2 * 160 + 4, 120)  # two views and omega's 4-pixel gap
+    # The box is drawn, its faces shaded: an empty scene's iso view holds the ground and the axes, 4 colours.
+    colours = {rows[y][3 * x:3 * x + 3] for y in range(height) for x in range(160)}
+    assert len(colours) >= 20, len(colours)
 
 
 # A sphere of radius r about the origin; r is a slider, the first name declared.
