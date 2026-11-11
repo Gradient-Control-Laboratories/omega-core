@@ -1,3 +1,6 @@
+/// Surfaces machining leaves, from the process's parameters: turning, face
+/// milling, grinding, brushing, blasting and knurling.
+
 
 // Machined Materials (material/process/machined)
 //

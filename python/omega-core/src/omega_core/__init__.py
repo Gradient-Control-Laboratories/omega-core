@@ -15,17 +15,20 @@ it returns)::
         part.certify("body", region=(-60, -60, 0, 60, 60, 50), threshold=0, over_sliders=True).verdict
         part.render("cut.png", "max(body, p.y)", views="iso,top", light=True)
 
+Teaching a model GSL: :func:`skill` is the GSL reference, written for a model to read before it writes GSL.
+
 Finding the program: :func:`executable` is the path to ``gsl``, and :func:`version` the release (``"0.1.1"``).
 """
 
 from __future__ import annotations
 
+import subprocess
 import sys
 from pathlib import Path
 
 from omega_core._eval import Document, EvalError, Session
 
-__all__ = ["Document", "EvalError", "Session", "executable", "version"]
+__all__ = ["Document", "EvalError", "Session", "executable", "skill", "version"]
 
 _BIN = Path(__file__).resolve().parent / "_bin"
 _PROGRAMS = ("gsl", "compile")
@@ -48,3 +51,22 @@ def version() -> str:
     from importlib.metadata import version as installed
 
     return installed("omega-core")
+
+
+def skill(*packages: str, everything: bool = False) -> str:
+    """The GSL reference, written for a model to read before it writes GSL, from the standard library this wheel
+    compiles (``gsl skill``).
+
+    With no arguments: the language, the built-ins, how packages are referenced and one line per package, about
+    70 KB. Name packages, by import path (``"material/bulk/wood"``) or prefix (``"wood"``), for their full
+    documentation. ``everything=True`` gives the whole reference, about 470 KB. ``ValueError`` for an unknown
+    package."""
+    args = [str(executable()), "skill", *packages]
+    if everything:
+        args.append("--all")
+    done = subprocess.run(args, capture_output=True, text=True, encoding="utf-8")
+    if done.returncode == 2:
+        raise ValueError(done.stderr.strip())
+    if done.returncode != 0:
+        raise RuntimeError(f"gsl skill exited {done.returncode}: {done.stderr.strip()}")
+    return done.stdout

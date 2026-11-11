@@ -1,3 +1,6 @@
+/// Standard metals (steel, stainless, cast iron, aluminum, titanium, zinc,
+/// brass, copper, gold, chromium), each a material and color pair.
+
 // Metal Library (material/bulk/metal)
 //
 // Standard metals. Each metal is a zero-argument function returning a PAIR:

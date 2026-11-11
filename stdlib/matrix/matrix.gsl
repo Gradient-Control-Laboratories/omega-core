@@ -1,3 +1,6 @@
+/// Linear algebra on matrices stored as lists of column vectors: products,
+/// rotation, translation and scaling constructors, determinant and inverse.
+
 
 // Matrix Library (matrix)
 //

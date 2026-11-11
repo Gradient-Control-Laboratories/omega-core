@@ -37,6 +37,7 @@ All lengths are millimetres.
 | `gsl compile [flags] part.gsl` | compile to a target (below) |
 | `gsl render [flags] part.gsl` | shorthand for `gsl compile -t png` |
 | `gsl eval REQUEST.json`, `gsl eval -`, `gsl eval --stdio` | answer field queries as JSON |
+| `gsl skill`, `gsl skill PACKAGE...`, `gsl skill --all` | the GSL reference for a model to read (below) |
 | `gsl --version`, `gsl help [command]` | the release; a command's help |
 
 `python -m omega_core` runs `gsl` too. The wheel does not include `gsl serve` (omega's interactive viewer)
@@ -109,6 +110,14 @@ A request names its `op` and its document, by path (`"source"`) or by text (`"co
 - **Exit codes** (one request): 0 answered, 1 the query failed, 2 a malformed request.
 - **More detail:** `gsl eval --help`.
 
+### `gsl skill`
+
+`gsl skill` prints the GSL reference, written for a model to read before it writes GSL and generated from
+the standard library this release compiles. Without arguments it prints the language, the built-ins, how
+packages are referenced and one line per package, about 70 KB. `gsl skill PACKAGE...` prints those
+packages in full, named by import path or prefix (`gsl skill builtin wood`), and `gsl skill --all` prints
+everything, about 470 KB. From Python, `omega_core.skill()` and `omega_core.skill("wood")` return the same text.
+
 ## Python
 
 ```python
@@ -171,6 +180,8 @@ All results are frozen dataclasses of floats and tuples.
 | `Picture` | `path`, and the sheet's `width` and `height` in pixels |
 
 A question that fails raises `omega_core.EvalError` in the compiler's words.
+
+`omega_core.skill(*packages, everything=False)` is the text `gsl skill` prints (above).
 
 `omega_core.executable()` is the path to the bundled `gsl`; it raises `FileNotFoundError` on a platform
 the wheel was not built for. `omega_core.version()` is the release, such as `"0.1.1"`.

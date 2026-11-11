@@ -109,7 +109,10 @@ func ReservedWordsDescriptiveText() string {
 	sb.WriteString("The following are reserved words.\n")
 	sb.WriteString("Do not use these names for your own functions or parameters or variables.\n\n")
 
+	// ReservedWords ranges over a map; sort so the text is the same on every
+	// call (diffable, and cacheable as a prompt).
 	words := program.ReservedWords()
+	sort.Strings(words)
 	for _, name := range words {
 		fmt.Fprintf(&sb, "`%s`, ", name)
 	}

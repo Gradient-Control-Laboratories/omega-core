@@ -25,6 +25,7 @@ The commands are:
     eval        query a document's field: values, gradients, extrema, proofs, pictures (JSON)
     render      draw GSL sources into a PNG on the CPU (compile -t png)
     serve      launch local HTTP server and interactive WebGPU viewer
+    skill       print the GSL reference for a model: the language and a package index, or packages in full
     fix         refactor GSL source files to current syntax
     help        display help for gsl or a specific subcommand
     version     print the version
@@ -148,6 +149,8 @@ func toolFor(subcmd string) (string, []string) {
 		return "compile", []string{"eval"}
 	case "render":
 		return "compile", []string{"-t", "png"}
+	case "skill":
+		return "compile", []string{"skill"}
 	}
 	return MapSubcommand(subcmd), nil
 }
