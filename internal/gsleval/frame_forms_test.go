@@ -12,7 +12,7 @@ import (
 // 20 mm cylinder along z through the origin, at the given points.
 func frameEval(t *testing.T, exprs []string, points [][3]float64) [][]float64 {
 	t.Helper()
-	mgr := source.NewLocalManager("testpkg", "../../../common/source/package")
+	mgr := source.NewLocalManager("../../stdlib")
 	e := New(mgr, nil)
 	doc := "bar = cylinder([0, 0, 0], [0, 0, 1], 10);\nreturn bar;\n"
 	groups, err := e.EvalGsl(context.Background(), nil, doc, "", exprs, points)

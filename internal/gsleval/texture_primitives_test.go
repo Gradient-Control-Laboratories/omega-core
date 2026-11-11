@@ -12,7 +12,7 @@ import (
 // scalarSamples evaluates scalar expressions at pts, a row per expression.
 func scalarSamples(t *testing.T, exprs []string, pts [][3]float64) [][]float64 {
 	t.Helper()
-	mgr := source.NewLocalManager("testpkg", "../../../common/source/package")
+	mgr := source.NewLocalManager("../../stdlib")
 	e := New(mgr, nil)
 	groups, err := e.EvalGsl(context.Background(), nil, "return p.x;", "", exprs, pts)
 	if err != nil {

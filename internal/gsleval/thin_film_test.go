@@ -13,7 +13,7 @@ import (
 // there because the evaluator wants one.
 func colorEval(t *testing.T, exprs []string) [][3]float64 {
 	t.Helper()
-	mgr := source.NewLocalManager("testpkg", "../../../common/source/package")
+	mgr := source.NewLocalManager("../../stdlib")
 	e := New(mgr, nil)
 	queries := make([]string, 0, 3*len(exprs))
 	for _, expr := range exprs {
