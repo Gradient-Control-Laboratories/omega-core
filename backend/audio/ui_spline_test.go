@@ -1,10 +1,11 @@
-package lib
+package audio_test
 
 import (
 	"strings"
 	"testing"
 
 	"gradientcontrol.com/omega/core/assembler"
+	"gradientcontrol.com/omega/core/backend/audio"
 	"gradientcontrol.com/omega/core/internal/source"
 )
 
@@ -20,7 +21,7 @@ return sin(position.x * time);`
 		if err != nil {
 			t.Fatal(err)
 		}
-		js, _, err := AudioToJs(res.Program)
+		js, _, err := audio.AudioToJs(res.Program)
 		if err != nil {
 			t.Fatal(err)
 		}
