@@ -1,15 +1,17 @@
-package convert_test
+package mesh_test
 
 import (
 	"math"
 	"testing"
 
 	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/internal/fidget/internal/convert"
-	"gradientcontrol.com/omega/core/internal/fidget/internal/fidget"
+	"gradientcontrol.com/omega/core/backend/mesh"
+	"gradientcontrol.com/omega/core/internal/fidget"
+	"gradientcontrol.com/omega/core/internal/fidget/convert"
 	"gradientcontrol.com/omega/core/internal/meshfold"
-	"gradientcontrol.com/omega/core/program/noise"
 	"gradientcontrol.com/omega/core/program"
+	"gradientcontrol.com/omega/core/program/noise"
+	"gradientcontrol.com/omega/core/program/noise/spinodoid"
 )
 
 // This follows the imported, graded, powder-bed-material project pipeline.
@@ -38,7 +40,7 @@ specimen.color = slsColor;
 specimen.material = slsMat;
 return specimen;
 `
-	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(mockMgr))
+	res, err := assembler.Assemble([]string{src})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,14 +75,14 @@ return specimen;
 		t.Fatal(err)
 	}
 
-	bakes, err := convert.BakeSpinodoids(prog)
+	bakes, err := mesh.BakeSpinodoids(prog)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(bakes) != 1 {
 		t.Fatalf("got %d spinodoid bakes, want one", len(bakes))
 	}
-	var baked convert.BakedSpinodoid
+	var baked spinodoid.Baked
 	for _, b := range bakes {
 		baked = b
 	}
@@ -133,7 +135,7 @@ return specimen;
 	// The driver source is unchanged, but a different imported domain needs
 	// different bytes and a new cache/content identity.
 	prog.Primary.Scene.SpinodoidBounds[4] += 20
-	changed, err := convert.BakeSpinodoids(prog)
+	changed, err := mesh.BakeSpinodoids(prog)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -176,13 +178,13 @@ return remap(field, p + [0, 200, 0]);
 	assertSpinodoidProgramValue(t, prog, want)
 }
 
-func bakeSingleSpinodoidForDomainTest(t *testing.T, src string) (*program.Program, convert.BakedSpinodoid) {
+func bakeSingleSpinodoidForDomainTest(t *testing.T, src string) (*program.Program, spinodoid.Baked) {
 	t.Helper()
-	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(mockMgr))
+	res, err := assembler.Assemble([]string{src})
 	if err != nil {
 		t.Fatal(err)
 	}
-	bakes, err := convert.BakeSpinodoids(res.Program)
+	bakes, err := mesh.BakeSpinodoids(res.Program)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,10 +1,10 @@
-package mesh_test
+package tape_test
 
 import (
 	"testing"
 
 	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/internal/fidget/internal/mesh"
+	"gradientcontrol.com/omega/core/backend/tape"
 	"gradientcontrol.com/omega/core/internal/source"
 	"gradientcontrol.com/omega/core/internal/test/assert"
 	"gradientcontrol.com/omega/core/internal/test/require"
@@ -22,13 +22,13 @@ return s;
 	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(&source.MockManager{}))
 	require.NoError(t, err)
 
-	tape1, names1, err := mesh.GenerateTape(res.Program)
+	tape1, names1, _, err := tape.GenerateTapeWithSpinodoids(res.Program)
 	require.NoError(t, err)
 	assert.True(t, len(tape1) > 0)
 	assert.Equal(t, 1, len(names1))
 
 	// Re-generating tape must be deterministic and byte-for-byte identical.
-	tape2, names2, err := mesh.GenerateTape(res.Program)
+	tape2, names2, _, err := tape.GenerateTapeWithSpinodoids(res.Program)
 	require.NoError(t, err)
 	assert.Equal(t, tape1, tape2)
 	assert.Equal(t, names1, names2)
@@ -48,8 +48,8 @@ return s;
 	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(&source.MockManager{}))
 	require.NoError(t, err)
 
-	tape, names, err := mesh.GenerateTape(res.Program)
+	tapeBytes, names, _, err := tape.GenerateTapeWithSpinodoids(res.Program)
 	require.NoError(t, err)
-	assert.True(t, len(tape) > 0)
+	assert.True(t, len(tapeBytes) > 0)
 	assert.Equal(t, 1, len(names))
 }
