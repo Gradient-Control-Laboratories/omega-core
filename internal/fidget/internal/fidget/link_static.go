@@ -3,7 +3,7 @@
 package fidget
 
 /*
-// Release binaries (the omega-gsl wheel, tool/build-wheel.sh) link the rust
+// Release binaries (the omega-core wheel, tool/build-wheel.sh) link the rust
 // wrapper as a static library, so a program that uses it is one file that
 // loads only the system's libraries. tool/build-wheel.sh builds it with
 //   cargo rustc -p render --release --crate-type staticlib --target-dir target/static

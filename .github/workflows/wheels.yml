@@ -1,6 +1,6 @@
 name: Wheels
 
-# The omega-gsl wheel (python/omega-gsl): omega-core's gsl and compile for one platform each, compile linked with the
+# The omega-core wheel (python/omega-core): omega-core's gsl and compile for one platform each, compile linked with the
 # render library statically (tool/build-wheel.sh). Each platform's wheel is built on its own runner -- Linux inside
 # the manylinux_2_28 image, so the programs need nothing newer than glibc 2.28 -- then installed and tested on a
 # plain runner of that platform, so a wheel that needs anything the build machine had and a user's does not fails
@@ -9,7 +9,7 @@ name: Wheels
 # Publishing is explicit, never a merge: pushing a tag v<version> whose version is the toolchain's
 # (internal/version/version.go), or running the workflow on main with `publish` set (which tags the commit
 # v<version> itself), publishes the wheels to PyPI through trusted publishing (the `pypi` environment; no token is
-# stored). PyPI must list this repository and workflow as omega-gsl's trusted publisher first.
+# stored). PyPI must list this repository and workflow as omega-core's trusted publisher first.
 
 on:
   push:
@@ -45,7 +45,7 @@ jobs:
           - { tag: manylinux_2_28_x86_64, runner: ubuntu-latest, container: "quay.io/pypa/manylinux_2_28_x86_64", protoc: linux-x86_64, protoc_sha256: a45cda0989c17dd950db55f6fbe1e5814c50fda08e87aa422980ac1f89dddbbc }
           - { tag: manylinux_2_28_aarch64, runner: ubuntu-24.04-arm, container: "quay.io/pypa/manylinux_2_28_aarch64", protoc: linux-aarch_64, protoc_sha256: 36b518ac14d90351cc6598228ed2bbe5afe4e357b1af470b07e0ec1609875de2 }
     env:
-      OMEGA_GSL_TAG: ${{ matrix.tag }}
+      OMEGA_CORE_TAG: ${{ matrix.tag }}
     steps:
       - name: Linux image tools on PATH (Python, cargo)
         if: matrix.container
@@ -135,10 +135,10 @@ jobs:
       # pip takes the one wheel this platform can install, from the built ones alone.
       - name: Install this platform's wheel
         run: |
-          python -m pip install --only-binary :all: --no-index --find-links dist omega-gsl
+          python -m pip install --only-binary :all: --no-index --find-links dist omega-core
           python -m pip install pytest
       - name: Test it
-        working-directory: python/omega-gsl
+        working-directory: python/omega-core
         run: python -m pytest -q tests
 
   publish:

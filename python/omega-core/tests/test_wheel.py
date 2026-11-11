@@ -1,4 +1,4 @@
-"""The installed omega-gsl wheel: its programs are there, report the package's version, load only the system's
+"""The installed omega-core wheel: its programs are there, report the package's version, load only the system's
 libraries, and mesh a model right. Standard library and pytest only, so it runs against a bare install."""
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-import omega_gsl
+import omega_core
 
 BOX = "@scene(40, 5)\nblk = box([0, 0, 0], [10, 20, 30]);\nreturn blk;\n"
 
@@ -25,17 +25,17 @@ def run(*args: str, cwd: Path | None = None) -> str:
 
 @pytest.mark.parametrize("name", ["gsl", "compile"])
 def test_each_program_is_there_and_reports_the_package_version(name: str) -> None:
-    path = omega_gsl.executable(name)
+    path = omega_core.executable(name)
     assert path.is_file()
-    assert run(str(path), "--version") == f"{name} {omega_gsl.version()}"
+    assert run(str(path), "--version") == f"{name} {omega_core.version()}"
 
 
 def test_the_gsl_command_runs_the_bundled_program() -> None:
-    assert run(sys.executable, "-m", "omega_gsl", "--version") == f"gsl {omega_gsl.version()}"
+    assert run(sys.executable, "-m", "omega_core", "--version") == f"gsl {omega_core.version()}"
 
 
 def test_the_licences_of_what_it_links_are_shipped() -> None:
-    licences = Path(omega_gsl.__file__).parent / "licenses"
+    licences = Path(omega_core.__file__).parent / "licenses"
     third_party = (licences / "THIRD_PARTY_LICENSES.txt").read_text()
     for component in ("Go standard library", "Rust standard library", "fidget-core", "epaint", "openvdb", "tbb",
                       "imath", "blosc", "zlib"):
@@ -45,11 +45,11 @@ def test_the_licences_of_what_it_links_are_shipped() -> None:
 
 def test_another_name_is_refused() -> None:
     with pytest.raises(ValueError):
-        omega_gsl.executable("serve")
+        omega_core.executable("serve")
 
 
 def test_compile_loads_only_the_system_libraries() -> None:
-    compile_ = str(omega_gsl.executable("compile"))
+    compile_ = str(omega_core.executable("compile"))
     if sys.platform == "darwin":
         libraries = run("otool", "-L", compile_).splitlines()[1:]
         foreign = [line.strip() for line in libraries if not line.strip().startswith(("/usr/lib/", "/System/"))]
@@ -70,7 +70,7 @@ def read_stl(path: Path) -> list[tuple[tuple[float, float, float], ...]]:
 
 def test_a_sharp_box_meshes_watertight_to_its_volume(tmp_path: Path) -> None:
     (tmp_path / "box.gsl").write_text(BOX)
-    run(str(omega_gsl.executable()), "compile", "-t", "stl", "--algo", "mdc", "--subdivision", "8", "--bbox", "auto",
+    run(str(omega_core.executable()), "compile", "-t", "stl", "--algo", "mdc", "--subdivision", "8", "--bbox", "auto",
         "--no-meta", "-o", "box.stl", "box.gsl", cwd=tmp_path)
     triangles = read_stl(tmp_path / "box.stl")
     assert triangles
