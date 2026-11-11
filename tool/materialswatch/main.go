@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"gradientcontrol.com/omega/core/assembler"
-	fidgetlib "gradientcontrol.com/omega/core/internal/fidget/lib"
+	"gradientcontrol.com/omega/core/eval"
 )
 
 // Manifest is what the browser panel reads: the sheet's geometry and the
@@ -187,7 +187,7 @@ func main() {
 		basis.Order = append(basis.Order, e.Package+"."+e.Symbol)
 	}
 
-	sheet, err := fidgetlib.ComposeSheet(panels, *cols)
+	sheet, err := eval.ComposeSheet(panels, *cols)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "compose:", err)
 		os.Exit(1)
@@ -340,7 +340,7 @@ func renderSwatch(e Entry, width, height int, extent float64, env string, light,
 	if err != nil {
 		return nil, fmt.Errorf("assemble: %w", err)
 	}
-	return fidgetlib.RenderLitSizedView(res.Program, width, height, extent*swatchRadius, 0, fidgetlib.LitView{
+	return eval.RenderLitSizedView(res.Program, width, height, extent*swatchRadius, 0, eval.LitView{
 		Light:        light,
 		NoAxes:       true,
 		Environment:  env,
