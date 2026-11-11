@@ -1,4 +1,4 @@
-// Environment lighting for the GSL raymarch viewers (webai, webedit).
+// Environment lighting for the GSL raymarch viewer.
 //
 // The light a surface sees from the world around it: a sky and up to four
 // soft panels that turn about the vertical with the camera, as the three rig
@@ -55,8 +55,9 @@ import { uniform } from "three/tsl";
 import PRESETS from "./environment/presets.json" with { type: "json" };
 
 // The presets live in environment/presets.json, which litrender reads too
-// (common/web/environment embeds it for Go), so both renderers light a scene
-// from the same numbers. Each has a description; a mode (0 is the viewer's own
+// (internal/fidget/internal/environment embeds it for Go), so both renderers
+// light a scene from the same numbers. Each has a description; a mode (0 is the
+// viewer's own
 // lighting, 1 analytic); rig, the rig lights' strength (1 = as before); sky and
 // ground (linear radiance); and panels, each an axis (Z up, need not be unit),
 // a sharpness and a linear RGB amplitude, placed as seen from the viewer's

@@ -21,9 +21,9 @@
 //
 // initExportPanel({...}) takes the app's hooks:
 //   getSdfContext()      viewer.getCurrentSDFContext — null until a scene
-//                        renders. Omit the hook entirely in an app that cannot
+//                        renders. Omit the hook entirely in a host that cannot
 //                        mesh in the browser at all and the Browser MC mesher
-//                        is not offered (webedit).
+//                        is not offered.
 //   getComputeDevice()   viewer.getComputeDevice — elevated limits; may resolve null
 //   getRawGPUDevice()    viewer.getRawGPUDevice — the renderer's device, as fallback
 //   getMeshGeometry(i)   viewer.getMeshGeometry — imported mesh geometry by index
@@ -48,13 +48,11 @@
 //                           Returns false when it sent nothing (and has
 //                           said why).
 //   serverResults           optional; true when the app hands the server's
-//                           canvas/stl reply to claimServerStl first, so a
-//                           server export can be cleaned or written as 3MF.
-//                           Without it Server DC is STL only (webedit, whose
-//                           reply goes to its mesh viewer).
+//                           STL reply to claimServerStl first, so a server
+//                           export can be cleaned or written as 3MF.
+//                           Without it Server DC is STL only.
 //   serverExportUnavailable optional; with no onServerExport, keeps Server
-//                           DC in the list, disabled, with this as its title
-//                           (webai, so its panel matches the other app's).
+//                           DC in the list, disabled, with this as its title.
 //   getVisibleShapes()      optional; the 1-based returns the viewer shows, or
 //                           null for all. Exports mesh only those, and several
 //                           bodies download as a zip of one STL each.
@@ -67,7 +65,7 @@
 //   getDocument()           optional; the open document's name, so the
 //                           Browser MC export resolves its imports.
 //   onSaveTape()            optional; tape export, the Omega Tape format.
-//                           Without it Omega Tape is not offered (webedit).
+//                           Without it Omega Tape is not offered.
 //   getTape({body, box, levelSets})
 //                           optional; resolves with the program's omega tape
 //                           bytes (one return's alone when body is set, its
@@ -651,7 +649,7 @@ function threeMfBody(body, listed) {
 // zipEntryNames is each body's <name>.stl in a zip, the name made safe as a
 // file name (fileSafeName) and one that comes out like an earlier one
 // suffixed -2, -3, ...: the server's zips name entries the same way
-// (agent/manifold compose.go zipEntryNames).
+// (backend/mesh/manifold).
 function zipEntryNames(names) {
     const used = new Set();
     return names.map((n) => {
@@ -828,8 +826,8 @@ const tapeTitles = new Map();
 let refreshControls = () => {};
 
 // setTapesAvailable disables the Browser DC mesher and the Omega Tape format,
-// which both need a tape from the server, when the server cannot make one
-// (deployed webai runs no fidget agent), and restores them when it can.
+// which both need a tape from the server, when the server cannot make one, and
+// restores them when it can.
 export function setTapesAvailable(on) {
     for (const [key, selector] of [['dc', '#export-mesher option[value="dc"]'], ['tape', '#export-format option[value="tape"]']]) {
         const option = document.querySelector(selector);
@@ -921,8 +919,8 @@ export function initExportPanel(hooks) {
     // app to hand over a compiled SDF and a compute device (an app that passes
     // no getSdfContext cannot; returning null from it means "nothing rendered
     // yet", which is transient), Browser DC needs getTape, and Server DC
-    // onServerExport. One the app keeps for show (webai's Server DC) or that
-    // the server cannot run now (Browser DC without fidget) stays, disabled.
+    // onServerExport. One the host keeps disabled via serverExportUnavailable
+    // or that the server cannot run now (Browser DC without fidget) stays, disabled.
     const mesherOption = (value) => mesherSelect.querySelector(`option[value="${value}"]`);
     if (!deps.getSdfContext) mesherOption('mc').remove();
     if (!deps.getTape) mesherOption('dc').remove();
@@ -937,8 +935,8 @@ export function initExportPanel(hooks) {
     if (!deps.onSaveTape) formatSelect.querySelector('option[value="tape"]').remove();
     const SERVER_STL_ONLY = "This app's server export comes back as one STL";
     const NOT_MESHED = "A tape is the implicit field itself; nothing is meshed";
-    // The default is dual contouring: the server's where the app has one,
-    // the browser's otherwise (webai), marching cubes only failing both.
+    // The default is dual contouring: the server's where the host has one,
+    // the browser's otherwise, marching cubes only failing both.
     const pickDefaultMesher = () => {
         const best = ['server', 'dc', 'mc'].map(mesherOption).find((o) => o && !o.disabled);
         if (best) mesherSelect.value = best.value;

@@ -1,8 +1,8 @@
 // The inside of #stl-bounds-panel: the "Export" side panel. export-panel.js
-// injects this at init when the app's #stl-bounds-panel is empty, and drops
-// the meshers and the Omega Tape format the app passes no handler for (webedit);
-// webai keeps Server DC, disabled. 3MF is the default format: it is a fifth
-// to a sixth the size of the same triangles as binary STL.
+// injects this at init when the host's #stl-bounds-panel is empty, and drops
+// the meshers and the Omega Tape format the host passes no handler for (or
+// disables Server DC when `serverExportUnavailable` is set). 3MF is the default
+// format: it is a fifth to a sixth the size of the same triangles as binary STL.
 export const EXPORT_PANEL_MARKUP = `
 <div id="stl-bounds-header">Export <span class="panel-close">&#x2715;</span></div>
 <div class="panel-body">

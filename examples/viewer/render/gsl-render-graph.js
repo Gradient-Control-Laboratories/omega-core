@@ -1,4 +1,4 @@
-// The render graph the GSL viewers draw with (webai, webedit), and
+// The render graph the GSL viewer draws with, and
 // that the image-parity test builds headlessly: every WGSL function around
 // the compiled program -- visibility, gsl_min, the displaced field, normals,
 // shape colour, shading, glass, the standard raymarch fragment, the

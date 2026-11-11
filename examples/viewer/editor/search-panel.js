@@ -1,4 +1,4 @@
-// Custom CodeMirror 6 search panel for webai.
+// Custom CodeMirror 6 search panel for the GSL editor.
 //
 // Differs from CM6's default panel in three ways:
 // 1. Four mode toggles (match case, regex, whole word, reverse direction)

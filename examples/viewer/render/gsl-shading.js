@@ -1,4 +1,4 @@
-// Shared surface shading for the GSL raymarch viewers (webai, webedit).
+// Shared surface shading for the GSL raymarch viewer.
 //
 // The three viewers embed the same raymarch fragment shader as a WGSL string
 // and used to carry identical copies of the lighting rig. The shading now
@@ -121,7 +121,7 @@ export const renderKnobsU = uniform(new THREE.Vector4(1, 1, BACK_FACE_DIM, 0));
 // across the two below its own.
 //
 // The codegen guards each part and notes the one nearest each point sdShape is
-// asked about (agent/wgsl/internal/codegen/vanish.go); partDetailSetupWGSL
+// asked about (backend/wgsl/internal/codegen/vanish.go); partDetailSetupWGSL
 // hands the guards the camera and the rungs, and GSL_PART_DETAIL_WGSL reads
 // the nearest part back for displacement (gsl-displace.js) and textures
 // (pixelSize(), through gsl_pw).
@@ -149,7 +149,7 @@ export function hasParts(wgslCode) {
 // at 0, every part evaluated wherever it is asked about; a frame raises it
 // while it marches, when a part far from the ray may read as its box.
 // A program whose parts have stand-ins (name.simple) also gets the Simple
-// rung, which switches them (agent/wgsl/internal/codegen/simple.go).
+// rung, which switches them (backend/wgsl/internal/codegen/simple.go).
 export function partDetailSetupWGSL(wgslCode) {
   if (!hasParts(wgslCode)) return "";
   return "gsl_vanishEye = vec4<f32>(camPosZUp, pixelScale); " +
@@ -180,7 +180,7 @@ export const GSL_PART_DETAIL_WGSL = partDetailWGSL(false);
 // their weight, gsl_simpleDetail, by the Textures rung, with the textures'
 // fine detail: a colour and a material go flat together. A value past the
 // rung draws its stand-in and is not evaluated
-// (agent/wgsl/internal/codegen/simple.go).
+// (backend/wgsl/internal/codegen/simple.go).
 export function partDetailWGSL(simpleValues) {
   const setWeight = simpleValues
     ? "\n    gsl_simpleDetail = gsl_partDetail(gsl_detail.y, 0.0, 4.0 * pw);"
@@ -260,7 +260,7 @@ export function srgbEncode(v) {
 }
 
 // The material record the compiler's gsl_materialField returns, one row per
-// vec4 of the GSL `name.material` list (see common/source/package/material).
+// vec4 of the GSL `name.material` list (see stdlib/material).
 // Declared by the host like gsl_shape: the generated module only references
 // it. Rows are appended, never reordered.
 export const GSL_MATERIAL_STRUCT_WGSL = `
