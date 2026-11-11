@@ -1,4 +1,4 @@
-V# `gsl eval`: Field Queries from the Command Line and Python
+# `gsl eval`: Field Queries from the Command Line and Python
 
 ## 1. Overview & Problem Statement
 
