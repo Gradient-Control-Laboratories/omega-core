@@ -101,8 +101,9 @@ func TestRun_ExitCodePropagationAndMissingBinary(t *testing.T) {
 	assert.NotEqual(t, "", cli.ResolveExecutableDir())
 }
 
-// `gsl eval ARGS` is `compile eval ARGS`: the toolchain keeps one Fidget-linked program.
-func TestRun_EvalRunsCompileEval(t *testing.T) {
+// `gsl eval ARGS` is `compile eval ARGS`: the toolchain keeps one Fidget-linked program. `gsl render ARGS` is
+// `compile -t png ARGS`.
+func TestRun_EvalAndRenderRunCompile(t *testing.T) {
 	binDir := t.TempDir()
 	createMockTool(t, binDir, "compile", `echo "MOCK_COMPILE:$@"`)
 
@@ -113,6 +114,8 @@ func TestRun_EvalRunsCompileEval(t *testing.T) {
 		{[]string{"eval", "--stdio"}, "MOCK_COMPILE:eval --stdio"},
 		{[]string{"eval", "-I", "lib", "req.json"}, "MOCK_COMPILE:eval -I lib req.json"},
 		{[]string{"help", "eval"}, "MOCK_COMPILE:eval --help"},
+		{[]string{"render", "--views", "iso,top", "--light", "a.gsl"}, "MOCK_COMPILE:-t png --views iso,top --light a.gsl"},
+		{[]string{"help", "render"}, "MOCK_COMPILE:-t png --help"},
 	} {
 		var stdout, stderr bytes.Buffer
 		require.NoError(t, cli.Run(context.Background(), binDir, tc.args, nil, &stdout, &stderr))
@@ -122,4 +125,5 @@ func TestRun_EvalRunsCompileEval(t *testing.T) {
 	var stdout bytes.Buffer
 	cli.PrintUsage(&stdout)
 	assert.Contains(t, stdout.String(), "eval        query a document's field")
+	assert.Contains(t, stdout.String(), "render      draw GSL sources into a PNG")
 }

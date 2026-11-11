@@ -22,7 +22,8 @@ Usage: gsl <command> [arguments]
 The commands are:
 
     compile     compile GSL sources to target outputs
-    eval        query a document's field: values, gradients, extrema, proofs (JSON)
+    eval        query a document's field: values, gradients, extrema, proofs, pictures (JSON)
+    render      draw GSL sources into a PNG on the CPU (compile -t png)
     serve      launch local HTTP server and interactive WebGPU viewer
     fix         refactor GSL source files to current syntax
     help        display help for gsl or a specific subcommand
@@ -139,10 +140,14 @@ func Run(ctx context.Context, binDir string, args []string, stdin io.Reader, std
 }
 
 // toolFor is the sibling binary a subcommand runs and the arguments it leads with: `gsl eval ARGS` is
-// `compile eval ARGS`, which keeps one Fidget-linked program in the toolchain.
+// `compile eval ARGS`, which keeps one Fidget-linked program in the toolchain, and `gsl render ARGS` is
+// `compile -t png ARGS`.
 func toolFor(subcmd string) (string, []string) {
-	if subcmd == "eval" {
+	switch subcmd {
+	case "eval":
 		return "compile", []string{"eval"}
+	case "render":
+		return "compile", []string{"-t", "png"}
 	}
 	return MapSubcommand(subcmd), nil
 }

@@ -6,6 +6,7 @@ text-to-cad's `cad[omega]` installs to mesh GSL implicit models.
 ```sh
 pip install omega-core
 gsl compile -t stl --algo mdc --subdivision 8 --bbox auto -o part.stl part.gsl
+gsl render --views iso,top --light -o part.png part.gsl     # gsl compile -t png
 ```
 
 ```python

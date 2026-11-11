@@ -39,6 +39,7 @@ wheel ships `gsl` and `compile`; `compile` (~25 MB) carries Fidget and the rende
   `compile eval ARGS`. The wheel keeps one Fidget-linked program; `hatch_build.py`'s `PROGRAMS`
   and the wheel layout are unchanged. Costs a small change to `MapSubcommand` (a command that maps
   to a binary *and* a leading argument).
+- `gsl render ARGS` is shorthand for `compile -t png ARGS`, by the same mechanism.
 - **Option B: a new `eval` program.** Cleaner separation; adds a second ~25 MB static binary to
   every wheel and a third entry to `PROGRAMS`, `link_static.go` checks and `test_wheel.py`.
 
