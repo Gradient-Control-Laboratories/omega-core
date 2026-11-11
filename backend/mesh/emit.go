@@ -17,12 +17,12 @@ import (
 
 // MeshSdfOracle holds the triangle soup for a bvhSdf(AssetID) leaf.
 //
-// Deprecated: Use [meshasset.MeshSdfOracle] instead; will be removed in 0.3.0.
+// Deprecated: Use [meshasset.MeshSdfOracle] instead; will be removed in 0.2.0.
 type MeshSdfOracle = meshasset.MeshSdfOracle
 
 // VdbOracle holds the triangle soup and narrow-band level-set parameters for a vdbSdf(AssetID) leaf.
 //
-// Deprecated: Use [meshasset.VdbOracle] instead; will be removed in 0.3.0.
+// Deprecated: Use [meshasset.VdbOracle] instead; will be removed in 0.2.0.
 type VdbOracle = meshasset.VdbOracle
 
 // Output holds the generated binary STL mesh bytes and extracted triangle soup.
@@ -36,7 +36,7 @@ type Output struct {
 
 // BakedSpinodoid is a baked Gabor spinodoid table and the ID of its content.
 //
-// Deprecated: Use [spinodoid.Baked] instead; will be removed in 0.3.0.
+// Deprecated: Use [spinodoid.Baked] instead; will be removed in 0.2.0.
 type BakedSpinodoid = spinodoid.Baked
 
 // Option configures 3D mesh generation.

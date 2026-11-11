@@ -14,17 +14,17 @@ import (
 
 // MeshSdfOracle holds the triangle soup for a bvhSdf(AssetID) leaf.
 //
-// Deprecated: Use [meshasset.MeshSdfOracle] instead; will be removed in 0.3.0.
+// Deprecated: Use [meshasset.MeshSdfOracle] instead; will be removed in 0.2.0.
 type MeshSdfOracle = meshasset.MeshSdfOracle
 
 // VdbOracle holds the triangle soup and narrow-band level-set parameters for a vdbSdf(AssetID) leaf.
 //
-// Deprecated: Use [meshasset.VdbOracle] instead; will be removed in 0.3.0.
+// Deprecated: Use [meshasset.VdbOracle] instead; will be removed in 0.2.0.
 type VdbOracle = meshasset.VdbOracle
 
 // SpinodoidOracle describes one spinodoid table bound during compilation.
 //
-// Deprecated: Use [spinodoid.Oracle] instead; will be removed in 0.3.0.
+// Deprecated: Use [spinodoid.Oracle] instead; will be removed in 0.2.0.
 type SpinodoidOracle = spinodoid.Oracle
 
 // Option configures bytecode tape compilation.

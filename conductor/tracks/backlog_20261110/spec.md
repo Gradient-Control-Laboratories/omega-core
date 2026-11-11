@@ -17,7 +17,7 @@ predictably:
 - **Medium Improvements (`M1`–`M12`):** Bounded feature completions, phased syntax retirements,
   diagnostics enhancements, viewer capabilities, and developer tooling tasks that can either spin
   off focused tracks or execute as self-contained single-phase tracks.
-- **Small Targeted Cleanups (`S1`–`S14`):** Localized refactors, invariant tightening, dead-code
+- **Small Targeted Cleanups (`S1`–`S15`):** Localized refactors, invariant tightening, dead-code
   removals, public/internal API deduplication, and documentation/comment hygiene tasks suitable for
   direct execution or small cleanup batches.
 
@@ -358,7 +358,7 @@ defined in [README.md](../../../README.md):
     `stdlib/pkg_info_test.go`; fix the `@slider` -> `@range` typo in `README.md`; and retire legacy
     non-standard asset extensions in `parser/internal/parser2/build_imports.go` once `L2` lands.
 
-- [ ] **S14. Eliminate Redundant Public/Internal API Aliases & Pass-Through Wrappers**
+- [x] **S14. Eliminate Redundant Public/Internal API Aliases & Pass-Through Wrappers**
   - Consolidate duplicated type/const aliases (`type X = internalpkg.X`) and thin 1-to-1
     pass-through wrapper functions so each public SDK type and function has a single canonical
     definition without redundant `internal` mirror packages:
@@ -380,12 +380,14 @@ defined in [README.md](../../../README.md):
     - `eval/joints/joints.go`: 7 type aliases (`Joint`, `Claim`, `Verdict`, `Prover`, `ClaimResult`,
       `JointReport`, `Report`) and 6 pass-through functions (`Find`, `Others`, `Claims`,
       `RegionExprs`, `Region`, `Run`) mirroring `internal/gsleval/joints` 1-for-1.
-    - `backend/mesh/emit.go`: 3 type aliases (`MeshSdfOracle`, `VdbOracle`, `BakedSpinodoid`) and 6
-      pass-through functions (`BakeSpinodoids`, `RegisterMeshOracle`, `RegisterVdbOracle`,
-      `BakeAndExtractVdbWithProgress`, `ExtractVdbDenseBytes`, `ExtractVdbLevelSet`) wrapping
-      `internal/fidget/lib` (and `internal/fidget/internal/convert`).
-    - `backend/tape/emit.go`: 3 type aliases (`MeshSdfOracle`, `VdbOracle`, `SpinodoidOracle`) and 2
-      pass-through functions (`GenerateTapeWithSpinodoids`,
+    - `backend/mesh/emit.go`: 3 type aliases (`MeshSdfOracle`, `VdbOracle`, `BakedSpinodoid`,
+      re-pointed to canonical `meshasset` / `spinodoid` types and marked `Deprecated` for removal in
+      `0.2.0`) and 6 pass-through functions (`BakeSpinodoids`, `RegisterMeshOracle`,
+      `RegisterVdbOracle`, `BakeAndExtractVdbWithProgress`, `ExtractVdbDenseBytes`,
+      `ExtractVdbLevelSet`) wrapping `internal/fidget/lib` (and `internal/fidget/internal/convert`).
+    - `backend/tape/emit.go`: 3 type aliases (`MeshSdfOracle`, `VdbOracle`, `SpinodoidOracle`,
+      re-pointed to canonical `meshasset` / `spinodoid` types and marked `Deprecated` for removal in
+      `0.2.0`) and 2 pass-through functions (`GenerateTapeWithSpinodoids`,
       `GenerateTapeWithAppearanceAndSpinodoids`) wrapping `internal/fidget/lib` (duplicating
       `MeshSdfOracle` and `VdbOracle` with `backend/mesh`).
     - `backend/audio/emit.go`: 2 pass-through functions (`AudioToJs`, `ExtractAudio`) wrapping
@@ -398,6 +400,15 @@ defined in [README.md](../../../README.md):
       duplicating `assembler/source.Manager` and `var ErrPkgNotFound = pubsource.ErrPkgNotFound`),
       and `backend/internal/common/build.go` (`Builder`, `Delegate`, `Scope`, `Expression` aliasing
       `internal/build`).
+
+- [ ] **S15. Support Hexadecimal Numeric Literals (`0x...` / `0X...`)**
+  - Add hexadecimal integer literal lexing (`0[xX][0-9a-fA-F]+` ordered before `Float` and `Int` in
+    `gslLexer`) and `Number` parsing (`strconv.ParseUint` -> `float64`) across
+    `parser/internal/parser2/parser.go`, `grammar.go`, `capture.go`, and `parse_scene.go` (with
+    clear parse errors on malformed `0x` prefixes), update syntax highlighting in
+    `examples/viewer/editor/editor.js`, and document hex literals in
+    `doc/gsl_lang_spec_current.md`, `doc/gsl_lang_spec_future.md`, and
+    `examples/viewer/docs/gsl_description.md`.
 
 ## 6. Acceptance Criteria
 
