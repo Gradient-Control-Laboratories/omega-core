@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"flag"
@@ -14,6 +15,7 @@ import (
 	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/backend/audio"
 	"gradientcontrol.com/omega/core/backend/mesh"
+	"gradientcontrol.com/omega/core/backend/mesh/threemf"
 	"gradientcontrol.com/omega/core/backend/tape"
 	"gradientcontrol.com/omega/core/backend/wgsl"
 	"gradientcontrol.com/omega/core/cmd/compile/internal/config"
@@ -40,7 +42,7 @@ func PrintUsage(w io.Writer) {
 	fmt.Fprintf(w, "  compile eval [flags] REQUEST.json | --stdio   (query a document's field: compile eval --help)\n\n")
 	fmt.Fprintf(w, "Flags:\n")
 	fmt.Fprintf(w, "  -t, --target string\n")
-	fmt.Fprintf(w, "        Compilation output target (wgsl, stl, tape, audio, ast, png) (default \"wgsl\")\n")
+	fmt.Fprintf(w, "        Compilation output target (wgsl, stl, 3mf, tape, audio, ast, png) (default \"wgsl\")\n")
 	fmt.Fprintf(w, "  -o, --output string\n")
 	fmt.Fprintf(w, "        Output destination path ('-' for stdout)\n")
 	fmt.Fprintf(w, "  -m, --meta string\n")
@@ -187,7 +189,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		}
 		outBytes = []byte(renderRes.WGSL)
 
-	case config.TargetSTL:
+	case config.TargetSTL, config.Target3MF:
 		meshOpts := []mesh.Option{
 			mesh.WithSubdivision(cfg.Subdivision),
 			mesh.WithAlgorithm(cfg.Algo),
@@ -231,6 +233,13 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 			return fmt.Errorf("generating STL mesh: %w", meshErr)
 		}
 		outBytes = stlBytes
+		if cfg.Target == config.Target3MF {
+			threeMf, threeMfErr := stlTo3MF(stlBytes, bodyName(cfg))
+			if threeMfErr != nil {
+				return fmt.Errorf("writing 3MF: %w", threeMfErr)
+			}
+			outBytes = threeMf
+		}
 
 	case config.TargetTape:
 		tapeOpts := []tape.Option{}
@@ -419,4 +428,29 @@ func autoBbox(code string, srcPaths []string) ([6]float32, error) {
 		box[k+3] = float32(fit[k+3] + pad)
 	}
 	return box, nil
+}
+
+// stlTo3MF writes a meshed STL as a one-object 3MF: the mesh welded, named
+// name, in the writer's default color (the program's own colors are not
+// evaluated here).
+func stlTo3MF(stl []byte, name string) ([]byte, error) {
+	m, err := threemf.WeldSTL(stl)
+	if err != nil {
+		return nil, err
+	}
+	var buf bytes.Buffer
+	if err := threemf.Write(&buf, []threemf.Body{{Name: name, Mesh: m}}); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// bodyName is a 3MF object's name: the first source file's name without its
+// extension, as the default output path takes it, or "model" from stdin.
+func bodyName(cfg *config.Config) string {
+	if cfg.IsStdin || len(cfg.Sources) == 0 {
+		return "model"
+	}
+	base := filepath.Base(cfg.Sources[0])
+	return strings.TrimSuffix(base, filepath.Ext(base))
 }
