@@ -8,7 +8,7 @@ system's libraries. What it adds is a way to find them from Python::
 
     omega_core.executable()              # Path to gsl
     omega_core.executable("compile")     # Path to compile, which `gsl compile` runs
-    omega_core.version()                 # "0.1.0": what `gsl --version` reports
+    omega_core.version()                 # "0.1.1": what `gsl --version` reports
 
 and a way to ask a document's field questions, through ``gsl eval`` (:class:`Session`)::
 
@@ -46,7 +46,7 @@ def executable(name: str = "gsl") -> Path:
 
 
 def version() -> str:
-    """The omega-core release bundled ("0.1.0"), without running anything."""
+    """The omega-core release bundled ("0.1.1"), without running anything."""
     from importlib.metadata import version as installed
 
     return installed("omega-core")
