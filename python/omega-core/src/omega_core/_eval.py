@@ -154,6 +154,9 @@ class Bounds:
 
 @dataclass(frozen=True)
 class SurfaceSample:
+    """A seed point moved onto ``expr = 0``: the ``point`` reached, the surface ``normal`` there, the field's ``value``
+    left at it (about 0 when ``converged``), and whether the walk converged within its iterations."""
+
     point: Vec3
     normal: Vec3
     value: Optional[float]
@@ -181,6 +184,9 @@ class Picture:
 
 @dataclass(frozen=True)
 class Description:
+    """What a document declares: its ``sliders``, each name's ``(min, max)``; its top-level ``names``; and the
+    expressions it ``returns``, in order."""
+
     sliders: Dict[str, Tuple[float, float]]
     names: Tuple[str, ...]
     returns: Tuple[str, ...]
@@ -212,6 +218,7 @@ class Session:
         self.close()
 
     def close(self) -> None:
+        """Stop the program: its stdin is closed and it exits (killed if it has not within 10 s)."""
         if self._process.poll() is None:
             assert self._process.stdin is not None
             self._process.stdin.close()
@@ -292,6 +299,7 @@ class Document:
         return self._session.request(request)
 
     def describe(self) -> Description:
+        """The document's sliders and their ranges, its top-level names and its returns."""
         r = self._ask("describe")
         return Description(_ranges(r["sliders"]) or {}, tuple(r["names"]), tuple(r["returns"]))
 
@@ -327,6 +335,8 @@ class Document:
 
     def bounds(self, expr: Optional[str] = None, *, region: Optional[Region] = None, resolution: int = 0,
                defs: str = "") -> Bounds:
+        """The box where ``expr`` is below zero, fitted on a grid of ``resolution`` cells a side (0: 32) over
+        ``region`` (default: 1024 mm about the origin). It can fall a cell short of the surface: see :class:`Bounds`."""
         r = self._ask("bounds", expr=expr, region=_region(region) if region is not None else None,
                       resolution=resolution or None, defs=defs)
         return Bounds(r["expr"], r["found"], _vec(r["bboxMin"]), _vec(r["bboxMax"]), _vec(r["cellSize"]),
