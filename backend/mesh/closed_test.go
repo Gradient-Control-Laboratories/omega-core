@@ -3,6 +3,7 @@ package mesh
 import (
 	"encoding/binary"
 	"math"
+	"strings"
 	"testing"
 )
 
@@ -78,5 +79,29 @@ func TestClosedMeasurementRetainsCollinearEdges(t *testing.T) {
 	stats, err := MeasureClosedSTL(stl)
 	if err != nil || stats.Volume != 8 || stats.SurfaceArea != 24 {
 		t.Fatalf("collinear facet changed a closed cube: %+v, %v", stats, err)
+	}
+}
+
+// A closed, consistently wound surface turned inside out -- every triangle facing inward -- encloses a negative
+// signed volume, and MeasureClosedSTL refuses it; MeasureSTL still measures it, and says so in SignedVolume.
+func TestClosedMeasurementRejectsAnInsideOutSurface(t *testing.T) {
+	stl := makeCubeSTL(2, [3]float32{})
+	stats, err := MeasureClosedSTL(stl)
+	if err != nil || stats.SignedVolume != 8 {
+		t.Fatalf("outward cube: %+v, %v", stats, err)
+	}
+	inverted := append([]byte(nil), stl...)
+	for i := 0; i < 12; i++ {
+		v1 := 84 + i*50 + 24 // each triangle's second and third vertices swap
+		vertex := append([]byte(nil), inverted[v1:v1+12]...)
+		copy(inverted[v1:v1+12], inverted[v1+12:v1+24])
+		copy(inverted[v1+12:v1+24], vertex)
+	}
+	measured, err := MeasureSTL(inverted)
+	if err != nil || measured.SignedVolume != -8 || measured.Volume != 8 {
+		t.Fatalf("inside-out cube measured: %+v, %v", measured, err)
+	}
+	if _, err := MeasureClosedSTL(inverted); err == nil || !strings.Contains(err.Error(), "inside out") {
+		t.Fatalf("accepted an inside-out cube: %v", err)
 	}
 }

@@ -409,9 +409,13 @@ fn process_slice_pair(
                 let e1 = tri_row[t + 1] as usize;
                 let e2 = tri_row[t + 2] as usize;
 
+                // Bourke's table winds each triangle to face the corners whose bit is set, and a set bit is a
+                // corner inside the solid (field < 0): taken as listed, every triangle faces inward and the mesh
+                // is inside out. Emitted (e0, e2, e1), each faces outward, up the field's gradient, as the
+                // dual-contouring mesher's do and as STL expects.
                 let v0 = edge_verts[e0];
-                let v1 = edge_verts[e1];
-                let v2 = edge_verts[e2];
+                let v1 = edge_verts[e2];
+                let v2 = edge_verts[e1];
 
                 // Compute face normal via cross product
                 let u = [v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2]];
@@ -575,4 +579,72 @@ where
     }
 
     triangles
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The triangles of `field` marched over the cube [-h, h]^3 at n points per axis.
+    fn march(field: impl Fn(f32, f32, f32) -> f32, n: usize, h: f32) -> Vec<f32> {
+        let cell = 2.0 * h / (n - 1) as f32;
+        chunked_marching_cubes(
+            n, -h, -h, -h, cell, n, n,
+            |iz0, count| {
+                let mut out = Vec::with_capacity(count * n * n);
+                for iz in iz0..iz0 + count {
+                    for iy in 0..n {
+                        for ix in 0..n {
+                            out.push(field(-h + ix as f32 * cell, -h + iy as f32 * cell, -h + iz as f32 * cell));
+                        }
+                    }
+                }
+                out
+            },
+            |_, _| {},
+        )
+    }
+
+    /// The signed volume the triangles enclose, and how many triangles' stored normals point the way their
+    /// winding does and away from the origin.
+    fn orientation(tris: &[f32]) -> (f64, usize, usize, usize) {
+        let (mut vol, mut agree, mut outward) = (0.0f64, 0, 0);
+        for t in tris.chunks_exact(12) {
+            let n = [t[0], t[1], t[2]];
+            let (a, b, c) = ([t[3], t[4], t[5]], [t[6], t[7], t[8]], [t[9], t[10], t[11]]);
+            vol += (a[0] * (b[1] * c[2] - b[2] * c[1]) - a[1] * (b[0] * c[2] - b[2] * c[0])
+                + a[2] * (b[0] * c[1] - b[1] * c[0])) as f64 / 6.0;
+            let u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+            let v = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+            let w = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+            agree += (w[0] * n[0] + w[1] * n[1] + w[2] * n[2] > 0.0) as usize;
+            let centroid = [(a[0] + b[0] + c[0]) / 3.0, (a[1] + b[1] + c[1]) / 3.0, (a[2] + b[2] + c[2]) / 3.0];
+            outward += (centroid[0] * n[0] + centroid[1] * n[1] + centroid[2] * n[2] > 0.0) as usize;
+        }
+        (vol, agree, outward, tris.len() / 12)
+    }
+
+    // A solid's mesh faces out: a positive signed volume, each normal along its winding and away from the solid.
+    #[test]
+    fn a_sphere_marches_outward() {
+        let tris = march(|x, y, z| (x * x + y * y + z * z).sqrt() - 1.0, 41, 1.25);
+        let (vol, agree, outward, count) = orientation(&tris);
+        let exact = 4.0 / 3.0 * std::f64::consts::PI;
+        assert!((vol - exact).abs() < 0.02 * exact, "signed volume {vol}, want about {exact}");
+        assert_eq!(agree, count, "every normal follows its winding");
+        assert_eq!(outward, count, "every normal points away from the centre");
+    }
+
+    // A cavity's wall faces into the cavity: the hollow ball's volume is the shell's, positive.
+    #[test]
+    fn a_hollow_ball_marches_its_cavity_inward() {
+        let tris = march(|x, y, z| {
+            let r = (x * x + y * y + z * z).sqrt();
+            (r - 1.0).max(0.5 - r)
+        }, 49, 1.25);
+        let (vol, agree, _, count) = orientation(&tris);
+        let exact = 4.0 / 3.0 * std::f64::consts::PI * (1.0 - 0.125);
+        assert!((vol - exact).abs() < 0.03 * exact, "signed volume {vol}, want about {exact}");
+        assert_eq!(agree, count);
+    }
 }

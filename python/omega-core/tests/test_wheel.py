@@ -84,6 +84,17 @@ def test_a_sharp_box_meshes_watertight_to_its_volume(tmp_path: Path) -> None:
     assert set(edges.values()) == {2}
 
 
+def test_marching_cubes_meshes_a_box_facing_outward(tmp_path: Path) -> None:
+    # Every triangle faces out of the solid: the signed volume is the box's, positive, as dual contouring's is.
+    (tmp_path / "box.gsl").write_text(BOX)
+    run(str(omega_core.executable()), "compile", "-t", "stl", "--algo", "marching-cubes", "--subdivision", "7",
+        "--bbox", "auto", "--no-meta", "-o", "box.stl", "box.gsl", cwd=tmp_path)
+    triangles = read_stl(tmp_path / "box.stl")
+    volume = sum(a[0] * (b[1] * c[2] - b[2] * c[1]) - a[1] * (b[0] * c[2] - b[2] * c[0])
+                 + a[2] * (b[0] * c[1] - b[1] * c[0]) for a, b, c in triangles) / 6
+    assert volume == pytest.approx(6000, rel=0.02)
+
+
 def read_png(path: Path) -> tuple[int, int, list[bytes]]:
     """An 8-bit RGB PNG's width, height and rows of pixels, its filters undone."""
     data = path.read_bytes()
