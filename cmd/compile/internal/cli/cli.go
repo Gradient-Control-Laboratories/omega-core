@@ -50,12 +50,13 @@ func PrintUsage(w io.Writer) {
 	fmt.Fprintf(w, "  -I, --source-path string\n")
 	fmt.Fprintf(w, "        Root directory for package resolution (may be specified multiple times)\n")
 	fmt.Fprintf(w, "      --subdivision int\n")
-	fmt.Fprintf(w, "        Octree subdivision depth for mesh polygonization (default 4)\n")
+	fmt.Fprintf(w, "        Octree subdivision depth for mesh polygonization (default 9)\n")
 	fmt.Fprintf(w, "      --bbox string\n")
 	fmt.Fprintf(w, "        Bounding box as minX,minY,minZ,maxX,maxY,maxZ, or auto: the box the field fills,\n")
-	fmt.Fprintf(w, "        found within 1024 mm of the origin and grown by two cells (default -10..10 on each axis)\n")
+	fmt.Fprintf(w, "        found within 1024 mm of the origin and grown by two cells (default: the @scene box, an edge of\n")
+	fmt.Fprintf(w, "        its size centred on the origin, as the viewer frames it; auto when there is no @scene)\n")
 	fmt.Fprintf(w, "      --algo string\n")
-	fmt.Fprintf(w, "        Meshing algorithm (marching-cubes or mdc) (default \"marching-cubes\")\n")
+	fmt.Fprintf(w, "        Meshing algorithm (marching-cubes or mdc) (default \"mdc\")\n")
 	fmt.Fprintf(w, "      --time float\n")
 	fmt.Fprintf(w, "        Animation time in seconds (default 0)\n")
 	fmt.Fprintf(w, "      --views string\n")
@@ -192,12 +193,16 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 			mesh.WithAlgorithm(cfg.Algo),
 			mesh.WithTime(cfg.Time),
 		}
-		if cfg.HasBbox {
+		switch {
+		case cfg.HasBbox:
 			meshOpts = append(meshOpts, mesh.WithBbox(cfg.Bbox))
-		}
-		if cfg.AutoBbox {
+		case cfg.AutoBbox || res.Scene.GetSize() <= 0:
+			// --bbox auto, or no box named and no @scene to take one from: the box the field fills.
 			if len(sourceTexts) > 1 {
-				return fmt.Errorf("--bbox auto takes one source file, not %d: name the box outright", len(sourceTexts))
+				if cfg.AutoBbox {
+					return fmt.Errorf("--bbox auto takes one source file, not %d: name the box outright", len(sourceTexts))
+				}
+				return fmt.Errorf("%d source files and no @scene to take a box from: name the box with --bbox", len(sourceTexts))
 			}
 			box, boxErr := autoBbox(primarySourceText, srcPaths)
 			if boxErr != nil {
@@ -205,6 +210,14 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 			}
 			if cfg.Verbose {
 				fmt.Fprintf(stderr, "[mesh] --bbox auto: %g,%g,%g,%g,%g,%g\n", box[0], box[1], box[2], box[3], box[4], box[5])
+			}
+			meshOpts = append(meshOpts, mesh.WithBbox(box))
+		default:
+			// No box named: the @scene box, an edge of its size centred on the origin, as the viewer frames it.
+			half := float32(res.Scene.GetSize() / 2)
+			box := [6]float32{-half, -half, -half, half, half, half}
+			if cfg.Verbose {
+				fmt.Fprintf(stderr, "[mesh] @scene box: %g,%g,%g,%g,%g,%g\n", box[0], box[1], box[2], box[3], box[4], box[5])
 			}
 			meshOpts = append(meshOpts, mesh.WithBbox(box))
 		}
