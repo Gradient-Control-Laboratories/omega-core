@@ -1,3 +1,6 @@
+/// Screwdriver bits and screwdrivers whose tips are a fastener's recess read as
+/// a solid, so a bit fits its screw exactly.
+
 // Driver Library (driver)
 //
 // The tools that turn fasteners: screwdriver bits and screwdrivers. A bit is a

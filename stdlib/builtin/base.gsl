@@ -1,3 +1,7 @@
+/// The core shapes and operations every file sees without an import: 2D and 3D
+/// primitives, booleans with round and chamfer blends, offsets, quadratic
+/// Bezier curves, sweeps and lofts, and utilities.
+
 
 // Base Omega Library
 //

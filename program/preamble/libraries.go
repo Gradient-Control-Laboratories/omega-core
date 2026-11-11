@@ -52,14 +52,39 @@ func containsStr(haystack []string, needle string) bool {
 	return false
 }
 
+// librariesLead opens the library docs, full or indexed.
+const librariesLead = "**Call these rather than writing the same code yourself.** " +
+	"The library's versions are SDF-correct, consistently named, and " +
+	"tested. If you need a helper the library doesn't provide, name it " +
+	"in the library's style (e.g. `cylinderHelical`, not `helicalCyl`) " +
+	"so it composes cleanly with the rest.\n\n"
+
 func LibrariesDescriptiveText(includeDomains ...string) string {
 	var sb strings.Builder
 	sb.WriteString("\n---\n\n## **Library Packages**\n\n")
-	sb.WriteString("**Call these rather than writing the same code yourself.** " +
-		"The library's versions are SDF-correct, consistently named, and " +
-		"tested. If you need a helper the library doesn't provide, name it " +
-		"in the library's style (e.g. `cylinderHelical`, not `helicalCyl`) " +
-		"so it composes cleanly with the rest.\n\n")
+	sb.WriteString(librariesLead)
+	writeLibrariesIntro(&sb)
+	sb.WriteString("---\n\n")
+
+	for _, lib := range gsllibs.All() {
+		if lib.Domain != "" && !containsStr(includeDomains, lib.Domain) {
+			continue
+		}
+		entries := extractLibraryEntries(strings.Join(lib.Sources, "\n"))
+		if len(entries.constants) == 0 && len(entries.preamble) == 0 && len(entries.sections) == 0 {
+			continue
+		}
+		fmt.Fprintf(&sb, "### `%s`\n\n", lib.ImportPath)
+		writeLibraryEntries(&sb, entries)
+	}
+
+	return sb.String()
+}
+
+// writeLibrariesIntro writes how packages are imported and referenced: the
+// part of the library docs every reader needs, whether it reads the full
+// docs or the package index.
+func writeLibrariesIntro(sb *strings.Builder) {
 	sb.WriteString("### Core & Standard Packages\n\n")
 	// The auto-imported set is read from the library registry rather than
 	// listed here, so this text cannot drift from what the assembler resolves.
@@ -82,21 +107,6 @@ func LibrariesDescriptiveText(includeDomains ...string) string {
 		"import \"path/to/pkg\";      // qualified: call as `pkg.func(1)` (prefix = last path segment)\n" +
 		"import alias \"path/to/pkg\";  // aliased:   call as `alias.func(1)`\n" +
 		"```\n\n")
-	sb.WriteString("---\n\n")
-
-	for _, lib := range gsllibs.All() {
-		if lib.Domain != "" && !containsStr(includeDomains, lib.Domain) {
-			continue
-		}
-		entries := extractLibraryEntries(strings.Join(lib.Sources, "\n"))
-		if len(entries.constants) == 0 && len(entries.preamble) == 0 && len(entries.sections) == 0 {
-			continue
-		}
-		fmt.Fprintf(&sb, "### `%s`\n\n", lib.ImportPath)
-		writeLibraryEntries(&sb, entries)
-	}
-
-	return sb.String()
 }
 
 // SourceLibraryDescriptiveText renders the same per-library documentation

@@ -1,3 +1,6 @@
+/// Surfaces that move by their own physics: ocean waves, and a lava lake whose
+/// crust breaks into drifting plates.
+
 
 // Animated Materials (material/collection/animated)
 //

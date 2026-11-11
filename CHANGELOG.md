@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added `gsl skill` (`compile skill`), Python `omega_core.skill(...)`, and `preamble` package-index
+  helpers (`GSLSkillIndex`, `PackageIndexText`, `PackageDescriptiveText`, `PackageSummary`, and
+  `PackageNames`) to emit GSL language and per-package reference docs directly from the embedded
+  standard library (`stdlib/`), and served `/docs/gsl_description.md` and `/docs/gsl_libraries.md`
+  dynamically in `cmd/serve`.
 - Added canonical pure-Go oracle structs `meshasset.MeshSdfOracle` and `meshasset.VdbOracle` in
   `program/meshasset/oracle.go`, plus `spinodoid.Baked` and `spinodoid.Oracle` in
   `program/noise/spinodoid/oracle.go`.

@@ -1,3 +1,7 @@
+/// The standard sizes, one row per size: thread pitches, head, socket, nut and
+/// washer dimensions, clearance holes and drive sizes, read by every mechanical
+/// library.
+
 // Mechanical catalog: the standard sizes, once
 //
 // ONE TABLE, ONE ROW PER SIZE. Every mechanical library that is sized by a

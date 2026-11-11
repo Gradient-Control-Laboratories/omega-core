@@ -8,6 +8,7 @@ import (
 
 	"gradientcontrol.com/omega/core/cmd/compile/internal/cli"
 	"gradientcontrol.com/omega/core/cmd/compile/internal/evalcmd"
+	"gradientcontrol.com/omega/core/cmd/compile/internal/skillcmd"
 )
 
 func main() {
@@ -17,6 +18,10 @@ func main() {
 		code := evalcmd.Run(ctx, os.Args[2:], os.Stdin, os.Stdout, os.Stderr)
 		stop()
 		os.Exit(code)
+	}
+	// `compile skill` (which `gsl skill` runs) prints the GSL reference for a model to read.
+	if len(os.Args) > 1 && os.Args[1] == "skill" {
+		os.Exit(skillcmd.Run(os.Args[2:], os.Stdout, os.Stderr))
 	}
 	if err := cli.Run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr); err != nil {
 		fmt.Fprintf(os.Stderr, "compile: %v\n", err)

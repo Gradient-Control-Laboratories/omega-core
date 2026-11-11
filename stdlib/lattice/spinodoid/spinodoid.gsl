@@ -1,3 +1,6 @@
+/// Spinodoid metamaterials: non-periodic, bicontinuous cellular fields whose
+/// anisotropy is set by cones of wave directions (Kumar et al. 2020).
+
 // Spinodoid Library (spinodoid)
 //
 // Spinodoid metamaterial fields after Kumar, Tan, Zheng & Kochmann,
