@@ -1,23 +1,21 @@
-"""omega-core's ``gsl`` program, packaged as a wheel: ``omega-core``, what text-to-cad's ``cad[omega]`` installs.
+"""omega-core's GSL toolchain, packaged as a wheel: the ``gsl`` command, which compiles, meshes, renders and
+queries implicit (signed-distance) models written in GSL, and a client for querying a model's field from Python.
 
-This package ships omega-core's ``gsl`` command and the ``compile`` program it runs for ``gsl compile`` (GSL
-implicit models: parse, check, mesh to STL), built for one platform per wheel and linked so they load only the
-system's libraries. What it adds is a way to find them from Python::
+The programs are built for one platform per wheel and load only the system's libraries. The ``gsl`` command this
+package installs runs the bundled program with its arguments as given.
+
+Querying a model (:class:`Session`, :class:`Document`; ``help(omega_core.Document)`` lists every question and what
+it returns)::
 
     import omega_core
-
-    omega_core.executable()              # Path to gsl
-    omega_core.executable("compile")     # Path to compile, which `gsl compile` runs
-    omega_core.version()                 # "0.1.1": what `gsl --version` reports
-
-and a way to ask a document's field questions, through ``gsl eval`` (:class:`Session`)::
 
     with omega_core.Session() as gsl:
         part = gsl.document("part.gsl")
         part.eval(["body", "body.d(skin)"], points=[(40, 0, 9)], defs="skin = 1.6;")
-        part.certify("body", region=[...], threshold=0, over_sliders=True).verdict
+        part.certify("body", region=(-60, -60, 0, 60, 60, 50), threshold=0, over_sliders=True).verdict
+        part.render("cut.png", "max(body, p.y)", views="iso,top", light=True)
 
-The ``gsl`` command this package installs runs the bundled program with its arguments as given.
+Finding the program: :func:`executable` is the path to ``gsl``, and :func:`version` the release (``"0.1.1"``).
 """
 
 from __future__ import annotations
