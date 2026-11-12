@@ -175,3 +175,53 @@ arcTwoPointTangentExtendedXY(pointA, pointB, tangentA) {
 
   return arcField;
 }
+
+// =========================================================
+// PROFILES (XY plane)
+// =========================================================
+
+// One sign's share of a profile's distance: the nearest of the loop's features
+// that face that way. Each vertex brings two features. Its corner is the
+// distance to the vertex, facing out where the loop turns left there (convex)
+// and in where it turns right (reflex) — the sign of the whole normal cone of
+// that vertex. Its edge, to the next vertex, is the distance to the edge's
+// line, facing whichever side of the line p is on. `whenOutside` and
+// `whenInside` are what a feature adds when it faces out or in: 0 to count
+// it, nothing to drop it.
+//
+// Written for its interval bounds as much as its value. A ternary lowers to
+// c * a + (1 - c) * b, which over a cell that straddles the condition loses
+// the distance's lower bound; so the ternaries here choose only between
+// constants and max applies them. And past either end of its edge the line
+// distance grows by twice the overshoot, so it is strictly farther than the
+// end vertex: at once the overshoot it would tie the corner all along the
+// edge's extended line, and the comparison in profileXY would never settle
+// there.
+profilePoolXY(points, whenOutside, whenInside) {
+  count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
+  return reduce([nothing, 0], (nearest, start, index) {
+    previous = points[mod(index - 1 + count, count)];
+    end = points[mod(index + 1, count)];
+    incoming = start - previous;
+    edge = end - start;
+    offset = p.xy - start;
+    edgeLength = length(edge);
+    along = dot(offset, edge) / edgeLength;
+    turn = incoming.x * edge.y - incoming.y * edge.x;
+    side = offset.x * edge.y - offset.y * edge.x;
+    cornerDistance = max(length(offset), turn >= 0 ? whenOutside : whenInside);
+    lineDistance = abs(side) / edgeLength + 2 * max(0, neg(along), along - edgeLength);
+    edgeDistance = max(lineDistance, side >= 0 ? whenOutside : whenInside);
+    return [min(nearest.x, cornerDistance, edgeDistance), 0];
+  }, points).x;
+}
+
+/// Closed polygon profile in the XY plane, convex or concave: the exact signed
+/// distance to the loop through `points` (a list of 2D points) in order,
+/// negative inside. Wind the loop counterclockwise; a clockwise loop is its
+/// complement, a hole. The loop must not cross itself.
+profileXY(points) {
+  outside = profilePoolXY(points, 0, nothing);
+  inside = profilePoolXY(points, nothing, 0);
+  return outside <= inside ? outside : neg(inside);
+}
