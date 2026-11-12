@@ -196,7 +196,16 @@ arcTwoPointTangentExtendedXY(pointA, pointB, tangentA) {
 // distance grows by twice the overshoot, so it is strictly farther than the
 // end vertex: at once the overshoot it would tie the corner all along the
 // edge's extended line, and the comparison in profileXY would never settle
-// there.
+// there. A vertex the loop runs straight through has no normal cone, only
+// the one normal line its two edges share, and counted either way it would
+// tie them all along that line with the wrong sign on half of it; so a
+// corner that turns by less than a millionth of a radian faces neither way.
+//
+// profileXY reads the two pools only for the sign, and takes the distance from
+// a third pass that counts every feature whichever way it faces. Over a cell
+// the profile's edge runs through, that edge is undecided in both pools and
+// neither is bounded by it; the third pass is, so the result is bounded by the
+// distance to the edge and not by nothing.
 profilePoolXY(points, whenOutside, whenInside) {
   count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
   return reduce([nothing, 0], (nearest, start, index) {
@@ -207,9 +216,9 @@ profilePoolXY(points, whenOutside, whenInside) {
     offset = p.xy - start;
     edgeLength = length(edge);
     along = dot(offset, edge) / edgeLength;
-    turn = incoming.x * edge.y - incoming.y * edge.x;
+    turn = (incoming.x * edge.y - incoming.y * edge.x) / (length(incoming) * edgeLength);
     side = offset.x * edge.y - offset.y * edge.x;
-    cornerDistance = max(length(offset), turn >= 0 ? whenOutside : whenInside);
+    cornerDistance = max(length(offset), turn > 1e-6 ? whenOutside : (turn < neg(1e-6) ? whenInside : nothing));
     lineDistance = abs(side) / edgeLength + 2 * max(0, neg(along), along - edgeLength);
     edgeDistance = max(lineDistance, side >= 0 ? whenOutside : whenInside);
     return [min(nearest.x, cornerDistance, edgeDistance), 0];
@@ -219,9 +228,196 @@ profilePoolXY(points, whenOutside, whenInside) {
 /// Closed polygon profile in the XY plane, convex or concave: the exact signed
 /// distance to the loop through `points` (a list of 2D points) in order,
 /// negative inside. Wind the loop counterclockwise; a clockwise loop is its
-/// complement, a hole. The loop must not cross itself.
+/// complement, a hole. The loop must not cross itself. Its box bounds it in
+/// X and Y. Its frame: .u the distance along the loop, from its first point,
+/// to the point of the loop nearest p, in mm.
 profileXY(points) {
   outside = profilePoolXY(points, 0, nothing);
   inside = profilePoolXY(points, nothing, 0);
-  return outside <= inside ? outside : neg(inside);
+  nearest = profilePoolXY(points, 0, 0);
+  form = outside <= inside ? nearest : neg(nearest);
+  low, high = profileBoundsXY(points);
+  form.box = [[low.x, low.y, neg(nothing)], [high.x, high.y, nothing]];
+  form.u = profileRunXY(points);
+  return form;
+}
+
+// The corners of a polygon profile's box in the XY plane: the least and the
+// greatest of its points.
+profileBoundsXY(points) {
+  low = reduce((corner, point) { return min(corner, point); }, points);
+  high = reduce((corner, point) { return max(corner, point); }, points);
+  return low, high;
+}
+
+// A polygon profile's u: the distance along the loop, from its first point, to
+// the point of the loop nearest p. Each edge offers its own nearest point and
+// the nearest of those is kept, with the length of the edges before it. Where
+// a vertex is nearest, the two edges that meet there agree on it.
+profileRunXY(points) {
+  count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
+  return reduce([nothing, 0, 0], (best, start, index) {
+    edge = points[mod(index + 1, count)] - start;
+    edgeLength = length(edge);
+    offset = p.xy - start;
+    station = clamp(dot(offset, edge) / edgeLength, 0, edgeLength);
+    reach = length(offset - edge / edgeLength * station);
+    nearer = reach < best.x;
+    return [nearer ? reach : best.x, nearer ? best.z + station : best.y, best.z + edgeLength];
+  }, points).y;
+}
+
+/// The length of the closed polygon through `points`: its perimeter, in mm.
+profileLengthXY(points) {
+  count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
+  return reduce([0, 0], (sum, start, index) {
+    return sum + length(points[mod(index + 1, count)] - start);
+  }, points).x;
+}
+
+// profilePoolXY for a loop whose edges may be arcs: edge i, from point i to
+// the next, has signed curvature curvatures[i]. An edge is a piece of a
+// circline through its start, with tangent T there and normal N to its right:
+// F = N . offset + curvature / 2 * |offset|^2 is zero on it, a line at
+// curvature 0 and a circle otherwise, and its signed distance is
+// 2 F / (1 + sqrt(1 + 2 curvature F)), which is F itself on the line. So a
+// straight edge is no special case and nothing divides by a curvature.
+//
+// The tangents at an edge's two ends are its chord turned back and forward
+// by the angle whose sine is curvature * chord / 2, and the normals to a
+// circline are straight lines, so the edge's own region is still bounded by
+// two lines and the overshoot past them is taken as on a straight edge. That
+// keeps the edge farther than an end vertex only while p is no farther round
+// from that end than a quarter turn. Farther round than that from both ends,
+// p is behind the arc's centre as seen from each, and twice the lesser of
+// those two depths is added, which is enough to keep the edge behind its
+// nearer end there too. It is a length added and never a feature dropped, so
+// the edge keeps a finite bound everywhere, and it is zero all over an edge's
+// own region and all round a straight edge. A corner's turn is between
+// the tangents that meet there, so an arc that leaves a line tangentially
+// has no corner, as a point on a straight side has none.
+profileArcPoolXY(points, curvatures, whenOutside, whenInside) {
+  count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
+  return reduce([nothing, 0], (nearest, start, index) {
+    previousIndex = mod(index - 1 + count, count);
+    previous = points[previousIndex];
+    end = points[mod(index + 1, count)];
+
+    curvature = curvatures[index];
+    chord = end - start;
+    chordLength = length(chord);
+    along = chord / chordLength;
+    sine = curvature * chordLength / 2;
+    cosine = sqrt(max(1 - sine * sine, 0));
+    startTangent = [along.x * cosine + along.y * sine, along.y * cosine - along.x * sine];
+    endTangent = [along.x * cosine - along.y * sine, along.y * cosine + along.x * sine];
+
+    previousChord = start - previous;
+    previousLength = length(previousChord);
+    previousAlong = previousChord / previousLength;
+    previousSine = curvatures[previousIndex] * previousLength / 2;
+    previousCosine = sqrt(max(1 - previousSine * previousSine, 0));
+    incoming = [previousAlong.x * previousCosine - previousAlong.y * previousSine, previousAlong.y * previousCosine + previousAlong.x * previousSine];
+    turn = incoming.x * startTangent.y - incoming.y * startTangent.x;
+
+    offset = p.xy - start;
+    carrier = offset.x * startTangent.y - offset.y * startTangent.x + curvature / 2 * dot(offset, offset);
+    carrierDistance = 2 * carrier / (1 + sqrt(max(1 + 2 * curvature * carrier, 0)));
+    fromEnd = p.xy - end;
+    startOvershoot = neg(dot(offset, startTangent));
+    endOvershoot = dot(fromEnd, endTangent);
+    overshoot = max(0, startOvershoot, endOvershoot);
+    startDepth = 1 + curvature * (offset.x * startTangent.y - offset.y * startTangent.x);
+    endDepth = 1 + curvature * (fromEnd.x * endTangent.y - fromEnd.y * endTangent.x);
+    behindCenter = max(0, neg(max(startDepth, endDepth))) / max(abs(curvature), 1e-30);
+
+    cornerDistance = max(length(offset), turn > 1e-6 ? whenOutside : (turn < neg(1e-6) ? whenInside : nothing));
+    edgeDistance = max(abs(carrierDistance) + 2 * overshoot + 2 * behindCenter, carrier >= 0 ? whenOutside : whenInside);
+    return [min(nearest.x, cornerDistance, edgeDistance), 0];
+  }, points).x;
+}
+
+/// Closed profile of lines and circular arcs in the XY plane: the exact signed
+/// distance to the loop through `points`, negative inside, as profileXY(points)
+/// but with each edge bent to a signed curvature. `curvatures` holds one per
+/// edge, in 1/mm, for the edge leaving the point of the same index: 0 is
+/// straight, positive curves to the left along the loop (bulging out of a
+/// counterclockwise one) and negative to the right (dented in). An edge is at
+/// most a semicircle: its curvature times its chord must not pass 2. The
+/// edges must not cross. Its box and its .u are as profileXY(points)'s,
+/// the distance along an arc being its arc length.
+profileXY(points, curvatures) {
+  outside = profileArcPoolXY(points, curvatures, 0, nothing);
+  inside = profileArcPoolXY(points, curvatures, nothing, 0);
+  nearest = profileArcPoolXY(points, curvatures, 0, 0);
+  form = outside <= inside ? nearest : neg(nearest);
+  low, high = profileArcBoundsXY(points, curvatures);
+  form.box = [[low.x, low.y, neg(nothing)], [high.x, high.y, nothing]];
+  form.u = profileArcRunXY(points, curvatures);
+  return form;
+}
+
+// The corners of an arc profile's box in the XY plane: the box of its points,
+// grown all round by the most any edge can bulge. An edge of at most a
+// semicircle stands off its chord by its sagitta, which is no more than half
+// the chord and no more than chord^2 * curvature / 4; and no chord is longer
+// than the diagonal of the points' box. So the box is sound, and loose where
+// one edge bends much more than the rest. It is not walked edge by edge
+// because a box is read where a reduce's function can see only its own
+// arguments: not the curvatures, nor the next point.
+profileArcBoundsXY(points, curvatures) {
+  low = reduce((corner, point) { return min(corner, point); }, points);
+  high = reduce((corner, point) { return max(corner, point); }, points);
+  bend = reduce(0, (most, curvature) { return max(most, abs(curvature)); }, curvatures);
+  span = length(high - low);
+  bulge = min(span / 2, span * span * bend / 4);
+  return low - bulge, high + bulge;
+}
+
+// An edge's curvature kept off zero, so a length along the edge can be an
+// angle divided by it: a straight edge is read as an arc of a million mm
+// radius, whose lengths are the straight ones to a part in a million.
+profileArcCurvature(curvature) {
+  return curvature >= 0 ? max(curvature, 1e-6) : min(curvature, neg(1e-6));
+}
+
+// An arc profile's u, as profileRunXY. Along an edge the distance is the angle
+// p has turned about the edge's centre since its start, over the curvature;
+// it is held to the edge's own length, and the distance to that point of the
+// edge is its start, its end, or the circline between them.
+profileArcRunXY(points, curvatures) {
+  count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
+  return reduce([nothing, 0, 0], (best, start, index) {
+    end = points[mod(index + 1, count)];
+    curvature = profileArcCurvature(curvatures[index]);
+    chord = end - start;
+    chordLength = length(chord);
+    along = chord / chordLength;
+    sine = curvature * chordLength / 2;
+    cosine = sqrt(max(1 - sine * sine, 0));
+    startTangent = [along.x * cosine + along.y * sine, along.y * cosine - along.x * sine];
+    edgeLength = 2 * asin(clamp(sine, neg(1), 1)) / curvature;
+
+    offset = p.xy - start;
+    across = offset.x * startTangent.y - offset.y * startTangent.x;
+    carrier = across + curvature / 2 * dot(offset, offset);
+    carrierDistance = 2 * carrier / (1 + sqrt(max(1 + 2 * curvature * carrier, 0)));
+    turned = atan(curvature * dot(offset, startTangent), 1 + curvature * across) / curvature;
+    station = clamp(turned, 0, edgeLength);
+    reach = station <= 0 ? length(offset) : (station >= edgeLength ? length(p.xy - end) : abs(carrierDistance));
+    nearer = reach < best.x;
+    return [nearer ? reach : best.x, nearer ? best.z + station : best.y, best.z + edgeLength];
+  }, points).y;
+}
+
+/// The length of the closed profile through `points` whose edges are bent to
+/// `curvatures`, as profileXY(points, curvatures) reads them: the sum of its
+/// lines and arcs, in mm.
+profileLengthXY(points, curvatures) {
+  count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
+  return reduce([0, 0], (sum, start, index) {
+    curvature = profileArcCurvature(curvatures[index]);
+    sine = curvature * length(points[mod(index + 1, count)] - start) / 2;
+    return sum + 2 * asin(clamp(sine, neg(1), 1)) / curvature;
+  }, points).x;
 }

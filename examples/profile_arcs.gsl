@@ -1,0 +1,90 @@
+@scene(240, 20)
+
+// Four plates cut from profiles of lines and arcs. profileXY takes the points
+// of a closed counterclockwise loop and one curvature for each edge, in 1/mm:
+// 0 is a straight edge, positive bulges outward, negative dents in, and
+// 1 / radius is an arc of that radius. From left to right: a slot, whose ends
+// are semicircles; a bracket with a 90 degree fillet in its inside corner and
+// a 90 degree round on its heel; a Reuleaux triangle, each side an arc
+// centred on the opposite corner; and a square whose four sides bend together
+// from dented through straight to a full circle. Lengths are in mm.
+
+// Half the plates' thickness, and the round on their rims.
+@range(1, 8) halfThickness = 3.0;
+@range(0, 2) rimRadius = 0.5;
+
+// Slot: distance between the centres of its ends, and its width.
+@range(10, 50) slotLength = 36.0;
+@range(6, 24) slotWidth = 16.0;
+
+// Bracket: length and width of its arms, the fillet in the inside corner and
+// the round on the heel.
+@range(30, 50) armLength = 40.0;
+@range(8, 20) armWidth = 14.0;
+@range(1, 10) filletRadius = 6.0;
+@range(1, 8) heelRadius = 5.0;
+
+// Reuleaux triangle: its width, the same in every direction.
+@range(15, 40) reuleauxWidth = 30.0;
+
+// Square: its side, and how far each side bends. bend is the sine of the
+// angle between a side's chord and its arc: negative dents the sides, 0 is the
+// square, about 0.71 is a circle through the corners, and 1 makes each side a
+// semicircle.
+@range(15, 30) squareSide = 24.0;
+@range(-0.9, 1) bend = -0.5;
+
+// A profile's plate: the profile between two planes, rounded at the rim.
+plate(profile) {
+  return intersectRound([profile, abs(p.z) - halfThickness], rimRadius);
+}
+
+// The ends are semicircles on the width: curvature 2 / width, tangent to the
+// straight sides.
+slotProfile() {
+  halfLength = slotLength / 2;
+  halfWidth = slotWidth / 2;
+  endCurvature = 2 / slotWidth;
+  return profileXY(
+    [[neg(halfLength), neg(halfWidth)], [halfLength, neg(halfWidth)],
+     [halfLength, halfWidth], [neg(halfLength), halfWidth]],
+    [0, endCurvature, 0, endCurvature]);
+}
+
+// An L with its heel at the origin. A 90 degree corner arc runs between the
+// two points one radius back from the sharp corner along each side. The loop
+// turns right at the inside corner, so its fillet has negative curvature, and
+// left at the heel, so its round has positive.
+bracketProfile() {
+  return profileXY(
+    [[heelRadius, 0], [armLength, 0], [armLength, armWidth],
+     [armWidth + filletRadius, armWidth], [armWidth, armWidth + filletRadius],
+     [armWidth, armLength], [0, armLength], [0, heelRadius]],
+    [0, 0, 0, neg(1 / filletRadius), 0, 0, 0, 1 / heelRadius]);
+}
+
+// An equilateral triangle with every side an arc of radius equal to the side.
+reuleauxProfile() {
+  halfWidth = reuleauxWidth / 2;
+  height = reuleauxWidth * sqrt(3) / 2;
+  sideCurvature = 1 / reuleauxWidth;
+  return profileXY(
+    [[neg(halfWidth), neg(height) / 3], [halfWidth, neg(height) / 3], [0, height * 2 / 3]],
+    [sideCurvature, sideCurvature, sideCurvature]);
+}
+
+// The sine of the chord-to-arc angle is curvature * chord / 2.
+bentSquareProfile() {
+  half = squareSide / 2;
+  sideCurvature = 2 * bend / squareSide;
+  return profileXY(
+    [[neg(half), neg(half)], [half, neg(half)], [half, half], [neg(half), half]],
+    [sideCurvature, sideCurvature, sideCurvature, sideCurvature]);
+}
+
+slot = plate(remap(slotProfile(), p - [-78, 0, 0]));
+bracket = plate(remap(bracketProfile(), p - [-36, -20, 0]));
+reuleaux = plate(remap(reuleauxProfile(), p - [34, 0, 0]));
+bentSquare = plate(remap(bentSquareProfile(), p - [86, 0, 0]));
+
+return slot, bracket, reuleaux, bentSquare;
