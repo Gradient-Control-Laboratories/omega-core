@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sort"
 
+	"gradientcontrol.com/omega/core/assembler/source"
 	"gradientcontrol.com/omega/core/internal/scope"
-	"gradientcontrol.com/omega/core/internal/source"
 	"gradientcontrol.com/omega/core/parser"
 	"gradientcontrol.com/omega/core/program"
 	gsllibs "gradientcontrol.com/omega/core/stdlib"

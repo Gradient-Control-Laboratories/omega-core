@@ -137,7 +137,7 @@ func (s *server) evaluator(paths []string) *eval.Evaluator {
 	if e, ok := s.evaluators[key]; ok {
 		return e
 	}
-	var opts []eval.Option
+	var opts []assembler.Option
 	if len(paths) > 0 {
 		opts = append(opts, assembler.SourcePaths(paths...))
 	}

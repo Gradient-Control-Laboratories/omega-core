@@ -2,9 +2,9 @@
 // variable assigned a literal with both `.min` and `.max` set, and one per
 // `@color` variable, which gets a chip in place of the slider.
 //
-// Shared by every app frontend (served from common/web). The editor is
-// imported directly because it is already common; everything that lives in
-// an app's viewer or compile state is passed in through initSliderPanel().
+// Shared across viewer frontends. The editor is
+// imported directly; everything that lives in a host's viewer or compile state
+// is passed in through initSliderPanel().
 //
 //   initSliderPanel({ setSliderValue, getAnimTime, audioSystem, onCommit })
 //     setSliderValue(name, value)  push a live value into the shader uniform

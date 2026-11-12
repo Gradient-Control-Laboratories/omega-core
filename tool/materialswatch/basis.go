@@ -6,7 +6,7 @@ import (
 	"math"
 
 	"gradientcontrol.com/omega/core/assembler"
-	fidgetlib "gradientcontrol.com/omega/core/internal/fidget/lib"
+	"gradientcontrol.com/omega/core/eval"
 )
 
 // The finishes' recolouring basis. A finish has no colour, so the Bodies panel
@@ -40,7 +40,7 @@ func renderRadianceDoc(doc string, width, height int, extent float64, env string
 	if err != nil {
 		return nil, nil, fmt.Errorf("assemble: %w", err)
 	}
-	return fidgetlib.RenderLitSizedViewRadiance(res.Program, width, height, extent*swatchRadius, 0, fidgetlib.LitView{
+	return eval.RenderLitSizedViewRadiance(res.Program, width, height, extent*swatchRadius, 0, eval.LitView{
 		Light:        light,
 		NoAxes:       true,
 		Environment:  env,

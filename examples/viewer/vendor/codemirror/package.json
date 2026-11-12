@@ -1,7 +1,7 @@
 {
   "name": "omega-codemirror-bundle",
   "private": true,
-  "description": "One-shot ESM bundle of the CodeMirror 6 subset webai's editor uses. The output file codemirror.js is committed to the repo so runtime fetch is a single file and no Node is needed to run omega.",
+  "description": "One-shot ESM bundle of the CodeMirror 6 subset the viewer's editor uses. The output file codemirror.js is committed to the repo so runtime fetch is a single file and no Node is needed to run omega-core.",
   "scripts": {
     "build": "esbuild build.mjs --bundle --format=esm --outfile=codemirror.js --minify --legal-comments=inline"
   },

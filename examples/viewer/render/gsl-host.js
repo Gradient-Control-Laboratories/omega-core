@@ -1,11 +1,11 @@
 // WGSL the host declares around a compiled GSL program.
 //
 // The generated sdShape, gsl_colorField and gsl_materialField reference
-// gsl_shape and gsl_min without declaring them: the viewers (webai,
-// webedit) supply both, and so does the GPU field-parity test in
-// agent/fidget, which reads this file and extracts the two strings below by
-// name. Keep them plain template literals with no ${} interpolation, so that
-// extraction stays exact.
+// gsl_shape and gsl_min without declaring them: the viewer supplies both, and
+// so does the GPU field-parity test in internal/fidget/internal/gpuparity,
+// which reads this file and extracts the two strings below by name. Keep them
+// plain template literals with no ${} interpolation, so that extraction stays
+// exact.
 //
 // gsl_min also needs the host to declare
 //

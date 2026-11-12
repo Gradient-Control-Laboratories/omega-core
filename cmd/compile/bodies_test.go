@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	main "gradientcontrol.com/omega/core/cmd/compile"
+	"gradientcontrol.com/omega/core/cmd/compile/internal/cli"
 	"gradientcontrol.com/omega/core/internal/test/assert"
 	"gradientcontrol.com/omega/core/internal/test/require"
 )
@@ -40,7 +40,7 @@ func TestRun_STL_SeveralBodiesZip(t *testing.T) {
 	source := filepath.Join(dir, "pair.gsl")
 	require.NoError(t, os.WriteFile(source, []byte(twoBodies), 0644))
 	var stdout, stderr bytes.Buffer
-	require.NoError(t, main.Run([]string{"-t", "stl", "--subdivision", "5", "--no-meta", source}, nil, &stdout, &stderr),
+	require.NoError(t, cli.Run([]string{"-t", "stl", "--subdivision", "5", "--no-meta", source}, nil, &stdout, &stderr),
 		stderr.String())
 
 	_, err := os.Stat(filepath.Join(dir, "pair.stl"))
@@ -60,7 +60,7 @@ func TestRun_STL_SeveralBodiesRefuseSTLPath(t *testing.T) {
 	require.NoError(t, os.WriteFile(source, []byte(twoBodies), 0644))
 	out := filepath.Join(dir, "out.stl")
 	var stdout, stderr bytes.Buffer
-	err := main.Run([]string{"-t", "stl", "--subdivision", "5", "--no-meta", "-o", out, source}, nil, &stdout, &stderr)
+	err := cli.Run([]string{"-t", "stl", "--subdivision", "5", "--no-meta", "-o", out, source}, nil, &stdout, &stderr)
 	require.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "out.zip"), err.Error())
 	_, statErr := os.Stat(out)
@@ -73,7 +73,7 @@ func TestRun_3MF_SeveralBodies(t *testing.T) {
 	source := filepath.Join(dir, "pair.gsl")
 	require.NoError(t, os.WriteFile(source, []byte(twoBodies), 0644))
 	var stdout, stderr bytes.Buffer
-	require.NoError(t, main.Run([]string{"-t", "3mf", "--subdivision", "5", "--no-meta", source}, nil, &stdout, &stderr),
+	require.NoError(t, cli.Run([]string{"-t", "3mf", "--subdivision", "5", "--no-meta", source}, nil, &stdout, &stderr),
 		stderr.String())
 	model := string(zipFiles(t, filepath.Join(dir, "pair.3mf"))["3D/3dmodel.model"])
 	assert.Equal(t, 2, strings.Count(model, "<object "))

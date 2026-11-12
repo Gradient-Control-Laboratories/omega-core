@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	main "gradientcontrol.com/omega/core/cmd/compile"
+	"gradientcontrol.com/omega/core/cmd/compile/internal/cli"
 	"gradientcontrol.com/omega/core/internal/test/assert"
 	"gradientcontrol.com/omega/core/internal/test/require"
 )
@@ -39,7 +39,7 @@ func TestRun_PNG_OneView(t *testing.T) {
 	require.NoError(t, os.WriteFile(source, []byte(pngBox), 0644))
 	out := filepath.Join(dir, "plate.png")
 	var stdout, stderr bytes.Buffer
-	require.NoError(t, main.Run([]string{"-t", "png", "--size", "160x120", "--light", "--no-meta", "-o", out, source},
+	require.NoError(t, cli.Run([]string{"-t", "png", "--size", "160x120", "--light", "--no-meta", "-o", out, source},
 		nil, &stdout, &stderr))
 	data, err := os.ReadFile(out)
 	require.NoError(t, err)
@@ -55,7 +55,7 @@ func TestRun_PNG_ViewsTileTwoAcross(t *testing.T) {
 	source := filepath.Join(dir, "plate.gsl")
 	require.NoError(t, os.WriteFile(source, []byte(pngBox), 0644))
 	var stdout, stderr bytes.Buffer
-	require.NoError(t, main.Run([]string{"-t", "png", "--views", "iso,top,-1,1,0.6", "--size", "100x80", "--no-meta",
+	require.NoError(t, cli.Run([]string{"-t", "png", "--views", "iso,top,-1,1,0.6", "--size", "100x80", "--no-meta",
 		"-o", "-", source}, nil, &stdout, &stderr))
 	b, _ := decoded(t, stdout.Bytes())
 	assert.Equal(t, 2*100+4, b.Dx()) // ComposeSheet leaves 4 px between panels
@@ -68,7 +68,7 @@ func TestRun_PNG_DefaultOutputPath(t *testing.T) {
 	source := filepath.Join(dir, "plate.gsl")
 	require.NoError(t, os.WriteFile(source, []byte(pngBox), 0644))
 	var stdout, stderr bytes.Buffer
-	require.NoError(t, main.Run([]string{"-t", "png", "--size", "64x48", "--no-meta", source}, nil, &stdout, &stderr))
+	require.NoError(t, cli.Run([]string{"-t", "png", "--size", "64x48", "--no-meta", source}, nil, &stdout, &stderr))
 	_, err := os.Stat(filepath.Join(dir, "plate.png"))
 	require.NoError(t, err)
 }
@@ -88,7 +88,7 @@ func TestRun_PNG_Refusals(t *testing.T) {
 	} {
 		var stdout, stderr bytes.Buffer
 		args := append([]string{"-t", "png", "--no-meta", "-o", filepath.Join(dir, "x.png")}, c.args...)
-		err := main.Run(append(args, source), nil, &stdout, &stderr)
+		err := cli.Run(append(args, source), nil, &stdout, &stderr)
 		require.True(t, err != nil)
 		assert.True(t, strings.Contains(err.Error(), c.says))
 	}

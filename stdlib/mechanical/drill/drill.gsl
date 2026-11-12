@@ -1,3 +1,7 @@
+/// Generalized holes as stacks of coaxial features (chamfers, counterbores,
+/// blind and through bores, drive recesses), returned as void solids to
+/// subtract.
+
 // Drill: generalized holes
 //
 // A hole is a stack of coaxial features on the +Z axis, its mouth at a given

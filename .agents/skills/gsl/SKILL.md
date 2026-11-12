@@ -7,9 +7,10 @@ description: Author and verify GSL (.gsl) geometry files from the command line â
 
 GSL documents are implicit geometry: every shape is a signed-distance field (SDF) over the
 implicit point `p` â€” negative inside, positive outside, magnitude = distance to the surface.
-Read `examples/viewer/docs/gsl_description.md` and `examples/viewer/docs/gsl_libraries.md` (or
-`program/preamble/`) for the language and standard libraries; this skill is about *verifying* what
-you write.
+Read the language and standard libraries from `bin/gsl skill` (built below): it prints the language,
+the built-ins and one line per package, and `bin/gsl skill PACKAGE...` prints a package in full
+(`bin/gsl skill builtin matrix`). It is generated from `program/preamble/` and the embedded stdlib, so
+it matches what the compiler accepts. This skill is about *verifying* what you write.
 
 ## Toolchain & Evaluation
 
@@ -37,7 +38,7 @@ For spatial evaluation, bounds, extrema, interval certification, and surface pro
   a direction (w = 0, translation ignored). Place a shape under transform `T` with
   `remap(shape, vector.multiplyPoint(matrix.inverse(T), p))`.
 - Rotation constructors: `matrix.rotationEuler` (4x4), `matrix.rotationEuler3` (3x3),
-  `matrix.rotation(...)`. Do not invent constructors that are not in `gsl_libraries.md`.
+  `matrix.rotation(...)`. Do not invent constructors that are not in `bin/gsl skill matrix`.
 - Prefer vector math (`repeatCentered(p.xy, cell)`, `dot(v, v)`, `length(v)`) over per-component
   scalar code.
 

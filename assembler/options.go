@@ -12,7 +12,7 @@ import (
 type Option func(*options)
 
 type options struct {
-	managers              []internalsource.Manager
+	managers              []source.Manager
 	parsePkg              ParsePackageFunc
 	geometryResolver      topofold.GeometryResolver
 	warpResolver          warpfold.WarpResolver

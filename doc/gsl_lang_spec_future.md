@@ -104,12 +104,13 @@ The `audio(...)` expression can only appear as the last element in a top-level r
   of modulo (`%`), rounding/truncation functions (`floor`, `fract`, `round`), and ternary selectors.
 
 **Implementation**
-Audio support should be implemented as a pre-processor in `omega/agent/js` (`omega/agent/js/lib/lib.go`)
-which transforms a single primary source file containing audio output (`audio(...)`) into two files:
-- the original GSL source with the `audio(...)` expression removed entirely.
-  This may result in an empty top-level return expression if audio was the only return value.
-- a new audio-only GSL source with the `audio(...)` wrapper extracted for mono or stereo evaluation,
-  or an empty string if no `audio(...)` expression is present.
+Audio support is implemented via top-level return partitioning in `assembler`
+(`assembler/returns.go`) and Web Audio JavaScript emission in `backend/audio`:
+- `assembler.Assemble` unwraps any trailing `audio(...)` expression from the primary geometry
+  returns into `Result.AudioReturns` (supporting empty geometry returns when audio is the sole
+  top-level return expression).
+- `backend/audio` (`audio.AudioToJs`) compiles the audio variation program (constructed via
+  `assembler/variation.Program`) into mono or stereo Web Audio JavaScript.
 
 ### 2. Syntax & EBNF Grammar
 
@@ -240,7 +241,7 @@ String             = StringLiteral
 
 While GSL syntax omits explicit type annotations, the compiler enforces static type analysis
 and semantic inference across the entire AST at compile time (`types.Analyze` in
-[`omega/common/program/types`](../common/program/types)).
+[`internal/types`](../internal/types)).
 Every expression, variable, and parameter is assigned a concrete compile-time type (`program.Type`).
 Type errors (such as dimension mismatches, illegal swizzles, or recursion)
 are caught as compile-time errors during assembly.
@@ -657,9 +658,9 @@ Cyclic dependencies among declarations and properties produce a compile-time err
 #### Package Imports
 Imports let a file access other package modules. They must sit at the top of the file:
 ```gsl
-import . "omega";        // Dot import: pulls members into local scope without prefix
-import "omega";          // Qualified import: elements accessed as `omega.member(...)`
-import myLib "omega";    // Aliased import: elements accessed as `myLib.member(...)`
+import . "vector";       // Dot import: pulls members into local scope without prefix
+import "vector";         // Qualified import: elements accessed as `vector.member(...)`
+import myLib "vector";   // Aliased import: elements accessed as `myLib.member(...)`
 ```
 *Segment Rules*: Import paths cannot contain `//`, start/end with `/`, contain `.` or `..`
 segments, or end with `.gsl`.
@@ -915,8 +916,8 @@ The first argument (`index`) of these functions has the following common constra
 
 ## Migration from GSL v1 to GSL v2
 
-For a detailed list of differences between GSL v1 and GSL v2, mechanical syntactic conversion
-guidelines, and current migration status, see [gsl_migration.md](gsl_migration.md).
+For a detailed list of implemented and planned GSL language changes and phased migration stages,
+see [README.md](../README.md#roadmap) and [gsl_lang_spec_current.md](gsl_lang_spec_current.md).
 
 ---
 

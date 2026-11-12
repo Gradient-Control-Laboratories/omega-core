@@ -1,4 +1,4 @@
-// Render tiers for the GSL raymarch viewers (webai, webedit).
+// Render tiers for the GSL raymarch viewer.
 //
 // A viewer draws its shape pass at one of two tiers, chosen by whether
 // anything is moving:

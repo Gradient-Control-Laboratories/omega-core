@@ -1,3 +1,6 @@
+/// Index of the mechanical family; its libraries are the sub-packages catalog,
+/// thread, fastener, drill, driver, gears and joint.
+
 // Mechanical Library (mechanical)
 //
 // Shared base for the mechanical family. The libraries themselves live in
