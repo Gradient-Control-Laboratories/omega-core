@@ -364,6 +364,7 @@ class Document:
         return Picture(r["out"], r["width"], r["height"])
 
     def volume(self, expr: Optional[str] = None, *, region: Region, relative_tolerance: float = 0.0) -> Volume:
-        """The volume inside the region, bracketed (``relative_tolerance`` 0.05 is quick; 0.01 takes seconds)."""
+        """The volume inside the region, bracketed (``relative_tolerance`` 0 takes the default 0.05, which is quick;
+        0.01 takes seconds)."""
         r = self._ask("volume", expr=expr, region=_region(region), relativeTolerance=relative_tolerance or None)
         return Volume(r["expr"], r["lowerMm3"], r["upperMm3"], r["evals"])

@@ -53,6 +53,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   edge-crossing midpoint lands on an exact `min`/`max` constant tie (`grad == 0`, #38) by evaluating
   the gradient again a hair off the crossing, and marking leaves that still lack a plane normal as
   non-collapsible (`QEF_ERR_INVALID`).
+- Fixed `volume` queries without a tolerance (`gsl eval`'s `relativeTolerance`, Python's
+  `Document.volume` default) failing with "volume tolerance must be between zero and
+  one": `eval.Volume` now reads a tolerance `<= 0` as the default `0.05`, as `surface` and `extremum`
+  do.
 
 ## [0.1.1] - 2026-11-11
 
