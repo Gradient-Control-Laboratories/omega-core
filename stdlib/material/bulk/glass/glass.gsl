@@ -1,3 +1,6 @@
+/// Transmissive glass, plastics and liquids, each a material (finish and
+/// medium) and tint pair.
+
 // Glass Library (material/bulk/glass)
 //
 // Transmissive materials. Each one is a zero-argument function returning a

@@ -3,11 +3,12 @@ package deadcode_test
 import (
 	"testing"
 
+	"gradientcontrol.com/omega/core/assembler/source"
 	"gradientcontrol.com/omega/core/internal/assembler/deadcode"
 	"gradientcontrol.com/omega/core/internal/collect"
 	"gradientcontrol.com/omega/core/internal/eval"
 	"gradientcontrol.com/omega/core/internal/link"
-	"gradientcontrol.com/omega/core/internal/source"
+	internalsource "gradientcontrol.com/omega/core/internal/source"
 	"gradientcontrol.com/omega/core/internal/types"
 	parserlib "gradientcontrol.com/omega/core/parser"
 	"gradientcontrol.com/omega/core/program"
@@ -46,7 +47,7 @@ func TestRemoveDeadCodeSingle(t *testing.T) {
 		return x + used();
 	`
 
-	pkgMgr := &source.MockManager{}
+	pkgMgr := &internalsource.MockManager{}
 
 	// Assemble compiles, links, and returns the unpruned program
 	prog, err := assembleUnpruned([]string{src}, pkgMgr)

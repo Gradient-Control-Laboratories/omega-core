@@ -1,6 +1,6 @@
 # Material composition: what exists, and the gap now closed
 
-A reassessment of how omega composes a surface from what it is made of and how
+A reassessment of how `omega-core` composes a surface from what it is made of and how
 it was made, written against the libraries actually in the repo.
 
 **This document replaces an earlier draft that was wrong.** That draft proposed

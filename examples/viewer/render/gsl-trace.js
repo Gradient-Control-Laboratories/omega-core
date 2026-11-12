@@ -1,5 +1,5 @@
-// Progressive path tracing for the GSL raymarch viewers (webai,
-// webedit): the "Progressive" render tier at rest.
+// Progressive path tracing for the GSL raymarch viewer:
+// the "Progressive" render tier at rest.
 //
 // Each frame adds one path per pixel to a running sum the composite averages,
 // so the image converges while the view is still. The standard frame is still

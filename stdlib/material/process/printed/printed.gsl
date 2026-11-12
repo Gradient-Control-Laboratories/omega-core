@@ -1,3 +1,6 @@
+/// Surfaces additive manufacturing leaves: fused filament beads, resin layers,
+/// powder-bed grain and laser-melted metal.
+
 
 // Printed Materials (material/process/printed)
 //

@@ -3,7 +3,7 @@ package collect
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/internal/source"
+	"gradientcontrol.com/omega/core/assembler/source"
 	"gradientcontrol.com/omega/core/parser"
 	"gradientcontrol.com/omega/core/program"
 )

@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	main "gradientcontrol.com/omega/core/cmd/compile"
+	"gradientcontrol.com/omega/core/cmd/compile/internal/cli"
 	"gradientcontrol.com/omega/core/internal/test/assert"
 	"gradientcontrol.com/omega/core/internal/test/require"
 )
@@ -20,7 +20,7 @@ func meshBounds(t *testing.T, source string) (int, [6]float64) {
 	require.NoError(t, os.WriteFile(path, []byte(source), 0644))
 	out := filepath.Join(dir, "part.stl")
 	var stdout, stderr bytes.Buffer
-	require.NoError(t, main.Run([]string{"-t", "stl", "--subdivision", "5", "--no-meta", "-o", out, path}, nil,
+	require.NoError(t, cli.Run([]string{"-t", "stl", "--subdivision", "5", "--no-meta", "-o", out, path}, nil,
 		&stdout, &stderr), stderr.String())
 	data, err := os.ReadFile(out)
 	require.NoError(t, err)

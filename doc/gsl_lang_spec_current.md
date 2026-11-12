@@ -56,111 +56,107 @@ These sources are listed here to give you some context,
 help with understanding the design decisions made in this language implementation
 and allow you to verify and document the existing language specification.
 
-The legacy AST model (`omega/common/model`) has been completely removed.
-The entire implementation is unified around the whole-program model defined in `omega/common/program`.
+The implementation is unified around the whole-program AST model defined in `program`.
 The parser creates an AST directly using this program model,
 and the assembler links multi-package programs into a complete program structure.
-All downstream compiler agents, analyzers, and runtimes operate directly on this unified model.
+All downstream compiler passes, analyzers, and backends operate directly on this unified model.
 
 Existing implementation:
-- **Program model** in `omega/common/program`:
-  Protobuf schema (`program.proto`) and Go representations for whole programs (`Program`),
-  multi-file packages (`Package`, `PackageFile`), and AST expressions (`Expr`, `Op`, `Operand`).
-  Provides comprehensive language subsystem packages:
-  - `types`: Type inference, type checking, and semantic validation.
-  - `eval`: Compile-time constant expression evaluation and constant folding.
-  - `property`: Property lowering, companion variables, and forward-mode automatic derivatives.
-  - `lower`: AST lowering passes for operations and map/reduce constructs.
-  - `closure`: Function specialization, closure analysis, and variable capture.
-  - `deadcode`: Dead code elimination and reachable function pruning.
-  - `inline`: Constant evaluation and parameter remapping for function inlining.
-  - `scope`: Multi-level lexical scoping for packages, functions, and variables.
-  - `meshslots`: Mesh and STEP CAD import slot management.
-  - `preamble`: Embedded definitions for primitives, built-ins, and standard library metadata.
-- **Parser** in `omega/agent/parser`:
-  The parser service parsing GSL v1 source directly into `common/program` AST structures.
+- **Program model** in `program`:
+  Protobuf schema (`program/program.proto`) and Go representations for whole programs (`Program`),
+  multi-file packages (`Package`, `PackageFile`), and AST expressions (`Expr`, `Op`, `Operand`),
+  with compiler and analysis subsystems across `program`, `assembler`, and `internal`:
+  - `internal/types`: Type inference, type checking, and semantic validation.
+  - `internal/eval`: Compile-time constant expression evaluation and constant folding.
+  - `internal/assembler/property`: Property lowering, companion variables, and forward-mode
+    automatic derivatives.
+  - `internal/lower`: AST lowering passes for operations and map/reduce constructs.
+  - `internal/closure`: Function specialization, closure analysis, and variable capture.
+  - `internal/assembler/deadcode`: Dead code elimination and reachable function pruning.
+  - `internal/assembler/inline`: Constant evaluation and parameter remapping for function inlining.
+  - `internal/scope`: Multi-level lexical scoping for packages, functions, and variables.
+  - `assembler/meshslots`: Mesh and STEP CAD import slot management.
+  - `program/preamble`: Embedded definitions for primitives, built-ins, and standard library
+    metadata.
+- **Parser** in `parser`:
+  Parses GSL v1 source directly into `program` AST structures.
   Contains:
-  - `parser2` (`internal/parser2`): Participle-based parser creating `program.Package` trees.
-  - `identifier2` (`internal/identifier2`): Validation for identifiers, keywords, and built-ins.
-- **Assembler** in `omega/agent/assembler` and `omega/assembler`:
-  The assembler service (`agent/assembler`) resolves package dependencies, links imported references,
-  lowers properties, and constructs complete `program.Program` bundles.
-  An interactive playground application is located in `omega/assembler`.
-- **Common build infrastructure** in `omega/common/build`:
+  - `parser2` (`parser/internal/parser2`): Participle-based parser creating `program.Package` trees.
+  - `identifier2` (`parser/internal/identifier2`): Validation for identifiers, keywords, and
+    built-ins.
+- **Assembler** in `assembler`:
+  Resolves package dependencies, links imported references, lowers properties, and constructs
+  complete `program.Program` bundles. An interactive WebGPU viewer and editor is located in
+  `examples/viewer` (served by `cmd/serve`).
+- **Common build infrastructure** in `internal/build`:
   Provides the AST visitor and code generator delegate architecture (`Builder` and `Delegate`),
   invoking type analysis, constant folding, and scope initialization before backend emission.
-- **WGSL compiler** in `omega/agent/wgsl`:
+- **WGSL compiler** in `backend/wgsl`:
   Translates parsed GSL v1 `program.Program` structures into WebGPU shading code (WGSL)
   for real-time raymarched viewport previews in the browser.
 - **Mesh / SDF compilers**:
-  - `omega/agent/fidget`:
-    Compiles GSL AST into Fidget bytecode for evaluation via Rust-based Fidget JIT and meshing kernels.
-  - `omega/agent/manifold`:
+  - `backend/mesh` and `internal/fidget`:
+    Compile GSL AST into Fidget trees and bytecode for evaluation via Rust-based Fidget JIT and
+    meshing kernels (`backend/tape` serializes standalone evaluation tapes).
+  - `backend/mesh/manifold`:
     Provides mesh operations and CSG evaluation using the Manifold geometry library.
-- **GSL v1 library packages** in `omega/common/source/package`:
+- **GSL v1 library packages** in `stdlib`:
   Contains standard GSL v1 packages embedded directly at build time
-  (e.g., `builtin`, `color`, `ease`, `glass`, `lattice`, `map`, `material`, `matrix`,
-  `mechanical`, `metal`, `noise`, `physical`, `text`, `texture`, `transform`, `vector`).
-- **Document store agent** in `omega/agent/document`:
-  Manages saving, loading, and listing of workspace code files and assets.
-- **Audio pre-processor** in `omega/agent/js`:
-  The js agent (`omega/agent/js`) pre-processes GSL v1 source code containing `audio(...)`
-  expressions (see `omega/agent/js/lib/lib.go`), splitting them into a core geometry program
-  and a separate audio-only program, supporting both mono and stereo output.
+  (e.g., `builtin`, `color`, `ease`, `lattice`, `map`, `material`, `matrix`,
+  `mechanical`, `noise`, `text`, `texture`, `transform`, `vector`).
+- **Audio backend & return partitioning** in `assembler` and `backend/audio`:
+  `assembler` (`assembler/returns.go`) partitions trailing `audio(...)` return expressions alongside
+  geometry returns, and `backend/audio` compiles audio expressions to Web Audio JavaScript,
+  supporting both mono and stereo output.
 
 ### Existing language documentation
 
 - **Language Readmes & Guidelines**:
-  - `omega/assembler/README.md`:
-    Documents special operator traits like spaceship `<=>`, conditional ternary behaviors,
-    and three-way conditionals.
-  - `omega/doc/compiler-arch.md`:
-    Details compiler architecture across parser, assembler, lowering, and codegen backends.
-  - `omega/doc/gsl_lang_changes.md`:
-    Summarizes language and compiler enhancements.
+  - `README.md`:
+    Repository architecture overview, SDK usage, CLI reference, and GSL language roadmap.
 - **Auto-documentation Go code**:
-  - `omega/common/program/preamble/export/main.go`:
-    Exports generated Markdown documentation into `common/web/docs/` directory.
-  - `omega/common/program/preamble/libraries.go`:
+  - `program/preamble/libraries.go`:
     Parses GSL v1 library sources and extracts top-level constant and function signatures
     documented with triple-slash (`///`) comments.
-  - `omega/common/program/preamble/primitives.go`, `builtin.go`, `pitfalls.go`, `gsl_description.go`:
+  - `program/preamble/primitives.go`, `builtin.go`, `pitfalls.go`, `gsl_description.go`:
     Preamble definitions for built-in shapes, operators, math functions, and pitfalls.
-- **Auto-generated language documentation**:
-  - `common/web/docs/gsl_description.md`: Descriptive introduction to GSL v1 language paradigms.
-  - `common/web/docs/gsl_libraries.md`: API reference detailing all exported library constants
+- **Generated viewer language documentation**:
+  - `examples/viewer/docs/gsl_description.md`: Descriptive introduction to GSL v1 language
+    paradigms.
+  - `examples/viewer/docs/gsl_libraries.md`: API reference detailing all exported library constants
     and functions.
 
 ### Existing language testcases
 
-- `omega/agent/parser/internal/parser2/parser_test.go`:
-  Tests parsing standard test inputs matching `testdata/*.gsl` directly into `common/program`
+- `parser/internal/parser2/parser_test.go`:
+  Tests parsing standard test inputs matching `testdata/*.gsl` directly into `program`
   structures, including mesh and STEP import declarations.
-- `omega/agent/parser/internal/parser2/scene_test.go`:
+- `parser/internal/parser2/scene_test.go`:
   Tests parsing scene annotations and directive configurations.
-- `omega/agent/parser/internal/identifier2/validate_test.go`:
+- `parser/internal/identifier2/validate_test.go`:
   Verifies variable, parameter, and function name checks (valid syntax, reserved words,
   and conflicts with primitives or built-in function names).
-- `omega/agent/parser/lib/import_ref_test.go`:
+- `parser/import_ref_test.go`:
   Tests inline expression forms of `importMesh` and `importStep` inside GSL v1.
-- `omega/agent/assembler/lib/link_test.go`:
+- `assembler/link_test.go`:
   Tests multi-package collection, linking, type analysis, AST lowering, and dead code elimination.
-- `omega/common/build/build_test.go`:
+- `internal/build/build_test.go`:
   Tests builder traversal, scope creation, type checking, and delegate integration.
-- `omega/common/program/eval/const_test.go` and `eval/fold_test.go`:
+- `internal/eval/const_test.go` and `internal/eval/fold_test.go`:
   Validates compile-time constant evaluation and AST folding.
-- `omega/common/program/property/property_test.go` and `property/derivative_test.go`:
+- `internal/assembler/property/property_test.go` and
+  `internal/assembler/property/derivative_test.go`:
   Tests property lowering, companion variable expansion, and forward-mode automatic derivatives.
-- `omega/common/program/types/types_test.go`:
+- `internal/types/types_test.go`:
   Tests type inference and semantic validation across expressions.
-- `omega/agent/wgsl/internal/codegen/build_test.go`:
+- `backend/wgsl/internal/codegen/build_test.go`:
   Tests compiler code generation outputs, float parameter bindings, and precedence
   mappings to WGSL.
-- `omega/agent/wgsl/internal/codegen/const_folding_test.go`:
+- `backend/wgsl/internal/codegen/const_folding_test.go`:
   Validates compiler-level constant folding of complex arithmetic operations.
-- `omega/agent/fidget/internal/convert/convert_test.go`:
+- `internal/fidget/internal/convert/convert_test.go`:
   Verifies that GSL v1 AST translates to valid fidget bytecode and Rust CSG operations.
-- `omega/common/program/preamble/libraries_test.go`:
+- `program/preamble/libraries_test.go`:
   Validates that triple-slash document blocks extract correctly for standard library
   packages.
 
@@ -169,7 +165,7 @@ Existing implementation:
 ## Language Specification
 
 This specification covers the syntax, semantics, and built-in constructs of GSL v1
-as it is currently implemented in the `omega` repository.
+as it is currently implemented in `omega-core`.
 It will be updated as the language implementation evolves.
 
 ### 1. Language Paradigm & Key Design Constraints
@@ -221,12 +217,13 @@ The `audio(...)` expression can only appear as the last element in a top-level r
   of modulo (`%`), rounding/truncation functions (`floor`, `fract`, `round`), and ternary selectors.
 
 **Implementation**:
-Audio support is implemented as a pre-processor in `omega/agent/js` (`omega/agent/js/lib/lib.go`)
-which transforms a single primary source file containing audio output (`audio(...)`) into two files:
-- the original GSL source with the `audio(...)` expression removed entirely.
-  This may result in an empty top-level return expression if audio was the only return value.
-- a new audio-only GSL source with the `audio(...)` wrapper extracted for mono or stereo evaluation,
-  or an empty string if no `audio(...)` expression is present.
+Audio support is implemented via top-level return partitioning in `assembler`
+(`assembler/returns.go`) and Web Audio JavaScript emission in `backend/audio`:
+- `assembler.Assemble` unwraps any trailing `audio(...)` expression from the primary geometry
+  returns into `Result.AudioReturns` (supporting empty geometry returns when audio is the sole
+  top-level return expression).
+- `backend/audio` (`audio.AudioToJs`) compiles the audio variation program (constructed via
+  `assembler/variation.Program`) into mono or stereo Web Audio JavaScript.
 
 ### 2. Syntax & EBNF Grammar
 
@@ -353,7 +350,7 @@ String             = StringLiteral
 
 While GSL syntax omits explicit type annotations, the compiler enforces static type analysis
 and semantic inference across the entire AST at compile time (`types.Analyze` in
-[`omega/common/program/types`](../common/program/types)).
+[`internal/types`](../internal/types)).
 Every expression, variable, and parameter is assigned a concrete compile-time type (`program.Type`).
 Type errors (such as dimension mismatches, illegal swizzles, or recursion)
 are caught as compile-time errors during assembly.
@@ -795,9 +792,9 @@ Cyclic dependencies among declarations and properties produce a compile-time err
 #### Package Imports
 Imports let a file access other package modules. They must sit at the top of the file:
 ```gsl
-import . "omega";        // Dot import: pulls members into local scope without prefix
-import "omega";          // Qualified import: elements accessed as `omega.member(...)`
-import myLib "omega";    // Aliased import: elements accessed as `myLib.member(...)`
+import . "vector";       // Dot import: pulls members into local scope without prefix
+import "vector";         // Qualified import: elements accessed as `vector.member(...)`
+import myLib "vector";   // Aliased import: elements accessed as `myLib.member(...)`
 ```
 *Segment Rules*: Import paths cannot contain `//`, start/end with `/`, contain `.` or `..`
 segments, or end with `.gsl`.

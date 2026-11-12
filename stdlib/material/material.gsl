@@ -1,3 +1,6 @@
+/// Surface finishes for the `name.material` property: constructors, finishes
+/// that keep the shape's color, accessors, modifiers and surface composition.
+
 // Material Library (material)
 //
 // A material is the surface finish a shape renders with, set by the

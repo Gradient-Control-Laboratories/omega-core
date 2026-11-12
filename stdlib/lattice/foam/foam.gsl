@@ -1,3 +1,6 @@
+/// Periodic 3D wall lattices (cubic, bcc, fcc) as the unsigned distance to the
+/// walls.
+
 
 // Foam Lattice Library (lattice/foam)
 //

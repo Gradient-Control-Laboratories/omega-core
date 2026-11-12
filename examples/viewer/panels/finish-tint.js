@@ -11,7 +11,7 @@
 //	radiance(a) = R0 + a * (R1 - R0)      (per channel, linear light)
 //
 // which is then tone-mapped and encoded exactly as the renderer does
-// (agent/fidget/internal/mesh/litrender.go: litTonemapPbrNeutral,
+// (internal/fidget/internal/mesh/litrender.go: litTonemapPbrNeutral,
 // litEncodeDisplay, toByte). tool/materialswatch's TestTintedFinishIsARender
 // holds this to a direct render of the finish in that colour.
 //

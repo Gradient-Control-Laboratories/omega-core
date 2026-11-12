@@ -654,7 +654,7 @@ function updateShader(wgslCode, shapeCount = 1, shapeNames = [], meshSdfBindings
   // Combined slider + mesh-SDF parameter/argument suffixes. Order is
   // load-bearing: the generated sdShape signature appends slider
   // parameters first and the mesh-SDF slot parameters after them (see
-  // agent/wgsl/internal/codegen/build.go), so every call-site argument
+  // backend/wgsl/internal/codegen/build.go), so every call-site argument
   // list must match that order positionally.
   // Noise tile: appended last so the argument order matches the sdShape
   // signature (sliders, mesh-SDF, then noise). Active only when the shader
@@ -2897,7 +2897,7 @@ export function getMeshGeometry(index) {
 
 // ── Imported CAD topology (annotated mesh from hodge) ──
 //
-// A hodge GLB (tool/hodge-import/step_to_omega.py) carries the full B-rep
+// An annotated STEP GLB carries the full B-rep
 // topology as named nodes: face_NNNN meshes (surface_type / surface_params
 // extras + UV), edge_NNNN lines (curve_type / curve_params + incidence) and
 // vertex_NNNN points. addAnnotatedMesh stores it in the shared mesh registry
@@ -3443,8 +3443,8 @@ function topoEntityInfo(r) {
 //
 // Resolves a stored reference to a part-space [x,y,z] from the loaded annotated
 // body, so a pre-compile pass can replace the calls with literals. Mirrors the
-// Go evaluators (common/hodgemesh); returns null if the body isn't loaded or
-// the entity/param can't be resolved.
+// Go topology evaluators (assembler/topofold); returns null if the body isn't
+// loaded or the entity/param can't be resolved.
 const _pad4 = (n) => String(n).padStart(4, "0");
 
 // For an edge, p0 is the native parameter t and p1 is the optional split

@@ -12,7 +12,9 @@ import (
 //   - Result and Result.Package are never nil.
 //   - Result.Package.Files always contains at least one non-nil *program.PackageFile
 //     (len(res.Package.Files) >= 1 and res.Package.Files[0] != nil).
-type Result = parser2.Result
+type Result struct {
+	Package *program.Package
+}
 
 // ParsePackage parses all source files in a package into a Result without caching
 // user packages, while resolving unmodified standard library packages directly
@@ -30,5 +32,6 @@ func ParsePackage(sources []string) (*Result, error) {
 			return &Result{Package: program.GetStdPackage(importPath)}, nil
 		}
 	}
-	return parser2.Parse(sources)
+	pkg, err := parser2.Parse(sources)
+	return &Result{Package: pkg}, err
 }

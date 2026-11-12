@@ -5,11 +5,11 @@ import (
 	"sort"
 	"strings"
 
+	"gradientcontrol.com/omega/core/assembler/slider"
+	"gradientcontrol.com/omega/core/assembler/ui"
 	"gradientcontrol.com/omega/core/backend/wgsl/internal/ir"
 	"gradientcontrol.com/omega/core/backend/wgsl/internal/wgsl"
 	"gradientcontrol.com/omega/core/internal/build"
-	"gradientcontrol.com/omega/core/internal/slider"
-	"gradientcontrol.com/omega/core/internal/ui"
 	"gradientcontrol.com/omega/core/program"
 	"gradientcontrol.com/omega/core/program/edit"
 )

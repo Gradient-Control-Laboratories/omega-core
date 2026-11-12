@@ -12,14 +12,14 @@ import (
 // test on any parse error.
 func parseFile(t *testing.T, src string) *program.PackageFile {
 	t.Helper()
-	res, err := parser2.Parse([]string{src})
+	pkg, err := parser2.Parse([]string{src})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if res.Package == nil || len(res.Package.Files) != 1 {
-		t.Fatalf("expected one package file, got %+v", res.Package)
+	if pkg == nil || len(pkg.Files) != 1 {
+		t.Fatalf("expected one package file, got %+v", pkg)
 	}
-	return res.Package.Files[0]
+	return pkg.Files[0]
 }
 
 // parseErr parses one source expecting it to be rejected, and returns the

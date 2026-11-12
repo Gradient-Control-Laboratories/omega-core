@@ -1,3 +1,6 @@
+/// Periodic 3D strut lattices (octet, fcc, kelvin and more) as the unsigned
+/// distance to the strut skeleton.
+
 
 // Beam Lattice Library (lattice/beam)
 //

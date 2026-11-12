@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	main "gradientcontrol.com/omega/core/cmd/compile"
+	"gradientcontrol.com/omega/core/cmd/compile/internal/cli"
 	"gradientcontrol.com/omega/core/internal/test/assert"
 	"gradientcontrol.com/omega/core/internal/test/require"
 )
@@ -27,7 +27,7 @@ func TestRun_STL_BboxAutoKeepsAThinTiltedSlabWhole(t *testing.T) {
 			"return slab;\n"), 0644))
 	out := filepath.Join(dir, "slab.stl")
 	var stdout, stderr bytes.Buffer
-	require.NoError(t, main.Run([]string{"-t", "stl", "--algo", "mdc", "--subdivision", "7", "--bbox", "auto", "--no-meta",
+	require.NoError(t, cli.Run([]string{"-t", "stl", "--algo", "mdc", "--subdivision", "7", "--bbox", "auto", "--no-meta",
 		"-o", out, source}, nil, &stdout, &stderr))
 	data, err := os.ReadFile(out)
 	require.NoError(t, err)

@@ -1,3 +1,6 @@
+/// Interfaces declared once (an axis, a face, a channel) and fasteners inserted
+/// into them, returning the screw and the finished parts it joins.
+
 // Joint Library (joint)
 //
 // PARTS MEET AT INTERFACES, AND FASTENERS ARE INSERTED INTO THEM. Declare each
