@@ -415,8 +415,10 @@ async function compileGsl(source) {
         if (reqId !== latestCompileID) return;
 
         if (!res.ok || (data.errors && data.errors.length > 0)) {
+            // Structured diagnostics go as { errors } so the handler can place
+            // each one in the editor; anything else falls back to plain text.
             const errs = data.errors && data.errors.length > 0
-                ? data.errors
+                ? { errors: data.errors }
                 : [`Compile failed (HTTP ${res.status})`];
             eventManager.dispatchEvent("canvas/errors", errs);
             return;
