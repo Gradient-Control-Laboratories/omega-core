@@ -8,7 +8,11 @@ import (
 	"math"
 )
 
+// defaultVolumeTolerance is the relative tolerance Volume takes when the caller names none.
+const defaultVolumeTolerance = 0.05
+
 // Volume classifies cells using field intervals and charges every unresolved cell to Upper.
+// relativeTolerance <= 0 selects defaultVolumeTolerance.
 func (e *Evaluator) Volume(ctx context.Context, code, expr string, region [6]float64, relativeTolerance float64) (VolumeBounds, error) {
 	var result VolumeBounds
 	if err := startQuery(ctx); err != nil {
@@ -23,7 +27,10 @@ func (e *Evaluator) Volume(ctx context.Context, code, expr string, region [6]flo
 		root[axis] = math.Nextafter32(float32(region[axis]), float32(math.Inf(-1)))
 		root[axis+3] = math.Nextafter32(float32(region[axis+3]), float32(math.Inf(1)))
 	}
-	if relativeTolerance <= 0 || relativeTolerance >= 1 || math.IsNaN(relativeTolerance) {
+	if relativeTolerance <= 0 {
+		relativeTolerance = defaultVolumeTolerance
+	}
+	if relativeTolerance >= 1 || math.IsNaN(relativeTolerance) {
 		return result, fmt.Errorf("volume tolerance must be between zero and one")
 	}
 	prog, err := e.prepareQuery(ctx, nil, code, "", []string{expr})

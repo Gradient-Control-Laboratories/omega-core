@@ -165,6 +165,16 @@ func TestBoundsSurfaceVolumeAndDescribe(t *testing.T) {
 	assert.Equal(t, []any{"ball"}, r["returns"])
 }
 
+// A volume request without relativeTolerance takes the default, 0.05, rather than failing.
+func TestVolume_DefaultTolerance(t *testing.T) {
+	r, code := ask(t, document(t, ball), map[string]any{"op": "volume", "region": []float64{-12, -12, -12, 12, 12, 12}})
+	require.Equal(t, 0, code, r)
+	lower, upper := number(t, r["lowerMm3"]), number(t, r["upperMm3"])
+	exact := 4.0 / 3 * math.Pi * 1000
+	assert.True(t, lower <= exact && exact <= upper, "%v brackets %g", r, exact)
+	assert.True(t, upper-lower <= 0.05*upper*(1+1e-9), "%v is within the default 0.05", r)
+}
+
 // The union of the returns is the expr when none is named.
 func TestExpr_DefaultsToTheUnionOfTheReturns(t *testing.T) {
 	two := "@scene(40)\na = length(p - [5, 0, 0]) - 2;\nb = length(p + [5, 0, 0]) - 2;\nreturn a, b;\n"
