@@ -231,7 +231,7 @@ func (in *inliner) operandHasPOrTime(op *program.Operand, fileScope *scope.PkgFi
 				cbIdx = 1
 			}
 			if cbIdx < len(t.Expression.Operands) {
-				cbFn := in.findCallbackFunction(t.Expression.Operands[cbIdx], fileScope)
+				cbFn := in.findCallbackFunction(t.Expression.Operands[cbIdx], fileScope, nil)
 				if cbFn != nil && in.hasPOrTimeHelper(cbFn, fileScope, visited) {
 					return true
 				}
@@ -593,7 +593,7 @@ func (in *inliner) callsPOrTime(op *program.Operand, fileScope *scope.PkgFileSco
 				cbIdx = 1
 			}
 			if cbIdx < len(t.Expression.Operands) {
-				cbFn := in.findCallbackFunction(t.Expression.Operands[cbIdx], fileScope)
+				cbFn := in.findCallbackFunction(t.Expression.Operands[cbIdx], fileScope, nil)
 				if cbFn != nil && in.hasPOrTime(cbFn, fileScope) {
 					return true
 				}
@@ -628,7 +628,7 @@ func (in *inliner) callsPOrTime(op *program.Operand, fileScope *scope.PkgFileSco
 // names and the functions it calls. Unlike operandHasPOrTime it leaves time out:
 // a value that varies only in time is the same at every point, so a remap has
 // nothing to re-evaluate.
-func (in *inliner) operandUsesP(op *program.Operand, fileScope *scope.PkgFileScope, visited map[*program.Function]bool, seen map[string]bool) bool {
+func (in *inliner) operandUsesP(op *program.Operand, fileScope *scope.PkgFileScope, visited map[*program.Function]bool, seen map[string]bool, lexical []*program.Function) bool {
 	if op == nil {
 		return false
 	}
@@ -646,7 +646,7 @@ func (in *inliner) operandUsesP(op *program.Operand, fileScope *scope.PkgFileSco
 		}
 		seen[name] = true
 		if v, ok := fileScope.NamedElem(name).(*scope.Var); ok && v != nil && v.Parent != nil && v.Parent.Assign != nil {
-			return in.operandUsesP(v.Parent.Assign.Expression, fileScope, visited, seen)
+			return in.operandUsesP(v.Parent.Assign.Expression, fileScope, visited, seen, lexical)
 		}
 	case *program.Operand_Expression:
 		if t.Expression.Operation == program.Operation_REDUCE || t.Expression.Operation == program.Operation_MAP {
@@ -655,31 +655,21 @@ func (in *inliner) operandUsesP(op *program.Operand, fileScope *scope.PkgFileSco
 				cbIdx = 1
 			}
 			if cbIdx < len(t.Expression.Operands) {
-				cbFn := in.findCallbackFunction(t.Expression.Operands[cbIdx], fileScope)
-				if cbFn != nil && !visited[cbFn] {
-					visited[cbFn] = true
-					for _, a := range cbFn.Assignments {
-						if in.operandUsesP(a.Expression, fileScope, visited, seen) {
-							return true
-						}
-					}
-					for _, r := range cbFn.Returns {
-						if in.operandUsesP(r, fileScope, visited, seen) {
-							return true
-						}
-					}
+				cbFn := in.findCallbackFunction(t.Expression.Operands[cbIdx], fileScope, lexical)
+				if in.bodyUsesP(cbFn, fileScope, visited, seen, lexical) {
+					return true
 				}
 			}
 		}
 		for _, child := range t.Expression.Operands {
-			if in.operandUsesP(child, fileScope, visited, seen) {
+			if in.operandUsesP(child, fileScope, visited, seen, lexical) {
 				return true
 			}
 		}
 	case *program.Operand_FnCall:
 		fc := t.FnCall
 		for _, arg := range fc.Arguments {
-			if in.operandUsesP(arg, fileScope, visited, seen) {
+			if in.operandUsesP(arg, fileScope, visited, seen, lexical) {
 				return true
 			}
 		}
@@ -687,22 +677,40 @@ func (in *inliner) operandUsesP(op *program.Operand, fileScope *scope.PkgFileSco
 		// a native builtin, remap and the like have none to look into.
 		if !in.isNativeOrSpecial(fc) {
 			_, calleeFn, _ := in.findFunction(fc, fileScope, len(fc.Arguments))
-			if calleeFn != nil && !visited[calleeFn] {
-				visited[calleeFn] = true
-				for _, a := range calleeFn.Assignments {
-					if in.operandUsesP(a.Expression, fileScope, visited, seen) {
-						return true
-					}
-				}
-				for _, r := range calleeFn.Returns {
-					if in.operandUsesP(r, fileScope, visited, seen) {
-						return true
-					}
-				}
+			if in.bodyUsesP(calleeFn, fileScope, visited, seen, nil) {
+				return true
 			}
 		}
 	}
 	return false
+}
+
+// bodyUsesP reports whether fn's body depends on p. fn sits inside the bodies
+// in lexical: nil for a function called, which sees none of its caller's
+// functions, and the chain it is declared in for a map or reduce function.
+func (in *inliner) bodyUsesP(fn *program.Function, fileScope *scope.PkgFileScope, visited map[*program.Function]bool, seen map[string]bool, lexical []*program.Function) bool {
+	if fn == nil || visited[fn] {
+		return false
+	}
+	visited[fn] = true
+	lexical = within(lexical, fn)
+	for _, a := range fn.Assignments {
+		if in.operandUsesP(a.Expression, fileScope, visited, seen, lexical) {
+			return true
+		}
+	}
+	for _, r := range fn.Returns {
+		if in.operandUsesP(r, fileScope, visited, seen, lexical) {
+			return true
+		}
+	}
+	return false
+}
+
+// within is lexical, the chain of bodies being walked, with fn innermost. It
+// copies, so a sibling's chain is never written over.
+func within(lexical []*program.Function, fn *program.Function) []*program.Function {
+	return append(lexical[:len(lexical):len(lexical)], fn)
 }
 
 // remapsFieldArg reports whether the call hands fn a field that fn remaps:
@@ -717,7 +725,7 @@ func (in *inliner) operandUsesP(op *program.Operand, fileScope *scope.PkgFileSco
 func (in *inliner) remapsFieldArg(fc *program.FnCall, fn *program.Function, fileScope *scope.PkgFileScope, calleePkgPath string) bool {
 	for i, param := range fn.Parameters {
 		if i >= len(fc.Arguments) ||
-			!in.operandUsesP(fc.Arguments[i], fileScope, map[*program.Function]bool{}, map[string]bool{}) {
+			!in.operandUsesP(fc.Arguments[i], fileScope, map[*program.Function]bool{}, map[string]bool{}, nil) {
 			continue
 		}
 		if in.remapsParam(fn, param.Name, in.fileScopeOf(fn, calleePkgPath), map[remapVisit]bool{}) {
@@ -739,7 +747,7 @@ func (in *inliner) inlinesRemapTarget(op *program.Operand, fc *program.FnCall, f
 		return false
 	}
 	for _, arg := range fc.Arguments {
-		if in.operandUsesP(arg, fileScope, map[*program.Function]bool{}, map[string]bool{}) {
+		if in.operandUsesP(arg, fileScope, map[*program.Function]bool{}, map[string]bool{}, nil) {
 			return true
 		}
 	}
