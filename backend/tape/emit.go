@@ -4,27 +4,36 @@ import (
 	"fmt"
 
 	"google.golang.org/protobuf/proto"
-	lib "gradientcontrol.com/omega/core/internal/fidget/lib"
+	"gradientcontrol.com/omega/core/internal/fidget"
+	"gradientcontrol.com/omega/core/internal/fidget/convert"
 	"gradientcontrol.com/omega/core/program"
+	"gradientcontrol.com/omega/core/program/meshasset"
+	"gradientcontrol.com/omega/core/program/noise/spinodoid"
 	"gradientcontrol.com/omega/core/program/progress"
 )
 
 // MeshSdfOracle holds the triangle soup for a bvhSdf(AssetID) leaf.
-type MeshSdfOracle = lib.MeshSdfOracle
+//
+// Deprecated: Use [meshasset.MeshSdfOracle] instead; will be removed in 0.2.0.
+type MeshSdfOracle = meshasset.MeshSdfOracle
 
 // VdbOracle holds the triangle soup and narrow-band level-set parameters for a vdbSdf(AssetID) leaf.
-type VdbOracle = lib.VdbOracle
+//
+// Deprecated: Use [meshasset.VdbOracle] instead; will be removed in 0.2.0.
+type VdbOracle = meshasset.VdbOracle
 
 // SpinodoidOracle describes one spinodoid table bound during compilation.
-type SpinodoidOracle = lib.SpinodoidOracle
+//
+// Deprecated: Use [spinodoid.Oracle] instead; will be removed in 0.2.0.
+type SpinodoidOracle = spinodoid.Oracle
 
 // Option configures bytecode tape compilation.
 type Option func(*options)
 
 type options struct {
 	bbox        [6]float32
-	meshOracles []MeshSdfOracle
-	vdbOracles  []VdbOracle
+	meshOracles []meshasset.MeshSdfOracle
+	vdbOracles  []meshasset.VdbOracle
 	appearance  bool
 	levelSets   bool
 	progressFn  progress.Callback
@@ -50,14 +59,14 @@ func Bbox(bbox [6]float32) Option {
 }
 
 // MeshOracles registers BVH mesh SDF oracles before compilation and embeds them in the tape.
-func MeshOracles(oracles []MeshSdfOracle) Option {
+func MeshOracles(oracles []meshasset.MeshSdfOracle) Option {
 	return func(o *options) {
 		o.meshOracles = oracles
 	}
 }
 
 // VdbOracles registers OpenVDB level-set oracles before compilation and embeds them in the tape.
-func VdbOracles(oracles []VdbOracle) Option {
+func VdbOracles(oracles []meshasset.VdbOracle) Option {
 	return func(o *options) {
 		o.vdbOracles = oracles
 	}
@@ -94,20 +103,26 @@ func Compile(prog *program.Program, opts ...Option) ([]byte, error) {
 		o.progressFn("Compiling bytecode tape", 0, 1)
 	}
 
-	for _, mo := range o.meshOracles {
-		if err := lib.RegisterMeshOracle(mo.AssetID, mo.Vertices, mo.Triangles); err != nil {
-			return nil, fmt.Errorf("mesh oracle %d register: %w", mo.AssetID, err)
+	if len(o.meshOracles) > 0 || len(o.vdbOracles) > 0 {
+		fidget.Lock()
+		for _, mo := range o.meshOracles {
+			if err := fidget.RegisterMeshOracle(mo.AssetID, mo.Vertices, mo.Triangles); err != nil {
+				fidget.Unlock()
+				return nil, fmt.Errorf("mesh oracle %d register: %w", mo.AssetID, err)
+			}
 		}
-	}
-	for _, vo := range o.vdbOracles {
-		if err := lib.RegisterVdbOracle(vo.AssetID, vo.Vertices, vo.Triangles, vo.VoxelSize, vo.HalfBandVoxels); err != nil {
-			return nil, fmt.Errorf("vdb oracle %d register: %w", vo.AssetID, err)
+		for _, vo := range o.vdbOracles {
+			if err := fidget.RegisterVdbOracle(vo.AssetID, vo.Vertices, vo.Triangles, vo.VoxelSize, vo.HalfBandVoxels); err != nil {
+				fidget.Unlock()
+				return nil, fmt.Errorf("vdb oracle %d register: %w", vo.AssetID, err)
+			}
 		}
+		fidget.Unlock()
 	}
 
-	generate := lib.GenerateTapeWithSpinodoids
+	generate := GenerateTapeWithSpinodoids
 	if o.appearance {
-		generate = lib.GenerateTapeWithAppearanceAndSpinodoids
+		generate = GenerateTapeWithAppearanceAndSpinodoids
 	}
 	tapeBytes, outputNames, spinodoids, err := generate(prog)
 	if err != nil {
@@ -137,17 +152,56 @@ func Compile(prog *program.Program, opts ...Option) ([]byte, error) {
 }
 
 // GenerateTapeWithSpinodoids serializes a parsed program into an omega tape and returns bound spinodoid oracles.
-func GenerateTapeWithSpinodoids(prog *program.Program) ([]byte, []string, []SpinodoidOracle, error) {
-	return lib.GenerateTapeWithSpinodoids(prog)
+func GenerateTapeWithSpinodoids(prog *program.Program) ([]byte, []string, []spinodoid.Oracle, error) {
+	var tapeBytes []byte
+	var outputNames []string
+	var spinodoids []spinodoid.Oracle
+	var err error
+
+	err = convert.ToTapeTrees(prog, func(treeIndices []fidget.TreeIndex, names []string,
+		oracles []spinodoid.Oracle) error {
+		tapeBytes, err = fidget.SerializeTape(treeIndices)
+		outputNames = names
+		spinodoids = oracles
+		return err
+	})
+	return tapeBytes, outputNames, spinodoids, err
 }
 
 // GenerateTapeWithAppearanceAndSpinodoids is GenerateTapeWithSpinodoids with each return's colour and material fields.
-func GenerateTapeWithAppearanceAndSpinodoids(prog *program.Program) ([]byte, []string, []SpinodoidOracle, error) {
-	return lib.GenerateTapeWithAppearanceAndSpinodoids(prog)
+func GenerateTapeWithAppearanceAndSpinodoids(prog *program.Program) ([]byte, []string, []spinodoid.Oracle, error) {
+	var tapeBytes []byte
+	var outputNames []string
+	var spinodoids []spinodoid.Oracle
+	var err error
+
+	err = convert.ToColorShapesWithOracles(prog, 0, func(shapes []convert.ColorShape,
+		oracles []spinodoid.Oracle) error {
+		spinodoids = oracles
+		trees := make([]fidget.TreeIndex, len(shapes))
+		appearance := make([]fidget.Appearance, len(shapes))
+		for i, s := range shapes {
+			trees[i] = s.Tree
+			outputNames = append(outputNames, s.Name)
+			a := &appearance[i]
+			if s.HasColor {
+				a.Color = s.Color[:]
+			}
+			if s.HasMaterial {
+				for _, row := range s.Material {
+					a.Material = append(a.Material, row[:]...)
+				}
+				a.Displaced = s.Displaced
+			}
+		}
+		tapeBytes, err = fidget.SerializeTapeWithAppearance(trees, appearance)
+		return err
+	})
+	return tapeBytes, outputNames, spinodoids, err
 }
 
 // StampSpinodoids adds the spinodoid tables a build bound to a tape as oracle payloads.
-func StampSpinodoids(t *Tape, oracles []SpinodoidOracle) error {
+func StampSpinodoids(t *Tape, oracles []spinodoid.Oracle) error {
 	for _, s := range oracles {
 		params := &SpinodoidParams{
 			Fast:              s.Fast,
@@ -243,9 +297,9 @@ func StampMetadata(
 	tapeBytes []byte,
 	bbox [6]float32,
 	outputNames []string,
-	meshOracles []MeshSdfOracle,
-	vdbOracles []VdbOracle,
-	spinodoids []SpinodoidOracle,
+	meshOracles []meshasset.MeshSdfOracle,
+	vdbOracles []meshasset.VdbOracle,
+	spinodoids []spinodoid.Oracle,
 ) ([]byte, error) {
 	var t Tape
 	if err := proto.Unmarshal(tapeBytes, &t); err != nil {
@@ -288,13 +342,15 @@ func StampMetadata(
 
 // EmbedLevelSets bakes each vdbSdf payload's level set and embeds it in the
 // tape's VDB oracle payload for that asset.
-func EmbedLevelSets(tapeBytes []byte, vdbOracles []VdbOracle) ([]byte, error) {
+func EmbedLevelSets(tapeBytes []byte, vdbOracles []meshasset.VdbOracle) ([]byte, error) {
 	var t Tape
 	if err := proto.Unmarshal(tapeBytes, &t); err != nil {
 		return nil, err
 	}
+	fidget.Lock()
+	defer fidget.Unlock()
 	for _, vo := range vdbOracles {
-		if err := lib.RegisterVdbOracle(vo.AssetID, vo.Vertices, vo.Triangles, vo.VoxelSize, vo.HalfBandVoxels); err != nil {
+		if err := fidget.RegisterVdbOracle(vo.AssetID, vo.Vertices, vo.Triangles, vo.VoxelSize, vo.HalfBandVoxels); err != nil {
 			return nil, fmt.Errorf("vdb oracle %d register: %w", vo.AssetID, err)
 		}
 	}
@@ -302,7 +358,7 @@ func EmbedLevelSets(tapeBytes []byte, vdbOracles []VdbOracle) ([]byte, error) {
 		if o.Kind != OracleKind_VDB {
 			continue
 		}
-		raw, err := lib.ExtractVdbLevelSet(o.AssetId)
+		raw, err := fidget.ExtractVdbLevelSet(o.AssetId)
 		if err != nil {
 			return nil, fmt.Errorf("vdbSdf(%d): %w", o.AssetId, err)
 		}

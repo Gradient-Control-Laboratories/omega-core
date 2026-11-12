@@ -16,9 +16,9 @@ import (
 	"testing"
 
 	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/internal/fidget/internal/convert"
-	"gradientcontrol.com/omega/core/internal/fidget/internal/fidget"
-	"gradientcontrol.com/omega/core/internal/gsleval"
+	"gradientcontrol.com/omega/core/eval"
+	"gradientcontrol.com/omega/core/internal/fidget"
+	"gradientcontrol.com/omega/core/internal/fidget/convert"
 	"gradientcontrol.com/omega/core/internal/source"
 	"gradientcontrol.com/omega/core/program/noise"
 )
@@ -208,7 +208,7 @@ func paintedTies(t *testing.T, code string, half float64, pts [][3]float32) []bo
 	for i, p := range pts {
 		at[i] = [3]float64{float64(p[0]), float64(p[1]), float64(p[2])}
 	}
-	groups, err := gsleval.New(pkgMgr, nil).EvalGsl(context.Background(), nil, code, "", names, at)
+	groups, err := eval.New(pkgMgr, nil).EvalGsl(context.Background(), nil, code, "", names, at)
 	if err != nil || len(groups) != len(names) {
 		t.Logf("painted values not evaluated, so no mismatch is taken for a tie: %v", err)
 		return ties

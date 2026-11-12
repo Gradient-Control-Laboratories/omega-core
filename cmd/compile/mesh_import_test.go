@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	main "gradientcontrol.com/omega/core/cmd/compile"
+	"gradientcontrol.com/omega/core/cmd/compile/internal/cli"
 	"gradientcontrol.com/omega/core/internal/test/assert"
 	"gradientcontrol.com/omega/core/internal/test/require"
 	"gradientcontrol.com/omega/core/internal/test/stlbox"
@@ -27,7 +27,7 @@ func compileFile(t *testing.T, path string, args ...string) ([]byte, error) {
 	t.Helper()
 	out := filepath.Join(t.TempDir(), "out")
 	var stdout, stderr bytes.Buffer
-	err := main.Run(append(append([]string{"--no-meta", "-o", out}, args...), path), nil, &stdout, &stderr)
+	err := cli.Run(append(append([]string{"--no-meta", "-o", out}, args...), path), nil, &stdout, &stderr)
 	if err != nil {
 		return nil, err
 	}

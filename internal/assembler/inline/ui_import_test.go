@@ -4,9 +4,9 @@ import (
 	"reflect"
 	"testing"
 
+	"gradientcontrol.com/omega/core/assembler/ui"
 	"gradientcontrol.com/omega/core/internal/eval"
 	"gradientcontrol.com/omega/core/internal/source"
-	"gradientcontrol.com/omega/core/internal/ui"
 )
 
 func TestImportedUIIdentityKeepsCallerControl(t *testing.T) {

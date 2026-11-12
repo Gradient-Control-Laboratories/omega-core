@@ -6,7 +6,7 @@
 // touches the renderer.
 //
 // The two annotation kinds are written differently, and the difference is the
-// one common/program/annotation draws. An @material returns a record AND the
+// one internal/assembler/annotation draws. An @material returns a record AND the
 // albedo that goes with it, so it is destructured and sets both properties. An
 // @finish carries no colour on purpose, so it sets .material alone and leaves
 // whatever colour the body already had — which is the whole point of a finish:
@@ -19,7 +19,7 @@ import { topLevelReturnSpan } from "../render/gsl-return-span.js";
 
 // isAssignableBody reports whether `name` is something a surface can be put on.
 //
-// A shape's name comes from program.OperandName (the wgsl agent's), which is a
+// A shape's name comes from program.OperandName (used by backend/wgsl), which is a
 // label rather than a binding: a document returning `sphere(3)` names that
 // shape "sphere", and one returning `min(a, b)` names it "min(a, b)". Neither
 // is a value the document binds, so assigning to it would write GSL that means

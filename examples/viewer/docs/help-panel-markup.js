@@ -1,10 +1,7 @@
-// The Help menu and the two documentation overlays it opens, shared by every
-// app. help-panel.js injects these at init when the app's host elements are
-// empty, and removes the items an app passes no handler for — the same
+// The Help menu and the two documentation overlays it opens, shared across
+// viewer frontends. help-panel.js injects these at init when the host elements
+// are empty, and removes the items the caller passes no handler for — the same
 // arrangement export-panel.js uses for #stl-bounds-panel.
-//
-// The markup is transcribed from webai, which had it inline; a second app carried a
-// copy differing only in the absence of "I wish…".
 
 // Goes in the toolbar, conventionally right after .editor-tab-container.
 export const HELP_MENU_MARKUP = `

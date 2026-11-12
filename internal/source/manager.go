@@ -3,17 +3,9 @@ package source
 import (
 	"os"
 	"path/filepath"
+
+	"gradientcontrol.com/omega/core/assembler/source"
 )
-
-// Manager provides access to package sources and assets.
-type Manager interface {
-	// Return the sources in the order that they should be parsed,
-	// along with the file names of the assets in the package.
-	Sources(path string) ([]string, []string, error)
-
-	// Asset returns the binary content of the named asset file in the package.
-	Asset(pkg, filename string) ([]byte, error)
-}
 
 // LocalManager searches local filesystem root directories
 // for package sources and assets.
@@ -22,7 +14,7 @@ type LocalManager struct {
 	rootPaths []string
 }
 
-var _ Manager = &LocalManager{}
+var _ source.Manager = &LocalManager{}
 
 // NewLocalManager creates a new instance of the source manager searching rootPaths.
 func NewLocalManager(rootPaths ...string) *LocalManager {
@@ -43,7 +35,7 @@ func (m *LocalManager) Sources(path string) ([]string, []string, error) {
 			}
 		}
 	}
-	return nil, nil, wrapError(path, ErrPkgNotFound)
+	return nil, nil, wrapError(path, source.ErrPkgNotFound)
 }
 
 // Asset searches root paths for the given asset file in the package.

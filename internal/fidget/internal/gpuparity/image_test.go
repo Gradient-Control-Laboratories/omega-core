@@ -16,8 +16,8 @@ import (
 	"testing"
 
 	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/internal/fidget/internal/convert"
-	"gradientcontrol.com/omega/core/internal/fidget/internal/mesh"
+	"gradientcontrol.com/omega/core/eval"
+	"gradientcontrol.com/omega/core/internal/fidget/convert"
 	"gradientcontrol.com/omega/core/program/noise"
 )
 
@@ -76,7 +76,7 @@ var imagePalette = [][3]float64{
 // TestGpuImageParity draws each example with the viewer's standard frame on
 // the GPU (the shader the viewers build, from common/web/gsl-render-graph.js,
 // run by gpu-eval) and with litrender on the CPU in its viewer mode
-// (mesh.LitOptions.ViewerMarch), from the same camera, and compares them pixel
+// (eval.LitOptions.ViewerMarch), from the same camera, and compares them pixel
 // by pixel: which return each pixel shows, and its tone-mapped colour.
 //
 // Silhouettes are left out (a pixel whose neighbours show a different return
@@ -120,7 +120,7 @@ func TestGpuImageParity(t *testing.T) {
 
 // imageCamera is litrender's default framing: from the corner (e, e, e) of
 // the scene box toward its center, Z up, a 50-degree vertical field of view.
-func imageCamera(e float64) mesh.LitCamera {
+func imageCamera(e float64) eval.LitCamera {
 	norm := func(v [3]float64) [3]float64 {
 		l := math.Sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2])
 		return [3]float64{v[0] / l, v[1] / l, v[2] / l}
@@ -132,7 +132,7 @@ func imageCamera(e float64) mesh.LitCamera {
 	right := norm(cross(fwd, [3]float64{0, 0, 1}))
 	up := cross(right, fwd)
 	tanY := math.Tan(25 * math.Pi / 180)
-	return mesh.LitCamera{
+	return eval.LitCamera{
 		Pos:    [3]float64{e, e, e},
 		Right:  right,
 		Up:     up,
@@ -195,7 +195,7 @@ func checkImage(t *testing.T, bin, node, noisePath, file, name string) {
 	}
 
 	// CPU.
-	cpu, err := mesh.RenderLitLinear(res.Program, mesh.LitOptions{
+	cpu, err := eval.RenderLitLinear(res.Program, eval.LitOptions{
 		Width:       imageW,
 		Height:      imageH,
 		WorldExtent: half,
@@ -225,7 +225,7 @@ func checkImage(t *testing.T, bin, node, noisePath, file, name string) {
 
 // dumpImages writes both renders as PNGs (name-cpu.png, name-gpu.png), for
 // looking at a disagreement. Set GSL_IMAGE_PARITY_DUMP to a directory.
-func dumpImages(t *testing.T, dir, name string, cpu *mesh.LitLinear, gpu []float32) {
+func dumpImages(t *testing.T, dir, name string, cpu *eval.LitLinear, gpu []float32) {
 	t.Helper()
 	w, h := cpu.Width, cpu.Height
 	write := func(suffix string, at func(i, k int) float64) {
@@ -257,9 +257,9 @@ func dumpImages(t *testing.T, dir, name string, cpu *mesh.LitLinear, gpu []float
 func imageFar(half float64) float64 { return 8 * half }
 
 // standardFrame has js/standard-frame.mjs build the viewer's frame shader.
-func standardFrame(t *testing.T, node, goldenPath string, n int, cam mesh.LitCamera, half float64, colors [][3]float64) string {
+func standardFrame(t *testing.T, node, goldenPath string, n int, cam eval.LitCamera, half float64, colors [][3]float64) string {
 	t.Helper()
-	bg, sky, ground := mesh.LitEnvironment()
+	bg, sky, ground := eval.LitEnvironment()
 	job := map[string]any{
 		"golden":     goldenPath,
 		"shapeCount": n,
@@ -291,7 +291,7 @@ func standardFrame(t *testing.T, node, goldenPath string, n int, cam mesh.LitCam
 }
 
 // compareImages reports how the two images agree away from silhouettes.
-func compareImages(t *testing.T, cpu *mesh.LitLinear, gpu []float32, far float64) {
+func compareImages(t *testing.T, cpu *eval.LitLinear, gpu []float32, far float64) {
 	t.Helper()
 	w, h := cpu.Width, cpu.Height
 	gIdx := make([]int32, w*h)

@@ -7,7 +7,7 @@ import (
 	"sort"
 	"sync"
 
-	"gradientcontrol.com/omega/core/internal/gsleval"
+	"gradientcontrol.com/omega/core/eval"
 	"gradientcontrol.com/omega/core/internal/source"
 )
 
@@ -34,8 +34,8 @@ const (
 // colorEvaluator is shared by every entry: building one registers process-wide
 // state (the noise tile), and queries serialise on it anyway. It is built on
 // first use, so a -list run never pays for it.
-var colorEvaluator = sync.OnceValue(func() *gsleval.Evaluator {
-	return gsleval.New(&source.MockManager{}, nil)
+var colorEvaluator = sync.OnceValue(func() *eval.Evaluator {
+	return eval.New(&source.MockManager{}, nil)
 })
 
 // surfaceColors evaluates a material's colour over the swatch sphere. A

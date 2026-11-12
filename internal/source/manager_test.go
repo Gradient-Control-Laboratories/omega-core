@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"gradientcontrol.com/omega/core/assembler/source"
 )
 
 func TestLocalManagerLoadsLocalSourcesAndAssets(t *testing.T) {
@@ -44,7 +46,7 @@ func TestLocalManagerLoadsLocalSourcesAndAssets(t *testing.T) {
 func TestLocalManagerDoesNotLoadEmbeddedStdLib(t *testing.T) {
 	mgr := NewLocalManager(t.TempDir())
 	_, _, err := mgr.Sources("builtin")
-	if !errors.Is(err, ErrPkgNotFound) {
+	if !errors.Is(err, source.ErrPkgNotFound) {
 		t.Fatalf("expected ErrPkgNotFound for embedded stdlib package 'builtin' on LocalManager, got: %v", err)
 	}
 }

@@ -64,11 +64,11 @@ func (c *CachingParser) ParsePackage(sources []string) (*Result, error) {
 	if pkg := c.get(key); pkg != nil {
 		return &Result{Package: pkg}, nil
 	}
-	res, err := parser2.Parse(sources)
+	pkg, err := parser2.Parse(sources)
 	if err == nil {
-		c.put(key, proto.Clone(res.Package).(*program.Package), sourcesSize(sources))
+		c.put(key, proto.Clone(pkg).(*program.Package), sourcesSize(sources))
 	}
-	return res, err
+	return &Result{Package: pkg}, err
 }
 
 func (c *CachingParser) get(key [sha256.Size]byte) *program.Package {

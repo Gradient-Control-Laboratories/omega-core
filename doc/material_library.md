@@ -22,17 +22,17 @@ colours; thirty are clays; fifteen are two-tone swirls. Colour is a parameter
 here (`@color`, Adjust), so their forty-two paints are one preset of ours. The
 count to match is the surfaces, not the entries.
 
-What that list covers and omega does not, structurally:
+What that list covers and `omega-core` does not, structurally:
 
-- **Woven and knit cloth**, and leather: nothing in omega is a textile.
+- **Woven and knit cloth**, and leather: nothing in `stdlib/material` is a textile.
 - **Tessellations with joints**: brick bonds, tiles with grout, parquet.
 - **Stylised relief**: scales, studs, bubble wrap, wrinkles, the sculpting-app
-  look, which omega does better than a texture map can because its relief is
+  look, which GSL does better than a texture map can because its relief is
   real displacement on the field.
 - **Plated and textured plastics and metals** as finished surfaces rather than
   measured substances.
 
-What omega has that it cannot: composition. A base under operators under
+What `omega-core` has that it cannot: composition. A base under operators under
 weathering, each a layer the Materials panel can add and remove, with the relief
 applied to the body. So the plan is families of **processes**, each a package
 of constructors with a ready-made layer on top for the browser, not a flat
@@ -295,7 +295,7 @@ entry is the construction from the paper, not a look copied from any product.
 Verify every DOI above against the publisher before copying it into a library
 header.
 
-**weathering** operators are omega's structural advantage and the deepest
+**weathering** operators are `omega-core`'s structural advantage and the deepest
 item. Dust, sun fade and mildew settle by how the surface faces, which needs
 the body's normal as a slot the panel can pass, as it passes the frame. Edge
 wear needs the distance to the nearest edge, which the second-closest
@@ -389,7 +389,7 @@ here fades each octave as it shrinks under a pixel, settling to the
 octave's mean, because one sample a pixel turns sub-pixel octaves into
 sparkle. Off a screen every octave is drawn, so meshing and export see the
 full field. The ranges each doc states are measured over 4000 points with
-the gsl CLI and pinned in `agent/fidget/gsleval/texture_primitives_test.go`,
+the gsl CLI and pinned in `internal/gsleval/texture_primitives_test.go`,
 which also proves the Voronoi scan sits on the cellular builtins' lattice
 (Euclidean F1 equals `cellular` to 1e-3). The color ramps Blender's ColorRamp
 node gives were already here, as `color`'s colormaps. Next: a realism pass
@@ -416,7 +416,7 @@ Each is worked out in its own section below.
 
 ## Relief
 
-Relief is what omega does that a texture map cannot, and the one place the
+Relief is what GSL does that a texture map cannot, and the one place the
 renderer sets a hard limit, so every entry decides its relief deliberately.
 There are three channels, and an entry may use all three.
 
@@ -854,7 +854,7 @@ which nobody can own. Do not use, from the market list or anywhere:
 Two of their families are not materials and are refused as such: perforated
 and expanded sheet are holes, which belong to the shape libraries; the clays
 are a sculpting app's identity, and `physical.clay` with a fingerprint
-operator is as far as omega goes.
+operator is as far as `omega-core` goes.
 
 ## Order of work
 

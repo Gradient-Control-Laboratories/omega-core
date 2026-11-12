@@ -22,7 +22,7 @@ import (
 	"sync"
 
 	"gradientcontrol.com/omega/core/assembler/meshslots"
-	"gradientcontrol.com/omega/core/internal/fidget/lib"
+	"gradientcontrol.com/omega/core/internal/fidget"
 	"gradientcontrol.com/omega/core/program"
 	"gradientcontrol.com/omega/core/program/meshasset"
 )
@@ -236,21 +236,21 @@ func parse(filename string, data []byte) (*Asset, error) {
 // well; building it costs little beside the level set's bake. Pass them to
 // mesh.MeshOracles / mesh.VdbOracles, tape's options of the same names, or
 // Register.
-func Oracles(uses []Use) ([]lib.MeshSdfOracle, []lib.VdbOracle) {
-	var bvh []lib.MeshSdfOracle
-	var vdb []lib.VdbOracle
+func Oracles(uses []Use) ([]meshasset.MeshSdfOracle, []meshasset.VdbOracle) {
+	var bvh []meshasset.MeshSdfOracle
+	var vdb []meshasset.VdbOracle
 	seenBvh := map[int]bool{}
 	seenVdb := map[int]bool{}
 	for _, u := range uses {
 		if !seenBvh[u.AssetIndex] {
 			seenBvh[u.AssetIndex] = true
-			bvh = append(bvh, lib.MeshSdfOracle{
+			bvh = append(bvh, meshasset.MeshSdfOracle{
 				AssetID: uint32(u.AssetIndex), Vertices: u.Asset.Vertices, Triangles: u.Asset.Triangles,
 			})
 		}
 		if u.Kind == program.MeshSdfKind_MESH_SDF_KIND_VDB && !seenVdb[u.AssetIndex] {
 			seenVdb[u.AssetIndex] = true
-			vdb = append(vdb, lib.VdbOracle{
+			vdb = append(vdb, meshasset.VdbOracle{
 				AssetID: uint32(u.AssetIndex), Vertices: u.Asset.Vertices, Triangles: u.Asset.Triangles,
 				VoxelSize: u.VoxelSize, HalfBandVoxels: u.HalfBandVoxels,
 			})
@@ -280,9 +280,9 @@ func Register(uses []Use) error {
 		if registered[slot] == key {
 			continue
 		}
-		lib.Lock()
-		err := lib.RegisterMeshOracle(o.AssetID, o.Vertices, o.Triangles)
-		lib.Unlock()
+		fidget.Lock()
+		err := fidget.RegisterMeshOracle(o.AssetID, o.Vertices, o.Triangles)
+		fidget.Unlock()
 		if err != nil {
 			return fmt.Errorf("bvhSdf(%d): %w", o.AssetID, err)
 		}
@@ -294,9 +294,9 @@ func Register(uses []Use) error {
 		if registered[slot] == key {
 			continue
 		}
-		lib.Lock()
-		err := lib.RegisterVdbOracle(o.AssetID, o.Vertices, o.Triangles, o.VoxelSize, o.HalfBandVoxels)
-		lib.Unlock()
+		fidget.Lock()
+		err := fidget.RegisterVdbOracle(o.AssetID, o.Vertices, o.Triangles, o.VoxelSize, o.HalfBandVoxels)
+		fidget.Unlock()
 		if err != nil {
 			return fmt.Errorf("vdbSdf(%d): %w", o.AssetID, err)
 		}
@@ -370,10 +370,10 @@ func Grids(uses []Use) (map[int]*meshasset.SdfGrid, error) {
 		gridsMu.Unlock()
 		if !ok {
 			dims := GridDims(u.Asset.Mesh.Bbox)
-			lib.Lock()
-			raw, err := lib.BakeAndExtractVdbWithProgress(uint32(u.AssetIndex), u.Asset.Vertices, u.Asset.Triangles,
+			fidget.Lock()
+			raw, err := fidget.BakeAndExtractVdbWithProgress(uint32(u.AssetIndex), u.Asset.Vertices, u.Asset.Triangles,
 				u.VoxelSize, u.HalfBandVoxels, dims[0], dims[1], dims[2], func(uint32, uint32) {})
-			lib.Unlock()
+			fidget.Unlock()
 			if err != nil {
 				return nil, fmt.Errorf("%s(%d): baking the preview grid: %w", u.Builtin(), u.AssetIndex, err)
 			}
