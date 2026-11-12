@@ -316,19 +316,19 @@ fn fastener_countersunk(p: vec3<f32>, nominalDia: f32, overallLength: f32) -> f3
   return form;
 }
 
-fn drill_coneVoid(p: vec3<f32>, vector_dirZ: vec3<f32>, plane: f32, dia: f32, included: f32) -> f32 {
+fn drill_coneVoid(p: vec3<f32>, vector_dirZ: vec3<f32>, vector_zero: vec3<f32>, plane: f32, dia: f32, included: f32) -> f32 {
   let half = included / 2.0;
   let apex = plane - dia / 2.0 / tan(half);
-  return builtin_cone(p, vec3<f32>(0.0, 0.0, apex), vector_dirZ, half);
+  return max(builtin_cone(p, vec3<f32>(0.0, 0.0, apex), vector_dirZ, half), builtin_cylinderZ(p, vector_dirZ, vector_zero, dia / 2.0));
 }
 
-fn drill_gcl_closure_countersink(p: vec3<f32>, vector_dirZ: vec3<f32>, dia: f32, included: f32, zTop: f32) -> f32 {
-  return drill_coneVoid(p, vector_dirZ, zTop, dia, included);
+fn drill_gcl_closure_countersink(p: vec3<f32>, vector_dirZ: vec3<f32>, vector_zero: vec3<f32>, dia: f32, included: f32, zTop: f32) -> f32 {
+  return drill_coneVoid(p, vector_dirZ, vector_zero, zTop, dia, included);
 }
 
 fn fastener_gcl_closure_hole(p: vec3<f32>, vector_dirZ: vec3<f32>, vector_zero: vec3<f32>, rim: f32, clear: f32, zTop: f32) -> f32 {
   let mouth = zTop;
-  return min(min(100000.0, drill_gcl_closure_countersink(p, vector_dirZ, rim, 1.5707963, mouth)), drill_gcl_closure_thru(p, vector_zero, vector_dirZ, clear, mouth));
+  return min(min(100000.0, drill_gcl_closure_countersink(p, vector_dirZ, vector_zero, rim, 1.5707963, mouth)), drill_gcl_closure_thru(p, vector_zero, vector_dirZ, clear, mouth));
 }
 
 fn fastener_countersunkHole(p: vec3<f32>, vector_dirZ: vec3<f32>, vector_zero: vec3<f32>, nominalDia: f32, fit: f32) -> f32 {
