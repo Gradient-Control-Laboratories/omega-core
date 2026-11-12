@@ -42,6 +42,8 @@ type options struct {
 	meshOracles []MeshSdfOracle
 	vdbOracles  []VdbOracle
 	progressFn  progress.Callback
+	// bodies, when set, is the 1-based returns MeshBodies meshes (WithBodies).
+	bodies map[int]bool
 }
 
 // Progress supplies a progress callback to report meshing progress.
@@ -194,10 +196,12 @@ func BakeSpinodoids(prog *program.Program) (map[string]BakedSpinodoid, error) {
 	return lib.BakeSpinodoids(prog)
 }
 
-// Body represents a distinct solid body in a multi-body export.
+// Body is one top-level return of a program, meshed as its own solid in a
+// multi-body export. Index is its 1-based return index.
 type Body struct {
-	Name string
-	STL  []byte
+	Name  string
+	Index int
+	STL   []byte
 }
 
 // Mesh converts an assembled GSL program into a single watertight binary STL mesh.
@@ -276,18 +280,4 @@ func unpackSTLTriangles(stl []byte) ([]float32, []uint32, error) {
 		tris[i] = uint32(i)
 	}
 	return verts, tris, nil
-}
-
-// MeshBodies converts an assembled program into discrete named bodies.
-func MeshBodies(prog *program.Program, opts ...Option) ([]Body, error) {
-	stl, err := Mesh(prog, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return []Body{
-		{
-			Name: "default",
-			STL:  stl,
-		},
-	}, nil
 }

@@ -36,12 +36,14 @@
 //   getWorldExtent()     viewer.getWorldExtent — scales the voxel-size estimate
 //   clearError()         optional; cleared after a successful union export
 //   track(name, params)  optional analytics hook
-//   onServerExport(detail, surfaceBbox, bodyBoxes, algo)  optional; server-side
-//                           STL export. bodyBoxes maps each visible body's return
+//   onServerExport(detail, surfaceBbox, bodyBoxes, algo, format)  optional;
+//                           server-side STL export. bodyBoxes maps each visible body's return
 //                           index to its measured box (see measureBodyBoxes),
 //                           or is null when they could not be measured. algo is
 //                           the mesher picked: "mdc" (Server DC) or
-//                           "marching-cubes" (Server MC).
+//                           "marching-cubes" (Server MC). format is the
+//                           format picked ("3mf" or "stl"), for an app with
+//                           serverFormats.
 //                           Without it the Server DC mesher is not offered,
 //                           unless serverExportUnavailable is given.
 //   serverMarchingCubes     optional; true when onServerExport meshes by the
@@ -57,6 +59,11 @@
 //                           server export can be cleaned or written as 3MF.
 //                           Without it Server DC is STL only (webedit, whose
 //                           reply goes to its mesh viewer).
+//   serverFormats           optional; true when onServerExport has the server
+//                           write the format it is given (3MF, or STL: one
+//                           body's, or a zip of one per body), so a server
+//                           export is not STL only. The server does not clean,
+//                           so Clean stays off for it (the standalone viewer).
 //   serverExportUnavailable optional; with no onServerExport, keeps Server
 //                           DC in the list, disabled, with this as its title
 //                           (webai, so its panel matches the other app's).
@@ -942,6 +949,7 @@ export function initExportPanel(hooks) {
     if (!deps.onServerExport || !deps.serverMarchingCubes) mesherOption('server-mc').remove();
     if (!deps.onSaveTape) formatSelect.querySelector('option[value="tape"]').remove();
     const SERVER_STL_ONLY = "This app's server export comes back as one STL";
+    const SERVER_NOT_CLEANED = "This app's server export is not cleaned";
     const NOT_MESHED = "A tape is the implicit field itself; nothing is meshed";
     // The default is dual contouring: the server's where the app has one,
     // the browser's otherwise (webai), marching cubes only failing both.
@@ -958,21 +966,20 @@ export function initExportPanel(hooks) {
         // to do.
         const tape = formatSelect.value === 'tape';
         const onServer = mesherSelect.value === 'server' || mesherSelect.value === 'server-mc';
-        const stlOnly = !tape && onServer && !deps.serverResults;
-        if (stlOnly) {
-            formatSelect.value = 'stl';
-            cleanBox.checked = false;
-        }
+        const serverFormatted = !tape && onServer && !deps.serverResults && !!deps.serverFormats;
+        const stlOnly = !tape && onServer && !deps.serverResults && !deps.serverFormats;
+        if (stlOnly) formatSelect.value = 'stl';
+        if (stlOnly || serverFormatted) cleanBox.checked = false;
         formatSelect.disabled = stlOnly;
         stlDepthSlider.disabled = tape;
         stlDepthSlider.closest('.field-panel-row').classList.toggle('disabled', tape);
         stlDepthSlider.closest('.field-panel-row').title = tape ? NOT_MESHED : '';
         document.getElementById('stl-voxel-info').classList.toggle('disabled', tape);
         mesherSelect.disabled = tape;
-        cleanBox.disabled = stlOnly || tape;
+        cleanBox.disabled = stlOnly || serverFormatted || tape;
         formatSelect.title = stlOnly ? SERVER_STL_ONLY : '';
         mesherSelect.title = tape ? NOT_MESHED : '';
-        cleanBox.parentElement.title = stlOnly ? SERVER_STL_ONLY : tape ? NOT_MESHED
+        cleanBox.parentElement.title = stlOnly ? SERVER_STL_ONLY : serverFormatted ? SERVER_NOT_CLEANED : tape ? NOT_MESHED
             : "Rebuild each body through Manifold: weld its vertices, drop degenerate triangles, close it as a 2-manifold";
         const none = tape ? false : !mesherSelect.value || mesherSelect.selectedOptions[0]?.disabled;
         btnExport.classList.toggle('unavailable', none);
@@ -1053,7 +1060,7 @@ export function initExportPanel(hooks) {
             : null;
         const surfaceBbox = await measureSurfaceBbox();
         pendingServerExport = deps.serverResults && (options.format !== 'stl' || options.clean) ? options : null;
-        if (deps.onServerExport(currentDetail(), surfaceBbox, boxes, algo) === false) {
+        if (deps.onServerExport(currentDetail(), surfaceBbox, boxes, algo, options.format) === false) {
             // The app sent nothing, and has said why.
             pendingServerExport = null;
             serverExportShown = false;

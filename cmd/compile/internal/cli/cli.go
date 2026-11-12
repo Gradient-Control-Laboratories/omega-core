@@ -15,7 +15,6 @@ import (
 	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/backend/audio"
 	"gradientcontrol.com/omega/core/backend/mesh"
-	"gradientcontrol.com/omega/core/backend/mesh/threemf"
 	"gradientcontrol.com/omega/core/backend/tape"
 	"gradientcontrol.com/omega/core/backend/wgsl"
 	"gradientcontrol.com/omega/core/cmd/compile/internal/config"
@@ -172,6 +171,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 
 	// Backend target emission
 	var outBytes []byte
+	var zipOutput bool
 
 	switch cfg.Target {
 	case config.TargetWGSL:
@@ -228,18 +228,32 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 				fmt.Fprintf(stderr, "[mesh] %s (%d/%d)\n", stage, completed, total)
 			}))
 		}
-		stlBytes, meshErr := mesh.Mesh(res.Program, meshOpts...)
+		// Each top-level return is its own body: one STL, a zip of <name>.stl for several, or a 3MF object each.
+		bodies, meshErr := mesh.MeshBodies(res.Program, meshOpts...)
 		if meshErr != nil {
 			return fmt.Errorf("generating STL mesh: %w", meshErr)
 		}
-		outBytes = stlBytes
 		if cfg.Target == config.Target3MF {
-			threeMf, threeMfErr := stlTo3MF(stlBytes, bodyName(cfg))
-			if threeMfErr != nil {
+			if len(bodies) == 1 {
+				bodies[0].Name = bodyName(cfg)
+			}
+			var buf bytes.Buffer
+			if threeMfErr := mesh.Write3MF(&buf, bodies, nil); threeMfErr != nil {
 				return fmt.Errorf("writing 3MF: %w", threeMfErr)
 			}
-			outBytes = threeMf
+			outBytes = buf.Bytes()
+			break
 		}
+		packed, zipped, packErr := mesh.PackSTL(bodies)
+		if packErr != nil {
+			return fmt.Errorf("zipping bodies: %w", packErr)
+		}
+		if zipped && strings.EqualFold(filepath.Ext(cfg.OutputPath), ".stl") {
+			return fmt.Errorf("%d bodies make a zip of STLs, not one STL: name the output .zip (-o %s.zip)",
+				len(bodies), strings.TrimSuffix(cfg.OutputPath, filepath.Ext(cfg.OutputPath)))
+		}
+		zipOutput = zipped
+		outBytes = packed
 
 	case config.TargetTape:
 		tapeOpts := []tape.Option{}
@@ -281,6 +295,10 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 
 	// Output routing
 	outputPath := cfg.ResolveOutputPath()
+	if zipOutput && cfg.OutputPath == "" && outputPath != "-" {
+		// The default name follows the source; several bodies make a zip, not an STL.
+		outputPath = strings.TrimSuffix(outputPath, filepath.Ext(outputPath)) + ".zip"
+	}
 	if outputPath == "-" {
 		if stdout == nil {
 			stdout = os.Stdout
@@ -430,23 +448,9 @@ func autoBbox(code string, srcPaths []string) ([6]float32, error) {
 	return box, nil
 }
 
-// stlTo3MF writes a meshed STL as a one-object 3MF: the mesh welded, named
-// name, in the writer's default color (the program's own colors are not
-// evaluated here).
-func stlTo3MF(stl []byte, name string) ([]byte, error) {
-	m, err := threemf.WeldSTL(stl)
-	if err != nil {
-		return nil, err
-	}
-	var buf bytes.Buffer
-	if err := threemf.Write(&buf, []threemf.Body{{Name: name, Mesh: m}}); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-// bodyName is a 3MF object's name: the first source file's name without its
-// extension, as the default output path takes it, or "model" from stdin.
+// bodyName names a one-body 3MF's object: the first source file's name without
+// its extension, as the default output path takes it, or "model" from stdin.
+// Several bodies keep their own names (mesh.MeshBodies).
 func bodyName(cfg *config.Config) string {
 	if cfg.IsStdin || len(cfg.Sources) == 0 {
 		return "model"

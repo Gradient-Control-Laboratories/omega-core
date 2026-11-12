@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"sort"
 	"strings"
 
+	"gradientcontrol.com/omega/core/backend/mesh"
 	"gradientcontrol.com/omega/core/cmd/serve/internal/compiler"
 )
 
@@ -136,9 +138,23 @@ func (s *Server) handleMesh(w http.ResponseWriter, r *http.Request) {
 		Bbox        []float32 `json:"bbox"`
 		Algo        string    `json:"algo"`
 		Time        float64   `json:"time"`
+		// Format is "stl" (the default: one body's STL, or a zip of <name>.stl for
+		// several) or "3mf" (one file, each body an object in its own color).
+		Format string `json:"format"`
+		// Bodies, when set, is the 1-based returns to export (the Bodies
+		// panel's visible ones); without it every return is exported.
+		Bodies []int `json:"bodies"`
+		// Colors gives a 3MF body's color by its 1-based return index
+		// ("#rrggbb", as the Bodies panel shows it); others take the palette.
+		Colors map[int]string `json:"colors"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		writeJSONError(w, http.StatusBadRequest, "invalid JSON payload")
+		return
+	}
+	format := strings.ToLower(strings.TrimSpace(payload.Format))
+	if format != "" && format != "stl" && format != "3mf" {
+		writeJSONError(w, http.StatusBadRequest, "unsupported format "+payload.Format+"; must be stl or 3mf")
 		return
 	}
 
@@ -149,13 +165,14 @@ func (s *Server) handleMesh(w http.ResponseWriter, r *http.Request) {
 		Subdivision: payload.Subdivision,
 		Algo:        payload.Algo,
 		Time:        payload.Time,
+		Bodies:      payload.Bodies,
 	}
 	if len(payload.Bbox) == 6 {
 		meshReq.HasBbox = true
 		copy(meshReq.Bbox[:], payload.Bbox)
 	}
 
-	stlBytes, err := compiler.Mesh(meshReq, s.cfg.SourcePaths, func(stage, label string, completed, total uint32) {
+	bodies, err := compiler.MeshBodies(meshReq, s.cfg.SourcePaths, func(stage, label string, completed, total uint32) {
 		s.emitProgress(payload.ClientID, payload.ID, stage, label, completed, total)
 	})
 	if err != nil {
@@ -163,10 +180,32 @@ func (s *Server) handleMesh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "model/stl")
-	w.Header().Set("Content-Disposition", `attachment; filename="model.stl"`)
+	// Each top-level return is its own body.
+	var data []byte
+	contentType, filename := "model/stl", "model.stl"
+	if format == "3mf" {
+		var buf bytes.Buffer
+		if err := mesh.Write3MF(&buf, bodies, payload.Colors); err != nil {
+			writeJSONError(w, http.StatusInternalServerError, "writing 3MF: "+err.Error())
+			return
+		}
+		data, contentType, filename = buf.Bytes(), "model/3mf", "model.3mf"
+	} else {
+		packed, zipped, err := mesh.PackSTL(bodies)
+		if err != nil {
+			writeJSONError(w, http.StatusInternalServerError, "zipping bodies: "+err.Error())
+			return
+		}
+		data = packed
+		if zipped {
+			contentType, filename = "application/zip", "model.zip"
+		}
+	}
+
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Content-Disposition", `attachment; filename="`+filename+`"`)
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(stlBytes)
+	_, _ = w.Write(data)
 }
 
 func isValidGSLFilename(name string) bool {
