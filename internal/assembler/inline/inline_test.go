@@ -4,20 +4,21 @@ import (
 	"strings"
 	"testing"
 
+	"gradientcontrol.com/omega/core/assembler/source"
 	"gradientcontrol.com/omega/core/internal/assembler/inline"
 	"gradientcontrol.com/omega/core/internal/closure"
 	"gradientcontrol.com/omega/core/internal/collect"
 	"gradientcontrol.com/omega/core/internal/eval"
 	"gradientcontrol.com/omega/core/internal/link"
 	"gradientcontrol.com/omega/core/internal/lower"
-	"gradientcontrol.com/omega/core/internal/source"
+	internalsource "gradientcontrol.com/omega/core/internal/source"
 	"gradientcontrol.com/omega/core/internal/types"
 	parser "gradientcontrol.com/omega/core/parser"
 	"gradientcontrol.com/omega/core/program"
 )
 
 func runPipeline(src string) (*program.Program, error) {
-	return runPipelineWithManager(src, &source.MockManager{})
+	return runPipelineWithManager(src, &internalsource.MockManager{})
 }
 
 func runPipelineWithManager(src string, srcMgr source.Manager) (*program.Program, error) {
@@ -177,7 +178,7 @@ return rec(5);
 }
 
 func TestInline_CrossPackage(t *testing.T) {
-	srcMgr := source.NewLocalManager("../../../stdlib")
+	srcMgr := internalsource.NewLocalManager("../../../stdlib")
 	src := `
 import font "text";
 return font.fontSpacing();
@@ -195,7 +196,7 @@ return font.fontSpacing();
 }
 
 func TestInline_CrossPackageQualification(t *testing.T) {
-	srcMgr := source.NewLocalManager("../../../stdlib")
+	srcMgr := internalsource.NewLocalManager("../../../stdlib")
 	src := `
 import font "text";
 return font.left("A", [0, 0], 1, 0.04, 0.3);
@@ -234,7 +235,7 @@ return outer(5);
 }
 
 func TestInline_CrossPackageMultiReturn(t *testing.T) {
-	srcMgr := &source.MockManager{
+	srcMgr := &internalsource.MockManager{
 		PkgSources: map[string][]string{
 			"geom/helpers": {
 				`
@@ -303,7 +304,7 @@ apply(f, z) {
 import lib "geom/lib";
 return lib.apply(lib.make(2.0), p.z);
 `
-	mgr := &source.MockManager{PkgSources: map[string][]string{"geom/tab": {tab}, "geom/lib": {lib}}}
+	mgr := &internalsource.MockManager{PkgSources: map[string][]string{"geom/tab": {tab}, "geom/lib": {lib}}}
 	prog, err := runPipelineWithManager(src, mgr)
 	if err != nil {
 		t.Fatal(err)

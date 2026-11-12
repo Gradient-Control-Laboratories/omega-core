@@ -1,5 +1,5 @@
-// Transparency and refraction for the GSL raymarch viewers (webai,
-// webedit), by marching the refracted ray through the same SDF.
+// Transparency and refraction for the GSL raymarch viewer, by marching the
+// refracted ray through the same SDF.
 //
 // A hit whose material has transmission (the `volume.x` row of the material
 // record) is shaded in two parts. The surface itself contributes its specular
@@ -43,7 +43,7 @@ struct gsl_secondaryHit {
 // the pixel-footprint epsilons continue from the primary ray's.
 //
 // parts is whether the program has parts: while this march runs, a part far
-// from the ray reads as its box (agent/wgsl/internal/codegen/vanish.go), as in
+// from the ray reads as its box (backend/wgsl/internal/codegen/vanish.go), as in
 // the primary march, and whatever the margin was is restored after it.
 // displace widens that margin by the reach of displacement, which moves the
 // surface off the undisplaced part its box bounds.

@@ -23,6 +23,18 @@ return sphere(x), audio(sin(t));
 	if !strings.Contains(otherSrc, "sphere(x)") {
 		t.Errorf("expected otherSrc to contain sphere(x), got: %s", otherSrc)
 	}
+
+	monoSrc := "freq = 440;\nreturn audio(sin(freq * time));"
+	audioOnly, otherEmpty, err := audio.ExtractAudio(monoSrc)
+	if err != nil {
+		t.Fatalf("ExtractAudio mono failed: %v", err)
+	}
+	if want := "freq = 440;\nreturn sin(freq * time);"; audioOnly != want {
+		t.Errorf("expected audioSource %q, got %q", want, audioOnly)
+	}
+	if otherEmpty != "" {
+		t.Errorf("expected empty otherSource, got %q", otherEmpty)
+	}
 }
 
 func TestAudioToJs(t *testing.T) {

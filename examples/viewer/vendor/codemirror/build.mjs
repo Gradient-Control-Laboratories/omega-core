@@ -1,6 +1,6 @@
-// Re-export all CodeMirror 6 symbols we use from webai/web/editor.js.
+// Re-export all CodeMirror 6 symbols we use from examples/viewer/editor/editor.js.
 // Bundled into codemirror.js with esbuild; committed so runtime fetches a
-// single file and contributors don't need Node just to run omega.
+// single file and contributors don't need Node just to run omega-core.
 //
 // To rebuild (from this directory):
 //   npm install

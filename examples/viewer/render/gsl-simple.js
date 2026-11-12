@@ -2,7 +2,7 @@
 // frame can be, drawn two ways from one spec so the pair can be compared. The GPU draws it from the
 // compiled WGSL (gsl-render-graph.js's simpleFragment); a CPU tier
 // draws it with fidget-wasm from the program's omega tape (fw_render_simple,
-// agent/fidget/internal/wasm), and shadeSimple below finishes that frame.
+// internal/fidget/internal/wasm), and shadeSimple below finishes that frame.
 //
 // The spec:
 //   - The ray is the standard frame's: the camera basis, perspective or
@@ -58,7 +58,7 @@ const f = (v) => {
 // setupWGSL runs first, after the visibility flags (the camera and the detail
 // rungs for the program's part guards). parts is whether the program has
 // parts: while the ray marches, a part far from it reads as its box
-// (agent/wgsl/internal/codegen/vanish.go).
+// (backend/wgsl/internal/codegen/vanish.go).
 export function simpleFragmentWGSL({ visParamsWGSL, visArgsWGSL, colorParamsWGSL, colorArgsWGSL, extraParamsWGSL, setupWGSL = "", parts = false }) {
   return `
         fn gsl_simpleFragment(

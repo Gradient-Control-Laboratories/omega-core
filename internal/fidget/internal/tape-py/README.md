@@ -1,16 +1,16 @@
-# omega_tape — Python wrapper for omega implicit fields
+# omega_tape — Python wrapper for GSL implicit fields
 
-A native Python extension (pyo3) that lets hodge read **omega tapes** in-process,
-including `bvhSdf` / `vdbSdf` oracles. It wraps omega's `render` lib (fidget +
+A native Python extension (pyo3) that lets Python callers read **omega tapes** in-process,
+including `bvhSdf` / `vdbSdf` oracles. It wraps `omega-core`'s `render` lib (fidget +
 OpenVDB), which is statically embedded, so the built module is self-contained.
 
 ```
-                     common/tape/tape.proto  (single source)
+                     backend/tape/tape.proto  (single source)
                        /                     \
           protoc --go_out              protoc --python_out  +  prost-build
               |                              |                      |
         tape.pb.go                     tape_pb2.py             (render lib)
-       (Go: serialize_tape)        (hodge: author tape)    (replay + eval/mesh)
+       (Go: serialize_tape)        (Python: author tape)   (replay + eval/mesh)
                        \                     |                      /
                         \--------- tape::Tape  (bytes) ------------/
                                             |
@@ -18,8 +18,8 @@ OpenVDB), which is statically embedded, so the built module is self-contained.
 ```
 
 The **omega tape** is the post-GSL-lowering fidget `TreeOp` DAG as protobuf —
-content is fidget-shaped (plus omega's `MeshOracle` leaves), the format is
-omega's. All GSL semantics (inlining, map/reduce unroll, const-eval) are already
+content is fidget-shaped (plus `omega-core`'s `MeshOracle` leaves), in the
+`backend/tape` format. All GSL semantics (inlining, map/reduce unroll, const-eval) are already
 resolved by the Go `build.Build` pass, so replay needs no GSL machinery.
 
 ## Build
@@ -30,7 +30,7 @@ build works across interpreters (verified: built on 3.14, imported on 3.10).
 With maturin (preferred for packaging):
 
 ```sh
-cd agent/fidget/internal/tape-py
+cd internal/fidget/internal/tape-py
 PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1 maturin build --release
 ```
 
@@ -132,7 +132,7 @@ and are loaded with different settings. The oracles are released when the
 
 `register_mesh_oracle` / `register_vdb_oracle` remain for advanced manual
 authoring (a tape that references oracles by id without embedding the mesh);
-not needed for tapes omega produces.
+not needed for tapes `omega-core` produces.
 
 The `noiseHash3` oracle (procedural cellular/Worley noise) needs no reader
 choice and carries no payload: its baked 64³ tile is a build-time constant baked
@@ -144,19 +144,19 @@ oracles from the library-baked tile automatically.
 
 A spinodoid leaf carries only an id, but the tape carries the field's
 *arguments* beside it (`tape.proto`'s `SpinodoidParams`), and `Tape(...)` bakes
-the kernel table from them on load, with the same bake omega's Go side uses
+the kernel table from them on load, with the same bake `omega-core`'s Go side uses
 (tape-core `spinodoid/bake.rs`, pinned to it). The same arguments describe two
 fields, and `backend` picks which one every spinodoid in the tape is rebuilt
 as, whatever the payload's `fast` flag says:
 
 ```python
-field = omega_tape.Tape(blob)                           # "fast": omega's lattice,
+field = omega_tape.Tape(blob)                           # "fast": omega-core's lattice,
                                                         #   what the viewer draws
 field = omega_tape.Tape(blob, backend="manufacturing")  # hodge's spinodoid_gabor
 ```
 
 Field drivers (a graded scale or orientation) travel as nodes of the tape and
-are read at every kernel centre, as omega's bake reads them.
+are read at every kernel centre, as `omega-core`'s bake reads them.
 
 A tape whose spinodoid leaf has no payload still needs its table handed over
 before it loads. `tape_oracle_uses` says what a tape needs:
@@ -184,9 +184,9 @@ field = omega_tape.Tape(blob)       # now it loads
 `kernels` is row-major over `size` from `origin`, `impulses` rows per cell, each
 row `[jitter x, jitter y, jitter z, dir x, dir y, dir z, beta, gamma]`, with a
 kernel centre at `(cell + jitter) * cell_size`. hodge's own `_gabor_kernels`
-produces exactly these, and omega's `HodgeBake` is pinned to it (bit-exact on
+produces exactly these, and `omega-core`'s `HodgeBake` is pinned to it (bit-exact on
 the direction pool, 2e-14 on the field —
-`common/noise/spinodoid/hodge_parity_test.go`). A `periodic=True` table must be
+`program/noise/spinodoid/hodge_parity_test.go`). A `periodic=True` table must be
 hodge's 32-cubed window; a bounded one is located by `bounds` and reads as a
 conservative distance-to-domain outside it. A tape with a payload ignores this:
 its baked table replaces a registered one.
@@ -199,7 +199,7 @@ a spinodoid tape quietly evaluating to `min 0.0 max 0.0`, i.e. meshing a
 the live preview paths keep their old behavior.
 
 `eval`/`grad` take `(N,3)` **float32** arrays and return numpy arrays — the same
-shape hodge's Walk-on-Spheres / Walk-on-Stars solvers use, so an omega field
+shape hodge's Walk-on-Spheres / Walk-on-Stars solvers use, so a GSL field
 drops in as a `FieldFn`. For a true SDF, `eval` is the WoS distance-to-boundary
 and its sign (GWN, baked into `bvhSdf`) is the inside/outside test — mesh-free.
 
@@ -248,20 +248,20 @@ transform is applied on `eval`). For the Walk-on-Spheres / Walk-on-Stars stack:
 drops in directly as a distance/boundary/source oracle — no mesh required.
 Oracle (`bvhSdf`/`vdbSdf`) payloads are embedded in the tape and auto-registered
 on load, so even mesh-referencing tapes are read with a bare `Tape(bytes)`, and
-so are spinodoid tapes omega writes, which carry their payload; pass
+so are spinodoid tapes `omega-core` writes, which carry their payload; pass
 `backend="manufacturing"` for hodge's field.
 
 ### Making it a native hodge feature
 
-`omega_tape` statically embeds omega's render lib (fidget + OpenVDB), so the
+`omega_tape` statically embeds `omega-core`'s render lib (fidget + OpenVDB), so the
 only artifact hodge needs at runtime is the built `omega_tape.{so,pyd}` on its
-path — there is no separate omega process and no `.tape`-specific C dependency.
+path — there is no separate `omega-core` process and no `.tape`-specific C dependency.
 To wrap it natively, hodge would:
 
-1. Add a build step that produces the wheel from an omega checkout
-   (`maturin build --release` in `agent/fidget/internal/tape-py`, or
+1. Add a build step that produces the wheel from an `omega-core` checkout
+   (`maturin build --release` in `internal/fidget/internal/tape-py`, or
    `cargo build -p omega-tape --release` + place `libomega_tape.dylib` as
-   `omega_tape.so`), pinned to an omega revision.
+   `omega_tape.so`), pinned to an `omega-core` revision.
 2. Add a thin `hodge` reader, e.g. `hodge.io.read_omega_tape(path) -> Field`,
    that calls `omega_tape.Tape(...)` and adapts `eval`/`grad`/`bbox` to whatever
    distance/normal interface hodge's solvers expect (per the mapping above).
@@ -274,5 +274,5 @@ registration; step 2 chooses the spinodoid's `backend`.
 - `eval`/`grad` require contiguous **float32** `(N,3)` input (hodge already
   downcasts geometry queries to f32). An f64 path could be added if needed.
 - `Tape` is `unsendable` (holds a fidget VM shape) — use it from one thread.
-- The Go cgo side (`serialize_tape` producing tapes from the live `TREES` DAG)
-  is exposed in the C-ABI but not yet wrapped in Go.
+- On the Go side, `backend/tape` (`tape.Compile`) wraps `serialize_tape` to emit
+  self-contained `.tape` payloads directly from assembled GSL programs.

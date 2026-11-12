@@ -8,36 +8,36 @@ import (
 
 func TestParseSceneDirective(t *testing.T) {
 	// Valid @scene(20) defaults grid to size / 10 = 2.0
-	res, err := parser2.Parse([]string{"@scene(20)\nreturn sphere(1);"})
+	pkg, err := parser2.Parse([]string{"@scene(20)\nreturn sphere(1);"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if res.Package.Scene == nil {
+	if pkg.Scene == nil {
 		t.Fatalf("expected package scene to be non-nil")
 	}
-	if res.Package.Scene.Size != 20 || res.Package.Scene.Grid != 2.0 {
-		t.Errorf("got size=%v grid=%v, want 20 and 2.0", res.Package.Scene.Size, res.Package.Scene.Grid)
+	if pkg.Scene.Size != 20 || pkg.Scene.Grid != 2.0 {
+		t.Errorf("got size=%v grid=%v, want 20 and 2.0", pkg.Scene.Size, pkg.Scene.Grid)
 	}
 
 	// Valid @scene(20, 5)
-	res2, err := parser2.Parse([]string{"@scene(20, 5)\nreturn sphere(1);"})
+	pkg2, err := parser2.Parse([]string{"@scene(20, 5)\nreturn sphere(1);"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if res2.Package.Scene == nil {
+	if pkg2.Scene == nil {
 		t.Fatalf("expected package scene to be non-nil")
 	}
-	if res2.Package.Scene.Size != 20 || res2.Package.Scene.Grid != 5.0 {
-		t.Errorf("got size=%v grid=%v, want 20 and 5.0", res2.Package.Scene.Size, res2.Package.Scene.Grid)
+	if pkg2.Scene.Size != 20 || pkg2.Scene.Grid != 5.0 {
+		t.Errorf("got size=%v grid=%v, want 20 and 5.0", pkg2.Scene.Size, pkg2.Scene.Grid)
 	}
 
 	// Preceded by whitespace and comments
-	res3, err := parser2.Parse([]string{"\n  // A helpful header comment\n  @scene(30, 3)\nreturn sphere(1);"})
+	pkg3, err := parser2.Parse([]string{"\n  // A helpful header comment\n  @scene(30, 3)\nreturn sphere(1);"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if res3.Package.Scene == nil || res3.Package.Scene.Size != 30 || res3.Package.Scene.Grid != 3.0 {
-		t.Errorf("expected scene with size 30, grid 3.0, got %+v", res3.Package.Scene)
+	if pkg3.Scene == nil || pkg3.Scene.Size != 30 || pkg3.Scene.Grid != 3.0 {
+		t.Errorf("expected scene with size 30, grid 3.0, got %+v", pkg3.Scene)
 	}
 
 	// Semicolon after @scene is rejected
@@ -64,23 +64,23 @@ func TestParseSceneDirective(t *testing.T) {
 
 	// Fallback to legacy comments in file 0 when @scene is absent
 	legacySrc := "// Scene Size: 40\n// Scene Grid: 4\nreturn sphere(1);"
-	resLegacy, err := parser2.Parse([]string{legacySrc})
+	pkgLegacy, err := parser2.Parse([]string{legacySrc})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if resLegacy.Package.Scene == nil {
+	if pkgLegacy.Scene == nil {
 		t.Fatalf("expected package scene from legacy comments")
 	}
-	if resLegacy.Package.Scene.Size != 40 || resLegacy.Package.Scene.Grid != 10.0 {
-		t.Errorf("got size=%v grid=%v, want 40 and 10.0", resLegacy.Package.Scene.Size, resLegacy.Package.Scene.Grid)
+	if pkgLegacy.Scene.Size != 40 || pkgLegacy.Scene.Grid != 10.0 {
+		t.Errorf("got size=%v grid=%v, want 40 and 10.0", pkgLegacy.Scene.Size, pkgLegacy.Scene.Grid)
 	}
 
 	// When neither @scene nor legacy comments exist, Scene is nil
-	resNone, err := parser2.Parse([]string{"return sphere(1);"})
+	pkgNone, err := parser2.Parse([]string{"return sphere(1);"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if resNone.Package.Scene != nil {
-		t.Errorf("expected nil Scene when absent, got %+v", resNone.Package.Scene)
+	if pkgNone.Scene != nil {
+		t.Errorf("expected nil Scene when absent, got %+v", pkgNone.Scene)
 	}
 }

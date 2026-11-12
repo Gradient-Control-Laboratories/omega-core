@@ -1,4 +1,4 @@
-// Per-shape visibility for the GSL shaders (webai, webedit, and the
+// Per-shape visibility for the GSL shaders (the raymarch viewer and the
 // mesher and auto-bbox compute passes that share their sdShape).
 //
 // Each returned shape has a visibility flag the UI toggles. gsl_min asks

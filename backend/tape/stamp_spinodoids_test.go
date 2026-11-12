@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"google.golang.org/protobuf/proto"
+	"gradientcontrol.com/omega/core/program/noise/spinodoid"
 )
 
 // A field driver travels as nodes appended to the tape. The splice has to
@@ -39,7 +40,7 @@ func TestStampSpinodoidsSplicesDriverNodes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = StampSpinodoids(main, []SpinodoidOracle{{
+	err = StampSpinodoids(main, []spinodoid.Oracle{{
 		AssetID: 0xE05B2000, Period: 2, DriverFingerprint: "fp", DriverTape: subBytes,
 	}})
 	if err != nil {

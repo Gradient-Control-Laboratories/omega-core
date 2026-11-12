@@ -1,4 +1,4 @@
-// Displacement for the GSL raymarch viewers (webai, webedit).
+// Displacement for the GSL raymarch viewer.
 //
 // The third row of a material record carries a signed height in millimetres
 // (`material.withDisplacement`). The renderer marches the displaced field,
@@ -64,7 +64,7 @@ export const GSL_DISPLACE_STATE_WGSL = `var<private> gsl_dispScale: f32 = 1.0;`;
 //                            rung loses its height
 //
 // EACH RETURN MOVES BY ITS OWN HEIGHT when the program has a displaced return:
-// the codegen then emits gsl_sdShapeDisplaced (agent/wgsl/internal/codegen/
+// the codegen then emits gsl_sdShapeDisplaced (backend/wgsl/internal/codegen/
 // displace.go), which subtracts every return's own height from its own
 // distance before the composite — so where two returns overlap, a screw in the
 // hole tapped for it, each keeps its own thread and neither opens a hole in the

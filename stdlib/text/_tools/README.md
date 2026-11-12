@@ -1,7 +1,7 @@
 # text — tooling
 
 CXF source font and the `cxf2gsl` converter that generates the `text` GSL
-package (`common/source/package/text/text.gsl`) consumed by the `text()`
+package (`stdlib/text/text.gsl`) consumed by the `text()`
 renderer.
 
 ## Source & license
@@ -37,9 +37,9 @@ in the repository's `THIRD_PARTY_NOTICES.md`.
 so it builds in every backend). Latin, Greek, Cyrillic, symbols, CJK
 punctuation (520 glyphs).
 
-Regenerate from `common/`:
+Regenerate from the repository root:
 
-    go run ./source/package/text/_tools/cxf2gsl -in source/package/text/_tools/Unicode.cxf -out source/package/text/text.gsl
+    go run ./stdlib/text/_tools/cxf2gsl -in stdlib/text/_tools/Unicode.cxf -out stdlib/text/text.gsl
 
 `cxf2gsl` also supports `-ascii "string"` (terminal preview) and `-png <path>`
 (glyph sprite sheet) for visual inspection, plus `-lo`/`-hi`/`-include` for

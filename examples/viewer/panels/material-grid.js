@@ -34,8 +34,8 @@ import { tintFinish } from "./finish-tint.js";
 import { MATERIAL_PANEL_MARKUP } from "./material-panel-markup.js";
 
 // The sheet sits beside the manifest that names it, and both are resolved
-// against this module rather than the page, so the app can mount common/web
-// wherever it likes.
+// against this module rather than the page, so the viewer assets can be mounted
+// under any URL path.
 const SHEET_URL = new URL(`../materials/${CATALOG.image}`, import.meta.url).href;
 
 // The swatch's drawn size. The sheet has to be scaled to match it in the same
