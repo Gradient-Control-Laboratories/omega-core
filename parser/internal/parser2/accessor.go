@@ -3,6 +3,9 @@ package parser2
 import "fmt"
 
 func IsAccessor(accessor string) (bool, error) {
+	if len(accessor) == 0 {
+		return false, nil
+	}
 	for _, c := range accessor {
 		if c != 'x' && c != 'y' && c != 'z' && c != 'w' {
 			return false, nil

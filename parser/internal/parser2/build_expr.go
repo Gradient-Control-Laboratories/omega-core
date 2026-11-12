@@ -350,67 +350,11 @@ func buildFactor(buildScope scope.BuilderScope, factor *Factor) (*program.Operan
 		return value, err
 	}
 
-	if access := factor.Access; access != nil {
-		if access.Args != nil && access.Name != program.DAccessor {
-			return value, &participle.ParseError{
-				Pos: access.Pos,
-				Msg: fmt.Sprintf("accessor .%s takes no arguments", access.Name),
-			}
-		}
-		switch access.Name {
-		case program.DAccessor:
-			// Forward-mode derivative with respect to a named variable,
-			// .d(var). Expanded by the autodiff pass.
-			var args []*Expression
-			if access.Args != nil {
-				args = access.Args.Expressions
-			}
-			if value, err = newDerivWrt(buildScope, value, args, access.Pos, access.EndPos); err != nil {
-				return value, err
-			}
-		case program.DTimeAccessor, program.DPAccessor:
-			// Forward-mode derivative: .dtime is d/d(time), .dp is the
-			// spatial gradient d/d(p). Expanded by the autodiff pass.
-			value = newDeriv(value, access.Name, access.EndPos)
-		case program.SecondAccessor:
-			// Second-closest primitive-surface distance. Expanded by the
-			// self-computing-property pass.
-			value = newSecond(value, access.EndPos)
-		case program.BoxAccessor:
-			// Bounding box of the field's solid. Expanded by the
-			// self-computing-property pass.
-			value = newBox(value, access.EndPos)
-		case program.UAccessor, program.VAccessor:
-			// Surface frame coordinate of the field (.u, .v). Expanded by the
-			// self-computing-property pass.
-			value = newSurfaceFrame(value, access.Name, access.EndPos)
-		default:
-			isAccessor, err := IsAccessor(access.Name)
-			if err != nil {
-				return value, &participle.ParseError{
-					Pos: lexer.Position{Line: access.EndPos.Line, Column: access.EndPos.Column - len(access.Name)},
-					Msg: err.Error(),
-				}
-			}
-			if !isAccessor {
-				return value, &participle.ParseError{
-					Pos: lexer.Position{Line: access.EndPos.Line, Column: access.EndPos.Column - len(access.Name)},
-					Msg: fmt.Sprintf("invalid accessor: %s", access.Name),
-				}
-			}
-			value = newAccess(value, access.Name, access.EndPos)
-		}
-	}
-
-	if factor.Index != nil {
-		index, err := buildExpression(buildScope, factor.Index)
+	for _, mod := range factor.Modifiers {
+		value, err = applyModifier(buildScope, value, mod)
 		if err != nil {
 			return value, err
 		}
-		value = program.NewExpression(
-			program.Operation_INDEX, []*program.Operand{value, index},
-			posToLocation(factor.Pos), posToLocation(factor.EndPos),
-		)
 	}
 
 	if factor.Negative {
@@ -435,5 +379,74 @@ func buildFactor(buildScope scope.BuilderScope, factor *Factor) (*program.Operan
 	return program.NewExpression(
 		program.Operation_NOT, []*program.Operand{value},
 		posToLocation(factor.Pos), value.End,
+	), nil
+}
+
+func applyModifier(buildScope scope.BuilderScope, value *program.Operand, mod *Modifier) (*program.Operand, error) {
+	// Invariant: mod is guaranteed non-nil by the parser grammar ("@@*"), with
+	// either Access populated or Bracket set ("@@ | @'[' @@? ']'").
+	if access := mod.Access; access != nil {
+		if access.Args != nil && access.Name != program.DAccessor {
+			return value, &participle.ParseError{
+				Pos: access.Pos,
+				Msg: fmt.Sprintf("accessor .%s takes no arguments", access.Name),
+			}
+		}
+		switch access.Name {
+		case program.DAccessor:
+			// Forward-mode derivative with respect to a named variable,
+			// .d(var). Expanded by the autodiff pass.
+			var args []*Expression
+			if access.Args != nil {
+				args = access.Args.Expressions
+			}
+			return newDerivWrt(buildScope, value, args, access.Pos, access.EndPos)
+		case program.DTimeAccessor, program.DPAccessor:
+			// Forward-mode derivative: .dtime is d/d(time), .dp is the
+			// spatial gradient d/d(p). Expanded by the autodiff pass.
+			return newDeriv(value, access.Name, access.EndPos), nil
+		case program.SecondAccessor:
+			// Second-closest primitive-surface distance. Expanded by the
+			// self-computing-property pass.
+			return newSecond(value, access.EndPos), nil
+		case program.BoxAccessor:
+			// Bounding box of the field's solid. Expanded by the
+			// self-computing-property pass.
+			return newBox(value, access.EndPos), nil
+		case program.UAccessor, program.VAccessor:
+			// Surface frame coordinate of the field (.u, .v). Expanded by the
+			// self-computing-property pass.
+			return newSurfaceFrame(value, access.Name, access.EndPos), nil
+		default:
+			isAccessor, err := IsAccessor(access.Name)
+			if err != nil {
+				return value, &participle.ParseError{
+					Pos: lexer.Position{Line: access.EndPos.Line, Column: access.EndPos.Column - len(access.Name)},
+					Msg: err.Error(),
+				}
+			}
+			if !isAccessor {
+				return value, &participle.ParseError{
+					Pos: lexer.Position{Line: access.EndPos.Line, Column: access.EndPos.Column - len(access.Name)},
+					Msg: fmt.Sprintf("invalid accessor: %s", access.Name),
+				}
+			}
+			return newAccess(value, access.Name, access.EndPos), nil
+		}
+	}
+
+	if mod.Index == nil {
+		return value, &participle.ParseError{
+			Pos: mod.Pos,
+			Msg: "index expression cannot be empty",
+		}
+	}
+	index, err := buildExpression(buildScope, mod.Index)
+	if err != nil {
+		return value, err
+	}
+	return program.NewExpression(
+		program.Operation_INDEX, []*program.Operand{value, index},
+		value.Start, posToLocation(mod.EndPos),
 	), nil
 }
