@@ -98,7 +98,8 @@ function placeMeshInSource(source, index, filename) {
     const keyword = 'importMesh';
     const line = `${keyword} ${index} "${filename}";`;
     const re = new RegExp(`^\\s*${keyword}\\s+${index}\\s+"[^"]+"\\s*;`, 'm');
-    const headerRe = /^(?:\s*\/\/.*\n|\s*import\s+(?:(?:\.|[A-Za-z_]\w*)\s+)?"[^"]+"\s*;\s*\n|\s*import(?:Mesh|Step)\s+\d+\s+"[^"]+"\s*;\s*\n)*/;
+    // The header includes an @scene directive, which must precede every statement.
+    const headerRe = /^(?:\s*\/\/.*\n|\s*@scene\s*\([^)]*\)\s*;?[ \t]*\n|\s*import\s+(?:(?:\.|[A-Za-z_]\w*)\s+)?"[^"]+"\s*;\s*\n|\s*import(?:Mesh|Step)\s+\d+\s+"[^"]+"\s*;\s*\n)*/;
     const at = (source.match(headerRe) || [''])[0].length;
     const imported = re.test(source) ? source.replace(re, line) : `${source.slice(0, at)}${line}\n${source.slice(at)}`;
     return addAssetPlacement(imported, index);

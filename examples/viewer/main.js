@@ -351,7 +351,7 @@ eventManager.addListener("canvas/update-shader", (event) => {
             event.wgsl,
             event.shapeCount || 1,
             event.shapeNames || [],
-            event.meshSdfSlots || event.meshSdfBindings || [],
+            event.meshSdfBindings || event.meshSdfSlots || [],
             event.sliders || [],
             event.uiControls || [],
         );
@@ -809,6 +809,20 @@ initMeshImport({
         const source = getGslSourceForServer();
         if (!source || source.trim() === "") return;
         compileGsl(source);
+    },
+    // Send an STL to the server before the import is written into the program,
+    // so bvhSdf / vdbSdf on its slot load it when the program compiles.
+    onImported: async (index, file, bytes) => {
+        if (!/\.stl$/i.test(file.name)) return;
+        const res = await fetch(`/api/asset?name=${encodeURIComponent(file.name)}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/octet-stream" },
+            body: bytes,
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || `upload failed (HTTP ${res.status})`);
+        }
     },
     dropTarget: document.getElementById("canvas-container"),
 });

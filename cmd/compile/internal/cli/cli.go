@@ -19,6 +19,7 @@ import (
 	"gradientcontrol.com/omega/core/backend/wgsl"
 	"gradientcontrol.com/omega/core/cmd/compile/internal/config"
 	"gradientcontrol.com/omega/core/eval"
+	"gradientcontrol.com/omega/core/internal/meshimport"
 	"gradientcontrol.com/omega/core/internal/version"
 	"gradientcontrol.com/omega/core/parser"
 	"gradientcontrol.com/omega/core/program"
@@ -169,6 +170,17 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		return fmt.Errorf("assembling program: %w", asmErr)
 	}
 
+	// The meshes bvhSdf and vdbSdf read: importMesh files beside the source (or in the working directory, for stdin).
+	docDir := "."
+	if len(cfg.Sources) > 0 {
+		docDir = filepath.Dir(cfg.Sources[0])
+	}
+	// Only the targets that evaluate the field load them; wgsl leaves binding the textures to its host.
+	meshDirs := meshDirsFor(docDir, srcPaths)
+	loadMeshes := func() ([]meshimport.Use, error) {
+		return meshimport.Resolve(res.Program, res.Slots, meshimport.Dirs(meshDirs...))
+	}
+
 	// Backend target emission
 	var outBytes []byte
 	var zipOutput bool
@@ -206,7 +218,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 				}
 				return fmt.Errorf("%d source files and no @scene to take a box from: name the box with --bbox", len(sourceTexts))
 			}
-			box, boxErr := autoBbox(primarySourceText, srcPaths)
+			box, boxErr := autoBbox(primarySourceText, srcPaths, meshDirs)
 			if boxErr != nil {
 				return boxErr
 			}
@@ -227,6 +239,9 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 			meshOpts = append(meshOpts, mesh.WithProgress(func(stage string, completed, total uint32) {
 				fmt.Fprintf(stderr, "[mesh] %s (%d/%d)\n", stage, completed, total)
 			}))
+		}
+		if regErr := registerMeshes(loadMeshes); regErr != nil {
+			return regErr
 		}
 		// Each top-level return is its own body: one STL, a zip of <name>.stl for several, or a 3MF object or GLB node each.
 		bodies, meshErr := mesh.MeshBodies(res.Program, meshOpts...)
@@ -267,7 +282,12 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		outBytes = packed
 
 	case config.TargetTape:
-		tapeOpts := []tape.Option{}
+		meshUses, loadErr := loadMeshes()
+		if loadErr != nil {
+			return loadErr
+		}
+		bvhOracles, vdbOracles := meshimport.Oracles(meshUses)
+		tapeOpts := []tape.Option{tape.MeshOracles(bvhOracles), tape.VdbOracles(vdbOracles)}
 		if cfg.Verbose {
 			tapeOpts = append(tapeOpts, tape.WithProgress(func(stage string, completed, total uint32) {
 				fmt.Fprintf(stderr, "[tape] %s (%d/%d)\n", stage, completed, total)
@@ -287,6 +307,9 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		outBytes = []byte(jsCode)
 
 	case config.TargetPNG:
+		if regErr := registerMeshes(loadMeshes); regErr != nil {
+			return regErr
+		}
 		pngBytes, pngErr := renderPNG(res.Program, cfg)
 		if pngErr != nil {
 			return pngErr
@@ -352,6 +375,27 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	return nil
 }
 
+// meshDirsFor is where a document's importMesh files are looked for: its own folder first, then each source path (a
+// dependency package's files sit in its folder under one).
+func meshDirsFor(docDir string, srcPaths []string) []string {
+	dirs := []string{docDir}
+	for _, p := range srcPaths {
+		if filepath.Clean(p) != filepath.Clean(docDir) {
+			dirs = append(dirs, p)
+		}
+	}
+	return dirs
+}
+
+// registerMeshes loads the document's meshes and registers them as the oracles its bvhSdf and vdbSdf calls read.
+func registerMeshes(load func() ([]meshimport.Use, error)) error {
+	uses, err := load()
+	if err != nil {
+		return err
+	}
+	return meshimport.Register(uses)
+}
+
 // renderPNG is the png target: the program's field raymarched on the CPU by the viewer's lit renderer, from each
 // of cfg.Views, tiled two across into one image. It draws the field itself, never a mesh of it.
 func renderPNG(prog *program.Program, cfg *config.Config) ([]byte, error) {
@@ -396,7 +440,7 @@ const autoRescans = 8
 // its own size, where the grid's cells are a few mm -- and the box grows by what it finds, until it no longer reaches
 // the edge of the region searched. It is a fit by sampling, not a proof: a field's interval bounds through its
 // gradient-scaled blends (unionRoundExact and the like) are unbounded, so a box cannot be proven for them.
-func autoBbox(code string, srcPaths []string) ([6]float32, error) {
+func autoBbox(code string, srcPaths, meshDirs []string) ([6]float32, error) {
 	var box [6]float32
 	returns := eval.TopLevelReturnExprs(code)
 	if len(returns) == 0 {
@@ -411,6 +455,7 @@ func autoBbox(code string, srcPaths []string) ([6]float32, error) {
 		opts = append(opts, assembler.SourcePaths(srcPaths...))
 	}
 	ev := eval.New(nil, nil, opts...)
+	ev.LoadMeshesFrom(meshDirs...)
 	ctx := context.Background()
 	found, err := ev.Bounds(ctx, nil, code, "", expr, [6]float64{}, 64)
 	if err != nil {

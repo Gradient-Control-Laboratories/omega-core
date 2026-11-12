@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"encoding/json"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -122,9 +123,17 @@ func (s *Server) handleCompile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	req.Meshes = s.meshFinder()
 	resp := compiler.Compile(req, s.cfg.SourcePaths, func(stage, label string, completed, total uint32) {
 		s.emitProgress(req.ClientID, req.ID, stage, label, completed, total)
 	})
+	if usesMeshes(req.Source) {
+		if len(resp.Errors) > 0 {
+			log.Printf("compile: %s", resp.Errors[0].Message)
+		} else {
+			log.Printf("compile: %d mesh grids, %d placed meshes", len(resp.MeshSdfBindings), meshDeclCount(resp.MeshDecls))
+		}
+	}
 
 	writeJSON(w, http.StatusOK, resp)
 }
@@ -166,6 +175,7 @@ func (s *Server) handleMesh(w http.ResponseWriter, r *http.Request) {
 		Subdivision: payload.Subdivision,
 		Algo:        payload.Algo,
 		Time:        payload.Time,
+		Meshes:      s.meshFinder(),
 		Bodies:      payload.Bodies,
 	}
 	if len(payload.Bbox) == 6 {
