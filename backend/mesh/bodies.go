@@ -111,8 +111,8 @@ func topLevelReturns(prog *program.Program) ([]*program.Operand, []string) {
 
 // WriteSTLZip writes bodies as a zip holding <name>.stl for each, in order.
 // The names are made safe as file names and one that comes out like an
-// earlier one is suffixed -2, -3, ..., as omega's browser and server zips
-// name entries (export-panel.js and agent/manifold compose.go zipEntryNames).
+// earlier one is suffixed -2, -3, ..., as the viewer's browser exports name
+// zip entries (examples/viewer/panels/export-panel.js zipEntryNames).
 func WriteSTLZip(w io.Writer, bodies []Body) error {
 	zw := zip.NewWriter(w)
 	names := make([]string, len(bodies))

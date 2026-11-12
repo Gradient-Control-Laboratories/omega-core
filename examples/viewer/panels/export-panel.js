@@ -37,7 +37,7 @@
 //   clearError()         optional; cleared after a successful union export
 //   track(name, params)  optional analytics hook
 //   onServerExport(detail, surfaceBbox, bodyBoxes, algo, format)  optional;
-//                           server-side STL export. bodyBoxes maps each visible body's return
+//                           server-side export. bodyBoxes maps each visible body's return
 //                           index to its measured box (see measureBodyBoxes),
 //                           or is null when they could not be measured. algo is
 //                           the mesher picked: "mdc" (Server DC) or
@@ -966,8 +966,11 @@ export function initExportPanel(hooks) {
         // to do.
         const tape = formatSelect.value === 'tape';
         const onServer = mesherSelect.value === 'server' || mesherSelect.value === 'server-mc';
-        const serverFormatted = !tape && onServer && !deps.serverResults && !!deps.serverFormats;
-        const stlOnly = !tape && onServer && !deps.serverResults && !deps.serverFormats;
+        // A server export the app downloads itself is STL only, unless the
+        // server writes the format (serverFormats); either way it is not cleaned.
+        const serverDirect = !tape && onServer && !deps.serverResults;
+        const serverFormatted = serverDirect && !!deps.serverFormats;
+        const stlOnly = serverDirect && !deps.serverFormats;
         if (stlOnly) formatSelect.value = 'stl';
         if (stlOnly || serverFormatted) cleanBox.checked = false;
         formatSelect.disabled = stlOnly;

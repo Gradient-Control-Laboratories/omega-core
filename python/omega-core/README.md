@@ -7,6 +7,7 @@ a Python client, standard library only, for querying a model's field.
 ```sh
 pip install omega-core
 gsl compile -t stl -o part.stl part.gsl     # mesh: depth 9, dual contouring, over the @scene box
+gsl compile -t 3mf -o part.3mf part.gsl     # one file, each returned body an object in its own color
 gsl render --views iso,top --light -o part.png part.gsl
 gsl eval --help                              # querying the field, as JSON
 ```
