@@ -634,38 +634,42 @@ func revolved(profile, axisPoint, axisDirection boxVal) boxVal {
 	dx, dy := planar(axisDirection.op, 0), planar(axisDirection.op, 1)
 	norm := sqrtOp(addOp(mulOp(dx, dx), mulOp(dy, dy)))
 	dx, dy = divOp(dx, norm), divOp(dy, norm)
-	var alongLo, alongHi *program.Operand
-	out := num(0)
-	for _, x := range []*program.Operand{b.lo[0], b.hi[0]} {
-		for _, y := range []*program.Operand{b.lo[1], b.hi[1]} {
-			ox, oy := subOp(x, ax), subOp(y, ay)
-			along := addOp(mulOp(ox, dx), mulOp(oy, dy))
-			if alongLo == nil {
-				alongLo, alongHi = along, along
-			} else {
-				alongLo, alongHi = minOp(alongLo, along), maxOp(alongHi, along)
-			}
-			out = maxOp(out, subOp(mulOp(ox, dy), mulOp(oy, dx)))
-		}
-	}
+	adx, ady := absOp(dx), absOp(dy)
+	// The box as a centre and half widths, so each of its bounds is read a
+	// few times and not once a corner: a profile's bounds are whole
+	// expressions, and this box is evaluated wherever the part's is.
+	cx, hx := centerHalf(b, 0)
+	cy, hy := centerHalf(b, 1)
+	ox, oy := subOp(cx, ax), subOp(cy, ay)
+	along := addOp(timesOp(ox, dx), timesOp(oy, dy))
+	alongHalf := addOp(timesOp(hx, adx), timesOp(hy, ady))
+	out := maxOp(num(0), addOp(subOp(timesOp(ox, dy), timesOp(oy, dx)), addOp(timesOp(hx, ady), timesOp(hy, adx))))
 	bx := &bbox{}
-	for i, d := range []*program.Operand{dx, dy} {
-		a := ax
+	for i := 0; i < 2; i++ {
+		a, d, ad, across := ax, dx, adx, ady
 		if i == 1 {
-			a = ay
+			a, d, ad, across = ay, dy, ady, adx
 		}
 		// The cylinder's discs stand across the line, so they reach
 		// out * sqrt(1 - d[i]^2) along axis i: out times the other component.
-		across := mulOp(out, absOp(dy))
-		if i == 1 {
-			across = mulOp(out, absOp(dx))
-		}
-		e0, e1 := mulOp(d, alongLo), mulOp(d, alongHi)
-		bx.lo[i] = subOp(addOp(a, minOp(e0, e1)), across)
-		bx.hi[i] = addOp(addOp(a, maxOp(e0, e1)), across)
+		centre := addOp(a, timesOp(d, along))
+		half := addOp(timesOp(ad, alongHalf), timesOp(across, out))
+		bx.lo[i], bx.hi[i] = subOp(centre, half), addOp(centre, half)
 	}
 	bx.lo[2], bx.hi[2] = negOp(out), out
 	return boxVal{box: bx, growth: profile.growth, limit: profile.limit}
+}
+
+// timesOp is mulOp that knows a literal zero: an axis along X or Y has one in
+// its direction, and the term it multiplies is a whole bound.
+func timesOp(a, b *program.Operand) *program.Operand {
+	if v, ok := literal(a); ok && v == 0 {
+		return num(0)
+	}
+	if v, ok := literal(b); ok && v == 0 {
+		return num(0)
+	}
+	return mulOp(a, b)
 }
 
 // planar is component i of a point of the sketch plane, a list of two.

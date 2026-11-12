@@ -251,20 +251,36 @@ profileBoundsXY(points) {
 }
 
 // A polygon profile's u: the distance along the loop, from its first point, to
-// the point of the loop nearest p. Each edge offers its own nearest point and
-// the nearest of those is kept, with the length of the edges before it. Where
-// a vertex is nearest, the two edges that meet there agree on it.
+// the point of the loop nearest p. Each edge offers its own nearest point; a
+// first pass finds how near the nearest of them is, and a second keeps the
+// distance along the loop of the edge that is that near, the length of the
+// edges before it and its own station. Where a vertex is nearest, the two
+// edges that meet there agree on it, and at the first point the loop's whole
+// length is kept over zero.
+//
+// It is two passes, each reading what it carries once or twice, and not one
+// that carries the nearest so far with its distance: unrolled, that one reads
+// what it carries five times an edge and grows fivefold with every edge.
 profileRunXY(points) {
   count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
-  return reduce([nothing, 0, 0], (best, start, index) {
-    edge = points[mod(index + 1, count)] - start;
-    edgeLength = length(edge);
-    offset = p.xy - start;
-    station = clamp(dot(offset, edge) / edgeLength, 0, edgeLength);
-    reach = length(offset - edge / edgeLength * station);
-    nearer = reach < best.x;
-    return [nearer ? reach : best.x, nearer ? best.z + station : best.y, best.z + edgeLength];
-  }, points).y;
+  nearest = reduce([nothing, 0], (best, start, index) {
+    run = profileEdgeRun(start, points[mod(index + 1, count)]);
+    return [min(best.x, run.x), 0];
+  }, points).x;
+  return reduce([0, 0], (best, start, index) {
+    run = profileEdgeRun(start, points[mod(index + 1, count)]);
+    return [max(best.x, run.x <= nearest + 1e-4 ? best.y + run.y : 0), best.y + run.z];
+  }, points).x;
+}
+
+// One straight edge's offer to profileRunXY: [the distance from p to its
+// nearest point, that point's distance along the edge, the edge's length].
+profileEdgeRun(start, end) {
+  edge = end - start;
+  edgeLength = length(edge);
+  offset = p.xy - start;
+  station = clamp(dot(offset, edge) / edgeLength, 0, edgeLength);
+  return [length(offset - edge / edgeLength * station), station, edgeLength];
 }
 
 /// The length of the closed polygon through `points`: its perimeter, in mm.
@@ -385,29 +401,38 @@ profileArcCurvature(curvature) {
 // p has turned about the edge's centre since its start, over the curvature;
 // it is held to the edge's own length, and the distance to that point of the
 // edge is its start, its end, or the circline between them.
+// The two passes are profileRunXY's.
 profileArcRunXY(points, curvatures) {
   count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
-  return reduce([nothing, 0, 0], (best, start, index) {
-    end = points[mod(index + 1, count)];
-    curvature = profileArcCurvature(curvatures[index]);
-    chord = end - start;
-    chordLength = length(chord);
-    along = chord / chordLength;
-    sine = curvature * chordLength / 2;
-    cosine = sqrt(max(1 - sine * sine, 0));
-    startTangent = [along.x * cosine + along.y * sine, along.y * cosine - along.x * sine];
-    edgeLength = 2 * asin(clamp(sine, neg(1), 1)) / curvature;
+  nearest = reduce([nothing, 0], (best, start, index) {
+    run = profileArcEdgeRun(start, points[mod(index + 1, count)], curvatures[index]);
+    return [min(best.x, run.x), 0];
+  }, points).x;
+  return reduce([0, 0], (best, start, index) {
+    run = profileArcEdgeRun(start, points[mod(index + 1, count)], curvatures[index]);
+    return [max(best.x, run.x <= nearest + 1e-4 ? best.y + run.y : 0), best.y + run.z];
+  }, points).x;
+}
 
-    offset = p.xy - start;
-    across = offset.x * startTangent.y - offset.y * startTangent.x;
-    carrier = across + curvature / 2 * dot(offset, offset);
-    carrierDistance = 2 * carrier / (1 + sqrt(max(1 + 2 * curvature * carrier, 0)));
-    turned = atan(curvature * dot(offset, startTangent), 1 + curvature * across) / curvature;
-    station = clamp(turned, 0, edgeLength);
-    reach = station <= 0 ? length(offset) : (station >= edgeLength ? length(p.xy - end) : abs(carrierDistance));
-    nearer = reach < best.x;
-    return [nearer ? reach : best.x, nearer ? best.z + station : best.y, best.z + edgeLength];
-  }, points).y;
+// One arc edge's offer to profileArcRunXY, as profileEdgeRun.
+profileArcEdgeRun(start, end, edgeCurvature) {
+  curvature = profileArcCurvature(edgeCurvature);
+  chord = end - start;
+  chordLength = length(chord);
+  along = chord / chordLength;
+  sine = curvature * chordLength / 2;
+  cosine = sqrt(max(1 - sine * sine, 0));
+  startTangent = [along.x * cosine + along.y * sine, along.y * cosine - along.x * sine];
+  edgeLength = 2 * asin(clamp(sine, neg(1), 1)) / curvature;
+
+  offset = p.xy - start;
+  across = offset.x * startTangent.y - offset.y * startTangent.x;
+  carrier = across + curvature / 2 * dot(offset, offset);
+  carrierDistance = 2 * carrier / (1 + sqrt(max(1 + 2 * curvature * carrier, 0)));
+  turned = atan(curvature * dot(offset, startTangent), 1 + curvature * across) / curvature;
+  station = clamp(turned, 0, edgeLength);
+  reach = station <= 0 ? length(offset) : (station >= edgeLength ? length(p.xy - end) : abs(carrierDistance));
+  return [reach, station, edgeLength];
 }
 
 /// The length of the closed profile through `points` whose edges are bent to

@@ -8,7 +8,13 @@
 // axis: its x is the arc length round the stock, the angle u times the stock's
 // radius, and its y is still v, so the L is a pocket wrapped onto a cylinder
 // and cut to a depth along the distance. Both axes run along Y.
-// Lengths are in mm.
+//
+// Each part is coloured by a checkerboard in its own frame, u the angle round
+// its axis and v a length: 24 squares round, and checkerSize mm along v. The
+// sleeve's frame is revolve's, so its v is the distance along the L's
+// outline and the squares follow the section round its corners. The machined
+// part's is the rotary axis's, so its v is the distance along the axis and
+// the squares run straight across the pocket. Lengths are in mm.
 
 // The L: length and width of its arms, the fillet in the inside corner and
 // the round on the heel.
@@ -24,6 +30,15 @@
 @range(20, 40) stockRadius = 26.0;
 @range(1, 12) pocketDepth = 5.0;
 
+// Checkerboard: the length of a square along v.
+@range(2, 12) checkerSize = 6.0;
+
+// Two greys by the parity of the square that (u, v) falls in: 24 squares to
+// a turn of u, which is in radians, and checkerSize mm to a square of v.
+uvChecker(u, v) {
+  return sin(12 * u) * sin(pi * v / checkerSize) > 0 ? color.gray : color.lightGray;
+}
+
 // An L with its heel at the origin. A 90 degree corner arc runs between the
 // two points one radius back from the sharp corner along each side. The loop
 // turns right at the inside corner, so its fillet has negative curvature, and
@@ -36,12 +51,14 @@ bracketProfile() {
     [0, 0, 0, neg(1 / filletRadius), 0, 0, 0, 1 / heelRadius]);
 }
 
-// The sleeve's axis, and the coordinate about it. The profile's x is the
-// distance from the axis, less the bore, and its y is the distance along it.
-sleeveCenter = [-70, 0, 0];
-sleeveDirection = [0, 1, 0];
-turned = axisCylindrical(sleeveCenter, sleeveDirection);
-sleeve = remap(bracketProfile(), [turned.x - boreRadius, turned.z, 0]);
+// Revolved about the line x = -boreRadius in the sketch plane, pointing up Y:
+// the profile lies on the right of the axis's direction. revolve reads the
+// profile at the distance from that line and the distance along it, and gives
+// the sleeve its frame: u the angle round the axis, v the profile's own u.
+// The sleeve is then moved to put its axis at x = -70.
+sleeve = transform.translate(
+  revolve(bracketProfile(), [neg(boreRadius), 0], [0, 1]), [boreRadius - 70, 0, 0]);
+sleeve.color = uvChecker(sleeve.u, sleeve.v);
 
 // The rotary axis, and the coordinate about it.
 rotaryCenter = [60, 0, 0];
@@ -60,5 +77,8 @@ stock = cylinderCapped(
   rotaryCenter - [0, margin, 0], rotaryCenter + [0, armLength + margin, 0], stockRadius);
 pocket = intersectSharp(wrapped, stockRadius - pocketDepth - rotary.x);
 machined = differenceSharp(stock, pocket);
+machined.u = rotary.y;
+machined.v = rotary.z;
+machined.color = uvChecker(machined.u, machined.v);
 
 return sleeve, machined;
