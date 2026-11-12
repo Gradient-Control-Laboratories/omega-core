@@ -230,18 +230,6 @@ func (in *inliner) findBuiltinFunction(fc *program.FnCall, paramCount int) (*pro
 	return nil, nil, ""
 }
 
-// remapsAnyParam reports whether fn, declared in pkgPath, remaps any of its
-// parameters (see remapsParam).
-func (in *inliner) remapsAnyParam(fn *program.Function, pkgPath string) bool {
-	fnScope := in.fileScopeOf(fn, pkgPath)
-	for _, param := range fn.Parameters {
-		if in.remapsParam(fn, param.Name, fnScope, map[remapVisit]bool{}) {
-			return true
-		}
-	}
-	return false
-}
-
 func (in *inliner) findFunctionUncached(fc *program.FnCall, fileScope *scope.PkgFileScope, paramCount int) (*program.FnType, *program.Function, string) {
 	// First check local function scopes in innermost-to-outermost lexical order
 	if fc.Reference.Prefix == "" && len(in.enclosingFns) > 0 {
@@ -367,8 +355,12 @@ func (in *inliner) findFunctionUncached(fc *program.FnCall, fileScope *scope.Pkg
 }
 
 // findCallbackFunction resolves a higher-order operation's callback operand (e.g. from
-// Operation_REDUCE or Operation_MAP) to its underlying Function AST.
-func (in *inliner) findCallbackFunction(cbOp *program.Operand, fileScope *scope.PkgFileScope) *program.Function {
+// Operation_REDUCE or Operation_MAP) to its underlying Function AST. lexical is
+// the chain of function bodies a predicate is walking, outermost first, when
+// the operation sits in one of them rather than in a function being
+// transformed: a callee's map or reduce names a function the callee declares,
+// which in.enclosingFns does not hold.
+func (in *inliner) findCallbackFunction(cbOp *program.Operand, fileScope *scope.PkgFileScope, lexical []*program.Function) *program.Function {
 	if cbOp == nil {
 		return nil
 	}
@@ -381,6 +373,21 @@ func (in *inliner) findCallbackFunction(cbOp *program.Operand, fileScope *scope.
 	}
 	if ref == nil {
 		return nil
+	}
+
+	// 0. Check the bodies being walked, innermost first.
+	if ref.Prefix == "" {
+		for i := len(lexical) - 1; i >= 0; i-- {
+			for _, ft := range lexical[i].FnTypes {
+				if ft.Name == ref.Name {
+					for _, grp := range ft.Groups {
+						if len(grp.Functions) > 0 {
+							return grp.Functions[0]
+						}
+					}
+				}
+			}
+		}
 	}
 
 	// 1. Check enclosing functions from innermost to outermost lexical scope.
