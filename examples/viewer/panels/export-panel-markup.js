@@ -3,6 +3,8 @@
 // the meshers and the Omega Tape format the host passes no handler for (or
 // disables Server DC when `serverExportUnavailable` is set). 3MF is the default
 // format: it is a fifth to a sixth the size of the same triangles as binary STL.
+// GLB is the server's to write, so it is dropped without `serverFormats` and
+// disabled while a browser mesher is picked.
 export const EXPORT_PANEL_MARKUP = `
 <div id="stl-bounds-header">Export <span class="panel-close">&#x2715;</span></div>
 <div class="panel-body">
@@ -10,6 +12,7 @@ export const EXPORT_PANEL_MARKUP = `
         <label for="export-format">Format</label>
         <select id="export-format">
             <option value="3mf" title="One file, each body an object in its own color" selected>3MF (color)</option>
+            <option value="glb" title="One binary glTF, each body a node in its own color">GLB (color)</option>
             <option value="stl">STL</option>
             <option value="tape" title="The program's implicit field as an omega tape, for fidget; not meshed">Omega Tape</option>
         </select>

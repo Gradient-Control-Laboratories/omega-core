@@ -71,6 +71,9 @@ type MeshRequest struct {
 	// Meshes finds the STL files the source's importMesh declarations name,
 	// as on CompileRequest.
 	Meshes meshimport.Finder `json:"-"`
+	// Bodies, when not nil, is the 1-based returns MeshBodies meshes (the
+	// viewer's visible bodies); Mesh ignores it.
+	Bodies []int `json:"bodies,omitempty"`
 }
 
 // Compile executes the in-process GSL compilation pipeline (audio extraction, AST assembly, WGSL codegen, and audio JS codegen).
@@ -172,9 +175,50 @@ func Compile(req CompileRequest, sourcePaths []string, progressFn ProgressFunc) 
 
 // Mesh assembles the GSL source and evaluates a binary STL mesh using the Fidget/Manifold mesh backend.
 func Mesh(req MeshRequest, sourcePaths []string, progressFn ProgressFunc) ([]byte, error) {
-	_, shapeSrc, err := audio.ExtractAudio(req.Source)
+	prog, meshOpts, uses, err := meshSetup(req, sourcePaths, progressFn)
 	if err != nil {
 		return nil, err
+	}
+	return withImportedMeshes(uses, func() ([]byte, error) {
+		return mesh.Mesh(prog, meshOpts...)
+	})
+}
+
+// MeshBodies is Mesh with each top-level return meshed as its own body (mesh.MeshBodies).
+func MeshBodies(req MeshRequest, sourcePaths []string, progressFn ProgressFunc) ([]mesh.Body, error) {
+	prog, meshOpts, uses, err := meshSetup(req, sourcePaths, progressFn)
+	if err != nil {
+		return nil, err
+	}
+	return withImportedMeshes(uses, func() ([]mesh.Body, error) {
+		return mesh.MeshBodies(prog, meshOpts...)
+	})
+}
+
+// withImportedMeshes runs meshFn with the program's imported meshes (uses) in
+// fidget's oracle table. That table is one per process, so it is held from
+// registering this document's meshes to the end of meshing, every body of
+// it, so another document's meshes in the same slots cannot replace them
+// halfway. With no imported meshes it runs meshFn as it is.
+func withImportedMeshes[T any](uses []meshimport.Use, meshFn func() (T, error)) (T, error) {
+	if len(uses) == 0 {
+		return meshFn()
+	}
+	meshesMu.Lock()
+	defer meshesMu.Unlock()
+	if err := meshimport.Register(uses); err != nil {
+		var zero T
+		return zero, err
+	}
+	return meshFn()
+}
+
+// meshSetup assembles req's source, resolves the meshes it imports (from
+// req.Meshes), and builds the mesher options it asks for.
+func meshSetup(req MeshRequest, sourcePaths []string, progressFn ProgressFunc) (*program.Program, []mesh.Option, []meshimport.Use, error) {
+	_, shapeSrc, err := audio.ExtractAudio(req.Source)
+	if err != nil {
+		return nil, nil, nil, err
 	}
 	if strings.TrimSpace(shapeSrc) == "" {
 		shapeSrc = req.Source
@@ -182,15 +226,15 @@ func Mesh(req MeshRequest, sourcePaths []string, progressFn ProgressFunc) ([]byt
 
 	asmRes, err := assembler.Assemble([]string{shapeSrc}, buildAssemblerOptions(sourcePaths, progressFn)...)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 	var uses []meshimport.Use
 	if meshimport.References(asmRes.Program) {
 		if req.Meshes == nil {
-			return nil, errNoMeshFolder
+			return nil, nil, nil, errNoMeshFolder
 		}
 		if uses, err = meshimport.Resolve(asmRes.Program, asmRes.Slots, req.Meshes); err != nil {
-			return nil, err
+			return nil, nil, nil, err
 		}
 	}
 
@@ -211,24 +255,16 @@ func Mesh(req MeshRequest, sourcePaths []string, progressFn ProgressFunc) ([]byt
 	if req.HasBbox {
 		meshOpts = append(meshOpts, mesh.WithBbox(req.Bbox))
 	}
+	if req.Bodies != nil {
+		meshOpts = append(meshOpts, mesh.WithBodies(req.Bodies...))
+	}
 	if progressFn != nil {
 		meshOpts = append(meshOpts, mesh.WithProgress(func(stage string, completed, total uint32) {
 			progressFn("mesh", stage, completed, total)
 		}))
 	}
 
-	if len(uses) == 0 {
-		return mesh.Mesh(asmRes.Program, meshOpts...)
-	}
-	// fidget's oracles are one table per process: hold it from registering this
-	// document's meshes to the end of meshing, so another document's meshes in
-	// the same slots cannot replace them halfway.
-	meshesMu.Lock()
-	defer meshesMu.Unlock()
-	if err := meshimport.Register(uses); err != nil {
-		return nil, err
-	}
-	return mesh.Mesh(asmRes.Program, meshOpts...)
+	return asmRes.Program, meshOpts, uses, nil
 }
 
 // meshesMu serializes the requests that put imported meshes in fidget's

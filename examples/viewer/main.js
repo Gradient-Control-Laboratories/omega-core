@@ -64,7 +64,7 @@ import { initHelpPanel } from "./docs/help-panel.js";
 import { initSliderPanel, renderSliderPanel, sliderAnimTick, previewColor } from "./panels/slider-panel.js";
 import { initMeshImport } from "./panels/mesh-import.js";
 import { initExportPanel } from "./panels/export-panel.js";
-import { initBodyPanel, setBodies, pickBody, materialVariables } from "./panels/body-panel.js";
+import { initBodyPanel, setBodies, pickBody, materialVariables, getVisibleBodies, getBodyStates } from "./panels/body-panel.js";
 
 const clientId = (typeof crypto !== "undefined" && crypto.randomUUID)
     ? crypto.randomUUID()
@@ -439,8 +439,9 @@ async function compileGsl(source) {
 }
 
 // requestStlExport asks the server to mesh the source by algo: "mdc" (the Export panel's Server DC) or
-// "marching-cubes" (Server MC).
-async function requestStlExport(detail, surfaceBbox, algo) {
+// "marching-cubes" (Server MC), and to write it as format ("3mf", "glb" or "stl"). Each body the Bodies panel shows
+// is meshed apart, in the color it shows; an STL of several comes back as a zip of one STL each.
+async function requestStlExport(detail, surfaceBbox, algo, format = "stl") {
     const source = getGslSourceForServer();
     if (!source || source.trim() === "") {
         showNotification(true, "No code to export");
@@ -454,7 +455,12 @@ async function requestStlExport(detail, surfaceBbox, algo) {
         ? surfaceBbox
         : [-ext, -ext, -ext, ext, ext, ext];
 
-    showNotification(false, "Generating STL mesh...", true);
+    // The bodies shown, by 1-based return index, with their chips' colors; no list when the panel lists none.
+    const visible = getVisibleBodies();
+    const bodies = getBodyStates().length > 0 ? visible.map((b) => b.index) : null;
+    const colors = Object.fromEntries(visible.map((b) => [b.index, b.color]));
+
+    showNotification(false, "Generating mesh...", true);
     startErrorTimer("stl export");
 
     try {
@@ -469,6 +475,9 @@ async function requestStlExport(detail, surfaceBbox, algo) {
                 bbox,
                 algo,
                 time: getAnimTime(),
+                format,
+                bodies,
+                colors,
             }),
         });
 
@@ -483,27 +492,30 @@ async function requestStlExport(detail, surfaceBbox, algo) {
             } catch (_) {
                 // ignore JSON parse error on non-JSON body
             }
-            showError(`STL export failed: ${errText}`, false, true);
+            showError(`Export failed: ${errText}`, false, true);
             return false;
         }
 
+        // The reply's own type names the file: one STL, a zip of one STL per body, a 3MF or a GLB.
+        const type = res.headers.get("Content-Type") || "";
+        const fileExt = type.includes("zip") ? "zip" : type.includes("3mf") ? "3mf" : type.includes("gltf-binary") ? "glb" : "stl";
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         const baseName = (currentExampleName || "model.gsl").replace(/\.gsl$/i, "");
         a.href = url;
-        a.download = `${baseName}.stl`;
+        a.download = `${baseName}.${fileExt}`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         setTimeout(() => URL.revokeObjectURL(url), 1000);
-        showNotification(false, `Exported ${baseName}.stl`);
+        showNotification(false, `Exported ${baseName}.${fileExt}`);
         return true;
     } catch (err) {
         stopErrorTimer();
         progressBar.reset();
         const msg = err instanceof Error ? err.message : String(err);
-        showError(`STL export failed: ${msg}`, false, true);
+        showError(`Export failed: ${msg}`, false, true);
         return false;
     }
 }
@@ -818,10 +830,11 @@ initExportPanel({
     getWorldExtent,
     getSource: getGslSourceForServer,
     clearError,
-    onServerExport: (detail, surfaceBbox, _bodyBoxes, algo) => {
-        return requestStlExport(detail, surfaceBbox, algo);
+    onServerExport: (detail, surfaceBbox, _bodyBoxes, algo, format) => {
+        return requestStlExport(detail, surfaceBbox, algo, format);
     },
     serverMarchingCubes: true,
+    serverFormats: true,
 });
 
 // ── Bodies Panel ──
