@@ -148,3 +148,48 @@ func TestFoldMeshIndices(t *testing.T) {
 		t.Fatalf("original package was mutated")
 	}
 }
+
+func TestFoldProgramWithSlots_ColorAndMaterialReturns(t *testing.T) {
+	loc := &program.Location{Line: 1, Column: 1}
+	stepCall := program.NewFnCall(
+		"",
+		"importStep",
+		[]*program.Operand{program.NewValue(float64('p'), loc, loc)},
+		loc,
+		loc,
+	)
+	meshCall := program.NewFnCall(
+		"",
+		"mesh",
+		[]*program.Operand{program.NewValue(3.0, loc, loc)},
+		loc,
+		loc,
+	)
+
+	prog := &program.Program{
+		Primary: &program.Package{
+			Path: "main",
+			Files: []*program.PackageFile{{
+				Path:            "main.gsl",
+				Returns:         []*program.Operand{program.NewValue(0.0, loc, loc)},
+				ColorReturns:    []*program.Operand{stepCall},
+				MaterialReturns: []*program.Operand{meshCall},
+			}},
+		},
+		Dependencies: []*program.Package{{
+			Path: "builtin",
+		}},
+	}
+
+	folded, slots, err := FoldProgramWithSlots(prog)
+	if err != nil {
+		t.Fatalf("FoldProgramWithSlots failed: %v", err)
+	}
+	if len(slots) != 1 {
+		t.Fatalf("expected 1 slot, got %d", len(slots))
+	}
+	val, ok := folded.Primary.Files[0].ColorReturns[0].T.(*program.Operand_Value)
+	if !ok || val.Value != float64(slots[0].Slot) {
+		t.Fatalf("expected ColorReturn importStep folded to slot %d, got %+v", slots[0].Slot, folded.Primary.Files[0].ColorReturns[0])
+	}
+}

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "omega-core"
-# The toolchain's own version (internal/version/version.go), so the wheel and `gsl --version` agree.
+# The toolchain's own version (cmd/internal/version/version.go), so the wheel and `gsl --version` agree.
 dynamic = ["version"]
 description = "omega-core's gsl program (GSL implicit models: compile, mesh, query), packaged as a wheel, with a small launcher."
 readme = "README.md"
@@ -33,7 +33,7 @@ Source = "https://github.com/Gradient-Control-Laboratories/omega-core"
 Issues = "https://github.com/Gradient-Control-Laboratories/omega-core/issues"
 
 [tool.hatch.version]
-path = "../../internal/version/version.go"
+path = "../../cmd/internal/version/version.go"
 pattern = 'var Version = "(?P<version>[^"]+)"'
 
 [tool.hatch.build.targets.wheel]

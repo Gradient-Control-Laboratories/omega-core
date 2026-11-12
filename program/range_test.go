@@ -3,7 +3,6 @@ package program_test
 import (
 	"testing"
 
-	parser "gradientcontrol.com/omega/core/parser"
 	"gradientcontrol.com/omega/core/program"
 )
 
@@ -65,19 +64,52 @@ func TestRangeAnnotation_ConstAccessors(t *testing.T) {
 }
 
 func TestComputeSliderVars(t *testing.T) {
-	src := `@range(1.0, 10.0)
-radius = 5.0;
-scale = radius * 2.0;
-offset = scale + 1.0;
-staticVal = 42.0;
-return offset;
-`
-	res, err := parser.ParsePackage([]string{src})
-	if err != nil {
-		t.Fatalf("ParsePackage failed: %v", err)
+	loc := program.NewLoc(1, 1, 0)
+	pkg := &program.Package{
+		Files: []*program.PackageFile{{
+			Assignments: []*program.Assignment{
+				{
+					Range: &program.Range{
+						Min: program.NewValue(1.0, loc, loc),
+						Max: program.NewValue(10.0, loc, loc),
+					},
+					Variables:  []*program.Variable{{Name: "radius"}},
+					Expression: program.NewValue(5.0, loc, loc),
+				},
+				{
+					Variables: []*program.Variable{{Name: "scale"}},
+					Expression: program.NewExpression(
+						program.Operation_MUL,
+						[]*program.Operand{
+							program.NewReference("", "radius", loc, loc),
+							program.NewValue(2.0, loc, loc),
+						},
+						loc,
+						loc,
+					),
+				},
+				{
+					Variables: []*program.Variable{{Name: "offset"}},
+					Expression: program.NewExpression(
+						program.Operation_ADD,
+						[]*program.Operand{
+							program.NewReference("", "scale", loc, loc),
+							program.NewValue(1.0, loc, loc),
+						},
+						loc,
+						loc,
+					),
+				},
+				{
+					Variables:  []*program.Variable{{Name: "staticVal"}},
+					Expression: program.NewValue(42.0, loc, loc),
+				},
+			},
+			Returns: []*program.Operand{program.NewReference("", "offset", loc, loc)},
+		}},
 	}
 
-	sliderVars := program.ComputeSliderVars(res.Package)
+	sliderVars := program.ComputeSliderVars(pkg)
 	if !sliderVars["radius"] {
 		t.Errorf("expected radius to be in sliderVars")
 	}

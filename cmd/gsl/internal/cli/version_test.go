@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"gradientcontrol.com/omega/core/cmd/gsl/internal/cli"
+	"gradientcontrol.com/omega/core/cmd/internal/version"
 	"gradientcontrol.com/omega/core/internal/test/assert"
 	"gradientcontrol.com/omega/core/internal/test/require"
-	"gradientcontrol.com/omega/core/internal/version"
 )
 
 // gsl --version (and gsl version) says the release in three numbers, without looking for any tool binary.

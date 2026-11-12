@@ -58,7 +58,7 @@ func Build(rootDir string) (*Graph, error) {
 
 		if info.IsDir() {
 			base := info.Name()
-			if base == ".git" || base == "bin" || base == "testdata" {
+			if base == ".git" || base == "bin" || base == "target" || base == "testdata" {
 				return filepath.SkipDir
 			}
 			return nil

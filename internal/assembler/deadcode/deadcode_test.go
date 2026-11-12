@@ -120,3 +120,66 @@ func TestRemoveDeadCodeSingle(t *testing.T) {
 		t.Error("expected function 'used' to be kept")
 	}
 }
+
+func TestDeadcode_PreservesColorAndMaterialReturnsAndRoots(t *testing.T) {
+	loc := &program.Location{Line: 1, Column: 1}
+
+	assignColor := &program.Assignment{
+		Variables:  []*program.Variable{{Name: "usedByColor"}},
+		Expression: program.NewValue(42.0, loc, loc),
+	}
+	assignMat := &program.Assignment{
+		Variables:  []*program.Variable{{Name: "usedByMat"}},
+		Expression: program.NewValue(84.0, loc, loc),
+	}
+	assignDead := &program.Assignment{
+		Variables:  []*program.Variable{{Name: "deadVar"}},
+		Expression: program.NewValue(999.0, loc, loc),
+	}
+
+	file := &program.PackageFile{
+		Path:            "main.gsl",
+		Assignments:     []*program.Assignment{assignColor, assignMat, assignDead},
+		Returns:         []*program.Operand{program.NewValue(1.0, loc, loc)},
+		ColorReturns:    []*program.Operand{program.NewReference("", "usedByColor", loc, loc)},
+		MaterialReturns: []*program.Operand{program.NewReference("", "usedByMat", loc, loc)},
+	}
+	prog := &program.Program{
+		Primary: &program.Package{
+			Path:  "main",
+			Files: []*program.PackageFile{file},
+		},
+	}
+
+	if err := link.References(prog, nil, nil); err != nil {
+		t.Fatalf("link.References failed: %v", err)
+	}
+
+	cleaned, err := deadcode.Remove(prog)
+	if err != nil {
+		t.Fatalf("deadcode.Remove failed: %v", err)
+	}
+
+	cleanedFile := cleaned.Primary.Files[0]
+	assignNames := make(map[string]bool)
+	for _, a := range cleanedFile.Assignments {
+		for _, v := range a.Variables {
+			assignNames[v.Name] = true
+		}
+	}
+	if !assignNames["usedByColor"] {
+		t.Error("expected usedByColor to be preserved")
+	}
+	if !assignNames["usedByMat"] {
+		t.Error("expected usedByMat to be preserved")
+	}
+	if assignNames["deadVar"] {
+		t.Error("expected deadVar to be removed")
+	}
+	if len(cleanedFile.ColorReturns) != 1 {
+		t.Errorf("expected 1 ColorReturn, got %d", len(cleanedFile.ColorReturns))
+	}
+	if len(cleanedFile.MaterialReturns) != 1 {
+		t.Errorf("expected 1 MaterialReturn, got %d", len(cleanedFile.MaterialReturns))
+	}
+}

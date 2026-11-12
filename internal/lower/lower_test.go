@@ -6,7 +6,6 @@ import (
 
 	"gradientcontrol.com/omega/core/internal/closure"
 	"gradientcontrol.com/omega/core/internal/collect"
-	"gradientcontrol.com/omega/core/internal/eval"
 	"gradientcontrol.com/omega/core/internal/link"
 	"gradientcontrol.com/omega/core/internal/lower"
 	"gradientcontrol.com/omega/core/internal/source"
@@ -970,36 +969,16 @@ return M1 - M2;
 	}
 }
 
-func TestLower_Map_PreFoldedConstantCollection(t *testing.T) {
+func TestLower_Map_StructurallyIndexedCollection(t *testing.T) {
 	src := `
 doubleVal(x) { return x * 2.0; }
 a = [10.0, 20.0];
 xs = [a.x, a.y, a.x * 2.0, a.y * 2.0];
 return map(doubleVal, xs);
 `
-	srcMgr := &source.MockManager{}
-	prog, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	prog, err := runPipeline(src)
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if err := link.References(prog, srcMgr, parser.ParsePackage); err != nil {
-		t.Fatalf("link error: %v", err)
-	}
-	if err := closure.Transform(prog); err != nil {
-		t.Fatalf("closure error: %v", err)
-	}
-	if err := link.References(prog, srcMgr, parser.ParsePackage); err != nil {
-		t.Fatalf("link error: %v", err)
-	}
-	if err := types.Analyze(prog); err != nil {
-		t.Fatalf("types error: %v", err)
-	}
-	// Constant fold collections before lower.Transform
-	if _, err := eval.Fold(prog, nil); err != nil {
-		t.Fatalf("eval.Fold error: %v", err)
-	}
-	if err := lower.Transform(prog); err != nil {
-		t.Fatalf("lower error: %v", err)
+		t.Fatalf("runPipeline error: %v", err)
 	}
 
 	ret := prog.Primary.Files[0].Returns[0]

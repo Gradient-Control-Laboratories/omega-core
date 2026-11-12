@@ -68,3 +68,29 @@ func TestAnalyzePackage_BlockedByMultipleSubsystems(t *testing.T) {
 		t.Errorf("expected 2 subsystems, got %d", len(report.Subsystems))
 	}
 }
+
+func TestAuditAll_SkipsNestedInternalAndRecognizesEvalSubsystem(t *testing.T) {
+	g := &graph.Graph{
+		ModulePrefix: "gradientcontrol.com/omega/core",
+		Packages: map[string]*graph.PackageNode{
+			"internal/fidget/internal/gpuparity": {
+				ImportPath: "internal/fidget/internal/gpuparity",
+			},
+			"internal/env": {
+				ImportPath: "internal/env",
+				ImportedBy: []graph.ImportEdge{
+					{FromPkg: "eval", ToPkg: "internal/env"},
+				},
+			},
+			"eval": {ImportPath: "eval"},
+		},
+	}
+
+	reports := scoping.AuditAll(g)
+	if len(reports) != 1 {
+		t.Fatalf("expected 1 root internal report (skipping nested internal/), got %d", len(reports))
+	}
+	if reports[0].Pkg != "internal/env" || !reports[0].CanNarrow || reports[0].SuggestedDest != "eval/internal/env" {
+		t.Errorf("unexpected report: %+v", reports[0])
+	}
+}

@@ -159,26 +159,25 @@ func TestTopoFoldPointAndMeshQueries(t *testing.T) {
 		},
 	}
 
-	if !hasTopoCall(prog.Primary) {
-		t.Fatalf("expected hasTopoCall to be true")
+	if !HasTopoCall(prog) {
+		t.Fatalf("expected HasTopoCall to be true")
 	}
 
-	folded, err := FoldProgram(prog, resolver)
-	if err != nil {
+	if err := FoldProgram(prog, nil, resolver); err != nil {
 		t.Fatalf("FoldProgram failed: %v", err)
 	}
 
-	// Verify assignments were folded to constants
-	if len(folded.Primary.Files[0].Assignments) != 2 {
-		t.Fatalf("expected 2 assignments, got %d", len(folded.Primary.Files[0].Assignments))
+	// Verify assignments were folded to constants in place
+	if len(prog.Primary.Files[0].Assignments) != 2 {
+		t.Fatalf("expected 2 assignments, got %d", len(prog.Primary.Files[0].Assignments))
 	}
 
-	ptAssign := folded.Primary.Files[0].Assignments[0]
+	ptAssign := prog.Primary.Files[0].Assignments[0]
 	if ptAssign.Expression.GetExpression() == nil || ptAssign.Expression.GetExpression().Operation != program.Operation_COLLECT {
 		t.Fatalf("expected pt assignment to be folded to COLLECT vector, got %v", ptAssign.Expression)
 	}
 
-	volAssign := folded.Primary.Files[0].Assignments[1]
+	volAssign := prog.Primary.Files[0].Assignments[1]
 	if volAssign.Expression.GetValue() != 450.0 {
 		t.Fatalf("expected vol assignment to fold to 450.0, got %v", volAssign.Expression.GetValue())
 	}

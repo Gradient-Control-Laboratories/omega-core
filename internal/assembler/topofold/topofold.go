@@ -6,8 +6,6 @@ import (
 
 	"gradientcontrol.com/omega/core/assembler/meshslots"
 	"gradientcontrol.com/omega/core/assembler/topofold"
-	"gradientcontrol.com/omega/core/internal/eval"
-	"gradientcontrol.com/omega/core/internal/meshfold"
 	"gradientcontrol.com/omega/core/program"
 )
 
@@ -49,15 +47,27 @@ func isTopoCall(fc *program.FnCall) bool {
 		meshListQueryBuiltins[name]
 }
 
+// HasTopoCall reports whether any package in prog contains topology or mesh-query builtin calls.
+func HasTopoCall(prog *program.Program) bool {
+	// Invariant: prog, prog.Primary, and prog.Dependencies entries are non-nil.
+	if hasTopoCall(prog.Primary) {
+		return true
+	}
+	for _, dep := range prog.Dependencies {
+		if hasTopoCall(dep) {
+			return true
+		}
+	}
+	return false
+}
+
 // hasTopoCall returns true if the package contains any topology-builtin calls.
 func hasTopoCall(pkg *program.Package) bool {
-	if pkg == nil {
-		return false
-	}
+	// Invariant: pkg and its AST slice elements (Files, Assignments, FnTypes, Groups, Functions, Operands) are non-nil.
 	found := false
 	var walkOp func(op *program.Operand)
 	walkOp = func(op *program.Operand) {
-		if op == nil || found {
+		if found {
 			return
 		}
 		switch t := op.T.(type) {
@@ -80,7 +90,7 @@ func hasTopoCall(pkg *program.Package) bool {
 	var walkFnType func(ft *program.FnType)
 
 	walkAssignment = func(a *program.Assignment) {
-		if a == nil || found {
+		if found {
 			return
 		}
 		walkOp(a.Expression)
@@ -92,7 +102,7 @@ func hasTopoCall(pkg *program.Package) bool {
 	}
 
 	walkFnType = func(ft *program.FnType) {
-		if ft == nil || found {
+		if found {
 			return
 		}
 		for _, g := range ft.Groups {
@@ -120,104 +130,74 @@ func hasTopoCall(pkg *program.Package) bool {
 		for _, r := range file.Returns {
 			walkOp(r)
 		}
+		for _, r := range file.ColorReturns {
+			walkOp(r)
+		}
+		for _, r := range file.MaterialReturns {
+			walkOp(r)
+		}
 	}
 	return found
 }
 
-// FoldProgram folds all topology and mesh-property builtin calls across the entire
-// program graph using the provided GeometryResolver.
-func FoldProgram(prog *program.Program, resolver topofold.GeometryResolver) (*program.Program, error) {
-	if prog == nil || resolver == nil {
-		return prog, nil
-	}
-
-	// Fast path: check if any package has topology calls.
-	anyTopo := false
-	if prog.Primary != nil && hasTopoCall(prog.Primary) {
-		anyTopo = true
-	}
-	if !anyTopo {
-		for _, dep := range prog.Dependencies {
-			if dep != nil && hasTopoCall(dep) {
-				anyTopo = true
-				break
-			}
-		}
-	}
-	if !anyTopo {
-		return prog, nil
-	}
-
-	// Assign mesh slots for the program graph.
-	slotTable, slotResolver := meshslots.Assign(prog.Primary, prog.GetImport)
-
-	// Clone & slot-fold the program graph so that mesh slot parameters are constants.
-	foldedProg, err := meshfold.FoldProgramMeshIndices(prog, slotResolver)
-	if err != nil {
-		return nil, fmt.Errorf("topofold: mesh slots folding failed: %w", err)
-	}
-
-	gi := foldedProg.GetImport
-	foldingGI := meshfold.FoldingGetImport(gi, slotResolver)
-
-	// Fold Primary package if it has topo calls.
-	if foldedProg.Primary != nil && hasTopoCall(foldedProg.Primary) {
-		if err := foldPackage(foldedProg.Primary, "", slotTable, slotResolver, foldingGI, resolver); err != nil {
-			return nil, err
+// FoldProgram folds all topology and mesh-property builtin calls across prog in place
+// using pre-folded constant values and the provided GeometryResolver.
+func FoldProgram(prog *program.Program, importSlots []meshslots.Import, resolver topofold.GeometryResolver) error {
+	// Invariant: prog, prog.Primary, prog.Dependencies entries, and resolver are non-nil,
+	// and upstream constant folding has already populated ConstValues on constant expressions.
+	if hasTopoCall(prog.Primary) {
+		if err := foldPackage(prog.Primary, "", true, importSlots, resolver); err != nil {
+			return err
 		}
 	}
 
-	// Fold dependent packages.
-	for _, dep := range foldedProg.Dependencies {
-		if dep != nil && hasTopoCall(dep) {
-			if err := foldPackage(dep, dep.Path, slotTable, slotResolver, foldingGI, resolver); err != nil {
-				return nil, err
+	for _, dep := range prog.Dependencies {
+		if hasTopoCall(dep) {
+			if err := foldPackage(dep, dep.Path, false, importSlots, resolver); err != nil {
+				return err
 			}
 		}
 	}
 
-	return foldedProg, nil
+	return nil
 }
 
 // foldPackage folds all topology references within a single package in place.
 func foldPackage(
 	pkg *program.Package,
 	pkgPath string,
+	isPrimary bool,
 	slotTable []meshslots.Import,
-	slotResolver meshslots.Resolver,
-	gi program.GetImportFunc,
 	resolver topofold.GeometryResolver,
 ) error {
-	placements, placementCounts, err := extractPlacements(pkg, gi)
-	if err != nil {
-		return fmt.Errorf("failed to resolve mesh placements: %w", err)
-	}
+	placements, placementCounts := extractPlacements(pkg)
 
 	folder := &topoFolder{
-		pkg:             pkg,
-		pkgPath:         pkgPath,
-		gi:              gi,
-		slots:           slotResolver,
-		bodySlots:       bodySlotsFor(pkg, pkgPath, slotTable),
+		bodySlots:       bodySlotsFor(pkg, pkgPath, isPrimary, slotTable),
 		placements:      placements,
 		placementCounts: placementCounts,
 		resolver:        resolver,
 		cachedMeshes:    make(map[int]topofold.AnnotatedMesh),
 	}
 
+	// Invariant: pkg.Files and its AST slice elements are non-nil.
 	for _, file := range pkg.Files {
-		if file == nil {
-			continue
-		}
-		if err := folder.foldAssignments(&file.Assignments, nil, nil); err != nil {
+		consts, err := folder.foldAssignments(&file.Assignments, nil)
+		if err != nil {
 			return err
 		}
 		for _, ft := range file.FnTypes {
-			if err := folder.foldFnType(ft, nil, nil); err != nil {
+			if err := folder.foldFnType(ft, consts); err != nil {
 				return err
 			}
 		}
-		if err := folder.foldReturns(&file.Returns, nil, nil); err != nil {
+		if err := folder.foldReturns(&file.Returns, consts); err != nil {
+			return err
+		}
+		if err := folder.foldReturns(&file.ColorReturns, consts); err != nil {
+			return err
+		}
+		if err := folder.foldReturns(&file.MaterialReturns, consts); err != nil {
 			return err
 		}
 	}
@@ -226,7 +206,7 @@ func foldPackage(
 }
 
 // bodySlotsFor lists a package's STEP-import slots in declaration order.
-func bodySlotsFor(p *program.Package, pkgPath string, slotTable []meshslots.Import) []int {
+func bodySlotsFor(p *program.Package, pkgPath string, isPrimary bool, slotTable []meshslots.Import) []int {
 	var out []int
 	for _, f := range p.Files {
 		for _, si := range f.StepImports {
@@ -234,7 +214,7 @@ func bodySlotsFor(p *program.Package, pkgPath string, slotTable []meshslots.Impo
 		}
 	}
 	for _, imp := range slotTable {
-		if imp.PkgPath == pkgPath && imp.Kind == "step" {
+		if imp.Kind == "step" && (imp.PkgPath == pkgPath || (isPrimary && imp.PkgPath == p.Path)) {
 			out = append(out, imp.Slot)
 		}
 	}
@@ -242,10 +222,6 @@ func bodySlotsFor(p *program.Package, pkgPath string, slotTable []meshslots.Impo
 }
 
 type topoFolder struct {
-	pkg             *program.Package
-	pkgPath         string
-	gi              program.GetImportFunc
-	slots           meshslots.Resolver
 	bodySlots       []int
 	placements      map[int][]float64
 	placementCounts map[int]int
@@ -260,70 +236,77 @@ func (f *topoFolder) errorAt(loc *program.Location, msg string) error {
 	return fmt.Errorf("%s", msg)
 }
 
-func (f *topoFolder) foldAssignments(assignments *[]*program.Assignment, outerAssignments []*program.Assignment, outerFnTypes []*program.FnType) error {
-	visibleAssignments := append([]*program.Assignment(nil), outerAssignments...)
-	visibleFnTypes := outerFnTypes
+func copyConsts(src map[string][]float64) map[string][]float64 {
+	dst := make(map[string][]float64, len(src))
+	for k, v := range src {
+		dst[k] = v
+	}
+	return dst
+}
+
+func (f *topoFolder) foldAssignments(assignments *[]*program.Assignment, outerConsts map[string][]float64) (map[string][]float64, error) {
+	consts := copyConsts(outerConsts)
 	out := make([]*program.Assignment, 0, len(*assignments))
+	// Invariant: *assignments slice elements are non-nil.
 	for _, a := range *assignments {
-		if a == nil {
-			continue
-		}
 		if fc := topoCallOf(a.Expression); fc != nil && topoNormalBuiltins[fc.Reference.Name] {
 			if len(a.Variables) != 2 {
-				return f.errorAt(a.Expression.GetStart(), fmt.Sprintf(
+				return nil, f.errorAt(a.Expression.GetStart(), fmt.Sprintf(
 					"%s returns two values (point, normal); assign both: pt, n = %s(...)", fc.Reference.Name, fc.Reference.Name))
 			}
-			point, normal, err := f.evalNormalCall(fc, a.Expression, visibleAssignments, visibleFnTypes)
+			point, normal, err := f.evalNormalCall(fc, a.Expression, consts)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			a1 := constAssignment(a, a.Variables[0].Name, a.Expression, point)
 			a2 := constAssignment(a, a.Variables[1].Name, a.Expression, normal)
 			out = append(out, a1, a2)
-			visibleAssignments = append(visibleAssignments, a1, a2)
+			consts[a1.Variables[0].Name] = a1.Expression.ConstValues
+			consts[a2.Variables[0].Name] = a2.Expression.ConstValues
 			continue
 		}
 
-		if err := f.foldOperand(a.Expression, visibleAssignments, visibleFnTypes); err != nil {
-			return err
+		if err := f.foldOperand(a.Expression, consts); err != nil {
+			return nil, err
 		}
 		for _, v := range a.Variables {
 			for _, p := range v.Properties {
-				if err := f.foldOperand(p.Expression, visibleAssignments, visibleFnTypes); err != nil {
-					return err
+				if err := f.foldOperand(p.Expression, consts); err != nil {
+					return nil, err
 				}
+			}
+		}
+		if len(a.Variables) == 1 {
+			if vals, ok := constValues(a.Expression, consts); ok {
+				consts[a.Variables[0].Name] = vals
+			} else {
+				delete(consts, a.Variables[0].Name)
 			}
 		}
 		out = append(out, a)
-		visibleAssignments = append(visibleAssignments, a)
 	}
 	*assignments = out
-	return nil
+	return consts, nil
 }
 
-func (f *topoFolder) foldFnType(ft *program.FnType, visibleAssignments []*program.Assignment, visibleFnTypes []*program.FnType) error {
-	if ft == nil {
-		return nil
-	}
+func (f *topoFolder) foldFnType(ft *program.FnType, outerConsts map[string][]float64) error {
+	// Invariant: ft, ft.Groups, and g.Functions elements are non-nil.
 	for _, g := range ft.Groups {
-		if g == nil {
-			continue
-		}
 		for _, fn := range g.Functions {
-			if fn == nil {
-				continue
+			paramShadowed := copyConsts(outerConsts)
+			for _, p := range fn.Parameters {
+				delete(paramShadowed, p.Name)
 			}
-			if err := f.foldAssignments(&fn.Assignments, visibleAssignments, visibleFnTypes); err != nil {
+			innerConsts, err := f.foldAssignments(&fn.Assignments, paramShadowed)
+			if err != nil {
 				return err
 			}
-			innerAssignments := append(append([]*program.Assignment(nil), visibleAssignments...), fn.Assignments...)
-			innerFnTypes := append(append([]*program.FnType(nil), visibleFnTypes...), fn.FnTypes...)
 			for _, subFt := range fn.FnTypes {
-				if err := f.foldFnType(subFt, innerAssignments, innerFnTypes); err != nil {
+				if err := f.foldFnType(subFt, innerConsts); err != nil {
 					return err
 				}
 			}
-			if err := f.foldReturns(&fn.Returns, innerAssignments, innerFnTypes); err != nil {
+			if err := f.foldReturns(&fn.Returns, innerConsts); err != nil {
 				return err
 			}
 		}
@@ -331,18 +314,18 @@ func (f *topoFolder) foldFnType(ft *program.FnType, visibleAssignments []*progra
 	return nil
 }
 
-func (f *topoFolder) foldReturns(returns *[]*program.Operand, visibleAssignments []*program.Assignment, visibleFnTypes []*program.FnType) error {
+func (f *topoFolder) foldReturns(returns *[]*program.Operand, consts map[string][]float64) error {
 	out := make([]*program.Operand, 0, len(*returns))
 	for _, op := range *returns {
 		if fc := topoCallOf(op); fc != nil && topoNormalBuiltins[fc.Reference.Name] {
-			point, normal, err := f.evalNormalCall(fc, op, visibleAssignments, visibleFnTypes)
+			point, normal, err := f.evalNormalCall(fc, op, consts)
 			if err != nil {
 				return err
 			}
 			out = append(out, constVec(op, point), constVec(op, normal))
 			continue
 		}
-		if err := f.foldOperand(op, visibleAssignments, visibleFnTypes); err != nil {
+		if err := f.foldOperand(op, consts); err != nil {
 			return err
 		}
 		out = append(out, op)
@@ -351,10 +334,8 @@ func (f *topoFolder) foldReturns(returns *[]*program.Operand, visibleAssignments
 	return nil
 }
 
-func (f *topoFolder) foldOperand(op *program.Operand, visibleAssignments []*program.Assignment, visibleFnTypes []*program.FnType) error {
-	if op == nil {
-		return nil
-	}
+func (f *topoFolder) foldOperand(op *program.Operand, consts map[string][]float64) error {
+	// Invariant: op is non-nil.
 	switch t := op.T.(type) {
 	case *program.Operand_FnCall:
 		fc := t.FnCall
@@ -364,44 +345,52 @@ func (f *topoFolder) foldOperand(op *program.Operand, visibleAssignments []*prog
 					"%s returns two values (point, normal) and cannot be used inside an expression; assign them first: pt, n = %s(...)", fc.Reference.Name, fc.Reference.Name))
 			}
 			if meshQueryBuiltins[fc.Reference.Name] {
-				v, err := f.evalMeshQueryCall(fc, op, visibleAssignments, visibleFnTypes)
+				v, err := f.evalMeshQueryCall(fc, op, consts)
 				if err != nil {
 					return err
 				}
-				op.T = constScalar(op, v).T
+				folded := constScalar(op, v)
+				op.T = folded.T
+				op.ConstValues = folded.ConstValues
 				return nil
 			}
 			if meshPointQueryBuiltins[fc.Reference.Name] {
-				point, err := f.evalMeshPointQueryCall(fc, op, visibleAssignments, visibleFnTypes)
+				point, err := f.evalMeshPointQueryCall(fc, op, consts)
 				if err != nil {
 					return err
 				}
-				op.T = constVec(op, point).T
+				folded := constVec(op, point)
+				op.T = folded.T
+				op.ConstValues = folded.ConstValues
 				return nil
 			}
 			if meshListQueryBuiltins[fc.Reference.Name] {
-				points, err := f.evalMeshPointsQueryCall(fc, op, visibleAssignments, visibleFnTypes)
+				points, err := f.evalMeshPointsQueryCall(fc, op, consts)
 				if err != nil {
 					return err
 				}
-				op.T = constVecList(op, points).T
+				folded := constVecList(op, points)
+				op.T = folded.T
+				op.ConstValues = folded.ConstValues
 				return nil
 			}
-			point, err := f.evalPointCall(fc, op, visibleAssignments, visibleFnTypes)
+			point, err := f.evalPointCall(fc, op, consts)
 			if err != nil {
 				return err
 			}
-			op.T = constVec(op, point).T
+			folded := constVec(op, point)
+			op.T = folded.T
+			op.ConstValues = folded.ConstValues
 			return nil
 		}
 		for _, arg := range fc.Arguments {
-			if err := f.foldOperand(arg, visibleAssignments, visibleFnTypes); err != nil {
+			if err := f.foldOperand(arg, consts); err != nil {
 				return err
 			}
 		}
 	case *program.Operand_Expression:
 		for _, sub := range t.Expression.Operands {
-			if err := f.foldOperand(sub, visibleAssignments, visibleFnTypes); err != nil {
+			if err := f.foldOperand(sub, consts); err != nil {
 				return err
 			}
 		}
@@ -418,8 +407,8 @@ func (f *topoFolder) checkPlacementUnambiguous(name string, body int, xf []float
 		name, body, f.placementCounts[body]))
 }
 
-func (f *topoFolder) evalPointCall(fc *program.FnCall, op *program.Operand, visibleAssignments []*program.Assignment, visibleFnTypes []*program.FnType) ([3]float64, error) {
-	body, mesh, args, xf, err := f.evalCommon(fc, op, visibleAssignments, visibleFnTypes)
+func (f *topoFolder) evalPointCall(fc *program.FnCall, op *program.Operand, consts map[string][]float64) ([3]float64, error) {
+	body, mesh, args, xf, err := f.evalCommon(fc, op, consts)
 	if err != nil {
 		return [3]float64{}, err
 	}
@@ -461,8 +450,8 @@ func (f *topoFolder) evalPointCall(fc *program.FnCall, op *program.Operand, visi
 	return f.placePointX(body, xf, p), nil
 }
 
-func (f *topoFolder) evalNormalCall(fc *program.FnCall, op *program.Operand, visibleAssignments []*program.Assignment, visibleFnTypes []*program.FnType) (point, normal [3]float64, err error) {
-	body, mesh, args, xf, err := f.evalCommon(fc, op, visibleAssignments, visibleFnTypes)
+func (f *topoFolder) evalNormalCall(fc *program.FnCall, op *program.Operand, consts map[string][]float64) (point, normal [3]float64, err error) {
+	body, mesh, args, xf, err := f.evalCommon(fc, op, consts)
 	if err != nil {
 		return
 	}
@@ -506,17 +495,63 @@ func (f *topoFolder) evalNormalCall(fc *program.FnCall, op *program.Operand, vis
 	return
 }
 
-func (f *topoFolder) resolveMeshSlot(name string, argOp *program.Operand, visibleAssignments []*program.Assignment, visibleFnTypes []*program.FnType) (int, error) {
-	if len(argOp.ConstValues) == 1 {
-		return int(math.Round(argOp.ConstValues[0])), nil
+// constValues extracts pre-folded constant values or literal AST constants from op.
+// Upstream constant evaluation (eval.Fold in assembler) populates ConstValues on
+// compile-time constant expressions before topofold executes; literal values,
+// COLLECT lists, UI markers, and bindings folded earlier in the pass are read
+// directly from the AST without invoking eval.
+func constValues(op *program.Operand, consts map[string][]float64) ([]float64, bool) {
+	// Invariant: op is non-nil.
+	if len(op.ConstValues) > 0 {
+		return op.ConstValues, true
 	}
-	vals, err := eval.Const(argOp, visibleAssignments, visibleFnTypes)
-	if err != nil {
-		vals, err = eval.ConstPkgSlotsAt(argOp, f.pkg, f.pkgPath, f.gi, f.slots)
+	switch t := op.T.(type) {
+	case *program.Operand_Value:
+		return []float64{t.Value}, true
+	case *program.Operand_Reference:
+		if t.Reference != nil && t.Reference.Prefix == "" && consts != nil {
+			vals, ok := consts[t.Reference.Name]
+			return vals, ok && len(vals) > 0
+		}
+	case *program.Operand_Expression:
+		if t.Expression != nil && t.Expression.Operation == program.Operation_COLLECT {
+			var out []float64
+			for _, elem := range t.Expression.Operands {
+				vals, ok := constValues(elem, consts)
+				if !ok {
+					return nil, false
+				}
+				out = append(out, vals...)
+			}
+			return out, len(out) > 0
+		}
+		if t.Expression != nil && t.Expression.Operation == program.Operation_NEG && len(t.Expression.Operands) == 1 {
+			vals, ok := constValues(t.Expression.Operands[0], consts)
+			if !ok {
+				return nil, false
+			}
+			neg := make([]float64, len(vals))
+			for i, v := range vals {
+				neg[i] = -v
+			}
+			return neg, true
+		}
+	case *program.Operand_FnCall:
+		fc := t.FnCall
+		if fc != nil && fc.Reference != nil && fc.Reference.Prefix == "" && len(fc.Arguments) == 1 {
+			switch fc.Reference.Name {
+			case "uiPoint", "uiTransform", "uiColor", "uiDirection":
+				return constValues(fc.Arguments[0], consts)
+			}
+		}
 	}
-	if err != nil {
-		return 0, f.errorAt(argOp.GetStart(), fmt.Sprintf(
-			"%s: the mesh id must be a constant: %v", name, err))
+	return nil, false
+}
+
+func (f *topoFolder) resolveMeshSlot(name string, argOp *program.Operand, consts map[string][]float64) (int, error) {
+	vals, ok := constValues(argOp, consts)
+	if !ok {
+		return 0, f.errorAt(argOp.GetStart(), fmt.Sprintf("%s: the mesh id must be a constant", name))
 	}
 	if len(vals) != 1 {
 		return 0, f.errorAt(argOp.GetStart(), fmt.Sprintf("%s: the mesh id must be a scalar", name))
@@ -524,11 +559,11 @@ func (f *topoFolder) resolveMeshSlot(name string, argOp *program.Operand, visibl
 	return int(math.Round(vals[0])), nil
 }
 
-func (f *topoFolder) evalMeshQueryCall(fc *program.FnCall, op *program.Operand, visibleAssignments []*program.Assignment, visibleFnTypes []*program.FnType) (float64, error) {
+func (f *topoFolder) evalMeshQueryCall(fc *program.FnCall, op *program.Operand, consts map[string][]float64) (float64, error) {
 	if len(fc.Arguments) != 1 {
 		return 0, f.errorAt(op.GetStart(), fmt.Sprintf("%s: expected a single mesh id", fc.Reference.Name))
 	}
-	slot, err := f.resolveMeshSlot(fc.Reference.Name, fc.Arguments[0], visibleAssignments, visibleFnTypes)
+	slot, err := f.resolveMeshSlot(fc.Reference.Name, fc.Arguments[0], consts)
 	if err != nil {
 		return 0, err
 	}
@@ -557,17 +592,17 @@ func (f *topoFolder) evalMeshQueryCall(fc *program.FnCall, op *program.Operand, 
 	return 0, f.errorAt(op.GetStart(), fmt.Sprintf("unhandled mesh query %s", fc.Reference.Name))
 }
 
-func (f *topoFolder) evalMeshPointQueryCall(fc *program.FnCall, op *program.Operand, visibleAssignments []*program.Assignment, visibleFnTypes []*program.FnType) ([3]float64, error) {
+func (f *topoFolder) evalMeshPointQueryCall(fc *program.FnCall, op *program.Operand, consts map[string][]float64) ([3]float64, error) {
 	if len(fc.Arguments) < 1 || len(fc.Arguments) > 2 {
 		return [3]float64{}, f.errorAt(op.GetStart(), fmt.Sprintf("%s: expected (id [, transform])", fc.Reference.Name))
 	}
-	slot, err := f.resolveMeshSlot(fc.Reference.Name, fc.Arguments[0], visibleAssignments, visibleFnTypes)
+	slot, err := f.resolveMeshSlot(fc.Reference.Name, fc.Arguments[0], consts)
 	if err != nil {
 		return [3]float64{}, err
 	}
 	var xf []float64
 	if len(fc.Arguments) == 2 {
-		vals, err := f.constArg(fc.Reference.Name, 2, fc.Arguments[1], visibleAssignments, visibleFnTypes)
+		vals, err := f.constArg(fc.Reference.Name, 2, fc.Arguments[1], consts)
 		if err != nil {
 			return [3]float64{}, err
 		}
@@ -591,33 +626,26 @@ func (f *topoFolder) evalMeshPointQueryCall(fc *program.FnCall, op *program.Oper
 	return f.placePointX(slot, xf, at), nil
 }
 
-func (f *topoFolder) constArg(name string, pos int, argOp *program.Operand, visibleAssignments []*program.Assignment, visibleFnTypes []*program.FnType) ([]float64, error) {
-	if len(argOp.ConstValues) > 0 {
-		return argOp.ConstValues, nil
-	}
-	vals, err := eval.Const(argOp, visibleAssignments, visibleFnTypes)
-	if err != nil {
-		vals, err = eval.ConstPkgSlotsAt(argOp, f.pkg, f.pkgPath, f.gi, f.slots)
-	}
-	if err != nil {
-		return nil, f.errorAt(argOp.GetStart(), fmt.Sprintf(
-			"%s: argument %d must be a constant: %v", name, pos, err))
+func (f *topoFolder) constArg(name string, pos int, argOp *program.Operand, consts map[string][]float64) ([]float64, error) {
+	vals, ok := constValues(argOp, consts)
+	if !ok {
+		return nil, f.errorAt(argOp.GetStart(), fmt.Sprintf("%s: argument %d must be a constant", name, pos))
 	}
 	return vals, nil
 }
 
-func (f *topoFolder) evalMeshPointsQueryCall(fc *program.FnCall, op *program.Operand, visibleAssignments []*program.Assignment, visibleFnTypes []*program.FnType) ([][3]float64, error) {
+func (f *topoFolder) evalMeshPointsQueryCall(fc *program.FnCall, op *program.Operand, consts map[string][]float64) ([][3]float64, error) {
 	if len(fc.Arguments) < 1 || len(fc.Arguments) > 5 {
 		return nil, f.errorAt(op.GetStart(), fmt.Sprintf(
 			"%s: expected (id [, transform] [, count]) or (id [, transform], axis, maxAngleDeg [, count])", fc.Reference.Name))
 	}
-	slot, err := f.resolveMeshSlot(fc.Reference.Name, fc.Arguments[0], visibleAssignments, visibleFnTypes)
+	slot, err := f.resolveMeshSlot(fc.Reference.Name, fc.Arguments[0], consts)
 	if err != nil {
 		return nil, err
 	}
 	rest := make([][]float64, len(fc.Arguments)-1)
 	for i, argOp := range fc.Arguments[1:] {
-		vals, err := f.constArg(fc.Reference.Name, i+2, argOp, visibleAssignments, visibleFnTypes)
+		vals, err := f.constArg(fc.Reference.Name, i+2, argOp, consts)
 		if err != nil {
 			return nil, err
 		}
@@ -686,13 +714,13 @@ func (f *topoFolder) evalMeshPointsQueryCall(fc *program.FnCall, op *program.Ope
 	return pts, nil
 }
 
-func (f *topoFolder) evalCommon(fc *program.FnCall, op *program.Operand, visibleAssignments []*program.Assignment, visibleFnTypes []*program.FnType) (int, topofold.AnnotatedMesh, [][]float64, []float64, error) {
+func (f *topoFolder) evalCommon(fc *program.FnCall, op *program.Operand, consts map[string][]float64) (int, topofold.AnnotatedMesh, [][]float64, []float64, error) {
 	if len(fc.Arguments) < 2 {
 		return 0, nil, nil, nil, f.errorAt(op.GetStart(), fmt.Sprintf("%s: expected at least a body and an entity id", fc.Reference.Name))
 	}
 	args := make([][]float64, len(fc.Arguments))
 	for i, argOp := range fc.Arguments {
-		vals, err := f.constArg(fc.Reference.Name, i+1, argOp, visibleAssignments, visibleFnTypes)
+		vals, err := f.constArg(fc.Reference.Name, i+1, argOp, consts)
 		if err != nil {
 			return 0, nil, nil, nil, err
 		}
@@ -807,9 +835,7 @@ func applyMat4Col(m []float64, p [3]float64) [3]float64 {
 }
 
 func topoCallOf(op *program.Operand) *program.FnCall {
-	if op == nil {
-		return nil
-	}
+	// Invariant: op is non-nil.
 	if t, ok := op.T.(*program.Operand_FnCall); ok {
 		if isTopoCall(t.FnCall) {
 			return t.FnCall
@@ -819,19 +845,21 @@ func topoCallOf(op *program.Operand) *program.FnCall {
 }
 
 func constAssignment(from *program.Assignment, name string, callOp *program.Operand, v [3]float64) *program.Assignment {
+	vec := constVec(callOp, v)
 	return &program.Assignment{
 		Start:      from.GetStart(),
 		End:        from.GetEnd(),
-		Variables:  []*program.Variable{{Name: name}},
-		Expression: constVec(callOp, v),
+		Variables:  []*program.Variable{{Name: name, ConstValues: vec.ConstValues}},
+		Expression: vec,
 	}
 }
 
 func constScalar(from *program.Operand, v float64) *program.Operand {
 	return &program.Operand{
-		Start: from.GetStart(),
-		End:   from.GetEnd(),
-		T:     &program.Operand_Value{Value: v},
+		Start:       from.GetStart(),
+		End:         from.GetEnd(),
+		ConstValues: []float64{v},
+		T:           &program.Operand_Value{Value: v},
 	}
 }
 
@@ -839,14 +867,16 @@ func constVec(from *program.Operand, v [3]float64) *program.Operand {
 	ops := make([]*program.Operand, 3)
 	for i, val := range v {
 		ops[i] = &program.Operand{
-			Start: from.GetStart(),
-			End:   from.GetEnd(),
-			T:     &program.Operand_Value{Value: val},
+			Start:       from.GetStart(),
+			End:         from.GetEnd(),
+			ConstValues: []float64{val},
+			T:           &program.Operand_Value{Value: val},
 		}
 	}
 	return &program.Operand{
-		Start: from.GetStart(),
-		End:   from.GetEnd(),
+		Start:       from.GetStart(),
+		End:         from.GetEnd(),
+		ConstValues: []float64{v[0], v[1], v[2]},
 		T: &program.Operand_Expression{Expression: &program.Expression{
 			Operation: program.Operation_COLLECT,
 			Operands:  ops,
@@ -856,12 +886,15 @@ func constVec(from *program.Operand, v [3]float64) *program.Operand {
 
 func constVecList(from *program.Operand, pts [][3]float64) *program.Operand {
 	ops := make([]*program.Operand, len(pts))
+	flat := make([]float64, 0, len(pts)*3)
 	for i, p := range pts {
 		ops[i] = constVec(from, p)
+		flat = append(flat, p[0], p[1], p[2])
 	}
 	return &program.Operand{
-		Start: from.GetStart(),
-		End:   from.GetEnd(),
+		Start:       from.GetStart(),
+		End:         from.GetEnd(),
+		ConstValues: flat,
 		T: &program.Operand_Expression{Expression: &program.Expression{
 			Operation: program.Operation_COLLECT,
 			Operands:  ops,
@@ -911,92 +944,102 @@ func argCount(args [][]float64, want int) error {
 	return nil
 }
 
-func extractPlacements(pkg *program.Package, getImport program.GetImportFunc) (map[int][]float64, map[int]int, error) {
+func extractPlacements(pkg *program.Package) (map[int][]float64, map[int]int) {
 	placements := make(map[int][]float64)
 	counts := make(map[int]int)
 
-	var walkOperand func(op *program.Operand)
-	walkOperand = func(op *program.Operand) {
-		if op == nil {
-			return
-		}
+	var walkOperand func(op *program.Operand, consts map[string][]float64)
+	walkOperand = func(op *program.Operand, consts map[string][]float64) {
 		switch t := op.T.(type) {
 		case *program.Operand_FnCall:
 			fc := t.FnCall
 			if fc != nil && fc.Reference != nil && fc.Reference.Prefix == "" && fc.Reference.Name == "mesh" {
-				index, mat, err := parseMeshCallMatrix(fc, pkg, getImport)
+				index, mat, err := parseMeshCallMatrix(fc, consts)
 				if err == nil {
 					placements[index] = mat
 					counts[index]++
 				}
 			}
 			for _, arg := range fc.Arguments {
-				walkOperand(arg)
+				walkOperand(arg, consts)
 			}
 		case *program.Operand_Expression:
 			for _, sub := range t.Expression.Operands {
-				walkOperand(sub)
+				walkOperand(sub, consts)
 			}
 		}
 	}
 
-	for _, file := range pkg.Files {
-		for _, a := range file.Assignments {
-			walkOperand(a.Expression)
-		}
-		for _, r := range file.Returns {
-			walkOperand(r)
-		}
-		for _, ft := range file.FnTypes {
-			for _, g := range ft.Groups {
-				for _, fn := range g.Functions {
-					for _, a := range fn.Assignments {
-						walkOperand(a.Expression)
+	var walkFnType func(ft *program.FnType, outerConsts map[string][]float64)
+	walkFnType = func(ft *program.FnType, outerConsts map[string][]float64) {
+		for _, g := range ft.Groups {
+			for _, fn := range g.Functions {
+				fnConsts := copyConsts(outerConsts)
+				for _, p := range fn.Parameters {
+					delete(fnConsts, p.Name)
+				}
+				for _, a := range fn.Assignments {
+					walkOperand(a.Expression, fnConsts)
+					if len(a.Variables) == 1 {
+						if vals, ok := constValues(a.Expression, fnConsts); ok {
+							fnConsts[a.Variables[0].Name] = vals
+						} else {
+							delete(fnConsts, a.Variables[0].Name)
+						}
 					}
-					for _, r := range fn.Returns {
-						walkOperand(r)
-					}
+				}
+				for _, nested := range fn.FnTypes {
+					walkFnType(nested, fnConsts)
+				}
+				for _, r := range fn.Returns {
+					walkOperand(r, fnConsts)
 				}
 			}
 		}
 	}
 
-	return placements, counts, nil
+	fileConsts := make(map[string][]float64)
+	for _, file := range pkg.Files {
+		for _, a := range file.Assignments {
+			walkOperand(a.Expression, fileConsts)
+			if len(a.Variables) == 1 {
+				if vals, ok := constValues(a.Expression, fileConsts); ok {
+					fileConsts[a.Variables[0].Name] = vals
+				}
+			}
+		}
+	}
+	for _, file := range pkg.Files {
+		for _, r := range file.Returns {
+			walkOperand(r, fileConsts)
+		}
+		for _, ft := range file.FnTypes {
+			walkFnType(ft, fileConsts)
+		}
+	}
+
+	return placements, counts
 }
 
-func parseMeshCallMatrix(fc *program.FnCall, pkg *program.Package, getImport program.GetImportFunc) (int, []float64, error) {
+func parseMeshCallMatrix(fc *program.FnCall, consts map[string][]float64) (int, []float64, error) {
 	args := fc.Arguments
 	if len(args) == 0 {
 		return 0, nil, fmt.Errorf("mesh() requires at least one argument")
 	}
 
-	// Slot index
-	var index int
-	if v, ok := args[0].T.(*program.Operand_Value); ok {
-		index = int(v.Value)
-	} else if len(args[0].ConstValues) == 1 {
-		index = int(math.Round(args[0].ConstValues[0]))
-	} else {
-		idx, err := eval.ConstPkg(args[0], pkg, getImport)
-		if err != nil || len(idx) != 1 {
-			return 0, nil, fmt.Errorf("mesh() first argument not a constant: %v", err)
-		}
-		index = int(idx[0])
+	idx, ok := constValues(args[0], consts)
+	if !ok || len(idx) != 1 {
+		return 0, nil, fmt.Errorf("mesh() first argument is not a scalar constant")
 	}
+	index := int(math.Round(idx[0]))
 
 	if len(args) <= 1 {
 		return index, []float64{1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1}, nil
 	}
 
-	var v []float64
-	if len(args[1].ConstValues) > 0 {
-		v = args[1].ConstValues
-	} else {
-		var err error
-		v, err = eval.ConstPkg(args[1], pkg, getImport)
-		if err != nil {
-			return index, nil, err
-		}
+	v, ok := constValues(args[1], consts)
+	if !ok {
+		return index, nil, fmt.Errorf("mesh() second argument is not a constant")
 	}
 
 	switch {
@@ -1005,15 +1048,9 @@ func parseMeshCallMatrix(fc *program.FnCall, pkg *program.Package, getImport pro
 	case len(v) == 3 && len(args) == 2:
 		return index, []float64{1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, v[0], v[1], v[2], 1}, nil
 	case len(v) == 3 && len(args) == 3:
-		var r []float64
-		if len(args[2].ConstValues) > 0 {
-			r = args[2].ConstValues
-		} else {
-			var err error
-			r, err = eval.ConstPkg(args[2], pkg, getImport)
-			if err != nil {
-				return index, nil, err
-			}
+		r, ok := constValues(args[2], consts)
+		if !ok {
+			return index, nil, fmt.Errorf("mesh() third argument is not a constant")
 		}
 		if len(r) == 16 {
 			mat := append([]float64(nil), r...)

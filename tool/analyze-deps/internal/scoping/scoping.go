@@ -143,10 +143,15 @@ func isRootInternal(pkg string) bool {
 		return false
 	}
 	parts := strings.Split(clean, "/")
-	// Root internal packages have form internal/<name>
-	// Packages like internal/assembler/* are already scoped to assembler
+	// Packages like internal/assembler/* are already scoped to assembler,
+	// and nested */internal/* packages are already privately scoped to their parent.
 	if len(parts) >= 2 && parts[1] == "assembler" {
 		return false
+	}
+	for _, part := range parts[1:] {
+		if part == "internal" {
+			return false
+		}
 	}
 	return true
 }
@@ -163,14 +168,20 @@ func SubsystemForScoping(pkg string) string {
 	if strings.HasPrefix(clean, "backend") {
 		return "backend"
 	}
+	if clean == "eval" || strings.HasPrefix(clean, "eval/") {
+		return "eval"
+	}
 	if clean == "program" || strings.HasPrefix(clean, "program/") {
 		return "program"
 	}
 	if clean == "stdlib" || strings.HasPrefix(clean, "stdlib/") {
 		return "stdlib"
 	}
-	if strings.HasPrefix(clean, "cmd") {
+	if clean == "cmd" || strings.HasPrefix(clean, "cmd/") {
 		return "cmd"
+	}
+	if clean == "tool" || strings.HasPrefix(clean, "tool/") {
+		return "tool"
 	}
 	return "internal"
 }
