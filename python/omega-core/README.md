@@ -39,10 +39,19 @@ All lengths are millimetres.
 | `gsl render [flags] part.gsl` | shorthand for `gsl compile -t png` |
 | `gsl eval REQUEST.json`, `gsl eval -`, `gsl eval --stdio` | answer field queries as JSON |
 | `gsl skill`, `gsl skill PACKAGE...`, `gsl skill --all` | the GSL reference for a model to read (below) |
+| `gsl viewer [part.gsl]` | open a model, or the examples, in the interactive WebGPU viewer (below) |
 | `gsl --version`, `gsl help [command]` | the release; a command's help |
 
-`python -m omega_core` runs `gsl` too. The wheel does not include `gsl serve` (omega's interactive viewer)
-or `gsl fix`.
+`python -m omega_core` runs `gsl` too. The wheel does not include `gsl serve` (the viewer's development server,
+which `gsl viewer` replaces here) or `gsl fix`.
+
+### `gsl viewer`
+
+`gsl viewer part.gsl` serves the viewer on `part.gsl`'s folder and opens the default browser on it: the folder's
+`.gsl` files are in the viewer's list, its imports are found there, and Save writes back to it. `gsl viewer` alone
+opens the examples installed with the package. The viewer needs a browser with WebGPU. It listens on
+`127.0.0.1:8080`, or on a free port when that is taken (`-a host:port` names one), prints its address, and runs
+until Ctrl-C. `--no-open` prints the address without opening a browser.
 
 ### `gsl compile`
 

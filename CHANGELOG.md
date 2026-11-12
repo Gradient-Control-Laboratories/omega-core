@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added `gsl viewer [part.gsl]` (`compile viewer`, in `cmd/serve/viewer`), which serves the
+  WebGPU viewer on a file's folder, or on the examples without one, and opens the default browser
+  on it (`?file=` in the viewer picks the file it starts on). The omega-core wheel now ships the
+  viewer (`omega_core/viewer`) and the examples (`omega_core/examples`) for it.
 - Added `gsl skill` (`compile skill`), Python `omega_core.skill(...)`, and `preamble` package-index
   helpers (`GSLSkillIndex`, `PackageIndexText`, `PackageDescriptiveText`, `PackageSummary`, and
   `PackageNames`) to emit GSL language and per-package reference docs directly from the embedded
