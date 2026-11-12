@@ -57,6 +57,9 @@ type MeshRequest struct {
 	HasBbox     bool       `json:"-"`
 	Algo        string     `json:"algo"`
 	Time        float64    `json:"time"`
+	// Bodies, when not nil, is the 1-based returns MeshBodies meshes (the
+	// viewer's visible bodies); Mesh ignores it.
+	Bodies []int `json:"bodies,omitempty"`
 }
 
 // Compile executes the in-process GSL compilation pipeline (audio extraction, AST assembly, WGSL codegen, and audio JS codegen).
@@ -139,9 +142,27 @@ func Compile(req CompileRequest, sourcePaths []string, progressFn ProgressFunc) 
 
 // Mesh assembles the GSL source and evaluates a binary STL mesh using the Fidget/Manifold mesh backend.
 func Mesh(req MeshRequest, sourcePaths []string, progressFn ProgressFunc) ([]byte, error) {
-	_, shapeSrc, err := audio.ExtractAudio(req.Source)
+	prog, meshOpts, err := meshSetup(req, sourcePaths, progressFn)
 	if err != nil {
 		return nil, err
+	}
+	return mesh.Mesh(prog, meshOpts...)
+}
+
+// MeshBodies is Mesh with each top-level return meshed as its own body (mesh.MeshBodies).
+func MeshBodies(req MeshRequest, sourcePaths []string, progressFn ProgressFunc) ([]mesh.Body, error) {
+	prog, meshOpts, err := meshSetup(req, sourcePaths, progressFn)
+	if err != nil {
+		return nil, err
+	}
+	return mesh.MeshBodies(prog, meshOpts...)
+}
+
+// meshSetup assembles req's source and the mesher options it asks for.
+func meshSetup(req MeshRequest, sourcePaths []string, progressFn ProgressFunc) (*program.Program, []mesh.Option, error) {
+	_, shapeSrc, err := audio.ExtractAudio(req.Source)
+	if err != nil {
+		return nil, nil, err
 	}
 	if strings.TrimSpace(shapeSrc) == "" {
 		shapeSrc = req.Source
@@ -149,7 +170,7 @@ func Mesh(req MeshRequest, sourcePaths []string, progressFn ProgressFunc) ([]byt
 
 	asmRes, err := assembler.Assemble([]string{shapeSrc}, buildAssemblerOptions(sourcePaths, progressFn)...)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	subdiv := req.Subdivision
@@ -169,13 +190,16 @@ func Mesh(req MeshRequest, sourcePaths []string, progressFn ProgressFunc) ([]byt
 	if req.HasBbox {
 		meshOpts = append(meshOpts, mesh.WithBbox(req.Bbox))
 	}
+	if req.Bodies != nil {
+		meshOpts = append(meshOpts, mesh.WithBodies(req.Bodies...))
+	}
 	if progressFn != nil {
 		meshOpts = append(meshOpts, mesh.WithProgress(func(stage string, completed, total uint32) {
 			progressFn("mesh", stage, completed, total)
 		}))
 	}
 
-	return mesh.Mesh(asmRes.Program, meshOpts...)
+	return asmRes.Program, meshOpts, nil
 }
 
 func buildAssemblerOptions(sourcePaths []string, progressFn ProgressFunc) []assembler.Option {

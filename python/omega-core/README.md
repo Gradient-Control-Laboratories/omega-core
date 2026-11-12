@@ -10,7 +10,8 @@ pip install omega-core
 
 ## What it does
 
-- **Compile** a GSL model to a WebGPU shader (WGSL), a mesh (STL), a picture (PNG), a bytecode tape, Web
+- **Compile** a GSL model to a WebGPU shader (WGSL), a mesh (STL, 3MF with each body an object in its
+  own colour, or GLB with each body a node in its own colour), a picture (PNG), a bytecode tape, Web
   Audio JavaScript, or its AST as JSON. Each comes with a JSON record of the model's sliders, controls and
   scene.
 - **Mesh** by dual contouring or marching cubes, at any octree depth, over the `@scene` box, the box the
@@ -48,7 +49,9 @@ or `gsl fix`.
 | `-t` | Writes | Default output |
 |---|---|---|
 | `wgsl` (default) | a WebGPU raymarching shader; `--standalone` appends a runner harness | `part.wgsl` |
-| `stl` | a binary STL mesh | `part.stl` |
+| `stl` | a binary STL mesh; with several top-level returns, a zip of one STL per body | `part.stl`, or `part.zip` for several bodies |
+| `3mf` | one 3MF, each top-level return an object in its own colour | `part.3mf` |
+| `glb` | one binary glTF, each top-level return a node in its own colour; millimetres and Z up under a root node that makes them metres and Y up | `part.glb` |
 | `png` | a picture of the field, raymarched on the CPU | `part.png` |
 | `tape` | the field as a bytecode tape (for Fidget) | `part.tape` |
 | `audio` | Web Audio JavaScript for the model's sound | `part.js` |
@@ -67,7 +70,7 @@ General flags:
 
 With no source files, the model is read from stdin.
 
-Mesh flags (`-t stl`):
+Mesh flags (`-t stl`, `-t 3mf`, `-t glb`):
 
 | Flag | Default | Meaning |
 |---|---|---|
