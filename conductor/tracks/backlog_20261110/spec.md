@@ -17,7 +17,7 @@ predictably:
 - **Medium Improvements (`M1`–`M12`):** Bounded feature completions, phased syntax retirements,
   diagnostics enhancements, viewer capabilities, and developer tooling tasks that can either spin
   off focused tracks or execute as self-contained single-phase tracks.
-- **Small Targeted Cleanups (`S1`–`S15`):** Localized refactors, invariant tightening, dead-code
+- **Small Targeted Cleanups (`S1`–`S17`):** Localized refactors, invariant tightening, dead-code
   removals, public/internal API deduplication, and documentation/comment hygiene tasks suitable for
   direct execution or small cleanup batches.
 
@@ -401,14 +401,37 @@ defined in [README.md](../../../README.md):
       and `backend/internal/common/build.go` (`Builder`, `Delegate`, `Scope`, `Expression` aliasing
       `internal/build`).
 
-- [ ] **S15. Support Hexadecimal Numeric Literals (`0x...` / `0X...`)**
+- [ ] **S15. Support Hexadecimal Numeric Literals (`0x...`) & 6-Digit `#RRGGBB` Color Literals**
   - Add hexadecimal integer literal lexing (`0[xX][0-9a-fA-F]+` ordered before `Float` and `Int` in
     `gslLexer`) and `Number` parsing (`strconv.ParseUint` -> `float64`) across
     `parser/internal/parser2/parser.go`, `grammar.go`, `capture.go`, and `parse_scene.go` (with
-    clear parse errors on malformed `0x` prefixes), update syntax highlighting in
-    `examples/viewer/editor/editor.js`, and document hex literals in
+    clear parse errors on malformed `0x` prefixes).
+  - Add strictly 6-hex-digit `#RRGGBB` sRGB color literals in `parser/internal/parser2`
+    (`parser.go`, `grammar.go`, `build_value.go`) lowering to `[r/255, g/255, b/255]` (with
+    `@color` UI control support in `assembler/ui` and `examples/viewer/`), emitting targeted parse
+    errors on non-6-digit `#...` forms (with a CSS digit-doubling hint on 3-digit `#RGB`, e.g.,
+    suggesting `#FFFFFF` for `#fff` and `#AABBCC` for `#abc`).
+  - Keep `color.fromHex` in `stdlib/color/color.gsl` unchanged for now, add a `cmd/fix` rule
+    rewriting `color.fromHex("#RRGGBB")` / `color.fromHex("RRGGBB")` calls to `#RRGGBB`, update
+    syntax highlighting in `examples/viewer/editor/editor.js`, and document both literals in
     `doc/gsl_lang_spec_current.md`, `doc/gsl_lang_spec_future.md`, and
-    `examples/viewer/docs/gsl_description.md`.
+    `program/preamble/gsl_description.go`.
+
+- [ ] **S16. Tighten `.color` Property Validation & Docs to Strictly 3-Element RGB (`vec3`)**
+  - Tighten `validateColorProperty` in `internal/assembler/propval/validate.go` (and unit tests in
+    `internal/assembler/propval/validate_test.go`) to require `len(vals) == 3` rather than allowing
+    stale 4-element `[r, g, b, a]` vectors that fail downstream in `internal/assembler/property`,
+    `backend/wgsl`, and `internal/fidget`, and remove `[r, g, b, a]` from `name.color` in
+    `doc/gsl_lang_spec_current.md` and `doc/gsl_lang_spec_future.md`.
+
+- [ ] **S17. Remove `compile eval` & `compile skill` in Favor of `gsl eval` & `gsl skill` Only**
+  - Remove the `os.Args[1] == "eval"` and `os.Args[1] == "skill"` branches from
+    `cmd/compile/main.go` and the `compile eval` usage line from `cmd/compile/internal/cli/cli.go`
+    so `cmd/compile` only compiles GSL sources; move `cmd/compile/internal/evalcmd` (plus
+    `cmd/compile/render_eval_test.go`) and `cmd/compile/internal/skillcmd` into `cmd/gsl/internal/`
+    for direct `gsl eval` and `gsl skill` execution (updating usage headers and
+    `cmd/gsl/internal/cli/cli.go` + `cli_test.go`, and unifying static wheel linkage in
+    `tool/build-wheel.sh` and `python/omega-core` so Fidget is not linked twice).
 
 ## 6. Acceptance Criteria
 
