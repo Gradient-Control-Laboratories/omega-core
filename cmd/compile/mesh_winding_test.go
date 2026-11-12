@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"gradientcontrol.com/omega/core/backend/mesh"
-	main "gradientcontrol.com/omega/core/cmd/compile"
+	"gradientcontrol.com/omega/core/cmd/compile/internal/cli"
 	"gradientcontrol.com/omega/core/internal/test/assert"
 	"gradientcontrol.com/omega/core/internal/test/require"
 )
@@ -22,7 +22,7 @@ func meshedWith(t *testing.T, algo, source string) []byte {
 	require.NoError(t, os.WriteFile(path, []byte(source), 0644))
 	out := filepath.Join(dir, "part.stl")
 	var stdout, stderr bytes.Buffer
-	require.NoError(t, main.Run([]string{"-t", "stl", "--algo", algo, "--subdivision", "6", "--bbox", "auto",
+	require.NoError(t, cli.Run([]string{"-t", "stl", "--algo", algo, "--subdivision", "6", "--bbox", "auto",
 		"--no-meta", "-o", out, path}, nil, &stdout, &stderr), stderr.String())
 	data, err := os.ReadFile(out)
 	require.NoError(t, err)

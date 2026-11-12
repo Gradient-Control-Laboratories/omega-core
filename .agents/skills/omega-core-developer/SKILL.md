@@ -23,14 +23,16 @@ There are two primary options for diagrams:
 
 ## 2. Read the GSL Documentation
 
-When writing or changing GSL (`.gsl`) code in `stdlib/` or `examples/`, consult the GSL
-documentation in `examples/viewer/docs/` (generated from `program/preamble/`):
-- `gsl_description.md` — the GSL language reference: syntax, SDF conventions, and how
-  shapes/fields are built. Vectors are component-wise, so prefer vector math
-  (`repeatCentered(p.xy, cell)`, `dot(v, v)`, `length(v)`) over per-component scalar code.
-- `gsl_libraries.md` — the standard library package reference (`builtin`, `map`, `lattice/*`,
-  `mechanical/*`, `material/*`, etc.). Prefer calling existing library functions over re-deriving
-  them; if you add a helper, name it in the library's style.
+When writing or changing GSL (`.gsl`) code in `stdlib/` or `examples/`, read the GSL
+documentation with `bin/gsl skill` (generated from `program/preamble/` and the embedded stdlib):
+- `bin/gsl skill` — the GSL language reference (syntax, SDF conventions, how shapes/fields are
+  built), the built-ins, and one line per standard library package. Vectors are component-wise, so
+  prefer vector math (`repeatCentered(p.xy, cell)`, `dot(v, v)`, `length(v)`) over per-component
+  scalar code.
+- `bin/gsl skill PACKAGE...` — a package in full (`builtin`, `map`, `lattice/*`, `mechanical/*`,
+  `material/*`, etc.). Prefer calling existing library functions over re-deriving them; if you add
+  a helper, name it in the library's style.
+- A new library starts with a `///` summary and a blank line; the package index shows it.
 
 ## 3. Standalone SDK Boundary Invariants
 

@@ -1,3 +1,6 @@
+/// Foams as a cut or skinned face shows them: open- and closed-cell foam,
+/// expanded polystyrene beads and aerogel.
+
 
 // Foam Materials (material/bulk/foams)
 //

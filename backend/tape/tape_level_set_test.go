@@ -7,6 +7,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/backend/tape"
+	"gradientcontrol.com/omega/core/program/meshasset"
 )
 
 // A tape asked for level sets carries each vdbSdf's baked grid in its oracle
@@ -27,7 +28,7 @@ func TestEmbedLevelSetsCarriesTheBakedGrid(t *testing.T) {
 			verts = append(verts, corners[c][0], corners[c][1], corners[c][2])
 		}
 	}
-	payloads := []tape.VdbOracle{{AssetID: 7, Vertices: verts, Triangles: tris, VoxelSize: 0.05, HalfBandVoxels: 3}}
+	payloads := []meshasset.VdbOracle{{AssetID: 7, Vertices: verts, Triangles: tris, VoxelSize: 0.05, HalfBandVoxels: 3}}
 	res, err := assembler.Assemble([]string{"return vdbSdf(7, 20, 3);"})
 	if err != nil {
 		t.Fatal(err)

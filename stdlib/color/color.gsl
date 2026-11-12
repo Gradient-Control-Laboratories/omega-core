@@ -1,3 +1,6 @@
+/// Colors as sRGB vec3: HSV, HSL and Oklab/OKLCH conversions, perceptual mixing
+/// and adjustments, palettes and colormaps.
+
 // Color Library (color)
 //
 // Colors are vec3 RGB in [0, 1], the same representation the `name.color = …`

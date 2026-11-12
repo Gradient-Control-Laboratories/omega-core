@@ -1,3 +1,7 @@
+/// Domain transforms for `remap`: rotations, mirrors, checkers, cylindrical
+/// mapping, and repeats in polar, rectangular, triangular and hexagonal
+/// patterns.
+
 
 // Map Library (map)
 //

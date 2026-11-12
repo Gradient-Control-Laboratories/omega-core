@@ -1,3 +1,6 @@
+/// Deterministic noise over the point p: cellular (Worley, Voronoi), gradient
+/// (Perlin), fractal sums, warps and anisotropic noise.
+
 
 // Noise Library (noise)
 //

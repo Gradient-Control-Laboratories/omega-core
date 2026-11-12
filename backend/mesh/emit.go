@@ -6,17 +6,24 @@ import (
 	"fmt"
 	"math"
 
-	lib "gradientcontrol.com/omega/core/internal/fidget/lib"
+	"gradientcontrol.com/omega/core/internal/build"
+	"gradientcontrol.com/omega/core/internal/fidget"
+	"gradientcontrol.com/omega/core/internal/fidget/convert"
 	"gradientcontrol.com/omega/core/program"
+	"gradientcontrol.com/omega/core/program/meshasset"
 	"gradientcontrol.com/omega/core/program/noise/spinodoid"
 	"gradientcontrol.com/omega/core/program/progress"
 )
 
 // MeshSdfOracle holds the triangle soup for a bvhSdf(AssetID) leaf.
-type MeshSdfOracle = lib.MeshSdfOracle
+//
+// Deprecated: Use [meshasset.MeshSdfOracle] instead; will be removed in 0.2.0.
+type MeshSdfOracle = meshasset.MeshSdfOracle
 
 // VdbOracle holds the triangle soup and narrow-band level-set parameters for a vdbSdf(AssetID) leaf.
-type VdbOracle = lib.VdbOracle
+//
+// Deprecated: Use [meshasset.VdbOracle] instead; will be removed in 0.2.0.
+type VdbOracle = meshasset.VdbOracle
 
 // Output holds the generated binary STL mesh bytes and extracted triangle soup.
 type Output struct {
@@ -28,7 +35,9 @@ type Output struct {
 }
 
 // BakedSpinodoid is a baked Gabor spinodoid table and the ID of its content.
-type BakedSpinodoid = lib.BakedSpinodoid
+//
+// Deprecated: Use [spinodoid.Baked] instead; will be removed in 0.2.0.
+type BakedSpinodoid = spinodoid.Baked
 
 // Option configures 3D mesh generation.
 type Option func(*options)
@@ -39,8 +48,8 @@ type options struct {
 	hasBbox     bool
 	algo        string
 	time        float64
-	meshOracles []MeshSdfOracle
-	vdbOracles  []VdbOracle
+	meshOracles []meshasset.MeshSdfOracle
+	vdbOracles  []meshasset.VdbOracle
 	progressFn  progress.Callback
 }
 
@@ -107,14 +116,14 @@ func WithTime(timeSec float64) Option {
 }
 
 // MeshOracles registers BVH mesh SDF oracles before meshing.
-func MeshOracles(oracles []MeshSdfOracle) Option {
+func MeshOracles(oracles []meshasset.MeshSdfOracle) Option {
 	return func(o *options) {
 		o.meshOracles = oracles
 	}
 }
 
 // VdbOracles registers OpenVDB narrow-band level-set oracles before meshing.
-func VdbOracles(oracles []VdbOracle) Option {
+func VdbOracles(oracles []meshasset.VdbOracle) Option {
 	return func(o *options) {
 		o.vdbOracles = oracles
 	}
@@ -148,16 +157,16 @@ func DecodePackedTriangles(verticesB64 string) ([]float32, []uint32, error) {
 
 // RegisterMeshOracle uploads triangle data for a bvhSdf(assetID) leaf.
 func RegisterMeshOracle(assetID uint32, vertices []float32, triangles []uint32) error {
-	lib.Lock()
-	defer lib.Unlock()
-	return lib.RegisterMeshOracle(assetID, vertices, triangles)
+	fidget.Lock()
+	defer fidget.Unlock()
+	return fidget.RegisterMeshOracle(assetID, vertices, triangles)
 }
 
 // RegisterVdbOracle bakes a narrow-band OpenVDB level set for vdbSdf(assetID).
 func RegisterVdbOracle(assetID uint32, vertices []float32, triangles []uint32, voxelSize, halfBandVoxels float32) error {
-	lib.Lock()
-	defer lib.Unlock()
-	return lib.RegisterVdbOracle(assetID, vertices, triangles, voxelSize, halfBandVoxels)
+	fidget.Lock()
+	defer fidget.Unlock()
+	return fidget.RegisterVdbOracle(assetID, vertices, triangles, voxelSize, halfBandVoxels)
 }
 
 // BakeAndExtractVdbWithProgress bakes a triangle soup into an OpenVDB level set,
@@ -170,28 +179,44 @@ func BakeAndExtractVdbWithProgress(
 	dimsX, dimsY, dimsZ uint32,
 	progressFn func(completed, total uint32),
 ) ([]byte, error) {
-	lib.Lock()
-	defer lib.Unlock()
-	return lib.BakeAndExtractVdbWithProgress(assetID, vertices, triangles, voxelSize, halfBandVoxels, dimsX, dimsY, dimsZ, progressFn)
+	fidget.Lock()
+	defer fidget.Unlock()
+	return fidget.BakeAndExtractVdbWithProgress(assetID, vertices, triangles, voxelSize, halfBandVoxels, dimsX, dimsY, dimsZ, progressFn)
 }
 
 // ExtractVdbDenseBytes samples the registered VDB level set for assetID into a uniform dense grid.
 func ExtractVdbDenseBytes(assetID, dimsX, dimsY, dimsZ uint32) ([]byte, error) {
-	lib.Lock()
-	defer lib.Unlock()
-	return lib.ExtractVdbDenseBytes(assetID, dimsX, dimsY, dimsZ)
+	fidget.Lock()
+	defer fidget.Unlock()
+	return fidget.ExtractVdbDenseBytes(assetID, dimsX, dimsY, dimsZ)
 }
 
 // ExtractVdbLevelSet returns the level set registered under assetID as an encoded tape.VdbLevelSet message.
 func ExtractVdbLevelSet(assetID uint32) ([]byte, error) {
-	lib.Lock()
-	defer lib.Unlock()
-	return lib.ExtractVdbLevelSet(assetID)
+	fidget.Lock()
+	defer fidget.Unlock()
+	return fidget.ExtractVdbLevelSet(assetID)
 }
 
 // BakeSpinodoids builds prog and returns the spinodoid table each of its gaborSpinodoid calls reads.
-func BakeSpinodoids(prog *program.Program) (map[string]BakedSpinodoid, error) {
-	return lib.BakeSpinodoids(prog)
+func BakeSpinodoids(prog *program.Program) (map[string]spinodoid.Baked, error) {
+	if prog == nil || prog.Primary == nil {
+		return nil, fmt.Errorf("program or primary package is nil")
+	}
+	var gslSource string
+	if len(prog.Primary.Files) > 0 {
+		gslSource = prog.Primary.Files[0].Source
+	}
+	d := convert.NewDelegate(gslSource)
+
+	fidget.Lock()
+	defer fidget.Unlock()
+	defer fidget.Clear()
+
+	if err := build.Build(d, convert.BuildCopy(prog), true); err != nil {
+		return nil, build.ErrWithPkgSrc(prog, err)
+	}
+	return d.BakedSpinodoids(), nil
 }
 
 // Body represents a distinct solid body in a multi-body export.
@@ -235,7 +260,13 @@ func Mesh(prog *program.Program, opts ...Option) ([]byte, error) {
 		}
 	}
 
-	return lib.MeshAtTime(prog, o.subdivision, o.bbox, o.algo, o.time, internalProgress)
+	var stlBytes []byte
+	var err error
+	err = convert.ToTreesAtTime(prog, o.time, func(treeIndices []fidget.TreeIndex, _ []string) error {
+		stlBytes, err = fidget.GenerateSTL(treeIndices, o.subdivision, o.bbox, o.algo, internalProgress)
+		return err
+	})
+	return stlBytes, err
 }
 
 // MeshWithOutput meshes prog and returns the binary STL along with extracted triangle soup.

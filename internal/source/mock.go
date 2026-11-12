@@ -2,6 +2,8 @@ package source
 
 import (
 	"fmt"
+
+	"gradientcontrol.com/omega/core/assembler/source"
 )
 
 type MockManager struct {
@@ -10,7 +12,7 @@ type MockManager struct {
 	Assets     map[string]map[string][]byte
 }
 
-var _ Manager = &MockManager{}
+var _ source.Manager = &MockManager{}
 
 func (m *MockManager) Sources(path string) ([]string, []string, error) {
 	srcs, ok := m.PkgSources[path]
@@ -22,7 +24,7 @@ func (m *MockManager) Sources(path string) ([]string, []string, error) {
 		return srcs, nil, nil
 	}
 
-	return nil, nil, wrapError(path, ErrPkgNotFound)
+	return nil, nil, wrapError(path, source.ErrPkgNotFound)
 }
 
 func (m *MockManager) Asset(pkg, filename string) ([]byte, error) {
@@ -33,5 +35,5 @@ func (m *MockManager) Asset(pkg, filename string) ([]byte, error) {
 			}
 		}
 	}
-	return nil, wrapError(pkg, fmt.Errorf("asset %q: %w", filename, ErrPkgNotFound))
+	return nil, wrapError(pkg, fmt.Errorf("asset %q: %w", filename, source.ErrPkgNotFound))
 }

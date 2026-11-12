@@ -841,30 +841,32 @@ impl<'a, F: Function + RenderHints> OctreeBuilder<'a, F> {
                 })
                 .collect();
 
-        let xs = &mut [Grad::from(0.0); 12 * EDGE_SEARCH_SIZE]
-            [..intersections.len()];
-        let ys = &mut [Grad::from(0.0); 12 * EDGE_SEARCH_SIZE]
-            [..intersections.len()];
-        let zs = &mut [Grad::from(0.0); 12 * EDGE_SEARCH_SIZE]
-            [..intersections.len()];
+        let intersection_pos: arrayvec::ArrayVec<nalgebra::Vector3<f32>, 12> =
+            intersections.iter().map(|xyz| cell.pos(*xyz)).collect();
 
-        for (i, xyz) in intersections.iter().enumerate() {
-            let pos = cell.pos(*xyz);
+        let mut xs = [Grad::from(0.0); 24];
+        let mut ys = [Grad::from(0.0); 24];
+        let mut zs = [Grad::from(0.0); 24];
+
+        let n = intersection_pos.len();
+        for (i, pos) in intersection_pos.iter().enumerate() {
             xs[i] = Grad::new(pos.x, 1.0, 0.0, 0.0);
             ys[i] = Grad::new(pos.y, 0.0, 1.0, 0.0);
             zs[i] = Grad::new(pos.z, 0.0, 0.0, 1.0);
         }
 
         // TODO: special case for cells with multiple gradients ("features")
-        let grads = match self.eval_grad_slice.eval_raw(
-            eval.g_tape(&mut self.tape_storage),
-            xs,
-            ys,
-            zs,
-            self.world_to_model,
-            ShapeBulkEval::<F::GradSliceEval>::var_value(self.vars),
-        ) {
-            Ok(v) => v,
+        let mut grads: arrayvec::ArrayVec<Grad, 12> = match self
+            .eval_grad_slice
+            .eval_raw(
+                eval.g_tape(&mut self.tape_storage),
+                &xs[..n],
+                &ys[..n],
+                &zs[..n],
+                self.world_to_model,
+                ShapeBulkEval::<F::GradSliceEval>::var_value(self.vars),
+            ) {
+            Ok(v) => v.iter().copied().collect(),
             Err(
                 ShapeBulkEvalError::MissingVar(..)
                 | ShapeBulkEvalError::MismatchedVarSlices { .. },
@@ -881,39 +883,36 @@ impl<'a, F: Function + RenderHints> OctreeBuilder<'a, F> {
         // (min(x, 0) is x - max(x, 0)), so the gradient is evaluated again a
         // hair off the point, where every piece is differentiable: along a
         // fixed generic direction, then against it. The crossing keeps its
-        // place and value; only its normal is replaced.
-        let mut fixed: arrayvec::ArrayVec<Grad, { 12 * EDGE_SEARCH_SIZE }> =
-            grads.iter().copied().collect();
+        // place and value; only its normal is replaced. A crossing whose
+        // gradient is zero on both sides still adds no plane, and the leaf is
+        // then kept from collapsing (missing_plane, below).
         let is_zero = |g: &Grad| {
             !g.v.is_nan() && g.dx == 0.0 && g.dy == 0.0 && g.dz == 0.0
         };
-        if fixed.iter().any(is_zero) {
+        if grads.iter().any(is_zero) {
             // In the cell's model space: about 80 ulps off a coordinate near
             // 1, and far below a cell even at depth 12.
             const NUDGE: f32 = 1e-5;
             let dir = nalgebra::Vector3::new(1.0f32, 2f32.sqrt(), 3f32.sqrt())
                 .normalize();
             for sign in [1.0f32, -1.0] {
-                let todo: arrayvec::ArrayVec<usize, { 12 * EDGE_SEARCH_SIZE }> =
-                    (0..fixed.len()).filter(|&i| is_zero(&fixed[i])).collect();
+                let todo: arrayvec::ArrayVec<usize, 12> =
+                    (0..grads.len()).filter(|&i| is_zero(&grads[i])).collect();
                 if todo.is_empty() {
                     break;
                 }
-                let n = todo.len();
-                let nx = &mut [Grad::from(0.0); 12 * EDGE_SEARCH_SIZE][..n];
-                let ny = &mut [Grad::from(0.0); 12 * EDGE_SEARCH_SIZE][..n];
-                let nz = &mut [Grad::from(0.0); 12 * EDGE_SEARCH_SIZE][..n];
+                let count = todo.len();
                 for (k, &i) in todo.iter().enumerate() {
-                    let p = cell.pos(intersections[i]) + dir * (sign * NUDGE);
-                    nx[k] = Grad::new(p.x, 1.0, 0.0, 0.0);
-                    ny[k] = Grad::new(p.y, 0.0, 1.0, 0.0);
-                    nz[k] = Grad::new(p.z, 0.0, 0.0, 1.0);
+                    let p = intersection_pos[i] + dir * (sign * NUDGE);
+                    xs[k] = Grad::new(p.x, 1.0, 0.0, 0.0);
+                    ys[k] = Grad::new(p.y, 0.0, 1.0, 0.0);
+                    zs[k] = Grad::new(p.z, 0.0, 0.0, 1.0);
                 }
                 let nudged = match self.eval_grad_slice.eval_raw(
                     eval.g_tape(&mut self.tape_storage),
-                    nx,
-                    ny,
-                    nz,
+                    &xs[..count],
+                    &ys[..count],
+                    &zs[..count],
                     self.world_to_model,
                     ShapeBulkEval::<F::GradSliceEval>::var_value(self.vars),
                 ) {
@@ -926,21 +925,23 @@ impl<'a, F: Function + RenderHints> OctreeBuilder<'a, F> {
                 for (k, &i) in todo.iter().enumerate() {
                     let g = nudged[k];
                     if !is_zero(&g) && !g.v.is_nan() {
-                        fixed[i] = Grad::new(fixed[i].v, g.dx, g.dy, g.dz);
+                        grads[i] = Grad::new(grads[i].v, g.dx, g.dy, g.dz);
                     }
                 }
             }
         }
-        let grads = &fixed[..];
 
         let mut verts: arrayvec::ArrayVec<_, 4> = arrayvec::ArrayVec::new();
+        let mut missing_plane = false;
         let mut i = 0;
         for vs in CELL_TO_VERT_TO_EDGES[mask.index()].iter() {
+            let base = i;
+            i += vs.len();
             let mut force_point = None;
             let mut qef = QuadraticErrorSolver::new();
-            for e in vs.iter() {
-                let pos = nalgebra::Vector3::new(xs[i].v, ys[i].v, zs[i].v);
-                let grad: nalgebra::Vector4<f32> = grads[i].into();
+            for (offset, e) in vs.iter().enumerate() {
+                let pos = intersection_pos[base + offset];
+                let grad: nalgebra::Vector4<f32> = grads[base + offset].into();
 
                 // If a point has invalid gradients, then it's _probably_ on a
                 // sharp feature in the mesh, so we should just snap to that
@@ -951,6 +952,9 @@ impl<'a, F: Function + RenderHints> OctreeBuilder<'a, F> {
                     hermite_cell.qef_err = QEF_ERR_INVALID;
                     break;
                 }
+                if !(grad.xyz().norm() > 0.0) {
+                    missing_plane = true;
+                }
                 qef.add_intersection(pos, grad);
 
                 // Record this intersection in the Hermite data for the leaf
@@ -959,8 +963,6 @@ impl<'a, F: Function + RenderHints> OctreeBuilder<'a, F> {
                     pos: nalgebra::Vector4::new(pos.x, pos.y, pos.z, 1.0),
                     grad,
                 };
-
-                i += 1;
             }
 
             if let Some(pos) = force_point {
@@ -971,18 +973,24 @@ impl<'a, F: Function + RenderHints> OctreeBuilder<'a, F> {
 
                 // We overwrite the error here, because it's only used when
                 // collapsing cells, which only occurs if there's a single
-                // vertex; last-error-wins works fine in that case.
-                hermite_cell.qef_err = err;
+                // vertex; last-error-wins works fine in that case. A zero
+                // gradient adds no plane to the QEF, so its residual cannot
+                // measure collapse error: keep the leaf's own vertex.
+                hermite_cell.qef_err = if missing_plane
+                    || hermite_cell.qef_err == QEF_ERR_INVALID
+                {
+                    QEF_ERR_INVALID
+                } else {
+                    err
+                };
             }
         }
 
         let index = self.octree.verts.len();
         self.octree.verts.extend(verts);
-        self.octree.verts.extend(
-            intersections
-                .into_iter()
-                .map(|pos| CellVertex { pos: cell.pos(pos) }),
-        );
+        self.octree
+            .verts
+            .extend(intersection_pos.into_iter().map(|pos| CellVertex { pos }));
 
         Cell::Leaf(Leaf { mask, index })
     }

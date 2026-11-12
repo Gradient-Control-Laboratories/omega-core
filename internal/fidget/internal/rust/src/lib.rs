@@ -1811,4 +1811,99 @@ mod tests {
             "mesh_oracle::lookup({key:#x}) returned None after clear() — registry got wiped"
         );
     }
+
+    #[test]
+    fn exact_box_constant_tie_keeps_sharp_corners() {
+        // Exact Euclidean box SDF with dyadic half-extents: on the negative
+        // faces, `(start + end) / 2` lands directly on `face == 0`, where
+        // `min(max(dx, dy, dz), 0)` ties with the constant `0`. Bracket-
+        // endpoint recovery preserves the face normals so corners stay sharp.
+        let (x, y, z) = fidget::context::Tree::axes();
+        let dx = x.abs() - 0.625;
+        let dy = y.abs() - 0.5;
+        let dz = z.abs() - 0.25;
+        let outside = (dx.clone().max(0.0).square()
+            + dy.clone().max(0.0).square()
+            + dz.clone().max(0.0).square())
+        .sqrt();
+        let inside = dx.max(dy).max(dz).min(0.0);
+        let shape: fidget::shape::BoundShape<'static, _, f32> =
+            fidget::vm::VmShape::from(outside + inside)
+                .try_into()
+                .unwrap();
+
+        let settings = MeshSettings {
+            depth: 5,
+            threads: None,
+            ..Default::default()
+        };
+        let mesh = fidget_mesh::Octree::build(&shape, &settings)
+            .unwrap()
+            .walk_dual();
+
+        for sx in [-0.625_f32, 0.625] {
+            for sy in [-0.5_f32, 0.5] {
+                for sz in [-0.25_f32, 0.25] {
+                    let expected = nalgebra::Vector3::new(sx, sy, sz);
+                    let best = mesh
+                        .vertices
+                        .iter()
+                        .map(|v| (v - expected).norm())
+                        .fold(f32::INFINITY, f32::min);
+                    assert!(
+                        best < 1e-3,
+                        "missing sharp corner near {expected:?} (closest distance {best})"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn zero_gradient_step_box_does_not_overcollapse() {
+        // A step-function box whose gradient is identically zero on both sides
+        // of every crossing: leaves have no planes, so octree collapse must not
+        // merge coarse cells across the 90-degree corners.
+        let (x, y, z) = fidget::context::Tree::axes();
+        let step_box = (x.abs() - 0.5)
+            .floor()
+            .max((y.abs() - 0.5).floor())
+            .max((z.abs() - 0.5).floor());
+        let shape: fidget::shape::BoundShape<'static, _, f32> =
+            fidget::vm::VmShape::from(step_box).try_into().unwrap();
+
+        let settings = MeshSettings {
+            depth: 5,
+            threads: None,
+            ..Default::default()
+        };
+        let mesh = fidget_mesh::Octree::build(&shape, &settings)
+            .unwrap()
+            .walk_dual();
+        assert!(
+            mesh.vertices.iter().all(|v| v.iter().all(|c| c.is_finite())),
+            "mesh contains non-finite vertex"
+        );
+
+        // At depth 5 (cell width w = 2 / 32 = 0.0625), the centroid of the
+        // three crossings in an uncollapsed corner leaf sits at distance
+        // sqrt(3) * (2/3) * w ≈ 0.0722 from [±0.5, ±0.5, ±0.5] (whereas even
+        // a single level of octree collapse doubles that to ≈ 0.144).
+        for sx in [-0.5_f32, 0.5] {
+            for sy in [-0.5_f32, 0.5] {
+                for sz in [-0.5_f32, 0.5] {
+                    let expected = nalgebra::Vector3::new(sx, sy, sz);
+                    let best = mesh
+                        .vertices
+                        .iter()
+                        .map(|v| (v - expected).norm())
+                        .fold(f32::INFINITY, f32::min);
+                    assert!(
+                        best < 0.08,
+                        "step-box corner over-collapsed near {expected:?} (closest distance {best})"
+                    );
+                }
+            }
+        }
+    }
 }

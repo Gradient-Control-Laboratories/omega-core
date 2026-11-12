@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	main "gradientcontrol.com/omega/core/cmd/compile"
+	"gradientcontrol.com/omega/core/cmd/compile/internal/cli"
 	"gradientcontrol.com/omega/core/cmd/compile/internal/evalcmd"
 	"gradientcontrol.com/omega/core/internal/test/assert"
 	"gradientcontrol.com/omega/core/internal/test/require"
@@ -24,7 +24,7 @@ func TestEvalRenderIsCompilePNG(t *testing.T) {
 
 	viaCompile := filepath.Join(dir, "compile.png")
 	var stdout, stderr bytes.Buffer
-	require.NoError(t, main.Run([]string{"-t", "png", "--views", "iso,-1,1,0.6", "--size", "120x90", "--light",
+	require.NoError(t, cli.Run([]string{"-t", "png", "--views", "iso,-1,1,0.6", "--size", "120x90", "--light",
 		"--no-meta", "-o", viaCompile, source}, nil, &stdout, &stderr), stderr.String())
 
 	viaEval := filepath.Join(dir, "eval.png")

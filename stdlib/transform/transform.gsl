@@ -1,3 +1,6 @@
+/// Move, rotate and scale a shape and keep its bounding box, as in
+/// `transform.translate(sphere(1), [2, 0, 0])`.
+
 // =========================================================
 // SHAPE TRANSFORMS
 // =========================================================

@@ -1,3 +1,6 @@
+/// Solid wood as a 3D growth field (rings, knots, pores, rays) with species
+/// presets, consistent on face, edge and end grain.
+
 
 // Wood Materials (material/bulk/wood)
 //

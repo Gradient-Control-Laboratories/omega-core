@@ -9,7 +9,7 @@ import { detailKnobsU } from "./gsl-shading.js";
 
 // partSizesPx is each part's size on screen, in pixels: its box's shortest
 // edge over the size of a pixel at the box's nearest point, as the shader
-// measures it (gsl_vanish, agent/wgsl/internal/codegen/vanish.go). eye is the
+// measures it (gsl_vanish, backend/wgsl/internal/codegen/vanish.go). eye is the
 // camera's position, Z up; pixelScale the world size of a pixel at distance 1,
 // or at any distance when ortho is 1.
 export function partSizesPx(parts, eye, pixelScale, ortho) {

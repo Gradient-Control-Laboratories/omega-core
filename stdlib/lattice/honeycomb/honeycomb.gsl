@@ -1,3 +1,6 @@
+/// Periodic 2D cell-wall lattices in the XY plane: square, diagonal, hexagonal,
+/// triangular, octet and reinforced.
+
 
 // Honeycomb Lattice Library (lattice/honeycomb)
 //

@@ -5,10 +5,10 @@ import (
 	"sort"
 
 	"gradientcontrol.com/omega/core/assembler/meshplan"
+	"gradientcontrol.com/omega/core/assembler/source"
 	"gradientcontrol.com/omega/core/internal/build"
 	"gradientcontrol.com/omega/core/internal/link"
 	"gradientcontrol.com/omega/core/internal/scope"
-	internalsource "gradientcontrol.com/omega/core/internal/source"
 	"gradientcontrol.com/omega/core/program"
 )
 
@@ -121,7 +121,7 @@ func partitionReturns(
 // prog.Returns()[geomCount+audioCount : geomCount+audioCount+totalVariantCount].
 func (rp *returnPartition) AttachVariants(
 	prog *program.Program,
-	srcMgr internalsource.Manager,
+	srcMgr source.Manager,
 	variants map[string]string,
 	parsePkg ParsePackageFunc,
 ) {
