@@ -209,6 +209,25 @@ func UnwrapProgramErrors(src string, err error) []program.Error {
 	return out
 }
 
+// tokenWidth is how many characters of line, from the 1-based column, an error
+// there should underline: the whole word or number when the column starts one
+// (a dotted name like lib.fn counts as one), else the single character.
+func tokenWidth(line string, column int) int {
+	start := column - 1
+	if start < 0 || start >= len(line) || !isWordByte(line[start]) {
+		return 1
+	}
+	end := start
+	for end < len(line) && (isWordByte(line[end]) || line[end] == '.') {
+		end++
+	}
+	return end - start
+}
+
+func isWordByte(b byte) bool {
+	return b == '_' || ('0' <= b && b <= '9') || ('a' <= b && b <= 'z') || ('A' <= b && b <= 'Z')
+}
+
 func collectErrors(src string, err error, out *[]program.Error) {
 	if err == nil {
 		return
@@ -225,8 +244,8 @@ func collectErrors(src string, err error, out *[]program.Error) {
 		if cp.Line == "" && cp.LineNum > 0 {
 			cp.Line = build.LineFromSource(src, cp.LineNum)
 		}
-		if cp.Length <= 0 {
-			cp.Length = 1
+		if cp.Length <= 1 {
+			cp.Length = tokenWidth(cp.Line, cp.Column)
 		}
 		*out = append(*out, cp)
 		return

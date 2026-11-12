@@ -1,6 +1,7 @@
 package types
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -9,7 +10,37 @@ import (
 	gsllibs "gradientcontrol.com/omega/core/stdlib"
 )
 
-func inferSingleType(op *program.Operand, env *TypeEnv, file *program.PackageFile, pa *PackageAnalyzer) (*program.Type, error) {
+// locateErr gives an error from inferring op the position of op's first
+// character, so a diagnostic points at the expression instead of falling back
+// to 1:1. An error that already carries a position, from an operand nested
+// inside op, keeps it: the innermost operand is the more precise place. An
+// error in a dependency package names that package.
+func (pa *PackageAnalyzer) locateErr(op *program.Operand, file *program.PackageFile, err error) error {
+	if err == nil || op == nil || op.Start == nil || op.Start.Line < 1 {
+		return err
+	}
+	var located *program.Error
+	if errors.As(err, &located) {
+		return err
+	}
+	locErr := &program.Error{
+		LineNum: int(op.Start.Line),
+		Column:  int(op.Start.Column),
+		Length:  1,
+		Message: err.Error(),
+	}
+	pkg := pa.filePkgs[file]
+	if pkg == nil {
+		pkg = pa.currentPkg
+	}
+	if pkg != nil && pkg != pa.prog.Primary {
+		locErr.PackagePath = pkg.Path
+	}
+	return locErr
+}
+
+func inferSingleType(op *program.Operand, env *TypeEnv, file *program.PackageFile, pa *PackageAnalyzer) (_ *program.Type, err error) {
+	defer func() { err = pa.locateErr(op, file, err) }()
 	types, err := inferOperandType(op, env, file, pa)
 	if err != nil {
 		return nil, err
@@ -21,7 +52,8 @@ func inferSingleType(op *program.Operand, env *TypeEnv, file *program.PackageFil
 	return types[0], nil
 }
 
-func inferOperandType(op *program.Operand, env *TypeEnv, file *program.PackageFile, pa *PackageAnalyzer) ([]*program.Type, error) {
+func inferOperandType(op *program.Operand, env *TypeEnv, file *program.PackageFile, pa *PackageAnalyzer) (_ []*program.Type, err error) {
+	defer func() { err = pa.locateErr(op, file, err) }()
 	if op == nil || op.T == nil {
 		return nil, nil
 	}
@@ -32,7 +64,6 @@ func inferOperandType(op *program.Operand, env *TypeEnv, file *program.PackageFi
 	}
 
 	var res []*program.Type
-	var err error
 
 	switch v := op.T.(type) {
 	case *program.Operand_Value:
