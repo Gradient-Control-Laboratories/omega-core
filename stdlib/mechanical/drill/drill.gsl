@@ -111,15 +111,17 @@ hole(features) {
 // upward at `included`. Below its own apex it contributes nothing, so a
 // lead-in needs no depth.
 //
-// It is NOT bounded above, and that is deliberate at the mouth: a cone cut off
-// on the face would put its rim annulus exactly on that face, and no surface of
-// the void may be coincident with the face it opens onto. Above the mouth there
-// is no material to protect — the mouth IS the face — so the cone runs on and
-// the part bounds it, exactly as the bodies do.
+// Above `plane` it is capped by its rim's CYLINDER, `dia` across, not by a
+// plane. A cone cut off on the face would put its rim annulus exactly on that
+// face, and no surface of the void may be coincident with the face it opens
+// onto; a cone left open widens without limit and cuts through whatever stands
+// above the face. The cylinder meets the face only in the rim circle, and above
+// the mouth it is the side of whatever seats in the cone, a flat head's or a
+// center's, so the part bounds it as it bounds the bodies.
 coneVoid(plane, dia, included) {
   half = included / 2.0;
   apex = plane - (dia / 2.0) / tan(half);
-  return cone([0.0, 0.0, apex], vector.dirZ, half);
+  return max(cone([0.0, 0.0, apex], vector.dirZ, half), cylinderZ(vector.zero, dia / 2.0));
 }
 
 // coneVoid cut off at its own plane, for a lead-in seated BELOW the mouth,
@@ -518,12 +520,14 @@ prismVoid(zTop, section, depth) {
 // ramp in z — and the 0.7071 is the same normalization coneVoid gets from
 // cone() for free.
 //
-// Unbounded above, like coneVoid and for the same reason. `section` is a 2D
+// Capped above by its rim, the section grown by `leg`, as coneVoid is by its
+// rim's cylinder and for the same reason: open, it would widen without limit
+// through whatever stands above the face. `section` is a 2D
 // FIELD, a plain parameter the caller has already evaluated; a feature taking
 // a section as a FUNCTION would be the general chamfer, and that is still the
 // captured-function case the closure pass bakes rather than lifts.
 chamferSection(plane, section, leg) {
-  return (section - leg - (p.z - plane)) * 0.7071;
+  return max((section - leg - (p.z - plane)) * 0.7071, section - leg);
 }
 
 // =========================================================
@@ -612,6 +616,10 @@ chamferAt(dia, leg, atDepth) {
 /// radians(90) for an ISO 10642 flat head, radians(82) for the inch series.
 /// To break its own outer edge, list a wider chamfer with it; that needs no
 /// new function, which is the point of a feature list.
+///
+/// Above the mouth the void is the rim's cylinder, `dia` across: the side of
+/// the head that seats in it. The cone stops widening there, so it cuts no
+/// wider than the head through anything that stands above the face.
 countersink(dia, included) {
   cut(zTop) {
     return coneVoid(zTop, dia, included);
