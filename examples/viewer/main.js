@@ -1432,7 +1432,10 @@ exampleSelectEl.addEventListener("change", () => {
 (async function initExamples() {
     const examples = await refreshExampleList();
     if (examples.length > 0) {
-        const defaultEx = examples.find((e) => e.name === "gears.gsl") || examples[0];
+        // `gsl viewer part.gsl` opens the page with ?file=part.gsl.
+        const requested = new URLSearchParams(window.location.search).get("file");
+        const defaultEx = examples.find((e) => e.name === requested)
+            || examples.find((e) => e.name === "gears.gsl") || examples[0];
         await loadExample(defaultEx.name);
     }
 })();

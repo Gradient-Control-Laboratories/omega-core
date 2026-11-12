@@ -8,6 +8,11 @@ the omega-core commit they were built from. The licence texts go to ``omega_core
 ``THIRD_PARTY_LICENSES.txt``, which the build script writes beside the programs (``tool/third_party_licenses.py``)
 and without which no wheel is built.
 
+``gsl viewer`` serves the WebGPU viewer from files beside the programs: the viewer's web files go to
+``omega_core/viewer`` (``examples/viewer``) and the examples it opens without a file to ``omega_core/examples`` (the
+``.gsl`` files of ``examples`` and its ``assets``). Only files git tracks are packaged, so a checkout's scratch files
+stay out of the wheel; without git, every file but dotfiles is.
+
 The tag is ``OMEGA_CORE_TAG`` when set (CI sets ``manylinux_2_28_<arch>`` for programs built in that image), else this
 machine's: ``macosx_11_0_<arch>`` on macOS (the build script sets that deployment target), ``linux_<arch>`` on Linux,
 which PyPI refuses, so a Linux wheel for PyPI is always one CI built and named.
@@ -54,6 +59,34 @@ def commit() -> str:
         return "unknown"
 
 
+def tracked(*paths: str) -> list[Path]:
+    """The files under ``paths`` (relative to the repository) that git tracks, or, without git, every file there
+    but dotfiles."""
+    try:
+        listed = subprocess.run(["git", "ls-files", "-z", "--", *paths], cwd=REPO, capture_output=True, check=True)
+        return [REPO / name for name in listed.stdout.decode().split("\0") if name]
+    except (OSError, subprocess.CalledProcessError):
+        found = []
+        for path in paths:
+            root = REPO / path
+            found += [f for f in (root.rglob("*") if root.is_dir() else [root])
+                      if f.is_file() and not any(part.startswith(".") for part in f.relative_to(REPO).parts)]
+        return found
+
+
+def viewer_files() -> dict[str, str]:
+    """``gsl viewer``'s files, source path to path in the wheel: the viewer and the examples it opens."""
+    examples = REPO / "examples"
+    files = {}
+    for f in tracked("examples/viewer"):
+        files[str(f)] = "omega_core/viewer/" + f.relative_to(examples / "viewer").as_posix()
+    for f in tracked("examples/assets") + [f for f in tracked("examples") if f.parent == examples and f.suffix == ".gsl"]:
+        files[str(f)] = "omega_core/examples/" + f.relative_to(examples).as_posix()
+    if not any(name.endswith("/viewer/index.html") for name in files.values()):
+        raise RuntimeError(f"no examples/viewer/index.html in {REPO}: the wheel needs the viewer")
+    return files
+
+
 def stage(source: Path, into: Path, version: str, tag: str) -> None:
     """The programs from ``source`` and a manifest, laid out under ``into`` as the wheel ships them."""
     shutil.rmtree(into, ignore_errors=True)
@@ -87,6 +120,7 @@ class CustomBuildHook(BuildHookInterface):
         build_data["force_include"][str(third_party)] = "omega_core/licenses/THIRD_PARTY_LICENSES.txt"
         for name, path in LICENSES.items():
             build_data["force_include"][str(path)] = f"omega_core/licenses/{name}"
+        build_data["force_include"].update(viewer_files())
         build_data["tag"] = f"py3-none-{tag}"
         build_data["pure_python"] = False
         self.app.display_info(f"omega-core {self.metadata.version}: gsl and compile from {source}, tagged {tag}")

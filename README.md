@@ -110,6 +110,8 @@ gsl <command> [arguments]
 Subcommands delegate to sibling tool binaries in `bin/`:
 - `gsl compile` (aliases `build`, `c`): Compile GSL sources to target outputs (`bin/compile`).
 - `gsl serve`: Launch the local HTTP server and interactive WebGPU viewer (`bin/serve`).
+- `gsl viewer [part.gsl]`: Open a file, or the examples, in the WebGPU viewer in the default browser
+  (`bin/compile viewer`); the file's folder is served, and Save writes back to it.
 - `gsl fix`: Refactor GSL source files to current syntax (`bin/fix`).
 - `gsl help [command]`: Display help for `gsl` or a specific subcommand.
 
