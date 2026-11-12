@@ -55,8 +55,9 @@ in your default WebGPU-capable browser (Chrome 113+, Edge 113+, or Safari 18+ on
     color or a swatch from the material catalog writes the `.color` / `.material` lines into the
     GSL source, and the palette strip sets the viewer's default colors.
   - **Export**: Server-side Dual Contouring / Marching Cubes export (`POST /api/mesh`) with live
-    stage progress, as 3MF (each body an object in its Bodies-panel color) or STL (a zip of one STL
-    per body when several are shown). Only the bodies the Bodies panel shows are exported.
+    stage progress, as 3MF (each body an object in its Bodies-panel color), GLB (each body a node in
+    its Bodies-panel color) or STL (a zip of one STL per body when several are shown). Only the bodies
+    the Bodies panel shows are exported.
 
 ## Directory Layout
 

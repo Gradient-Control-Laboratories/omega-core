@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"gradientcontrol.com/omega/core/assembler/variation"
+	"gradientcontrol.com/omega/core/backend/mesh/glb"
 	"gradientcontrol.com/omega/core/backend/mesh/threemf"
 	"gradientcontrol.com/omega/core/program"
 )
@@ -161,6 +162,27 @@ func Write3MF(w io.Writer, bodies []Body, colors map[int]string) error {
 		entries[i] = threemf.Body{Name: b.Name, Color: color, Mesh: m}
 	}
 	return threemf.Write(w, entries)
+}
+
+// WriteGLB writes bodies as one binary glTF (.glb), each a node with its own
+// mesh and material, colored as Write3MF colors it: colors[Index] where colors
+// has a "#rrggbb" for it, the viewer's palette otherwise. Vertices are welded
+// as for 3MF and stay in millimetres, Z up, under a root node that turns them
+// into glTF's metres, Y up (package glb).
+func WriteGLB(w io.Writer, bodies []Body, colors map[int]string) error {
+	entries := make([]glb.Body, len(bodies))
+	for i, b := range bodies {
+		m, err := threemf.WeldSTL(b.STL)
+		if err != nil {
+			return fmt.Errorf("body %s: %w", b.Name, err)
+		}
+		color := colors[b.Index]
+		if color == "" {
+			color = threemf.PaletteColor(b.Index)
+		}
+		entries[i] = glb.Body{Name: b.Name, Color: color, Positions: m.Positions, Indices: m.Indices}
+	}
+	return glb.Write(w, entries)
 }
 
 func zipEntryNames(names []string) []string {

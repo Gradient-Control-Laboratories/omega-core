@@ -37,7 +37,7 @@ omega-core/
 │   └── wgsl/                  # WebGPU shader emitter
 ├── bin/                       # Local build outputs (gsl, compile, serve, fix binaries; gitignored)
 ├── cmd/                       # Standalone CLI tools
-│   ├── compile/               # Unified compiler CLI (emits WGSL, STL, 3MF, tape, audio)
+│   ├── compile/               # Unified compiler CLI (emits WGSL, STL, 3MF, GLB, tape, audio)
 │   ├── fix/                   # GSL source refactoring CLI (rewrites legacy comments to directives)
 │   ├── gsl/                   # Unified GSL toolchain CLI driver (delegates to bin/ tools)
 │   └── serve/                 # Local HTTP server and WebGPU viewer host
@@ -159,6 +159,14 @@ or, with `-t 3mf`, one 3MF with each body an object in its own color:
 
 ```bash
 bin/gsl compile -t 3mf -o model.3mf model.gsl
+```
+
+`-t glb` writes one binary glTF with each body a node in its own color, for Blender, three.js and other
+3D tools. The vertices stay in millimetres with Z up, as in the STL and 3MF; a root node scales them to
+glTF's metres and turns them Y up, so the part opens at its size and the right way up:
+
+```bash
+bin/gsl compile -t glb -o model.glb model.gsl
 ```
 
 Compile from standard input (`stdin`) and stream to standard output (`stdout`):

@@ -139,12 +139,13 @@ func (s *Server) handleMesh(w http.ResponseWriter, r *http.Request) {
 		Algo        string    `json:"algo"`
 		Time        float64   `json:"time"`
 		// Format is "stl" (the default: one body's STL, or a zip of <name>.stl for
-		// several) or "3mf" (one file, each body an object in its own color).
+		// several), "3mf" (one file, each body an object in its own color) or
+		// "glb" (one binary glTF, each body a node with its own color).
 		Format string `json:"format"`
 		// Bodies, when set, is the 1-based returns to export (the Bodies
 		// panel's visible ones); without it every return is exported.
 		Bodies []int `json:"bodies"`
-		// Colors gives a 3MF body's color by its 1-based return index
+		// Colors gives a 3MF or GLB body's color by its 1-based return index
 		// ("#rrggbb", as the Bodies panel shows it); others take the palette.
 		Colors map[int]string `json:"colors"`
 	}
@@ -153,8 +154,8 @@ func (s *Server) handleMesh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	format := strings.ToLower(strings.TrimSpace(payload.Format))
-	if format != "" && format != "stl" && format != "3mf" {
-		writeJSONError(w, http.StatusBadRequest, "unsupported format "+payload.Format+"; must be stl or 3mf")
+	if format != "" && format != "stl" && format != "3mf" && format != "glb" {
+		writeJSONError(w, http.StatusBadRequest, "unsupported format "+payload.Format+"; must be stl, 3mf or glb")
 		return
 	}
 
@@ -183,14 +184,22 @@ func (s *Server) handleMesh(w http.ResponseWriter, r *http.Request) {
 	// Each top-level return is its own body.
 	var data []byte
 	contentType, filename := "model/stl", "model.stl"
-	if format == "3mf" {
+	switch format {
+	case "3mf":
 		var buf bytes.Buffer
 		if err := mesh.Write3MF(&buf, bodies, payload.Colors); err != nil {
 			writeJSONError(w, http.StatusInternalServerError, "writing 3MF: "+err.Error())
 			return
 		}
 		data, contentType, filename = buf.Bytes(), "model/3mf", "model.3mf"
-	} else {
+	case "glb":
+		var buf bytes.Buffer
+		if err := mesh.WriteGLB(&buf, bodies, payload.Colors); err != nil {
+			writeJSONError(w, http.StatusInternalServerError, "writing GLB: "+err.Error())
+			return
+		}
+		data, contentType, filename = buf.Bytes(), "model/gltf-binary", "model.glb"
+	default:
 		packed, zipped, err := mesh.PackSTL(bodies)
 		if err != nil {
 			writeJSONError(w, http.StatusInternalServerError, "zipping bodies: "+err.Error())

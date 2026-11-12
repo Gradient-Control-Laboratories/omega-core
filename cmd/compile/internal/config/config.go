@@ -16,6 +16,7 @@ const (
 	TargetWGSL  Target = "wgsl"
 	TargetSTL   Target = "stl"
 	Target3MF   Target = "3mf"
+	TargetGLB   Target = "glb"
 	TargetTape  Target = "tape"
 	TargetAudio Target = "audio"
 	TargetAST   Target = "ast"
@@ -73,6 +74,8 @@ func (c *Config) defaultExt() string {
 		return ".stl"
 	case Target3MF:
 		return ".3mf"
+	case TargetGLB:
+		return ".glb"
 	case TargetTape:
 		return ".tape"
 	case TargetAudio:
@@ -148,8 +151,8 @@ func ParseFlags(args []string) (*Config, error) {
 	)
 
 	// Target flag (-t, --target)
-	fs.StringVar(&targetStr, "t", "wgsl", "Compilation output target (wgsl, stl, 3mf, tape, audio, ast, png)")
-	fs.StringVar(&targetStr, "target", "wgsl", "Compilation output target (wgsl, stl, 3mf, tape, audio, ast, png)")
+	fs.StringVar(&targetStr, "t", "wgsl", "Compilation output target (wgsl, stl, 3mf, glb, tape, audio, ast, png)")
+	fs.StringVar(&targetStr, "target", "wgsl", "Compilation output target (wgsl, stl, 3mf, glb, tape, audio, ast, png)")
 
 	// Output flag (-o, --output)
 	fs.StringVar(&outputStr, "o", "", "Output destination path ('-' for stdout)")
@@ -192,9 +195,9 @@ func ParseFlags(args []string) (*Config, error) {
 
 	target := Target(strings.ToLower(strings.TrimSpace(targetStr)))
 	switch target {
-	case TargetWGSL, TargetSTL, Target3MF, TargetTape, TargetAudio, TargetAST, TargetPNG:
+	case TargetWGSL, TargetSTL, Target3MF, TargetGLB, TargetTape, TargetAudio, TargetAST, TargetPNG:
 	default:
-		return nil, fmt.Errorf("unsupported target %q; must be one of wgsl, stl, 3mf, tape, audio, ast, png", targetStr)
+		return nil, fmt.Errorf("unsupported target %q; must be one of wgsl, stl, 3mf, glb, tape, audio, ast, png", targetStr)
 	}
 
 	var width, height int

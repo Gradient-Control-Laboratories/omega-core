@@ -11,7 +11,9 @@
 // booleans with Manifold (mesh_boolean.js). See runPlanExport below.
 //
 // The panel picks the output and the mesher apart. Format is 3MF (one file,
-// each body an object in its own color, threemf.js; the default), STL (one
+// each body an object in its own color, threemf.js; the default), GLB (one
+// binary glTF, each body a node in its own color; the server writes it, so
+// only for a server mesher with serverFormats), STL (one
 // file, or a zip of one per body) or Omega Tape (the implicit field itself,
 // which Detail, the mesher and Clean do not touch). Mesher is where the meshing runs: Browser MC (above),
 // Browser DC (fidget-wasm on the server's tape) or Server DC.
@@ -42,8 +44,8 @@
 //                           or is null when they could not be measured. algo is
 //                           the mesher picked: "mdc" (Server DC) or
 //                           "marching-cubes" (Server MC). format is the
-//                           format picked ("3mf" or "stl"), for an app with
-//                           serverFormats.
+//                           format picked ("3mf", "glb" or "stl"), for an
+//                           app with serverFormats.
 //                           Without it the Server DC mesher is not offered,
 //                           unless serverExportUnavailable is given.
 //   serverMarchingCubes     optional; true when onServerExport meshes by the
@@ -59,10 +61,11 @@
 //                           export can be cleaned or written as 3MF.
 //                           Without it Server DC is STL only.
 //   serverFormats           optional; true when onServerExport has the server
-//                           write the format it is given (3MF, or STL: one
+//                           write the format it is given (3MF, GLB, or STL: one
 //                           body's, or a zip of one per body), so a server
 //                           export is not STL only. The server does not clean,
 //                           so Clean stays off for it (the standalone viewer).
+//                           Without it GLB is not offered.
 //   serverExportUnavailable optional; with no onServerExport, keeps Server
 //                           DC in the list, disabled, with this as its title.
 //   getVisibleShapes()      optional; the 1-based returns the viewer shows, or
@@ -685,6 +688,8 @@ function fileSafeName(name) {
 }
 
 async function deliverBodies(bodies, baseName, { format, clean }) {
+    // GLB is the server's to write; the panel offers it for server exports only.
+    if (format === 'glb') throw new Error("GLB is written by the server: pick Server DC or Server MC");
     let refused = [];
     if (clean) ({ bodies, refused } = await cleanBodies(bodies));
     if (format === '3mf') {
@@ -946,6 +951,12 @@ export function initExportPanel(hooks) {
     }
     if (!deps.onServerExport || !deps.serverMarchingCubes) mesherOption('server-mc').remove();
     if (!deps.onSaveTape) formatSelect.querySelector('option[value="tape"]').remove();
+    // GLB is written by the server, so only an app whose server writes the
+    // format (serverFormats) offers it, and only for a server mesher.
+    const glbOption = formatSelect.querySelector('option[value="glb"]');
+    if (!deps.onServerExport || !deps.serverFormats) glbOption?.remove();
+    const GLB_TITLE = glbOption?.title || '';
+    const GLB_SERVER_ONLY = "GLB is written by the server: pick Server DC or Server MC";
     const SERVER_STL_ONLY = "This app's server export comes back as one STL";
     const SERVER_NOT_CLEANED = "This app's server export is not cleaned";
     const NOT_MESHED = "A tape is the implicit field itself; nothing is meshed";
@@ -959,6 +970,12 @@ export function initExportPanel(hooks) {
     refreshControls = () => {
         // A mesher or format that became unavailable gives way to the default.
         if (mesherSelect.selectedOptions[0]?.disabled) pickDefaultMesher();
+        const serverMesher = mesherSelect.value === 'server' || mesherSelect.value === 'server-mc';
+        if (glbOption?.isConnected) {
+            const serverWritesGlb = serverMesher && !deps.serverResults;
+            glbOption.disabled = !serverWritesGlb;
+            glbOption.title = serverWritesGlb ? GLB_TITLE : GLB_SERVER_ONLY;
+        }
         if (formatSelect.selectedOptions[0]?.disabled) formatSelect.value = '3mf';
         // A tape is not meshed, so Detail, the mesher and Clean have nothing
         // to do.

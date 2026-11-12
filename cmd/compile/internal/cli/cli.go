@@ -41,7 +41,7 @@ func PrintUsage(w io.Writer) {
 	fmt.Fprintf(w, "  compile eval [flags] REQUEST.json | --stdio   (query a document's field: compile eval --help)\n\n")
 	fmt.Fprintf(w, "Flags:\n")
 	fmt.Fprintf(w, "  -t, --target string\n")
-	fmt.Fprintf(w, "        Compilation output target (wgsl, stl, 3mf, tape, audio, ast, png) (default \"wgsl\")\n")
+	fmt.Fprintf(w, "        Compilation output target (wgsl, stl, 3mf, glb, tape, audio, ast, png) (default \"wgsl\")\n")
 	fmt.Fprintf(w, "  -o, --output string\n")
 	fmt.Fprintf(w, "        Output destination path ('-' for stdout)\n")
 	fmt.Fprintf(w, "  -m, --meta string\n")
@@ -189,7 +189,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		}
 		outBytes = []byte(renderRes.WGSL)
 
-	case config.TargetSTL, config.Target3MF:
+	case config.TargetSTL, config.Target3MF, config.TargetGLB:
 		meshOpts := []mesh.Option{
 			mesh.WithSubdivision(cfg.Subdivision),
 			mesh.WithAlgorithm(cfg.Algo),
@@ -228,7 +228,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 				fmt.Fprintf(stderr, "[mesh] %s (%d/%d)\n", stage, completed, total)
 			}))
 		}
-		// Each top-level return is its own body: one STL, a zip of <name>.stl for several, or a 3MF object each.
+		// Each top-level return is its own body: one STL, a zip of <name>.stl for several, or a 3MF object or GLB node each.
 		bodies, meshErr := mesh.MeshBodies(res.Program, meshOpts...)
 		if meshErr != nil {
 			return fmt.Errorf("generating STL mesh: %w", meshErr)
@@ -240,6 +240,17 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 			var buf bytes.Buffer
 			if threeMfErr := mesh.Write3MF(&buf, bodies, nil); threeMfErr != nil {
 				return fmt.Errorf("writing 3MF: %w", threeMfErr)
+			}
+			outBytes = buf.Bytes()
+			break
+		}
+		if cfg.Target == config.TargetGLB {
+			if len(bodies) == 1 {
+				bodies[0].Name = bodyName(cfg)
+			}
+			var buf bytes.Buffer
+			if glbErr := mesh.WriteGLB(&buf, bodies, nil); glbErr != nil {
+				return fmt.Errorf("writing GLB: %w", glbErr)
 			}
 			outBytes = buf.Bytes()
 			break
@@ -448,7 +459,7 @@ func autoBbox(code string, srcPaths []string) ([6]float32, error) {
 	return box, nil
 }
 
-// bodyName names a one-body 3MF's object: the first source file's name without
+// bodyName names a one-body 3MF's object or GLB's node: the first source file's name without
 // its extension, as the default output path takes it, or "model" from stdin.
 // Several bodies keep their own names (mesh.MeshBodies).
 func bodyName(cfg *config.Config) string {

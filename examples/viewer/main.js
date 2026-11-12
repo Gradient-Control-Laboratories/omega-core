@@ -439,7 +439,7 @@ async function compileGsl(source) {
 }
 
 // requestStlExport asks the server to mesh the source by algo: "mdc" (the Export panel's Server DC) or
-// "marching-cubes" (Server MC), and to write it as format ("3mf" or "stl"). Each body the Bodies panel shows
+// "marching-cubes" (Server MC), and to write it as format ("3mf", "glb" or "stl"). Each body the Bodies panel shows
 // is meshed apart, in the color it shows; an STL of several comes back as a zip of one STL each.
 async function requestStlExport(detail, surfaceBbox, algo, format = "stl") {
     const source = getGslSourceForServer();
@@ -496,9 +496,9 @@ async function requestStlExport(detail, surfaceBbox, algo, format = "stl") {
             return false;
         }
 
-        // The reply's own type names the file: one STL, a zip of one STL per body, or a 3MF.
+        // The reply's own type names the file: one STL, a zip of one STL per body, a 3MF or a GLB.
         const type = res.headers.get("Content-Type") || "";
-        const fileExt = type.includes("zip") ? "zip" : type.includes("3mf") ? "3mf" : "stl";
+        const fileExt = type.includes("zip") ? "zip" : type.includes("3mf") ? "3mf" : type.includes("gltf-binary") ? "glb" : "stl";
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
