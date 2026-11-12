@@ -204,6 +204,44 @@ func (in *inliner) findFunction(fc *program.FnCall, fileScope *scope.PkgFileScop
 	return fnType, fn, pkgPath
 }
 
+// findBuiltinFunction finds the builtin package's own function that fc calls,
+// which findFunction does not look for: only a call that isBuiltinOrSpecial
+// and not isNativeOrSpecial has one.
+func (in *inliner) findBuiltinFunction(fc *program.FnCall, paramCount int) (*program.FnType, *program.Function, string) {
+	if in.progScope == nil || fc.Reference == nil {
+		return nil, nil, ""
+	}
+	builtinScope := in.progScope.Dependencies["builtin"]
+	if builtinScope == nil || builtinScope.Package == nil {
+		return nil, nil, ""
+	}
+	for _, file := range builtinScope.Package.Files {
+		for _, fnType := range file.FnTypes {
+			if fnType.Name != fc.Reference.Name {
+				continue
+			}
+			for _, group := range fnType.Groups {
+				if int(group.ParamCount) == paramCount && len(group.Functions) > 0 {
+					return fnType, group.Functions[0], builtinScope.Package.Path
+				}
+			}
+		}
+	}
+	return nil, nil, ""
+}
+
+// remapsAnyParam reports whether fn, declared in pkgPath, remaps any of its
+// parameters (see remapsParam).
+func (in *inliner) remapsAnyParam(fn *program.Function, pkgPath string) bool {
+	fnScope := in.fileScopeOf(fn, pkgPath)
+	for _, param := range fn.Parameters {
+		if in.remapsParam(fn, param.Name, fnScope, map[remapVisit]bool{}) {
+			return true
+		}
+	}
+	return false
+}
+
 func (in *inliner) findFunctionUncached(fc *program.FnCall, fileScope *scope.PkgFileScope, paramCount int) (*program.FnType, *program.Function, string) {
 	// First check local function scopes in innermost-to-outermost lexical order
 	if fc.Reference.Prefix == "" && len(in.enclosingFns) > 0 {
