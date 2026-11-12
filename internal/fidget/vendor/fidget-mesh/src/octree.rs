@@ -871,6 +871,68 @@ impl<'a, F: Function + RenderHints> OctreeBuilder<'a, F> {
             ) => unreachable!(),
         };
 
+        // A zero gradient at a crossing is never a distance field's normal.
+        // It comes from an exact tie of min or max, where each one takes its
+        // rhs's derivative on its own: on a face found exactly on a grid point
+        // (a box with round dimensions puts its faces there), the exact box
+        // field `length(max(d, 0)) + min(max(d.x, d.y, d.z), 0)` takes the
+        // inside's flat half of one term and the outside's flat half of the
+        // other, and sums to zero. No rule for ties fixes every spelling
+        // (min(x, 0) is x - max(x, 0)), so the gradient is evaluated again a
+        // hair off the point, where every piece is differentiable: along a
+        // fixed generic direction, then against it. The crossing keeps its
+        // place and value; only its normal is replaced.
+        let mut fixed: arrayvec::ArrayVec<Grad, { 12 * EDGE_SEARCH_SIZE }> =
+            grads.iter().copied().collect();
+        let is_zero = |g: &Grad| {
+            !g.v.is_nan() && g.dx == 0.0 && g.dy == 0.0 && g.dz == 0.0
+        };
+        if fixed.iter().any(is_zero) {
+            // In the cell's model space: about 80 ulps off a coordinate near
+            // 1, and far below a cell even at depth 12.
+            const NUDGE: f32 = 1e-5;
+            let dir = nalgebra::Vector3::new(1.0f32, 2f32.sqrt(), 3f32.sqrt())
+                .normalize();
+            for sign in [1.0f32, -1.0] {
+                let todo: arrayvec::ArrayVec<usize, { 12 * EDGE_SEARCH_SIZE }> =
+                    (0..fixed.len()).filter(|&i| is_zero(&fixed[i])).collect();
+                if todo.is_empty() {
+                    break;
+                }
+                let n = todo.len();
+                let nx = &mut [Grad::from(0.0); 12 * EDGE_SEARCH_SIZE][..n];
+                let ny = &mut [Grad::from(0.0); 12 * EDGE_SEARCH_SIZE][..n];
+                let nz = &mut [Grad::from(0.0); 12 * EDGE_SEARCH_SIZE][..n];
+                for (k, &i) in todo.iter().enumerate() {
+                    let p = cell.pos(intersections[i]) + dir * (sign * NUDGE);
+                    nx[k] = Grad::new(p.x, 1.0, 0.0, 0.0);
+                    ny[k] = Grad::new(p.y, 0.0, 1.0, 0.0);
+                    nz[k] = Grad::new(p.z, 0.0, 0.0, 1.0);
+                }
+                let nudged = match self.eval_grad_slice.eval_raw(
+                    eval.g_tape(&mut self.tape_storage),
+                    nx,
+                    ny,
+                    nz,
+                    self.world_to_model,
+                    ShapeBulkEval::<F::GradSliceEval>::var_value(self.vars),
+                ) {
+                    Ok(v) => v,
+                    Err(
+                        ShapeBulkEvalError::MissingVar(..)
+                        | ShapeBulkEvalError::MismatchedVarSlices { .. },
+                    ) => unreachable!(),
+                };
+                for (k, &i) in todo.iter().enumerate() {
+                    let g = nudged[k];
+                    if !is_zero(&g) && !g.v.is_nan() {
+                        fixed[i] = Grad::new(fixed[i].v, g.dx, g.dy, g.dz);
+                    }
+                }
+            }
+        }
+        let grads = &fixed[..];
+
         let mut verts: arrayvec::ArrayVec<_, 4> = arrayvec::ArrayVec::new();
         let mut i = 0;
         for vs in CELL_TO_VERT_TO_EDGES[mask.index()].iter() {
