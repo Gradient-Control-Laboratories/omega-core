@@ -44,7 +44,9 @@ cargo rustc -p render --release --crate-type staticlib --target-dir "${ROOT_DIR}
 mkdir -p "${OUT}"
 "${SCRIPT_DIR}/build-stdlib.sh"
 echo "==> compile (omega_static) and gsl"
-go build -tags omega_static -trimpath -ldflags "-s -w" -o "${OUT}/compile" ./cmd/compile
+# netgo: Go's own name resolver, not the C library's, which on Linux would load libresolv; compile serves
+# `gsl viewer` on a local address and never needs DNS.
+go build -tags "omega_static netgo" -trimpath -ldflags "-s -w" -o "${OUT}/compile" ./cmd/compile
 CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o "${OUT}/gsl" ./cmd/gsl
 
 echo "==> what compile loads"
