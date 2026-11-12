@@ -48,7 +48,10 @@ const EDGES = [
 // update colours each box by the rung its size is past.
 export function createPartBoxes() {
   const geometry = new THREE.BufferGeometry();
-  const material = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85, depthWrite: false });
+  // depthWrite, so the composite (viewer.js, gsl_composite) sees each line's
+  // depth in the main target and draws the model over a line only where the
+  // model is nearer.
+  const material = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85, depthWrite: true });
   const object = new THREE.LineSegments(geometry, material);
   object.visible = false;
   object.frustumCulled = false;
