@@ -1,0 +1,64 @@
+@scene(260, 20)
+
+// One L-shaped profile read twice in the cylindrical coordinate of an axis.
+// axisCylindrical gives [distance, u, v] about a line: the distance out from
+// it, the angle round it, and the distance along it. On the left the profile
+// is revolved: its x is the distance from the axis and its y is v, so the L
+// is the section of a flanged sleeve. On the right it is machined on a rotary
+// axis: its x is the arc length round the stock, the angle u times the stock's
+// radius, and its y is still v, so the L is a pocket wrapped onto a cylinder
+// and cut to a depth along the distance. Both axes run along Y.
+// Lengths are in mm.
+
+// The L: length and width of its arms, the fillet in the inside corner and
+// the round on the heel.
+@range(30, 50) armLength = 40.0;
+@range(8, 20) armWidth = 14.0;
+@range(1, 10) filletRadius = 6.0;
+@range(1, 8) heelRadius = 5.0;
+
+// Revolve: distance from the axis to the heel of the L, the sleeve's bore.
+@range(2, 30) boreRadius = 10.0;
+
+// Rotary: radius of the stock, and the depth of the pocket.
+@range(20, 40) stockRadius = 26.0;
+@range(1, 12) pocketDepth = 5.0;
+
+// An L with its heel at the origin. A 90 degree corner arc runs between the
+// two points one radius back from the sharp corner along each side. The loop
+// turns right at the inside corner, so its fillet has negative curvature, and
+// left at the heel, so its round has positive.
+bracketProfile() {
+  return profileXY(
+    [[heelRadius, 0], [armLength, 0], [armLength, armWidth],
+     [armWidth + filletRadius, armWidth], [armWidth, armWidth + filletRadius],
+     [armWidth, armLength], [0, armLength], [0, heelRadius]],
+    [0, 0, 0, neg(1 / filletRadius), 0, 0, 0, 1 / heelRadius]);
+}
+
+// The sleeve's axis, and the coordinate about it. The profile's x is the
+// distance from the axis, less the bore, and its y is the distance along it.
+sleeveCenter = [-70, 0, 0];
+sleeveDirection = [0, 1, 0];
+turned = axisCylindrical(sleeveCenter, sleeveDirection);
+sleeve = remap(bracketProfile(), [turned.x - boreRadius, turned.z, 0]);
+
+// The rotary axis, and the coordinate about it.
+rotaryCenter = [60, 0, 0];
+rotaryDirection = [0, 1, 0];
+rotary = axisCylindrical(rotaryCenter, rotaryDirection);
+
+// The profile's x is the arc length round the stock at its surface, placed so
+// the middle of the L faces +Z. Away from the surface an arc is shorter than
+// the profile's x by distance / stockRadius, so inside the stock the wrapped
+// distance is scaled down to stay a distance.
+arcLength = stockRadius * (rotary.y + pi / 2) + armLength / 2;
+wrapped = remap(bracketProfile(), [arcLength, rotary.z, 0]) * min(rotary.x / stockRadius, 1);
+
+margin = 8.0;
+stock = cylinderCapped(
+  rotaryCenter - [0, margin, 0], rotaryCenter + [0, armLength + margin, 0], stockRadius);
+pocket = intersectSharp(wrapped, stockRadius - pocketDepth - rotary.x);
+machined = differenceSharp(stock, pocket);
+
+return sleeve, machined;

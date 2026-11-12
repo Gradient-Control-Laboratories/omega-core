@@ -501,16 +501,35 @@ func (in *inliner) transformOperand(op *program.Operand, fileScope *scope.PkgFil
 			}
 		}
 
+		// A function of the builtin package is left as a call, with one
+		// exception: one that remaps a parameter (revolve) has to be inlined
+		// as any other package's is (see remapsFieldArg), or a backend that
+		// emits it as a function returns the field where the caller stood.
+		// Whether the argument depends on p is not asked here: operandUsesP
+		// does not see a p read inside a callee's map or reduce function,
+		// which is where a profile reads it, and inlining a call whose
+		// argument is the same at every point changes nothing.
+		builtinFn := false
 		if in.isBuiltinOrSpecial(fc) {
-			return nil
+			if in.isNativeOrSpecial(fc) {
+				return nil
+			}
+			builtinFn = true
 		}
 
 		fnDecl, fn, calleePkgPath := in.findFunction(fc, fileScope, len(fc.Arguments))
+		if builtinFn {
+			fnDecl, fn, calleePkgPath = in.findBuiltinFunction(fc, len(fc.Arguments))
+		}
 		if fn == nil || fnDecl == nil {
 			return nil
 		}
 
 		if len(fn.Returns) != 1 {
+			return nil
+		}
+
+		if builtinFn && !in.remapsAnyParam(fn, calleePkgPath) {
 			return nil
 		}
 
