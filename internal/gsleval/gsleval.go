@@ -26,6 +26,7 @@ import (
 	fidgetapi "gradientcontrol.com/omega/core/internal/fidget"
 	"gradientcontrol.com/omega/core/internal/fidget/lib"
 	"gradientcontrol.com/omega/core/internal/meshfold"
+	"gradientcontrol.com/omega/core/internal/meshimport"
 	"gradientcontrol.com/omega/core/internal/source"
 	parser "gradientcontrol.com/omega/core/parser"
 	"gradientcontrol.com/omega/core/program"
@@ -42,6 +43,10 @@ type Evaluator struct {
 	fetchAssets     AssetFetcher
 	assembleOptions []assembler.Option
 
+	// findMeshes, when set, loads importMesh files itself instead of
+	// fetching assets; see LoadMeshesFrom.
+	findMeshes meshimport.Finder
+
 	// certifyBudget overrides certify's per-proof interval-eval budget
 	// when positive; see SetCertifyBudget.
 	certifyBudget int
@@ -51,6 +56,19 @@ type Evaluator struct {
 	queryCacheSize int
 	queryCache     []preparedQuery
 	queryCacheMu   sync.Mutex
+}
+
+// LoadMeshesFrom has the evaluator read the STL files a document's importMesh
+// declarations name from dirs (the first that holds each file; a dependency
+// package's under dir/its path) and register them as the bvhSdf and vdbSdf
+// oracles its queries read, in place of the AssetFetcher. With no dirs it
+// loads nothing and an asset fetcher, if any, serves as before.
+func (e *Evaluator) LoadMeshesFrom(dirs ...string) {
+	if len(dirs) == 0 {
+		e.findMeshes = nil
+		return
+	}
+	e.findMeshes = meshimport.Dirs(dirs...)
 }
 
 // preparedQuery is one cached query: the source it was assembled from and
@@ -232,6 +250,16 @@ func (e *Evaluator) prepareQuery(ctx context.Context, manifest map[string]string
 	// oracle payloads before they can build. The textual filter errs open:
 	// a false positive costs one round trip, a mention inside a comment is
 	// harmless.
+	if meshAssets && e.findMeshes != nil {
+		uses, err := meshimport.Resolve(prog, res.Slots, e.findMeshes)
+		if err != nil {
+			return nil, err
+		}
+		if err := meshimport.Register(uses); err != nil {
+			return nil, err
+		}
+		return prog, nil
+	}
 	if meshAssets {
 		if e.fetchAssets == nil {
 			return nil, fmt.Errorf("this document references mesh assets (importStep/importMesh/bvhSdf/vdbSdf), which evalGsl cannot evaluate here")
