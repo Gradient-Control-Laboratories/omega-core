@@ -584,13 +584,14 @@ defined in [README.md](../../../README.md):
     `backend/wgsl`, and `internal/fidget`, and remove `[r, g, b, a]` from `name.color` in
     `doc/gsl_lang_spec_current.md` and `doc/gsl_lang_spec_future.md`.
 
-- [ ] **S17. Remove `compile eval` & `compile skill` in Favor of `gsl eval` & `gsl skill` Only**
-  - Remove the `os.Args[1] == "eval"` and `os.Args[1] == "skill"` branches from
-    `cmd/compile/main.go` and the `compile eval` usage line from `cmd/compile/internal/cli/cli.go`
-    so `cmd/compile` only compiles GSL sources; move `cmd/compile/internal/evalcmd` (plus
-    `cmd/compile/render_eval_test.go`) and `cmd/compile/internal/skillcmd` into `cmd/gsl/internal/`
-    for direct `gsl eval` and `gsl skill` execution (updating usage headers and
-    `cmd/gsl/internal/cli/cli.go` + `cli_test.go`, and unifying static wheel linkage in
+- [ ] **S17. Remove `compile eval`, `compile skill` & `compile viewer` in Favor of `gsl` Subcommands Only**
+  - Remove the `os.Args[1] == "eval"`, `os.Args[1] == "skill"`, and `os.Args[1] == "viewer"`
+    branches from `cmd/compile/main.go` and the `compile eval` usage line from
+    `cmd/compile/internal/cli/cli.go` so `cmd/compile` only compiles GSL sources; move
+    `cmd/compile/internal/evalcmd` (plus `cmd/compile/render_eval_test.go`) and
+    `cmd/compile/internal/skillcmd` into `cmd/gsl/internal/` and dispatch `viewer.Run`
+    (`cmd/serve/viewer`) directly from `cmd/gsl/internal/cli/cli.go` (updating usage headers,
+    `cmd/gsl/internal/cli/cli_test.go` + `viewer_test.go`, and unifying static wheel linkage in
     `tool/build-wheel.sh` and `python/omega-core` so Fidget is not linked twice).
 
 - [ ] **S18. Pre-Index `wgsl.Render` Span Lookups, Memoize `reachesKeyedBuiltin` & Avoid Double WGSL
