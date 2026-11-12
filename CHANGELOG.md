@@ -47,6 +47,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 | `mesh.BakedSpinodoid`  | `spinodoid.Baked`         | `gradientcontrol.com/omega/core/program/noise/spinodoid` |
 | `tape.SpinodoidOracle` | `spinodoid.Oracle`        | `gradientcontrol.com/omega/core/program/noise/spinodoid` |
 
+### Fixed
+
+- Fixed Manifold Dual Contouring (`fidget-mesh`) corner chamfering and octree over-collapse when an
+  edge-crossing midpoint lands on an exact `min`/`max` constant tie (`grad == 0`) by recovering the
+  surface normal from the bracket endpoints and marking leaves that still lack a plane normal as
+  non-collapsible (`QEF_ERR_INVALID`).
+
 ## [0.1.1] - 2026-11-11
 
 ### Added

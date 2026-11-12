@@ -841,44 +841,111 @@ impl<'a, F: Function + RenderHints> OctreeBuilder<'a, F> {
                 })
                 .collect();
 
-        let xs = &mut [Grad::from(0.0); 12 * EDGE_SEARCH_SIZE]
-            [..intersections.len()];
-        let ys = &mut [Grad::from(0.0); 12 * EDGE_SEARCH_SIZE]
-            [..intersections.len()];
-        let zs = &mut [Grad::from(0.0); 12 * EDGE_SEARCH_SIZE]
-            [..intersections.len()];
+        let intersection_pos: arrayvec::ArrayVec<nalgebra::Vector3<f32>, 12> =
+            intersections.iter().map(|xyz| cell.pos(*xyz)).collect();
 
-        for (i, xyz) in intersections.iter().enumerate() {
-            let pos = cell.pos(*xyz);
+        let mut xs = [Grad::from(0.0); 24];
+        let mut ys = [Grad::from(0.0); 24];
+        let mut zs = [Grad::from(0.0); 24];
+
+        let n = intersection_pos.len();
+        for (i, pos) in intersection_pos.iter().enumerate() {
             xs[i] = Grad::new(pos.x, 1.0, 0.0, 0.0);
             ys[i] = Grad::new(pos.y, 0.0, 1.0, 0.0);
             zs[i] = Grad::new(pos.z, 0.0, 0.0, 1.0);
         }
 
         // TODO: special case for cells with multiple gradients ("features")
-        let grads = match self.eval_grad_slice.eval_raw(
-            eval.g_tape(&mut self.tape_storage),
-            xs,
-            ys,
-            zs,
-            self.world_to_model,
-            ShapeBulkEval::<F::GradSliceEval>::var_value(self.vars),
-        ) {
-            Ok(v) => v,
+        let mut grads: arrayvec::ArrayVec<Grad, 12> = match self
+            .eval_grad_slice
+            .eval_raw(
+                eval.g_tape(&mut self.tape_storage),
+                &xs[..n],
+                &ys[..n],
+                &zs[..n],
+                self.world_to_model,
+                ShapeBulkEval::<F::GradSliceEval>::var_value(self.vars),
+            ) {
+            Ok(v) => v.iter().copied().collect(),
             Err(
                 ShapeBulkEvalError::MissingVar(..)
                 | ShapeBulkEvalError::MismatchedVarSlices { .. },
             ) => unreachable!(),
         };
 
+        // When `(start + end) / 2` lands right on a constant-tie kink (such as
+        // `min(face, 0)` where `face == 0` at `end`), the subgradient at the
+        // midpoint can be the constant's zero gradient even though the face
+        // has a well-defined normal on the strict interior endpoint `start`
+        // (`f < 0`) or `end` (`f >= 0`), one u16 step away. Recover that normal
+        // from the bracket endpoints before giving up on a plane.
+        let grad_norm =
+            |g: &Grad| nalgebra::Vector3::new(g.dx, g.dy, g.dz).norm();
+        if grads.iter().any(|g| grad_norm(g) == 0.0) {
+            let mut zero_indices: arrayvec::ArrayVec<usize, 12> =
+                arrayvec::ArrayVec::new();
+            for (idx, g) in grads.iter().enumerate() {
+                if grad_norm(g) == 0.0 {
+                    let m = zero_indices.len() * 2;
+                    for (slot, endpoint) in [(m, start[idx]), (m + 1, end[idx])]
+                    {
+                        let pos = cell.pos(endpoint);
+                        xs[slot] = Grad::new(pos.x, 1.0, 0.0, 0.0);
+                        ys[slot] = Grad::new(pos.y, 0.0, 1.0, 0.0);
+                        zs[slot] = Grad::new(pos.z, 0.0, 0.0, 1.0);
+                    }
+                    zero_indices.push(idx);
+                }
+            }
+            let alt_len = zero_indices.len() * 2;
+            let alt = match self.eval_grad_slice.eval_raw(
+                eval.g_tape(&mut self.tape_storage),
+                &xs[..alt_len],
+                &ys[..alt_len],
+                &zs[..alt_len],
+                self.world_to_model,
+                ShapeBulkEval::<F::GradSliceEval>::var_value(self.vars),
+            ) {
+                Ok(v) => v,
+                Err(
+                    ShapeBulkEvalError::MissingVar(..)
+                    | ShapeBulkEvalError::MismatchedVarSlices { .. },
+                ) => unreachable!(),
+            };
+            let valid_grad = |g: &Grad| {
+                !g.v.is_nan()
+                    && !g.dx.is_nan()
+                    && !g.dy.is_nan()
+                    && !g.dz.is_nan()
+                    && grad_norm(g) > 0.0
+            };
+            for (k, &idx) in zero_indices.iter().enumerate() {
+                let g_start = &alt[k * 2];
+                let g_end = &alt[k * 2 + 1];
+                let chosen = if valid_grad(g_start) {
+                    Some(g_start)
+                } else if valid_grad(g_end) {
+                    Some(g_end)
+                } else {
+                    None
+                };
+                if let Some(c) = chosen {
+                    grads[idx] = Grad::new(grads[idx].v, c.dx, c.dy, c.dz);
+                }
+            }
+        }
+
         let mut verts: arrayvec::ArrayVec<_, 4> = arrayvec::ArrayVec::new();
+        let mut missing_plane = false;
         let mut i = 0;
         for vs in CELL_TO_VERT_TO_EDGES[mask.index()].iter() {
+            let base = i;
+            i += vs.len();
             let mut force_point = None;
             let mut qef = QuadraticErrorSolver::new();
-            for e in vs.iter() {
-                let pos = nalgebra::Vector3::new(xs[i].v, ys[i].v, zs[i].v);
-                let grad: nalgebra::Vector4<f32> = grads[i].into();
+            for (offset, e) in vs.iter().enumerate() {
+                let pos = intersection_pos[base + offset];
+                let grad: nalgebra::Vector4<f32> = grads[base + offset].into();
 
                 // If a point has invalid gradients, then it's _probably_ on a
                 // sharp feature in the mesh, so we should just snap to that
@@ -889,6 +956,9 @@ impl<'a, F: Function + RenderHints> OctreeBuilder<'a, F> {
                     hermite_cell.qef_err = QEF_ERR_INVALID;
                     break;
                 }
+                if !(grad.xyz().norm() > 0.0) {
+                    missing_plane = true;
+                }
                 qef.add_intersection(pos, grad);
 
                 // Record this intersection in the Hermite data for the leaf
@@ -897,8 +967,6 @@ impl<'a, F: Function + RenderHints> OctreeBuilder<'a, F> {
                     pos: nalgebra::Vector4::new(pos.x, pos.y, pos.z, 1.0),
                     grad,
                 };
-
-                i += 1;
             }
 
             if let Some(pos) = force_point {
@@ -909,18 +977,24 @@ impl<'a, F: Function + RenderHints> OctreeBuilder<'a, F> {
 
                 // We overwrite the error here, because it's only used when
                 // collapsing cells, which only occurs if there's a single
-                // vertex; last-error-wins works fine in that case.
-                hermite_cell.qef_err = err;
+                // vertex; last-error-wins works fine in that case. A zero
+                // gradient adds no plane to the QEF, so its residual cannot
+                // measure collapse error: keep the leaf's own vertex.
+                hermite_cell.qef_err = if missing_plane
+                    || hermite_cell.qef_err == QEF_ERR_INVALID
+                {
+                    QEF_ERR_INVALID
+                } else {
+                    err
+                };
             }
         }
 
         let index = self.octree.verts.len();
         self.octree.verts.extend(verts);
-        self.octree.verts.extend(
-            intersections
-                .into_iter()
-                .map(|pos| CellVertex { pos: cell.pos(pos) }),
-        );
+        self.octree
+            .verts
+            .extend(intersection_pos.into_iter().map(|pos| CellVertex { pos }));
 
         Cell::Leaf(Leaf { mask, index })
     }
