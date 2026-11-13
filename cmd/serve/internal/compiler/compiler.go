@@ -10,6 +10,7 @@ import (
 	"gradientcontrol.com/omega/core/assembler/meshplan"
 	"gradientcontrol.com/omega/core/assembler/slider"
 	"gradientcontrol.com/omega/core/assembler/ui"
+	"gradientcontrol.com/omega/core/assembler/variation"
 	"gradientcontrol.com/omega/core/backend/audio"
 	"gradientcontrol.com/omega/core/backend/mesh"
 	"gradientcontrol.com/omega/core/backend/wgsl"
@@ -76,7 +77,7 @@ type MeshRequest struct {
 	Bodies []int `json:"bodies,omitempty"`
 }
 
-// Compile executes the in-process GSL compilation pipeline (audio extraction, AST assembly, WGSL codegen, and audio JS codegen).
+// Compile executes the in-process GSL compilation pipeline (AST assembly, WGSL codegen, and audio JS codegen).
 func Compile(req CompileRequest, sourcePaths []string, progressFn ProgressFunc) *CompileResponse {
 	resp := &CompileResponse{ID: req.ID}
 
@@ -92,33 +93,30 @@ func Compile(req CompileRequest, sourcePaths []string, progressFn ProgressFunc) 
 		return resp
 	}
 
-	audioSrc, shapeSrc, err := audio.ExtractAudio(req.Source)
-	if err != nil {
-		resp.Errors = UnwrapProgramErrors(req.Source, err)
-		return resp
-	}
-	if audioSrc == "" && shapeSrc == "" {
-		shapeSrc = req.Source
-	}
-
 	// The mesh plan lists the meshes the program places (mesh(i, placement)),
 	// which the viewer draws itself, as omega's canvas does.
 	asmOpts := append(buildAssemblerOptions(sourcePaths, progressFn), assembler.ExtractMeshPlan("leaf-"))
 
-	if strings.TrimSpace(shapeSrc) != "" {
-		asmRes, err := assembler.Assemble([]string{shapeSrc}, asmOpts...)
-		if err != nil {
-			resp.Errors = UnwrapProgramErrors(shapeSrc, err)
-			return resp
-		}
+	asmRes, err := assembler.Assemble([]string{req.Source}, asmOpts...)
+	if err != nil {
+		resp.Errors = UnwrapProgramErrors(req.Source, err)
+		return resp
+	}
 
+	resp.Sliders = asmRes.Sliders
+	resp.UIControls = asmRes.UIControls
+	resp.Scene = asmRes.Scene
+
+	if len(asmRes.Program.Returns()) > 0 {
 		// With placed meshes, the shader draws only the program's SDF parts.
 		renderProg := asmRes.Program
 		if plan := asmRes.MeshPlan; plan != nil && plan.Root != nil {
 			if decls := plan.MeshDecls(); len(decls) > 0 {
 				resp.MeshDecls = decls
 			}
-			renderProg = meshplan.PreviewProgram(asmRes.Program, plan, asmRes.SdfSubtrees)
+			renderProg = meshplan.PreviewProgram(renderProg, plan, asmRes.SdfSubtrees)
+		} else if len(asmRes.AudioReturns) > 0 {
+			renderProg = variation.PrunePrimary(renderProg)
 		}
 
 		wgslOpts := []wgsl.Option{}
@@ -128,9 +126,9 @@ func Compile(req CompileRequest, sourcePaths []string, progressFn ProgressFunc) 
 			}))
 		}
 
-		renderRes, err := wgsl.Render(shapeSrc, renderProg, wgslOpts...)
+		renderRes, err := wgsl.Render(req.Source, renderProg, wgslOpts...)
 		if err != nil {
-			resp.Errors = UnwrapProgramErrors(shapeSrc, err)
+			resp.Errors = UnwrapProgramErrors(req.Source, err)
 			return resp
 		}
 
@@ -142,26 +140,23 @@ func Compile(req CompileRequest, sourcePaths []string, progressFn ProgressFunc) 
 		if len(renderRes.MeshSdfSlots) > 0 {
 			bindings, err := meshBindings(asmRes, renderRes.MeshSdfSlots, req.Meshes)
 			if err != nil {
-				resp.Errors = UnwrapProgramErrors(shapeSrc, err)
+				resp.Errors = UnwrapProgramErrors(req.Source, err)
 				return resp
 			}
 			resp.MeshSdfBindings = bindings
 		}
 		resp.Parts = renderRes.Parts
-		resp.Sliders = asmRes.Sliders
-		resp.UIControls = asmRes.UIControls
-		resp.Scene = asmRes.Scene
 	}
 
-	if strings.TrimSpace(audioSrc) != "" {
-		audioAsmRes, err := assembler.Assemble([]string{audioSrc}, buildAssemblerOptions(sourcePaths, nil)...)
-		if err != nil {
-			resp.Errors = UnwrapProgramErrors(audioSrc, err)
-			return resp
+	if len(asmRes.AudioReturns) > 0 {
+		audioOps := make([]*program.Operand, len(asmRes.AudioReturns))
+		for i, ar := range asmRes.AudioReturns {
+			audioOps[i] = ar.Return
 		}
-		jsCode, duration, err := audio.AudioToJs(audioAsmRes.Program)
+		audioProg := variation.Program(asmRes.Program, audioOps...)
+		jsCode, duration, err := audio.AudioToJs(audioProg)
 		if err != nil {
-			resp.Errors = UnwrapProgramErrors(audioSrc, err)
+			resp.Errors = UnwrapProgramErrors(req.Source, err)
 			return resp
 		}
 		resp.Audio = &AudioResult{
@@ -216,24 +211,20 @@ func withImportedMeshes[T any](uses []meshimport.Use, meshFn func() (T, error)) 
 // meshSetup assembles req's source, resolves the meshes it imports (from
 // req.Meshes), and builds the mesher options it asks for.
 func meshSetup(req MeshRequest, sourcePaths []string, progressFn ProgressFunc) (*program.Program, []mesh.Option, []meshimport.Use, error) {
-	_, shapeSrc, err := audio.ExtractAudio(req.Source)
+	asmRes, err := assembler.Assemble([]string{req.Source}, buildAssemblerOptions(sourcePaths, progressFn)...)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	if strings.TrimSpace(shapeSrc) == "" {
-		shapeSrc = req.Source
-	}
-
-	asmRes, err := assembler.Assemble([]string{shapeSrc}, buildAssemblerOptions(sourcePaths, progressFn)...)
-	if err != nil {
-		return nil, nil, nil, err
+	prog := asmRes.Program
+	if len(asmRes.AudioReturns) > 0 {
+		prog = variation.PrunePrimary(prog)
 	}
 	var uses []meshimport.Use
-	if meshimport.References(asmRes.Program) {
+	if meshimport.References(prog) {
 		if req.Meshes == nil {
 			return nil, nil, nil, errNoMeshFolder
 		}
-		if uses, err = meshimport.Resolve(asmRes.Program, asmRes.Slots, req.Meshes); err != nil {
+		if uses, err = meshimport.Resolve(prog, asmRes.Slots, req.Meshes); err != nil {
 			return nil, nil, nil, err
 		}
 	}
@@ -264,7 +255,7 @@ func meshSetup(req MeshRequest, sourcePaths []string, progressFn ProgressFunc) (
 		}))
 	}
 
-	return asmRes.Program, meshOpts, uses, nil
+	return prog, meshOpts, uses, nil
 }
 
 // meshesMu serializes the requests that put imported meshes in fidget's

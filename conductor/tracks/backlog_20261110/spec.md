@@ -454,7 +454,7 @@ defined in [README.md](../../../README.md):
     `vector`/`builtin` import rewrite shims in `parser/internal/parser2/build_imports.go`,
     `internal/scope/pkg_file.go`, and `program/auto_import.go`.
 
-- [ ] **S5. Migrate `cmd/serve` Off `audio.ExtractAudio` & Delete String-Based Audio Splitter**
+- [x] **S5. Migrate `cmd/serve` Off `audio.ExtractAudio` & Delete String-Based Audio Splitter**
   - Refactor `cmd/serve/internal/compiler/compiler.go` (and `backend/audio` tests) to run a single
     `assembler.Assemble(..., assembler.WithVariants())` pass with `assembler/variation.Program`
     instead of invoking `audio.ExtractAudio` and assembling twice, then delete `audio.ExtractAudio`

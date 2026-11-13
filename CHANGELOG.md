@@ -30,6 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Updated `cmd/serve/internal/compiler` to assemble GSL sources in a single pass using
+  `assembler.Result.AudioReturns` and `assembler/variation` instead of splitting source strings
+  and assembling twice, preserving sliders, UI controls, and scene metadata on audio-only models.
 - Restricted `.color` validation in `internal/assembler/propval` and GSL specs to `[r, g, b]`,
   along with a `.material` transparency hint when a 4-element RGBA vector is supplied.
 - Updated `mesh.MeshOracles`, `mesh.VdbOracles`, and `mesh.BakeSpinodoids` in `backend/mesh/emit.go`
@@ -63,6 +66,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Document.volume` default) failing with "volume tolerance must be between zero and
   one": `eval.Volume` now reads a tolerance `<= 0` as the default `0.05`, as `surface` and `extremum`
   do.
+
+### Removed
+
+- Removed `audio.ExtractAudio` from `backend/audio` and deleted the string-based
+  `backend/audio/internal/extract` splitter package.
 
 ## [0.1.1] - 2026-11-11
 
