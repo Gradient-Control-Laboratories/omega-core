@@ -65,6 +65,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Document.volume` default) failing with "volume tolerance must be between zero and
   one": `eval.Volume` now reads a tolerance `<= 0` as the default `0.05`, as `surface` and `extremum`
   do.
+- Fixed queries that default to the union of a document's returns (`gsl eval` with no `expr`:
+  `volume`, `bounds`, `extremum`, `certify`), and `gsl compile --bbox auto`, failing with "failed to
+  assemble query" when a comment stood above `return`, or `return` was the first statement after
+  `@scene`: `eval.TopLevelReturnExprs` now starts at the `return` keyword (#46).
+- Fixed a ternary whose condition varies over space being NaN when the branch it does not take is
+  infinite or NaN there (`(p.x > 0) ? p.x : 1 / z`). This affected eval, the meshers, `volume` and
+  `certify`, but not the WGSL viewer, and made `unionRoundExact` NaN on the line through both
+  shapes' centres. Each branch is now masked with Fidget's `and` instead of being multiplied by its
+  0/1 condition (#51).
 
 ## [0.1.1] - 2026-11-11
 
