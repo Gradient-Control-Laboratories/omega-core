@@ -36,6 +36,9 @@ func TestSanityCheck(t *testing.T) {
 			name == program.WorleyFeature || name == program.WorleyFarFeature ||
 			name == program.WorleyNearCell ||
 			name == program.WorleyFarCell ||
+			// worleyWall / worleyWallFeature lower to gsl_cellularWallScan,
+			// beside it in codegen/cellular.go.
+			name == program.WorleyWall || name == program.WorleyWallFeature ||
 			// gaborSpinodoid lowers to the gsl_spinodoid helper in
 			// codegen/spinodoid.go.
 			program.IsGaborSpinodoid(name) ||

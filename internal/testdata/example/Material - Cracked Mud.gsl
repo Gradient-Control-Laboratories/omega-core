@@ -11,9 +11,9 @@
 
 clayMat, clayColor = physical.clay();
 
-walls = noise.cellularEdges(14);
-curl = 0.6 * clamp(1 - walls / 5, 0, 1);
-crack = 3 * max(0, 1 - walls / 0.8);
+walls = noise.cellularWalls(14);
+curl = 0.6 * clamp(1 - walls / 2.5, 0, 1);
+crack = 3 * max(0, 1 - walls / 0.4);
 top = curl - crack;
 
 block = boxCentered([0, 0, -5], [120, 120, 10]);
@@ -23,6 +23,6 @@ dry = color.lighten(clayColor, 0.15);
 damp = color.darken(clayColor, 0.45);
 plate = color.mixOklab(clayColor, dry, texture.mask(p.z + 0.2 * noise.gradient(6), 0.2, 0.3));
 mud.material = clayMat;
-mud.color = texture.paint(walls, 0.8, 0.5, damp, plate);
+mud.color = texture.paint(walls, 0.4, 0.25, damp, plate);
 
 return mud;
