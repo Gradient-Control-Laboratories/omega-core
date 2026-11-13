@@ -645,7 +645,7 @@ Variables representing 3D geometry can be configured with metadata properties:
   (`shape.box = [[-10, -10, auto], [10, 10, auto + 2]];`) to automatically compute analytical
   extents from the geometry.
   `shape.box` may also be evaluated in expressions to query bounding box extents.
-- **`name.color`**: Color components `[r, g, b]` or `[r, g, b, a]` normalized to `[0.0, 1.0]`.
+- **`name.color`**: RGB color components `[r, g, b]` normalized to `[0.0, 1.0]`.
 - **`name.material`**: Material parameter collection.
 
 #### Property Lifecycle and Lifecycle Constraints
