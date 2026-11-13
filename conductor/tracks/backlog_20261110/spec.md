@@ -22,6 +22,11 @@ predictably:
   removals, public/internal API deduplication, and documentation/comment hygiene tasks suitable for
   direct execution or small cleanup batches.
 
+Items can generally be scheduled independently across tiers, except `L10`
+(the hand-written byte scanner and direct-to-AST parser in `parser/internal/parser2`),
+which must be scheduled last after all other GSL language changes, syntax retirements,
+and compiler/library backlog items have been completed.
+
 ## 2. Core Engineering Principles
 
 All compiler, parser, evaluator, and backend work scheduled from this backlog must uphold two
@@ -199,6 +204,14 @@ defined in [README.md](../../../README.md):
       collection formatting.
 
 - [ ] **L10. Hand-Written Byte Scanner & Direct-to-AST Parser (`parser/internal/parser2`)**
+  - **Scheduling Prerequisite:** While replacing the Participle lexer and parser is a worthwhile
+    compilation-latency and allocation improvement, `L10` must be scheduled last —
+    after all other GSL language changes, syntax retirements, and compiler/library backlog items
+    have been completed — so that grammar rules, `@` annotations (`L1`, `M1`),
+    asset imports (`L2`), postfix modifiers (`S1`), numeric and color literals (`S15`),
+    legacy syntax removals (`M2`–`M4`, `S2`–`S4`, `S13`), parser diagnostics (`M5`),
+    and `program` AST invariants stabilize in `parser/internal/parser2`
+    before replacing the declarative Participle grammar and regex lexer.
   - **Current State:** `parser/internal/parser2/parser.go` drives lexing through regex-based
     `lexer.MustSimple` (8 compiled regular expressions) and builds grammar trees via
     reflection-heavy `participle.MustBuild[PackageFile]` with `participle.UseLookahead(3)` plus
