@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-11-12
+
 ### Added
 
 - Added `gsl viewer [part.gsl]` (`compile viewer`, in `cmd/serve/viewer`), which serves the
@@ -98,6 +100,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial standalone release of `omega-core` (GSL parser, assembler, standard library, evaluator,
   backends, CLI tools, and `omega-core` Python wheel).
 
-[Unreleased]: https://github.com/Gradient-Control-Laboratories/omega-core/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/Gradient-Control-Laboratories/omega-core/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/Gradient-Control-Laboratories/omega-core/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Gradient-Control-Laboratories/omega-core/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Gradient-Control-Laboratories/omega-core/releases/tag/v0.1.0
