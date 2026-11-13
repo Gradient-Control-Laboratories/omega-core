@@ -2,6 +2,8 @@ package parser2
 
 import (
 	"errors"
+	"regexp"
+	"strconv"
 	"strings"
 
 	participle "github.com/alecthomas/participle/v2"
@@ -127,39 +129,63 @@ func recordFileError(pkg *program.Package, pkgFile *program.PackageFile, source 
 }
 
 func ParseError(source string, err error) program.Error {
-	pErr, ok := err.(participle.Error)
-	if ok {
-
+	lines := strings.Split(source, "\n")
+	lineNum, column, msg := 0, 0, err.Error()
+	if pErr, ok := err.(participle.Error); ok {
 		errPos := pErr.Position()
-		lineNum := errPos.Line
-		column := errPos.Column
+		lineNum, column, msg = errPos.Line, errPos.Column, pErr.Message()
+	}
+	lineNum, column, msg = innermostPosition(lineNum, column, msg, len(lines))
 
-		lines := strings.Split(source, "\n")
-		if 1 <= lineNum && lineNum <= len(lines) {
-			line := lines[lineNum-1]
-			msg := pErr.Message()
+	if 1 <= lineNum && lineNum <= len(lines) {
+		line := lines[lineNum-1]
 
-			// GSL's ?: branches are LogicOr, not Expression — so nested
-			// ternaries are illegal inline, and the bare participle error
-			// ("unexpected token ?") doesn't tell the model how to fix it.
-			// When the failing token is a ?, append a decomposition hint so
-			// the Fix-error follow-up turn has actionable guidance.
-			if column >= 1 && column <= len(line) && line[column-1] == '?' {
-				msg += " — nested ternaries cannot be inlined; assign the inner conditional to a variable first, e.g. `inner = (b > 0) ? y : z; result = (a > 0) ? x : inner;`"
-			}
+		// GSL's ?: branches are LogicOr, not Expression — so nested
+		// ternaries are illegal inline, and the bare participle error
+		// ("unexpected token ?") doesn't tell the model how to fix it.
+		// When the failing token is a ?, append a decomposition hint so
+		// the Fix-error follow-up turn has actionable guidance.
+		if column >= 1 && column <= len(line) && line[column-1] == '?' {
+			msg += " — nested ternaries cannot be inlined; assign the inner conditional to a variable first, e.g. `inner = (b > 0) ? y : z; result = (a > 0) ? x : inner;`"
+		}
 
-			return program.Error{
-				Line:    line,
-				LineNum: lineNum,
-				Column:  column,
-				Length:  1,
-				Message: msg,
-			}
+		return program.Error{
+			Line:    line,
+			LineNum: lineNum,
+			Column:  column,
+			Length:  1,
+			Message: msg,
 		}
 	}
 	return program.Error{
 		LineNum: 1,
 		Column:  1,
 		Message: err.Error(),
+	}
+}
+
+// positionPrefix matches the "line:col: " participle.FormatError puts before a
+// message when the position has no filename, as every GSL parse does.
+var positionPrefix = regexp.MustCompile(`(?s)^(\d+):(\d+): (.*)$`)
+
+// innermostPosition finds where a parse error really is. When a root
+// Parseable's Parse fails, participle flattens the error to text and re-raises
+// it at the lexer's current token, usually where the statement began, so each
+// level stacks another "line:col: " onto the message ("2:14: 3:1: unexpected
+// token"). The last prefix is the token that failed. It is taken while it
+// names a line of the source, and the message is returned without the
+// prefixes.
+func innermostPosition(lineNum, column int, msg string, nLines int) (int, int, string) {
+	for {
+		m := positionPrefix.FindStringSubmatch(msg)
+		if m == nil {
+			return lineNum, column, msg
+		}
+		l, lErr := strconv.Atoi(m[1])
+		c, cErr := strconv.Atoi(m[2])
+		if lErr != nil || cErr != nil || l < 1 || l > nLines {
+			return lineNum, column, msg
+		}
+		lineNum, column, msg = l, c, m[3]
 	}
 }

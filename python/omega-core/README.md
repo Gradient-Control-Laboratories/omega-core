@@ -10,7 +10,8 @@ pip install omega-core
 
 ## What it does
 
-- **Compile** a GSL model to a WebGPU shader (WGSL), a mesh (STL), a picture (PNG), a bytecode tape, Web
+- **Compile** a GSL model to a WebGPU shader (WGSL), a mesh (STL, 3MF with each body an object in its
+  own colour, or GLB with each body a node in its own colour), a picture (PNG), a bytecode tape, Web
   Audio JavaScript, or its AST as JSON. Each comes with a JSON record of the model's sliders, controls and
   scene.
 - **Mesh** by dual contouring or marching cubes, at any octree depth, over the `@scene` box, the box the
@@ -38,17 +39,28 @@ All lengths are millimetres.
 | `gsl render [flags] part.gsl` | shorthand for `gsl compile -t png` |
 | `gsl eval REQUEST.json`, `gsl eval -`, `gsl eval --stdio` | answer field queries as JSON |
 | `gsl skill`, `gsl skill PACKAGE...`, `gsl skill --all` | the GSL reference for a model to read (below) |
+| `gsl viewer [part.gsl]` | open a model, or the examples, in the interactive WebGPU viewer (below) |
 | `gsl --version`, `gsl help [command]` | the release; a command's help |
 
-`python -m omega_core` runs `gsl` too. The wheel does not include `gsl serve` (omega's interactive viewer)
-or `gsl fix`.
+`python -m omega_core` runs `gsl` too. The wheel does not include `gsl serve` (the viewer's development server,
+which `gsl viewer` replaces here) or `gsl fix`.
+
+### `gsl viewer`
+
+`gsl viewer part.gsl` serves the viewer on `part.gsl`'s folder and opens the default browser on it: the folder's
+`.gsl` files are in the viewer's list, its imports are found there, and Save writes back to it. `gsl viewer` alone
+opens the examples installed with the package. The viewer needs a browser with WebGPU. It listens on
+`127.0.0.1:8080`, or on a free port when that is taken (`-a host:port` names one), prints its address, and runs
+until Ctrl-C. `--no-open` prints the address without opening a browser.
 
 ### `gsl compile`
 
 | `-t` | Writes | Default output |
 |---|---|---|
 | `wgsl` (default) | a WebGPU raymarching shader; `--standalone` appends a runner harness | `part.wgsl` |
-| `stl` | a binary STL mesh | `part.stl` |
+| `stl` | a binary STL mesh; with several top-level returns, a zip of one STL per body | `part.stl`, or `part.zip` for several bodies |
+| `3mf` | one 3MF, each top-level return an object in its own colour | `part.3mf` |
+| `glb` | one binary glTF, each top-level return a node in its own colour; millimetres and Z up under a root node that makes them metres and Y up | `part.glb` |
 | `png` | a picture of the field, raymarched on the CPU | `part.png` |
 | `tape` | the field as a bytecode tape (for Fidget) | `part.tape` |
 | `audio` | Web Audio JavaScript for the model's sound | `part.js` |
@@ -67,7 +79,7 @@ General flags:
 
 With no source files, the model is read from stdin.
 
-Mesh flags (`-t stl`):
+Mesh flags (`-t stl`, `-t 3mf`, `-t glb`):
 
 | Flag | Default | Meaning |
 |---|---|---|

@@ -56,7 +56,9 @@ impl QuadraticErrorSolver {
         // constant (min(face, 0) where the face is at 0, as a box with round
         // dimensions puts it) takes the constant's. Normalized, it is NaN and
         // the vertex is lost; it keeps its place in the mass point only, and
-        // the cell's other intersections place the vertex.
+        // the cell's other intersections place the vertex. The octree
+        // evaluates a leaf crossing's zero gradient again off the tie first,
+        // so this is the fallback for one that stays zero there too.
         let len = grad.xyz().norm();
         if !(len > 0.0) {
             return;

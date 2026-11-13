@@ -1,0 +1,66 @@
+@scene(160, 20)
+
+// One profile swept along another. The path is an L with a filleted inside
+// corner and a rounded heel; the section is a small moulding with a cove.
+// The sweep is a remap, as revolve is: the section is read with its x as the
+// path's signed distance, positive outside the L, and its y as the height z.
+// So the section's x = 0 line rides the path, what it draws at x > 0 hangs
+// outside the L and what it draws at x < 0 sits inside.
+//
+// Where the path turns, the section follows the path's distance: on the
+// outside of a corner it sweeps round it, and on the inside it meets itself
+// in a mitre. An arc of the path, the fillet or the heel, carries it round
+// smoothly on both sides. Inside the L the section can reach no farther than
+// half an arm's width, where the distances from two sides meet.
+//
+// The rail is coloured by a checkerboard in its frame: u the distance along
+// the path and v the distance round the section, both in mm, so the squares
+// are square. Lengths are in mm.
+
+// The path: length and width of the L's arms, the fillet in the inside corner
+// and the round on the heel.
+@range(40, 70) armLength = 60.0;
+@range(16, 30) armWidth = 24.0;
+@range(2, 14) filletRadius = 8.0;
+@range(2, 12) heelRadius = 6.0;
+
+// The section: how far it reaches inside and outside the path, its height,
+// and the radius of the cove cut from its outer top corner.
+@range(1, 6) reachInside = 4.0;
+@range(6, 12) reachOutside = 7.0;
+@range(6, 12) sectionHeight = 8.0;
+@range(1, 5) coveRadius = 5.0;
+
+// Checkerboard: the side of a square.
+@range(1, 8) checkerSize = 3.0;
+
+// An L with its heel at the origin, as in profile_arcs: the fillet has
+// negative curvature and the heel's round positive.
+pathProfile() {
+  return profileXY(
+    [[heelRadius, 0], [armLength, 0], [armLength, armWidth],
+     [armWidth + filletRadius, armWidth], [armWidth, armWidth + filletRadius],
+     [armWidth, armLength], [0, armLength], [0, heelRadius]],
+    [0, 0, 0, neg(1 / filletRadius), 0, 0, 0, 1 / heelRadius]);
+}
+
+// The moulding, drawn with x across the path and y up: a rectangle from
+// reachInside inside the path to reachOutside outside it, with a quarter-round
+// cove, an arc of negative curvature, cut from its outer top corner.
+sectionProfile() {
+  return profileXY(
+    [[neg(reachInside), 0], [reachOutside, 0], [reachOutside, sectionHeight - coveRadius],
+     [reachOutside - coveRadius, sectionHeight], [neg(reachInside), sectionHeight]],
+    [0, 0, neg(1 / coveRadius), 0, 0]);
+}
+
+path = remap(pathProfile(), p - [-30, -30, 0]);
+section = sectionProfile();
+
+// The sweep: the section read at (the path's distance, z).
+rail = remap(section, [path, p.z, 0]);
+rail.u = path.u;
+rail.v = remap(section.u, [path, p.z, 0]);
+rail.color = sin(pi * rail.u / checkerSize) * sin(pi * rail.v / checkerSize) > 0 ? color.gray : color.lightGray;
+
+return rail;

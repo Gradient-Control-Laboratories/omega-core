@@ -4,10 +4,13 @@ library and pytest only, so it runs against a bare install."""
 
 from __future__ import annotations
 
+import json
 import shutil
 import struct
 import subprocess
 import sys
+import urllib.parse
+import urllib.request
 import zlib
 from collections import Counter
 from pathlib import Path
@@ -210,3 +213,36 @@ def test_a_session_draws_what_gsl_compile_draws_with_a_slider_set(ball, tmp_path
     assert len({rows[y][3 * x:3 * x + 3] for y in range(height) for x in range(160)}) >= 20
     whole = ball.render(tmp_path / "whole.png", views=["iso", "top"], width=160, height=120, light=True, extent=20)
     assert Path(whole.path).read_bytes() != Path(picture.path).read_bytes()  # at one extent, r = 6 draws smaller
+
+
+def fetch(url: str, body: bytes | None = None) -> bytes:
+    with urllib.request.urlopen(urllib.request.Request(url, data=body), timeout=120) as answer:
+        assert answer.status == 200, url
+        return answer.read()
+
+
+@pytest.mark.parametrize("opened", ["a file", "the examples"])
+def test_gsl_viewer_serves_the_installed_viewer_and_compiles_there(opened: str, tmp_path: Path) -> None:
+    """``gsl viewer`` finds the viewer and the examples the wheel installs beside its programs, serves a file's
+    folder or the examples, and compiles with the bundled program; --no-open keeps it from a browser."""
+    (tmp_path / "part.gsl").write_text(BOX)
+    args, start = ([str(tmp_path / "part.gsl")], "part.gsl") if opened == "a file" else ([], "gears.gsl")
+    viewer = subprocess.Popen([str(omega_core.executable()), "viewer", "--no-open", "-a", "127.0.0.1:0", *args],
+                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    try:
+        line = viewer.stdout.readline()
+        assert line.startswith("gsl viewer: http://"), line + viewer.stdout.read()
+        page = line.split(": ", 1)[1].strip()
+        base = page.split("?")[0]
+        assert page == (base + "?file=part.gsl" if opened == "a file" else base)
+        assert b"importmap" in fetch(page)
+        assert len(fetch(base + "render/noise_tile.bin")) == 64 ** 3 * 4
+        names = [e["name"] for e in json.loads(fetch(base + "api/examples"))["examples"]]
+        assert (names == ["part.gsl"]) if opened == "a file" else (len(names) > 20 and start in names)
+        source = json.loads(fetch(base + "api/example?name=" + urllib.parse.quote(start)))["source"]
+        assert source.strip()
+        compiled = json.loads(fetch(base + "api/compile", json.dumps({"source": source}).encode()))
+        assert not compiled.get("errors") and compiled["wgsl"], compiled.get("errors")
+    finally:
+        viewer.terminate()
+        viewer.wait(timeout=30)

@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added `gsl viewer [part.gsl]` (`compile viewer`, in `cmd/serve/viewer`), which serves the
+  WebGPU viewer on a file's folder, or on the examples without one, and opens the default browser
+  on it (`?file=` in the viewer picks the file it starts on). The omega-core wheel now ships the
+  viewer (`omega_core/viewer`) and the examples (`omega_core/examples`) for it.
 - Added `gsl skill` (`compile skill`), Python `omega_core.skill(...)`, and `preamble` package-index
   helpers (`GSLSkillIndex`, `PackageIndexText`, `PackageDescriptiveText`, `PackageSummary`, and
   `PackageNames`) to emit GSL language and per-package reference docs directly from the embedded
@@ -26,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Restricted `.color` validation in `internal/assembler/propval` and GSL specs to `[r, g, b]`,
+  along with a `.material` transparency hint when a 4-element RGBA vector is supplied.
 - Updated `mesh.MeshOracles`, `mesh.VdbOracles`, and `mesh.BakeSpinodoids` in `backend/mesh/emit.go`
   along with `tape.MeshOracles`, `tape.VdbOracles`, `tape.GenerateTapeWithSpinodoids`,
   `tape.GenerateTapeWithAppearanceAndSpinodoids`, `tape.StampSpinodoids`, and `tape.EmbedLevelSets`
@@ -46,6 +52,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 | `tape.VdbOracle`       | `meshasset.VdbOracle`     | `gradientcontrol.com/omega/core/program/meshasset`       |
 | `mesh.BakedSpinodoid`  | `spinodoid.Baked`         | `gradientcontrol.com/omega/core/program/noise/spinodoid` |
 | `tape.SpinodoidOracle` | `spinodoid.Oracle`        | `gradientcontrol.com/omega/core/program/noise/spinodoid` |
+
+### Fixed
+
+- Fixed Manifold Dual Contouring (`fidget-mesh`) corner chamfering and octree over-collapse when an
+  edge-crossing midpoint lands on an exact `min`/`max` constant tie (`grad == 0`, #38) by evaluating
+  the gradient again a hair off the crossing, and marking leaves that still lack a plane normal as
+  non-collapsible (`QEF_ERR_INVALID`).
+- Fixed `volume` queries without a tolerance (`gsl eval`'s `relativeTolerance`, Python's
+  `Document.volume` default) failing with "volume tolerance must be between zero and
+  one": `eval.Volume` now reads a tolerance `<= 0` as the default `0.05`, as `surface` and `extremum`
+  do.
 
 ## [0.1.1] - 2026-11-11
 

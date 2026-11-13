@@ -38,12 +38,12 @@ func TopLevelNames(source string) map[string]bool {
 // with the names a case's checks were written against.
 func TopLevelReturnExprs(source string) []string {
 	for _, s := range topLevelStatements(source) {
-		name, _, _ := leadingIdentifier(s.text)
-		if name != "return" {
+		if s.name != "return" {
 			continue
 		}
-		body := strings.TrimSpace(s.text)
-		body = strings.TrimPrefix(body, "return")
+		// The statement's text starts with what leads it -- comments, the @scene directive -- and its return
+		// keyword is where leadingIdentifier found it.
+		body := strings.TrimPrefix(s.text[s.keep:], "return")
 		body = strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(body), ";"))
 		if body == "" {
 			return nil

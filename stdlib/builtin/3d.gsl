@@ -108,6 +108,17 @@ axisDistance(center, direction) {
   return dot(p - center, normalize(direction));
 }
 
+/// The cylindrical coordinate of p about the line through `center` along
+/// `direction`: [distance, u, v], the axis's own distance and frame — the
+/// distance from the line in mm, the angle round it in radians, and the signed
+/// distance along it from `center` in mm. Pass it to remap to read a shape in
+/// that basis, its x as the distance out from the axis, its y as the angle
+/// and its z as the distance along; revolve reads a profile in the distance
+/// and v alone.
+axisCylindrical(center, direction) {
+  return [axis(center, direction), axisAngle(center, direction), axisDistance(center, direction)];
+}
+
 /// Distance to an infinite line through `center` parallel to the X axis.
 axisX(center) {
   form = axis(center, vector.dirX);

@@ -64,7 +64,7 @@ import { initHelpPanel } from "./docs/help-panel.js";
 import { initSliderPanel, renderSliderPanel, sliderAnimTick, previewColor } from "./panels/slider-panel.js";
 import { initMeshImport } from "./panels/mesh-import.js";
 import { initExportPanel } from "./panels/export-panel.js";
-import { initBodyPanel, setBodies, pickBody, materialVariables } from "./panels/body-panel.js";
+import { initBodyPanel, setBodies, pickBody, materialVariables, getVisibleBodies, getBodyStates } from "./panels/body-panel.js";
 
 const clientId = (typeof crypto !== "undefined" && crypto.randomUUID)
     ? crypto.randomUUID()
@@ -351,7 +351,7 @@ eventManager.addListener("canvas/update-shader", (event) => {
             event.wgsl,
             event.shapeCount || 1,
             event.shapeNames || [],
-            event.meshSdfSlots || event.meshSdfBindings || [],
+            event.meshSdfBindings || event.meshSdfSlots || [],
             event.sliders || [],
             event.uiControls || [],
         );
@@ -415,8 +415,10 @@ async function compileGsl(source) {
         if (reqId !== latestCompileID) return;
 
         if (!res.ok || (data.errors && data.errors.length > 0)) {
+            // Structured diagnostics go as { errors } so the handler can place
+            // each one in the editor; anything else falls back to plain text.
             const errs = data.errors && data.errors.length > 0
-                ? data.errors
+                ? { errors: data.errors }
                 : [`Compile failed (HTTP ${res.status})`];
             eventManager.dispatchEvent("canvas/errors", errs);
             return;
@@ -439,8 +441,9 @@ async function compileGsl(source) {
 }
 
 // requestStlExport asks the server to mesh the source by algo: "mdc" (the Export panel's Server DC) or
-// "marching-cubes" (Server MC).
-async function requestStlExport(detail, surfaceBbox, algo) {
+// "marching-cubes" (Server MC), and to write it as format ("3mf", "glb" or "stl"). Each body the Bodies panel shows
+// is meshed apart, in the color it shows; an STL of several comes back as a zip of one STL each.
+async function requestStlExport(detail, surfaceBbox, algo, format = "stl") {
     const source = getGslSourceForServer();
     if (!source || source.trim() === "") {
         showNotification(true, "No code to export");
@@ -454,7 +457,12 @@ async function requestStlExport(detail, surfaceBbox, algo) {
         ? surfaceBbox
         : [-ext, -ext, -ext, ext, ext, ext];
 
-    showNotification(false, "Generating STL mesh...", true);
+    // The bodies shown, by 1-based return index, with their chips' colors; no list when the panel lists none.
+    const visible = getVisibleBodies();
+    const bodies = getBodyStates().length > 0 ? visible.map((b) => b.index) : null;
+    const colors = Object.fromEntries(visible.map((b) => [b.index, b.color]));
+
+    showNotification(false, "Generating mesh...", true);
     startErrorTimer("stl export");
 
     try {
@@ -469,6 +477,9 @@ async function requestStlExport(detail, surfaceBbox, algo) {
                 bbox,
                 algo,
                 time: getAnimTime(),
+                format,
+                bodies,
+                colors,
             }),
         });
 
@@ -483,27 +494,30 @@ async function requestStlExport(detail, surfaceBbox, algo) {
             } catch (_) {
                 // ignore JSON parse error on non-JSON body
             }
-            showError(`STL export failed: ${errText}`, false, true);
+            showError(`Export failed: ${errText}`, false, true);
             return false;
         }
 
+        // The reply's own type names the file: one STL, a zip of one STL per body, a 3MF or a GLB.
+        const type = res.headers.get("Content-Type") || "";
+        const fileExt = type.includes("zip") ? "zip" : type.includes("3mf") ? "3mf" : type.includes("gltf-binary") ? "glb" : "stl";
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         const baseName = (currentExampleName || "model.gsl").replace(/\.gsl$/i, "");
         a.href = url;
-        a.download = `${baseName}.stl`;
+        a.download = `${baseName}.${fileExt}`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         setTimeout(() => URL.revokeObjectURL(url), 1000);
-        showNotification(false, `Exported ${baseName}.stl`);
+        showNotification(false, `Exported ${baseName}.${fileExt}`);
         return true;
     } catch (err) {
         stopErrorTimer();
         progressBar.reset();
         const msg = err instanceof Error ? err.message : String(err);
-        showError(`STL export failed: ${msg}`, false, true);
+        showError(`Export failed: ${msg}`, false, true);
         return false;
     }
 }
@@ -796,6 +810,20 @@ initMeshImport({
         if (!source || source.trim() === "") return;
         compileGsl(source);
     },
+    // Send an STL to the server before the import is written into the program,
+    // so bvhSdf / vdbSdf on its slot load it when the program compiles.
+    onImported: async (index, file, bytes) => {
+        if (!/\.stl$/i.test(file.name)) return;
+        const res = await fetch(`/api/asset?name=${encodeURIComponent(file.name)}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/octet-stream" },
+            body: bytes,
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || `upload failed (HTTP ${res.status})`);
+        }
+    },
     dropTarget: document.getElementById("canvas-container"),
 });
 
@@ -804,10 +832,11 @@ initExportPanel({
     getWorldExtent,
     getSource: getGslSourceForServer,
     clearError,
-    onServerExport: (detail, surfaceBbox, _bodyBoxes, algo) => {
-        return requestStlExport(detail, surfaceBbox, algo);
+    onServerExport: (detail, surfaceBbox, _bodyBoxes, algo, format) => {
+        return requestStlExport(detail, surfaceBbox, algo, format);
     },
     serverMarchingCubes: true,
+    serverFormats: true,
 });
 
 // ── Bodies Panel ──
@@ -1430,7 +1459,10 @@ exampleSelectEl.addEventListener("change", () => {
 (async function initExamples() {
     const examples = await refreshExampleList();
     if (examples.length > 0) {
-        const defaultEx = examples.find((e) => e.name === "gears.gsl") || examples[0];
+        // `gsl viewer part.gsl` opens the page with ?file=part.gsl.
+        const requested = new URLSearchParams(window.location.search).get("file");
+        const defaultEx = examples.find((e) => e.name === requested)
+            || examples.find((e) => e.name === "gears.gsl") || examples[0];
         await loadExample(defaultEx.name);
     }
 })();

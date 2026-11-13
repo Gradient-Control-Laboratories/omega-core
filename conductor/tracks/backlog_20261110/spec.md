@@ -11,17 +11,43 @@ backend, native Rust/C++ FFI, interactive viewer, CLI toolchain, and code-hygien
 Items are organized by engineering scope into three tiers so future work can be scheduled
 predictably:
 
-- **Large Initiatives (`L1`–`L9`):** Multi-pass language, compiler, codegen, runtime, or CLI
+- **Large Initiatives (`L1`–`L10`):** Multi-pass language, compiler, codegen, runtime, or CLI
   initiatives that warrant spinning off dedicated Conductor tracks (`spec.md` + `plan.md`) when
   scheduled.
-- **Medium Improvements (`M1`–`M12`):** Bounded feature completions, phased syntax retirements,
-  diagnostics enhancements, viewer capabilities, and developer tooling tasks that can either spin
-  off focused tracks or execute as self-contained single-phase tracks.
-- **Small Targeted Cleanups (`S1`–`S17`):** Localized refactors, invariant tightening, dead-code
+- **Medium Improvements (`M1`–`M14`):** Bounded feature completions, phased syntax retirements,
+  compiler hot-path optimizations, diagnostics enhancements, viewer capabilities, and developer
+  tooling tasks that can either spin off focused tracks or execute as self-contained single-phase
+  tracks.
+- **Small Targeted Cleanups (`S1`–`S19`):** Localized refactors, invariant tightening, dead-code
   removals, public/internal API deduplication, and documentation/comment hygiene tasks suitable for
   direct execution or small cleanup batches.
 
-## 2. Phased Language Evolution Lifecycle
+## 2. Core Engineering Principles
+
+All compiler, parser, evaluator, and backend work scheduled from this backlog must uphold two
+foundational engineering principles:
+
+1. **Fast Happy Path, Rich Cold Error Path:**
+   - Valid, error-free `.gsl` files must compile with minimal latency and heap churn: avoid
+     reflection-driven `proto.Clone` calls, redundant whole-program AST copies, unconditional pass
+     re-runs when an AST pass makes zero modifications, and eager diagnostic string formatting or
+     symbol candidate searches on valid inputs.
+   - Conversely, when an error or warning *does* occur (the cold path), spend extra cycles to emit
+     high-signal, actionable diagnostics optimized for both human engineers and AI GSL authors —
+     including inlined call-site provenance chains, edit-distance `"did you mean ...?"` symbol
+     suggestions, 1-based parameter indices with declared parameter names and types, candidate
+     overload/built-in signatures, and concrete fix hints.
+2. **Boundary Validation & Clean Internal Invariants (`clean-go-test-guards`):**
+   - Validate untrusted caller inputs defensively at public SDK entry points (`parser`,
+     `assembler`, `eval`, `backend/wgsl`, `backend/mesh`, `backend/tape`, `backend/audio`).
+   - Inside internal compiler and codegen packages (`internal/*`, `backend/*/internal/*`), rely
+     directly on structural AST and scope invariants established by upstream passes
+     (`parser.ParsePackage`, `collect.Program`, `scope.Init`, `link.References`, `types.Analyze`).
+   - Eliminate test-induced defensive `nil` skips, unused internal parameters, and dead or
+     test-only helpers from production `.go` files, keeping unit test fixtures invariant-compliant
+     rather than weakening internal domain guarantees.
+
+## 3. Phased Language Evolution Lifecycle
 
 All breaking or surface-level GSL language changes in `omega-core` follow the four-stage rollout
 defined in [README.md](../../../README.md):
@@ -35,7 +61,7 @@ defined in [README.md](../../../README.md):
 4. **Retire Legacy Syntax:** Remove legacy grammar/desugaring shims and emit targeted compile-time
    migration errors if removed syntax is encountered.
 
-## 3. Large Initiatives
+## 4. Large Initiatives
 
 - [ ] **L1. First-Class AST Annotations & Unified UI Control Extraction**
   - **Current State:** `@material`, `@finish`, and `@surface` are stored as structured `PackageFile`
@@ -172,7 +198,32 @@ defined in [README.md](../../../README.md):
       preserving `//` and `///` doc comments, blank-line grouping, `@` annotations, and multi-line
       collection formatting.
 
-## 4. Medium Improvements
+- [ ] **L10. Hand-Written Byte Scanner & Direct-to-AST Parser (`parser/internal/parser2`)**
+  - **Current State:** `parser/internal/parser2/parser.go` drives lexing through regex-based
+    `lexer.MustSimple` (8 compiled regular expressions) and builds grammar trees via
+    reflection-heavy `participle.MustBuild[PackageFile]` with `participle.UseLookahead(3)` plus
+    backtracking union dispatch (`participle.Union[Declaration]` and `participle.Union[Value]`).
+    Every expression atom — even a bare numeric literal or variable reference — allocates an
+    8-to-9-node grammar pointer chain (`Expression` -> `LogicOr` -> `LogicAnd` -> `Equality` ->
+    `Comparison` -> `Terms` -> `Term` -> `Factor` -> `Number`) in
+    `parser/internal/parser2/grammar.go` along with heap `*program.Location` structs
+    (`posToLocation`) before `build_expr.go` lowers it to `*program.Operand` and discards the
+    intermediate grammar tree.
+  - **Goals:**
+    - Replace regex-driven `gslLexer` in `parser/internal/parser2/parser.go` with a zero-allocation
+      hand-written byte scanner over source slices (with optional trivia retention shared with `L9`
+      `cmd/fmt`).
+    - Replace Participle reflection grammar parsing (`parser.go`, `grammar.go`, `build_expr.go`)
+      with a hand-written recursive-descent declaration parser and Pratt expression parser that
+      constructs `*program.PackageFile` and `*program.Operand` nodes directly without intermediate
+      CST heap chains, batching `*program.Location` allocations in contiguous slices.
+    - Keep the valid-input happy path free of speculative error construction while preserving and
+      expanding rich cold-path syntax diagnostics in `ParseError`
+      (`parser/internal/parser2/parser.go`, including innermost parse-failure positioning,
+      unclosed-delimiter and EOF span anchoring, nested-ternary parentheses hints, missing-`;`
+      recovery, and legacy operator hints).
+
+## 5. Medium Improvements
 
 - [ ] **M1. Discrete Option Annotations (`@values`)**
   - Add AST metadata in `program/program.proto` and parser construction in
@@ -181,15 +232,15 @@ defined in [README.md](../../../README.md):
     literals; validate `>= 2` distinct compile-time scalar constants, initial-value membership, and
     mutual exclusion with `@range` in `internal/assembler/propval`; surface discrete controls in UI
     extraction, WGSL uniform lifting, and `examples/viewer/panels/slider-panel.js`; and update
-    `program/preamble` and `examples/viewer/docs/gsl_description.md`.
+    `program/preamble`, `doc/gsl_lang_spec_current.md`, and `doc/gsl_lang_spec_future.md`.
 
 - [ ] **M2. Phased Retirement of Slider Dot-Properties (`.min`, `.max`, `.period`)**
   - Add a `cmd/fix` rule rewriting `x = v; x.min = a; x.max = b; [x.period = p;]` into
     `@range(a, b [, p]) x = v;`; migrate the 8 `examples/*.gsl` models,
-    `internal/testdata/example/*.gsl`, `program/preamble/gsl_description.go`, and
-    `examples/viewer/docs/gsl_description.md`; emit compiler deprecation warnings when `.min`,
-    `.max`, or `.period` are assigned; and subsequently remove legacy slider dot-properties from
-    `internal/scope/pkg_file.go`.
+    `internal/testdata/example/*.gsl`, `program/preamble/gsl_description.go`,
+    `doc/gsl_lang_spec_current.md`, and `doc/gsl_lang_spec_future.md`; emit compiler deprecation
+    warnings when `.min`, `.max`, or `.period` are assigned; and subsequently remove legacy slider
+    dot-properties from `internal/scope/pkg_file.go`.
 
 - [ ] **M3. Phased Retirement of Viewport Manipulator Built-ins (`uiPoint`, `uiTransform`,
   `uiSpline`)**
@@ -202,18 +253,79 @@ defined in [README.md](../../../README.md):
   - Fix 3-argument `reduce(fn, coll, init)` evaluation, type inference, inlining predicates, and
     lowering across `internal/eval/const.go`, `internal/types/infer.go`,
     `internal/assembler/inline/predicates.go`, `internal/build/expression.go`, and
-    `internal/fidget/internal/fidget/custom.go`; migrate the 21 legacy `reduce(init, fn, coll)` call
-    sites in `stdlib/noise/noise.gsl` and `stdlib/text/text.gsl` (regenerating `stdlib` `.pb` files
-    via `./tool/build-stdlib.sh`); add `cmd/fix` rewriting and deprecation diagnostics; remove the
+    `internal/fidget/custom.go`; migrate the 21 legacy `reduce(init, fn, coll)` call sites in
+    `stdlib/noise/noise.gsl` and `stdlib/text/text.gsl` (regenerating `stdlib` `.pb` files via
+    `./tool/build-stdlib.sh`); add `cmd/fix` rewriting and deprecation diagnostics; remove the
     dual-order fallback (`isFnOperand`); and update `program/program.proto` and `program/preamble`.
 
-- [ ] **M5. Actionable Compiler Error Provenance, Parameter Attribution & Legacy Construct Hints**
-  - Preserve call-site provenance frames across `internal/assembler/inline` so `program.Error`
-    attributes errors inside inlined library functions to the caller's source span with
-    `"called from ..."` context; include 1-based parameter index and declared parameter name in
-    function and built-in argument type mismatch diagnostics (`internal/types`); add built-in
-    signature hints; and report targeted hints for common mistakes (such as passing a bare function
-    identifier to `remap(fn, p)` instead of `fn()`).
+- [ ] **M5. Improve Error Messages and Locations**
+  - Apply the Fast Happy Path, Rich Cold Error Path principle across the compilation pipeline so
+    CLI, viewer, and SDK diagnostics highlight exact source spans and emit actionable guidance for
+    both human engineers and AI GSL authors:
+    - **Centralize Error Span & Source-Line Enrichment in `internal/error.go`:** Move
+      `tokenWidth`/`isWordByte` and `LineFromSource` enrichment from
+      `cmd/serve/internal/compiler/compiler.go` (`collectErrors`) into `internal/error.go`, using
+      single-line AST `End.Column - Start.Column` spans when available, falling back to token-width
+      scanning when `Length <= 1`, and fixing `scope.ErrLoc` (`internal/scope/scope.go`) setting
+      `Length: 0` (which renders zero `^` carets in `program.Error.Error()`). Invoke enrichment
+      upstream in `parser.ParsePackage`, `assembler.Assemble`, and `internal/build.ErrWithPkgSrc`,
+      and populate `FilePath` in `cmd/compile/internal/cli/cli.go` so `gsl compile`, `gsl eval`,
+      `cmd/serve`, and SDK callers all receive `file:line:col` headers, source lines, and
+      full-token underlines.
+    - **Promote `locateErr` to `internal/error.go` & Use `errors.As` Throughout:** Move
+      `PackageAnalyzer.locateErr` from `internal/types/infer.go` into `internal/error.go` as a
+      shared innermost-AST location and `PackagePath` helper (`LocateErr`) that preserves existing
+      inner `*program.Error` spans via `errors.As`. Replace fragile direct `err.(*program.Error)`
+      and `err.(*ErrorWithLoc)` type assertions in `internal/build/error.go` (and test runners in
+      `internal/srctest/run.go` and `parser/internal/parser2/parser_test.go`) with `errors.As`, and
+      resolve dependency source text in `ErrWithPkgSrc` when `PackagePath != ""`.
+    - **Attach AST Node Locations Across Unlocated Compiler Passes:** Wrap bare `fmt.Errorf`
+      failures with `LocateErr` at the failing AST node instead of defaulting to `1:1` across
+      `internal/collect/collect.go` (missing, self-, and cyclic `import` statements at `imp.Start`),
+      `internal/types/types.go` and `internal/types/infer.go` (`analyzeTopLevelVar` cycles and
+      count mismatches at `assign.Start`, `@annotation` checks at `ann.Start`, and `inferUserCall`
+      errors at `fnCall.Start`), `internal/eval/const.go` and `fold.go` (divide-by-zero,
+      zero-vector `normalize`, constant cycles, out-of-bounds indexing, and matrix shape errors),
+      `internal/lower/lower.go` and `map_reduce.go` (`map`, `reduce`, and `meshDifference`/CSG
+      arity or empty-collection errors), `internal/closure/` (`validate.go`, `transform.go`,
+      `specialize.go`, `unroll.go`), `internal/assembler/property/` (`property.go`,
+      `derivative.go`, `parts.go`, `expand.go`, `companion.go`, `second.go`, `uv.go` for
+      `.dp`/`.dtime`/`.d(var)` differentiation and `.box`/`.simple`/`.detail` errors),
+      `internal/assembler/inline/` (`inline.go`, `substitute.go` recursion checks),
+      `internal/assembler/topofold/topofold.go` (replacing plain `"(line %d, col %d)"` strings with
+      `*program.Error`), `internal/assembler/warpfold/warpfold.go`, and `assembler/meshplan/`
+      (`slice.go`, `decl.go`).
+    - **Fix Parser EOF Spans, Imported-Package Attribution, String Typing & Unit Test Coverage:**
+      Anchor unexpected-EOF parse errors in `parser/internal/parser2/parser.go` to the final
+      non-empty token/line rather than a trailing blank line, and report the opening delimiter's
+      `line:col` for unclosed `(`, `[`, and `{`. Attribute errors originating in imported packages
+      (`PackagePath != ""`) to the primary file's `import` declaration or caller call site (without
+      slicing `primarySrc` at the dependency's `LineNum` in `cmd/serve`) while retaining the inner
+      `pkg:line:col` context. Distinguish string literals from numeric scalars and vectors in
+      `parser/internal/parser2/build_value.go` and `internal/types` so invalid string arguments
+      such as `sphere("x")` or `box("xyz")` fail type checking instead of lowering to rune float
+      code points. Add unit tests covering `ParseError`/`innermostPosition`, `LocateErr`,
+      `TokenWidth`, EOF/unclosed-delimiter spans, imported-package attribution, and CLI/viewer
+      diagnostic parity.
+    - **Lazy Provenance Chains, `"Did You Mean"` Hints & Human/AI Recovery Guidance:** Record
+      compact, zero-string-allocation call-site provenance links during inlining in
+      `internal/assembler/inline` (`inline.go`, `substitute.go`) and
+      `internal/build/keyed_builtin.go` (`pushInlineSite`), formatting `"called from ..."` chains
+      lazily on error, and include full cycle paths (`a -> b -> a`) on cyclic imports, variables,
+      and recursive functions. Compute cold-path edit-distance `"did you mean ...?"` suggestions for
+      unresolved variables, functions, package prefixes, dot-properties, and `@` annotations across
+      `internal/link/link.go`, `internal/scope/pkg_file.go` (`invalidPropertyError`),
+      `internal/types/infer.go`, and `parser/internal/annotation/validate.go`. Report 1-based
+      parameter indices, declared parameter names, idiomatic GSL type names (`vec3`, `4x4 matrix`,
+      `scalar`), operator context on `"incompatible types"` (`internal/types/types.go`), natural
+      built-in signature/arity hints (`clamp(x, lo, hi)` instead of `"expects 3..3 arguments"` in
+      `internal/types/builtin.go`), `.dp`/`.d(...)` differentiation provenance, and concrete
+      multi-return destructuring syntax (`a, b = fn(...)`). Add targeted syntax/idiom hints for
+      common human and LLM mistakes from GLSL/WGSL/JS/Python (`let`/`var`/`const`,
+      `fn`/`function`/`def`, imperative `if`/`else` -> `(cond) ? a : b`, `vec2`/`vec3`/`vec4(...)`
+      -> `[x, y, z]`, immutable variable reassignment citing the original declaration's `line:col`
+      in `internal/scope/pkg_file.go` and `fn.go`, and bare function identifiers passed to
+      `remap(fn, p)` instead of `fn()`).
 
 - [ ] **M6. Strict Lexical Declaration-Order Enforcement in Assembler**
   - Reorder `clearance273` and `shcs4762` above their callers in
@@ -248,10 +360,10 @@ defined in [README.md](../../../README.md):
 
 - [ ] **M10. Re-enable 10 Skipped Fidget Conversion Golden Tests**
   - Diagnose and fix the 10 `.glsl` conversion golden tests currently marked `"skip"` in
-    `internal/fidget/internal/fidget/testdata/` (`builtin`, `car`, `common_type`, `flying_wing`,
-    `func`, `mod`, `multi_return`, `overload`, `simple`, `wgsl_keywords`), generate verified
-    goldens, and remove the `"skip"` bypass in `internal/fidget/internal/fidget/convert_test.go`
-    (resolving its `"remove this once all tests are passing"` `TODO`).
+    `internal/fidget/testdata/` (`builtin`, `car`, `common_type`, `flying_wing`, `func`, `mod`,
+    `multi_return`, `overload`, `simple`, `wgsl_keywords`), generate verified goldens, and remove
+    the `"skip"` bypass in `internal/fidget/convert_test.go` (resolving its
+    `"remove this once all tests are passing"` `TODO`).
 
 - [ ] **M11. Go License Tool Migration & `stdlib/text` `cxf2gsl` Generator Restoration**
   - Replace `tool/third_party_licenses.py` with a pure Go command under
@@ -266,7 +378,57 @@ defined in [README.md](../../../README.md):
     bounds/clearance checks, add unit tests, uncomment the function, and regenerate
     `stdlib/lattice/honeycomb/package.pb`.
 
-## 5. Small Targeted Cleanups
+- [ ] **M13. Assembler Fixed-Point Pass Gating, Incremental Re-Linking & Fold/Type Allocation
+  Reduction**
+  - Eliminate avoidable happy-path compiler passes and per-node heap churn in `assembler.Assemble`:
+    - Gate `link.References` and `types.Analyze` inside `optimizeProgram` and Step 4 of
+      `assembler/assemble.go` on actual AST mutation booleans (returning
+      `(modified bool, err error)` from `lower.Transform` in `internal/lower/lower.go`) instead of
+      unconditionally re-linking and re-analyzing 4 times per fixed-point iteration when
+      `inline.Functions`, `eval.Fold`, `constspec.Transform`, `lower.Transform`, or
+      `unroll.Functions` made no changes.
+    - Remove the duplicate back-to-back `deadcode.Remove` invocation between the final
+      `optimizeProgram` iteration and Step 7 in `assembler/assemble.go`, and reuse
+      `assemblerParamChecker` (`newAssemblerParamChecker`) across non-mutating passes rather than
+      re-walking `prog.Primary` twice per iteration.
+    - Split fast silent reference re-binding (`link.References`) from cold collision/shadowing
+      warning passes (`checkDotImportCollisions`, `checkLocalDeclarationCollisions`,
+      `checkBuiltinShadowing`) in `internal/link/link.go`, and skip re-linking unmodified
+      `prog.Dependencies` on internal assembler re-links.
+    - Reuse `constCtx` cycle-detection maps (`evaluating`, `calls`) on `foldVisitor` and preserve
+      matching single-element `op.ConstValues` slices on numeric literals in
+      `internal/eval/fold.go` (`VisitValue`, `evalConst`) instead of reallocating per AST node.
+    - Share canonical immutable `*program.Type` singletons (`Scalar`, `Vec2`, `Vec3`, `Vec4`) in
+      `program/type.go` and add a zero-slice single-type fast path alongside `inferOperandType` in
+      `internal/types/infer.go` to eliminate per-operand `[]*program.Type` wrapper allocations.
+    - Avoid building and discarding `*program.Package` trees on intermediate reachability rounds,
+      replace `O(F^2)` slice prepending (`append([]*program.PackageFile{newFile}, files...)`), and
+      prune dependencies with zero reachable declarations in
+      `internal/assembler/deadcode/deadcode.go`.
+
+- [ ] **M14. Typed AST Cloning, In-Place Assembler Ownership & Conditional `meshfold`
+  Short-Circuiting**
+  - Eliminate reflection-heavy `proto.Clone` calls across all 39 production call sites and skip
+    redundant whole-program clones when `assembler.Assemble` already owns a fresh `Program`:
+    - Replace `proto.Clone` with typed `program.Clone*` helpers (`program/clone.go`, adding
+      `CloneProgram`, `CloneAssignment`, and `CloneFunction`) across `program/get_import.go`
+      (`GetStdPackage`), `parser/caching.go` (`CachingParser`),
+      `internal/fidget/convert/buildcopy.go` (`BuildCopy`), `internal/assembler/property/`
+      (`carry.go`, `remap_wrappers.go`, `share.go`), `internal/closure/` (`capture.go`,
+      `specialize.go`, `transform.go`, `unroll.go`), `internal/lower/map_reduce.go`,
+      `internal/assembler/constspec/constspec.go`, and `assembler/meshplan/inline.go`, and rewrite
+      `program.EqualModuloLocations` (`program/program.go`) as a direct structural AST comparator
+      without `proto.Clone` + `protoreflect` mutation.
+    - Mutate in place (or clone only `Primary.Files`) inside `property.ExpandShared`
+      (`internal/assembler/property/expand.go`) and `property.MarkParts`
+      (`internal/assembler/property/parts.go`) when operating on the exclusively owned `Program`
+      from `collect.Program`, avoiding full `Dependencies` deep copies.
+    - Short-circuit `meshfold.FoldProgramWithSlotsChecked` (`internal/meshfold/fold.go`, enabled by
+      default via `enableSlotFold: true` in `assembler/assemble.go`) when a program declares no
+      mesh/STEP/warp imports and invokes no `mesh`, `bvhSdf`, or `vdbSdf` built-ins, avoiding two
+      full-program `FoldMeshIndicesAt` clones plus an extra `eval.Fold` pass on analytical SDFs.
+
+## 6. Small Targeted Cleanups
 
 - [ ] **S1. Generalized Postfix Modifier Chaining (`Modifiers []*Modifier`)**
   - Replace single `Access *Accessor` + `Index *Expression` fields on `Factor` in
@@ -286,12 +448,11 @@ defined in [README.md](../../../README.md):
     legacy functional logical calls.
 
 - [ ] **S4. Retire Legacy Prelude Import Alias Shims in Parser & Auto-Import**
-  - Update legacy test fixtures across `assembler/`, `parser/`, `internal/eval/`,
-    `internal/gsleval/`, `internal/fidget/internal/convert/testdata/`, and
-    `backend/wgsl/internal/codegen/testdata/` that still import the legacy prelude package alias,
-    add a `cmd/fix` cleanup rule, and remove the silent `vector`/`builtin` import rewrite shims in
-    `parser/internal/parser2/build_imports.go`, `internal/scope/pkg_file.go`, and
-    `program/auto_import.go`.
+  - Update legacy test fixtures across `assembler/`, `parser/`, `internal/eval/`, `eval/`,
+    `internal/fidget/convert/testdata/`, and `backend/wgsl/internal/codegen/testdata/` that still
+    import the legacy prelude package alias, add a `cmd/fix` cleanup rule, and remove the silent
+    `vector`/`builtin` import rewrite shims in `parser/internal/parser2/build_imports.go`,
+    `internal/scope/pkg_file.go`, and `program/auto_import.go`.
 
 - [ ] **S5. Migrate `cmd/serve` Off `audio.ExtractAudio` & Delete String-Based Audio Splitter**
   - Refactor `cmd/serve/internal/compiler/compiler.go` (and `backend/audio` tests) to run a single
@@ -330,19 +491,18 @@ defined in [README.md](../../../README.md):
   - Replace regex type-name parsing (`arrayTypeRE`, `matrixTypeRE`) in
     `backend/wgsl/internal/codegen/simple.go` (`blendRows`) with structured assembler type metadata
     (resolving the `TODO` in `backend/wgsl/internal/codegen/simple.go`), remove obsolete
-    post-unrolling broadcasting fallbacks in `internal/fidget/internal/convert/type.go`
+    post-unrolling broadcasting fallbacks in `internal/fidget/convert/type.go`
     (`vecType.ExpandTrees`) and `backend/wgsl/internal/wgsl/numeric_op.go`, and flatten single-use
     cross-statement `let` chains for associative accelerated ops in `internal/lower/lower.go`.
 
 - [ ] **S11. Resolve Residual `inline`, `eval`, `meshfold`, and `fidget` Code `TODO`s**
-  - Extract the `"gsl_tmp_"` constant in `internal/assembler/inline/inline.go` (`TODO`) and remove
-    the unused `currentPkgPath` parameter on `shouldInlineMultiReturnCall` in
-    `internal/assembler/inline/predicates.go` (`TODO`); extract `"matrix"`/`"vector"`/`"multiply"`
-    constants at both `TODO` sites in `internal/eval/const.go`; inline trivial `FoldProgram` and
-    document cloning behavior on `FoldProgramWithSlots` in `internal/meshfold/fold.go` (2 `TODO`s);
-    pass GSL source/location spans into `GenerateSTLAtTime` in
-    `internal/fidget/internal/mesh/mesh.go` (`TODO`); and warn or check parent-scope variable
-    shadowing in `internal/fidget/internal/fidget/convert.go` (`TODO`) via `internal/scope`.
+  - Extract the `"gsl_tmp_"` constant in `internal/assembler/inline/inline.go` (`TODO`) and resolve
+    the `TODO` on `shouldInlineMultiReturnCall` in `internal/assembler/inline/predicates.go`;
+    extract `"matrix"`/`"vector"`/`"multiply"` constants at both `TODO` sites in
+    `internal/eval/const.go`; inline trivial `FoldProgram` and document cloning behavior on
+    `FoldProgramWithSlots` in `internal/meshfold/fold.go` (2 `TODO`s); and warn or check
+    parent-scope variable shadowing in `internal/fidget/convert.go` (`TODO` in `validateName`) via
+    `internal/scope`.
 
 - [ ] **S12. Audit `program/meshasset.Registry` vs. `Cache` & Reserve Deprecated Tape Field**
   - Consolidate or deprecate index-keyed `program/meshasset/registry.go` in favor of
@@ -417,33 +577,96 @@ defined in [README.md](../../../README.md):
     `doc/gsl_lang_spec_current.md`, `doc/gsl_lang_spec_future.md`, and
     `program/preamble/gsl_description.go`.
 
-- [ ] **S16. Tighten `.color` Property Validation & Docs to Strictly 3-Element RGB (`vec3`)**
+- [x] **S16. Tighten `.color` Property Validation & Docs to Strictly 3-Element RGB (`vec3`)**
   - Tighten `validateColorProperty` in `internal/assembler/propval/validate.go` (and unit tests in
     `internal/assembler/propval/validate_test.go`) to require `len(vals) == 3` rather than allowing
     stale 4-element `[r, g, b, a]` vectors that fail downstream in `internal/assembler/property`,
     `backend/wgsl`, and `internal/fidget`, and remove `[r, g, b, a]` from `name.color` in
     `doc/gsl_lang_spec_current.md` and `doc/gsl_lang_spec_future.md`.
 
-- [ ] **S17. Remove `compile eval` & `compile skill` in Favor of `gsl eval` & `gsl skill` Only**
-  - Remove the `os.Args[1] == "eval"` and `os.Args[1] == "skill"` branches from
-    `cmd/compile/main.go` and the `compile eval` usage line from `cmd/compile/internal/cli/cli.go`
-    so `cmd/compile` only compiles GSL sources; move `cmd/compile/internal/evalcmd` (plus
-    `cmd/compile/render_eval_test.go`) and `cmd/compile/internal/skillcmd` into `cmd/gsl/internal/`
-    for direct `gsl eval` and `gsl skill` execution (updating usage headers and
-    `cmd/gsl/internal/cli/cli.go` + `cli_test.go`, and unifying static wheel linkage in
+- [ ] **S17. Remove `compile eval`, `compile skill` & `compile viewer` in Favor of `gsl` Subcommands Only**
+  - Remove the `os.Args[1] == "eval"`, `os.Args[1] == "skill"`, and `os.Args[1] == "viewer"`
+    branches from `cmd/compile/main.go` and the `compile eval` usage line from
+    `cmd/compile/internal/cli/cli.go` so `cmd/compile` only compiles GSL sources; move
+    `cmd/compile/internal/evalcmd` (plus `cmd/compile/render_eval_test.go`) and
+    `cmd/compile/internal/skillcmd` into `cmd/gsl/internal/` and dispatch `viewer.Run`
+    (`cmd/serve/viewer`) directly from `cmd/gsl/internal/cli/cli.go` (updating usage headers,
+    `cmd/gsl/internal/cli/cli_test.go` + `viewer_test.go`, and unifying static wheel linkage in
     `tool/build-wheel.sh` and `python/omega-core` so Fidget is not linked twice).
 
-## 6. Acceptance Criteria
+- [ ] **S18. Pre-Index `wgsl.Render` Span Lookups, Memoize `reachesKeyedBuiltin` & Avoid Double WGSL
+  Serialization**
+  - Pre-index top-level assignments and functions once in `backend/wgsl/render.go`
+    (`newLocationCollector`) and key `visited` by typed structs/pointers instead of re-scanning
+    `packageAssignments(c.module)` and `packageFunctions(c.module)` (`O(R * A^2)`) and formatting
+    `fmt.Sprintf("assign:%p:%d", ...)` / `fmt.Sprintf("fn:%p", ...)` keys on every reference.
+  - Fast-skip `reachesKeyedBuiltin` in `internal/build/keyed_builtin.go` when
+    `!prog.GetGlobalTextures().GetUsesSpinodoid()` and memoize reachability per `*program.Function`
+    rather than allocating `visited`/`anonFnDecls` maps and `fmt.Sprintf` keys on each `FnCall`.
+  - Track `withDisplacement` calls directly during `BuildFuncCall` rather than serializing
+    `d.module.WGSL()` mid-build in `backend/wgsl/internal/codegen/build.go` and scanning the full
+    module string in `displacementEvident` (`backend/wgsl/internal/codegen/displace.go`);
+    synchronize or pre-allocate `vecTypes`/`listVecTypes` in `internal/fidget/convert/type.go`; and
+    replace `fmt.Sscanf(name, "gsl_tmp_%d", &n)` in `internal/assembler/inline/inline.go`
+    (`initAnonCounter`) with `strings.TrimPrefix` + `strconv.Atoi`.
+
+- [ ] **S19. Audit & Remove Test-Induced `nil` Guards, Unused Parameters & Dead/Test-Only Helpers
+  (`clean-go-test-guards`)**
+  - Preserve defensive input validation at public SDK boundaries (`parser`, `assembler`, `eval`,
+    `backend/*`) while restoring clean internal domain invariants across Go production files:
+    - **Delete unreferenced dead helpers:** remove `subdivide8` (`eval/certify.go`), `shadeLit`
+      (`eval/litrender.go`), `(*pcg64).uniform` (`program/noise/spinodoid/numpy.go`), `NewSubExpr`
+      (`backend/wgsl/internal/wgsl/expression.go`), `VecType` and `NewListVecType`
+      (`internal/fidget/convert/type.go`), `HodgeSpinodoidOracleID`, `RegisterHodgeSpinodoid`, and
+      `HodgeSpinodoidTree` (`internal/fidget/fidget.go`), and `JSONEq`
+      (`internal/test/assert/json.go`).
+    - **Relocate or inline test-only internal exports out of production `.go` files:** move
+      test-only wrappers/constructors into `*_test.go` (or call production APIs directly) for
+      `NewUniformDecl` (`backend/wgsl/internal/ir/decl.go`), `Expand`
+      (`internal/assembler/property/expand.go`), `NewEngine`
+      (`internal/assembler/property/property.go`), `UFields` and `VFields`
+      (`internal/assembler/property/uv.go`), `GraphPackages`
+      (`internal/assembler/warpfold/warpfold.go`), `ConstElementsPkg` (`internal/eval/const.go`),
+      `ToColorShapes` (`internal/fidget/convert/color.go`), `UnrollReduce`
+      (`internal/lower/map_reduce.go`), `FoldMeshIndices` (`internal/meshfold/fold.go`), and
+      `IsSupported` (`parser/internal/annotation/annotation.go`).
+    - **Drop unused internal parameters & `_`-rename unused interface parameters:** remove unused
+      `op` on `(*sliceCtx).sliceMeshCSG` and `(*sliceCtx).sliceMeshLiteral`
+      (`assembler/meshplan/slice.go`), `expressions` on `(*Delegate).BuildMeshSdfCall`
+      (`backend/wgsl/internal/codegen/mesh_sdf.go`), `currentPkgPath` on
+      `(*inliner).shouldInlineCall` and both `calleePkgPath` and `currentPkgPath` on
+      `(*inliner).shouldInlineMultiReturnCall` (`internal/assembler/inline/predicates.go`),
+      `pkgPath` on `addCompanions` (`internal/assembler/property/carry.go`), `op` on
+      `(*warpFolder).rewrite` (`internal/assembler/warpfold/warpfold.go`), `fc` on
+      `(*transformer).enclosingNamesForList` (`internal/closure/enclosing.go`), `env` on
+      `(*transformer).unrollFunctionFold` (`internal/closure/unroll.go`), `name` on
+      `(*Delegate).builtinUnaryScale` (`internal/fidget/convert/builtin.go`), and `fc` on
+      `(*FnScope).CallFrom` (`internal/scope/fn.go`), and rename unused interface-mandated
+      parameters to `_` across `internal/link`, `internal/eval`, `internal/assembler/deadcode`,
+      `internal/assembler/property`, `internal/scope`, `internal/fidget/convert`,
+      `backend/wgsl/internal/`, and `backend/audio/internal/codegen`.
+    - **Eliminate test-induced internal `nil` skips & update test fixtures:** remove redundant
+      `if file == nil`, `if a == nil`, `if v == nil`, `if ft == nil`, `if g == nil`, and
+      `if fn == nil` guards inside internal passes (`internal/meshfold/fold.go`,
+      `internal/assembler/property/parts.go` and `carry.go`, `internal/assembler/inline/inline.go`
+      and `substitute.go`, `internal/eval/const.go`, and `backend/wgsl/render.go`), document
+      upstream non-nil AST invariants, and update unit test AST fixtures to satisfy them.
+
+## 7. Acceptance Criteria
 
 - [ ] Every backlog item is categorized into `Large`, `Medium`, or `Small` with concrete,
       code-verified `omega-core` context and relative paths.
 - [ ] All documentation, terminology, and path references within this specification are completely
       self-contained inside `omega-core`.
+- [ ] Compiler, parser, codegen, and diagnostics items uphold the Core Engineering Principles:
+      fast, low-allocation happy-path compilation on valid `.gsl` inputs, rich lazy cold-path
+      diagnostics on errors/warnings, and strict boundary validation paired with clean internal
+      domain invariants (`clean-go-test-guards`).
 - [ ] Large and Medium entries provide clear architectural boundaries and sub-goals from which
       standalone Conductor tracks (`spec.md` + `plan.md`) can be created as needed, while Small
       entries define self-contained cleanups verifiable via `./tool/check.sh` and `./tool/test.sh`.
 
-## 7. Out of Scope
+## 8. Out of Scope
 
 - **Native Boolean Type (`bool`):** Introducing a separate `bool` primitive type with implicit
   scalar conversion is intentionally excluded; GSL retains scalar `> 0.0` truthiness.

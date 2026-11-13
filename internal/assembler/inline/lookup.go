@@ -204,6 +204,32 @@ func (in *inliner) findFunction(fc *program.FnCall, fileScope *scope.PkgFileScop
 	return fnType, fn, pkgPath
 }
 
+// findBuiltinFunction finds the builtin package's own function that fc calls,
+// which findFunction does not look for: only a call that isBuiltinOrSpecial
+// and not isNativeOrSpecial has one.
+func (in *inliner) findBuiltinFunction(fc *program.FnCall, paramCount int) (*program.FnType, *program.Function, string) {
+	if in.progScope == nil || fc.Reference == nil {
+		return nil, nil, ""
+	}
+	builtinScope := in.progScope.Dependencies["builtin"]
+	if builtinScope == nil || builtinScope.Package == nil {
+		return nil, nil, ""
+	}
+	for _, file := range builtinScope.Package.Files {
+		for _, fnType := range file.FnTypes {
+			if fnType.Name != fc.Reference.Name {
+				continue
+			}
+			for _, group := range fnType.Groups {
+				if int(group.ParamCount) == paramCount && len(group.Functions) > 0 {
+					return fnType, group.Functions[0], builtinScope.Package.Path
+				}
+			}
+		}
+	}
+	return nil, nil, ""
+}
+
 func (in *inliner) findFunctionUncached(fc *program.FnCall, fileScope *scope.PkgFileScope, paramCount int) (*program.FnType, *program.Function, string) {
 	// First check local function scopes in innermost-to-outermost lexical order
 	if fc.Reference.Prefix == "" && len(in.enclosingFns) > 0 {
@@ -329,8 +355,12 @@ func (in *inliner) findFunctionUncached(fc *program.FnCall, fileScope *scope.Pkg
 }
 
 // findCallbackFunction resolves a higher-order operation's callback operand (e.g. from
-// Operation_REDUCE or Operation_MAP) to its underlying Function AST.
-func (in *inliner) findCallbackFunction(cbOp *program.Operand, fileScope *scope.PkgFileScope) *program.Function {
+// Operation_REDUCE or Operation_MAP) to its underlying Function AST. lexical is
+// the chain of function bodies a predicate is walking, outermost first, when
+// the operation sits in one of them rather than in a function being
+// transformed: a callee's map or reduce names a function the callee declares,
+// which in.enclosingFns does not hold.
+func (in *inliner) findCallbackFunction(cbOp *program.Operand, fileScope *scope.PkgFileScope, lexical []*program.Function) *program.Function {
 	if cbOp == nil {
 		return nil
 	}
@@ -343,6 +373,21 @@ func (in *inliner) findCallbackFunction(cbOp *program.Operand, fileScope *scope.
 	}
 	if ref == nil {
 		return nil
+	}
+
+	// 0. Check the bodies being walked, innermost first.
+	if ref.Prefix == "" {
+		for i := len(lexical) - 1; i >= 0; i-- {
+			for _, ft := range lexical[i].FnTypes {
+				if ft.Name == ref.Name {
+					for _, grp := range ft.Groups {
+						if len(grp.Functions) > 0 {
+							return grp.Functions[0]
+						}
+					}
+				}
+			}
+		}
 	}
 
 	// 1. Check enclosing functions from innermost to outermost lexical scope.

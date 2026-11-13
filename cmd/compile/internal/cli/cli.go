@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"flag"
@@ -19,6 +20,7 @@ import (
 	"gradientcontrol.com/omega/core/cmd/compile/internal/config"
 	"gradientcontrol.com/omega/core/cmd/internal/version"
 	"gradientcontrol.com/omega/core/eval"
+	"gradientcontrol.com/omega/core/internal/meshimport"
 	"gradientcontrol.com/omega/core/parser"
 	"gradientcontrol.com/omega/core/program"
 )
@@ -40,7 +42,7 @@ func PrintUsage(w io.Writer) {
 	fmt.Fprintf(w, "  compile eval [flags] REQUEST.json | --stdio   (query a document's field: compile eval --help)\n\n")
 	fmt.Fprintf(w, "Flags:\n")
 	fmt.Fprintf(w, "  -t, --target string\n")
-	fmt.Fprintf(w, "        Compilation output target (wgsl, stl, tape, audio, ast, png) (default \"wgsl\")\n")
+	fmt.Fprintf(w, "        Compilation output target (wgsl, stl, 3mf, glb, tape, audio, ast, png) (default \"wgsl\")\n")
 	fmt.Fprintf(w, "  -o, --output string\n")
 	fmt.Fprintf(w, "        Output destination path ('-' for stdout)\n")
 	fmt.Fprintf(w, "  -m, --meta string\n")
@@ -168,8 +170,20 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		return fmt.Errorf("assembling program: %w", asmErr)
 	}
 
+	// The meshes bvhSdf and vdbSdf read: importMesh files beside the source (or in the working directory, for stdin).
+	docDir := "."
+	if len(cfg.Sources) > 0 {
+		docDir = filepath.Dir(cfg.Sources[0])
+	}
+	// Only the targets that evaluate the field load them; wgsl leaves binding the textures to its host.
+	meshDirs := meshDirsFor(docDir, srcPaths)
+	loadMeshes := func() ([]meshimport.Use, error) {
+		return meshimport.Resolve(res.Program, res.Slots, meshimport.Dirs(meshDirs...))
+	}
+
 	// Backend target emission
 	var outBytes []byte
+	var zipOutput bool
 
 	switch cfg.Target {
 	case config.TargetWGSL:
@@ -187,7 +201,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		}
 		outBytes = []byte(renderRes.WGSL)
 
-	case config.TargetSTL:
+	case config.TargetSTL, config.Target3MF, config.TargetGLB:
 		meshOpts := []mesh.Option{
 			mesh.WithSubdivision(cfg.Subdivision),
 			mesh.WithAlgorithm(cfg.Algo),
@@ -204,7 +218,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 				}
 				return fmt.Errorf("%d source files and no @scene to take a box from: name the box with --bbox", len(sourceTexts))
 			}
-			box, boxErr := autoBbox(primarySourceText, srcPaths)
+			box, boxErr := autoBbox(primarySourceText, srcPaths, meshDirs)
 			if boxErr != nil {
 				return boxErr
 			}
@@ -226,14 +240,54 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 				fmt.Fprintf(stderr, "[mesh] %s (%d/%d)\n", stage, completed, total)
 			}))
 		}
-		stlBytes, meshErr := mesh.Mesh(res.Program, meshOpts...)
+		if regErr := registerMeshes(loadMeshes); regErr != nil {
+			return regErr
+		}
+		// Each top-level return is its own body: one STL, a zip of <name>.stl for several, or a 3MF object or GLB node each.
+		bodies, meshErr := mesh.MeshBodies(res.Program, meshOpts...)
 		if meshErr != nil {
 			return fmt.Errorf("generating STL mesh: %w", meshErr)
 		}
-		outBytes = stlBytes
+		if cfg.Target == config.Target3MF {
+			if len(bodies) == 1 {
+				bodies[0].Name = bodyName(cfg)
+			}
+			var buf bytes.Buffer
+			if threeMfErr := mesh.Write3MF(&buf, bodies, nil); threeMfErr != nil {
+				return fmt.Errorf("writing 3MF: %w", threeMfErr)
+			}
+			outBytes = buf.Bytes()
+			break
+		}
+		if cfg.Target == config.TargetGLB {
+			if len(bodies) == 1 {
+				bodies[0].Name = bodyName(cfg)
+			}
+			var buf bytes.Buffer
+			if glbErr := mesh.WriteGLB(&buf, bodies, nil); glbErr != nil {
+				return fmt.Errorf("writing GLB: %w", glbErr)
+			}
+			outBytes = buf.Bytes()
+			break
+		}
+		packed, zipped, packErr := mesh.PackSTL(bodies)
+		if packErr != nil {
+			return fmt.Errorf("zipping bodies: %w", packErr)
+		}
+		if zipped && strings.EqualFold(filepath.Ext(cfg.OutputPath), ".stl") {
+			return fmt.Errorf("%d bodies make a zip of STLs, not one STL: name the output .zip (-o %s.zip)",
+				len(bodies), strings.TrimSuffix(cfg.OutputPath, filepath.Ext(cfg.OutputPath)))
+		}
+		zipOutput = zipped
+		outBytes = packed
 
 	case config.TargetTape:
-		tapeOpts := []tape.Option{}
+		meshUses, loadErr := loadMeshes()
+		if loadErr != nil {
+			return loadErr
+		}
+		bvhOracles, vdbOracles := meshimport.Oracles(meshUses)
+		tapeOpts := []tape.Option{tape.MeshOracles(bvhOracles), tape.VdbOracles(vdbOracles)}
 		if cfg.Verbose {
 			tapeOpts = append(tapeOpts, tape.WithProgress(func(stage string, completed, total uint32) {
 				fmt.Fprintf(stderr, "[tape] %s (%d/%d)\n", stage, completed, total)
@@ -253,6 +307,9 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		outBytes = []byte(jsCode)
 
 	case config.TargetPNG:
+		if regErr := registerMeshes(loadMeshes); regErr != nil {
+			return regErr
+		}
 		pngBytes, pngErr := renderPNG(res.Program, cfg)
 		if pngErr != nil {
 			return pngErr
@@ -272,6 +329,10 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 
 	// Output routing
 	outputPath := cfg.ResolveOutputPath()
+	if zipOutput && cfg.OutputPath == "" && outputPath != "-" {
+		// The default name follows the source; several bodies make a zip, not an STL.
+		outputPath = strings.TrimSuffix(outputPath, filepath.Ext(outputPath)) + ".zip"
+	}
 	if outputPath == "-" {
 		if stdout == nil {
 			stdout = os.Stdout
@@ -312,6 +373,27 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	}
 
 	return nil
+}
+
+// meshDirsFor is where a document's importMesh files are looked for: its own folder first, then each source path (a
+// dependency package's files sit in its folder under one).
+func meshDirsFor(docDir string, srcPaths []string) []string {
+	dirs := []string{docDir}
+	for _, p := range srcPaths {
+		if filepath.Clean(p) != filepath.Clean(docDir) {
+			dirs = append(dirs, p)
+		}
+	}
+	return dirs
+}
+
+// registerMeshes loads the document's meshes and registers them as the oracles its bvhSdf and vdbSdf calls read.
+func registerMeshes(load func() ([]meshimport.Use, error)) error {
+	uses, err := load()
+	if err != nil {
+		return err
+	}
+	return meshimport.Register(uses)
 }
 
 // renderPNG is the png target: the program's field raymarched on the CPU by the viewer's lit renderer, from each
@@ -358,7 +440,7 @@ const autoRescans = 8
 // its own size, where the grid's cells are a few mm -- and the box grows by what it finds, until it no longer reaches
 // the edge of the region searched. It is a fit by sampling, not a proof: a field's interval bounds through its
 // gradient-scaled blends (unionRoundExact and the like) are unbounded, so a box cannot be proven for them.
-func autoBbox(code string, srcPaths []string) ([6]float32, error) {
+func autoBbox(code string, srcPaths, meshDirs []string) ([6]float32, error) {
 	var box [6]float32
 	returns := eval.TopLevelReturnExprs(code)
 	if len(returns) == 0 {
@@ -373,6 +455,7 @@ func autoBbox(code string, srcPaths []string) ([6]float32, error) {
 		opts = append(opts, assembler.SourcePaths(srcPaths...))
 	}
 	ev := eval.New(nil, nil, opts...)
+	ev.LoadMeshesFrom(meshDirs...)
 	ctx := context.Background()
 	found, err := ev.Bounds(ctx, nil, code, "", expr, [6]float64{}, 64)
 	if err != nil {
@@ -419,4 +502,15 @@ func autoBbox(code string, srcPaths []string) ([6]float32, error) {
 		box[k+3] = float32(fit[k+3] + pad)
 	}
 	return box, nil
+}
+
+// bodyName names a one-body 3MF's object or GLB's node: the first source file's name without
+// its extension, as the default output path takes it, or "model" from stdin.
+// Several bodies keep their own names (mesh.MeshBodies).
+func bodyName(cfg *config.Config) string {
+	if cfg.IsStdin || len(cfg.Sources) == 0 {
+		return "model"
+	}
+	base := filepath.Base(cfg.Sources[0])
+	return strings.TrimSuffix(base, filepath.Ext(base))
 }

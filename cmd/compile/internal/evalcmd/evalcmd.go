@@ -125,15 +125,17 @@ func (p *sourcePaths) Set(value string) error {
 	return nil
 }
 
-// server answers requests with one evaluator per set of source paths.
+// server answers requests with one evaluator per set of source paths and mesh folder.
 type server struct {
 	paths      []string
 	cache      bool
 	evaluators map[string]*eval.Evaluator
 }
 
-func (s *server) evaluator(paths []string) *eval.Evaluator {
-	key := strings.Join(paths, "\x00")
+// evaluator is the evaluator for documents whose packages resolve against paths and whose importMesh files sit in
+// docDir: a mesh is read from docDir, else from under a source path.
+func (s *server) evaluator(paths []string, docDir string) *eval.Evaluator {
+	key := strings.Join(append([]string{docDir}, paths...), "\x00")
 	if e, ok := s.evaluators[key]; ok {
 		return e
 	}
@@ -142,6 +144,13 @@ func (s *server) evaluator(paths []string) *eval.Evaluator {
 		opts = append(opts, assembler.SourcePaths(paths...))
 	}
 	e := eval.New(nil, nil, opts...)
+	meshDirs := []string{docDir}
+	for _, p := range paths {
+		if filepath.Clean(p) != filepath.Clean(docDir) {
+			meshDirs = append(meshDirs, p)
+		}
+	}
+	e.LoadMeshesFrom(meshDirs...)
 	if s.cache {
 		e.CacheQueries(sessionCache)
 	}
@@ -256,11 +265,11 @@ func (s *server) dispatch(ctx context.Context, req *request) (map[string]any, er
 	if req.Op != "eval" && len(req.Exprs) > 0 {
 		return nil, malformedf("exprs is eval's; %s takes one expr", req.Op)
 	}
-	code, paths, err := s.document(req)
+	code, paths, docDir, err := s.document(req)
 	if err != nil {
 		return nil, err
 	}
-	e := s.evaluator(paths)
+	e := s.evaluator(paths, docDir)
 	switch req.Op {
 	case "eval":
 		return evalPoints(ctx, e, code, req)
@@ -281,37 +290,31 @@ func (s *server) dispatch(ctx context.Context, req *request) (map[string]any, er
 	}
 }
 
-// assetCalls are the calls that load mesh assets, which need the canvas agent's asset fetcher.
-var assetCalls = []string{"importStep", "importMesh", "bvhSdf", "vdbSdf"}
-
-// document is the request's GSL text and the source paths its imports resolve against: -I when given, else the
-// folder of the file it names.
-func (s *server) document(req *request) (string, []string, error) {
+// document is the request's GSL text, the source paths its imports resolve against (-I when given, else the folder
+// of the file it names) and the folder its importMesh files sit in (the file's, or the working directory for code).
+func (s *server) document(req *request) (string, []string, string, error) {
 	var code string
 	paths := s.paths
+	docDir := "."
 	switch {
 	case req.Source != "" && req.Code != nil:
-		return "", nil, malformedf("name the document once: source or code, not both")
+		return "", nil, "", malformedf("name the document once: source or code, not both")
 	case req.Code != nil:
 		code = *req.Code
 	case req.Source != "":
 		data, err := os.ReadFile(req.Source)
 		if err != nil {
-			return "", nil, fmt.Errorf("reading %s: %w", req.Source, err)
+			return "", nil, "", fmt.Errorf("reading %s: %w", req.Source, err)
 		}
 		code = string(data)
+		docDir = filepath.Dir(req.Source)
 		if len(paths) == 0 {
-			paths = []string{filepath.Dir(req.Source)}
+			paths = []string{docDir}
 		}
 	default:
-		return "", nil, malformedf("name the document: source (a .gsl path) or code (its text)")
+		return "", nil, "", malformedf("name the document: source (a .gsl path) or code (its text)")
 	}
-	for _, call := range assetCalls {
-		if strings.Contains(code, call) {
-			return "", nil, fmt.Errorf("the document loads mesh assets (%s), which gsl eval cannot load", call)
-		}
-	}
-	return code, paths, nil
+	return code, paths, docDir, nil
 }
 
 // expr is the request's expression, or the union of the document's returns.

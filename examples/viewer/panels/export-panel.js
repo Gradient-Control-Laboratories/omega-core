@@ -11,7 +11,9 @@
 // booleans with Manifold (mesh_boolean.js). See runPlanExport below.
 //
 // The panel picks the output and the mesher apart. Format is 3MF (one file,
-// each body an object in its own color, threemf.js; the default), STL (one
+// each body an object in its own color, threemf.js; the default), GLB (one
+// binary glTF, each body a node in its own color; the server writes it, so
+// only for a server mesher with serverFormats), STL (one
 // file, or a zip of one per body) or Omega Tape (the implicit field itself,
 // which Detail, the mesher and Clean do not touch). Mesher is where the meshing runs: Browser MC (above),
 // Browser DC (fidget-wasm on the server's tape) or Server DC.
@@ -36,12 +38,14 @@
 //   getWorldExtent()     viewer.getWorldExtent — scales the voxel-size estimate
 //   clearError()         optional; cleared after a successful union export
 //   track(name, params)  optional analytics hook
-//   onServerExport(detail, surfaceBbox, bodyBoxes, algo)  optional; server-side
-//                           STL export. bodyBoxes maps each visible body's return
+//   onServerExport(detail, surfaceBbox, bodyBoxes, algo, format)  optional;
+//                           server-side export. bodyBoxes maps each visible body's return
 //                           index to its measured box (see measureBodyBoxes),
 //                           or is null when they could not be measured. algo is
 //                           the mesher picked: "mdc" (Server DC) or
-//                           "marching-cubes" (Server MC).
+//                           "marching-cubes" (Server MC). format is the
+//                           format picked ("3mf", "glb" or "stl"), for an
+//                           app with serverFormats.
 //                           Without it the Server DC mesher is not offered,
 //                           unless serverExportUnavailable is given.
 //   serverMarchingCubes     optional; true when onServerExport meshes by the
@@ -56,6 +60,12 @@
 //                           STL reply to claimServerStl first, so a server
 //                           export can be cleaned or written as 3MF.
 //                           Without it Server DC is STL only.
+//   serverFormats           optional; true when onServerExport has the server
+//                           write the format it is given (3MF, GLB, or STL: one
+//                           body's, or a zip of one per body), so a server
+//                           export is not STL only. The server does not clean,
+//                           so Clean stays off for it (the standalone viewer).
+//                           Without it GLB is not offered.
 //   serverExportUnavailable optional; with no onServerExport, keeps Server
 //                           DC in the list, disabled, with this as its title.
 //   getVisibleShapes()      optional; the 1-based returns the viewer shows, or
@@ -678,6 +688,8 @@ function fileSafeName(name) {
 }
 
 async function deliverBodies(bodies, baseName, { format, clean }) {
+    // GLB is the server's to write; the panel offers it for server exports only.
+    if (format === 'glb') throw new Error("GLB is written by the server: pick Server DC or Server MC");
     let refused = [];
     if (clean) ({ bodies, refused } = await cleanBodies(bodies));
     if (format === '3mf') {
@@ -939,7 +951,14 @@ export function initExportPanel(hooks) {
     }
     if (!deps.onServerExport || !deps.serverMarchingCubes) mesherOption('server-mc').remove();
     if (!deps.onSaveTape) formatSelect.querySelector('option[value="tape"]').remove();
+    // GLB is written by the server, so only an app whose server writes the
+    // format (serverFormats) offers it, and only for a server mesher.
+    const glbOption = formatSelect.querySelector('option[value="glb"]');
+    if (!deps.onServerExport || !deps.serverFormats) glbOption?.remove();
+    const GLB_TITLE = glbOption?.title || '';
+    const GLB_SERVER_ONLY = "GLB is written by the server: pick Server DC or Server MC";
     const SERVER_STL_ONLY = "This app's server export comes back as one STL";
+    const SERVER_NOT_CLEANED = "This app's server export is not cleaned";
     const NOT_MESHED = "A tape is the implicit field itself; nothing is meshed";
     // The default is dual contouring: the server's where the host has one,
     // the browser's otherwise, marching cubes only failing both.
@@ -951,26 +970,34 @@ export function initExportPanel(hooks) {
     refreshControls = () => {
         // A mesher or format that became unavailable gives way to the default.
         if (mesherSelect.selectedOptions[0]?.disabled) pickDefaultMesher();
+        const serverMesher = mesherSelect.value === 'server' || mesherSelect.value === 'server-mc';
+        if (glbOption?.isConnected) {
+            const serverWritesGlb = serverMesher && !deps.serverResults;
+            glbOption.disabled = !serverWritesGlb;
+            glbOption.title = serverWritesGlb ? GLB_TITLE : GLB_SERVER_ONLY;
+        }
         if (formatSelect.selectedOptions[0]?.disabled) formatSelect.value = '3mf';
         // A tape is not meshed, so Detail, the mesher and Clean have nothing
         // to do.
         const tape = formatSelect.value === 'tape';
         const onServer = mesherSelect.value === 'server' || mesherSelect.value === 'server-mc';
-        const stlOnly = !tape && onServer && !deps.serverResults;
-        if (stlOnly) {
-            formatSelect.value = 'stl';
-            cleanBox.checked = false;
-        }
+        // A server export the app downloads itself is STL only, unless the
+        // server writes the format (serverFormats); either way it is not cleaned.
+        const serverDirect = !tape && onServer && !deps.serverResults;
+        const serverFormatted = serverDirect && !!deps.serverFormats;
+        const stlOnly = serverDirect && !deps.serverFormats;
+        if (stlOnly) formatSelect.value = 'stl';
+        if (stlOnly || serverFormatted) cleanBox.checked = false;
         formatSelect.disabled = stlOnly;
         stlDepthSlider.disabled = tape;
         stlDepthSlider.closest('.field-panel-row').classList.toggle('disabled', tape);
         stlDepthSlider.closest('.field-panel-row').title = tape ? NOT_MESHED : '';
         document.getElementById('stl-voxel-info').classList.toggle('disabled', tape);
         mesherSelect.disabled = tape;
-        cleanBox.disabled = stlOnly || tape;
+        cleanBox.disabled = stlOnly || serverFormatted || tape;
         formatSelect.title = stlOnly ? SERVER_STL_ONLY : '';
         mesherSelect.title = tape ? NOT_MESHED : '';
-        cleanBox.parentElement.title = stlOnly ? SERVER_STL_ONLY : tape ? NOT_MESHED
+        cleanBox.parentElement.title = stlOnly ? SERVER_STL_ONLY : serverFormatted ? SERVER_NOT_CLEANED : tape ? NOT_MESHED
             : "Rebuild each body through Manifold: weld its vertices, drop degenerate triangles, close it as a 2-manifold";
         const none = tape ? false : !mesherSelect.value || mesherSelect.selectedOptions[0]?.disabled;
         btnExport.classList.toggle('unavailable', none);
@@ -1051,7 +1078,7 @@ export function initExportPanel(hooks) {
             : null;
         const surfaceBbox = await measureSurfaceBbox();
         pendingServerExport = deps.serverResults && (options.format !== 'stl' || options.clean) ? options : null;
-        if (deps.onServerExport(currentDetail(), surfaceBbox, boxes, algo) === false) {
+        if (deps.onServerExport(currentDetail(), surfaceBbox, boxes, algo, options.format) === false) {
             // The app sent nothing, and has said why.
             pendingServerExport = null;
             serverExportShown = false;

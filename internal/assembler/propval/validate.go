@@ -410,19 +410,62 @@ func validateColorProperty(colorProp *program.Property, varName string, pkg *pro
 		return fileErr(file, colorProp.Start, fmt.Sprintf("property .color on variable %q has no expression", varName))
 	}
 
-	// If constant, verify components in [0.0, 1.0]
+	// Fast path for `[r, g, b]` collection literals: reject non-3-element
+	// collections immediately (including varying expressions depending on `p`),
+	// and validate literal scalar components in place without heap allocations.
+	// Invariant: parser and property passes populate non-nil Expression and Operands on Operand_Expression.
+	if exprOp, ok := op.T.(*program.Operand_Expression); ok && exprOp.Expression.Operation == program.Operation_COLLECT {
+		operands := exprOp.Expression.Operands
+		if len(operands) != 3 {
+			return colorLengthErr(file, colorProp.Start, varName, len(operands))
+		}
+		allLiteralValues := true
+		for _, elem := range operands {
+			valOp, ok := elem.T.(*program.Operand_Value)
+			if !ok {
+				allLiteralValues = false
+				continue
+			}
+			if valOp.Value < 0.0 || valOp.Value > 1.0 {
+				return colorRangeErr(file, colorProp.Start, valOp.Value)
+			}
+		}
+		if allLiteralValues {
+			return nil
+		}
+	}
+
+	// Constant expressions (such as imported color constants or arithmetic):
+	// verify the folded value is a 3-element RGB vector in [0.0, 1.0].
 	vals, err := evalConstExpr(op, pkg, getImport)
 	if err == nil {
-		if len(vals) != 3 && len(vals) != 4 {
-			return fileErr(file, colorProp.Start, fmt.Sprintf("property .color on variable %q must be a 3-element or 4-element vector, got %d components", varName, len(vals)))
+		if len(vals) != 3 {
+			return colorLengthErr(file, colorProp.Start, varName, len(vals))
 		}
 		for _, c := range vals {
 			if c < 0.0 || c > 1.0 {
-				return fileErr(file, colorProp.Start, fmt.Sprintf("color components must be in range [0.0, 1.0], got %v", c))
+				return colorRangeErr(file, colorProp.Start, c)
 			}
 		}
 	}
 	return nil
+}
+
+func colorLengthErr(file *program.PackageFile, loc *program.Location, varName string, got int) error {
+	if got == 4 {
+		return fileErr(file, loc, fmt.Sprintf(
+			"property .color on variable %q must be a 3-element RGB vector [r, g, b], got 4 components; alpha is not supported on .color (use .material for transparency)",
+			varName,
+		))
+	}
+	return fileErr(file, loc, fmt.Sprintf(
+		"property .color on variable %q must be a 3-element RGB vector [r, g, b], got %d components",
+		varName, got,
+	))
+}
+
+func colorRangeErr(file *program.PackageFile, loc *program.Location, c float64) error {
+	return fileErr(file, loc, fmt.Sprintf("color components must be in range [0.0, 1.0], got %v", c))
 }
 
 func validateExpression(op *program.Operand, inBoxProperty bool, file *program.PackageFile) error {

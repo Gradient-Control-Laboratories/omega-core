@@ -597,6 +597,9 @@ func (dd *boxDomain) Call(name string, args []Value) (Value, bool, error) {
 		return nil, false, nil
 	}
 	vs := boxVals(args)
+	if name == "revolve" && len(vs) == 3 {
+		return revolved(vs[0], vs[1], vs[2]), true, nil
+	}
 	if v, ok := primitiveBox(name, vs); ok {
 		return v, true, nil
 	}
@@ -604,6 +607,78 @@ func (dd *boxDomain) Call(name string, args []Value) (Value, bool, error) {
 		return v, true, nil
 	}
 	return nil, false, nil
+}
+
+// revolved is the box of revolve(profile, axisPoint, axisDirection)
+// (sweep.gsl): the profile's box in x and y, turned about the line through
+// axisPoint along axisDirection in the sketch plane. revolve reads the profile
+// at (along, out), the distance along the line and the distance out from it
+// taken on the right of its direction, so the solid lies inside the cylinder
+// about the line that spans the box's reach along it and reaches as far out as
+// the box does on that side; the result is that cylinder's box. A point's
+// distance to the cylinder is no more than its (along, out) is from the
+// profile's box, so the profile's growth holds. A profile unbounded in x or y,
+// or an axis that depends on p, leaves the result unbounded.
+func revolved(profile, axisPoint, axisDirection boxVal) boxVal {
+	b := profile.box
+	if profile.op != nil || axisPoint.op == nil || axisDirection.op == nil || b == nil {
+		return boxVal{}
+	}
+	if b.empty {
+		return boxVal{box: b, growth: profile.growth, limit: profile.limit}
+	}
+	if b.lo[0] == nil || b.hi[0] == nil || b.lo[1] == nil || b.hi[1] == nil {
+		return boxVal{}
+	}
+	ax, ay := planar(axisPoint.op, 0), planar(axisPoint.op, 1)
+	dx, dy := planar(axisDirection.op, 0), planar(axisDirection.op, 1)
+	norm := sqrtOp(addOp(mulOp(dx, dx), mulOp(dy, dy)))
+	dx, dy = divOp(dx, norm), divOp(dy, norm)
+	adx, ady := absOp(dx), absOp(dy)
+	// The box as a centre and half widths, so each of its bounds is read a
+	// few times and not once a corner: a profile's bounds are whole
+	// expressions, and this box is evaluated wherever the part's is.
+	cx, hx := centerHalf(b, 0)
+	cy, hy := centerHalf(b, 1)
+	ox, oy := subOp(cx, ax), subOp(cy, ay)
+	along := addOp(timesOp(ox, dx), timesOp(oy, dy))
+	alongHalf := addOp(timesOp(hx, adx), timesOp(hy, ady))
+	out := maxOp(num(0), addOp(subOp(timesOp(ox, dy), timesOp(oy, dx)), addOp(timesOp(hx, ady), timesOp(hy, adx))))
+	bx := &bbox{}
+	for i := 0; i < 2; i++ {
+		a, d, ad, across := ax, dx, adx, ady
+		if i == 1 {
+			a, d, ad, across = ay, dy, ady, adx
+		}
+		// The cylinder's discs stand across the line, so they reach
+		// out * sqrt(1 - d[i]^2) along axis i: out times the other component.
+		centre := addOp(a, timesOp(d, along))
+		half := addOp(timesOp(ad, alongHalf), timesOp(across, out))
+		bx.lo[i], bx.hi[i] = subOp(centre, half), addOp(centre, half)
+	}
+	bx.lo[2], bx.hi[2] = negOp(out), out
+	return boxVal{box: bx, growth: profile.growth, limit: profile.limit}
+}
+
+// timesOp is mulOp that knows a literal zero: an axis along X or Y has one in
+// its direction, and the term it multiplies is a whole bound.
+func timesOp(a, b *program.Operand) *program.Operand {
+	if v, ok := literal(a); ok && v == 0 {
+		return num(0)
+	}
+	if v, ok := literal(b); ok && v == 0 {
+		return num(0)
+	}
+	return mulOp(a, b)
+}
+
+// planar is component i of a point of the sketch plane, a list of two.
+func planar(v *program.Operand, i int) *program.Operand {
+	if e, ok := v.T.(*program.Operand_Expression); ok &&
+		e.Expression.Operation == program.Operation_COLLECT && len(e.Expression.Operands) == 2 {
+		return e.Expression.Operands[i]
+	}
+	return nary(program.Operation_ACCESS, v, ref(axisNames[i]))
 }
 
 // primitiveBox is the box of a builtin primitive (3d.gsl). Every one here is an

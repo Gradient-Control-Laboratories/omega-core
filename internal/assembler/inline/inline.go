@@ -501,16 +501,32 @@ func (in *inliner) transformOperand(op *program.Operand, fileScope *scope.PkgFil
 			}
 		}
 
+		// A function of the builtin package is left as a call, with one
+		// exception: one handed a field it remaps (revolve(profile, …)) has
+		// to be inlined as any other package's is (see remapsFieldArg), or a
+		// backend that emits it as a function returns the field where the
+		// caller stood.
+		builtinFn := false
 		if in.isBuiltinOrSpecial(fc) {
-			return nil
+			if in.isNativeOrSpecial(fc) {
+				return nil
+			}
+			builtinFn = true
 		}
 
 		fnDecl, fn, calleePkgPath := in.findFunction(fc, fileScope, len(fc.Arguments))
+		if builtinFn {
+			fnDecl, fn, calleePkgPath = in.findBuiltinFunction(fc, len(fc.Arguments))
+		}
 		if fn == nil || fnDecl == nil {
 			return nil
 		}
 
 		if len(fn.Returns) != 1 {
+			return nil
+		}
+
+		if builtinFn && !in.remapsFieldArg(fc, fn, fileScope, calleePkgPath) {
 			return nil
 		}
 

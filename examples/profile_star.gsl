@@ -1,0 +1,44 @@
+@scene(120, 30)
+
+// A star cut from one closed profile, its inner points riding a sine wave so
+// each one passes back and forth between reflex and convex. profileXY takes
+// the ten points as they stand each frame: nothing about the loop is fixed
+// but its vertex count and its counterclockwise winding. Play the time slider
+// to watch a wave of notches travel round the star. An inner point turns
+// convex once it is farther out than the chord between its two tips, at
+// outerRadius * cos(pi / 5); past outerRadius it becomes a tip itself.
+// Lengths are in mm.
+
+// Radius of the five fixed tips.
+@range(20, 50) outerRadius = 30.0;
+// The inner points swing between these two radii.
+@range(4, 20) innerMin = 8.0;
+@range(20, 45) innerMax = 32.0;
+// Turns of the wave round the star: 0 moves every inner point together.
+@range(0, 2) waves = 1.0;
+// Half the plate's thickness, and the round on its rim.
+@range(1, 10) halfThickness = 4.0;
+@range(0, 3) rimRadius = 1.0;
+
+// Point `step` of the ten round the star, at `radius` from the centre.
+starPoint(step, radius) {
+  angle = step * pi / 5;
+  return [radius * cos(angle), radius * sin(angle)];
+}
+
+// Radius of the inner point after tip `tip`, each one a phase behind the last.
+innerRadius(tip) {
+  swing = 0.5 + 0.5 * sin(time - tip * waves * tau / 5);
+  return mix(innerMin, innerMax, swing);
+}
+
+star = [
+  starPoint(0, outerRadius), starPoint(1, innerRadius(0)),
+  starPoint(2, outerRadius), starPoint(3, innerRadius(1)),
+  starPoint(4, outerRadius), starPoint(5, innerRadius(2)),
+  starPoint(6, outerRadius), starPoint(7, innerRadius(3)),
+  starPoint(8, outerRadius), starPoint(9, innerRadius(4))
+];
+
+plate = intersectRound([profileXY(star), abs(p.z) - halfThickness], rimRadius);
+return plate;

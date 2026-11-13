@@ -184,11 +184,116 @@ func CarryReturnProperties(prog *program.Program) error {
 			break
 		}
 	}
+	// revolve's frame is not one a companion can return (see revolveFrame),
+	// and like any frame it is carried only in a program that reads one.
+	var rev *revolveFrame
+	if packageReadsFrame(prog.Primary) {
+		if rev = findRevolve(pkgs, paths); rev != nil {
+			carriers[rev.key] = carrier{slots: [][]string{{uProperty, vProperty}}}
+		}
+	}
 	if len(carriers) == 0 {
 		return nil
 	}
-	carryCalls(prog.Primary, carriers)
+	carryCalls(prog.Primary, carriers, rev)
 	return nil
+}
+
+// REVOLVE'S FRAME. builtin's revolve(profile, axisPoint, axisDirection)
+// (sweep.gsl) is one remap of its profile, and its frame is the convention of
+// a surface of revolution, the one the cylinder, sphere and torus keep: u the
+// angle round the axis, v the coordinate along the curve that was turned,
+// which is the profile's own u read where revolve reads the profile. A
+// companion cannot return that v: it is a frame read of an argument, and a
+// function's parameter is a value, with no frame to read. So revolve is a
+// carrier whose two values are written here at the call, where the profile is
+// still the caller's expression:
+//
+//	ring = revolve(section, a, d);   becomes   gslCarry1 = revolveAngle(a, d);
+//	                                           gslCarry2 = remap(section.u, <revolve's coordinate>);
+//	                                           ring = revolve(section, a, d);
+//	                                           ring.u = gslCarry1;  ring.v = gslCarry2;
+//
+// A function that returns a revolve does not carry this frame out: there is
+// no companion for its own to call.
+type revolveFrame struct {
+	key carrierKey
+	fn  *program.Function
+}
+
+const (
+	builtinPath      = "builtin"
+	revolveName      = "revolve"
+	revolveAngleName = "revolveAngle"
+)
+
+// findRevolve finds builtin's three-parameter revolve among pkgs, or nil when
+// it is not there or its body is no longer the one remap of its first
+// parameter that the frame is read from.
+func findRevolve(pkgs []*program.Package, paths []string) *revolveFrame {
+	for i, pkg := range pkgs {
+		if pkg == nil || pkg.Path != builtinPath {
+			continue
+		}
+		for _, f := range pkg.Files {
+			if f == nil {
+				continue
+			}
+			for _, ft := range f.FnTypes {
+				if ft == nil || ft.Name != revolveName {
+					continue
+				}
+				for _, g := range ft.Groups {
+					if g == nil || g.ParamCount != 3 || len(g.Functions) == 0 {
+						continue
+					}
+					fn := g.Functions[0]
+					if revolveCoordinate(fn) == nil {
+						return nil
+					}
+					return &revolveFrame{key: carrierKey{pkgPath: paths[i], name: revolveName, params: 3}, fn: fn}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// revolveCoordinate is the coordinate fn's body remaps its first parameter by,
+// or nil when the body is not that one remap.
+func revolveCoordinate(fn *program.Function) *program.Operand {
+	if fn == nil || len(fn.Parameters) != 3 || len(fn.Returns) != 1 || len(fn.Assignments) != 0 {
+		return nil
+	}
+	e, ok := fn.Returns[0].T.(*program.Operand_Expression)
+	if !ok || e.Expression == nil || e.Expression.Operation != program.Operation_REMAP || len(e.Expression.Operands) != 2 {
+		return nil
+	}
+	target, ok := e.Expression.Operands[0].T.(*program.Operand_Reference)
+	if !ok || target.Reference == nil || target.Reference.Name != fn.Parameters[0].Name {
+		return nil
+	}
+	return e.Expression.Operands[1]
+}
+
+// valueOr is the value of prop for the call fc when fc is a revolve, and
+// companion, the call of an ordinary carrier's companion, when it is not.
+func (rev *revolveFrame) valueOr(fc *program.FnCall, prop string, companion *program.Operand) *program.Operand {
+	if rev == nil || fc == nil || fc.Reference == nil || len(fc.Arguments) != 3 ||
+		fc.Reference.Name != rev.key.name || fc.Reference.PkgPath != rev.key.pkgPath {
+		return companion
+	}
+	arg := func(i int) *program.Operand { return proto.Clone(fc.Arguments[i]).(*program.Operand) }
+	if prop == uProperty {
+		return call(revolveAngleName, arg(1), arg(2))
+	}
+	params := make(map[string]*program.Operand, 3)
+	for i, prm := range rev.fn.Parameters {
+		params[prm.Name] = fc.Arguments[i]
+	}
+	return nary(program.Operation_REMAP,
+		nary(program.Operation_SURFACEU, arg(0)),
+		substituteParams(revolveCoordinate(rev.fn), params))
 }
 
 // carrier is what one overload carries: for each place in its return, the
@@ -487,7 +592,7 @@ func companionOf(fn *program.Function, expr *program.Operand, keep bool) *progra
 
 // carryCalls gives every call to a carrier in pkg's declarations and returns
 // the carried properties, hoisting a nested call into a declaration of its own.
-func carryCalls(pkg *program.Package, carriers map[carrierKey]carrier) {
+func carryCalls(pkg *program.Package, carriers map[carrierKey]carrier, rev *revolveFrame) {
 	taken := map[string]bool{}
 	for _, f := range pkg.Files {
 		if f == nil {
@@ -524,7 +629,7 @@ func carryCalls(pkg *program.Package, carriers map[carrierKey]carrier) {
 				Start:      at.Start,
 				End:        at.End,
 				Variables:  []*program.Variable{{Name: name}},
-				Expression: companionCall(fc, prop, i, multi),
+				Expression: rev.valueOr(fc, prop, companionCall(fc, prop, i, multi)),
 			})
 			return &program.Property{
 				Start:      at.Start,

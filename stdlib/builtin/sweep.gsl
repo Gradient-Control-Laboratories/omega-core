@@ -234,3 +234,78 @@ sweepLoftScaleSmoothSeparateCaps(startProfile, endProfile, start, control, end, 
 
   return profileDistance, startCap, endCap;
 }
+
+// =========================================================
+// EXTRUDE AND REVOLVE
+// =========================================================
+
+/// A profile extruded along Z: `profile`, a 2D field in the XY plane such as
+/// profileXY's, kept between the planes z = `low` and z = `high`, using
+/// `blend` to combine the profile with the two caps — pass
+/// `intersectRound(radius)` to round both rims, or any other operator taking
+/// a list of fields, as on cylinderCapped. Its box is the profile's between
+/// the two planes. Its frame: .u the profile's own, the distance along its
+/// loop where it has one, and .v the height z, both in mm, on the sides and
+/// the caps alike.
+extrude(profile, low, high, blend) {
+  middle = (low + high) / 2;
+  halfHeight = abs(high - low) / 2;
+  form = blend([profile, abs(p.z - middle) - halfHeight]);
+  form.v = extrudeV();
+  return form;
+}
+
+// An extrusion's v: the height, in mm.
+extrudeV() {
+  return p.z;
+}
+
+/// A profile extruded along Z between z = `low` and z = `high`, with sharp
+/// rims. An exact profile gives an exact solid: the caps are square to it.
+extrude(profile, low, high) {
+  form = extrude(profile, low, high, intersectRound(0));
+  form.v = extrudeV();
+  return form;
+}
+
+/// A profile revolved a full turn about a line in its own plane: the line
+/// through `axisPoint` along `axisDirection`, both 2D, in the XY plane where
+/// `profile` is drawn. The profile is read at the axis's own distance and v
+/// (as axisCylindrical gives them), laid back onto the sketch, so it
+/// stays where it was drawn and the solid's section in the XY plane is the
+/// profile itself. It is read on the right of the direction; reverse the
+/// direction to revolve what lies on the left. Keep the profile to that one
+/// side. An exact profile then gives an exact solid, unless it has an edge
+/// lying along the axis: that edge is not a surface of the solid, but the
+/// distance inside still counts it. Draw the whole section across the axis,
+/// symmetric about it, to keep the inside exact as well. Its
+/// frame is a surface of revolution's, as the cylinder's and the torus's are:
+/// .u the angle round the axis in radians, zero on the sketch plane where the
+/// profile is drawn and counterclockwise seen from the tip of the direction,
+/// and .v the profile's own .u, the distance along its loop where it has
+/// one. Its box is the profile's, turned about the axis.
+//
+// Internal: the body is one remap, its coordinate written out in scalars of
+// p, the parameters and primitives alone: no locals, no call to axis() or
+// axisDistance(), whose values these are, and no component taken of a call's
+// result. Only such a function is read as the remap it is (property's
+// unwrapRemaps), and only then do the profile's colour and material turn
+// with it. The frame is written at the call (property's revolveFrame), from
+// revolveAngle and this body's coordinate. The first line is the point as far along the axis as p, the
+// second term of each the distance from the axis, laid to the right of its
+// direction; that distance is taken from the one cross product and z, not
+// from a difference of squares, to keep its interval bound.
+revolve(profile, axisPoint, axisDirection) {
+  return remap(profile, [
+    axisPoint.x + axisDirection.x / length(axisDirection) * ((p.x - axisPoint.x) * axisDirection.x + (p.y - axisPoint.y) * axisDirection.y) / length(axisDirection) + axisDirection.y / length(axisDirection) * length([((p.x - axisPoint.x) * axisDirection.y - (p.y - axisPoint.y) * axisDirection.x) / length(axisDirection), p.z]),
+    axisPoint.y + axisDirection.y / length(axisDirection) * ((p.x - axisPoint.x) * axisDirection.x + (p.y - axisPoint.y) * axisDirection.y) / length(axisDirection) - axisDirection.x / length(axisDirection) * length([((p.x - axisPoint.x) * axisDirection.y - (p.y - axisPoint.y) * axisDirection.x) / length(axisDirection), p.z]),
+    0]);
+}
+
+// revolve's .u: the angle round the line through `axisPoint` along
+// `axisDirection`, both 2D in the XY plane, in radians. It is zero on the XY
+// plane to the right of the direction, where revolve reads its profile, and
+// runs counterclockwise seen from the tip of the direction, so toward -Z.
+revolveAngle(axisPoint, axisDirection) {
+  return atan(neg(p.z), ((p.x - axisPoint.x) * axisDirection.y - (p.y - axisPoint.y) * axisDirection.x) / length(axisDirection));
+}

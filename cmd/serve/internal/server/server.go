@@ -35,6 +35,9 @@ type Server struct {
 	// Lock for accessing the fields below
 	mu      sync.Mutex
 	clients map[string]chan ProgressEvent
+
+	// uploads are the meshes the viewer sent (POST /api/asset); it locks itself.
+	uploads uploads
 }
 
 // New constructs and routes a new Server instance for the given Config.
@@ -60,6 +63,7 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("POST /api/save", s.handleSave)
 	s.mux.HandleFunc("POST /api/compile", s.handleCompile)
 	s.mux.HandleFunc("POST /api/mesh", s.handleMesh)
+	s.mux.HandleFunc("POST /api/asset", s.handleAsset)
 
 	// The Help panel's GSL reference, generated from the standard library
 	// this server compiles; ahead of the static files so it cannot go stale.

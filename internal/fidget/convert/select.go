@@ -50,15 +50,17 @@ func (d *Delegate) BuildSelect2(op *program.Operand, expr *program.Expression, o
 			condTree = fidget.Max(d.zero, fidget.Compare(condTree, d.zero))
 		}
 
-		// Algebraic formulation for 2-way branch where the condition is guaranteed
-		// by BuildComparison to evaluate within [0, 1].
-		// result = condTree * trueVal + (1 - condTree) * falseVal
-		// With the condition 0 or 1 the branch not taken is multiplied by 0 and
-		// drops out exactly. The shorter falseVal + condTree * (trueVal -
-		// falseVal) rounds the difference, which costs trueVal its precision
-		// when falseVal is large, as builtin's nothing is.
-		resultTrees[i] = fidget.Add(fidget.Mul(condTree, trueTrees[i]),
-			fidget.Mul(fidget.Sub(d.one, condTree), falseTrees[i]))
+		// result = and(cond, trueVal) + and(!cond, falseVal). fidget's and is a
+		// branch, not a product: and(c, v) is v where c is nonzero and exactly 0
+		// where it is 0, whatever v is there. Multiplied by 0, a branch not taken
+		// that is infinite or NaN there (a division by zero, the root of a
+		// negative) made the result NaN, as 0 * inf and 0 * NaN are NaN. Each
+		// side is still kept whole, never subtracted, so trueVal keeps its
+		// precision when falseVal is large, as builtin's nothing is. The two are
+		// summed, not or-ed: or falls through where the branch taken is 0, on its
+		// surface, and would give the condition's gradient there, not the branch's.
+		resultTrees[i] = fidget.Add(fidget.And(condTree, trueTrees[i]),
+			fidget.And(fidget.Not(condTree), falseTrees[i]))
 	}
 
 	return NewTreeNode(op, op.Start, resultTrees...)
@@ -97,11 +99,14 @@ func (d *Delegate) BuildSelect3(op *program.Operand, expr *program.Expression, o
 
 	resultTrees := make([]fidget.TreeIndex, len(valueTrees))
 	for i := 0; i < len(valueTrees); i++ {
+		// Each branch masked by its own condition with and, as in BuildSelect2:
+		// a branch not taken that is infinite or NaN there drops out.
 		positive := fidget.Max(d.zero, fidget.Compare(valueTrees[i], d.zero))
 		negative := fidget.Max(d.zero, fidget.Compare(d.zero, valueTrees[i]))
-		pos := fidget.Mul(positive, fidget.Sub(positiveTrees[i], zeroTrees[i]))
-		neg := fidget.Mul(negative, fidget.Sub(negativeTrees[i], zeroTrees[i]))
-		resultTrees[i] = fidget.Add(zeroTrees[i], fidget.Add(pos, neg))
+		zero := fidget.Not(fidget.Add(positive, negative))
+		pos := fidget.And(positive, positiveTrees[i])
+		neg := fidget.And(negative, negativeTrees[i])
+		resultTrees[i] = fidget.Add(fidget.And(zero, zeroTrees[i]), fidget.Add(pos, neg))
 	}
 
 	return NewTreeNode(op, op.Start, resultTrees...)

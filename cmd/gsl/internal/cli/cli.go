@@ -25,7 +25,8 @@ The commands are:
     eval        query a document's field: values, gradients, extrema, proofs, pictures (JSON)
     render      draw GSL sources into a PNG on the CPU (compile -t png)
     serve      launch local HTTP server and interactive WebGPU viewer
-    skill       print the GSL reference for a model: the language and a package index, or packages in full
+    viewer      open a GSL file, or the examples, in the WebGPU viewer in the browser
+    skill      print the GSL reference for a model: the language and a package index, or packages in full
     fix         refactor GSL source files to current syntax
     help        display help for gsl or a specific subcommand
     version     print the version
@@ -141,12 +142,14 @@ func Run(ctx context.Context, binDir string, args []string, stdin io.Reader, std
 }
 
 // toolFor is the sibling binary a subcommand runs and the arguments it leads with: `gsl eval ARGS` is
-// `compile eval ARGS`, which keeps one Fidget-linked program in the toolchain, and `gsl render ARGS` is
-// `compile -t png ARGS`.
+// `compile eval ARGS`, which keeps one Fidget-linked program in the toolchain, `gsl render ARGS` is
+// `compile -t png ARGS`, and `gsl viewer ARGS` is `compile viewer ARGS`.
 func toolFor(subcmd string) (string, []string) {
 	switch subcmd {
 	case "eval":
 		return "compile", []string{"eval"}
+	case "viewer":
+		return "compile", []string{"viewer"}
 	case "render":
 		return "compile", []string{"-t", "png"}
 	case "skill":
