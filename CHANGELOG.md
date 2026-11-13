@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-11-12
+
 ### Added
 
 - Added `noise.cellularWalls(size)`, the exact distance to the nearest Voronoi wall
@@ -74,6 +76,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Document.volume` default) failing with "volume tolerance must be between zero and
   one": `eval.Volume` now reads a tolerance `<= 0` as the default `0.05`, as `surface` and `extremum`
   do.
+- Fixed queries that default to the union of a document's returns (`gsl eval` with no `expr`:
+  `volume`, `bounds`, `extremum`, `certify`), and `gsl compile --bbox auto`, failing with "failed to
+  assemble query" when a comment stood above `return`, or `return` was the first statement after
+  `@scene`: `eval.TopLevelReturnExprs` now starts at the `return` keyword (#46).
+- Fixed a ternary whose condition varies over space being NaN when the branch it does not take is
+  infinite or NaN there (`(p.x > 0) ? p.x : 1 / z`). This affected eval, the meshers, `volume` and
+  `certify`, but not the WGSL viewer, and made `unionRoundExact` NaN on the line through both
+  shapes' centres. Each branch is now masked with Fidget's `and` instead of being multiplied by its
+  0/1 condition (#51).
 
 ## [0.1.1] - 2026-11-11
 
@@ -111,6 +122,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial standalone release of `omega-core` (GSL parser, assembler, standard library, evaluator,
   backends, CLI tools, and `omega-core` Python wheel).
 
-[Unreleased]: https://github.com/Gradient-Control-Laboratories/omega-core/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/Gradient-Control-Laboratories/omega-core/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/Gradient-Control-Laboratories/omega-core/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Gradient-Control-Laboratories/omega-core/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Gradient-Control-Laboratories/omega-core/releases/tag/v0.1.0

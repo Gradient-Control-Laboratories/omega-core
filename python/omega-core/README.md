@@ -196,7 +196,7 @@ A question that fails raises `omega_core.EvalError` in the compiler's words.
 `omega_core.skill(*packages, everything=False)` is the text `gsl skill` prints (above).
 
 `omega_core.executable()` is the path to the bundled `gsl`; it raises `FileNotFoundError` on a platform
-the wheel was not built for. `omega_core.version()` is the release, such as `"0.1.1"`.
+the wheel was not built for. `omega_core.version()` is the release, such as `"0.1.2"`.
 
 ## Conventions
 
