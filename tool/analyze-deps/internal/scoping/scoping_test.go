@@ -94,3 +94,21 @@ func TestAuditAll_SkipsNestedInternalAndRecognizesEvalSubsystem(t *testing.T) {
 		t.Errorf("unexpected report: %+v", reports[0])
 	}
 }
+
+func TestSubsystemForScoping(t *testing.T) {
+	cases := map[string]string{
+		"eval":                        "eval",
+		"eval/joints":                 "eval",
+		"cmd":                         "cmd",
+		"cmd/gsl/internal/cli":        "cmd",
+		"tool":                        "tool",
+		"tool/analyze-deps":           "tool",
+		"internal/assembler/topofold": "assembler",
+		"internal/fidget/convert":     "internal",
+	}
+	for pkg, want := range cases {
+		if got := scoping.SubsystemForScoping(pkg); got != want {
+			t.Errorf("SubsystemForScoping(%q) = %q, want %q", pkg, got, want)
+		}
+	}
+}

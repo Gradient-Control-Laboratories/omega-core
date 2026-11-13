@@ -1611,3 +1611,30 @@ return vol + pt.x + n.z;
 		t.Fatalf("expected folded return 463.5, got %v", ret)
 	}
 }
+
+func TestAssemble_TopoFoldWithSlotFoldingDisabled(t *testing.T) {
+	pkgMgr := source.NewLocalManager("../stdlib")
+	src := `import . "omega";
+importStep 0 "bracket.step";
+u = 0.25 + 0.5;
+pt = facePoint(0, 1, [u, 0.25]);
+vol = meshVolume(0);
+return vol + pt.x;
+`
+	resolver := &mockTopoResolver{
+		mesh: &mockTopoMesh{
+			volume: 450.0,
+			facePt: [3]float64{2.0, 3.0, 4.0},
+			normal: [3]float64{0.0, 0.0, 1.0},
+		},
+	}
+	res, err := Assemble([]string{src}, SourceManager(pkgMgr), DisableMeshSlotFolding(), GeometryResolver(resolver))
+	if err != nil {
+		t.Fatalf("Assemble with DisableMeshSlotFolding and GeometryResolver failed: %v", err)
+	}
+	ret := res.Program.Primary.Files[0].Returns[0]
+	// vol=450, pt.x = 2.0 + 0.75 = 2.75 -> 452.75
+	if ret.GetValue() != 452.75 {
+		t.Fatalf("expected folded return 452.75, got %v", ret)
+	}
+}

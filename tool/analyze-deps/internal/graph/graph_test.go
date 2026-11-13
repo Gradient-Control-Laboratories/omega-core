@@ -77,3 +77,27 @@ func Use() string { return pkga.Hello() }
 		t.Errorf("expected nodeA importedBy to be internal/pkgb, got %s", nodeA.ImportedBy[0].FromPkg)
 	}
 }
+
+func TestBuild_SkipsTargetDirectory(t *testing.T) {
+	tmpDir := t.TempDir()
+	goMod := "module gradientcontrol.com/omega/core\n\ngo 1.22\n"
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(goMod), 0644); err != nil {
+		t.Fatalf("failed to write go.mod: %v", err)
+	}
+
+	targetPkg := filepath.Join(tmpDir, "target", "ignoredpkg")
+	if err := os.MkdirAll(targetPkg, 0755); err != nil {
+		t.Fatalf("failed to create target pkg dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(targetPkg, "ignored.go"), []byte("package ignoredpkg\n"), 0644); err != nil {
+		t.Fatalf("failed to write ignored.go: %v", err)
+	}
+
+	g, err := graph.Build(tmpDir)
+	if err != nil {
+		t.Fatalf("graph.Build failed: %v", err)
+	}
+	if _, exists := g.Packages["target/ignoredpkg"]; exists {
+		t.Fatalf("expected target/ignoredpkg to be skipped by graph.Build")
+	}
+}
