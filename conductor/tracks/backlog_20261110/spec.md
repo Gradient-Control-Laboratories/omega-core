@@ -18,7 +18,7 @@ predictably:
   compiler hot-path optimizations, diagnostics enhancements, viewer capabilities, and developer
   tooling tasks that can either spin off focused tracks or execute as self-contained single-phase
   tracks.
-- **Small Targeted Cleanups (`S1`–`S19`):** Localized refactors, invariant tightening, dead-code
+- **Small Targeted Cleanups (`S1`–`S21`):** Localized refactors, invariant tightening, dead-code
   removals, public/internal API deduplication, and documentation/comment hygiene tasks suitable for
   direct execution or small cleanup batches.
 
@@ -651,6 +651,21 @@ defined in [README.md](../../../README.md):
       `internal/assembler/property/parts.go` and `carry.go`, `internal/assembler/inline/inline.go`
       and `substitute.go`, `internal/eval/const.go`, and `backend/wgsl/render.go`), document
       upstream non-nil AST invariants, and update unit test AST fixtures to satisfy them.
+
+- [ ] **S20. Add `Diagnostics` to `parser.Result` & Warn on Legacy Screen Size Comments**
+  - Add `Diagnostics []program.Diagnostic` to `parser.Result` (`parser/parser.go`) and propagate
+    parser diagnostics from `parser/internal/parser2` through `parser.ParsePackage` and
+    `assembler.Assemble` (`assembler/assemble.go`, alongside existing `Diagnostics`).
+  - When `parser/internal/parser2/legacy_scene.go` (`fromLegacyComments`) parses legacy
+    `// Scene Size:` / `// Scene Grid:` header comments into a `@screen` annotation (`*program.Scene`),
+    emit a `program.SeverityWarning` diagnostic at the legacy comment location advising the user to
+    use `@screen` instead and run `gsl fix` to update the source (supporting `S2`).
+
+- [ ] **S21. Display Compiler & Parser Warnings in the Example Viewer When the Code Panel Is Open**
+  - Surface `SeverityWarning` diagnostics from `cmd/serve/internal/compiler` (`CompileResponse`)
+    into `examples/viewer/` (`examples/viewer/main.js` and `examples/viewer/editor/editor.js` via
+    `setEditorDiagnostics` or a dedicated code-panel banner/gutter) so warnings are visible when the
+    code editor panel is open without blocking rendering.
 
 ## 7. Acceptance Criteria
 
