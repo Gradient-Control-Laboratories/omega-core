@@ -577,7 +577,7 @@ defined in [README.md](../../../README.md):
     `doc/gsl_lang_spec_current.md`, `doc/gsl_lang_spec_future.md`, and
     `program/preamble/gsl_description.go`.
 
-- [ ] **S16. Tighten `.color` Property Validation & Docs to Strictly 3-Element RGB (`vec3`)**
+- [x] **S16. Tighten `.color` Property Validation & Docs to Strictly 3-Element RGB (`vec3`)**
   - Tighten `validateColorProperty` in `internal/assembler/propval/validate.go` (and unit tests in
     `internal/assembler/propval/validate_test.go`) to require `len(vals) == 3` rather than allowing
     stale 4-element `[r, g, b, a]` vectors that fail downstream in `internal/assembler/property`,

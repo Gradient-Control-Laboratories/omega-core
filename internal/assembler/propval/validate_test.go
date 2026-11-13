@@ -172,18 +172,172 @@ return s;
 }
 
 func TestColorOutOfBounds(t *testing.T) {
-	src := `
-s = sphere(1.0);
-s.color = [1.2, 0.5, 0.5];
-
-return s;
-`
-	err := parseAndValidate(t, src)
-	if err == nil {
-		t.Fatalf("expected error for color out of bounds, got nil")
+	tests := []struct {
+		name string
+		expr string
+	}{
+		{name: "above one", expr: "[1.2, 0.5, 0.5]"},
+		{name: "negative", expr: "[-0.1, 0.5, 0.5]"},
 	}
-	if !strings.Contains(err.Error(), "color components must be in range [0.0, 1.0]") {
-		t.Fatalf("expected color range error, got: %v", err)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			src := "s = sphere(1.0);\ns.color = " + tc.expr + ";\nreturn s;\n"
+			err := parseAndValidate(t, src)
+			if err == nil {
+				t.Fatalf("expected error for color out of bounds, got nil")
+			}
+			if !strings.Contains(err.Error(), "color components must be in range [0.0, 1.0]") {
+				t.Fatalf("expected color range error, got: %v", err)
+			}
+		})
+	}
+}
+
+func TestColorValidRGBForms(t *testing.T) {
+	tests := []struct {
+		name string
+		src  string
+	}{
+		{
+			name: "boundary rgb literal",
+			src: `
+s = sphere(1.0);
+s.color = [0.0, 0.5, 1.0];
+return s;
+`,
+		},
+		{
+			name: "imported rgb constant",
+			src: `
+import "color";
+s = sphere(1.0);
+s.color = color.red;
+return s;
+`,
+		},
+		{
+			name: "varying rgb field",
+			src: `
+s = sphere(1.0);
+s.color = [clamp(p.x, 0.0, 1.0), 0.4, 0.6];
+return s;
+`,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := parseAndValidate(t, tc.src); err != nil {
+				t.Fatalf("unexpected validation error: %v", err)
+			}
+		})
+	}
+}
+
+func TestColorVectorLengthValidation(t *testing.T) {
+	tests := []struct {
+		name        string
+		src         string
+		wantSubstrs []string
+	}{
+		{
+			name: "2-element literal rejected",
+			src: `
+s = sphere(1.0);
+s.color = [0.2, 0.4];
+return s;
+`,
+			wantSubstrs: []string{
+				`property .color on variable "s" must be a 3-element RGB vector [r, g, b], got 2 components`,
+			},
+		},
+		{
+			name: "2-element varying literal rejected",
+			src: `
+s = sphere(1.0);
+s.color = [clamp(p.x, 0.0, 1.0), 0.4];
+return s;
+`,
+			wantSubstrs: []string{
+				`property .color on variable "s" must be a 3-element RGB vector [r, g, b], got 2 components`,
+			},
+		},
+		{
+			name: "2-element constant variable rejected",
+			src: `
+rg = [0.2, 0.4];
+s = sphere(1.0);
+s.color = rg;
+return s;
+`,
+			wantSubstrs: []string{
+				`property .color on variable "s" must be a 3-element RGB vector [r, g, b], got 2 components`,
+			},
+		},
+		{
+			name: "4-element rgba literal rejected with material hint",
+			src: `
+s = sphere(1.0);
+s.color = [0.2, 0.4, 0.6, 1.0];
+return s;
+`,
+			wantSubstrs: []string{
+				`property .color on variable "s" must be a 3-element RGB vector [r, g, b], got 4 components`,
+				`alpha is not supported on .color`,
+				`.material`,
+			},
+		},
+		{
+			name: "4-element varying rgba literal rejected with material hint",
+			src: `
+s = sphere(1.0);
+s.color = [clamp(p.x, 0.0, 1.0), 0.4, 0.6, 0.8];
+return s;
+`,
+			wantSubstrs: []string{
+				`property .color on variable "s" must be a 3-element RGB vector [r, g, b], got 4 components`,
+				`alpha is not supported on .color`,
+				`.material`,
+			},
+		},
+		{
+			name: "4-element constant variable rejected with material hint",
+			src: `
+rgba = [0.2, 0.4, 0.6, 0.8];
+s = sphere(1.0);
+s.color = rgba;
+return s;
+`,
+			wantSubstrs: []string{
+				`property .color on variable "s" must be a 3-element RGB vector [r, g, b], got 4 components`,
+				`alpha is not supported on .color`,
+				`.material`,
+			},
+		},
+		{
+			name: "5-element literal rejected",
+			src: `
+s = sphere(1.0);
+s.color = [0.1, 0.2, 0.3, 0.4, 0.5];
+return s;
+`,
+			wantSubstrs: []string{
+				`property .color on variable "s" must be a 3-element RGB vector [r, g, b], got 5 components`,
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := parseAndValidate(t, tc.src)
+			if err == nil {
+				t.Fatalf("expected validation error, got nil")
+			}
+			for _, sub := range tc.wantSubstrs {
+				if !strings.Contains(err.Error(), sub) {
+					t.Fatalf("expected error containing %q, got: %v", sub, err)
+				}
+			}
+		})
 	}
 }
 
