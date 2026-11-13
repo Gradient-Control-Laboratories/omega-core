@@ -39,7 +39,8 @@ func (d *Delegate) BuildBuiltinCall(
 	case program.NoiseHash3:
 		return d.builtinNoiseHash3(op, call, args[0].(*TreeNode))
 	case program.WorleyF1, program.WorleyF2, program.WorleyFeature,
-		program.WorleyFarFeature, program.WorleyNearCell, program.WorleyFarCell:
+		program.WorleyFarFeature, program.WorleyNearCell, program.WorleyFarCell,
+		program.WorleyWall, program.WorleyWallFeature:
 		return d.builtinCellular(op, call, args[0].(*TreeNode))
 	case program.GaborSpinodoid, program.GaborSpinodoidGradient,
 		program.FastGaborSpinodoid, program.FastGaborSpinodoidGradient:
@@ -130,12 +131,14 @@ func (d *Delegate) builtinNoiseHash3(
 // per axis; the distances take one. Numbering matches
 // tape_core::cellular::component and the WGSL emitter.
 var cellularComponents = map[string][]uint32{
-	program.WorleyF1:         {fidget.WorleyF1},
-	program.WorleyF2:         {fidget.WorleyF2},
-	program.WorleyFeature:    axisComponents(fidget.WorleyFeatureX),
-	program.WorleyFarFeature: axisComponents(fidget.WorleyFarFeatureX),
-	program.WorleyNearCell:   axisComponents(fidget.WorleyNearCellX),
-	program.WorleyFarCell:    axisComponents(fidget.WorleyFarCellX),
+	program.WorleyF1:          {fidget.WorleyF1},
+	program.WorleyF2:          {fidget.WorleyF2},
+	program.WorleyFeature:     axisComponents(fidget.WorleyFeatureX),
+	program.WorleyFarFeature:  axisComponents(fidget.WorleyFarFeatureX),
+	program.WorleyNearCell:    axisComponents(fidget.WorleyNearCellX),
+	program.WorleyFarCell:     axisComponents(fidget.WorleyFarCellX),
+	program.WorleyWall:        {fidget.WorleyWall},
+	program.WorleyWallFeature: axisComponents(fidget.WorleyWallFeatureX),
 }
 
 // axisComponents is the run of components a point-valued builtin reads, one per

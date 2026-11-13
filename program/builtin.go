@@ -89,6 +89,10 @@ var builtinsMap = map[string]*BuiltinType{
 	WorleyNearCell:   {Name: WorleyNearCell, MinArgs: 1, MaxArgs: 2},
 	WorleyFarCell:    {Name: WorleyFarCell, MinArgs: 1, MaxArgs: 2},
 	WorleyFarFeature: {Name: WorleyFarFeature, MinArgs: 1, MaxArgs: 2},
+	// worleyWall(q) / worleyWall(q, octaves): the exact distance to the nearest
+	// Voronoi wall, and the feature point whose wall it is.
+	WorleyWall:        {Name: WorleyWall, MinArgs: 1, MaxArgs: 2},
+	WorleyWallFeature: {Name: WorleyWallFeature, MinArgs: 1, MaxArgs: 2},
 
 	// gaborSpinodoid(q, period, theta, poles, packetWidth, impulses, pool,
 	// seed, bias, localNormalize, scale, orientation) and its gradient.

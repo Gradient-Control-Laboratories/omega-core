@@ -1,25 +1,30 @@
 @scene(300, 30)
 
-// Cellular (Worley) noise, three ways side by side. Each ball samples the same
+// Cellular (Worley) noise, four ways side by side. Each ball samples the same
 // cells, so you can compare the measures directly:
-//   left   - F1: distance to the nearest feature point (blobs around points)
-//   middle - F2: distance to the second-nearest point (larger, merged blobs)
-//   right  - F2 - F1: the Voronoi-edge field (thin walls, an open-cell foam)
+//   1st - F1: distance to the nearest feature point (blobs around points)
+//   2nd - F2: distance to the second-nearest point (larger, merged blobs)
+//   3rd - F2 - F1: the Voronoi-edge field (thin walls, an open-cell foam),
+//         whose walls thicken where the points are far apart
+//   4th - the exact distance to the nearest wall: the same foam, its walls
+//         one thickness everywhere
 //
 // The noise is sampled identically in the viewer and in an exported mesh, so
 // the preview matches the exported part. Lengths are in mm.
 
 cell = 20;     // lattice cell size
 r = 28;        // display-ball radius
-gap = 72;      // spacing between the three balls
+gap = 72;      // spacing between the balls
 
 // Each field is a noise measure clipped to a ball at the origin. Naming them
 // lets remap re-derive each under a shifted p to slide it sideways.
 f1    = add(noise.cellular(cell) - 12,        sphere(r));
 f2    = add(-(noise.cellularF2(cell) - 16),   sphere(r));
 edges = max(noise.cellularEdges(cell) - 2.4, sphere(r));
+walls = max(noise.cellularWalls(cell) - 1.2, sphere(r));
 
 return
-  transform.translate(f1, vector.dirX * -gap),       // F1 on the left
-  f2,                                     // F2 in the middle
-  transform.translate(edges, vector.dirX * gap);    // difference on the right
+  transform.translate(f1, vector.dirX * -1.5 * gap),     // F1 on the left
+  transform.translate(f2, vector.dirX * -0.5 * gap),     // F2
+  transform.translate(edges, vector.dirX * 0.5 * gap),   // F2 - F1
+  transform.translate(walls, vector.dirX * 1.5 * gap);   // exact walls on the right

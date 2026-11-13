@@ -41,6 +41,10 @@ type Delegate struct {
 	// cellularUsed is true once a cellularF1 / cellularFeature call has been
 	// emitted, so build.go appends the scan helper the call refers to.
 	cellularUsed bool
+	// cellularWallUsed is true once a worleyWall / worleyWallFeature call has
+	// been emitted, so build.go appends the wall pass after the scan helper,
+	// whose hash it calls. Shaders without one carry no wall code.
+	cellularWallUsed bool
 
 	// noiseUsed is true when the program (or an import) calls noiseHash3, so the
 	// noise tile texture is threaded into the shader functions.

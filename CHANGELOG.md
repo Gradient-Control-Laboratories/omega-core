@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added `noise.cellularWalls(size)`, the exact distance to the nearest Voronoi wall
+  (https://iquilezles.org/articles/voronoilines/), and the builtins it reads, `worleyWall` and
+  `worleyWallFeature`. Unlike `cellularEdges` (F2 − F1, about twice the distance beside a wall), it
+  is 1-Lipschitz, so a threshold gives walls of one thickness. Native in the cellular oracle and
+  the WGSL emitter; shaders that do not call it are unchanged. `natural.lava`'s cracks,
+  `ceramic.crackle`'s lines and the cracked-mud example now use it, so their cracks are one width
+  (lava's stand-in coverage is 16.3%, crackle's line share 0.59, re-measured), and the cellular
+  noise example shows it beside F2 − F1.
 - Added `gsl viewer [part.gsl]` (`compile viewer`, in `cmd/serve/viewer`), which serves the
   WebGPU viewer on a file's folder, or on the examples without one, and opens the default browser
   on it (`?file=` in the viewer picks the file it starts on). The omega-core wheel now ships the

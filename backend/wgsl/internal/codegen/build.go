@@ -320,6 +320,9 @@ func (d *Delegate) BuildPackageReturns(_ []*program.Operand, expressions []build
 	}
 	if d.cellularUsed {
 		d.module.AddRuntimeSnippet(cellularWGSL)
+		if d.cellularWallUsed {
+			d.module.AddRuntimeSnippet(cellularWallWGSL)
+		}
 	}
 	if d.spinodoidEmitted {
 		d.module.AddRuntimeSnippet(spinodoidWGSL)

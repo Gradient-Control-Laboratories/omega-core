@@ -159,7 +159,8 @@ func (w *walker) walkOperand(op *program.Operand) {
 						w.assetSlots[idx] = info
 					}
 				}
-			case program.NoiseHash3, program.WorleyF1, program.WorleyFeature:
+			case program.NoiseHash3, program.WorleyF1, program.WorleyFeature,
+				program.WorleyWall, program.WorleyWallFeature:
 				w.global.UsesNoiseTile = true
 			case "warpField":
 				w.global.UsesWarpField = true

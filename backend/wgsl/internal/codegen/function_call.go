@@ -177,13 +177,15 @@ type CellularScanExpr struct {
 	Q       wgsl.Expression
 	Octaves int
 	Field   string
+	Helper  string
 }
 
-func NewCellularScanExpr(op *program.Operand, q wgsl.Expression, octaves int, field string, outType wgsl.TypeInfo) *CellularScanExpr {
+func NewCellularScanExpr(op *program.Operand, q wgsl.Expression, octaves int, helper, field string, outType wgsl.TypeInfo) *CellularScanExpr {
 	c := &CellularScanExpr{
 		Q:       q,
 		Octaves: octaves,
 		Field:   field,
+		Helper:  helper,
 	}
 	reads := append([]string{}, q.Reads()...)
 	reads = append(reads, noiseTexName)
@@ -193,8 +195,8 @@ func NewCellularScanExpr(op *program.Operand, q wgsl.Expression, octaves int, fi
 }
 
 func (c *CellularScanExpr) Codegen(ctx wgsl.CodegenContext) string {
-	return fmt.Sprintf("gsl_cellularScan(%s, %d, %s).%s",
-		c.Q.Codegen(ctx), c.Octaves, noiseTexName, c.Field)
+	return fmt.Sprintf("%s(%s, %d, %s).%s",
+		c.Helper, c.Q.Codegen(ctx), c.Octaves, noiseTexName, c.Field)
 }
 
 type NoiseHash3Expr struct {
@@ -342,7 +344,14 @@ func (d *Delegate) BuildBuiltinCall(
 			outType = wgsl.TypeVec3
 		}
 		d.cellularUsed = true
-		return NewCellularScanExpr(op, q, octaves, f.field, outType), nil
+		helper := f.helper
+		if helper == "" {
+			helper = cellularScanHelper
+		}
+		if helper == cellularWallHelper {
+			d.cellularWallUsed = true
+		}
+		return NewCellularScanExpr(op, q, octaves, helper, f.field, outType), nil
 	}
 
 	// noiseHash3(cell) -> vec3 in [0,1)^3: a nearest lookup into the baked noise

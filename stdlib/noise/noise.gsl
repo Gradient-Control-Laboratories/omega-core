@@ -132,6 +132,15 @@ cellularEdges(size) {
   return (f2 - f1) * size;
 }
 
+/// cellularWalls(size): the exact distance to the nearest Voronoi wall, in world
+/// units — 0 on the walls between cells and rising toward each feature point.
+/// Unlike cellularEdges it is a true distance (1-Lipschitz), so a threshold
+/// gives walls of one thickness everywhere: `t - noise.cellularWalls(4)` is a
+/// foam of walls 2t thick, and `noise.cellularWalls(4) - t` its cells.
+cellularWalls(size) {
+  return worleyWall(p / size, 1) * size;
+}
+
 // F1, F2 and the lattice cell whose feature point is nearest. The cell comes
 // straight from cellularNearCell, which reads it off the winning candidate — the
 // fold used to pack the winning offset base 3 into the accumulator and unpack it
