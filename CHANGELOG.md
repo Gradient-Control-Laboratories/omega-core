@@ -30,6 +30,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Enforced `go run ./tool/analyze-deps -rules` in `tool/check.sh`, decoupled
+  `internal/assembler/topofold` from `internal/eval` and `internal/meshfold`, removed unused
+  `internal/pkg`, and narrowed `internal/version` (`cmd/internal/version`) and
+  `internal/fidget/environment` (`eval/internal/environment`).
 - Restricted `.color` validation in `internal/assembler/propval` and GSL specs to `[r, g, b]`,
   along with a `.material` transparency hint when a 4-element RGBA vector is supplied.
 - Updated `mesh.MeshOracles`, `mesh.VdbOracles`, and `mesh.BakeSpinodoids` in `backend/mesh/emit.go`
