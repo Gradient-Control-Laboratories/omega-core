@@ -115,3 +115,45 @@ func TestCheckRules_FrameworkCreep(t *testing.T) {
 		t.Errorf("expected rule framework-creep, got %s", violations[0].Rule)
 	}
 }
+
+func TestCheckRules_ProgramExternalTestAllowsParserOnly(t *testing.T) {
+	g := &graph.Graph{
+		ModulePrefix: "gradientcontrol.com/omega/core",
+		Packages: map[string]*graph.PackageNode{
+			"program": {
+				ImportPath: "program",
+				Imports: []graph.ImportEdge{
+					{
+						FromPkg:        "program",
+						ToPkg:          "parser",
+						FilePath:       "program/range_test.go",
+						Line:           6,
+						IsTest:         true,
+						IsExternalTest: true,
+					},
+					{
+						FromPkg:        "program",
+						ToPkg:          "parser",
+						FilePath:       "program/bad.go",
+						Line:           6,
+						IsTest:         false,
+						IsExternalTest: false,
+					},
+					{
+						FromPkg:        "program",
+						ToPkg:          "internal/assembler/deadcode",
+						FilePath:       "program/bad_test.go",
+						Line:           7,
+						IsTest:         true,
+						IsExternalTest: true,
+					},
+				},
+			},
+		},
+	}
+
+	violations := rules.Check(g)
+	if len(violations) != 2 {
+		t.Fatalf("expected 2 violations (prod program->parser and external test program->assembler), got %d: %+v", len(violations), violations)
+	}
+}

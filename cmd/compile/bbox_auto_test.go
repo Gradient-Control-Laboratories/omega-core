@@ -10,9 +10,9 @@ import (
 	"testing"
 
 	"gradientcontrol.com/omega/core/cmd/compile/internal/cli"
-	"gradientcontrol.com/omega/core/cmd/internal/version"
 	"gradientcontrol.com/omega/core/internal/test/assert"
 	"gradientcontrol.com/omega/core/internal/test/require"
+	"gradientcontrol.com/omega/core/internal/version"
 )
 
 // stlBounds reads a binary STL's triangle count and the box its vertices span.

@@ -7,7 +7,7 @@ name: Wheels
 # here. Every pull request and push to main builds and tests them all.
 #
 # Publishing is explicit, never a merge: pushing a tag v<version> whose version is the toolchain's
-# (cmd/internal/version/version.go), or running the workflow on main with `publish` set (which tags the commit
+# (internal/version/version.go), or running the workflow on main with `publish` set (which tags the commit
 # v<version> itself), publishes the wheels to PyPI through trusted publishing (the `pypi` environment; no token is
 # stored). PyPI must list this repository and workflow as omega-core's trusted publisher first.
 
@@ -162,8 +162,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          version=$(sed -n 's/^var Version = "\(.*\)"$/\1/p' cmd/internal/version/version.go)
-          test -n "$version" || { echo "no version in cmd/internal/version/version.go"; exit 1; }
+          version=$(sed -n 's/^var Version = "\(.*\)"$/\1/p' internal/version/version.go)
+          test -n "$version" || { echo "no version in internal/version/version.go"; exit 1; }
           echo "version=$version" >> "$GITHUB_OUTPUT"
           if [ "$GITHUB_REF_TYPE" = tag ]; then
             test "v$version" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME is not v$version"; exit 1; }

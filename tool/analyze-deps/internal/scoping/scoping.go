@@ -12,6 +12,7 @@ import (
 type ScopingReport struct {
 	Pkg                string
 	CanNarrow          bool
+	PinnedReason       string
 	SuggestedSubsystem string
 	SuggestedDest      string
 	Subsystems         []string
@@ -78,6 +79,14 @@ func AnalyzePackage(g *graph.Graph, pkg string) *ScopingReport {
 		report.CanNarrow = true
 		report.SuggestedSubsystem = "unreferenced"
 		report.Advice = fmt.Sprintf("package %s has zero external importers (potentially dead code or candidate for removal)", cleanPkg)
+		return report
+	}
+
+	if node.KeepHereReason != "" {
+		report.CanNarrow = false
+		report.PinnedReason = node.KeepHereReason
+		report.Blockers = append(report.Blockers, fmt.Sprintf("pinned (%s)", node.KeepHereReason))
+		report.Advice = fmt.Sprintf("Pinned in root internal/ because %s.", node.KeepHereReason)
 		return report
 	}
 

@@ -18,9 +18,9 @@ import (
 	"gradientcontrol.com/omega/core/backend/tape"
 	"gradientcontrol.com/omega/core/backend/wgsl"
 	"gradientcontrol.com/omega/core/cmd/compile/internal/config"
-	"gradientcontrol.com/omega/core/cmd/internal/version"
 	"gradientcontrol.com/omega/core/eval"
 	"gradientcontrol.com/omega/core/internal/meshimport"
+	"gradientcontrol.com/omega/core/internal/version"
 	"gradientcontrol.com/omega/core/parser"
 	"gradientcontrol.com/omega/core/program"
 )

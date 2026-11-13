@@ -9,7 +9,7 @@ import (
 	"io"
 	"strings"
 
-	"gradientcontrol.com/omega/core/cmd/internal/version"
+	"gradientcontrol.com/omega/core/internal/version"
 	"gradientcontrol.com/omega/core/program/preamble"
 )
 

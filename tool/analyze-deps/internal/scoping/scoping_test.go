@@ -112,3 +112,27 @@ func TestSubsystemForScoping(t *testing.T) {
 		}
 	}
 }
+
+func TestAnalyzePackage_KeepHereDirectivePinsPackage(t *testing.T) {
+	g := &graph.Graph{
+		ModulePrefix: "gradientcontrol.com/omega/core",
+		Packages: map[string]*graph.PackageNode{
+			"internal/version": {
+				ImportPath:     "internal/version",
+				KeepHereReason: "pyproject.toml and wheels.yml reference this path",
+				ImportedBy: []graph.ImportEdge{
+					{FromPkg: "cmd/gsl/internal/cli", ToPkg: "internal/version"},
+				},
+			},
+			"cmd/gsl/internal/cli": {ImportPath: "cmd/gsl/internal/cli"},
+		},
+	}
+
+	report := scoping.AnalyzePackage(g, "internal/version")
+	if report.CanNarrow {
+		t.Fatalf("expected internal/version to remain pinned, got CanNarrow=true (%+v)", report)
+	}
+	if report.PinnedReason != "pyproject.toml and wheels.yml reference this path" {
+		t.Errorf("unexpected PinnedReason: %q", report.PinnedReason)
+	}
+}

@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"gradientcontrol.com/omega/core/cmd/internal/version"
+	"gradientcontrol.com/omega/core/internal/version"
 )
 
 // PrintUsage writes the unified gsl CLI help message to w.

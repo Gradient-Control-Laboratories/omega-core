@@ -232,7 +232,7 @@ Go, Rust, CMake and Python's `build` package:
 tool/build-wheel.sh          # builds the programs into target/static/bin, then the wheel into dist/
 ```
 
-The wheel's version is omega-core's own (`cmd/internal/version/version.go`). CI
+The wheel's version is omega-core's own (`internal/version/version.go`). CI
 (`.github/workflows/wheels.yml`) builds and tests every platform's wheel and publishes them to PyPI.
 
 ## Licence
