@@ -159,27 +159,211 @@ func TestTopoFoldPointAndMeshQueries(t *testing.T) {
 		},
 	}
 
-	if !hasTopoCall(prog.Primary) {
-		t.Fatalf("expected hasTopoCall to be true")
+	if !HasTopoCall(prog) {
+		t.Fatalf("expected HasTopoCall to be true")
 	}
 
-	folded, err := FoldProgram(prog, resolver)
-	if err != nil {
+	if err := FoldProgram(prog, nil, resolver); err != nil {
 		t.Fatalf("FoldProgram failed: %v", err)
 	}
 
-	// Verify assignments were folded to constants
-	if len(folded.Primary.Files[0].Assignments) != 2 {
-		t.Fatalf("expected 2 assignments, got %d", len(folded.Primary.Files[0].Assignments))
+	// Verify assignments were folded to constants in place
+	if len(prog.Primary.Files[0].Assignments) != 2 {
+		t.Fatalf("expected 2 assignments, got %d", len(prog.Primary.Files[0].Assignments))
 	}
 
-	ptAssign := folded.Primary.Files[0].Assignments[0]
+	ptAssign := prog.Primary.Files[0].Assignments[0]
 	if ptAssign.Expression.GetExpression() == nil || ptAssign.Expression.GetExpression().Operation != program.Operation_COLLECT {
 		t.Fatalf("expected pt assignment to be folded to COLLECT vector, got %v", ptAssign.Expression)
 	}
 
-	volAssign := folded.Primary.Files[0].Assignments[1]
+	volAssign := prog.Primary.Files[0].Assignments[1]
 	if volAssign.Expression.GetValue() != 450.0 {
 		t.Fatalf("expected vol assignment to fold to 450.0, got %v", volAssign.Expression.GetValue())
+	}
+}
+
+func TestTopoFold_DepsColorMaterialNegUIAndPlacements(t *testing.T) {
+	resolver := &mockResolver{
+		meshes: map[int]*mockMesh{
+			0: {area: 120.0, volume: 450.0},
+		},
+		annotated: map[int]*mockAnnotatedMesh{
+			0: {
+				facePt: [3]float64{10, 0, 0},
+				edgePt: [3]float64{0, 20, 0},
+				vertPt: [3]float64{0, 0, 30},
+				normal: [3]float64{0, 0, 1},
+			},
+		},
+	}
+
+	valOp := func(v float64) *program.Operand {
+		return &program.Operand{T: &program.Operand_Value{Value: v}}
+	}
+	collectOp := func(ops ...*program.Operand) *program.Operand {
+		return &program.Operand{
+			T: &program.Operand_Expression{
+				Expression: &program.Expression{
+					Operation: program.Operation_COLLECT,
+					Operands:  ops,
+				},
+			},
+		}
+	}
+	negOp := func(op *program.Operand) *program.Operand {
+		return &program.Operand{
+			T: &program.Operand_Expression{
+				Expression: &program.Expression{
+					Operation: program.Operation_NEG,
+					Operands:  []*program.Operand{op},
+				},
+			},
+		}
+	}
+	identMat := collectOp(
+		valOp(1), valOp(0), valOp(0), valOp(0),
+		valOp(0), valOp(1), valOp(0), valOp(0),
+		valOp(0), valOp(0), valOp(1), valOp(0),
+		valOp(0), valOp(0), valOp(0), valOp(1),
+	)
+
+	// Primary has no topo calls; Dependency has topo calls in ColorReturns, MaterialReturns, and FnTypes,
+	// plus mesh(0, uiPoint([5, -6, 7]), uiTransform(identMat)) placement inside a function.
+	depPkg := &program.Package{
+		Path: "subpkg",
+		Files: []*program.PackageFile{
+			{
+				StepImports: []*program.StepImport{{Index: 0, Path: "part.step"}},
+				Assignments: []*program.Assignment{
+					{
+						Variables:  []*program.Variable{{Name: "slotId"}},
+						Expression: valOp(0),
+					},
+				},
+				FnTypes: []*program.FnType{
+					{
+						Name: "placedPart",
+						Groups: []*program.FnGroup{
+							{
+								ParamCount: 1,
+								Functions: []*program.Function{
+									{
+										Parameters: []*program.Parameter{{Name: "shadowed"}},
+										Assignments: []*program.Assignment{
+											{
+												Variables: []*program.Variable{{Name: "pos"}},
+												Expression: &program.Operand{
+													T: &program.Operand_FnCall{
+														FnCall: &program.FnCall{
+															Reference: &program.Reference{Name: "uiPoint"},
+															Arguments: []*program.Operand{
+																collectOp(valOp(5), negOp(valOp(6)), valOp(7)),
+															},
+														},
+													},
+												},
+											},
+											{
+												Variables: []*program.Variable{{Name: "rot"}},
+												Expression: &program.Operand{
+													T: &program.Operand_FnCall{
+														FnCall: &program.FnCall{
+															Reference: &program.Reference{Name: "uiTransform"},
+															Arguments: []*program.Operand{identMat},
+														},
+													},
+												},
+											},
+											{
+												Variables: []*program.Variable{{Name: "m"}},
+												Expression: &program.Operand{
+													T: &program.Operand_FnCall{
+														FnCall: &program.FnCall{
+															Reference: &program.Reference{Name: "mesh"},
+															Arguments: []*program.Operand{
+																{T: &program.Operand_Reference{Reference: &program.Reference{Name: "slotId"}}},
+																{T: &program.Operand_Reference{Reference: &program.Reference{Name: "pos"}}},
+																{T: &program.Operand_Reference{Reference: &program.Reference{Name: "rot"}}},
+															},
+														},
+													},
+												},
+											},
+										},
+										Returns: []*program.Operand{
+											{
+												T: &program.Operand_FnCall{
+													FnCall: &program.FnCall{
+														Reference: &program.Reference{Name: "facePoint"},
+														Arguments: []*program.Operand{
+															{T: &program.Operand_Reference{Reference: &program.Reference{Name: "slotId"}}},
+															valOp(1),
+															collectOp(negOp(valOp(0.5)), valOp(0.25)),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				ColorReturns: []*program.Operand{
+					{
+						T: &program.Operand_FnCall{
+							FnCall: &program.FnCall{
+								Reference: &program.Reference{Name: "meshArea"},
+								Arguments: []*program.Operand{
+									{T: &program.Operand_Reference{Reference: &program.Reference{Name: "slotId"}}},
+								},
+							},
+						},
+					},
+				},
+				MaterialReturns: []*program.Operand{
+					{
+						T: &program.Operand_FnCall{
+							FnCall: &program.FnCall{
+								Reference: &program.Reference{Name: "meshVolume"},
+								Arguments: []*program.Operand{
+									{T: &program.Operand_Reference{Reference: &program.Reference{Name: "slotId"}}},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	prog := &program.Program{
+		Primary: &program.Package{
+			Path:  "main",
+			Files: []*program.PackageFile{{Returns: []*program.Operand{valOp(1)}}},
+		},
+		Dependencies: []*program.Package{depPkg},
+	}
+
+	if !HasTopoCall(prog) {
+		t.Fatalf("expected HasTopoCall to detect topology calls in Dependencies")
+	}
+	if err := FoldProgram(prog, nil, resolver); err != nil {
+		t.Fatalf("FoldProgram failed: %v", err)
+	}
+
+	depFile := prog.Dependencies[0].Files[0]
+	if depFile.ColorReturns[0].GetValue() != 120.0 {
+		t.Fatalf("expected ColorReturn meshArea=120.0, got %v", depFile.ColorReturns[0])
+	}
+	if depFile.MaterialReturns[0].GetValue() != 450.0 {
+		t.Fatalf("expected MaterialReturn meshVolume=450.0, got %v", depFile.MaterialReturns[0])
+	}
+	fnRet := depFile.FnTypes[0].Groups[0].Functions[0].Returns[0]
+	// facePoint([10,0,0] + [-0.5, 0.25, 0]) = [9.5, 0.25, 0], translated by [5, -6, 7] => [14.5, -5.75, 7]
+	if len(fnRet.ConstValues) != 3 || fnRet.ConstValues[0] != 14.5 || fnRet.ConstValues[1] != -5.75 || fnRet.ConstValues[2] != 7.0 {
+		t.Fatalf("expected placed facePoint [14.5, -5.75, 7], got %v", fnRet.ConstValues)
 	}
 }

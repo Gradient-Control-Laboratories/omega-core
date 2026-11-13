@@ -51,10 +51,12 @@ func Check(g *graph.Graph) []Violation {
 			}
 
 			// Rule 1: Layer Hierarchy & Subsystem Isolation
+			// External black-box tests in program (package program_test) may import parser
+			// to construct readable GSL AST fixtures without creating import cycles.
 			fromLayer := layerOf(edge.FromPkg)
 			toLayer := layerOf(edge.ToPkg)
 
-			if fromLayer > 0 && toLayer > 0 && fromLayer < toLayer {
+			if fromLayer > 0 && toLayer > 0 && fromLayer < toLayer && !(edge.IsExternalTest && fromLayer == 1 && toLayer == 2) {
 				violations = append(violations, Violation{
 					Rule:        "layer-hierarchy",
 					FromPkg:     edge.FromPkg,

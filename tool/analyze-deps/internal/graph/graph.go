@@ -3,6 +3,7 @@ package graph
 import (
 	"bufio"
 	"fmt"
+	"go/ast"
 	"go/parser"
 	"go/token"
 	"os"
@@ -13,22 +14,24 @@ import (
 
 // ImportEdge represents a single import relationship between packages.
 type ImportEdge struct {
-	FromPkg   string
-	ToPkg     string
-	RawImport string
-	FilePath  string
-	Line      int
-	IsTest    bool
+	FromPkg        string
+	ToPkg          string
+	RawImport      string
+	FilePath       string
+	Line           int
+	IsTest         bool
+	IsExternalTest bool
 }
 
 // PackageNode represents a Go package in the module.
 type PackageNode struct {
-	ImportPath string // Relative to module root, e.g. "internal/lower"
-	FullImport string // Full module path, e.g. "gradientcontrol.com/omega/core/internal/lower"
-	Dir        string // Relative filesystem directory
-	Name       string // Go package clause name
-	Imports    []ImportEdge
-	ImportedBy []ImportEdge
+	ImportPath     string // Relative to module root, e.g. "internal/lower"
+	FullImport     string // Full module path, e.g. "gradientcontrol.com/omega/core/internal/lower"
+	Dir            string // Relative filesystem directory
+	Name           string // Go package clause name
+	KeepHereReason string // Reason from "// Keep <pkg> here because <reason>" comment, if any
+	Imports        []ImportEdge
+	ImportedBy     []ImportEdge
 }
 
 // Graph represents the directed dependency graph of the module.
@@ -58,7 +61,7 @@ func Build(rootDir string) (*Graph, error) {
 
 		if info.IsDir() {
 			base := info.Name()
-			if base == ".git" || base == "bin" || base == "testdata" {
+			if base == ".git" || base == "bin" || base == "target" || base == "testdata" {
 				return filepath.SkipDir
 			}
 			return nil
@@ -77,11 +80,15 @@ func Build(rootDir string) (*Graph, error) {
 			relDir = ""
 		}
 
-		// Parse file imports only
-		node, err := parser.ParseFile(fset, path, nil, parser.ImportsOnly)
+		// Parse file imports and header comments only
+		node, err := parser.ParseFile(fset, path, nil, parser.ImportsOnly|parser.ParseComments)
 		if err != nil {
 			return fmt.Errorf("failed to parse %s: %w", path, err)
 		}
+
+		relFile, _ := filepath.Rel(rootDir, path)
+		isTest := strings.HasSuffix(path, "_test.go")
+		isExternalTest := isTest && strings.HasSuffix(node.Name.Name, "_test")
 
 		pkgRel := relDir
 		pkgNode := g.Packages[pkgRel]
@@ -94,15 +101,18 @@ func Build(rootDir string) (*Graph, error) {
 				ImportPath: pkgRel,
 				FullImport: fullImport,
 				Dir:        relDir,
-				Name:       node.Name.Name,
+				Name:       strings.TrimSuffix(node.Name.Name, "_test"),
 				Imports:    nil,
 				ImportedBy: nil,
 			}
 			g.Packages[pkgRel] = pkgNode
+		} else if !isExternalTest {
+			pkgNode.Name = node.Name.Name
 		}
 
-		relFile, _ := filepath.Rel(rootDir, path)
-		isTest := strings.HasSuffix(path, "_test.go")
+		if !isTest && pkgNode.KeepHereReason == "" {
+			pkgNode.KeepHereReason = extractKeepHereReason(node.Comments, pkgRel)
+		}
 
 		for _, imp := range node.Imports {
 			rawPath, err := strconv.Unquote(imp.Path.Value)
@@ -119,12 +129,13 @@ func Build(rootDir string) (*Graph, error) {
 
 			line := fset.Position(imp.Pos()).Line
 			edge := ImportEdge{
-				FromPkg:   pkgRel,
-				ToPkg:     targetPkg,
-				RawImport: rawPath,
-				FilePath:  relFile,
-				Line:      line,
-				IsTest:    isTest,
+				FromPkg:        pkgRel,
+				ToPkg:          targetPkg,
+				RawImport:      rawPath,
+				FilePath:       relFile,
+				Line:           line,
+				IsTest:         isTest,
+				IsExternalTest: isExternalTest,
 			}
 			pkgNode.Imports = append(pkgNode.Imports, edge)
 		}
@@ -147,6 +158,31 @@ func Build(rootDir string) (*Graph, error) {
 	}
 
 	return g, nil
+}
+
+// extractKeepHereReason scans comment paragraphs for a directive of the form:
+//
+//	// Keep <pkgRel> here because <reason>.
+//
+// Requiring the exact relative package path (<pkgRel>) keeps the sentence readable as
+// ordinary Go prose while preventing accidental matches in unrelated comments.
+func extractKeepHereReason(comments []*ast.CommentGroup, pkgRel string) string {
+	if pkgRel == "" {
+		return ""
+	}
+	prefix := "Keep " + pkgRel + " here because "
+	for _, cg := range comments {
+		for _, para := range strings.Split(cg.Text(), "\n\n") {
+			norm := strings.Join(strings.Fields(para), " ")
+			if strings.HasPrefix(norm, prefix) {
+				reason := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(norm, prefix), "."))
+				if reason != "" {
+					return reason
+				}
+			}
+		}
+	}
+	return ""
 }
 
 func readModulePrefix(rootDir string) (string, error) {

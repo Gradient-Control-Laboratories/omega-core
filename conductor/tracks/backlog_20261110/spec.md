@@ -460,7 +460,7 @@ defined in [README.md](../../../README.md):
     instead of invoking `audio.ExtractAudio` and assembling twice, then delete `audio.ExtractAudio`
     and `backend/audio/internal/extract/`.
 
-- [ ] **S6. Enforce `tool/analyze-deps -rules` in `tool/check.sh` & Remove Dead `internal/pkg`**
+- [x] **S6. Enforce `tool/analyze-deps -rules` in `tool/check.sh` & Remove Dead `internal/pkg`**
   - Resolve the 5 active `tool/analyze-deps -rules` layer/pass-separation violations
     (`internal/assembler/topofold/topofold.go`, `program/range_test.go`,
     `program/returns_traversal_test.go`, and `internal/lower/lower_test.go`), delete the unused

@@ -1509,3 +1509,132 @@ return branch();`
 		}
 	})
 }
+
+func TestAssemble_MapPreFoldedConstantCollection(t *testing.T) {
+	src := `
+doubleVal(x) { return x * 2.0; }
+a = [10.0, 20.0];
+xs = [a.x, a.y, a.x * 2.0, a.y * 2.0];
+vals = map(doubleVal, xs);
+return vals[0] + vals[1] + vals[2] + vals[3];
+`
+	res, err := Assemble([]string{src})
+	if err != nil {
+		t.Fatalf("Assemble failed: %v", err)
+	}
+	ret := res.Program.Primary.Files[0].Returns[0]
+	if ret.GetValue() != 180.0 {
+		t.Fatalf("expected folded sum 180.0, got %v", ret)
+	}
+}
+
+type mockTopoMesh struct {
+	volume float64
+	facePt [3]float64
+	normal [3]float64
+}
+
+func (m *mockTopoMesh) Area() float64   { return 10.0 }
+func (m *mockTopoMesh) Volume() float64 { return m.volume }
+func (m *mockTopoMesh) FacePoint(face int, u, v float64) ([3]float64, error) {
+	return [3]float64{m.facePt[0] + u, m.facePt[1] + v, m.facePt[2]}, nil
+}
+func (m *mockTopoMesh) EdgePoint(int, float64) ([3]float64, error)          { return m.facePt, nil }
+func (m *mockTopoMesh) EdgePointComp(int, int, float64) ([3]float64, error) { return m.facePt, nil }
+func (m *mockTopoMesh) VertexPoint(int) ([3]float64, error)                 { return m.facePt, nil }
+func (m *mockTopoMesh) CircleCenter(int) ([3]float64, error)                { return m.facePt, nil }
+func (m *mockTopoMesh) FacePointNormal(face int, u, v float64) ([3]float64, [3]float64, error) {
+	return [3]float64{m.facePt[0] + u, m.facePt[1] + v, m.facePt[2]}, m.normal, nil
+}
+func (m *mockTopoMesh) EdgePointNormal(int, float64) ([3]float64, [3]float64, error) {
+	return m.facePt, m.normal, nil
+}
+func (m *mockTopoMesh) EdgePointNormalComp(int, int, float64) ([3]float64, [3]float64, error) {
+	return m.facePt, m.normal, nil
+}
+func (m *mockTopoMesh) VertexPointNormal(int) ([3]float64, [3]float64, error) {
+	return m.facePt, m.normal, nil
+}
+func (m *mockTopoMesh) CircleCenterNormal(int) ([3]float64, [3]float64, error) {
+	return m.facePt, m.normal, nil
+}
+func (m *mockTopoMesh) MedialMax() (float64, [3]float64, error) {
+	return 4.0, m.facePt, nil
+}
+func (m *mockTopoMesh) MedialHotSpots(func([3]float64, [3]float64) bool, int) ([][3]float64, error) {
+	return [][3]float64{m.facePt}, nil
+}
+
+type mockTopoResolver struct {
+	mesh *mockTopoMesh
+}
+
+func (r *mockTopoResolver) GetMesh(slot int) (topofold.MeshGeometry, bool) {
+	if slot == 0 {
+		return r.mesh, true
+	}
+	return nil, false
+}
+
+func (r *mockTopoResolver) GetAnnotatedMesh(slot int) (topofold.AnnotatedMesh, bool, error) {
+	if slot == 0 {
+		return r.mesh, true, nil
+	}
+	return nil, false, nil
+}
+
+func TestAssemble_TopoFoldWithPreFoldedConstants(t *testing.T) {
+	pkgMgr := source.NewLocalManager("../stdlib")
+	src := `import . "omega";
+partId = importStep "bracket.step";
+xf = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [10, 20, 30, 1]];
+bracket = mesh(partId, xf);
+uv = [0.25 + 0.25, 0.25];
+pt, n = facePointNormal(0, 1, uv);
+vol = meshVolume(partId);
+return vol + pt.x + n.z;
+`
+	resolver := &mockTopoResolver{
+		mesh: &mockTopoMesh{
+			volume: 450.0,
+			facePt: [3]float64{2.0, 3.0, 4.0},
+			normal: [3]float64{0.0, 0.0, 1.0},
+		},
+	}
+	res, err := Assemble([]string{src}, SourceManager(pkgMgr), GeometryResolver(resolver))
+	if err != nil {
+		t.Fatalf("Assemble with GeometryResolver failed: %v", err)
+	}
+	ret := res.Program.Primary.Files[0].Returns[0]
+	// vol=450, pt.x = (2.0 + 0.5) + 10.0 = 12.5, n.z = 1.0 -> 463.5
+	if ret.GetValue() != 463.5 {
+		t.Fatalf("expected folded return 463.5, got %v", ret)
+	}
+}
+
+func TestAssemble_TopoFoldWithSlotFoldingDisabled(t *testing.T) {
+	pkgMgr := source.NewLocalManager("../stdlib")
+	src := `import . "omega";
+importStep 0 "bracket.step";
+u = 0.25 + 0.5;
+pt = facePoint(0, 1, [u, 0.25]);
+vol = meshVolume(0);
+return vol + pt.x;
+`
+	resolver := &mockTopoResolver{
+		mesh: &mockTopoMesh{
+			volume: 450.0,
+			facePt: [3]float64{2.0, 3.0, 4.0},
+			normal: [3]float64{0.0, 0.0, 1.0},
+		},
+	}
+	res, err := Assemble([]string{src}, SourceManager(pkgMgr), DisableMeshSlotFolding(), GeometryResolver(resolver))
+	if err != nil {
+		t.Fatalf("Assemble with DisableMeshSlotFolding and GeometryResolver failed: %v", err)
+	}
+	ret := res.Program.Primary.Files[0].Returns[0]
+	// vol=450, pt.x = 2.0 + 0.75 = 2.75 -> 452.75
+	if ret.GetValue() != 452.75 {
+		t.Fatalf("expected folded return 452.75, got %v", ret)
+	}
+}
