@@ -110,7 +110,15 @@ func assembleWithOptions(primarySources []string, srcMgr source.Manager, o *opti
 	// Parse the primary package and transitively collect imported packages into a Program AST,
 	// then resolve and link all symbol references across package boundaries.
 	report("Resolving package imports", 1)
-	prog, err := collect.Program(primarySources, srcMgr, o.parsePkg)
+	var parserDiags []program.Diagnostic
+	collectParse := func(sources []string) (*parser.Result, error) {
+		res, err := o.parsePkg(sources)
+		if res != nil && len(res.Diagnostics) > 0 {
+			parserDiags = append(parserDiags, res.Diagnostics...)
+		}
+		return res, err
+	}
+	prog, err := collect.Program(primarySources, srcMgr, collectParse)
 	if err != nil {
 		return nil, err
 	}
@@ -121,6 +129,9 @@ func assembleWithOptions(primarySources []string, srcMgr source.Manager, o *opti
 	assemblyDiags, err := link.ReferencesAndDiagnostics(prog, srcMgr, o.parsePkg)
 	if err != nil {
 		return nil, err
+	}
+	if len(parserDiags) > 0 {
+		assemblyDiags = append(parserDiags, assemblyDiags...)
 	}
 
 	// Properties a function sets on the part it returns are carried out to its

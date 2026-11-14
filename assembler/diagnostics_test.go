@@ -180,3 +180,23 @@ return foo(1.0, 2.0);
 			"unexpected error: %v", err)
 	})
 }
+
+func TestAssembler_PropagatesParserDiagnostics(t *testing.T) {
+	src := `// Scene Size: 20
+return sphere(5);
+`
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(newTestMockManager()))
+	assert.NoError(t, err)
+
+	var found bool
+	for _, diag := range res.Diagnostics {
+		if diag.Severity == program.SeverityWarning &&
+			strings.Contains(diag.Message, "@scene") &&
+			strings.Contains(diag.Message, "gsl fix") {
+			found = true
+			assert.Equal(t, 1, diag.LineNum)
+			break
+		}
+	}
+	assert.True(t, found, "expected parser legacy scene warning in assembler Result.Diagnostics, got %+v", res.Diagnostics)
+}

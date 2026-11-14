@@ -665,7 +665,7 @@ defined in [README.md](../../../README.md):
       and `substitute.go`, `internal/eval/const.go`, and `backend/wgsl/render.go`), document
       upstream non-nil AST invariants, and update unit test AST fixtures to satisfy them.
 
-- [ ] **S20. Add `Diagnostics` to `parser.Result` & Warn on Legacy Screen Size Comments**
+- [x] **S20. Add `Diagnostics` to `parser.Result` & Warn on Legacy Screen Size Comments**
   - Add `Diagnostics []program.Diagnostic` to `parser.Result` (`parser/parser.go`) and propagate
     parser diagnostics from `parser/internal/parser2` through `parser.ParsePackage` and
     `assembler.Assemble` (`assembler/assemble.go`, alongside existing `Diagnostics`).
