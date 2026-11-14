@@ -188,12 +188,20 @@ before Phase 4 builds on naga.
   - [x] `_eval.py`: `Document.shader`. No Python test was added (`AGENTS.md`); `shader`, `mesh` and
     `volume(defs=...)` were each called once through a scratch-built `gsl`, outside the repository.
   - [x] `go test ./backend/wgsl/... ./eval/... ./cmd/... ./internal/fidget/...` passes.
-- [ ] Task: Check the seven documents by hand
-  - [ ] Run `shader` with `glsl-es300` on `blend`, `gyroid`, `hybrid_bracket`,
-    `aerospace_bracket`, `cellular_noise`, `bvhsdf_basic` and `corexy_printer`, load each result
-    in a WebGL2 page outside the repository, and record compile time and frame time in this file.
-    For `corexy_printer`, record the frame time with vanish on against the 36 ms measured with it
-    off. This is the only browser evidence the track has.
+- [x] Task: Check the seven documents by hand SHA5
+  - [x] The owner ran the `glsl-es300` response of each of `blend`, `gyroid`, `hybrid_bracket`,
+    `aerospace_bracket`, `cellular_noise`, `corexy_printer` and a tetrahedron's `bvhSdf` (in place
+    of `bvhsdf_basic`, which is a codegen fixture with no mesh) in a WebGL2 page outside the
+    repository, in Chrome. All seven compiled and drew, and the driver's uniform block size
+    equalled the response's on each. Times are in the spec, Section 4.3.
+  - [x] `corexy_printer` was 186 ms a frame with the guards on, against the spike's 36 ms without
+    them. Measured through `gpu-eval`: the field is byte-identical to the spike's and the guards
+    are the difference (77 ms on, 33 ms off).
+- [x] Task: Leave the guards off for a zero `detail` (owner's decision, 2026-11-13) SHA5
+  - [x] `host_test.go` first: the vanish setup is under a test of `detail`, and a zero `detail`
+    clears what an earlier call set. Seen to fail, then `host.go`.
+  - [x] `corexy_printer` with a zero `detail`: 33 ms and 60 evaluations a pixel through
+    `gpu-eval`, the spike's figure. Not rerun in the browser.
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ---

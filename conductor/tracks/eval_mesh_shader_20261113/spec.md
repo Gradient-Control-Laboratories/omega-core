@@ -116,9 +116,13 @@ refusal is replaced by one that pins the answer.
     far from zero for the field to have crossed (the jump-slack test);
   - the hit tolerance grows with the pixel footprint;
   - the step budget is 256 to 1024 by path length through the box, times `stepScale`;
-  - for a document with parts, it sets the vanish globals (`gsl_vanishEye`, `gsl_vanishView`) from
-    the ray and `detail` before the first sample and clears them after the last, so a part far from
-    the ray reads as its box while marching, as in the viewer.
+  - for a document with parts and a `detail` that names a rung, it sets the vanish globals
+    (`gsl_vanishEye`, `gsl_vanishView`) from the ray and `detail` before the first sample and
+    clears the margin after the last, so a part far from the ray reads as its box while marching,
+    as in the viewer. With every rung zero it leaves the guards off and every part whole. This
+    differs from the viewer, which always sets the margin, and was the owner's choice on
+    2026-11-13 after measurement: on `corexy_printer` the guards take the march from 60 field
+    evaluations a pixel to 96, and from 33 ms a frame to 77 ms (Section 4.3).
 - **Sliders are members of one uniform block**, so a host moves one without asking again. A host
   binds a buffer of `blockBytes` to `uniformBlock` and writes each slider, and each of `uniforms`
   (time, and values the document fixes such as a mesh grid's box), at its `offset`. Offsets follow
@@ -202,6 +206,45 @@ the `compile` program's Rust library does not link. This track would add `naga` 
 It is a new native dependency of every wheel. The owner chose this route on 2026-11-13; the plan
 still stops for approval once the added size and the crates it pulls in are known, and records the
 change in `tech-stack.md` before any code that uses it.
+
+### 4.3 Measured on the op as built (2026-11-13)
+
+Apple M4 Max, 800 by 600, one `gsl_march` a pixel.
+
+| Document | Op | GLSL lines | ANGLE compile | WebGL2 frame | Covers |
+| :-- | --: | --: | --: | --: | --: |
+| `blend` | 40 ms | 258 | 67 ms | 0.98 ms | 7.6% |
+| `gyroid` | 30 ms | 212 | 21 ms | 1.03 ms | 16.2% |
+| `hybrid_bracket` | 30 ms | 271 | 24 ms | 0.67 ms | 7.2% |
+| `aerospace_bracket` | 50 ms | 384 | 30 ms | 1.47 ms | 11.4% |
+| `cellular_noise` | 60 ms | 578 | 82 ms | 55.4 ms | 8.2% |
+| a tetrahedron's `bvhSdf` | | 209 | 56 ms | 1.61 ms | 11.0% |
+| `corexy_printer`, guards on, 4 px rung | 320 ms | 5,746 | 316 ms | 186 ms | 29.8% |
+
+- **Chrome (ANGLE, Metal), the owner's run.** Every document compiled, linked and drew, and the
+  uniform block's size by the driver equalled `blockBytes` on each (16, 16, 16, 32, 16, 48, 16).
+  The run predates the change that leaves the guards off for a zero `detail`.
+- **The same rays through `gpu-eval`** (wgpu, the WGSL target, a compute shader), which counts
+  field evaluations. Its coverage equals the browser's on every document.
+
+| `corexy_printer` | Frame | Field evaluations a pixel |
+| :-- | --: | --: |
+| guards on, 4 px rung | 77 ms | 106 |
+| guards on, no rung (before the change) | 79 ms | 96 |
+| zero `detail`: guards off | 33 ms | 60 |
+
+- **The guards cost this document 2.4 times the frame.** A part far from the ray reads as its
+  box, which is nearer than the part, so the march takes more steps, and each evaluation costs
+  more with 177 guards in it. Letting only the gradient taps read parts whole did not change the
+  count (95), so it is not the taps straddling a guard's edge.
+- **The step budget is not a draft lever.** Halving `stepScale` changed no frame time and no
+  coverage: the mean is 24 to 106 evaluations a pixel against a budget of 256 steps. A host
+  drafts by resolution.
+- **`cellular_noise` is slow in the field**, not the march: 28 evaluations a pixel, as `blend`
+  has, at 45 ms against 1.3 ms.
+- **Not isolated:** the browser took 186 ms where `gpu-eval` took 77 ms for the same rays of
+  `corexy_printer`. Whether that is the GLSL route (naga's GLSL through ANGLE) or fragment
+  against compute is not known. The viewer's own march was not measured.
 
 ---
 

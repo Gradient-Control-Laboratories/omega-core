@@ -246,24 +246,34 @@ func wgslFloat(v float64) string {
 }
 
 // marchWGSL is gsl_gradient and gsl_march by rule r, for a box of half-width
-// extent. With parts it hands the part guards the ray before the first sample
-// and takes it back after the last; module is searched for the rungs and
-// footprints the program declares, which the march sets when they are there.
+// extent. With parts, and a detail that names a rung, it hands the part guards
+// the ray before the first sample and takes the margin back after the last;
+// module is searched for the rungs and footprints the program declares, which
+// the march sets when they are there.
 func marchWGSL(r MarchRule, extent float64, parts bool, module string) string {
 	f := wgslFloat
 	vanishOn, vanishOff, hitState := "", "", ""
 	if parts {
-		vanishOn = fmt.Sprintf(`
-    // While it marches, a part far from the ray reads as its box: past %[1]s
-    // pixels at the far end of the ray and never under %[2]s hit tolerances.
-    // The gradient at the hit reads every part whole.
-    gsl_vanishEye = vec4<f32>(origin, pixelScale);
-    gsl_vanishView = vec4<f32>(ortho, detail.w, 4.0 * detail.w,
-        max(%[3]s * %[2]s, pixelScale * mix(max(tExit, 1.0), 1.0, ortho) * %[1]s));`,
-			f(r.VanishPixels), f(r.VanishHitEps), f(r.HitEps))
+		simpleRung := ""
 		if declares(module, "gsl_simpleRung") {
-			vanishOn += "\n    gsl_simpleRung = detail.z;"
+			simpleRung = "\n        gsl_simpleRung = detail.z;"
 		}
+		vanishOn = fmt.Sprintf(`
+    // With a rung named, a part far from the ray reads as its box while the
+    // ray marches: past %[1]s pixels at the far end of the ray and never under
+    // %[2]s hit tolerances. The gradient at the hit reads every part whole.
+    // With every rung zero the guards stay off and each part is evaluated
+    // wherever it is asked about: on a document of many parts the guards cost
+    // more steps than they save (corexy_printer: 2.4 times the frame).
+    if (max(max(detail.x, detail.y), max(detail.z, detail.w)) > 0.0) {
+        gsl_vanishEye = vec4<f32>(origin, pixelScale);
+        gsl_vanishView = vec4<f32>(ortho, detail.w, 4.0 * detail.w,
+            max(%[3]s * %[2]s, pixelScale * mix(max(tExit, 1.0), 1.0, ortho) * %[1]s));%[4]s
+    } else {
+        gsl_vanishEye = vec4<f32>(0.0);
+        gsl_vanishView = vec4<f32>(0.0);
+    }`,
+			f(r.VanishPixels), f(r.VanishHitEps), f(r.HitEps), simpleRung)
 		vanishOff = "\n    gsl_vanishView.w = 0.0;"
 		if declares(module, "gsl_detailPw") {
 			hitState = "\n        gsl_detailPw = gsl_pw;"
@@ -295,7 +305,8 @@ fn gsl_gradient(p: vec3<f32>, ge: f32) -> vec3<f32> {
 // pixelScale is the world size of a pixel one unit from the eye, or of every
 // pixel when ortho is 1. stepScale multiplies the step budget. detail is the
 // part ladder's rungs in pixels (displacement, textures, simplified, vanish);
-// only a program with parts reads it, and zeros keep every part whole.
+// only a program with parts reads it, and zeros keep every part whole and
+// unguarded.
 fn %[2]s(origin: vec3<f32>, direction: vec3<f32>, tEntry: f32, tExit: f32,
         pixelScale: f32, ortho: f32, stepScale: f32, detail: vec4<f32>) -> gsl_hit {
     var result = gsl_hit(false, tExit, 0u, vec3<f32>(0.0));

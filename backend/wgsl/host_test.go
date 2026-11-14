@@ -63,6 +63,10 @@ func TestMarchSetsTheVanishGlobalsOnlyForParts(t *testing.T) {
 	require.False(t, strings.Contains(plain, "gsl_simpleRung"), "gsl_simpleRung")
 
 	parts := marchWGSL(FrontMarch, 8, true, "var<private> gsl_vanishEye: vec4<f32>;")
+	// Only for a detail that names a rung: with every rung zero the guards stay off, each part is evaluated
+	// wherever it is asked about, and what an earlier call set is cleared.
+	require.Contains(t, parts, "if (max(max(detail.x, detail.y), max(detail.z, detail.w)) > 0.0) {")
+	require.Contains(t, parts, "} else {\n        gsl_vanishEye = vec4<f32>(0.0);\n        gsl_vanishView = vec4<f32>(0.0);")
 	require.Contains(t, parts, "gsl_vanishEye = vec4<f32>(origin, pixelScale);")
 	require.Contains(t, parts, "gsl_vanishView = vec4<f32>(ortho, detail.w, 4.0 * detail.w,")
 	require.Contains(t, parts, "max(0.001 * 8.0, pixelScale * mix(max(tExit, 1.0), 1.0, ortho) * 4.0)")
