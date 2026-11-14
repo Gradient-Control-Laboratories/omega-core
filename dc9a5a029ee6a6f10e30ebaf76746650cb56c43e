@@ -1,0 +1,4 @@
+Task: Phase 1, volume takes defs (track eval_mesh_shader_20261113).
+Changes: new eval.Evaluator.VolumeOf(ctx, manifest, code, defs, expr, region, relativeTolerance); Volume delegates to it. evalcmd's volume op passes req.Defs and drops its refusal and the '(no defs)' usage note. omega_core Session.volume gains defs; wheel README rows updated.
+Files: eval/volume.go, eval/volume_defs_test.go (new), cmd/compile/internal/evalcmd/evalcmd.go, cmd/compile/internal/evalcmd/evalcmd_test.go (one TestErrors row removed with the owner's authorization, TestVolume_AppliesDefs added), python/omega-core/src/omega_core/_eval.py, python/omega-core/README.md.
+Why: a host that moved a slider could not ask for that part's volume.
