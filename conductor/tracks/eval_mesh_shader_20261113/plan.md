@@ -207,15 +207,21 @@ before Phase 4 builds on naga.
 
 ## Phase 5: Verification and Records
 
-- [ ] Task: Full verification
+- [ ] Task: Full verification (all but the wheel packaging and its Python tests)
   - [x] `go test ./...` passes (98 s), `go vet ./...` is clean and `tool/analyze-deps -rules`
     passes, against a `librender` built in the worktree. No golden moved and none was regenerated.
   - [x] `gofmt -l` lists 30 files, none of them touched by this track, so `tool/check.sh` stops at
     its first step on `main` as it stands. The scripts themselves were not run: `tool/test-go.sh`
     appends to a history file outside the worktree and both rebuild the standard library's
     protobufs.
-  - [ ] `tool/test-rust.sh` in full (only `cargo test -p render glsl` was run), the `omega_static`
-    link, and the wheel (`tool/build-wheel.sh`) with its tests: each is a build the owner starts.
+  - [x] `tool/test-rust.sh` in full passes (368 tests, one ignored, 28 s).
+  - [x] The `omega_static` link: `tool/build-wheel.sh` built `render` as a static library and
+    `compile` against it (33.6 MB, loading only system libraries, minimum macOS 11.0), and
+    collected the licences (219 components, naga's among them). That `compile` answers `shader`
+    for `glsl-es300` on `corexy_printer` and `cellular_noise`, and the Go tests of
+    `fidget.GLSLES300` and `Evaluator.Shader` pass under the `omega_static` tag.
+  - [ ] The wheel itself and its Python tests: `build-wheel.sh` stopped at packaging because this
+    machine's Python 3.14 has neither `build` nor `pytest`. Neither was installed.
 - [x] Task: Records
   - [x] The wheel's README: the two ops, `volume`'s `defs`, the Python methods. The top-level
     `README.md` does not document `gsl eval`'s ops and is unchanged.
