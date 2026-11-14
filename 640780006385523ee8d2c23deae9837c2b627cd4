@@ -1,0 +1,1 @@
+Task: Phase 5 records and Go verification. go test ./... ok (98 s); go vet clean; analyze-deps -rules ok. gofmt -l lists 30 files on main, none touched by this track. Not run: tool/test.sh, tool/check.sh, tool/test-rust.sh in full, omega_static link, wheel build.
