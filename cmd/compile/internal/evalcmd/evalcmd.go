@@ -64,10 +64,14 @@ A request names its op and its document, by path ("source") or text ("code"):
   describe                                            the sliders, top-level names and returns
   render     out, expr, views, width, height, light,   a PNG at out, as compile -t png draws it; expr defaults
              extent, time                              to the returns, each in its own colour
+  mesh       out, region, subdivision, algorithm,      a .glb at out: a node per return, a normal per vertex from
+             time                                      the field's gradient; and each body's counts and volume
 
 "defs" are GSL statements in the document's scope; one naming a declared name replaces it ("skin = 1.6;").
 "expr" defaults to the union of the document's returns. "region" is [x0, y0, z0, x1, y1, z1] in mm.
 render's "views" is compile's --views ("iso,top,-1,1,0.6"), its size 640 by 480 unless named.
+mesh's "region" defaults to the box the field fills (compile's --bbox auto), "subdivision" to 9 and "algorithm"
+to "mdc" (or "marching-cubes"); the response's "region" is the box that was meshed.
 Each response is {"id", "ok": true, ...} or {"id", "ok": false, "error"}. A value that is not finite is null.
 Exit codes (one request): 0 answered, 1 the query failed, 2 a malformed request.
 `
@@ -209,6 +213,8 @@ type request struct {
 	Light             bool                  `json:"light"`
 	Extent            float64               `json:"extent"`
 	Time              float64               `json:"time"`
+	Subdivision       int                   `json:"subdivision"`
+	Algorithm         string                `json:"algorithm"`
 }
 
 // malformed is a request the command cannot read or that lacks what its op needs: exit 2, not a query that failed.
@@ -256,11 +262,11 @@ func failure(id json.RawMessage, msg string) map[string]any {
 
 func (s *server) dispatch(ctx context.Context, req *request) (map[string]any, error) {
 	switch req.Op {
-	case "eval", "extremum", "certify", "bounds", "surface", "volume", "describe", "render":
+	case "eval", "extremum", "certify", "bounds", "surface", "volume", "describe", "render", "mesh":
 	case "":
-		return nil, malformedf("name an op: eval, extremum, certify, bounds, surface, volume, describe or render")
+		return nil, malformedf("name an op: eval, extremum, certify, bounds, surface, volume, describe, render or mesh")
 	default:
-		return nil, malformedf("op %q: one of eval, extremum, certify, bounds, surface, volume, describe or render", req.Op)
+		return nil, malformedf("op %q: one of eval, extremum, certify, bounds, surface, volume, describe, render or mesh", req.Op)
 	}
 	if req.Op != "eval" && len(req.Exprs) > 0 {
 		return nil, malformedf("exprs is eval's; %s takes one expr", req.Op)
@@ -285,6 +291,8 @@ func (s *server) dispatch(ctx context.Context, req *request) (map[string]any, er
 		return volume(ctx, e, code, req)
 	case "render":
 		return render(ctx, e, code, req)
+	case "mesh":
+		return meshFile(ctx, e, code, req)
 	default:
 		return describe(code)
 	}
@@ -604,6 +612,58 @@ func render(ctx context.Context, e *eval.Evaluator, code string, req *request) (
 	}
 	sheetWidth, sheetHeight := pngSize(data)
 	return map[string]any{"out": out, "width": sheetWidth, "height": sheetHeight, "bytes": len(data)}, nil
+}
+
+// meshFile writes the document, with defs, as a .glb at req.Out, and answers with the box meshed and what each
+// body's triangles say of it. The file is written only once the whole mesh is made.
+func meshFile(ctx context.Context, e *eval.Evaluator, code string, req *request) (map[string]any, error) {
+	if req.Out == "" {
+		return nil, malformedf("mesh names out, the .glb to write")
+	}
+	if req.Expr != "" {
+		return nil, malformedf("mesh takes no expr: it meshes the document's returns, each a body")
+	}
+	if req.Subdivision < 0 {
+		return nil, malformedf("subdivision %d: zero for the default, or more", req.Subdivision)
+	}
+	switch req.Algorithm {
+	case "", "mdc", "marching-cubes":
+	default:
+		return nil, malformedf("algorithm %q: mdc or marching-cubes", req.Algorithm)
+	}
+	opt := eval.MeshOptions{Subdivision: req.Subdivision, Algorithm: req.Algorithm, Time: req.Time}
+	if req.Region != nil {
+		box, err := checkRegion(*req.Region)
+		if err != nil {
+			return nil, err
+		}
+		opt.Region = &box
+	}
+	var buf bytes.Buffer
+	r, err := e.Mesh(ctx, nil, code, req.Defs, &buf, opt)
+	if err != nil {
+		return nil, err
+	}
+	out, err := filepath.Abs(req.Out)
+	if err != nil {
+		return nil, err
+	}
+	if err := os.MkdirAll(filepath.Dir(out), 0o755); err != nil {
+		return nil, err
+	}
+	if err := os.WriteFile(out, buf.Bytes(), 0o644); err != nil {
+		return nil, err
+	}
+	bodies := make([]map[string]any, len(r.Bodies))
+	for i, b := range r.Bodies {
+		bodies[i] = map[string]any{"name": b.Name, "index": b.Index, "vertices": b.Vertices, "triangles": b.Triangles,
+			"openEdges": b.OpenEdges, "nonManifoldEdges": b.NonManifoldEdges, "volumeMm3": f64(b.VolumeMm3)}
+	}
+	region := make([]any, len(r.Region))
+	for k, v := range r.Region {
+		region[k] = f64(v)
+	}
+	return map[string]any{"out": out, "bytes": buf.Len(), "region": region, "bodies": bodies}, nil
 }
 
 // pngSize is a PNG's width and height, read from its header.

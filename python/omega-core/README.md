@@ -116,6 +116,7 @@ A request names its `op` and its document, by path (`"source"`) or by text (`"co
 | `volume` | `expr`, `region`, `relativeTolerance` | the volume where `expr < 0`, bracketed |
 | `describe` | (none) | the sliders and their ranges, top-level names and returns |
 | `render` | `out`, `expr`, `views`, `width`, `height`, `light`, `extent`, `time` | a PNG at `out`, as `gsl compile -t png` draws it |
+| `mesh` | `out`, `region`, `subdivision`, `algorithm`, `time` | a `.glb` at `out`: a node per return, a gradient normal per vertex; and each body's counts and volume |
 
 - **Responses:** each is `{"id", "ok": true, ...}` or `{"id", "ok": false, "error"}`. A value that is not
   finite is `null`.
@@ -171,6 +172,7 @@ or the end of the `with` block.
 | `surface(points, expr=None, *, max_iters=0, tolerance=0, defs="")` | a tuple of `SurfaceSample` |
 | `volume(expr=None, *, region, relative_tolerance=0, defs="")` | `Volume` |
 | `render(out, expr=None, *, views="iso", width=640, height=480, light=False, extent=0, time=0, defs="")` | `Picture` |
+| `mesh(out, *, region=None, subdivision=0, algorithm="", time=0, defs="")` | `Mesh` |
 
 A zero `tolerance`, `lipschitz`, `resolution`, `max_iters` or `relative_tolerance` takes the evaluator's
 default. `views` is a string as for `--views`, or a list of them.

@@ -17,8 +17,8 @@ import tempfile
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, Tuple, Union
 
-__all__ = ["Bounds", "Certificate", "Description", "Document", "EvalError", "Extremum", "Field", "Fields", "Picture",
-           "Session", "SurfaceSample", "Volume"]
+__all__ = ["Bounds", "Certificate", "Description", "Document", "EvalError", "Extremum", "Field", "Fields", "Mesh",
+           "MeshBody", "Picture", "Session", "SurfaceSample", "Volume"]
 
 Vec3 = Tuple[float, float, float]
 Region = Sequence[float]
@@ -180,6 +180,31 @@ class Picture:
     path: str
     width: int
     height: int
+
+
+@dataclass(frozen=True)
+class MeshBody:
+    """One body of a mesh, a top-level return: its ``name`` and ``index`` (from 1), and what its triangles say of it.
+    ``open_edges`` and ``non_manifold_edges`` are both 0 for a closed surface; ``volume_mm3`` is the volume the
+    triangles enclose (negative if they face inward), the mesh's own and not the field's."""
+
+    name: str
+    index: int
+    vertices: int
+    triangles: int
+    open_edges: int
+    non_manifold_edges: int
+    volume_mm3: Optional[float]
+
+
+@dataclass(frozen=True)
+class Mesh:
+    """A ``.glb`` written at ``path``: the ``region`` it was meshed over, as ``(x0, y0, z0, x1, y1, z1)`` in mm, and
+    its ``bodies``."""
+
+    path: str
+    region: Tuple[float, ...]
+    bodies: Tuple[MeshBody, ...]
 
 
 @dataclass(frozen=True)
@@ -362,6 +387,17 @@ class Document:
         r = self._ask("render", out=os.path.abspath(os.fspath(out)), expr=expr, views=cameras, width=int(width),
                       height=int(height), light=light or None, extent=extent or None, time=time or None, defs=defs)
         return Picture(r["out"], r["width"], r["height"])
+
+    def mesh(self, out: Union[str, "os.PathLike[str]"], *, region: Optional[Region] = None, subdivision: int = 0,
+             algorithm: str = "", time: float = 0.0, defs: str = "") -> Mesh:
+        """Mesh the document's returns, each a body, into the ``.glb`` ``out``, with a normal per vertex taken from
+        the field's gradient. ``region`` defaults to the box the field fills, ``subdivision`` to 9 and ``algorithm``
+        to ``"mdc"``, as ``gsl compile`` has them. Meshing is the slow question: ask it when a file is wanted."""
+        r = self._ask("mesh", out=os.path.abspath(os.fspath(out)), region=_region(region) if region is not None else None,
+                      subdivision=int(subdivision) or None, algorithm=algorithm, time=time or None, defs=defs)
+        bodies = tuple(MeshBody(b["name"], b["index"], b["vertices"], b["triangles"], b["openEdges"],
+                                b["nonManifoldEdges"], b["volumeMm3"]) for b in r["bodies"])
+        return Mesh(r["out"], tuple(r["region"]), bodies)
 
     def volume(self, expr: Optional[str] = None, *, region: Region, relative_tolerance: float = 0.0,
                defs: str = "") -> Volume:
