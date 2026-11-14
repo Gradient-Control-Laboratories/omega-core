@@ -4,12 +4,26 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/backend/audio/internal/codegen"
-	"gradientcontrol.com/omega/core/backend/audio/internal/extract"
 	"gradientcontrol.com/omega/core/assembler"
+	"gradientcontrol.com/omega/core/assembler/variation"
+	"gradientcontrol.com/omega/core/backend/audio/internal/codegen"
 	"gradientcontrol.com/omega/core/internal/source"
 	"gradientcontrol.com/omega/core/internal/test/require"
+	"gradientcontrol.com/omega/core/program"
 )
+
+func assembleAudioProgram(t *testing.T, primary string, srcs map[string][]string) *program.Program {
+	t.Helper()
+	mgr := &source.MockManager{PkgSources: srcs}
+	res, err := assembler.Assemble([]string{primary}, assembler.SourceManager(mgr))
+	require.NoError(t, err)
+	require.True(t, len(res.AudioReturns) > 0)
+	audioOps := make([]*program.Operand, len(res.AudioReturns))
+	for i, ar := range res.AudioReturns {
+		audioOps[i] = ar.Return
+	}
+	return variation.Program(res.Program, audioOps...)
+}
 
 // TestImportConstants — top-level constants in an imported package flow
 // into the generated audio output and references resolve. Regression for
@@ -24,14 +38,8 @@ two_pi = pi * 2;
 tone = sin(time * two_pi * 440);
 return audio(tone, tone);
 `
-	primaryAudioSrc, _, err := extract.ExtractAudio(string(primary))
-	require.NoError(t, err)
-
-	mgr := &source.MockManager{PkgSources: srcs}
-	res, err := assembler.Assemble([]string{primaryAudioSrc}, assembler.SourceManager(mgr))
-	require.NoError(t, err)
-
-	js, _, err := codegen.AudioToJs(res.Program)
+	audioProg := assembleAudioProgram(t, primary, srcs)
+	js, _, err := codegen.AudioToJs(audioProg)
 	require.NoError(t, err)
 	// pi is folded into two_pi and dropped as dead; two_pi is what the primary reads.
 	require.True(t, strings.Contains(js, "const libk_two_pi"))
@@ -52,14 +60,8 @@ env(t) { return exp(-t * 2); }
 note = remap(osc(time * 440) * env(time), [1, 2, 3]);
 return audio(note, note);
 `
-	primaryAudioSrc, _, err := extract.ExtractAudio(string(primary))
-	require.NoError(t, err)
-
-	mgr := &source.MockManager{PkgSources: srcs}
-	res, err := assembler.Assemble([]string{primaryAudioSrc}, assembler.SourceManager(mgr))
-	require.NoError(t, err)
-
-	js, _, err := codegen.AudioToJs(res.Program)
+	audioProg := assembleAudioProgram(t, primary, srcs)
+	js, _, err := codegen.AudioToJs(audioProg)
 	require.NoError(t, err)
 	require.True(t, strings.Contains(js, "function audiolib_osc("))
 	require.True(t, strings.Contains(js, "function audiolib_env("))
@@ -79,14 +81,8 @@ func TestImportCollisionResolved(t *testing.T) {
 both = a.helper() + b.helper();
 return audio(both, both);
 `
-	primaryAudioSrc, _, err := extract.ExtractAudio(string(primary))
-	require.NoError(t, err)
-
-	mgr := &source.MockManager{PkgSources: srcs}
-	res, err := assembler.Assemble([]string{primaryAudioSrc}, assembler.SourceManager(mgr))
-	require.NoError(t, err)
-
-	js, _, err := codegen.AudioToJs(res.Program)
+	audioProg := assembleAudioProgram(t, primary, srcs)
+	js, _, err := codegen.AudioToJs(audioProg)
 	require.NoError(t, err)
 	// Assert the sum of the two inlined helpers
 	require.True(t, strings.Contains(js, "gsl_p[0] + 1 + (gsl_p[0] + 2)"))

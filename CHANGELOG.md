@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Updated `cmd/serve/internal/compiler` to assemble GSL sources in a single pass using
+  `assembler.Result.AudioReturns` and `assembler/variation` instead of splitting source strings
+  and assembling twice, preserving sliders, UI controls, and scene metadata on audio-only models.
+
+### Removed
+
+- Removed `audio.ExtractAudio` from `backend/audio` and deleted the string-based
+  `backend/audio/internal/extract` splitter package.
+
 ## [0.1.2] - 2026-11-12
 
 ### Added
