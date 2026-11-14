@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 // disabling MANIFOLD_PAR removes the TBB integration headache. Cross-section
 // (2D) is also off because the boolean composer never touches 2D paths.
 fn main() {
-    let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let manifest = PathBuf::from(std::env::var_os("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"));
     let workspace_root = manifest
         .ancestors()
         .nth(5)
