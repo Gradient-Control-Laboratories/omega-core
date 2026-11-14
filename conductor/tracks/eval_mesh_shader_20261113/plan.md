@@ -153,7 +153,7 @@ before Phase 4 builds on naga.
 
 ## Phase 4: The `shader` Op
 
-- [x] Task: Write tests for the march SHA4
+- [x] Task: Write tests for the march 37828e2
   - [x] `backend/wgsl/host_test.go`: the emitted march takes every number of the step rule from
     one Go table (`FrontMarch`); a rule with other numbers writes them and not the viewer's.
   - [x] For a module with parts the march assigns `gsl_vanishEye` and `gsl_vanishView` and clears
@@ -168,19 +168,19 @@ before Phase 4 builds on naga.
     own text, read from `examples/viewer/render`.
   - [x] Not red first: `host.go` was written before `host_test.go`. The GPU tests and the tests of
     `Evaluator.Shader` and the op below were written and seen to fail first.
-- [x] Task: Emit the preamble and the march SHA4
+- [x] Task: Emit the preamble and the march 37828e2
   - [x] `backend/wgsl/host.go`: `Host(result, extent)` wraps a rendered module with the host
     declarations, the `gsl_Host` block (time, then sdShape's value arguments, with byte offsets),
     the textures and samplers as bindings, `gsl_field`, `gsl_gradient` and `gsl_march`.
   - [x] The front march as the viewer has it. No displacement, backface or march fade.
-- [x] Task: Write failing tests for `Evaluator.Shader` and the op (Red Phase) SHA4
+- [x] Task: Write failing tests for `Evaluator.Shader` and the op (Red Phase) 37828e2
   - [x] Both targets: the two functions, no entry point, no `#version`; sliders with offsets;
     bodies; the region from `@scene`, or fitted without one.
   - [x] The `wgsl` response validates through naga with an entry point added.
   - [x] `corexy_printer` answers for both targets.
   - [x] The noise tile and a mesh's distance grid are written under `outDir` at the stated size.
   - [x] An unknown or missing `target` exits 2; a texture with no `outDir` exits 1.
-- [x] Task: Implement `Evaluator.Shader` and the op (Green & Refactor Phase) SHA4
+- [x] Task: Implement `Evaluator.Shader` and the op (Green & Refactor Phase) 37828e2
   - [x] `eval/shader.go`, with its result types beside it. `eval/eval.go`: `prepareQuery` now
     calls `assembleQuery`, which also returns the assembled source and the meshes read; its
     behaviour is unchanged.
