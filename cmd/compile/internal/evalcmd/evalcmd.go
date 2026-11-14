@@ -60,7 +60,7 @@ A request names its op and its document, by path ("source") or text ("code"):
              params | overSliders                     (and over the parameter ranges)
   bounds     expr, region, resolution                 the box where expr < 0
   surface    expr, points, maxIters, tolerance        each point moved onto expr = 0
-  volume     expr, region, relativeTolerance          the volume where expr < 0, bracketed (no defs)
+  volume     expr, region, relativeTolerance          the volume where expr < 0, bracketed
   describe                                            the sliders, top-level names and returns
   render     out, expr, views, width, height, light,   a PNG at out, as compile -t png draws it; expr defaults
              extent, time                              to the returns, each in its own colour
@@ -534,9 +534,6 @@ func surface(ctx context.Context, e *eval.Evaluator, code string, req *request) 
 }
 
 func volume(ctx context.Context, e *eval.Evaluator, code string, req *request) (map[string]any, error) {
-	if req.Defs != "" {
-		return nil, malformedf("volume takes no defs: it reads the document as written")
-	}
 	if err := nonNegative("relativeTolerance", req.RelativeTolerance); err != nil {
 		return nil, err
 	}
@@ -548,7 +545,7 @@ func volume(ctx context.Context, e *eval.Evaluator, code string, req *request) (
 	if err != nil {
 		return nil, err
 	}
-	r, err := e.Volume(ctx, code, x, box, req.RelativeTolerance)
+	r, err := e.VolumeOf(ctx, nil, code, req.Defs, x, box, req.RelativeTolerance)
 	if err != nil {
 		return nil, err
 	}

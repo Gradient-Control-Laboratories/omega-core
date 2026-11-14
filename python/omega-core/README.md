@@ -113,7 +113,7 @@ A request names its `op` and its document, by path (`"source"`) or by text (`"co
 | `certify` | `expr`, `region`, `threshold`, `tolerance`, `params` or `overSliders` | a sound proof that `expr >= threshold` over the region and the parameter ranges, or a box where it fails |
 | `bounds` | `expr`, `region`, `resolution` | the box where `expr < 0` |
 | `surface` | `expr`, `points`, `maxIters`, `tolerance` | each point moved onto `expr = 0`, with the normal there |
-| `volume` | `expr`, `region`, `relativeTolerance` | the volume where `expr < 0`, bracketed (no `defs`) |
+| `volume` | `expr`, `region`, `relativeTolerance` | the volume where `expr < 0`, bracketed |
 | `describe` | (none) | the sliders and their ranges, top-level names and returns |
 | `render` | `out`, `expr`, `views`, `width`, `height`, `light`, `extent`, `time` | a PNG at `out`, as `gsl compile -t png` draws it |
 
@@ -169,7 +169,7 @@ or the end of the `with` block.
 | `certify(expr=None, *, region, threshold, tolerance=0, params=None, over_sliders=False, defs="")` | `Certificate` |
 | `bounds(expr=None, *, region=None, resolution=0, defs="")` | `Bounds` |
 | `surface(points, expr=None, *, max_iters=0, tolerance=0, defs="")` | a tuple of `SurfaceSample` |
-| `volume(expr=None, *, region, relative_tolerance=0)` | `Volume` |
+| `volume(expr=None, *, region, relative_tolerance=0, defs="")` | `Volume` |
 | `render(out, expr=None, *, views="iso", width=640, height=480, light=False, extent=0, time=0, defs="")` | `Picture` |
 
 A zero `tolerance`, `lipschitz`, `resolution`, `max_iters` or `relative_tolerance` takes the evaluator's
