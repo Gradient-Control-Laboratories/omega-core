@@ -1,0 +1,5 @@
+Task: Phase 2, Evaluator.Mesh and the mesh op (track eval_mesh_shader_20261113).
+Changes: eval.Evaluator.Mesh, MeshOptions, MeshResult, MeshBody; fitBox (the --bbox auto rule with defs, restated in eval); vertexNormals (gradient, else area-weighted facet average). evalcmd: the mesh op, request fields subdivision and algorithm, usage rows, op list in the two error messages. omega_core: Document.mesh, Mesh, MeshBody; wheel README rows.
+Files: eval/mesh.go (new), eval/mesh_test.go (new), eval/mesh_normals_test.go (new), cmd/compile/internal/evalcmd/evalcmd.go, cmd/compile/internal/evalcmd/mesh_op_test.go (new), python/omega-core/src/omega_core/_eval.py, python/omega-core/README.md.
+Why: a host that moved a slider could get a mesh only of the document as written, without normals, and had to re-measure the file to learn whether it was closed.
+Known: two pre-existing failures (boxsweep/shard2, libflattest: 'noise tile not registered') reproduce on untouched main against the same linked native library.
