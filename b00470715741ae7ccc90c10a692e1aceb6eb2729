@@ -1,0 +1,1 @@
+Task: Phase 4, browser check and the guard decision. Tests: go test ./backend/wgsl/... ./eval/... ./cmd/... ./internal/fidget/... ok. host_test.go's vanish expectation (written earlier in this track) was changed first and seen to fail. Measurements are from scratch scripts outside the repo, driving target/release/gpu-eval. Not rerun in a browser after this change.
