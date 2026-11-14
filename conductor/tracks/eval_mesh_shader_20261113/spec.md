@@ -86,12 +86,13 @@ refusal is replaced by one that pins the answer.
 ```json
 {"ok": true, "target": "glsl-es300", "code": "...",
  "entry": {"field": "gsl_field", "march": "gsl_march"},
- "uniformBlock": "gsl_Host",
- "sliders": [{"name": "skin", "uniform": "gsl_param_4_9", "type": "f32",
+ "uniformBlock": "gsl_Host_block_0Fragment", "blockBytes": 16,
+ "uniforms": [{"name": "time", "type": "f32", "offset": 0, "value": [0]}],
+ "sliders": [{"name": "skin", "uniform": "gsl_param_4_9", "type": "f32", "offset": 4,
               "value": 1.6, "min": 0.8, "max": 3.0}],
- "textures": [{"uniform": "noiseTex", "kind": "noise3d", "format": "rgba8",
-               "size": [64, 64, 64], "path": "cache/noise3d.bin"}],
- "bodies": [{"name": "bracket", "index": 0}],
+ "textures": [{"uniform": "_group_0_binding_1_fs", "kind": "noise3d", "format": "rgba8unorm",
+               "filter": "nearest", "size": [64, 64, 64], "path": "/abs/cache/noiseTex.bin"}],
+ "bodies": [{"name": "bracket", "index": 1}],
  "region": [...]}
 ```
 
@@ -118,12 +119,30 @@ refusal is replaced by one that pins the answer.
   - for a document with parts, it sets the vanish globals (`gsl_vanishEye`, `gsl_vanishView`) from
     the ray and `detail` before the first sample and clears them after the last, so a part far from
     the ray reads as its box while marching, as in the viewer.
-- **Sliders are uniforms**, so a host moves one without asking again. `sliders` maps each slider's
-  GSL name to the uniform that carries it. `defs` that replace a slider change its `value`.
-- **Textures are files** under `outDir`, raw texels in the stated format. The response names each
-  one's sampler; nothing is inlined in JSON.
-- `target` is required: `wgsl` or `glsl-es300`. In the `wgsl` response the `uniform` names are the
-  WGSL names; in the `glsl-es300` response they are the names after transpiling.
+- **Sliders are members of one uniform block**, so a host moves one without asking again. A host
+  binds a buffer of `blockBytes` to `uniformBlock` and writes each slider, and each of `uniforms`
+  (time, and values the document fixes such as a mesh grid's box), at its `offset`. Offsets follow
+  WGSL's layout rules, which for these types are std140's, so the two targets share them. A
+  slider's `uniform` is its member name in the WGSL; naga's reflection does not report member
+  names, so a GLSL host goes by offset.
+- **`defs` apply as they do to every query.** One that replaces a slider whose range is in `.min`
+  and `.max` changes its `value`. One that replaces a slider declared with `@range` replaces the
+  annotation too, so the value is built into the field and the slider is gone from `sliders`.
+- **Textures are files** under `outDir`, raw texels in the stated `format`, to be read with the
+  stated `filter`, clamped to the edge. Nothing is inlined in JSON. Two kinds are written: the
+  noise tile (`noise3d`) and a mesh's distance grid (`meshSdf`, 256 cells a side, 32 MB). A
+  document that reads a spinodoid or warp texture is refused with a message that says so.
+- **Binding.** In the `wgsl` response the block is `@group(0) @binding(0)` and each texture
+  carries its `binding`, with `samplerUniform` and `samplerBinding` when the field samples it. In
+  the `glsl-es300` response `uniformBlock` and each texture's `uniform` are naga's names, read
+  from its reflection output, and a texture and its sampler are one `sampler3D`.
+- **`region` is the box to march**: the `@scene` box, or without one the box the field fills. Its
+  half-width is built into `gsl_march`, whose step budget is measured against it, which is why
+  the function takes no extent.
+- **`gsl_march` returns `gsl_hit`** (`hit`, `t`, `shapeIndex`, `gradient`), and takes every
+  gradient through one function, `gsl_gradient(p, reach)`: four tetrahedral taps today, and the
+  one place an analytic gradient replaces them.
+- `target` is required: `wgsl` or `glsl-es300`.
 
 ### 3.4 Out of Scope (v1)
 

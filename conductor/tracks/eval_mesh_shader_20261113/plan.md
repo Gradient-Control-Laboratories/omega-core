@@ -153,44 +153,41 @@ before Phase 4 builds on naga.
 
 ## Phase 4: The `shader` Op
 
-- [ ] Task: Write failing tests for the march (Red Phase)
-  - [ ] `backend/wgsl`: the emitted march source contains the step rule's constants (fudge 0.8,
-    jump slack 4, budget 256 to 1024) taken from one Go table, so the text and the table cannot
-    drift.
-  - [ ] `backend/wgsl`: for a document with parts the march assigns `gsl_vanishEye` and
-    `gsl_vanishView`; for one without, it does not mention them.
-  - [ ] `eval`: a Go transcription of the emitted loop, driven by that table, and the CPU march
-    (`eval/litrender.go`) hit the same points on a gyroid within the hit tolerance.
-  - [ ] Confirm they fail before implementation.
-- [ ] Task: Emit the preamble and the march (Green & Refactor Phase)
-  - [ ] `backend/wgsl`: an option that appends the host preamble (`gsl_shape`, `gsl_material`,
-    `gsl_min`, `gsl_isShapeVisible`, `gsl_fieldFilterIdx`, `gsl_pw`, `gsl_pwScale`, the `gsl_Host`
-    block built from the sliders), `gsl_field` and `gsl_march`.
-  - [ ] The front march as the viewer has it (`examples/viewer/render/gsl-render-graph.js`):
-    gradient-corrected step, same-body sign-change bisection with the jump-slack test,
-    pixel-footprint hit tolerance, step budget times `stepScale`. For a document that declares the
-    vanish globals, set them before the first sample and clear them after the last, as the viewer
-    does. No displacement or backface.
-- [ ] Task: Write failing tests for `Evaluator.Shader` and the op (Red Phase)
-  - [ ] For each target, the response's `code` defines `gsl_field` and `gsl_march` and has no
-    entry point; the `glsl-es300` one has no `#version` line.
-  - [ ] For each target, every slider `describe` reports appears in `sliders` with a `uniform`
-    that occurs in `code`; `defs` replacing a slider change its `value`.
-  - [ ] The `wgsl` response parses and validates through the transpile entry point's parser.
-  - [ ] `corexy_printer` (parts and materials) answers for both targets.
-  - [ ] A document with a noise texture lists it in `textures` and writes a file of the stated
-    size under `outDir`; a mesh-SDF document does the same for its distance grid.
-  - [ ] An unknown `target`, or a missing one, exits 2.
-  - [ ] Confirm they fail before implementation.
-- [ ] Task: Implement `Evaluator.Shader` and the op (Green & Refactor Phase)
-  - [ ] `eval/shader.go`: assemble with `defs`, render WGSL with the preamble option, write
-    textures. `wgsl`: return the module and the WGSL names. `glsl-es300`: add a stub fragment
-    entry that keeps both functions alive through naga's dead-code pass, transpile, strip the stub
-    and the version line, map names through the reflection output.
-  - [ ] `eval/types.go`: `ShaderResult` and its parts.
-  - [ ] `evalcmd.go`: the `shader` op, `target` and `outDir`, and its usage row.
-  - [ ] `_eval.py`: `Session.shader`, with its test.
-  - [ ] `gofmt`; `go test ./eval/... ./backend/wgsl/... ./cmd/compile/...`.
+- [x] Task: Write tests for the march SHA4
+  - [x] `backend/wgsl/host_test.go`: the emitted march takes every number of the step rule from
+    one Go table (`FrontMarch`); a rule with other numbers writes them and not the viewer's.
+  - [x] For a module with parts the march assigns `gsl_vanishEye` and `gsl_vanishView` and clears
+    the margin before the gradient at the hit; for one without, it does not mention them.
+  - [x] `internal/fidget/internal/gpuparity/march_test.go`: the emitted `gsl_march`, run on the
+    GPU through `gpu-eval`, meets a ball where the ray meets it in closed form (and returns the
+    unit radial as its gradient), and meets a gyroid of gradient about 3 where a 4 micron sampling
+    of the field along the same ray, on the CPU, first finds it. This replaces the Go
+    transcription the plan first named: it runs the emitted text itself. With the gradient
+    correction removed the gyroid test fails on 12 of 144 rays; restored, it passes.
+  - [x] The host declarations (`gsl_shape`, `gsl_material`, `gsl_min`) are held to the viewer's
+    own text, read from `examples/viewer/render`.
+  - [x] Not red first: `host.go` was written before `host_test.go`. The GPU tests and the tests of
+    `Evaluator.Shader` and the op below were written and seen to fail first.
+- [x] Task: Emit the preamble and the march SHA4
+  - [x] `backend/wgsl/host.go`: `Host(result, extent)` wraps a rendered module with the host
+    declarations, the `gsl_Host` block (time, then sdShape's value arguments, with byte offsets),
+    the textures and samplers as bindings, `gsl_field`, `gsl_gradient` and `gsl_march`.
+  - [x] The front march as the viewer has it. No displacement, backface or march fade.
+- [x] Task: Write failing tests for `Evaluator.Shader` and the op (Red Phase) SHA4
+  - [x] Both targets: the two functions, no entry point, no `#version`; sliders with offsets;
+    bodies; the region from `@scene`, or fitted without one.
+  - [x] The `wgsl` response validates through naga with an entry point added.
+  - [x] `corexy_printer` answers for both targets.
+  - [x] The noise tile and a mesh's distance grid are written under `outDir` at the stated size.
+  - [x] An unknown or missing `target` exits 2; a texture with no `outDir` exits 1.
+- [x] Task: Implement `Evaluator.Shader` and the op (Green & Refactor Phase) SHA4
+  - [x] `eval/shader.go`, with its result types beside it. `eval/eval.go`: `prepareQuery` now
+    calls `assembleQuery`, which also returns the assembled source and the meshes read; its
+    behaviour is unchanged.
+  - [x] `evalcmd.go`: the `shader` op, `target` and `outDir`, usage text.
+  - [x] `_eval.py`: `Document.shader`. No Python test was added (`AGENTS.md`); `shader`, `mesh` and
+    `volume(defs=...)` were each called once through a scratch-built `gsl`, outside the repository.
+  - [x] `go test ./backend/wgsl/... ./eval/... ./cmd/... ./internal/fidget/...` passes.
 - [ ] Task: Check the seven documents by hand
   - [ ] Run `shader` with `glsl-es300` on `blend`, `gyroid`, `hybrid_bracket`,
     `aerospace_bracket`, `cellular_noise`, `bvhsdf_basic` and `corexy_printer`, load each result

@@ -18,7 +18,8 @@ from dataclasses import dataclass
 from typing import Any, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, Tuple, Union
 
 __all__ = ["Bounds", "Certificate", "Description", "Document", "EvalError", "Extremum", "Field", "Fields", "Mesh",
-           "MeshBody", "Picture", "Session", "SurfaceSample", "Volume"]
+           "MeshBody", "Picture", "Session", "Shader", "ShaderSlider", "ShaderTexture", "ShaderUniform", "SurfaceSample",
+           "Volume"]
 
 Vec3 = Tuple[float, float, float]
 Region = Sequence[float]
@@ -205,6 +206,71 @@ class Mesh:
     path: str
     region: Tuple[float, ...]
     bodies: Tuple[MeshBody, ...]
+
+
+@dataclass(frozen=True)
+class ShaderUniform:
+    """A member of a shader's uniform block that is not a slider: ``time``, or a value the document fixes, such as
+    the box a mesh's distance grid covers. ``value`` goes at ``offset`` bytes into the block, a float per
+    component."""
+
+    name: str
+    type: str
+    offset: int
+    value: Tuple[float, ...]
+
+
+@dataclass(frozen=True)
+class ShaderSlider:
+    """A slider and the member of the uniform block that carries it: write a float at ``offset`` to move it, without
+    asking for the shader again. ``name`` is the document's; ``uniform`` is the block member's."""
+
+    name: str
+    uniform: str
+    type: str
+    offset: int
+    value: float
+    min: float
+    max: float
+
+
+@dataclass(frozen=True)
+class ShaderTexture:
+    """A texture the field reads, written at ``path`` as raw texels: ``size`` of ``format`` (``"rgba8unorm"`` or
+    ``"r16float"``), x fastest. ``uniform`` is what to bind: the texture in WGSL, at ``binding`` (with its sampler,
+    if any, at ``sampler_binding``), the sampler by name in GLSL. Read it ``filter`` (``"nearest"`` or
+    ``"linear"``), clamped to the edge."""
+
+    uniform: str
+    kind: str
+    format: str
+    filter: str
+    size: Tuple[int, int, int]
+    path: str
+    binding: Optional[int] = None
+    sampler_uniform: Optional[str] = None
+    sampler_binding: Optional[int] = None
+
+
+@dataclass(frozen=True)
+class Shader:
+    """A document's field as a library a host's shader calls, in ``target``'s language. ``code`` declares the uniform
+    block and the textures and defines ``field`` (``gsl_field(p)``: distance and body) and ``march`` (``gsl_march``:
+    the first surface along a ray). It has no entry point: the host adds its own, binds a buffer of ``block_bytes``
+    to ``uniform_block``, writes ``uniforms`` and ``sliders`` into it, and loads ``textures``. ``bodies`` are
+    ``(name, index)`` for each return; ``region`` is the box to march."""
+
+    target: str
+    code: str
+    field: str
+    march: str
+    uniform_block: str
+    block_bytes: int
+    uniforms: Tuple[ShaderUniform, ...]
+    sliders: Tuple[ShaderSlider, ...]
+    textures: Tuple[ShaderTexture, ...]
+    bodies: Tuple[Tuple[str, int], ...]
+    region: Tuple[float, ...]
 
 
 @dataclass(frozen=True)
@@ -398,6 +464,23 @@ class Document:
         bodies = tuple(MeshBody(b["name"], b["index"], b["vertices"], b["triangles"], b["openEdges"],
                                 b["nonManifoldEdges"], b["volumeMm3"]) for b in r["bodies"])
         return Mesh(r["out"], tuple(r["region"]), bodies)
+
+    def shader(self, target: str, *, out_dir: Optional[Union[str, "os.PathLike[str]"]] = None,
+               defs: str = "") -> Shader:
+        """The document's field as a library for a host's own shader, in ``target``: ``"wgsl"`` for WebGPU or
+        ``"glsl-es300"`` for WebGL2. Textures the field reads are written under ``out_dir``, which only a document
+        that reads one needs. Asking is quick next to :meth:`mesh`: nothing is meshed."""
+        r = self._ask("shader", target=target, outDir=os.path.abspath(os.fspath(out_dir)) if out_dir is not None else None,
+                      defs=defs)
+        uniforms = tuple(ShaderUniform(u["name"], u["type"], u["offset"], tuple(u["value"])) for u in r["uniforms"])
+        sliders = tuple(ShaderSlider(s["name"], s["uniform"], s["type"], s["offset"], s["value"], s["min"], s["max"])
+                        for s in r["sliders"])
+        textures = tuple(ShaderTexture(t["uniform"], t["kind"], t["format"], t["filter"], tuple(t["size"]), t["path"],
+                                       t.get("binding"), t.get("samplerUniform"), t.get("samplerBinding"))
+                         for t in r["textures"])
+        return Shader(r["target"], r["code"], r["entry"]["field"], r["entry"]["march"], r["uniformBlock"],
+                      r["blockBytes"], uniforms, sliders, textures,
+                      tuple((b["name"], b["index"]) for b in r["bodies"]), tuple(r["region"]))
 
     def volume(self, expr: Optional[str] = None, *, region: Region, relative_tolerance: float = 0.0,
                defs: str = "") -> Volume:

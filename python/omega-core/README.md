@@ -117,6 +117,7 @@ A request names its `op` and its document, by path (`"source"`) or by text (`"co
 | `describe` | (none) | the sliders and their ranges, top-level names and returns |
 | `render` | `out`, `expr`, `views`, `width`, `height`, `light`, `extent`, `time` | a PNG at `out`, as `gsl compile -t png` draws it |
 | `mesh` | `out`, `region`, `subdivision`, `algorithm`, `time` | a `.glb` at `out`: a node per return, a gradient normal per vertex; and each body's counts and volume |
+| `shader` | `target` (`wgsl`, `glsl-es300`), `outDir` | the field as a library a host's shader calls: `gsl_field` and `gsl_march`, a uniform block for time and the sliders, and its textures as files under `outDir` |
 
 - **Responses:** each is `{"id", "ok": true, ...}` or `{"id", "ok": false, "error"}`. A value that is not
   finite is `null`.
@@ -173,6 +174,7 @@ or the end of the `with` block.
 | `volume(expr=None, *, region, relative_tolerance=0, defs="")` | `Volume` |
 | `render(out, expr=None, *, views="iso", width=640, height=480, light=False, extent=0, time=0, defs="")` | `Picture` |
 | `mesh(out, *, region=None, subdivision=0, algorithm="", time=0, defs="")` | `Mesh` |
+| `shader(target, *, out_dir=None, defs="")` | `Shader` |
 
 A zero `tolerance`, `lipschitz`, `resolution`, `max_iters` or `relative_tolerance` takes the evaluator's
 default. `views` is a string as for `--views`, or a list of them.
