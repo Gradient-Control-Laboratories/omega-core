@@ -197,3 +197,31 @@ func TestMesh_WithAudioBlock(t *testing.T) {
 		t.Fatalf("expected binary STL >= 84 bytes, got %d", len(stlBytes))
 	}
 }
+
+func TestCompile_AudioCodegenErrorAndStereo(t *testing.T) {
+	t.Run("unsupported_audio_builtin_reports_error", func(t *testing.T) {
+		resp := compiler.Compile(compiler.CompileRequest{
+			ID:     "req-audio-err",
+			Source: "return audio(worley([time, 0, 0]));",
+		}, nil, nil)
+		if len(resp.Errors) == 0 {
+			t.Fatalf("expected error when audio expression uses unsupported builtin, got %+v", resp)
+		}
+		if resp.Audio != nil {
+			t.Errorf("expected nil Audio on codegen failure, got %+v", resp.Audio)
+		}
+	})
+
+	t.Run("stereo_audio_channels", func(t *testing.T) {
+		resp := compiler.Compile(compiler.CompileRequest{
+			ID:     "req-stereo",
+			Source: "return audio(sin(440 * 2 * pi * time), cos(440 * 2 * pi * time));",
+		}, nil, nil)
+		if len(resp.Errors) > 0 {
+			t.Fatalf("unexpected compile errors for stereo audio: %+v", resp.Errors)
+		}
+		if resp.Audio == nil || resp.Audio.JSCode == "" {
+			t.Fatalf("expected stereo Audio JSCode, got %+v", resp.Audio)
+		}
+	})
+}
