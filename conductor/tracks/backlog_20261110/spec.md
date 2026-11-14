@@ -209,7 +209,7 @@ defined in [README.md](../../../README.md):
     after all other GSL language changes, syntax retirements, and compiler/library backlog items
     have been completed — so that grammar rules, `@` annotations (`L1`, `M1`),
     asset imports (`L2`), postfix modifiers (`S1`), numeric and color literals (`S15`),
-    legacy syntax removals (`M2`–`M4`, `S2`–`S4`, `S13`), parser diagnostics (`M5`),
+    legacy syntax removals (`M2`–`M4`, `S2`–`S4`, `S13`), parser diagnostics (`M5`, `S20`),
     and `program` AST invariants stabilize in `parser/internal/parser2`
     before replacing the declarative Participle grammar and regex lexer.
   - **Current State:** `parser/internal/parser2/parser.go` drives lexing through regex-based
