@@ -1,0 +1,1 @@
+Task: Phase 3 naga gate, measure and record. Dependency only; no Rust or Go code calls naga yet. Measured on a scratch crate (the worktree has no submodules): +1.87 MB dead-stripped static link, 8 crates newly linked, none new to Cargo.lock. Nothing built or tested in the repo for this commit.
