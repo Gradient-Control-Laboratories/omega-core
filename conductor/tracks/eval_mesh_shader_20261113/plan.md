@@ -6,8 +6,8 @@ This plan implements [spec.md](./spec.md) in five test-driven phases. Phases 1 a
 dependency and are complete on their own; Phase 3 is a gate that stops for the owner's approval
 before Phase 4 builds on naga.
 
-1. **Phase 1 (`volume` takes `defs`):** `Evaluator.Volume` gains `manifest` and `defs`; the
-   command and `Session.volume` pass them.
+1. **Phase 1 (`volume` takes `defs`):** a new `Evaluator.VolumeOf` takes `manifest` and `defs`
+   and `Volume` calls it; the command and `Session.volume` pass `defs`.
 2. **Phase 2 (`mesh` op):** gradient normals as a `WriteGLB` option, `Evaluator.Mesh` over
    `mesh.MeshBodies` with the `defs` path, per-body edge counts and volume, the `mesh` op and
    `Session.mesh`.
@@ -37,19 +37,25 @@ before Phase 4 builds on naga.
 - [ ] Task: Calculate and record active **Spec Creation** and **Plan Creation** times
   - [ ] Compute active collaboration time from the transcript's turn deltas (10-minute idle cutoff
     per turn) and record it, with the implementation start time, in this file.
-- [ ] Task: Write failing tests for `volume` with `defs` (Red Phase)
-  - [ ] `eval/volume_defs_test.go`: a ball whose radius is a slider; with `defs` that double the
-    radius the bracket contains eight times the closed-form volume, and without them it does not.
-  - [ ] `cmd/compile/internal/evalcmd`: a `volume` request with `defs` answers with the larger
-    bracket.
-  - [ ] Confirm both fail before implementation.
-- [ ] Task: Implement (Green & Refactor Phase)
-  - [ ] `eval/volume.go`: `Volume(ctx, manifest, code, defs, expr, region, relativeTolerance)`,
-    passing `manifest` and `defs` to `prepareQuery`; update every caller.
-  - [ ] `evalcmd.go`: pass `req.Defs`; drop "(no defs)" from the usage text.
-  - [ ] `python/omega-core/src/omega_core/_eval.py`: `Session.volume(..., defs="")`, with its test
-    beside the package's existing ones.
-  - [ ] `gofmt`; `go test ./eval/... ./cmd/compile/...`.
+- [x] Task: Write failing tests for `volume` with `defs` (Red Phase) dc9a5a0
+  - [x] `eval/volume_defs_test.go`: a ball whose radius is a slider; with `defs` that double the
+    radius the bracket contains eight times the closed-form volume, and without them it does not;
+    `Volume` and `VolumeOf` without defs agree.
+  - [x] `cmd/compile/internal/evalcmd`: a `volume` request with `defs` answers with that part's
+    bracket. The row of `TestErrors` that pinned the refusal ("no defs", exit 2) is removed, with
+    the owner's authorization (2026-11-13).
+  - [x] Confirm both fail before implementation.
+- [x] Task: Implement (Green & Refactor Phase) dc9a5a0
+  - [x] `eval/volume.go`: `VolumeOf(ctx, manifest, code, defs, expr, region, relativeTolerance)`,
+    passing `manifest` and `defs` to `prepareQuery`; `Volume` calls it and its callers are
+    untouched.
+  - [x] `evalcmd.go`: pass `req.Defs`; drop the refusal and "(no defs)" from the usage text.
+  - [x] `python/omega-core/src/omega_core/_eval.py`: `Session.volume(..., defs="")`, and the
+    wheel README's two rows.
+  - [ ] A Python test of `Session.volume(defs=...)`: not written. `AGENTS.md` rules out new Python
+    tests, and the package's existing ones need a built wheel. Owner's call.
+  - [x] `gofmt`; `go vet`; `go test ./eval -run 'Volume|Certify.*Cache'` and
+    `go test ./cmd/compile/...` pass.
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ---

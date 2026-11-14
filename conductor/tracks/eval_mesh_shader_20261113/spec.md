@@ -22,8 +22,8 @@ This track adds `defs` to `volume` and two ops to `gsl eval`: `mesh` and `shader
 
 ## 2. Public API Surface Policy
 
-- **`eval.Evaluator.Volume`:** gains `manifest` and `defs`, in the position the other queries have
-  them. A source-compatible wrapper is not kept; the only callers are `evalcmd` and tests.
+- **`eval.Evaluator.VolumeOf`** (new): `Volume` with `manifest` and `defs`, in the position the
+  other queries have them. `Volume` keeps its signature and calls it with neither.
 - **`backend/mesh`:** `WriteGLB` gains an option to write per-vertex normals. Its default output
   is unchanged, so `compile -t glb` writes the bytes it writes today.
 - **New Go:** `Evaluator.Mesh` and `Evaluator.Shader` (Section 4), each a thin composition of
@@ -40,7 +40,8 @@ This track adds `defs` to `volume` and two ops to `gsl eval`: `mesh` and `shader
 
 `{"op": "volume", "source": "part.gsl", "defs": "skin = 1.6;", ...}` brackets the volume of the
 document with those statements applied, as `bounds` and `eval` already do. The usage text drops
-"(no defs)".
+"(no defs)". Until this track the op refused `defs` as malformed; the test row that pinned the
+refusal is replaced by one that pins the answer.
 
 ### 3.2 `mesh`
 
