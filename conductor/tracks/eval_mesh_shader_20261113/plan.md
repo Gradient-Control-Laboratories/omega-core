@@ -102,21 +102,32 @@ before Phase 4 builds on naga.
 
 ## Phase 3: The naga Gate
 
-- [ ] Task: Measure and report, then stop
-  - [ ] On a scratch commit, add `naga = { version = "30", default-features = false, features =
-    ["wgsl-in", "glsl-out"] }` to `internal/fidget/internal/rust/Cargo.toml`, matching the version
-    `Cargo.lock` already resolves for `fidget-wgpu`.
-  - [ ] Report: crates added to `Cargo.lock` beyond those already present, each with version,
-    source, licence and maintainers; the size of `compile` before and after
-    (`tool/build-fidget.sh`, `tool/build-cli.sh`); the build-time change.
-  - [ ] Review the added crates' sources for network access, process execution and build scripts
-    before running any code that links them, as `AGENTS.md` asks of a new Go package.
-  - [ ] **Stop. Wait for the owner's approval of the dependency.**
-- [ ] Task: Record the dependency
-  - [ ] `conductor/tech-stack.md`: naga's role (WGSL in, GLSL ES 3.00 out, for `gsl eval shader`),
-    with a dated note.
-  - [ ] `THIRD_PARTY_NOTICES.md` via `tool/third_party_licenses.py`, if it covers Rust crates;
-    otherwise by hand in the file's existing form.
+- [x] Task: Measure and report, then stop
+  - [x] `naga = { version = "30", default-features = false, features = ["wgsl-in", "glsl-out"] }`
+    in `internal/fidget/internal/rust/Cargo.toml`. `Cargo.lock` gains no package (naga 30.0.1 is
+    already resolved for the vendored `fidget-wgpu`), only `render`'s own dependency line.
+  - [x] Newly linked into `render`: `naga` and `naga-types` 30.0.1 (MIT OR Apache-2.0, gfx-rs),
+    `codespan-reporting` 0.13.1 (Apache-2.0), `bit-set` 0.10.0 and `bit-vec` 0.9.1 (Apache-2.0 OR
+    MIT), `rustc-hash` 1.1.0 (Apache-2.0/MIT), `libm` 0.2.16 (MIT), and `cfg_aliases` 0.2.2 (MIT)
+    at build time. `spirv` is not: only the SPIR-V features enable it.
+  - [x] Size, measured on a scratch crate that links only naga behind one C entry point, at the
+    locked versions (the worktree has no submodules, so `render` itself was not built): 1.87 MB
+    added to a dead-stripped static link, 1.88 MB to a `cdylib`; an upper bound, since crates
+    `render` already links are counted again. Not measured: `render` as a Rust `dylib`, which may
+    keep more. Cold build of naga and its dependencies: 10 s wall, 26 s CPU (M4 Max).
+  - [x] At naga 30.0.1 the scratch entry point transpiles `corexy_printer` (2,404 lines of WGSL
+    to 5,768 of GLSL ES 3.00, about 20 ms), `cellular_noise` and `bvhsdf_basic`, with no optional
+    capability enabled; invalid WGSL returns naga's message. Reflection names the uniform block
+    and the samplers.
+  - [x] Sources scanned for network access, process execution and filesystem writes, and the two
+    build scripts (naga's, libm's) read: none found in what these features compile. A pattern
+    scan, not a line-by-line audit.
+  - [x] **Approved by the owner, 2026-11-13.**
+- [x] Task: Record the dependency
+  - [x] `conductor/tech-stack.md`: naga's role, with a dated note.
+  - [x] `THIRD_PARTY_NOTICES.md` needs no change: its crate count is of `Cargo.lock`, which gains
+    no package, and `codespan-reporting` is already among its Apache-2.0-only crates. The wheel's
+    licence texts are collected by `tool/third_party_licenses.py` at build time.
 - [ ] Task: Write failing tests for the transpile entry point (Red Phase)
   - [ ] Rust (`tool/test-rust.sh`): a small WGSL module with one uniform block, one 3D texture and
     one function transpiles to text containing `sampler3D` and `texelFetch`; invalid WGSL returns

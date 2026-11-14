@@ -18,6 +18,13 @@
   and VM tape bundle schema (`backend/tape/tape.proto`).
 - **Go `embed` (`//go:embed`, `embed.FS`):** Compile-time embedding of GSL standard library sources
   (`stdlib/`) and pre-compiled assets.
+- **naga 30 (`wgsl-in`, `glsl-out`), in the `render` Rust library:** transpiles the WGSL that
+  `backend/wgsl` emits to GLSL ES 3.00, for the `glsl-es300` target of `gsl eval`'s `shader` op, so
+  a WebGL2 host can draw a field. Added 2026-11-13 (track `eval_mesh_shader_20261113`), approved by
+  the owner after measurement: no package added to `Cargo.lock` (the vendored `fidget-wgpu`
+  already resolves naga 30.0.1), eight crates newly linked into `render` (`naga`, `naga-types`,
+  `codespan-reporting`, `bit-set`, `bit-vec`, `rustc-hash` 1.1, `libm`, and `cfg_aliases` at build
+  time), about 1.9 MB of code as an upper bound.
 
 ## Compiler Architecture & Pass Boundaries
 
