@@ -1,0 +1,4 @@
+Task: Phase 2, normals option on WriteGLB (track eval_mesh_shader_20261113).
+Changes: glb.Body.Normals written as a NORMAL accessor after positions and indices; mismatched length refused. mesh.WriteGLB gains variadic GLBOption and GLBNormals(fn). New mesh.MeasureIndexed / IndexedStats (open edges, non-manifold edges, signed volume).
+Files: backend/mesh/glb/glb.go, backend/mesh/glb/glb_normals_test.go (new), backend/mesh/bodies.go, backend/mesh/indexed.go (new), backend/mesh/indexed_test.go (new).
+Why: a mesh op needs gradient normals in the file and closedness facts in its answer; backend/mesh must not import eval, so the caller supplies the normals.
