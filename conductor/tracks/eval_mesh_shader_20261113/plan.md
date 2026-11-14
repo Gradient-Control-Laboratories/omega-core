@@ -128,18 +128,25 @@ before Phase 4 builds on naga.
   - [x] `THIRD_PARTY_NOTICES.md` needs no change: its crate count is of `Cargo.lock`, which gains
     no package, and `codespan-reporting` is already among its Apache-2.0-only crates. The wheel's
     licence texts are collected by `tool/third_party_licenses.py` at build time.
-- [ ] Task: Write failing tests for the transpile entry point (Red Phase)
-  - [ ] Rust (`tool/test-rust.sh`): a small WGSL module with one uniform block, one 3D texture and
-    one function transpiles to text containing `sampler3D` and `texelFetch`; invalid WGSL returns
-    an error, not a panic.
-  - [ ] Go (`internal/fidget`): the wrapper returns the GLSL and a name map (WGSL identifier to
-    GLSL identifier) for block members and samplers; an error carries naga's message.
-  - [ ] Confirm they fail before implementation.
-- [ ] Task: Implement the entry point (Green & Refactor Phase)
-  - [ ] Rust: parse, validate, write GLSL with the `es300` profile for a named fragment entry
-    point, return the text and the reflection map as JSON; catch panics at the boundary.
-  - [ ] Go: `internal/fidget` wrapper in both `link_static.go` and `link_dynamic.go` builds.
-  - [ ] `tool/test.sh` passes for the touched packages.
+- [x] Task: Write failing tests for the transpile entry point (Red Phase) 18da6f1
+  - [x] Rust (`internal/fidget/internal/rust/src/glsl.rs`): a module with one uniform block, one
+    3D texture and one function transpiles to text containing `sampler3D` and `texelFetch`; the
+    names of the block and the sampler are returned and appear in the text; invalid WGSL, a module
+    that does not validate and a missing entry point are errors, not panics; the C entry point
+    answers in JSON, carries the message of a refusal and refuses null or non-UTF-8 arguments.
+  - [x] Go (`internal/fidget/glsl_test.go`): the wrapper returns the GLSL and the name maps; an
+    error carries naga's message.
+  - [x] Confirmed failing before implementation (eight Rust tests against a stub; the Go tests
+    did not compile).
+- [x] Task: Implement the entry point (Green & Refactor Phase) 18da6f1
+  - [x] Rust: `wgsl_to_glsl_es300_json(wgsl, wgsl_len, entry, entry_len) -> RenderResult`; code 0
+    carries JSON (`glsl`, `uniformBlocks`, `textures`), any other code a message; panics caught.
+    The maps are keyed by WGSL global: block members keep their names inside the block.
+  - [x] Go: `fidget.GLSLES300(wgsl, entryPoint) (*GLSL, error)`. The dynamic link is tested; the
+    `omega_static` link was not built.
+  - [x] `go test ./internal/fidget/... ./eval/... ./backend/... ./cmd/...` and
+    `cargo test --release -p render glsl` pass against a `librender` built in the worktree. The
+    two failures recorded under Phases 1 and 2 were the stale linked library and are gone.
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ---
