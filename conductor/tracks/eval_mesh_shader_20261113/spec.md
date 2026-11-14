@@ -24,12 +24,13 @@ This track adds `defs` to `volume` and two ops to `gsl eval`: `mesh` and `shader
 
 - **`eval.Evaluator.VolumeOf`** (new): `Volume` with `manifest` and `defs`, in the position the
   other queries have them. `Volume` keeps its signature and calls it with neither.
-- **`backend/mesh`:** `WriteGLB` gains an option to write per-vertex normals. Its default output
-  is unchanged, so `compile -t glb` writes the bytes it writes today.
+- **`backend/mesh`:** `WriteGLB` gains an option, `GLBNormals`, to write per-vertex normals. Its
+  default output is unchanged, so `compile -t glb` writes the bytes it writes today. New:
+  `MeasureIndexed`, the open edges, non-manifold edges and signed volume of an indexed mesh.
 - **New Go:** `Evaluator.Mesh` and `Evaluator.Shader` (Section 4), each a thin composition of
   existing entry points (`mesh.MeshBodies`, `wgsl.Render`) with the `defs` path of `prepareQuery`.
 - **New, outside Go:** the two ops' JSON shapes, and `Session.mesh` / `Session.shader` in the
-  wheel's Python package.
+  wheel's Python package (on `Document`, which a `Session` hands out).
 - **Unchanged:** `gsl compile` and every target of it; the viewer under `examples/viewer`.
 
 ---
@@ -52,18 +53,28 @@ refusal is replaced by one that pins the answer.
 
 ```json
 {"ok": true, "out": "part.glb", "region": [...],
- "bodies": [{"name": "bracket", "index": 0, "vertices": 5120, "triangles": 10236,
-             "openEdges": 0, "nonManifoldEdges": 0, "volume": 1834.2}]}
+ "bytes": 245760,
+ "bodies": [{"name": "bracket", "index": 1, "vertices": 5120, "triangles": 10236,
+             "openEdges": 0, "nonManifoldEdges": 0, "volumeMm3": 1834.2}]}
 ```
 
 - One GLB, one node per top-level return, indexed, with a normal per vertex.
 - **Normals are the field's gradient at the vertex**, not an average of facets. A vertex where the
-  gradient is not finite falls back to the facet average.
-- `region` defaults to what `compile --bbox auto` uses; the response states the box that was used.
+  gradient is not finite, or is zero, falls back to the area-weighted facet average.
+- **At a `time` other than zero every normal is the facet average.** The point query that supplies
+  gradients evaluates at time zero, so its gradients would be of a different surface.
+- `region` defaults to the box the field fills, found by the rule `compile --bbox auto` follows,
+  with `defs` applied; the response states the box that was used. The rule is restated in `eval`
+  (`fitBox`) rather than shared with `cmd/compile`'s `autoBbox`, which another track is changing;
+  the two should become one when that lands (Section 7).
+- A body's `index` counts from 1, as `mesh.MeshBodies` and the viewer's Bodies panel count.
+- `volumeMm3` is the volume the triangles enclose, negative if they face inward. It is the mesh's
+  own; `volume` brackets the field's.
 - `subdivision`, `algorithm` and `time` mean what the `compile` flags mean and default as they do.
-- `openEdges`, `nonManifoldEdges` and the mesh's own `volume` are counted from the welded index
-  buffer the op already builds, so a host need not load the file to gate an export.
-- `out` is required. The op writes a file; it never returns mesh bytes in JSON.
+- `openEdges`, `nonManifoldEdges` and `volumeMm3` are counted from the welded index buffer the op
+  already builds, so a host need not load the file to gate an export.
+- `out` is required. The op writes a file, and only once the whole mesh is made; it never returns
+  mesh bytes in JSON. `expr` is refused: the op meshes the document's returns.
 
 ### 3.3 `shader`
 
@@ -177,10 +188,10 @@ change in `tech-stack.md` before any code that uses it.
 
 ## 5. Python (`omega_core`)
 
-- `Session.volume(..., defs="")`, as `bounds` and `render` spell it.
-- `Session.mesh(out, *, defs="", subdivision=None, region=None, algorithm=None, time=None)`
-  returns the response's `bodies` and `region`.
-- `Session.shader(target, *, out_dir, defs="")` returns the response as a mapping; `target` has no
+- `Document.volume(..., defs="")`, as `bounds` and `render` spell it.
+- `Document.mesh(out, *, region=None, subdivision=0, algorithm="", time=0, defs="")` returns a
+  `Mesh`: the path, the region and a `MeshBody` per body.
+- `Document.shader(target, *, out_dir, defs="")` returns the response as a mapping; `target` has no
   default, as in the op.
 
 Standard library only, as the rest of the package is.
@@ -225,7 +236,8 @@ the test environment; the seven-document measurement above is the evidence, and 
 1. **One march or two:** v1 leaves the viewer's copy in place. The follow-up has the viewer
    consume the emitted front march and keep only its extras.
 2. **`region` for `shader` and `mesh`:** whether the certified automatic box, once it lands,
-   replaces the sampled one as the default here.
+   replaces the sampled one as the default here, and `eval`'s `fitBox` and `cmd/compile`'s
+   `autoBbox` become one function.
 3. **Analytic gradient in the march:** forward-mode `.dp` in place of four taps would cut the
    field evaluations per step from five to one dual evaluation. Not measured.
 

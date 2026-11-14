@@ -62,33 +62,41 @@ before Phase 4 builds on naga.
 
 ## Phase 2: The `mesh` Op
 
-- [ ] Task: Write failing tests for normals in `WriteGLB` (Red Phase)
-  - [ ] `backend/mesh`: without the option, `WriteGLB` writes the bytes it writes today for one
+- [x] Task: Write failing tests for normals in `WriteGLB` (Red Phase) d1ec2bd
+  - [x] `backend/mesh`: without the option, `WriteGLB` writes the bytes it writes today for one
     document (pinned before any change to the function).
-  - [ ] With the option, the GLB has a NORMAL accessor per node, one normal per vertex, unit
+  - [x] With the option, the GLB has a NORMAL accessor per node, one normal per vertex, unit
     length.
-  - [ ] Confirm the second fails before implementation.
-- [ ] Task: Implement the normals option (Green & Refactor Phase)
-  - [ ] An option on `WriteGLB` carrying a function from vertex positions to normals, so the
-    package stays free of `eval`.
-  - [ ] `gofmt`; `go test ./backend/mesh/...`.
-- [ ] Task: Write failing tests for `Evaluator.Mesh` and the op (Red Phase)
-  - [ ] A ball: one node, zero open and non-manifold edges, every normal within a stated angle of
+  - [x] Confirm the second fails before implementation.
+- [x] Task: Implement the normals option (Green & Refactor Phase) d1ec2bd
+  - [x] `GLBNormals`, an option on `WriteGLB` carrying a function from a body's welded mesh to
+    its normals, so the package stays free of `eval`; `glb.Body.Normals`; `MeasureIndexed`.
+  - [x] `gofmt`; `go test ./backend/mesh/...`.
+- [x] Task: Write failing tests for `Evaluator.Mesh` and the op (Red Phase) 7fb7901
+  - [x] A ball: one node, zero open and non-manifold edges, every normal within a stated angle of
     the radial direction, mesh volume within a stated tolerance of the closed form.
-  - [ ] `defs` that change the radius change the vertex extents.
-  - [ ] Two returns give two nodes named as the returns are.
-  - [ ] A vertex with a non-finite gradient gets the facet average, not a NaN.
-  - [ ] `evalcmd`: the response's `bodies`, `region` and `out`; a missing `out` exits 2.
-  - [ ] Confirm they fail before implementation.
-- [ ] Task: Implement `Evaluator.Mesh` and the op (Green & Refactor Phase)
-  - [ ] `eval/mesh.go`: assemble with `defs` as `prepareQuery` does, call `mesh.MeshBodies` with
+  - [x] `defs` that change the radius change the vertex extents.
+  - [x] Two returns give two nodes named as the returns are.
+  - [x] A vertex with a non-finite gradient gets the facet average, not a NaN.
+  - [x] `evalcmd`: the response's `bodies`, `region` and `out`; a missing `out`, a negative
+    `subdivision`, an unknown `algorithm`, a bad `region` or an `expr` exits 2 and writes no file.
+  - [x] Confirm they fail before implementation.
+- [x] Task: Implement `Evaluator.Mesh` and the op (Green & Refactor Phase) 7fb7901
+  - [x] `eval/mesh.go`: assemble with `defs` as `prepareQuery` does, call `mesh.MeshBodies` with
     the request's subdivision, box, algorithm and time, evaluate the gradient at each welded
     vertex, count open and non-manifold edges and the signed volume from the index buffer.
-  - [ ] `eval/types.go`: `MeshResult`, `MeshBody`.
-  - [ ] `evalcmd.go`: the `mesh` op, its request fields (`subdivision`, `algorithm`) and usage row.
-  - [ ] `_eval.py`: `Session.mesh`, with its test.
-  - [ ] `gofmt`; `go test ./eval/... ./backend/mesh/... ./cmd/compile/...`.
+  - [x] `eval/types.go`: `MeshResult`, `MeshBody`.
+  - [x] `evalcmd.go`: the `mesh` op, its request fields (`subdivision`, `algorithm`) and usage row.
+  - [x] `_eval.py`: `Document.mesh`, `Mesh` and `MeshBody`; the wheel README's two rows.
+  - [x] `gofmt`; `go test ./eval/... ./backend/mesh/... ./cmd/compile/...`.
+- [ ] Task: A Python test of `Document.mesh`: not written, for the reason given in Phase 1.
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+  - [x] `go test ./eval/... ./backend/... ./cmd/...`: everything passes except
+    `eval/internal/boxsweep/shard2` (`TestBoundingBoxSoundness`) and `eval/internal/libflattest`
+    (`TestTextureStandInMatchesMean`), which fail with "worleyWall: noise tile not registered".
+    Both fail the same way on an untouched checkout of `main` (d1b27d7) linked against the same
+    native library, which was built from `release-0.1.2` and predates `main`'s `cellular.rs`.
+  - [ ] Coverage report and the owner's manual verification: not done.
 
 ---
 
