@@ -150,7 +150,8 @@ Comparison         = Terms ( ( ">=" | ">" | "<=>" | "<=" | "<" ) Terms )?
 Terms              = Term ( ( "+" | "-" ) Term )*
 Term               = Factor ( ( "*" | "/" | "%" ) Factor )*
 
-Factor             = "!"? "-"? Value ( "." Ident )? ( "[" Expression "]" )?
+Factor             = "!"? "-"? Value Modifier*
+Modifier           = "." Ident Arguments? | "[" Expression "]"
 
 Value              = ImportRef | Number | FunctionCall | QualifiedRef | Reference | AnonCall
                    | SubExpression | Collection | String | AnnotatedExpr

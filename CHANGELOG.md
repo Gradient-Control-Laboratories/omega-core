@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added generalized left-to-right postfix modifier chaining (`Modifiers []*Modifier`) in
+  `parser/internal/parser2`, supporting arbitrary `.member`, `.dp`/`.dtime`/`.d(var)`, and
+  `[index]` sequences such as `m[0][1]`, `pts[0].x`, `body.box[0]`, and `v.d(t)[0]`.
+
 ### Changed
 
 - Updated `cmd/serve/internal/compiler` to assemble GSL sources in a single pass using
