@@ -22,21 +22,20 @@ before Phase 4 builds on naga.
 
 ## Execution Metrics & Effort Tracking
 
-| Metric             | Elapsed Time |
-| :----------------- | :----------- |
-| **Spec Creation**  | `pending`    |
-| **Plan Creation**  | `pending`    |
-| **Implementation** | `pending`    |
-| **Code Review**    | `pending`    |
-| **Effort**         | `pending`    |
+| Metric             | Elapsed Time      |
+| :----------------- | :---------------- |
+| **Spec Creation**  | `not recoverable` |
+| **Plan Creation**  | `not recoverable` |
+| **Implementation** | `~100 mins`       |
+| **Code Review**    | `pending`         |
+| **Effort**         | `~520,000 tokens` |
 
 ---
 
 ## Phase 1: `volume` Takes `defs`
 
-- [ ] Task: Calculate and record active **Spec Creation** and **Plan Creation** times
-  - [ ] Compute active collaboration time from the transcript's turn deltas (10-minute idle cutoff
-    per turn) and record it, with the implementation start time, in this file.
+- [x] Task: Calculate and record active **Spec Creation** and **Plan Creation** times
+  - [x] Not recoverable from the compacted transcript; see the metrics task in Phase 5.
 - [x] Task: Write failing tests for `volume` with `defs` (Red Phase) dc9a5a0
   - [x] `eval/volume_defs_test.go`: a ball whose radius is a slider; with `defs` that double the
     radius the bracket contains eight times the closed-form volume, and without them it does not;
@@ -209,14 +208,23 @@ before Phase 4 builds on naga.
 ## Phase 5: Verification and Records
 
 - [ ] Task: Full verification
-  - [ ] `./tool/test.sh` and `./tool/check.sh`; no golden under `backend/wgsl` or `backend/mesh`
-    moves. A golden that moves stops the track for the owner's decision; none is regenerated.
-  - [ ] Build the wheel (`tool/build-wheel.sh`) and run its tests.
-- [ ] Task: Records
-  - [ ] `README.md` and the wheel's README: the two ops and `volume`'s `defs`, in the form the
-    existing ops are documented.
-  - [ ] `CHANGELOG.md`.
-  - [ ] `conductor/tracks.md`: register this track; add `index.md` and `metadata.json` beside
-    this file.
-- [ ] Task: Finalize Execution Metrics & Effort Tracking
+  - [x] `go test ./...` passes (98 s), `go vet ./...` is clean and `tool/analyze-deps -rules`
+    passes, against a `librender` built in the worktree. No golden moved and none was regenerated.
+  - [x] `gofmt -l` lists 30 files, none of them touched by this track, so `tool/check.sh` stops at
+    its first step on `main` as it stands. The scripts themselves were not run: `tool/test-go.sh`
+    appends to a history file outside the worktree and both rebuild the standard library's
+    protobufs.
+  - [ ] `tool/test-rust.sh` in full (only `cargo test -p render glsl` was run), the `omega_static`
+    link, and the wheel (`tool/build-wheel.sh`) with its tests: each is a build the owner starts.
+- [x] Task: Records
+  - [x] The wheel's README: the two ops, `volume`'s `defs`, the Python methods. The top-level
+    `README.md` does not document `gsl eval`'s ops and is unchanged.
+  - [x] `CHANGELOG.md`, under Unreleased.
+  - [x] `conductor/tracks.md`, `index.md` and `metadata.json`.
+- [x] Task: Finalize Execution Metrics & Effort Tracking
+  - [x] Recorded above. Implementation is active time from the first test file to the last
+    commit, by the transcript's turn deltas with a 10-minute idle cutoff, and includes the
+    measurement work. Spec and plan times could not be recovered: the transcript was compacted
+    and their turns no longer carry their own timestamps. Effort is output tokens over the same
+    span.
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)

@@ -5,5 +5,9 @@
   *Link: [index.md](./tracks/stdlib_embed_fs_and_protos_20261109/index.md)*
 
 ---
+- [ ] **Track: `gsl eval`: a Mesh on Request and a Shader for Any Host**
+  *Link: [index.md](./tracks/eval_mesh_shader_20261113/index.md)*
+
+---
 - [ ] **Track: Backlog**
   *Link: [index.md](./tracks/backlog_20261110/index.md)*

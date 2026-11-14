@@ -27,7 +27,9 @@ pip install omega-core
   - the occupied box;
   - points projected onto the surface;
   - a bracketed volume;
-  - pictures with sliders set or the part cut open.
+  - pictures with sliders set or the part cut open;
+  - a mesh of the part as a `.glb`, with what its triangles say of each body;
+  - the field as a shader library, in WGSL or GLSL ES 3.00, for a host that draws it itself.
 
 All lengths are millimetres.
 
