@@ -127,10 +127,9 @@ fn sdShape(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
   let gsl_partBox = gsl_boxDistance(p, gsl_partLo, gsl_partHi);
   var gsl_part = gsl_partBox;
   let block = builtin_gcl_closure_boxCentered(p, vec3<f32>(0.0, 0.0, -5.0), vec3<f32>(120.0, 120.0, 10.0), noiseTex);
-  let gsl_tmp_1 = p / 14.0;
-  let walls = (gsl_cellularScan(gsl_tmp_1, 1, noiseTex).f2 - gsl_cellularScan(gsl_tmp_1, 1, noiseTex).f1) * 14.0;
-  let curl = 0.6 * clamp(1.0 - walls / 5.0, 0.0, 1.0);
-  let crack = 3.0 * max(0.0, 1.0 - walls / 0.8);
+  let walls = gsl_cellularWallScan(p / 14.0, 1, noiseTex).wall * 14.0;
+  let curl = 0.6 * clamp(1.0 - walls / 2.5, 0.0, 1.0);
+  let crack = 3.0 * max(0.0, 1.0 - walls / 0.4);
   let top = curl - crack;
   if (gsl_vanishView.w <= 0.0 || gsl_partBox <= gsl_vanishView.w) {
     let gsl_partVanish = gsl_vanish(gsl_partLo, gsl_partHi);
@@ -145,10 +144,9 @@ fn sdShape(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
 
 fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_3d<f32>) -> vec4<f32> {
   if (gsl_colorIdx == 1u) {
-    let gsl_tmp_1 = p / 14.0;
-    let walls = (gsl_cellularScan(gsl_tmp_1, 1, noiseTex).f2 - gsl_cellularScan(gsl_tmp_1, 1, noiseTex).f1) * 14.0;
+    let walls = gsl_cellularWallScan(p / 14.0, 1, noiseTex).wall * 14.0;
     let plate = color_mixOklab(vec3<f32>(0.543, 0.378, 0.3336), vec3<f32>(0.7278824, 0.55116194, 0.50334877), texture_mask(p.z + 0.2 * noise_gradientLattice(p / 6.0, noiseTex), 0.2, 0.3, noiseTex), noiseTex);
-    return vec4<f32>(texture_paint(walls, 0.8, 0.5, vec3<f32>(0.047742378, -0.006692655, -0.0029882735), plate, noiseTex), 1.0);
+    return vec4<f32>(texture_paint(walls, 0.4, 0.25, vec3<f32>(0.047742378, -0.006692655, -0.0029882735), plate, noiseTex), 1.0);
   }
   return vec4<f32>(0.0, 0.0, 0.0, 0.0);
 }
@@ -212,6 +210,73 @@ fn gsl_cellularScan(q: vec3<f32>, oct: i32, noiseTex: texture_3d<f32>) -> gsl_Ce
   out.farFeature = secondCell + secondH;
   out.nearCell = bestCell;
   out.farCell = secondCell;
+  return out;
+}
+
+struct gsl_CellularWalls {
+  wall: f32,
+  wallFeature: vec3<f32>,
+}
+
+fn gsl_cellularWallScan(q: vec3<f32>, oct: i32, noiseTex: texture_3d<f32>) -> gsl_CellularWalls {
+  let pi = floor(q);
+  let pf = q - pi;
+  var d: array<vec3<f32>, 27>;
+  var h: array<vec3<f32>, 27>;
+  var best = 64.000000;
+  var a = 0;
+  for (var i = 0; i < 27; i = i + 1) {
+    let o = vec3<f32>(f32(i % 3) - 1.0, f32((i / 3) % 3) - 1.0, f32(i / 9) - 1.0);
+    h[i] = gsl_cellularHash(pi + o, oct, noiseTex);
+    d[i] = pf - (o + h[i]);
+    let d2 = dot(d[i], d[i]);
+    if (d2 < best) {
+      best = d2;
+      a = i;
+    }
+  }
+  let da = d[a];
+  var wall = 64.000000;
+  var wallCell = pi;
+  var wallH = vec3<f32>(0.0);
+  for (var i = 0; i < 27; i = i + 1) {
+    if (i == a) {
+      continue;
+    }
+    let ac = d[i] - da;
+    let w = (dot(d[i], d[i]) - best) / (2.0 * sqrt(dot(ac, ac)));
+    if (w < wall) {
+      wall = w;
+      wallCell = pi + vec3<f32>(f32(i % 3) - 1.0, f32((i / 3) % 3) - 1.0, f32(i / 9) - 1.0);
+      wallH = h[i];
+    }
+  }
+  // Only a point within F1 + 2*wall of q can own a nearer plane.
+  let reach = sqrt(best) + 2.0 * wall;
+  let lo = vec3<i32>(max(floor(pf - vec3<f32>(reach)), vec3<f32>(-2.0)));
+  let hi = vec3<i32>(min(floor(pf + vec3<f32>(reach)), vec3<f32>(2.0)));
+  for (var oz = lo.z; oz <= hi.z; oz = oz + 1) {
+    for (var oy = lo.y; oy <= hi.y; oy = oy + 1) {
+      for (var ox = lo.x; ox <= hi.x; ox = ox + 1) {
+        if (abs(ox) <= 1 && abs(oy) <= 1 && abs(oz) <= 1) {
+          continue;
+        }
+        let o = vec3<f32>(f32(ox), f32(oy), f32(oz));
+        let hc = gsl_cellularHash(pi + o, oct, noiseTex);
+        let dc = pf - (o + hc);
+        let ac = dc - da;
+        let w = (dot(dc, dc) - best) / (2.0 * sqrt(dot(ac, ac)));
+        if (w < wall) {
+          wall = w;
+          wallCell = pi + o;
+          wallH = hc;
+        }
+      }
+    }
+  }
+  var out: gsl_CellularWalls;
+  out.wall = wall;
+  out.wallFeature = wallCell + wallH;
   return out;
 }
 

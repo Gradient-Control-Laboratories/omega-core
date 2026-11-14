@@ -166,13 +166,12 @@ fn sdShape(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
 
 fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_3d<f32>) -> vec4<f32> {
   if (gsl_colorIdx == 1u) {
-    var gsl_simpleValue = vec3<f32>(0.2814541, 0.15560538, 0.1058671);
+    var gsl_simpleValue = vec3<f32>(0.24472311, 0.14130184, 0.101101294);
     if (gsl_simpleDetail > 0.0) {
-      let gsl_tmp_1 = p / 15.0;
-      let gsl_tmp_2 = texture_coverageLine((gsl_cellularScan(gsl_tmp_1, 1, noiseTex).f2 - gsl_cellularScan(gsl_tmp_1, 1, noiseTex).f1) * 15.0, 1.8, noiseTex);
-      gsl_simpleValue = mix(gsl_simpleValue, color_mixOklab(vec3<f32>(0.12, 0.09, 0.08), vec3<f32>(1.0, 0.4, 0.05), gsl_tmp_2, noiseTex), gsl_simpleDetail);
+      let gsl_tmp_1 = texture_coverageLine(gsl_cellularWallScan(p / 15.0, 1, noiseTex).wall * 15.0, 0.9, noiseTex);
+      gsl_simpleValue = mix(gsl_simpleValue, color_mixOklab(vec3<f32>(0.12, 0.09, 0.08), vec3<f32>(1.0, 0.4, 0.05), gsl_tmp_1, noiseTex), gsl_simpleDetail);
     }
-    var gsl_simpleValue_2 = vec3<f32>(0.2814541, 0.15560538, 0.1058671);
+    var gsl_simpleValue_2 = vec3<f32>(0.24472311, 0.14130184, 0.101101294);
     if (gsl_simpleDetail > 0.0) {
       gsl_simpleValue_2 = mix(gsl_simpleValue_2, gsl_simpleValue, gsl_simpleDetail);
     }
@@ -183,14 +182,13 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_
 }
 fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, noiseTex: texture_3d<f32>) -> gsl_material {
   if (gsl_materialIdx == 1u) {
-    var gsl_simpleValue_3 = mat4x4<f32>(vec4<f32>(0.8164, 0.0, 1.5, 0.0), vec4<f32>(0.209, 0.0836, 0.01045, 0.418), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    var gsl_simpleValue_3 = mat4x4<f32>(vec4<f32>(0.8348, 0.0, 1.5, 0.0), vec4<f32>(0.163, 0.0652, 0.00815, 0.326), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     if (gsl_simpleDetail > 0.0) {
-      let gsl_tmp_1 = p / 15.0;
-      let gsl_tmp_2 = texture_coverageLine((gsl_cellularScan(gsl_tmp_1, 1, noiseTex).f2 - gsl_cellularScan(gsl_tmp_1, 1, noiseTex).f1) * 15.0, 1.8, noiseTex);
-      let gsl_simpleFull = material_blend(mat4x4<f32>(vec4<f32>(0.9, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), material_glowing(vec3<f32>(1.0, 0.4, 0.05), 4.0 * (noise_gradientLattice4(vec4<f32>(p.x / 30.0, p.y / 30.0, p.z / 30.0, time / 5.0), noiseTex) * 0.5 + 0.5), noiseTex), gsl_tmp_2, noiseTex);
+      let gsl_tmp_1 = texture_coverageLine(gsl_cellularWallScan(p / 15.0, 1, noiseTex).wall * 15.0, 0.9, noiseTex);
+      let gsl_simpleFull = material_blend(mat4x4<f32>(vec4<f32>(0.9, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), material_glowing(vec3<f32>(1.0, 0.4, 0.05), 4.0 * (noise_gradientLattice4(vec4<f32>(p.x / 30.0, p.y / 30.0, p.z / 30.0, time / 5.0), noiseTex) * 0.5 + 0.5), noiseTex), gsl_tmp_1, noiseTex);
       gsl_simpleValue_3 = mat4x4<f32>(mix(gsl_simpleValue_3[0], gsl_simpleFull[0], gsl_simpleDetail), mix(gsl_simpleValue_3[1], gsl_simpleFull[1], gsl_simpleDetail), mix(gsl_simpleValue_3[2], gsl_simpleFull[2], gsl_simpleDetail), mix(gsl_simpleValue_3[3], gsl_simpleFull[3], gsl_simpleDetail));
     }
-    var gsl_simpleValue_4 = mat4x4<f32>(vec4<f32>(0.8164, 0.0, 1.5, 0.0), vec4<f32>(0.209, 0.0836, 0.01045, 0.418), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    var gsl_simpleValue_4 = mat4x4<f32>(vec4<f32>(0.8348, 0.0, 1.5, 0.0), vec4<f32>(0.163, 0.0652, 0.00815, 0.326), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     if (gsl_simpleDetail > 0.0) {
       let gsl_simpleFull_2 = material_withDisplacement(gsl_simpleValue_3, 0.1 * noise_gradientLattice(p / 7.5, noiseTex) * 7.5 / 4.0 * (1.0 - texture_mask(gsl_pw, 2.8125, 0.9375, noiseTex)), noiseTex);
       gsl_simpleValue_4 = mat4x4<f32>(mix(gsl_simpleValue_4[0], gsl_simpleFull_2[0], gsl_simpleDetail), mix(gsl_simpleValue_4[1], gsl_simpleFull_2[1], gsl_simpleDetail), mix(gsl_simpleValue_4[2], gsl_simpleFull_2[2], gsl_simpleDetail), mix(gsl_simpleValue_4[3], gsl_simpleFull_2[3], gsl_simpleDetail));
@@ -256,6 +254,73 @@ fn gsl_cellularScan(q: vec3<f32>, oct: i32, noiseTex: texture_3d<f32>) -> gsl_Ce
   out.farFeature = secondCell + secondH;
   out.nearCell = bestCell;
   out.farCell = secondCell;
+  return out;
+}
+
+struct gsl_CellularWalls {
+  wall: f32,
+  wallFeature: vec3<f32>,
+}
+
+fn gsl_cellularWallScan(q: vec3<f32>, oct: i32, noiseTex: texture_3d<f32>) -> gsl_CellularWalls {
+  let pi = floor(q);
+  let pf = q - pi;
+  var d: array<vec3<f32>, 27>;
+  var h: array<vec3<f32>, 27>;
+  var best = 64.000000;
+  var a = 0;
+  for (var i = 0; i < 27; i = i + 1) {
+    let o = vec3<f32>(f32(i % 3) - 1.0, f32((i / 3) % 3) - 1.0, f32(i / 9) - 1.0);
+    h[i] = gsl_cellularHash(pi + o, oct, noiseTex);
+    d[i] = pf - (o + h[i]);
+    let d2 = dot(d[i], d[i]);
+    if (d2 < best) {
+      best = d2;
+      a = i;
+    }
+  }
+  let da = d[a];
+  var wall = 64.000000;
+  var wallCell = pi;
+  var wallH = vec3<f32>(0.0);
+  for (var i = 0; i < 27; i = i + 1) {
+    if (i == a) {
+      continue;
+    }
+    let ac = d[i] - da;
+    let w = (dot(d[i], d[i]) - best) / (2.0 * sqrt(dot(ac, ac)));
+    if (w < wall) {
+      wall = w;
+      wallCell = pi + vec3<f32>(f32(i % 3) - 1.0, f32((i / 3) % 3) - 1.0, f32(i / 9) - 1.0);
+      wallH = h[i];
+    }
+  }
+  // Only a point within F1 + 2*wall of q can own a nearer plane.
+  let reach = sqrt(best) + 2.0 * wall;
+  let lo = vec3<i32>(max(floor(pf - vec3<f32>(reach)), vec3<f32>(-2.0)));
+  let hi = vec3<i32>(min(floor(pf + vec3<f32>(reach)), vec3<f32>(2.0)));
+  for (var oz = lo.z; oz <= hi.z; oz = oz + 1) {
+    for (var oy = lo.y; oy <= hi.y; oy = oy + 1) {
+      for (var ox = lo.x; ox <= hi.x; ox = ox + 1) {
+        if (abs(ox) <= 1 && abs(oy) <= 1 && abs(oz) <= 1) {
+          continue;
+        }
+        let o = vec3<f32>(f32(ox), f32(oy), f32(oz));
+        let hc = gsl_cellularHash(pi + o, oct, noiseTex);
+        let dc = pf - (o + hc);
+        let ac = dc - da;
+        let w = (dot(dc, dc) - best) / (2.0 * sqrt(dot(ac, ac)));
+        if (w < wall) {
+          wall = w;
+          wallCell = pi + o;
+          wallH = hc;
+        }
+      }
+    }
+  }
+  var out: gsl_CellularWalls;
+  out.wall = wall;
+  out.wallFeature = wallCell + wallH;
   return out;
 }
 

@@ -18,9 +18,14 @@ predictably:
   compiler hot-path optimizations, diagnostics enhancements, viewer capabilities, and developer
   tooling tasks that can either spin off focused tracks or execute as self-contained single-phase
   tracks.
-- **Small Targeted Cleanups (`S1`–`S19`):** Localized refactors, invariant tightening, dead-code
+- **Small Targeted Cleanups (`S1`–`S21`):** Localized refactors, invariant tightening, dead-code
   removals, public/internal API deduplication, and documentation/comment hygiene tasks suitable for
   direct execution or small cleanup batches.
+
+Items can generally be scheduled independently across tiers, except `L10`
+(the hand-written byte scanner and direct-to-AST parser in `parser/internal/parser2`),
+which must be scheduled last after all other GSL language changes, syntax retirements,
+and compiler/library backlog items have been completed.
 
 ## 2. Core Engineering Principles
 
@@ -199,6 +204,14 @@ defined in [README.md](../../../README.md):
       collection formatting.
 
 - [ ] **L10. Hand-Written Byte Scanner & Direct-to-AST Parser (`parser/internal/parser2`)**
+  - **Scheduling Prerequisite:** While replacing the Participle lexer and parser is a worthwhile
+    compilation-latency and allocation improvement, `L10` must be scheduled last —
+    after all other GSL language changes, syntax retirements, and compiler/library backlog items
+    have been completed — so that grammar rules, `@` annotations (`L1`, `M1`),
+    asset imports (`L2`), postfix modifiers (`S1`), numeric and color literals (`S15`),
+    legacy syntax removals (`M2`–`M4`, `S2`–`S4`, `S13`), parser diagnostics (`M5`, `S20`),
+    and `program` AST invariants stabilize in `parser/internal/parser2`
+    before replacing the declarative Participle grammar and regex lexer.
   - **Current State:** `parser/internal/parser2/parser.go` drives lexing through regex-based
     `lexer.MustSimple` (8 compiled regular expressions) and builds grammar trees via
     reflection-heavy `participle.MustBuild[PackageFile]` with `participle.UseLookahead(3)` plus
@@ -460,7 +473,7 @@ defined in [README.md](../../../README.md):
     instead of invoking `audio.ExtractAudio` and assembling twice, then delete `audio.ExtractAudio`
     and `backend/audio/internal/extract/`.
 
-- [ ] **S6. Enforce `tool/analyze-deps -rules` in `tool/check.sh` & Remove Dead `internal/pkg`**
+- [x] **S6. Enforce `tool/analyze-deps -rules` in `tool/check.sh` & Remove Dead `internal/pkg`**
   - Resolve the 5 active `tool/analyze-deps -rules` layer/pass-separation violations
     (`internal/assembler/topofold/topofold.go`, `program/range_test.go`,
     `program/returns_traversal_test.go`, and `internal/lower/lower_test.go`), delete the unused
@@ -651,6 +664,21 @@ defined in [README.md](../../../README.md):
       `internal/assembler/property/parts.go` and `carry.go`, `internal/assembler/inline/inline.go`
       and `substitute.go`, `internal/eval/const.go`, and `backend/wgsl/render.go`), document
       upstream non-nil AST invariants, and update unit test AST fixtures to satisfy them.
+
+- [ ] **S20. Add `Diagnostics` to `parser.Result` & Warn on Legacy Screen Size Comments**
+  - Add `Diagnostics []program.Diagnostic` to `parser.Result` (`parser/parser.go`) and propagate
+    parser diagnostics from `parser/internal/parser2` through `parser.ParsePackage` and
+    `assembler.Assemble` (`assembler/assemble.go`, alongside existing `Diagnostics`).
+  - When `parser/internal/parser2/legacy_scene.go` (`fromLegacyComments`) parses legacy
+    `// Scene Size:` / `// Scene Grid:` header comments into a `@screen` annotation (`*program.Scene`),
+    emit a `program.SeverityWarning` diagnostic at the legacy comment location advising the user to
+    use `@screen` instead and run `gsl fix` to update the source (supporting `S2`).
+
+- [ ] **S21. Display Compiler & Parser Warnings in the Example Viewer When the Code Panel Is Open**
+  - Surface `SeverityWarning` diagnostics from `cmd/serve/internal/compiler` (`CompileResponse`)
+    into `examples/viewer/` (`examples/viewer/main.js` and `examples/viewer/editor/editor.js` via
+    `setEditorDiagnostics` or a dedicated code-panel banner/gutter) so warnings are visible when the
+    code editor panel is open without blocking rendering.
 
 ## 7. Acceptance Criteria
 

@@ -919,12 +919,14 @@ func NoiseChannelTree(channel, octaves uint32) TreeIndex {
 // numbering is part of the contract between the Go convert layer, the Rust
 // oracles and the WGSL emitter.
 const (
-	WorleyF1          uint32 = 0
-	WorleyF2          uint32 = 1
-	WorleyFeatureX    uint32 = 2
-	WorleyNearCellX   uint32 = 5
-	WorleyFarCellX    uint32 = 8
-	WorleyFarFeatureX uint32 = 11
+	WorleyF1           uint32 = 0
+	WorleyF2           uint32 = 1
+	WorleyFeatureX     uint32 = 2
+	WorleyNearCellX    uint32 = 5
+	WorleyFarCellX     uint32 = 8
+	WorleyFarFeatureX  uint32 = 11
+	WorleyWallFeatureX uint32 = 14
+	WorleyWall         uint32 = 17
 	// WorleyAxes is how many consecutive components a point-valued one spans.
 	WorleyAxes uint32 = 3
 )

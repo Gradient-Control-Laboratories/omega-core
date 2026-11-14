@@ -3,8 +3,8 @@ package codegen
 import (
 	"fmt"
 
-	noise "gradientcontrol.com/omega/core/program/noise"
 	"gradientcontrol.com/omega/core/program"
+	noise "gradientcontrol.com/omega/core/program/noise"
 )
 
 // Cellular (Worley) noise, emitted as ONE helper with a real WGSL `for` loop.
@@ -27,8 +27,9 @@ import (
 // cellularField names the struct field each cellular builtin reads, and whether
 // that field is a vec3. Kept beside the WGSL source so the two cannot drift.
 type cellularField struct {
-	field string
-	vec3  bool
+	field  string
+	vec3   bool
+	helper string
 }
 
 // The scan's own constants, named so the emitted shader holds no bare numbers.
@@ -116,12 +117,106 @@ fn gsl_cellularScan(q: vec3<f32>, oct: i32, noiseTex: texture_3d<f32>) -> gsl_Ce
 	tileWrapMask, tileSpan, unreachableDistance*unreachableDistance,
 	candidates, neighboursPerAxis, neighbourPlane, neighbourCentre)
 
-// cellularFields is the builtin-to-field map the emitter dispatches on.
+// The wall pass's window: how far from floor(q), per axis, it may reach.
+// Must match tape-core's WALL_REACH.
+const wallReach = 2
+
+// cellularWallWGSL is the exact distance to the nearest Voronoi wall, iq's two
+// passes (https://iquilezles.org/articles/voronoilines/). It is a snippet of its
+// own, added only when a shader reads it, so shaders that use only the F1
+// family come out exactly as before. It calls gsl_cellularHash, so it is always
+// emitted after cellularWGSL.
+//
+// Term for term the arithmetic of tape-core's walls_uncached, which explains
+// why it is exact: pass 1 is the same 27-cell scan, keeping every candidate;
+// pass 2 takes the plane between the nearest point and each other candidate,
+// (|q-c|^2 - |q-a|^2) / (2|a-c|), first over the 27 and then over the cells of
+// the window that the radius F1 + 2*wall still reaches. sqrt(dot) rather than
+// length(), to match the Rust.
+var cellularWallWGSL = fmt.Sprintf(`struct gsl_CellularWalls {
+  wall: f32,
+  wallFeature: vec3<f32>,
+}
+
+fn gsl_cellularWallScan(q: vec3<f32>, oct: i32, noiseTex: texture_3d<f32>) -> gsl_CellularWalls {
+  let pi = floor(q);
+  let pf = q - pi;
+  var d: array<vec3<f32>, %[2]d>;
+  var h: array<vec3<f32>, %[2]d>;
+  var best = %[1]f;
+  var a = 0;
+  for (var i = 0; i < %[2]d; i = i + 1) {
+    let o = vec3<f32>(f32(i %% %[3]d) - %[5]d.0, f32((i / %[3]d) %% %[3]d) - %[5]d.0, f32(i / %[4]d) - %[5]d.0);
+    h[i] = gsl_cellularHash(pi + o, oct, noiseTex);
+    d[i] = pf - (o + h[i]);
+    let d2 = dot(d[i], d[i]);
+    if (d2 < best) {
+      best = d2;
+      a = i;
+    }
+  }
+  let da = d[a];
+  var wall = %[1]f;
+  var wallCell = pi;
+  var wallH = vec3<f32>(0.0);
+  for (var i = 0; i < %[2]d; i = i + 1) {
+    if (i == a) {
+      continue;
+    }
+    let ac = d[i] - da;
+    let w = (dot(d[i], d[i]) - best) / (2.0 * sqrt(dot(ac, ac)));
+    if (w < wall) {
+      wall = w;
+      wallCell = pi + vec3<f32>(f32(i %% %[3]d) - %[5]d.0, f32((i / %[3]d) %% %[3]d) - %[5]d.0, f32(i / %[4]d) - %[5]d.0);
+      wallH = h[i];
+    }
+  }
+  // Only a point within F1 + 2*wall of q can own a nearer plane.
+  let reach = sqrt(best) + 2.0 * wall;
+  let lo = vec3<i32>(max(floor(pf - vec3<f32>(reach)), vec3<f32>(-%[6]d.0)));
+  let hi = vec3<i32>(min(floor(pf + vec3<f32>(reach)), vec3<f32>(%[6]d.0)));
+  for (var oz = lo.z; oz <= hi.z; oz = oz + 1) {
+    for (var oy = lo.y; oy <= hi.y; oy = oy + 1) {
+      for (var ox = lo.x; ox <= hi.x; ox = ox + 1) {
+        if (abs(ox) <= %[5]d && abs(oy) <= %[5]d && abs(oz) <= %[5]d) {
+          continue;
+        }
+        let o = vec3<f32>(f32(ox), f32(oy), f32(oz));
+        let hc = gsl_cellularHash(pi + o, oct, noiseTex);
+        let dc = pf - (o + hc);
+        let ac = dc - da;
+        let w = (dot(dc, dc) - best) / (2.0 * sqrt(dot(ac, ac)));
+        if (w < wall) {
+          wall = w;
+          wallCell = pi + o;
+          wallH = hc;
+        }
+      }
+    }
+  }
+  var out: gsl_CellularWalls;
+  out.wall = wall;
+  out.wallFeature = wallCell + wallH;
+  return out;
+}`,
+	unreachableDistance*unreachableDistance, candidates, neighboursPerAxis, neighbourPlane,
+	neighbourCentre, wallReach)
+
+// The helpers a cellular builtin may read from.
+const (
+	cellularScanHelper = "gsl_cellularScan"
+	cellularWallHelper = "gsl_cellularWallScan"
+)
+
+// cellularFields is the builtin-to-field map the emitter dispatches on. The
+// helper is the F1 scan unless named.
 var cellularFields = map[string]cellularField{
-	program.WorleyF1:         {field: "f1"},
-	program.WorleyF2:         {field: "f2"},
-	program.WorleyFeature:    {field: "feature", vec3: true},
-	program.WorleyFarFeature: {field: "farFeature", vec3: true},
-	program.WorleyNearCell:   {field: "nearCell", vec3: true},
-	program.WorleyFarCell:    {field: "farCell", vec3: true},
+	program.WorleyF1:          {field: "f1"},
+	program.WorleyF2:          {field: "f2"},
+	program.WorleyFeature:     {field: "feature", vec3: true},
+	program.WorleyFarFeature:  {field: "farFeature", vec3: true},
+	program.WorleyNearCell:    {field: "nearCell", vec3: true},
+	program.WorleyFarCell:     {field: "farCell", vec3: true},
+	program.WorleyWall:        {field: "wall", helper: cellularWallHelper},
+	program.WorleyWallFeature: {field: "wallFeature", vec3: true, helper: cellularWallHelper},
 }

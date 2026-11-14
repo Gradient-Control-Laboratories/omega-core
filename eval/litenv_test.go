@@ -8,7 +8,7 @@ import (
 	"math/rand/v2"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/fidget/environment"
+	"gradientcontrol.com/omega/core/eval/internal/environment"
 )
 
 // litEnvSphere draws a uniform direction on the sphere.

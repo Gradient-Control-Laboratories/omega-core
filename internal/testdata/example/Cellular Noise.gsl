@@ -1,25 +1,30 @@
 // Scene Size: 20
 // Scene Grid: 10
-// Cellular (Worley) noise from the noise library, three ways side by side.
+// Cellular (Worley) noise from the noise library, four ways side by side.
 // Each ball samples the same cells, so you can compare the measures directly:
-//   left   — F1: distance to the nearest feature point (blobs around points)
-//   middle — F2: distance to the second-nearest point (larger, merged blobs)
-//   right  — F2 - F1: the Voronoi-edge field (thin walls — an open-cell foam)
+//   1st — F1: distance to the nearest feature point (blobs around points)
+//   2nd — F2: distance to the second-nearest point (larger, merged blobs)
+//   3rd — F2 - F1: the Voronoi-edge field (thin walls — an open-cell foam),
+//         whose walls thicken where the points are far apart
+//   4th — the exact distance to the nearest wall: the same foam, its walls
+//         one thickness everywhere
 //
 // Backed by a baked noise tile sampled identically in the WGSL preview and the
 // Fidget mesh, so the preview matches the exported mesh.
 
 cell = 5;     // lattice cell size
 r = 7;        // display-ball radius
-gap = 18;     // spacing between the three balls
+gap = 18;     // spacing between the balls
 
 // Each field is a noise measure clipped to a ball at the origin (omega.sphere).
 // Naming them lets remap re-derive each under a shifted p to slide it sideways.
 f1    = add(noise.cellular(cell) - 3,        sphere(r));
 f2    = add(-(noise.cellularF2(cell) - 4),   sphere(r));
 edges = max(noise.cellularEdges(cell) - 0.6, sphere(r));
+walls = max(noise.cellularWalls(cell) - 0.3, sphere(r));
 
 return
-  remap(f1, [p.x + gap, p.y, p.z]),       // F1 on the left
-  f2,                                     // F2 in the middle
-  remap(edges, [p.x - gap, p.y, p.z]);    // difference on the right
+  remap(f1, [p.x + 1.5 * gap, p.y, p.z]),      // F1 on the left
+  remap(f2, [p.x + 0.5 * gap, p.y, p.z]),      // F2
+  remap(edges, [p.x - 0.5 * gap, p.y, p.z]),   // F2 - F1
+  remap(walls, [p.x - 1.5 * gap, p.y, p.z]);   // exact walls on the right

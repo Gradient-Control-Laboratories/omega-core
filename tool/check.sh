@@ -15,6 +15,10 @@ if [ -n "${UNFORMATTED}" ]; then
 fi
 echo "  ✓ gofmt passed."
 
+echo "==> Running architectural dependency check..."
+(cd "${ROOT_DIR}" && go run ./tool/analyze-deps -rules)
+echo "  ✓ Architectural dependency check passed."
+
 echo "==> Running go vet..."
 (cd "${ROOT_DIR}" && go vet ./...)
 echo "  ✓ go vet passed."

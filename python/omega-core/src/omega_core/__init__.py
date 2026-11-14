@@ -17,7 +17,7 @@ it returns)::
 
 Teaching a model GSL: :func:`skill` is the GSL reference, written for a model to read before it writes GSL.
 
-Finding the program: :func:`executable` is the path to ``gsl``, and :func:`version` the release (``"0.1.1"``).
+Finding the program: :func:`executable` is the path to ``gsl``, and :func:`version` the release (``"0.1.2"``).
 """
 
 from __future__ import annotations
@@ -47,7 +47,7 @@ def executable(name: str = "gsl") -> Path:
 
 
 def version() -> str:
-    """The omega-core release bundled ("0.1.1"), without running anything."""
+    """The omega-core release bundled ("0.1.2"), without running anything."""
     from importlib.metadata import version as installed
 
     return installed("omega-core")

@@ -68,3 +68,71 @@ func TestAnalyzePackage_BlockedByMultipleSubsystems(t *testing.T) {
 		t.Errorf("expected 2 subsystems, got %d", len(report.Subsystems))
 	}
 }
+
+func TestAuditAll_SkipsNestedInternalAndRecognizesEvalSubsystem(t *testing.T) {
+	g := &graph.Graph{
+		ModulePrefix: "gradientcontrol.com/omega/core",
+		Packages: map[string]*graph.PackageNode{
+			"internal/fidget/internal/gpuparity": {
+				ImportPath: "internal/fidget/internal/gpuparity",
+			},
+			"internal/env": {
+				ImportPath: "internal/env",
+				ImportedBy: []graph.ImportEdge{
+					{FromPkg: "eval", ToPkg: "internal/env"},
+				},
+			},
+			"eval": {ImportPath: "eval"},
+		},
+	}
+
+	reports := scoping.AuditAll(g)
+	if len(reports) != 1 {
+		t.Fatalf("expected 1 root internal report (skipping nested internal/), got %d", len(reports))
+	}
+	if reports[0].Pkg != "internal/env" || !reports[0].CanNarrow || reports[0].SuggestedDest != "eval/internal/env" {
+		t.Errorf("unexpected report: %+v", reports[0])
+	}
+}
+
+func TestSubsystemForScoping(t *testing.T) {
+	cases := map[string]string{
+		"eval":                        "eval",
+		"eval/joints":                 "eval",
+		"cmd":                         "cmd",
+		"cmd/gsl/internal/cli":        "cmd",
+		"tool":                        "tool",
+		"tool/analyze-deps":           "tool",
+		"internal/assembler/topofold": "assembler",
+		"internal/fidget/convert":     "internal",
+	}
+	for pkg, want := range cases {
+		if got := scoping.SubsystemForScoping(pkg); got != want {
+			t.Errorf("SubsystemForScoping(%q) = %q, want %q", pkg, got, want)
+		}
+	}
+}
+
+func TestAnalyzePackage_KeepHereDirectivePinsPackage(t *testing.T) {
+	g := &graph.Graph{
+		ModulePrefix: "gradientcontrol.com/omega/core",
+		Packages: map[string]*graph.PackageNode{
+			"internal/version": {
+				ImportPath:     "internal/version",
+				KeepHereReason: "pyproject.toml and wheels.yml reference this path",
+				ImportedBy: []graph.ImportEdge{
+					{FromPkg: "cmd/gsl/internal/cli", ToPkg: "internal/version"},
+				},
+			},
+			"cmd/gsl/internal/cli": {ImportPath: "cmd/gsl/internal/cli"},
+		},
+	}
+
+	report := scoping.AnalyzePackage(g, "internal/version")
+	if report.CanNarrow {
+		t.Fatalf("expected internal/version to remain pinned, got CanNarrow=true (%+v)", report)
+	}
+	if report.PinnedReason != "pyproject.toml and wheels.yml reference this path" {
+		t.Errorf("unexpected PinnedReason: %q", report.PinnedReason)
+	}
+}

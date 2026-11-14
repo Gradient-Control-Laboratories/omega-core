@@ -6,8 +6,10 @@ import (
 
 	"gradientcontrol.com/omega/core/internal/collect"
 	"gradientcontrol.com/omega/core/internal/eval"
+	"gradientcontrol.com/omega/core/internal/link"
 	"gradientcontrol.com/omega/core/internal/source"
 	"gradientcontrol.com/omega/core/internal/test/assert"
+	"gradientcontrol.com/omega/core/internal/types"
 	parserlib "gradientcontrol.com/omega/core/parser"
 	"gradientcontrol.com/omega/core/program"
 )
@@ -192,4 +194,52 @@ return glyphA();
 	exprOp, ok := fnRet.T.(*program.Operand_Expression)
 	assert.True(t, ok)
 	assert.Equal(t, exprOp.Expression.Operation, program.Operation_ADD)
+}
+
+func TestEvalFold_ColorAndMaterialReturns(t *testing.T) {
+	loc := &program.Location{Line: 1, Column: 1}
+	colorExpr := program.NewExpression(
+		program.Operation_ADD,
+		[]*program.Operand{
+			program.NewValue(1.5, loc, loc),
+			program.NewValue(2.5, loc, loc),
+		},
+		loc,
+		loc,
+	)
+	matExpr := program.NewExpression(
+		program.Operation_MUL,
+		[]*program.Operand{
+			program.NewValue(3.0, loc, loc),
+			program.NewValue(4.0, loc, loc),
+		},
+		loc,
+		loc,
+	)
+
+	prog := &program.Program{
+		Primary: &program.Package{
+			Path: "main",
+			Files: []*program.PackageFile{{
+				Path:            "main.gsl",
+				Returns:         []*program.Operand{program.NewValue(0.0, loc, loc)},
+				ColorReturns:    []*program.Operand{colorExpr},
+				MaterialReturns: []*program.Operand{matExpr},
+			}},
+		},
+		Dependencies: []*program.Package{{
+			Path: "builtin",
+		}},
+	}
+
+	assert.NoError(t, link.References(prog, nil, nil))
+	assert.NoError(t, types.Analyze(prog))
+
+	mod, err := eval.Fold(prog, nil)
+	assert.NoError(t, err)
+	assert.True(t, mod)
+
+	file := prog.Primary.Files[0]
+	assert.Equal(t, []float64{4.0}, file.ColorReturns[0].ConstValues)
+	assert.Equal(t, []float64{12.0}, file.MaterialReturns[0].ConstValues)
 }

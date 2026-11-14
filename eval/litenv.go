@@ -22,7 +22,7 @@ package eval
 import (
 	"math"
 
-	"gradientcontrol.com/omega/core/internal/fidget/environment"
+	"gradientcontrol.com/omega/core/eval/internal/environment"
 )
 
 // litEnv is an analytic environment, turned for one camera.

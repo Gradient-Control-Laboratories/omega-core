@@ -158,7 +158,8 @@ func (pa *PackageAnalyzer) inferBuiltinCall(name string, args []*program.Operand
 		return []*program.Type{program.NewListType(3, program.NewScalarType())}, nil
 
 	case program.WorleyF1, program.WorleyF2, program.WorleyFeature,
-		program.WorleyFarFeature, program.WorleyNearCell, program.WorleyFarCell:
+		program.WorleyFarFeature, program.WorleyNearCell, program.WorleyFarCell,
+		program.WorleyWall, program.WorleyWallFeature:
 		// q is a 3-component lattice coordinate. cellularF1 returns the
 		// scalar distance; cellularFeature returns the feature point, a vec3.
 		if !argTypes[0].IsList() || argTypes[0].Size != 3 {
@@ -171,7 +172,7 @@ func (pa *PackageAnalyzer) inferBuiltinCall(name string, args []*program.Operand
 		}
 		switch name {
 		case program.WorleyFeature, program.WorleyFarFeature,
-			program.WorleyNearCell, program.WorleyFarCell:
+			program.WorleyNearCell, program.WorleyFarCell, program.WorleyWallFeature:
 			return []*program.Type{program.NewListType(3, program.NewScalarType())}, nil
 		}
 		return []*program.Type{program.NewScalarType()}, nil

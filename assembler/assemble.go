@@ -265,9 +265,15 @@ func assembleWithOptions(primarySources []string, srcMgr source.Manager, o *opti
 		if si, ok := o.geometryResolver.(interface{ SetImportSlots([]meshslots.Import) }); ok {
 			si.SetImportSlots(importSlots)
 		}
-		prog, err = internaltopofold.FoldProgram(prog, o.geometryResolver)
-		if err != nil {
-			return nil, err
+		if internaltopofold.HasTopoCall(prog) {
+			if !o.enableSlotFold {
+				if _, err = eval.Fold(prog, newAssemblerParamChecker(prog.Primary)); err != nil {
+					return nil, err
+				}
+			}
+			if err = internaltopofold.FoldProgram(prog, importSlots, o.geometryResolver); err != nil {
+				return nil, err
+			}
 		}
 	}
 

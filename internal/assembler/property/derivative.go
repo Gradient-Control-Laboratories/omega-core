@@ -493,8 +493,25 @@ func (dd *derivDomain) Builtin(name string, args []Value) (Value, error) {
 		}
 		feat := call(point, append([]*program.Operand{v.primal}, rest...)...)
 		return dual{f1, div(call("dot", sub(v.primal, feat), v.tangent), nonZero(f1))}, nil
+	case program.WorleyWall:
+		// The distance to the plane between the nearest feature point a and
+		// the wall feature c, measured from a's side: its gradient is that
+		// plane's unit normal, (a - c)/|a - c|. Both points are piecewise
+		// constant, as for F1, so the normal is the whole derivative.
+		v := ds[0]
+		rest := make([]*program.Operand, 0, len(ds)-1)
+		for _, d := range ds[1:] {
+			rest = append(rest, d.primal)
+		}
+		args := append([]*program.Operand{v.primal}, rest...)
+		wall := call(name, args...)
+		if isZeroTangent(v.tangent) {
+			return dual{wall, num(0)}, nil
+		}
+		normal := sub(call(program.WorleyFeature, args...), call(program.WorleyWallFeature, args...))
+		return dual{wall, div(call("dot", normal, v.tangent), call("length", normal))}, nil
 	case program.WorleyFeature, program.WorleyFarFeature,
-		program.WorleyNearCell, program.WorleyFarCell:
+		program.WorleyNearCell, program.WorleyFarCell, program.WorleyWallFeature:
 		// The winning cells and their feature points: piecewise constant in q —
 		// they change only as q crosses a Voronoi wall, where the distances are
 		// not differentiable anyway — so a zero tangent, exactly like

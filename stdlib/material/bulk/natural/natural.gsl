@@ -47,7 +47,7 @@ water(@range(1, 50) rippleScale, rippleTimeScale, @range(0.02, 1) rippleAmount) 
 }
 
 /// lava(crackScale, crustColor, glowColor, glowStrength, flowTimeScale): a
-/// dark rocky crust in plates about `crackScale` mm across (noise.cellularEdges
+/// dark rocky crust in plates about `crackScale` mm across (noise.cellularWalls
 /// crack network) with glowing molten cracks (material.glowing) — primarily a
 /// material/color effect, no
 /// geometric relief by design. glowStrength is modulated by a slow
@@ -56,12 +56,13 @@ water(@range(1, 50) rippleScale, rippleTimeScale, @range(0.02, 1) rippleAmount) 
 /// seams that glow by a Planck fit, see animated.lavaLake. Returns material,
 /// color.
 lava(@range(2, 60) crackScale, @color crustColor, @color glowColor, glowStrength, flowTimeScale) {
-  cracks = noise.cellularEdges(crackScale);
+  cracks = noise.cellularWalls(crackScale);
   flow = noise.gradient4(crackScale * 2.0, flowTimeScale) * 0.5 + 0.5;
   crustMat = material.make(0.9, 0, 1.5);
   glowMat = material.glowing(glowColor, glowStrength * flow);
-  // The cracks as lines 0.12 of a cell wide, keeping their share of a pixel.
-  crack = texture.coverageLine(cracks, crackScale * 0.12);
+  // The cracks as lines 0.06 of a cell wide, keeping their share of a pixel.
+  // cracks is the exact distance to the wall, so every crack is that wide.
+  crack = texture.coverageLine(cracks, crackScale * 0.06);
   mat = material.blend(crustMat, glowMat, crack);
   col = color.mixOklab(crustColor, glowColor, crack);
   mat.simple = lavaStandMaterial(glowColor, glowStrength);
@@ -69,14 +70,14 @@ lava(@range(2, 60) crackScale, @color crustColor, @color glowColor, glowStrength
   return mat, col;
 }
 
-// lava's stand-ins: its cracks cover 20.9% of the crust (measured), glowing
-// at half their strength on average.
+// lava's stand-ins: its cracks cover 16.3% of the crust (measured over 60000
+// random points), glowing at half their strength on average.
 lavaStandMaterial(glowColor, glowStrength) {
-  return material.blend(material.make(0.9, 0, 1.5), material.glowing(glowColor, 0.5 * glowStrength), 0.209);
+  return material.blend(material.make(0.9, 0, 1.5), material.glowing(glowColor, 0.5 * glowStrength), 0.163);
 }
 
 lavaStandColor(crustColor, glowColor) {
-  return color.mixOklab(crustColor, glowColor, 0.209);
+  return color.mixOklab(crustColor, glowColor, 0.163);
 }
 
 /// lava(crackScale, crustColor, glowColor, glowStrength, flowTimeScale,

@@ -17,6 +17,13 @@ const WorleyFarFeature = "worleyFarFeature"
 const WorleyNearCell = "worleyNearCell"
 const WorleyFarCell = "worleyFarCell"
 
+// The exact distance to the nearest Voronoi wall (iq's two-pass bisector scan;
+// https://iquilezles.org/articles/voronoilines/), and the feature point whose
+// wall it is. WorleyWallFeature carries WorleyWall's derivative together with
+// WorleyFeature: the wall's normal is the unit vector from one to the other.
+const WorleyWall = "worleyWall"
+const WorleyWallFeature = "worleyWallFeature"
+
 // The Gabor spinodoid (hodge-release spinodoid.py, spinodoid_gabor) as one
 // oracle over a kernel table baked in Go (common/noise/spinodoid), and its
 // analytic gradient, which carries the field's derivative the way
@@ -151,6 +158,8 @@ var reservedMap = map[string]bool{
 	WorleyFarFeature:           true,
 	WorleyNearCell:             true,
 	WorleyFarCell:              true,
+	WorleyWall:                 true,
+	WorleyWallFeature:          true,
 	GaborSpinodoid:             true,
 	GaborSpinodoidGradient:     true,
 	FastGaborSpinodoid:         true,

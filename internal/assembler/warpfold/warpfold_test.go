@@ -433,3 +433,27 @@ func TestFoldProgram_NestedFunctionsAndErrors(t *testing.T) {
 		}
 	}
 }
+
+func TestWarpfold_ColorAndMaterialReturns(t *testing.T) {
+	loc := &program.Location{Line: 1, Column: 1}
+	warpCall := program.NewFnCall(
+		"",
+		"importWarp",
+		[]*program.Operand{program.NewValue(float64('s'), loc, loc)},
+		loc,
+		loc,
+	)
+
+	pkg := &program.Package{
+		Path: "main",
+		Files: []*program.PackageFile{{
+			Path:            "main.gsl",
+			Returns:         []*program.Operand{program.NewValue(0.0, loc, loc)},
+			MaterialReturns: []*program.Operand{warpCall},
+		}},
+	}
+
+	if !HasWarpCall(pkg) {
+		t.Errorf("expected HasWarpCall to detect importWarp inside MaterialReturns")
+	}
+}

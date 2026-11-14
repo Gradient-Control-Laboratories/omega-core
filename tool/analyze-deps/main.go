@@ -88,10 +88,13 @@ func main() {
 func printScopingReport(r *scoping.ScopingReport, verbose bool) {
 	fmt.Printf("Scoping Analysis for: %s\n", r.Pkg)
 	fmt.Printf("Status: ")
-	if r.CanNarrow {
+	switch {
+	case r.CanNarrow:
 		fmt.Printf("READY FOR NARROWING\n")
 		fmt.Printf("Suggested Destination: %s\n", r.SuggestedDest)
-	} else {
+	case r.PinnedReason != "":
+		fmt.Printf("PINNED IN ROOT internal/\n")
+	default:
 		fmt.Printf("BLOCKED FROM NARROWING (Shared across multiple subsystems)\n")
 	}
 	fmt.Printf("Advice: %s\n\n", r.Advice)
@@ -107,13 +110,17 @@ func printScopingReport(r *scoping.ScopingReport, verbose bool) {
 
 func printAllScopingAudit(reports []*scoping.ScopingReport, verbose bool) {
 	var ready []*scoping.ScopingReport
-	var blocked []*scoping.ScopingReport
+	var pinned []*scoping.ScopingReport
+	var shared []*scoping.ScopingReport
 
 	for _, r := range reports {
-		if r.CanNarrow {
+		switch {
+		case r.CanNarrow:
 			ready = append(ready, r)
-		} else {
-			blocked = append(blocked, r)
+		case r.PinnedReason != "":
+			pinned = append(pinned, r)
+		default:
+			shared = append(shared, r)
 		}
 	}
 
@@ -121,7 +128,7 @@ func printAllScopingAudit(reports []*scoping.ScopingReport, verbose bool) {
 
 	fmt.Printf("Candidates Ready for Narrower Scoping (%d):\n", len(ready))
 	if len(ready) == 0 {
-		fmt.Printf("  (None — all internal packages are shared across multiple subsystems or already scoped)\n")
+		fmt.Printf("  (None — all internal packages are shared across multiple subsystems, pinned, or already scoped)\n")
 	} else {
 		for _, r := range ready {
 			fmt.Printf("  • %-24s -> %-36s (Subsystem: %s)\n", r.Pkg, r.SuggestedDest, r.SuggestedSubsystem)
@@ -129,8 +136,22 @@ func printAllScopingAudit(reports []*scoping.ScopingReport, verbose bool) {
 	}
 	fmt.Println()
 
-	fmt.Printf("Packages Blocked Across Subsystems (%d):\n", len(blocked))
-	for _, r := range blocked {
+	if len(pinned) > 0 {
+		fmt.Printf("Packages Pinned in Root internal/ (%d):\n", len(pinned))
+		for _, r := range pinned {
+			fmt.Printf("  • %-24s imported by: %s (because %s)\n", r.Pkg, strings.Join(r.Subsystems, ", "), r.PinnedReason)
+			if verbose {
+				for _, s := range r.Subsystems {
+					pkgs := r.ImportersBySubsys[s]
+					fmt.Printf("      - %s: %s\n", s, strings.Join(pkgs, ", "))
+				}
+			}
+		}
+		fmt.Println()
+	}
+
+	fmt.Printf("Packages Shared Across Multiple Subsystems (%d):\n", len(shared))
+	for _, r := range shared {
 		fmt.Printf("  • %-24s imported by: %s\n", r.Pkg, strings.Join(r.Subsystems, ", "))
 		if verbose {
 			for _, s := range r.Subsystems {
@@ -142,7 +163,11 @@ func printAllScopingAudit(reports []*scoping.ScopingReport, verbose bool) {
 }
 
 func printDependencyGraph(g *graph.Graph, verbose bool) {
-	fmt.Println("=== Subsystem Dependency Relationships ===")
+	if verbose {
+		fmt.Println("=== Subsystem Dependency Relationships (Production + Test Imports) ===")
+	} else {
+		fmt.Println("=== Subsystem Dependency Relationships (Production Imports) ===")
+	}
 	subsysDeps := make(map[string]map[string]int)
 
 	for _, node := range g.Packages {
@@ -151,6 +176,9 @@ func printDependencyGraph(g *graph.Graph, verbose bool) {
 			subsysDeps[fromSubsys] = make(map[string]int)
 		}
 		for _, edge := range node.Imports {
+			if edge.IsTest && !verbose {
+				continue
+			}
 			if strings.HasPrefix(edge.RawImport, g.ModulePrefix) {
 				toSubsys := graph.SubsystemOf(edge.ToPkg)
 				subsysDeps[fromSubsys][toSubsys]++

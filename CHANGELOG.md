@@ -7,8 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Updated `cmd/serve/internal/compiler` to assemble GSL sources in a single pass using
+  `assembler.Result.AudioReturns` and `assembler/variation` instead of splitting source strings
+  and assembling twice, preserving sliders, UI controls, and scene metadata on audio-only models.
+
+### Removed
+
+- Removed `audio.ExtractAudio` from `backend/audio` and deleted the string-based
+  `backend/audio/internal/extract` splitter package.
+
+## [0.1.2] - 2026-11-12
+
 ### Added
 
+- Added `noise.cellularWalls(size)`, the exact distance to the nearest Voronoi wall
+  (https://iquilezles.org/articles/voronoilines/), and the builtins it reads, `worleyWall` and
+  `worleyWallFeature`. Unlike `cellularEdges` (F2 − F1, about twice the distance beside a wall), it
+  is 1-Lipschitz, so a threshold gives walls of one thickness. Native in the cellular oracle and
+  the WGSL emitter; shaders that do not call it are unchanged. `natural.lava`'s cracks,
+  `ceramic.crackle`'s lines and the cracked-mud example now use it, so their cracks are one width
+  (lava's stand-in coverage is 16.3%, crackle's line share 0.59, re-measured), and the cellular
+  noise example shows it beside F2 − F1.
 - Added `gsl viewer [part.gsl]` (`compile viewer`, in `cmd/serve/viewer`), which serves the
   WebGPU viewer on a file's folder, or on the examples without one, and opens the default browser
   on it (`?file=` in the viewer picks the file it starts on). The omega-core wheel now ships the
@@ -30,9 +51,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Updated `cmd/serve/internal/compiler` to assemble GSL sources in a single pass using
-  `assembler.Result.AudioReturns` and `assembler/variation` instead of splitting source strings
-  and assembling twice, preserving sliders, UI controls, and scene metadata on audio-only models.
+- Enforced `go run ./tool/analyze-deps -rules` in `tool/check.sh`, decoupled
+  `internal/assembler/topofold` from `internal/eval` and `internal/meshfold`, removed unused
+  `internal/pkg`, and narrowed `internal/fidget/environment` to `eval/internal/environment`.
 - Restricted `.color` validation in `internal/assembler/propval` and GSL specs to `[r, g, b]`,
   along with a `.material` transparency hint when a 4-element RGBA vector is supplied.
 - Updated `mesh.MeshOracles`, `mesh.VdbOracles`, and `mesh.BakeSpinodoids` in `backend/mesh/emit.go`
@@ -66,11 +87,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Document.volume` default) failing with "volume tolerance must be between zero and
   one": `eval.Volume` now reads a tolerance `<= 0` as the default `0.05`, as `surface` and `extremum`
   do.
-
-### Removed
-
-- Removed `audio.ExtractAudio` from `backend/audio` and deleted the string-based
-  `backend/audio/internal/extract` splitter package.
+- Fixed queries that default to the union of a document's returns (`gsl eval` with no `expr`:
+  `volume`, `bounds`, `extremum`, `certify`), and `gsl compile --bbox auto`, failing with "failed to
+  assemble query" when a comment stood above `return`, or `return` was the first statement after
+  `@scene`: `eval.TopLevelReturnExprs` now starts at the `return` keyword (#46).
+- Fixed a ternary whose condition varies over space being NaN when the branch it does not take is
+  infinite or NaN there (`(p.x > 0) ? p.x : 1 / z`). This affected eval, the meshers, `volume` and
+  `certify`, but not the WGSL viewer, and made `unionRoundExact` NaN on the line through both
+  shapes' centres. Each branch is now masked with Fidget's `and` instead of being multiplied by its
+  0/1 condition (#51).
 
 ## [0.1.1] - 2026-11-11
 
@@ -108,6 +133,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial standalone release of `omega-core` (GSL parser, assembler, standard library, evaluator,
   backends, CLI tools, and `omega-core` Python wheel).
 
-[Unreleased]: https://github.com/Gradient-Control-Laboratories/omega-core/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/Gradient-Control-Laboratories/omega-core/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/Gradient-Control-Laboratories/omega-core/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Gradient-Control-Laboratories/omega-core/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Gradient-Control-Laboratories/omega-core/releases/tag/v0.1.0

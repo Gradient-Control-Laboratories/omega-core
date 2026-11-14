@@ -59,8 +59,16 @@ pub mod component {
     /// The second-nearest feature point, x/y/z. Piecewise constant. The scan
     /// already has it, so F2's gradient needs no second hash to recover it.
     pub const FAR_FEATURE_X: u32 = 11;
+    /// The feature point whose wall is nearest: the neighbour of the nearest
+    /// point whose bisector plane with it lies closest to q, x/y/z. Piecewise
+    /// constant. It carries WALL's gradient, as FEATURE carries F1's.
+    pub const WALL_FEATURE_X: u32 = 14;
+    /// The exact distance to the nearest Voronoi wall: the boundary of the cell
+    /// q lies in. Exactly 1-Lipschitz (a distance to a set: the union of the
+    /// walls). Read by its own scan, not the one above; see walls_uncached.
+    pub const WALL: u32 = 17;
     /// One past the last component.
-    pub const COUNT: u32 = 14;
+    pub const COUNT: u32 = 18;
     /// How many consecutive components a point-valued one spans.
     pub const AXES: u32 = 3;
 }
@@ -185,6 +193,144 @@ fn scan_uncached(tile: &[u8], q: [f32; 3], octaves: u32) -> Scan {
     }
 }
 
+/// How many cells the wall pass may reach from floor(q) on each side, per axis:
+/// a 5x5x5 window, the 3-D form of iq's second pass
+/// (https://iquilezles.org/articles/voronoilines/). The pass visits only the cells
+/// inside the radius F1 + 2 * wall that the 27 candidates already bound, which
+/// has never been seen past 1.5 cells, so this cap is a guard on the loop rather
+/// than a limit on the answer.
+const WALL_REACH: f32 = 2.0;
+
+/// Everything the wall pass yields.
+#[derive(Clone, Copy)]
+pub struct Walls {
+    pub wall: f32,
+    pub wall_feature: [f32; 3],
+}
+
+impl Walls {
+    fn component(&self, c: u32) -> f32 {
+        use component::{AXES, WALL, WALL_FEATURE_X};
+        match c {
+            WALL => self.wall,
+            _ if (WALL_FEATURE_X..WALL_FEATURE_X + AXES).contains(&c) => {
+                self.wall_feature[(c - WALL_FEATURE_X) as usize]
+            }
+            _ => f32::NAN,
+        }
+    }
+}
+
+/// The exact distance from q to the nearest Voronoi wall, by iq's two passes.
+///
+/// q lies in the cell of its nearest feature point a, and every wall it can
+/// reach first is a face of that cell: the bisector plane between a and some
+/// neighbour c. A cell is convex, so the distance to its boundary is the least
+/// distance to those planes, and that least distance is the distance to the
+/// union of all walls. F2 - F1 is not it: that difference is ~twice the
+/// distance beside a wall and drifts with how far apart the two points are.
+///
+/// The plane between a and c lies (|q-c|^2 - |q-a|^2) / (2|a-c|) from q, which
+/// is iq's dot(0.5*(a+c) - q, normalize(c-a)) written with the squared
+/// distances the first pass already has.
+///
+/// Pass 1 is scan_uncached's 27-cell scan, keeping every candidate, so a is
+/// the same point worleyFeature names (same arithmetic, same order, same
+/// strict comparison). Pass 2 takes the planes against those 27 first. A
+/// further point c can only own a nearer plane if |q-c| < F1 + 2*wall, since
+/// |a-c| <= |q-c| + F1 bounds the plane's distance below by (|q-c| - F1) / 2,
+/// so it then visits the cells of the window that radius reaches beyond the 27.
+/// Most points need none of them. Over 200k random points this matched a
+/// brute force over 9x9x9 cells exactly; planes against only the 27 overshot it
+/// at 1 point in 12k, by up to 0.05 cell.
+///
+/// All arithmetic is relative to q, as in scan_uncached, so the hash keeps its
+/// low bits at large |q|.
+fn walls_uncached(tile: &[u8], q: [f32; 3], octaves: u32) -> Walls {
+    let pi = [q[0].floor(), q[1].floor(), q[2].floor()];
+    let pf = [q[0] - pi[0], q[1] - pi[1], q[2] - pi[2]];
+    let away = |o: [f32; 3], h: [f32; 3]| {
+        [pf[0] - (o[0] + h[0]), pf[1] - (o[1] + h[1]), pf[2] - (o[2] + h[2])]
+    };
+    let norm2 = |d: [f32; 3]| d[0] * d[0] + d[1] * d[1] + d[2] * d[2];
+
+    // Pass 1: the nearest point, keeping every candidate's offset q - point.
+    let mut d = [[0.0f32; 3]; CANDIDATES];
+    let mut d2 = [0.0f32; CANDIDATES];
+    let mut hs = [[0.0f32; 3]; CANDIDATES];
+    let mut best = f32::INFINITY;
+    let mut a = 0;
+    for (i, o) in OFFSETS.iter().enumerate() {
+        let h = noise::hash3_from_tile(tile, pi[0] + o[0], pi[1] + o[1], pi[2] + o[2], octaves);
+        d[i] = away(*o, h);
+        d2[i] = norm2(d[i]);
+        hs[i] = h;
+        if d2[i] < best {
+            best = d2[i];
+            a = i;
+        }
+    }
+
+    // The distance from q to the plane between a and a point whose offset is dc.
+    let da = d[a];
+    let plane = |dc: [f32; 3], dc2: f32| {
+        (dc2 - best) / (2.0 * norm2([dc[0] - da[0], dc[1] - da[1], dc[2] - da[2]]).sqrt())
+    };
+
+    // Pass 2a: the planes against the 27.
+    let mut wall = f32::INFINITY;
+    let mut wall_o = OFFSETS[a];
+    let mut wall_h = hs[a];
+    for i in 0..CANDIDATES {
+        if i == a {
+            continue;
+        }
+        let w = plane(d[i], d2[i]);
+        if w < wall {
+            wall = w;
+            wall_o = OFFSETS[i];
+            wall_h = hs[i];
+        }
+    }
+
+    // Pass 2b: the cells beyond the 27 that the bound F1 + 2*wall reaches.
+    let reach = best.sqrt() + 2.0 * wall;
+    let lo = |k: usize| (pf[k] - reach).floor().max(-WALL_REACH);
+    let hi = |k: usize| (pf[k] + reach).floor().min(WALL_REACH);
+    let mut oz = lo(2);
+    while oz <= hi(2) {
+        let mut oy = lo(1);
+        while oy <= hi(1) {
+            let mut ox = lo(0);
+            while ox <= hi(0) {
+                let o = [ox, oy, oz];
+                if o.iter().any(|v| v.abs() > 1.0) {
+                    let h = noise::hash3_from_tile(tile, pi[0] + ox, pi[1] + oy, pi[2] + oz, octaves);
+                    let dc = away(o, h);
+                    let w = plane(dc, norm2(dc));
+                    if w < wall {
+                        wall = w;
+                        wall_o = o;
+                        wall_h = h;
+                    }
+                }
+                ox += 1.0;
+            }
+            oy += 1.0;
+        }
+        oz += 1.0;
+    }
+
+    Walls {
+        wall,
+        wall_feature: [
+            pi[0] + wall_o[0] + wall_h[0],
+            pi[1] + wall_o[1] + wall_h[1],
+            pi[2] + wall_o[2] + wall_h[2],
+        ],
+    }
+}
+
 // A one-entry memo. A call like noise.cellularCell wants five components of the
 // SAME scan at the same point, and each is its own oracle leaf, so without this
 // one evaluation would scan the neighbourhood five times. scan_uncached is pure,
@@ -217,6 +363,46 @@ fn scan(tile: &Arc<Vec<u8>>, q: [f32; 3], octaves: u32) -> Scan {
     })
 }
 
+// The wall pass's own one-entry memo, on the same terms as MEMO: WALL and the
+// three WALL_FEATURE axes are four leaves at the same point. Kept apart from
+// MEMO so the F1 family never pays for a second pass it does not read.
+thread_local! {
+    static WALL_MEMO: RefCell<Option<([f32; 3], u32, usize, Walls)>> = const { RefCell::new(None) };
+}
+
+fn walls(tile: &Arc<Vec<u8>>, q: [f32; 3], octaves: u32) -> Walls {
+    let tag = Arc::as_ptr(tile) as usize;
+    WALL_MEMO.with(|m| {
+        if let Some((cq, co, ct, w)) = *m.borrow() {
+            if ct == tag
+                && co == octaves
+                && cq[0].to_bits() == q[0].to_bits()
+                && cq[1].to_bits() == q[1].to_bits()
+                && cq[2].to_bits() == q[2].to_bits()
+            {
+                return w;
+            }
+        }
+        let w = walls_uncached(tile, q, octaves);
+        *m.borrow_mut() = Some((q, octaves, tag, w));
+        w
+    })
+}
+
+/// True for the components the wall pass answers rather than the F1 scan.
+fn is_wall_component(c: u32) -> bool {
+    c >= component::WALL_FEATURE_X && c <= component::WALL
+}
+
+/// One component at q, from whichever pass yields it.
+fn component_at(tile: &Arc<Vec<u8>>, q: [f32; 3], octaves: u32, c: u32) -> f32 {
+    if is_wall_component(c) {
+        walls(tile, q, octaves).component(c)
+    } else {
+        scan(tile, q, octaves).component(c)
+    }
+}
+
 /// The oracle. Holds the tile it was registered with, so re-baking does not
 /// disturb live trees — the same contract as the noise-tile oracle.
 struct CellularOracle {
@@ -228,13 +414,13 @@ struct CellularOracle {
 impl CellularOracle {
     /// True for the components that are distances, and so 1-Lipschitz.
     fn is_distance(&self) -> bool {
-        self.comp == component::F1 || self.comp == component::F2
+        self.comp == component::F1 || self.comp == component::F2 || self.comp == component::WALL
     }
 }
 
 impl MeshOracleTrait for CellularOracle {
     fn point(&self, x: f32, y: f32, z: f32) -> f32 {
-        scan(&self.tile, [x, y, z], self.octaves).component(self.comp)
+        component_at(&self.tile, [x, y, z], self.octaves, self.comp)
     }
 
     fn interval(&self, x: Interval, y: Interval, z: Interval) -> Interval {
@@ -245,11 +431,14 @@ impl MeshOracleTrait for CellularOracle {
             // the 27 around floor(q), so its index on this axis lies within
             // [floor(lo) - 1, floor(hi) + 1], and a feature point sits that
             // index plus a jitter in [0, 1) — hence the +2. Sound for any box.
+            // The wall feature can come from anywhere in the wall pass's window,
+            // WALL_REACH cells out rather than 1.
+            let reach = if is_wall_component(self.comp) { WALL_REACH } else { 1.0 };
             let a = [x, y, z][((self.comp - component::FEATURE_X) % 3) as usize];
-            return Interval::new(a.lower().floor() - 1.0, a.upper().floor() + 2.0);
+            return Interval::new(a.lower().floor() - reach, a.upper().floor() + reach + 1.0);
         }
         // Sample the 8 corners of the query box and widen by half the diagonal.
-        // F1 and F2 are 1-Lipschitz, and every point of an axis-aligned box is
+        // F1, F2 and WALL are 1-Lipschitz, and every point of an axis-aligned box is
         // within half the diagonal of its nearest corner, so this brackets the
         // true range soundly. Half, not the full diagonal: the full one is a
         // wider-than-needed bound that makes the octree descend into cells with
@@ -267,7 +456,7 @@ impl MeshOracleTrait for CellularOracle {
         for &cx in &xs {
             for &cy in &ys {
                 for &cz in &zs {
-                    let v = scan(&self.tile, [cx, cy, cz], self.octaves).component(self.comp);
+                    let v = component_at(&self.tile, [cx, cy, cz], self.octaves, self.comp);
                     if v < lo {
                         lo = v;
                     }
@@ -286,6 +475,17 @@ impl MeshOracleTrait for CellularOracle {
     }
 
     fn grad(&self, x: f32, y: f32, z: f32) -> Grad {
+        if self.comp == component::WALL {
+            // The wall's normal, pointing from the nearest wall into q's cell:
+            // the unit vector from the wall feature c toward the nearest point
+            // a. Exact wherever one wall is nearest; the distance has a ridge
+            // where two are equally near, as F1 has across a wall.
+            let w = walls(&self.tile, [x, y, z], self.octaves);
+            let a = scan(&self.tile, [x, y, z], self.octaves).feature;
+            let n = [a[0] - w.wall_feature[0], a[1] - w.wall_feature[1], a[2] - w.wall_feature[2]];
+            let len = (n[0] * n[0] + n[1] * n[1] + n[2] * n[2]).sqrt();
+            return Grad::new(w.wall, n[0] / len, n[1] / len, n[2] / len);
+        }
         let s = scan(&self.tile, [x, y, z], self.octaves);
         let v = s.component(self.comp);
         if !self.is_distance() {
@@ -611,6 +811,148 @@ mod tests {
                 );
             }
         }
+    }
+
+    // The wall distance by brute force: the nearest point over a 9x9x9 block,
+    // then the nearest plane against every other point in it. Four cells out
+    // is far past anything the two-pass scan could miss.
+    fn brute_wall(tile: &[u8], q: [f32; 3]) -> f32 {
+        let pi = [q[0].floor(), q[1].floor(), q[2].floor()];
+        let mut pts = Vec::new();
+        for z in -4..=4 {
+            for y in -4..=4 {
+                for x in -4..=4 {
+                    let c = [pi[0] + x as f32, pi[1] + y as f32, pi[2] + z as f32];
+                    let h = noise::hash3_from_tile(tile, c[0], c[1], c[2], 1);
+                    pts.push([
+                        (c[0] + h[0] - q[0]) as f64,
+                        (c[1] + h[1] - q[1]) as f64,
+                        (c[2] + h[2] - q[2]) as f64,
+                    ]);
+                }
+            }
+        }
+        let n2 = |v: [f64; 3]| v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
+        let a = (0..pts.len())
+            .min_by(|&i, &j| n2(pts[i]).partial_cmp(&n2(pts[j])).unwrap())
+            .unwrap();
+        let mut wall = f64::INFINITY;
+        for (i, c) in pts.iter().enumerate() {
+            if i != a {
+                let ac = [c[0] - pts[a][0], c[1] - pts[a][1], c[2] - pts[a][2]];
+                wall = wall.min((n2(*c) - n2(pts[a])) / (2.0 * n2(ac).sqrt()));
+            }
+        }
+        wall as f32
+    }
+
+    fn sample_points(n: usize) -> Vec<[f32; 3]> {
+        (0..n)
+            .map(|i| {
+                let t = i as f32;
+                [
+                    (t * 0.618_034).fract() * 128.0 - 64.0,
+                    (t * 0.414_214).fract() * 128.0 - 64.0,
+                    (t * 0.732_051).fract() * 128.0 - 64.0,
+                ]
+            })
+            .collect()
+    }
+
+    // The two-pass wall distance must be the exact distance to the nearest
+    // wall, which a brute force over a much larger block decides.
+    #[test]
+    fn wall_matches_brute_force() {
+        let tile = noise::tile_snapshot();
+        for q in sample_points(4000) {
+            let got = walls_uncached(&tile, q, 1).wall;
+            let want = brute_wall(&tile, q);
+            assert!(
+                (got - want).abs() < 1e-4,
+                "wall {} but brute force {} at {:?}",
+                got,
+                want,
+                q
+            );
+        }
+    }
+
+    // The wall is a distance to a set, so 1-Lipschitz. It is also at least
+    // (F2 - F1)/2: on the nearest wall F1 = F2, and the d it takes to get there
+    // changes each of them by at most d.
+    #[test]
+    fn wall_is_one_lipschitz_and_bounded_by_f2_minus_f1() {
+        let tile = noise::tile_snapshot();
+        let pts = sample_points(300);
+        for (i, a) in pts.iter().enumerate() {
+            let wa = walls_uncached(&tile, *a, 1).wall;
+            let s = scan_uncached(&tile, *a, 1);
+            assert!(wa >= 0.0, "negative wall {} at {:?}", wa, a);
+            assert!(
+                wa >= 0.5 * (s.f2 - s.f1) - 1e-5,
+                "wall {} below (F2 - F1)/2 = {} at {:?}",
+                wa,
+                0.5 * (s.f2 - s.f1),
+                a
+            );
+            // A near neighbour as well as the far ones, so the bound is tested
+            // where it is tight.
+            let near = [a[0] + 0.013, a[1] - 0.021, a[2] + 0.017];
+            for b in pts[i + 1..].iter().take(20).chain(std::iter::once(&near)) {
+                let wb = walls_uncached(&tile, *b, 1).wall;
+                let dist = ((a[0] - b[0]).powi(2) + (a[1] - b[1]).powi(2) + (a[2] - b[2]).powi(2)).sqrt();
+                assert!(
+                    (wa - wb).abs() <= dist + 1e-4,
+                    "wall not 1-Lipschitz: |{} - {}| > {} between {:?} and {:?}",
+                    wa,
+                    wb,
+                    dist,
+                    a,
+                    b
+                );
+            }
+        }
+    }
+
+    // The wall's gradient must be a unit vector and agree with a central
+    // difference wherever one wall is clearly nearest.
+    #[test]
+    fn wall_grad_is_unit_and_matches_finite_difference() {
+        let o = oracle(component::WALL);
+        let mut checked = 0;
+        for p in sample_points(200) {
+            let g = o.grad(p[0], p[1], p[2]);
+            let len = (g.dx * g.dx + g.dy * g.dy + g.dz * g.dz).sqrt();
+            assert!((len - 1.0).abs() < 1e-3, "wall gradient not unit: {}", len);
+            let h = 1e-3;
+            let fd: Vec<f32> = (0..3)
+                .map(|axis| {
+                    let mut a = p;
+                    let mut b = p;
+                    a[axis] -= h;
+                    b[axis] += h;
+                    (o.point(b[0], b[1], b[2]) - o.point(a[0], a[1], a[2])) / (2.0 * h)
+                })
+                .collect();
+            // Skip points within a step of a ridge, where two walls tie and
+            // the difference straddles both.
+            let fd_len = (fd[0] * fd[0] + fd[1] * fd[1] + fd[2] * fd[2]).sqrt();
+            if (fd_len - 1.0).abs() > 1e-2 {
+                continue;
+            }
+            for (axis, got) in [(0, g.dx), (1, g.dy), (2, g.dz)] {
+                assert!(
+                    (got - fd[axis]).abs() < 1e-2,
+                    "axis {}: wall gradient {} vs finite difference {} at {:?}",
+                    axis,
+                    got,
+                    fd[axis],
+                    p
+                );
+            }
+            checked += 1;
+        }
+        assert!(checked > 150, "only {} points away from a ridge", checked);
     }
 
     // The memo must never answer for a different point or a different octave
