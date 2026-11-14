@@ -296,6 +296,21 @@ func TestPostfixModifierErrors(t *testing.T) {
 			src:  "f(p0, @direction(p0[0]) d) { return p0; }\nreturn 1;\n",
 			want: "@direction's anchor on a parameter must name another parameter",
 		},
+		{
+			name: "invalid_expr_inside_index_modifier",
+			src:  "m = [[1, 2]];\npts = [[1, 2, 3]];\nx = m[0][pts[0].foo];\nreturn x;\n",
+			want: "invalid accessor: foo",
+		},
+		{
+			name: "vdb_sdf_divisor_rejects_modified_int_literal",
+			src:  "x = vdbSdf(0, 256[0]);\nreturn x;\n",
+			want: "vdbSdf() second argument (voxelDivisor) must be a positive integer literal",
+		},
+		{
+			name: "vdb_sdf_half_band_rejects_modified_float_literal",
+			src:  "x = vdbSdf(0, 256, 3.0[0]);\nreturn x;\n",
+			want: "vdbSdf() third argument (halfBandVoxels) must be a positive numeric literal",
+		},
 	}
 
 	for _, tc := range cases {
@@ -308,5 +323,59 @@ func TestPostfixModifierErrors(t *testing.T) {
 				t.Errorf("error %q does not contain %q", err.Error(), tc.want)
 			}
 		})
+	}
+}
+
+func TestPostfixModifierFieldPropertiesAndAnnotationGuards(t *testing.T) {
+	if ok, err := parser2.IsAccessor(""); ok || err != nil {
+		t.Fatalf("IsAccessor(\"\") = (%v, %v), want (false, nil)", ok, err)
+	}
+
+	src := strings.Join([]string{
+		`shapes = [sphere(1), box([1, 1, 1])];`,
+		`sec = shapes[0].second;`,
+		`su = shapes[0].u;`,
+		`sv = shapes[1].v;`,
+		`@spline sp1 = [[[0, 0, 0], [1, 1, 1]]][0];`,
+		`@spline sp2 = [uiTransform(shapes)[0]];`,
+		`return sec + su + sv;`,
+	}, "\n") + "\n"
+
+	res, err := lib.ParsePackage([]string{src})
+	if err != nil {
+		t.Fatalf("ParsePackage failed: %v", err)
+	}
+	byName := make(map[string]*program.Operand)
+	for _, assign := range res.Package.Files[0].Assignments {
+		byName[assign.Variables[0].Name] = assign.Expression
+	}
+
+	secOps := exprOp(t, byName["sec"], program.Operation_SECONDCLOSEST)
+	exprOp(t, secOps[0], program.Operation_INDEX)
+
+	suOps := exprOp(t, byName["su"], program.Operation_SURFACEU)
+	exprOp(t, suOps[0], program.Operation_INDEX)
+
+	svOps := exprOp(t, byName["sv"], program.Operation_SURFACEV)
+	exprOp(t, svOps[0], program.Operation_INDEX)
+
+	// sp1 has an outer `[0]` modifier, so its inner collection elements are not promoted to uiTransform.
+	sp1Call, ok := byName["sp1"].T.(*program.Operand_FnCall)
+	if !ok || sp1Call.FnCall.Reference.Name != "uiSpline" {
+		t.Fatalf("sp1 = %s, want uiSpline call", byName["sp1"].PrettyPrint(0))
+	}
+	sp1Idx := exprOp(t, sp1Call.FnCall.Arguments[0], program.Operation_INDEX)
+	sp1OuterCol := exprOp(t, sp1Idx[0], program.Operation_COLLECT)
+	exprOp(t, sp1OuterCol[0], program.Operation_COLLECT)
+
+	// sp2's element is `uiTransform(shapes)[0]`, which has a modifier so it gets wrapped in uiTransform.
+	sp2Call, ok := byName["sp2"].T.(*program.Operand_FnCall)
+	if !ok || sp2Call.FnCall.Reference.Name != "uiSpline" {
+		t.Fatalf("sp2 = %s, want uiSpline call", byName["sp2"].PrettyPrint(0))
+	}
+	sp2Col := exprOp(t, sp2Call.FnCall.Arguments[0], program.Operation_COLLECT)
+	elemCall, ok := sp2Col[0].T.(*program.Operand_FnCall)
+	if !ok || elemCall.FnCall.Reference.Name != "uiTransform" {
+		t.Fatalf("sp2[0] = %s, want wrapped uiTransform call", sp2Col[0].PrettyPrint(0))
 	}
 }
