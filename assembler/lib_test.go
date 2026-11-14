@@ -1633,8 +1633,41 @@ return vol + pt.x;
 		t.Fatalf("Assemble with DisableMeshSlotFolding and GeometryResolver failed: %v", err)
 	}
 	ret := res.Program.Primary.Files[0].Returns[0]
-	// vol=450, pt.x = 2.0 + 0.75 = 2.75 -> 452.75
+	// vol=450, pt.x = 2.0 + 0.75 = 452.75
 	if ret.GetValue() != 452.75 {
 		t.Fatalf("expected folded return 452.75, got %v", ret)
+	}
+}
+
+func TestAssemble_TopoFoldWithUITransformDerivedMatrix(t *testing.T) {
+	pkgMgr := source.NewLocalManager("../stdlib")
+	src := `import . "omega";
+partId = importStep "bracket.step";
+partXf = uiTransform([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [45, 0, -30, 1]]);
+partScale = 2.0;
+partXfScaled = [partXf[0] * partScale, partXf[1] * partScale, partXf[2] * partScale, partXf[3]];
+branch() {
+  pt, n = facePointNormal(partId, 1, [0.5, 0.25], partXfScaled);
+  return pt.x + pt.z + n.z;
+}
+return branch(), mesh(partId, partXfScaled);
+`
+	resolver := &mockTopoResolver{
+		mesh: &mockTopoMesh{
+			volume: 450.0,
+			facePt: [3]float64{2.0, 3.0, 4.0},
+			normal: [3]float64{0.0, 0.0, 1.0},
+		},
+	}
+	res, err := Assemble([]string{src}, SourceManager(pkgMgr), GeometryResolver(resolver))
+	if err != nil {
+		t.Fatalf("Assemble with UI-derived transform failed: %v", err)
+	}
+	// Local facePoint = [2.0+0.5, 3.0+0.25, 4.0] = [2.5, 3.25, 4.0]
+	// Scaled by 2.0 + translated by [45, 0, -30]: pt = [50.0, 6.5, -22.0], n = [0, 0, 1]
+	// pt.x + pt.z + n.z = 50.0 + (-22.0) + 1.0 = 29.0
+	ret := res.Program.Primary.Files[0].Returns[0]
+	if ret.GetValue() != 29.0 {
+		t.Fatalf("expected folded branch() return 29.0, got %v", ret)
 	}
 }

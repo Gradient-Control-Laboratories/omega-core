@@ -163,7 +163,7 @@ func TestTopoFoldPointAndMeshQueries(t *testing.T) {
 		t.Fatalf("expected HasTopoCall to be true")
 	}
 
-	if err := FoldProgram(prog, nil, resolver); err != nil {
+	if err := FoldProgram(prog, nil, resolver, nil); err != nil {
 		t.Fatalf("FoldProgram failed: %v", err)
 	}
 
@@ -350,7 +350,7 @@ func TestTopoFold_DepsColorMaterialNegUIAndPlacements(t *testing.T) {
 	if !HasTopoCall(prog) {
 		t.Fatalf("expected HasTopoCall to detect topology calls in Dependencies")
 	}
-	if err := FoldProgram(prog, nil, resolver); err != nil {
+	if err := FoldProgram(prog, nil, resolver, nil); err != nil {
 		t.Fatalf("FoldProgram failed: %v", err)
 	}
 
@@ -365,5 +365,123 @@ func TestTopoFold_DepsColorMaterialNegUIAndPlacements(t *testing.T) {
 	// facePoint([10,0,0] + [-0.5, 0.25, 0]) = [9.5, 0.25, 0], translated by [5, -6, 7] => [14.5, -5.75, 7]
 	if len(fnRet.ConstValues) != 3 || fnRet.ConstValues[0] != 14.5 || fnRet.ConstValues[1] != -5.75 || fnRet.ConstValues[2] != 7.0 {
 		t.Fatalf("expected placed facePoint [14.5, -5.75, 7], got %v", fnRet.ConstValues)
+	}
+}
+
+func TestFoldProgram_ConstEvalCallbackAndShadowing(t *testing.T) {
+	resolver := &mockResolver{
+		meshes: map[int]*mockMesh{0: {volume: 450.0, area: 120.0}},
+		annotated: map[int]*mockAnnotatedMesh{
+			0: {
+				facePt: [3]float64{2.0, 3.0, 4.0},
+				normal: [3]float64{0.0, 0.0, 1.0},
+			},
+		},
+	}
+
+	valOp := func(v float64) *program.Operand {
+		return &program.Operand{T: &program.Operand_Value{Value: v}}
+	}
+
+	// Non-ConstValues expression (e.g. ADD without pre-populated ConstValues) requiring evalConst.
+	derivedUV := &program.Operand{
+		T: &program.Operand_Expression{
+			Expression: &program.Expression{
+				Operation: program.Operation_ADD,
+				Operands: []*program.Operand{
+					{T: &program.Operand_Reference{Reference: &program.Reference{Name: "uBase"}}},
+					{T: &program.Operand_Reference{Reference: &program.Reference{Name: "sibOffset"}}},
+				},
+			},
+		},
+	}
+
+	prog := &program.Program{
+		Primary: &program.Package{
+			Path: "main",
+			Files: []*program.PackageFile{
+				{
+					Assignments: []*program.Assignment{
+						{Variables: []*program.Variable{{Name: "uBase"}}, Expression: valOp(0.1)},
+						{Variables: []*program.Variable{{Name: "shadowedParam"}}, Expression: valOp(99)},
+					},
+					FnTypes: []*program.FnType{
+						{Name: "helper"},
+						{
+							Name: "compute",
+							Groups: []*program.FnGroup{
+								{
+									ParamCount: 1,
+									Functions: []*program.Function{
+										{
+											Parameters: []*program.Parameter{{Name: "shadowedParam"}},
+											FnTypes:    []*program.FnType{{Name: "helper"}},
+											Assignments: []*program.Assignment{
+												// Shadows outer uBase = 0.1 with inner uBase = 0.25.
+												{Variables: []*program.Variable{{Name: "uBase"}}, Expression: valOp(0.25)},
+												{Variables: []*program.Variable{{Name: "uv"}}, Expression: derivedUV},
+											},
+											Returns: []*program.Operand{
+												{
+													T: &program.Operand_FnCall{
+														FnCall: &program.FnCall{
+															Reference: &program.Reference{Name: "facePoint"},
+															Arguments: []*program.Operand{
+																valOp(0),
+																valOp(1),
+																{T: &program.Operand_Reference{Reference: &program.Reference{Name: "uv"}}},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					Returns: []*program.Operand{valOp(0)},
+				},
+				{
+					// Sibling file with both unshadowed (sibOffset) and shadowed (shadowedParam, helper) declarations.
+					Assignments: []*program.Assignment{
+						{Variables: []*program.Variable{{Name: "sibOffset"}}, Expression: valOp(0.5)},
+						{Variables: []*program.Variable{{Name: "shadowedParam"}}, Expression: valOp(88)},
+					},
+					FnTypes: []*program.FnType{{Name: "helper"}},
+				},
+			},
+		},
+	}
+
+	evalConst := func(op *program.Operand, pkg *program.Package, _ string) ([]float64, error) {
+		vars := map[string]float64{}
+		for _, f := range pkg.Files {
+			for _, a := range f.Assignments {
+				if len(a.Variables) == 1 && a.Expression.GetT() != nil {
+					if v, ok := a.Expression.T.(*program.Operand_Value); ok {
+						vars[a.Variables[0].Name] = v.Value
+					}
+				}
+			}
+		}
+		if _, leaked := vars["shadowedParam"]; leaked {
+			t.Fatalf("expected shadowedParam to be excluded from scope package")
+		}
+		if op == derivedUV {
+			return []float64{vars["uBase"] + vars["sibOffset"], 0.25}, nil
+		}
+		return nil, nil
+	}
+
+	if err := FoldProgram(prog, nil, resolver, evalConst); err != nil {
+		t.Fatalf("FoldProgram with ConstEvalFunc failed: %v", err)
+	}
+
+	fnRet := prog.Primary.Files[0].FnTypes[1].Groups[0].Functions[0].Returns[0]
+	// facePt [2, 3, 4] + uv [0.25 + 0.5, 0.25] = [2.75, 3.25, 4.0]
+	if len(fnRet.ConstValues) != 3 || fnRet.ConstValues[0] != 2.75 || fnRet.ConstValues[1] != 3.25 || fnRet.ConstValues[2] != 4.0 {
+		t.Fatalf("expected folded facePoint [2.75, 3.25, 4.0], got %v", fnRet.ConstValues)
 	}
 }
