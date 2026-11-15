@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added generalized left-to-right postfix modifier chaining (`Modifiers []*Modifier`) in
+  `parser/internal/parser2`, supporting valid `.member`, `.dp`/`.dtime`/`.d(var)`, and
+  `[index]` sequences (such as `m[0][1]`, `pts[0].x`, `body.box[0]`, and `v.d(t)[0]`) while
+  rejecting invalid modifier sequences at parse time.
+
 ### Changed
 
 - Updated `cmd/serve/internal/compiler` to assemble GSL sources in a single pass using
@@ -17,6 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Removed `audio.ExtractAudio` from `backend/audio` and deleted the string-based
   `backend/audio/internal/extract` splitter package.
+
+### Fixed
+
+- Fixed `topofold` constant evaluation for `uiTransform`-derived expressions using column
+  indexing and `vector.multiplyScalar` (e.g. scaled part transforms passed to
+  `facePointNormal`).
 
 ## [0.1.2] - 2026-11-12
 

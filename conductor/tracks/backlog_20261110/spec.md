@@ -443,7 +443,7 @@ defined in [README.md](../../../README.md):
 
 ## 6. Small Targeted Cleanups
 
-- [ ] **S1. Generalized Postfix Modifier Chaining (`Modifiers []*Modifier`)**
+- [x] **S1. Generalized Postfix Modifier Chaining (`Modifiers []*Modifier`)**
   - Replace single `Access *Accessor` + `Index *Expression` fields on `Factor` in
     `parser/internal/parser2/grammar.go` and `build_expr.go` with repeatable `Modifiers []*Modifier`
     (`@@*`) folding `.member`, `.dp`/`.dtime`/`.d(var)`, and `[index]` left-to-right (supporting
