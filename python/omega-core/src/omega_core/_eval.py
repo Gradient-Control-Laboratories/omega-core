@@ -139,9 +139,12 @@ class Certificate:
 
 @dataclass(frozen=True)
 class Bounds:
-    """The box of the grid cells where ``expr`` is below zero; it can fall short of the surface by up to a cell
-    (``cell_size``), so grow it before relying on it as an enclosure. ``min_value`` at ``min_at`` is the least sample,
-    reported even when nothing was found."""
+    """A box around where ``expr`` is below zero. When ``proven``, interval arithmetic shows nothing of the part lies
+    outside it, and ``cell_size`` is how far it can stand off the part on each axis; ``found`` is then false only where
+    the region is proven empty. When not ``proven`` (``reason`` says why: the field's intervals are ``unbounded``, or
+    too loose for the ``budget``), it is a fit on a grid of ``resolution`` cells a side that can miss a wall thinner
+    than a cell and fall short of the surface by up to one (``cell_size``): do not read a size from it. ``min_value``
+    at ``min_at`` is the grid's least sample, reported even when nothing was found."""
 
     expr: str
     found: bool
@@ -151,6 +154,8 @@ class Bounds:
     resolution: int
     min_value: Optional[float]
     min_at: Vec3
+    proven: bool = False
+    reason: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -166,12 +171,16 @@ class SurfaceSample:
 
 @dataclass(frozen=True)
 class Volume:
-    """The volume where ``expr`` is below zero inside the region, bracketed, in cubic millimetres."""
+    """The volume where ``expr`` is below zero inside the region, bracketed, in cubic millimetres. The bracket always
+    holds; ``converged`` says it is as narrow as the tolerance asked, and ``reason`` what ended the search where it is
+    not (``budget`` or ``depth``)."""
 
     expr: str
     lower_mm3: float
     upper_mm3: float
     evals: int
+    converged: bool = True
+    reason: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -394,10 +403,11 @@ class Document:
         r = self._ask("describe")
         return Description(_ranges(r["sliders"]) or {}, tuple(r["names"]), tuple(r["returns"]))
 
-    def eval(self, exprs: Union[str, Sequence[str]], points: Iterable[Sequence[float]], *, defs: str = "") -> Fields:
+    def eval(self, exprs: Union[str, Sequence[str], None], points: Iterable[Sequence[float]], *,
+             defs: str = "") -> Fields:
         """Each expression's value and gradient at each point (``.dp``, ``.dtime`` and ``.d(var)`` are expressions
-        too). Send many points at once: each question costs a round trip."""
-        exprs = [exprs] if isinstance(exprs, str) else list(exprs)
+        too); ``exprs`` None is the document's returns. Send many points at once: each question costs a round trip."""
+        exprs = None if exprs is None else [exprs] if isinstance(exprs, str) else list(exprs)
         r = self._ask("eval", exprs=exprs, points=_points(points), defs=defs)
         return Fields([Field._of(group) for group in r["groups"]])
 
@@ -426,12 +436,14 @@ class Document:
 
     def bounds(self, expr: Optional[str] = None, *, region: Optional[Region] = None, resolution: int = 0,
                defs: str = "") -> Bounds:
-        """The box where ``expr`` is below zero, fitted on a grid of ``resolution`` cells a side (0: 32) over
-        ``region`` (default: 1024 mm about the origin). It can fall a cell short of the surface: see :class:`Bounds`."""
+        """A box that holds where ``expr`` is below zero, within ``region`` (default: 1024 mm about the origin):
+        proven where the field's intervals allow, else fitted on a grid of ``resolution`` cells a side (0: 32, at
+        most 64). Read ``proven`` before reading a size from it: see :class:`Bounds`."""
         r = self._ask("bounds", expr=expr, region=_region(region) if region is not None else None,
                       resolution=resolution or None, defs=defs)
         return Bounds(r["expr"], r["found"], _vec(r["bboxMin"]), _vec(r["bboxMax"]), _vec(r["cellSize"]),
-                      r["resolution"], r.get("minValue"), _vec(r["minAt"]))  # type: ignore[arg-type]
+                      r["resolution"], r.get("minValue"), _vec(r["minAt"]),  # type: ignore[arg-type]
+                      bool(r.get("proven", False)), r.get("reason"))
 
     def surface(self, points: Iterable[Sequence[float]], expr: Optional[str] = None, *, max_iters: int = 0,
                 tolerance: float = 0.0, defs: str = "") -> Tuple[SurfaceSample, ...]:
@@ -488,4 +500,5 @@ class Document:
         0.01 takes seconds)."""
         r = self._ask("volume", expr=expr, region=_region(region), relativeTolerance=relative_tolerance or None,
                       defs=defs)
-        return Volume(r["expr"], r["lowerMm3"], r["upperMm3"], r["evals"])
+        return Volume(r["expr"], r["lowerMm3"], r["upperMm3"], r["evals"], bool(r.get("converged", True)),
+                      r.get("reason"))
