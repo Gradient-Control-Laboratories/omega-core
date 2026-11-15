@@ -25,6 +25,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed `audio.ExtractAudio` from `backend/audio` and deleted the string-based
   `backend/audio/internal/extract` splitter package.
 
+### Fixed
+
+- Fixed `topofold` constant evaluation for `uiTransform`-derived expressions using column
+  indexing and `vector.multiplyScalar` (e.g. scaled part transforms passed to
+  `facePointNormal`).
+
 ## [0.1.2] - 2026-11-12
 
 ### Added
