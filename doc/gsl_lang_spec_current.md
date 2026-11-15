@@ -452,6 +452,18 @@ GSL is structured around fundamental mathematical and geometric types:
 * **Indexing**: Accesses component scalars in lists using single brackets (e.g. `v[0]` for $x$,
   `v[1]` for $y$), or column vectors in matrices (`mat[0]`).
   Constant indices out of bounds produce a compile-time error.
+* **Postfix Modifier Chaining**: Indexing (`[i]`), swizzles (`.x`..`.xyzw`), derivatives (`.dp`,
+  `.dtime`, `.d(var)`), and geometry/surface properties (`.box`, `.second`, `.u`, `.v`) fold
+  left-to-right. Chaining is validated at parse time as follows:
+
+| Previous Modifier                       | Allowed Next Modifiers                                        |
+| :-------------------------------------- | :------------------------------------------------------------ |
+| `[index]`                               | `[index]`, swizzle, derivative, `.second`, `.u`, `.v`, `.box` |
+| Swizzle (`.x`..`.xyzw`)                 | `[index]` (2+ components), swizzle, derivative                |
+| Derivative (`.dp`, `.dtime`, `.d(var)`) | `[index]`, swizzle, derivative                                |
+| `.box`                                  | `[index]`, derivative                                         |
+| `.second`                               | `.u`, `.v`, derivative                                        |
+| `.u`, `.v`                              | derivative                                                    |
 * **Operator Precedence**:
 
 | Precedence | Operators | Description |

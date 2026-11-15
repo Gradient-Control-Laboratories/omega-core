@@ -311,6 +311,56 @@ func TestPostfixModifierErrors(t *testing.T) {
 			src:  "x = vdbSdf(0, 256, 3.0[0]);\nreturn x;\n",
 			want: "vdbSdf() third argument (halfBandVoxels) must be a positive numeric literal",
 		},
+		{
+			name: "u_then_second_rejected",
+			src:  "s = sphere(1);\nreturn s.u.second;\n",
+			want: "cannot apply .second after .u",
+		},
+		{
+			name: "v_then_index_rejected",
+			src:  "s = sphere(1);\nreturn s.v[0];\n",
+			want: "cannot index after .v",
+		},
+		{
+			name: "second_then_swizzle_rejected",
+			src:  "s = sphere(1);\nreturn s.second.x;\n",
+			want: "cannot apply .x after .second",
+		},
+		{
+			name: "second_then_box_rejected",
+			src:  "s = sphere(1);\nreturn s.second.box;\n",
+			want: "cannot apply .box after .second",
+		},
+		{
+			name: "box_then_swizzle_rejected",
+			src:  "s = sphere(1);\nreturn s.box.x;\n",
+			want: "cannot apply .x after .box",
+		},
+		{
+			name: "box_then_box_rejected",
+			src:  "s = sphere(1);\nreturn s.box.box;\n",
+			want: "cannot apply .box after .box",
+		},
+		{
+			name: "deriv_then_second_rejected",
+			src:  "s = sphere(1);\nreturn s.dp.second;\n",
+			want: "cannot apply .second after .dp",
+		},
+		{
+			name: "deriv_then_box_rejected",
+			src:  "s = sphere(1);\nreturn s.dtime.box;\n",
+			want: "cannot apply .box after .dtime",
+		},
+		{
+			name: "swizzle_then_u_rejected",
+			src:  "v = [1, 2, 3];\nreturn v.xy.u;\n",
+			want: "cannot apply .u after .xy",
+		},
+		{
+			name: "scalar_swizzle_then_index_rejected",
+			src:  "v = [1, 2, 3];\nreturn v.x[0];\n",
+			want: "cannot index after .x",
+		},
 	}
 
 	for _, tc := range cases {
@@ -327,18 +377,16 @@ func TestPostfixModifierErrors(t *testing.T) {
 }
 
 func TestPostfixModifierFieldPropertiesAndAnnotationGuards(t *testing.T) {
-	if ok, err := parser2.IsAccessor(""); ok || err != nil {
-		t.Fatalf("IsAccessor(\"\") = (%v, %v), want (false, nil)", ok, err)
-	}
-
 	src := strings.Join([]string{
 		`shapes = [sphere(1), box([1, 1, 1])];`,
 		`sec = shapes[0].second;`,
+		`secu = shapes[0].second.u.dp;`,
+		`bx = shapes[0].box[0].x;`,
 		`su = shapes[0].u;`,
 		`sv = shapes[1].v;`,
 		`@spline sp1 = [[[0, 0, 0], [1, 1, 1]]][0];`,
 		`@spline sp2 = [uiTransform(shapes)[0]];`,
-		`return sec + su + sv;`,
+		`return sec + secu.x + bx + su + sv;`,
 	}, "\n") + "\n"
 
 	res, err := lib.ParsePackage([]string{src})

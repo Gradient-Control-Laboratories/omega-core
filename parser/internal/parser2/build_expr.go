@@ -351,6 +351,9 @@ func buildFactor(buildScope scope.BuilderScope, factor *Factor) (*program.Operan
 	}
 
 	for _, mod := range factor.Modifiers {
+		if err := validateModifierSequence(value, mod); err != nil {
+			return value, err
+		}
 		value, err = applyModifier(buildScope, value, mod)
 		if err != nil {
 			return value, err
@@ -449,4 +452,146 @@ func applyModifier(buildScope scope.BuilderScope, value *program.Operand, mod *M
 		program.Operation_INDEX, []*program.Operand{value, index},
 		value.Start, posToLocation(mod.EndPos),
 	), nil
+}
+
+type modifierKind int
+
+const (
+	modNone modifierKind = iota
+	modIndex
+	modSwizzleScalar
+	modSwizzleVec
+	modDeriv
+	modBox
+	modSecond
+	modSurfaceFrame
+)
+
+func classifyOperandModifier(op *program.Operand) (modifierKind, string) {
+	expr := op.GetExpression()
+	if expr == nil {
+		return modNone, ""
+	}
+	switch expr.Operation {
+	case program.Operation_INDEX:
+		return modIndex, ""
+	case program.Operation_DERIV:
+		if len(expr.Operands) >= 2 {
+			if ref := expr.Operands[1].GetReference(); ref != nil {
+				switch ref.Name {
+				case program.PVarName:
+					return modDeriv, program.DPAccessor
+				case program.TimeVarName:
+					return modDeriv, program.DTimeAccessor
+				}
+			}
+		}
+		return modDeriv, program.DAccessor + "(...)"
+	case program.Operation_BOUNDINGBOX:
+		return modBox, program.BoxAccessor
+	case program.Operation_SECONDCLOSEST:
+		return modSecond, program.SecondAccessor
+	case program.Operation_SURFACEU:
+		return modSurfaceFrame, program.UAccessor
+	case program.Operation_SURFACEV:
+		return modSurfaceFrame, program.VAccessor
+	case program.Operation_ACCESS:
+		if len(expr.Operands) >= 2 {
+			if ref := expr.Operands[1].GetReference(); ref != nil {
+				if len(ref.Name) == 1 {
+					return modSwizzleScalar, ref.Name
+				}
+				return modSwizzleVec, ref.Name
+			}
+		}
+		return modSwizzleVec, ""
+	default:
+		return modNone, ""
+	}
+}
+
+func classifyModifier(mod *Modifier) modifierKind {
+	if mod.Access == nil {
+		return modIndex
+	}
+	switch mod.Access.Name {
+	case program.DAccessor, program.DTimeAccessor, program.DPAccessor:
+		return modDeriv
+	case program.BoxAccessor:
+		return modBox
+	case program.SecondAccessor:
+		return modSecond
+	case program.UAccessor, program.VAccessor:
+		return modSurfaceFrame
+	default:
+		if len(mod.Access.Name) == 1 {
+			return modSwizzleScalar
+		}
+		return modSwizzleVec
+	}
+}
+
+var allowedModifierTransitions = map[modifierKind]map[modifierKind]bool{
+	modIndex: {
+		modIndex:         true,
+		modSwizzleScalar: true,
+		modSwizzleVec:    true,
+		modDeriv:         true,
+		modBox:           true,
+		modSecond:        true,
+		modSurfaceFrame:  true,
+	},
+	modSwizzleScalar: {
+		modSwizzleScalar: true,
+		modSwizzleVec:    true,
+		modDeriv:         true,
+	},
+	modSwizzleVec: {
+		modIndex:         true,
+		modSwizzleScalar: true,
+		modSwizzleVec:    true,
+		modDeriv:         true,
+	},
+	modDeriv: {
+		modIndex:         true,
+		modSwizzleScalar: true,
+		modSwizzleVec:    true,
+		modDeriv:         true,
+	},
+	modBox: {
+		modIndex: true,
+		modDeriv: true,
+	},
+	modSecond: {
+		modSurfaceFrame: true,
+		modDeriv:        true,
+	},
+	modSurfaceFrame: {
+		modDeriv: true,
+	},
+}
+
+func validateModifierSequence(prev *program.Operand, cur *Modifier) error {
+	prevKind, prevName := classifyOperandModifier(prev)
+	if prevKind == modNone {
+		return nil
+	}
+	curKind := classifyModifier(cur)
+	if allowedModifierTransitions[prevKind][curKind] {
+		return nil
+	}
+	if cur.Access == nil {
+		return &participle.ParseError{
+			Pos: cur.Pos,
+			Msg: fmt.Sprintf("cannot index after .%s", prevName),
+		}
+	}
+	msg := fmt.Sprintf("cannot apply .%s after .%s", cur.Access.Name, prevName)
+	if prevKind == modSurfaceFrame && curKind == modSecond {
+		msg += fmt.Sprintf(" (did you mean .second.%s?)", prevName)
+	}
+	return &participle.ParseError{
+		Pos: cur.Access.Pos,
+		Msg: msg,
+	}
 }
