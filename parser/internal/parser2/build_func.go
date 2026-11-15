@@ -351,7 +351,7 @@ func extractPositiveFloatLiteral(expr *Expression) (float64, bool) {
 		return 0, false
 	}
 	factor := terms.Left.Left
-	if factor.Negative || factor.Not {
+	if factor.Negative || factor.Not || len(factor.Modifiers) > 0 {
 		return 0, false
 	}
 	if factor.Value == nil {
@@ -397,7 +397,7 @@ func extractNonNegativeIntLiteral(expr *Expression) (int, bool) {
 		return 0, false
 	}
 	factor := terms.Left.Left
-	if factor.Negative || factor.Not {
+	if factor.Negative || factor.Not || len(factor.Modifiers) > 0 {
 		return 0, false
 	}
 	if factor.Value == nil {
@@ -443,7 +443,7 @@ func extractStringLiteral(expr *Expression) (*String, bool) {
 		return nil, false
 	}
 	factor := term.Left
-	if factor.Negative || factor.Not {
+	if factor.Negative || factor.Not || len(factor.Modifiers) > 0 {
 		return nil, false
 	}
 	if factor.Value == nil {

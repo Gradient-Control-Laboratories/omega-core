@@ -150,3 +150,78 @@ func TestMesh_ErrorOnInvalidSource(t *testing.T) {
 		t.Fatalf("expected error from Mesh on invalid GSL source")
 	}
 }
+
+func TestCompile_AudioOnlyWithSliders(t *testing.T) {
+	src := `
+freq = 440;
+freq.min = 100;
+freq.max = 1000;
+return audio(sin(freq * 2 * pi * time));
+`
+	resp := compiler.Compile(compiler.CompileRequest{
+		ID:     "req-audio-only",
+		Source: src,
+	}, nil, nil)
+
+	if len(resp.Errors) > 0 {
+		t.Fatalf("unexpected compile errors: %+v", resp.Errors)
+	}
+	if resp.WGSL != "" {
+		t.Errorf("expected empty WGSL for audio-only document, got:\n%s", resp.WGSL)
+	}
+	if resp.ShapeCount != 0 {
+		t.Errorf("expected ShapeCount 0, got %d", resp.ShapeCount)
+	}
+	if resp.Audio == nil || resp.Audio.JSCode == "" {
+		t.Fatalf("expected non-nil Audio with JSCode")
+	}
+	if len(resp.Sliders) != 1 || resp.Sliders[0].VariableName != "freq" {
+		t.Errorf("expected 1 slider 'freq', got %+v", resp.Sliders)
+	}
+}
+
+func TestMesh_WithAudioBlock(t *testing.T) {
+	src := `return sphere(5), audio(sin(440 * 2 * pi * time));`
+	stlBytes, err := compiler.Mesh(compiler.MeshRequest{
+		ID:          "mesh-audio",
+		Source:      src,
+		Subdivision: 2,
+		Bbox:        [6]float32{-8, -8, -8, 8, 8, 8},
+		HasBbox:     true,
+		Algo:        "marching-cubes",
+	}, nil, nil)
+	if err != nil {
+		t.Fatalf("unexpected Mesh error: %v", err)
+	}
+	if len(stlBytes) < 84 {
+		t.Fatalf("expected binary STL >= 84 bytes, got %d", len(stlBytes))
+	}
+}
+
+func TestCompile_AudioCodegenErrorAndStereo(t *testing.T) {
+	t.Run("unsupported_audio_builtin_reports_error", func(t *testing.T) {
+		resp := compiler.Compile(compiler.CompileRequest{
+			ID:     "req-audio-err",
+			Source: "return audio(worley([time, 0, 0]));",
+		}, nil, nil)
+		if len(resp.Errors) == 0 {
+			t.Fatalf("expected error when audio expression uses unsupported builtin, got %+v", resp)
+		}
+		if resp.Audio != nil {
+			t.Errorf("expected nil Audio on codegen failure, got %+v", resp.Audio)
+		}
+	})
+
+	t.Run("stereo_audio_channels", func(t *testing.T) {
+		resp := compiler.Compile(compiler.CompileRequest{
+			ID:     "req-stereo",
+			Source: "return audio(sin(440 * 2 * pi * time), cos(440 * 2 * pi * time));",
+		}, nil, nil)
+		if len(resp.Errors) > 0 {
+			t.Fatalf("unexpected compile errors for stereo audio: %+v", resp.Errors)
+		}
+		if resp.Audio == nil || resp.Audio.JSCode == "" {
+			t.Fatalf("expected stereo Audio JSCode, got %+v", resp.Audio)
+		}
+	})
+}
