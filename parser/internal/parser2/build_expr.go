@@ -6,6 +6,7 @@ import (
 
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
+	"gradientcontrol.com/omega/core/internal/lang"
 	"gradientcontrol.com/omega/core/internal/scope"
 	"gradientcontrol.com/omega/core/program"
 )
@@ -454,130 +455,77 @@ func applyModifier(buildScope scope.BuilderScope, value *program.Operand, mod *M
 	), nil
 }
 
-type modifierKind int
-
-const (
-	modNone modifierKind = iota
-	modIndex
-	modSwizzleScalar
-	modSwizzleVec
-	modDeriv
-	modBox
-	modSecond
-	modSurfaceFrame
-)
-
-func classifyOperandModifier(op *program.Operand) (modifierKind, string) {
+func classifyOperandModifier(op *program.Operand) (lang.ModifierKind, string) {
 	expr := op.GetExpression()
 	if expr == nil {
-		return modNone, ""
+		return lang.ModNone, ""
 	}
 	switch expr.Operation {
 	case program.Operation_INDEX:
-		return modIndex, ""
+		return lang.ModIndex, ""
 	case program.Operation_DERIV:
 		if len(expr.Operands) >= 2 {
 			if ref := expr.Operands[1].GetReference(); ref != nil {
 				switch ref.Name {
 				case program.PVarName:
-					return modDeriv, program.DPAccessor
+					return lang.ModDeriv, program.DPAccessor
 				case program.TimeVarName:
-					return modDeriv, program.DTimeAccessor
+					return lang.ModDeriv, program.DTimeAccessor
 				}
 			}
 		}
-		return modDeriv, program.DAccessor + "(...)"
+		return lang.ModDeriv, program.DAccessor + "(...)"
 	case program.Operation_BOUNDINGBOX:
-		return modBox, program.BoxAccessor
+		return lang.ModBox, program.BoxAccessor
 	case program.Operation_SECONDCLOSEST:
-		return modSecond, program.SecondAccessor
+		return lang.ModSecond, program.SecondAccessor
 	case program.Operation_SURFACEU:
-		return modSurfaceFrame, program.UAccessor
+		return lang.ModSurfaceFrame, program.UAccessor
 	case program.Operation_SURFACEV:
-		return modSurfaceFrame, program.VAccessor
+		return lang.ModSurfaceFrame, program.VAccessor
 	case program.Operation_ACCESS:
 		if len(expr.Operands) >= 2 {
 			if ref := expr.Operands[1].GetReference(); ref != nil {
 				if len(ref.Name) == 1 {
-					return modSwizzleScalar, ref.Name
+					return lang.ModSwizzleScalar, ref.Name
 				}
-				return modSwizzleVec, ref.Name
+				return lang.ModSwizzleVec, ref.Name
 			}
 		}
-		return modSwizzleVec, ""
+		return lang.ModSwizzleVec, ""
 	default:
-		return modNone, ""
+		return lang.ModNone, ""
 	}
 }
 
-func classifyModifier(mod *Modifier) modifierKind {
+func classifyModifier(mod *Modifier) lang.ModifierKind {
 	if mod.Access == nil {
-		return modIndex
+		return lang.ModIndex
 	}
 	switch mod.Access.Name {
 	case program.DAccessor, program.DTimeAccessor, program.DPAccessor:
-		return modDeriv
+		return lang.ModDeriv
 	case program.BoxAccessor:
-		return modBox
+		return lang.ModBox
 	case program.SecondAccessor:
-		return modSecond
+		return lang.ModSecond
 	case program.UAccessor, program.VAccessor:
-		return modSurfaceFrame
+		return lang.ModSurfaceFrame
 	default:
 		if len(mod.Access.Name) == 1 {
-			return modSwizzleScalar
+			return lang.ModSwizzleScalar
 		}
-		return modSwizzleVec
+		return lang.ModSwizzleVec
 	}
-}
-
-var allowedModifierTransitions = map[modifierKind]map[modifierKind]bool{
-	modIndex: {
-		modIndex:         true,
-		modSwizzleScalar: true,
-		modSwizzleVec:    true,
-		modDeriv:         true,
-		modBox:           true,
-		modSecond:        true,
-		modSurfaceFrame:  true,
-	},
-	modSwizzleScalar: {
-		modSwizzleScalar: true,
-		modSwizzleVec:    true,
-		modDeriv:         true,
-	},
-	modSwizzleVec: {
-		modIndex:         true,
-		modSwizzleScalar: true,
-		modSwizzleVec:    true,
-		modDeriv:         true,
-	},
-	modDeriv: {
-		modIndex:         true,
-		modSwizzleScalar: true,
-		modSwizzleVec:    true,
-		modDeriv:         true,
-	},
-	modBox: {
-		modIndex: true,
-		modDeriv: true,
-	},
-	modSecond: {
-		modSurfaceFrame: true,
-		modDeriv:        true,
-	},
-	modSurfaceFrame: {
-		modDeriv: true,
-	},
 }
 
 func validateModifierSequence(prev *program.Operand, cur *Modifier) error {
 	prevKind, prevName := classifyOperandModifier(prev)
-	if prevKind == modNone {
+	if prevKind == lang.ModNone {
 		return nil
 	}
 	curKind := classifyModifier(cur)
-	if allowedModifierTransitions[prevKind][curKind] {
+	if lang.IsAllowedModifierTransition(prevKind, curKind) {
 		return nil
 	}
 	if cur.Access == nil {
@@ -587,7 +535,7 @@ func validateModifierSequence(prev *program.Operand, cur *Modifier) error {
 		}
 	}
 	msg := fmt.Sprintf("cannot apply .%s after .%s", cur.Access.Name, prevName)
-	if prevKind == modSurfaceFrame && curKind == modSecond {
+	if prevKind == lang.ModSurfaceFrame && curKind == lang.ModSecond {
 		msg += fmt.Sprintf(" (did you mean .second.%s?)", prevName)
 	}
 	return &participle.ParseError{
