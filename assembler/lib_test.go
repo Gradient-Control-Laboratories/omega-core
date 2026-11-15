@@ -1666,3 +1666,89 @@ return pt.x + n.z;
 		t.Fatalf("expected folded return 15.0, got %v", ret)
 	}
 }
+
+func TestAssemble_TopoFoldUiDerivedArithmeticAndErrors(t *testing.T) {
+	pkgMgr := source.NewLocalManager("../stdlib")
+	resolver := &mockTopoResolver{
+		mesh: &mockTopoMesh{
+			volume: 450.0,
+			facePt: [3]float64{2.0, 3.0, 4.0},
+			normal: [3]float64{0.0, 0.0, 1.0},
+		},
+	}
+
+	// Covers scalar ADD, SUB, MUL, DIV, NEG, vector.multiplyScalar, and 2D indexing on UI-derived constants.
+	src := `import . "omega";
+partId = importStep "bracket.step";
+uvBase = uiPoint([2.0, 4.0, 6.0]);
+u = (uvBase[0] + 2.0 - 1.0) / 2.0;
+v = (uvBase[1] * 1.5 - 3.0) / 2.0;
+uv = [u, v];
+partXf = uiTransform([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]);
+negScale = -(-1.0);
+col0 = negScale * partXf[0];
+xf = [col0, partXf[1], partXf[2], [partXf[3][0] + 5.0, 0.0, 0.0, 1.0]];
+pt = facePoint(partId, 1, uv, xf);
+return pt.x + pt.y;
+`
+	res, err := Assemble([]string{src}, SourceManager(pkgMgr), GeometryResolver(resolver))
+	if err != nil {
+		t.Fatalf("Assemble failed: %v", err)
+	}
+	// u = (2+2-1)/2 = 1.5, v = (4*1.5-3)/2 = 1.5
+	// mockTopoMesh.FacePoint returns [2+u, 3+v, 4] = [3.5, 4.5, 4]; +5 in x -> [8.5, 4.5, 4], x+y = 13.0
+	if got := res.Program.Primary.Files[0].Returns[0].GetValue(); got != 13.0 {
+		t.Fatalf("expected folded return 13.0, got %v", got)
+	}
+
+	errCases := []struct {
+		name string
+		src  string
+		want string
+	}{
+		{
+			name: "ui_derived_div_by_zero",
+			src: `import . "omega";
+partId = importStep "bracket.step";
+uvBase = uiPoint([1.0, 2.0, 3.0]);
+badUv = [uvBase[0] / 0.0, 0.0];
+pt = facePoint(partId, 1, badUv);
+return pt.x;
+`,
+			want: "facePoint: argument 3 must be a constant",
+		},
+		{
+			name: "ui_derived_negative_index",
+			src: `import . "omega";
+partId = importStep "bracket.step";
+uvBase = uiPoint([1.0, 2.0, 3.0]);
+idx = uiPoint([-1.0, 0.0, 0.0])[0];
+badUv = [uvBase[idx], 0.0];
+pt = facePoint(partId, 1, badUv);
+return pt.x;
+`,
+			want: "facePoint: argument 3 must be a constant",
+		},
+		{
+			name: "ui_derived_out_of_bounds_index",
+			src: `import . "omega";
+partId = importStep "bracket.step";
+uvBase = uiPoint([1.0, 2.0, 3.0]);
+idx = uiPoint([9.0, 0.0, 0.0])[0];
+badUv = [uvBase[idx], 0.0];
+pt = facePoint(partId, 1, badUv);
+return pt.x;
+`,
+			want: "facePoint: argument 3 must be a constant",
+		},
+	}
+
+	for _, tc := range errCases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := Assemble([]string{tc.src}, SourceManager(pkgMgr), GeometryResolver(resolver))
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("got err=%v, want error containing %q", err, tc.want)
+			}
+		})
+	}
+}

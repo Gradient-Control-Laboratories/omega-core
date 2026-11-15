@@ -352,6 +352,11 @@ func TestPostfixModifierErrors(t *testing.T) {
 			want: "cannot apply .box after .dtime",
 		},
 		{
+			name: "deriv_wrt_then_box_rejected",
+			src:  "t = 1;\nv = [t, 2];\nreturn v.d(t).box;\n",
+			want: "cannot apply .box after .d(...)",
+		},
+		{
 			name: "swizzle_then_u_rejected",
 			src:  "v = [1, 2, 3];\nreturn v.xy.u;\n",
 			want: "cannot apply .u after .xy",
