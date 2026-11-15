@@ -25,7 +25,9 @@ export function collectWGSL(root) {
   const seenCode = new Set();
   const out = [];
   const visit = (n) => {
-    if (typeof n === "function") n = n.functionNode;
+    // Up to r178 a wgslFn is a function carrying .functionNode; from r187 it is a Proxy
+    // that reads every property through to its FunctionNode, so it stands for the node itself.
+    if (typeof n === "function") n = n.functionNode ?? n;
     if (!n || seen.has(n)) return;
     seen.add(n);
     for (const inc of n.includes || []) visit(inc);

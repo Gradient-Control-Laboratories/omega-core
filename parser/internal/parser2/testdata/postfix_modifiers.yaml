@@ -1,0 +1,236 @@
+Expected:
+  files:
+    - assignments:
+        - expression:
+            expression:
+              operands:
+                - expression:
+                    operands:
+                      - value: 1
+                      - value: 2
+                    operation: COLLECT
+                - expression:
+                    operands:
+                      - value: 3
+                      - value: 4
+                    operation: COLLECT
+              operation: COLLECT
+          variables:
+            - name: m
+        - expression:
+            expression:
+              operands:
+                - expression:
+                    operands:
+                      - value: 10
+                      - value: 20
+                      - value: 30
+                    operation: COLLECT
+                - expression:
+                    operands:
+                      - value: 40
+                      - value: 50
+                      - value: 60
+                    operation: COLLECT
+              operation: COLLECT
+          variables:
+            - name: pts
+        - expression:
+            expression:
+              operands:
+                - value: 0
+                - value: 1
+              operation: COLLECT
+          variables:
+            - name: flags
+        - expression:
+            value: 2
+          variables:
+            - name: t
+        - expression:
+            expression:
+              operands:
+                - reference:
+                    name: t
+                - expression:
+                    operands:
+                      - reference:
+                          name: t
+                      - value: 2
+                    operation: MUL
+                - expression:
+                    operands:
+                      - reference:
+                          name: t
+                      - value: 3
+                    operation: MUL
+              operation: COLLECT
+          variables:
+            - name: v
+        - expression:
+            fnCall:
+              arguments:
+                - value: 1
+              reference:
+                name: sphere
+          variables:
+            - name: body
+        - expression:
+            expression:
+              operands:
+                - expression:
+                    operands:
+                      - reference:
+                          name: m
+                      - value: 0
+                    operation: INDEX
+                - value: 1
+              operation: INDEX
+          variables:
+            - name: a
+        - expression:
+            expression:
+              operands:
+                - expression:
+                    operands:
+                      - reference:
+                          name: pts
+                      - value: 0
+                    operation: INDEX
+                - reference:
+                    name: x
+              operation: ACCESS
+          variables:
+            - name: b
+        - expression:
+            expression:
+              operands:
+                - expression:
+                    operands:
+                      - reference:
+                          name: pts
+                      - value: 1
+                    operation: INDEX
+                - reference:
+                    name: yz
+              operation: ACCESS
+          variables:
+            - name: c
+        - expression:
+            expression:
+              operands:
+                - expression:
+                    operands:
+                      - reference:
+                          name: body
+                    operation: BOUNDINGBOX
+                - value: 0
+              operation: INDEX
+          variables:
+            - name: d
+        - expression:
+            expression:
+              operands:
+                - expression:
+                    operands:
+                      - expression:
+                          operands:
+                            - reference:
+                                name: body
+                          operation: BOUNDINGBOX
+                      - value: 1
+                    operation: INDEX
+                - reference:
+                    name: z
+              operation: ACCESS
+          variables:
+            - name: e
+        - expression:
+            expression:
+              operands:
+                - expression:
+                    operands:
+                      - expression:
+                          operands:
+                            - expression:
+                                operands:
+                                  - reference:
+                                      name: m
+                                  - value: 0
+                                operation: INDEX
+                            - value: 1
+                          operation: INDEX
+                    operation: NEG
+                - expression:
+                    operands:
+                      - expression:
+                          operands:
+                            - reference:
+                                name: flags
+                            - value: 0
+                          operation: INDEX
+                    operation: NOT
+              operation: ADD
+          variables:
+            - name: g
+        - expression:
+            expression:
+              operands:
+                - expression:
+                    operands:
+                      - expression:
+                          operands:
+                            - reference:
+                                name: v
+                            - reference:
+                                name: t
+                          operation: DERIV
+                      - value: 0
+                    operation: INDEX
+                - expression:
+                    operands:
+                      - expression:
+                          operands:
+                            - expression:
+                                operands:
+                                  - reference:
+                                      name: pts
+                                  - value: 0
+                                operation: INDEX
+                            - reference:
+                                name: t
+                          operation: DERIV
+                      - reference:
+                          name: "y"
+                    operation: ACCESS
+              operation: ADD
+          variables:
+            - name: h
+      returns:
+        - expression:
+            operands:
+              - reference:
+                  name: a
+              - reference:
+                  name: b
+              - expression:
+                  operands:
+                    - reference:
+                        name: c
+                    - value: 0
+                  operation: INDEX
+              - expression:
+                  operands:
+                    - reference:
+                        name: d
+                    - reference:
+                        name: x
+                  operation: ACCESS
+              - reference:
+                  name: e
+              - reference:
+                  name: g
+              - reference:
+                  name: h
+            operation: ADD
+Source: ""

@@ -42,10 +42,11 @@ This document outlines guidelines and principles for writing Markdown documentat
 
 ## Tables
 
-- Format tables with aligned columns padded with spaces so that vertical pipes (`|`)
-  line up vertically across header rows, separator rows, and data rows.
+- Format tables with equal column widths: pad every cell in each column with trailing spaces to
+  match the widest cell in that column so that vertical pipes (`|`) line up vertically across
+  header rows, separator rows, and data rows.
 - Aligning columns ensures tables are easily readable as plain text (ASCII) in diffs
   and code editors, as well as when rendered in Markdown viewers.
-- Separator rows should match column widths using dashes (`:---...--- |`).
+- Separator rows should match column widths using dashes (`:---...--- |`), never minimal `| :--- |`.
 - Table rows are exempt from the standard 100-character line length limit when column
   content requires additional width to maintain proper alignment.

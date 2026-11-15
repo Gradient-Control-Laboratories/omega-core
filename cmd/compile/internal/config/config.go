@@ -21,6 +21,10 @@ const (
 	TargetAudio Target = "audio"
 	TargetAST   Target = "ast"
 	TargetPNG   Target = "png"
+	// TargetField is the field bundle a viewer draws: the WGSL and its shapes, parts, sliders, UI controls,
+	// @scene and mesh grids, or the document's errors, as one JSON (internal/fieldbundle), the same as
+	// gsl serve's /api/compile answers.
+	TargetField Target = "field"
 )
 
 // multiStringFlag collects multiple instances of a flag into a string slice.
@@ -84,6 +88,8 @@ func (c *Config) defaultExt() string {
 		return ".ast.json"
 	case TargetPNG:
 		return ".png"
+	case TargetField:
+		return ".field.json"
 	default:
 		return ".out"
 	}
@@ -151,8 +157,8 @@ func ParseFlags(args []string) (*Config, error) {
 	)
 
 	// Target flag (-t, --target)
-	fs.StringVar(&targetStr, "t", "wgsl", "Compilation output target (wgsl, stl, 3mf, glb, tape, audio, ast, png)")
-	fs.StringVar(&targetStr, "target", "wgsl", "Compilation output target (wgsl, stl, 3mf, glb, tape, audio, ast, png)")
+	fs.StringVar(&targetStr, "t", "wgsl", "Compilation output target (wgsl, stl, 3mf, glb, tape, audio, ast, png, field)")
+	fs.StringVar(&targetStr, "target", "wgsl", "Compilation output target (wgsl, stl, 3mf, glb, tape, audio, ast, png, field)")
 
 	// Output flag (-o, --output)
 	fs.StringVar(&outputStr, "o", "", "Output destination path ('-' for stdout)")
@@ -195,9 +201,9 @@ func ParseFlags(args []string) (*Config, error) {
 
 	target := Target(strings.ToLower(strings.TrimSpace(targetStr)))
 	switch target {
-	case TargetWGSL, TargetSTL, Target3MF, TargetGLB, TargetTape, TargetAudio, TargetAST, TargetPNG:
+	case TargetWGSL, TargetSTL, Target3MF, TargetGLB, TargetTape, TargetAudio, TargetAST, TargetPNG, TargetField:
 	default:
-		return nil, fmt.Errorf("unsupported target %q; must be one of wgsl, stl, 3mf, glb, tape, audio, ast, png", targetStr)
+		return nil, fmt.Errorf("unsupported target %q; must be one of wgsl, stl, 3mf, glb, tape, audio, ast, png, field", targetStr)
 	}
 
 	var width, height int
