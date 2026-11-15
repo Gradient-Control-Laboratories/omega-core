@@ -22,10 +22,17 @@
 
 // --- solidification ---
 
-// Every lattice field in this library is unit-normalized: a unit-gradient
-// distance field whose value is the (real-length) distance to the lattice's zero
-// surface. That makes one solidify() utility work across all families, with
-// `bias` and `thickness` in the model's length units.
+// The beam, honeycomb and foam fields in this library are unit-normalized: a
+// unit-gradient distance field whose value is the (real-length) distance to the
+// lattice's zero surface. That makes one solidify() utility work across those
+// families, with `bias` and `thickness` in the model's length units.
+//
+// The TPMS fields are not. They are scaled to be of that order, but their
+// gradient at the zero surface is not 1 (a gyroid's is about 1.5), so `bias`
+// and `thickness` are not lengths for them: a gyroid sheet asked to be 1.0 mm
+// measures about 0.64 mm. Pass a TPMS field through normalizeField() first
+// where a real thickness matters; the sheet then measures within a few percent
+// of what was asked.
 
 /// solidify(field, bias): grow a unit-normalized lattice field into a solid by
 /// offsetting its zero level set outward by `bias` (a length, or a field for

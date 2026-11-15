@@ -30,9 +30,10 @@ sum3(v) {
 // --- solidification variants ---
 // A raw TPMS field splits space into two interpenetrating labyrinths either
 // side of the zero surface. These four helpers turn a field into a solid, all
-// routed through the shared lattice.solidify utility (TPMS fields are
-// unit-normalized like the other lattices, but start at ~50% volume rather than
-// thin):
+// routed through the shared lattice.solidify utility. TPMS fields start at
+// ~50% volume rather than thin, and unlike the other lattices they are not
+// unit-normalized: `t` is a length only for a field passed through
+// normalizeField() first (see lattice.gsl).
 
 /// thick(field, t): the solid network on the negative side of the surface
 /// (field <= t). `t` shifts the volume fraction; t = 0 is the balanced split,
