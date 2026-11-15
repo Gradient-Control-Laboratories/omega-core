@@ -9,5 +9,9 @@
   *Link: [index.md](./tracks/eval_mesh_shader_20261113/index.md)*
 
 ---
+- [ ] **Track: `gsl eval`: Answers an Agent Can Lean On**
+  *Link: [index.md](./tracks/eval_answers_20261115/index.md)*
+
+---
 - [ ] **Track: Backlog**
   *Link: [index.md](./tracks/backlog_20261110/index.md)*
