@@ -122,6 +122,9 @@ Subcommands delegate to sibling tool binaries in `bin/`:
 - `tape`: Compact vectorized spatial bytecode evaluation tape.
 - `audio`: Web Audio JavaScript oscillator and synthesis code.
 - `ast`: Formatted JSON AST dump for structural inspection.
+- `field`: The field bundle a viewer draws, as one JSON (`<source>.field.json`): the WGSL with its shapes,
+  parts, sliders, UI controls, `@scene` and imported meshes' preview grids, the same as `gsl serve`'s
+  `/api/compile` answers. A document with errors gets a bundle listing them, and the command exits 1.
 
 ### Companion Metadata (`<output>.json`)
 

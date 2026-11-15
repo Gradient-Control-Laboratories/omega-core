@@ -65,6 +65,7 @@ until Ctrl-C. `--no-open` prints the address without opening a browser.
 | `tape` | the field as a bytecode tape (for Fidget) | `part.tape` |
 | `audio` | Web Audio JavaScript for the model's sound | `part.js` |
 | `ast` | the linked program as JSON | `part.ast.json` |
+| `field` | the field bundle a viewer draws, as one JSON: the WGSL with its shapes, parts, sliders, UI controls, `@scene` and imported meshes' preview grids, the same as `gsl serve`'s `/api/compile` answers. A model with errors gets a bundle listing them (`lineNum`, `column`, `message`), and the command exits 1. No companion JSON: the bundle holds it | `part.field.json` |
 
 General flags:
 

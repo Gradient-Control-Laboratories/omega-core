@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added `gsl compile -t field` (`compile -t field`, default `<source>.field.json`) and shared
+  `internal/fieldbundle` compilation so CLI field bundles and `gsl serve`'s `/api/compile` emit
+  identical WGSL, shape, part, slider, UI control, `@scene`, mesh preview grid, audio, and
+  structured diagnostic JSON.
 - Added generalized left-to-right postfix modifier chaining (`Modifiers []*Modifier`) in
   `parser/internal/parser2`, supporting valid `.member`, `.dp`/`.dtime`/`.d(var)`, and
   `[index]` sequences (such as `m[0][1]`, `pts[0].x`, `body.box[0]`, and `v.d(t)[0]`) while
