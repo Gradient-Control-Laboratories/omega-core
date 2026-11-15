@@ -11,7 +11,14 @@ import (
 // defaultVolumeTolerance is the relative tolerance Volume takes when the caller names none.
 const defaultVolumeTolerance = 0.05
 
-// Volume is VolumeOf for the document as written: no manifest and no defs.
+// volumeBudget bounds the interval evaluations of one volume: where it ends the search, the bracket is sound but
+// wider than the tolerance asked, and the result says so.
+var volumeBudget = 64_000_000
+
+// ReasonDepth is why a VolumeBounds did not converge when the search reached its deepest subdivision first.
+const ReasonDepth = "depth"
+
+// Volumeis VolumeOf for the document as written: no manifest and no defs.
 func (e *Evaluator) Volume(ctx context.Context, code, expr string, region [6]float64, relativeTolerance float64) (VolumeBounds, error) {
 	return e.VolumeOf(ctx, nil, code, "", expr, region, relativeTolerance)
 }
@@ -47,19 +54,18 @@ func (e *Evaluator) VolumeOf(ctx context.Context, manifest map[string]string, co
 		return (float64(box[3]) - float64(box[0])) * (float64(box[4]) - float64(box[1])) * (float64(box[5]) - float64(box[2]))
 	}
 	result.Upper = volume(root)
-	const budget = 64_000_000
 	type cell struct {
 		box   [6]float32
 		depth int
 	}
-	for depth := 18; depth <= 36 && result.Evals < budget; depth += 2 {
+	for depth := 18; depth <= 36 && result.Evals < volumeBudget; depth += 2 {
 		stack := []cell{{box: root}}
 		lower, upper := 0.0, volume(root)
-		for len(stack) > 0 && result.Evals < budget {
+		for len(stack) > 0 && result.Evals < volumeBudget {
 			if err := ctx.Err(); err != nil {
 				return result, err
 			}
-			count := min(len(stack), 4096, budget-result.Evals)
+			count := min(len(stack), 4096, volumeBudget-result.Evals)
 			batch := append([]cell(nil), stack[len(stack)-count:]...)
 			stack = stack[:len(stack)-count]
 			boxes := make([][6]float32, count)
@@ -97,7 +103,14 @@ func (e *Evaluator) VolumeOf(ctx context.Context, manifest map[string]string, co
 		}
 		result.Lower, result.Upper = max(result.Lower, lower), min(result.Upper, upper)
 		if result.Upper-result.Lower <= relativeTolerance*result.Upper {
+			result.Converged = true
 			break
+		}
+	}
+	if !result.Converged {
+		result.Reason = ReasonDepth
+		if result.Evals >= volumeBudget {
+			result.Reason = ReasonBudget
 		}
 	}
 	result.Upper *= 1 + 1e-12

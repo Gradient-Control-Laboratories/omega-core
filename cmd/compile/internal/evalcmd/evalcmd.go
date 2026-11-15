@@ -58,9 +58,11 @@ A request names its op and its document, by path ("source") or text ("code"):
   extremum   expr, region, mode, tolerance, lipschitz  min and/or max; the bound assumes the Lipschitz constant
   certify    expr, region, threshold, tolerance,      a sound proof that expr >= threshold over the region
              params | overSliders                     (and over the parameter ranges)
-  bounds     expr, region, resolution                 the box where expr < 0
+  bounds     expr, region, resolution                 a box proven to hold all of expr < 0 ("proven"); else a
+                                                      fit on a grid that can miss thin walls, and "reason"
   surface    expr, points, maxIters, tolerance        each point moved onto expr = 0
-  volume     expr, region, relativeTolerance          the volume where expr < 0, bracketed
+  volume     expr, region, relativeTolerance          the volume where expr < 0, bracketed; "converged" says the
+                                                      bracket met the tolerance, "reason" why it did not
   describe                                            the sliders, top-level names and returns
   render     out, expr, views, width, height, light,   a PNG at out, as compile -t png draws it; expr defaults
              extent, time                              to the returns, each in its own colour
@@ -71,7 +73,8 @@ A request names its op and its document, by path ("source") or text ("code"):
                                                        for time and the sliders, and its textures as files
 
 "defs" are GSL statements in the document's scope; one naming a declared name replaces it ("skin = 1.6;").
-"expr" defaults to the union of the document's returns. "region" is [x0, y0, z0, x1, y1, z1] in mm.
+"expr" defaults to the union of the document's returns, and eval's "exprs" to each of them.
+"region" is [x0, y0, z0, x1, y1, z1] in mm.
 render's "views" is compile's --views ("iso,top,-1,1,0.6"), its size 640 by 480 unless named.
 mesh's "region" defaults to the box the field fills (compile's --bbox auto), "subdivision" to 9 and "algorithm"
 to "mdc" (or "marching-cubes"); the response's "region" is the box that was meshed.
@@ -379,13 +382,17 @@ func evalPoints(ctx context.Context, e *eval.Evaluator, code string, req *reques
 	if req.Expr != "" {
 		return nil, malformedf("eval takes exprs, a list, not expr")
 	}
-	if len(req.Exprs) == 0 {
-		return nil, malformedf("eval names its exprs")
+	exprs := req.Exprs
+	if len(exprs) == 0 {
+		// As expr defaults to the returns for the other ops; here each is its own group.
+		if exprs = eval.TopLevelReturnExprs(code); len(exprs) == 0 {
+			return nil, errors.New("the document returns nothing: name its exprs")
+		}
 	}
 	if len(req.Points) == 0 {
 		return nil, malformedf("eval names its points, [[x, y, z], ...] in mm")
 	}
-	groups, err := e.EvalGsl(ctx, nil, code, req.Defs, req.Exprs, req.Points)
+	groups, err := e.EvalGsl(ctx, nil, code, req.Defs, exprs, req.Points)
 	if err != nil {
 		return nil, err
 	}
@@ -401,8 +408,8 @@ func evalPoints(ctx context.Context, e *eval.Evaluator, code string, req *reques
 		}
 		group := map[string]any{"type": g.TypeName, "values": values, "gradients": gradients}
 		// A call returning several values gives several groups for one expr: then a group is known by its place only.
-		if len(groups) == len(req.Exprs) {
-			group["expr"] = req.Exprs[i]
+		if len(groups) == len(exprs) {
+			group["expr"] = exprs[i]
 		}
 		out = append(out, group)
 	}
@@ -515,14 +522,19 @@ func bounds(ctx context.Context, e *eval.Evaluator, code string, req *request) (
 	if err != nil {
 		return nil, err
 	}
-	r, err := e.Bounds(ctx, nil, code, req.Defs, x, box, req.Resolution)
+	r, err := e.Enclose(ctx, nil, code, req.Defs, x, box, req.Resolution)
 	if err != nil {
 		return nil, err
 	}
-	return map[string]any{
+	out := map[string]any{
 		"expr": x, "found": r.Found, "bboxMin": vec(r.BboxMin[:]), "bboxMax": vec(r.BboxMax[:]),
 		"cellSize": vec(r.CellSize[:]), "resolution": r.Resolution, "minValue": f32(r.MinValue), "minAt": vec(r.MinAt[:]),
-	}, nil
+		"proven": r.Proven, "evals": r.Evals,
+	}
+	if !r.Proven {
+		out["reason"] = r.Reason
+	}
+	return out, nil
 }
 
 func surface(ctx context.Context, e *eval.Evaluator, code string, req *request) (map[string]any, error) {
@@ -567,7 +579,12 @@ func volume(ctx context.Context, e *eval.Evaluator, code string, req *request) (
 	if err != nil {
 		return nil, err
 	}
-	return map[string]any{"expr": x, "lowerMm3": f64(r.Lower), "upperMm3": f64(r.Upper), "evals": r.Evals}, nil
+	out := map[string]any{"expr": x, "lowerMm3": f64(r.Lower), "upperMm3": f64(r.Upper), "evals": r.Evals,
+		"converged": r.Converged}
+	if !r.Converged {
+		out["reason"] = r.Reason
+	}
+	return out, nil
 }
 
 // The panel size render draws when the request names none: compile -t png's.
