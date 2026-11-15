@@ -430,32 +430,160 @@ compile-time constants or restricting the target variable's or expression's type
 
 #### Supported Annotations
 
-Annotations are supported as top-level scene directives, on variable declarations,
-named functions, function parameters, and inline expressions:
-- **`@scene`**: Top-level directive configuring package-level viewport and grid extents.
-- **`@range`**: Numeric slider bounds and optional animation periods on variable declarations,
-  function parameters, or inline expressions.
-- **`@values`**: Discrete option selectors on variable declarations, function parameters,
-  or inline expressions.
-- **`@point`**: 3D position controls on 3-component variable declarations
-  or inline expressions.
-- **`@transform`**: 3D spatial transformation gizmos on 4x4 matrix variable declarations
-  or inline expressions.
-- **`@spline`**: Multi-handle 3D spline curve manipulators on variable declarations
-  or inline expressions.
+Annotations are organized into five categories based on their role:
 
-#### Range Annotations (Sliders)
+| Category      | Purpose                                                                      |
+| :------------ | :--------------------------------------------------------------------------- |
+| Presentation  | Configure how the host environment frames and displays the package.          |
+| Scalar        | Configure sliders, animation periods, or discrete choices for scalar values. |
+| UI Suggestion | Suggest interactive viewport manipulators or color pickers for values.       |
+| Parameter     | Provide hints on function parameters for what arguments callers should pass. |
+| Metadata      | Mark top-level declarations for catalog discovery and tooling metadata.      |
 
-A top-level variable assigned a scalar numeric literal, a function parameter,
-or a scalar numeric literal within an expression can be decorated with a `@range(...)` annotation:
-- **`@range(min, max)`**: Registers a slider with the given minimum and maximum bounds.
-- **`@range(min, max, period)`**: Registers
-  an animated slider oscillating sinusoidally between `min` and `max` over `period` seconds.
-- **Snapping**: Snapping/rounding steps are configured by the decimal places of
-  the original literal (`radius = 5;` snaps to integers, `radius = 0.50;` snaps to 0.01 increments).
+| Category      | Annotation                                        | Valid Targets                                   |
+| :------------ | :------------------------------------------------ | :---------------------------------------------- |
+| Presentation  | `@scene(size[, grid])`                            | Package directive (top of first file)           |
+| Scalar        | `@range(min, max[, increment=inc][, period=sec])` | Variable assignments, inline scalar expressions |
+| Scalar        | `@values(v1, v2, ...)`                            | Variable assignments, inline scalar expressions |
+| UI Suggestion | `@point`                                          | Variable assignments, inline expressions        |
+| UI Suggestion | `@direction[(anchor)]`                            | Variable assignments, inline expressions        |
+| UI Suggestion | `@color`                                          | Variable assignments, inline expressions        |
+| UI Suggestion | `@transform`                                      | Variable assignments, inline expressions        |
+| UI Suggestion | `@spline`                                         | Variable assignments, inline expressions        |
+| Parameter     | `@range(min, max)`                                | Function parameters                             |
+| Parameter     | `@values(v1, v2, ...)`                            | Function parameters                             |
+| Parameter     | `@frame`                                          | Function parameters                             |
+| Parameter     | `@point`                                          | Function parameters                             |
+| Parameter     | `@direction[(anchor)]`                            | Function parameters                             |
+| Parameter     | `@color`                                          | Function parameters                             |
+| Parameter     | `@transform`                                      | Function parameters                             |
+| Metadata      | `@material`                                       | Function declarations                           |
+| Metadata      | `@finish`                                         | Variable assignments, function declarations     |
+| Metadata      | `@surface`                                        | Function declarations                           |
+
+#### 1. Presentation Annotations
+
+Presentation annotations configure how the host environment frames and displays the package.
+
+##### Scene Annotation (`@scene`)
+
+The `@scene` annotation configures the document viewport size and grid density:
+
+```gsl
+@scene(20)
+@scene(20, 2)
+```
+
+* **Position**: Must be placed at the very top of the first file in a package,
+  strictly preceding any imports or declarations.
+* **Arguments**: Takes positional numeric constants: `@scene(size)` or `@scene(size, grid)`.
+  Arguments must be strictly positive (`size > 0`, `grid > 0`).
+* **Default Grid**: If `grid` is omitted, it defaults to `size / 10.0`.
+* **Syntax**: Must not end with a semicolon.
+
+#### 2. Scalar Annotations
+
+When `@range` or `@values` precedes a variable assignment or an inline scalar value, it acts as a
+scalar annotation, configuring a slider or discrete selection control in the host UI. (When placed
+on a function parameter, see [4. Parameter Annotations](#4-parameter-annotations).)
+
+Each of the following scalar annotations maps to an `Input` annotation in the AST.
+
+The existing `Range` annotation in `program/program.proto` will be migrated to the `Input`
+annotation. Because `Input` captures `decimals` directly from the source literal during parsing
+(alongside `min`, `max`, `increment`, `values`, and `period`), host UI descriptors such as
+`SliderInfo` (in `assembler/slider/slider.go`) can be constructed solely from the assembled AST
+without requiring the raw source text.
+
+##### Proposed `program.proto` Schema & Mapping
+
+```protobuf
+message Input {
+    // The location containing the first character of the annotation
+    Location start = 1;
+
+    // The location one beyond the last character of the annotation
+    Location end = 2;
+
+    oneof domain {
+        // Continuous or stepped numeric interval from @range(...)
+        RangeDomain range = 3;
+
+        // Discrete numeric choices from @values(...)
+        ValuesDomain values = 4;
+    }
+
+    // Optional animation period in seconds (from period=<sec>, must evaluate to > 0).
+    // When set, the host UI drives the scalar value sinusoidally across [min, max] over
+    // this period (crossing the midpoint (min + max) / 2 at t = 0) while allowing the user
+    // to pause or scrub manually. If increment is set, the animated value snaps to
+    // min + k * increment; otherwise it rounds using decimals. Ignored during shader codegen.
+    Operand period = 5;
+}
+
+message RangeDomain {
+    Operand min = 1;
+    Operand max = 2;
+
+    // Strict step size from increment=<inc> (max == min + n * increment, n >= 1).
+    // Unset when no increment is specified.
+    Operand increment = 3;
+
+    // Soft UI rounding hint: decimal-place count of the original scalar literal
+    // (populated on assignments and inline scalars when increment is absent).
+    optional int32 decimals = 4;
+}
+
+message ValuesDomain {
+    repeated Operand values = 1;
+}
+```
+
+`Input` is used only for variable assignments and inline scalar literals, not for function
+parameters: in `Assignment`, `Range range` is replaced with `Input input` (and inline scalar
+`Operand`s may carry `Input input`), while `Parameter` is changed or not as specified
+in the "Parameter Annotations" section below.
+
+| Source Annotation                                 | `Input` AST Representation                                                    |
+| :------------------------------------------------ | :---------------------------------------------------------------------------- |
+| `@range(min, max)`                                | `range: { min, max, decimals? }`, `period: nil`                               |
+| `@range(min, max, period=<sec>)`                  | `range: { min, max, decimals? }`, `period: <sec>`                             |
+| `@range(min, max, increment=<inc>)`               | `range: { min, max, increment: <inc> }` (`decimals` unset)                    |
+| `@range(min, max, increment=<inc>, period=<sec>)` | `range: { min, max, increment: <inc> }`, `period: <sec>` (`decimals` unset)   |
+| `@values(v1, v2, ..., vn)`                        | `values: { values: [v1, v2, ..., vn] }`, `period: nil`                        |
+
+**Host UI Resolution (`SliderInfo`)**:
+- `SliderInfo` keeps **`Increment`** (strict step from `RangeDomain.increment`) and **`Decimals`**
+  (soft $10^{-\text{decimals}}$ rounding and literal-formatting hint from `RangeDomain.decimals`) as
+  separate optional fields.
+- When `Increment > 0`, `Decimals` is unset and the host UI snaps strictly to `min + k * Increment`.
+- When `Increment == 0`, the host UI treats the control as a continuous slider using `Decimals` for
+  soft rounding and source-literal formatting.
+
+##### Range Annotation (`@range`)
+
+A top-level variable assigned a scalar numeric literal or a scalar numeric literal within an
+expression can be decorated with a `@range(...)` annotation:
+- **`@range(min, max)`**: Registers a continuous slider with the given minimum and maximum bounds.
+- **`@range(min, max, period=<sec>)`**: Registers an animated slider oscillating sinusoidally
+  between `min` and `max` over `<sec>` seconds.
+- **`@range(min, max, increment=<increment>)`**: Registers a stepped/discrete slider from `min` to
+  `max` in steps of `<increment>`. This is equivalent to `@values(min, min + increment, ..., max)`.
+  It is a compile-time error if `max != min + (n * increment)` for some integer $n \ge 1$.
+- **`@range(min, max, increment=<increment>, period=<sec>)`**: Combines stepped increments with
+  periodic animation. `increment` must precede `period`; specifying `period` followed by
+  `increment` is reported as a parser error.
+- **Snapping (UI Suggestion)**: For continuous sliders without `increment`, the parser records the
+  decimal-place count of the original scalar literal in the `decimals` field of the `Input` AST
+  annotation (`radius = 5;` → `decimals = 0`, integer steps; `radius = 0.50;` → `decimals = 2`,
+  `0.01` steps). `decimals` is populated for variable assignments and inline scalar literals (not
+  parameters) and serves as a "softer" host UI suggestion for rounding and formatting.
 - **Validation Rules**:
   - Both `min` and `max` bounds are required, where `min < max`.
-  - The assigned initial value must satisfy `min <= initialValue <= max`.
+  - The assigned initial value must satisfy `min <= initialValue <= max` (and must align with a
+    step `min + k * increment` when `increment` is specified).
+  - If `increment` is specified, it must evaluate to a strictly positive constant (`increment > 0`),
+    and `max` must equal `min + n * increment` for an integer $n \ge 1$.
   - If `period` is specified, it must evaluate to a strictly positive constant (`period > 0`).
   - Range arguments can be expressions, but must evaluate to numeric constants at compile time.
   - Range arguments cannot depend on spatial coordinates `p`.
@@ -467,10 +595,16 @@ or a scalar numeric literal within an expression can be decorated with a `@range
 A `@range(...)` annotation on a variable assignment or inline expression encourages the host application
 to register a dynamic slider in the host user interface.
 
-*Example Assignment Slider Configuration:*
+*Example Assignment Slider Configurations:*
 ```gsl
-@range(0.5, 10.0, 4.0)
+@range(0.5, 10.0, period=4.0)
 radius = 5.00;
+
+@range(1.0, 5.0, increment=0.5)
+stepped = 2.5;
+
+@range(1.0, 5.0, increment=0.5, period=4.0)
+animatedStepped = 2.5;
 ```
 
 *Example Expression Slider Configuration:*
@@ -478,39 +612,18 @@ radius = 5.00;
 s = sphere(@range(0.5, 10.0) 5.00);
 ```
 
-A `@range(...)` annotation on a function parameter suggests that any caller provide a value
-within the specified range.
-On function parameters, `@range` requires exactly 2 arguments: `@range(min, max)`.
-A third `period` argument does not make sense on a parameter and produces a compile-time parse error.
-For example, if a programmer wants a function parameter to be limited to values
-between 0.5 and 10.0, they can add the `@range(0.5, 10.0)` annotation to the parameter.
-The host application can use this information to provide feedback to the user
-about the expected range of values for the parameter.
-Shader code generators ignore parameter-level `@range` annotations during emission
-as these annotations are suggestions for callers to the functions whose parameters
-contain these annotations.
+##### Values Annotation (`@values`)
 
-*Example Function Parameter Range Annotation:*
-```gsl
-someFunc(a, @range(0.5, 10.0) b, c) {
-  ...
-  return d;
-}
-```
-
-#### Values Annotations (Discrete Options)
-
-A top-level variable assigned a scalar numeric literal, a function parameter,
-or a scalar numeric literal within an expression can be decorated with a `@values(...)` annotation.
+A top-level variable assigned a scalar numeric literal or a scalar numeric literal within an
+expression can be decorated with a `@values(...)` annotation:
 - **`@values(v1, v2, ..., vn)`**: Registers
   a discrete UI selector allowing choice among specified scalar values ($v1, v2, \dots, vn$).
 - **Restrictions**:
   - The `@values` parameters can be scalar expressions,
     but must evaluate to numeric constants at compile time.
   - At least 2 value parameters must be provided.
-  - It can be applied to any top-level variable assigned a scalar literal,
-    a function parameter, or a scalar literal within an expression
-    (matching all contexts where `@range` is permitted).
+  - It can be applied to any top-level variable assigned a scalar literal
+    or a scalar literal within an expression.
   - It is a compile error if any of the above restrictions are not satisfied.
 
 A `@values(...)` annotation on a variable or expression encourages the host application
@@ -527,24 +640,14 @@ stepSize = 2.0;
 s = step(@values(1.0, 2.0, 4.0, 8.0) 2.0);
 ```
 
-A `@values(...)` annotation on a function parameter suggests that any caller provide a value
-among the specified discrete values. For example, if a programmer wants a particular function
-parameter to be limited to values among 1.0, 2.0, 4.0, or 8.0, they can add the
-`@values(1.0, 2.0, 4.0, 8.0)` annotation to the parameter.
-The host application can use this information to provide feedback to the user
-about the expected set of values for the parameter.
+#### 3. UI Suggestion Annotations
 
-*Example Function Parameter Discrete Values Annotation:*
-```gsl
-someFunc(a, @values(1.0, 2.0, 4.0, 8.0) b, c) {
-  ...
-  return d;
-}
-```
+UI suggestion annotations declare interactive viewport manipulators, color pickers, and typed
+parameter expectations for tooling and editor UIs.
 
-#### Point Annotations
+##### Point Annotation (`@point`)
 
-A top-level variable or a 3-component list within an expression
+A top-level variable, a function parameter, or a 3-component list within an expression
 can be decorated with a `@point` annotation.
 The annotation is placed before the variable assignment:
 
@@ -559,15 +662,54 @@ s = sphere(p - @point [1.0, 2.0, 3.0]);
 ```
 
 **Restrictions**:
-- The target being annotated must be a top-level variable or a 3-component list within an expression.
-- The variable must be assigned a value.
-- The value must be a 3-component list.
-- All of the values in the list must be scalar numeric literals.
+- The target being annotated must be a top-level variable, a function parameter, or a 3-component
+  list within an expression.
+- On variable assignments and expressions, the value must be a 3-component list of scalar numeric
+  literals.
 - It is a compile error if any of the above restrictions are not satisfied.
 
-#### Transform Annotations
+##### Direction Annotation (`@direction`)
 
-A top-level variable assignment or a 4x4 matrix within an expression
+A top-level variable, a function parameter, or a 3-component vector within an expression
+can be decorated with `@direction` or `@direction(anchor)`:
+
+```gsl
+@direction
+buildDir = [0.0, 0.0, 1.0];
+
+@point
+center = [10.0, 0.0, 5.0];
+
+@direction(center)
+axis = [0.0, 0.0, 1.0];
+```
+
+**Arguments**:
+- Takes 0 or 1 argument: `@direction` draws the arrow from the origin; `@direction(anchor)` draws
+  the arrow from the specified anchor point (a constant 3D point or a `@point` variable).
+- On a function parameter, `@direction(anchor)` must name a sibling parameter of the same
+  function (e.g., `turned(@point axisOrigin, @direction(axisOrigin) axisDir)`).
+
+##### Color Annotation (`@color`)
+
+A top-level variable, a function parameter, or a 3-component sRGB vector within an expression
+can be decorated with `@color`:
+
+```gsl
+@color
+coat = [0.804, 0.098, 0.098];
+
+c = applyColor(@color [0.2, 0.2, 0.2]);
+```
+
+**Restrictions**:
+- Takes no arguments.
+- On variable assignments and expressions, the value must evaluate to a 3-component `[r, g, b]`
+  vector.
+
+##### Transform Annotation (`@transform`)
+
+A top-level variable assignment, a function parameter, or a 4x4 matrix within an expression
 can be decorated with a `@transform` annotation.
 The annotation is placed on a line immediately before the variable assignment:
 
@@ -590,13 +732,13 @@ s = myFunc(@transform [[1.0, 0.0, 0.0, 0.0],
 ```
 
 **Restrictions**:
-- The target being annotated must be a top-level variable or a 4x4 matrix within an expression.
-- The variable must be assigned a value.
-- The value must be a 4x4 matrix.
-- All of the values in the matrix must be scalar numeric literals.
+- The target being annotated must be a top-level variable, a function parameter, or a 4x4 matrix
+  within an expression.
+- On variable assignments and expressions, the value must be a 4x4 matrix of scalar numeric
+  literals.
 - It is a compile error if any of the above restrictions are not satisfied.
 
-#### Spline Annotations
+##### Spline Annotation (`@spline`)
 
 A top-level variable assignment or an odd-length list of 4x4 matrices within an expression
 can be decorated with a `@spline` annotation.
@@ -632,21 +774,80 @@ or references to variables (such as `@transform` definitions) are left untouched
 - Parameter annotations with `@spline` (such as `fn(@spline s)`) are not supported.
 - It is a compile error if any of the above restrictions are not satisfied.
 
-#### Scene Annotation
+#### 4. Parameter Annotations
 
-The `@scene` annotation configures the document viewport size and grid density:
+Parameter annotations are hints on function parameters describing what argument should be supplied
+when calling the function. They are recorded on the function signature for tooling and editor UIs
+and are ignored during shader code generation.
+
+##### Parameter Range Annotation (`@range`)
+
+A `@range(min, max)` annotation on a function parameter suggests that callers provide a value
+within the specified range:
 
 ```gsl
-@scene(20)
-@scene(20, 2)
+someFunc(a, @range(0.5, 10.0) b, c) {
+  ...
+  return d;
+}
 ```
 
-* **Position**: Must be placed at the very top of the first file in a package,
-  strictly preceding any imports or declarations.
-* **Arguments**: Takes positional numeric constants: `@scene(size)` or `@scene(size, grid)`.
-  Arguments must be strictly positive (`size > 0`, `grid > 0`).
-* **Default Grid**: If `grid` is omitted, it defaults to `size / 10.0`.
-* **Syntax**: Must not end with a semicolon.
+On function parameters, `@range` requires exactly 2 arguments: `@range(min, max)`.
+A third `period` argument does not make sense on a parameter and produces a compile-time parse error.
+
+##### Parameter Values Annotation (`@values`)
+
+A `@values(v1, v2, ..., vn)` annotation on a function parameter suggests that callers provide a
+value from the specified discrete set (at least 2 compile-time numeric constants):
+
+```gsl
+someFunc(a, @values(1.0, 2.0, 4.0, 8.0) b, c) {
+  ...
+  return d;
+}
+```
+
+##### Frame Parameter Annotation (`@frame`)
+
+`@frame` is a parameter-only annotation that takes no arguments:
+
+```gsl
+@surface turned(baseMaterial, @color baseColor, @frame frame) {
+  ...
+}
+```
+
+It indicates that the parameter receives a body's `[body.u, body.v]` frame, which tooling reads
+from the body rather than prompting the user with a control. Applying `@frame` to any target other
+than a function parameter produces a compile-time error.
+
+##### Typed Parameter Hints (`@point`, `@direction`, `@color`, `@transform`)
+
+When `@point`, `@direction`, `@color`, or `@transform` decorates a function parameter, it declares
+the kind of argument the parameter expects so tooling writing a call can offer the matching
+control. On a parameter, `@direction(anchor)` must name a sibling parameter of the same function
+(e.g., `turned(@point axisOrigin, @direction(axisOrigin) axisDir)`).
+
+#### 5. Metadata Annotations
+
+Metadata annotations mark top-level declarations for catalog discovery, material browsers, and
+tooling without altering what the declaration compiles to.
+
+##### Material Annotations (`@material`)
+
+Takes no arguments and marks a browsable material function returning a `(material, color)` pair.
+`@material` must annotate a function declaration; constant assignments are rejected because a
+constant cannot carry both a material record and an albedo color.
+
+##### Finish Annotations (`@finish`)
+
+Takes no arguments and marks a colorless material finish preset on a variable assignment or
+function declaration.
+
+##### Surface Operator Annotations (`@surface`)
+
+Takes no arguments and is valid only on function declarations. Marks a surface operator preset
+taking a base material first and returning the modified surface.
 
 ### 8. Geometry and Field Properties
 
