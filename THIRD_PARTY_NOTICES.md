@@ -25,15 +25,15 @@ selection). Every file in these crates, including the modified ones, remains
 under MPL-2.0. The license text is `internal/fidget/vendor/LICENSE`.
 The MPL is file-level: it does not apply to this repository's own files.
 
-### three.js r178 — MIT
+### three.js r187 — MIT
 
-`examples/viewer/vendor/three/`. Copyright 2010-2025 three.js authors. License
+`examples/viewer/vendor/three/`. Copyright 2010-2026 three.js authors. License
 text: `examples/viewer/vendor/three/LICENSE`. The kept files are
-byte-identical to the upstream r178 tag.
+byte-identical to the upstream r187 tag.
 
-Third-party code embedded in `three.core.js` / `three.webgpu.js`:
+Third-party code embedded in `three.core.js` / `three.tsl.js`:
 
-- **earcut** v3.0.1, ISC, Copyright (c) 2024 Mapbox (Appendix B).
+- **earcut** v3.0.2, ISC, Copyright (c) 2024 Mapbox (Appendix B).
 - **cyrb53** hash, Copyright (c) 2018 bryc, public domain.
 
 Only the files the viewer loads are kept: `three.core.js`, `three.webgpu.js`,
