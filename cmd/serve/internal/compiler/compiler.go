@@ -1,10 +1,8 @@
 package compiler
 
 import (
-	"strings"
-
 	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/backend/audio"
+	"gradientcontrol.com/omega/core/assembler/variation"
 	"gradientcontrol.com/omega/core/backend/mesh"
 	"gradientcontrol.com/omega/core/internal/fieldbundle"
 	"gradientcontrol.com/omega/core/internal/meshimport"
@@ -97,24 +95,20 @@ func withImportedMeshes[T any](uses []meshimport.Use, meshFn func() (T, error)) 
 // meshSetup assembles req's source, resolves the meshes it imports (from
 // req.Meshes), and builds the mesher options it asks for.
 func meshSetup(req MeshRequest, sourcePaths []string, progressFn ProgressFunc) (*program.Program, []mesh.Option, []meshimport.Use, error) {
-	_, shapeSrc, err := audio.ExtractAudio(req.Source)
+	asmRes, err := assembler.Assemble([]string{req.Source}, fieldbundle.AssemblerOptions(sourcePaths, progressFn)...)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	if strings.TrimSpace(shapeSrc) == "" {
-		shapeSrc = req.Source
-	}
-
-	asmRes, err := assembler.Assemble([]string{shapeSrc}, fieldbundle.AssemblerOptions(sourcePaths, progressFn)...)
-	if err != nil {
-		return nil, nil, nil, err
+	prog := asmRes.Program
+	if len(asmRes.AudioReturns) > 0 {
+		prog = variation.PrunePrimary(prog)
 	}
 	var uses []meshimport.Use
-	if meshimport.References(asmRes.Program) {
+	if meshimport.References(prog) {
 		if req.Meshes == nil {
 			return nil, nil, nil, fieldbundle.ErrNoMeshFolder
 		}
-		if uses, err = meshimport.Resolve(asmRes.Program, asmRes.Slots, req.Meshes); err != nil {
+		if uses, err = meshimport.Resolve(prog, asmRes.Slots, req.Meshes); err != nil {
 			return nil, nil, nil, err
 		}
 	}
@@ -145,5 +139,5 @@ func meshSetup(req MeshRequest, sourcePaths []string, progressFn ProgressFunc) (
 		}))
 	}
 
-	return asmRes.Program, meshOpts, uses, nil
+	return prog, meshOpts, uses, nil
 }

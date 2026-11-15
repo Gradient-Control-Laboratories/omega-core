@@ -238,13 +238,22 @@ type OpFactor struct {
 }
 
 type Factor struct {
-	Pos      lexer.Position // automatically assigned by parser
-	Not      bool           `parser:"@'!'?"`
-	Negative bool           `parser:"@'-'?"`
-	Value    Value          `parser:"@@"`
-	Access   *Accessor      `parser:"@@?"`
-	Index    *Expression    `parser:"( '[' @@ ']' )?"`
-	EndPos   lexer.Position // automatically assigned by parser
+	Pos       lexer.Position // automatically assigned by parser
+	Not       bool           `parser:"@'!'?"`
+	Negative  bool           `parser:"@'-'?"`
+	Value     Value          `parser:"@@"`
+	Modifiers []*Modifier    `parser:"@@*"`
+	EndPos    lexer.Position // automatically assigned by parser
+}
+
+// Modifier is a postfix operation on a factor: either a `.name` / `.d(var)`
+// accessor or a `[index]` subscript, folded left-to-right.
+type Modifier struct {
+	Pos     lexer.Position // automatically assigned by parser
+	Access  *Accessor      `parser:"  @@"`
+	Bracket bool           `parser:"| @'['"`
+	Index   *Expression    `parser:"  @@? ']'"`
+	EndPos  lexer.Position // automatically assigned by parser
 }
 
 // Accessor is a postfix `.name` on a factor: a swizzle, a property operator

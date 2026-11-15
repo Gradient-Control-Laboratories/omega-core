@@ -164,7 +164,7 @@ func getCollectionFromExpression(expr *Expression) *Collection {
 		return nil
 	}
 	factor := logicAnd.Left.Left.Left.Left.Left
-	if factor == nil {
+	if factor == nil || factor.Not || factor.Negative || len(factor.Modifiers) > 0 {
 		return nil
 	}
 	col, _ := factor.Value.(*Collection)
@@ -181,7 +181,7 @@ func isUiTransformCall(expr *Expression) bool {
 		return false
 	}
 	factor := logicAnd.Left.Left.Left.Left.Left
-	if factor == nil {
+	if factor == nil || factor.Not || factor.Negative || len(factor.Modifiers) > 0 {
 		return false
 	}
 	fc, ok := factor.Value.(*FunctionCall)
@@ -207,7 +207,7 @@ func plainReference(expr *Expression) (string, bool) {
 		return "", false
 	}
 	factor := logicAnd.Left.Left.Left.Left.Left
-	if factor == nil || factor.Not || factor.Negative || factor.Access != nil || factor.Index != nil {
+	if factor == nil || factor.Not || factor.Negative || len(factor.Modifiers) > 0 {
 		return "", false
 	}
 	ref, ok := factor.Value.(*Reference)

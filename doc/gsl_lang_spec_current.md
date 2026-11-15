@@ -263,7 +263,8 @@ Comparison         = Terms ( ( ">=" | ">" | "<=>" | "<=" | "<" ) Terms )?
 Terms              = Term ( ( "+" | "-" ) Term )*
 Term               = Factor ( ( "*" | "/" | "%" ) Factor )*
 
-Factor             = "!"? "-"? Value ( "." Ident )? ( "[" Expression "]" )?
+Factor             = "!"? "-"? Value Modifier*
+Modifier           = "." Ident Arguments? | "[" Expression "]"
 
 Value              = ImportRef | Number | FunctionCall | QualifiedRef | Reference | AnonCall
                    | SubExpression | Collection | String | AnnotatedExpr
@@ -451,6 +452,18 @@ GSL is structured around fundamental mathematical and geometric types:
 * **Indexing**: Accesses component scalars in lists using single brackets (e.g. `v[0]` for $x$,
   `v[1]` for $y$), or column vectors in matrices (`mat[0]`).
   Constant indices out of bounds produce a compile-time error.
+* **Postfix Modifier Chaining**: Indexing (`[i]`), swizzles (`.x`..`.xyzw`), derivatives (`.dp`,
+  `.dtime`, `.d(var)`), and geometry/surface properties (`.box`, `.second`, `.u`, `.v`) fold
+  left-to-right. Chaining is validated at parse time as follows:
+
+| Previous Modifier                       | Allowed Next Modifiers                                        |
+| :-------------------------------------- | :------------------------------------------------------------ |
+| `[index]`                               | `[index]`, swizzle, derivative, `.second`, `.u`, `.v`, `.box` |
+| Swizzle (`.x`..`.xyzw`)                 | `[index]` (2+ components), swizzle, derivative                |
+| Derivative (`.dp`, `.dtime`, `.d(var)`) | `[index]`, swizzle, derivative                                |
+| `.box`                                  | `[index]`, derivative                                         |
+| `.second`                               | `.u`, `.v`, derivative                                        |
+| `.u`, `.v`                              | derivative                                                    |
 * **Operator Precedence**:
 
 | Precedence | Operators | Description |
@@ -488,41 +501,50 @@ GSL is structured around fundamental mathematical and geometric types:
 
 ### 7. Annotations
 
-Annotations are optional compile-time only metadata declarations that begin with `@` followed by an identifier.
-Annotations are parsed and stored as metadata in the AST, but are otherwise ignored by the compiler.
-They are hints from the author of a GSL program to the host application about suggested ways
-that the program could be changed, how functions should be called, or how to provide a better user
-experience.
-
-An annotation begins with `@` followed by an identifier and optional parenthesized arguments:
+Annotations are optional compile-time metadata declarations that begin with `@` followed by an
+identifier and optional parenthesized arguments:
 
 ```gsl
+@annotationName
 @annotationName(arg1, arg2, ...)
 ```
 
-Not all annotations are supported on all target types (declarations, parameters, or expressions).
-Each annotation definition specifies which target types it supports.
-Applying an unrecognized annotation or applying an annotation to an unsupported target produces
-a compile-time error (`unsupported annotation @<name>`).
+Depending on the annotation, the parser either attaches range metadata (`@range`), lowers the
+annotated expression into a `ui*` built-in wrapper (`@point`, `@transform`, `@spline`, `@color`,
+`@direction`), or records declaration/parameter metadata on the AST (`@material`, `@finish`,
+`@surface`, `@frame`, and control annotations on function parameters). Annotations never alter the
+mathematical result of a program.
 
-By default, each type of annotation may only be specified at most once per target
-(declaration, parameter, or expression), unless explicitly allowed by the annotation definition.
-Annotations may enforce further restrictions, such as requiring that arguments evaluate to
-compile-time constants or restricting the target variable's or expression's type or value.
+Not all annotations are supported on all target types (package directives, variable assignments,
+function declarations, function parameters, or inline expressions). Applying an unrecognized
+annotation or applying an annotation to an unsupported target produces a compile-time error.
 
 #### Supported Annotations
 
-In the current GSL v1 implementation, annotations are supported as top-level scene directives,
-preceding top-level variable declarations, preceding function parameters, and inline expressions:
+In the current GSL v1 implementation, the following annotations are supported:
 - **`@scene`**: Top-level directive configuring package-level viewport and grid extents.
-- **`@range`**: Numeric slider bounds and optional animation periods on variable declarations,
-  inline numeric literals, or parameter bounds suggestions.
-- **`@point`**: 3D position controls on 3-component variable declarations
-  or inline expressions.
-- **`@transform`**: 3D spatial transformation gizmos on 4x4 matrix variable declarations
-  or inline expressions.
-- **`@spline`**: Multi-handle 3D spline curve manipulators on variable declarations
-  or inline expressions.
+- **`@range`**: Numeric slider bounds and optional animation periods on variable assignments,
+  function parameters (2 arguments only), or inline expressions.
+- **`@point`**: 3D position controls on 3-component variable assignments, inline expressions,
+  or function parameters.
+- **`@direction`**: 3D direction arrow controls (with an optional anchor point) on 3-component
+  variable assignments, inline expressions, or function parameters.
+- **`@color`**: sRGB color controls on 3-component variable assignments, inline expressions,
+  or function parameters.
+- **`@transform`**: 3D spatial transformation gizmos on 4x4 matrix variable assignments, inline
+  expressions, or function parameters.
+- **`@spline`**: Multi-handle 3D spline curve manipulators on variable assignments or inline
+  expressions.
+- **`@frame`**: Parameter-only annotation indicating a body's `[body.u, body.v]` frame.
+- **`@material`**: Declaration-level annotation marking a browsable material function returning a
+  `(material, color)` pair.
+- **`@finish`**: Declaration-level annotation marking a colorless material finish preset (constant
+  or function).
+- **`@surface`**: Function-level annotation marking a surface operator preset.
+
+> Note: `@values` is reserved in the parser's annotation registry for variable assignments with at
+> least two arguments, but is not yet wired into declaration building and currently produces an
+> `unsupported annotation @values` error.
 
 #### Range Annotations (Sliders)
 
@@ -589,6 +611,56 @@ s = sphere(p - @point [1.0, 2.0, 3.0]);
 The parser automatically rewrites `@point <expr>` into `uiPoint(<expr>)`.
 In the editor and host UI, this registers an interactive 3D point handle that allows
 direct spatial manipulation of the vector.
+When `@point` is placed on a function parameter, it is recorded on the parameter without lowering
+to indicate that the parameter expects a 3D point.
+
+#### Direction Annotations
+
+A top-level variable assignment or a 3-component vector within an expression can be decorated with
+`@direction` or `@direction(anchor)`:
+
+```gsl
+@direction
+buildDir = [0.0, 0.0, 1.0];
+
+// Anchor point from which the @direction(center) arrow is drawn
+@point
+center = [10.0, 0.0, 5.0];
+
+@direction(center)
+axis = [0.0, 0.0, 1.0];
+```
+
+**Arguments**:
+- Takes 0 or 1 argument: `@direction` draws the arrow from the origin; `@direction(anchor)` draws
+  the arrow from the specified anchor point (a constant 3D point or a `@point` variable).
+- On a function parameter, `@direction(anchor)` must name a sibling parameter of the same
+  function (e.g., `turned(@point axisOrigin, @direction(axisOrigin) axisDir)`).
+
+**Lowering**:
+The parser rewrites `@direction <expr>` into `uiDirection(<expr>)` and `@direction(anchor) <expr>`
+into `uiDirection(<expr>, anchor)`. On a function parameter, `@direction` is recorded on the
+parameter without lowering.
+
+#### Color Annotations
+
+A top-level variable assignment or a 3-component sRGB vector within an expression can be decorated
+with `@color`:
+
+```gsl
+@color
+coat = [0.804, 0.098, 0.098];
+
+c = applyColor(@color [0.2, 0.2, 0.2]);
+```
+
+**Restrictions**:
+- Takes no arguments.
+- The decorated expression must evaluate to a 3-component `[r, g, b]` vector.
+
+**Lowering**:
+The parser rewrites `@color <expr>` into `uiColor(<expr>)`, registering a color picker control in
+the host UI. On a function parameter, `@color` is recorded on the parameter without lowering.
 
 #### Transform Annotations
 
@@ -622,6 +694,8 @@ s = myFunc(@transform [[1.0, 0.0, 0.0, 0.0],
 
 The parser automatically rewrites `@transform <expr>` into `uiTransform(<expr>)`.
 In the editor and host UI, this registers an interactive 3D spatial transformation gizmo.
+When `@transform` is placed on a function parameter, it is recorded on the parameter without
+lowering.
 
 #### Spline Viewport Manipulator (@spline, uiSpline)
 
@@ -716,8 +790,38 @@ path = uiSpline([start, bend, end]);
 - **UI Registration**: The compiler UI extraction pass registers a composite `spline` control.
   The host viewer draws a visible spline curve connecting the frames above scene geometry
   and binds each matrix handle for interactive manipulation.
-- **Shader Stripping**: Calls to `uiSpline` (along with `uiPoint` and `uiTransform`)
-  are stripped during shader code generation and lowered to their underlying list expressions.
+- **Shader Stripping**: Calls to `uiSpline` (along with `uiPoint`, `uiTransform`, `uiColor`,
+  and `uiDirection`) are stripped during shader code generation and lowered to their underlying
+  expressions.
+
+#### Frame Parameter Annotation (`@frame`)
+
+`@frame` is a parameter-only annotation that takes no arguments:
+
+```gsl
+@surface turned(baseMaterial, @color baseColor, @frame frame) {
+  ...
+}
+```
+
+It indicates that the parameter receives a body's `[body.u, body.v]` frame, which tooling reads
+from the body rather than prompting the user with a control. Applying `@frame` to any target other
+than a function parameter produces a compile-time error.
+
+#### Declaration Annotations (`@material`, `@finish`, `@surface`)
+
+Unlike the viewport control annotations above, `@material`, `@finish`, and `@surface` are
+**recorded** on the package file (`PackageFile.Annotations`) rather than lowered into the
+expression tree. They mark a symbol name (covering all overloads of an annotated function) and
+never alter what the declaration compiles to:
+
+- **`@material`**: Takes no arguments. Marks a browsable material function returning a
+  `(material, color)` pair. The assembler rejects `@material` on a constant assignment because a
+  constant cannot carry both a material record and an albedo color.
+- **`@finish`**: Takes no arguments. Valid on a variable assignment or function declaration. Marks
+  a material finish preset that carries no albedo color on its own.
+- **`@surface`**: Takes no arguments. Valid only on function declarations. Marks a surface operator
+  preset taking a base material first and returning the modified surface.
 
 #### Scene Annotation
 

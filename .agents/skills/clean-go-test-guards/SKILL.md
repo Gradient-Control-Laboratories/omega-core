@@ -38,6 +38,11 @@ Once data passes validation at the system boundary and enters internal core pipe
   to appease incomplete or partial unit test fixtures must be eliminated.
 - Test fixtures must be updated to construct valid domain instances rather than polluting
   production code with guards for impossible internal states.
+- **Test Fixture Construction**: Prefer assembling real GSL snippets via `assembler.Assemble(...)`
+  (or `parser.ParsePackage(...)` when testing parser/pre-assembly stages) rather than
+  hand-constructing `program.Program`, `program.Package`, or `program.PackageFile` structs in
+  tests; reserve synthetic AST literals only for intentional empty/boundary-input tests
+  (e.g., `&program.Program{}`).
 
 ### 3. Eliminate Unused Parameters with Caller Propagation
 Function and method signatures should only accept parameters required for execution:
