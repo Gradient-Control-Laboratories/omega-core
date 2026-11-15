@@ -408,8 +408,10 @@ func runField(cfg *config.Config, sourceTexts []string, sourceName, source strin
 			fmt.Fprintf(stderr, "[%s] %s (%d/%d)\n", stage, label, completed, total)
 		}
 	}
+	// The bundle's id is the document's file name, never its path: a host serves the bundle to a page, which is
+	// told no more of the file system than the name it shows.
 	bundle := fieldbundle.Compile(fieldbundle.CompileRequest{
-		ID:     sourceName,
+		ID:     filepath.Base(sourceName),
 		Source: source,
 		Meshes: meshimport.Dirs(meshDirsFor(docDir, srcPaths)...),
 	}, srcPaths, progress)
