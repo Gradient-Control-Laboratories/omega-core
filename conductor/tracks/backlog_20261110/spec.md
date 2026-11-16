@@ -674,10 +674,10 @@ defined in [README.md](../../../README.md):
     emit a `program.SeverityWarning` diagnostic at the legacy comment location advising the user to
     use `@screen` instead and run `gsl fix` to update the source (supporting `S2`).
 
-- [ ] **S21. Display Compiler & Parser Warnings in the Example Viewer When the Code Panel Is Open**
-  - Surface `SeverityWarning` diagnostics from `cmd/serve/internal/compiler` (`CompileResponse`)
-    into `examples/viewer/` (`examples/viewer/main.js` and `examples/viewer/editor/editor.js` via
-    `setEditorDiagnostics` or a dedicated code-panel banner/gutter) so warnings are visible when the
+- [x] **S21. Display Compiler & Parser Warnings in the Example Viewer When the Code Panel Is Open**
+  - Surface `SeverityWarning` diagnostics from `internal/compile` (`compile.Response`) into
+    `examples/viewer/` (`examples/viewer/main.js` and `examples/viewer/editor/editor.js` via
+    `setEditorDiagnostics` and a code-panel warning banner/gutter) so warnings are visible when the
     code editor panel is open without blocking rendering.
 
 - [ ] **S22. Warn on Unnecessary `import . "omega"` & Remove via `gsl fix`**

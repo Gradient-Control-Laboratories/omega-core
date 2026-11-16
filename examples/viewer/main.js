@@ -52,12 +52,22 @@ import {
     insertAtCursor,
     setLineWrap,
     replaceSourceSpan,
+    refreshEditorLayout,
 } from "./editor/editor.js";
+import {
+    errorsToEditorEntries,
+    formatErrorBody,
+    formatWarningsBanner,
+    gslPlainTextErrorToEntry,
+    warningsToEditorEntries,
+} from "./editor/diagnostics.js";
 import {
     currentTab,
     selectTab,
     setPendingError,
     clearPendingError,
+    setPendingWarnings,
+    setWarningsVisible,
     setTabNames,
 } from "./editor/editor-tab.js";
 import { initHelpPanel } from "./docs/help-panel.js";
@@ -84,9 +94,13 @@ let currentShapeLocations = [];
 let currentExampleName = "";
 let suppressDirty = false;
 let isDirty = false;
+let currentWarnings = [];
+let hasActiveError = false;
 
 const btnToggleCode = document.getElementById("btn-toggle-code");
 const editorContainerEl = document.getElementById("editor-container");
+const warningWrapperEl = document.getElementById("warning-wrapper");
+const warningOutputEl = document.getElementById("warning-output");
 const splitterEl = document.querySelector(".splitter");
 const editorTopControlsEl = document.getElementById("editor-top-controls");
 const exampleSelectEl = document.getElementById("example-select");
@@ -122,11 +136,39 @@ function defaultSaveCopyName(name) {
 
 // ── Top Bar: Code Slide-Out Toggle ──
 
+function isCodePanelOpen() {
+    return !editorContainerEl.classList.contains("collapsed");
+}
+
+function syncWarningBanner() {
+    const bannerText = (isCodePanelOpen() && !hasActiveError)
+        ? formatWarningsBanner(currentWarnings)
+        : "";
+    if (warningWrapperEl) {
+        warningWrapperEl.classList.toggle("hidden", bannerText === "");
+    }
+    if (warningOutputEl) {
+        warningOutputEl.textContent = bannerText;
+    }
+}
+
+function applyCompileWarnings(warnings) {
+    currentWarnings = Array.isArray(warnings) ? warnings : [];
+    setPendingWarnings("GSL", warningsToEditorEntries(currentWarnings));
+    syncWarningBanner();
+}
+
 function setCodePanelOpen(open) {
     editorContainerEl.classList.toggle("collapsed", !open);
     splitterEl.classList.toggle("hidden", !open);
     editorTopControlsEl.classList.toggle("hidden", !open);
     btnToggleCode.classList.toggle("active", open);
+    btnToggleCode.setAttribute("aria-pressed", String(open));
+    setWarningsVisible(open);
+    syncWarningBanner();
+    if (open) {
+        refreshEditorLayout();
+    }
     window.dispatchEvent(new Event("resize"));
 }
 
@@ -216,41 +258,6 @@ document.addEventListener("click", (e) => {
 
 // ── Error Formatting & Diagnostics ──
 
-function formatErrBody(e) {
-    const parts = [];
-    if (e.line) {
-        parts.push(e.line);
-        if (e.column >= 1 && e.length >= 1) {
-            parts.push(" ".repeat(e.column - 1) + "^".repeat(e.length) + " " + e.message);
-        } else {
-            parts.push(e.message);
-        }
-    } else {
-        parts.push(e.message);
-    }
-    return parts.join("\n");
-}
-
-function gslPlainTextErrorToEntry(text) {
-    const trimmed = (typeof text === "string" ? text : String(text || "")).trim();
-    const caretMatch = trimmed.match(/\n\s*\^\s*(\d+):(\d+):\s*([^\n]*)/)
-        || trimmed.match(/^\s*\^\s*(\d+):(\d+):\s*(.*)$/m);
-    if (caretMatch) {
-        return {
-            line: +caretMatch[1],
-            col: +caretMatch[2],
-            length: 1,
-            message: trimmed,
-            actions: [],
-        };
-    }
-    return {
-        line: 1, col: 1, length: 1,
-        message: trimmed,
-        actions: [],
-    };
-}
-
 eventManager.addListener("canvas/errors", (payload) => {
     markCompileResolved();
     stopErrorTimer();
@@ -258,21 +265,13 @@ eventManager.addListener("canvas/errors", (payload) => {
 
     let entries = [];
     let joined = "";
+    const warnings = (payload && Array.isArray(payload.warnings)) ? payload.warnings : [];
     if (typeof payload === "string") {
         joined = payload;
-        entries = [{ line: 1, col: 1, length: 1, message: payload, actions: [] }];
+        entries = [{ line: 1, col: 1, length: 1, severity: "error", message: payload, actions: [] }];
     } else if (payload && Array.isArray(payload.errors)) {
-        for (const e of payload.errors) {
-            const body = formatErrBody(e);
-            entries.push({
-                line: e.lineNum || 1,
-                col: e.column || 1,
-                length: Math.max(1, e.length || 1),
-                message: body,
-                actions: [],
-            });
-        }
-        joined = payload.errors.map(formatErrBody).join("\n");
+        entries = errorsToEditorEntries(payload.errors);
+        joined = payload.errors.map(formatErrorBody).join("\n");
     } else if (Array.isArray(payload)) {
         const chunks = [];
         for (const item of payload) {
@@ -284,20 +283,29 @@ eventManager.addListener("canvas/errors", (payload) => {
         joined = chunks.join("\n\n");
     }
 
+    hasActiveError = true;
+    currentWarnings = warnings;
+    setPendingWarnings("GSL", warningsToEditorEntries(warnings));
     setPendingError("GSL", entries);
+    syncWarningBanner();
     showError(joined, false);
 });
 
 eventManager.addListener("error", (event) => {
     if (!event || !event.message) {
+        hasActiveError = false;
         clearPendingError();
+        syncWarningBanner();
         return;
     }
+    hasActiveError = true;
+    syncWarningBanner();
     if (!event.wgsl) return;
     const probably = event.message.match(/probably line (\d+)/);
     const line = probably ? +probably[1] : 1;
     setPendingError("WGSL", [{
         line, col: 1, length: 1,
+        severity: "error",
         message: event.message,
         actions: [],
     }]);
@@ -356,6 +364,7 @@ eventManager.addListener("canvas/update-shader", (event) => {
             event.uiControls || [],
         );
         markCompileResolved();
+        hasActiveError = false;
         clearPendingError();
         clearError();
         stopErrorTimer();
@@ -376,6 +385,7 @@ eventManager.addListener("canvas/update-shader", (event) => {
         const decls = event.meshDecls || [];
         const unknowns = syncMeshInstances(decls);
         if (unknowns.length > 0) {
+            hasActiveError = true;
             showError(`Unknown mesh index: ${unknowns.join(", ")}. Upload in the Imports panel first.`, false);
         }
         // The scene gizmos: a handle for each @point, @direction and
@@ -415,17 +425,26 @@ async function compileGsl(source) {
         if (reqId !== latestCompileID) return;
 
         if (!res.ok || (data.errors && data.errors.length > 0)) {
-            // Structured diagnostics go as { errors } so the handler can place
-            // each one in the editor; anything else falls back to plain text.
+            // Structured diagnostics go as { errors, warnings } so the handler
+            // can place each one in the editor; anything else falls back to plain text.
             const errs = data.errors && data.errors.length > 0
-                ? { errors: data.errors }
+                ? { errors: data.errors, warnings: data.warnings }
                 : [`Compile failed (HTTP ${res.status})`];
             eventManager.dispatchEvent("canvas/errors", errs);
             return;
         }
 
         clearNotification();
+        if (!data.wgsl) {
+            markCompileResolved();
+            hasActiveError = false;
+            clearPendingError();
+            clearError();
+            stopErrorTimer();
+            progressBar.reset();
+        }
         eventManager.dispatchEvent("canvas/update-shader", data);
+        applyCompileWarnings(data.warnings || []);
 
         const audioJs = data.audio && (data.audio.jsCode || data.audio.javascript) || "";
         const hasAudio = Boolean(audioJs);

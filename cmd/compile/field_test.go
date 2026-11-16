@@ -114,3 +114,29 @@ func TestRun_Field_Refusals(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no companion metadata")
 }
+
+// A document with compiler warnings still compiles its shader into the field bundle and exits 0.
+func TestRun_Field_WarningsGoInTheBundleWithoutFailing(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "warn.gsl")
+	src := "@scene(40)\nmin(radius, fallback) {\n    return radius;\n}\nreturn sphere(min(5.0, 2.0));\n"
+	require.NoError(t, os.WriteFile(source, []byte(src), 0644))
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, cli.Run([]string{"-t", "field", source}, nil, &stdout, &stderr), stderr.String())
+
+	data, err := os.ReadFile(filepath.Join(dir, "warn.field.json"))
+	require.NoError(t, err)
+	bundle := fieldOf(t, data)
+	assert.True(t, strings.Contains(bundle["wgsl"].(string), "fn sdShape"), "warnings do not block shader generation")
+	_, hasErrors := bundle["errors"]
+	assert.False(t, hasErrors, "warnings do not populate errors")
+	warnings, ok := bundle["warnings"].([]any)
+	require.True(t, ok, "the bundle carries warnings")
+	require.Equal(t, 1, len(warnings))
+	first := warnings[0].(map[string]any)
+	assert.Equal(t, 2.0, first["lineNum"])
+	assert.Equal(t, 5.0, first["column"])
+	assert.Equal(t, float64(len("radius")), first["length"])
+	assert.Equal(t, "min(radius, fallback) {", first["line"])
+	assert.Contains(t, first["message"].(string), "shadows implicitly imported builtin function")
+}

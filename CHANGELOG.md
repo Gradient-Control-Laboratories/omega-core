@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Surfaced non-blocking `SeverityWarning` diagnostics on `compile.Response` (`warnings`)
+  across `gsl serve`'s `/api/compile` and `gsl compile -t field`.
+  `gsl viewer` (`examples/viewer/`) now displays inline amber warning underlines, gutter
+  highlights, and a code-panel warning banner when the code editor panel is open.
+
 ### Changed
 
 - `gsl eval`'s `volume` stops after 10 seconds unless the request names a longer `timeLimit` (Python
