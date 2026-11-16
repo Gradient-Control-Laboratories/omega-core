@@ -18,7 +18,7 @@ predictably:
   compiler hot-path optimizations, diagnostics enhancements, viewer capabilities, and developer
   tooling tasks that can either spin off focused tracks or execute as self-contained single-phase
   tracks.
-- **Small Targeted Cleanups (`S1`–`S21`):** Localized refactors, invariant tightening, dead-code
+- **Small Targeted Cleanups (`S1`–`S23`):** Localized refactors, invariant tightening, dead-code
   removals, public/internal API deduplication, and documentation/comment hygiene tasks suitable for
   direct execution or small cleanup batches.
 
@@ -679,6 +679,15 @@ defined in [README.md](../../../README.md):
     into `examples/viewer/` (`examples/viewer/main.js` and `examples/viewer/editor/editor.js` via
     `setEditorDiagnostics` or a dedicated code-panel banner/gutter) so warnings are visible when the
     code editor panel is open without blocking rendering.
+
+- [ ] **S22. Warn on Unnecessary `import . "omega"` & Remove via `gsl fix`**
+  - Emit a `program.SeverityWarning` diagnostic when `import . "omega"` is encountered, advising
+    that it is unnecessary because `builtin` is implicitly imported.
+  - Update `gsl fix` (`cmd/fix`) to automatically remove `import . "omega"` from GSL sources.
+
+- [ ] **S23. Error on `import . "omega"` & Remove Internal Support**
+  - Promote the `import . "omega"` warning from `S22` to a compile-time error.
+  - Remove internal support and shims for `import . "omega"` in the parser and assembler.
 
 ## 7. Acceptance Criteria
 

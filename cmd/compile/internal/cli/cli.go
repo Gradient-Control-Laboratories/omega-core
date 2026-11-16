@@ -19,7 +19,7 @@ import (
 	"gradientcontrol.com/omega/core/backend/wgsl"
 	"gradientcontrol.com/omega/core/cmd/compile/internal/config"
 	"gradientcontrol.com/omega/core/eval"
-	"gradientcontrol.com/omega/core/internal/fieldbundle"
+	"gradientcontrol.com/omega/core/internal/compile"
 	"gradientcontrol.com/omega/core/internal/meshimport"
 	"gradientcontrol.com/omega/core/internal/version"
 	"gradientcontrol.com/omega/core/parser"
@@ -402,13 +402,13 @@ func runField(cfg *config.Config, sourceTexts []string, sourceName, source strin
 			srcPaths = []string{docDir}
 		}
 	}
-	var progress fieldbundle.ProgressFunc
+	var progress compile.ProgressFunc
 	if cfg.Verbose {
 		progress = func(stage, label string, completed, total uint32) {
 			fmt.Fprintf(stderr, "[%s] %s (%d/%d)\n", stage, label, completed, total)
 		}
 	}
-	bundle := fieldbundle.Compile(fieldbundle.CompileRequest{
+	bundle := compile.Process(compile.Request{
 		ID:     sourceName,
 		Source: source,
 		Meshes: meshimport.Dirs(meshDirsFor(docDir, srcPaths)...),

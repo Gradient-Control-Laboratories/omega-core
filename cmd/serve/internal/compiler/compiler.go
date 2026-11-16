@@ -4,35 +4,10 @@ import (
 	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/assembler/variation"
 	"gradientcontrol.com/omega/core/backend/mesh"
-	"gradientcontrol.com/omega/core/internal/fieldbundle"
+	"gradientcontrol.com/omega/core/internal/compile"
 	"gradientcontrol.com/omega/core/internal/meshimport"
 	"gradientcontrol.com/omega/core/program"
 )
-
-// The compile half lives in internal/fieldbundle, which gsl compile -t field
-// shares, so /api/compile and a field bundle written by the CLI are the same.
-
-// ProgressFunc reports compilation or meshing progress milestones.
-type ProgressFunc = fieldbundle.ProgressFunc
-
-// CompileRequest describes an interactive GSL compilation request.
-type CompileRequest = fieldbundle.CompileRequest
-
-// AudioResult contains compiled Web Audio synthesis JavaScript and duration.
-type AudioResult = fieldbundle.AudioResult
-
-// CompileResponse contains the compiled WGSL shader, UI metadata, optional audio, or structured diagnostics.
-type CompileResponse = fieldbundle.CompileResponse
-
-// Compile executes the in-process GSL compilation pipeline (fieldbundle.Compile).
-func Compile(req CompileRequest, sourcePaths []string, progressFn ProgressFunc) *CompileResponse {
-	return fieldbundle.Compile(req, sourcePaths, progressFn)
-}
-
-// UnwrapProgramErrors enriches and flattens an error tree into structured program.Error values.
-func UnwrapProgramErrors(src string, err error) []program.Error {
-	return fieldbundle.UnwrapProgramErrors(src, err)
-}
 
 // MeshRequest describes a server-side binary STL meshing request.
 type MeshRequest struct {
@@ -45,7 +20,7 @@ type MeshRequest struct {
 	Algo        string     `json:"algo"`
 	Time        float64    `json:"time"`
 	// Meshes finds the STL files the source's importMesh declarations name,
-	// as on CompileRequest.
+	// as on compile.Request.
 	Meshes meshimport.Finder `json:"-"`
 	// Bodies, when not nil, is the 1-based returns MeshBodies meshes (the
 	// viewer's visible bodies); Mesh ignores it.
@@ -53,7 +28,7 @@ type MeshRequest struct {
 }
 
 // Mesh assembles the GSL source and evaluates a binary STL mesh using the Fidget/Manifold mesh backend.
-func Mesh(req MeshRequest, sourcePaths []string, progressFn ProgressFunc) ([]byte, error) {
+func Mesh(req MeshRequest, sourcePaths []string, progressFn compile.ProgressFunc) ([]byte, error) {
 	prog, meshOpts, uses, err := meshSetup(req, sourcePaths, progressFn)
 	if err != nil {
 		return nil, err
@@ -64,7 +39,7 @@ func Mesh(req MeshRequest, sourcePaths []string, progressFn ProgressFunc) ([]byt
 }
 
 // MeshBodies is Mesh with each top-level return meshed as its own body (mesh.MeshBodies).
-func MeshBodies(req MeshRequest, sourcePaths []string, progressFn ProgressFunc) ([]mesh.Body, error) {
+func MeshBodies(req MeshRequest, sourcePaths []string, progressFn compile.ProgressFunc) ([]mesh.Body, error) {
 	prog, meshOpts, uses, err := meshSetup(req, sourcePaths, progressFn)
 	if err != nil {
 		return nil, err
@@ -83,8 +58,8 @@ func withImportedMeshes[T any](uses []meshimport.Use, meshFn func() (T, error)) 
 	if len(uses) == 0 {
 		return meshFn()
 	}
-	fieldbundle.MeshesMu.Lock()
-	defer fieldbundle.MeshesMu.Unlock()
+	compile.MeshesMu.Lock()
+	defer compile.MeshesMu.Unlock()
 	if err := meshimport.Register(uses); err != nil {
 		var zero T
 		return zero, err
@@ -94,8 +69,8 @@ func withImportedMeshes[T any](uses []meshimport.Use, meshFn func() (T, error)) 
 
 // meshSetup assembles req's source, resolves the meshes it imports (from
 // req.Meshes), and builds the mesher options it asks for.
-func meshSetup(req MeshRequest, sourcePaths []string, progressFn ProgressFunc) (*program.Program, []mesh.Option, []meshimport.Use, error) {
-	asmRes, err := assembler.Assemble([]string{req.Source}, fieldbundle.AssemblerOptions(sourcePaths, progressFn)...)
+func meshSetup(req MeshRequest, sourcePaths []string, progressFn compile.ProgressFunc) (*program.Program, []mesh.Option, []meshimport.Use, error) {
+	asmRes, err := assembler.Assemble([]string{req.Source}, compile.AssemblerOptions(sourcePaths, progressFn)...)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -106,7 +81,7 @@ func meshSetup(req MeshRequest, sourcePaths []string, progressFn ProgressFunc) (
 	var uses []meshimport.Use
 	if meshimport.References(prog) {
 		if req.Meshes == nil {
-			return nil, nil, nil, fieldbundle.ErrNoMeshFolder
+			return nil, nil, nil, compile.ErrNoMeshFolder
 		}
 		if uses, err = meshimport.Resolve(prog, asmRes.Slots, req.Meshes); err != nil {
 			return nil, nil, nil, err
