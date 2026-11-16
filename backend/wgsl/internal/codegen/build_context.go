@@ -27,6 +27,7 @@ func (c BuildContext) WithP(p *wgsl.VarInfo) wgsl.CodegenContext {
 
 func (c BuildContext) EmitVar(ref *wgsl.VarInfo) {
 	if c.delegate.ShouldGenerate(ref) && c.delegate.markGenerated(ref.WGSLName()) {
+		c.delegate.needSliderParam(ref)
 		c.delegate.emitVar(ref, c)
 	}
 }

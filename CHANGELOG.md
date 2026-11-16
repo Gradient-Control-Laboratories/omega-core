@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A slider read by a field that a `remap` re-derives inside a function's body (as `unionRoundExact` does with
+  its closures) was emitted as a name the WGSL did not define, so `gsl eval`'s `shader` refused the model in
+  `glsl-es300` and `gsl compile -t wgsl` wrote a module that does not validate. The helper now takes the slider
+  as a parameter.
+
 ## [0.1.2] - 2026-11-15
 
 ### Added
