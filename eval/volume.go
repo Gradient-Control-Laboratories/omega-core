@@ -11,9 +11,15 @@ import (
 // defaultVolumeTolerance is the relative tolerance Volume takes when the caller names none.
 const defaultVolumeTolerance = 0.05
 
-// Volume classifies cells using field intervals and charges every unresolved cell to Upper.
-// relativeTolerance <= 0 selects defaultVolumeTolerance.
+// Volume is VolumeOf for the document as written: no manifest and no defs.
 func (e *Evaluator) Volume(ctx context.Context, code, expr string, region [6]float64, relativeTolerance float64) (VolumeBounds, error) {
+	return e.VolumeOf(ctx, nil, code, "", expr, region, relativeTolerance)
+}
+
+// VolumeOf classifies cells using field intervals and charges every unresolved cell to Upper.
+// defs are applied to the document as the other queries apply them, so the bracket is of the part
+// a slider was moved to. relativeTolerance <= 0 selects defaultVolumeTolerance.
+func (e *Evaluator) VolumeOf(ctx context.Context, manifest map[string]string, code, defs, expr string, region [6]float64, relativeTolerance float64) (VolumeBounds, error) {
 	var result VolumeBounds
 	if err := startQuery(ctx); err != nil {
 		return result, err
@@ -33,7 +39,7 @@ func (e *Evaluator) Volume(ctx context.Context, code, expr string, region [6]flo
 	if relativeTolerance >= 1 || math.IsNaN(relativeTolerance) {
 		return result, fmt.Errorf("volume tolerance must be between zero and one")
 	}
-	prog, err := e.prepareQuery(ctx, nil, code, "", []string{expr})
+	prog, err := e.prepareQuery(ctx, manifest, code, defs, []string{expr})
 	if err != nil {
 		return result, err
 	}

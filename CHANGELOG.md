@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added the `shader` op to `gsl eval` (`eval.Evaluator.Shader`, Python `Document.shader`): a
+  document's field as a library a host's own shader calls, in `wgsl` for WebGPU or `glsl-es300`
+  for WebGL2. It declares one uniform block for time and the sliders, with each member's byte
+  offset in the response, and defines `gsl_field(p)` and `gsl_march(...)`, the front face of the
+  viewer's primary march, with no entry point. Textures the field reads (the noise tile, a mesh's
+  distance grid) are written as raw texels under `outDir`. For a document with parts the march
+  guards them only when its `detail` argument names a rung. Both targets are one WGSL module
+  (`backend/wgsl.Host`); the GLSL is its transpile.
+- Added the `mesh` op to `gsl eval` (`eval.Evaluator.Mesh`, Python `Document.mesh`): the document,
+  with `defs`, as one indexed `.glb` with a node per return and a normal per vertex from the
+  field's gradient. The response gives the box meshed and, per body, its vertex and triangle
+  counts, open and non-manifold edge counts and enclosed volume.
+- `gsl eval`'s `volume` op takes `defs` (`eval.Evaluator.VolumeOf`, Python
+  `Document.volume(defs=...)`), so the bracket is of the part a slider was moved to.
+- Added `mesh.GLBNormals`, an option of `mesh.WriteGLB` that writes a normal per vertex, and
+  `mesh.MeasureIndexed`, the edge counts and signed volume of an indexed mesh.
+- The `render` Rust library links naga 30 (`wgsl-in`, `glsl-out`), already resolved in
+  `Cargo.lock` for the vendored `fidget-wgpu`, for the `glsl-es300` target
+  (`fidget.GLSLES300`). It adds about 1.9 MB.
 - Added `gsl compile -t field` (`compile -t field`, default `<source>.field.json`) and shared
   `internal/fieldbundle` compilation so CLI field bundles and `gsl serve`'s `/api/compile` emit
   identical WGSL, shape, part, slider, UI control, `@scene`, mesh preview grid, audio, and

@@ -165,6 +165,18 @@ func TestBoundsSurfaceVolumeAndDescribe(t *testing.T) {
 	assert.Equal(t, []any{"ball"}, r["returns"])
 }
 
+// A volume request with defs brackets the document with them applied: the ball at r = 5 has an eighth of the
+// volume it has as written, at r = 10.
+func TestVolume_AppliesDefs(t *testing.T) {
+	r, code := ask(t, document(t, ball), map[string]any{"op": "volume", "region": []float64{-12, -12, -12, 12, 12, 12},
+		"defs": "r = 5.0;"})
+	require.Equal(t, 0, code, r)
+	lower, upper := number(t, r["lowerMm3"]), number(t, r["upperMm3"])
+	exact := 4.0 / 3 * math.Pi * 125
+	assert.True(t, lower <= exact && exact <= upper, "%v brackets %g", r, exact)
+	assert.True(t, upper < 4.0/3*math.Pi*1000, "%v is the smaller ball's", r)
+}
+
 // A volume request without relativeTolerance takes the default, 0.05, rather than failing.
 func TestVolume_DefaultTolerance(t *testing.T) {
 	r, code := ask(t, document(t, ball), map[string]any{"op": "volume", "region": []float64{-12, -12, -12, 12, 12, 12}})
@@ -210,7 +222,6 @@ func TestFailures_AreAnsweredWithTheirExitCodes(t *testing.T) {
 		{map[string]any{"op": "certify", "threshold": 0}, 2, "names its region"},
 		{map[string]any{"op": "certify", "region": unit}, 2, "names its threshold"},
 		{map[string]any{"op": "extremum", "region": []float64{0, 0, 0, -1, 1, 1}}, 2, "max must exceed its min"},
-		{map[string]any{"op": "volume", "region": unit, "defs": "r = 3.0;"}, 2, "no defs"},
 		{map[string]any{"op": "eval", "exprs": []string{"ball"}}, 2, "names its points"},
 		{map[string]any{"op": "bounds", "exprs": []string{"ball"}}, 2, "exprs is eval's"},
 		{map[string]any{"op": "bounds", "regoin": unit}, 2, "unknown field \"regoin\""},

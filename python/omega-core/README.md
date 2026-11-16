@@ -27,7 +27,9 @@ pip install omega-core
   - the occupied box;
   - points projected onto the surface;
   - a bracketed volume;
-  - pictures with sliders set or the part cut open.
+  - pictures with sliders set or the part cut open;
+  - a mesh of the part as a `.glb`, with what its triangles say of each body;
+  - the field as a shader library, in WGSL or GLSL ES 3.00, for a host that draws it itself.
 
 All lengths are millimetres.
 
@@ -114,9 +116,11 @@ A request names its `op` and its document, by path (`"source"`) or by text (`"co
 | `certify` | `expr`, `region`, `threshold`, `tolerance`, `params` or `overSliders` | a sound proof that `expr >= threshold` over the region and the parameter ranges, or a box where it fails |
 | `bounds` | `expr`, `region`, `resolution` | the box where `expr < 0` |
 | `surface` | `expr`, `points`, `maxIters`, `tolerance` | each point moved onto `expr = 0`, with the normal there |
-| `volume` | `expr`, `region`, `relativeTolerance` | the volume where `expr < 0`, bracketed (no `defs`) |
+| `volume` | `expr`, `region`, `relativeTolerance` | the volume where `expr < 0`, bracketed |
 | `describe` | (none) | the sliders and their ranges, top-level names and returns |
 | `render` | `out`, `expr`, `views`, `width`, `height`, `light`, `extent`, `time` | a PNG at `out`, as `gsl compile -t png` draws it |
+| `mesh` | `out`, `region`, `subdivision`, `algorithm`, `time` | a `.glb` at `out`: a node per return, a gradient normal per vertex; and each body's counts and volume |
+| `shader` | `target` (`wgsl`, `glsl-es300`), `outDir` | the field as a library a host's shader calls: `gsl_field` and `gsl_march`, a uniform block for time and the sliders, and its textures as files under `outDir` |
 
 - **Responses:** each is `{"id", "ok": true, ...}` or `{"id", "ok": false, "error"}`. A value that is not
   finite is `null`.
@@ -170,8 +174,10 @@ or the end of the `with` block.
 | `certify(expr=None, *, region, threshold, tolerance=0, params=None, over_sliders=False, defs="")` | `Certificate` |
 | `bounds(expr=None, *, region=None, resolution=0, defs="")` | `Bounds` |
 | `surface(points, expr=None, *, max_iters=0, tolerance=0, defs="")` | a tuple of `SurfaceSample` |
-| `volume(expr=None, *, region, relative_tolerance=0)` | `Volume` |
+| `volume(expr=None, *, region, relative_tolerance=0, defs="")` | `Volume` |
 | `render(out, expr=None, *, views="iso", width=640, height=480, light=False, extent=0, time=0, defs="")` | `Picture` |
+| `mesh(out, *, region=None, subdivision=0, algorithm="", time=0, defs="")` | `Mesh` |
+| `shader(target, *, out_dir=None, defs="")` | `Shader` |
 
 A zero `tolerance`, `lipschitz`, `resolution`, `max_iters` or `relative_tolerance` takes the evaluator's
 default. `views` is a string as for `--views`, or a list of them.

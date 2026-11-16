@@ -196,6 +196,11 @@ RenderResult serialize_tape(const TreeIndex* outputs, size_t count);
 // indices per output, UINT64_MAX for one it lacks, and a displaced flag each.
 RenderResult serialize_tape_appearance(const TreeIndex* outputs, size_t count, const TreeIndex* appearance, const uint8_t* displaced);
 
+// The fragment entry point of a WGSL module as GLSL ES 3.00. Code 0 carries
+// JSON (the text and the names a WebGL2 host binds); any other code carries a
+// message. Neither string is NUL-terminated. Free with render_result_free.
+RenderResult wgsl_to_glsl_es300_json(const uint8_t* wgsl, size_t wgsl_len, const uint8_t* entry, size_t entry_len);
+
 // Bridge function defined in fidget_progress.go
 extern void goProgressCallback(unsigned int completed, unsigned int total);
 
@@ -204,6 +209,7 @@ void clear();
 */
 import "C"
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"sync"
@@ -763,6 +769,43 @@ func SerializeTape(treeIndices []TreeIndex) ([]byte, error) {
 	}
 
 	return nil, fmt.Errorf("serialize tape failed: %d", result.code)
+}
+
+// GLSL is a fragment shader in GLSL ES 3.00 and, for each WGSL global a WebGL2
+// host binds, the name it has there: naga renames both kinds.
+type GLSL struct {
+	// Source is the shader, starting with its #version line.
+	Source string `json:"glsl"`
+	// UniformBlocks maps a WGSL var<uniform> to its GLSL uniform block.
+	UniformBlocks map[string]string `json:"uniformBlocks"`
+	// Textures maps a WGSL texture to its GLSL sampler.
+	Textures map[string]string `json:"textures"`
+}
+
+// GLSLES300 transpiles the fragment entry point of a WGSL module to GLSL ES
+// 3.00. A module naga refuses is an error carrying naga's message. It keeps no
+// state and needs no Lock().
+func GLSLES300(wgsl, entryPoint string) (*GLSL, error) {
+	// A trailing byte, never read, so that an empty string still has an address.
+	src, entry := []byte(wgsl+"\x00"), []byte(entryPoint+"\x00")
+	result := C.wgsl_to_glsl_es300_json(
+		(*C.uint8_t)(unsafe.Pointer(&src[0])), C.size_t(len(wgsl)),
+		(*C.uint8_t)(unsafe.Pointer(&entry[0])), C.size_t(len(entryPoint)),
+	)
+	defer C.render_result_free(result)
+
+	var data []byte
+	if result.len > 0 {
+		data = C.GoBytes(unsafe.Pointer(result.data), C.int(result.len))
+	}
+	if result.code != 0 {
+		return nil, fmt.Errorf("WGSL to GLSL ES 3.00 (%d): %s", result.code, data)
+	}
+	out := &GLSL{}
+	if err := json.Unmarshal(data, out); err != nil {
+		return nil, fmt.Errorf("WGSL to GLSL ES 3.00: %w", err)
+	}
+	return out, nil
 }
 
 // Appearance is one output's colour (3 trees) and material (12 trees, rows

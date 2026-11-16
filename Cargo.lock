@@ -2025,6 +2025,7 @@ dependencies = [
  "fidget-mesh",
  "image",
  "libc",
+ "naga",
  "nalgebra",
  "prost",
  "serde",

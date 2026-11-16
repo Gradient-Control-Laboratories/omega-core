@@ -1,3 +1,4 @@
+pub mod glsl;
 pub mod tape;
 mod marching_cubes;
 mod mesh_oracle;

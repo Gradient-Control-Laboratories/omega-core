@@ -1,0 +1,307 @@
+# `gsl eval`: a Mesh on Request and a Shader for Any Host
+
+## 1. Overview & Problem Statement
+
+A host that edits a GSL document in a loop (an agent, a CAD viewer) wants three things from the
+field after each edit: facts, a picture, and, only when a file is asked for, a mesh. `gsl eval`
+gives the facts. The other two have gaps:
+
+- **Slider values do not reach `volume` or the mesh.** Every other op takes `defs`
+  (`"skin = 1.6;"`); `volume` does not, and a mesh comes only from `gsl compile`, which meshes the
+  document as written. A host that moved a slider cannot ask for that part's volume or its mesh.
+- **A mesh comes back without what a host needs to trust it.** `compile -t glb` writes positions
+  and indices. The host then re-derives normals from facets and re-measures the mesh to learn
+  whether it is closed and how its volume compares with the field's.
+- **The picture needs omega's viewer.** `compile -t wgsl` emits the field's functions; the march
+  that draws them lives in `examples/viewer` as JavaScript template strings. A WebGPU host has to
+  copy that march, and a WebGL2 host (three.js `WebGLRenderer`) cannot use either half.
+
+This track adds `defs` to `volume` and two ops to `gsl eval`: `mesh` and `shader`.
+
+---
+
+## 2. Public API Surface Policy
+
+- **`eval.Evaluator.VolumeOf`** (new): `Volume` with `manifest` and `defs`, in the position the
+  other queries have them. `Volume` keeps its signature and calls it with neither.
+- **`backend/mesh`:** `WriteGLB` gains an option, `GLBNormals`, to write per-vertex normals. Its
+  default output is unchanged, so `compile -t glb` writes the bytes it writes today. New:
+  `MeasureIndexed`, the open edges, non-manifold edges and signed volume of an indexed mesh.
+- **New Go:** `Evaluator.Mesh` and `Evaluator.Shader` (Section 4), each a thin composition of
+  existing entry points (`mesh.MeshBodies`, `wgsl.Render`) with the `defs` path of `prepareQuery`.
+- **New, outside Go:** the two ops' JSON shapes, and `Session.mesh` / `Session.shader` in the
+  wheel's Python package (on `Document`, which a `Session` hands out).
+- **Unchanged:** `gsl compile` and every target of it; the viewer under `examples/viewer`.
+
+---
+
+## 3. Functional Requirements
+
+### 3.1 `volume` takes `defs`
+
+`{"op": "volume", "source": "part.gsl", "defs": "skin = 1.6;", ...}` brackets the volume of the
+document with those statements applied, as `bounds` and `eval` already do. The usage text drops
+"(no defs)". Until this track the op refused `defs` as malformed; the test row that pinned the
+refusal is replaced by one that pins the answer.
+
+### 3.2 `mesh`
+
+```json
+{"op": "mesh", "source": "part.gsl", "defs": "skin = 1.6;", "out": "part.glb",
+ "subdivision": 7, "region": [x0, y0, z0, x1, y1, z1], "algorithm": "mdc", "time": 0}
+```
+
+```json
+{"ok": true, "out": "part.glb", "region": [...],
+ "bytes": 245760,
+ "bodies": [{"name": "bracket", "index": 1, "vertices": 5120, "triangles": 10236,
+             "openEdges": 0, "nonManifoldEdges": 0, "volumeMm3": 1834.2}]}
+```
+
+- One GLB, one node per top-level return, indexed, with a normal per vertex.
+- **Normals are the field's gradient at the vertex**, not an average of facets. A vertex where the
+  gradient is not finite, or is zero, falls back to the area-weighted facet average.
+- **At a `time` other than zero every normal is the facet average.** The point query that supplies
+  gradients evaluates at time zero, so its gradients would be of a different surface.
+- `region` defaults to the box the field fills, found by the rule `compile --bbox auto` follows,
+  with `defs` applied; the response states the box that was used. The rule is restated in `eval`
+  (`fitBox`) rather than shared with `cmd/compile`'s `autoBbox`, which another track is changing;
+  the two should become one when that lands (Section 7).
+- A body's `index` counts from 1, as `mesh.MeshBodies` and the viewer's Bodies panel count.
+- `volumeMm3` is the volume the triangles enclose, negative if they face inward. It is the mesh's
+  own; `volume` brackets the field's.
+- `subdivision`, `algorithm` and `time` mean what the `compile` flags mean and default as they do.
+- `openEdges`, `nonManifoldEdges` and `volumeMm3` are counted from the welded index buffer the op
+  already builds, so a host need not load the file to gate an export.
+- `out` is required. The op writes a file, and only once the whole mesh is made; it never returns
+  mesh bytes in JSON. `expr` is refused: the op meshes the document's returns.
+
+### 3.3 `shader`
+
+```json
+{"op": "shader", "source": "part.gsl", "defs": "...", "target": "glsl-es300", "outDir": "cache/"}
+{"op": "shader", "source": "part.gsl", "defs": "...", "target": "wgsl", "outDir": "cache/"}
+```
+
+```json
+{"ok": true, "target": "glsl-es300", "code": "...",
+ "entry": {"field": "gsl_field", "march": "gsl_march"},
+ "uniformBlock": "gsl_Host_block_0Fragment", "blockBytes": 16,
+ "uniforms": [{"name": "time", "type": "f32", "offset": 0, "value": [0]}],
+ "sliders": [{"name": "skin", "uniform": "gsl_param_4_9", "type": "f32", "offset": 4,
+              "value": 1.6, "min": 0.8, "max": 3.0}],
+ "textures": [{"uniform": "_group_0_binding_1_fs", "kind": "noise3d", "format": "rgba8unorm",
+               "filter": "nearest", "size": [64, 64, 64], "path": "/abs/cache/noiseTex.bin"}],
+ "bodies": [{"name": "bracket", "index": 1}],
+ "region": [...]}
+```
+
+- **`code` is a library, not a program**, in the language `target` names. It declares one uniform
+  block and the textures, and defines two functions. It has no entry point, no `#version` line and
+  no outputs, so a host adds its own and calls in.
+- **One source, two targets.** The op always builds the same WGSL module: the field as
+  `compile -t wgsl` emits it, the host preamble, and the march. `wgsl` returns that module;
+  `glsl-es300` returns its transpile (Section 4). A WebGPU host needs no transpiler, and both hosts
+  run the same march.
+- **The preamble carries every declaration the emitted field expects of its host:** `gsl_shape`,
+  `gsl_material`, `gsl_min`, `gsl_isShapeVisible`, `gsl_fieldFilterIdx`, and the pixel footprint
+  `gsl_pw` with its scale `gsl_pwScale`.
+- **`gsl_field(p)`** returns distance and body index, with sliders and textures already bound.
+- **`gsl_march(origin, direction, tEntry, tExit, pixelScale, ortho, stepScale, detail)`** returns
+  whether it hit, the distance along the ray, the body index and the gradient at the hit. The
+  distance is the host's to turn into depth, so a field composites with a host's own meshes. It is
+  the front face of the viewer's primary march:
+  - each step is divided by the tetrahedral gradient magnitude, clamped at 1, times 0.8;
+  - a sign change of the same body between two samples is bisected, unless the samples are too
+    far from zero for the field to have crossed (the jump-slack test);
+  - the hit tolerance grows with the pixel footprint;
+  - the step budget is 256 to 1024 by path length through the box, times `stepScale`;
+  - for a document with parts and a `detail` that names a rung, it sets the vanish globals
+    (`gsl_vanishEye`, `gsl_vanishView`) from the ray and `detail` before the first sample and
+    clears the margin after the last, so a part far from the ray reads as its box while marching,
+    as in the viewer. With every rung zero it leaves the guards off and every part whole. This
+    differs from the viewer, which always sets the margin, and was the owner's choice on
+    2026-11-13 after measurement: on `corexy_printer` the guards take the march from 60 field
+    evaluations a pixel to 96, and from 33 ms a frame to 77 ms (Section 4.3).
+- **Sliders are members of one uniform block**, so a host moves one without asking again. A host
+  binds a buffer of `blockBytes` to `uniformBlock` and writes each slider, and each of `uniforms`
+  (time, and values the document fixes such as a mesh grid's box), at its `offset`. Offsets follow
+  WGSL's layout rules, which for these types are std140's, so the two targets share them. A
+  slider's `uniform` is its member name in the WGSL; naga's reflection does not report member
+  names, so a GLSL host goes by offset.
+- **`defs` apply as they do to every query.** One that replaces a slider whose range is in `.min`
+  and `.max` changes its `value`. One that replaces a slider declared with `@range` replaces the
+  annotation too, so the value is built into the field and the slider is gone from `sliders`.
+- **Textures are files** under `outDir`, raw texels in the stated `format`, to be read with the
+  stated `filter`, clamped to the edge. Nothing is inlined in JSON. Two kinds are written: the
+  noise tile (`noise3d`) and a mesh's distance grid (`meshSdf`, 256 cells a side, 32 MB). A
+  document that reads a spinodoid or warp texture is refused with a message that says so.
+- **Binding.** In the `wgsl` response the block is `@group(0) @binding(0)` and each texture
+  carries its `binding`, with `samplerUniform` and `samplerBinding` when the field samples it. In
+  the `glsl-es300` response `uniformBlock` and each texture's `uniform` are naga's names, read
+  from its reflection output, and a texture and its sampler are one `sampler3D`.
+- **`region` is the box to march**: the `@scene` box, or without one the box the field fills. Its
+  half-width is built into `gsl_march`, whose step budget is measured against it, which is why
+  the function takes no extent.
+- **`gsl_march` returns `gsl_hit`** (`hit`, `t`, `shapeIndex`, `gradient`), and takes every
+  gradient through one function, `gsl_gradient(p, reach)`: four tetrahedral taps today, and the
+  one place an analytic gradient replaces them.
+- `target` is required: `wgsl` or `glsl-es300`.
+
+### 3.4 Out of Scope (v1)
+
+- The backface march, displacement, glass, shadows and ambient occlusion. They stay in
+  `examples/viewer`. The viewer keeps its own copy of the front march too; moving the
+  viewer onto the emitted one is a later track (Section 7).
+- Shading. `shader` returns geometry of the hit; the look is the host's.
+- Mesh bytes or texture bytes inside a JSON response.
+
+---
+
+## 4. How the `glsl-es300` Target Is Made
+
+Two routes were weighed. This section records why the second was chosen.
+
+### 4.1 A GLSL dialect of the Go backend (rejected)
+
+`backend/wgsl` is about 10,000 lines outside tests, and WGSL syntax is not confined to a printer:
+
+- `internal/ir` statements carry their expressions and types as WGSL strings (`LetStmt.Expr`,
+  `LetStmt.Type`) and format themselves as WGSL.
+- `internal/codegen` holds hand-written WGSL as Go string templates: the cellular scan, the
+  spinodoid sampler, warp and noise textures, vanish, displacement, materials.
+- `internal/wgsl` builds expressions as WGSL text (`vec3<f32>(...)`, `select`, reserved words).
+
+A dialect therefore means a second copy of each template and a typed expression layer under the
+IR, which is a second backend in all but name. Every later change to a template would be made
+twice.
+
+### 4.2 Transpile the emitted WGSL with naga (chosen)
+
+The op emits WGSL as `compile -t wgsl` does, appends the host preamble (`gsl_shape`, `gsl_min`,
+the uniform block) and the march, written once in WGSL, and hands the module to naga's GLSL
+writer.
+
+- **Measured on six documents** (`blend`, `gyroid`, `hybrid_bracket`, `aerospace_bracket`,
+  `cellular_noise`, `bvhsdf_basic`) with naga 29's command-line tool, profile `es300`: all six
+  transpile, compile under ANGLE (Chrome, Metal) in 40 to 150 ms, and draw. Texture and sampler
+  pairs become one `sampler3D`; `textureLoad` becomes `texelFetch`.
+- **Frame cost at 800 by 600**, the surface covering 4 to 9 percent of the picture: 0.5 to 1.2 ms
+  for five of them, 27 to 32 ms for `cellular_noise`. A part that fills a high-density viewport
+  marches ten to twenty times as many pixels, so `stepScale` and a host-side draft resolution are
+  needed, not optional.
+- **A large document, `corexy_printer`** (598 lines of GSL, parts and materials): 2,292 lines of
+  WGSL become 5,766 lines of GLSL, which ANGLE compiles in 49 ms. It draws at 36 ms a frame at 800
+  by 600 with the surface covering 23 percent of the picture, vanish off and a march box of twice
+  the scene's bounds. That is the worst case, and it is why vanish is in the march (Section 3.3).
+  The same document stopped naga twice until the harness declared `gsl_pw` and `gsl_material`,
+  which is why the preamble lists them.
+- **naga renames identifiers** (`distance` to `distance_`, a trailing `_` on names ending in a
+  digit, its own block and instance names). The op reads the names back from naga's reflection
+  output and reports them in `sliders` and `textures`; a host never guesses.
+
+**Cost of this route.** naga is in the workspace only through the vendored `fidget-wgpu`, which
+the `compile` program's Rust library does not link. This track would add `naga` (features
+`wgsl-in`, `glsl-out`) to `internal/fidget/internal/rust`, one C entry point, and its Go wrapper.
+It is a new native dependency of every wheel. The owner chose this route on 2026-11-13; the plan
+still stops for approval once the added size and the crates it pulls in are known, and records the
+change in `tech-stack.md` before any code that uses it.
+
+### 4.3 Measured on the op as built (2026-11-13)
+
+Apple M4 Max, 800 by 600, one `gsl_march` a pixel.
+
+| Document | Op | GLSL lines | ANGLE compile | WebGL2 frame | Covers |
+| :-- | --: | --: | --: | --: | --: |
+| `blend` | 40 ms | 258 | 67 ms | 0.98 ms | 7.6% |
+| `gyroid` | 30 ms | 212 | 21 ms | 1.03 ms | 16.2% |
+| `hybrid_bracket` | 30 ms | 271 | 24 ms | 0.67 ms | 7.2% |
+| `aerospace_bracket` | 50 ms | 384 | 30 ms | 1.47 ms | 11.4% |
+| `cellular_noise` | 60 ms | 578 | 82 ms | 55.4 ms | 8.2% |
+| a tetrahedron's `bvhSdf` | | 209 | 56 ms | 1.61 ms | 11.0% |
+| `corexy_printer`, guards on, 4 px rung | 320 ms | 5,746 | 316 ms | 186 ms | 29.8% |
+
+- **Chrome (ANGLE, Metal), the owner's run.** Every document compiled, linked and drew, and the
+  uniform block's size by the driver equalled `blockBytes` on each (16, 16, 16, 32, 16, 48, 16).
+  The run predates the change that leaves the guards off for a zero `detail`.
+- **The same rays through `gpu-eval`** (wgpu, the WGSL target, a compute shader), which counts
+  field evaluations. Its coverage equals the browser's on every document.
+
+| `corexy_printer` | Frame | Field evaluations a pixel |
+| :-- | --: | --: |
+| guards on, 4 px rung | 77 ms | 106 |
+| guards on, no rung (before the change) | 79 ms | 96 |
+| zero `detail`: guards off | 33 ms | 60 |
+
+- **The guards cost this document 2.4 times the frame.** A part far from the ray reads as its
+  box, which is nearer than the part, so the march takes more steps, and each evaluation costs
+  more with 177 guards in it. Letting only the gradient taps read parts whole did not change the
+  count (95), so it is not the taps straddling a guard's edge.
+- **The step budget is not a draft lever.** Halving `stepScale` changed no frame time and no
+  coverage: the mean is 24 to 106 evaluations a pixel against a budget of 256 steps. A host
+  drafts by resolution.
+- **`cellular_noise` is slow in the field**, not the march: 28 evaluations a pixel, as `blend`
+  has, at 45 ms against 1.3 ms.
+- **Not isolated:** the browser took 186 ms where `gpu-eval` took 77 ms for the same rays of
+  `corexy_printer`. Whether that is the GLSL route (naga's GLSL through ANGLE) or fragment
+  against compute is not known. The viewer's own march was not measured.
+
+---
+
+## 5. Python (`omega_core`)
+
+- `Document.volume(..., defs="")`, as `bounds` and `render` spell it.
+- `Document.mesh(out, *, region=None, subdivision=0, algorithm="", time=0, defs="")` returns a
+  `Mesh`: the path, the region and a `MeshBody` per body.
+- `Document.shader(target, *, out_dir, defs="")` returns the response as a mapping; `target` has no
+  default, as in the op.
+
+Standard library only, as the rest of the package is.
+
+---
+
+## 6. Tests
+
+All in Go, written before the code they pin.
+
+- **`volume` with `defs`:** a ball whose radius is a slider; the bracket for `defs` that double
+  the radius contains eight times the closed-form volume, and the bracket without them does not.
+- **`mesh`:**
+  - a ball: the file parses as GLB, has one node, a NORMAL accessor, zero open and non-manifold
+    edges, and every normal within a stated angle of the radial direction;
+  - the mesh `volume` lies within a stated tolerance of the closed form;
+  - `defs` that change the radius change the vertex extents accordingly;
+  - two returns give two nodes with the returns' names;
+  - a missing `out` is a malformed request (exit code 2).
+- **`WriteGLB` without the option** writes the same bytes as before, pinned against the current
+  output for one document.
+- **`shader`:**
+  - for each target, the response's `code` contains `gsl_field` and `gsl_march` and no entry point;
+  - for each target, every slider `describe` reports appears in `sliders` with a `uniform` that
+    occurs in `code`;
+  - the `wgsl` response parses and validates (through the transpile entry point's parser);
+  - a document with parts and materials (`corexy_printer`) answers for both targets, and its march
+    assigns the vanish globals;
+  - a document with a noise texture lists it in `textures` and writes a file of the stated size;
+  - an unknown `target` is a malformed request.
+- **The march's arithmetic** is pinned against the CPU renderer, which steps by the same rule
+  (`eval/litrender.go`): a Go transcription of the emitted loop and the CPU march hit the same
+  points on a non-unit-Lipschitz field (a gyroid) within the hit tolerance.
+
+Not covered by an automated test: that a browser compiles the GLSL. No WebGL context exists in
+the test environment; the seven-document measurement above is the evidence, and it is by hand.
+
+---
+
+## 7. Open Questions
+
+1. **One march or two:** v1 leaves the viewer's copy in place. The follow-up has the viewer
+   consume the emitted front march and keep only its extras.
+2. **`region` for `shader` and `mesh`:** whether the certified automatic box, once it lands,
+   replaces the sampled one as the default here, and `eval`'s `fitBox` and `cmd/compile`'s
+   `autoBbox` become one function.
+3. **Analytic gradient in the march:** forward-mode `.dp` in place of four taps would cut the
+   field evaluations per step from five to one dual evaluation. Not measured.
+
+Decided (2026-11-13): the transpile lives in the `compile` program, not in the host as
+WebAssembly; `shader` has two targets from the start, `wgsl` and `glsl-es300`.
