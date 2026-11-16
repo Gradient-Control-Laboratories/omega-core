@@ -141,8 +141,8 @@ class Certificate:
 class Bounds:
     """A box around where ``expr`` is below zero. When ``proven``, interval arithmetic shows nothing of the part lies
     outside it, and ``cell_size`` is how far it can stand off the part on each axis; ``found`` is then false only where
-    the region is proven empty. When not ``proven`` (``reason`` says why: the field's intervals are ``unbounded``, or
-    too loose for the ``budget``), it is a fit on a grid of ``resolution`` cells a side that can miss a wall thinner
+    the region is proven empty. When not ``proven`` (``reason`` says why: the field's intervals are ``unbounded``, too
+    ``loose`` to bring the box near the part, or too loose for the ``budget``), it is a fit on a grid of ``resolution`` cells a side that can miss a wall thinner
     than a cell and fall short of the surface by up to one (``cell_size``): do not read a size from it. ``min_value``
     at ``min_at`` is the grid's least sample, reported even when nothing was found."""
 
@@ -173,7 +173,7 @@ class SurfaceSample:
 class Volume:
     """The volume where ``expr`` is below zero inside the region, bracketed, in cubic millimetres. The bracket always
     holds; ``converged`` says it is as narrow as the tolerance asked, and ``reason`` what ended the search where it is
-    not (``budget`` or ``depth``)."""
+    not (``time``, ``budget`` or ``depth``)."""
 
     expr: str
     lower_mm3: float
@@ -495,10 +495,11 @@ class Document:
                       tuple((b["name"], b["index"]) for b in r["bodies"]), tuple(r["region"]))
 
     def volume(self, expr: Optional[str] = None, *, region: Region, relative_tolerance: float = 0.0,
-               defs: str = "") -> Volume:
-        """The volume inside the region, bracketed (``relative_tolerance`` 0 takes the default 0.05, which is quick;
-        0.01 takes seconds)."""
+               defs: str = "", time_limit: float = 0.0) -> Volume:
+        """The volume inside the region, bracketed (``relative_tolerance`` 0 takes the default 0.05, which is quick
+        on a plain part; 0.01 takes seconds). The search stops after ``time_limit`` seconds (0 takes the default,
+        10), with the bracket it has."""
         r = self._ask("volume", expr=expr, region=_region(region), relativeTolerance=relative_tolerance or None,
-                      defs=defs)
+                      defs=defs, timeLimit=time_limit or None)
         return Volume(r["expr"], r["lowerMm3"], r["upperMm3"], r["evals"], bool(r.get("converged", True)),
                       r.get("reason"))

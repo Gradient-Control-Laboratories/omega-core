@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `gsl eval`'s `volume` stops after 10 seconds unless the request names a longer `timeLimit` (Python
+  `Document.volume(time_limit=...)`), and answers with the bracket it has, `"converged": false` and the new reason
+  `time`. On a part whose intervals are loose, as a round blend's are, it ran to its evaluation budget for about
+  100 seconds. The bracket and the budget are unchanged.
+
+### Fixed
+
+- A field's gradient (`.dp`) did not compile where the field is a `reduce` whose step reads its index, as
+  `profileXY` and every extrusion of one do (`undefined identifier: index`). The gradient's evaluation of a
+  `reduce` now hands the step its index as lowering does, and an index that reads such a name is evaluated rather
+  than copied into the output.
+
+- `gsl eval`'s `bounds` answered `"proven": true` with a box several millimetres off the part where the search
+  ended on boxes it could not rule out (an angle folded with `atan`, across its seam). Such a box is now the
+  grid's, with `"proven": false` and the new reason `loose`; a proven box stands within 1/64 of the part's span
+  of points known to be inside, however its search ended.
+- A slider read by a field that a `remap` re-derives inside a function's body (as `unionRoundExact` does with
+  its closures) was emitted as a name the WGSL did not define, so `gsl eval`'s `shader` refused the model in
+  `glsl-es300` and `gsl compile -t wgsl` wrote a module that does not validate. The helper now takes the slider
+  as a parameter.
+
 ## [0.1.2] - 2026-11-15
 
 ### Added

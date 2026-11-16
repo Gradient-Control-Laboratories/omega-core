@@ -643,3 +643,13 @@ func subPair(a, b pair) pair {
 	}
 	return pair{first: first, second: inf()}
 }
+
+// Primal is a pair's plain value, for an index the Engine evaluates (see
+// frame.indexOperand).
+func (dd *secondDomain) Primal(v Value) (*program.Operand, bool) {
+	p, ok := v.(pair)
+	if !ok || p.first == nil {
+		return nil, false
+	}
+	return p.first, true
+}

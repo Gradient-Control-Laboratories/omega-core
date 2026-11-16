@@ -22,6 +22,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/eval"
@@ -61,8 +62,9 @@ A request names its op and its document, by path ("source") or text ("code"):
   bounds     expr, region, resolution                 a box proven to hold all of expr < 0 ("proven"); else a
                                                       fit on a grid that can miss thin walls, and "reason"
   surface    expr, points, maxIters, tolerance        each point moved onto expr = 0
-  volume     expr, region, relativeTolerance          the volume where expr < 0, bracketed; "converged" says the
-                                                      bracket met the tolerance, "reason" why it did not
+  volume     expr, region, relativeTolerance,         the volume where expr < 0, bracketed; "converged" says the
+             timeLimit                                bracket met the tolerance, "reason" why it did not; it
+                                                      stops after timeLimit seconds, 10 unless named
   describe                                            the sliders, top-level names and returns
   render     out, expr, views, width, height, light,   a PNG at out, as compile -t png draws it; expr defaults
              extent, time                              to the returns, each in its own colour
@@ -215,6 +217,7 @@ type request struct {
 	Resolution        int                   `json:"resolution"`
 	MaxIters          int                   `json:"maxIters"`
 	RelativeTolerance float64               `json:"relativeTolerance"`
+	TimeLimit         float64               `json:"timeLimit"`
 	Out               string                `json:"out"`
 	Views             string                `json:"views"`
 	Width             int                   `json:"width"`
@@ -567,6 +570,9 @@ func volume(ctx context.Context, e *eval.Evaluator, code string, req *request) (
 	if err := nonNegative("relativeTolerance", req.RelativeTolerance); err != nil {
 		return nil, err
 	}
+	if err := nonNegative("timeLimit", req.TimeLimit); err != nil {
+		return nil, err
+	}
 	box, err := region(req)
 	if err != nil {
 		return nil, err
@@ -575,7 +581,11 @@ func volume(ctx context.Context, e *eval.Evaluator, code string, req *request) (
 	if err != nil {
 		return nil, err
 	}
-	r, err := e.VolumeOf(ctx, nil, code, req.Defs, x, box, req.RelativeTolerance)
+	limit := time.Duration(req.TimeLimit * float64(time.Second))
+	if req.TimeLimit > 0 && limit <= 0 {
+		limit = 1 // a limit too short for a nanosecond is the shortest one, not the default
+	}
+	r, err := e.VolumeWithin(ctx, nil, code, req.Defs, x, box, req.RelativeTolerance, limit)
 	if err != nil {
 		return nil, err
 	}
