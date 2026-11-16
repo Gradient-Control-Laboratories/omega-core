@@ -77,3 +77,10 @@ single-responsibility boundaries:
   and bytecode tapes.
 - `cmd/{gsl,compile,serve,fix}/` — Unified CLI toolchain built into `bin/` via `./tool/build-cli.sh`.
 
+## 7. Testing
+
+- Prefer assembling real GSL snippets via `assembler.Assemble(...)` (or `parser.ParsePackage(...)`
+  for parser/pre-assembly tests) rather than hand-constructing `program.Program`, `program.Package`,
+  or `program.PackageFile` structs; reserve synthetic AST literals only for intentional
+  empty/boundary-input tests.
+

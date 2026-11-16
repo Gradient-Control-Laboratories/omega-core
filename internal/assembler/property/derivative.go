@@ -891,3 +891,13 @@ func sqrt(a *program.Operand) *program.Operand   { return un(program.Operation_S
 func nonZero(l *program.Operand) *program.Operand {
 	return add(l, sub(num(1), bin(program.Operation_GT, l, num(0))))
 }
+
+// Primal is a dual's plain value, for an index the Engine evaluates (see
+// frame.indexOperand).
+func (dd *derivDomain) Primal(v Value) (*program.Operand, bool) {
+	d, ok := v.(dual)
+	if !ok || d.primal == nil {
+		return nil, false
+	}
+	return d.primal, true
+}

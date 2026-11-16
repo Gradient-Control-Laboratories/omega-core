@@ -27,7 +27,9 @@ pip install omega-core
   - the occupied box;
   - points projected onto the surface;
   - a bracketed volume;
-  - pictures with sliders set or the part cut open.
+  - pictures with sliders set or the part cut open;
+  - a mesh of the part as a `.glb`, with what its triangles say of each body;
+  - the field as a shader library, in WGSL or GLSL ES 3.00, for a host that draws it itself.
 
 All lengths are millimetres.
 
@@ -65,6 +67,7 @@ until Ctrl-C. `--no-open` prints the address without opening a browser.
 | `tape` | the field as a bytecode tape (for Fidget) | `part.tape` |
 | `audio` | Web Audio JavaScript for the model's sound | `part.js` |
 | `ast` | the linked program as JSON | `part.ast.json` |
+| `field` | the field bundle a viewer draws, as one JSON: the WGSL with its shapes, parts, sliders, UI controls, `@scene` and imported meshes' preview grids, the same as `gsl serve`'s `/api/compile` answers. A model with errors gets a bundle listing them (`lineNum`, `column`, `message`), and the command exits 1. No companion JSON: the bundle holds it | `part.field.json` |
 
 General flags:
 
@@ -108,14 +111,16 @@ A request names its `op` and its document, by path (`"source"`) or by text (`"co
 
 | `op` | Fields | Answers |
 |---|---|---|
-| `eval` | `exprs`, `points` | each expression's value and gradient at each point |
+| `eval` | `exprs`, `points` | each expression's value and gradient at each point; `exprs` defaults to the returns |
 | `extremum` | `expr`, `region`, `mode` (`min`, `max`, `both`), `tolerance`, `lipschitz` | the global min and/or max, where it is, and a bound that assumes the Lipschitz constant |
 | `certify` | `expr`, `region`, `threshold`, `tolerance`, `params` or `overSliders` | a sound proof that `expr >= threshold` over the region and the parameter ranges, or a box where it fails |
-| `bounds` | `expr`, `region`, `resolution` | the box where `expr < 0` |
+| `bounds` | `expr`, `region`, `resolution` | a box proven to hold all of `expr < 0` (`proven`), or a fit on a grid with the `reason` no proof was had |
 | `surface` | `expr`, `points`, `maxIters`, `tolerance` | each point moved onto `expr = 0`, with the normal there |
-| `volume` | `expr`, `region`, `relativeTolerance` | the volume where `expr < 0`, bracketed (no `defs`) |
+| `volume` | `expr`, `region`, `relativeTolerance`, `timeLimit` | the volume where `expr < 0`, bracketed; `converged` says the bracket met the tolerance; it stops after `timeLimit` seconds, 10 unless named |
 | `describe` | (none) | the sliders and their ranges, top-level names and returns |
 | `render` | `out`, `expr`, `views`, `width`, `height`, `light`, `extent`, `time` | a PNG at `out`, as `gsl compile -t png` draws it |
+| `mesh` | `out`, `region`, `subdivision`, `algorithm`, `time` | a `.glb` at `out`: a node per return, a gradient normal per vertex; and each body's counts and volume |
+| `shader` | `target` (`wgsl`, `glsl-es300`), `outDir` | the field as a library a host's shader calls: `gsl_field` and `gsl_march`, a uniform block for time and the sliders, and its textures as files under `outDir` |
 
 - **Responses:** each is `{"id", "ok": true, ...}` or `{"id", "ok": false, "error"}`. A value that is not
   finite is `null`.
@@ -164,13 +169,15 @@ or the end of the `with` block.
 | Method | Returns |
 |---|---|
 | `describe()` | `Description` |
-| `eval(exprs, points, *, defs="")` | `Fields` |
+| `eval(exprs, points, *, defs="")` (`exprs` `None`: the returns) | `Fields` |
 | `extremum(expr=None, *, region, mode="min", tolerance=0, lipschitz=0, defs="")` | `Extremum` |
 | `certify(expr=None, *, region, threshold, tolerance=0, params=None, over_sliders=False, defs="")` | `Certificate` |
 | `bounds(expr=None, *, region=None, resolution=0, defs="")` | `Bounds` |
 | `surface(points, expr=None, *, max_iters=0, tolerance=0, defs="")` | a tuple of `SurfaceSample` |
-| `volume(expr=None, *, region, relative_tolerance=0)` | `Volume` |
+| `volume(expr=None, *, region, relative_tolerance=0, defs="", time_limit=0)` | `Volume` |
 | `render(out, expr=None, *, views="iso", width=640, height=480, light=False, extent=0, time=0, defs="")` | `Picture` |
+| `mesh(out, *, region=None, subdivision=0, algorithm="", time=0, defs="")` | `Mesh` |
+| `shader(target, *, out_dir=None, defs="")` | `Shader` |
 
 A zero `tolerance`, `lipschitz`, `resolution`, `max_iters` or `relative_tolerance` takes the evaluator's
 default. `views` is a string as for `--views`, or a list of them.
@@ -215,7 +222,12 @@ the wheel was not built for. `omega_core.version()` is the release, such as `"0.
   - `extremum`'s sample is a true value of the field, but its bound holds only under the Lipschitz
     constant it assumed (1 unless given). That is correct for a distance field, and wrong for a sum of two
     fields, a lattice, or a blend that overstates distance. To claim a minimum, certify it.
-  - `bounds` can fall a cell short of the surface.
+  - `bounds` is a proof when it says `proven`: nothing of the part lies outside the box, which stands off it
+    by at most `cell_size`. Otherwise it is a fit on a grid that can miss a thin wall and fall a cell short
+    of the surface, and `reason` says why (`unbounded` intervals, as a field divided by its own gradient
+    has; `loose` ones, as an angle folded with `atan` has across its seam; or `budget`).
+  - `volume`'s bracket always holds. `converged` says whether it is as narrow as was asked; it stops after 10
+    seconds unless given a longer `time_limit`, and `reason` is then `time`.
 
 ## Platforms
 

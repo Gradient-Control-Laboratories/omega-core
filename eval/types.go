@@ -192,11 +192,15 @@ type SurfaceSample struct {
 	Converged bool
 }
 
-// VolumeBounds brackets the solid volume inside a containing region in cubic millimetres.
+// VolumeBounds brackets the solid volume inside a containing region in cubic millimetres. Converged says the
+// bracket is as narrow as the tolerance asked; where it is not, the bracket still holds and Reason says what
+// ended the search (ReasonBudget or ReasonDepth).
 type VolumeBounds struct {
-	Lower float64 `json:"lowerMm3"`
-	Upper float64 `json:"upperMm3"`
-	Evals int     `json:"evals"`
+	Lower     float64 `json:"lowerMm3"`
+	Upper     float64 `json:"upperMm3"`
+	Evals     int     `json:"evals"`
+	Converged bool    `json:"converged"`
+	Reason    string  `json:"reason,omitempty"`
 }
 
 // LitView is the camera and ground of a lit CPU render.

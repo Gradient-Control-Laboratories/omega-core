@@ -19,6 +19,7 @@ import (
 	"gradientcontrol.com/omega/core/backend/wgsl"
 	"gradientcontrol.com/omega/core/cmd/compile/internal/config"
 	"gradientcontrol.com/omega/core/eval"
+	"gradientcontrol.com/omega/core/internal/compile"
 	"gradientcontrol.com/omega/core/internal/meshimport"
 	"gradientcontrol.com/omega/core/internal/version"
 	"gradientcontrol.com/omega/core/parser"
@@ -42,7 +43,7 @@ func PrintUsage(w io.Writer) {
 	fmt.Fprintf(w, "  compile eval [flags] REQUEST.json | --stdio   (query a document's field: compile eval --help)\n\n")
 	fmt.Fprintf(w, "Flags:\n")
 	fmt.Fprintf(w, "  -t, --target string\n")
-	fmt.Fprintf(w, "        Compilation output target (wgsl, stl, 3mf, glb, tape, audio, ast, png) (default \"wgsl\")\n")
+	fmt.Fprintf(w, "        Compilation output target (wgsl, stl, 3mf, glb, tape, audio, ast, png, field) (default \"wgsl\")\n")
 	fmt.Fprintf(w, "  -o, --output string\n")
 	fmt.Fprintf(w, "        Output destination path ('-' for stdout)\n")
 	fmt.Fprintf(w, "  -m, --meta string\n")
@@ -134,6 +135,12 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		}
 		sourceName = cfg.Sources[0]
 		primarySourceText = sourceTexts[0]
+	}
+
+	// The field target is a viewer's bundle, compiled as gsl serve's /api/compile compiles it
+	// (internal/compile). A document with errors still gets one, listing them.
+	if cfg.Target == config.TargetField {
+		return runField(cfg, sourceTexts, sourceName, primarySourceText, stdout, stderr)
 	}
 
 	// Validate parser on primary package
@@ -372,6 +379,68 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		}
 	}
 
+	return nil
+}
+
+// runField writes source's field bundle (internal/compile) as JSON: the WGSL with its shapes, parts,
+// sliders, UI controls, @scene and imported meshes' preview grids, the same as gsl serve's /api/compile answers
+// for the same document. A document with errors gets a bundle too, holding them with their lines and columns, and
+// then runField returns an error, so the exit status says the bundle draws nothing. There is no companion
+// metadata: the bundle holds it.
+func runField(cfg *config.Config, sourceTexts []string, sourceName, source string, stdout, stderr io.Writer) error {
+	if len(sourceTexts) > 1 {
+		return fmt.Errorf("-t field takes one source file, not %d", len(sourceTexts))
+	}
+	if cfg.MetaPath != "" {
+		return fmt.Errorf("-t field writes no companion metadata (the bundle holds the sliders, UI controls and scene): drop -m")
+	}
+	srcPaths := cfg.SourcePaths
+	docDir := "."
+	if len(cfg.Sources) > 0 {
+		docDir = filepath.Dir(cfg.Sources[0])
+		if len(srcPaths) == 0 {
+			srcPaths = []string{docDir}
+		}
+	}
+	var progress compile.ProgressFunc
+	if cfg.Verbose {
+		progress = func(stage, label string, completed, total uint32) {
+			fmt.Fprintf(stderr, "[%s] %s (%d/%d)\n", stage, label, completed, total)
+		}
+	}
+	bundle := compile.Process(compile.Request{
+		ID:     sourceName,
+		Source: source,
+		Meshes: meshimport.Dirs(meshDirsFor(docDir, srcPaths)...),
+	}, srcPaths, progress)
+	data, err := json.Marshal(bundle)
+	if err != nil {
+		return fmt.Errorf("marshaling the field bundle: %w", err)
+	}
+	data = append(data, '\n')
+
+	outputPath := cfg.ResolveOutputPath()
+	if outputPath == "-" {
+		if stdout == nil {
+			stdout = os.Stdout
+		}
+		if _, err := stdout.Write(data); err != nil {
+			return fmt.Errorf("writing output to stdout: %w", err)
+		}
+	} else {
+		if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
+			return fmt.Errorf("creating output directory: %w", err)
+		}
+		if err := os.WriteFile(outputPath, data, 0644); err != nil {
+			return fmt.Errorf("writing output file %q: %w", outputPath, err)
+		}
+	}
+
+	if n := len(bundle.Errors); n > 0 {
+		first := bundle.Errors[0]
+		return fmt.Errorf("%s: %d error(s), listed in the field bundle; the first, %d:%d: %s",
+			sourceName, n, first.LineNum, first.Column, first.Message)
+	}
 	return nil
 }
 

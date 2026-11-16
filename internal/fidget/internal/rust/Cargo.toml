@@ -20,6 +20,9 @@ fidget = { version = "0.5", default-features = false, features = ["gui", "jit", 
 fidget-mesh = "0.5"
 image = "0.24"
 libc = "0.2.168"
+# WGSL in, GLSL ES 3.00 out, for `gsl eval`'s shader op on a WebGL2 host. The version is the one fidget-wgpu
+# already resolves, so Cargo.lock gains no package.
+naga = { version = "30", default-features = false, features = ["wgsl-in", "glsl-out"] }
 nalgebra = "0.35"
 prost = "0.13.4"
 serde = { version = "1.0", features = ["derive"] }

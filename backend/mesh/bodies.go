@@ -164,12 +164,35 @@ func Write3MF(w io.Writer, bodies []Body, colors map[int]string) error {
 	return threemf.Write(w, entries)
 }
 
+// GLBOption adjusts what WriteGLB writes.
+type GLBOption func(*glbOptions)
+
+type glbOptions struct {
+	normals func(body Body, positions []float32, indices []uint32) ([]float32, error)
+}
+
+// GLBNormals has WriteGLB write a NORMAL attribute for each body: fn is given
+// the body and its welded vertices and triangles, and returns one unit normal
+// per vertex, xyz in the positions' frame. A body with no triangles is not
+// asked. The package knows no field to take a gradient from, so the caller
+// that has one supplies them.
+func GLBNormals(fn func(body Body, positions []float32, indices []uint32) ([]float32, error)) GLBOption {
+	return func(o *glbOptions) { o.normals = fn }
+}
+
 // WriteGLB writes bodies as one binary glTF (.glb), each a node with its own
 // mesh and material, colored as Write3MF colors it: colors[Index] where colors
 // has a "#rrggbb" for it, the viewer's palette otherwise. Vertices are welded
 // as for 3MF and stay in millimetres, Z up, under a root node that turns them
-// into glTF's metres, Y up (package glb).
-func WriteGLB(w io.Writer, bodies []Body, colors map[int]string) error {
+// into glTF's metres, Y up (package glb). Without options a body is positions
+// and indices only.
+func WriteGLB(w io.Writer, bodies []Body, colors map[int]string, opts ...GLBOption) error {
+	var o glbOptions
+	for _, opt := range opts {
+		if opt != nil {
+			opt(&o)
+		}
+	}
 	entries := make([]glb.Body, len(bodies))
 	for i, b := range bodies {
 		m, err := threemf.WeldSTL(b.STL)
@@ -181,6 +204,13 @@ func WriteGLB(w io.Writer, bodies []Body, colors map[int]string) error {
 			color = threemf.PaletteColor(b.Index)
 		}
 		entries[i] = glb.Body{Name: b.Name, Color: color, Positions: m.Positions, Indices: m.Indices}
+		if o.normals != nil && len(m.Indices) > 0 {
+			normals, err := o.normals(b, m.Positions, m.Indices)
+			if err != nil {
+				return fmt.Errorf("body %s: normals: %w", b.Name, err)
+			}
+			entries[i].Normals = normals
+		}
 	}
 	return glb.Write(w, entries)
 }

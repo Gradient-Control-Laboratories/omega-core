@@ -178,8 +178,17 @@ func (e *Evaluator) EvalGsl(ctx context.Context, manifest map[string]string, cod
 // `defs` is optional GSL statements appended after the document, in its
 // scope, before the query return.
 func (e *Evaluator) prepareQuery(ctx context.Context, manifest map[string]string, code, defs string, exprs []string) (*program.Program, error) {
+	prog, _, _, err := e.assembleQuery(ctx, manifest, code, defs, exprs)
+	return prog, err
+}
+
+// assembleQuery is prepareQuery, and also returns the source it assembled
+// (the document with defs applied and exprs as its returns) and, when the
+// evaluator loads meshes itself (LoadMeshesFrom), the meshes the document
+// reads.
+func (e *Evaluator) assembleQuery(ctx context.Context, manifest map[string]string, code, defs string, exprs []string) (*program.Program, string, []meshimport.Use, error) {
 	if len(exprs) == 0 {
-		return nil, fmt.Errorf("no expressions to evaluate")
+		return nil, "", nil, fmt.Errorf("no expressions to evaluate")
 	}
 
 	// Clean the defs: drop import statements (all libraries are injected
@@ -218,13 +227,13 @@ func (e *Evaluator) prepareQuery(ctx context.Context, manifest map[string]string
 	meshAssets := referencesMeshAssets(gslSource)
 	if !meshAssets {
 		if prog := e.cachedQuery(gslSource); prog != nil {
-			return prog, nil
+			return prog, gslSource, nil, nil
 		}
 	}
 
 	res, err := assembler.Assemble([]string{gslSource}, e.assembleOptions...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to assemble query: %w", err)
+		return nil, "", nil, fmt.Errorf("failed to assemble query: %w", err)
 	}
 	prog := res.Program
 	if !meshAssets {
@@ -238,24 +247,24 @@ func (e *Evaluator) prepareQuery(ctx context.Context, manifest map[string]string
 	if meshAssets && e.findMeshes != nil {
 		uses, err := meshimport.Resolve(prog, res.Slots, e.findMeshes)
 		if err != nil {
-			return nil, err
+			return nil, "", nil, err
 		}
 		if err := meshimport.Register(uses); err != nil {
-			return nil, err
+			return nil, "", nil, err
 		}
-		return prog, nil
+		return prog, gslSource, uses, nil
 	}
 	if meshAssets {
 		if e.fetchAssets == nil {
-			return nil, fmt.Errorf("this document references mesh assets (importStep/importMesh/bvhSdf/vdbSdf), which evalGsl cannot evaluate here")
+			return nil, "", nil, fmt.Errorf("this document references mesh assets (importStep/importMesh/bvhSdf/vdbSdf), which evalGsl cannot evaluate here")
 		}
 		prog, err = e.applyMeshAssets(ctx, manifest, prog)
 		if err != nil {
-			return nil, err
+			return nil, "", nil, err
 		}
 	}
 
-	return prog, nil
+	return prog, gslSource, nil, nil
 }
 
 const (

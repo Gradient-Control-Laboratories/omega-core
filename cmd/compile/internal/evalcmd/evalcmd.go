@@ -22,6 +22,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/eval"
@@ -58,16 +59,30 @@ A request names its op and its document, by path ("source") or text ("code"):
   extremum   expr, region, mode, tolerance, lipschitz  min and/or max; the bound assumes the Lipschitz constant
   certify    expr, region, threshold, tolerance,      a sound proof that expr >= threshold over the region
              params | overSliders                     (and over the parameter ranges)
-  bounds     expr, region, resolution                 the box where expr < 0
+  bounds     expr, region, resolution                 a box proven to hold all of expr < 0 ("proven"); else a
+                                                      fit on a grid that can miss thin walls, and "reason"
   surface    expr, points, maxIters, tolerance        each point moved onto expr = 0
-  volume     expr, region, relativeTolerance          the volume where expr < 0, bracketed (no defs)
+  volume     expr, region, relativeTolerance,         the volume where expr < 0, bracketed; "converged" says the
+             timeLimit                                bracket met the tolerance, "reason" why it did not; it
+                                                      stops after timeLimit seconds, 10 unless named
   describe                                            the sliders, top-level names and returns
   render     out, expr, views, width, height, light,   a PNG at out, as compile -t png draws it; expr defaults
              extent, time                              to the returns, each in its own colour
+  mesh       out, region, subdivision, algorithm,      a .glb at out: a node per return, a normal per vertex from
+             time                                      the field's gradient; and each body's counts and volume
+  shader     target, outDir                            the field as a library a host's shader calls, in "wgsl" or
+                                                       "glsl-es300": gsl_field and gsl_march, a uniform block
+                                                       for time and the sliders, and its textures as files
 
 "defs" are GSL statements in the document's scope; one naming a declared name replaces it ("skin = 1.6;").
-"expr" defaults to the union of the document's returns. "region" is [x0, y0, z0, x1, y1, z1] in mm.
+"expr" defaults to the union of the document's returns, and eval's "exprs" to each of them.
+"region" is [x0, y0, z0, x1, y1, z1] in mm.
 render's "views" is compile's --views ("iso,top,-1,1,0.6"), its size 640 by 480 unless named.
+mesh's "region" defaults to the box the field fills (compile's --bbox auto), "subdivision" to 9 and "algorithm"
+to "mdc" (or "marching-cubes"); the response's "region" is the box that was meshed.
+shader's "code" has no entry point: a host adds its own, binds a buffer of "blockBytes" to "uniformBlock" and
+writes each of "uniforms" and "sliders" at its "offset", and loads each of "textures" from its "path" (raw texels,
+written under "outDir"). "region" is the box to march: the @scene box, or the box the field fills.
 Each response is {"id", "ok": true, ...} or {"id", "ok": false, "error"}. A value that is not finite is null.
 Exit codes (one request): 0 answered, 1 the query failed, 2 a malformed request.
 `
@@ -202,6 +217,7 @@ type request struct {
 	Resolution        int                   `json:"resolution"`
 	MaxIters          int                   `json:"maxIters"`
 	RelativeTolerance float64               `json:"relativeTolerance"`
+	TimeLimit         float64               `json:"timeLimit"`
 	Out               string                `json:"out"`
 	Views             string                `json:"views"`
 	Width             int                   `json:"width"`
@@ -209,6 +225,10 @@ type request struct {
 	Light             bool                  `json:"light"`
 	Extent            float64               `json:"extent"`
 	Time              float64               `json:"time"`
+	Subdivision       int                   `json:"subdivision"`
+	Algorithm         string                `json:"algorithm"`
+	Target            string                `json:"target"`
+	OutDir            string                `json:"outDir"`
 }
 
 // malformed is a request the command cannot read or that lacks what its op needs: exit 2, not a query that failed.
@@ -256,11 +276,11 @@ func failure(id json.RawMessage, msg string) map[string]any {
 
 func (s *server) dispatch(ctx context.Context, req *request) (map[string]any, error) {
 	switch req.Op {
-	case "eval", "extremum", "certify", "bounds", "surface", "volume", "describe", "render":
+	case "eval", "extremum", "certify", "bounds", "surface", "volume", "describe", "render", "mesh", "shader":
 	case "":
-		return nil, malformedf("name an op: eval, extremum, certify, bounds, surface, volume, describe or render")
+		return nil, malformedf("name an op: eval, extremum, certify, bounds, surface, volume, describe, render, mesh or shader")
 	default:
-		return nil, malformedf("op %q: one of eval, extremum, certify, bounds, surface, volume, describe or render", req.Op)
+		return nil, malformedf("op %q: one of eval, extremum, certify, bounds, surface, volume, describe, render, mesh or shader", req.Op)
 	}
 	if req.Op != "eval" && len(req.Exprs) > 0 {
 		return nil, malformedf("exprs is eval's; %s takes one expr", req.Op)
@@ -285,6 +305,10 @@ func (s *server) dispatch(ctx context.Context, req *request) (map[string]any, er
 		return volume(ctx, e, code, req)
 	case "render":
 		return render(ctx, e, code, req)
+	case "mesh":
+		return meshFile(ctx, e, code, req)
+	case "shader":
+		return shaderLibrary(ctx, e, code, req)
 	default:
 		return describe(code)
 	}
@@ -361,13 +385,17 @@ func evalPoints(ctx context.Context, e *eval.Evaluator, code string, req *reques
 	if req.Expr != "" {
 		return nil, malformedf("eval takes exprs, a list, not expr")
 	}
-	if len(req.Exprs) == 0 {
-		return nil, malformedf("eval names its exprs")
+	exprs := req.Exprs
+	if len(exprs) == 0 {
+		// As expr defaults to the returns for the other ops; here each is its own group.
+		if exprs = eval.TopLevelReturnExprs(code); len(exprs) == 0 {
+			return nil, errors.New("the document returns nothing: name its exprs")
+		}
 	}
 	if len(req.Points) == 0 {
 		return nil, malformedf("eval names its points, [[x, y, z], ...] in mm")
 	}
-	groups, err := e.EvalGsl(ctx, nil, code, req.Defs, req.Exprs, req.Points)
+	groups, err := e.EvalGsl(ctx, nil, code, req.Defs, exprs, req.Points)
 	if err != nil {
 		return nil, err
 	}
@@ -383,8 +411,8 @@ func evalPoints(ctx context.Context, e *eval.Evaluator, code string, req *reques
 		}
 		group := map[string]any{"type": g.TypeName, "values": values, "gradients": gradients}
 		// A call returning several values gives several groups for one expr: then a group is known by its place only.
-		if len(groups) == len(req.Exprs) {
-			group["expr"] = req.Exprs[i]
+		if len(groups) == len(exprs) {
+			group["expr"] = exprs[i]
 		}
 		out = append(out, group)
 	}
@@ -497,14 +525,19 @@ func bounds(ctx context.Context, e *eval.Evaluator, code string, req *request) (
 	if err != nil {
 		return nil, err
 	}
-	r, err := e.Bounds(ctx, nil, code, req.Defs, x, box, req.Resolution)
+	r, err := e.Enclose(ctx, nil, code, req.Defs, x, box, req.Resolution)
 	if err != nil {
 		return nil, err
 	}
-	return map[string]any{
+	out := map[string]any{
 		"expr": x, "found": r.Found, "bboxMin": vec(r.BboxMin[:]), "bboxMax": vec(r.BboxMax[:]),
 		"cellSize": vec(r.CellSize[:]), "resolution": r.Resolution, "minValue": f32(r.MinValue), "minAt": vec(r.MinAt[:]),
-	}, nil
+		"proven": r.Proven, "evals": r.Evals,
+	}
+	if !r.Proven {
+		out["reason"] = r.Reason
+	}
+	return out, nil
 }
 
 func surface(ctx context.Context, e *eval.Evaluator, code string, req *request) (map[string]any, error) {
@@ -534,10 +567,10 @@ func surface(ctx context.Context, e *eval.Evaluator, code string, req *request) 
 }
 
 func volume(ctx context.Context, e *eval.Evaluator, code string, req *request) (map[string]any, error) {
-	if req.Defs != "" {
-		return nil, malformedf("volume takes no defs: it reads the document as written")
-	}
 	if err := nonNegative("relativeTolerance", req.RelativeTolerance); err != nil {
+		return nil, err
+	}
+	if err := nonNegative("timeLimit", req.TimeLimit); err != nil {
 		return nil, err
 	}
 	box, err := region(req)
@@ -548,11 +581,20 @@ func volume(ctx context.Context, e *eval.Evaluator, code string, req *request) (
 	if err != nil {
 		return nil, err
 	}
-	r, err := e.Volume(ctx, code, x, box, req.RelativeTolerance)
+	limit := time.Duration(req.TimeLimit * float64(time.Second))
+	if req.TimeLimit > 0 && limit <= 0 {
+		limit = 1 // a limit too short for a nanosecond is the shortest one, not the default
+	}
+	r, err := e.VolumeWithin(ctx, nil, code, req.Defs, x, box, req.RelativeTolerance, limit)
 	if err != nil {
 		return nil, err
 	}
-	return map[string]any{"expr": x, "lowerMm3": f64(r.Lower), "upperMm3": f64(r.Upper), "evals": r.Evals}, nil
+	out := map[string]any{"expr": x, "lowerMm3": f64(r.Lower), "upperMm3": f64(r.Upper), "evals": r.Evals,
+		"converged": r.Converged}
+	if !r.Converged {
+		out["reason"] = r.Reason
+	}
+	return out, nil
 }
 
 // The panel size render draws when the request names none: compile -t png's.
@@ -607,6 +649,119 @@ func render(ctx context.Context, e *eval.Evaluator, code string, req *request) (
 	}
 	sheetWidth, sheetHeight := pngSize(data)
 	return map[string]any{"out": out, "width": sheetWidth, "height": sheetHeight, "bytes": len(data)}, nil
+}
+
+// meshFile writes the document, with defs, as a .glb at req.Out, and answers with the box meshed and what each
+// body's triangles say of it. The file is written only once the whole mesh is made.
+func meshFile(ctx context.Context, e *eval.Evaluator, code string, req *request) (map[string]any, error) {
+	if req.Out == "" {
+		return nil, malformedf("mesh names out, the .glb to write")
+	}
+	if req.Expr != "" {
+		return nil, malformedf("mesh takes no expr: it meshes the document's returns, each a body")
+	}
+	if req.Subdivision < 0 {
+		return nil, malformedf("subdivision %d: zero for the default, or more", req.Subdivision)
+	}
+	switch req.Algorithm {
+	case "", "mdc", "marching-cubes":
+	default:
+		return nil, malformedf("algorithm %q: mdc or marching-cubes", req.Algorithm)
+	}
+	opt := eval.MeshOptions{Subdivision: req.Subdivision, Algorithm: req.Algorithm, Time: req.Time}
+	if req.Region != nil {
+		box, err := checkRegion(*req.Region)
+		if err != nil {
+			return nil, err
+		}
+		opt.Region = &box
+	}
+	var buf bytes.Buffer
+	r, err := e.Mesh(ctx, nil, code, req.Defs, &buf, opt)
+	if err != nil {
+		return nil, err
+	}
+	out, err := filepath.Abs(req.Out)
+	if err != nil {
+		return nil, err
+	}
+	if err := os.MkdirAll(filepath.Dir(out), 0o755); err != nil {
+		return nil, err
+	}
+	if err := os.WriteFile(out, buf.Bytes(), 0o644); err != nil {
+		return nil, err
+	}
+	bodies := make([]map[string]any, len(r.Bodies))
+	for i, b := range r.Bodies {
+		bodies[i] = map[string]any{"name": b.Name, "index": b.Index, "vertices": b.Vertices, "triangles": b.Triangles,
+			"openEdges": b.OpenEdges, "nonManifoldEdges": b.NonManifoldEdges, "volumeMm3": f64(b.VolumeMm3)}
+	}
+	region := make([]any, len(r.Region))
+	for k, v := range r.Region {
+		region[k] = f64(v)
+	}
+	return map[string]any{"out": out, "bytes": buf.Len(), "region": region, "bodies": bodies}, nil
+}
+
+// shaderLibrary answers with the document's field, with defs, as a library in req.Target's language, its textures
+// written under req.OutDir.
+func shaderLibrary(ctx context.Context, e *eval.Evaluator, code string, req *request) (map[string]any, error) {
+	if req.Target != eval.ShaderWGSL && req.Target != eval.ShaderGLSLES300 {
+		return nil, malformedf("shader names a target: %q or %q, got %q", eval.ShaderWGSL, eval.ShaderGLSLES300, req.Target)
+	}
+	if req.Expr != "" {
+		return nil, malformedf("shader takes no expr: it is the document's returns, each a body")
+	}
+	outDir := req.OutDir
+	if outDir != "" {
+		abs, err := filepath.Abs(outDir)
+		if err != nil {
+			return nil, err
+		}
+		outDir = abs
+	}
+	r, err := e.Shader(ctx, nil, code, req.Defs, eval.ShaderOptions{Target: req.Target, OutDir: outDir})
+	if err != nil {
+		return nil, err
+	}
+	numbers := func(values []float64) []any {
+		out := make([]any, len(values))
+		for k, v := range values {
+			out[k] = f64(v)
+		}
+		return out
+	}
+	uniforms := make([]map[string]any, len(r.Uniforms))
+	for i, u := range r.Uniforms {
+		uniforms[i] = map[string]any{"name": u.Name, "type": u.Type, "offset": u.Offset, "value": numbers(u.Value)}
+	}
+	sliders := make([]map[string]any, len(r.Sliders))
+	for i, s := range r.Sliders {
+		sliders[i] = map[string]any{"name": s.Name, "uniform": s.Uniform, "type": s.Type, "offset": s.Offset,
+			"value": f64(s.Value), "min": f64(s.Min), "max": f64(s.Max)}
+	}
+	textures := make([]map[string]any, len(r.Textures))
+	for i, t := range r.Textures {
+		tex := map[string]any{"uniform": t.Uniform, "kind": t.Kind, "format": t.Format, "filter": t.Filter,
+			"size": t.Size, "path": t.Path}
+		// WGSL binds by number, and a texture read through a sampler has the sampler's too; GLSL binds by name.
+		if req.Target == eval.ShaderWGSL {
+			tex["binding"] = t.Binding
+			if t.SamplerUniform != "" {
+				tex["samplerUniform"], tex["samplerBinding"] = t.SamplerUniform, t.SamplerBinding
+			}
+		}
+		textures[i] = tex
+	}
+	bodies := make([]map[string]any, len(r.Bodies))
+	for i, b := range r.Bodies {
+		bodies[i] = map[string]any{"name": b.Name, "index": b.Index}
+	}
+	return map[string]any{
+		"target": r.Target, "code": r.Code, "entry": map[string]any{"field": r.FieldFn, "march": r.MarchFn},
+		"uniformBlock": r.UniformBlock, "blockBytes": r.BlockSize, "uniforms": uniforms, "sliders": sliders,
+		"textures": textures, "bodies": bodies, "region": numbers(r.Region[:]),
+	}, nil
 }
 
 // pngSize is a PNG's width and height, read from its header.

@@ -398,7 +398,7 @@ func (f *frame) evalExpr(expr *program.Expression) (Value, error) {
 		if err != nil {
 			return nil, err
 		}
-		return f.eng.dom.Index(base, f.resolveIndexOperand(expr.Operands[1])), nil
+		return f.eng.dom.Index(base, f.indexOperand(expr.Operands[1])), nil
 	case program.Operation_COLLECT:
 		args, err := f.evalAll(expr.Operands)
 		if err != nil {
@@ -463,7 +463,11 @@ func (f *frame) reduceElements(expr *program.Expression) (Value, error) {
 		acc, start = elems[0], 1
 	}
 	for i := start; i < len(elems); i++ {
-		if acc, err = f.applyLambda(fn, []Value{acc, elems[i]}); err != nil {
+		args := []Value{acc, elems[i]}
+		if len(fn.Parameters) == 3 { // (accumulator, value, index), as lower unrolls it
+			args = append(args, f.eng.dom.Literal(float64(i)))
+		}
+		if acc, err = f.applyLambda(fn, args); err != nil {
 			return nil, err
 		}
 	}
@@ -638,6 +642,76 @@ func (f *frame) resolveLambda(op *program.Operand) (*program.Function, error) {
 // literal falls out or a nameable frame owns the name. A table lookup that
 // takes its column as a parameter — at(rows, key, col, halfWidth) — is the
 // case that found this.
+// primalDomain is a Domain whose Values carry the plain value as an operand,
+// which reads only names that resolve where the output is emitted.
+type primalDomain interface {
+	Primal(v Value) (*program.Operand, bool)
+}
+
+// indexOperand is the operand an INDEX selects by. An index is copied into the
+// output, so one that reads a name only this evaluation knows (a fold step's
+// index, a local of an inlined body: points[mod(index - 1 + count, count)] in
+// profileXY's step) would read an undefined name there; in a Domain that has
+// one, such an index is evaluated and its primal used. Any other index is
+// resolved as before.
+func (f *frame) indexOperand(op *program.Operand) *program.Operand {
+	resolved := f.resolveIndexOperand(op)
+	pd, ok := f.eng.dom.(primalDomain)
+	if !ok || !f.readsFrameLocal(resolved) {
+		return resolved
+	}
+	v, err := f.eval(op)
+	if err != nil {
+		return resolved
+	}
+	if primal, ok := pd.Primal(v); ok {
+		return primal
+	}
+	return resolved
+}
+
+// readsFrameLocal reports whether op reads, unprefixed, a name bound in this
+// frame or one around it that the output does not declare: a lambda's or an
+// inlined function's parameter or local.
+func (f *frame) readsFrameLocal(op *program.Operand) bool {
+	found := false
+	var walk func(o *program.Operand)
+	walk = func(o *program.Operand) {
+		if found || o == nil {
+			return
+		}
+		switch t := o.T.(type) {
+		case *program.Operand_Reference:
+			if t.Reference == nil || t.Reference.Prefix != "" {
+				return
+			}
+			for s := f; s != nil; s = s.parent {
+				if _, ok := s.vars[t.Reference.Name]; ok && !s.nameable {
+					found = true
+					return
+				}
+				if _, ok := s.decls[t.Reference.Name]; ok {
+					found = !s.nameable
+					return
+				}
+				if _, ok := s.argOps[t.Reference.Name]; ok {
+					return
+				}
+			}
+		case *program.Operand_Expression:
+			for _, c := range t.Expression.Operands {
+				walk(c)
+			}
+		case *program.Operand_FnCall:
+			for _, c := range t.FnCall.Arguments {
+				walk(c)
+			}
+		}
+	}
+	walk(op)
+	return found
+}
+
 func (f *frame) resolveIndexOperand(op *program.Operand) *program.Operand {
 	fr := f
 	// A binding chain is short; the bound guards against a cycle rather than
