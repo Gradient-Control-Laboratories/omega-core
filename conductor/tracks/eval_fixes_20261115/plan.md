@@ -27,6 +27,17 @@ Implements [spec.md](./spec.md), test first, one fault per task.
   - [x] The 1/64 rule holds every face; `ReasonLoose`
   - [x] The wheel's README and wrapper name the reason
 
+- [x] Task: A field's gradient compiles where a `reduce` step reads its index
+  - [x] `eval/reduce_index_dp_test.go`: both tests fail on 0.1.2 (`undefined identifier: index`)
+  - [x] `frame.reduceElements` passes the index; `frame.indexOperand` evaluates an index that reads a fold-local
+        name, through `Primal` on the derivative domains
+  - [x] No golden moves
+
+- [x] Task: `volume` stops at a time limit
+  - [x] `eval/volume_time_test.go`, `TestVolume_StopsAtItsTimeLimit` in `evalcmd`: fail before the change
+  - [x] `Evaluator.VolumeWithin`; `VolumeOf` takes the default 10 s; `ReasonTime`; the `timeLimit` field
+  - [x] The wheel's README and wrapper name `time_limit` and the reason
+
 ## Phase 2: Verification and Records
 
 - [x] Task: Full Go suite passes with `go vet`; CHANGELOG

@@ -7,7 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `gsl eval`'s `volume` stops after 10 seconds unless the request names a longer `timeLimit` (Python
+  `Document.volume(time_limit=...)`), and answers with the bracket it has, `"converged": false` and the new reason
+  `time`. On a part whose intervals are loose, as a round blend's are, it ran to its evaluation budget for about
+  100 seconds. The bracket and the budget are unchanged.
+
 ### Fixed
+
+- A field's gradient (`.dp`) did not compile where the field is a `reduce` whose step reads its index, as
+  `profileXY` and every extrusion of one do (`undefined identifier: index`). The gradient's evaluation of a
+  `reduce` now hands the step its index as lowering does, and an index that reads such a name is evaluated rather
+  than copied into the output.
 
 - `gsl eval`'s `bounds` answered `"proven": true` with a box several millimetres off the part where the search
   ended on boxes it could not rule out (an angle folded with `atan`, across its seam). Such a box is now the
