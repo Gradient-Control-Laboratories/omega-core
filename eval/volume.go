@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"time"
 )
 
 // defaultVolumeTolerance is the relative tolerance Volume takes when the caller names none.
@@ -15,8 +16,15 @@ const defaultVolumeTolerance = 0.05
 // wider than the tolerance asked, and the result says so.
 var volumeBudget = 64_000_000
 
+// defaultVolumeTimeLimit is how long VolumeOf searches before it answers with the bracket it has. On a part whose
+// intervals are loose (a round blend) the evaluation budget alone runs to about 100 seconds.
+const defaultVolumeTimeLimit = 10 * time.Second
+
 // ReasonDepth is why a VolumeBounds did not converge when the search reached its deepest subdivision first.
 const ReasonDepth = "depth"
+
+// ReasonTime is why a VolumeBounds did not converge when its time limit ended the search.
+const ReasonTime = "time"
 
 // Volumeis VolumeOf for the document as written: no manifest and no defs.
 func (e *Evaluator) Volume(ctx context.Context, code, expr string, region [6]float64, relativeTolerance float64) (VolumeBounds, error) {
@@ -25,9 +33,22 @@ func (e *Evaluator) Volume(ctx context.Context, code, expr string, region [6]flo
 
 // VolumeOf classifies cells using field intervals and charges every unresolved cell to Upper.
 // defs are applied to the document as the other queries apply them, so the bracket is of the part
-// a slider was moved to. relativeTolerance <= 0 selects defaultVolumeTolerance.
+// a slider was moved to. relativeTolerance <= 0 selects defaultVolumeTolerance. It searches for at most
+// defaultVolumeTimeLimit.
 func (e *Evaluator) VolumeOf(ctx context.Context, manifest map[string]string, code, defs, expr string, region [6]float64, relativeTolerance float64) (VolumeBounds, error) {
+	return e.VolumeWithin(ctx, manifest, code, defs, expr, region, relativeTolerance, 0)
+}
+
+// VolumeWithin is VolumeOf searching for at most timeLimit (<= 0 selects defaultVolumeTimeLimit). Where the limit
+// ends the search, between batches of cells, the bracket is sound but wider than the tolerance, and Reason is
+// ReasonTime; one batch always runs.
+func (e *Evaluator) VolumeWithin(ctx context.Context, manifest map[string]string, code, defs, expr string, region [6]float64, relativeTolerance float64, timeLimit time.Duration) (VolumeBounds, error) {
 	var result VolumeBounds
+	if timeLimit <= 0 {
+		timeLimit = defaultVolumeTimeLimit
+	}
+	deadline := time.Now().Add(timeLimit)
+	outOfTime := false
 	if err := startQuery(ctx); err != nil {
 		return result, err
 	}
@@ -58,10 +79,10 @@ func (e *Evaluator) VolumeOf(ctx context.Context, manifest map[string]string, co
 		box   [6]float32
 		depth int
 	}
-	for depth := 18; depth <= 36 && result.Evals < volumeBudget; depth += 2 {
+	for depth := 18; depth <= 36 && result.Evals < volumeBudget && !outOfTime; depth += 2 {
 		stack := []cell{{box: root}}
 		lower, upper := 0.0, volume(root)
-		for len(stack) > 0 && result.Evals < volumeBudget {
+		for len(stack) > 0 && result.Evals < volumeBudget && !outOfTime {
 			if err := ctx.Err(); err != nil {
 				return result, err
 			}
@@ -100,6 +121,7 @@ func (e *Evaluator) VolumeOf(ctx context.Context, manifest map[string]string, co
 					stack = append(stack, cell{left, node.depth + 1}, cell{right, node.depth + 1})
 				}
 			}
+			outOfTime = time.Now().After(deadline)
 		}
 		result.Lower, result.Upper = max(result.Lower, lower), min(result.Upper, upper)
 		if result.Upper-result.Lower <= relativeTolerance*result.Upper {
@@ -111,6 +133,8 @@ func (e *Evaluator) VolumeOf(ctx context.Context, manifest map[string]string, co
 		result.Reason = ReasonDepth
 		if result.Evals >= volumeBudget {
 			result.Reason = ReasonBudget
+		} else if outOfTime {
+			result.Reason = ReasonTime
 		}
 	}
 	result.Upper *= 1 + 1e-12

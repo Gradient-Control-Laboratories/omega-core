@@ -173,7 +173,7 @@ class SurfaceSample:
 class Volume:
     """The volume where ``expr`` is below zero inside the region, bracketed, in cubic millimetres. The bracket always
     holds; ``converged`` says it is as narrow as the tolerance asked, and ``reason`` what ended the search where it is
-    not (``budget`` or ``depth``)."""
+    not (``time``, ``budget`` or ``depth``)."""
 
     expr: str
     lower_mm3: float
@@ -495,10 +495,11 @@ class Document:
                       tuple((b["name"], b["index"]) for b in r["bodies"]), tuple(r["region"]))
 
     def volume(self, expr: Optional[str] = None, *, region: Region, relative_tolerance: float = 0.0,
-               defs: str = "") -> Volume:
-        """The volume inside the region, bracketed (``relative_tolerance`` 0 takes the default 0.05, which is quick;
-        0.01 takes seconds)."""
+               defs: str = "", time_limit: float = 0.0) -> Volume:
+        """The volume inside the region, bracketed (``relative_tolerance`` 0 takes the default 0.05, which is quick
+        on a plain part; 0.01 takes seconds). The search stops after ``time_limit`` seconds (0 takes the default,
+        10), with the bracket it has."""
         r = self._ask("volume", expr=expr, region=_region(region), relativeTolerance=relative_tolerance or None,
-                      defs=defs)
+                      defs=defs, timeLimit=time_limit or None)
         return Volume(r["expr"], r["lowerMm3"], r["upperMm3"], r["evals"], bool(r.get("converged", True)),
                       r.get("reason"))
