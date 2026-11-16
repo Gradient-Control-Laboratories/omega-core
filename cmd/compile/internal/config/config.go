@@ -22,7 +22,7 @@ const (
 	TargetAST   Target = "ast"
 	TargetPNG   Target = "png"
 	// TargetField is the field bundle a viewer draws: the WGSL and its shapes, parts, sliders, UI controls,
-	// @scene and mesh grids, or the document's errors, as one JSON (internal/fieldbundle), the same as
+	// @scene and mesh grids, or the document's errors, as one JSON (internal/compile), the same as
 	// gsl serve's /api/compile answers.
 	TargetField Target = "field"
 )

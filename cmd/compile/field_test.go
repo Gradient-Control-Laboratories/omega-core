@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"gradientcontrol.com/omega/core/cmd/compile/internal/cli"
-	"gradientcontrol.com/omega/core/internal/fieldbundle"
+	"gradientcontrol.com/omega/core/internal/compile"
 	"gradientcontrol.com/omega/core/internal/meshimport"
 	"gradientcontrol.com/omega/core/internal/test/assert"
 	"gradientcontrol.com/omega/core/internal/test/require"
@@ -26,7 +26,7 @@ func fieldOf(t *testing.T, data []byte) map[string]any {
 }
 
 // -t field writes <source>.field.json: the WGSL and what a viewer draws it with, byte for byte the bundle
-// fieldbundle.Compile (gsl serve's /api/compile) makes for the same document, and no companion metadata.
+// compile.Process (gsl serve's /api/compile) makes for the same document, and no companion metadata.
 func TestRun_Field_IsTheViewersBundle(t *testing.T) {
 	dir := t.TempDir()
 	source := filepath.Join(dir, "slab.gsl")
@@ -39,7 +39,7 @@ func TestRun_Field_IsTheViewersBundle(t *testing.T) {
 	_, metaErr := os.Stat(filepath.Join(dir, "slab.json"))
 	assert.True(t, os.IsNotExist(metaErr), "no companion metadata beside the bundle")
 
-	want, err := json.Marshal(fieldbundle.Compile(fieldbundle.CompileRequest{
+	want, err := json.Marshal(compile.Process(compile.Request{
 		ID: source, Source: fieldSlab, Meshes: meshimport.Dirs(dir),
 	}, []string{dir}, nil))
 	require.NoError(t, err)

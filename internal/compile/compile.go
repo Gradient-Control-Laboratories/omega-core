@@ -1,13 +1,12 @@
-// Package fieldbundle compiles a GSL document into the field bundle a viewer
+// Package compile compiles a GSL document into the field bundle a viewer
 // draws: the WGSL shader and what goes with it (shapes, parts, sliders, UI
 // controls, the @scene, placed meshes, imported meshes' preview grids, audio),
 // or the document's errors, each with its line and column.
 //
 // It is the one implementation behind gsl serve's POST /api/compile
-// (cmd/serve/internal/compiler wraps it) and gsl compile -t field, so a
-// viewer that reads a bundle from either gets the same bytes for the same
-// document.
-package fieldbundle
+// (cmd/serve/internal/server) and gsl compile -t field, so a viewer that reads
+// a bundle from either gets the same bytes for the same document.
+package compile
 
 import (
 	"errors"
@@ -30,8 +29,8 @@ import (
 // ProgressFunc reports compilation or meshing progress milestones.
 type ProgressFunc func(stage, label string, completed, total uint32)
 
-// CompileRequest describes an interactive GSL compilation request.
-type CompileRequest struct {
+// Request describes an interactive GSL compilation request.
+type Request struct {
 	ID       string `json:"id"`
 	ClientID string `json:"clientId"`
 	Source   string `json:"source"`
@@ -40,14 +39,14 @@ type CompileRequest struct {
 	Meshes meshimport.Finder `json:"-"`
 }
 
-// AudioResult contains compiled Web Audio synthesis JavaScript and duration.
-type AudioResult struct {
+// Audio contains compiled Web Audio synthesis JavaScript and duration.
+type Audio struct {
 	JSCode   string `json:"jsCode"`
 	Duration int    `json:"duration"`
 }
 
-// CompileResponse contains the compiled WGSL shader, UI metadata, optional audio, or structured diagnostics.
-type CompileResponse struct {
+// Response contains the compiled WGSL shader, UI metadata, optional audio, or structured diagnostics.
+type Response struct {
 	ID             string                `json:"id"`
 	WGSL           string                `json:"wgsl,omitempty"`
 	ShapeCount     int                   `json:"shapeCount,omitempty"`
@@ -59,7 +58,7 @@ type CompileResponse struct {
 	UIControls     []ui.Control          `json:"uiControls,omitempty"`
 	Scene          *program.Scene        `json:"scene,omitempty"`
 	MeshDecls      any                   `json:"meshDecls,omitempty"`
-	Audio          *AudioResult          `json:"audio,omitempty"`
+	Audio          *Audio                `json:"audio,omitempty"`
 	Errors         []program.Error       `json:"errors,omitempty"`
 
 	// MeshSdfBindings carries the preview grid the shader samples for each of
@@ -67,9 +66,9 @@ type CompileResponse struct {
 	MeshSdfBindings []wgsl.MeshSdfBinding `json:"meshSdfBindings,omitempty"`
 }
 
-// Compile executes the in-process GSL compilation pipeline (AST assembly, WGSL codegen, and audio JS codegen).
-func Compile(req CompileRequest, sourcePaths []string, progressFn ProgressFunc) *CompileResponse {
-	resp := &CompileResponse{ID: req.ID}
+// Process executes the in-process GSL compilation pipeline (AST assembly, WGSL codegen, and audio JS codegen).
+func Process(req Request, sourcePaths []string, progressFn ProgressFunc) *Response {
+	resp := &Response{ID: req.ID}
 
 	if strings.TrimSpace(req.Source) == "" {
 		resp.Errors = []program.Error{
@@ -149,7 +148,7 @@ func Compile(req CompileRequest, sourcePaths []string, progressFn ProgressFunc) 
 			resp.Errors = UnwrapProgramErrors(req.Source, err)
 			return resp
 		}
-		resp.Audio = &AudioResult{
+		resp.Audio = &Audio{
 			JSCode:   jsCode,
 			Duration: duration,
 		}

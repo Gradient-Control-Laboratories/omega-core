@@ -12,6 +12,7 @@ import (
 
 	"gradientcontrol.com/omega/core/backend/mesh"
 	"gradientcontrol.com/omega/core/cmd/serve/internal/compiler"
+	"gradientcontrol.com/omega/core/internal/compile"
 )
 
 func (s *Server) handleExamples(w http.ResponseWriter, r *http.Request) {
@@ -117,14 +118,14 @@ func (s *Server) handleSave(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleCompile(w http.ResponseWriter, r *http.Request) {
-	var req compiler.CompileRequest
+	var req compile.Request
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSONError(w, http.StatusBadRequest, "invalid JSON payload")
 		return
 	}
 
 	req.Meshes = s.meshFinder()
-	resp := compiler.Compile(req, s.cfg.SourcePaths, func(stage, label string, completed, total uint32) {
+	resp := compile.Process(req, s.cfg.SourcePaths, func(stage, label string, completed, total uint32) {
 		s.emitProgress(req.ClientID, req.ID, stage, label, completed, total)
 	})
 	if usesMeshes(req.Source) {

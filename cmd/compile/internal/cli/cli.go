@@ -19,7 +19,7 @@ import (
 	"gradientcontrol.com/omega/core/backend/wgsl"
 	"gradientcontrol.com/omega/core/cmd/compile/internal/config"
 	"gradientcontrol.com/omega/core/eval"
-	"gradientcontrol.com/omega/core/internal/fieldbundle"
+	"gradientcontrol.com/omega/core/internal/compile"
 	"gradientcontrol.com/omega/core/internal/meshimport"
 	"gradientcontrol.com/omega/core/internal/version"
 	"gradientcontrol.com/omega/core/parser"
@@ -138,7 +138,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	}
 
 	// The field target is a viewer's bundle, compiled as gsl serve's /api/compile compiles it
-	// (internal/fieldbundle). A document with errors still gets one, listing them.
+	// (internal/compile). A document with errors still gets one, listing them.
 	if cfg.Target == config.TargetField {
 		return runField(cfg, sourceTexts, sourceName, primarySourceText, stdout, stderr)
 	}
@@ -382,7 +382,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	return nil
 }
 
-// runField writes source's field bundle (internal/fieldbundle) as JSON: the WGSL with its shapes, parts,
+// runField writes source's field bundle (internal/compile) as JSON: the WGSL with its shapes, parts,
 // sliders, UI controls, @scene and imported meshes' preview grids, the same as gsl serve's /api/compile answers
 // for the same document. A document with errors gets a bundle too, holding them with their lines and columns, and
 // then runField returns an error, so the exit status says the bundle draws nothing. There is no companion
@@ -402,13 +402,13 @@ func runField(cfg *config.Config, sourceTexts []string, sourceName, source strin
 			srcPaths = []string{docDir}
 		}
 	}
-	var progress fieldbundle.ProgressFunc
+	var progress compile.ProgressFunc
 	if cfg.Verbose {
 		progress = func(stage, label string, completed, total uint32) {
 			fmt.Fprintf(stderr, "[%s] %s (%d/%d)\n", stage, label, completed, total)
 		}
 	}
-	bundle := fieldbundle.Compile(fieldbundle.CompileRequest{
+	bundle := compile.Process(compile.Request{
 		ID:     sourceName,
 		Source: source,
 		Meshes: meshimport.Dirs(meshDirsFor(docDir, srcPaths)...),
