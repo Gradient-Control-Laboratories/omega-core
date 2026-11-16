@@ -4,9 +4,8 @@
 // or the document's errors, each with its line and column.
 //
 // It is the one implementation behind gsl serve's POST /api/compile
-// (cmd/serve/internal/compiler wraps it) and gsl compile -t field, so a
-// viewer that reads a bundle from either gets the same bytes for the same
-// document.
+// (cmd/serve/internal/server) and gsl compile -t field, so a viewer that reads
+// a bundle from either gets the same bytes for the same document.
 package compile
 
 import (

@@ -138,7 +138,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	}
 
 	// The field target is a viewer's bundle, compiled as gsl serve's /api/compile compiles it
-	// (internal/fieldbundle). A document with errors still gets one, listing them.
+	// (internal/compile). A document with errors still gets one, listing them.
 	if cfg.Target == config.TargetField {
 		return runField(cfg, sourceTexts, sourceName, primarySourceText, stdout, stderr)
 	}
@@ -382,7 +382,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	return nil
 }
 
-// runField writes source's field bundle (internal/fieldbundle) as JSON: the WGSL with its shapes, parts,
+// runField writes source's field bundle (internal/compile) as JSON: the WGSL with its shapes, parts,
 // sliders, UI controls, @scene and imported meshes' preview grids, the same as gsl serve's /api/compile answers
 // for the same document. A document with errors gets a bundle too, holding them with their lines and columns, and
 // then runField returns an error, so the exit status says the bundle draws nothing. There is no companion
