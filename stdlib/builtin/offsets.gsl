@@ -11,7 +11,7 @@ shell(d, thickness) {
 /// Shell with a `bias` in [-1, 1] that shifts the wall inward (-1) or outward
 /// (+1) relative to the surface; 0 is centered.
 shell(d, thickness, bias) {
-  return abs(d + bias * thickness * 0.5) - thickness * 0.5;
+  return abs(d - bias * thickness * 0.5) - thickness * 0.5;
 }
 
 /// Two-body Cayley field: (d1 - d2) / (d1 + d2). A normalized interpolant of

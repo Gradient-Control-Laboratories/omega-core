@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-11-15
+
 ### Added
 
 - Added the `shader` op to `gsl eval` (`eval.Evaluator.Shader`, Python `Document.shader`): a
@@ -36,28 +38,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `parser/internal/parser2`, supporting valid `.member`, `.dp`/`.dtime`/`.d(var)`, and
   `[index]` sequences (such as `m[0][1]`, `pts[0].x`, `body.box[0]`, and `v.d(t)[0]`) while
   rejecting invalid modifier sequences at parse time.
-
-### Changed
-
-- Updated `cmd/serve/internal/compiler` to assemble GSL sources in a single pass using
-  `assembler.Result.AudioReturns` and `assembler/variation` instead of splitting source strings
-  and assembling twice, preserving sliders, UI controls, and scene metadata on audio-only models.
-
-### Removed
-
-- Removed `audio.ExtractAudio` from `backend/audio` and deleted the string-based
-  `backend/audio/internal/extract` splitter package.
-
-### Fixed
-
-- Fixed `topofold` constant evaluation for `uiTransform`-derived expressions using column
-  indexing and `vector.multiplyScalar` (e.g. scaled part transforms passed to
-  `facePointNormal`).
-
-## [0.1.2] - 2026-11-12
-
-### Added
-
 - Added `noise.cellularWalls(size)`, the exact distance to the nearest Voronoi wall
   (https://iquilezles.org/articles/voronoilines/), and the builtins it reads, `worleyWall` and
   `worleyWallFeature`. Unlike `cellularEdges` (F2 − F1, about twice the distance beside a wall), it
@@ -87,6 +67,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `gsl eval`'s `bounds` op answers with a box proven by interval arithmetic to hold the part
+  (`eval.Evaluator.Enclose`, `"proven": true`), where it used to fit one on a grid that missed walls
+  thinner than a cell and could fall short of the surface. `cellSize` is then how far the box can
+  stand off the part. Where a field's intervals prove nothing (a field divided by its own gradient,
+  as `normalizeField` of a TPMS) it answers with the grid's box as before, `"proven": false` and a
+  `reason`. `eval.Evaluator.Bounds`, the mesher's box fit and `gsl compile --bbox auto` are unchanged.
+- `intersectRound(fields, radius)`, which every `box` is built on, writes its sharp term
+  `min(sharp, 1e-30 - radius)` where it wrote `sharp - max(sharp + radius, 0)`. Values are the same,
+  and so are gradients at radius 0. Interval arithmetic could not cancel the two `sharp`s, so every
+  bound outside a box was off by the box's own width: `bounds` of an 80 mm plate is now proven in
+  about 13 thousand evaluations where 600 thousand left it half a millimetre loose, and `volume` at
+  the default tolerance takes a quarter of the evaluations. At a radius above 0 the gradient is now
+  zero on the level set `sharp = -radius`, inside the part.
+- `gsl eval`'s `eval` op defaults `exprs` to the document's returns, as `expr` does for the other ops.
+- Updated `cmd/serve/internal/compiler` to assemble GSL sources in a single pass using
+  `assembler.Result.AudioReturns` and `assembler/variation` instead of splitting source strings
+  and assembling twice, preserving sliders, UI controls, and scene metadata on audio-only models.
 - Enforced `go run ./tool/analyze-deps -rules` in `tool/check.sh`, decoupled
   `internal/assembler/topofold` from `internal/eval` and `internal/meshfold`, removed unused
   `internal/pkg`, and narrowed `internal/fidget/environment` to `eval/internal/environment`.
@@ -103,7 +100,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Deprecated redundant oracle type aliases in `backend/mesh` and `backend/tape` in favor of single
   canonical definitions in `program/meshasset` and `program/noise/spinodoid`; these aliases are
   scheduled for removal in `0.2.0`:
-
 | Deprecated Alias       | Canonical Type            | Canonical Package Import Path                            |
 | :--------------------- | :------------------------ | :------------------------------------------------------- |
 | `mesh.MeshSdfOracle`   | `meshasset.MeshSdfOracle` | `gradientcontrol.com/omega/core/program/meshasset`       |
@@ -113,8 +109,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 | `mesh.BakedSpinodoid`  | `spinodoid.Baked`         | `gradientcontrol.com/omega/core/program/noise/spinodoid` |
 | `tape.SpinodoidOracle` | `spinodoid.Oracle`        | `gradientcontrol.com/omega/core/program/noise/spinodoid` |
 
+### Removed
+
+- Removed `audio.ExtractAudio` from `backend/audio` and deleted the string-based
+  `backend/audio/internal/extract` splitter package.
+
 ### Fixed
 
+- `shell(d, thickness, bias)` moves the wall as documented: -1 inward, +1 outward. It ran the other
+  way. A model that passed a bias gets the opposite wall.
+- `gsl eval`'s `volume` op says whether its bracket met the tolerance (`converged`) and, where the
+  evaluation budget or the subdivision depth ended it first, which (`reason`). It reported neither.
+- The lattice library's comments no longer call TPMS fields unit-normalized. A gyroid's gradient is
+  about 1.5 at its surface, so a sheet asked to be 1.0 mm is about 0.64 mm unless the field is
+  passed through `normalizeField` first.
+- Fixed `topofold` constant evaluation for `uiTransform`-derived expressions using column
+  indexing and `vector.multiplyScalar` (e.g. scaled part transforms passed to
+  `facePointNormal`).
 - Fixed Manifold Dual Contouring (`fidget-mesh`) corner chamfering and octree over-collapse when an
   edge-crossing midpoint lands on an exact `min`/`max` constant tie (`grad == 0`, #38) by evaluating
   the gradient again a hair off the crossing, and marking leaves that still lack a plane normal as

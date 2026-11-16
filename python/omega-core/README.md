@@ -111,12 +111,12 @@ A request names its `op` and its document, by path (`"source"`) or by text (`"co
 
 | `op` | Fields | Answers |
 |---|---|---|
-| `eval` | `exprs`, `points` | each expression's value and gradient at each point |
+| `eval` | `exprs`, `points` | each expression's value and gradient at each point; `exprs` defaults to the returns |
 | `extremum` | `expr`, `region`, `mode` (`min`, `max`, `both`), `tolerance`, `lipschitz` | the global min and/or max, where it is, and a bound that assumes the Lipschitz constant |
 | `certify` | `expr`, `region`, `threshold`, `tolerance`, `params` or `overSliders` | a sound proof that `expr >= threshold` over the region and the parameter ranges, or a box where it fails |
-| `bounds` | `expr`, `region`, `resolution` | the box where `expr < 0` |
+| `bounds` | `expr`, `region`, `resolution` | a box proven to hold all of `expr < 0` (`proven`), or a fit on a grid with the `reason` no proof was had |
 | `surface` | `expr`, `points`, `maxIters`, `tolerance` | each point moved onto `expr = 0`, with the normal there |
-| `volume` | `expr`, `region`, `relativeTolerance` | the volume where `expr < 0`, bracketed |
+| `volume` | `expr`, `region`, `relativeTolerance` | the volume where `expr < 0`, bracketed; `converged` says the bracket met the tolerance |
 | `describe` | (none) | the sliders and their ranges, top-level names and returns |
 | `render` | `out`, `expr`, `views`, `width`, `height`, `light`, `extent`, `time` | a PNG at `out`, as `gsl compile -t png` draws it |
 | `mesh` | `out`, `region`, `subdivision`, `algorithm`, `time` | a `.glb` at `out`: a node per return, a gradient normal per vertex; and each body's counts and volume |
@@ -169,7 +169,7 @@ or the end of the `with` block.
 | Method | Returns |
 |---|---|
 | `describe()` | `Description` |
-| `eval(exprs, points, *, defs="")` | `Fields` |
+| `eval(exprs, points, *, defs="")` (`exprs` `None`: the returns) | `Fields` |
 | `extremum(expr=None, *, region, mode="min", tolerance=0, lipschitz=0, defs="")` | `Extremum` |
 | `certify(expr=None, *, region, threshold, tolerance=0, params=None, over_sliders=False, defs="")` | `Certificate` |
 | `bounds(expr=None, *, region=None, resolution=0, defs="")` | `Bounds` |
@@ -222,7 +222,11 @@ the wheel was not built for. `omega_core.version()` is the release, such as `"0.
   - `extremum`'s sample is a true value of the field, but its bound holds only under the Lipschitz
     constant it assumed (1 unless given). That is correct for a distance field, and wrong for a sum of two
     fields, a lattice, or a blend that overstates distance. To claim a minimum, certify it.
-  - `bounds` can fall a cell short of the surface.
+  - `bounds` is a proof when it says `proven`: nothing of the part lies outside the box, which stands off it
+    by at most `cell_size`. Otherwise it is a fit on a grid that can miss a thin wall and fall a cell short
+    of the surface, and `reason` says why (`unbounded` intervals, as a field divided by its own gradient
+    has, or `budget`).
+  - `volume`'s bracket always holds. `converged` says whether it is as narrow as was asked.
 
 ## Platforms
 
