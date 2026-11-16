@@ -67,3 +67,27 @@ func TestMesh_WithAudioBlock(t *testing.T) {
 		t.Fatalf("expected binary STL >= 84 bytes, got %d", len(stlBytes))
 	}
 }
+
+func TestMeshBodies_MultiReturnAndError(t *testing.T) {
+	bodies, err := compiler.MeshBodies(compiler.MeshRequest{
+		ID:          "bodies-1",
+		Source:      "a = sphere([-6, 0, 0], 3);\nb = sphere([6, 0, 0], 3);\nreturn a, b;\n",
+		Subdivision: 2,
+		Bbox:        [6]float32{-12, -6, -6, 12, 6, 6},
+		HasBbox:     true,
+		Bodies:      []int{1, 2},
+	}, nil, nil)
+	if err != nil {
+		t.Fatalf("unexpected MeshBodies error: %v", err)
+	}
+	if len(bodies) != 2 {
+		t.Fatalf("expected 2 bodies, got %d", len(bodies))
+	}
+
+	if _, err := compiler.MeshBodies(compiler.MeshRequest{
+		ID:     "bodies-err",
+		Source: "return nonexistent(1);",
+	}, nil, nil); err == nil {
+		t.Fatalf("expected error from MeshBodies on invalid GSL source")
+	}
+}
