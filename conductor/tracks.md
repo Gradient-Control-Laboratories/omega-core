@@ -13,5 +13,9 @@
   *Link: [index.md](./tracks/eval_answers_20261115/index.md)*
 
 ---
+- [ ] **Track: `gsl eval`: Two Faults a Side-by-Side Run Found**
+  *Link: [index.md](./tracks/eval_fixes_20261115/index.md)*
+
+---
 - [ ] **Track: Backlog**
   *Link: [index.md](./tracks/backlog_20261110/index.md)*
