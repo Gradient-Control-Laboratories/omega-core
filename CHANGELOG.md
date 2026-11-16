@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `gsl eval`'s `bounds` answered `"proven": true` with a box several millimetres off the part where the search
+  ended on boxes it could not rule out (an angle folded with `atan`, across its seam). Such a box is now the
+  grid's, with `"proven": false` and the new reason `loose`; a proven box stands within 1/64 of the part's span
+  of points known to be inside, however its search ended.
 - A slider read by a field that a `remap` re-derives inside a function's body (as `unionRoundExact` does with
   its closures) was emitted as a name the WGSL did not define, so `gsl eval`'s `shader` refused the model in
   `glsl-es300` and `gsl compile -t wgsl` wrote a module that does not validate. The helper now takes the slider

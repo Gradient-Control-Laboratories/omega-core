@@ -24,13 +24,18 @@ const (
 	// on round coordinates, where a part's faces are: a box that only touches a face has a lower bound of zero or
 	// a rounding below it and is never dropped. A cut off the half keeps boxes from landing on faces.
 	encloseCut = 0.4567891
-	// encloseLoose is the share of the fitted span a face may stand off a point known inside when the budget, not
-	// a leaf, ended its search. A face looser than that is no answer to "how big is it", and the proof is given up.
+	// encloseLoose is the share of the fitted span a face may stand off a point known inside, whether the budget
+	// ended its search or a leaf it could not drop did. A face looser than that is no answer to "how big is it",
+	// and the proof is given up.
 	encloseLoose = 1.0 / 64
 )
 
 // ReasonUnbounded is why an EncloseResult is not proven when the field's intervals were not finite.
 const ReasonUnbounded = "unbounded"
+
+// ReasonLoose is why an EncloseResult is not proven when the search ended, with budget to spare, on boxes it could
+// cut no finer and could not rule out, and they stand too far off the part to say what size it is.
+const ReasonLoose = "loose"
 
 // EncloseResult is a box that holds every point where an expression is negative. When Proven, BboxMin and
 // BboxMax are that box by interval arithmetic, and Found is false only where the region is proven to hold no
@@ -122,7 +127,11 @@ func (e *Evaluator) Enclose(ctx context.Context, manifest map[string]string, cod
 		} else if search.spent {
 			return unproven() // the budget ended a face with no point inside to measure it against
 		}
-		if search.spent && gap[k] > span*encloseLoose {
+		if gap[k] > span*encloseLoose {
+			if !search.spent {
+				out.Reason = ReasonLoose
+				return out, nil
+			}
 			return unproven()
 		}
 	}

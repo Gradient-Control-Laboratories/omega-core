@@ -225,7 +225,7 @@ the wheel was not built for. `omega_core.version()` is the release, such as `"0.
   - `bounds` is a proof when it says `proven`: nothing of the part lies outside the box, which stands off it
     by at most `cell_size`. Otherwise it is a fit on a grid that can miss a thin wall and fall a cell short
     of the surface, and `reason` says why (`unbounded` intervals, as a field divided by its own gradient
-    has, or `budget`).
+    has; `loose` ones, as an angle folded with `atan` has across its seam; or `budget`).
   - `volume`'s bracket always holds. `converged` says whether it is as narrow as was asked.
 
 ## Platforms

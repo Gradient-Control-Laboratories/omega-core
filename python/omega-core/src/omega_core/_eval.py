@@ -141,8 +141,8 @@ class Certificate:
 class Bounds:
     """A box around where ``expr`` is below zero. When ``proven``, interval arithmetic shows nothing of the part lies
     outside it, and ``cell_size`` is how far it can stand off the part on each axis; ``found`` is then false only where
-    the region is proven empty. When not ``proven`` (``reason`` says why: the field's intervals are ``unbounded``, or
-    too loose for the ``budget``), it is a fit on a grid of ``resolution`` cells a side that can miss a wall thinner
+    the region is proven empty. When not ``proven`` (``reason`` says why: the field's intervals are ``unbounded``, too
+    ``loose`` to bring the box near the part, or too loose for the ``budget``), it is a fit on a grid of ``resolution`` cells a side that can miss a wall thinner
     than a cell and fall short of the surface by up to one (``cell_size``): do not read a size from it. ``min_value``
     at ``min_at`` is the grid's least sample, reported even when nothing was found."""
 
