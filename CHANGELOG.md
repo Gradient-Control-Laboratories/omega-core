@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added `Diagnostics []program.Diagnostic` to `parser.Result` (preserved by `parser.CachingParser`)
+  and propagated parser diagnostics into `assembler.Result.Diagnostics`.
+- Emitted a `program.SeverityWarning` diagnostic in `parser/internal/parser2` when legacy
+  `// Scene Size:` comments are parsed, advising `@scene(...)` and `gsl fix`.
+
 ### Changed
 
 - `gsl eval`'s `volume` stops after 10 seconds unless the request names a longer `timeLimit` (Python

@@ -27,7 +27,7 @@ func (c literalChecker) IsParameter(op *program.Operand) bool { return c[op] }
 func inlineWithParameters(t *testing.T, src string, params []string) *program.Program {
 	t.Helper()
 	srcMgr := &source.MockManager{}
-	prog, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	prog, _, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
 	if err != nil {
 		t.Fatal(err)
 	}

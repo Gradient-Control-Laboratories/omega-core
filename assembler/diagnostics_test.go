@@ -1,6 +1,8 @@
 package assembler_test
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -179,4 +181,55 @@ return foo(1.0, 2.0);
 		assert.True(t, strings.Contains(err.Error(), `variable or function named "foo" already defined`),
 			"unexpected error: %v", err)
 	})
+}
+
+func TestAssembler_PropagatesParserDiagnostics(t *testing.T) {
+	src := `// Scene Size: 20
+return sphere(5);
+`
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(newTestMockManager()))
+	assert.NoError(t, err)
+
+	var found bool
+	for _, diag := range res.Diagnostics {
+		if diag.Severity == program.SeverityWarning &&
+			strings.Contains(diag.Message, "@scene") &&
+			strings.Contains(diag.Message, "gsl fix") {
+			found = true
+			assert.Equal(t, 1, diag.LineNum)
+			break
+		}
+	}
+	assert.True(t, found, "expected parser legacy scene warning in assembler Result.Diagnostics, got %+v", res.Diagnostics)
+}
+
+func TestAssembler_PropagatesImportedPackageParserDiagnostics(t *testing.T) {
+	root := t.TempDir()
+	depDir := filepath.Join(root, "legacydep")
+	if err := os.MkdirAll(depDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	depFile := filepath.Join(depDir, "legacydep.gsl")
+	depSrc := "// Scene Size: 30\nrad = 6.0;\n"
+	if err := os.WriteFile(depFile, []byte(depSrc), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	primarySrc := "import \"legacydep\";\nreturn sphere(legacydep.rad);\n"
+	res, err := assembler.Assemble([]string{primarySrc}, assembler.SourcePaths(root))
+	if err != nil {
+		t.Fatalf("Assemble failed: %v", err)
+	}
+
+	var found bool
+	for _, diag := range res.Diagnostics {
+		if diag.Severity == program.SeverityWarning && strings.Contains(diag.Message, "@scene") {
+			found = true
+			assert.Equal(t, "legacydep", diag.PackagePath)
+			assert.Equal(t, "// Scene Size: 30", diag.Line)
+			assert.Equal(t, 1, diag.LineNum)
+			break
+		}
+	}
+	assert.True(t, found, "expected imported package parser warning in assembler Result.Diagnostics, got %+v", res.Diagnostics)
 }

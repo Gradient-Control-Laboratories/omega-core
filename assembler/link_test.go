@@ -30,7 +30,7 @@ func testRebuildOne(t *testing.T, srcFile string) {
 func runTestRebuildOne(t *testing.T, srcFile string, src []byte) (*program.Program, error) {
 	pkgMgr := source.NewLocalManager("../stdlib")
 
-	prog, err := collect.Program([]string{string(src)}, pkgMgr, parser.ParsePackage)
+	prog, _, err := collect.Program([]string{string(src)}, pkgMgr, parser.ParsePackage)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +164,7 @@ func TestReferencesInPlace(t *testing.T) {
 		return x + used();
 	`
 
-	prog, err := collect.Program([]string{src}, pkgMgr, parser.ParsePackage)
+	prog, _, err := collect.Program([]string{src}, pkgMgr, parser.ParsePackage)
 	if err != nil {
 		t.Fatalf("failed to collect: %v", err)
 	}
@@ -230,7 +230,7 @@ func testReferencesOne(t *testing.T, srcFile string) {
 func runTestReferencesOn(t *testing.T, srcFile string, src []byte) (*program.Program, error) {
 	pkgMgr := source.NewLocalManager("../stdlib")
 
-	prog, err := collect.Program([]string{string(src)}, pkgMgr, parser.ParsePackage)
+	prog, _, err := collect.Program([]string{string(src)}, pkgMgr, parser.ParsePackage)
 	if err != nil {
 		return nil, err
 	}
@@ -418,7 +418,7 @@ func TestLinkConstantEvaluation(t *testing.T) {
 		return 0.0;
 	`
 
-	prog, err := collect.Program([]string{src}, pkgMgr, parser.ParsePackage)
+	prog, _, err := collect.Program([]string{src}, pkgMgr, parser.ParsePackage)
 	if err != nil {
 		t.Fatalf("failed to collect: %v", err)
 	}
@@ -503,7 +503,7 @@ func TestLinkConstantEvaluationWithImports(t *testing.T) {
 		return 0.0;
 	`
 
-	prog, err := collect.Program([]string{src}, pkgMgr, parser.ParsePackage)
+	prog, _, err := collect.Program([]string{src}, pkgMgr, parser.ParsePackage)
 	if err != nil {
 		t.Fatalf("failed to collect: %v", err)
 	}

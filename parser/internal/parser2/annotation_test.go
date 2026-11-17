@@ -12,7 +12,7 @@ import (
 // test on any parse error.
 func parseFile(t *testing.T, src string) *program.PackageFile {
 	t.Helper()
-	pkg, err := parser2.Parse([]string{src})
+	pkg, _, err := parser2.Parse([]string{src})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -26,7 +26,7 @@ func parseFile(t *testing.T, src string) *program.PackageFile {
 // message so the caller can check which rule rejected it.
 func parseErr(t *testing.T, src string) string {
 	t.Helper()
-	_, err := parser2.Parse([]string{src})
+	_, _, err := parser2.Parse([]string{src})
 	if err == nil {
 		t.Fatalf("expected a parse error, got none")
 	}

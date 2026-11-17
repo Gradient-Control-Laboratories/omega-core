@@ -22,7 +22,7 @@ func runPipeline(src string) (*program.Program, error) {
 }
 
 func runPipelineWithManager(src string, srcMgr source.Manager) (*program.Program, error) {
-	prog, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	prog, _, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
 	if err != nil {
 		return nil, err
 	}
