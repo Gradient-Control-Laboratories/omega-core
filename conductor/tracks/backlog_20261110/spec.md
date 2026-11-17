@@ -18,7 +18,7 @@ predictably:
   compiler hot-path optimizations, diagnostics enhancements, viewer capabilities, and developer
   tooling tasks that can either spin off focused tracks or execute as self-contained single-phase
   tracks.
-- **Small Targeted Cleanups (`S1`–`S23`):** Localized refactors, invariant tightening, dead-code
+- **Small Targeted Cleanups (`S1`–`S24`):** Localized refactors, invariant tightening, dead-code
   removals, public/internal API deduplication, and documentation/comment hygiene tasks suitable for
   direct execution or small cleanup batches.
 
@@ -688,6 +688,16 @@ defined in [README.md](../../../README.md):
 - [ ] **S23. Error on `import . "omega"` & Remove Internal Support**
   - Promote the `import . "omega"` warning from `S22` to a compile-time error.
   - Remove internal support and shims for `import . "omega"` in the parser and assembler.
+
+- [ ] **S24. Add Viewer `Fix` Button for `gsl fix` Warnings & Document Registered Fixers**
+  - Promote `cmd/fix/internal/fix` to `internal/fix` (`layer 0`) so `cmd/fix`, `internal/compile`,
+    and `cmd/serve` share the same source-to-source refactoring registry.
+  - On the cold path in `compile.Process` (`internal/compile/compile.go`), when warnings exist,
+    set `Fixable bool` (`json:"fixable,omitempty"`) on `compile.Response` via `fix.Apply`.
+  - Add `POST /api/fix` in `cmd/serve/internal/server` and a floating right-aligned `Fix` button in
+    `#warning-wrapper` (`examples/viewer/`) that appears when `resp.fixable` is true, replaces the
+    editor buffer via a single undoable CodeMirror transaction, marks dirty, and recompiles.
+  - Document `gsl fix`'s registered fixers and `gsl fix help <name>` in `README.md`.
 
 ## 7. Acceptance Criteria
 
