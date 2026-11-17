@@ -87,12 +87,7 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
 - [ ] Task: Implement (Green & Refactor Phase), within whatever Phase 0 found `.box` can hold
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
-## Phase 5: Gate: `cylinderCapped` Upstream
-
-- [ ] Task: The owner's upstream PR making `cylinderCapped` a cylinder rather than a beam has merged; the caps
-      of Phases 6 and 8 are modelled on it
-
-## Phase 6: Partial Revolve (C3)
+## Phase 5: Partial Revolve (C3)
 
 - [ ] Task: Proposal: the signature (angle range, its origin) and the caps
 - [ ] Task: Write failing tests (Red Phase): exact against the reference, caps included; `.u` over the
@@ -101,7 +96,7 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
 - [ ] Task: An example; WGSL size; the owner's viewer check
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
-## Phase 7: `sweep()` (C4)
+## Phase 6: `sweep()` (C4)
 
 - [ ] Task: Proposal: the signature, starting from the remap in `profile_sweep.gsl`
 - [ ] Task: Closed planar paths, exact
@@ -116,14 +111,14 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
 - [ ] Task: WGSL size; the owner's viewer check
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
-## Phase 8: Caps for Sweeps (C5)
+## Phase 7: Caps for Sweeps (C5)
 
-- [ ] Task: Write failing tests (Red Phase): an open sweep's ends capped as Phase 5's cylinder is, exact
-      where the path is, frames across the rim
+- [ ] Task: Write failing tests (Red Phase): an open sweep's ends capped flat, exact where the path is,
+      frames across the rim
 - [ ] Task: Implement (Green & Refactor Phase)
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
-## Phase 9: Verification and Records
+## Phase 8: Verification and Records
 
 - [ ] Task: Full Go suite with `go vet`; `tool/check.sh`
 - [ ] Task: The stdlib's doc comments, `gsl skill`'s text and the language spec describe the new functions;

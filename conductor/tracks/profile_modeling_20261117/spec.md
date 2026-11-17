@@ -75,10 +75,6 @@ Profiles first, then the operations on them. The numbering is the order.
    past the path's radius of curvature.
 7. **C5. Caps for sweeps.** Cylinder-style caps where an open sweep ends.
 
-**Upstream, in its own PR:** `cylinderCapped(pointA, pointB, radius[, blend])` is placed by its two end
-points, which makes it a beam rather than a cylinder. It is fixed upstream before the caps of C3 and C5 are
-modelled on it.
-
 ## 5. Constraints Met While Writing #45
 
 Noted on 2026-11-11 and 2026-11-12; each is to be rechecked on `main` before planning, since S1 (postfix
@@ -120,4 +116,3 @@ modifier chaining) and other front-end work have landed since.
 | The `sweepLoft*` family         | Kept as it is; revisited once `sweep()` exists.                                                                  |
 | Sketch planes                   | Profiles stay in XY and are placed with `transform`; no sketch-plane argument.                                   |
 | Backlog `M8`                    | Not waited for: `revolve`, `sweep` and caps are written within constraint 3, as `revolve` is now.                |
-| `cylinderCapped`                | A beam by its end points; fixed in its own upstream PR before C3 and C5 model caps on it.                        |
