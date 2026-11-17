@@ -76,6 +76,9 @@ func (w *walker) walkPackage(m *program.Package, getImport program.GetImportFunc
 		for _, r := range f.MaterialReturns {
 			w.operand(r)
 		}
+		for _, r := range f.GradientReturns {
+			w.operand(r)
+		}
 		if getImport == nil {
 			continue
 		}

@@ -394,6 +394,42 @@ eventManager.addListener("canvas/update-shader", (event) => {
 
 // ── HTTP /api/compile & /api/mesh Client ──
 
+// The Render panel's Normals switch. Analytic asks the server for each
+// return's gradient (gsl_gradField), so switching recompiles.
+let analyticNormals = false;
+eventManager.addListener("render/normals", (event) => {
+    analyticNormals = Boolean(event && event.analytic);
+    if (!analyticNormals) showNormalsNote(null);
+    const source = getGslSourceForServer();
+    if (!source || source.trim() === "") return;
+    compileGsl(source);
+});
+
+// showNormalsNote says, beside the Normals switch, which shapes fall back to
+// numeric normals and why (hover for the reasons); data null hides it.
+function showNormalsNote(data) {
+    const note = document.getElementById("render-normals-note");
+    if (!note) return;
+    if (!analyticNormals || !data || !data.wgsl) {
+        note.hidden = true;
+        note.textContent = "";
+        note.title = "";
+        return;
+    }
+    const notes = data.gradientNotes || [];
+    const names = data.shapeNames || [];
+    if (notes.length === 0) {
+        note.hidden = !data.wgsl.includes("fn gsl_gradField(");
+        note.textContent = "all exact";
+        note.title = "Every shape has an analytic gradient (numeric only where displacement is drawn)";
+        return;
+    }
+    const label = (n) => (n.return === 0 ? "all" : (names[n.return - 1] || `#${n.return}`));
+    note.hidden = false;
+    note.textContent = `numeric: ${notes.map(label).join(", ")}`;
+    note.title = notes.map((n) => `${label(n)}: ${n.reason}`).join("\n");
+}
+
 async function compileGsl(source) {
     if (!source || source.trim() === "") return;
     const reqId = nextCompileID();
@@ -409,6 +445,7 @@ async function compileGsl(source) {
                 id: reqId,
                 clientId,
                 source,
+                analyticNormals,
             }),
         });
         const data = await res.json();
@@ -426,6 +463,7 @@ async function compileGsl(source) {
 
         clearNotification();
         eventManager.dispatchEvent("canvas/update-shader", data);
+        showNormalsNote(data);
 
         const audioJs = data.audio && (data.audio.jsCode || data.audio.javascript) || "";
         const hasAudio = Boolean(audioJs);

@@ -52,14 +52,17 @@ type Result struct {
 	MeshSdfSlots   []*program.MeshSdfSlot
 	GlobalTextures *program.GlobalTextures
 	Diagnostics    []program.Diagnostic
-	Sliders        []slider.SliderInfo
-	UIControls     []ui.Control
-	Scene          *program.Scene
-	MeshPlan       *meshplan.MeshExportPlan
-	SdfSubtrees    []meshplan.SdfSubtree
-	PreviewBodies  []meshplan.PreviewBody
-	AudioReturns   []meshplan.SdfSubtree
-	Variants       map[string]VariantResult
+	// GradientNotes lists the geometry returns WithAnalyticGradient could not
+	// differentiate (empty unless that option is set).
+	GradientNotes []GradientNote
+	Sliders       []slider.SliderInfo
+	UIControls    []ui.Control
+	Scene         *program.Scene
+	MeshPlan      *meshplan.MeshExportPlan
+	SdfSubtrees   []meshplan.SdfSubtree
+	PreviewBodies []meshplan.PreviewBody
+	AudioReturns  []meshplan.SdfSubtree
+	Variants      map[string]VariantResult
 }
 
 // Assemble collects packages directly and indirectly referenced by primarySources,
@@ -166,6 +169,7 @@ func assembleWithOptions(primarySources []string, srcMgr source.Manager, o *opti
 	if err != nil {
 		return nil, err
 	}
+	var gradientNotes []GradientNote
 	// Mark the document's parts for the viewer, drop declared boxes, and lower
 	// .color and .material properties over the primary geometry returns only
 	// (prog.Returns()[:geomCount]) so ColorReturns and MaterialReturns remain
@@ -178,6 +182,15 @@ func assembleWithOptions(primarySources []string, srcMgr source.Manager, o *opti
 		property.DropDeclaredBoxes(p)
 		if err := property.LowerReturnProperties(p); err != nil {
 			return nil, err
+		}
+		if o.analyticGradient {
+			notes, err := property.LowerGradientReturns(p)
+			if err != nil {
+				return nil, err
+			}
+			for _, n := range notes {
+				gradientNotes = append(gradientNotes, GradientNote{Return: n.Return, Reason: n.Reason})
+			}
 		}
 		return p, nil
 	})
@@ -332,6 +345,7 @@ func assembleWithOptions(primarySources []string, srcMgr source.Manager, o *opti
 		MeshSdfSlots:   sdfSlots,
 		GlobalTextures: globalTex,
 		Diagnostics:    diags,
+		GradientNotes:  gradientNotes,
 		AudioReturns:   audioReturns,
 		Variants:       variants,
 	}

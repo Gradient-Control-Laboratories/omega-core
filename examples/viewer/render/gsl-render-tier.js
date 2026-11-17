@@ -260,10 +260,11 @@ export function getAperture() {
 //   onRenderImage()  the button was pressed
 //   onShadows(on)    Shadows was switched on or off
 //   onBackFaces(dim) Back faces was set to Dim (true) or Full (false)
+//   onNormals(analytic) Normals was set to Analytic (true) or Numeric (false)
 // Displacement, Fine relief and Pixel filter need no callback: they set the
 // surface knobs through setShading, whose listeners re-render every viewer.
 // The tool button is returned so the viewer can switch it off after a pick.
-export function bindRenderControls({ onAperture, onFocusTool, onRenderImage, onShadows, onBackFaces }) {
+export function bindRenderControls({ onAperture, onFocusTool, onRenderImage, onShadows, onBackFaces, onNormals }) {
   const slider = document.getElementById("render-aperture");
   const label = document.getElementById("render-aperture-label");
   slider?.addEventListener("input", () => {
@@ -323,6 +324,17 @@ export function bindRenderControls({ onAperture, onFocusTool, onRenderImage, onS
         o.setAttribute("aria-pressed", o === b);
       });
       onBackFaces?.(b.dataset.backFaces === "dim");
+    });
+  });
+  const normals = document.querySelectorAll("[data-normals]");
+  normals.forEach((b) => {
+    b.addEventListener("click", () => {
+      if (b.classList.contains("active")) return;
+      normals.forEach((o) => {
+        o.classList.toggle("active", o === b);
+        o.setAttribute("aria-pressed", o === b);
+      });
+      onNormals?.(b.dataset.normals === "analytic");
     });
   });
   const scales = document.querySelectorAll("[data-image-scale]");

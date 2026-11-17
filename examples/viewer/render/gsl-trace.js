@@ -193,7 +193,7 @@ fn gsl_traceSample(
         gsl_pw = ${texturePw("gsl_pwScale * pixelScale * mix(max(camDist, 1.0), 1.0, camOrtho)")};${setDispDrawn}
         let off = gsl_traceOffset(camDist, pixelScale, camOrtho);
         let normalEps = max(baseGradEps, pixelScale * mix(max(camDist, 1.0), 1.0, camOrtho) * 0.05);
-        let nRaw = gsl_calcNormal(h.pos, time, normalEps);
+        let nRaw = gsl_calcNormal(h.pos, time, normalEps, h.sd.shapeIndex);
         ${colorStmt("hColor", "h.pos", "h.sd")}
         let hMat = ${materialAt("h.pos", "h.sd")};
         let T = clamp(hMat.volume.x, 0.0, 1.0);
