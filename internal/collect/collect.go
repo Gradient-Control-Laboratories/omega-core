@@ -8,27 +8,37 @@ import (
 	"gradientcontrol.com/omega/core/program"
 )
 
-// Program collects all packages starting from the primary package.
+// Program collects all packages starting from the primary package
+// along with any non-fatal parser diagnostics, tagging diagnostics from imported
+// packages with their import path and source file path.
 // It reports an error if a package cannot be found, cannot be parsed,
 // or cyclic package imports are detected.
-//
-// It returns a program composed of all packages
-// directly or indirectly referenced by the primarySources GSL code.
-func Program(primarySources []string, srcMgr source.Manager, parsePkg func(sources []string) (*parser.Result, error)) (*program.Program, error) {
+func Program(primarySources []string, srcMgr source.Manager, parsePkg func(sources []string) (*parser.Result, error)) (*program.Program, []program.Diagnostic, error) {
 	if len(primarySources) == 0 {
-		return nil, fmt.Errorf("missing primary sources")
+		return nil, nil, fmt.Errorf("missing primary sources")
 	}
 
 	primaryRes, err := parsePkg(primarySources)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if primaryRes == nil || primaryRes.Package == nil {
-		return nil, fmt.Errorf("no primary package returned")
+		return nil, nil, fmt.Errorf("no primary package returned")
 	}
 	primaryPkg := primaryRes.Package
 	setPackageSources(primaryPkg, primarySources)
-	return Package(primaryPkg, srcMgr, parsePkg)
+	var diags []program.Diagnostic
+	if len(primaryRes.Diagnostics) > 0 {
+		diags = append(diags, primaryRes.Diagnostics...)
+	}
+	prog, depDiags, err := Package(primaryPkg, srcMgr, parsePkg)
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(depDiags) > 0 {
+		diags = append(diags, depDiags...)
+	}
+	return prog, diags, nil
 }
 
 func setPackageSources(pkg *program.Package, sources []string) {
@@ -42,18 +52,21 @@ func setPackageSources(pkg *program.Package, sources []string) {
 	}
 }
 
-// Package collects all packages starting from a pre-parsed primary package.
-func Package(primaryPkg *program.Package, srcMgr source.Manager, parsePkg func(sources []string) (*parser.Result, error)) (*program.Program, error) {
+// Package collects all packages starting from a pre-parsed primary package
+// along with any non-fatal parser diagnostics, tagging diagnostics from imported
+// packages with their import path and source file path.
+func Package(primaryPkg *program.Package, srcMgr source.Manager, parsePkg func(sources []string) (*parser.Result, error)) (*program.Program, []program.Diagnostic, error) {
 	if primaryPkg == nil {
-		return nil, fmt.Errorf("missing primary package")
+		return nil, nil, fmt.Errorf("missing primary package")
 	}
 	program.UpdateImports(primaryPkg, primaryPkg.Path)
 
 	if len(primaryPkg.Files) == 0 {
-		return nil, fmt.Errorf("primary package must have at least one file")
+		return nil, nil, fmt.Errorf("primary package must have at least one file")
 	}
 
 	var collected []*program.Package
+	var diags []program.Diagnostic
 	visited := make(map[string]bool)
 	visiting := make(map[string]bool)
 
@@ -83,6 +96,12 @@ func Package(primaryPkg *program.Package, srcMgr source.Manager, parsePkg func(s
 					if depRes == nil || depRes.Package == nil {
 						return fmt.Errorf("package not found: %s", impPath)
 					}
+					for _, d := range depRes.Diagnostics {
+						if d.PackagePath == "" {
+							d.PackagePath = impPath
+						}
+						diags = append(diags, d)
+					}
 					depPkg := depRes.Package
 					setPackageSources(depPkg, sources)
 					program.UpdateImports(depPkg, impPath)
@@ -105,7 +124,7 @@ func Package(primaryPkg *program.Package, srcMgr source.Manager, parsePkg func(s
 	}
 
 	if err := dfs(primaryPkg); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Reverse the collected packages slice to ensure that importing packages
@@ -119,5 +138,5 @@ func Package(primaryPkg *program.Package, srcMgr source.Manager, parsePkg func(s
 		VersionMinor: primaryPkg.VersionMinor,
 		Primary:      primaryPkg,
 		Dependencies: collected,
-	}, nil
+	}, diags, nil
 }

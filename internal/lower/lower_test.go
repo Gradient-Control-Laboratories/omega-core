@@ -16,7 +16,7 @@ import (
 
 func runPipeline(src string) (*program.Program, error) {
 	srcMgr := &source.MockManager{}
-	prog, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	prog, _, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
 	if err != nil {
 		return nil, err
 	}

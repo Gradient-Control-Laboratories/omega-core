@@ -15,7 +15,7 @@ import (
 )
 
 func assembleUnpruned(primarySources []string, srcMgr source.Manager) (*program.Program, error) {
-	prog, err := collect.Program(primarySources, srcMgr, parserlib.ParsePackage)
+	prog, _, err := collect.Program(primarySources, srcMgr, parserlib.ParsePackage)
 	if err != nil {
 		return nil, err
 	}

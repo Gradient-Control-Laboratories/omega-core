@@ -21,7 +21,7 @@ func TestStdlibProtosUpToDate(t *testing.T) {
 			continue
 		}
 
-		freshPkg, err := parser2.Parse(lib.Sources)
+		freshPkg, _, err := parser2.Parse(lib.Sources)
 		if err != nil {
 			t.Fatalf("parser2.Parse(%q) failed: %v", lib.ImportPath, err)
 		}

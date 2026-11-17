@@ -18,7 +18,7 @@ import (
 func buildTestProgram(t *testing.T, src string, lowerStep func(prog *program.Program) error) *program.Program {
 	t.Helper()
 	srcMgr := &source.MockManager{}
-	prog, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	prog, _, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
 	if err != nil {
 		t.Fatal(err)
 	}

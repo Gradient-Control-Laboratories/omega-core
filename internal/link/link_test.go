@@ -37,7 +37,7 @@ return x;
 
 func parseAndLink(t *testing.T, src string, mgr source.Manager) ([]program.Diagnostic, error) {
 	t.Helper()
-	prog, err := collect.Program([]string{src}, mgr, parser.ParsePackage)
+	prog, _, err := collect.Program([]string{src}, mgr, parser.ParsePackage)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +189,7 @@ import . "pkgB";
 return pkgA.x + pkgB.x;
 `
 	mgr := newMockManager()
-	prog, err := collect.Program([]string{src}, mgr, parser.ParsePackage)
+	prog, _, err := collect.Program([]string{src}, mgr, parser.ParsePackage)
 	assert.NoError(t, err)
 
 	// Calling link.References succeeds with no error even when warnings are generated
@@ -203,7 +203,7 @@ x = 1.0;
 return x;
 `
 	mgr := newMockManager()
-	prog, err := collect.Program([]string{src}, mgr, parser.ParsePackage)
+	prog, _, err := collect.Program([]string{src}, mgr, parser.ParsePackage)
 	assert.NoError(t, err)
 
 	start := time.Now()
