@@ -211,7 +211,7 @@ and what is planned in the [future language specification](doc/gsl_lang_spec_fut
   package qualifiers, and dot-import ambiguity diagnostics.
 - **Asset imports (`importMesh`, `importStep`, `importWarp`)**: Added slot-numbered top-level
   declarations and compiler-assigned inline import expressions for `.stl`, `.step`/`.stp`/`.hodge`,
-  and `.warp`/`.castsim` assets.
+  and `.warp` assets.
 - **Top-level `audio(...)` return**: Replaced `returnAudio` statements with `audio(signal)`
   (mono) and `audio(left, right)` (stereo) as the trailing top-level `return` element.
 - **Automatic differentiation and shape accessors**: Added postfix `.dp` (spatial gradient),
