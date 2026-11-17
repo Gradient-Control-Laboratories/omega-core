@@ -30,7 +30,7 @@ func (c sliderChecker) IsParameter(op *program.Operand) bool {
 // parameters through the inline pass.
 func runPipelineWithSliders(src string, sliders sliderChecker) (*program.Program, error) {
 	srcMgr := &source.MockManager{}
-	prog, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	prog, _, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
 	if err != nil {
 		return nil, err
 	}

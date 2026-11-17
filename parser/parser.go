@@ -33,6 +33,6 @@ func ParsePackage(sources []string) (*Result, error) {
 			return &Result{Package: program.GetStdPackage(importPath)}, nil
 		}
 	}
-	pkg, diags, err := parser2.ParseWithDiagnostics(sources)
+	pkg, diags, err := parser2.Parse(sources)
 	return &Result{Package: pkg, Diagnostics: diags}, err
 }

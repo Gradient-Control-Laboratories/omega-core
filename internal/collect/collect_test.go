@@ -59,7 +59,7 @@ func TestCollect_Ordering(t *testing.T) {
 		},
 	}
 
-	prog, err := Program([]string{primarySource}, srcMgr, parseMockPackage)
+	prog, _, err := Program([]string{primarySource}, srcMgr, parseMockPackage)
 	if err != nil {
 		t.Fatalf("Collect failed: %v", err)
 	}
@@ -111,7 +111,7 @@ func TestCollect_PrimaryWithoutReturnsAndErrorPaths(t *testing.T) {
 				{Source: "fn helper() { return 1; }"},
 			},
 		}
-		prog, err := Package(pkg, &source.MockManager{}, parseMockPackage)
+		prog, _, err := Package(pkg, &source.MockManager{}, parseMockPackage)
 		if err != nil {
 			t.Fatalf("expected primary package without returns to succeed, got: %v", err)
 		}
@@ -121,13 +121,13 @@ func TestCollect_PrimaryWithoutReturnsAndErrorPaths(t *testing.T) {
 	})
 
 	t.Run("missing primary sources and empty package errors", func(t *testing.T) {
-		if _, err := Program(nil, &source.MockManager{}, parseMockPackage); err == nil {
+		if _, _, err := Program(nil, &source.MockManager{}, parseMockPackage); err == nil {
 			t.Fatal("expected error for empty primarySources")
 		}
-		if _, err := Package(nil, &source.MockManager{}, parseMockPackage); err == nil {
+		if _, _, err := Package(nil, &source.MockManager{}, parseMockPackage); err == nil {
 			t.Fatal("expected error for nil primaryPkg")
 		}
-		if _, err := Package(&program.Package{}, &source.MockManager{}, parseMockPackage); err == nil {
+		if _, _, err := Package(&program.Package{}, &source.MockManager{}, parseMockPackage); err == nil {
 			t.Fatal("expected error for primaryPkg with no files")
 		}
 	})
@@ -139,7 +139,7 @@ func TestCollect_PrimaryWithoutReturnsAndErrorPaths(t *testing.T) {
 				{Imports: []*program.Import{{Path: "dep1"}}},
 			},
 		}
-		if _, err := Package(selfPkg, &source.MockManager{}, parseMockPackage); err == nil || !strings.Contains(err.Error(), "cannot import itself") {
+		if _, _, err := Package(selfPkg, &source.MockManager{}, parseMockPackage); err == nil || !strings.Contains(err.Error(), "cannot import itself") {
 			t.Fatalf("expected self-import error, got: %v", err)
 		}
 
@@ -149,7 +149,7 @@ func TestCollect_PrimaryWithoutReturnsAndErrorPaths(t *testing.T) {
 				"dep2": {`import "dep1"; return 2.0;`},
 			},
 		}
-		if _, err := Program([]string{`import "dep1"; return 0.0;`}, srcMgr, parseMockPackage); err == nil || !strings.Contains(err.Error(), "cyclic package import") {
+		if _, _, err := Program([]string{`import "dep1"; return 0.0;`}, srcMgr, parseMockPackage); err == nil || !strings.Contains(err.Error(), "cyclic package import") {
 			t.Fatalf("expected cyclic import error, got: %v", err)
 		}
 	})
@@ -177,9 +177,9 @@ func TestProgramWithDiagnostics_TagsImportedPackages(t *testing.T) {
 		return res, nil
 	}
 
-	_, diags, err := ProgramWithDiagnostics([]string{"// Scene Size: 10\nimport \"dep1\"; return 42.0;"}, srcMgr, parseWithDiag)
+	_, diags, err := Program([]string{"// Scene Size: 10\nimport \"dep1\"; return 42.0;"}, srcMgr, parseWithDiag)
 	if err != nil {
-		t.Fatalf("ProgramWithDiagnostics failed: %v", err)
+		t.Fatalf("Program failed: %v", err)
 	}
 	if len(diags) != 2 {
 		t.Fatalf("expected 2 diagnostics (primary + dep1), got %d: %+v", len(diags), diags)

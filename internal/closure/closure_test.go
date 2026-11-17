@@ -15,7 +15,7 @@ import (
 
 func runPipeline(src string) (*program.Program, error) {
 	srcMgr := &internalsource.MockManager{}
-	prog, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	prog, _, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
 	if err != nil {
 		return nil, err
 	}
@@ -406,7 +406,7 @@ return stepped(3.0);
 }
 
 func runPipelineWithManager(src string, srcMgr source.Manager) (*program.Program, error) {
-	prog, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	prog, _, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
 	if err != nil {
 		return nil, err
 	}

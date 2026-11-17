@@ -370,7 +370,7 @@ func TestPostfixModifierErrors(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := parser2.Parse([]string{tc.src})
+			_, _, err := parser2.Parse([]string{tc.src})
 			if err == nil {
 				t.Fatalf("expected parse error containing %q, got nil", tc.want)
 			}

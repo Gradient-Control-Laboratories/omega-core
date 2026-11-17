@@ -8,21 +8,12 @@ import (
 	"gradientcontrol.com/omega/core/program"
 )
 
-// Program collects all packages starting from the primary package.
-// It reports an error if a package cannot be found, cannot be parsed,
-// or cyclic package imports are detected.
-//
-// It returns a program composed of all packages
-// directly or indirectly referenced by the primarySources GSL code.
-func Program(primarySources []string, srcMgr source.Manager, parsePkg func(sources []string) (*parser.Result, error)) (*program.Program, error) {
-	prog, _, err := ProgramWithDiagnostics(primarySources, srcMgr, parsePkg)
-	return prog, err
-}
-
-// ProgramWithDiagnostics collects all packages starting from the primary package
+// Program collects all packages starting from the primary package
 // along with any non-fatal parser diagnostics, tagging diagnostics from imported
 // packages with their import path and source file path.
-func ProgramWithDiagnostics(primarySources []string, srcMgr source.Manager, parsePkg func(sources []string) (*parser.Result, error)) (*program.Program, []program.Diagnostic, error) {
+// It reports an error if a package cannot be found, cannot be parsed,
+// or cyclic package imports are detected.
+func Program(primarySources []string, srcMgr source.Manager, parsePkg func(sources []string) (*parser.Result, error)) (*program.Program, []program.Diagnostic, error) {
 	if len(primarySources) == 0 {
 		return nil, nil, fmt.Errorf("missing primary sources")
 	}
@@ -40,7 +31,7 @@ func ProgramWithDiagnostics(primarySources []string, srcMgr source.Manager, pars
 	if len(primaryRes.Diagnostics) > 0 {
 		diags = append(diags, primaryRes.Diagnostics...)
 	}
-	prog, depDiags, err := packageWithDiagnostics(primaryPkg, srcMgr, parsePkg)
+	prog, depDiags, err := Package(primaryPkg, srcMgr, parsePkg)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -61,13 +52,10 @@ func setPackageSources(pkg *program.Package, sources []string) {
 	}
 }
 
-// Package collects all packages starting from a pre-parsed primary package.
-func Package(primaryPkg *program.Package, srcMgr source.Manager, parsePkg func(sources []string) (*parser.Result, error)) (*program.Program, error) {
-	prog, _, err := packageWithDiagnostics(primaryPkg, srcMgr, parsePkg)
-	return prog, err
-}
-
-func packageWithDiagnostics(primaryPkg *program.Package, srcMgr source.Manager, parsePkg func(sources []string) (*parser.Result, error)) (*program.Program, []program.Diagnostic, error) {
+// Package collects all packages starting from a pre-parsed primary package
+// along with any non-fatal parser diagnostics, tagging diagnostics from imported
+// packages with their import path and source file path.
+func Package(primaryPkg *program.Package, srcMgr source.Manager, parsePkg func(sources []string) (*parser.Result, error)) (*program.Program, []program.Diagnostic, error) {
 	if primaryPkg == nil {
 		return nil, nil, fmt.Errorf("missing primary package")
 	}

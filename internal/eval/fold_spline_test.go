@@ -11,7 +11,7 @@ import (
 )
 
 func TestFoldLocalSplinePreservesNestedMatrix(t *testing.T) {
-	prog, err := collect.Program([]string{`frames() {
+	prog, _, err := collect.Program([]string{`frames() {
   frame = uiTransform([[1,0,0,0],[0,1,0,0],[0,0,1,0],[3,4,5,1]]);
   path = uiSpline([frame, frame, frame]);
   selected = path[2];

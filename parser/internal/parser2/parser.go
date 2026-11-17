@@ -46,7 +46,8 @@ var options = []participle.Option{
 	participle.Union[Value](&ImportRef{}, &Number{}, &FunctionCall{}, &QualifiedRef{}, &Reference{}, &AnonCall{}, &SubExpression{}, &Collection{}, &String{}, &AnnotatedExpr{}),
 }
 
-// Parse parses all source files in a package into a program.Package.
+// Parse parses all source files in a package into a program.Package
+// along with any non-fatal parser diagnostics.
 //
 // Invariants:
 //   - The returned *program.Package is never nil.
@@ -55,14 +56,7 @@ var options = []participle.Option{
 //   - If a syntax or semantic error occurs, Parse returns the *program.Error and
 //     pkg preserves all files, scene metadata, imports, and declarations
 //     completed prior to the error.
-func Parse(sources []string) (*program.Package, error) {
-	pkg, _, err := ParseWithDiagnostics(sources)
-	return pkg, err
-}
-
-// ParseWithDiagnostics parses all source files in a package into a
-// program.Package along with any non-fatal parser diagnostics.
-func ParseWithDiagnostics(sources []string) (*program.Package, []program.Diagnostic, error) {
+func Parse(sources []string) (*program.Package, []program.Diagnostic, error) {
 	pkg := &program.Package{
 		VersionMajor: program.VersionMajor,
 		VersionMinor: program.VersionMinor,

@@ -65,7 +65,7 @@ func (c *CachingParser) ParsePackage(sources []string) (*Result, error) {
 	if pkg, diags := c.get(key); pkg != nil {
 		return &Result{Package: pkg, Diagnostics: diags}, nil
 	}
-	pkg, diags, err := parser2.ParseWithDiagnostics(sources)
+	pkg, diags, err := parser2.Parse(sources)
 	if err == nil {
 		c.put(key, proto.Clone(pkg).(*program.Package), diags, sourcesSize(sources))
 	}
