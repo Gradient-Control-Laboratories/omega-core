@@ -338,4 +338,24 @@ func TestCompile_WarningsDoNotBlockWGSLOrAudio(t *testing.T) {
 			t.Errorf("expected clean response JSON to omit warnings, got %s", string(raw))
 		}
 	})
+
+	t.Run("legacy_scene_comment_parser_warning_flows_to_bundle", func(t *testing.T) {
+		resp := compile.Process(compile.Request{
+			ID:     "req-legacy-scene",
+			Source: "// Scene Size: 40\nreturn sphere(5);\n",
+		}, nil, nil)
+		if len(resp.Errors) > 0 {
+			t.Fatalf("unexpected errors: %+v", resp.Errors)
+		}
+		if resp.Scene == nil || resp.Scene.Size != 40 {
+			t.Fatalf("expected Scene.Size 40, got %+v", resp.Scene)
+		}
+		if len(resp.Warnings) != 1 {
+			t.Fatalf("expected 1 legacy scene warning, got %+v", resp.Warnings)
+		}
+		w := resp.Warnings[0]
+		if w.LineNum != 1 || w.Column != 1 || w.Length != len("// Scene Size: 40") {
+			t.Errorf("unexpected legacy scene warning span: %+v", w)
+		}
+	})
 }
