@@ -37,6 +37,17 @@ type Request struct {
 	// Meshes finds the STL files the source's importMesh declarations name;
 	// nil when the server has none to offer.
 	Meshes meshimport.Finder `json:"-"`
+	// AnalyticNormals asks for each return's analytic gradient to be emitted
+	// as gsl_gradField, for the Render panel's Analytic normals.
+	AnalyticNormals bool `json:"analyticNormals,omitempty"`
+}
+
+// GradientNote is a return whose analytic normal is not available, so the
+// viewer takes central differences for it. Return is 1-based, as shapeIndex is;
+// 0 means the whole program.
+type GradientNote struct {
+	Return int    `json:"return"`
+	Reason string `json:"reason"`
 }
 
 // Audio contains compiled Web Audio synthesis JavaScript and duration.
@@ -67,6 +78,10 @@ type Response struct {
 	// MeshSdfBindings carries the preview grid the shader samples for each of
 	// MeshSdfSlots.
 	MeshSdfBindings []wgsl.MeshSdfBinding `json:"meshSdfBindings,omitempty"`
+
+	// GradientNotes lists the returns without an analytic normal, when the
+	// request asked for AnalyticNormals.
+	GradientNotes []GradientNote `json:"gradientNotes,omitempty"`
 }
 
 // Process executes the in-process GSL compilation pipeline (AST assembly, WGSL codegen, and audio JS codegen).
@@ -88,6 +103,9 @@ func Process(req Request, sourcePaths []string, progressFn ProgressFunc) *Respon
 	// The mesh plan lists the meshes the program places (mesh(i, placement)),
 	// which the viewer draws itself, as omega's canvas does.
 	asmOpts := append(AssemblerOptions(sourcePaths, progressFn), assembler.ExtractMeshPlan("leaf-"))
+	if req.AnalyticNormals {
+		asmOpts = append(asmOpts, assembler.WithAnalyticGradient())
+	}
 
 	asmRes, err := assembler.Assemble([]string{req.Source}, asmOpts...)
 	if err != nil {
@@ -105,13 +123,28 @@ func Process(req Request, sourcePaths []string, progressFn ProgressFunc) *Respon
 	if len(asmRes.Program.Returns()) > 0 {
 		// With placed meshes, the shader draws only the program's SDF parts.
 		renderProg := asmRes.Program
+		previewed := false
 		if plan := asmRes.MeshPlan; plan != nil && plan.Root != nil {
 			if decls := plan.MeshDecls(); len(decls) > 0 {
 				resp.MeshDecls = decls
 			}
 			renderProg = meshplan.PreviewProgram(renderProg, plan, asmRes.SdfSubtrees)
+			previewed = renderProg != asmRes.Program
 		} else if len(asmRes.AudioReturns) > 0 {
 			renderProg = variation.PrunePrimary(renderProg)
+		}
+		if req.AnalyticNormals {
+			if previewed {
+				// The preview program's returns are the plan's SDF parts, not
+				// the returns the gradients were taken of, and it carries no
+				// lowered return fields, so the shader gets no gsl_gradField.
+				resp.GradientNotes = append(resp.GradientNotes, GradientNote{Return: 0,
+					Reason: "the program places meshes; its preview shader has no analytic gradient"})
+			} else {
+				for _, n := range asmRes.GradientNotes {
+					resp.GradientNotes = append(resp.GradientNotes, GradientNote{Return: n.Return + 1, Reason: n.Reason})
+				}
+			}
 		}
 
 		wgslOpts := []wgsl.Option{}

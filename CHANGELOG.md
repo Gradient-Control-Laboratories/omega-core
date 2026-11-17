@@ -43,6 +43,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   gives the length of the document's animation. It is to time what `@scene` is to space: the viewer's Time
   slider and end time span it, and the animation clock starts over on passing it, so an animation and its
   captions loop. It reaches the compile response as `duration`, so a page `gsl export` writes loops too.
+- The viewer's Render panel has a Normals switch, Numeric or Analytic. Analytic asks `/api/compile`
+  (`analyticNormals`) for each return's spatial gradient, taken by the assembler's forward-mode derivative
+  (`assembler.WithAnalyticGradient`, `PackageFile.gradientReturns`) and emitted as `gsl_gradField`, which
+  `gsl_calcNormal` uses in place of central differences. A return the derivative cannot go through, a program that
+  places meshes, and a displaced material keep numeric normals, and the panel says which (`gradientNotes`). Frame
+  time is unchanged within noise; the shader is larger and compiles slower (boolean_blends: 37 to 614 KB of WGSL,
+  about 2.7 s more per compile).
 
 ### Changed
 

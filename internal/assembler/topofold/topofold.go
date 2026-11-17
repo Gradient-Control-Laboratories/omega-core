@@ -136,6 +136,9 @@ func hasTopoCall(pkg *program.Package) bool {
 		for _, r := range file.MaterialReturns {
 			walkOp(r)
 		}
+		for _, r := range file.GradientReturns {
+			walkOp(r)
+		}
 	}
 	return found
 }
@@ -198,6 +201,9 @@ func foldPackage(
 			return err
 		}
 		if err := folder.foldReturns(&file.MaterialReturns, consts); err != nil {
+			return err
+		}
+		if err := folder.foldReturns(&file.GradientReturns, consts); err != nil {
 			return err
 		}
 	}

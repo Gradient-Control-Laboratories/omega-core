@@ -153,6 +153,14 @@
                                     </div>
                                 </div>
                                 <div class="field-panel-row">
+                                    <label>Normals</label>
+                                    <div class="resolution-controls" role="group" aria-label="How surface normals are computed">
+                                        <button class="resolution-btn active" type="button" data-normals="numeric" aria-pressed="true" title="Central differences of the field, six samples a pixel-footprint apart: detail finer than a pixel averages out">Numeric</button>
+                                        <button class="resolution-btn" type="button" data-normals="analytic" aria-pressed="false" title="The field&#39;s exact gradient, differentiated by the compiler (recompiles). Falls back to Numeric for a shape it cannot differentiate, and wherever displacement is drawn">Analytic</button>
+                                    </div>
+                                    <span id="render-normals-note" class="field-panel-label" hidden></span>
+                                </div>
+                                <div class="field-panel-row">
                                     <label>Displacement</label>
                                     <div class="resolution-controls" role="group" aria-label="Displacement of surfaces">
                                         <button class="resolution-btn active" type="button" data-displacement="on" aria-pressed="true" title="Materials with displacement move the surface, such as open pores and weathered relief">On</button>

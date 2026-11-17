@@ -224,6 +224,29 @@ func (b *Builder) build(prog *program.Program, progScope *scope.ProgScope) error
 		}
 	}
 
+	// And for gradient returns, present only when assembly was asked for
+	// analytic gradients, for delegates that render analytic normals.
+	if gb, ok := b.delegate.(GradientReturnsBuilder); ok {
+		gradientOps := prog.GradientReturns()
+		if len(gradientOps) > 0 {
+			gradientExprs := make([]Expression, len(gradientOps))
+			for i, op := range gradientOps {
+				if op != nil {
+					expr, err := program.VisitOperand(op, b)
+					if err != nil {
+						return ErrLoc(lastFileScope, op.Start, err)
+					}
+					gradientExprs[i] = expr
+				}
+				CheckScope(b, lastFileScope)
+			}
+			if err := gb.BuildPackageGradientReturns(gradientExprs); err != nil {
+				return err
+			}
+			CheckScope(b, lastFileScope)
+		}
+	}
+
 	err = b.delegate.BuildPackageReturns(returnOps, expressions)
 	if err != nil {
 		return err

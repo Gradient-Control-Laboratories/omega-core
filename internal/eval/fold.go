@@ -149,6 +149,11 @@ func Fold(prog *program.Program, checker ParameterChecker) (bool, error) {
 					return err
 				}
 			}
+			for _, ret := range file.GradientReturns {
+				if _, err := program.VisitOperand(ret, visitor); err != nil {
+					return err
+				}
+			}
 		}
 		if visitor.modified {
 			modifiedAny = true
