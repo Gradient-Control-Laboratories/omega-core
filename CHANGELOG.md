@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and propagated parser diagnostics into `assembler.Result.Diagnostics`.
 - Emitted a `program.SeverityWarning` diagnostic in `parser/internal/parser2` when legacy
   `// Scene Size:` comments are parsed, advising `@scene(...)` and `gsl fix`.
+- Emitted a `program.SeverityWarning` diagnostic in `parser/internal/parser2` when unnecessary
+  `import . "omega"` statements are parsed, advising that `builtin` is implicitly imported, and
+  added the `omegaimport` fixer to `gsl fix` (`cmd/fix`) to remove them automatically.
 
 ### Changed
 

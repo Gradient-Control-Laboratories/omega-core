@@ -680,7 +680,7 @@ defined in [README.md](../../../README.md):
     `setEditorDiagnostics` or a dedicated code-panel banner/gutter) so warnings are visible when the
     code editor panel is open without blocking rendering.
 
-- [ ] **S22. Warn on Unnecessary `import . "omega"` & Remove via `gsl fix`**
+- [x] **S22. Warn on Unnecessary `import . "omega"` & Remove via `gsl fix`**
   - Emit a `program.SeverityWarning` diagnostic when `import . "omega"` is encountered, advising
     that it is unnecessary because `builtin` is implicitly imported.
   - Update `gsl fix` (`cmd/fix`) to automatically remove `import . "omega"` from GSL sources.
