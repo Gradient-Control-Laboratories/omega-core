@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-11-17
+
 ### Added
 
 - Added `Diagnostics []program.Diagnostic` to `parser.Result` (preserved by `parser.CachingParser`)
@@ -210,7 +212,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial standalone release of `omega-core` (GSL parser, assembler, standard library, evaluator,
   backends, CLI tools, and `omega-core` Python wheel).
 
-[Unreleased]: https://github.com/Gradient-Control-Laboratories/omega-core/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/Gradient-Control-Laboratories/omega-core/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/Gradient-Control-Laboratories/omega-core/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/Gradient-Control-Laboratories/omega-core/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Gradient-Control-Laboratories/omega-core/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Gradient-Control-Laboratories/omega-core/releases/tag/v0.1.0
