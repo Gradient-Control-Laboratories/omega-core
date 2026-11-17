@@ -154,3 +154,40 @@ func TestCollect_PrimaryWithoutReturnsAndErrorPaths(t *testing.T) {
 		}
 	})
 }
+
+func TestProgramWithDiagnostics_TagsImportedPackages(t *testing.T) {
+	srcMgr := &source.MockManager{
+		PkgSources: map[string][]string{
+			"dep1": {"// Scene Size: 20\nreturn 1.0;"},
+		},
+	}
+	parseWithDiag := func(sources []string) (*parser.Result, error) {
+		res, err := parseMockPackage(sources)
+		if err != nil {
+			return nil, err
+		}
+		if strings.Contains(sources[0], "// Scene Size:") {
+			res.Diagnostics = []program.Diagnostic{{
+				Severity: program.SeverityWarning,
+				LineNum:  1,
+				Column:   1,
+				Message:  "legacy warning",
+			}}
+		}
+		return res, nil
+	}
+
+	_, diags, err := ProgramWithDiagnostics([]string{"// Scene Size: 10\nimport \"dep1\"; return 42.0;"}, srcMgr, parseWithDiag)
+	if err != nil {
+		t.Fatalf("ProgramWithDiagnostics failed: %v", err)
+	}
+	if len(diags) != 2 {
+		t.Fatalf("expected 2 diagnostics (primary + dep1), got %d: %+v", len(diags), diags)
+	}
+	if diags[0].PackagePath != "" {
+		t.Errorf("expected empty PackagePath for primary diagnostic, got %q", diags[0].PackagePath)
+	}
+	if diags[1].PackagePath != "dep1" {
+		t.Errorf("expected PackagePath 'dep1' for dependency diagnostic, got %q", diags[1].PackagePath)
+	}
+}

@@ -1,6 +1,8 @@
 package assembler_test
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -199,4 +201,35 @@ return sphere(5);
 		}
 	}
 	assert.True(t, found, "expected parser legacy scene warning in assembler Result.Diagnostics, got %+v", res.Diagnostics)
+}
+
+func TestAssembler_PropagatesImportedPackageParserDiagnostics(t *testing.T) {
+	root := t.TempDir()
+	depDir := filepath.Join(root, "legacydep")
+	if err := os.MkdirAll(depDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	depFile := filepath.Join(depDir, "legacydep.gsl")
+	depSrc := "// Scene Size: 30\nrad = 6.0;\n"
+	if err := os.WriteFile(depFile, []byte(depSrc), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	primarySrc := "import \"legacydep\";\nreturn sphere(legacydep.rad);\n"
+	res, err := assembler.Assemble([]string{primarySrc}, assembler.SourcePaths(root))
+	if err != nil {
+		t.Fatalf("Assemble failed: %v", err)
+	}
+
+	var found bool
+	for _, diag := range res.Diagnostics {
+		if diag.Severity == program.SeverityWarning && strings.Contains(diag.Message, "@scene") {
+			found = true
+			assert.Equal(t, "legacydep", diag.PackagePath)
+			assert.Equal(t, "// Scene Size: 30", diag.Line)
+			assert.Equal(t, 1, diag.LineNum)
+			break
+		}
+	}
+	assert.True(t, found, "expected imported package parser warning in assembler Result.Diagnostics, got %+v", res.Diagnostics)
 }
