@@ -99,10 +99,11 @@ export function initEditor(container, initialContent, onChange) {
             // filtered out of lintConfig.sources, so run() short-circuits.
             //
             // We skip lintGutter() (no separate red-dot column); instead
-            // errorLineClassField below tints the matching line-number cell
-            // red so we reclaim a gutter column's width.
+            // diagnosticLineClassField below tints the matching line-number
+            // cell red (errors) or amber (warnings) so we reclaim a gutter
+            // column's width.
             linter(null),
-            errorLineClassField,
+            diagnosticLineClassField,
             syntaxHighlighting(gslHighlightStyle),
             keymap.of([
                 // Custom Cmd-F: when panel is already open, refocus the
@@ -258,14 +259,13 @@ export function clearHighlights() {
     view.dispatch({ effects: setHighlights.of([]) });
 }
 
-// Push inline error diagnostics. entries is an array of
-//   { line, col, length, message, actions? }
-// where line/col are 1-based. `actions` is an optional array of
+// Push inline diagnostics. entries is an array of
+//   { line, col, length, severity?, message, actions? }
+// where line/col are 1-based and severity defaults to "error" ("warning" for
+// non-blocking compiler/parser warnings). `actions` is an optional array of
 // { name, apply: (view, from, to) => void } that shows up as clickable
 // links inside the hover tooltip. Pass [] to clear.
-export function setEditorDiagnostics(entries) {
-    if (!view) return;
-    const doc = view.state.doc;
+export function buildDiagnostics(doc, entries) {
     const diags = [];
     for (const e of entries || []) {
         if (!e.message) continue;
@@ -283,12 +283,22 @@ export function setEditorDiagnostics(entries) {
         }
         diags.push({
             from, to,
-            severity: "error",
+            severity: e.severity === "warning" ? "warning" : "error",
             message: e.message,
             actions: e.actions,
         });
     }
-    view.dispatch(setDiagnostics(view.state, diags));
+    return diags;
+}
+
+export function setEditorDiagnostics(entries) {
+    if (!view) return;
+    view.dispatch(setDiagnostics(view.state, buildDiagnostics(view.state.doc, entries)));
+}
+
+export function refreshEditorLayout() {
+    if (!view) return;
+    view.requestMeasure();
 }
 
 // spans: [{startLine, startColumn, endLine, endColumn}] with 1-based lines/cols.
@@ -313,28 +323,36 @@ export function highlightSpans(spans) {
     view.dispatch({ effects: setHighlights.of(decos) });
 }
 
-// --- Error line class ---
+// --- Diagnostic line classes ---
 //
 // A diagnostic on a given line tags every gutter cell for that line with
-// .cm-has-error. CSS then paints the line number red (see style.css).
+// .cm-has-error or .cm-has-warning (errors win when both share a line).
+// CSS tints the line number accordingly (see editor.css).
 // This replaces lintGutter() so we don't need a separate marker column.
 
 const errorLineMarker = new (class extends GutterMarker {
     elementClass = "cm-has-error";
 })();
 
-const errorLineClassField = StateField.define({
+const warningLineMarker = new (class extends GutterMarker {
+    elementClass = "cm-has-warning";
+})();
+
+export const diagnosticLineClassField = StateField.define({
     create: () => RangeSet.empty,
     update(val, tr) {
-        const marks = [];
-        const seen = new Set();
+        const lineSeverity = new Map();
         forEachDiagnostic(tr.state, (d, from) => {
             const line = tr.state.doc.lineAt(from);
-            if (!seen.has(line.from)) {
-                seen.add(line.from);
-                marks.push(errorLineMarker.range(line.from));
+            const prev = lineSeverity.get(line.from);
+            if (d.severity === "error" || !prev) {
+                lineSeverity.set(line.from, d.severity === "warning" ? "warning" : "error");
             }
         });
+        const marks = [];
+        for (const [lineFrom, sev] of lineSeverity) {
+            marks.push((sev === "warning" ? warningLineMarker : errorLineMarker).range(lineFrom));
+        }
         marks.sort((a, b) => a.from - b.from);
         return RangeSet.of(marks, true);
     },
