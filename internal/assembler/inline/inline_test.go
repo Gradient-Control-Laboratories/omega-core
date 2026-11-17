@@ -1,6 +1,7 @@
 package inline_test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -22,7 +23,10 @@ func runPipeline(src string) (*program.Program, error) {
 }
 
 func runPipelineWithManager(src string, srcMgr source.Manager) (*program.Program, error) {
-	prog, _, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	prog, diags, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	if len(diags) != 0 {
+		return nil, fmt.Errorf("unexpected diagnostics: %+v", diags)
+	}
 	if err != nil {
 		return nil, err
 	}

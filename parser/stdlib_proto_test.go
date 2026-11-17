@@ -21,9 +21,12 @@ func TestStdlibProtosUpToDate(t *testing.T) {
 			continue
 		}
 
-		freshPkg, _, err := parser2.Parse(lib.Sources)
+		freshPkg, diags, err := parser2.Parse(lib.Sources)
 		if err != nil {
 			t.Fatalf("parser2.Parse(%q) failed: %v", lib.ImportPath, err)
+		}
+		if len(diags) != 0 {
+			t.Fatalf("parser2.Parse(%q) returned unexpected diagnostics: %+v", lib.ImportPath, diags)
 		}
 		if !proto.Equal(embeddedPkg, freshPkg) {
 			t.Errorf("stdlib %q package.pb AST differs from fresh parser2.Parse output; run ./tool/build-stdlib.sh --force", lib.ImportPath)

@@ -370,9 +370,12 @@ func TestPostfixModifierErrors(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, _, err := parser2.Parse([]string{tc.src})
+			_, diags, err := parser2.Parse([]string{tc.src})
 			if err == nil {
 				t.Fatalf("expected parse error containing %q, got nil", tc.want)
+			}
+			if len(diags) != 0 {
+				t.Fatalf("unexpected diagnostics: %+v", diags)
 			}
 			if !strings.Contains(err.Error(), tc.want) {
 				t.Errorf("error %q does not contain %q", err.Error(), tc.want)

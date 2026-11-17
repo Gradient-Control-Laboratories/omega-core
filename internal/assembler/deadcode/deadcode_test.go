@@ -1,6 +1,7 @@
 package deadcode_test
 
 import (
+	"fmt"
 	"testing"
 
 	"gradientcontrol.com/omega/core/assembler/source"
@@ -15,7 +16,10 @@ import (
 )
 
 func assembleUnpruned(primarySources []string, srcMgr source.Manager) (*program.Program, error) {
-	prog, _, err := collect.Program(primarySources, srcMgr, parserlib.ParsePackage)
+	prog, diags, err := collect.Program(primarySources, srcMgr, parserlib.ParsePackage)
+	if len(diags) != 0 {
+		return nil, fmt.Errorf("unexpected diagnostics: %+v", diags)
+	}
 	if err != nil {
 		return nil, err
 	}

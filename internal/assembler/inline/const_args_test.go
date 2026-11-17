@@ -27,9 +27,12 @@ func (c literalChecker) IsParameter(op *program.Operand) bool { return c[op] }
 func inlineWithParameters(t *testing.T, src string, params []string) *program.Program {
 	t.Helper()
 	srcMgr := &source.MockManager{}
-	prog, _, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	prog, diags, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if len(diags) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", diags)
 	}
 	step := func(err error) {
 		t.Helper()
