@@ -1,0 +1,15 @@
+Phase 0 (Ground Truth) verification report
+
+Automated: go vet ./eval/ && go test ./eval/ -count=1 -> ok (85 s).
+New tests: eval/profile_reference_test.go, eval/profile_provable_test.go.
+- profileXY (both forms) vs brute-force reference: worst 3.6e-6 mm (tolerance 2e-5).
+- extrude / revolve vs reference composed in 3D: worst 3.5e-6 / 8.6e-6 mm.
+- Surface-cell intervals: sound, widest 2.16 cell diagonals (limit 4).
+- certify: clearance 0.25 mm above the cap and beside, sharp and intersectRound(2) rims.
+Mutation checks: #45's turn >= 0 corner sign fails the slot; the gated
+magnitude fails every profile (17-78 diagonals). stdlib restored after each.
+WGSL budgets (85a0152): star 12337, sweep 113847, arcs 119522, cylinder 190178 bytes.
+Constraints rechecked: 1 and 4 lifted, 2 and 3 hold.
+
+Manual verification: go test ./eval/ -run 'Profile|Extrude_|Revolve_' -v
+User confirmation: accepted by the owner, 2026-11-17.
