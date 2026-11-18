@@ -51,10 +51,17 @@ On `main` (6f5462b):
 
 Profiles first, then the operations on them. The numbering is the order.
 
-1. **C1. Several loops in one profile.** Today an outline and its holes are combined by hand with `max`. For
-   properly nested loops (holes inside the outline, islands inside holes) `max`/`min` of exact loop distances
-   is exact everywhere, because each region's nearest boundary belongs to one loop. `profileXY` takes a list
-   of loops, combines them that way, and checks that they nest.
+1. **C1. Several loops in one profile.** Today an outline and its holes are combined by hand with `max`.
+   Decided 2026-11-17 (Phase 1's proposal): a generic `nested(fields)` in `stdlib/builtin/booleans.gsl`
+   takes a list of exact fields whose surfaces do not cross, each wound so the solid is on its negative side
+   (counterclockwise outlines and islands, clockwise holes), and gives the nearest surface's distance with
+   that surface's sign. That is exact for any such arrangement, in any order, with no nesting tree: the
+   segment from a point to its nearest surface point crosses no other surface, so the point lies on the side
+   that surface's field reports. It is written as `profileXY`'s pools are (a sign gate combined with `max`,
+   the magnitude from an ungated pool), so it stays interval-provable. Loops are passed as fields, not as
+   data, because GSL refuses ragged lists; and nothing checks the winding, because GSL cannot raise a
+   diagnostic. A mis-wound loop keeps the sign but reports its own distance; the doc comment states the
+   rule. Being generic, it serves 3D fields too (a solid with a void).
 2. **C2. Corner blends, per vertex.** "Every corner eventually a blend." Each vertex can take either kind:
    - an **arc fillet** (or a **line chamfer**) generated as edges of the loop, so the distance stays exact,
      as the hand-written L in [profile_cylinder.gsl](../../../examples/profile_cylinder.gsl) is; or
