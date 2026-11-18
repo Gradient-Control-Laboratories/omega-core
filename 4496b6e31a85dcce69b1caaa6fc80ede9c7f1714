@@ -1,0 +1,15 @@
+Phase 2 (Corner Blends, per Vertex, C2) verification report — Part A; Part B deferred by the owner
+
+Automated: go vet ./... && go test ./eval/ ./stdlib/... ./assembler/... ./internal/assembler/... ./backend/... -count=1 -> all ok (30 packages).
+New: profileXY(points, curvatures, corners[, blend]), cornerSharp/Fillet/Chamfer/Blend, everyCorner, nested pools in stdlib/builtin/2d.gsl;
+eval/profile_corners_test.go, eval/profile_corner_blend_test.go; examples/profile_corners.gsl.
+- Exact fillets and chamfers between straight edges vs reference: worst 3.6e-6 mm; clamped fillets make the circle (2.8e-6).
+- Field blends (intersectRound, intersectChamfer, intersectLp): exact outside the pieces (1.9e-6), the documented formula inside,
+  1-Lipschitz (1.0001), surface cells sound (widest 3.35), sign right at 4,809 far points (139 wrong without the triangle bound).
+- Surface cells at cells scaled to the smallest fillet: widest 2.89 diagonals.
+Mutation checks: fillet curvature sign flipped fails the reference; triangle bound removed fails the far-field sign (intersectLp).
+GPU (gpu-eval, 4M points): corners example 61-63 ms (from 124), arcs example 39-43 ms; remainder is backlog M15.
+No golden moved.
+
+Manual verification: viewer, examples/profile_corners.gsl (U with fillets and chamfers, Lp-blended U with .u checkerboard, filleted star).
+User confirmation: the owner checked it in the viewer (renders; .u right after the fix; slower than arcs, improved), and deferred Part B, 2026-11-17.
