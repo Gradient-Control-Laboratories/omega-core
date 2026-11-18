@@ -20,6 +20,23 @@ pure, modular compiler libraries and the `gsl` command-line toolchain (`compile`
 for parsing, analyzing, refactoring, and compiling GSL models into WebGPU compute shaders (WGSL),
 3D meshes (STL), bytecode tapes, and audio synthesizers.
 
+<table>
+  <tr>
+    <td valign="top">
+      <strong>Video Demo — Interactive WebGPU Viewer</strong><br><br>
+      Watch a short walkthrough of the <code>gsl serve</code> / <code>gsl viewer</code> example viewer in action:
+      browsing curated GSL models, editing source code live, adjusting interactive <code>@range</code>
+      sliders and viewport controls, and seeing real-time WebGPU raymarched updates.<br><br>
+      Watch on YouTube: <a href="https://youtu.be/wlTj_TXmRJk">https://youtu.be/wlTj_TXmRJk</a>
+    </td>
+    <td align="right" valign="middle" width="340">
+      <a href="https://youtu.be/wlTj_TXmRJk">
+        <img src="https://img.youtube.com/vi/wlTj_TXmRJk/maxresdefault.jpg" width="320" alt="Watch the omega-core interactive WebGPU viewer video">
+      </a>
+    </td>
+  </tr>
+</table>
+
 ## Architecture & Package Topology
 
 - **`parser/`**: Stateless GSL lexer, parser, and AST generator.
