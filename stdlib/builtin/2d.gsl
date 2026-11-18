@@ -509,12 +509,12 @@ profileXY(points, curvatures, corners) {
 /// a convex corner, its dual at a reflex one. That part is the blend's field,
 /// not an exact distance; the rest of the profile is exact. The blend must fit
 /// within half of each edge at the corner, or it is cut off where the trims
-/// end. Along a blended corner .u runs straight from trim to trim.
+/// end. Along a blended corner .u follows its two edges into the corner.
 profileXY(points, curvatures, corners, blend) {
   pools = profileCornerBlendPoolsXY(points, curvatures, corners, blend);
   form = pools.x <= pools.y ? pools.z : neg(pools.z);
   form.box = profileArcBoxXY(points, curvatures);
-  form.u = profileCornerRunXY(points, curvatures, corners, 1);
+  form.u = profileCornerBlendRunXY(points, curvatures, corners, blend);
   return form;
 }
 
@@ -693,6 +693,26 @@ profileCornerBlendPieceXY(previous, start, end, corner, previousCurvature, curva
   return max(piece, blended && corner.x == 3 ? 0 : nothing);
 }
 
+// The reach a cornerBlend() corner's piece offers its pools, as
+// profileCornerBlendPieceXY takes it, for the blended profile's .u, so that
+// .u changes piece where the field does. Nothing unless the corner is blended.
+profileCornerBlendReachXY(previous, start, end, corner, previousCurvature, curvature, blend) {
+  trim = profileCornerTrimXY(previous, start, end, corner, previousCurvature, curvature, 1);
+  incomingAlong = (start - previous) / length(start - previous);
+  outgoingAlong = (end - start) / length(end - start);
+  trimStart = start - trim * incomingAlong;
+  blended = trim > 0;
+  blendEnd = blended ? start + trim * outgoingAlong : trimStart + [1e-6, 0];
+  turn = incomingAlong.x * outgoingAlong.y - incomingAlong.y * outgoingAlong.x;
+  offset = p.xy - start;
+  lineIn = offset.x * incomingAlong.y - offset.y * incomingAlong.x;
+  lineOut = offset.x * outgoingAlong.y - offset.y * outgoingAlong.x;
+  blendValue = turn >= 0 ? blend([lineIn, lineOut]) : neg(blend([neg(lineIn), neg(lineOut)]));
+  overshoot = max(0, neg(dot(p.xy - trimStart, incomingAlong)), dot(p.xy - blendEnd, outgoingAlong));
+  reach = max(abs(blendValue), profileTriangleDistanceXY(trimStart, start, blendEnd)) + 2 * overshoot;
+  return max(reach, blended && corner.x == 3 ? 0 : nothing);
+}
+
 // The distance from p to the triangle a, b, c in the XY plane: 0 inside,
 // else the distance to the nearest of its sides. Inside is a gate on a
 // constant combined with min.
@@ -715,28 +735,59 @@ profileTriangleDistanceXY(a, b, c) {
 
 // A blended profile's u, as profileArcRunXY, with each step offering corner
 // `index`'s blend and the edge leaving it as one piece: its reach the lesser
-// of theirs, its station along whichever is nearer, its length the sum.
+// of theirs, its station along whichever is nearer, its length the sum. No
+// corner is blended here: see profileCornerBlendRunXY.
 profileCornerRunXY(points, curvatures, corners, blending) {
   count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
   nearest = reduce([nothing, 0], (best, start, index) {
     previousIndex = mod(index - 1 + count, count);
     nextIndex = mod(index + 1, count);
     run = profileCornerPieceRun(points[previousIndex], start, points[nextIndex], points[mod(index + 2, count)],
-      corners[index], corners[nextIndex], curvatures[previousIndex], curvatures[index], curvatures[nextIndex], blending);
+      corners[index], corners[nextIndex], curvatures[previousIndex], curvatures[index], curvatures[nextIndex], blending, nothing);
     return [min(best.x, run.x), 0];
   }, points).x;
   return reduce([0, 0], (best, start, index) {
     previousIndex = mod(index - 1 + count, count);
     nextIndex = mod(index + 1, count);
     run = profileCornerPieceRun(points[previousIndex], start, points[nextIndex], points[mod(index + 2, count)],
-      corners[index], corners[nextIndex], curvatures[previousIndex], curvatures[index], curvatures[nextIndex], blending);
+      corners[index], corners[nextIndex], curvatures[previousIndex], curvatures[index], curvatures[nextIndex], blending, nothing);
+    return [max(best.x, run.x <= nearest + 1e-4 ? best.y + run.y : 0), best.y + run.z];
+  }, points).x;
+}
+
+// profileCornerRunXY for a profile with `blend` made at its cornerBlend()
+// corners: a blended corner offers the reach its piece offers the pools
+// (profileCornerBlendReachXY), not its distance from the chord between its
+// trims, so that .u turns from one piece to the next where the field does.
+// Along the piece .u follows its two legs, trim to corner to trim.
+profileCornerBlendRunXY(points, curvatures, corners, blend) {
+  count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
+  nearest = reduce([nothing, 0], (best, start, index) {
+    previousIndex = mod(index - 1 + count, count);
+    nextIndex = mod(index + 1, count);
+    previous = points[previousIndex];
+    end = points[nextIndex];
+    pieceReach = profileCornerBlendReachXY(previous, start, end, corners[index], curvatures[previousIndex], curvatures[index], blend);
+    run = profileCornerPieceRun(previous, start, end, points[mod(index + 2, count)],
+      corners[index], corners[nextIndex], curvatures[previousIndex], curvatures[index], curvatures[nextIndex], 1, pieceReach);
+    return [min(best.x, run.x), 0];
+  }, points).x;
+  return reduce([0, 0], (best, start, index) {
+    previousIndex = mod(index - 1 + count, count);
+    nextIndex = mod(index + 1, count);
+    previous = points[previousIndex];
+    end = points[nextIndex];
+    pieceReach = profileCornerBlendReachXY(previous, start, end, corners[index], curvatures[previousIndex], curvatures[index], blend);
+    run = profileCornerPieceRun(previous, start, end, points[mod(index + 2, count)],
+      corners[index], corners[nextIndex], curvatures[previousIndex], curvatures[index], curvatures[nextIndex], 1, pieceReach);
     return [max(best.x, run.x <= nearest + 1e-4 ? best.y + run.y : 0), best.y + run.z];
   }, points).x;
 }
 
 // Corner `index`'s blend and the edge after it, as one offer [reach, station,
-// length] to profileCornerRunXY.
-profileCornerPieceRun(previous, start, end, after, corner, nextCorner, previousCurvature, curvature, nextCurvature, blending) {
+// length] to profileCornerRunXY. A cornerBlend() corner reaches as far as
+// `blendPieceReach` says (nothing where no blend is made).
+profileCornerPieceRun(previous, start, end, after, corner, nextCorner, previousCurvature, curvature, nextCurvature, blending, blendPieceReach) {
   trim = profileCornerTrimXY(previous, start, end, corner, previousCurvature, curvature, blending);
   endTrim = profileCornerTrimXY(start, end, after, nextCorner, curvature, nextCurvature, blending);
   incomingAlong = (start - previous) / length(start - previous);
@@ -748,13 +799,20 @@ profileCornerPieceRun(previous, start, end, after, corner, nextCorner, previousC
   halfTangent = abs(turn) / max(1 + dot(incomingAlong, outgoingAlong), 1e-30);
   blendCurvature = corner.x == 1 ? (turn >= 0 ? 1 : neg(1)) * halfTangent / max(trim, 1e-6) : 0;
   blendRun = profileArcEdgeRun(trimStart, blendEnd, blendCurvature);
-  blendReach = max(blendRun.x, blended ? 0 : nothing);
-  blendLength = blended ? blendRun.z : 0;
+  // Along a cornerBlend() piece .u follows the corner's two legs, trim to
+  // corner to trim, which are the profile's edges beyond the blend's reach.
+  legCorner = blended ? start : trimStart + [0, 1e-6];
+  legIn = profileArcEdgeRun(trimStart, legCorner, 0);
+  legOut = profileArcEdgeRun(legCorner, blendEnd, 0);
+  legStation = legIn.x <= legOut.x ? legIn.y : legIn.z + legOut.y;
+  blendReach = max(corner.x == 3 ? blendPieceReach : blendRun.x, blended ? 0 : nothing);
+  blendStation = corner.x == 3 ? legStation : blendRun.y;
+  blendLength = blended ? (corner.x == 3 ? legIn.z + legOut.z : blendRun.z) : 0;
   edgeStart = start + trim * outgoingAlong;
   edgeEnd = end - endTrim * outgoingAlong;
   edgeHasLength = length(edgeEnd - edgeStart) > 1e-6;
   edgeRun = profileArcEdgeRun(edgeStart, edgeHasLength ? edgeEnd : edgeStart + [1e-6, 0], curvature);
   edgeReach = max(edgeRun.x, edgeHasLength ? 0 : nothing);
   edgeLength = edgeHasLength ? edgeRun.z : 0;
-  return [min(blendReach, edgeReach), blendReach <= edgeReach ? blendRun.y : blendLength + edgeRun.y, blendLength + edgeLength];
+  return [min(blendReach, edgeReach), blendReach <= edgeReach ? blendStation : blendLength + edgeRun.y, blendLength + edgeLength];
 }
