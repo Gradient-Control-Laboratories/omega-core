@@ -88,7 +88,7 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
       open; 100,690 bytes of WGSL (its own budget from here); the other examples' sizes unchanged; checked by the owner in the viewer
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
-## Phase 2: Corner Blends, per Vertex (C2)
+## Phase 2: Corner Blends, per Vertex (C2) [checkpoint: 4496b6e]
 
 - [x] Task: Proposal: how a vertex names its blend (none, arc fillet, line chamfer, field blend) and its size,
       and what is refused (a fillet larger than its edges allow). Decided: corner helpers in a `corners`
@@ -133,7 +133,7 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
       too big for its edges has no closed-form largest fit. Until then a corner next to an arc stays
       sharp, as documented, and `cornerBlend()` too works between straight edges only
 - [x] Task: An example mixing the kinds; WGSL size; the owner's viewer check (Part A's corners)
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 3: Quadratic Bezier Edges (C6)
 
