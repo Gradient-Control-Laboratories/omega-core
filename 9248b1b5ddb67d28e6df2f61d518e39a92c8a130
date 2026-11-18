@@ -1,0 +1,11 @@
+Phase 5 (Partial Revolve, C3) verification report
+
+Automated: go vet ./... and go test ./internal/... ./assembler/... ./backend/... ./stdlib/... ./eval/... -> all ok; no golden moved.
+New: revolve(profile, axisPoint, axisDirection, angle) in stdlib/builtin/sweep.gsl; the revolve frame carry rule and box rule for four arguments; eval/profile_partial_revolve_test.go; examples/profile_revolve.gsl.
+- Exact vs reference on four sweeps (incl. reflex and negative): worst 1.3e-5 mm; vs an independent boundary point cloud: within 0.25 mm spacing.
+- Surface cells widest 2.88 diagonals; certify proves the unswept side; bounds proves a tight box; .u and .v equal the full revolve's.
+Mutation: dropping the far cap fails the reference by 41 mm; the atan2 sweep test made the box unprovable (replaced by two planes).
+GPU (64 evals/point, 1M points, less floor): sleeve 56 ms partial vs 26 ms full; profile_cylinder 44 ms.
+
+Manual verification: viewer, examples/profile_revolve.gsl (flanged sleeve cut open with .u/.v checkerboard; arch).
+User confirmation: the owner: looks right, terrible performance, 2026-11-18.
