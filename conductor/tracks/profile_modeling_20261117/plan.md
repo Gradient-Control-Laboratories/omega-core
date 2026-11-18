@@ -64,7 +64,7 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
       1 and 4 are lifted, 2 and 3 hold
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
-## Phase 1: Several Loops in One Profile (C1)
+## Phase 1: Several Loops in One Profile (C1) [checkpoint: c94b0d8]
 
 - [x] Task: Proposal: the signature (a list of loops, each points or points and curvatures), how nesting is
       checked, and what a loop that does not nest reports. Decided: a generic `nested(fields)` taking
@@ -83,10 +83,10 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
       `stdlib/builtin/booleans.gsl`; box and `.u` carry without code of their own. Restoring a gated
       magnitude fails the plate's surface cells (51 diagonals). No golden moved (stdlib, assembler, parser,
       program and WGSL suites)
-- [ ] Task: An example, its WGSL size against the budget, and the owner's viewer check:
+- [x] Task: An example, its WGSL size against the budget, and the owner's viewer check:
       `examples/profile_nested.gsl`, a flange of eight loops nested four deep and a block with a void cut
-      open; 100,690 bytes of WGSL (its own budget from here); the other examples' sizes unchanged
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+      open; 100,690 bytes of WGSL (its own budget from here); the other examples' sizes unchanged; checked by the owner in the viewer
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 2: Corner Blends, per Vertex (C2)
 
