@@ -127,9 +127,12 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
       along the chord, diagonally across half of each edge).
     - Found, worked around, not reduced: with a blend made from a slider, the blend form's two-name box
       assignment went undefined (the box now comes from `profileArcBoxXY`).
-- [ ] Task: Part B, corners next to an arc edge (line to arc, arc to arc): tests, then implementation
-- [ ] Task: An example mixing the kinds; WGSL size; the owner's viewer check (Part A's is done; Part B's
-      corners still to add)
+- [ ] Task: Part B, corners next to an arc edge (line to arc, arc to arc): **deferred by the owner,
+      2026-11-17**, for implicit blends and more pressing work, after Part A's GPU cost. An exact fillet
+      there is a line–circle or circle–circle intersection and a shorter arc of the same circle; a fillet
+      too big for its edges has no closed-form largest fit. Until then a corner next to an arc stays
+      sharp, as documented, and `cornerBlend()` too works between straight edges only
+- [x] Task: An example mixing the kinds; WGSL size; the owner's viewer check (Part A's corners)
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 3: Quadratic Bezier Edges (C6)

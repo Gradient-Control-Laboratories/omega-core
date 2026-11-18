@@ -78,9 +78,10 @@ Profiles first, then the operations on them. The numbering is the order.
    an argument but cannot hold operators in a list, hence one operator per profile. `everyCorner(points,
    corner)` builds a `corners` list of one kind for every vertex. A fillet or chamfer too large for its edges
    is clamped to fit (each trim at most half of each adjacent edge), documented, since GSL cannot refuse it
-   with a message. Corners between two straight edges come first; corners next to an arc stay sharp until a
-   second part of the phase. `intersectRound` makes the same surface as an exact fillet only at a right
-   angle, so field blends are genuinely other shapes.
+   with a message. Corners between two straight edges only: corners next to an arc stay sharp, the second
+   part of the phase deferred by the owner on 2026-11-17 in favour of implicit blends and more pressing
+   work. `intersectRound` makes the same surface as an exact fillet only at a right angle, so field blends
+   are genuinely other shapes.
 3. **C6. Quadratic Bezier edges.** The stdlib already has an exact distance to a 3D quadratic Bezier
    (`bezierQuadPointRound` in `stdlib/builtin/quad_bezier_curves.gsl`, Quilez's closed-form cubic solve);
    the 2D case is simpler. A profile edge can be a line, an arc or a quadratic Bezier, and the profile stays
