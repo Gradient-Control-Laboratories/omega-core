@@ -15,7 +15,7 @@
   <a href="doc/assets/showcase/gyroid.png"><img src="doc/assets/showcase/gyroid_thumb.png" width="220" alt="Gyroid"></a>
 </p>
 
-`omega-core` is the standalone Go SDK for the Geometric Specification Language (GSL). It provides
+`omega-core` is the standalone Go SDK for the Geometric Shape Language (GSL). It provides
 pure, modular compiler libraries and the `gsl` command-line toolchain (`compile`, `serve`, `fix`)
 for parsing, analyzing, refactoring, and compiling GSL models into WebGPU compute shaders (WGSL),
 3D meshes (STL), bytecode tapes, and audio synthesizers.
