@@ -155,17 +155,27 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
 - [ ] Task: Implement (Green & Refactor Phase), within whatever Phase 0 found `.box` can hold
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
-## Phase 5: Partial Revolve (C3)
+## Phase 5: Partial Revolve (C3) [checkpoint: 9248b1b]
 
 Taken next after Phase 2, before Phases 3 and 4 (the owner, 2026-11-18).
 
 - [x] Task: Proposal: the signature (angle range, its origin) and the caps. Decided: one angle from the
       sketch plane, flat caps, the exact formula and Go box and frame rules of spec section 4, C3
-- [ ] Task: Write failing tests (Red Phase): exact against the reference, caps included; `.u` over the
-      range; box
-- [ ] Task: Implement (Green & Refactor Phase), within spec section 5.3 as `revolve` is
-- [ ] Task: An example; WGSL size; the owner's viewer check
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Write failing tests (Red Phase) (`eval/profile_partial_revolve_test.go`): exact against the
+      reference on a quarter turn, three quarters, a sixth the other way and the arc L (worst 1.3e-5); an
+      independent point cloud of the boundary (within its 0.25 mm spacing); surface cells (widest 2.88);
+      `certify` behind the sketch plane; a proven box; `.u` and `.v` the full revolve's
+- [x] Task: Implement (Green & Refactor Phase): `revolve(profile, axisPoint, axisDirection, angle)` in
+      `stdlib/builtin/sweep.gsl`; the frame by the revolve carry rule, now for four arguments too, and the
+      full turn's box (`internal/assembler/property`). The sweep is tested by two planes, not an angle:
+      `atan2`'s intervals near the axis left the sign undecided and `bounds` could not prove the box.
+      Dropping the far cap fails the reference (off by 41 mm). No golden moved
+- [x] Task: An example; WGSL size; the owner's viewer check: `examples/profile_revolve.gsl`, a flanged
+      sleeve cut open and an arch; 65 KB of WGSL with a slider angle. Checked by the owner: right, and slow.
+      Measured (64 evaluations a point, less the floor): the sleeve 56 ms partial against 26 ms full, the
+      profile read three times; `profile_cylinder.gsl` 44 ms. Most of the cost is the profile itself, whose
+      pools make three passes
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 6: `sweep()` (C4)
 
