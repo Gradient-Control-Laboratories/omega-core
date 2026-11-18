@@ -33,6 +33,12 @@ const languageCompartment = new Compartment();
 // in its own compartment so we can reconfigure without rebuilding the view.
 const wrapCompartment = new Compartment();
 
+// Read-only is set at runtime by setReadOnly(boolean): typing is refused, and
+// so are the edits the panels and gizmos make (insertAtCursor,
+// replaceSourceRange, replaceSourceSpan). setContent still shows a document.
+const readOnlyCompartment = new Compartment();
+let readOnly = false;
+
 // --- Highlight spans (shape picker → editor) ---
 
 const setHighlights = StateEffect.define();
@@ -67,6 +73,7 @@ export function initEditor(container, initialContent, onChange) {
             // Soft-wrap long lines instead of requiring horizontal scroll.
             // Toggleable via setLineWrap().
             wrapCompartment.of(EditorView.lineWrapping),
+            readOnlyCompartment.of(EditorState.readOnly.of(readOnly)),
             history(),
             drawSelection(),
             // Multi-cursor / multi-select. Required for Cmd-D (next
@@ -179,8 +186,18 @@ export function installEditorUndoShortcut() {
     }, true);
 }
 
-export function insertAtCursor(text) {
+// setReadOnly makes the editor show its document without taking changes to
+// it, for a host that cannot compile them (host-static.js).
+export function setReadOnly(on) {
+    readOnly = !!on;
     if (!view) return;
+    view.dispatch({
+        effects: readOnlyCompartment.reconfigure(EditorState.readOnly.of(readOnly)),
+    });
+}
+
+export function insertAtCursor(text) {
+    if (!view || readOnly) return;
     // Replace the main selection with `text` and leave the inserted text
     // selected (the point-select tool relies on this so the user can
     // immediately overwrite, copy, or see the reference it just wrote). One
@@ -194,7 +211,7 @@ export function insertAtCursor(text) {
 }
 
 export function replaceSourceRange(from, to, text) {
-    if (!view || from < 0 || to < from || to > view.state.doc.length) return;
+    if (!view || readOnly || from < 0 || to < from || to > view.state.doc.length) return;
     view.dispatch({
         changes: { from, to, insert: text },
         userEvent: "input",
@@ -223,7 +240,7 @@ export function readSourceSpan(span) {
 // Tagged with userEvent: "input.scrub" so any downstream change listener
 // can debounce / coalesce scrub edits separately from normal typing.
 export function replaceSourceSpan(span, newText) {
-    if (!view) return;
+    if (!view || readOnly) return;
     const doc = view.state.doc;
     if (span.startLine < 1 || span.startLine > doc.lines) return;
     if (span.endLine < 1 || span.endLine > doc.lines) return;

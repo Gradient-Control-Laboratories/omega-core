@@ -2,6 +2,7 @@ import { showNotification, clearNotification } from "./ui/notification.js";
 import { clearError, showError, startErrorTimer, stopErrorTimer, resetErrorTimer } from "./ui/error.js";
 import { ProgressBar, operationKindLabels } from "./ui/progress-bar.js";
 import eventManager from "./ui/event-manager.js";
+import * as host from "./host.js";
 import "./ui/panel-resize.js";
 import "./ui/tooltip.js";
 import {
@@ -51,6 +52,7 @@ import {
     clearHighlights,
     insertAtCursor,
     setLineWrap,
+    setReadOnly,
     replaceSourceSpan,
 } from "./editor/editor.js";
 import {
@@ -95,6 +97,10 @@ const saveAsPopover = document.getElementById("save-as-popover");
 const saveAsInput = document.getElementById("save-as-input");
 const btnSaveConfirm = document.getElementById("btn-save-confirm");
 const btnSaveCancel = document.getElementById("btn-save-cancel");
+
+// A host that compiles nothing (host-static.js, in a page `gsl export` wrote) shows the document
+// as it was exported: style.css hides what would change or save it, and the editor is read-only.
+document.body.classList.toggle("read-only-host", !host.editable);
 
 function nextCompileID() {
     latestCompileID = `compile-${Date.now()}-${++compileSeq}`;
@@ -163,15 +169,7 @@ async function submitSaveAs() {
     }
     const source = getGslSourceForServer();
     try {
-        const res = await fetch("/api/save", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, source }),
-        });
-        const data = await res.json();
-        if (!res.ok || data.error) {
-            throw new Error(data.error || `HTTP ${res.status}`);
-        }
+        const data = await host.saveExample(name, source);
         const savedName = data.name || name;
         currentExampleName = savedName;
         await refreshExampleList(savedName);
@@ -392,7 +390,7 @@ eventManager.addListener("canvas/update-shader", (event) => {
     }
 });
 
-// ── HTTP /api/compile & /api/mesh Client ──
+// ── Compile & Mesh, by the Host (host.js) ──
 
 async function compileGsl(source) {
     if (!source || source.trim() === "") return;
@@ -402,24 +400,15 @@ async function compileGsl(source) {
     showNotification(false, "Compiling...");
 
     try {
-        const res = await fetch("/api/compile", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                id: reqId,
-                clientId,
-                source,
-            }),
-        });
-        const data = await res.json();
+        const { ok, status, data } = await host.compile({ id: reqId, clientId, source });
         if (reqId !== latestCompileID) return;
 
-        if (!res.ok || (data.errors && data.errors.length > 0)) {
+        if (!ok || (data.errors && data.errors.length > 0)) {
             // Structured diagnostics go as { errors } so the handler can place
             // each one in the editor; anything else falls back to plain text.
             const errs = data.errors && data.errors.length > 0
                 ? { errors: data.errors }
-                : [`Compile failed (HTTP ${res.status})`];
+                : [`Compile failed (HTTP ${status})`];
             eventManager.dispatchEvent("canvas/errors", errs);
             return;
         }
@@ -466,21 +455,17 @@ async function requestStlExport(detail, surfaceBbox, algo, format = "stl") {
     startErrorTimer("stl export");
 
     try {
-        const res = await fetch("/api/mesh", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                id: reqId,
-                clientId,
-                source,
-                subdivision,
-                bbox,
-                algo,
-                time: getAnimTime(),
-                format,
-                bodies,
-                colors,
-            }),
+        const res = await host.mesh({
+            id: reqId,
+            clientId,
+            source,
+            subdivision,
+            bbox,
+            algo,
+            time: getAnimTime(),
+            format,
+            bodies,
+            colors,
         });
 
         stopErrorTimer();
@@ -522,7 +507,7 @@ async function requestStlExport(detail, surfaceBbox, algo, format = "stl") {
     }
 }
 
-// ── Streaming NDJSON Progress Reader (/api/progress) ──
+// ── Progress Events from the Host ──
 
 function handleProgressEvent(ev) {
     if (!ev) return;
@@ -536,40 +521,7 @@ function handleProgressEvent(ev) {
     progressBar.startProgress(stage, label, 10000, ev.completed || 0, ev.total || 0);
 }
 
-async function connectProgressStream() {
-    while (true) {
-        try {
-            const res = await fetch(`/api/progress?clientId=${encodeURIComponent(clientId)}`);
-            if (!res.ok || !res.body) {
-                throw new Error(`HTTP ${res.status}`);
-            }
-            const reader = res.body.getReader();
-            const decoder = new TextDecoder();
-            let buffer = "";
-            while (true) {
-                const { value, done } = await reader.read();
-                if (done) break;
-                buffer += decoder.decode(value, { stream: true });
-                let newlineIdx;
-                while ((newlineIdx = buffer.indexOf("\n")) >= 0) {
-                    const line = buffer.slice(0, newlineIdx).trim();
-                    buffer = buffer.slice(newlineIdx + 1);
-                    if (!line) continue;
-                    try {
-                        handleProgressEvent(JSON.parse(line));
-                    } catch (parseErr) {
-                        console.warn("Invalid progress JSON line:", parseErr);
-                    }
-                }
-            }
-        } catch (err) {
-            // Reconnect after a short delay if the server restarts or closes the stream.
-            await new Promise((r) => setTimeout(r, 1500));
-        }
-    }
-}
-
-connectProgressStream();
+host.connectProgress(clientId, handleProgressEvent);
 
 // ── Surface Point & Point+Normal Picking Tools ──
 
@@ -735,6 +687,7 @@ function onEditorChange(content) {
 }
 
 initEditor(editorHost, initialContent.trim(), onEditorChange);
+setReadOnly(!host.editable);
 
 eventManager.addListener("tab/selected", (event) => {
     const nextTab = event.tab;
@@ -766,7 +719,9 @@ btnWrap.addEventListener("click", () => {
 
 // ── Help Panel, Slider Panel, Mesh Import Panel, Export Panel ──
 
-initHelpPanel({
+// The reference for writing GSL, importing meshes into the document and meshing it on the server
+// are for a host that compiles.
+if (host.editable) initHelpPanel({
     menuHost: document.getElementById("help-menu"),
     panelHost: document.getElementById("canvas-container"),
 });
@@ -791,7 +746,7 @@ document.getElementById("slider-panel-header").addEventListener("click", (e) => 
     }
 });
 
-initMeshImport({
+if (host.editable) initMeshImport({
     addMesh,
     removeMesh,
     getMeshEntries,
@@ -814,20 +769,12 @@ initMeshImport({
     // so bvhSdf / vdbSdf on its slot load it when the program compiles.
     onImported: async (index, file, bytes) => {
         if (!/\.stl$/i.test(file.name)) return;
-        const res = await fetch(`/api/asset?name=${encodeURIComponent(file.name)}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/octet-stream" },
-            body: bytes,
-        });
-        if (!res.ok) {
-            const data = await res.json().catch(() => ({}));
-            throw new Error(data.error || `upload failed (HTTP ${res.status})`);
-        }
+        await host.uploadAsset(file.name, bytes);
     },
     dropTarget: document.getElementById("canvas-container"),
 });
 
-initExportPanel({
+if (host.editable) initExportPanel({
     getMeshGeometry,
     getWorldExtent,
     getSource: getGslSourceForServer,
@@ -869,6 +816,7 @@ initBodyPanel({
     previewColor,
     selectShape: setSelectedShape,
     popupParent: document.getElementById("canvas-container"),
+    readOnly: !host.editable,
 });
 
 eventManager.addListener("shapes/detected", (event) => {
@@ -1405,11 +1353,7 @@ gridSpacingLabel.addEventListener("blur", () => {
 async function loadExample(name) {
     if (!name) return;
     try {
-        const res = await fetch(`/api/example?name=${encodeURIComponent(name)}`);
-        const data = await res.json();
-        if (!res.ok || data.error) {
-            throw new Error(data.error || `HTTP ${res.status}`);
-        }
+        const data = await host.loadExample(name);
         currentExampleName = data.name || name;
         exampleSelectEl.value = currentExampleName;
         selectTab("GSL");
@@ -1429,9 +1373,7 @@ async function loadExample(name) {
 
 async function refreshExampleList(selectedName = "") {
     try {
-        const res = await fetch("/api/examples");
-        const data = await res.json();
-        const examples = (data && Array.isArray(data.examples)) ? data.examples : [];
+        const examples = await host.listExamples();
         exampleSelectEl.innerHTML = "";
         for (const ex of examples) {
             const opt = document.createElement("option");
@@ -1444,7 +1386,7 @@ async function refreshExampleList(selectedName = "") {
         }
         return examples;
     } catch (err) {
-        console.error("Failed to fetch /api/examples:", err);
+        console.error("Failed to list the examples:", err);
         return [];
     }
 }

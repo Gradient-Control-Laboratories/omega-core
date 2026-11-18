@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `gsl export part.gsl [more.gsl ...] -o dir` writes the WebGPU viewer and each file's compiled field as a folder
+  of static web pages, which any web server can host: the page draws what `gsl viewer` draws, with its sliders,
+  gizmos, time, sections and render settings, and compiles nothing, so the source is shown read-only and Save As,
+  Imports, Export, Materials and Help are not offered. Several files share the one page and are picked from its
+  menu. The folder is about 12 MB, without the material catalog's previews.
+
+### Changed
+
+- The viewer reaches its server through one module, `examples/viewer/host.js`; `host-static.js` answers the same
+  calls from files beside the page, and takes its place in a page `gsl export` writes.
+
 ## [0.1.3] - 2026-11-17
 
 ### Added

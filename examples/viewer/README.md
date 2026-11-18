@@ -59,10 +59,28 @@ in your default WebGPU-capable browser (Chrome 113+, Edge 113+, or Safari 18+ on
     its Bodies-panel color) or STL (a zip of one STL per body when several are shown). Only the bodies
     the Bodies panel shows are exported.
 
+## Static Export
+
+`gsl export` writes the viewer as a folder that any static web server can host, with no `gsl serve`
+behind it:
+
+```bash
+./bin/gsl export examples/gears.gsl examples/can.gsl -o site
+```
+
+The folder holds this viewer's files and, under `models/`, each document's source with the field it
+compiles to (the bundle `/api/compile` answers). The page draws what the viewer draws, and its
+sliders, gizmos, time, sections and render settings work, since those only set shader uniforms. It
+compiles nothing, so the code panel is read-only and Save As, Imports, Export, Materials and Help
+are not offered. Several documents share the one page: the menu lists them, and `?file=can.gsl`
+on the address opens one. Browsers do not load the page from a `file://` address.
+
 ## Directory Layout
 
-- `index.html`, `main.js`, `style.css`: Top-level application shell, HTTP `/api/*` client, and panel
-  wiring.
+- `index.html`, `main.js`, `style.css`: Top-level application shell and panel wiring.
+- `host.js`: The viewer's host, the HTTP `/api/*` client: where documents come from, what compiles
+  them and where they are saved. `host-static.js` answers the same calls from files beside the page
+  and compiles nothing; `gsl export` saves it as `host.js` (see Static Export).
 - `render/`: Three.js/WebGPU raymarching viewport (`viewer.js`), TSL/WGSL render graph, shading,
   glass, displacement, path tracing, 3D gizmos, and audio worklet processor.
 - `panels/`: Inspector panel controllers and styles (`slider-panel`, `mesh-import`, `export-panel`,
