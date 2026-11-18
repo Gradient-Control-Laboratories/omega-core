@@ -48,4 +48,3 @@ return mesh(0, matrix.multiply(placement, fromLocal));
 		}
 	}
 }
-
