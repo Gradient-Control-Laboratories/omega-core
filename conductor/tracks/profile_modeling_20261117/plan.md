@@ -192,7 +192,15 @@ Taken next after Phase 2, before Phases 3 and 4 (the owner, 2026-11-18).
         its frame by `sweepFrame` and its box by the `swept` rule (`internal/assembler/property`);
         `profile_sweep.gsl` rewritten on it, its values and frame unchanged at sample points. Removing the
         box rule fails the box test. No golden moved
-- [ ] Task: Open and non-planar paths, with a stated Lipschitz bound
+- [x] Task: Proposal for open paths. Decided: `openProfileXY(points[, curvatures])`, signed, its ends
+      extended as tangent rays; flat caps by `sweepOpen` (Phase 7); finite 2D strokes later; non-planar
+      paths split off (spec section 4, C4 and C5)
+- [ ] Task: Open planar profiles (`eval/profile_open_test.go`)
+  - [ ] Write failing tests (Red Phase): exact against a reference distance to the extended chain, straight
+        and with arcs; the sign right of travel; a piece of a closed profile agrees with it near that piece;
+        `.u` along the chain and past its ends; surface cells; `certify`
+  - [ ] Implement (Green & Refactor Phase): `openProfileXY` in `stdlib/builtin/2d.gsl`, one pass of pools
+- [ ] Task: Non-planar paths, with a stated Lipschitz bound
   - [ ] Proposal: frame transport along the path, and the bound
   - [ ] Write failing tests (Red Phase): the field never exceeds the reference distance and stays within the
         bound; `certify` holds
@@ -203,9 +211,12 @@ Taken next after Phase 2, before Phases 3 and 4 (the owner, 2026-11-18).
 
 ## Phase 7: Caps for Sweeps (C5)
 
-- [ ] Task: Write failing tests (Red Phase): an open sweep's ends capped flat, exact where the path is,
-      frames across the rim
-- [ ] Task: Implement (Green & Refactor Phase)
+- [ ] Task: Write failing tests (Red Phase) (`eval/profile_sweep_open_test.go`): `sweepOpen`'s ends capped
+      flat, exact against the swept solid sampled on its own; surface cells; `certify`; the box; the frame
+      across the rim
+- [ ] Task: Implement (Green & Refactor Phase): `sweepOpen(section, points[, curvatures])` in
+      `stdlib/builtin/sweep.gsl`; frame and box by Go rules beside `sweep`'s
+- [ ] Task: An example; WGSL size; the GPU cost of reading the section three times; the owner's viewer check
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 8: Verification and Records

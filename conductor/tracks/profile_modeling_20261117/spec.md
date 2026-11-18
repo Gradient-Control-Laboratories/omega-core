@@ -112,7 +112,28 @@ Profiles first, then the operations on them. The numbering is the order.
    it sweeps round the outside and mitres the inside, as documented; fillet the path for a smooth sweep.
    Frame and box by Go rules beside revolve's: `.u` the path's `.u`, `.v` the section's `.u`, the box the
    path's grown by the section's reach across and its height.
-7. **C5. Caps for sweeps.** Cylinder-style caps where an open sweep ends.
+
+   Decided 2026-11-18 (open paths): an open profile is `openProfileXY(points)` or
+   `openProfileXY(points, curvatures)`, a chain of lines and arcs with one curvature per edge (one fewer than
+   the points). Its two end edges are extended along their end tangents as rays, so the chain splits the
+   plane and the closed profile's pools apply unchanged, the rays standing in for the closing edge and the
+   end corners: the exact signed distance to the extended chain, positive to the right of travel (where a
+   counterclockwise loop's outside is), so a piece of a closed path sweeps as the closed path does. That
+   holds while neither ray crosses the chain or the other ray; a chain that turns past half a turn, a C,
+   breaks the sign, which the doc comment states since GSL cannot refuse it. Its `.u` is the arc length to
+   the nearest point of the extended chain, negative along the start ray and past the chain's length along
+   the end ray. It has no box, the side it calls negative being unbounded, and `abs()` of it is a strip
+   running out along both rays, documented; finite 2D strokes come later. Non-planar paths are split off
+   into a proposal of their own, with the stated Lipschitz bound.
+7. **C5. Caps for sweeps.** Decided 2026-11-18: `sweepOpen(section, points)` and
+   `sweepOpen(section, points, curvatures)`, a name of its own because overloads are told apart by arity
+   alone and `sweep(section, path)` takes two. The path is data and not a field: the caps need the chain's
+   ends, and a body cannot read a field's `.u` (constraint 2). Flat caps, exact as the partial revolve's
+   are: the magnitude is the least of the wall's distance, |section(across, z)| gated off where the nearest
+   point of the extended chain is on a ray, and each cap's sqrt(h^2 + max(section(lateral, z), 0)^2) in its
+   own plane; the sign is negative where the wall's is and the nearest point is on the chain. The section is
+   read three times, as the partial revolve reads its profile, so its cost is timed on the GPU before it is
+   called done. Frame and box by Go rules beside `sweep`'s.
 
 ## 5. Constraints Met While Writing #45
 
