@@ -441,26 +441,30 @@ defined in [README.md](../../../README.md):
       mesh/STEP/warp imports and invokes no `mesh`, `bvhSdf`, or `vdbSdf` built-ins, avoiding two
       full-program `FoldMeshIndicesAt` clones plus an extra `eval.Fold` pass on analytical SDFs.
 
-- [ ] **M15. Fold a Builtin Call's Constant Arguments into Its Body (Profiles' Per-Pixel Geometry)**
-  - A call whose every argument is constant is inlined, and its constant work then folds, but
-    `internal/assembler/inline/inline.go` returns early for builtin-package functions unless they
-    remap a field argument (`remapsFieldArg`). So `profileXY(points, curvatures[, corners[, blend]])`,
-    called with constant lists, ships as a WGSL function over arrays, and every vertex's
-    p-independent geometry (chord directions, tangents, corner trims, a fillet's curvature, the
-    turn) is recomputed for every point at every march step. Found in the Profile Modeling track
-    ([profile_modeling_20261117](../profile_modeling_20261117/plan.md), Phase 2): the corners example
-    took 81–84 ms per 4M points on the GPU (`gpu-eval`) before its trims were computed once (61–63
-    ms), against 39–43 ms for the arcs example, and the viewer hung the GPU before the pools were
-    merged into one pass.
-  - Proposal to measure, not yet a decision: inline a builtin call whose every argument is a
-    constant (lists included), or specialize it on those arguments as `constspec` does for scalar
-    select conditions, so the reduce unrolls over constant data and its geometry folds.
-  - Measure before and after: WGSL size and `gpu-eval` time for every `examples/profile_*.gsl` and
-    the `internal/testdata/example` goldens. The risk is the one `hasPOrTime` guards against (inlining
-    the text package grows Text Glyphs from 120 KB to 86 MB of WGSL), so gate on a size budget, and
-    note that our fold leaves some constant work (e.g. `length()` of a constant vector) to the GPU
-    compiler.
-  - Moves WGSL goldens: regenerate only on the owner's go.
+- [x] **M15. Fold a Builtin Call's Constant Arguments into Its Body: Measured, Not to Build**
+  - The idea: `internal/assembler/inline/inline.go` returns early for builtin-package functions unless they
+    remap a field argument, so `profileXY` called with constant lists ships as a WGSL function over arrays,
+    and its per-vertex geometry is recomputed per point. Inlining such calls (letting a builtin with all
+    constant arguments through the ordinary rules) was prototyped and measured on 2026-11-18 in the Profile
+    Modeling track ([profile_modeling_20261117](../profile_modeling_20261117/plan.md), Phase 2).
+  - Measured on the GPU, 64 evaluations per point over 1M points, less a trivial field's time, on slider-free
+    copies of the examples:
+
+    | Field                         | As now | Builtins inlined | WGSL          |
+    | :---------------------------- | -----: | ---------------: | :------------ |
+    | `profile_arcs.gsl`            |  34 ms |           127 ms | 118 → 558 KB  |
+    | `profile_corners.gsl`         |  57 ms |            25 ms | 248 → 80 KB   |
+    | its left U (exact corners)    |   4 ms |           7.5 ms | 12 → 39 KB    |
+    | its blended U (without colour)| 13.5 ms |          9.5 ms | 60 → 14 KB    |
+
+  - Not to build as a rule: it is no reliable win (the arcs example is 3.7× slower, its code four times the
+    size), and it never reaches the documents people draw, whose points come from sliders, runtime values,
+    so their calls never have constant arguments. Our own fold also leaves constant work such as
+    `length()` of a constant vector to the GPU compiler.
+  - How to measure: `gpu-eval` with the parity harness's own `main` over many points is bound by its ~25 ms
+    floor (a trivial sphere costs as much as a profile part), so per-part numbers from it are noise. Keep
+    `assembleShader`'s prelude, replace `main` with a loop of 64 `sdShape` calls at shifted points summed
+    into one output per point, run 1M points with stride 1, and subtract a trivial field's time.
 
 ## 6. Small Targeted Cleanups
 

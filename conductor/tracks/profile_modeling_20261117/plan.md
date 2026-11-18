@@ -121,8 +121,10 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
     - The first build hung the GPU. The corner pools now make one pass for all three pools (each feature
       offering a vector, the nearest pool keeping a constant gate of its own), a fillet and a chamfer are
       one edge, and each trim is computed once. `gpu-eval`, 4M points: the example from 124 ms to 61–63
-      ms, against 39–43 ms for `profile_arcs.gsl`; the rest is backlog `M15` (profiles ship as WGSL
-      functions over arrays, so no per-vertex geometry folds).
+      ms, against 39–43 ms for `profile_arcs.gsl` (whole examples only: that harness's ~25 ms floor makes
+      its per-part numbers noise). Folding the per-vertex geometry by inlining was measured and is not to
+      build (backlog `M15`): the arcs example 3.7× slower, the corners example 2.3× faster, and slider-
+      driven profiles never qualify.
     - A blended corner's `.u` follows its two legs and changes piece where the field does (it had run
       along the chord, diagonally across half of each edge).
     - Found, worked around, not reduced: with a blend made from a slider, the blend form's two-name box
