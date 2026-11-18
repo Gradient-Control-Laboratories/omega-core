@@ -591,11 +591,23 @@ profileVertexSidedXY(at, turn) {
 // is a constant, and handed on as values.
 profileCornerPoolsXY(points, curvatures, corners) {
   count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
+  trims = profileCornerTrimsXY(points, curvatures, corners, 0);
   return reduce([nothing, nothing, nothing], (pools, start, index) {
     previousIndex = mod(index - 1 + count, count);
     nextIndex = mod(index + 1, count);
-    return min(pools, profileCornerStepXY(points[previousIndex], start, points[nextIndex], points[mod(index + 2, count)],
-      corners[index], corners[nextIndex], curvatures[previousIndex], curvatures[index], curvatures[nextIndex], 0));
+    return min(pools, profileCornerStepXY(points[previousIndex], start, points[nextIndex],
+      corners[index], trims[index], trims[nextIndex], curvatures[previousIndex], curvatures[index]));
+  }, points);
+}
+
+// Each corner's trim, once: the pools and .u read a corner's trim at its own
+// step and at the step before it.
+profileCornerTrimsXY(points, curvatures, corners, blending) {
+  count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
+  return map((point, index) {
+    previousIndex = mod(index - 1 + count, count);
+    return profileCornerTrimXY(points[previousIndex], point, points[mod(index + 1, count)], corners[index],
+      curvatures[previousIndex], curvatures[index], blending);
   }, points);
 }
 
@@ -604,14 +616,15 @@ profileCornerPoolsXY(points, curvatures, corners) {
 // apart so that a profile handed no blend carries none of its code.
 profileCornerBlendPoolsXY(points, curvatures, corners, blend) {
   count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
+  trims = profileCornerTrimsXY(points, curvatures, corners, 1);
   return reduce([nothing, nothing, nothing], (pools, start, index) {
     previousIndex = mod(index - 1 + count, count);
     nextIndex = mod(index + 1, count);
     previous = points[previousIndex];
     end = points[nextIndex];
-    step = profileCornerStepXY(previous, start, end, points[mod(index + 2, count)],
-      corners[index], corners[nextIndex], curvatures[previousIndex], curvatures[index], curvatures[nextIndex], 1);
-    piece = profileCornerBlendPieceXY(previous, start, end, corners[index], curvatures[previousIndex], curvatures[index], blend);
+    step = profileCornerStepXY(previous, start, end, corners[index], trims[index], trims[nextIndex],
+      curvatures[previousIndex], curvatures[index]);
+    piece = profileCornerBlendPieceXY(previous, start, end, corners[index], trims[index], blend);
     return min(pools, step, piece);
   }, points);
 }
@@ -626,9 +639,7 @@ profileCornerBlendPoolsXY(points, curvatures, corners, blend) {
 // gate on a constant combined with max, never by selecting between
 // distances; and a piece of no length (a corner not blended, an edge whose two
 // trims meet) is given a length of 1e-6 to stay finite and is then gated out.
-profileCornerStepXY(previous, start, end, after, corner, nextCorner, previousCurvature, curvature, nextCurvature, blending) {
-  trim = profileCornerTrimXY(previous, start, end, corner, previousCurvature, curvature, blending);
-  endTrim = profileCornerTrimXY(start, end, after, nextCorner, curvature, nextCurvature, blending);
+profileCornerStepXY(previous, start, end, corner, trim, endTrim, previousCurvature, curvature) {
   incomingAlong = (start - previous) / length(start - previous);
   outgoingAlong = (end - start) / length(end - start);
   trimStart = start - trim * incomingAlong;
@@ -674,8 +685,7 @@ profileCornerStepXY(previous, start, end, after, corner, nextCorner, previousCur
 // never less than the distance to the triangle of its two trims and the
 // corner, which holds the blend's curve whether it takes material (convex) or
 // adds it (reflex).
-profileCornerBlendPieceXY(previous, start, end, corner, previousCurvature, curvature, blend) {
-  trim = profileCornerTrimXY(previous, start, end, corner, previousCurvature, curvature, 1);
+profileCornerBlendPieceXY(previous, start, end, corner, trim, blend) {
   incomingAlong = (start - previous) / length(start - previous);
   outgoingAlong = (end - start) / length(end - start);
   trimStart = start - trim * incomingAlong;
@@ -696,8 +706,7 @@ profileCornerBlendPieceXY(previous, start, end, corner, previousCurvature, curva
 // The reach a cornerBlend() corner's piece offers its pools, as
 // profileCornerBlendPieceXY takes it, for the blended profile's .u, so that
 // .u changes piece where the field does. Nothing unless the corner is blended.
-profileCornerBlendReachXY(previous, start, end, corner, previousCurvature, curvature, blend) {
-  trim = profileCornerTrimXY(previous, start, end, corner, previousCurvature, curvature, 1);
+profileCornerBlendReachXY(previous, start, end, corner, trim, blend) {
   incomingAlong = (start - previous) / length(start - previous);
   outgoingAlong = (end - start) / length(end - start);
   trimStart = start - trim * incomingAlong;
@@ -739,18 +748,19 @@ profileTriangleDistanceXY(a, b, c) {
 // corner is blended here: see profileCornerBlendRunXY.
 profileCornerRunXY(points, curvatures, corners, blending) {
   count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
+  trims = profileCornerTrimsXY(points, curvatures, corners, blending);
   nearest = reduce([nothing, 0], (best, start, index) {
     previousIndex = mod(index - 1 + count, count);
     nextIndex = mod(index + 1, count);
-    run = profileCornerPieceRun(points[previousIndex], start, points[nextIndex], points[mod(index + 2, count)],
-      corners[index], corners[nextIndex], curvatures[previousIndex], curvatures[index], curvatures[nextIndex], blending, nothing);
+    run = profileCornerPieceRun(points[previousIndex], start, points[nextIndex], corners[index],
+      trims[index], trims[nextIndex], curvatures[index], nothing);
     return [min(best.x, run.x), 0];
   }, points).x;
   return reduce([0, 0], (best, start, index) {
     previousIndex = mod(index - 1 + count, count);
     nextIndex = mod(index + 1, count);
-    run = profileCornerPieceRun(points[previousIndex], start, points[nextIndex], points[mod(index + 2, count)],
-      corners[index], corners[nextIndex], curvatures[previousIndex], curvatures[index], curvatures[nextIndex], blending, nothing);
+    run = profileCornerPieceRun(points[previousIndex], start, points[nextIndex], corners[index],
+      trims[index], trims[nextIndex], curvatures[index], nothing);
     return [max(best.x, run.x <= nearest + 1e-4 ? best.y + run.y : 0), best.y + run.z];
   }, points).x;
 }
@@ -762,14 +772,14 @@ profileCornerRunXY(points, curvatures, corners, blending) {
 // Along the piece .u follows its two legs, trim to corner to trim.
 profileCornerBlendRunXY(points, curvatures, corners, blend) {
   count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
+  trims = profileCornerTrimsXY(points, curvatures, corners, 1);
   nearest = reduce([nothing, 0], (best, start, index) {
     previousIndex = mod(index - 1 + count, count);
     nextIndex = mod(index + 1, count);
     previous = points[previousIndex];
     end = points[nextIndex];
-    pieceReach = profileCornerBlendReachXY(previous, start, end, corners[index], curvatures[previousIndex], curvatures[index], blend);
-    run = profileCornerPieceRun(previous, start, end, points[mod(index + 2, count)],
-      corners[index], corners[nextIndex], curvatures[previousIndex], curvatures[index], curvatures[nextIndex], 1, pieceReach);
+    pieceReach = profileCornerBlendReachXY(previous, start, end, corners[index], trims[index], blend);
+    run = profileCornerPieceRun(previous, start, end, corners[index], trims[index], trims[nextIndex], curvatures[index], pieceReach);
     return [min(best.x, run.x), 0];
   }, points).x;
   return reduce([0, 0], (best, start, index) {
@@ -777,19 +787,17 @@ profileCornerBlendRunXY(points, curvatures, corners, blend) {
     nextIndex = mod(index + 1, count);
     previous = points[previousIndex];
     end = points[nextIndex];
-    pieceReach = profileCornerBlendReachXY(previous, start, end, corners[index], curvatures[previousIndex], curvatures[index], blend);
-    run = profileCornerPieceRun(previous, start, end, points[mod(index + 2, count)],
-      corners[index], corners[nextIndex], curvatures[previousIndex], curvatures[index], curvatures[nextIndex], 1, pieceReach);
+    pieceReach = profileCornerBlendReachXY(previous, start, end, corners[index], trims[index], blend);
+    run = profileCornerPieceRun(previous, start, end, corners[index], trims[index], trims[nextIndex], curvatures[index], pieceReach);
     return [max(best.x, run.x <= nearest + 1e-4 ? best.y + run.y : 0), best.y + run.z];
   }, points).x;
 }
 
 // Corner `index`'s blend and the edge after it, as one offer [reach, station,
-// length] to profileCornerRunXY. A cornerBlend() corner reaches as far as
-// `blendPieceReach` says (nothing where no blend is made).
-profileCornerPieceRun(previous, start, end, after, corner, nextCorner, previousCurvature, curvature, nextCurvature, blending, blendPieceReach) {
-  trim = profileCornerTrimXY(previous, start, end, corner, previousCurvature, curvature, blending);
-  endTrim = profileCornerTrimXY(start, end, after, nextCorner, curvature, nextCurvature, blending);
+// length] to profileCornerRunXY, from the corner's trim and the next one's. A
+// cornerBlend() corner reaches as far as `blendPieceReach` says (nothing
+// where no blend is made).
+profileCornerPieceRun(previous, start, end, corner, trim, endTrim, curvature, blendPieceReach) {
   incomingAlong = (start - previous) / length(start - previous);
   outgoingAlong = (end - start) / length(end - start);
   trimStart = start - trim * incomingAlong;
