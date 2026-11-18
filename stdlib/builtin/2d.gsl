@@ -517,10 +517,18 @@ profileXY(points, curvatures, corners, blend) {
   inside = profileCornerBlendPoolXY(points, curvatures, corners, blend, nothing, 0);
   nearest = profileCornerBlendPoolXY(points, curvatures, corners, blend, 0, 0);
   form = outside <= inside ? nearest : neg(nearest);
-  low, high = profileArcBoundsXY(points, curvatures);
-  form.box = [[low.x, low.y, neg(nothing)], [high.x, high.y, nothing]];
+  form.box = profileArcBoxXY(points, curvatures);
   form.u = profileCornerRunXY(points, curvatures, corners, 1);
   return form;
+}
+
+// profileArcBoundsXY's corners as a box, unbounded in Z. The blend form takes
+// its box from here rather than from a two-name assignment in its own body:
+// with a blend made from a slider, that assignment's names went undefined
+// when the box was read.
+profileArcBoxXY(points, curvatures) {
+  low, high = profileArcBoundsXY(points, curvatures);
+  return [[low.x, low.y, neg(nothing)], [high.x, high.y, nothing]];
 }
 
 // How far a corner's blend trims each of its edges back from the corner at
