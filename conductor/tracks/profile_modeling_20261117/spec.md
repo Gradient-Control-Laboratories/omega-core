@@ -77,17 +77,22 @@ Profiles first, then the operations on them. The numbering is the order.
 
 ## 5. Constraints Met While Writing #45
 
-Noted on 2026-11-11 and 2026-11-12; each is to be rechecked on `main` before planning, since S1 (postfix
-modifier chaining) and other front-end work have landed since.
+Noted on 2026-11-11 and 2026-11-12. Constraints 1–4 were rechecked on `main` (85a0152) on 2026-11-17 with
+probe documents compiled to WGSL and queried with `gsl eval`; the result follows each.
 
 1. A `.box` expression could not contain a `reduce` whose function captures anything or takes an index.
-2. `.u`, `.v` and `.box` could not be read inside a function body.
+   **Lifted:** in a document's function, a box holding a reduce that captures a parameter, and one that reads
+   its index and a neighbour (`points[mod(index + 1, count)]`), both compile and clip `bounds` where they
+   say. Not yet tried inside `stdlib/builtin`, where #45 met it; C7 confirms it there.
+2. `.u`, `.v` and `.box` could not be read inside a function body. **Holds:** each is refused with a message
+   to read it at the call site.
 3. A function's internal `remap` carries frame, colour and material only when its whole body is one
    `return remap(param, coord)` with `coord` in scalars of `p`, parameters and primitives
    (`internal/assembler/property/remap_wrappers.go`): no locals, no stdlib calls, no component of a call's
    result. `revolve` is written that way, which is why it cannot declare `.v` or a box itself. Backlog `M8`
-   (the coordinate as an explicit parameter upstream) would lift this.
-4. `m[i][j]` and `m[i].x` did not parse inside a list literal.
+   (the coordinate as an explicit parameter upstream) would lift this. **Holds:** the rule is unchanged.
+4. `m[i][j]` and `m[i].x` did not parse inside a list literal. **Lifted:** both parse and evaluate in a list
+   literal at the top level, in a function, and in a reduce's function.
 5. A `reduce` whose function reads its accumulator several times per step unrolls to code that grows
    exponentially with the list's length: 3.1 MB of WGSL for eight edges. Keep accumulator reads to one or
    two per step.
@@ -97,10 +102,13 @@ modifier chaining) and other front-end work have landed since.
 ## 6. Verification
 
 - **Exactness:** a brute-force Go reference (distance to a densely sampled boundary, sign by containment)
-  agrees with the field to about 1e-6 on an L, a star, a square with a hole and an arc profile, and on every
-  new edge or operation this track adds.
-- **Provability:** `certify` and `bounds` prove on surface cells, including rounded rims above an extrude's
-  caps.
+  agrees with the field to within 2e-5 mm (float32 evaluation; today's profiles sit under 9e-6) on an L, a
+  star, a square with a hole, an arc profile and a slot with smooth joints, and on every new edge or
+  operation this track adds.
+- **Provability:** interval bounds over cells straddling the surface contain the field and are no wider
+  than four cell diagonals, and `certify` proves the space just off the part empty, including above a
+  rounded rim. (`bounds` is not a proof unless the part declares a box: its grid fit can fall a cell or two
+  inside a thin feature.)
 - **Backends:** each example compiles to WGSL; its size is checked against a budget, and the viewer shows
   what the CPU evaluates.
 - **Tests:** in Go. A Python test of the wheel's API only where `AGENTS.md`'s owner allows one.

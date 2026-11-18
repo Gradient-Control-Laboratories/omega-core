@@ -10,7 +10,8 @@ same reference.
 Every phase that adds a function to the stdlib checks four things before it is done:
 
 1. **Exact** (or, where the spec allows a bound, within it): the field against the Go reference.
-2. **Provable:** `certify` and `bounds` prove on surface cells.
+2. **Provable:** interval bounds over surface cells are sound and tight, and `certify` proves clearance
+   (`eval/profile_provable_test.go`).
 3. **In WGSL:** the example compiles to WGSL, under its size budget, and renders in the viewer as the CPU
    evaluates it (the owner's check).
 4. **No silent golden moves:** a stdlib edit can move `testdata/example` goldens; any that move are shown
@@ -33,18 +34,30 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
 
 ## Phase 0: Ground Truth
 
-- [ ] Task: Gate: the development Rust library (`target/release`) is rebuilt on the owner's go; the Go
-      packages that evaluate fields (`eval`, `cmd/compile`) do not link against the current one.
-- [ ] Task: A brute-force reference for profiles, in Go
-  - [ ] Distance to a densely sampled boundary, sign by containment; one helper the later phases reuse
-  - [ ] Today's `profileXY(points)` and `profileXY(points, curvatures)` agree with it to about 1e-6: an L, a
-        star, a square with a hole (`max` by hand), the arc L of `profile_cylinder.gsl`, and a loop with a
-        collinear point and a tangent-continuous joint
-  - [ ] `extrude` and `revolve` of those profiles agree with the reference composed in 3D
-- [ ] Task: Provability and size, recorded
-  - [ ] `certify` and `bounds` prove on surface cells of each profile and of an extrude with a rounded rim
-  - [ ] The WGSL size of each `examples/profile_*.gsl`, recorded as the budget later phases compare against
-- [ ] Task: Recheck spec section 5's constraints 1–4 on `main` and record which still hold in the spec
+- [x] Task: Gate: the development Rust library (`target/release`) matches `main`'s Rust; the Go packages
+      that evaluate fields (`eval`, `cmd/compile`) did not link against the one there. Met on the owner's go
+      by copying a build whose Rust is identical to 6f5462b, rather than rebuilding.
+- [x] Task: A brute-force reference for profiles, in Go (`eval/profile_reference_test.go`)
+  - [x] Distance to a densely sampled boundary, sign by containment; one helper the later phases reuse
+        (`refLoop`, `newRefProfile`, `profileCases`)
+  - [x] Today's `profileXY(points)` and `profileXY(points, curvatures)` agree with it to within 2e-5 mm
+        (worst 3.6e-6): an L, a star, a square with a hole (`max` by hand), the arc L of
+        `profile_cylinder.gsl`, and a slot with a collinear point and tangent-continuous joints. Restoring
+        #45's `turn >= 0` corner sign fails the slot (+5 for -5 on the collinear point's normal).
+  - [x] `extrude` and `revolve` of those profiles agree with the reference composed in 3D (worst 3.5e-6
+        and 8.6e-6)
+- [x] Task: Provability and size, recorded (`eval/profile_provable_test.go`)
+  - [x] Interval bounds over 0.5 mm cells on each profile's boundary, and on an extrude's rims and cap,
+        sharp and with `intersectRound(2)`, contain the field and are at most 4 cell diagonals wide (widest
+        2.16). `certify` proves each extrude clear 0.25 mm above its cap and beside it, both rim kinds.
+        Restoring #45's gated magnitude (`outside <= inside ? outside : neg(inside)`) fails every profile
+        (17 to 78 diagonals). `bounds` is not tested: its grid fit misses a star's tips by up to two cells
+        whatever the profile.
+  - [x] The WGSL size of each `examples/profile_*.gsl` on 85a0152, the budget later phases compare against:
+        `profile_star` 12,337 bytes, `profile_sweep` 113,847, `profile_arcs` 119,522, `profile_cylinder`
+        190,178
+- [x] Task: Recheck spec section 5's constraints 1–4 on `main` and record which still hold in the spec:
+      1 and 4 are lifted, 2 and 3 hold
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 1: Several Loops in One Profile (C1)
