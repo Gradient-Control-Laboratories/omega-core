@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   failed with "undefined identifier" wherever the function's body was inlined into its caller: any document
   function called with constants, or a library function handed a blend made from a slider. The shape's
   assignment now moves after the names its box reads; a shape read in between is refused with a message.
+- A function that passes its function parameter on to another only inside a fold's callback
+  (`f(blend) { return reduce(..., (best, q) { ... inner(q, blend) ... }) }`) failed to assemble with
+  "undefined identifier" once called with a closure: the closure transform pruned the template it called but
+  kept it, not seeing that its callback made it a template too.
 
 ## [0.1.3] - 2026-11-17
 
