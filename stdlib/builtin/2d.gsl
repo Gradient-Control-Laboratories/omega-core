@@ -498,16 +498,38 @@ profileXY(points, curvatures, corners) {
   form = outside <= inside ? nearest : neg(nearest);
   low, high = profileArcBoundsXY(points, curvatures);
   form.box = [[low.x, low.y, neg(nothing)], [high.x, high.y, nothing]];
-  form.u = profileCornerRunXY(points, curvatures, corners);
+  form.u = profileCornerRunXY(points, curvatures, corners, 0);
+  return form;
+}
+
+/// profileXY(points, curvatures, corners) with `blend`, any edge blend from
+/// the stdlib that takes a list of fields (intersectRound(radius),
+/// intersectChamfer(setback), intersectLp(width, exponent), ...), made at
+/// every cornerBlend() corner between two straight edges. There the corner's
+/// two edges are trimmed back to half the shorter one, and between the trims
+/// the profile is the blend of the two edges' lines: the intersection blend at
+/// a convex corner, its dual at a reflex one. That part is the blend's field,
+/// not an exact distance; the rest of the profile is exact. The blend must fit
+/// within half of each edge at the corner, or it is cut off where the trims
+/// end. Along a blended corner .u runs straight from trim to trim.
+profileXY(points, curvatures, corners, blend) {
+  outside = profileCornerBlendPoolXY(points, curvatures, corners, blend, 0, nothing);
+  inside = profileCornerBlendPoolXY(points, curvatures, corners, blend, nothing, 0);
+  nearest = profileCornerBlendPoolXY(points, curvatures, corners, blend, 0, 0);
+  form = outside <= inside ? nearest : neg(nearest);
+  low, high = profileArcBoundsXY(points, curvatures);
+  form.box = [[low.x, low.y, neg(nothing)], [high.x, high.y, nothing]];
+  form.u = profileCornerRunXY(points, curvatures, corners, 1);
   return form;
 }
 
 // How far a corner's blend trims each of its edges back from the corner at
 // `at`, between the edge from `previous` and the edge to `next`: a fillet's
-// radius times the tangent of half the turn, a chamfer's setback, none for a
-// sharp corner, a blend, or a corner next to an arc. Never more than half of
+// radius times the tangent of half the turn, a chamfer's setback, half the
+// shorter edge for a blend while `blending` (1, or 0 to leave it sharp), none
+// for a sharp corner or a corner next to an arc. Never more than half of
 // either edge.
-profileCornerTrimXY(previous, at, next, corner, incomingCurvature, outgoingCurvature) {
+profileCornerTrimXY(previous, at, next, corner, incomingCurvature, outgoingCurvature, blending) {
   incoming = at - previous;
   outgoing = next - at;
   incomingLength = length(incoming);
@@ -515,7 +537,7 @@ profileCornerTrimXY(previous, at, next, corner, incomingCurvature, outgoingCurva
   sine = (incoming.x * outgoing.y - incoming.y * outgoing.x) / (incomingLength * outgoingLength);
   cosine = dot(incoming, outgoing) / (incomingLength * outgoingLength);
   halfTangent = abs(sine) / max(1 + cosine, 1e-30);
-  asked = corner.x == 1 ? corner.y * halfTangent : (corner.x == 2 ? corner.y : 0);
+  asked = corner.x == 1 ? corner.y * halfTangent : (corner.x == 2 ? corner.y : (corner.x == 3 ? blending * 1e30 : 0));
   straight = abs(incomingCurvature) + abs(outgoingCurvature) <= 0;
   return straight ? min(asked, min(incomingLength, outgoingLength) / 2) : 0;
 }
@@ -549,92 +571,162 @@ profileVertexFeatureXY(at, turn, whenOutside, whenInside) {
 }
 
 // profileArcPoolXY with corners blended. Each step offers the features of
-// corner `index` and of the edge leaving it. A sharp corner is its point, as
-// there. A fillet is an arc edge between its two trim points, tangent to the
-// edges at both, so neither joint turns. A chamfer is a line edge between
-// them and two points turning half the corner's turn each. The edge runs from
-// this corner's trim to the next corner's. Each blend is chosen by a gate on
-// a constant combined with max, never by selecting between distances; and a
-// piece of no length (a corner not blended, an edge whose two trims meet) is
-// given a length of 1e-6 to stay finite and is then gated out.
+// corner `index` and of the edge leaving it (profileCornerStepXY).
 profileCornerPoolXY(points, curvatures, corners, whenOutside, whenInside) {
+  count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
+  return reduce([nothing, 0], (nearest, start, index) {
+    previousIndex = mod(index - 1 + count, count);
+    nextIndex = mod(index + 1, count);
+    step = profileCornerStepXY(points[previousIndex], start, points[nextIndex], points[mod(index + 2, count)],
+      corners[index], corners[nextIndex], curvatures[previousIndex], curvatures[index], curvatures[nextIndex],
+      0, whenOutside, whenInside);
+    return [min(nearest.x, step), 0];
+  }, points).x;
+}
+
+// profileCornerPoolXY with `blend` made at its cornerBlend() corners: each
+// step also offers the corner's blend piece (profileCornerBlendPieceXY). Kept
+// apart so that a profile handed no blend carries none of its code.
+profileCornerBlendPoolXY(points, curvatures, corners, blend, whenOutside, whenInside) {
   count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
   return reduce([nothing, 0], (nearest, start, index) {
     previousIndex = mod(index - 1 + count, count);
     nextIndex = mod(index + 1, count);
     previous = points[previousIndex];
     end = points[nextIndex];
-    after = points[mod(index + 2, count)];
-    corner = corners[index];
-    curvature = curvatures[index];
-
-    trim = profileCornerTrimXY(previous, start, end, corner, curvatures[previousIndex], curvature);
-    endTrim = profileCornerTrimXY(start, end, after, corners[nextIndex], curvature, curvatures[nextIndex]);
-    incomingAlong = (start - previous) / length(start - previous);
-    outgoingAlong = (end - start) / length(end - start);
-    trimStart = start - trim * incomingAlong;
-    trimEnd = start + trim * outgoingAlong;
-    blended = trim > 0;
-    blendEnd = blended ? trimEnd : trimStart + [1e-6, 0];
-
-    // The sharp corner's turn, between the tangents meeting there.
-    chord = end - start;
-    chordLength = length(chord);
-    sine = curvature * chordLength / 2;
-    cosine = sqrt(max(1 - sine * sine, 0));
-    startTangent = [outgoingAlong.x * cosine + outgoingAlong.y * sine, outgoingAlong.y * cosine - outgoingAlong.x * sine];
-    previousChord = start - previous;
-    previousLength = length(previousChord);
-    previousSine = curvatures[previousIndex] * previousLength / 2;
-    previousCosine = sqrt(max(1 - previousSine * previousSine, 0));
-    incomingTangent = [incomingAlong.x * previousCosine - incomingAlong.y * previousSine, incomingAlong.y * previousCosine + incomingAlong.x * previousSine];
-    turn = incomingTangent.x * startTangent.y - incomingTangent.y * startTangent.x;
-
-    sharpCorner = max(profileVertexFeatureXY(start, turn, whenOutside, whenInside), blended ? nothing : 0);
-    halfTangent = abs(turn) / max(1 + dot(incomingAlong, outgoingAlong), 1e-30);
-    filletCurvature = (turn >= 0 ? 1 : neg(1)) * halfTangent / max(trim, 1e-6);
-    fillet = max(profileEdgeFeatureXY(trimStart, blendEnd, filletCurvature, whenOutside, whenInside),
-                 blended && corner.x == 1 ? 0 : nothing);
-    chamferLine = profileEdgeFeatureXY(trimStart, blendEnd, 0, whenOutside, whenInside);
-    chamferPoints = min(profileVertexFeatureXY(trimStart, turn, whenOutside, whenInside),
-                        profileVertexFeatureXY(blendEnd, turn, whenOutside, whenInside));
-    chamfer = max(min(chamferLine, chamferPoints), blended && corner.x == 2 ? 0 : nothing);
-
-    edgeStart = start + trim * outgoingAlong;
-    edgeEnd = end - endTrim * outgoingAlong;
-    edgeHasLength = length(edgeEnd - edgeStart) > 1e-6;
-    edge = max(profileEdgeFeatureXY(edgeStart, edgeHasLength ? edgeEnd : edgeStart + [1e-6, 0], curvature, whenOutside, whenInside),
-               edgeHasLength ? 0 : nothing);
-    return [min(nearest.x, sharpCorner, fillet, chamfer, edge), 0];
+    step = profileCornerStepXY(previous, start, end, points[mod(index + 2, count)],
+      corners[index], corners[nextIndex], curvatures[previousIndex], curvatures[index], curvatures[nextIndex],
+      1, whenOutside, whenInside);
+    piece = profileCornerBlendPieceXY(previous, start, end, corners[index], curvatures[previousIndex], curvatures[index],
+      blend, whenOutside, whenInside);
+    return [min(nearest.x, step, piece), 0];
   }, points).x;
+}
+
+// Corner `index`'s features and the edge leaving it, the least of them. A
+// sharp corner is its point, as in profileArcPoolXY. A fillet is an arc edge
+// between its two trim points, tangent to the edges at both, so neither joint
+// turns. A chamfer is a line edge between them and two points turning half
+// the corner's turn each. A blended corner (while `blending`) is trimmed here
+// and its piece offered by profileCornerBlendPieceXY. The edge runs from this
+// corner's trim to the next corner's. Each kind is chosen by a gate on a
+// constant combined with max, never by selecting between distances; and a
+// piece of no length (a corner not blended, an edge whose two trims meet) is
+// given a length of 1e-6 to stay finite and is then gated out.
+profileCornerStepXY(previous, start, end, after, corner, nextCorner, previousCurvature, curvature, nextCurvature, blending, whenOutside, whenInside) {
+  trim = profileCornerTrimXY(previous, start, end, corner, previousCurvature, curvature, blending);
+  endTrim = profileCornerTrimXY(start, end, after, nextCorner, curvature, nextCurvature, blending);
+  incomingAlong = (start - previous) / length(start - previous);
+  outgoingAlong = (end - start) / length(end - start);
+  trimStart = start - trim * incomingAlong;
+  blended = trim > 0;
+  blendEnd = blended ? start + trim * outgoingAlong : trimStart + [1e-6, 0];
+
+  // The sharp corner's turn, between the tangents meeting there.
+  chord = end - start;
+  chordLength = length(chord);
+  sine = curvature * chordLength / 2;
+  cosine = sqrt(max(1 - sine * sine, 0));
+  startTangent = [outgoingAlong.x * cosine + outgoingAlong.y * sine, outgoingAlong.y * cosine - outgoingAlong.x * sine];
+  previousChord = start - previous;
+  previousLength = length(previousChord);
+  previousSine = previousCurvature * previousLength / 2;
+  previousCosine = sqrt(max(1 - previousSine * previousSine, 0));
+  incomingTangent = [incomingAlong.x * previousCosine - incomingAlong.y * previousSine, incomingAlong.y * previousCosine + incomingAlong.x * previousSine];
+  turn = incomingTangent.x * startTangent.y - incomingTangent.y * startTangent.x;
+
+  sharpCorner = max(profileVertexFeatureXY(start, turn, whenOutside, whenInside), blended ? nothing : 0);
+  halfTangent = abs(turn) / max(1 + dot(incomingAlong, outgoingAlong), 1e-30);
+  filletCurvature = (turn >= 0 ? 1 : neg(1)) * halfTangent / max(trim, 1e-6);
+  fillet = max(profileEdgeFeatureXY(trimStart, blendEnd, filletCurvature, whenOutside, whenInside),
+               blended && corner.x == 1 ? 0 : nothing);
+  chamferLine = profileEdgeFeatureXY(trimStart, blendEnd, 0, whenOutside, whenInside);
+  chamferPoints = min(profileVertexFeatureXY(trimStart, turn, whenOutside, whenInside),
+                      profileVertexFeatureXY(blendEnd, turn, whenOutside, whenInside));
+  chamfer = max(min(chamferLine, chamferPoints), blended && corner.x == 2 ? 0 : nothing);
+
+  edgeStart = start + trim * outgoingAlong;
+  edgeEnd = end - endTrim * outgoingAlong;
+  edgeHasLength = length(edgeEnd - edgeStart) > 1e-6;
+  edge = max(profileEdgeFeatureXY(edgeStart, edgeHasLength ? edgeEnd : edgeStart + [1e-6, 0], curvature, whenOutside, whenInside),
+             edgeHasLength ? 0 : nothing);
+  return min(sharpCorner, fillet, chamfer, edge);
+}
+
+// Corner `index`'s blend piece, nothing unless it is a cornerBlend() corner
+// between straight edges: `blend` of the two edges' lines between its trims,
+// the dual at a reflex corner, held off past the trims as an edge is. Far
+// off, two lines' blend claims less than the corner's distance (the deeper or
+// the shallower line, not the corner), and another part of the loop lying in
+// the corner's wedge would then lose to it, sign and all. So the piece is
+// never less than the distance to the triangle of its two trims and the
+// corner, which holds the blend's curve whether it takes material (convex) or
+// adds it (reflex).
+profileCornerBlendPieceXY(previous, start, end, corner, previousCurvature, curvature, blend, whenOutside, whenInside) {
+  trim = profileCornerTrimXY(previous, start, end, corner, previousCurvature, curvature, 1);
+  incomingAlong = (start - previous) / length(start - previous);
+  outgoingAlong = (end - start) / length(end - start);
+  trimStart = start - trim * incomingAlong;
+  blended = trim > 0;
+  blendEnd = blended ? start + trim * outgoingAlong : trimStart + [1e-6, 0];
+  turn = incomingAlong.x * outgoingAlong.y - incomingAlong.y * outgoingAlong.x;
+
+  offset = p.xy - start;
+  lineIn = offset.x * incomingAlong.y - offset.y * incomingAlong.x;
+  lineOut = offset.x * outgoingAlong.y - offset.y * outgoingAlong.x;
+  blendValue = turn >= 0 ? blend([lineIn, lineOut]) : neg(blend([neg(lineIn), neg(lineOut)]));
+  overshoot = max(0, neg(dot(p.xy - trimStart, incomingAlong)), dot(p.xy - blendEnd, outgoingAlong));
+  piece = max(max(abs(blendValue), profileTriangleDistanceXY(trimStart, start, blendEnd)) + 2 * overshoot,
+              blendValue >= 0 ? whenOutside : whenInside);
+  return max(piece, blended && corner.x == 3 ? 0 : nothing);
+}
+
+// The distance from p to the triangle a, b, c in the XY plane: 0 inside,
+// else the distance to the nearest of its sides. Inside is a gate on a
+// constant combined with min.
+profileTriangleDistanceXY(a, b, c) {
+  ab = b - a;
+  bc = c - b;
+  ca = a - c;
+  fromA = p.xy - a;
+  fromB = p.xy - b;
+  fromC = p.xy - c;
+  toAB = length(fromA - clamp(dot(fromA, ab) / max(dot(ab, ab), 1e-30), 0, 1) * ab);
+  toBC = length(fromB - clamp(dot(fromB, bc) / max(dot(bc, bc), 1e-30), 0, 1) * bc);
+  toCA = length(fromC - clamp(dot(fromC, ca) / max(dot(ca, ca), 1e-30), 0, 1) * ca);
+  winding = ab.x * bc.y - ab.y * bc.x >= 0 ? 1 : neg(1);
+  inside = min(winding * (ab.x * fromA.y - ab.y * fromA.x),
+               winding * (bc.x * fromB.y - bc.y * fromB.x),
+               winding * (ca.x * fromC.y - ca.y * fromC.x)) >= 0;
+  return min(toAB, toBC, toCA, inside ? 0 : nothing);
 }
 
 // A blended profile's u, as profileArcRunXY, with each step offering corner
 // `index`'s blend and the edge leaving it as one piece: its reach the lesser
 // of theirs, its station along whichever is nearer, its length the sum.
-profileCornerRunXY(points, curvatures, corners) {
+profileCornerRunXY(points, curvatures, corners, blending) {
   count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
   nearest = reduce([nothing, 0], (best, start, index) {
-    run = profileCornerPieceRun(points, curvatures, corners, count, start, index);
+    previousIndex = mod(index - 1 + count, count);
+    nextIndex = mod(index + 1, count);
+    run = profileCornerPieceRun(points[previousIndex], start, points[nextIndex], points[mod(index + 2, count)],
+      corners[index], corners[nextIndex], curvatures[previousIndex], curvatures[index], curvatures[nextIndex], blending);
     return [min(best.x, run.x), 0];
   }, points).x;
   return reduce([0, 0], (best, start, index) {
-    run = profileCornerPieceRun(points, curvatures, corners, count, start, index);
+    previousIndex = mod(index - 1 + count, count);
+    nextIndex = mod(index + 1, count);
+    run = profileCornerPieceRun(points[previousIndex], start, points[nextIndex], points[mod(index + 2, count)],
+      corners[index], corners[nextIndex], curvatures[previousIndex], curvatures[index], curvatures[nextIndex], blending);
     return [max(best.x, run.x <= nearest + 1e-4 ? best.y + run.y : 0), best.y + run.z];
   }, points).x;
 }
 
 // Corner `index`'s blend and the edge after it, as one offer [reach, station,
 // length] to profileCornerRunXY.
-profileCornerPieceRun(points, curvatures, corners, count, start, index) {
-  previousIndex = mod(index - 1 + count, count);
-  nextIndex = mod(index + 1, count);
-  previous = points[previousIndex];
-  end = points[nextIndex];
-  after = points[mod(index + 2, count)];
-  curvature = curvatures[index];
-  trim = profileCornerTrimXY(previous, start, end, corners[index], curvatures[previousIndex], curvature);
-  endTrim = profileCornerTrimXY(start, end, after, corners[nextIndex], curvature, curvatures[nextIndex]);
+profileCornerPieceRun(previous, start, end, after, corner, nextCorner, previousCurvature, curvature, nextCurvature, blending) {
+  trim = profileCornerTrimXY(previous, start, end, corner, previousCurvature, curvature, blending);
+  endTrim = profileCornerTrimXY(start, end, after, nextCorner, curvature, nextCurvature, blending);
   incomingAlong = (start - previous) / length(start - previous);
   outgoingAlong = (end - start) / length(end - start);
   trimStart = start - trim * incomingAlong;
@@ -642,7 +734,7 @@ profileCornerPieceRun(points, curvatures, corners, count, start, index) {
   blendEnd = blended ? start + trim * outgoingAlong : trimStart + [1e-6, 0];
   turn = incomingAlong.x * outgoingAlong.y - incomingAlong.y * outgoingAlong.x;
   halfTangent = abs(turn) / max(1 + dot(incomingAlong, outgoingAlong), 1e-30);
-  blendCurvature = corners[index].x == 1 ? (turn >= 0 ? 1 : neg(1)) * halfTangent / max(trim, 1e-6) : 0;
+  blendCurvature = corner.x == 1 ? (turn >= 0 ? 1 : neg(1)) * halfTangent / max(trim, 1e-6) : 0;
   blendRun = profileArcEdgeRun(trimStart, blendEnd, blendCurvature);
   blendReach = max(blendRun.x, blended ? 0 : nothing);
   blendLength = blended ? blendRun.z : 0;
