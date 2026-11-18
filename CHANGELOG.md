@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Surfaced non-blocking `SeverityWarning` diagnostics on `compile.Response` (`warnings`)
+  across `gsl serve`'s `/api/compile` and `gsl compile -t field`.
+  `gsl viewer` (`examples/viewer/`) now displays inline amber warning underlines, gutter
+  highlights, and a code-panel warning banner when the code editor panel is open.
 - Added `Diagnostics []program.Diagnostic` to `parser.Result` (preserved by `parser.CachingParser`)
   and propagated parser diagnostics into `assembler.Result.Diagnostics`.
 - Emitted a `program.SeverityWarning` diagnostic in `parser/internal/parser2` when legacy

@@ -311,6 +311,33 @@ body.resizing #stl-canvas-container {
     pointer-events: none;
 }
 
+#warning-wrapper {
+    margin: 0 10px 10px 10px;
+    max-height: 112px;
+    display: flex;
+    background: #18140a;
+    border: 1px solid #4d3d16;
+    border-radius: 10px;
+    box-sizing: border-box;
+}
+
+#warning-wrapper.hidden {
+    display: none;
+}
+
+#warning-output {
+    flex-grow: 1;
+    margin: 0;
+    padding: 8px 10px;
+    color: #e2b93d;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-y: auto;
+}
+
 #error-wrapper {
     height: 140px;
     display: flex;
@@ -488,6 +515,11 @@ body.resizing #stl-canvas-container {
 .btn-switch.has-error {
     color: #f48771;
     box-shadow: inset 0 0 0 1px #f48771;
+}
+
+.btn-switch.has-warning {
+    color: #e2b93d;
+    box-shadow: inset 0 0 0 1px #d7a63c;
 }
 
 #canvas-controls {

@@ -1,7 +1,7 @@
 // Package compile compiles a GSL document into the field bundle a viewer
 // draws: the WGSL shader and what goes with it (shapes, parts, sliders, UI
-// controls, the @scene, placed meshes, imported meshes' preview grids, audio),
-// or the document's errors, each with its line and column.
+// controls, the @scene, placed meshes, imported meshes' preview grids, audio,
+// warnings), or the document's errors, each with its line and column.
 //
 // It is the one implementation behind gsl serve's POST /api/compile
 // (cmd/serve/internal/server) and gsl compile -t field, so a viewer that reads
@@ -59,6 +59,7 @@ type Response struct {
 	Scene          *program.Scene        `json:"scene,omitempty"`
 	MeshDecls      any                   `json:"meshDecls,omitempty"`
 	Audio          *Audio                `json:"audio,omitempty"`
+	Warnings       []program.Error       `json:"warnings,omitempty"`
 	Errors         []program.Error       `json:"errors,omitempty"`
 
 	// MeshSdfBindings carries the preview grid the shader samples for each of
@@ -95,6 +96,7 @@ func Process(req Request, sourcePaths []string, progressFn ProgressFunc) *Respon
 	resp.Sliders = asmRes.Sliders
 	resp.UIControls = asmRes.UIControls
 	resp.Scene = asmRes.Scene
+	resp.Warnings = collectWarnings(req.Source, asmRes.Program, asmRes.Diagnostics)
 
 	if len(asmRes.Program.Returns()) > 0 {
 		// With placed meshes, the shader draws only the program's SDF parts.
@@ -268,4 +270,64 @@ func collectErrors(src string, err error, out *[]program.Error) {
 		Length:  1,
 		Message: err.Error(),
 	})
+}
+
+// collectWarnings converts non-blocking warning diagnostics into structured
+// editor spans without allocating on clean compiles.
+// Invariant: prog and prog.Primary are non-nil from assembler.Assemble.
+func collectWarnings(src string, prog *program.Program, diags []program.Diagnostic) []program.Error {
+	if len(diags) == 0 {
+		return nil
+	}
+	primaryPath := prog.Primary.Path
+	var out []program.Error
+	for _, d := range diags {
+		if d.Severity != program.SeverityWarning {
+			continue
+		}
+		line := d.Line
+		if line == "" && d.LineNum > 0 {
+			diagSrc := src
+			if d.PackagePath != primaryPath {
+				diagSrc = dependencySource(prog, d.PackagePath, d.FilePath)
+			}
+			if diagSrc != "" {
+				line = build.LineFromSource(diagSrc, d.LineNum)
+			}
+		}
+		length := d.Length
+		if length <= 1 && line != "" && d.Column >= 1 {
+			length = tokenWidth(line, d.Column)
+		} else if length < 1 && d.LineNum > 0 {
+			length = 1
+		}
+		out = append(out, program.Error{
+			PackagePath: d.PackagePath,
+			FilePath:    d.FilePath,
+			Line:        line,
+			LineNum:     d.LineNum,
+			Column:      d.Column,
+			Length:      length,
+			Message:     d.Message,
+		})
+	}
+	return out
+}
+
+// Invariant: every collected dependency package has at least one parsed PackageFile.
+func dependencySource(prog *program.Program, pkgPath, filePath string) string {
+	for _, dep := range prog.Dependencies {
+		if dep.Path != pkgPath {
+			continue
+		}
+		if filePath != "" {
+			for _, f := range dep.Files {
+				if f.Path == filePath {
+					return f.Source
+				}
+			}
+		}
+		return dep.Files[0].Source
+	}
+	return ""
 }
