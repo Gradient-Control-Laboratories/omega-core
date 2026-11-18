@@ -107,8 +107,8 @@ probe documents compiled to WGSL and queried with `gsl eval`; the result follows
   operation this track adds.
 - **Provability:** interval bounds over cells straddling the surface contain the field and are no wider
   than four cell diagonals, and `certify` proves the space just off the part empty, including above a
-  rounded rim. (`bounds` is not a proof unless the part declares a box: its grid fit can fall a cell or two
-  inside a thin feature.)
+  rounded rim, and `bounds` (`Evaluator.Enclose`) proves the part's box. Whether `Enclose` proves can hang on
+  where its cuts land: Phase 0's star proves over one region and runs out of budget over another.
 - **Backends:** each example compiles to WGSL; its size is checked against a budget, and the viewer shows
   what the CPU evaluates.
 - **Tests:** in Go. A Python test of the wheel's API only where `AGENTS.md`'s owner allows one.

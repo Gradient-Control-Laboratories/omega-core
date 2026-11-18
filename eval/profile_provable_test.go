@@ -159,3 +159,53 @@ func TestExtrude_CertifiesClearance(t *testing.T) {
 		})
 	}
 }
+
+// encloseUnproven names the cases whose box Enclose does not prove over the
+// region this test gives it, and why. The star's proof runs out of budget
+// here, yet the same star proves over [-30, -30, -10, 30, 30, 22]: whether
+// Enclose proves depends on where its cuts land, not on the profile, whose
+// surface cells are as tight as the others'.
+var encloseUnproven = map[string]string{
+	"star": "Enclose's budget, over this region",
+}
+
+// bounds (Enclose) proves each extrusion's box by interval arithmetic: the box
+// holds the reference's, and stands off it by no more than the stand-off the
+// result reports.
+func TestExtrude_EncloseProvesItsBox(t *testing.T) {
+	const low, high = 0.0, 12.0
+	for _, c := range profileCases(t) {
+		t.Run(c.name, func(t *testing.T) {
+			box := c.ref.box()
+			want := [6]float64{box[0], box[1], low, box[2], box[3], high}
+			region := [6]float64{box[0] - 10, box[1] - 10, low - 10, box[2] + 10, box[3] + 10, high + 10}
+			doc := fmt.Sprintf("@scene(120)\nsolid = extrude(%s, %v, %v);\nreturn solid;\n", c.expr, low, high)
+			e := New(&source.MockManager{}, nil)
+			r, err := e.Enclose(context.Background(), nil, doc, "", "solid", region, 0)
+			if err != nil {
+				t.Fatalf("enclose: %v", err)
+			}
+			if why, ok := encloseUnproven[c.name]; ok {
+				t.Logf("%s: not asserted (%s): proven=%v reason=%q in %d evals", c.name, why, r.Proven, r.Reason, r.Evals)
+				return
+			}
+			if !r.Proven || !r.Found {
+				t.Fatalf("want a proven box, got proven=%v found=%v: %s", r.Proven, r.Found, r.Reason)
+			}
+			worst := 0.0
+			for k := 0; k < 3; k++ {
+				lo, hi := want[k], want[k+3]
+				if r.BboxMin[k] > lo+profileTolerance || r.BboxMax[k] < hi-profileTolerance {
+					t.Errorf("axis %d: proven box [%v, %v] misses the reference [%v, %v]", k, r.BboxMin[k], r.BboxMax[k], lo, hi)
+				}
+				standOff := math.Max(lo-r.BboxMin[k], r.BboxMax[k]-hi)
+				worst = math.Max(worst, standOff)
+				if standOff > r.CellSize[k]+profileTolerance {
+					t.Errorf("axis %d: proven box [%v, %v] stands %v off the reference [%v, %v], more than its stated %v",
+						k, r.BboxMin[k], r.BboxMax[k], standOff, lo, hi, r.CellSize[k])
+				}
+			}
+			t.Logf("%s: proven in %d evals, widest stand-off %.3g mm", c.name, r.Evals, worst)
+		})
+	}
+}

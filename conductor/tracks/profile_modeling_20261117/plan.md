@@ -10,8 +10,8 @@ same reference.
 Every phase that adds a function to the stdlib checks four things before it is done:
 
 1. **Exact** (or, where the spec allows a bound, within it): the field against the Go reference.
-2. **Provable:** interval bounds over surface cells are sound and tight, and `certify` proves clearance
-   (`eval/profile_provable_test.go`).
+2. **Provable:** interval bounds over surface cells are sound and tight, `certify` proves clearance, and
+   `bounds` proves the box (`eval/profile_provable_test.go`).
 3. **In WGSL:** the example compiles to WGSL, under its size budget, and renders in the viewer as the CPU
    evaluates it (the owner's check).
 4. **No silent golden moves:** a stdlib edit can move `testdata/example` goldens; any that move are shown
@@ -51,8 +51,12 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
         sharp and with `intersectRound(2)`, contain the field and are at most 4 cell diagonals wide (widest
         2.16). `certify` proves each extrude clear 0.25 mm above its cap and beside it, both rim kinds.
         Restoring #45's gated magnitude (`outside <= inside ? outside : neg(inside)`) fails every profile
-        (17 to 78 diagonals). `bounds` is not tested: its grid fit misses a star's tips by up to two cells
-        whatever the profile.
+        (17 to 78 diagonals).
+  - [x] `bounds` (`Evaluator.Enclose`, the interval proof `gsl eval` runs; not `Evaluator.Bounds`, the grid
+        fit beneath it) proves each extrude's box, holding the reference's and standing off it by at most
+        0.071 mm. Not the star's over the test's region: there it runs out of budget, though the same star
+        proves over [-30, -30, -10, 30, 30, 22]. That is `Enclose`'s sensitivity to where its cuts land, a
+        finding for the `gsl eval` tracks, and the test logs the star rather than asserting it.
   - [x] The WGSL size of each `examples/profile_*.gsl` on 85a0152, the budget later phases compare against:
         `profile_star` 12,337 bytes, `profile_sweep` 113,847, `profile_arcs` 119,522, `profile_cylinder`
         190,178
