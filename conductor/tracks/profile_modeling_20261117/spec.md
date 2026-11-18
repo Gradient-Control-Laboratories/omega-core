@@ -60,8 +60,10 @@ Profiles first, then the operations on them. The numbering is the order.
    that surface's field reports. It is written as `profileXY`'s pools are (a sign gate combined with `max`,
    the magnitude from an ungated pool), so it stays interval-provable. Loops are passed as fields, not as
    data, because GSL refuses ragged lists; and nothing checks the winding, because GSL cannot raise a
-   diagnostic. A mis-wound loop keeps the sign but reports its own distance; the doc comment states the
-   rule. Being generic, it serves 3D fields too (a solid with a void).
+   diagnostic. A mis-wound loop reports its own distance wherever it is the nearest surface: right in sign
+   inside it, but void just outside it in the material, with the field jumping sign where another surface
+   becomes the nearer. The doc comment states the rule. Being generic, it serves 3D fields too (a solid
+   with a void).
 2. **C2. Corner blends, per vertex.** "Every corner eventually a blend." Each vertex can take either kind:
    - an **arc fillet** (or a **line chamfer**) generated as edges of the loop, so the distance stays exact,
      as the hand-written L in [profile_cylinder.gsl](../../../examples/profile_cylinder.gsl) is; or
