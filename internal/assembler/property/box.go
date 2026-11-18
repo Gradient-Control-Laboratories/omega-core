@@ -597,7 +597,9 @@ func (dd *boxDomain) Call(name string, args []Value) (Value, bool, error) {
 		return nil, false, nil
 	}
 	vs := boxVals(args)
-	if name == "revolve" && len(vs) == 3 {
+	// A partial revolve lies within the full turn, so the full turn's box
+	// holds it: sound, if loose for a small angle.
+	if name == "revolve" && (len(vs) == 3 || len(vs) == 4) {
 		return revolved(vs[0], vs[1], vs[2]), true, nil
 	}
 	if v, ok := primitiveBox(name, vs); ok {

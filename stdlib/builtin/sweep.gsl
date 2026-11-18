@@ -309,3 +309,46 @@ revolve(profile, axisPoint, axisDirection) {
 revolveAngle(axisPoint, axisDirection) {
   return atan(neg(p.z), ((p.x - axisPoint.x) * axisDirection.y - (p.y - axisPoint.y) * axisDirection.x) / length(axisDirection));
 }
+
+/// A profile revolved through `angle` about a line in its own plane, as
+/// revolve(profile, axisPoint, axisDirection) but only part of the way round,
+/// with flat caps. `angle`, in radians, starts at the sketch plane, where the
+/// profile is drawn, and runs counterclockwise seen from the tip of the
+/// direction, so toward -Z, as the frame's .u does; a negative angle turns
+/// the other way. An exact profile gives an exact solid, caps included, under
+/// revolve's own conditions: keep the profile to the right of the direction.
+/// Its frame and box are revolve's: .u the angle round the axis, .v the
+/// profile's own .u, the box the full turn's.
+//
+// Internal: the distance is the least of three: to the revolved surface,
+// within the sweep only; and to each cap, the profile lying flat in its
+// half-plane, which from p is sqrt(h^2 + max(d, 0)^2) for p's distance h from
+// the cap's plane and the profile's distance d at p's foot in it. The first
+// cap is the sketch plane itself, so its d is the profile where it stands.
+// The revolved distance is gated by a constant, and the sign is read from the
+// revolved distance against the sweep, as profileXY reads its sign, so a cell
+// on the surface stays bounded by the distance.
+revolve(profile, axisPoint, axisDirection, angle) {
+  along = ((p.x - axisPoint.x) * axisDirection.x + (p.y - axisPoint.y) * axisDirection.y) / length(axisDirection);
+  right = ((p.x - axisPoint.x) * axisDirection.y - (p.y - axisPoint.y) * axisDirection.x) / length(axisDirection);
+  radial = length([right, p.z]);
+  revolved = remap(profile, [
+    axisPoint.x + (along * axisDirection.x + radial * axisDirection.y) / length(axisDirection),
+    axisPoint.y + (along * axisDirection.y - radial * axisDirection.x) / length(axisDirection),
+    0]);
+  farRight = right * cos(angle) - p.z * sin(angle);
+  farDepth = right * sin(angle) + p.z * cos(angle);
+  farCap = remap(profile, [
+    axisPoint.x + (along * axisDirection.x + farRight * axisDirection.y) / length(axisDirection),
+    axisPoint.y + (along * axisDirection.y - farRight * axisDirection.x) / length(axisDirection),
+    0]);
+  // The sweep as a field, negative inside it: on the swept side of both cap
+  // planes (of either, for more than half a turn). Two planes, not an angle,
+  // so a box near the axis or a cap is bounded tightly.
+  turn = angle >= 0 ? 1 : neg(1);
+  wedge = abs(angle) <= pi ? max(turn * p.z, neg(turn) * farDepth) : min(turn * p.z, neg(turn) * farDepth);
+  reach = min(max(abs(revolved), wedge <= 0 ? 0 : nothing),
+              length([p.z, max(profile, 0)]),
+              length([farDepth, max(farCap, 0)]));
+  return max(revolved, wedge) < 0 ? neg(reach) : reach;
+}

@@ -190,6 +190,11 @@ func CarryReturnProperties(prog *program.Program) error {
 	if packageReadsFrame(prog.Primary) {
 		if rev = findRevolve(pkgs, paths); rev != nil {
 			carriers[rev.key] = carrier{slots: [][]string{{uProperty, vProperty}}}
+			if rev.partial {
+				partial := rev.key
+				partial.params = 4
+				carriers[partial] = carrier{slots: [][]string{{uProperty, vProperty}}}
+			}
 		}
 	}
 	if len(carriers) == 0 {
@@ -216,9 +221,15 @@ func CarryReturnProperties(prog *program.Program) error {
 //
 // A function that returns a revolve does not carry this frame out: there is
 // no companion for its own to call.
+//
+// The partial revolve, revolve(profile, axisPoint, axisDirection, angle), has
+// the same frame and is not one remap (its caps read the profile elsewhere),
+// so it is carried here too, its values read from its first three arguments
+// and the full revolve's coordinate.
 type revolveFrame struct {
-	key carrierKey
-	fn  *program.Function
+	key     carrierKey
+	fn      *program.Function
+	partial bool // builtin also has the four-parameter partial revolve
 }
 
 const (
@@ -251,7 +262,8 @@ func findRevolve(pkgs []*program.Package, paths []string) *revolveFrame {
 					if revolveCoordinate(fn) == nil {
 						return nil
 					}
-					return &revolveFrame{key: carrierKey{pkgPath: paths[i], name: revolveName, params: 3}, fn: fn}
+					return &revolveFrame{key: carrierKey{pkgPath: paths[i], name: revolveName, params: 3}, fn: fn,
+						partial: hasOverload(ft, 4)}
 				}
 			}
 		}
@@ -279,7 +291,8 @@ func revolveCoordinate(fn *program.Function) *program.Operand {
 // valueOr is the value of prop for the call fc when fc is a revolve, and
 // companion, the call of an ordinary carrier's companion, when it is not.
 func (rev *revolveFrame) valueOr(fc *program.FnCall, prop string, companion *program.Operand) *program.Operand {
-	if rev == nil || fc == nil || fc.Reference == nil || len(fc.Arguments) != 3 ||
+	if rev == nil || fc == nil || fc.Reference == nil ||
+		!(len(fc.Arguments) == 3 || (rev.partial && len(fc.Arguments) == 4)) ||
 		fc.Reference.Name != rev.key.name || fc.Reference.PkgPath != rev.key.pkgPath {
 		return companion
 	}
@@ -1039,6 +1052,16 @@ func operandReads(op *program.Operand, name string) bool {
 	case *program.Operand_Value:
 	default:
 		panic(fmt.Sprintf("internal error: unhandled operand type %T in operandReads; please add a new case to this switch", t))
+	}
+	return false
+}
+
+// hasOverload reports whether ft has an overload of params parameters.
+func hasOverload(ft *program.FnType, params int) bool {
+	for _, g := range ft.Groups {
+		if g != nil && int(g.ParamCount) == params && len(g.Functions) > 0 {
+			return true
+		}
 	}
 	return false
 }
