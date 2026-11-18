@@ -466,6 +466,17 @@ defined in [README.md](../../../README.md):
     `assembleShader`'s prelude, replace `main` with a loop of 64 `sdShape` calls at shifted points summed
     into one output per point, run 1M points with stride 1, and subtract a trivial field's time.
 
+- [ ] **M16. Let `bounds` Take an Evaluation Budget, as `certify` Does**
+  - `Evaluator.Enclose` (`eval/enclose.go`, what `gsl eval`'s `bounds` runs) stops at a fixed
+    `encloseBudget` of 240,000 interval evaluations, a sixth per face; `certify` takes the evaluator's
+    budget (`SetCertifyBudget`) and a request can raise it. A part whose intervals compound, as a
+    `sweep()` does (its section read at its path's distance), needs more: `certify` proves the space above
+    the Profile Modeling track's test sweeps in about 300,000 evaluations, and `bounds` cannot prove their
+    boxes at all ([profile_modeling_20261117](../profile_modeling_20261117/plan.md), Phase 6).
+  - Proposal: `Enclose` reads the evaluator's budget when one is set, its faces sharing it as now, and
+    `gsl eval`'s `bounds` request takes a budget as `certify`'s does. Test: a sweep's box proves with a
+    raised budget and not with the default.
+
 ## 6. Small Targeted Cleanups
 
 - [x] **S1. Generalized Postfix Modifier Chaining (`Modifiers []*Modifier`)**

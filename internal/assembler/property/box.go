@@ -599,6 +599,9 @@ func (dd *boxDomain) Call(name string, args []Value) (Value, bool, error) {
 	vs := boxVals(args)
 	// A partial revolve lies within the full turn, so the full turn's box
 	// holds it: sound, if loose for a small angle.
+	if name == "sweep" && len(vs) == 2 {
+		return swept(vs[0], vs[1]), true, nil
+	}
 	if name == "revolve" && (len(vs) == 3 || len(vs) == 4) {
 		return revolved(vs[0], vs[1], vs[2]), true, nil
 	}
@@ -660,6 +663,38 @@ func revolved(profile, axisPoint, axisDirection boxVal) boxVal {
 	}
 	bx.lo[2], bx.hi[2] = negOp(out), out
 	return boxVal{box: bx, growth: profile.growth, limit: profile.limit}
+}
+
+// swept is the box of sweep(section, path) (sweep.gsl): the box of the path's
+// zero line in x and y (its surface box where the value has one), grown on
+// every side by the section's reach across the path, the greater of how far it
+// goes either way; and in z the section's own extent in y. The section is read
+// at the path's distance, so no point of the solid is farther across from the
+// path's line than the section reaches. A section or path without a bounded
+// box leaves the result unbounded.
+func swept(section, path boxVal) boxVal {
+	sb, pb := section.box, path.surf
+	if pb == nil {
+		pb = path.box
+	}
+	if section.op != nil || path.op != nil || sb == nil || pb == nil {
+		return boxVal{}
+	}
+	if sb.empty || pb.empty {
+		return boxVal{box: &bbox{empty: true}, growth: section.growth, limit: section.limit}
+	}
+	for _, o := range []*program.Operand{sb.lo[0], sb.hi[0], sb.lo[1], sb.hi[1], pb.lo[0], pb.hi[0], pb.lo[1], pb.hi[1]} {
+		if o == nil {
+			return boxVal{}
+		}
+	}
+	reach := maxOp(absOp(sb.lo[0]), absOp(sb.hi[0]))
+	bx := &bbox{}
+	for i := 0; i < 2; i++ {
+		bx.lo[i], bx.hi[i] = subOp(pb.lo[i], reach), addOp(pb.hi[i], reach)
+	}
+	bx.lo[2], bx.hi[2] = sb.lo[1], sb.hi[1]
+	return boxVal{box: bx, growth: section.growth, limit: section.limit}
 }
 
 // timesOp is mulOp that knows a literal zero: an axis along X or Y has one in

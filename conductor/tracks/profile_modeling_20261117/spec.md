@@ -149,7 +149,11 @@ probe documents compiled to WGSL and queried with `gsl eval`; the result follows
   smallest fillet's radius (an interval over a curve is as loose as the cell is wide against its radius:
   at a radius-1 fillet, 4.35 diagonals at 0.5 mm cells, 2.43 at 0.04 mm), and `certify` proves the space just off the part empty, including above a
   rounded rim, and `bounds` (`Evaluator.Enclose`) proves the part's box. Whether `Enclose` proves can hang on
-  where its cuts land: Phase 0's star proves over one region and runs out of budget over another.
+  where its cuts land: Phase 0's star proves over one region and runs out of budget over another. A sweep
+  reads its section at the path's distance, so the path's interval feeds the section's and their looseness
+  compounds (owner's decision, 2026-11-18): its cells may be six diagonals wide (5.54 measured), `certify`
+  proves it with a larger budget (about 300,000 evaluations above it, against a default of 200,000), and
+  `bounds` is not asserted, its budget fixed short of what it needs (backlog `M16`).
 - **Backends:** each example compiles to WGSL; its size is checked against a budget, and the viewer shows
   what the CPU evaluates.
 - **Tests:** in Go. A Python test of the wheel's API only where `AGENTS.md`'s owner allows one.

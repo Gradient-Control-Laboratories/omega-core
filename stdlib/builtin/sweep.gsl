@@ -352,3 +352,28 @@ revolve(profile, axisPoint, axisDirection, angle) {
               length([farDepth, max(farCap, 0)]));
   return max(revolved, wedge) < 0 ? neg(reach) : reach;
 }
+
+/// A 2D section swept along a closed path in the XY plane. `path` is any
+/// exact 2D field whose zero line is the path: a profileXY loop, a nested()
+/// of loops, a circle. `section` is a 2D profile drawn with x across the path,
+/// positive outside it, and y up, which becomes the height z. The section is
+/// read at the path's signed distance and the height, so its x = 0 line rides
+/// the path. The distance is never more than the true distance anywhere. It
+/// is exact while the whole section stays inside the path's tube: on the
+/// inside of every bend no farther across than the bend's radius, and nowhere
+/// past the middle of the shape the path encloses. A sharp corner is a bend of
+/// no radius: there the section sweeps round the outside and meets itself in a
+/// mitre on the inside, and near the corner the distance is a bound, short of
+/// the true one. Fillet the path's corners, wider than the section reaches,
+/// for a smooth sweep and an exact distance. Its frame: .u the
+/// path's own .u, the distance along it, and .v the section's .u, the
+/// distance round the section. Its box is the path's grown by the section's
+/// reach across it, between the section's lowest and highest.
+//
+// Internal: the body is one remap of the section, its coordinate in p and
+// the parameters alone, so the section's colour and material move with it
+// (property's unwrapRemaps); the frame is written at the call (property's
+// sweepFrame) and the box by property's swept rule.
+sweep(section, path) {
+  return remap(section, [path, p.z, 0]);
+}
