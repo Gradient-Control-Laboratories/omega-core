@@ -117,8 +117,19 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
         documented formula inside them; 1-Lipschitz and continuous (steepest 1.0001); surface cells sound
         (widest 3.35); the sign right at every far point. `profileXY(points, curvatures, corners, blend)`;
         WGSL 21,007 bytes for the U with two blend corners
+  - [x] Viewer, cost and frame (`examples/profile_corners.gsl`, checked by the owner):
+    - The first build hung the GPU. The corner pools now make one pass for all three pools (each feature
+      offering a vector, the nearest pool keeping a constant gate of its own), a fillet and a chamfer are
+      one edge, and each trim is computed once. `gpu-eval`, 4M points: the example from 124 ms to 61–63
+      ms, against 39–43 ms for `profile_arcs.gsl`; the rest is backlog `M15` (profiles ship as WGSL
+      functions over arrays, so no per-vertex geometry folds).
+    - A blended corner's `.u` follows its two legs and changes piece where the field does (it had run
+      along the chord, diagonally across half of each edge).
+    - Found, worked around, not reduced: with a blend made from a slider, the blend form's two-name box
+      assignment went undefined (the box now comes from `profileArcBoxXY`).
 - [ ] Task: Part B, corners next to an arc edge (line to arc, arc to arc): tests, then implementation
-- [ ] Task: An example mixing the kinds; WGSL size; the owner's viewer check
+- [ ] Task: An example mixing the kinds; WGSL size; the owner's viewer check (Part A's is done; Part B's
+      corners still to add)
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 3: Quadratic Bezier Edges (C6)
