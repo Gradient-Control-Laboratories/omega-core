@@ -197,7 +197,8 @@ Taken next after Phase 2, before Phases 3 and 4 (the owner, 2026-11-18).
   - [ ] Write failing tests (Red Phase): the field never exceeds the reference distance and stays within the
         bound; `certify` holds
   - [ ] Implement (Green & Refactor Phase)
-- [ ] Task: WGSL size; the owner's viewer check
+- [x] Task: WGSL size; the owner's viewer check: `profile_sweep.gsl` on `sweep()`, 17 KB of WGSL, checked by
+      the owner (closed planar paths; open and non-planar paths to come)
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 7: Caps for Sweeps (C5)
