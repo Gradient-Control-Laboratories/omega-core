@@ -15,15 +15,47 @@ concurrency:
 jobs:
   check:
     name: ./tool/check.sh
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    runs-on: macos-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
         with:
+          submodules: recursive
           persist-credentials: false
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache-dependency-path: go.sum
+      - name: Rust and CMake
+        run: |
+          command -v cargo || curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+          command -v cmake || brew install cmake
+          cargo --version; cmake --version | head -1; go version
+      - name: protoc
+        env:
+          PROTOC_VERSION: "35.0"
+          PROTOC_ASSET: osx-aarch_64
+          PROTOC_SHA256: 45444963204757fd3e2fbe304bc1fdadfb488d8556ff099c4cc06575eab88976
+        run: |
+          curl -sSfL -o "$RUNNER_TEMP/protoc.zip" \
+            "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-${PROTOC_ASSET}.zip"
+          python3 -c 'import hashlib, sys; d = hashlib.sha256(open(sys.argv[1], "rb").read()).hexdigest(); sys.exit(None if d == sys.argv[2] else f"protoc sha256 {d}, pinned {sys.argv[2]}")' "$RUNNER_TEMP/protoc.zip" "$PROTOC_SHA256"
+          python3 -m zipfile -e "$RUNNER_TEMP/protoc.zip" "$RUNNER_TEMP/protoc"
+          chmod +x "$RUNNER_TEMP/protoc/bin/protoc"
+          echo "PROTOC=$RUNNER_TEMP/protoc/bin/protoc" >> "$GITHUB_ENV"
+          "$RUNNER_TEMP/protoc/bin/protoc" --version
+      - name: The submodules' revisions (the cache key)
+        id: submodules
+        run: echo "hash=$(git ls-tree -r HEAD | awk '$2 == "commit"' | cksum | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/release
+          key: check-release-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Cargo.lock') }}-${{ steps.submodules.outputs.hash }}
+          restore-keys: check-release-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Cargo.lock') }}-
+      - name: Build native Fidget/Manifold libraries
+        run: ./tool/build-fidget.sh --no-prompt
       - name: Run quality checks
         run: ./tool/check.sh
