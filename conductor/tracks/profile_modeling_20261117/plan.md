@@ -32,7 +32,7 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
 
 ---
 
-## Phase 0: Ground Truth
+## Phase 0: Ground Truth [checkpoint: ac68832]
 
 - [x] Task: Gate: the development Rust library (`target/release`) matches `main`'s Rust; the Go packages
       that evaluate fields (`eval`, `cmd/compile`) did not link against the one there. Met on the owner's go
@@ -58,7 +58,7 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
         190,178
 - [x] Task: Recheck spec section 5's constraints 1–4 on `main` and record which still hold in the spec:
       1 and 4 are lifted, 2 and 3 hold
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 1: Several Loops in One Profile (C1)
 
