@@ -69,6 +69,18 @@ Profiles first, then the operations on them. The numbering is the order.
      as the hand-written L in [profile_cylinder.gsl](../../../examples/profile_cylinder.gsl) is; or
    - a **field blend** at the corner (a round or chamfer operator), where exactness is not needed; the
      distance there is a bound.
+
+   Decided 2026-11-17 (Phase 2's proposal): `profileXY(points, curvatures, corners)` and
+   `profileXY(points, curvatures, corners, blend)`. `corners` holds one helper per vertex: `cornerSharp()`,
+   `cornerFillet(radius)`, `cornerChamfer(setback)` or `cornerBlend()`; `blend` is any of the stdlib's
+   partially applied edge blends (`intersectRound(r)`, `intersectChamfer(d)`, `intersectLp(…)`, …), applied
+   at every `cornerBlend()` vertex, its dual (`neg(blend(neg …))`) at a reflex one. GSL passes an operator as
+   an argument but cannot hold operators in a list, hence one operator per profile. `everyCorner(points,
+   corner)` builds a `corners` list of one kind for every vertex. A fillet or chamfer too large for its edges
+   is clamped to fit (each trim at most half of each adjacent edge), documented, since GSL cannot refuse it
+   with a message. Corners between two straight edges come first; corners next to an arc stay sharp until a
+   second part of the phase. `intersectRound` makes the same surface as an exact fillet only at a right
+   angle, so field blends are genuinely other shapes.
 3. **C6. Quadratic Bezier edges.** The stdlib already has an exact distance to a 3D quadratic Bezier
    (`bezierQuadPointRound` in `stdlib/builtin/quad_bezier_curves.gsl`, Quilez's closed-form cubic solve);
    the 2D case is simpler. A profile edge can be a line, an arc or a quadratic Bezier, and the profile stays
@@ -127,7 +139,7 @@ probe documents compiled to WGSL and queried with `gsl eval`; the result follows
 | Question                        | Decision                                                                                                         |
 | :------------------------------ | :--------------------------------------------------------------------------------------------------------------- |
 | Which candidates, in what order | All seven, profiles first: C1, C2, C6, C7, then C3, C4, C5 (section 4).                                          |
-| Corner blends (C2)              | Both, chosen per vertex: exact arc fillets and line chamfers as edges, or a field blend where exactness is not needed. |
+| Corner blends (C2)              | Both, chosen per vertex: exact arc fillets and line chamfers as edges, or a field blend where exactness is not needed. Field blends are the stdlib's edge-blend operators, one per profile (section 4). |
 | Splines (C6)                    | Quadratic Bezier edges, exact, from the existing 3D distance. Higher orders are out of this track.               |
 | Sweep guarantee (C4)            | Exact first, on closed planar paths; open and non-planar paths later, with a stated Lipschitz bound.             |
 | The `sweepLoft*` family         | Kept as it is; revisited once `sweep()` exists.                                                                  |

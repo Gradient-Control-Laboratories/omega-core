@@ -90,12 +90,18 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
 
 ## Phase 2: Corner Blends, per Vertex (C2)
 
-- [ ] Task: Proposal: how a vertex names its blend (none, arc fillet, line chamfer, field blend) and its size,
-      and what is refused (a fillet larger than its edges allow)
-- [ ] Task: Write failing tests (Red Phase)
-  - [ ] Arc fillets and line chamfers generated as edges are exact against the reference, convex and reflex
-  - [ ] A field blend stays within its stated bound and keeps the rest of the loop exact
-- [ ] Task: Implement (Green & Refactor Phase)
+- [x] Task: Proposal: how a vertex names its blend (none, arc fillet, line chamfer, field blend) and its size,
+      and what is refused (a fillet larger than its edges allow). Decided: corner helpers in a `corners`
+      list, one edge-blend operator per profile for `cornerBlend()` vertices, `everyCorner()`, clamping
+      (spec section 4, C2)
+- [ ] Task: Part A, corners between straight edges
+  - [ ] Write failing tests (Red Phase): exact fillets and chamfers against the reference, convex and
+        reflex, mixed with sharp corners; `everyCorner()`; a clamped fillet equals the largest that fits;
+        surface cells tight; WGSL size
+  - [ ] Implement (Green & Refactor Phase): the pools walk a corner's trimmed edges and its arc or chamfer
+  - [ ] Proposal, then tests and implementation: how a `cornerBlend()` corner's field enters the pools,
+        where it is a bound, and that the rest of the loop stays exact
+- [ ] Task: Part B, corners next to an arc edge (line to arc, arc to arc): tests, then implementation
 - [ ] Task: An example mixing the kinds; WGSL size; the owner's viewer check
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
