@@ -1,0 +1,12 @@
+Phase 1 (Several Loops in One Profile, C1) verification report
+
+Automated: go vet ./... && go test ./eval/ ./stdlib/... ./assembler/... ./internal/assembler/... ./backend/... -count=1 -> all ok.
+New: nested(fields) in stdlib/builtin/booleans.gsl; eval/profile_nested_test.go; examples/profile_nested.gsl.
+- Plate (outline, two holes, island; polygon and arc loops), another order, separate islands vs reference: worst 3.6e-6 mm.
+- Extruded plate: 1.9e-6 mm; surface cells widest 1.93 diagonals; certify holes and clearance; Enclose proves the box.
+- .u is the nearest loop's; 3D block with a void: 7.1e-7 mm; mis-wound loop behaviour pinned.
+Mutation: a gated magnitude fails the plate's surface cells (51 diagonals).
+No golden moved. WGSL: profile_nested 100690 bytes; other examples unchanged.
+
+Manual verification: viewer, examples/profile_nested.gsl (flange of eight loops, block with a void cut open).
+User confirmation: the owner checked it in the viewer and accepted, 2026-11-17.
