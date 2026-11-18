@@ -179,7 +179,9 @@ Taken next after Phase 2, before Phases 3 and 4 (the owner, 2026-11-18).
 
 ## Phase 6: `sweep()` (C4)
 
-- [ ] Task: Proposal: the signature, starting from the remap in `profile_sweep.gsl`
+- [x] Task: Proposal: the signature, starting from the remap in `profile_sweep.gsl`. Decided: `sweep(section,
+      path)`, the path any exact 2D field; corners as the distance makes them; Go frame and box rules (spec
+      section 4, C4)
 - [ ] Task: Closed planar paths, exact
   - [ ] Write failing tests (Red Phase): exact against a reference swept section, inside and outside the
         path, at its corners and arcs; frame `.u` along the path

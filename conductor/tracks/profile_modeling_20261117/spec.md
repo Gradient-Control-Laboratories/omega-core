@@ -102,6 +102,16 @@ Profiles first, then the operations on them. The numbering is the order.
    [profile_sweep.gsl](../../../examples/profile_sweep.gsl). Open and non-planar paths come after, with a
    stated Lipschitz bound: there the section's frame is transported and the swept distance stops being exact
    past the path's radius of curvature.
+
+   Decided 2026-11-18: `sweep(section, path)`, the path any exact 2D field in XY whose zero line it is
+   (`profileXY`, `nested(...)`, a circle), the section a 2D profile with x across the path (positive outside)
+   and y up as z. It is the remap `profile_sweep.gsl` writes by hand, `remap(section, [path, p.z, 0])`:
+   1-Lipschitz and zero on the swept surface everywhere, so never more than the distance, and exact where
+   p's nearest path point is unique, which holds while the section stays inside the path's tube (on the
+   inside of a bend, within its radius; nowhere past the path's medial axis). At a sharp corner of the path
+   it sweeps round the outside and mitres the inside, as documented; fillet the path for a smooth sweep.
+   Frame and box by Go rules beside revolve's: `.u` the path's `.u`, `.v` the section's `.u`, the box the
+   path's grown by the section's reach across and its height.
 7. **C5. Caps for sweeps.** Cylinder-style caps where an open sweep ends.
 
 ## 5. Constraints Met While Writing #45
