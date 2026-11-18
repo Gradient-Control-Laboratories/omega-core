@@ -24,9 +24,7 @@ for parsing, analyzing, refactoring, and compiling GSL models into WebGPU comput
   <tr>
     <td valign="top">
       <strong>Video Demo — Interactive WebGPU Viewer</strong><br><br>
-      Watch a short walkthrough of the <code>gsl serve</code> / <code>gsl viewer</code> example viewer in action:
-      browsing curated GSL models, editing source code live, adjusting interactive <code>@range</code>
-      sliders and viewport controls, and seeing real-time WebGPU raymarched updates.<br><br>
+      Watch a short walkthrough of the <code>gsl serve</code> / <code>gsl viewer</code> example viewer in action.<br><br>
       Watch on YouTube: <a href="https://youtu.be/wlTj_TXmRJk">https://youtu.be/wlTj_TXmRJk</a>
     </td>
     <td align="right" valign="middle" width="340">
