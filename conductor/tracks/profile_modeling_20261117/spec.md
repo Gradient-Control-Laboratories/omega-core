@@ -90,7 +90,14 @@ Profiles first, then the operations on them. The numbering is the order.
    `min(span / 2, span^2 * maxCurvature / 4)`: sound, but loose, because a `.box` could not hold the reduce
    an exact box needs (see section 5).
 5. **C3. Partial revolve.** A revolve through an angle range, capped at both ends, with `.u` running over the
-   range.
+   range. Decided 2026-11-18: `revolve(profile, axisPoint, axisDirection, angle)`, the angle from the
+   sketch plane, counterclockwise seen from the tip of the direction as `revolveAngle` runs, negative the
+   other way; flat caps. Exact: the magnitude is the least of the revolved distance (gated off outside the
+   sweep by a constant) and each cap's distance, sqrt(h^2 + max(d(r, a), 0)^2) in that cap's plane; the sign
+   is negative inside the sweep and the profile. The profile is read three times. Its box and frame come
+   from Go rules beside `revolved` and `revolveFrame`, since a body cannot read `profile.box` or `.u`
+   (constraint 2): the box is the full revolve's, the frame the full revolve's (`.u` the angle, `.v` the
+   profile's `.u`). Taken before C6 and C7 (2026-11-18): revolve and sweep first.
 6. **C4. `sweep(section, path, …)`.** Exact first: a closed planar path, from the remap in
    [profile_sweep.gsl](../../../examples/profile_sweep.gsl). Open and non-planar paths come after, with a
    stated Lipschitz bound: there the section's frame is transported and the swept distance stops being exact

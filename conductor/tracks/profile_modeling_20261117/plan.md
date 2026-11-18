@@ -157,7 +157,10 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
 
 ## Phase 5: Partial Revolve (C3)
 
-- [ ] Task: Proposal: the signature (angle range, its origin) and the caps
+Taken next after Phase 2, before Phases 3 and 4 (the owner, 2026-11-18).
+
+- [x] Task: Proposal: the signature (angle range, its origin) and the caps. Decided: one angle from the
+      sketch plane, flat caps, the exact formula and Go box and frame rules of spec section 4, C3
 - [ ] Task: Write failing tests (Red Phase): exact against the reference, caps included; `.u` over the
       range; box
 - [ ] Task: Implement (Green & Refactor Phase), within spec section 5.3 as `revolve` is
