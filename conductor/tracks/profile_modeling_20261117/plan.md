@@ -195,11 +195,15 @@ Taken next after Phase 2, before Phases 3 and 4 (the owner, 2026-11-18).
 - [x] Task: Proposal for open paths. Decided: `openProfileXY(points[, curvatures])`, signed, its ends
       extended as tangent rays; flat caps by `sweepOpen` (Phase 7); finite 2D strokes later; non-planar
       paths split off (spec section 4, C4 and C5)
-- [ ] Task: Open planar profiles (`eval/profile_open_test.go`)
-  - [ ] Write failing tests (Red Phase): exact against a reference distance to the extended chain, straight
-        and with arcs; the sign right of travel; a piece of a closed profile agrees with it near that piece;
-        `.u` along the chain and past its ends; surface cells; `certify`
-  - [ ] Implement (Green & Refactor Phase): `openProfileXY` in `stdlib/builtin/2d.gsl`, one pass of pools
+- [x] Task: Open planar profiles (`eval/profile_open_test.go`)
+  - [x] Write failing tests (Red Phase): exact against a reference distance to the extended chain, straight
+        and with arcs (worst 5.2e-6); the sign right of travel; a piece of a closed profile agrees with it
+        beside that piece; `.u` along the chain and past its ends (worst 3.1e-5); surface cells (widest
+        1.79); `certify` on the right side (at most 1,737 evaluations)
+  - [x] Implement (Green & Refactor Phase): `openProfileXY` in `stdlib/builtin/2d.gsl`, one pass of pools
+        through the closed profile's own steps, the first point's turn made nothing by a mirrored previous
+        edge and the last point shut by a constant gate; the rays offered beside the pass. Flipping the
+        first ray's overshoot fails the reference test by 54.7 mm
 - [ ] Task: Non-planar paths, with a stated Lipschitz bound
   - [ ] Proposal: frame transport along the path, and the bound
   - [ ] Write failing tests (Red Phase): the field never exceeds the reference distance and stays within the
