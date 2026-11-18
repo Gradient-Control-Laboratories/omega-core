@@ -127,7 +127,9 @@ probe documents compiled to WGSL and queried with `gsl eval`; the result follows
   star, a square with a hole, an arc profile and a slot with smooth joints, and on every new edge or
   operation this track adds.
 - **Provability:** interval bounds over cells straddling the surface contain the field and are no wider
-  than four cell diagonals, and `certify` proves the space just off the part empty, including above a
+  than four cell diagonals, the cells 0.5 mm or, on a profile with fillets, no wider than a fifth of the
+  smallest fillet's radius (an interval over a curve is as loose as the cell is wide against its radius:
+  at a radius-1 fillet, 4.35 diagonals at 0.5 mm cells, 2.43 at 0.04 mm), and `certify` proves the space just off the part empty, including above a
   rounded rim, and `bounds` (`Evaluator.Enclose`) proves the part's box. Whether `Enclose` proves can hang on
   where its cuts land: Phase 0's star proves over one region and runs out of budget over another.
 - **Backends:** each example compiles to WGSL; its size is checked against a budget, and the viewer shows

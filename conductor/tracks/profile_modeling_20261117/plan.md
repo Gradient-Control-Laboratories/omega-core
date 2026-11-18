@@ -95,10 +95,16 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
       list, one edge-blend operator per profile for `cornerBlend()` vertices, `everyCorner()`, clamping
       (spec section 4, C2)
 - [ ] Task: Part A, corners between straight edges
-  - [ ] Write failing tests (Red Phase): exact fillets and chamfers against the reference, convex and
-        reflex, mixed with sharp corners; `everyCorner()`; a clamped fillet equals the largest that fits;
-        surface cells tight; WGSL size
-  - [ ] Implement (Green & Refactor Phase): the pools walk a corner's trimmed edges and its arc or chamfer
+  - [x] Write failing tests (Red Phase) (`eval/profile_corners_test.go`): exact fillets and chamfers
+        against the reference, convex and reflex, mixed with sharp corners (worst 2.1e-6); `everyCorner()`
+        (3.3e-6); clamped fillets make the circle they should (2.8e-6); surface cells tight, at cells scaled
+        to the smallest fillet (widest 2.89); a corner next to an arc stays sharp. WGSL: the U grows from
+        62,374 to 89,364 bytes with its eight corners blended
+  - [x] Implement (Green & Refactor Phase): the pools walk a corner's trimmed edges and its arc or chamfer
+        (`profileXY(points, curvatures, corners)` and the corner helpers in `stdlib/builtin/2d.gsl`).
+        Flipping the fillet's curvature sign fails the reference. No golden moved. Found on the way, not
+        fixed: a `map`-built list handed in as `curvatures` fails to assemble once the profile is named,
+        with or without corners (its box pass, likely); the test writes its curvatures out
   - [ ] Proposal, then tests and implementation: how a `cornerBlend()` corner's field enters the pools,
         where it is a bound, and that the rest of the loop stays exact
 - [ ] Task: Part B, corners next to an arc edge (line to arc, arc to arc): tests, then implementation
