@@ -188,7 +188,8 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
       boxes in `stdlib/builtin/2d.gsl` (`profileArcEdgeBoxXY`, `profileBezierEdgeBoxXY`, their unions);
       a `.box` in the stdlib could not hold them (constraint 1 holds there), so `profileBox` Go rules give
       the box (spec section 4, C7). Without the rule the arc box tests fail. `TestSweepOpen_Box`'s arc case
-      now expects the exact box, with the owner's authorization. GPU and size cost recorded in the spec
+      now expects the exact box, with the owner's authorization. GPU and size cost recorded in the spec.
+      The owner's viewer check (bezier, sweep_open, corners, cylinder render as before): look right
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 5: Partial Revolve (C3) [checkpoint: 9248b1b]
