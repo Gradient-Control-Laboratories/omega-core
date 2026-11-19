@@ -137,7 +137,7 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
 - [x] Task: An example mixing the kinds; WGSL size; the owner's viewer check (Part A's corners)
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
-## Phase 3: Quadratic Bezier Edges (C6)
+## Phase 3: Quadratic Bezier Edges (C6) [checkpoint: c33e494]
 
 - [x] Task: Proposal: how an edge is marked as a quadratic Bezier (its control point) alongside lines and
       arcs, and how the 2D distance reuses `bezierQuadPointRound`'s closed-form solve. Decided:
@@ -190,9 +190,9 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
       settles a tie between features within 1e-4 mm, so beside a corner or an end it can be off by up to
       sqrt(2 d 1e-4) at distance d (0.03 mm at 5 mm), in closed profiles too; a one-element list such as
       `[0.1]` is a number to the type checker, so `openProfileXY([a, b], [k])`, one arc, does not compile
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
-## Phase 4: Tighter Boxes (C7)
+## Phase 4: Tighter Boxes (C7) [checkpoint: 1b00f7d]
 
 - [x] Task: Proposal. Decided: exact per edge (arcs' axis extremes on the arc, Beziers' per-axis
       extremum), every form, the corner forms by their loop without corners (spec section 4, C7)
@@ -214,7 +214,7 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
       compile error); merged here. A constant arc profile's WGSL 10.7 → 5.4 KB, its box numbers again.
       `profileBox` reads one corner a side, not both corners' least and most: profile_bezier's slider-driven
       box 18 → 10 helper references
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 5: Partial Revolve (C3) [checkpoint: 9248b1b]
 
@@ -238,7 +238,7 @@ Taken next after Phase 2, before Phases 3 and 4 (the owner, 2026-11-18).
       pools make three passes
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
-## Phase 6: `sweep()` (C4)
+## Phase 6: `sweep()` (C4) [checkpoint: 21a7af6]
 
 - [x] Task: Proposal: the signature, starting from the remap in `profile_sweep.gsl`. Decided: `sweep(section,
       path)`, the path any exact 2D field; corners as the distance makes them; Go frame and box rules (spec
@@ -278,9 +278,9 @@ Taken next after Phase 2, before Phases 3 and 4 (the owner, 2026-11-18).
   - [ ] Implement (Green & Refactor Phase)
 - [x] Task: WGSL size; the owner's viewer check: `profile_sweep.gsl` on `sweep()`, 17 KB of WGSL, checked by
       the owner (closed planar paths; open and non-planar paths to come)
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
-## Phase 7: Caps for Sweeps (C5)
+## Phase 7: Caps for Sweeps (C5) [checkpoint: dd653e6]
 
 - [x] Task: Write failing tests (Red Phase) (`eval/profile_sweep_open_test.go`): the formula from the
       references (worst 7.3e-6); against the swept solid sampled on its own, wall and caps apart: where the
@@ -302,7 +302,7 @@ Taken next after Phase 2, before Phases 3 and 4 (the owner, 2026-11-18).
       WGSL unchanged (sweep and revolve byte for byte). GPU, slider-free copies without colour, 64
       evaluations a point over 1M points, less a trivial field's 25.9 ms: closed `sweep` 2.9 ms,
       `sweepOpen` three reads 8.8 ms, the one-read alternative 4.9 ms. Checked by the owner: looks right
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 8: Verification and Records
 
