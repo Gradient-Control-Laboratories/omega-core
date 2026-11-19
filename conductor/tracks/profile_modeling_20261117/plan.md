@@ -164,6 +164,12 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
       beside a tight Bezier and its checkerboard read from the wrong place; both fixed (spec section 4,
       C6), the plate added as the "tight Bezier" test loop (worst 5.8e-6, cells 9.18, limit 10 by the
       owner). Checked by the owner: looks right
+- [x] Task: The GPU cost (2026-11-19, 64 evaluations a point over 1M points, less a trivial field): the arc
+      L as `profileXY` 4.3 ms, as `profileEdgesXY` 44 ms, the plate 33 ms; every edge runs the Bezier step.
+      Measured by removing each part: the Newton step costs ~10 ms and buys only the tight edge's last
+      3.2e-4 mm; the sampled points narrow the widest cells (11.2 → 9.18); the triangle bound is what
+      certify needs. A select on the constant kind is no faster. The owner kept the step and asked for a
+      codegen proposal, uniform branches: backlog M18, prototyped by hand at 14.5 and 17.8 ms
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 4: Tighter Boxes (C7)
