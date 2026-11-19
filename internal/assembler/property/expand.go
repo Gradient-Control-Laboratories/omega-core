@@ -821,6 +821,15 @@ func cropFnType(ft *program.FnType, apply string, pkg *program.Package) error {
 			if err := cropAssignments(fn.Assignments, apply, pkg); err != nil {
 				return err
 			}
+			// The crop is written where the name is declared, but a function
+			// body is read in order, and the box may read locals declared
+			// after it. The body is single-assignment and free of effects, so
+			// it is put in an order its reads allow. A library's declaredBox
+			// is dropped before anything reads the body in order, so its
+			// bodies are left as written.
+			if apply == cropToBoxName {
+				fn.Assignments = orderByReads(fn.Assignments)
+			}
 			for _, nested := range fn.FnTypes {
 				if err := cropFnType(nested, apply, pkg); err != nil {
 					return err
@@ -879,6 +888,114 @@ func cropAssignments(assigns []*program.Assignment, apply string, pkg *program.P
 		}
 	}
 	return nil
+}
+
+// orderByReads is a function body's assignments with each after every
+// assignment of the body it reads, and otherwise in the order written: a body
+// already in such an order comes back as it is. A body whose reads go round in
+// a cycle is left as written, for type analysis to report.
+func orderByReads(assigns []*program.Assignment) []*program.Assignment {
+	declaredAt := map[string]int{}
+	for i, a := range assigns {
+		if a == nil {
+			continue
+		}
+		for _, v := range a.Variables {
+			if v != nil {
+				declaredAt[v.Name] = i
+			}
+		}
+	}
+	after := make([]map[int]bool, len(assigns))
+	inOrder := true
+	for i, a := range assigns {
+		if a == nil {
+			continue
+		}
+		reads := map[string]bool{}
+		bodyReads(a.Expression, reads)
+		for name := range reads {
+			if j, ok := declaredAt[name]; ok && j != i {
+				if after[i] == nil {
+					after[i] = map[int]bool{}
+				}
+				after[i][j] = true
+				if j > i {
+					inOrder = false
+				}
+			}
+		}
+	}
+	if inOrder {
+		return assigns
+	}
+	placed := make([]bool, len(assigns))
+	ordered := make([]*program.Assignment, 0, len(assigns))
+	for len(ordered) < len(assigns) {
+		next := -1
+		for i := range assigns {
+			if placed[i] {
+				continue
+			}
+			ready := true
+			for j := range after[i] {
+				if !placed[j] {
+					ready = false
+					break
+				}
+			}
+			if ready {
+				next = i
+				break
+			}
+		}
+		if next < 0 {
+			return assigns
+		}
+		placed[next] = true
+		ordered = append(ordered, assigns[next])
+	}
+	return ordered
+}
+
+// bodyReads adds the names an operand reads that a function body could
+// declare: plain references, the local of a member read such as lo.x, and the
+// name a property read or a call is made on.
+func bodyReads(op *program.Operand, out map[string]bool) {
+	if op == nil {
+		return
+	}
+	switch t := op.T.(type) {
+	case *program.Operand_Reference:
+		if t.Reference == nil {
+			return
+		}
+		if t.Reference.Prefix != "" {
+			out[t.Reference.Prefix] = true
+		} else {
+			out[t.Reference.Name] = true
+		}
+	case *program.Operand_PropRef:
+		if t.PropRef != nil && t.PropRef.Reference != nil {
+			bodyReads(&program.Operand{T: &program.Operand_Reference{Reference: t.PropRef.Reference}}, out)
+		}
+	case *program.Operand_Expression:
+		if t.Expression != nil {
+			for _, o := range t.Expression.Operands {
+				bodyReads(o, out)
+			}
+		}
+	case *program.Operand_FnCall:
+		if t.FnCall == nil {
+			return
+		}
+		if t.FnCall.Reference != nil && t.FnCall.Reference.Prefix == "" {
+			out[t.FnCall.Reference.Name] = true
+		}
+		for _, a := range t.FnCall.Arguments {
+			bodyReads(a, out)
+		}
+	}
 }
 
 func isAuto(op *program.Operand) bool {
