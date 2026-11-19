@@ -52,6 +52,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   left to run per point, so a box written with one did not fold to numbers.
 - A constant that folds to infinity or NaN, a division or a mod by zero, is a compile error naming it, instead of
   `+Inf.0` or `NaN.0` in a WGSL shader the browser refuses.
+- A one-element list indexed at run time, such as `curvatures[0]` of `[0.1]` read in a reduce, failed on the CPU
+  paths (`gsl eval`, tape and meshing) with "target must be a collection, got num": the fidget backend builds the
+  list as one value. Index 0 now reads it there as WGSL already did; past 0 is an error.
 
 ## [0.1.3] - 2026-11-17
 

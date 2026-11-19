@@ -99,7 +99,9 @@ func (n *TreeNode) Type() *program.Type {
 }
 
 func (n *TreeNode) FidgetType() FidgetNumType {
-	// The parser guarantees that collections have 2 or more elements.
+	// A one-element list is built as one tree, so it reports a number here,
+	// though the type check keeps it a list of length one; build's visitIndex
+	// reads index 0 of such a target as the target itself.
 	if n.elemLen <= 1 {
 		if len(n.trees) <= 1 {
 			return NumType
