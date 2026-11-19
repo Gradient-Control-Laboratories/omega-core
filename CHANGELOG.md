@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `nested(fields)` combines exact fields whose surfaces do not cross, each wound with its solid on the negative
+  side (counterclockwise outlines and islands, clockwise holes), into one exact distance in any order: an outline
+  with holes in a single profile, or a 3D solid with a void.
+- Corners per vertex on `profileXY`: `profileXY(points, curvatures, corners)` and
+  `profileXY(points, curvatures, corners, blend)`, with `cornerSharp()`, `cornerFillet(radius)`,
+  `cornerChamfer(setback)`, `cornerBlend()` and `everyCorner(points, corner)`. Fillets and chamfers are edges of
+  the loop, so the distance stays exact, and are clamped to fit; `cornerBlend()` applies any edge-blend operator
+  (`intersectRound(r)`, `intersectChamfer(d)`, …) at that vertex. Corners between two straight edges.
+- `revolve(profile, axisPoint, axisDirection, angle)`, a partial revolve with flat caps, exact; `.u` is the angle
+  and `.v` the profile's `.u`.
+- `sweep(section, path)` sweeps a 2D section along a closed planar path, any exact 2D field: exact while the
+  section stays inside the path's tube, never more than the distance anywhere. `.u` runs along the path and `.v`
+  round the section.
+- `openProfileXY(points)` and `openProfileXY(points, curvatures)`, an open chain of lines and arcs whose ends carry
+  on as rays along their tangents: the exact signed distance to that extended chain, positive to the right of
+  travel. `.u` runs along the chain.
+- `sweepOpen(section, points)` and `sweepOpen(section, points, curvatures)` sweep a section along an open chain,
+  capped flat at both ends: exact beside the chain and over the caps; beyond a cap where another part of the sweep
+  is nearer, the distance reads that cap's and is too large, though its sign stays right.
+
+### Changed
+
+- `profileXY` fills its three distance pools in one pass instead of three, with the same values: 2.6 to 11 times
+  faster on the GPU across the profile examples.
+
 ## [0.1.3] - 2026-11-17
 
 ### Added
