@@ -58,15 +58,38 @@ treatment), the phase opens with a proposal for the owner to approve before any 
 
 ## Phase 1: A Coaxial Round Stack
 
-- [ ] Task: Proposal: the `shaft` package layout, the segment closure's signature (its uncapped field
-      and its span), and how baseline positions are written
-- [ ] Task: Write failing tests (Red Phase)
-  - [ ] Cylinder, taper and groove segments against the reference, outside and inside
-  - [ ] No interior zero on any joint plane; a groove (a smaller middle segment) gets no material from
-        a bridge across it
-- [ ] Task: Implement (Green & Refactor Phase); `shaft` is self-contained as a folding function
-- [ ] Task: An example; its WGSL size, recorded as the budget; the owner's viewer check
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Proposal (approved 2026-11-18): `stdlib/mechanical/shaft`, entry point `shaft.body(segments)`,
+      segments `shaft.diameter(dia, from, to)` and `shaft.taper(diaFrom, diaTo, from, to)` (a groove is a
+      diameter), each a `seg(eDown, eUp)` closure; a taper's extensions continue at its end diameters and
+      its distance is taken in its half-section (the owner chose this over `revolve(profileXY)`)
+- [x] Task: Write failing tests (Red Phase), `eval/shaft_test.go`
+  - [x] Diameters, tapers narrowing and widening, a cone shoulder, a taper into a step and into a
+        shoulder, and a groove, against the exact meridian reference, outside and inside
+  - [x] No interior zero on any joint plane; surface cells tight; joint cells prove solid
+- [x] Task: Implement (Green & Refactor Phase); `body` is self-contained as a folding function
+  - [x] Exact outside (worst 4.8e-6 mm over nine cases), a bound inside; surface cells within 1.76
+        diagonals; every joint cell proves solid
+  - [x] A taper's long side and caps are measured by clamping: projecting onto a side that starts 1e5 mm
+        away lost 7e-4 mm to float32 (the cone shoulder case caught it)
+  - [x] Mutation: `body` without its bridge fails the joint and surface-cell tests in all six
+        multi-segment cases
+  - [x] Phase 0's throwaway package is now imported as `spike`: an import alias that matches a stdlib
+        package's name resolves to the stdlib package (spec 6), and `shaft` now is one
+- [x] Task: `examples/shaft_turned.gsl` (eight segments)
+- [x] Task: The owner's viewer check of `examples/shaft_turned.gsl`
+  - [x] The interior's sharp contours at reflex corners: the stated bound, accepted for now; an exact
+        interior recorded for later (spec 5)
+  - [x] A collar (groove larger than the journal) showed a shallow sheet under it. Fixed by a bridge for
+        every run of consecutive segments in place of neighbours only (spec 3.3, approved)
+- [x] Task: The run bridge, test first
+  - [x] Red: thin collar, thin groove and a collar on a step; inside never shallower than 1/√2 of the
+        true depth (the cost of a square reflex corner), on every grid point, mid-plane and joint
+  - [x] Green: `body` folds every run in one pass, accumulator `[shaft, open runs]`
+  - [x] Mutation: neighbours only fails twelve subtests (the 3 mm groove and the cone shoulder too)
+  - [x] WGSL linear, about 1.5 KB a segment; the example 23112 bytes, the budget
+- [x] Task: The owner's viewer check of the run bridge: the collar's sheet is gone; the corner bound shows
+      past a groove's rims and at a taper meeting a diameter (spec 3.3), accepted
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 2: End Holes
 

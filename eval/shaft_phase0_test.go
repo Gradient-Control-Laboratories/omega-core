@@ -225,7 +225,7 @@ func (s roundStack) reference() func([3]float64) float64 {
 func (s roundStack) gsl() string {
 	parts := make([]string, len(s))
 	for i, g := range s {
-		parts[i] = fmt.Sprintf("shaft.cyl(%v, %v, %v)", g.dia, g.from, g.to)
+		parts[i] = fmt.Sprintf("spike.cyl(%v, %v, %v)", g.dia, g.from, g.to)
 	}
 	return "[" + strings.Join(parts, ", ") + "]"
 }
@@ -268,7 +268,7 @@ func roundStackCases() []stackCase {
 var shaftVariants = []string{"plain", "bridged", "gated"}
 
 func shaftDoc(variant, segments string) string {
-	return fmt.Sprintf("@scene(140)\nimport shaft \"geom/shaft\";\nsolid = shaft.%s(%s);\nreturn solid;\n", variant, segments)
+	return fmt.Sprintf("@scene(140)\nimport spike \"geom/shaft\";\nsolid = spike.%s(%s);\nreturn solid;\n", variant, segments)
 }
 
 // jointPoints are points on each joint plane strictly inside both neighbours,
@@ -433,8 +433,8 @@ func TestShaftPhase0_MixedConvexity(t *testing.T) {
 			if !hexBelow {
 				hexLo, hexHi, rLo, rHi = 20, 40, 0, 20
 			}
-			hexSeg := fmt.Sprintf("shaft.section(%s, %v, %v)", hexProfileGSL(hexAF), hexLo, hexHi)
-			roundSeg := fmt.Sprintf("shaft.cyl(%v, %v, %v)", roundDia, rLo, rHi)
+			hexSeg := fmt.Sprintf("spike.section(%s, %v, %v)", hexProfileGSL(hexAF), hexLo, hexHi)
+			roundSeg := fmt.Sprintf("spike.cyl(%v, %v, %v)", roundDia, rLo, rHi)
 			segs := "[" + hexSeg + ", " + roundSeg + "]"
 			if !hexBelow {
 				segs = "[" + roundSeg + ", " + hexSeg + "]"
@@ -621,14 +621,14 @@ func TestShaftPhase0_SpikeAccumulatorGrowth(t *testing.T) {
 		var baseline, chain []string
 		for i := 0; i < n; i++ {
 			dia := 12.0 + 4*float64(i%3)
-			baseline = append(baseline, fmt.Sprintf("shaft.cyl(%v, %v, %v)", dia, 5*i, 5*(i+1)))
-			chain = append(chain, fmt.Sprintf("shaft.chainCyl(%v, 5.0)", dia))
+			baseline = append(baseline, fmt.Sprintf("spike.cyl(%v, %v, %v)", dia, 5*i, 5*(i+1)))
+			chain = append(chain, fmt.Sprintf("spike.chainCyl(%v, 5.0)", dia))
 		}
 		docs := map[string]string{
 			"plain":   shaftDoc("plain", list(baseline)),
 			"bridged": shaftDoc("bridged", list(baseline)),
 			"gated":   shaftDoc("gated", list(baseline)),
-			"chained": fmt.Sprintf("@scene(140)\nimport shaft \"geom/shaft\";\nsolid = shaft.chained(%s, 0.0);\nreturn solid;\n", list(chain)),
+			"chained": fmt.Sprintf("@scene(140)\nimport spike \"geom/shaft\";\nsolid = spike.chained(%s, 0.0);\nreturn solid;\n", list(chain)),
 		}
 		for _, v := range []string{"plain", "bridged", "gated", "chained"} {
 			res, err := e.Shader(t.Context(), nil, docs[v], "", ShaderOptions{Target: "wgsl", OutDir: t.TempDir()})
@@ -644,10 +644,10 @@ func TestShaftPhase0_SpikeAccumulatorGrowth(t *testing.T) {
 // The chained fold reads the same shaft as its baseline twin.
 func TestShaftPhase0_SpikeChainedMatchesBaseline(t *testing.T) {
 	stack := roundStack{{20, 0, 15}, {14, 15, 18}, {20, 18, 40}}
-	chain := "[shaft.chainCyl(20.0, 15.0), shaft.chainCyl(14.0, 3.0), shaft.chainCyl(20.0, 22.0)]"
+	chain := "[spike.chainCyl(20.0, 15.0), spike.chainCyl(14.0, 3.0), spike.chainCyl(20.0, 22.0)]"
 	points := shaftGrid3([3]float64{-10, -10, 0}, [3]float64{10, 10, 40}, 4, 14)
 	base := evalShaft(t, shaftDoc("bridged", stack.gsl()), "solid", points)
-	chained := evalShaft(t, fmt.Sprintf("@scene(140)\nimport shaft \"geom/shaft\";\nsolid = shaft.chained(%s, 0.0);\nreturn solid;\n", chain), "solid", points)
+	chained := evalShaft(t, fmt.Sprintf("@scene(140)\nimport spike \"geom/shaft\";\nsolid = spike.chained(%s, 0.0);\nreturn solid;\n", chain), "solid", points)
 	for i, q := range points {
 		if math.Abs(base[i]-chained[i]) > shaftTolerance {
 			t.Fatalf("at %v: chained %v, baseline %v", q, chained[i], base[i])
@@ -656,9 +656,9 @@ func TestShaftPhase0_SpikeChainedMatchesBaseline(t *testing.T) {
 }
 
 const endHolesPrelude = `@scene(140)
-import shaft "geom/shaft";
+import spike "geom/shaft";
 import drill "mechanical/drill";
-segs = [shaft.cyl(20.0, 0.0, 20.0), shaft.cyl(12.0, 20.0, 40.0)];
+segs = [spike.cyl(20.0, 0.0, 20.0), spike.cyl(12.0, 20.0, 40.0)];
 `
 
 // Spike (b), as the drill library imagined it: drill closures made in the
@@ -667,7 +667,7 @@ segs = [shaft.cyl(20.0, 0.0, 20.0), shaft.cyl(12.0, 20.0, 40.0)];
 // list that arrives as a parameter is not. This pins the gap; when the closure
 // pass learns to follow a list through a parameter, it flips.
 func TestShaftPhase0_SpikeHoleListsThroughShaft(t *testing.T) {
-	doc := endHolesPrelude + `solid = shaft.withHoles(segs, 0.0, 40.0, drill.centerHole(3.0, 8.0, 10.0), [drill.blind(5.0, 12.0), drill.chamfer(5.0, 0.5)]);
+	doc := endHolesPrelude + `solid = spike.withHoles(segs, 0.0, 40.0, drill.centerHole(3.0, 8.0, 10.0), [drill.blind(5.0, 12.0), drill.chamfer(5.0, 0.5)]);
 return solid;
 `
 	e := New(shaftSpikeManager(), nil)
@@ -691,12 +691,12 @@ func TestShaftPhase0_SpikeEndHoleVoids(t *testing.T) {
 	docs := map[string]string{
 		"placed by the caller": endHolesPrelude + `top = drill.hole([drill.blind(5.0, 12.0), drill.chamfer(5.0, 0.5)], 40.0);
 bottom = remap(drill.hole(drill.centerHole(3.0, 8.0, 10.0), 0.0), [p.x, -p.y, 0.0 - p.z]);
-solid = shaft.withVoids(segs, top, bottom);
+solid = spike.withVoids(segs, top, bottom);
 return solid;
 `,
 		"placed by shaft": endHolesPrelude + `top = drill.hole([drill.blind(5.0, 12.0), drill.chamfer(5.0, 0.5)], 0.0);
 bottom = drill.hole(drill.centerHole(3.0, 8.0, 10.0), 0.0);
-solid = shaft.withVoidsAt(segs, 0.0, 40.0, top, bottom);
+solid = spike.withVoidsAt(segs, 0.0, 40.0, top, bottom);
 return solid;
 `,
 	}

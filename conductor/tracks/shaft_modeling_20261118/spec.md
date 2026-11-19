@@ -47,44 +47,56 @@ know. Take a gear whose tip circle lies above the next diameter and whose root c
 some angles the gear is the larger side and at others the smaller. A spline, a hex or a D-flat next to
 a round can do the same.
 
-### 3.3 The construction
+### 3.3 The construction: a bridge for every run
 
-Let each segment `S_i` give its **uncapped** field `S_i∞` (its section, unbounded along the axis) and
-its span `slab_i`. At each joint between adjacent segments A and B:
+Let each segment `S_i` be extensible: `S_i↑` is it unbounded above, `S_i↓` unbounded below, `S_i∞`
+both ways. Every **run** of consecutive segments `i..j` contributes the intersection of its members
+over the run's span:
 
-    bridge = max(A∞, B∞, slab over [A.from, B.to])
-    shaft  = min( min_i max(S_i∞, slab_i),  min_joints bridge )
+    bridge(i..j) = max(S_i↑, S_(i+1)∞, …, S_(j-1)∞, S_j↓)
+    shaft        = min( min_i S_i,  min over runs bridge(i..j) )
 
-- **It adds no material, whatever the convexity.** Over A's span, `A∞ ∩ B∞` is inside A. Over B's
-  span, it is inside B.
-- **It removes the sheet, point by point.** On the joint plane, where both sides are solid, the bridge
-  is negative. Where only one side is solid (a tooth standing above a smaller neighbour), the bridge is
-  positive and the segment's own end face is a real face. This holds angle by angle, so mixed
+- **It adds no material, whatever the convexity.** Over each member's own span, the intersection lies
+  inside that member.
+- **It removes the sheet, point by point.** On a joint plane, where both sides are solid, the run of
+  the two is negative. Where only one side is solid (a tooth standing above a smaller neighbour), it is
+  positive, and that segment's own end face is a real face. This holds angle by angle, so mixed
   convexity needs no special case.
-- **It needs no select.** It is built from min and max only, so it stays interval-provable. A ternary
-  would lower to a lerp and wreck interval bounds.
-- **Adjacency matters.** A bridge across a smaller middle segment would add material, so a joint only
-  ever bridges its two neighbours. This is why the fold carries the previous segment's uncapped value.
+- **It needs no select.** It is built from min and max only, so it stays interval-provable.
+- **Runs, not just neighbours.** Phase 1 first bridged neighbours only (Phase 0's construction), and
+  the owner's viewer check found it wanting. A thin segment, whether a collar or a ring groove, then
+  leaves the whole section across it no deeper than half its width. For a collar of 16 on a 12
+  journal, the axis read −0.55 where the truth is −6.0, so an inset of 0.55 mm slits the shaft. The
+  run of all three carries the section common to them straight across.
 
-**Proved in Phase 0** (section 7): the field is exact outside wherever the segments are exact, and a
-bound inside. There is no interior zero across any joint plane. `certify` and `bounds` still prove on
-surface cells.
+**Exact outside, although it is a max.** Each extended member is an exact extrusion, and from within
+a member's own span the nearest point of the member extended is the member's own (an extension is only
+ever reached at its rim). So outside, no bridge reads below the capped segments' min. Inside it is a
+bound, never shallower than 1/√2 of the true depth in every case tested. That is the most a square
+reflex corner costs: the field reads `max(a, b)` where the truth is `√(a² + b²)`. The remaining
+interior error is those corners, where the true contours are arcs (accepted by the owner, 2026-11-18).
 
-**Why it is exact outside, although it is a max.** The extended neighbours `A↑` (A unbounded upward)
-and `B↓` (B unbounded downward) are themselves exact semi-infinite extrusions, not a radial field
-maxed with a slab. Take a point outside the shaft. If it lies within A's span or below it, then it is
-outside `A↑`, and `A↑` reads A's own distance there. The same holds for B within its span or above
-it. So the bridge never reads below a segment's own distance, and the min is the min of the exact
-capped segments.
+In the viewer's contours this shows two ways. Each is a capped segment's end plane counted as boundary
+where it is not:
 
-**The segment closure.** A segment is a factory returning a closure of two extension lengths:
-`seg(0, 0)` is the segment capped to its span, `seg(big, 0)` is unbounded below and `seg(0, big)`
-unbounded above. The bridge at a joint is `max(prev(0, big), cur(big, 0))`, so with baseline
-positions the fold needs no position at all. Its accumulator is `[d, prevUp]`:
+- **Past a groove's rims**, each contour runs straight on by up to its own depth instead of rounding
+  the rim.
+- **Where a taper meets a diameter at the same radius**, which has no face at all, contours run
+  vertical at a constant offset from the joint. At a 45° cone that run is about 0.6 × the depth long.
 
-    acc = reduce((a, f) {
-      return [min(a.x, f(0, 0), max(a.y, f(big, 0))), f(0, big)];
+**The segment closure and the fold.** A segment is a factory returning a closure of two extension
+lengths: `seg(0, 0)` capped, `seg(big, 0)` unbounded below, `seg(0, big)` above, and `seg(big, big)` both
+ways. Bridges are pooled by min, and max distributes over min, so all runs fold in one pass. The
+accumulator is `[shaft so far, every run still open]`:
+
+    acc = reduce((a, seg) {
+      openRuns = a.y;
+      return [min(a.x, seg(0, 0), max(openRuns, seg(big, 0))),
+              min(max(openRuns, seg(big, big)), seg(0, big))];
     }, segments, [big, big]);
+
+With baseline positions the fold needs no position at all. WGSL grows linearly, by about 1.5 KB a
+segment (section 7).
 
 **Rejected: gating the bridge to the inside.** A variant counting the bridge only where the plain
 union reads ≤ 0 (`max(bridge, m > 0 ? nothing : -nothing)`) is no more exact, since the ungated bridge
@@ -176,7 +188,12 @@ The numbering is the order.
         `thread.male`'s advice to "prove against the smooth cylinder".
 
 **Later, recorded:** knurl as geometry; cross holes and male keyseats; relief threads; an exact
-revolved envelope for the turned diameters, once profile C2 lands.
+revolved envelope for the turned diameters, once profile C2 lands; an **exact interior** (the owner,
+2026-11-18). For the last, the true contours at reflex corners are arcs. A candidate is to build the
+interior from real boundary pieces only: sides, end caps, and at each joint the shoulder, the
+symmetric difference of the neighbours' end sections, whose 2D distance
+`max(0, −max(sA, sB), min(sA, sB))` is exact for exact sections. It needs more from a segment than
+`seg(eDown, eUp)`.
 
 ## 6. Constraints
 
@@ -197,6 +214,13 @@ From the closure pass:
   captured *field* is fine (spike (c)).
 - A **list of functions must be visible where it is folded**: it cannot arrive as a parameter of the
   function that folds it (spike (b)).
+
+From the linker (found in Phase 1, predates this track):
+
+- An **import alias that matches a stdlib package's name resolves to the stdlib package**:
+  `import gears "geom/gears"` then `gears.f()` reports f "not found in package gears". A
+  non-stdlib alias works. Once `mechanical/shaft` existed, Phase 0's throwaway package, imported as
+  `shaft`, hit this, so it is imported as `spike` now. Not fixed here.
 - A scalar folds as a list of one, so a lone segment needs no list literal.
 
 From the drill library:
@@ -224,6 +248,15 @@ the stack's meridian polygon, mirrored across the axis.
 | Spike (b): hole lists through `shaft`  | **Refused.** "A list of functions has to be visible where it is folded": a list that arrives as a parameter does not reach `drill.hole`. Pinned by `TestShaftPhase0_SpikeHoleListsThroughShaft`. |
 | Spike (b): voids instead of lists      | Works: the document folds each end's `drill.hole` and hands the shaft the voids. A void handed over with its mouth at 0 is placed by the shaft's own `remap` correctly on the CPU, so the "silent no-op" drill warns of did not occur here. WGSL not yet checked. |
 | Spike (c): section segment             | Works: a captured `profileXY` field as a segment's section.                                                                                |
+
+**Phase 1 (2026-11-18): runs, not neighbours.** The owner's viewer check of a collar showed a shallow
+sheet under it (section 3.3). With a bridge for every run:
+
+- the collar's axis reads −6.00 (truth −6.03) and a thin groove's −5.00 (truth −5.00);
+- outside stays exact;
+- inside, the field is at least 1/√2 of the true depth over every grid point of twelve stacks;
+- WGSL at 2 / 4 / 8 / 16 segments (with tapers) is 7338 / 10447 / 16323 / 27935 bytes;
+- the eight-segment example goes from 19553 to 23112 bytes.
 
 **Decided (owner, 2026-11-18): fix the closure pass.** Phase 2 keeps drill's intent,
 `shaft(segments, topHole, bottomHole)` taking feature lists, and opens by teaching the closure pass to

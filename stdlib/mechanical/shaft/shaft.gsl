@@ -1,0 +1,158 @@
+/// Generalized shafts as stacks of coaxial segments along +Z: diameters and
+/// tapers so far, joined so that no surface lies inside the solid where one
+/// segment meets the next.
+
+// Shaft: generalized shafts
+//
+// A shaft is a stack of segments on the +Z axis, each placed by the two planes
+// it runs between, measured from one datum the way a baseline-dimensioned
+// drawing gives them:
+//
+//   shaft.body([shaft.diameter(20.0, 0.0, 20.0),
+//               shaft.taper(20.0, 12.0, 20.0, 26.0),
+//               shaft.diameter(12.0, 26.0, 60.0)])
+//
+// A segment is a solid, so the body is too: min it into the scene. Holes into
+// its ends come from mechanical/drill.
+//
+// THE JOINTS. Segments that meet at a plane cannot simply be min'd: on the
+// joint plane, inside both, each capped segment reads 0, so their min is 0
+// there too: a sheet of zero inside the solid with no change of sign across
+// it. Nothing on the outside shows it, but it breaks every interior value and
+// every proof that relies on one, and an inset or a shell opens it into a
+// slit. Extending the smaller segment into the larger would close it, but
+// that needs to know which side is smaller, and a gear whose tip stands above
+// the next diameter while its root lies below it is the smaller side at some
+// angles and the larger at others.
+//
+// So the body also takes a BRIDGE for every RUN of consecutive segments: the
+// intersection of all their sections over the run's whole span, the first
+// unbounded above, the last unbounded below and those between unbounded both
+// ways. Over each member's own span the intersection lies inside that member,
+// so it adds no material whatever the convexity. On a joint plane, wherever
+// both sides are solid, the run of the two is negative, so the sheet is gone;
+// where only one side is solid it is positive and that segment's own end face
+// is a real face.
+//
+// Neighbours alone are not enough. A thin segment, a collar or a ring groove,
+// bridged only to each neighbour leaves every point of the section across it
+// no deeper than half its width, a shallow sheet in place of a zero one, which
+// an inset just as deep still opens. The run of all three carries the section
+// common to them straight across it.
+//
+// The distance is exact outside wherever the segments are: from within any
+// member's span, the nearest point of that member extended is the member's own
+// (an extension is only ever reached at its rim), so no bridge undercuts the
+// min of the capped segments. Inside it is a bound.
+//
+// A SEGMENT is a factory returning a closure of two extension lengths, which
+// only body calls: seg(0, 0) is the segment capped to its own span, seg(big, 0)
+// is the same section unbounded below it, seg(0, big) unbounded above it and
+// seg(big, big) both ways. Beyond its span a segment continues at the diameter
+// it ends with.
+//
+// Doc convention follows builtin/base.gsl: `///` lines are public docs.
+
+// =========================================================
+// Entry Points
+// =========================================================
+
+/// The solid of a shaft: `segments`, a list of segments from this package
+/// (shaft.diameter, shaft.taper), each between its own two planes, in order
+/// along +Z, each starting where the one before it ends. A lone segment needs
+/// no list. Exact outside, a bound inside, and solid across every joint.
+body(segments) {
+  // This body is CLONED INTO THE CALLER'S FILE, where the segments' own
+  // arguments live, so every name in it has to resolve there: builtin is
+  // dot-imported everywhere, a name of this package's would not be. The
+  // extension length is written out for the same reason.
+  //
+  // The accumulator is [the shaft so far, every run still open]. The open
+  // runs are the runs that end at the previous segment, each the intersection
+  // of its members with the last of them still unbounded above, pooled by min:
+  // the bridges of all runs ending here are then max(open, this unbounded
+  // below), since max distributes over min. Passing this segment, every open
+  // run takes it as a member between (unbounded both ways) and a new run opens
+  // at it (unbounded above). The seed's second component keeps the first
+  // segment from bridging with anything.
+  shaftSoFar = reduce((acc, seg) {
+    openRuns = acc.y;
+    return [min(acc.x, seg(0.0, 0.0), max(openRuns, seg(100000.0, 0.0))),
+            min(max(openRuns, seg(100000.0, 100000.0)), seg(0.0, 100000.0))];
+  }, segments, [100000.0, 100000.0]);
+  return shaftSoFar.x;
+}
+
+// =========================================================
+// Segments
+// =========================================================
+
+/// A plain diameter `dia` across, from the plane z = `from` up to z = `to`.
+/// A groove, a relief or a journal is a diameter too: list it between its
+/// neighbours.
+diameter(dia, from, to) {
+  seg(eDown, eUp) {
+    radial = length(p.xy) - dia / 2.0;
+    axial = max((from - eDown) - p.z, p.z - (to + eUp));
+    return sqrt(max(radial, 0.0) * max(radial, 0.0) + max(axial, 0.0) * max(axial, 0.0)) + min(max(radial, axial), 0.0);
+  }
+  return seg;
+}
+
+/// A taper from diameter `diaFrom` at the plane z = `from` to diameter
+/// `diaTo` at z = `to`: narrowing or widening, a cone shoulder between two
+/// diameters, a chamfer at a shaft's end.
+taper(diaFrom, diaTo, from, to) {
+  seg(eDown, eUp) {
+    return turnedTaper(diaFrom / 2.0, diaTo / 2.0, from, to, from - eDown, to + eUp);
+  }
+  return seg;
+}
+
+// =========================================================
+// Internal Geometry
+// =========================================================
+
+// The distance from q to the segment from a to b, in 2D. A segment of length
+// zero is its point: an extension of zero leaves one, and it must read as the
+// point rather than as nothing.
+segmentDistance2(q, a, b) {
+  edge = b - a;
+  offset = q - a;
+  along = clamp(dot(offset, edge) / max(dot(edge, edge), 1e-12), 0.0, 1.0);
+  return length(offset - edge * along);
+}
+
+// The exact signed distance to a taper of radius r0 at z = from and r1 at
+// z = to, continued as plain diameters down to the plane z = low and up to
+// z = high (low <= from < to <= high). A prism's formula is not enough here:
+// above the small end of a narrowing taper a point can lie nearest the sloped
+// side, not the rim, so the distance is taken in the taper's own half-section,
+// at q = (distance from the axis, z), as the nearest of its five edges: the
+// bottom cap, the side below the taper, the slope, the side above it and the
+// top cap. The axis is no edge of it, and for q on its side of the axis the
+// nearest point of each cap is too.
+//
+// The four edges that run along or across the axis are measured by clamping
+// rather than by projecting onto them. An extended side runs from a plane a
+// hundred metres off, and q minus that end, in float32, keeps only about a
+// hundredth of a millimetre; clamping z between the side's two planes only
+// ever subtracts the near one. The slope's two ends are both its own, so it
+// takes the general segment distance.
+//
+// The sign comes from containment, low <= z <= high and r <= radius(z), and is
+// applied by a select between the magnitude and its negation, as profileXY's
+// is: over a surface cell the condition is undecided and the bound widens to
+// the magnitude's range, which is the cell's size there.
+turnedTaper(r0, r1, from, to, low, high) {
+  q = [length(p.xy), p.z];
+  bottomCap = length([max(q.x - r0, 0.0), p.z - low]);
+  sideBelow = length([q.x - r0, max(low - p.z, p.z - from, 0.0)]);
+  slope = segmentDistance2(q, [r0, from], [r1, to]);
+  sideAbove = length([q.x - r1, max(to - p.z, p.z - high, 0.0)]);
+  topCap = length([max(q.x - r1, 0.0), p.z - high]);
+  nearest = min(bottomCap, sideBelow, slope, sideAbove, topCap);
+  radiusHere = r0 + (r1 - r0) * clamp((p.z - from) / (to - from), 0.0, 1.0);
+  containment = max(low - p.z, p.z - high, q.x - radiusHere);
+  return containment > 0.0 ? nearest : neg(nearest);
+}
