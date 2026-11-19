@@ -187,6 +187,10 @@ The numbering is the order.
         spline at its major diameter. It is for proofs, meshing and assemblies, following
         `thread.male`'s advice to "prove against the smooth cylinder".
 
+**Phase 3 depends on gears for the gear segment:** `gears.gearProfile` is not yet a bound (plan, Phase 3), so
+neither is `shaft.gear`; the fix is its own PR off main (a bounded involute flank, and the normalized
+chamfer for its tip). The shaft adds nothing to it: a helix's twist is divided out.
+
 **Later, recorded:** knurl as geometry; cross holes and male keyseats; relief threads; an exact
 revolved envelope for the turned diameters, once profile C2 lands; an **exact interior** (the owner,
 2026-11-18). For the last, the true contours at reflex corners are arcs. A candidate is to build the

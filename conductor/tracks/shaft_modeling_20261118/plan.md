@@ -125,15 +125,40 @@ treatment), the phase opens with a proposal for the owner to approve before any 
 
 ## Phase 3: Non-Axisymmetric Segments
 
-- [ ] Task: Proposal: the segment factories (gear, male spline, D-flat, double-D, hex) and their
-      parameters, sized as `drill`'s female counterparts are
-- [ ] Task: Write failing tests (Red Phase)
-  - [ ] Each segment against the reference
-  - [ ] Mixed convexity: gear tip > neighbour > root; hex across corners > round > hex across flats
-  - [ ] A male spline fits `drill.spline` of the same size (the fit test the driver bits use)
-- [ ] Task: Implement (Green & Refactor Phase)
-- [ ] Task: An example (a gear shaft); WGSL size; the owner's viewer check
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Proposal (approved 2026-11-18)
+  - [x] `shaft.section(field2d, from, to)`, public: any 2D section as a prism segment
+  - [x] Exact sections from `profileXY` (owner's call, over max/min bounds): `hex(acrossFlats, from, to)`
+        with flats on ±x, `dFlat(dia, acrossFlat, from, to)` with its flat on +x, `doubleD(dia,
+        acrossFlats, from, to)` with flats on ±x, and the male `spline(count, minor, major, width, from,
+        to)`, one tooth (a box with an arc tip) repeated with `map.patternPolarXY` and min'd with the
+        minor disc
+  - [x] `gear(teeth, module, pressureAngle, helixAngle, from, to)`, spur and helical, from
+        `gears.gearProfile`; the helix's twist is divided out by `sqrt(1 + (tipRadius * twistRate)^2)`
+        so the field stays a bound (`gears.gear` does not correct it)
+- [x] Task: Write failing tests (Red Phase), `eval/shaft_sections_test.go`
+  - [x] hex, D-flat, double-D, spline and a generic section of a hex against a reference sampled from
+        the same lines and arcs: exact outside (worst 2.9e-6 mm); exact inside for each prism, a bound
+        for the spline's union
+  - [x] Mixed convexity: hex across corners > round > hex across flats, both orders; a gear between rounds
+        between its root and tip; exact outside, solid on every joint
+  - [x] The male spline seats in `drill.spline` over a bore at its minor: nearest approach 0.002 mm, no
+        interference
+  - [x] The spur gear reads `gears.gearProfile` across its span; a helix adds no stretch over the spur
+        (full 3D gradient inside the tip circle: helical 1.0002 against the spur's 1.1253; without the
+        twist correction 1.19, which fails)
+- [x] Task: Implement (Green & Refactor Phase)
+  - [x] `gears.gearProfile` is not a bound, so neither is the gear segment. Beyond the tip its involute
+        flanks read the string length outside their normal fans (slope 1.56, field 3.51 where the truth
+        is about 2.7); inside the tip circle the tip chamfer overstates at the obtuse flank-tip edge
+        (1.13). Measured, not the shaft's: fixed apart (owner's call, two PRs off main) as a bounded
+        involute flank in `gearProfile` and a normalized chamfer in builtin
+- [x] Task: `examples/shaft_pinion.gsl` (nine segments: spline, journals, helical pinion, hex, D, centres
+      at both ends): 101596 bytes of WGSL, the budget. Each segment's section is evaluated four times a
+      fold step (capped, below, both, above) where its axial term alone differs; computing it once is
+      left for later
+- [x] Task: Full suite passes; no golden moved
+- [x] Task: The owner's viewer check of `examples/shaft_pinion.gsl`
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 4: End Treatments
 

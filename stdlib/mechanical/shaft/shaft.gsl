@@ -146,9 +146,139 @@ taper(diaFrom, diaTo, from, to) {
   return seg;
 }
 
+/// Any 2D section `field`, a distance in the XY plane negative inside such as
+/// a profileXY, carried along the axis from z = `from` to z = `to`. Exact
+/// wherever the section is: the segment is the section's prism, square-ended.
+section(field, from, to) {
+  seg(eDown, eUp, want) {
+    return prismSegment(field, from, to, eDown, eUp, want);
+  }
+  return seg;
+}
+
+/// A hexagon `acrossFlats` wide, its flats facing +x and -x as
+/// drill.hexSocket's do. Exact.
+hex(acrossFlats, from, to) {
+  seg(eDown, eUp, want) {
+    return prismSegment(hexSection(acrossFlats), from, to, eDown, eUp, want);
+  }
+  return seg;
+}
+
+/// A D-shaft: a round of diameter `dia` with one flat facing +x, `acrossFlat`
+/// measured from the flat to the far side of the round, as drill.dFlat's
+/// bore is. Exact.
+dFlat(dia, acrossFlat, from, to) {
+  seg(eDown, eUp, want) {
+    return prismSegment(dFlatSection(dia, acrossFlat), from, to, eDown, eUp, want);
+  }
+  return seg;
+}
+
+/// A double-D: a round of diameter `dia` with two opposed flats facing +x and
+/// -x, `acrossFlats` apart, as drill.doubleD's bore is. Exact.
+doubleD(dia, acrossFlats, from, to) {
+  seg(eDown, eUp, want) {
+    return prismSegment(doubleDSection(dia, acrossFlats), from, to, eDown, eUp, want);
+  }
+  return seg;
+}
+
+/// A straight-sided male spline, the DIN 5463 / ISO 14 form: `count` teeth,
+/// each `width` across with parallel flanks, standing from the `minor`
+/// diameter out to the `major`, one centred on +x. It seats in
+/// drill.spline(count, major, width) over a bore at `minor`. Exact outside.
+spline(count, minor, major, width, from, to) {
+  seg(eDown, eUp, want) {
+    return prismSegment(splineSection(count, minor, major, width), from, to, eDown, eUp, want);
+  }
+  return seg;
+}
+
+/// An involute gear cut on the shaft: `numTeeth` teeth of module `moduleVal`
+/// and pressure angle `pressureAngle`, the section gears.gearProfile draws
+/// (a quarter-module root clearance, a twentieth-module tip break), from
+/// z = `from` to z = `to`. A `helixAngle` other than 0 makes it helical,
+/// measured at the pitch circle and turning with z from the tooth position at
+/// `from`. A bound: the involute section is not exact, and a helix's twist
+/// stretches the field, which is divided out so that it never overstates the
+/// distance.
+gear(numTeeth, moduleVal, pressureAngle, helixAngle, from, to) {
+  seg(eDown, eUp, want) {
+    return prismSegment(gearSection(numTeeth, moduleVal, pressureAngle, helixAngle, from), from, to, eDown, eUp, want);
+  }
+  return seg;
+}
+
 // =========================================================
 // Internal Geometry
 // =========================================================
+
+// A 2D section's prism from z = from to z = to, its ends moved out by the
+// extension lengths, answering as segmentAnswer says. The prism of an exact
+// section is exact, inside and out.
+prismSegment(sectionField, from, to, eDown, eUp, want) {
+  axial = max((from - eDown) - p.z, p.z - (to + eUp));
+  field = sqrt(max(sectionField, 0.0) * max(sectionField, 0.0) + max(axial, 0.0) * max(axial, 0.0)) + min(max(sectionField, axial), 0.0);
+  return segmentAnswer(want, field, from, to);
+}
+
+// The hexagon's six corners, counterclockwise from 30 degrees, so its flats
+// face +-x.
+hexSection(acrossFlats) {
+  r = acrossFlats / 1.7320508075688772;
+  cx = r * 0.8660254037844386;
+  cy = r * 0.5;
+  return profileXY([[cx, cy], [0.0, r], [neg(cx), cy], [neg(cx), neg(cy)], [0.0, neg(r)], [cx, neg(cy)]]);
+}
+
+// The D: round from the top of the flat, through -x, to its bottom, in two
+// minor arcs, and back up the flat.
+dFlatSection(dia, acrossFlat) {
+  r = dia / 2.0;
+  flatX = acrossFlat - r;
+  flatY = sqrt(r * r - flatX * flatX);
+  return profileXY([[flatX, flatY], [neg(r), 0.0], [flatX, neg(flatY)]], [1.0 / r, 1.0 / r, 0.0]);
+}
+
+// The double D: up the +x flat, over the top arc, down the -x flat and under
+// the bottom arc.
+doubleDSection(dia, acrossFlats) {
+  r = dia / 2.0;
+  flatX = acrossFlats / 2.0;
+  flatY = sqrt(r * r - flatX * flatX);
+  return profileXY([[flatX, neg(flatY)], [flatX, flatY], [neg(flatX), flatY], [neg(flatX), neg(flatY)]],
+                   [0.0, 1.0 / r, 0.0, 1.0 / r]);
+}
+
+// The spline: one tooth on +x, a box from the axis out to an arc on the major
+// circle, repeated round the axis and joined to the minor disc. Every point is
+// nearest the tooth of its own sector, so the repeat is exact; tooth and disc
+// overlap rather than abut, so their min is exact outside with no sheet inside.
+splineSection(count, minor, major, width) {
+  halfWidth = width / 2.0;
+  majorR = major / 2.0;
+  tipX = sqrt(majorR * majorR - halfWidth * halfWidth);
+  tooth = remap(profileXY([[0.0, neg(halfWidth)], [tipX, neg(halfWidth)], [tipX, halfWidth], [0.0, halfWidth]],
+                          [0.0, 1.0 / majorR, 0.0, 0.0]),
+                map.patternPolarXY(count));
+  return min(length(p.xy) - minor / 2.0, tooth);
+}
+
+// The gear's section at this height: gears.gearProfile turned by the helix's
+// twist since `from`, and divided by the most the twist can stretch it, at the
+// tip circle, so the field stays a bound.
+gearSection(numTeeth, moduleVal, pressureAngle, helixAngle, from) {
+  pitchRadius = numTeeth * moduleVal / 2.0;
+  tipRadius = pitchRadius + moduleVal;
+  twistRate = tan(helixAngle) / pitchRadius;
+  twist = (p.z - from) * twistRate;
+  cosT = cos(twist);
+  sinT = sin(twist);
+  profile = remap(gears.gearProfile(numTeeth, moduleVal, pressureAngle, 0.0, 0.25, 0.05 * moduleVal),
+                  [p.x * cosT + p.y * sinT, p.y * cosT - p.x * sinT, p.z]);
+  return profile / sqrt(1.0 + tipRadius * twistRate * tipRadius * twistRate);
+}
 
 // What a segment answers: its field when `want` is 0, the plane it starts on
 // when 1 and the plane it ends on when 2. body always asks with a constant, so
