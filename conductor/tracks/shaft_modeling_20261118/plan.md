@@ -123,7 +123,7 @@ treatment), the phase opens with a proposal for the owner to approve before any 
 - [x] Task: The owner's viewer check of `examples/shaft_end_holes.gsl`
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
-## Phase 3: Non-Axisymmetric Segments
+## Phase 3: Non-Axisymmetric Segments [checkpoint: d2634b1]
 
 - [x] Task: Proposal (approved 2026-11-18)
   - [x] `shaft.section(field2d, from, to)`, public: any 2D section as a prism segment
