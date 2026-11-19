@@ -139,10 +139,15 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
 
 ## Phase 3: Quadratic Bezier Edges (C6)
 
-- [ ] Task: Proposal: how an edge is marked as a quadratic Bezier (its control point) alongside lines and
-      arcs, and how the 2D distance reuses `bezierQuadPointRound`'s closed-form solve
-- [ ] Task: Write failing tests (Red Phase): Bezier edges, alone and mixed with lines and arcs, exact against
-      the reference, with smooth and sharp joints
+- [x] Task: Proposal: how an edge is marked as a quadratic Bezier (its control point) alongside lines and
+      arcs, and how the 2D distance reuses `bezierQuadPointRound`'s closed-form solve. Decided:
+      `profileEdgesXY(points, edges)` with `edgeLine()`, `edgeArc(curvature)`, `edgeBezier(control)`;
+      `openProfileEdgesXY` and `sweepOpenEdges` too (spec section 4, C6)
+- [ ] Task: Write failing tests (Red Phase) (`eval/profile_edges_test.go`): Bezier edges, alone and mixed
+      with lines and arcs, exact against the reference, with smooth and sharp joints; a straight Bezier is
+      its chord; lines and arcs alone agree with `profileXY(points, curvatures)`; `.u` the arc length;
+      surface cells; `certify`; the open forms against the extended chain and `sweepOpenEdges`'s formula,
+      frame and box
 - [ ] Task: Implement (Green & Refactor Phase); `.u` along a Bezier edge is its arc length
 - [ ] Task: An example; WGSL size (watch the per-step accumulator reads, spec section 5.5); the owner's
       viewer check

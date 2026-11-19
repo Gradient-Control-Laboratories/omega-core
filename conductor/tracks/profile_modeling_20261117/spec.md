@@ -86,6 +86,20 @@ Profiles first, then the operations on them. The numbering is the order.
    (`bezierQuadPointRound` in `stdlib/builtin/quad_bezier_curves.gsl`, Quilez's closed-form cubic solve);
    the 2D case is simpler. A profile edge can be a line, an arc or a quadratic Bezier, and the profile stays
    exact. Higher-order splines are not in this track.
+
+   Decided 2026-11-18 (taken after C4 and C5): an edge is named by a descriptor, `edgeLine()`,
+   `edgeArc(curvature)` or `edgeBezier(control)`, and a profile of mixed edges is `profileEdgesXY(points,
+   edges)`, one descriptor per edge; a name of its own, since overloads are told apart by arity alone and
+   `profileXY` already takes two and three arguments. Open chains too: `openProfileEdgesXY(points, edges)`
+   and `sweepOpenEdges(section, points, edges)`, one descriptor per edge (one fewer than the points).
+   Corners on these forms, and corners next to a Bezier, come later. A Bezier edge joins the three pools as
+   an arc does: its distance is the least over the cubic solve's candidate parameters, each clamped to the
+   edge and each a point on it, with its two ends, so no select chooses among them; its side is the sign
+   of the implicit parabola it lies on, F(q) = D (g x q) - (q x f)^2 with g = 2 (control - start),
+   f = start - 2 control + end, D = g x f and q = p - start, or the chord's side where D vanishes (a choice
+   made by the points alone, so exact over any cell); it is held off past its ends by twice the overshoot,
+   or gated by its parameter, whichever the reference and surface cells bear out. `.u` along it is its arc
+   length, in closed form; its box takes the hull of its points and control.
 4. **C7. Tighter arc (and Bezier) boxes.** The arc profile's box is the points' box padded by
    `min(span / 2, span^2 * maxCurvature / 4)`: sound, but loose, because a `.box` could not hold the reduce
    an exact box needs (see section 5).
