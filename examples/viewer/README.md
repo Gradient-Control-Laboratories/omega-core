@@ -73,7 +73,11 @@ compiles to (the bundle `/api/compile` answers). The page draws what the viewer 
 sliders, gizmos, time, sections and render settings work, since those only set shader uniforms. It
 compiles nothing, so the code panel is read-only and Save As, Imports, Export, Materials and Help
 are not offered. Several documents share the one page: the menu lists them, and `?file=can.gsl`
-on the address opens one. Browsers do not load the page from a `file://` address.
+on the address opens one, and adding `&embed` hides the menu, for a page set into another as a
+frame. Browsers do not load the page from a `file://` address.
+
+The Export panel's `Web page (.zip)` format downloads the same folder for the open document, as the
+editor shows it, saved or not (`POST /api/export`). Unzip it onto a web server.
 
 ## Directory Layout
 

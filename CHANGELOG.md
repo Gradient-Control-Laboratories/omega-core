@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   only at a square edge; at a 120-degree edge `intersectChamfer`'s field changes 1.22 times as fast as
   distance and at 150 degrees 1.37. Pass the normals, or omit them to take each field's gradient.
   Existing callers are unchanged.
+- The viewer's Export panel has a `Web page (.zip)` format: it downloads the same folder for the open document,
+  as the editor shows it, zipped (`POST /api/export`).
 
 ### Changed
 

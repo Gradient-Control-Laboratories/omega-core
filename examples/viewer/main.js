@@ -116,6 +116,17 @@ const btnSaveCancel = document.getElementById("btn-save-cancel");
 // as it was exported: style.css hides what would change or save it, and the editor is read-only.
 document.body.classList.toggle("read-only-host", !host.editable);
 
+// ?embed on the address is a page set into another one, as a frame in an article: it shows the one
+// document its address names (?file=), so there is no menu of documents, and no top bar to hold it.
+// The Code button joins the viewport's own buttons, above Fullscreen, and what stands over the code
+// (Wrap, the GSL/WGSL tabs) moves to the top of the code panel, so the viewport keeps the page's height.
+const embedded = new URLSearchParams(window.location.search).has("embed");
+document.body.classList.toggle("embedded", embedded);
+if (embedded) {
+    document.getElementById("canvas-left-btns").prepend(btnToggleCode);
+    editorContainerEl.prepend(editorTopControlsEl);
+}
+
 function nextCompileID() {
     latestCompileID = `compile-${Date.now()}-${++compileSeq}`;
     return latestCompileID;
@@ -526,6 +537,50 @@ async function requestStlExport(detail, surfaceBbox, algo, format = "stl") {
     }
 }
 
+// exportPage downloads the open document as `gsl export` writes it: this viewer and the document's
+// field as static web pages, zipped. It is the Export panel's Web page format.
+async function exportPage() {
+    const source = getGslSourceForServer();
+    if (!source || source.trim() === "") {
+        showNotification(true, "Nothing to export");
+        return false;
+    }
+    showNotification(false, "Exporting web page...", true);
+    try {
+        const res = await host.exportPage({ name: currentExampleName || "model.gsl", source });
+        if (!res.ok) {
+            let errText = `HTTP ${res.status}`;
+            try {
+                const errJson = await res.json();
+                if (errJson && errJson.error) errText = errJson.error;
+            } catch (_) {
+                // ignore JSON parse error on non-JSON body
+            }
+            showError(`Export failed: ${errText}`, false, true);
+            return false;
+        }
+
+        // The reply names the file: the document's name, -html.zip in place of .gsl.
+        const named = /filename="?([^";]+)"?/.exec(res.headers.get("Content-Disposition") || "");
+        const fileName = named ? named[1] : "model-html.zip";
+        const url = URL.createObjectURL(await res.blob());
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        const note = res.headers.get("X-Export-Note");
+        showNotification(false, note ? `Exported ${fileName}. ${note}` : `Exported ${fileName}: unzip it onto any web server`);
+        return true;
+    } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        showError(`Export failed: ${msg}`, false, true);
+        return false;
+    }
+}
+
 // ── Progress Events from the Host ──
 
 function handleProgressEvent(ev) {
@@ -661,7 +716,8 @@ document.getElementById("canvas-container").addEventListener("click", async (eve
 
 const btnFullscreen = document.getElementById("btn-fullscreen");
 btnFullscreen.addEventListener("click", () => {
-    const container = document.getElementById("canvas-container");
+    // An embedded page goes full screen whole, so its code panel comes along; otherwise the viewport does.
+    const container = embedded ? document.documentElement : document.getElementById("canvas-container");
     if (!document.fullscreenElement) {
         container.requestFullscreen();
     } else {
@@ -803,6 +859,7 @@ if (host.editable) initExportPanel({
     },
     serverMarchingCubes: true,
     serverFormats: true,
+    onExportPage: exportPage,
 });
 
 // ── Bodies Panel ──

@@ -1079,3 +1079,35 @@ body.read-only-host #stl-bounds-panel,
 body.read-only-host #material-panel {
     display: none;
 }
+
+/* A page opened with ?embed sits in another page and shows the one document
+ * its address names: no menu of documents, so no top bar. main.js moves the
+ * Code button in with the viewport's buttons, where it is an icon like them,
+ * and the code's own controls to the top of the code panel. */
+body.embedded #top-bar {
+    display: none;
+}
+
+body.embedded #btn-toggle-code {
+    padding: 10px;
+    border: none;
+}
+
+body.embedded #btn-toggle-code span {
+    display: none;
+}
+
+body.embedded #btn-toggle-code img {
+    display: block;
+    width: 13px;
+    height: 13px;
+}
+
+body.embedded #btn-toggle-code.active {
+    outline: 1px solid #4a4a4a;
+}
+
+body.embedded #editor-top-controls {
+    flex-shrink: 0;
+    margin: 10px 10px 0;
+}

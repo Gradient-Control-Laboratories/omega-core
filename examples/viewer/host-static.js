@@ -63,6 +63,10 @@ export function mesh() {
     return unavailable("Meshing");
 }
 
+export function exportPage() {
+    return unavailable("Exporting a web page");
+}
+
 export function uploadAsset() {
     return unavailable("Importing a mesh");
 }
