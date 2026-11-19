@@ -411,6 +411,15 @@ message Scene {
     repeated double spinodoidBounds = 5;
 }
 
+// How long the document's animation runs, written @duration(seconds). It is
+// to time what Scene is to space: the viewer's time slider spans it, and the
+// animation clock starts over on reaching it.
+message Duration {
+    Location start   = 1; // the '@'
+    Location end     = 2; // the closing ')'
+    double   seconds = 3; // on the animation clock, greater than zero
+}
+
 // A line of text the viewer shows centred at the bottom of the canvas while
 // the animation clock is in [startTime, endTime], written
 // @caption("text", startTime, endTime[, fade]).
@@ -444,6 +453,9 @@ message Package {
 
     // Timed captions, in source order across the package's files
     repeated Caption captions = 6;
+
+    // Animation length declared for this package
+    Duration duration = 7;
 }
 
 

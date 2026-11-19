@@ -921,7 +921,7 @@ function render(allowDraft = false, useAccum = true) {
     accumN = 0;
   }
   accumNU.value = useAccum ? accumN : 0;
-  timeU.value = getElapsedMs() / 1000;
+  timeU.value = getAnimTime();
   updateCameraUniforms();
   updatePartView();
 
@@ -2073,8 +2073,20 @@ function getElapsedMs() {
     return performance.now() - startTimeMs - timeOffsetMs;
 }
 
+// @duration: how long the document says its animation runs, in seconds. The
+// clock starts over on passing it. 0 means the document names none, and the
+// clock runs on.
+let loopSeconds = 0;
+
+export function setAnimDuration(seconds) {
+    loopSeconds = seconds > 0 ? seconds : 0;
+    scheduleRender();
+}
+
 export function getAnimTime() {
-    return getElapsedMs() / 1000;
+    const t = getElapsedMs() / 1000;
+    // Only once past the end, so the end itself can be scrubbed to and seen.
+    return loopSeconds > 0 && t > loopSeconds ? t % loopSeconds : t;
 }
 
 export function setAnimTime(t) {

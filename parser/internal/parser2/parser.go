@@ -119,6 +119,20 @@ func Parse(sources []string) (*program.Package, []program.Diagnostic, error) {
 			return p, diags, err
 		}
 
+		if topLevel.Duration != nil {
+			if i != 0 {
+				p, err := recordFileError(pkg, pkgFile, source, participle.Errorf(topLevel.Duration.Pos, "@duration directive is only allowed in the first source file"))
+				return p, diags, err
+			}
+			dur, err := newDuration(topLevel.Duration.Seconds,
+				posToLocation(topLevel.Duration.Pos), posToLocation(topLevel.Duration.EndPos))
+			if err != nil {
+				p, err := recordFileError(pkg, pkgFile, source, participle.Errorf(topLevel.Duration.Pos, "%s", err.Error()))
+				return p, diags, err
+			}
+			pkg.Duration = dur
+		}
+
 		pkg.Captions = append(pkg.Captions, takeCaptions(topLevel)...)
 
 		if berr := buildPkgFile(pkgFileScope, topLevel); berr != nil {

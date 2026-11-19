@@ -25,6 +25,7 @@ import {
     setMeshShapeVisible,
     setAnimPaused,
     setAnimTime,
+    setAnimDuration,
     getAnimTime,
     audioSystem,
     pickWorldPoint,
@@ -396,6 +397,9 @@ eventManager.addListener("canvas/update-shader", (event) => {
 
         // The document's @caption lines, which the clock shows and hides.
         setCaptions(event.captions || []);
+
+        // The document's @duration, which the Time slider spans and the clock loops on.
+        applyDuration(event.duration);
 
         const decls = event.meshDecls || [];
         const unknowns = syncMeshInstances(decls);
@@ -975,6 +979,18 @@ animTimeInput.addEventListener("change", () => {
         timeRange.value = String(t);
     }
 });
+
+// A document's @duration(seconds) sets the end time and the Time slider's
+// range, and the clock starts over there. A document without one leaves the
+// end time as it is and lets the clock run on.
+function applyDuration(duration) {
+    const seconds = duration && duration.seconds > 0 ? duration.seconds : 0;
+    setAnimDuration(seconds);
+    if (seconds > 0) {
+        animEndTimeInput.value = String(seconds);
+        timeRange.max = String(seconds);
+    }
+}
 
 // Scrub time with the range input (active only while paused). Stays within
 // [0, endTime].

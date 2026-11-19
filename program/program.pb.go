@@ -1860,6 +1860,69 @@ func (x *Scene) GetSpinodoidBounds() []float64 {
 	return nil
 }
 
+// How long the document's animation runs, written @duration(seconds). It is
+// to time what Scene is to space: the viewer's time slider spans it, and the
+// animation clock starts over on reaching it.
+type Duration struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Start         *Location              `protobuf:"bytes,1,opt,name=start,proto3" json:"start,omitempty"`       // the '@'
+	End           *Location              `protobuf:"bytes,2,opt,name=end,proto3" json:"end,omitempty"`           // the closing ')'
+	Seconds       float64                `protobuf:"fixed64,3,opt,name=seconds,proto3" json:"seconds,omitempty"` // on the animation clock, greater than zero
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Duration) Reset() {
+	*x = Duration{}
+	mi := &file_program_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Duration) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Duration) ProtoMessage() {}
+
+func (x *Duration) ProtoReflect() protoreflect.Message {
+	mi := &file_program_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Duration.ProtoReflect.Descriptor instead.
+func (*Duration) Descriptor() ([]byte, []int) {
+	return file_program_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *Duration) GetStart() *Location {
+	if x != nil {
+		return x.Start
+	}
+	return nil
+}
+
+func (x *Duration) GetEnd() *Location {
+	if x != nil {
+		return x.End
+	}
+	return nil
+}
+
+func (x *Duration) GetSeconds() float64 {
+	if x != nil {
+		return x.Seconds
+	}
+	return 0
+}
+
 // A line of text the viewer shows centred at the bottom of the canvas while
 // the animation clock is in [startTime, endTime], written
 // @caption("text", startTime, endTime[, fade]).
@@ -1880,7 +1943,7 @@ type Caption struct {
 
 func (x *Caption) Reset() {
 	*x = Caption{}
-	mi := &file_program_proto_msgTypes[20]
+	mi := &file_program_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1892,7 +1955,7 @@ func (x *Caption) String() string {
 func (*Caption) ProtoMessage() {}
 
 func (x *Caption) ProtoReflect() protoreflect.Message {
-	mi := &file_program_proto_msgTypes[20]
+	mi := &file_program_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1905,7 +1968,7 @@ func (x *Caption) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Caption.ProtoReflect.Descriptor instead.
 func (*Caption) Descriptor() ([]byte, []int) {
-	return file_program_proto_rawDescGZIP(), []int{20}
+	return file_program_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *Caption) GetStart() *Location {
@@ -1964,14 +2027,16 @@ type Package struct {
 	// Scene framing (extent and grid) declared for this package
 	Scene *Scene `protobuf:"bytes,5,opt,name=scene,proto3" json:"scene,omitempty"`
 	// Timed captions, in source order across the package's files
-	Captions      []*Caption `protobuf:"bytes,6,rep,name=captions,proto3" json:"captions,omitempty"`
+	Captions []*Caption `protobuf:"bytes,6,rep,name=captions,proto3" json:"captions,omitempty"`
+	// Animation length declared for this package
+	Duration      *Duration `protobuf:"bytes,7,opt,name=duration,proto3" json:"duration,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Package) Reset() {
 	*x = Package{}
-	mi := &file_program_proto_msgTypes[21]
+	mi := &file_program_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1983,7 +2048,7 @@ func (x *Package) String() string {
 func (*Package) ProtoMessage() {}
 
 func (x *Package) ProtoReflect() protoreflect.Message {
-	mi := &file_program_proto_msgTypes[21]
+	mi := &file_program_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1996,7 +2061,7 @@ func (x *Package) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Package.ProtoReflect.Descriptor instead.
 func (*Package) Descriptor() ([]byte, []int) {
-	return file_program_proto_rawDescGZIP(), []int{21}
+	return file_program_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *Package) GetVersionMajor() int32 {
@@ -2041,6 +2106,13 @@ func (x *Package) GetCaptions() []*Caption {
 	return nil
 }
 
+func (x *Package) GetDuration() *Duration {
+	if x != nil {
+		return x.Duration
+	}
+	return nil
+}
+
 type PackageFile struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The full and unique identifier path for this package file.
@@ -2066,7 +2138,7 @@ type PackageFile struct {
 
 func (x *PackageFile) Reset() {
 	*x = PackageFile{}
-	mi := &file_program_proto_msgTypes[22]
+	mi := &file_program_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2078,7 +2150,7 @@ func (x *PackageFile) String() string {
 func (*PackageFile) ProtoMessage() {}
 
 func (x *PackageFile) ProtoReflect() protoreflect.Message {
-	mi := &file_program_proto_msgTypes[22]
+	mi := &file_program_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2091,7 +2163,7 @@ func (x *PackageFile) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PackageFile.ProtoReflect.Descriptor instead.
 func (*PackageFile) Descriptor() ([]byte, []int) {
-	return file_program_proto_rawDescGZIP(), []int{22}
+	return file_program_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *PackageFile) GetPath() string {
@@ -2198,7 +2270,7 @@ type MeshSdfSlot struct {
 
 func (x *MeshSdfSlot) Reset() {
 	*x = MeshSdfSlot{}
-	mi := &file_program_proto_msgTypes[23]
+	mi := &file_program_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2210,7 +2282,7 @@ func (x *MeshSdfSlot) String() string {
 func (*MeshSdfSlot) ProtoMessage() {}
 
 func (x *MeshSdfSlot) ProtoReflect() protoreflect.Message {
-	mi := &file_program_proto_msgTypes[23]
+	mi := &file_program_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2223,7 +2295,7 @@ func (x *MeshSdfSlot) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MeshSdfSlot.ProtoReflect.Descriptor instead.
 func (*MeshSdfSlot) Descriptor() ([]byte, []int) {
-	return file_program_proto_rawDescGZIP(), []int{23}
+	return file_program_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *MeshSdfSlot) GetSlot() int32 {
@@ -2275,7 +2347,7 @@ type GlobalTextures struct {
 
 func (x *GlobalTextures) Reset() {
 	*x = GlobalTextures{}
-	mi := &file_program_proto_msgTypes[24]
+	mi := &file_program_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2287,7 +2359,7 @@ func (x *GlobalTextures) String() string {
 func (*GlobalTextures) ProtoMessage() {}
 
 func (x *GlobalTextures) ProtoReflect() protoreflect.Message {
-	mi := &file_program_proto_msgTypes[24]
+	mi := &file_program_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2300,7 +2372,7 @@ func (x *GlobalTextures) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GlobalTextures.ProtoReflect.Descriptor instead.
 func (*GlobalTextures) Descriptor() ([]byte, []int) {
-	return file_program_proto_rawDescGZIP(), []int{24}
+	return file_program_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *GlobalTextures) GetUsesNoiseTile() bool {
@@ -2349,7 +2421,7 @@ type Program struct {
 
 func (x *Program) Reset() {
 	*x = Program{}
-	mi := &file_program_proto_msgTypes[25]
+	mi := &file_program_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2361,7 +2433,7 @@ func (x *Program) String() string {
 func (*Program) ProtoMessage() {}
 
 func (x *Program) ProtoReflect() protoreflect.Message {
-	mi := &file_program_proto_msgTypes[25]
+	mi := &file_program_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2374,7 +2446,7 @@ func (x *Program) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Program.ProtoReflect.Descriptor instead.
 func (*Program) Descriptor() ([]byte, []int) {
-	return file_program_proto_rawDescGZIP(), []int{25}
+	return file_program_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *Program) GetVersionMajor() int32 {
@@ -2452,7 +2524,7 @@ type Type struct {
 
 func (x *Type) Reset() {
 	*x = Type{}
-	mi := &file_program_proto_msgTypes[26]
+	mi := &file_program_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2464,7 +2536,7 @@ func (x *Type) String() string {
 func (*Type) ProtoMessage() {}
 
 func (x *Type) ProtoReflect() protoreflect.Message {
-	mi := &file_program_proto_msgTypes[26]
+	mi := &file_program_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2477,7 +2549,7 @@ func (x *Type) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Type.ProtoReflect.Descriptor instead.
 func (*Type) Descriptor() ([]byte, []int) {
-	return file_program_proto_rawDescGZIP(), []int{26}
+	return file_program_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *Type) GetKind() TypeKind {
@@ -2644,21 +2716,26 @@ const file_program_proto_rawDesc = "" +
 	"\x03end\x18\x02 \x01(\v2\x11.program.LocationR\x03end\x12\x12\n" +
 	"\x04size\x18\x03 \x01(\x01R\x04size\x12\x12\n" +
 	"\x04grid\x18\x04 \x01(\x01R\x04grid\x12(\n" +
-	"\x0fspinodoidBounds\x18\x05 \x03(\x01R\x0fspinodoidBounds\"\xb7\x01\n" +
+	"\x0fspinodoidBounds\x18\x05 \x03(\x01R\x0fspinodoidBounds\"r\n" +
+	"\bDuration\x12'\n" +
+	"\x05start\x18\x01 \x01(\v2\x11.program.LocationR\x05start\x12#\n" +
+	"\x03end\x18\x02 \x01(\v2\x11.program.LocationR\x03end\x12\x18\n" +
+	"\aseconds\x18\x03 \x01(\x01R\aseconds\"\xb7\x01\n" +
 	"\aCaption\x12'\n" +
 	"\x05start\x18\x01 \x01(\v2\x11.program.LocationR\x05start\x12#\n" +
 	"\x03end\x18\x02 \x01(\v2\x11.program.LocationR\x03end\x12\x12\n" +
 	"\x04text\x18\x03 \x01(\tR\x04text\x12\x1c\n" +
 	"\tstartTime\x18\x04 \x01(\x01R\tstartTime\x12\x18\n" +
 	"\aendTime\x18\x05 \x01(\x01R\aendTime\x12\x12\n" +
-	"\x04fade\x18\x06 \x01(\x01R\x04fade\"\xe5\x01\n" +
+	"\x04fade\x18\x06 \x01(\x01R\x04fade\"\x94\x02\n" +
 	"\aPackage\x12\"\n" +
 	"\fversionMajor\x18\x01 \x01(\x05R\fversionMajor\x12\"\n" +
 	"\fversionMinor\x18\x02 \x01(\x05R\fversionMinor\x12\x12\n" +
 	"\x04path\x18\x03 \x01(\tR\x04path\x12*\n" +
 	"\x05files\x18\x04 \x03(\v2\x14.program.PackageFileR\x05files\x12$\n" +
 	"\x05scene\x18\x05 \x01(\v2\x0e.program.SceneR\x05scene\x12,\n" +
-	"\bcaptions\x18\x06 \x03(\v2\x10.program.CaptionR\bcaptions\"\xc0\x04\n" +
+	"\bcaptions\x18\x06 \x03(\v2\x10.program.CaptionR\bcaptions\x12-\n" +
+	"\bduration\x18\a \x01(\v2\x11.program.DurationR\bduration\"\xc0\x04\n" +
 	"\vPackageFile\x12\x12\n" +
 	"\x04path\x18\x01 \x01(\tR\x04path\x12\x16\n" +
 	"\x06source\x18\x02 \x01(\tR\x06source\x12)\n" +
@@ -2781,7 +2858,7 @@ func file_program_proto_rawDescGZIP() []byte {
 }
 
 var file_program_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_program_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
+var file_program_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
 var file_program_proto_goTypes = []any{
 	(Operation)(0),         // 0: program.Operation
 	(MeshSdfKind)(0),       // 1: program.MeshSdfKind
@@ -2806,18 +2883,19 @@ var file_program_proto_goTypes = []any{
 	(*StepImport)(nil),     // 20: program.StepImport
 	(*WarpImport)(nil),     // 21: program.WarpImport
 	(*Scene)(nil),          // 22: program.Scene
-	(*Caption)(nil),        // 23: program.Caption
-	(*Package)(nil),        // 24: program.Package
-	(*PackageFile)(nil),    // 25: program.PackageFile
-	(*MeshSdfSlot)(nil),    // 26: program.MeshSdfSlot
-	(*GlobalTextures)(nil), // 27: program.GlobalTextures
-	(*Program)(nil),        // 28: program.Program
-	(*Type)(nil),           // 29: program.Type
+	(*Duration)(nil),       // 23: program.Duration
+	(*Caption)(nil),        // 24: program.Caption
+	(*Package)(nil),        // 25: program.Package
+	(*PackageFile)(nil),    // 26: program.PackageFile
+	(*MeshSdfSlot)(nil),    // 27: program.MeshSdfSlot
+	(*GlobalTextures)(nil), // 28: program.GlobalTextures
+	(*Program)(nil),        // 29: program.Program
+	(*Type)(nil),           // 30: program.Type
 }
 var file_program_proto_depIdxs = []int32{
 	4,  // 0: program.Operand.start:type_name -> program.Location
 	4,  // 1: program.Operand.end:type_name -> program.Location
-	29, // 2: program.Operand.type:type_name -> program.Type
+	30, // 2: program.Operand.type:type_name -> program.Type
 	5,  // 3: program.Operand.reference:type_name -> program.Reference
 	8,  // 4: program.Operand.expression:type_name -> program.Expression
 	7,  // 5: program.Operand.fnCall:type_name -> program.FnCall
@@ -2838,7 +2916,7 @@ var file_program_proto_depIdxs = []int32{
 	3,  // 20: program.Assignment.expression:type_name -> program.Operand
 	9,  // 21: program.Assignment.range:type_name -> program.Range
 	12, // 22: program.Variable.properties:type_name -> program.Property
-	29, // 23: program.Variable.type:type_name -> program.Type
+	30, // 23: program.Variable.type:type_name -> program.Type
 	4,  // 24: program.Property.start:type_name -> program.Location
 	4,  // 25: program.Property.end:type_name -> program.Location
 	3,  // 26: program.Property.expression:type_name -> program.Operand
@@ -2851,7 +2929,7 @@ var file_program_proto_depIdxs = []int32{
 	14, // 33: program.Function.fnTypes:type_name -> program.FnType
 	3,  // 34: program.Function.returns:type_name -> program.Operand
 	4,  // 35: program.Parameter.start:type_name -> program.Location
-	29, // 36: program.Parameter.type:type_name -> program.Type
+	30, // 36: program.Parameter.type:type_name -> program.Type
 	9,  // 37: program.Parameter.range:type_name -> program.Range
 	4,  // 38: program.Import.start:type_name -> program.Location
 	4,  // 39: program.Import.end:type_name -> program.Location
@@ -2863,34 +2941,37 @@ var file_program_proto_depIdxs = []int32{
 	4,  // 45: program.WarpImport.end:type_name -> program.Location
 	4,  // 46: program.Scene.start:type_name -> program.Location
 	4,  // 47: program.Scene.end:type_name -> program.Location
-	4,  // 48: program.Caption.start:type_name -> program.Location
-	4,  // 49: program.Caption.end:type_name -> program.Location
-	25, // 50: program.Package.files:type_name -> program.PackageFile
-	22, // 51: program.Package.scene:type_name -> program.Scene
-	23, // 52: program.Package.captions:type_name -> program.Caption
-	18, // 53: program.PackageFile.imports:type_name -> program.Import
-	10, // 54: program.PackageFile.assignments:type_name -> program.Assignment
-	14, // 55: program.PackageFile.fnTypes:type_name -> program.FnType
-	3,  // 56: program.PackageFile.returns:type_name -> program.Operand
-	19, // 57: program.PackageFile.meshImports:type_name -> program.MeshImport
-	20, // 58: program.PackageFile.stepImports:type_name -> program.StepImport
-	21, // 59: program.PackageFile.warpImports:type_name -> program.WarpImport
-	3,  // 60: program.PackageFile.colorReturns:type_name -> program.Operand
-	3,  // 61: program.PackageFile.materialReturns:type_name -> program.Operand
-	13, // 62: program.PackageFile.annotations:type_name -> program.Annotation
-	1,  // 63: program.MeshSdfSlot.kind:type_name -> program.MeshSdfKind
-	24, // 64: program.Program.primary:type_name -> program.Package
-	24, // 65: program.Program.dependencies:type_name -> program.Package
-	26, // 66: program.Program.meshSdfSlots:type_name -> program.MeshSdfSlot
-	27, // 67: program.Program.globalTextures:type_name -> program.GlobalTextures
-	2,  // 68: program.Type.kind:type_name -> program.TypeKind
-	29, // 69: program.Type.elemType:type_name -> program.Type
-	3,  // 70: program.Type.constValue:type_name -> program.Operand
-	71, // [71:71] is the sub-list for method output_type
-	71, // [71:71] is the sub-list for method input_type
-	71, // [71:71] is the sub-list for extension type_name
-	71, // [71:71] is the sub-list for extension extendee
-	0,  // [0:71] is the sub-list for field type_name
+	4,  // 48: program.Duration.start:type_name -> program.Location
+	4,  // 49: program.Duration.end:type_name -> program.Location
+	4,  // 50: program.Caption.start:type_name -> program.Location
+	4,  // 51: program.Caption.end:type_name -> program.Location
+	26, // 52: program.Package.files:type_name -> program.PackageFile
+	22, // 53: program.Package.scene:type_name -> program.Scene
+	24, // 54: program.Package.captions:type_name -> program.Caption
+	23, // 55: program.Package.duration:type_name -> program.Duration
+	18, // 56: program.PackageFile.imports:type_name -> program.Import
+	10, // 57: program.PackageFile.assignments:type_name -> program.Assignment
+	14, // 58: program.PackageFile.fnTypes:type_name -> program.FnType
+	3,  // 59: program.PackageFile.returns:type_name -> program.Operand
+	19, // 60: program.PackageFile.meshImports:type_name -> program.MeshImport
+	20, // 61: program.PackageFile.stepImports:type_name -> program.StepImport
+	21, // 62: program.PackageFile.warpImports:type_name -> program.WarpImport
+	3,  // 63: program.PackageFile.colorReturns:type_name -> program.Operand
+	3,  // 64: program.PackageFile.materialReturns:type_name -> program.Operand
+	13, // 65: program.PackageFile.annotations:type_name -> program.Annotation
+	1,  // 66: program.MeshSdfSlot.kind:type_name -> program.MeshSdfKind
+	25, // 67: program.Program.primary:type_name -> program.Package
+	25, // 68: program.Program.dependencies:type_name -> program.Package
+	27, // 69: program.Program.meshSdfSlots:type_name -> program.MeshSdfSlot
+	28, // 70: program.Program.globalTextures:type_name -> program.GlobalTextures
+	2,  // 71: program.Type.kind:type_name -> program.TypeKind
+	30, // 72: program.Type.elemType:type_name -> program.Type
+	3,  // 73: program.Type.constValue:type_name -> program.Operand
+	74, // [74:74] is the sub-list for method output_type
+	74, // [74:74] is the sub-list for method input_type
+	74, // [74:74] is the sub-list for extension type_name
+	74, // [74:74] is the sub-list for extension extendee
+	0,  // [0:74] is the sub-list for field type_name
 }
 
 func init() { file_program_proto_init() }
@@ -2911,7 +2992,7 @@ func file_program_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_program_proto_rawDesc), len(file_program_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   27,
+			NumMessages:   28,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -231,10 +231,12 @@ GSL is parsed using the `participle/v2` framework.
 The grammar is defined by the following AST structures:
 
 ```ebnf
-TopLevel           = SceneDirective? CaptionDirective* Import* MeshImport* StepImport* WarpImport*
+TopLevel           = ( SceneDirective DurationDirective? | DurationDirective SceneDirective? )?
+                     CaptionDirective* Import* MeshImport* StepImport* WarpImport*
                      ( Declaration | CaptionDirective )*
                      ( "return" Expression ( "," Expression )* ","? ";" )?
 SceneDirective     = "@scene" "(" Number ( "," Number )? ")"
+DurationDirective  = "@duration" "(" Number ")"
 CaptionDirective   = "@caption" "(" String "," Number "," Number ( "," Number )? ")"
 Import             = "import" ( Ident | "." )? String ";"
 MeshImport         = "importMesh" Int String ";"
@@ -525,6 +527,7 @@ annotation or applying an annotation to an unsupported target produces a compile
 
 In the current GSL v1 implementation, the following annotations are supported:
 - **`@scene`**: Top-level directive configuring package-level viewport and grid extents.
+- **`@duration`**: Top-level directive giving the length of the document's animation, in seconds.
 - **`@caption`**: Top-level directive showing timed text at the bottom of the viewer during an
   animation.
 - **`@range`**: Numeric slider bounds and optional animation periods on variable assignments,
@@ -844,6 +847,26 @@ The `@scene` annotation configures the document viewport size and grid density:
 * **Syntax**: Must not end with a semicolon.
 * **Legacy Comments**: In GSL v1, legacy header comments (`// Scene Size:` and `// Scene Grid:`)
   are also supported as a fallback when `@scene` is omitted.
+
+#### Duration Directive
+
+The `@duration` directive says how long the document's animation runs, in seconds. It is to time
+what `@scene` is to space:
+
+```gsl
+@scene(60)
+@duration(12)
+```
+
+* **Position**: At the very top of the first file in a package, with `@scene`: directly above or
+  below it, or alone where there is no `@scene`. It precedes any captions, imports and
+  declarations. In any other file it is an error.
+* **Arguments**: One positive number literal. A name or an expression is not accepted.
+* **Effect**: The viewer's Time slider and end time span `[0, seconds]`, and the animation clock
+  starts over on passing the end, so the document and its captions loop. Without the directive
+  the clock runs on and the end time is whatever the viewer has.
+* **Scope**: Only the primary package's duration applies; an imported package's does not.
+* **Syntax**: Must not end with a semicolon.
 
 #### Caption Directive
 

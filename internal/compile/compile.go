@@ -58,6 +58,7 @@ type Response struct {
 	UIControls     []ui.Control          `json:"uiControls,omitempty"`
 	Scene          *program.Scene        `json:"scene,omitempty"`
 	Captions       []*program.Caption    `json:"captions,omitempty"`
+	Duration       *program.Duration     `json:"duration,omitempty"`
 	MeshDecls      any                   `json:"meshDecls,omitempty"`
 	Audio          *Audio                `json:"audio,omitempty"`
 	Warnings       []program.Error       `json:"warnings,omitempty"`
@@ -98,6 +99,7 @@ func Process(req Request, sourcePaths []string, progressFn ProgressFunc) *Respon
 	resp.UIControls = asmRes.UIControls
 	resp.Scene = asmRes.Scene
 	resp.Captions = asmRes.Captions
+	resp.Duration = asmRes.Duration
 	resp.Warnings = collectWarnings(req.Source, asmRes.Program, asmRes.Diagnostics)
 
 	if len(asmRes.Program.Returns()) > 0 {
