@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A box declared in a function from a `reduce` whose step indexes a list by its `index`, such as
+  `points[mod(index + 1, count)]`, now holds: read with `.box` it failed to link ("undefined identifier: index"),
+  and in builtin the part it bounds lost its box without a word.
+
 ## [0.1.3] - 2026-11-17
 
 ### Added
