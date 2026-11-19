@@ -138,6 +138,15 @@ Profiles first, then the operations on them. The numbering is the order.
    sweeps box with, are exact likewise. All of it reads the points alone, so its selects are the same
    everywhere. Measured: the moulding's concave cove padded its box by 4.62 mm on every side, which every
    sweep box built from it carried.
+
+   Found building it: constraint 1 holds in the stdlib (section 5), so the exact box cannot be the profile's
+   own `.box`. Decided by the owner: Go box rules (`profileBox` in `internal/assembler/property/box.go`),
+   as `sweep` and `sweepOpen` have, for `profileXY`'s curvature and corner forms and `profileEdgesXY`: the
+   box is `profileArcLowXY`/`profileArcHighXY` or `profileEdgesLowXY`/`profileEdgesHighXY` called on the
+   same arguments, padded by `boxPad`, unbounded in z, as the declared box was. The polygon form keeps its
+   own box, which needs no index. Cost, measured: a constant profile's box no longer folds to numbers, so
+   the helpers run per point (the extruded arc L 1.2 ms more over 64 evaluations a point, about a tenth of
+   its own time; its WGSL 6.4 → 18.4 KB), and the viewer's list of constant part boxes no longer holds it.
 5. **C3. Partial revolve.** A revolve through an angle range, capped at both ends, with `.u` running over the
    range. Decided 2026-11-18: `revolve(profile, axisPoint, axisDirection, angle)`, the angle from the
    sketch plane, counterclockwise seen from the tip of the direction as `revolveAngle` runs, negative the
@@ -205,7 +214,12 @@ probe documents compiled to WGSL and queried with `gsl eval`; the result follows
 1. A `.box` expression could not contain a `reduce` whose function captures anything or takes an index.
    **Lifted:** in a document's function, a box holding a reduce that captures a parameter, and one that reads
    its index and a neighbour (`points[mod(index + 1, count)]`), both compile and clip `bounds` where they
-   say. Not yet tried inside `stdlib/builtin`, where #45 met it; C7 confirms it there.
+   say. Not yet tried inside `stdlib/builtin`, where #45 met it; C7 confirms it there. **Holds in the
+   stdlib, and for a read of a box (C7, 2026-11-19):** a builtin profile's declared box holding such a reduce
+   is silently dropped by the box domain (the extruded arc L lost its part box), and a document reading
+   `x.box` where the box holds one, in its own function too, fails to link (`undefined identifier: index`);
+   #81 and #82 do not change it. Profile boxes are therefore given by Go rules calling GSL helpers opaquely,
+   as the sweeps' are (spec section 4, C7).
 2. `.u`, `.v` and `.box` could not be read inside a function body. **Holds:** each is refused with a message
    to read it at the call site.
 3. A function's internal `remap` carries frame, colour and material only when its whole body is one

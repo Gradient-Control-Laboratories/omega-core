@@ -180,10 +180,15 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
 
 - [x] Task: Proposal. Decided: exact per edge (arcs' axis extremes on the arc, Beziers' per-axis
       extremum), every form, the corner forms by their loop without corners (spec section 4, C7)
-- [ ] Task: Write failing tests (Red Phase) (`eval/profile_boxes_test.go`): an arc profile's and a Bezier
+- [x] Task: Write failing tests (Red Phase) (`eval/profile_boxes_test.go`): an arc profile's and a Bezier
       profile's boxes contain the reference boundary and are within 0.02 mm of its true box (the 0.01
-      padding and the sampling); a corner form's is its loop's without corners; an open sweep's along arcs
-- [ ] Task: Implement (Green & Refactor Phase), within whatever Phase 0 found `.box` can hold
+      padding and the sampling); a corner form's is its loop's without corners; an open sweep's along arcs.
+      Red: the arc L loose by 28.3 mm a side, the slot 15.8, the moulding 4.62, the sweep along arcs 26.6
+- [x] Task: Implement (Green & Refactor Phase), within whatever Phase 0 found `.box` can hold: exact edge
+      boxes in `stdlib/builtin/2d.gsl` (`profileArcEdgeBoxXY`, `profileBezierEdgeBoxXY`, their unions);
+      a `.box` in the stdlib could not hold them (constraint 1 holds there), so `profileBox` Go rules give
+      the box (spec section 4, C7). Without the rule the arc box tests fail. `TestSweepOpen_Box`'s arc case
+      now expects the exact box, with the owner's authorization. GPU and size cost recorded in the spec
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 5: Partial Revolve (C3) [checkpoint: 9248b1b]
