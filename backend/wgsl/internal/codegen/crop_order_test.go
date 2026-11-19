@@ -74,18 +74,22 @@ func TestCropOrder_BoxReadsALaterLocal(t *testing.T) {
 	}
 }
 
-// A box that reads the shape itself goes round in a cycle no order breaks, and
-// stays an error.
+// A box that reads the shape itself goes round in a cycle no order breaks: an
+// error naming the shape and the local between.
 func TestCropOrder_BoxReadingTheShapeIsAnError(t *testing.T) {
-	src := "f(points) {\n  form = length(p.xy) - 1;\n  lo = [form, 0];\n" +
-		"  form.box = [[lo.x, lo.y, -1], [lo.x + 10, lo.y + 10, 1]];\n  return form;\n}\n" +
-		"solid = f([[0, 0], [10, 0], [10, 10]]);\nreturn solid;\n"
-	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(&source.MockManager{}))
-	if err == nil {
-		_, err = renderHelper(src, res.Program)
+	for _, c := range []struct{ box, want string }{
+		{"  lo = [form, 0];\n  form.box = [[lo.x, lo.y, -1], [lo.x + 10, lo.y + 10, 1]];\n",
+			"form.box: the box reads lo, which reads form, the shape it bounds"},
+		{"  form.box = [[form, 0, -1], [10, 10, 1]];\n", "form.box: the box reads form, the shape it bounds"},
+	} {
+		src := "f(points) {\n  form = length(p.xy) - 1;\n" + c.box + "  return form;\n}\n" +
+			"solid = f([[0, 0], [10, 0], [10, 10]]);\nreturn solid;\n"
+		res, err := assembler.Assemble([]string{src}, assembler.SourceManager(&source.MockManager{}))
+		if err == nil {
+			_, err = renderHelper(src, res.Program)
+		}
+		if err == nil || !strings.Contains(err.Error(), c.want) {
+			t.Errorf("want %q, got %v", c.want, err)
+		}
 	}
-	if err == nil {
-		t.Fatal("a box reading the shape it crops compiled; want an error")
-	}
-	t.Logf("error, as before: %v", err)
 }

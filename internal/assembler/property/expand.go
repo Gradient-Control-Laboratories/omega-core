@@ -3,6 +3,7 @@ package property
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"google.golang.org/protobuf/proto"
 	"gradientcontrol.com/omega/core/program"
@@ -828,7 +829,11 @@ func cropFnType(ft *program.FnType, apply string, pkg *program.Package) error {
 			// is dropped before anything reads the body in order, so its
 			// bodies are left as written.
 			if apply == cropToBoxName {
-				fn.Assignments = orderByReads(fn.Assignments)
+				ordered, stuck := orderByReads(fn.Assignments)
+				if err := boxCycle(fn.Assignments, stuck); err != nil {
+					return err
+				}
+				fn.Assignments = ordered
 			}
 			for _, nested := range fn.FnTypes {
 				if err := cropFnType(nested, apply, pkg); err != nil {
@@ -893,8 +898,9 @@ func cropAssignments(assigns []*program.Assignment, apply string, pkg *program.P
 // orderByReads is a function body's assignments with each after every
 // assignment of the body it reads, and otherwise in the order written: a body
 // already in such an order comes back as it is. A body whose reads go round in
-// a cycle is left as written, for type analysis to report.
-func orderByReads(assigns []*program.Assignment) []*program.Assignment {
+// a cycle is left as written, with the indices of the assignments that could
+// not be placed.
+func orderByReads(assigns []*program.Assignment) ([]*program.Assignment, []int) {
 	declaredAt := map[string]int{}
 	for i, a := range assigns {
 		if a == nil {
@@ -927,7 +933,7 @@ func orderByReads(assigns []*program.Assignment) []*program.Assignment {
 		}
 	}
 	if inOrder {
-		return assigns
+		return assigns, nil
 	}
 	placed := make([]bool, len(assigns))
 	ordered := make([]*program.Assignment, 0, len(assigns))
@@ -950,12 +956,72 @@ func orderByReads(assigns []*program.Assignment) []*program.Assignment {
 			}
 		}
 		if next < 0 {
-			return assigns
+			var stuck []int
+			for i := range assigns {
+				if !placed[i] {
+					stuck = append(stuck, i)
+				}
+			}
+			return assigns, stuck
 		}
 		placed[next] = true
 		ordered = append(ordered, assigns[next])
 	}
-	return ordered
+	return ordered, nil
+}
+
+// boxCycle reports a cropped shape among a body's assignments that could not
+// be ordered: its box reads the shape itself, directly or through the locals
+// named, which no order breaks. Any other cycle is left for type analysis.
+func boxCycle(assigns []*program.Assignment, stuck []int) error {
+	for _, a := range assigns {
+		fc := a.GetExpression().GetFnCall()
+		if fc == nil || fc.Reference == nil || fc.Reference.Name != cropToBoxName || len(fc.Arguments) != 3 || len(a.Variables) != 1 {
+			continue
+		}
+		name := a.Variables[0].Name
+		reads := map[string]bool{}
+		bodyReads(fc.Arguments[1], reads)
+		bodyReads(fc.Arguments[2], reads)
+		if reads[name] {
+			return fmt.Errorf("%s.box: the box reads %s, the shape it bounds; a box cannot depend on its shape", name, name)
+		}
+	}
+	if len(stuck) == 0 {
+		return nil
+	}
+	stuckNames := map[string]bool{}
+	for _, i := range stuck {
+		for _, v := range assigns[i].Variables {
+			if v != nil {
+				stuckNames[v.Name] = true
+			}
+		}
+	}
+	for _, i := range stuck {
+		a := assigns[i]
+		fc := a.Expression.GetFnCall()
+		if fc == nil || fc.Reference == nil || fc.Reference.Name != cropToBoxName || len(fc.Arguments) != 3 || len(a.Variables) != 1 {
+			continue
+		}
+		name := a.Variables[0].Name
+		reads := map[string]bool{}
+		bodyReads(fc.Arguments[1], reads)
+		bodyReads(fc.Arguments[2], reads)
+		var through []string
+		for n := range reads {
+			if stuckNames[n] && n != name {
+				through = append(through, n)
+			}
+		}
+		sort.Strings(through)
+		if len(through) == 0 {
+			continue
+		}
+		return fmt.Errorf("%s.box: the box reads %s, which reads %s, the shape it bounds; a box cannot depend on its shape",
+			name, strings.Join(through, ", "), name)
+	}
+	return nil
 }
 
 // bodyReads adds the names an operand reads that a function body could
