@@ -1,0 +1,19 @@
+Phase 0 (Ground Truth and Spikes) verification report
+
+Automated: go vet ./eval/ && go test ./eval/ -count=1 -> ok (86 s).
+New: eval/shaft_phase0_test.go (a throwaway shaft package via the mock source manager).
+- No sheet: plain min reads 0 at every joint point (111-222 per case), a 1 mm inset slits 69-178;
+  the bridge: none, no slit.
+- Bridge vs exact meridian reference: outside worst 3.2e-6 mm; inside a bound (shortfall 0.1-4.4 mm),
+  never the wrong sign. Cases: step down, step up, groove, near-equal diameters.
+- Mixed convexity, hex AF20 beside a round of 22, both orders: outside worst 2.4e-6 mm; joint solid.
+- Surface cells: sound, widest 0.81 diagonals; joint cells proved solid (bridge 3/3, plain 0/3,
+  gated 0/3 -> gated rejected). certify: clearance proven in 1 eval each.
+- Spike (a): WGSL linear in segments (bridge 7054/8562/11782/18031 bytes at 2/4/8/16; chained
+  6777/8247/11312/17483); chained equals baseline.
+- Spike (b): hole list through shaft refused (pinned); voids work on the CPU, WGSL unchecked.
+- Spike (c): captured profileXY field as a section works.
+
+Manual verification: go test ./eval/ -run TestShaftPhase0 -v
+User confirmation: accepted by the owner, 2026-11-18. Owner's call for Phase 2: fix the closure pass
+so hole lists pass through shaft.
