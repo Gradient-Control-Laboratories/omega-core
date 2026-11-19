@@ -1,0 +1,4 @@
+Phase 3 (Quadratic Bezier Edges, C6) verification. Automated: go vet ./... and go run ./tool/analyze-deps -rules clean; go test ./... passes on modeling-robust (1755b4b), internal/link's 2 s timing test only when run alone (1.66 s); every examples/profile_*.gsl WGSL accepted by naga (gpu-eval). 2026-11-19.
+Tests: eval/profile_edges_test.go, eval/profile_open_robust_test.go (hooked Beziers open and closed, degenerate controls; removing the split fails exactly the five hook cases).
+Manual: the owner's viewer checks of examples/profile_bezier.gsl ('looks right', 2026-11-18 and 2026-11-19), the second on modeling-robust after the hook fix.
+Confirmed by the owner: 'Looks right, close them'.
