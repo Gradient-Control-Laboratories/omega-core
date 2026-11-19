@@ -1,0 +1,64 @@
+@scene(160, 20)
+
+// Profiles whose edges are lines, arcs and quadratic Beziers, each named by a
+// descriptor: edgeLine(), edgeArc(curvature) or edgeBezier(control).
+//
+// The plate is a closed profile, extruded: a straight base, a Bezier rising
+// from it tangentially to a straight side, a Bezier dented into the top
+// between sharp corners, an arc, and a straight left side. Move the controls
+// to reshape its curved edges; its distance stays exact.
+//
+// The rail is a moulding swept along an open chain that bends by two Beziers,
+// capped flat at both ends.
+//
+// Both are coloured by checkerboards in their frames: u the distance along
+// the profile (the arc length along a curve) and, on the rail, v the distance
+// round its section, in mm. Lengths are in mm.
+
+// The plate: its size, and where the side's rise and the top's dent pull.
+@range(30, 60) plateWidth = 44.0;
+@range(20, 40) plateHeight = 30.0;
+@range(0, 20) riseControl = 12.0;
+@range(-12, 12) dentDepth = 8.0;
+@range(-0.1, 0.1) leftBend = 0.04;
+@range(4, 12) plateThickness = 6.0;
+
+// The rail's chain: the run in, the bend's reach, and the height of the rise.
+@range(10, 30) runLength = 18.0;
+@range(6, 20) bendReach = 12.0;
+@range(10, 30) riseLength = 16.0;
+
+// Checkerboard: the side of a square.
+@range(1, 8) checkerSize = 3.0;
+
+// The plate sits left of the origin: its points and controls are drawn from
+// its corner, so its frame is read where it stands.
+corner = [neg(plateWidth) - 4, neg(plateHeight) / 2];
+plateEdges = [edgeLine(),
+              edgeBezier(corner + [plateWidth, riseControl]),
+              edgeLine(),
+              edgeBezier(corner + [plateWidth / 2, plateHeight - dentDepth]),
+              edgeArc(leftBend),
+              edgeLine()];
+platePoints = [corner, corner + [plateWidth - 10, 0], corner + [plateWidth, 15],
+               corner + [plateWidth, plateHeight], corner + [plateWidth / 2 - 6, plateHeight], corner + [0, plateHeight]];
+outline = profileEdgesXY(platePoints, plateEdges);
+plate = extrude(outline, 0, plateThickness);
+plate.color = sin(pi * outline.u / checkerSize) * sin(pi * p.z / checkerSize) > 0 ? color.gray : color.lightGray;
+
+// The rail: a line, a Bezier bend left, a line and a Bezier bend right.
+section = profileXY([[neg(2), 0], [3, 0], [3, 4], [neg(2), 4]]);
+start = [4, neg(riseLength + 2 * bendReach) / 2];
+railPoints = [start,
+              start + [runLength, 0],
+              start + [runLength + bendReach, bendReach],
+              start + [runLength + bendReach, bendReach + riseLength],
+              start + [runLength + 2 * bendReach, 2 * bendReach + riseLength]];
+railEdges = [edgeLine(),
+             edgeBezier(start + [runLength + bendReach, 0]),
+             edgeLine(),
+             edgeBezier(start + [runLength + bendReach, 2 * bendReach + riseLength])];
+rail = sweepOpenEdges(section, railPoints, railEdges);
+rail.color = sin(pi * rail.u / checkerSize) * sin(pi * rail.v / checkerSize) > 0 ? color.gray : color.lightGray;
+
+return min(plate, rail);

@@ -135,9 +135,10 @@ type edgeLoopCase struct {
 
 // bezierCellSpread is how wide a surface cell's interval may be, in cell
 // diagonals, on a loop with a curved Bezier edge: the closed-form root's
-// interval is loose right at the curve. Measured 2026-11-18: 5.93 on the mixed
-// loop, 2.41 on the lens; lines and arcs keep maxCellSpread.
-const bezierCellSpread = 6.0
+// interval is loose right at the curve. Measured 2026-11-18: 9.18 on the tight
+// Bezier, 5.93 on the mixed loop, 2.41 on the lens (the owner set 10); lines and
+// arcs keep maxCellSpread.
+const bezierCellSpread = 10.0
 
 func edgeLoopCases() []edgeLoopCase {
 	return []edgeLoopCase{
@@ -157,6 +158,18 @@ func edgeLoopCases() []edgeLoopCase {
 				edges:  []refEdge{edgeL(), edgeB(40, 0), edgeL(), edgeB(30, 20), edgeA(0.05), edgeL()},
 			},
 			clear:  [4]float64{40.25, -5, 50, 35},
+			curved: true,
+		},
+		// examples/profile_bezier.gsl's plate at its default sliders: a
+		// Bezier whose control polygon turns sharply at the control, so the
+		// parabola it lies on swings back past it into the plate, and a dent.
+		{
+			name: "tight Bezier",
+			loop: edgeLoop{
+				points: [][2]float64{{0, 0}, {34, 0}, {44, 15}, {44, 30}, {16, 30}, {0, 30}},
+				edges:  []refEdge{edgeL(), edgeB(44, 12), edgeL(), edgeB(22, 22), edgeA(0.04), edgeL()},
+			},
+			clear:  [4]float64{44.25, -5, 55, 35},
 			curved: true,
 		},
 		// Beziers whose controls lie on their chords, at the middle and a

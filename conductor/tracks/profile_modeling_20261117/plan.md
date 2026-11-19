@@ -158,8 +158,12 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
       `TestFastExitSingleOrZeroDotImports`, a 2 s timing test that failed on `main`'s worktree too under a
       load average of 225; builtin's `package.pb` is 365 KB here against 181 KB on `main`, and the test
       links it a thousand times, so it is close to its limit even unloaded (1.77 s)
-- [ ] Task: An example; WGSL size (watch the per-step accumulator reads, spec section 5.5); the owner's
-      viewer check
+- [x] Task: An example; WGSL size (watch the per-step accumulator reads, spec section 5.5); the owner's
+      viewer check: `examples/profile_bezier.gsl`, a mixed-edge plate extruded and a rail swept along
+      Bezier bends; 52.7 KB of WGSL, accepted by naga. The owner's first look found the plate's sign wrong
+      beside a tight Bezier and its checkerboard read from the wrong place; both fixed (spec section 4,
+      C6), the plate added as the "tight Bezier" test loop (worst 5.8e-6, cells 9.18, limit 10 by the
+      owner). Checked by the owner: looks right
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 4: Tighter Boxes (C7)

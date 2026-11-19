@@ -113,6 +113,18 @@ Profiles first, then the operations on them. The numbering is the order.
    ended a NaN in intervals. `.u` takes one Newton step on the root, which float32 gives to a part in ten
    thousand. Certify proves the test loops in the default budget; surface cells on a curved Bezier reach
    5.93 diagonals, allowed 6 by the owner (lines and arcs keep 4).
+
+   Found by the owner in the viewer, the same day: the side from the parabola's sign was wrong. Past the edge
+   the parabola swings back, and where the control polygon turns sharply its other arm passes between the
+   edge and points near it, so the sign flipped inside the example's plate (24 mm off; the test loops had
+   not had so tight an edge). The side is now the edge's own: concave where p is across the chord from the
+   control, or within the triangle of the points and control and inside the parabola, which within the
+   triangle is sound, since the edge leaves it along two of its sides. The plate is now a test loop. Each
+   candidate root also takes one Newton step (float32 left 3e-4 mm on the tight edge), the roots as solved
+   kept beside the stepped ones so the bounds do not widen. Its cells reach 9.18 diagonals; the owner set
+   the limit for curved Beziers to 10. Two WGSL-only failures the CPU tests could not see, both found by
+   compiling the example: a list indexed through a parameter (not a constant in WGSL), and an `||` mixed
+   with `&&`, whose brackets the codegen drops and WGSL refuses.
 4. **C7. Tighter arc (and Bezier) boxes.** The arc profile's box is the points' box padded by
    `min(span / 2, span^2 * maxCurvature / 4)`: sound, but loose, because a `.box` could not hold the reduce
    an exact box needs (see section 5).

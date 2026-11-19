@@ -730,7 +730,19 @@ profileBezierRootsXY(start, control, end) {
   v = acos(clamp(qq / (min(2.0 * pp * zz, 0.0) - 1e-20), neg(1.0), 1.0)) / 3.0;
   m = cos(v);
   n = sin(v) * 1.732050808;
-  return [t1, clamp((m + m) * zz - kx, 0.0, 1.0), clamp((neg(n) - m) * zz - kx, 0.0, 1.0), clamp((n - m) * zz - kx, 0.0, 1.0)];
+  roots = [t1, clamp((m + m) * zz - kx, 0.0, 1.0), clamp((neg(n) - m) * zz - kx, 0.0, 1.0), clamp((n - m) * zz - kx, 0.0, 1.0)];
+  return roots;
+}
+
+// One Newton step from t toward the parameter of the Bezier's point nearest p,
+// clamped to the edge; a step whose curvature term is not positive is not taken.
+profileBezierNewtonXY(start, control, end, t) {
+  e = control - start;
+  f = start - 2 * control + end;
+  offset = start + 2 * e * t + f * t * t - p.xy;
+  velocity = 2 * (e + f * t);
+  slope = dot(velocity, velocity) + dot(offset, 2 * f);
+  return clamp(t - dot(offset, velocity) / max(slope, 1e-20) * (slope > 0 ? 1 : 0), 0.0, 1.0);
 }
 
 // The squared distance from p to the Bezier's point at parameter t.
@@ -749,17 +761,32 @@ profileBezierChordTXY(start, end) {
 
 // The feature of one Bezier edge, as profileEdgeSidedXY is an arc's: its
 // distance (the nearest of its candidate points), held off past its ends by
-// twice the overshoot past the normals there, offered by its side. The side
-// is the sign of the parabola it lies on, F(q) = D (g x q) - (q x f)^2 with
+// twice the overshoot past the normals there, offered by its side.
+//
+// Its side: a curved edge turns one way, so it has a concave side, the left
+// where it turns left. p is on that side where it is across the chord from the
+// control, or within the triangle of the points and the control and inside the
+// parabola the edge lies on: F(q) = D (g x q) - (q x f)^2 > 0, with
 // q = p - start, g = 2 (control - start), f = start - 2 control + end and
-// D = g x f, zero on the parabola, which beside the edge has the edge's side;
-// it is turned so the right of travel is positive. A straight edge, D = 0,
-// takes its chord's side; that choice reads the points alone, so it is the
-// same over every cell.
+// D = g x f. The parabola alone will not do: past the edge it swings back,
+// and where the control polygon turns sharply its other arm passes between
+// the edge and points near it. Within the triangle it does not: the edge
+// leaves the triangle along two of its sides. A straight edge, D = 0, takes
+// its chord's side; that choice reads the points alone, so it is the same over
+// every cell.
 profileBezierSidedXY(start, control, end) {
   roots = profileBezierRootsXY(start, control, end);
   gap = min(min(profileBezierGapXY(start, control, end, roots.x), profileBezierGapXY(start, control, end, roots.y)),
             min(profileBezierGapXY(start, control, end, roots.z), profileBezierGapXY(start, control, end, roots.w)));
+  // Float32 gives each root to about a part in ten thousand, which moves the
+  // nearest point off by up to 3e-4 mm on a tight edge. One Newton step on each
+  // (B - p) . B' = 0, the result clamped, still names a point of the edge; the
+  // roots as solved are kept too, since over a cell a stepped one can bound
+  // worse.
+  stepped = min(min(profileBezierGapXY(start, control, end, profileBezierNewtonXY(start, control, end, roots.x)),
+                    profileBezierGapXY(start, control, end, profileBezierNewtonXY(start, control, end, roots.y))),
+                min(profileBezierGapXY(start, control, end, profileBezierNewtonXY(start, control, end, roots.z)),
+                    profileBezierGapXY(start, control, end, profileBezierNewtonXY(start, control, end, roots.w))));
   chordGap = profileBezierGapXY(start, control, end, profileBezierChordTXY(start, end));
   ends = min(dot(p.xy - start, p.xy - start), dot(p.xy - end, p.xy - end));
   // Over a cell the roots' intervals can span the whole edge, so the bounds
@@ -769,7 +796,7 @@ profileBezierSidedXY(start, control, end) {
   // its distance is never more.
   sampled = min(min(profileBezierGapXY(start, control, end, 0.25), profileBezierGapXY(start, control, end, 0.5)),
               profileBezierGapXY(start, control, end, 0.75));
-  reach = max(sqrt(min(min(gap, chordGap), min(ends, sampled))), profileTriangleDistanceXY(start, control, end));
+  reach = max(sqrt(min(min(min(gap, stepped), chordGap), min(ends, sampled))), profileTriangleDistanceXY(start, control, end));
 
   g = 2 * (control - start);
   f = start - 2 * control + end;
@@ -778,13 +805,26 @@ profileBezierSidedXY(start, control, end) {
   across = g.x * q.y - g.y * q.x;
   bend = q.x * f.y - q.y * f.x;
   straight = abs(turning) <= 1e-6 * dot(g, g);
-  right = straight ? neg(across) : neg(turning * across - bend * bend) * sign(turning);
+  chord = end - start;
+  fromControl = control - start;
+  bulge = chord.x * fromControl.y - chord.y * fromControl.x;
+  chordSide = chord.x * q.y - chord.y * q.x;
+  winding = bulge >= 0 ? neg(1) : 1;
+  sideA = fromControl.x * q.y - fromControl.y * q.x;
+  sideB = (end - control).x * (p.xy - control).y - (end - control).y * (p.xy - control).x;
+  sideC = (start - end).x * (p.xy - end).y - (start - end).y * (p.xy - end).x;
+  // Concave where across the chord, or within the triangle (each side's
+  // measure positive) and inside the parabola: one measure, positive there,
+  // so no mix of || and && reaches the WGSL, which refuses one unbracketed.
+  triangle = min(winding * sideA, winding * sideB, winding * sideC);
+  concave = max(neg(chordSide * bulge), min(triangle, turning * across - bend * bend));
+  right = straight ? neg(across) : (concave >= 0 ? neg(1) : 1) * sign(turning);
 
   // Past its ends it is held off by twice the overshoot past the normals
-  // there, but only on its convex side (both sides of a straight edge), where
-  // its normals part: on its concave side they meet, and a point before an end
-  // normal can still be nearest a point within the edge. The nearest pool
-  // takes the distance itself.
+  // there, in the sided pools only. On its concave side the normals meet, and
+  // a point before an end normal can still be nearest a point within the edge,
+  // so the nearest pool takes the distance itself and the magnitude is always
+  // exact.
   startTangent = normalize(control - start);
   endTangent = normalize(end - control);
   overshoot = max(0, neg(dot(q, startTangent)), dot(p.xy - end, endTangent));
@@ -890,14 +930,13 @@ profileEdgesRunXY(points, edges) {
 
 // The corners of a mixed loop's box in XY: the box of its points and its
 // Beziers' controls, which hold each Bezier, grown by the most an arc edge can
-// bulge, as profileArcBoundsXY grows an arc profile's. `closed` is 1 for a
-// loop, where every point starts an edge, and 0 for an open chain, whose last
-// point starts none.
-profileEdgesBoundsXY(points, edges, closed) {
-  count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
-  last = count - 1 + closed;
+// bulge, as profileArcBoundsXY grows an arc profile's. A loop has as many
+// edges as points and an open chain one fewer, its last point starting none;
+// the edges' own count says which, so every index is a constant.
+profileEdgesBoundsXY(points, edges) {
+  last = reduce([0, 0], (sum, edge) { return sum + 1; }, edges).x;
   hull = reduce([nothing, nothing, neg(nothing), neg(nothing)], (box, start, index) {
-    edge = edges[min(index, count - 2 + closed)];
+    edge = edges[min(index, last - 1)];
     starts = index < last ? 1 : 0;
     bezier = profileEdgeKindXY(edge).y * starts;
     control = [edge.y, edge.z] * bezier + start * (1 - bezier);
@@ -905,7 +944,7 @@ profileEdgesBoundsXY(points, edges, closed) {
             max(max(box.z, start.x), control.x), max(max(box.w, start.y), control.y)];
   }, points);
   bend = reduce([0, 0], (most, start, index) {
-    edge = edges[min(index, count - 2 + closed)];
+    edge = edges[min(index, last - 1)];
     starts = index < last ? 1 : 0;
     return [max(most.x, abs(edge.y) * profileEdgeKindXY(edge).x * starts), 0];
   }, points).x;
@@ -925,7 +964,7 @@ profileEdgesBoundsXY(points, edges, closed) {
 profileEdgesXY(points, edges) {
   pools = profileEdgesPoolsXY(points, edges);
   form = pools.x <= pools.y ? pools.z : neg(pools.z);
-  bounds = profileEdgesBoundsXY(points, edges, 1);
+  bounds = profileEdgesBoundsXY(points, edges);
   form.box = [[bounds.x, bounds.y, neg(nothing)], [bounds.z, bounds.w, nothing]];
   form.u = profileEdgesRunXY(points, edges);
   return form;
@@ -991,11 +1030,11 @@ openProfileEdgesXY(points, edges) {
 // The low and high corners of a mixed chain's box, for sweepOpenEdges' box
 // rule (property's sweptOpen).
 openProfileEdgesLowXY(points, edges) {
-  return profileEdgesBoundsXY(points, edges, 0).xy;
+  return profileEdgesBoundsXY(points, edges).xy;
 }
 
 openProfileEdgesHighXY(points, edges) {
-  return profileEdgesBoundsXY(points, edges, 0).zw;
+  return profileEdgesBoundsXY(points, edges).zw;
 }
 
 // =========================================================
