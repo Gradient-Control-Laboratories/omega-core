@@ -306,8 +306,17 @@ Taken next after Phase 2, before Phases 3 and 4 (the owner, 2026-11-18).
 
 ## Phase 8: Verification and Records
 
-- [ ] Task: Full Go suite with `go vet`; `tool/check.sh`
-- [ ] Task: The stdlib's doc comments, `gsl skill`'s text and the language spec describe the new functions;
-      CHANGELOG
-- [ ] Task: The wheel's Python tests on a wheel built from the branch
-- [ ] Task: Metrics recorded
+- [x] Task: Full Go suite with `go vet`; `tool/check.sh`. 2026-11-19 on `modeling-robust`: `tool/check.sh` stops
+      at gofmt on 28 files this track never touched, which `main` fails alike under go1.26.4; its other steps
+      run by hand: the dependency rules and `go vet` clean, every test passing but `internal/link`'s 2 s timing test under the suite's load, which passes alone (1.66 s)
+- [x] Task: The stdlib's doc comments, `gsl skill`'s text and the language spec describe the new functions;
+      CHANGELOG. Every new function has its `///` comment, and `gsl skill builtin` prints each (it reads
+      them). The language spec documents the language and its primitives, not library functions, so it
+      needs nothing for these; `choose`'s GPU branch belongs with #92. The CHANGELOG has each addition,
+      the one-pass `profileXY` and exact boxes under Changed, and the folding fixes under Fixed
+- [ ] Task: The wheel's Python tests on a wheel built from the branch: not run, a long build that waits
+      for the owner's go
+- [x] Task: Metrics recorded (2026-11-19, `modeling-robust`). WGSL per example: arcs 8.2 KB, bezier 61.2,
+      corners 61.4, cylinder 40.3, nested 12.1, revolve 23.4, star 4.4, sweep 17.5, sweep_open 34.0, every
+      one accepted by naga. 56 test functions in `eval/profile_*_test.go`. GPU costs are in the phases
+      above
