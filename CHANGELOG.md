@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A one-element list indexed at run time, such as `curvatures[0]` of `[0.1]` read in a reduce, failed on the CPU
+  paths (`gsl eval`, tape and meshing) with "target must be a collection, got num": the fidget backend builds the
+  list as one value. Index 0 now reads it there as WGSL already did; past 0 is an error.
+
 ## [0.1.3] - 2026-11-17
 
 ### Added
