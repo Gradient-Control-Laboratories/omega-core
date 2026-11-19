@@ -88,16 +88,54 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
       open; 100,690 bytes of WGSL (its own budget from here); the other examples' sizes unchanged; checked by the owner in the viewer
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
-## Phase 2: Corner Blends, per Vertex (C2)
+## Phase 2: Corner Blends, per Vertex (C2) [checkpoint: 4496b6e]
 
-- [ ] Task: Proposal: how a vertex names its blend (none, arc fillet, line chamfer, field blend) and its size,
-      and what is refused (a fillet larger than its edges allow)
-- [ ] Task: Write failing tests (Red Phase)
-  - [ ] Arc fillets and line chamfers generated as edges are exact against the reference, convex and reflex
-  - [ ] A field blend stays within its stated bound and keeps the rest of the loop exact
-- [ ] Task: Implement (Green & Refactor Phase)
-- [ ] Task: An example mixing the kinds; WGSL size; the owner's viewer check
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Proposal: how a vertex names its blend (none, arc fillet, line chamfer, field blend) and its size,
+      and what is refused (a fillet larger than its edges allow). Decided: corner helpers in a `corners`
+      list, one edge-blend operator per profile for `cornerBlend()` vertices, `everyCorner()`, clamping
+      (spec section 4, C2)
+- [x] Task: Part A, corners between straight edges
+  - [x] Write failing tests (Red Phase) (`eval/profile_corners_test.go`): exact fillets and chamfers
+        against the reference, convex and reflex, mixed with sharp corners (worst 2.1e-6); `everyCorner()`
+        (3.3e-6); clamped fillets make the circle they should (2.8e-6); surface cells tight, at cells scaled
+        to the smallest fillet (widest 2.89); a corner next to an arc stays sharp. WGSL: the U with its
+        eight corners blended is 8,079 bytes, against 62,374 for the plain polygon (each step's work is a
+        helper taking values, which the WGSL backend emits as a function instead of unrolling; a helper
+        must not index a list by a passed index, which WGSL refuses as not constant)
+  - [x] Implement (Green & Refactor Phase): the pools walk a corner's trimmed edges and its arc or chamfer
+        (`profileXY(points, curvatures, corners)` and the corner helpers in `stdlib/builtin/2d.gsl`).
+        Flipping the fillet's curvature sign fails the reference. No golden moved. Found on the way, not
+        fixed: a `map`-built list handed in as `curvatures` fails to assemble once the profile is named,
+        with or without corners (its box pass, likely); the test writes its curvatures out
+  - [x] Proposal, then tests and implementation: how a `cornerBlend()` corner's field enters the pools,
+        where it is a bound, and that the rest of the loop stays exact. A piece between trims at half the
+        shorter edge, its field the blend of the two edge lines (the dual at a reflex corner), never less
+        than the distance to the triangle of the corner and its trims: without that bound the blend of two
+        lines claims less than the corner's distance far off and takes the sign of other parts of the loop
+        (`intersectLp`: 139 of 4,809 far points wrong-signed). `eval/profile_corner_blend_test.go`, with
+        `intersectRound`, `intersectChamfer` and `intersectLp`: exact outside the pieces (1.9e-6); the
+        documented formula inside them; 1-Lipschitz and continuous (steepest 1.0001); surface cells sound
+        (widest 3.35); the sign right at every far point. `profileXY(points, curvatures, corners, blend)`;
+        WGSL 21,007 bytes for the U with two blend corners
+  - [x] Viewer, cost and frame (`examples/profile_corners.gsl`, checked by the owner):
+    - The first build hung the GPU. The corner pools now make one pass for all three pools (each feature
+      offering a vector, the nearest pool keeping a constant gate of its own), a fillet and a chamfer are
+      one edge, and each trim is computed once. `gpu-eval`, 4M points: the example from 124 ms to 61–63
+      ms, against 39–43 ms for `profile_arcs.gsl` (whole examples only: that harness's ~25 ms floor makes
+      its per-part numbers noise). Folding the per-vertex geometry by inlining was measured and is not to
+      build (backlog `M15`): the arcs example 3.7× slower, the corners example 2.3× faster, and slider-
+      driven profiles never qualify.
+    - A blended corner's `.u` follows its two legs and changes piece where the field does (it had run
+      along the chord, diagonally across half of each edge).
+    - Found, worked around, not reduced: with a blend made from a slider, the blend form's two-name box
+      assignment went undefined (the box now comes from `profileArcBoxXY`).
+- [ ] Task: Part B, corners next to an arc edge (line to arc, arc to arc): **deferred by the owner,
+      2026-11-17**, for implicit blends and more pressing work, after Part A's GPU cost. An exact fillet
+      there is a line–circle or circle–circle intersection and a shorter arc of the same circle; a fillet
+      too big for its edges has no closed-form largest fit. Until then a corner next to an arc stays
+      sharp, as documented, and `cornerBlend()` too works between straight edges only
+- [x] Task: An example mixing the kinds; WGSL size; the owner's viewer check (Part A's corners)
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 3: Quadratic Bezier Edges (C6)
 
