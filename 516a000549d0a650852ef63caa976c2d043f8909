@@ -1,0 +1,17 @@
+Phase 1 (A Coaxial Round Stack) verification report
+
+Automated: go vet ./eval/ ./stdlib/... && go test ./... -count=1 -> all ok.
+New: stdlib/mechanical/shaft (body, diameter, taper); eval/shaft_test.go; examples/shaft_turned.gsl.
+- Twelve stacks (diameters, tapers both ways, cone shoulder, taper to step / into shoulder, groove,
+  thin collar, thin groove, collar on a step) vs exact meridian reference: outside worst 4.8e-6 mm;
+  inside a bound, never shallower than 1/sqrt2 of the truth on any grid point, mid-plane or joint.
+- Surface cells sound, widest 1.76 diagonals; every joint cell proves solid.
+- Mutations: no bridge fails joint and surface-cell tests (6 stacks); neighbours-only bridge fails
+  12 subtests.
+- WGSL: 7338 / 10447 / 16323 / 27935 bytes at 2 / 4 / 8 / 16 segments; example 23112 bytes.
+- Phase 0 tests: spike package re-aliased (owner-approved); still pass.
+
+Manual verification: owner's viewer check of examples/shaft_turned.gsl. First pass found the shallow
+sheet under a collar (fixed by the run bridge, approved); second pass: corner bound visible past a
+groove's rims and at the taper/diameter joint, accepted; exact interior recorded for later.
+User confirmation: accepted by the owner, 2026-11-18.
