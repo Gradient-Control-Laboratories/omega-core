@@ -9,12 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `gsl export part.gsl [more.gsl ...] -o dir` writes the WebGPU viewer and each file's compiled field as a folder
+  of static web pages, which any web server can host: the page draws what `gsl viewer` draws, with its sliders,
+  gizmos, time, sections and render settings, and compiles nothing, so the source is shown read-only and Save As,
+  Imports, Export, Materials and Help are not offered. Several files share the one page and are picked from its
+  menu. The folder is about 12 MB, without the material catalog's previews.
 - `intersectChamferNormalized`, `unionChamferNormalized` and `differenceChamferNormalized` in builtin:
   `intersectChamfer`'s surface with a bevel whose field has unit gradient at an edge of any angle. The
   bevel is divided by the length of the sum of the two faces' normals rather than by sqrt2, which is right
   only at a square edge; at a 120-degree edge `intersectChamfer`'s field changes 1.22 times as fast as
   distance and at 150 degrees 1.37. Pass the normals, or omit them to take each field's gradient.
   Existing callers are unchanged.
+
+### Changed
+
+- The viewer reaches its server through one module, `examples/viewer/host.js`; `host-static.js` answers the same
+  calls from files beside the page, and takes its place in a page `gsl export` writes.
 
 ## [0.1.3] - 2026-11-17
 

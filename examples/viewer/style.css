@@ -1066,3 +1066,16 @@ body.resizing #stl-canvas-container {
 #material-panel.open {
     min-width: 180px;
 }
+
+/* A page `gsl export` wrote compiles nothing (host-static.js), so what changes
+ * or saves the document is not offered: Save As, the GSL reference, the tools
+ * that write a picked point into the source, Imports, Export and Materials. */
+body.read-only-host #btn-save-as,
+body.read-only-host #help-menu,
+body.read-only-host #btn-point-select,
+body.read-only-host #btn-point-normal-select,
+body.read-only-host #mesh-import-panel,
+body.read-only-host #stl-bounds-panel,
+body.read-only-host #material-panel {
+    display: none;
+}
