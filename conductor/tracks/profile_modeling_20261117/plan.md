@@ -64,16 +64,29 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
       1 and 4 are lifted, 2 and 3 hold
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
-## Phase 1: Several Loops in One Profile (C1)
+## Phase 1: Several Loops in One Profile (C1) [checkpoint: c94b0d8]
 
-- [ ] Task: Proposal: the signature (a list of loops, each points or points and curvatures), how nesting is
-      checked, and what a loop that does not nest reports
-- [ ] Task: Write failing tests (Red Phase)
-  - [ ] Outline with two holes, and an island inside a hole, against the reference
-  - [ ] Nesting check: crossing or touching loops are refused with a message naming them
-- [ ] Task: Implement (Green & Refactor Phase); `.box` and `.u` across loops
-- [ ] Task: An example, its WGSL size against the budget, and the owner's viewer check
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Proposal: the signature (a list of loops, each points or points and curvatures), how nesting is
+      checked, and what a loop that does not nest reports. Decided: a generic `nested(fields)` taking
+      each loop as its own `profileXY` field, nearest surface wins; the winding rule documented and pinned
+      by a test, not checked (spec section 4, C1)
+- [x] Task: Write failing tests (Red Phase) (`eval/profile_nested_test.go`)
+  - [x] An outline with two holes and an island inside one, polygon and arc loops mixed, against the
+        reference; the same loops in another order; two separate islands (worst 3.6e-6)
+  - [x] `extrude` of it against the reference (1.9e-6); surface cells tight (widest 1.93 diagonals);
+        `certify` proves the holes and the space above empty; `bounds` proves its box
+  - [x] `.u` is the nearest loop's own
+  - [x] A 3D solid with a void against an analytic reference (7.1e-7)
+  - [x] A mis-wound loop's result pinned: its own distance where it is nearest, so void just outside it in
+        the material
+- [x] Task: Implement (Green & Refactor Phase); `.box` and `.u` across loops: `nested(fields)` in
+      `stdlib/builtin/booleans.gsl`; box and `.u` carry without code of their own. Restoring a gated
+      magnitude fails the plate's surface cells (51 diagonals). No golden moved (stdlib, assembler, parser,
+      program and WGSL suites)
+- [x] Task: An example, its WGSL size against the budget, and the owner's viewer check:
+      `examples/profile_nested.gsl`, a flange of eight loops nested four deep and a block with a void cut
+      open; 100,690 bytes of WGSL (its own budget from here); the other examples' sizes unchanged; checked by the owner in the viewer
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 2: Corner Blends, per Vertex (C2)
 

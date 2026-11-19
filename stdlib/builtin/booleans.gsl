@@ -46,6 +46,31 @@ differenceSharp(target, tool) {
   return max(target, neg(tool));
 }
 
+/// The solid bounded by several surfaces that do not cross or touch: an
+/// outline with its holes, islands inside those holes, separate parts, in any
+/// order. Pass [field1, field2, ...] as one collection, each field negative on
+/// the solid's side of its own surface: a profileXY loop wound counterclockwise
+/// for an outline or an island and clockwise for a hole, or neg() of a solid to
+/// make it a void. Where each field is an exact distance the result is exact
+/// everywhere: the nearest surface's distance, with that surface's sign.
+/// Nothing checks the winding. A field negative on the wrong side reads as its
+/// own distance wherever its surface is the nearest: void just outside an
+/// island wound as a hole, and the field jumps sign where another surface
+/// becomes the nearer.
+//
+// Internal: the nearest surface with its sign, as profileXY's pools take it. A
+// field gated to its sign by max with a constant pools the outside and the
+// inside separately, and only their comparison picks the sign; the magnitude
+// comes from the ungated pool, so a cell on a surface is bounded by that
+// surface's own field, not by nothing. Each reduce starts from a list, as
+// profilePoolXY's do: a scalar first argument is read as the function here.
+nested(fields) {
+  outside = reduce([nothing, 0], (best, field) { return [min(best.x, max(abs(field), field >= 0 ? 0 : nothing)), 0]; }, fields).x;
+  inside = reduce([nothing, 0], (best, field) { return [min(best.x, max(abs(field), field < 0 ? 0 : nothing)), 0]; }, fields).x;
+  nearest = reduce([nothing, 0], (best, field) { return [min(best.x, abs(field)), 0]; }, fields).x;
+  return outside <= inside ? nearest : neg(nearest);
+}
+
 /// Round CSG intersection with fillet `radius`. The intersection edge
 /// becomes a smooth arc of about that radius. At radius 0 the surface is
 /// intersectSharp's, but the field is not: outside a convex corner it
