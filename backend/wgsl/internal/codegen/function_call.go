@@ -50,6 +50,14 @@ func (d *Delegate) buildFuncCall(
 		}
 		return d.vanishGuard(fnCallOp, parts, returnType), nil
 	}
+	// choose is never called either: every call is its branch (branch.go).
+	if chooses(wgslName, len(expressions)) && len(globalRefs) == 0 {
+		args := make([]wgsl.Expression, len(expressions))
+		for i, e := range expressions {
+			args[i] = e.(wgsl.Expression)
+		}
+		return d.chooseBranch(fnCallOp, args, returnType), nil
+	}
 	// A stand-in's switches read only their four arguments, so a call that
 	// also carries module state (the noise tile a noisy part needs) is
 	// switched as well.
