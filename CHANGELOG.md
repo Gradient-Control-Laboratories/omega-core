@@ -31,8 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Quadratic Bezier edges: `edgeLine()`, `edgeArc(curvature)` and `edgeBezier(control)` name each edge of
   `profileEdgesXY(points, edges)`, `openProfileEdgesXY(points, edges)` and
   `sweepOpenEdges(section, points, edges)`, so lines, arcs and Beziers mix in one profile, still exact;
-  `.u` is the arc length along a curve. For lines and arcs alone `profileXY` remains much faster on the GPU:
-  every edge of the descriptor forms runs the Bezier step.
+  `.u` is the arc length along a curve. Each edge computes only its own kind's step on the GPU (by `choose`);
+  for lines and arcs alone `profileXY` is still the faster form.
 
 ### Changed
 
