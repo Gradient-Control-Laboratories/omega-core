@@ -1,0 +1,18 @@
+Phase 3 (Non-Axisymmetric Segments) verification report
+
+Automated: go vet ./eval/ ./stdlib/... ./internal/closure/ && go test ./... -count=1 -> all ok.
+New: eval/shaft_sections_test.go; examples/shaft_pinion.gsl.
+- Exact sections vs a reference sampled from the same lines and arcs (0.002 mm steps, arc ends included):
+  hex, d-flat, double-d, section-of-hex exact inside and out (worst 2.3e-6 mm); spline exact outside
+  (2.9e-6 mm), a bound inside.
+- Mixed convexity: hex AF20 beside a 22 round, both orders, exact outside, solid on the joint; gear
+  (17 teeth, m1) between 17 rounds, 3210 joint points inside both sides all solid.
+- Spline in drill.spline: nearest approach 0.002 mm, no interference.
+- Spur gear equals gearProfile across its span. Helix: full 3D gradient inside the tip circle, helical
+  1.0002 vs spur 1.1253; mutation (no twist correction) 1.19, fails.
+- Found (owner's call: two PRs off main): gearProfile not a bound - involute string field past the tips
+  (1.56; chamfer and root round ruled out by turning them off), tip chamfer at obtuse edges (1.13).
+- WGSL: shaft_pinion 101596 bytes; section evaluated 4x per fold step (later optimization noted).
+
+Manual verification: owner's viewer check of examples/shaft_pinion.gsl.
+User confirmation: accepted by the owner, 2026-11-19.
