@@ -1,0 +1,17 @@
+Phase 2 (End Holes) verification report
+
+Automated: go vet ./internal/closure/ ./eval/ ./stdlib/... && go test ./... -count=1 -> all ok but
+internal/link TestFastExitSingleOrZeroDotImports (timing: 2.08 s against a 2 s limit under the parallel
+suite; 0.69 s alone; package untouched).
+- internal/closure: fold_forward_test.go (lists and lone functions forwarded: one package, across
+  packages, two hops, package into package; the lone-across-packages cases were Red before);
+  fold_twice_test.go (two folds over one list keep distinct names; Red before).
+- eval: TestShaftBody_EndHoles, _EndHolesOpenOntoTheirFaces (no void surface in either end plane;
+  outside unchanged clear of the mouths; never deeper anywhere), _BottomHoleKeepsItsSide (keyway on
+  +x), _EndHolesExampleCompilesToWGSL (32998 bytes). Phase 1 tests unchanged and passing.
+- Phase 0 pin TestShaftPhase0_SpikeHoleListsThroughShaft converted to a positive check (owner's call).
+- WGSL: the `want` select costs every shaft ~7% (shaft_turned 23112 -> 24764 bytes).
+
+Manual verification: owner's viewer check of examples/shaft_end_holes.gsl (server restarted for the
+embedded stdlib).
+User confirmation: accepted by the owner, 2026-11-18.
