@@ -58,6 +58,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A box declared in a function from a `reduce` whose step indexes a list by its `index`, such as
   `points[mod(index + 1, count)]`, now holds: read with `.box` it failed to link ("undefined identifier: index"),
   and in builtin the part it bounds lost its box without a word.
+- A box declared in a function written in the document may read locals assigned after the shape it bounds:
+  the crop that applies it was written on the shape's own line, so such a local was read before its assignment
+  ("undefined identifier"). A cropped body is now put in an order its reads allow; one that compiled before is
+  unchanged, and every reader of the shape still reads it cropped.
 
 ## [0.1.3] - 2026-11-17
 
