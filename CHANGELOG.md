@@ -38,6 +38,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `profileXY` fills its three distance pools in one pass instead of three, with the same values: 2.6 to 11 times
   faster on the GPU across the profile examples.
+- A profile's box is exact: the union of its edges' own boxes, an arc's extremes where they lie on it and a
+  Bezier's extremum along each axis, for `profileXY` with arcs, its corner forms (the loop's box without the
+  corners, which holds every fillet) and `profileEdgesXY`; it was the points' box grown by the most an edge can
+  bulge, 28 mm loose a side on an L with arcs. `sweepOpen` and `sweepOpenEdges` grow their chain's exact box.
 
 ### Fixed
 
