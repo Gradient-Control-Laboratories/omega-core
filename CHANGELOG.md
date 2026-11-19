@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- A part's box declares what its corners repeat once, as a value before the part, instead of writing every copy
+  out in the WGSL, where the viewer evaluates it per point to cull. The box is unchanged; parts whose boxes read
+  profile bounds shrink most: `examples/profile_cylinder.gsl` from 190 KB of WGSL to 83 KB, about half its time
+  per point on the GPU.
+
 ## [0.1.3] - 2026-11-17
 
 ### Added
