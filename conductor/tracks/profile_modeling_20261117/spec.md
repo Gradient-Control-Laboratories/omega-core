@@ -100,6 +100,19 @@ Profiles first, then the operations on them. The numbering is the order.
    made by the points alone, so exact over any cell); it is held off past its ends by twice the overshoot,
    or gated by its parameter, whichever the reference and surface cells bear out. `.u` along it is its arc
    length, in closed form; its box takes the hull of its points and control.
+
+   Found 2026-11-18 while building it. The overshoot penalty is not valid for a Bezier as it is for an arc:
+   on its concave side the normals meet, and a point before an end normal can still be nearest a point
+   within the edge (the mixed loop's, 0.94 mm off with the penalty in all three pools). Gating by "a point
+   within the edge is nearer than both its ends" is exact, but where an end is nearest it compares two equal
+   quantities, so no interval decides it, and certify failed everywhere. Kept: the penalty in the two sided
+   pools only, the nearest pool taking the distance itself, so the magnitude is always exact and the sign
+   exact on every reference. Over a cell the cubic's roots can span the edge, so its distance is helped
+   without changing a value: three fixed points of the edge (t = 1/4, 1/2, 3/4) bound it above, and the
+   triangle of its points and control below; the trigonometric root's divisor is held below zero, which
+   ended a NaN in intervals. `.u` takes one Newton step on the root, which float32 gives to a part in ten
+   thousand. Certify proves the test loops in the default budget; surface cells on a curved Bezier reach
+   5.93 diagonals, allowed 6 by the owner (lines and arcs keep 4).
 4. **C7. Tighter arc (and Bezier) boxes.** The arc profile's box is the points' box padded by
    `min(span / 2, span^2 * maxCurvature / 4)`: sound, but loose, because a `.box` could not hold the reduce
    an exact box needs (see section 5).

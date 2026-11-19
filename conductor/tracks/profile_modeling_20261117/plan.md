@@ -143,12 +143,21 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
       arcs, and how the 2D distance reuses `bezierQuadPointRound`'s closed-form solve. Decided:
       `profileEdgesXY(points, edges)` with `edgeLine()`, `edgeArc(curvature)`, `edgeBezier(control)`;
       `openProfileEdgesXY` and `sweepOpenEdges` too (spec section 4, C6)
-- [ ] Task: Write failing tests (Red Phase) (`eval/profile_edges_test.go`): Bezier edges, alone and mixed
-      with lines and arcs, exact against the reference, with smooth and sharp joints; a straight Bezier is
-      its chord; lines and arcs alone agree with `profileXY(points, curvatures)`; `.u` the arc length;
-      surface cells; `certify`; the open forms against the extended chain and `sweepOpenEdges`'s formula,
-      frame and box
-- [ ] Task: Implement (Green & Refactor Phase); `.u` along a Bezier edge is its arc length
+- [x] Task: Write failing tests (Red Phase) (`eval/profile_edges_test.go`): Bezier edges, alone and mixed
+      with lines and arcs, exact against the reference (worst 5e-6), with smooth and sharp joints; a
+      straight Bezier is its chord; lines and arcs alone agree with `profileXY(points, curvatures)`; `.u`
+      the arc length (worst 2.6e-5); surface cells (curved Bezier 5.93, limit 6 by the owner; straight
+      2.18, limit 4); `certify` (18,089, 34,281 and 3,417 evaluations); the open forms against the extended
+      chain (worst 7.5e-6) and agreeing with `openProfileXY` and `sweepOpen` on lines and arcs;
+      `sweepOpenEdges`'s formula (worst 4.8e-6), frame and box
+- [x] Task: Implement (Green & Refactor Phase); `.u` along a Bezier edge is its arc length:
+      `edgeLine`, `edgeArc`, `edgeBezier`, `profileEdgesXY`, `openProfileEdgesXY` in
+      `stdlib/builtin/2d.gsl`; `sweepOpenEdges` in `stdlib/builtin/sweep.gsl`; the box and frame rules
+      generalised to it (`sweptOpen` takes the helpers' names, `sweepFrame` a table of open sweeps). The
+      Bezier step's choices in spec section 4, C6. Full suite clean but `internal/link`'s
+      `TestFastExitSingleOrZeroDotImports`, a 2 s timing test that failed on `main`'s worktree too under a
+      load average of 225; builtin's `package.pb` is 365 KB here against 181 KB on `main`, and the test
+      links it a thousand times, so it is close to its limit even unloaded (1.77 s)
 - [ ] Task: An example; WGSL size (watch the per-step accumulator reads, spec section 5.5); the owner's
       viewer check
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)

@@ -2,7 +2,6 @@ package property
 
 import (
 	"fmt"
-	"slices"
 
 	"google.golang.org/protobuf/proto"
 	"gradientcontrol.com/omega/core/program"
@@ -199,9 +198,9 @@ func CarryReturnProperties(prog *program.Program) error {
 		}
 		if frames.sweep = findSweep(pkgs, paths); frames.sweep != nil {
 			carriers[frames.sweep.key] = carrier{slots: [][]string{{uProperty, vProperty}}}
-			for _, params := range frames.sweep.open {
+			for _, form := range frames.sweep.open {
 				open := frames.sweep.key
-				open.name, open.params = sweepOpenName, params
+				open.name, open.params = form.name, form.params
 				carriers[open] = carrier{slots: [][]string{{uProperty, vProperty}}}
 			}
 		}
@@ -238,20 +237,32 @@ func (f builtinFrames) valueOr(fc *program.FnCall, prop string, companion *progr
 //	                                           rail = sweep(moulding, route);
 //	                                           rail.u = gslCarry1;  rail.v = gslCarry2;
 //
-// The open sweep, sweepOpen(section, points[, curvatures]), has the same
-// frame about the chain's openProfileXY on the same points: its body is not
+// The open sweeps, sweepOpen(section, points[, curvatures]) and
+// sweepOpenEdges(section, points, edges), have the same frame about the chain's
+// openProfileXY (or openProfileEdgesXY) on the same points: a body is not
 // one remap (its caps read the section elsewhere), so its values are written
 // from sweep's coordinate with that profile as the path.
 type sweepFrame struct {
 	key  carrierKey
 	fn   *program.Function
-	open []int // the parameter counts of builtin's sweepOpen overloads
+	open []openSweep // builtin's open sweeps, each overload
+}
+
+// openSweep is one overload of an open sweep and the open profile its frame is
+// read from, called on its arguments after the section.
+type openSweep struct {
+	name    string
+	params  int
+	profile string
 }
 
 const (
 	sweepName         = "sweep"
 	sweepOpenName     = "sweepOpen"
 	openProfileXYName = "openProfileXY"
+
+	sweepOpenEdgesName     = "sweepOpenEdges"
+	openProfileEdgesXYName = "openProfileEdgesXY"
 )
 
 // findSweep finds builtin's two-parameter sweep among pkgs, or nil when it is
@@ -278,7 +289,7 @@ func findSweep(pkgs []*program.Package, paths []string) *sweepFrame {
 						return nil
 					}
 					return &sweepFrame{key: carrierKey{pkgPath: paths[i], name: sweepName, params: 2}, fn: fn,
-						open: sweepOpenArities(pkg)}
+						open: openSweeps(pkg)}
 				}
 			}
 		}
@@ -286,20 +297,27 @@ func findSweep(pkgs []*program.Package, paths []string) *sweepFrame {
 	return nil
 }
 
-// sweepOpenArities are the parameter counts of pkg's sweepOpen overloads.
-func sweepOpenArities(pkg *program.Package) []int {
-	var out []int
+// openSweeps are pkg's open sweep overloads: sweepOpen of two and three
+// parameters, read from openProfileXY, and sweepOpenEdges of three, read from
+// openProfileEdgesXY.
+func openSweeps(pkg *program.Package) []openSweep {
+	forms := []openSweep{
+		{sweepOpenName, 2, openProfileXYName},
+		{sweepOpenName, 3, openProfileXYName},
+		{sweepOpenEdgesName, 3, openProfileEdgesXYName},
+	}
+	var out []openSweep
 	for _, f := range pkg.Files {
 		if f == nil {
 			continue
 		}
 		for _, ft := range f.FnTypes {
-			if ft == nil || ft.Name != sweepOpenName {
+			if ft == nil {
 				continue
 			}
-			for _, params := range []int{2, 3} {
-				if hasOverload(ft, params) {
-					out = append(out, params)
+			for _, form := range forms {
+				if ft.Name == form.name && hasOverload(ft, form.params) {
+					out = append(out, form)
 				}
 			}
 		}
@@ -319,12 +337,12 @@ func (sw *sweepFrame) valueOr(fc *program.FnCall, prop string, otherwise *progra
 	case fc.Reference.Name == sw.key.name && len(fc.Arguments) == 2:
 		path = arg(1)
 		u = nary(program.Operation_SURFACEU, arg(1))
-	case fc.Reference.Name == sweepOpenName && slices.Contains(sw.open, len(fc.Arguments)):
-		// The chain's openProfileXY, called as sweepOpen was; its u is its
+	case sw.openProfile(fc) != "":
+		// The chain's open profile, called as the sweep was; its u is its
 		// companion's, since a frame read of a call written here would reach
 		// no companion.
 		profile := &program.FnCall{
-			Reference: &program.Reference{Prefix: fc.Reference.Prefix, Name: openProfileXYName, PkgPath: fc.Reference.PkgPath},
+			Reference: &program.Reference{Prefix: fc.Reference.Prefix, Name: sw.openProfile(fc), PkgPath: fc.Reference.PkgPath},
 			Arguments: fc.Arguments[1:],
 		}
 		path = &program.Operand{T: &program.Operand_FnCall{FnCall: proto.Clone(profile).(*program.FnCall)}}
@@ -1211,4 +1229,15 @@ func hasOverload(ft *program.FnType, params int) bool {
 		}
 	}
 	return false
+}
+
+// openProfile is the open profile whose frame the open sweep fc carries, or ""
+// when fc is no open sweep of builtin's.
+func (sw *sweepFrame) openProfile(fc *program.FnCall) string {
+	for _, form := range sw.open {
+		if fc.Reference.Name == form.name && len(fc.Arguments) == form.params {
+			return form.profile
+		}
+	}
+	return ""
 }

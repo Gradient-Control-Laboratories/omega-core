@@ -451,3 +451,29 @@ sweepOpen(section, points, curvatures) {
               length([lastDepth, max(lastCap, 0)]));
   return max(wall, onRay) < 0 ? neg(reach) : reach;
 }
+
+/// sweepOpen along a chain of mixed edges, each named by a descriptor in
+/// `edges`, one fewer than the points, as openProfileEdgesXY reads them:
+/// edgeLine(), edgeArc(curvature) or edgeBezier(control). The caps stand
+/// square to the tangents at the chain's two ends, a Bezier's along its
+/// control polygon.
+sweepOpenEdges(section, points, edges) {
+  count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
+  pools = openProfileEdgesPoolsXY(points, edges);
+  first = profileAnyEdgeTangentsXY(points[0], points[1], edges[0]).xy;
+  last = profileAnyEdgeTangentsXY(points[count - 2], points[count - 1], edges[count - 2]).zw;
+  nearest = min(pools.z, pools.w);
+  across = pools.x <= pools.y ? nearest : neg(nearest);
+  wall = remap(section, [across, p.z, 0]);
+  fromFirst = p.xy - points[0];
+  firstDepth = neg(dot(fromFirst, first));
+  firstCap = remap(section, [fromFirst.x * first.y - fromFirst.y * first.x, p.z, 0]);
+  fromLast = p.xy - points[count - 1];
+  lastDepth = dot(fromLast, last);
+  lastCap = remap(section, [fromLast.x * last.y - fromLast.y * last.x, p.z, 0]);
+  onRay = pools.z - pools.w;
+  reach = min(max(abs(wall), onRay <= 0 ? 0 : nothing),
+              length([firstDepth, max(firstCap, 0)]),
+              length([lastDepth, max(lastCap, 0)]));
+  return max(wall, onRay) < 0 ? neg(reach) : reach;
+}

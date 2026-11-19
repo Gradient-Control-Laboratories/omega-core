@@ -649,6 +649,356 @@ openProfileHighXY(points, curvatures) {
 }
 
 // =========================================================
+// PROFILES OF MIXED EDGES (XY plane)
+// =========================================================
+
+/// A straight edge, for profileEdgesXY and openProfileEdgesXY.
+edgeLine() {
+  return [0, 0, 0];
+}
+
+/// An edge bent to a circular arc of signed `curvature` (1/mm), positive
+/// curving to the left along the loop, as profileXY(points, curvatures) reads
+/// a curvature: at most a semicircle.
+edgeArc(curvature) {
+  return [1, curvature, 0];
+}
+
+/// A quadratic Bezier edge from its start to its end, pulled toward
+/// `control` (a 2D point): tangent there to the lines to the control. A
+/// control on the chord makes a straight edge; it must not be either end.
+edgeBezier(control) {
+  return [2, control.x, control.y];
+}
+
+// An edge descriptor's weights, constants of its kind: [arc or line, Bezier],
+// each 1 or 0.
+profileEdgeKindXY(edge) {
+  bezier = edge.x > 1.5 ? 1 : 0;
+  return [1 - bezier, bezier];
+}
+
+// A Bezier edge's control, or for a line or an arc its chord's middle, so
+// what reads it divides by nothing that vanishes.
+profileEdgeControlXY(start, end, edge) {
+  kind = profileEdgeKindXY(edge);
+  return [edge.y, edge.z] * kind.y + (start + end) / 2 * kind.x;
+}
+
+// The unit tangents at an edge's two ends, [start's, end's]: an arc's or a
+// line's as profileEdgeTangentsXY finds them, a Bezier's along its control
+// polygon.
+profileAnyEdgeTangentsXY(start, end, edge) {
+  kind = profileEdgeKindXY(edge);
+  arc = profileEdgeTangentsXY(start, end, edge.y * kind.x);
+  control = profileEdgeControlXY(start, end, edge);
+  bezierStart = normalize(control - start);
+  bezierEnd = normalize(end - control);
+  return arc * kind.x + [bezierStart.x, bezierStart.y, bezierEnd.x, bezierEnd.y] * kind.y;
+}
+
+// The candidate parameters of the point of the Bezier from `start` through
+// `control` to `end` nearest p, each clamped to the edge: the cubic's real
+// root where it has one, [t1, 0, 0, 0] alongside its three trigonometric
+// roots [0, ta, tb, tc], as bezierQuadPointRound solves it in 3D (Quilez's
+// closed form, his names). Each is a point of the edge whatever the cubic, so
+// the nearest of them, with the projection onto the chord for a straight
+// edge, is the nearest point, and no select need choose.
+profileBezierRootsXY(start, control, end) {
+  e = control - start;
+  f = start - 2.0 * control + end;
+  d = start - p.xy;
+  ff = dot(f, f);
+  ef = dot(e, f);
+  ee = dot(e, e);
+  kk = 1.0 / max(ff, 1e-6 * ee + 1e-20);
+  kx = kk * ef;
+  ky = kk * (2.0 * ee + dot(d, f)) / 3.0;
+  kz = kk * dot(d, e);
+  pp = ky - kx * kx;
+  qq = kx * (2.0 * kx * kx - 3.0 * ky) + kz;
+  h = qq * qq + 4.0 * pp * pp * pp;
+  sh = sqrt(max(h, 0.0));
+  w1 = (sh - qq) / 2.0;
+  w2 = (neg(sh) - qq) / 2.0;
+  u1 = sign(w1) * exp(ln(max(abs(w1), 1e-12)) / 3.0);
+  u2 = sign(w2) * exp(ln(max(abs(w2), 1e-12)) / 3.0);
+  t1 = clamp(u1 + u2 - kx, 0.0, 1.0);
+  zz = sqrt(max(neg(pp), 0.0));
+  // The trigonometric roots are read only where pp < 0, so the divisor is held
+  // below zero, which changes no value and keeps an interval of it off zero.
+  v = acos(clamp(qq / (min(2.0 * pp * zz, 0.0) - 1e-20), neg(1.0), 1.0)) / 3.0;
+  m = cos(v);
+  n = sin(v) * 1.732050808;
+  return [t1, clamp((m + m) * zz - kx, 0.0, 1.0), clamp((neg(n) - m) * zz - kx, 0.0, 1.0), clamp((n - m) * zz - kx, 0.0, 1.0)];
+}
+
+// The squared distance from p to the Bezier's point at parameter t.
+profileBezierGapXY(start, control, end, t) {
+  at = start + 2 * (control - start) * t + (start - 2 * control + end) * t * t;
+  offset = p.xy - at;
+  return dot(offset, offset);
+}
+
+// The Bezier's projection of p onto its chord, clamped: the nearest point of a
+// straight one.
+profileBezierChordTXY(start, end) {
+  chord = end - start;
+  return clamp(dot(p.xy - start, chord) / max(dot(chord, chord), 1e-20), 0.0, 1.0);
+}
+
+// The feature of one Bezier edge, as profileEdgeSidedXY is an arc's: its
+// distance (the nearest of its candidate points), held off past its ends by
+// twice the overshoot past the normals there, offered by its side. The side
+// is the sign of the parabola it lies on, F(q) = D (g x q) - (q x f)^2 with
+// q = p - start, g = 2 (control - start), f = start - 2 control + end and
+// D = g x f, zero on the parabola, which beside the edge has the edge's side;
+// it is turned so the right of travel is positive. A straight edge, D = 0,
+// takes its chord's side; that choice reads the points alone, so it is the
+// same over every cell.
+profileBezierSidedXY(start, control, end) {
+  roots = profileBezierRootsXY(start, control, end);
+  gap = min(min(profileBezierGapXY(start, control, end, roots.x), profileBezierGapXY(start, control, end, roots.y)),
+            min(profileBezierGapXY(start, control, end, roots.z), profileBezierGapXY(start, control, end, roots.w)));
+  chordGap = profileBezierGapXY(start, control, end, profileBezierChordTXY(start, end));
+  ends = min(dot(p.xy - start, p.xy - start), dot(p.xy - end, p.xy - end));
+  // Over a cell the roots' intervals can span the whole edge, so the bounds
+  // are helped from both sides without changing a value: three fixed points
+  // of the edge, whose distances are exact to bound and never less than the
+  // nearest, and the triangle of its points and control, which holds it, so
+  // its distance is never more.
+  sampled = min(min(profileBezierGapXY(start, control, end, 0.25), profileBezierGapXY(start, control, end, 0.5)),
+              profileBezierGapXY(start, control, end, 0.75));
+  reach = max(sqrt(min(min(gap, chordGap), min(ends, sampled))), profileTriangleDistanceXY(start, control, end));
+
+  g = 2 * (control - start);
+  f = start - 2 * control + end;
+  q = p.xy - start;
+  turning = g.x * f.y - g.y * f.x;
+  across = g.x * q.y - g.y * q.x;
+  bend = q.x * f.y - q.y * f.x;
+  straight = abs(turning) <= 1e-6 * dot(g, g);
+  right = straight ? neg(across) : neg(turning * across - bend * bend) * sign(turning);
+
+  // Past its ends it is held off by twice the overshoot past the normals
+  // there, but only on its convex side (both sides of a straight edge), where
+  // its normals part: on its concave side they meet, and a point before an end
+  // normal can still be nearest a point within the edge. The nearest pool
+  // takes the distance itself.
+  startTangent = normalize(control - start);
+  endTangent = normalize(end - control);
+  overshoot = max(0, neg(dot(q, startTangent)), dot(p.xy - end, endTangent));
+  held = reach + 2 * overshoot;
+  return [max(held, right >= 0 ? 0 : nothing), max(held, right >= 0 ? nothing : 0), reach];
+}
+
+// The feature of one edge of any kind: the arc's or the line's
+// (profileEdgeSidedXY) or the Bezier's, the other shut by a constant gate.
+profileAnyEdgeSidedXY(start, end, edge) {
+  kind = profileEdgeKindXY(edge);
+  arcGate = kind.x > 0.5 ? 0 : nothing;
+  bezierGate = kind.y > 0.5 ? 0 : nothing;
+  arc = profileEdgeSidedXY(start, end, edge.y * kind.x);
+  bezier = profileBezierSidedXY(start, profileEdgeControlXY(start, end, edge), end);
+  return min(max(arc, [arcGate, arcGate, arcGate]), max(bezier, [bezierGate, bezierGate, bezierGate]));
+}
+
+// The corner at `start`, between the edge arriving from `previous` and the
+// edge leaving for `end`, and that edge: their least offer to each pool. The
+// turn is between the tangents that meet there.
+profileEdgesStepXY(previous, start, end, previousEdge, edge) {
+  incoming = profileAnyEdgeTangentsXY(previous, start, previousEdge).zw;
+  outgoing = profileAnyEdgeTangentsXY(start, end, edge).xy;
+  turn = incoming.x * outgoing.y - incoming.y * outgoing.x;
+  return min(profileVertexSidedXY(start, turn), profileAnyEdgeSidedXY(start, end, edge));
+}
+
+// profileArcPoolsXY for a loop of mixed edges, one pass.
+profileEdgesPoolsXY(points, edges) {
+  count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
+  return reduce([nothing, nothing, nothing], (pools, start, index) {
+    previousIndex = mod(index - 1 + count, count);
+    return min(pools, profileEdgesStepXY(points[previousIndex], start, points[mod(index + 1, count)],
+                                         edges[previousIndex], edges[index]));
+  }, points);
+}
+
+// The length of the Bezier from its start to parameter t, with
+// e = control - start and f = start - 2 control + end: twice the integral of
+// sqrt(a s^2 + b s + c), a = f.f, b = 2 e.f, c = e.e, in closed form; a
+// straight one, a ~ 0, is 2 |e| t.
+profileBezierLengthXY(e, f, t) {
+  a = dot(f, f);
+  b = 2 * dot(e, f);
+  c = dot(e, e);
+  aa = max(a, 1e-20);
+  sa = sqrt(aa);
+  q0 = sqrt(c);
+  qt = sqrt(max(aa * t * t + b * t + c, 0));
+  k = (4 * aa * c - b * b) / (8 * aa * sa);
+  at = (2 * aa * t + b) * qt / (4 * aa) + k * ln(max(2 * sa * qt + 2 * aa * t + b, 1e-20));
+  atStart = b * q0 / (4 * aa) + k * ln(max(2 * sa * q0 + b, 1e-20));
+  return a < 1e-6 * c ? 2 * sqrt(c) * t : 2 * (at - atStart);
+}
+
+// One Bezier edge's offer to a profile's u, as profileArcEdgeRun: [the
+// distance from p to its nearest point, that point's distance along it, its
+// length]. The nearest candidate is chosen by selects, which a frame may use.
+profileBezierEdgeRun(start, control, end) {
+  roots = profileBezierRootsXY(start, control, end);
+  chordT = profileBezierChordTXY(start, end);
+  gapA = profileBezierGapXY(start, control, end, roots.x);
+  gapB = profileBezierGapXY(start, control, end, roots.y);
+  gapC = profileBezierGapXY(start, control, end, roots.z);
+  gapD = profileBezierGapXY(start, control, end, roots.w);
+  gapE = profileBezierGapXY(start, control, end, chordT);
+  t = gapA <= gapB && gapA <= gapC && gapA <= gapD && gapA <= gapE ? roots.x
+    : (gapB <= gapC && gapB <= gapD && gapB <= gapE ? roots.y
+    : (gapC <= gapD && gapC <= gapE ? roots.z : (gapD <= gapE ? roots.w : chordT)));
+  e = control - start;
+  f = start - 2 * control + end;
+  // The closed form's root is good to a part in ten thousand in float32: true
+  // enough for the distance, which is flat at its nearest point, but not for
+  // the distance along the edge there. One Newton step on (B - p) . B' = 0
+  // makes it so.
+  offset = start + 2 * e * t + f * t * t - p.xy;
+  velocity = 2 * (e + f * t);
+  slope = dot(velocity, velocity) + dot(offset, 2 * f);
+  refined = clamp(t - dot(offset, velocity) / max(slope, 1e-20), 0.0, 1.0);
+  return [sqrt(min(min(min(gapA, gapB), min(gapC, gapD)), gapE)), profileBezierLengthXY(e, f, refined), profileBezierLengthXY(e, f, 1)];
+}
+
+// One edge of any kind's offer to a profile's u.
+profileAnyEdgeRun(start, end, edge) {
+  kind = profileEdgeKindXY(edge);
+  return profileArcEdgeRun(start, end, edge.y * kind.x) * kind.x
+       + profileBezierEdgeRun(start, profileEdgeControlXY(start, end, edge), end) * kind.y;
+}
+
+// A mixed loop's u, as profileArcRunXY.
+profileEdgesRunXY(points, edges) {
+  count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
+  nearest = reduce([nothing, 0], (best, start, index) {
+    run = profileAnyEdgeRun(start, points[mod(index + 1, count)], edges[index]);
+    return [min(best.x, run.x), 0];
+  }, points).x;
+  return reduce([0, 0], (best, start, index) {
+    run = profileAnyEdgeRun(start, points[mod(index + 1, count)], edges[index]);
+    return [max(best.x, run.x <= nearest + 1e-4 ? best.y + run.y : 0), best.y + run.z];
+  }, points).x;
+}
+
+// The corners of a mixed loop's box in XY: the box of its points and its
+// Beziers' controls, which hold each Bezier, grown by the most an arc edge can
+// bulge, as profileArcBoundsXY grows an arc profile's. `closed` is 1 for a
+// loop, where every point starts an edge, and 0 for an open chain, whose last
+// point starts none.
+profileEdgesBoundsXY(points, edges, closed) {
+  count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
+  last = count - 1 + closed;
+  hull = reduce([nothing, nothing, neg(nothing), neg(nothing)], (box, start, index) {
+    edge = edges[min(index, count - 2 + closed)];
+    starts = index < last ? 1 : 0;
+    bezier = profileEdgeKindXY(edge).y * starts;
+    control = [edge.y, edge.z] * bezier + start * (1 - bezier);
+    return [min(min(box.x, start.x), control.x), min(min(box.y, start.y), control.y),
+            max(max(box.z, start.x), control.x), max(max(box.w, start.y), control.y)];
+  }, points);
+  bend = reduce([0, 0], (most, start, index) {
+    edge = edges[min(index, count - 2 + closed)];
+    starts = index < last ? 1 : 0;
+    return [max(most.x, abs(edge.y) * profileEdgeKindXY(edge).x * starts), 0];
+  }, points).x;
+  span = length([hull.z - hull.x, hull.w - hull.y]);
+  bulge = min(span / 2, span * span * bend / 4);
+  return [hull.x - bulge, hull.y - bulge, hull.z + bulge, hull.w + bulge];
+}
+
+/// Closed profile of mixed edges in the XY plane: the exact signed distance to
+/// the loop through `points`, negative inside, each edge, from the point of
+/// the same index to the next, named by a descriptor in `edges`: edgeLine(),
+/// edgeArc(curvature) or edgeBezier(control). Wind the loop counterclockwise;
+/// it must not cross itself. With lines and arcs alone it is
+/// profileXY(points, curvatures). Its box holds the points and the Beziers'
+/// controls; its frame: .u the distance along the loop, from its first point,
+/// to the point of the loop nearest p, the arc length along a curve.
+profileEdgesXY(points, edges) {
+  pools = profileEdgesPoolsXY(points, edges);
+  form = pools.x <= pools.y ? pools.z : neg(pools.z);
+  bounds = profileEdgesBoundsXY(points, edges, 1);
+  form.box = [[bounds.x, bounds.y, neg(nothing)], [bounds.z, bounds.w, nothing]];
+  form.u = profileEdgesRunXY(points, edges);
+  return form;
+}
+
+// openProfilePoolsXY for a chain of mixed edges, one descriptor an edge.
+openProfileEdgesPoolsXY(points, edges) {
+  count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
+  chain = reduce([nothing, nothing, nothing], (pools, start, index) {
+    inner = index > 0 ? 1 : 0;
+    shut = index < count - 1 ? 0 : nothing;
+    end = points[mod(index + 1, count)];
+    edge = edges[min(index, count - 2)];
+    previousEdge = edges[max(index - 1, 0)];
+    // At the first point, the edge before is this one mirrored behind it:
+    // the same edge from 2 start - end, whose end tangent is this edge's
+    // start tangent, so the turn there is nothing.
+    previous = points[mod(index - 1 + count, count)] * inner + (2 * start - end) * (1 - inner);
+    tangents = profileAnyEdgeTangentsXY(start, end, edge);
+    incoming = profileAnyEdgeTangentsXY(previous, start, previousEdge).zw * inner + tangents.xy * (1 - inner);
+    turn = incoming.x * tangents.y - incoming.y * tangents.x;
+    step = min(profileVertexSidedXY(start, turn), profileAnyEdgeSidedXY(start, end, edge));
+    return min(pools, max(step, [shut, shut, shut]));
+  }, points);
+  first = profileAnyEdgeTangentsXY(points[0], points[1], edges[0]);
+  last = profileAnyEdgeTangentsXY(points[count - 2], points[count - 1], edges[count - 2]);
+  rays = min(profileRaySidedXY(points[0], first.xy, neg(1)), profileRaySidedXY(points[count - 1], last.zw, 1));
+  return [min(chain.x, rays.x), min(chain.y, rays.y), chain.z, rays.z];
+}
+
+// A mixed chain's u, as openProfileArcRunXY.
+openProfileEdgesRunXY(points, edges) {
+  count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
+  nearest = reduce([nothing, 0], (best, start, index) {
+    shut = index < count - 1 ? 0 : nothing;
+    run = profileAnyEdgeRun(start, points[mod(index + 1, count)], edges[min(index, count - 2)]);
+    return [min(best.x, max(run.x, shut)), 0];
+  }, points).x;
+  chain = reduce([0, 0], (best, start, index) {
+    shut = index < count - 1 ? 0 : nothing;
+    keep = index < count - 1 ? 1 : 0;
+    run = profileAnyEdgeRun(start, points[mod(index + 1, count)], edges[min(index, count - 2)]);
+    return [max(best.x, max(run.x, shut) <= nearest + 1e-4 ? best.y + run.y : 0), best.y + run.z * keep];
+  }, points);
+  first = profileAnyEdgeTangentsXY(points[0], points[1], edges[0]);
+  last = profileAnyEdgeTangentsXY(points[count - 2], points[count - 1], edges[count - 2]);
+  return openProfileRaysRun(points[0], first.xy, points[count - 1], last.zw, nearest, chain);
+}
+
+/// Open profile of mixed edges in the XY plane: as openProfileXY(points), each
+/// edge named by a descriptor in `edges`, one fewer than the points:
+/// edgeLine(), edgeArc(curvature) or edgeBezier(control). The rays carry on
+/// along the tangents at the chain's two ends, a Bezier's along its control
+/// polygon.
+openProfileEdgesXY(points, edges) {
+  pools = openProfileEdgesPoolsXY(points, edges);
+  nearest = min(pools.z, pools.w);
+  form = pools.x <= pools.y ? nearest : neg(nearest);
+  form.u = openProfileEdgesRunXY(points, edges);
+  return form;
+}
+
+// The low and high corners of a mixed chain's box, for sweepOpenEdges' box
+// rule (property's sweptOpen).
+openProfileEdgesLowXY(points, edges) {
+  return profileEdgesBoundsXY(points, edges, 0).xy;
+}
+
+openProfileEdgesHighXY(points, edges) {
+  return profileEdgesBoundsXY(points, edges, 0).zw;
+}
+
+// =========================================================
 // PROFILE CORNERS
 // =========================================================
 
