@@ -17,5 +17,9 @@
   *Link: [index.md](./tracks/eval_fixes_20261115/index.md)*
 
 ---
+- [ ] **Track: Shaft Modeling**
+  *Link: [index.md](./tracks/shaft_modeling_20261118/index.md)*
+
+---
 - [ ] **Track: Backlog**
   *Link: [index.md](./tracks/backlog_20261110/index.md)*
