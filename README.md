@@ -112,6 +112,8 @@ Subcommands delegate to sibling tool binaries in `bin/`:
 - `gsl serve`: Launch the local HTTP server and interactive WebGPU viewer (`bin/serve`).
 - `gsl viewer [part.gsl]`: Open a file, or the examples, in the WebGPU viewer in the default browser
   (`bin/compile viewer`); the file's folder is served, and Save writes back to it.
+- `gsl export part.gsl [more.gsl ...] -o dir`: Write the viewer and the files' compiled fields as a folder of
+  static web pages that needs no server of ours (`bin/compile export`); the page shows the source read-only.
 - `gsl fix`: Refactor GSL source files to current syntax (`bin/fix`).
 - `gsl help [command]`: Display help for `gsl` or a specific subcommand.
 
