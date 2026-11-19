@@ -228,7 +228,13 @@ Taken next after Phase 2, before Phases 3 and 4 (the owner, 2026-11-18).
       coordinate; the box by the `sweptOpen` rule from `openProfileLowXY` and `openProfileHighXY`. Owner's decision on
       the cap formula and the corner cells in spec section 4, C5. `package.pb` regenerated (it was stale
       after the `openProfileXY` commit). Full suite clean, no golden moved
-- [ ] Task: An example; WGSL size; the GPU cost of reading the section three times; the owner's viewer check
+- [x] Task: An example; WGSL size; the GPU cost of reading the section three times; the owner's viewer check:
+      `examples/profile_sweep_open.gsl`, a coved moulding along an S with flat caps; 55 KB of WGSL with its
+      frame and sliders, 45 KB without the frame, most of it the box (the `swept` rule repeats the
+      section's bounds, whole expressions, where `revolved` reads each a few times). The other examples'
+      WGSL unchanged (sweep and revolve byte for byte). GPU, slider-free copies without colour, 64
+      evaluations a point over 1M points, less a trivial field's 25.9 ms: closed `sweep` 2.9 ms,
+      `sweepOpen` three reads 8.8 ms, the one-read alternative 4.9 ms. Checked by the owner: looks right
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 8: Verification and Records
