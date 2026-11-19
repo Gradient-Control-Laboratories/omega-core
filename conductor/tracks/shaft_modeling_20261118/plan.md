@@ -91,7 +91,7 @@ treatment), the phase opens with a proposal for the owner to approve before any 
       past a groove's rims and at a taper meeting a diameter (spec 3.3), accepted
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
-## Phase 2: End Holes
+## Phase 2: End Holes [checkpoint: 7259b77]
 
 - [x] Task: The closure pass follows a list of functions through a parameter (spec 7, the owner's call)
   - [x] Proposal (approved 2026-11-18): `paramIsFunctionList` counts a parameter handed on whole to a
