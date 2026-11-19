@@ -625,6 +625,29 @@ openProfileRaysRun(first, firstTangent, last, lastTangent, chainNearest, chain) 
   return firstReach <= nearest + 1e-4 ? neg(back) : (lastReach <= nearest + 1e-4 ? chain.y + onward : chain.x);
 }
 
+// The low and high corners of an open chain's box in XY, without its rays,
+// for sweepOpen's box rule (property's sweptOpen): its points' box, and with
+// arcs that box grown by the most an edge can bulge, as a closed profile's.
+openProfileLowXY(points) {
+  low, high = profileBoundsXY(points);
+  return low;
+}
+
+openProfileHighXY(points) {
+  low, high = profileBoundsXY(points);
+  return high;
+}
+
+openProfileLowXY(points, curvatures) {
+  low, high = profileArcBoundsXY(points, curvatures);
+  return low;
+}
+
+openProfileHighXY(points, curvatures) {
+  low, high = profileArcBoundsXY(points, curvatures);
+  return high;
+}
+
 // =========================================================
 // PROFILE CORNERS
 // =========================================================

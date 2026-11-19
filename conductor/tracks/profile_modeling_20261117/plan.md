@@ -215,11 +215,19 @@ Taken next after Phase 2, before Phases 3 and 4 (the owner, 2026-11-18).
 
 ## Phase 7: Caps for Sweeps (C5)
 
-- [ ] Task: Write failing tests (Red Phase) (`eval/profile_sweep_open_test.go`): `sweepOpen`'s ends capped
-      flat, exact against the swept solid sampled on its own; surface cells; `certify`; the box; the frame
-      across the rim
-- [ ] Task: Implement (Green & Refactor Phase): `sweepOpen(section, points[, curvatures])` in
-      `stdlib/builtin/sweep.gsl`; frame and box by Go rules beside `sweep`'s
+- [x] Task: Write failing tests (Red Phase) (`eval/profile_sweep_open_test.go`): the formula from the
+      references (worst 7.3e-6); against the swept solid sampled on its own, wall and caps apart: where the
+      condition holds never over (worst 0.0003 mm) and, on the smooth S, never short by more than the
+      sampling (0.055 mm); beyond a cap with another part nearer, over by up to 1.73 mm, logged; surface
+      cells (S widest 3.00, limit 6; zigzag 9.00, soundness only); `certify` above and beyond the first
+      cap; the box, lines and arcs; the frame. Written after the implementation, so checked by mutation:
+      without the box rule the box test fails, without the wall's gate the formula is off by 9.4 mm
+- [x] Task: Implement (Green & Refactor Phase): `sweepOpen(section, points[, curvatures])` in
+      `stdlib/builtin/sweep.gsl`, three reads of the section; the frame by `sweepFrame` from
+      `openProfileXY`'s companion (a frame read of a call written at the call reaches none) and `sweep`'s
+      coordinate; the box by the `sweptOpen` rule from `openProfileLowXY` and `openProfileHighXY`. Owner's decision on
+      the cap formula and the corner cells in spec section 4, C5. `package.pb` regenerated (it was stale
+      after the `openProfileXY` commit). Full suite clean, no golden moved
 - [ ] Task: An example; WGSL size; the GPU cost of reading the section three times; the owner's viewer check
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
