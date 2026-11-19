@@ -174,6 +174,22 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
       `profileAnyEdgeSidedXY` and `profileAnyEdgeRun` choose the edge's kind's step, so the GPU computes
       only that one. The L 45.5 → 12.2 ms, the plate 32 → 16.4 ms (`profileXY` 5.1 ms), checksums identical;
       the CPU and interval paths, which read the ternary, unchanged in every edge test
+- [x] Task: Robustness (2026-11-19, the owner: make open profiles robust, with good coverage, assuming the
+      tangent rays cross nothing). Probing found a Bezier that hooks back past its chord, an end tangent
+      more than a right angle from it, wrong in sign and size (51 mm on a closed loop, 30 on an open chain):
+      the side rule's "across the chord from the control" holds only for an edge that is a graph over its
+      chord. Such an edge is now two pieces split where its tangent bisects its turn (the owner's choice),
+      chosen on the constant hook so ordinary edges cost as before; profile_bezier's WGSL 60.0 → 61.7 KB,
+      accepted by naga. A control on an end point made the field NaN everywhere: its tangent is now the
+      chord's, the limit of the derivative, and a straight edge reads its chord's side. Consecutive equal
+      points break an open chain (wrong or NaN everywhere): documented, by the owner's choice. New tests
+      (`eval/profile_open_robust_test.go`), all exact to the reference: single edges, semicircles, tiny
+      curvatures, collinear and short edges, a U turn and a hairpin, arc joints, a chain 2 km out, rotated
+      and reversed chains, hooks open and closed, degenerate controls, and an open Bezier chain's `.u`,
+      cells (3.29) and certify. Removing the split fails exactly the five hook cases. Found and left: `.u`
+      settles a tie between features within 1e-4 mm, so beside a corner or an end it can be off by up to
+      sqrt(2 d 1e-4) at distance d (0.03 mm at 5 mm), in closed profiles too; a one-element list such as
+      `[0.1]` is a number to the type checker, so `openProfileXY([a, b], [k])`, one arc, does not compile
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 4: Tighter Boxes (C7)
@@ -190,6 +206,14 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
       the box (spec section 4, C7). Without the rule the arc box tests fail. `TestSweepOpen_Box`'s arc case
       now expects the exact box, with the owner's authorization. GPU and size cost recorded in the spec.
       The owner's viewer check (bezier, sweep_open, corners, cylinder render as before): look right
+- [x] Task: Constant boxes fold again (2026-11-19, the owner chose all four fixes). The constant evaluator
+      called a reduce's function with two arguments, so the exact boxes' index-reading helpers never folded
+      and ran per point. Fixed off `main` in `const-fold-fixes`, with two more folding bugs found beside it:
+      a three-way select on a constant vector folded to its positive branch whatever the signs (a
+      miscompile), and a constant division or mod by zero reached WGSL as `+Inf.0` or `NaN.0` (now a
+      compile error); merged here. A constant arc profile's WGSL 10.7 → 5.4 KB, its box numbers again.
+      `profileBox` reads one corner a side, not both corners' least and most: profile_bezier's slider-driven
+      box 18 → 10 helper references
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 5: Partial Revolve (C3) [checkpoint: 9248b1b]
@@ -241,7 +265,13 @@ Taken next after Phase 2, before Phases 3 and 4 (the owner, 2026-11-18).
         through the closed profile's own steps, the first point's turn made nothing by a mirrored previous
         edge and the last point shut by a constant gate; the rays offered beside the pass. Flipping the
         first ray's overshoot fails the reference test by 54.7 mm
-- [ ] Task: Non-planar paths, with a stated Lipschitz bound
+- [ ] Task: Non-planar paths, with a stated Lipschitz bound: **deferred by the owner, 2026-11-19, not yet a
+      priority.** A note for when it is taken up, reasoned and not yet checked numerically: with a
+      rotation-minimizing frame the section's coordinates have gradients U and V, orthonormal, so the sweep
+      is 1-Lipschitz and exact within the path's reach, as the planar one is; the bound is needed only where
+      the frame twists, sqrt(1 + (w r / (1 - k r))^2) at twist rate w, distance r and curvature k, and a
+      round section has 1 at any twist. A polyline with a bend radius per vertex has that frame in closed
+      form (a rotation at each bend)
   - [ ] Proposal: frame transport along the path, and the bound
   - [ ] Write failing tests (Red Phase): the field never exceeds the reference distance and stays within the
         bound; `certify` holds
