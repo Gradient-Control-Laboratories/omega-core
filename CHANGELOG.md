@@ -39,6 +39,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `profileXY` fills its three distance pools in one pass instead of three, with the same values: 2.6 to 11 times
   faster on the GPU across the profile examples.
 
+### Fixed
+
+- A three-way select on a constant vector condition folded to its positive branch whatever the condition's signs:
+  `[-1, -2] ? a : b : c` compiled as `a`, where the shader picks `c`. It now folds per component, as the shader
+  selects, and is pruned to one branch only when every component picks it.
+- A `reduce` whose function takes the index, `(accumulator, element, index)`, now folds to a constant; it was
+  left to run per point, so a box written with one did not fold to numbers.
+- A constant that folds to infinity or NaN, a division or a mod by zero, is a compile error naming it, instead of
+  `+Inf.0` or `NaN.0` in a WGSL shader the browser refuses.
+
 ## [0.1.3] - 2026-11-17
 
 ### Added
