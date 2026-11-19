@@ -735,11 +735,18 @@ func profileBox(args []boxVal, lowName, highName string) (boxVal, bool) {
 	if !ok {
 		return boxVal{}, false
 	}
+	// The low corner is never above the high one, so each side reads one
+	// corner, not the least and most of both as between does: each helper is
+	// called once an axis instead of twice, which matters where the box does
+	// not fold to numbers.
 	low, high := call(lowName, ops...), call(highName, ops...)
-	far := ref(nothingName)
-	lo := nary(program.Operation_COLLECT, planar(low, 0), planar(low, 1), neg(far))
-	hi := nary(program.Operation_COLLECT, planar(high, 0), planar(high, 1), far)
-	return boxVal{box: between(lo, hi, ref(boxPadName))}, true
+	far, pad := ref(nothingName), ref(boxPadName)
+	bx := &bbox{}
+	for i := 0; i < 2; i++ {
+		bx.lo[i], bx.hi[i] = subOp(planar(low, i), pad), addOp(planar(high, i), pad)
+	}
+	bx.lo[2], bx.hi[2] = subOp(neg(far), pad), addOp(far, pad)
+	return boxVal{box: bx}, true
 }
 
 // sweptAround is a sweep's box about pb, its path's box in x and y: pb grown
