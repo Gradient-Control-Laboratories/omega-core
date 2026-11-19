@@ -56,7 +56,7 @@ treatment), the phase opens with a proposal for the owner to approve before any 
 - [x] Task: Recheck spec section 6's constraints on `main` and record which still hold
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
-## Phase 1: A Coaxial Round Stack
+## Phase 1: A Coaxial Round Stack [checkpoint: 516a000]
 
 - [x] Task: Proposal (approved 2026-11-18): `stdlib/mechanical/shaft`, entry point `shaft.body(segments)`,
       segments `shaft.diameter(dia, from, to)` and `shaft.taper(diaFrom, diaTo, from, to)` (a groove is a
