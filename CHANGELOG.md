@@ -28,6 +28,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The viewer reaches its server through one module, `examples/viewer/host.js`; `host-static.js` answers the same
   calls from files beside the page, and takes its place in a page `gsl export` writes.
 
+### Removed
+
+- `sweepLoft`, `sweepLoftScale`, `sweepLoftScaleSmooth`, `sweepLoftScaleSmoothSeparateCaps` and
+  `bezierTubeDir` from builtin. They lofted two sections along a 3D quadratic Bezier, but mixed the sections'
+  distances by the curve's parameter and scaled by it, so the field was not a distance bound, and they carried no
+  frame, box or material. A document that needs them can keep a copy in its own library.
+
 ## [0.1.3] - 2026-11-17
 
 ### Added
