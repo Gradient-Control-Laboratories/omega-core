@@ -128,6 +128,16 @@ Profiles first, then the operations on them. The numbering is the order.
 4. **C7. Tighter arc (and Bezier) boxes.** The arc profile's box is the points' box padded by
    `min(span / 2, span^2 * maxCurvature / 4)`: sound, but loose, because a `.box` could not hold the reduce
    an exact box needs (see section 5).
+
+   Decided 2026-11-19 (taken after C6): exact, per edge, for every form. An arc edge's box is its ends and
+   whichever of its circle's four axis extremes lie on it, those on the side of the chord the arc bulges
+   to; a Bezier edge's, its ends and its point at each axis's extremum, t* = (start - control) /
+   (start - 2 control + end) where that is in (0, 1). The loop's box is the union over its edges, padded
+   0.01 mm as now. The corner forms take their loop's box without the corners: a fillet, chamfer or blend
+   lies within its corner's triangle, which that box holds. The open forms' bounds helpers, which the open
+   sweeps box with, are exact likewise. All of it reads the points alone, so its selects are the same
+   everywhere. Measured: the moulding's concave cove padded its box by 4.62 mm on every side, which every
+   sweep box built from it carried.
 5. **C3. Partial revolve.** A revolve through an angle range, capped at both ends, with `.u` running over the
    range. Decided 2026-11-18: `revolve(profile, axisPoint, axisDirection, angle)`, the angle from the
    sketch plane, counterclockwise seen from the tip of the direction as `revolveAngle` runs, negative the

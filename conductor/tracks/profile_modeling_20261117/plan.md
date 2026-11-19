@@ -178,8 +178,11 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
 
 ## Phase 4: Tighter Boxes (C7)
 
-- [ ] Task: Write failing tests (Red Phase): an arc profile's and a Bezier profile's boxes contain the
-      reference boundary and are within a stated margin of its true box
+- [x] Task: Proposal. Decided: exact per edge (arcs' axis extremes on the arc, Beziers' per-axis
+      extremum), every form, the corner forms by their loop without corners (spec section 4, C7)
+- [ ] Task: Write failing tests (Red Phase) (`eval/profile_boxes_test.go`): an arc profile's and a Bezier
+      profile's boxes contain the reference boundary and are within 0.02 mm of its true box (the 0.01
+      padding and the sampling); a corner form's is its loop's without corners; an open sweep's along arcs
 - [ ] Task: Implement (Green & Refactor Phase), within whatever Phase 0 found `.box` can hold
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
