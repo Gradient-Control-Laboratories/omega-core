@@ -189,7 +189,9 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
       cells (3.29) and certify. Removing the split fails exactly the five hook cases. Found and left: `.u`
       settles a tie between features within 1e-4 mm, so beside a corner or an end it can be off by up to
       sqrt(2 d 1e-4) at distance d (0.03 mm at 5 mm), in closed profiles too; a one-element list such as
-      `[0.1]` is a number to the type checker, so `openProfileXY([a, b], [k])`, one arc, does not compile
+      `[0.1]` is one tree in the fidget backend, which reported it a number, so `openProfileXY([a, b], [k])`,
+      one arc, failed on the CPU paths: fixed by the owner's choice in #101 (index 0 of such a target is the
+      target), merged here, and the one-arc chains added to the tests (exact)
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 4: Tighter Boxes (C7) [checkpoint: 1b00f7d]

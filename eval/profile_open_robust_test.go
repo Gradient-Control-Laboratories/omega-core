@@ -26,6 +26,10 @@ func robustOpenCases() []robustOpen {
 	zigzag, s := openCases()[0].chain, openCases()[1].chain
 	return []robustOpen{
 		{"one line", refChain{points: [][2]float64{{0, 0}, {10, 0}}}},
+		// One arc: its curvatures a one-element list, indexed at run time.
+		{"one arc", refChain{points: [][2]float64{{0, 0}, {10, 0}}, curvatures: []float64{0.1}}},
+		{"one arc, turning right", refChain{points: [][2]float64{{0, 0}, {10, 0}}, curvatures: []float64{-0.1}}},
+		{"one semicircle", refChain{points: [][2]float64{{0, 0}, {10, 0}}, curvatures: []float64{0.2}}},
 		// A semicircle turns its tangent round: the end ray runs back beside it.
 		{"line then semicircle", refChain{points: [][2]float64{{0, 0}, {10, 0}, {20, 0}}, curvatures: []float64{0, 0.2}}},
 		{"line then near semicircle", refChain{points: [][2]float64{{0, 0}, {10, 0}, {20, 0}}, curvatures: []float64{0, 0.1999}}},
