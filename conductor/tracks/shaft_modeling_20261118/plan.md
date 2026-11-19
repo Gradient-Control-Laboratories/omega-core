@@ -93,19 +93,35 @@ treatment), the phase opens with a proposal for the owner to approve before any 
 
 ## Phase 2: End Holes
 
-- [ ] Task: The closure pass follows a list of functions through a parameter (spec 7, the owner's call)
-  - [ ] Proposal: where the list binding is resolved (today `listBindings` binds one frame up), for the
-        owner to approve before code
-  - [ ] Write failing tests (Red Phase) in `internal/closure`: a library function handing a parameter list
-        to another package's fold; `TestShaftPhase0_SpikeHoleListsThroughShaft` flips and is retired
-  - [ ] Implement (Green & Refactor Phase); no existing golden moves
-- [ ] Task: Proposal: `shaft(segments, topHole, bottomHole)`, and how the bottom stack is flipped
-- [ ] Task: Write failing tests (Red Phase): the drill invariant holds at both end faces (no void surface
-      in the end plane); depths measured from each end face
-- [ ] Task: Implement (Green & Refactor Phase)
-- [ ] Task: Example: a shaft center-drilled at both ends with `drill.centerHole`; WGSL size; the owner's
-      viewer check
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: The closure pass follows a list of functions through a parameter (spec 7, the owner's call)
+  - [x] Proposal (approved 2026-11-18): `paramIsFunctionList` counts a parameter handed on whole to a
+        callee's function-list parameter, recursively (provisional cache entry ends a cycle)
+  - [x] Write failing tests (Red Phase), `internal/closure/fold_forward_test.go`. Lists already forwarded
+        within and across packages; what failed was a LONE function forwarded across packages (alone,
+        beside a list, under a remap): the spike's `drill.centerHole(...)`
+  - [x] Implement (Green & Refactor Phase), `internal/closure/prune.go`; the full suite passes and no
+        golden moved
+  - [x] `TestShaftPhase0_SpikeHoleListsThroughShaft` flipped and is converted to a positive check (owner's
+        call): the holes are cut where the voids spike cuts them
+- [x] Task: Proposal (approved 2026-11-18): `shaft.body(segments, bottomHole, topHole)`; the fold finds the
+      end faces itself, segments answering `seg(eDown, eUp, want)` (0 the field, 1 and 2 their planes);
+      the bottom stack turned a half turn about X
+- [x] Task: Write failing tests (Red Phase): holes at both ends, lone and listed, depths from each face;
+      the drill invariant at both end planes; outside unchanged clear of the mouths and never deeper
+      anywhere; a keyway in the bottom hole stays on +x (rules out a turn about Y, not a mirror in z)
+- [x] Task: Implement (Green & Refactor Phase)
+  - [x] It met a second closure-pass fault: `nextClosureName` issued `gcl_closure_gsl_anon_2` both as
+        gsl_anon's second name and as gsl_anon_2's first, and the later registration replaced the earlier,
+        so the field fold called the plane fold's closures (the shaft read 5, its bottom plane, far
+        from it). Fixed with the owner's go: every issued name remembered and a taken one skipped;
+        `internal/closure/fold_twice_test.go`
+- [x] Task: `examples/shaft_end_holes.gsl` (a centre at one end; countersink, tap and drill at the other):
+      32998 bytes of WGSL, the budget. The `want` select costs every shaft about 7% (`shaft_turned`
+      23112 to 24764 bytes)
+- [x] Task: Full suite passes (no golden moved). `internal/link`'s `TestFastExitSingleOrZeroDotImports`
+      (1000 links under 2 s) took 2.08 s under the parallel suite once, and 0.69 s alone
+- [x] Task: The owner's viewer check of `examples/shaft_end_holes.gsl`
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 3: Non-Axisymmetric Segments
 

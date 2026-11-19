@@ -662,23 +662,44 @@ segs = [spike.cyl(20.0, 0.0, 20.0), spike.cyl(12.0, 20.0, 40.0)];
 `
 
 // Spike (b), as the drill library imagined it: drill closures made in the
-// document and passed through the shaft package's function into drill.hole.
-// Refused today: a folded list has to be visible where it is folded, and a
-// list that arrives as a parameter is not. This pins the gap; when the closure
-// pass learns to follow a list through a parameter, it flips.
+// document and passed through the shaft package's function into drill.hole,
+// one end a list and the other a lone feature, the bottom one flipped by a
+// remap of the fold's result. Refused in Phase 0, where it was pinned: a lone
+// function forwarded across packages did not fold as a list of one. Since
+// Phase 2 the closure pass follows a list, or a lone function, handed on to
+// another function's fold, and the holes are cut where the voids spike below
+// cuts them.
 func TestShaftPhase0_SpikeHoleListsThroughShaft(t *testing.T) {
 	doc := endHolesPrelude + `solid = spike.withHoles(segs, 0.0, 40.0, drill.centerHole(3.0, 8.0, 10.0), [drill.blind(5.0, 12.0), drill.chamfer(5.0, 0.5)]);
 return solid;
 `
-	e := New(shaftSpikeManager(), nil)
-	_, err := e.EvalGsl(context.Background(), nil, doc, "", []string{"solid"}, [][3]float64{{0, 0, 0}})
-	if err == nil {
-		t.Fatalf("a hole list passed through shaft now folds: spike (b) is unblocked, so update the spec and retire this pin")
+	cases := []struct {
+		q    [3]float64
+		want string
+	}{
+		{[3]float64{0, 0, 35}, "void"},    // in the top hole, 5 below its mouth
+		{[3]float64{2, 0, 35}, "void"},    // inside the 5 mm bore
+		{[3]float64{3.5, 0, 35}, "solid"}, // in the wall beyond it
+		{[3]float64{0, 0, 26}, "solid"},   // below the top hole's 12 depth and point
+		{[3]float64{0, 0, 5}, "void"},     // in the center's pilot, 5 above the bottom face
+		{[3]float64{3.5, 0, 0.5}, "void"}, // in the center's 60-degree countersink
+		{[3]float64{0, 0, 20}, "solid"},   // the joint plane, on the axis
+		{[3]float64{8, 0, 10}, "solid"},
 	}
-	if !strings.Contains(err.Error(), "a list of functions has to be visible where it is folded") {
-		t.Fatalf("refused, but not for the known reason: %v", err)
+	points := make([][3]float64, len(cases))
+	for i, c := range cases {
+		points[i] = c.q
 	}
-	t.Logf("refused as known: %v", err)
+	got := evalShaft(t, doc, "solid", points)
+	for i, c := range cases {
+		state := "solid"
+		if got[i] > 0 {
+			state = "void"
+		}
+		if state != c.want {
+			t.Errorf("at %v: field %v reads %s, want %s", c.q, got[i], state, c.want)
+		}
+	}
 }
 
 // Spike (b), the ways round it: the document folds each hole itself and hands

@@ -45,11 +45,20 @@
 // (an extension is only ever reached at its rim), so no bridge undercuts the
 // min of the capped segments. Inside it is a bound.
 //
-// A SEGMENT is a factory returning a closure of two extension lengths, which
-// only body calls: seg(0, 0) is the segment capped to its own span, seg(big, 0)
-// is the same section unbounded below it, seg(0, big) unbounded above it and
-// seg(big, big) both ways. Beyond its span a segment continues at the diameter
-// it ends with.
+// A SEGMENT is a factory returning a closure, which only body calls, of two
+// extension lengths and a question: seg(0, 0, 0) is the segment capped to its
+// own span, seg(big, 0, 0) is the same section unbounded below it, seg(0, big, 0)
+// unbounded above it and seg(big, big, 0) both ways; seg(0, 0, 1) is the plane it
+// starts on and seg(0, 0, 2) the plane it ends on, which is how body finds the
+// shaft's two end faces without being told. Beyond its span a segment continues
+// at the diameter it ends with.
+//
+// THE ENDS. body(segments, bottomHole, topHole) cuts a mechanical/drill hole
+// stack into each end face, each depth measured from its own face as a drawing
+// gives it. The top stack is cut downward from the top face as drill.hole cuts
+// any hole; the bottom one is the same kind of stack turned over by a half turn
+// about X, which keeps x and the hand of a thread, so a keyway drawn on +x stays
+// on +x.
 //
 // Doc convention follows builtin/base.gsl: `///` lines are public docs.
 
@@ -77,10 +86,37 @@ body(segments) {
   // segment from bridging with anything.
   shaftSoFar = reduce((acc, seg) {
     openRuns = acc.y;
-    return [min(acc.x, seg(0.0, 0.0), max(openRuns, seg(100000.0, 0.0))),
-            min(max(openRuns, seg(100000.0, 100000.0)), seg(0.0, 100000.0))];
+    return [min(acc.x, seg(0.0, 0.0, 0.0), max(openRuns, seg(100000.0, 0.0, 0.0))),
+            min(max(openRuns, seg(100000.0, 100000.0, 0.0)), seg(0.0, 100000.0, 0.0))];
   }, segments, [100000.0, 100000.0]);
   return shaftSoFar.x;
+}
+
+/// The same shaft with a hole stack cut into each end face: `bottomHole` into
+/// the lowest segment's starting plane and `topHole` into the highest
+/// segment's ending plane, each a list of mechanical/drill features, or a lone
+/// one, with every depth measured from its own end face. The bottom stack is
+/// turned over by a half turn about X, so a feature drawn on +x stays on +x.
+///
+///   shaft.body(segments, drill.centerHole(3.15, 6.7, 8.0),
+///              [drill.tap(6.0, 12.0), drill.blind(5.0, 15.0)])
+body(segments, bottomHole, topHole) {
+  // Cloned into the caller's file like body(segments), and written out in full
+  // for the same reason: it cannot call that one by name.
+  shaftSoFar = reduce((acc, seg) {
+    openRuns = acc.y;
+    return [min(acc.x, seg(0.0, 0.0, 0.0), max(openRuns, seg(100000.0, 0.0, 0.0))),
+            min(max(openRuns, seg(100000.0, 100000.0, 0.0)), seg(0.0, 100000.0, 0.0))];
+  }, segments, [100000.0, 100000.0]);
+  // The end faces, asked of the segments: the lowest starting plane and the
+  // highest ending one.
+  bottomFace = reduce((low, seg) { return min(low, seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
+  topFace = reduce((high, seg) { return max(high, seg(0.0, 0.0, 2.0)); }, segments, -100000.0);
+  // The voids run on past their faces, as every drill void does, so no surface
+  // of either lies in the face it opens onto.
+  topVoid = drill.hole(topHole, topFace);
+  bottomVoid = remap(drill.hole(bottomHole, 0.0), [p.x, -p.y, bottomFace - p.z]);
+  return max(shaftSoFar.x, -topVoid, -bottomVoid);
 }
 
 // =========================================================
@@ -91,10 +127,11 @@ body(segments) {
 /// A groove, a relief or a journal is a diameter too: list it between its
 /// neighbours.
 diameter(dia, from, to) {
-  seg(eDown, eUp) {
+  seg(eDown, eUp, want) {
     radial = length(p.xy) - dia / 2.0;
     axial = max((from - eDown) - p.z, p.z - (to + eUp));
-    return sqrt(max(radial, 0.0) * max(radial, 0.0) + max(axial, 0.0) * max(axial, 0.0)) + min(max(radial, axial), 0.0);
+    field = sqrt(max(radial, 0.0) * max(radial, 0.0) + max(axial, 0.0) * max(axial, 0.0)) + min(max(radial, axial), 0.0);
+    return segmentAnswer(want, field, from, to);
   }
   return seg;
 }
@@ -103,8 +140,8 @@ diameter(dia, from, to) {
 /// `diaTo` at z = `to`: narrowing or widening, a cone shoulder between two
 /// diameters, a chamfer at a shaft's end.
 taper(diaFrom, diaTo, from, to) {
-  seg(eDown, eUp) {
-    return turnedTaper(diaFrom / 2.0, diaTo / 2.0, from, to, from - eDown, to + eUp);
+  seg(eDown, eUp, want) {
+    return segmentAnswer(want, turnedTaper(diaFrom / 2.0, diaTo / 2.0, from, to, from - eDown, to + eUp), from, to);
   }
   return seg;
 }
@@ -112,6 +149,13 @@ taper(diaFrom, diaTo, from, to) {
 // =========================================================
 // Internal Geometry
 // =========================================================
+
+// What a segment answers: its field when `want` is 0, the plane it starts on
+// when 1 and the plane it ends on when 2. body always asks with a constant, so
+// each answer is one of the three outright.
+segmentAnswer(want, field, from, to) {
+  return want > 1.5 ? to : (want > 0.5 ? from : field);
+}
 
 // The distance from q to the segment from a to b, in 2D. A segment of length
 // zero is its point: an extension of zero leaves one, and it must read as the

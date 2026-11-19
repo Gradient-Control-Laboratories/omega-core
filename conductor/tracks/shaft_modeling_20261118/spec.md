@@ -212,8 +212,12 @@ From the closure pass:
 - A **captured function** is not supported (`internal/closure/transform.go`, `liftIfForeign`), so a
   segment cannot take a closure as an argument (for example, a cam with a periodic function). A
   captured *field* is fine (spike (c)).
-- A **list of functions must be visible where it is folded**: it cannot arrive as a parameter of the
-  function that folds it (spike (b)).
+- A **list of functions must be visible where it is folded**: written at the call, bound to a name, or
+  handed on through parameters to the fold (a lone function too, since Phase 2). It cannot come back
+  from a call.
+- **Synthesized names are unique** since Phase 2. Before, a counter per base let one base's numbered
+  name equal another's plain one (`gcl_closure_gsl_anon_2`). The later function replaced the earlier,
+  silently, whenever one function folded two lists or one list twice.
 
 From the linker (found in Phase 1, predates this track):
 
@@ -258,9 +262,11 @@ sheet under it (section 3.3). With a bridge for every run:
 - WGSL at 2 / 4 / 8 / 16 segments (with tapers) is 7338 / 10447 / 16323 / 27935 bytes;
 - the eight-segment example goes from 19553 to 23112 bytes.
 
-**Decided (owner, 2026-11-18): fix the closure pass.** Phase 2 keeps drill's intent,
-`shaft(segments, topHole, bottomHole)` taking feature lists, and opens by teaching the closure pass to
-follow a list of functions through a parameter into the function that folds it. Voids are not the API.
+**Decided (owner, 2026-11-18): fix the closure pass.** Phase 2 keeps drill's intent, the shaft taking
+feature lists. **Done in Phase 2:** lists already followed a parameter into another function's fold;
+what the spike hit was a LONE function (`drill.centerHole(...)`) forwarded across packages, which did
+not fold as a list of one. `paramIsFunctionList` now counts a parameter handed on to a callee's
+function-list parameter, recursively.
 
 ## 8. Verification
 

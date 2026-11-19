@@ -18,8 +18,11 @@ func Transform(prog *program.Program) error {
 }
 
 type transformer struct {
-	prog          *program.Program
-	nameCounters  map[string]int
+	prog         *program.Program
+	nameCounters map[string]int
+	// issuedNames holds every name nextClosureName has handed out, so it never
+	// hands out one twice whichever base it was built from.
+	issuedNames   map[string]bool
 	pkgFunctions  map[string]map[string]*program.FnType // pkgPath -> name -> FnType
 	fileFunctions map[*program.PackageFile]map[string]*program.FnType
 	pkgByPath     map[string]*program.Package
@@ -63,6 +66,7 @@ func newTransformer(prog *program.Program) *transformer {
 	return &transformer{
 		prog:           prog,
 		nameCounters:   make(map[string]int),
+		issuedNames:    make(map[string]bool),
 		pkgFunctions:   make(map[string]map[string]*program.FnType),
 		fileFunctions:  make(map[*program.PackageFile]map[string]*program.FnType),
 		pkgByPath:      make(map[string]*program.Package),
@@ -179,12 +183,27 @@ func (t *transformer) indexFunctions() {
 	}
 }
 
+// nextClosureName issues a fresh name for a function this pass synthesizes from
+// enclosingName: gcl_closure_<name>, then gcl_closure_<name>_2, _3 and on.
+//
+// A counter per base is not enough on its own, because one base's numbered
+// name can be another base's plain one: gsl_anon's second is
+// gcl_closure_gsl_anon_2, which is also gsl_anon_2's first. Registering a
+// function under a name already issued replaces the one already there, so a
+// call meant for one silently reaches the other. Every name issued is
+// remembered and a taken one skipped.
 func (t *transformer) nextClosureName(enclosingName string) string {
 	base := fmt.Sprintf("gcl_closure_%s", enclosingName)
-	count := t.nameCounters[base]
-	t.nameCounters[base] = count + 1
-	if count == 0 {
-		return base
+	for {
+		count := t.nameCounters[base]
+		t.nameCounters[base] = count + 1
+		name := base
+		if count > 0 {
+			name = fmt.Sprintf("%s_%d", base, count+1)
+		}
+		if !t.issuedNames[name] {
+			t.issuedNames[name] = true
+			return name
+		}
 	}
-	return fmt.Sprintf("%s_%d", base, count+1)
 }

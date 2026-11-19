@@ -344,3 +344,120 @@ func TestShaftBody_ExampleCompilesToWGSL(t *testing.T) {
 		t.Errorf("middle %v, beyond the ends %v and %v: want solid, then empty twice", got[0].Value, got[1].Value, got[2].Value)
 	}
 }
+
+// endHoleStack is a step-down shaft from z = 5 to z = 45: the end planes are
+// not at 0, so the fold has to compute them.
+func endHoleStack() turnedStack {
+	return turnedStack{{20, 20, 5, 25}, {12, 12, 25, 45}}
+}
+
+func endHoleDoc(bottom, top string) string {
+	return fmt.Sprintf("@scene(140)\nsolid = shaft.body(%s, %s, %s);\nreturn solid;\n", endHoleStack().gsl(), bottom, top)
+}
+
+func classify(v float64) string {
+	if v > 0 {
+		return "void"
+	}
+	return "solid"
+}
+
+// The end holes are drill stacks cut at the planes the fold computes, depths
+// measured from each end face: a centre at the bottom given alone, a blind
+// hole with a chamfer at the top given as a list.
+func TestShaftBody_EndHoles(t *testing.T) {
+	doc := endHoleDoc("drill.centerHole(3.0, 8.0, 10.0)", "[drill.blind(5.0, 12.0), drill.chamfer(5.0, 0.5)]")
+	cases := []struct {
+		q    [3]float64
+		want string
+	}{
+		{[3]float64{0, 0, 44}, "void"},    // in the top hole, 1 below its mouth
+		{[3]float64{0, 0, 34}, "void"},    // 11 deep, short of the drill's 12
+		{[3]float64{2, 0, 40}, "void"},    // inside the 5 mm bore
+		{[3]float64{3.5, 0, 40}, "solid"}, // in the wall beyond it
+		{[3]float64{0, 0, 31}, "solid"},   // 14 deep, below the drill point
+		{[3]float64{0, 0, 10}, "void"},    // in the centre's pilot, 5 above the bottom face
+		{[3]float64{0, 0, 16}, "solid"},   // 11 above the bottom face, past the pilot
+		{[3]float64{3.5, 0, 5.5}, "void"}, // in the centre's 60-degree countersink
+		{[3]float64{8, 0, 15}, "solid"},
+		{[3]float64{0, 0, 25}, "solid"}, // the joint plane, on the axis
+	}
+	points := make([][3]float64, len(cases))
+	for i, c := range cases {
+		points[i] = c.q
+	}
+	got := evalStdShaft(t, doc, points)
+	for i, c := range cases {
+		if s := classify(got[i]); s != c.want {
+			t.Errorf("at %v: field %v reads %s, want %s", c.q, got[i], s, c.want)
+		}
+	}
+}
+
+// The drill invariant at both ends: no surface of a void lies in the end face
+// it opens onto. Across each hole's mouth the end plane reads strictly outside
+// the part, never 0; away from the holes the shaft is the body without them.
+func TestShaftBody_EndHolesOpenOntoTheirFaces(t *testing.T) {
+	doc := endHoleDoc("drill.centerHole(3.0, 8.0, 10.0)", "[drill.blind(5.0, 12.0), drill.chamfer(5.0, 0.5)]")
+	var mouths [][3]float64
+	for _, z := range []float64{5, 45} {
+		for x := -2.4; x <= 2.4; x += 0.2 {
+			mouths = append(mouths, [3]float64{x, 0, z}, [3]float64{0, x, z})
+		}
+	}
+	got := evalStdShaft(t, doc, mouths)
+	for i, q := range mouths {
+		if got[i] <= 1e-4 {
+			t.Errorf("end plane at %v reads %v inside a hole's mouth: a void surface lies in the face", q, got[i])
+		}
+	}
+	// Outside the part and clear of the mouths the holes change nothing; and
+	// anywhere, cutting holes only takes material away, so the shaft with them
+	// never reads deeper than the shaft without. (Inside, near a hole, the
+	// hole's own wall is a nearer boundary, so the two differ there by design.)
+	grid := shaftGrid3([3]float64{-12, -12, 0}, [3]float64{12, 12, 50}, 0, 16)
+	plain := evalStdShaft(t, endHoleStack().doc(), grid)
+	holed := evalStdShaft(t, doc, grid)
+	for i, q := range grid {
+		if plain[i] > 0 && math.Hypot(q[0], q[1]) > 5.5 && math.Abs(plain[i]-holed[i]) > shaftTolerance {
+			t.Fatalf("at %v, outside and clear of the holes: %v with them, %v without", q, holed[i], plain[i])
+		}
+		if holed[i] < plain[i]-shaftTolerance {
+			t.Fatalf("at %v: %v with the holes is deeper than %v without", q, holed[i], plain[i])
+		}
+	}
+}
+
+// The bottom stack is turned over by a half turn about X, which keeps x: a
+// keyway drawn on +x in the bottom hole is cut on +x, not mirrored to -x.
+func TestShaftBody_BottomHoleKeepsItsSide(t *testing.T) {
+	doc := endHoleDoc("[drill.blind(6.0, 10.0), drill.keyway(2.0, 1.5, 6.0, 8.0)]", "drill.centerHole(3.0, 8.0, 10.0)")
+	got := evalStdShaft(t, doc, [][3]float64{{3.7, 0, 9}, {-3.7, 0, 9}})
+	if classify(got[0]) != "void" || classify(got[1]) != "solid" {
+		t.Errorf("keyway in the bottom hole: +x reads %v, -x reads %v; want void on +x and solid on -x", got[0], got[1])
+	}
+}
+
+// The end-holes example compiles to WGSL (its size logged as Phase 2's budget)
+// and evaluates: its body is solid, the tapped hole and the centre are open.
+func TestShaftBody_EndHolesExampleCompilesToWGSL(t *testing.T) {
+	src, err := os.ReadFile("../examples/shaft_end_holes.gsl")
+	if err != nil {
+		t.Fatal(err)
+	}
+	e := New(&source.MockManager{}, nil)
+	res, err := e.Shader(t.Context(), nil, string(src), "", ShaderOptions{Target: "wgsl", OutDir: t.TempDir()})
+	if err != nil {
+		t.Fatalf("shader: %v", err)
+	}
+	t.Logf("examples/shaft_end_holes.gsl: %d bytes of WGSL", len(res.Code))
+	groups, err := e.EvalGsl(t.Context(), nil, string(src), "", []string{"turned"},
+		[][3]float64{{8, 0, 50}, {0, 0, 90}, {0, 0, 4}})
+	if err != nil {
+		t.Fatalf("eval: %v", err)
+	}
+	got := groups[0].Samples[0]
+	if got[0].Value >= 0 || got[1].Value <= 0 || got[2].Value <= 0 {
+		t.Errorf("body %v, tapped hole %v, centre %v: want solid, then open twice", got[0].Value, got[1].Value, got[2].Value)
+	}
+}
