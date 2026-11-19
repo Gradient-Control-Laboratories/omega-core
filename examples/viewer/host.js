@@ -57,6 +57,17 @@ export function mesh(request) {
     });
 }
 
+// exportPage asks for request's document ({ name, source }) as `gsl export` writes it, and answers
+// the HTTP response, whose body is a zip of the folder: this viewer with the static host in this
+// file's place, and the document's field beside it.
+export function exportPage(request) {
+    return fetch("/api/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+    });
+}
+
 // uploadAsset sends an imported mesh's bytes to the server, so a program that reads the mesh
 // compiles there.
 export async function uploadAsset(name, bytes) {

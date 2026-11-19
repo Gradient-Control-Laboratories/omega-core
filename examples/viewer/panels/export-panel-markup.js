@@ -15,6 +15,7 @@ export const EXPORT_PANEL_MARKUP = `
             <option value="glb" title="One binary glTF, each body a node in its own color">GLB (color)</option>
             <option value="stl">STL</option>
             <option value="tape" title="The program's implicit field as an omega tape, for fidget; not meshed">Omega Tape</option>
+            <option value="page" title="This viewer and the document as a folder of static web pages, zipped, for any web server; not meshed">Web page (.zip)</option>
         </select>
     </div>
     <div class="field-panel-row export-detail">

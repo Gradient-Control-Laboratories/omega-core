@@ -1,25 +1,23 @@
 package viewer
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"gradientcontrol.com/omega/core/cmd/serve/internal/staticpage"
 	"gradientcontrol.com/omega/core/internal/compile"
 	"gradientcontrol.com/omega/core/internal/meshimport"
 )
 
-// `compile export`, which `gsl export` runs: the viewer saved as a folder that needs no server. The folder
-// is the viewer's own web files with host-static.js in host.js's place, and beside them each document with
-// the field bundle it compiles to (internal/compile, the same one /api/compile answers), so the page draws
-// what `gsl viewer` draws and compiles nothing.
+// `compile export`, which `gsl export` runs: the viewer saved as a folder that needs no server. What the
+// folder holds is staticpage's to say (cmd/serve/internal/staticpage), and the viewer's Export panel
+// downloads the same thing as a zip; this file is the command: its flags, the documents it is given, and
+// where it writes.
 
 const exportUsage = `Usage of compile export (gsl export):
   gsl export [flags] part.gsl [more.gsl ...]
@@ -44,27 +42,19 @@ Flags:
 Exit codes: 0 written, 1 a file did not compile or the folder could not be written, 2 a bad argument.
 `
 
+// The export's layout, by the names this command and its tests use.
 const (
-	// staticHost is the viewer's host for an exported page, written there as servedHost.
-	staticHost = "host-static.js"
-	servedHost = "host.js"
-	// modelsDir holds an export's documents, and modelsIndex lists them.
-	modelsDir   = "models"
-	modelsIndex = "index.json"
+	staticHost = staticpage.StaticHost
+	servedHost = staticpage.ServedHost
 )
 
-// exportSkips are the viewer's files an exported page never asks for, by slash path from the viewer's folder
-// (a folder skips all under it): the material catalog's large previews, operator pictures and recoloring
-// tables, which only the Materials panel reads, and Manifold, which only meshing does. Neither is offered
-// by a page that cannot change or mesh its document. What is left of materials/ draws the Bodies panel's rows.
-var exportSkips = []string{
-	"README.md",
-	"materials/large",
-	"materials/operators",
-	"materials/coat-basis.bin",
-	"materials/finish-basis.bin",
-	"vendor/manifold",
-}
+var exportSkips = staticpage.Skips
+
+type (
+	exportedExample = staticpage.Example
+	exportedIndex   = staticpage.Index
+	exportedModel   = staticpage.Model
+)
 
 // exportOptions are the parsed command line.
 type exportOptions struct {
@@ -74,25 +64,6 @@ type exportOptions struct {
 	files       []string
 	verbose     bool
 	help        bool
-}
-
-// exportedExample is one row of models/index.json: a document's name, its label in the menu, and its file.
-type exportedExample struct {
-	Name  string `json:"name"`
-	Label string `json:"label"`
-	File  string `json:"file"`
-}
-
-// exportedIndex is models/index.json.
-type exportedIndex struct {
-	Examples []exportedExample `json:"examples"`
-}
-
-// exportedModel is one document's file: its source and the field bundle the source compiles to.
-type exportedModel struct {
-	Name   string            `json:"name"`
-	Source string            `json:"source"`
-	Field  *compile.Response `json:"field"`
 }
 
 type pathList []string
@@ -199,8 +170,8 @@ func exportViewerDir(named, exeDir string) (string, error) {
 	} else if !isViewer(dir) {
 		return "", fmt.Errorf("%s has no index.html: it is not the viewer's folder", dir)
 	}
-	if info, err := os.Stat(filepath.Join(dir, staticHost)); err != nil || info.IsDir() {
-		return "", fmt.Errorf("%s has no %s: this viewer cannot be exported", dir, staticHost)
+	if err := staticpage.CheckViewer(dir); err != nil {
+		return "", err
 	}
 	return dir, nil
 }
@@ -250,9 +221,7 @@ func compileDocuments(docs []document, o exportOptions, stderr io.Writer) ([]exp
 		if err != nil {
 			return nil, err
 		}
-		// The page compiles a document as it shows it, trimmed (main.js), and the bundle's spans
-		// are positions in that text.
-		source := strings.TrimSpace(strings.TrimPrefix(string(data), "\ufeff"))
+		source := staticpage.Source(string(data))
 
 		docDir := filepath.Dir(doc.path)
 		srcPaths := o.sourcePaths
@@ -305,148 +274,8 @@ func compileDocuments(docs []document, o exportOptions, stderr io.Writer) ([]exp
 
 // writeExport writes the folder and returns its size in bytes.
 func writeExport(out, viewerDir string, models []exportedModel) (int64, error) {
-	if err := prepareOutput(out); err != nil {
+	if err := staticpage.PrepareDir(out); err != nil {
 		return 0, err
 	}
-	size, err := copyViewer(viewerDir, out)
-	if err != nil {
-		return 0, err
-	}
-	index := exportedIndex{Examples: make([]exportedExample, 0, len(models))}
-	for _, m := range models {
-		label := strings.TrimSuffix(m.Name, ".gsl")
-		file := label + ".json"
-		n, err := writeJSONFile(filepath.Join(out, modelsDir, file), m)
-		if err != nil {
-			return 0, err
-		}
-		size += n
-		index.Examples = append(index.Examples, exportedExample{Name: m.Name, Label: label, File: file})
-	}
-	n, err := writeJSONFile(filepath.Join(out, modelsDir, modelsIndex), index)
-	if err != nil {
-		return 0, err
-	}
-	return size + n, nil
-}
-
-// prepareOutput makes out ready to write into: a new or empty folder, or an earlier export, whose models are
-// removed so the new list replaces them. Any other folder with files in it is refused, so an export never
-// lands among someone's files.
-func prepareOutput(out string) error {
-	info, err := os.Stat(out)
-	if errors.Is(err, fs.ErrNotExist) {
-		return os.MkdirAll(out, 0o755)
-	}
-	if err != nil {
-		return err
-	}
-	if !info.IsDir() {
-		return fmt.Errorf("%s is a file: name a folder to write", out)
-	}
-	entries, err := os.ReadDir(out)
-	if err != nil {
-		return err
-	}
-	if len(entries) == 0 {
-		return nil
-	}
-	indexPath := filepath.Join(out, modelsDir, modelsIndex)
-	data, err := os.ReadFile(indexPath)
-	if err != nil {
-		return fmt.Errorf("%s has files in it and is not an earlier export: name a new or empty folder", out)
-	}
-	var old exportedIndex
-	if err := json.Unmarshal(data, &old); err != nil {
-		return fmt.Errorf("%s: %w", indexPath, err)
-	}
-	for _, e := range old.Examples {
-		// Only a file of the models folder: the index is read back from disk.
-		if e.File == "" || e.File != filepath.Base(e.File) {
-			continue
-		}
-		if err := os.Remove(filepath.Join(out, modelsDir, e.File)); err != nil && !errors.Is(err, fs.ErrNotExist) {
-			return err
-		}
-	}
-	return nil
-}
-
-// copyViewer copies the viewer's web files into out, but for exportSkips and dotfiles, with the static host
-// in the served host's place. It returns the bytes written.
-func copyViewer(viewerDir, out string) (int64, error) {
-	var size int64
-	err := filepath.WalkDir(viewerDir, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		rel, err := filepath.Rel(viewerDir, path)
-		if err != nil {
-			return err
-		}
-		if rel == "." {
-			return nil
-		}
-		slash := filepath.ToSlash(rel)
-		if strings.HasPrefix(d.Name(), ".") || skipped(slash) {
-			if d.IsDir() {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-		// copyFile makes a file's folders, so a folder with nothing left to copy is not made.
-		if d.IsDir() || !d.Type().IsRegular() || slash == servedHost {
-			return nil
-		}
-		if slash == staticHost {
-			rel = servedHost
-		}
-		n, err := copyFile(path, filepath.Join(out, rel))
-		size += n
-		return err
-	})
-	return size, err
-}
-
-func skipped(slash string) bool {
-	for _, skip := range exportSkips {
-		if slash == skip || strings.HasPrefix(slash, skip+"/") {
-			return true
-		}
-	}
-	return false
-}
-
-func copyFile(from, to string) (int64, error) {
-	in, err := os.Open(from)
-	if err != nil {
-		return 0, err
-	}
-	defer in.Close()
-	if err := os.MkdirAll(filepath.Dir(to), 0o755); err != nil {
-		return 0, err
-	}
-	dst, err := os.Create(to)
-	if err != nil {
-		return 0, err
-	}
-	n, err := io.Copy(dst, in)
-	if closeErr := dst.Close(); err == nil {
-		err = closeErr
-	}
-	return n, err
-}
-
-// writeJSONFile writes v as JSON, with <, > and & as they are (WGSL is full of them), and returns its size.
-func writeJSONFile(path string, v any) (int64, error) {
-	var buf bytes.Buffer
-	enc := json.NewEncoder(&buf)
-	enc.SetEscapeHTML(false)
-	if err := enc.Encode(v); err != nil {
-		return 0, err
-	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return 0, err
-	}
-	return int64(buf.Len()), os.WriteFile(path, buf.Bytes(), 0o644)
+	return staticpage.Write(staticpage.Dir(out), viewerDir, models)
 }
