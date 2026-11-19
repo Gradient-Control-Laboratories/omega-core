@@ -397,6 +397,59 @@ differenceChamfer(target, tool, setback) {
   return intersectChamfer(target, neg(tool), setback);
 }
 
+/// intersectChamfer with its bevel's field normalized: the same surface, but a
+/// field that never overstates the distance at an edge that is not square.
+/// intersectChamfer divides the bevel plane d1 + d2 + setback by sqrt2, which
+/// is the length of its gradient only where the faces meet at a right angle;
+/// at an obtuse edge the gradient is sqrt(1 + normal1·normal2) and the field
+/// reads high. Here it is divided by the length of normal1 + normal2, the two
+/// faces' outward unit normals at the edge, so its gradient is 1 at any angle.
+/// Dividing a plane by a positive number does not move it, so the bevel lies
+/// exactly where intersectChamfer's does, `setback` in from the edge along each
+/// face.
+///
+/// Pass the normals when they are known, constant along the edge or
+/// analytic; the three-argument form takes them from the fields' gradients.
+/// Faces that face opposite ways have no edge to chamfer, and the guard on the
+/// divisor keeps the result finite there.
+intersectChamferNormalized(d1, d2, setback, normal1, normal2) {
+  face = max(d1, d2);
+  edge = (d1 + d2 + setback) / max(length(normal1 + normal2), 0.000001);
+  return max(face, edge);
+}
+
+/// intersectChamferNormalized taking each face's normal from its own field's
+/// gradient.
+intersectChamferNormalized(d1, d2, setback) {
+  return intersectChamferNormalized(d1, d2, setback, d1.dp, d2.dp);
+}
+
+/// Union counterpart of intersectChamferNormalized: unionChamfer's surface,
+/// with unit gradient at an edge of any angle. The normals are each solid's
+/// outward ones, as for the intersection.
+unionChamferNormalized(d1, d2, setback, normal1, normal2) {
+  return neg(intersectChamferNormalized(neg(d1), neg(d2), setback, neg(normal1), neg(normal2)));
+}
+
+/// unionChamferNormalized taking each face's normal from its own field's
+/// gradient.
+unionChamferNormalized(d1, d2, setback) {
+  return unionChamferNormalized(d1, d2, setback, d1.dp, d2.dp);
+}
+
+/// Difference counterpart of intersectChamferNormalized: target minus tool,
+/// differenceChamfer's surface with unit gradient at any edge. `toolNormal` is
+/// the tool's own outward normal; the cut's face points the other way.
+differenceChamferNormalized(target, tool, setback, targetNormal, toolNormal) {
+  return intersectChamferNormalized(target, neg(tool), setback, targetNormal, neg(toolNormal));
+}
+
+/// differenceChamferNormalized taking each face's normal from its own field's
+/// gradient.
+differenceChamferNormalized(target, tool, setback) {
+  return differenceChamferNormalized(target, tool, setback, target.dp, tool.dp);
+}
+
 /// Chamfered intersection whose chamfer planes are joined by a round fillet
 /// of `radius`: intersectChamferBlend with intersectRound(radius). A
 /// bevel that fades into a fillet rather than ending in a hard line.
