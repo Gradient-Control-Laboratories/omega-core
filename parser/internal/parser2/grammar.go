@@ -7,6 +7,7 @@ import (
 
 type TopLevel struct {
 	Scene        *SceneDirective
+	Captions     []*CaptionDirective
 	Imports      []*Import     // `parser:"@@*"`
 	MeshImports  []*MeshImport // `parser:"@@*"`
 	StepImports  []*StepImport // `parser:"@@*"`

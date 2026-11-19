@@ -22,6 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Existing callers are unchanged.
 - The viewer's Export panel has a `Web page (.zip)` format: it downloads the same folder for the open document,
   as the editor shows it, zipped (`POST /api/export`).
+- `@caption("text", startTime, endTime [, fade])` is a top-level directive that shows a line of text centred at
+  the bottom of the viewer while the animation clock is between the two times, in seconds. It fades in after
+  `startTime` and out before `endTime` over `fade` seconds (0.5 by default, at most half the interval; `0` cuts).
+  Captions whose times overlap stack. They reach the compile response as `captions`, so a page `gsl export`
+  writes shows them too. Only the primary package's captions show.
 
 ### Changed
 

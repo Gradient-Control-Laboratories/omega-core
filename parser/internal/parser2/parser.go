@@ -40,7 +40,9 @@ var options = []participle.Option{
 	participle.Elide("Whitespace", "Comment"),
 	// Lookahead 3 for distinguishing between qualified function calls and qualified references
 	participle.UseLookahead(3),
-	participle.Union[Declaration](&NamedFunction{}, &PropertyAssignment{}, &Assignment{}, &AnnotatedDeclaration{}),
+	// CaptionDirective precedes AnnotatedDeclaration: both begin with '@', and
+	// a caption answers NextMatch for any other name.
+	participle.Union[Declaration](&NamedFunction{}, &PropertyAssignment{}, &Assignment{}, &CaptionDirective{}, &AnnotatedDeclaration{}),
 	// Order is important here. ImportRef is first so the `importStep`/`importMesh`
 	// keywords are matched before they could be consumed as a plain Reference.
 	participle.Union[Value](&ImportRef{}, &Number{}, &FunctionCall{}, &QualifiedRef{}, &Reference{}, &AnonCall{}, &SubExpression{}, &Collection{}, &String{}, &AnnotatedExpr{}),
@@ -116,6 +118,8 @@ func Parse(sources []string) (*program.Package, []program.Diagnostic, error) {
 			p, err := recordFileError(pkg, pkgFile, source, participle.Errorf(topLevel.Scene.Pos, "@scene directive is only allowed in the first source file"))
 			return p, diags, err
 		}
+
+		pkg.Captions = append(pkg.Captions, takeCaptions(topLevel)...)
 
 		if berr := buildPkgFile(pkgFileScope, topLevel); berr != nil {
 			p, err := recordFileError(pkg, pkgFile, source, berr)

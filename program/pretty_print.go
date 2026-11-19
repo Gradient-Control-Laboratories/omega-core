@@ -2,6 +2,7 @@ package program
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -338,6 +339,16 @@ func (p *Package) PrettyPrint(indent int) string {
 	if p.Scene != nil {
 		result.WriteString(strings.Repeat(" ", indent*3))
 		result.WriteString(fmt.Sprintf("@scene(%g, %g)\n\n", p.Scene.Size, p.Scene.Grid))
+	}
+	for _, c := range p.Captions {
+		if c == nil {
+			continue
+		}
+		result.WriteString(strings.Repeat(" ", indent*3))
+		result.WriteString(fmt.Sprintf("@caption(%s, %g, %g, %g)\n", strconv.Quote(c.Text), c.StartTime, c.EndTime, c.Fade))
+	}
+	if len(p.Captions) > 0 {
+		result.WriteString("\n")
 	}
 	for i, file := range p.Files {
 		if i > 0 {

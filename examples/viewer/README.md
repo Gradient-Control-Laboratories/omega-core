@@ -42,7 +42,9 @@ in your default WebGPU-capable browser (Chrome 113+, Edge 113+, or Safari 18+ on
   - **Parameters**: Live sliders for `.min`/`.max` variables and color chips for `@color` controls
     that update uniforms at 60 FPS and rewrite GSL source spans, with the animation transport at
     the bottom: a `time` range, rewind / play-pause / fast-forward, the end time, and the
-    synthesized Web Audio volume for programs with `audio(...)` outputs.
+    synthesized Web Audio volume for programs with `audio(...)` outputs. A document's
+    `@caption("text", start, end [, fade])` lines show at the bottom of the canvas as the clock
+    passes through them (`ui/captions.js`).
   - **Imports**: Drag-and-drop `.stl` or `.obj` files to render hybrid B-rep meshes alongside
     implicit SDFs.
   - **Scene**: The bounding box size and grid spacing in mm; a document's `@scene` directive sets
