@@ -396,8 +396,9 @@ profileArcBoundsXY(points, curvatures) {
 
 // The low and high corners of an arc profile's box, closed or open, one value
 // each, for the box rules (property's profileBox and sweptOpen): an exact box
-// needs each edge's neighbour, a reduce reading its index, which a .box in
-// the stdlib cannot hold, so the rules call these instead.
+// needs each edge's neighbour, a reduce reading its index. A .box in the
+// stdlib can hold one, but where the points follow a slider it is unrolled
+// into every corner; the rules call these instead, compiled once.
 profileArcLowXY(points, curvatures) {
   low, high = profileArcBoundsXY(points, curvatures);
   return low;

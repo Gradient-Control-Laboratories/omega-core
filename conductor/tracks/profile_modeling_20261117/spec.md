@@ -226,7 +226,12 @@ probe documents compiled to WGSL and queried with `gsl eval`; the result follows
    is silently dropped by the box domain (the extruded arc L lost its part box), and a document reading
    `x.box` where the box holds one, in its own function too, fails to link (`undefined identifier: index`);
    #81 and #82 do not change it. Profile boxes are therefore given by Go rules calling GSL helpers opaquely,
-   as the sweeps' are (spec section 4, C7).
+   as the sweeps' are (spec section 4, C7). **Lifted, 2026-11-19:** the box domain did
+   not fold a reduce step's index, as the gradient and `.second` domains do (`frame.indexOperand` asks the
+   domain for `Primal`), so the name `index` reached the box corners; `boxDomain.Primal` fixes both
+   symptoms (`box-index-primal`, merged here). The profile boxes stay Go rules for WGSL size: a declared
+   box is unrolled into every corner where the points follow a slider (the arc L, 14.9 KB against 262 KB
+   to 1 MB).
 2. `.u`, `.v` and `.box` could not be read inside a function body. **Holds:** each is refused with a message
    to read it at the call site.
 3. A function's internal `remap` carries frame, colour and material only when its whole body is one
