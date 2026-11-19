@@ -1,0 +1,4 @@
+Phase 4 (Tighter Boxes, C7) verification. Automated: go vet ./... and go run ./tool/analyze-deps -rules clean; go test ./... passes on modeling-robust (1755b4b), internal/link's 2 s timing test only when run alone (1.66 s); every examples/profile_*.gsl WGSL accepted by naga (gpu-eval). 2026-11-19.
+Tests: eval/profile_boxes_test.go; constant boxes fold again with const-fold-fixes (#97) merged.
+Manual: the owner's viewer checks of bezier, sweep_open, corners and cylinder ('look right'), and again on modeling-robust.
+Confirmed by the owner: 'Looks right, close them'.
