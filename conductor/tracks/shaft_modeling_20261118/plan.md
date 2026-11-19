@@ -31,7 +31,7 @@ treatment), the phase opens with a proposal for the owner to approve before any 
 
 ---
 
-## Phase 0: Ground Truth and Spikes
+## Phase 0: Ground Truth and Spikes [checkpoint: f390b8c]
 
 - [x] Task: A reference for shafts, in Go (`eval/shaft_phase0_test.go`)
   - [x] The Profile Modeling reference is not on `main`, so the shaft has its own. For round stacks it is
@@ -54,7 +54,7 @@ treatment), the phase opens with a proposal for the owner to approve before any 
       caller or by the shaft's own `remap` (CPU; WGSL unchecked). Decision open for the owner (spec 7)
 - [x] Task: Spike (c): a section segment from a captured `profileXY` field works
 - [x] Task: Recheck spec section 6's constraints on `main` and record which still hold
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 1: A Coaxial Round Stack
 
