@@ -180,6 +180,16 @@ the numbering of temporaries. Five fillets on a six-segment shaft cost 1,399 B (
 accumulator did not grow. Segments with named ends answer nothing past want 3, with the constant test
 outermost so it folds even when the ends come from sliders.
 
+**Cranks (Phase 8, approved 2026-11-20; Phase 7 skipped for now by the owner).** A crank pin is
+`shaft.eccentric(dia, offset, angle, from, to)`: a round `dia` across whose axis stands `offset` from the
+shaft's, at `angle` in radians from +x about +z; exact, a cylinder about a shifted axis, and a multi-throw
+crank is its pins at their angles. A web is `shaft.web(mainR, pinR, offset, angle, from, to)`: the convex
+hull of a circle of `mainR` about the shaft's axis and one of `pinR` about the pin, exact by the two-circle
+hull's closed form; counterweights and other outlines stay `shaft.section`. The bridges join eccentric
+neighbours unchanged, and `shaft.fillet` between pin and web is the exact arc, the pin's side being square
+to the web's face. Tested as Phase 6: exact outside against the min of the capped prisms' exact
+distances, a unit gradient outside, no sheet on the joints, the pin fillet's arc.
+
 ### 3.5 What falls out of the construction
 
 - A retaining-ring groove or a shoulder undercut is a short, smaller segment.
