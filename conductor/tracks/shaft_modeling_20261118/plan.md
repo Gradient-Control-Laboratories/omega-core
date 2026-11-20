@@ -191,11 +191,20 @@ treatment), the phase opens with a proposal for the owner to approve before any 
 
 ## Phase 6: Joint Blends
 
-- [ ] Task: Proposal: how a joint names its blend (none, fillet, chamfer) and its size
-- [ ] Task: Write failing tests (Red Phase): a blended joint stays within its stated bound; the rest of
-      the shaft is unchanged; no interior zero
-- [ ] Task: Implement (Green & Refactor Phase)
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Proposal (approved 2026-11-20): a joint entry in the segment list, `shaft.fillet(r)` and
+      `shaft.chamfer(c)`, between the segments it blends; the union blend of the two capped segments min'd into the
+      fold; concave corners only (spec 3.4)
+- [x] Task: Write failing tests (Red Phase), `eval/shaft_blends_test.go`: the fillet's surface is the exact arc at a round square
+      shoulder; |grad f| = 1 outside near it; no interior zero; the rest of the shaft unchanged; the
+      accumulator's WGSL cost measured (the owner chose these over the earlier "within its stated bound")
+- [x] Task: Implement (Green & Refactor Phase): the closure pass hands a reduce over functions the
+      previous element (4th callback argument; `internal/closure/unroll.go`, the owner's call); joints
+      answer their sizes to constant questions; the blend stands in for the segment's term, so plain
+      shafts compile as before. Two tests corrected with the owner's approval: the chamfer changes the true
+      distance in a strip along the bisector; the 1/sqrt2 depth check holds farther than the blend's size
+- [x] Task: `examples/shaft_blended.gsl` (three fillets and a chamfer, slider sizes); WGSL 15,128 B; the
+      owner's viewer check
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 7: Chained Positions
 

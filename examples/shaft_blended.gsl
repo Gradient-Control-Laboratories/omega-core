@@ -1,0 +1,26 @@
+@scene(140)
+
+// A stepped shaft with its joints blended. Each blend is an entry in the list
+// between the two segments it joins: shaft.fillet(r) rounds the corner where
+// the smaller segment meets the face of the larger, and shaft.chamfer(c)
+// bevels it at 45 degrees. A blend fills the concave corners only; the outer
+// edges of the shoulders stay sharp. Every segment is placed by the two planes
+// it runs between, measured from the left end. Lengths are in mm.
+
+@range(0.2, 2.5) shoulderFillet = 1.0;
+@range(0.2, 3) collarChamfer = 1.0;
+
+blendedShaft = shaft.body(
+  [shaft.diameter(20.0, 0.0, 25.0),
+   shaft.fillet(shoulderFillet),
+   shaft.diameter(30.0, 25.0, 35.0),
+   shaft.fillet(shoulderFillet),
+   shaft.diameter(25.0, 35.0, 70.0),
+   shaft.chamfer(collarChamfer),
+   shaft.diameter(35.0, 70.0, 80.0),
+   shaft.fillet(shoulderFillet),
+   shaft.diameter(20.0, 80.0, 110.0)]);
+blendedShaft.color = [0.58, 0.60, 0.64];
+
+// Laid along X and centred, so the viewer frames the whole shaft.
+return remap(blendedShaft, [p.z, p.y, 55.0 - p.x]);
