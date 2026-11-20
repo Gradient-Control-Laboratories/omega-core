@@ -118,4 +118,3 @@ return b, a;
 		t.Fatal("reference following did not terminate")
 	}
 }
-

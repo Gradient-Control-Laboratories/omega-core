@@ -2,6 +2,7 @@ import { showNotification, clearNotification } from "./ui/notification.js";
 import { clearError, showError, startErrorTimer, stopErrorTimer, resetErrorTimer } from "./ui/error.js";
 import { ProgressBar, operationKindLabels } from "./ui/progress-bar.js";
 import eventManager from "./ui/event-manager.js";
+import * as host from "./host.js";
 import "./ui/panel-resize.js";
 import "./ui/tooltip.js";
 import {
@@ -51,13 +52,24 @@ import {
     clearHighlights,
     insertAtCursor,
     setLineWrap,
+    setReadOnly,
     replaceSourceSpan,
+    refreshEditorLayout,
 } from "./editor/editor.js";
+import {
+    errorsToEditorEntries,
+    formatErrorBody,
+    formatWarningsBanner,
+    gslPlainTextErrorToEntry,
+    warningsToEditorEntries,
+} from "./editor/diagnostics.js";
 import {
     currentTab,
     selectTab,
     setPendingError,
     clearPendingError,
+    setPendingWarnings,
+    setWarningsVisible,
     setTabNames,
 } from "./editor/editor-tab.js";
 import { initHelpPanel } from "./docs/help-panel.js";
@@ -84,9 +96,13 @@ let currentShapeLocations = [];
 let currentExampleName = "";
 let suppressDirty = false;
 let isDirty = false;
+let currentWarnings = [];
+let hasActiveError = false;
 
 const btnToggleCode = document.getElementById("btn-toggle-code");
 const editorContainerEl = document.getElementById("editor-container");
+const warningWrapperEl = document.getElementById("warning-wrapper");
+const warningOutputEl = document.getElementById("warning-output");
 const splitterEl = document.querySelector(".splitter");
 const editorTopControlsEl = document.getElementById("editor-top-controls");
 const exampleSelectEl = document.getElementById("example-select");
@@ -95,6 +111,21 @@ const saveAsPopover = document.getElementById("save-as-popover");
 const saveAsInput = document.getElementById("save-as-input");
 const btnSaveConfirm = document.getElementById("btn-save-confirm");
 const btnSaveCancel = document.getElementById("btn-save-cancel");
+
+// A host that compiles nothing (host-static.js, in a page `gsl export` wrote) shows the document
+// as it was exported: style.css hides what would change or save it, and the editor is read-only.
+document.body.classList.toggle("read-only-host", !host.editable);
+
+// ?embed on the address is a page set into another one, as a frame in an article: it shows the one
+// document its address names (?file=), so there is no menu of documents, and no top bar to hold it.
+// The Code button joins the viewport's own buttons, above Fullscreen, and what stands over the code
+// (Wrap, the GSL/WGSL tabs) moves to the top of the code panel, so the viewport keeps the page's height.
+const embedded = new URLSearchParams(window.location.search).has("embed");
+document.body.classList.toggle("embedded", embedded);
+if (embedded) {
+    document.getElementById("canvas-left-btns").prepend(btnToggleCode);
+    editorContainerEl.prepend(editorTopControlsEl);
+}
 
 function nextCompileID() {
     latestCompileID = `compile-${Date.now()}-${++compileSeq}`;
@@ -122,11 +153,39 @@ function defaultSaveCopyName(name) {
 
 // ── Top Bar: Code Slide-Out Toggle ──
 
+function isCodePanelOpen() {
+    return !editorContainerEl.classList.contains("collapsed");
+}
+
+function syncWarningBanner() {
+    const bannerText = (isCodePanelOpen() && !hasActiveError)
+        ? formatWarningsBanner(currentWarnings)
+        : "";
+    if (warningWrapperEl) {
+        warningWrapperEl.classList.toggle("hidden", bannerText === "");
+    }
+    if (warningOutputEl) {
+        warningOutputEl.textContent = bannerText;
+    }
+}
+
+function applyCompileWarnings(warnings) {
+    currentWarnings = Array.isArray(warnings) ? warnings : [];
+    setPendingWarnings("GSL", warningsToEditorEntries(currentWarnings));
+    syncWarningBanner();
+}
+
 function setCodePanelOpen(open) {
     editorContainerEl.classList.toggle("collapsed", !open);
     splitterEl.classList.toggle("hidden", !open);
     editorTopControlsEl.classList.toggle("hidden", !open);
     btnToggleCode.classList.toggle("active", open);
+    btnToggleCode.setAttribute("aria-pressed", String(open));
+    setWarningsVisible(open);
+    syncWarningBanner();
+    if (open) {
+        refreshEditorLayout();
+    }
     window.dispatchEvent(new Event("resize"));
 }
 
@@ -163,15 +222,7 @@ async function submitSaveAs() {
     }
     const source = getGslSourceForServer();
     try {
-        const res = await fetch("/api/save", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, source }),
-        });
-        const data = await res.json();
-        if (!res.ok || data.error) {
-            throw new Error(data.error || `HTTP ${res.status}`);
-        }
+        const data = await host.saveExample(name, source);
         const savedName = data.name || name;
         currentExampleName = savedName;
         await refreshExampleList(savedName);
@@ -216,41 +267,6 @@ document.addEventListener("click", (e) => {
 
 // ── Error Formatting & Diagnostics ──
 
-function formatErrBody(e) {
-    const parts = [];
-    if (e.line) {
-        parts.push(e.line);
-        if (e.column >= 1 && e.length >= 1) {
-            parts.push(" ".repeat(e.column - 1) + "^".repeat(e.length) + " " + e.message);
-        } else {
-            parts.push(e.message);
-        }
-    } else {
-        parts.push(e.message);
-    }
-    return parts.join("\n");
-}
-
-function gslPlainTextErrorToEntry(text) {
-    const trimmed = (typeof text === "string" ? text : String(text || "")).trim();
-    const caretMatch = trimmed.match(/\n\s*\^\s*(\d+):(\d+):\s*([^\n]*)/)
-        || trimmed.match(/^\s*\^\s*(\d+):(\d+):\s*(.*)$/m);
-    if (caretMatch) {
-        return {
-            line: +caretMatch[1],
-            col: +caretMatch[2],
-            length: 1,
-            message: trimmed,
-            actions: [],
-        };
-    }
-    return {
-        line: 1, col: 1, length: 1,
-        message: trimmed,
-        actions: [],
-    };
-}
-
 eventManager.addListener("canvas/errors", (payload) => {
     markCompileResolved();
     stopErrorTimer();
@@ -258,21 +274,13 @@ eventManager.addListener("canvas/errors", (payload) => {
 
     let entries = [];
     let joined = "";
+    const warnings = (payload && Array.isArray(payload.warnings)) ? payload.warnings : [];
     if (typeof payload === "string") {
         joined = payload;
-        entries = [{ line: 1, col: 1, length: 1, message: payload, actions: [] }];
+        entries = [{ line: 1, col: 1, length: 1, severity: "error", message: payload, actions: [] }];
     } else if (payload && Array.isArray(payload.errors)) {
-        for (const e of payload.errors) {
-            const body = formatErrBody(e);
-            entries.push({
-                line: e.lineNum || 1,
-                col: e.column || 1,
-                length: Math.max(1, e.length || 1),
-                message: body,
-                actions: [],
-            });
-        }
-        joined = payload.errors.map(formatErrBody).join("\n");
+        entries = errorsToEditorEntries(payload.errors);
+        joined = payload.errors.map(formatErrorBody).join("\n");
     } else if (Array.isArray(payload)) {
         const chunks = [];
         for (const item of payload) {
@@ -284,20 +292,29 @@ eventManager.addListener("canvas/errors", (payload) => {
         joined = chunks.join("\n\n");
     }
 
+    hasActiveError = true;
+    currentWarnings = warnings;
+    setPendingWarnings("GSL", warningsToEditorEntries(warnings));
     setPendingError("GSL", entries);
+    syncWarningBanner();
     showError(joined, false);
 });
 
 eventManager.addListener("error", (event) => {
     if (!event || !event.message) {
+        hasActiveError = false;
         clearPendingError();
+        syncWarningBanner();
         return;
     }
+    hasActiveError = true;
+    syncWarningBanner();
     if (!event.wgsl) return;
     const probably = event.message.match(/probably line (\d+)/);
     const line = probably ? +probably[1] : 1;
     setPendingError("WGSL", [{
         line, col: 1, length: 1,
+        severity: "error",
         message: event.message,
         actions: [],
     }]);
@@ -356,6 +373,7 @@ eventManager.addListener("canvas/update-shader", (event) => {
             event.uiControls || [],
         );
         markCompileResolved();
+        hasActiveError = false;
         clearPendingError();
         clearError();
         stopErrorTimer();
@@ -376,6 +394,7 @@ eventManager.addListener("canvas/update-shader", (event) => {
         const decls = event.meshDecls || [];
         const unknowns = syncMeshInstances(decls);
         if (unknowns.length > 0) {
+            hasActiveError = true;
             showError(`Unknown mesh index: ${unknowns.join(", ")}. Upload in the Imports panel first.`, false);
         }
         // The scene gizmos: a handle for each @point, @direction and
@@ -392,7 +411,7 @@ eventManager.addListener("canvas/update-shader", (event) => {
     }
 });
 
-// ── HTTP /api/compile & /api/mesh Client ──
+// ── Compile & Mesh, by the Host (host.js) ──
 
 async function compileGsl(source) {
     if (!source || source.trim() === "") return;
@@ -402,30 +421,30 @@ async function compileGsl(source) {
     showNotification(false, "Compiling...");
 
     try {
-        const res = await fetch("/api/compile", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                id: reqId,
-                clientId,
-                source,
-            }),
-        });
-        const data = await res.json();
+        const { ok, status, data } = await host.compile({ id: reqId, clientId, source });
         if (reqId !== latestCompileID) return;
 
-        if (!res.ok || (data.errors && data.errors.length > 0)) {
-            // Structured diagnostics go as { errors } so the handler can place
-            // each one in the editor; anything else falls back to plain text.
+        if (!ok || (data.errors && data.errors.length > 0)) {
+            // Structured diagnostics go as { errors, warnings } so the handler
+            // can place each one in the editor; anything else falls back to plain text.
             const errs = data.errors && data.errors.length > 0
-                ? { errors: data.errors }
-                : [`Compile failed (HTTP ${res.status})`];
+                ? { errors: data.errors, warnings: data.warnings }
+                : [`Compile failed (HTTP ${status})`];
             eventManager.dispatchEvent("canvas/errors", errs);
             return;
         }
 
         clearNotification();
+        if (!data.wgsl) {
+            markCompileResolved();
+            hasActiveError = false;
+            clearPendingError();
+            clearError();
+            stopErrorTimer();
+            progressBar.reset();
+        }
         eventManager.dispatchEvent("canvas/update-shader", data);
+        applyCompileWarnings(data.warnings || []);
 
         const audioJs = data.audio && (data.audio.jsCode || data.audio.javascript) || "";
         const hasAudio = Boolean(audioJs);
@@ -466,21 +485,17 @@ async function requestStlExport(detail, surfaceBbox, algo, format = "stl") {
     startErrorTimer("stl export");
 
     try {
-        const res = await fetch("/api/mesh", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                id: reqId,
-                clientId,
-                source,
-                subdivision,
-                bbox,
-                algo,
-                time: getAnimTime(),
-                format,
-                bodies,
-                colors,
-            }),
+        const res = await host.mesh({
+            id: reqId,
+            clientId,
+            source,
+            subdivision,
+            bbox,
+            algo,
+            time: getAnimTime(),
+            format,
+            bodies,
+            colors,
         });
 
         stopErrorTimer();
@@ -522,7 +537,51 @@ async function requestStlExport(detail, surfaceBbox, algo, format = "stl") {
     }
 }
 
-// ── Streaming NDJSON Progress Reader (/api/progress) ──
+// exportPage downloads the open document as `gsl export` writes it: this viewer and the document's
+// field as static web pages, zipped. It is the Export panel's Web page format.
+async function exportPage() {
+    const source = getGslSourceForServer();
+    if (!source || source.trim() === "") {
+        showNotification(true, "Nothing to export");
+        return false;
+    }
+    showNotification(false, "Exporting web page...", true);
+    try {
+        const res = await host.exportPage({ name: currentExampleName || "model.gsl", source });
+        if (!res.ok) {
+            let errText = `HTTP ${res.status}`;
+            try {
+                const errJson = await res.json();
+                if (errJson && errJson.error) errText = errJson.error;
+            } catch (_) {
+                // ignore JSON parse error on non-JSON body
+            }
+            showError(`Export failed: ${errText}`, false, true);
+            return false;
+        }
+
+        // The reply names the file: the document's name, -html.zip in place of .gsl.
+        const named = /filename="?([^";]+)"?/.exec(res.headers.get("Content-Disposition") || "");
+        const fileName = named ? named[1] : "model-html.zip";
+        const url = URL.createObjectURL(await res.blob());
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        const note = res.headers.get("X-Export-Note");
+        showNotification(false, note ? `Exported ${fileName}. ${note}` : `Exported ${fileName}: unzip it onto any web server`);
+        return true;
+    } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        showError(`Export failed: ${msg}`, false, true);
+        return false;
+    }
+}
+
+// ── Progress Events from the Host ──
 
 function handleProgressEvent(ev) {
     if (!ev) return;
@@ -536,40 +595,7 @@ function handleProgressEvent(ev) {
     progressBar.startProgress(stage, label, 10000, ev.completed || 0, ev.total || 0);
 }
 
-async function connectProgressStream() {
-    while (true) {
-        try {
-            const res = await fetch(`/api/progress?clientId=${encodeURIComponent(clientId)}`);
-            if (!res.ok || !res.body) {
-                throw new Error(`HTTP ${res.status}`);
-            }
-            const reader = res.body.getReader();
-            const decoder = new TextDecoder();
-            let buffer = "";
-            while (true) {
-                const { value, done } = await reader.read();
-                if (done) break;
-                buffer += decoder.decode(value, { stream: true });
-                let newlineIdx;
-                while ((newlineIdx = buffer.indexOf("\n")) >= 0) {
-                    const line = buffer.slice(0, newlineIdx).trim();
-                    buffer = buffer.slice(newlineIdx + 1);
-                    if (!line) continue;
-                    try {
-                        handleProgressEvent(JSON.parse(line));
-                    } catch (parseErr) {
-                        console.warn("Invalid progress JSON line:", parseErr);
-                    }
-                }
-            }
-        } catch (err) {
-            // Reconnect after a short delay if the server restarts or closes the stream.
-            await new Promise((r) => setTimeout(r, 1500));
-        }
-    }
-}
-
-connectProgressStream();
+host.connectProgress(clientId, handleProgressEvent);
 
 // ── Surface Point & Point+Normal Picking Tools ──
 
@@ -690,7 +716,8 @@ document.getElementById("canvas-container").addEventListener("click", async (eve
 
 const btnFullscreen = document.getElementById("btn-fullscreen");
 btnFullscreen.addEventListener("click", () => {
-    const container = document.getElementById("canvas-container");
+    // An embedded page goes full screen whole, so its code panel comes along; otherwise the viewport does.
+    const container = embedded ? document.documentElement : document.getElementById("canvas-container");
     if (!document.fullscreenElement) {
         container.requestFullscreen();
     } else {
@@ -735,6 +762,7 @@ function onEditorChange(content) {
 }
 
 initEditor(editorHost, initialContent.trim(), onEditorChange);
+setReadOnly(!host.editable);
 
 eventManager.addListener("tab/selected", (event) => {
     const nextTab = event.tab;
@@ -766,7 +794,9 @@ btnWrap.addEventListener("click", () => {
 
 // ── Help Panel, Slider Panel, Mesh Import Panel, Export Panel ──
 
-initHelpPanel({
+// The reference for writing GSL, importing meshes into the document and meshing it on the server
+// are for a host that compiles.
+if (host.editable) initHelpPanel({
     menuHost: document.getElementById("help-menu"),
     panelHost: document.getElementById("canvas-container"),
 });
@@ -791,7 +821,7 @@ document.getElementById("slider-panel-header").addEventListener("click", (e) => 
     }
 });
 
-initMeshImport({
+if (host.editable) initMeshImport({
     addMesh,
     removeMesh,
     getMeshEntries,
@@ -814,20 +844,12 @@ initMeshImport({
     // so bvhSdf / vdbSdf on its slot load it when the program compiles.
     onImported: async (index, file, bytes) => {
         if (!/\.stl$/i.test(file.name)) return;
-        const res = await fetch(`/api/asset?name=${encodeURIComponent(file.name)}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/octet-stream" },
-            body: bytes,
-        });
-        if (!res.ok) {
-            const data = await res.json().catch(() => ({}));
-            throw new Error(data.error || `upload failed (HTTP ${res.status})`);
-        }
+        await host.uploadAsset(file.name, bytes);
     },
     dropTarget: document.getElementById("canvas-container"),
 });
 
-initExportPanel({
+if (host.editable) initExportPanel({
     getMeshGeometry,
     getWorldExtent,
     getSource: getGslSourceForServer,
@@ -837,6 +859,7 @@ initExportPanel({
     },
     serverMarchingCubes: true,
     serverFormats: true,
+    onExportPage: exportPage,
 });
 
 // ── Bodies Panel ──
@@ -869,6 +892,7 @@ initBodyPanel({
     previewColor,
     selectShape: setSelectedShape,
     popupParent: document.getElementById("canvas-container"),
+    readOnly: !host.editable,
 });
 
 eventManager.addListener("shapes/detected", (event) => {
@@ -1405,11 +1429,7 @@ gridSpacingLabel.addEventListener("blur", () => {
 async function loadExample(name) {
     if (!name) return;
     try {
-        const res = await fetch(`/api/example?name=${encodeURIComponent(name)}`);
-        const data = await res.json();
-        if (!res.ok || data.error) {
-            throw new Error(data.error || `HTTP ${res.status}`);
-        }
+        const data = await host.loadExample(name);
         currentExampleName = data.name || name;
         exampleSelectEl.value = currentExampleName;
         selectTab("GSL");
@@ -1429,9 +1449,7 @@ async function loadExample(name) {
 
 async function refreshExampleList(selectedName = "") {
     try {
-        const res = await fetch("/api/examples");
-        const data = await res.json();
-        const examples = (data && Array.isArray(data.examples)) ? data.examples : [];
+        const examples = await host.listExamples();
         exampleSelectEl.innerHTML = "";
         for (const ex of examples) {
             const opt = document.createElement("option");
@@ -1444,7 +1462,7 @@ async function refreshExampleList(selectedName = "") {
         }
         return examples;
     } catch (err) {
-        console.error("Failed to fetch /api/examples:", err);
+        console.error("Failed to list the examples:", err);
         return [];
     }
 }

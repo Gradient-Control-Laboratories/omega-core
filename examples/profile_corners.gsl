@@ -1,0 +1,61 @@
+@scene(220, 20)
+
+// Corners blended per vertex. profileXY takes a third list, one corner for
+// each point: cornerSharp(), cornerFillet(radius), cornerChamfer(setback) or
+// cornerBlend(). A fillet or a chamfer is made of edges of the loop, so the
+// profile stays exact; cornerBlend() makes the edge blend handed to profileXY
+// as a fourth argument, any of the stdlib's (intersectRound, intersectChamfer,
+// intersectLp, ...), and there the profile is that blend's field. From left to
+// right: a U with fillets and chamfers on its outer and its inner corners; the
+// same U with every corner blended by one edge blend; and a star with every
+// corner filleted by everyCorner(). The middle U is coloured by its .u, the
+// distance round its blended loop. Lengths are in mm.
+
+// Half the plates' thickness.
+@range(1, 8) halfThickness = 3.0;
+
+// The U's corners: the fillets and the chamfer.
+@range(0, 6) outerFillet = 4.0;
+@range(0, 4) innerFillet = 2.5;
+@range(0, 4) chamferSetback = 2.0;
+
+// The blended U: the blend's radius, and the Lp exponent that sharpens it
+// (2 is round, larger is sharper).
+@range(0.5, 3) blendRadius = 2.0;
+@range(2, 8) blendExponent = 4.0;
+
+// The star's fillets.
+@range(0, 3) starFillet = 1.5;
+
+// The checkerboard on the middle U: the length of a square along .u.
+@range(2, 10) checkerSize = 4.0;
+
+uPoints = [[0, 0], [30, 0], [30, 25], [22, 25], [22, 8], [8, 8], [8, 25], [0, 25]];
+uStraight = [0, 0, 0, 0, 0, 0, 0, 0];
+
+// The outer corners filleted or chamfered, the two inner (reflex) corners at
+// the slot's bottom filleted, the slot's mouth left sharp.
+filletedU = profileXY(uPoints, uStraight,
+  [cornerFillet(outerFillet), cornerChamfer(chamferSetback), cornerFillet(outerFillet), cornerSharp(),
+   cornerFillet(innerFillet), cornerFillet(innerFillet), cornerSharp(), cornerChamfer(chamferSetback)]);
+
+blendedU = profileXY(uPoints, uStraight, everyCorner(uPoints, cornerBlend()), intersectLp(blendRadius, blendExponent));
+
+starPoints = [[20, 0], [6.47, 4.7], [6.18, 19.02], [-2.47, 7.61], [-16.18, 11.76],
+              [-8, 0], [-16.18, -11.76], [-2.47, -7.61], [6.18, -19.02], [6.47, -4.7]];
+star = profileXY(starPoints, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], everyCorner(starPoints, cornerFillet(starFillet)));
+
+plate(profile) {
+  return max(profile, abs(p.z) - halfThickness);
+}
+
+// Squares of checkerSize along .u, coloured before the plate is moved so the
+// move carries them with it.
+blendedPlate = plate(blendedU);
+blendedPlate.color = sin(pi * blendedU.u / checkerSize) > 0 ? color.gray : color.lightGray;
+
+left = remap(plate(filletedU), p - [-95, -12, 0]);
+middle = remap(blendedPlate, p - [-15, -12, 0]);
+right = remap(plate(star), p - [70, 0, 0]);
+
+return left, middle, right;

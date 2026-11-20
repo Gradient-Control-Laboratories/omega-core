@@ -32,6 +32,7 @@ package manifold
 
 /*
 #cgo LDFLAGS: -L../../../target/release -lmanifold_glue
+#cgo linux LDFLAGS: -Wl,-rpath,${SRCDIR}/../../../target/release
 #include <stdint.h>
 #include <stdlib.h>
 

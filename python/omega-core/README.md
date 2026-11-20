@@ -42,6 +42,7 @@ All lengths are millimetres.
 | `gsl eval REQUEST.json`, `gsl eval -`, `gsl eval --stdio` | answer field queries as JSON |
 | `gsl skill`, `gsl skill PACKAGE...`, `gsl skill --all` | the GSL reference for a model to read (below) |
 | `gsl viewer [part.gsl]` | open a model, or the examples, in the interactive WebGPU viewer (below) |
+| `gsl export part.gsl... -o dir` | write the viewer and the models as a folder of static web pages, for any web server |
 | `gsl --version`, `gsl help [command]` | the release; a command's help |
 
 `python -m omega_core` runs `gsl` too. The wheel does not include `gsl serve` (the viewer's development server,

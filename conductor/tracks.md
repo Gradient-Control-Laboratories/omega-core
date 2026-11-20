@@ -17,6 +17,10 @@
   *Link: [index.md](./tracks/eval_fixes_20261115/index.md)*
 
 ---
+- [ ] **Track: Profile Modeling**
+  *Link: [index.md](./tracks/profile_modeling_20261117/index.md)*
+
+---
 - [ ] **Track: Shaft Modeling**
   *Link: [index.md](./tracks/shaft_modeling_20261118/index.md)*
 

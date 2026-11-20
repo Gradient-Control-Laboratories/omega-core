@@ -3,7 +3,7 @@
 ## 1. Overview
 
 This specification serves as the self-contained master improvement backlog for `omega-core`
-(`module gradientcontrol.com/omega/core`). It consolidates planned Geometric Specification Language
+(`module gradientcontrol.com/omega/core`). It consolidates planned Geometric Shape Language
 (GSL) evolution from [README.md](../../../README.md) and
 [doc/gsl_lang_spec_future.md](../../../doc/gsl_lang_spec_future.md) alongside compiler, evaluator,
 backend, native Rust/C++ FFI, interactive viewer, CLI toolchain, and code-hygiene improvements.
@@ -18,7 +18,7 @@ predictably:
   compiler hot-path optimizations, diagnostics enhancements, viewer capabilities, and developer
   tooling tasks that can either spin off focused tracks or execute as self-contained single-phase
   tracks.
-- **Small Targeted Cleanups (`S1`–`S23`):** Localized refactors, invariant tightening, dead-code
+- **Small Targeted Cleanups (`S1`–`S24`):** Localized refactors, invariant tightening, dead-code
   removals, public/internal API deduplication, and documentation/comment hygiene tasks suitable for
   direct execution or small cleanup batches.
 
@@ -441,6 +441,31 @@ defined in [README.md](../../../README.md):
       mesh/STEP/warp imports and invokes no `mesh`, `bvhSdf`, or `vdbSdf` built-ins, avoiding two
       full-program `FoldMeshIndicesAt` clones plus an extra `eval.Fold` pass on analytical SDFs.
 
+- [x] **M15. Fold a Builtin Call's Constant Arguments into Its Body: Measured, Not to Build**
+  - The idea: `internal/assembler/inline/inline.go` returns early for builtin-package functions unless they
+    remap a field argument, so `profileXY` called with constant lists ships as a WGSL function over arrays,
+    and its per-vertex geometry is recomputed per point. Inlining such calls (letting a builtin with all
+    constant arguments through the ordinary rules) was prototyped and measured on 2026-11-18 in the Profile
+    Modeling track ([profile_modeling_20261117](../profile_modeling_20261117/plan.md), Phase 2).
+  - Measured on the GPU, 64 evaluations per point over 1M points, less a trivial field's time, on slider-free
+    copies of the examples:
+
+    | Field                         | As now | Builtins inlined | WGSL          |
+    | :---------------------------- | -----: | ---------------: | :------------ |
+    | `profile_arcs.gsl`            |  34 ms |           127 ms | 118 → 558 KB  |
+    | `profile_corners.gsl`         |  57 ms |            25 ms | 248 → 80 KB   |
+    | its left U (exact corners)    |   4 ms |           7.5 ms | 12 → 39 KB    |
+    | its blended U (without colour)| 13.5 ms |          9.5 ms | 60 → 14 KB    |
+
+  - Not to build as a rule: it is no reliable win (the arcs example is 3.7× slower, its code four times the
+    size), and it never reaches the documents people draw, whose points come from sliders, runtime values,
+    so their calls never have constant arguments. Our own fold also leaves constant work such as
+    `length()` of a constant vector to the GPU compiler.
+  - How to measure: `gpu-eval` with the parity harness's own `main` over many points is bound by its ~25 ms
+    floor (a trivial sphere costs as much as a profile part), so per-part numbers from it are noise. Keep
+    `assembleShader`'s prelude, replace `main` with a loop of 64 `sdShape` calls at shifted points summed
+    into one output per point, run 1M points with stride 1, and subtract a trivial field's time.
+
 ## 6. Small Targeted Cleanups
 
 - [x] **S1. Generalized Postfix Modifier Chaining (`Modifiers []*Modifier`)**
@@ -674,10 +699,10 @@ defined in [README.md](../../../README.md):
     emit a `program.SeverityWarning` diagnostic at the legacy comment location advising the user to
     use `@screen` instead and run `gsl fix` to update the source (supporting `S2`).
 
-- [ ] **S21. Display Compiler & Parser Warnings in the Example Viewer When the Code Panel Is Open**
-  - Surface `SeverityWarning` diagnostics from `cmd/serve/internal/compiler` (`CompileResponse`)
-    into `examples/viewer/` (`examples/viewer/main.js` and `examples/viewer/editor/editor.js` via
-    `setEditorDiagnostics` or a dedicated code-panel banner/gutter) so warnings are visible when the
+- [x] **S21. Display Compiler & Parser Warnings in the Example Viewer When the Code Panel Is Open**
+  - Surface `SeverityWarning` diagnostics from `internal/compile` (`compile.Response`) into
+    `examples/viewer/` (`examples/viewer/main.js` and `examples/viewer/editor/editor.js` via
+    `setEditorDiagnostics` and a code-panel warning banner/gutter) so warnings are visible when the
     code editor panel is open without blocking rendering.
 
 - [ ] **S22. Warn on Unnecessary `import . "omega"` & Remove via `gsl fix`**
@@ -688,6 +713,16 @@ defined in [README.md](../../../README.md):
 - [ ] **S23. Error on `import . "omega"` & Remove Internal Support**
   - Promote the `import . "omega"` warning from `S22` to a compile-time error.
   - Remove internal support and shims for `import . "omega"` in the parser and assembler.
+
+- [ ] **S24. Add Viewer `Fix` Button for `gsl fix` Warnings & Document Registered Fixers**
+  - Promote `cmd/fix/internal/fix` to `internal/fix` (`layer 0`) so `cmd/fix`, `internal/compile`,
+    and `cmd/serve` share the same source-to-source refactoring registry.
+  - On the cold path in `compile.Process` (`internal/compile/compile.go`), when warnings exist,
+    set `Fixable bool` (`json:"fixable,omitempty"`) on `compile.Response` via `fix.Apply`.
+  - Add `POST /api/fix` in `cmd/serve/internal/server` and a floating right-aligned `Fix` button in
+    `#warning-wrapper` (`examples/viewer/`) that appears when `resp.fixable` is true, replaces the
+    editor buffer via a single undoable CodeMirror transaction, marks dirty, and recompiles.
+  - Document `gsl fix`'s registered fixers and `gsl fix help <name>` in `README.md`.
 
 ## 7. Acceptance Criteria
 
