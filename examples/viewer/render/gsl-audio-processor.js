@@ -38,6 +38,10 @@ class GSLAudioProcessor extends AudioWorkletProcessor {
         // calls per sample during the crossfade window (~5ms).
         this.sliderValues = {};
         this.shaderCode = null;
+        // The baked noise tile (64^3 RGBA8, render/noise_tile.bin) for the
+        // gsl_noiseHash3 helper. The compiled function closes over this
+        // array, so setNoiseTile fills it in place and needs no recompile.
+        this.noiseTile = new Uint8Array(64 * 64 * 64 * 4);
         // Pre-allocated scratch maps for crossfade — mutated in place
         // so we don't allocate on the audio thread (allocations on the
         // realtime thread cause GC pauses → glitches).
@@ -102,6 +106,10 @@ class GSLAudioProcessor extends AudioWorkletProcessor {
                 case 'setPlaying':
                     this.isPlaying = data.playing;
                     break;
+
+                case 'setNoiseTile':
+                    this.noiseTile.set(new Uint8Array(data.tile));
+                    break;
             }
         };
     }
@@ -151,10 +159,11 @@ class GSLAudioProcessor extends AudioWorkletProcessor {
         }
         try {
             const patched = this.patchShaderForSliders(this.shaderCode);
-            // The factory takes one argument (the sliders object) so
-            // the compiled `computeAudio` closes over our mutable map.
-            const wrapped = `const sliders = arguments[0];\n${patched}\nreturn computeAudio;`;
-            this.computeAudio = (new Function(wrapped))(this.sliderValues);
+            // The factory takes the sliders object (so the compiled
+            // `computeAudio` closes over our mutable map) and the noise
+            // tile read by gsl_noiseHash3.
+            const wrapped = `const sliders = arguments[0];\nconst gsl_noiseTile = arguments[1];\n${patched}\nreturn computeAudio;`;
+            this.computeAudio = (new Function(wrapped))(this.sliderValues, this.noiseTile);
 
             this.port.postMessage({
                 type: 'shaderLoaded',

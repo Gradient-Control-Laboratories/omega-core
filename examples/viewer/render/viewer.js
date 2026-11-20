@@ -500,7 +500,9 @@ noiseTexture.wrapT = THREE.RepeatWrapping;
 noiseTexture.wrapR = THREE.RepeatWrapping;
 noiseTexture.needsUpdate = true;
 const noiseTexNode = texture3D(noiseTexture);
-(async () => {
+// noiseTileReady resolves once the tile bytes are in noiseTileData (or the
+// fetch failed); the audio worklet waits on it before taking a copy.
+const noiseTileReady = (async () => {
   try {
     const buf = await (await fetch("render/noise_tile.bin")).arrayBuffer();
     noiseTileData.set(new Uint8Array(buf));
@@ -2191,6 +2193,14 @@ class AudioSystem {
             this.workletNode.port.postMessage({
                 type: 'setSampleRate',
                 data: { sampleRate: this.audioContext.sampleRate }
+            });
+
+            // Send the noise tile for noiseHash3 in audio, once it's loaded.
+            noiseTileReady.then(() => {
+                this.workletNode?.port.postMessage({
+                    type: 'setNoiseTile',
+                    data: { tile: noiseTileData.slice().buffer }
+                });
             });
 
             // Listen for messages from worklet
