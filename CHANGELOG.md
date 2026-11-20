@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `map.bendXZ(v, curvature)` bends space in the XZ plane for `remap`: the plane x = 0 becomes an arc of the
+  given curvature, 1 / radius, with lengths along it kept, for a bow, a camber or a warp, as in
+  `remap(plate, map.bendXZ(p - origin, 1 / 400) + origin)`. A curvature of 0 is no bend.
 - `gsl export part.gsl [more.gsl ...] -o dir` writes the WebGPU viewer and each file's compiled field as a folder
   of static web pages, which any web server can host: the page draws what `gsl viewer` draws, with its sliders,
   gizmos, time, sections and render settings, and compiles nothing, so the source is shown read-only and Save As,
