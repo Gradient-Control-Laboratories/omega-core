@@ -43,6 +43,7 @@ import {
     setSliderValue,
     setUiControlValues,
     syncUiControls,
+    defaultWGSL,
 } from "./render/viewer.js";
 import {
     initEditor,
@@ -360,12 +361,15 @@ function detectShapeCount(wgslCode) {
 }
 
 eventManager.addListener("canvas/update-shader", (event) => {
-    if (event.wgsl) {
-        currentWGSL = event.wgsl;
+    // A program that returns only audio has nothing to draw: it shows the
+    // empty scene in place of the previous document's model.
+    const wgsl = event.wgsl || (event.audio ? defaultWGSL : "");
+    if (wgsl) {
+        currentWGSL = wgsl;
         currentShapeLocations = event.shapeLocations || [];
         setParts(event.parts || []);
         updateShader(
-            event.wgsl,
+            wgsl,
             event.shapeCount || 1,
             event.shapeNames || [],
             event.meshSdfBindings || event.meshSdfSlots || [],
