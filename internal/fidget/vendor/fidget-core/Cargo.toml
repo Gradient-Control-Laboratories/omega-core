@@ -1,6 +1,6 @@
 [package]
 name = "fidget-core"
-version = "0.5.0"
+version = "0.5.1"
 edition = "2024"
 rust-version = "1.95"
 authors = ["Matt Keeter <matt.j.keeter@gmail.com>"]
@@ -25,7 +25,6 @@ ordered-float = "5"
 rand = "0.10"
 rayon = "1.10"
 serde = { version = "1.0", features = ["derive", "rc"] }
-strum = { version = "0.28", features = ["derive"] }
 thiserror = "2"
 
 [target."cfg(target_arch = \"wasm32\")".dependencies]
