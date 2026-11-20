@@ -160,7 +160,7 @@ treatment), the phase opens with a proposal for the owner to approve before any 
 - [x] Task: The owner's viewer check of `examples/shaft_pinion.gsl`
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
-## Phase 4: End Treatments
+## Phase 4: End Treatments [checkpoint: 2f62bdb]
 
 - [x] Task: Proposal: how a segment names its end (plane, cutter-radius runout, chamfer). Decided
       2026-11-19: finished prisms in the fold, runouts cut after it, the Phase 3 API kept (spec 3.4;
