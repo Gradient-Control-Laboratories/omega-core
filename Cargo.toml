@@ -16,6 +16,7 @@ members = [
     "internal/fidget/vendor/fidget-shapes",
     "internal/fidget/vendor/fidget-solver",
     "internal/fidget/vendor/fidget-wgpu",
+    "internal/fidget/vendor/workspace-hack",
 ]
 
 # All of fidget is vendored from our fork, Gradient-Control-Laboratories/fidget

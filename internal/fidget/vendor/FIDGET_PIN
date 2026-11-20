@@ -12,6 +12,9 @@
 #
 # It replaces the sources and reports how the fork's Cargo.toml files differ
 # from the vendored ones; the manifests are reconciled by hand.
+#
+# workspace-hack/ is not copied from the fork: it is an empty stand-in for
+# upstream's cargo-hakari crate, which fidget-core's lib.rs names.
 fork: https://github.com/Gradient-Control-Laboratories/fidget
 branch: omega
 commit: 673b451073aa9a92d701851f0a6191c443bfa0a6
