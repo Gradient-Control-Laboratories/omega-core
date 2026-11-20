@@ -189,7 +189,7 @@ treatment), the phase opens with a proposal for the owner to approve before any 
       journal); WGSL 15,609 B; the owner's viewer check
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
-## Phase 6: Joint Blends
+## Phase 6: Joint Blends [checkpoint: 25ecd77]
 
 - [x] Task: Proposal (approved 2026-11-20): a joint entry in the segment list, `shaft.fillet(r)` and
       `shaft.chamfer(c)`, between the segments it blends; the union blend of the two capped segments min'd into the
