@@ -321,6 +321,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   until a pass folds a property's expression to a new one; the range kept the old tree, which read `hi`, and `hi` was
   removed as dead. Slider extraction now reads such a range's bounds from the properties as the passes left them
   (`Assignment.LiveRange`).
+- `.dp` through a remap of a function's parameter. A call binds a parameter to its argument's value at the
+  caller's p, and a remap inside the function read that value unmoved, so `f(v) { return remap(v, q); }` lost
+  the chain rule through q: the value was right and its gradient was not. The argument is now evaluated again
+  where the remap reads it, and a parameter counts as varying with p when its argument does.
 
 ## [0.1.3] - 2026-11-17
 
