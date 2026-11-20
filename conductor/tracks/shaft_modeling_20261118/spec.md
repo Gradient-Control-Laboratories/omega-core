@@ -26,6 +26,7 @@ plane, which is "what will let the shaft hand its end holes a plane its own fold
 | Threads            | Geometry first: `thread.male` bounded to its segment, a true distance. The relief form (a displacement material, the fastener precedent) comes later.                                                                              |
 | Package            | `stdlib/mechanical/shaft/`. Segments are factories returning closures, as drill's features are. The folding function is self-contained (section 6).                                                                              |
 | In this track      | Cranks (eccentric and section segments); bearings and bushings; a bounding-box override; a simplified model with no teeth, threads or knurling.                                                                                    |
+| End treatments (2026-11-19) | **Finished prisms, and runouts cut after the fold** (section 3.4): segments fold as in Phase 3; a cutter runout is a void cut into the neighbour afterwards; a chamfered end cuts the prism. The Phase 3 API is kept, with end overloads. (B1, the blank in the fold, was tried and dropped.) |
 | Deferred (recorded) | Knurl as geometry. Cross holes and male keyseats as voids attached to a segment. An exact revolved envelope, once profile C2 lands. Relief threads.                                                                                |
 
 ## 3. The Bridge
@@ -103,14 +104,44 @@ union reads ≤ 0 (`max(bridge, m > 0 ? nothing : -nothing)`) is no more exact, 
 is already exact outside. It also costs proofs: on a joint cell the plain union's interval straddles
 0, the select stays undecided, and the cell no longer proves solid (0 of 3 against 3 of 3).
 
-### 3.4 Caps
+### 3.4 Caps: finished prisms, and runouts cut after the fold (decided 2026-11-19)
 
-A segment declares how it **ends**. The default is a plane, handled by its slab. The other end
-treatments are:
+A segment declares how it **ends**. The default is a plane. The other end treatments are:
 
 - a **runout** at a cutter's radius, for a hobbed gear or a milled spline;
 - a **chamfered end**, for teeth;
-- a **thread runout**, after `thread.runout`.
+- a **thread runout**, after `thread.runout` (Phase 5).
+
+**A runout is a cut, not part of the segment's solid.** A hob or disc cutter of radius Rc cannot
+stop at the segment's end plane: where the neighbour is larger than the root, the gaps run on into the
+neighbour's material, their floor rising from the root along the cutter's arc, centred at
+(root + Rc, the end plane) in the half-section, until it breaks out of the neighbour's diameter. Within
+the cutter's reach the neighbour is cut to the segment's profile, tips included.
+
+**The construction (owner's choice: the hybrid).** The fold is Phase 3's: every segment, round or not,
+enters it as its finished prism, capped and extended. Only a runout is cut after the fold, as `body`
+cuts the end holes:
+
+    shaft = max(fold, -min(cuts), -holes)
+    cut   = max(-section, min(bottomDisc, topDisc))     asked only of a segment with a runout end
+    disc  = length([r - (root + Rc), z - endPlane]) - Rc, gated off at a plane or chamfered end
+
+- The API stays as Phase 3 left it: `shaft.gear(...)` and `shaft.spline(...)` gain overloads with two
+  end arguments, `shaft.planeEnd()`, `shaft.runout(cutterDia)` or `shaft.chamferEnd(size)`, e.g.
+  `shaft.gear(z, m, pa, helix, from, to, shaft.planeEnd(), shaft.runout(80.0))`. An end is a value
+  `[kind, size]`, not a closure. Segments without named ends run Phase 3's code unchanged.
+- The segment closure answers one more question (`want` 3), its cut. Every segment that cannot run out
+  answers `nothing` before it evaluates anything: the compiler passes a callee's arguments even when it
+  ignores them, so the short circuit has to sit in the closure.
+- A chamfered tooth end cuts the prism at 45 degrees by its size, as the blank is chamfered before the
+  teeth are cut.
+
+**Rejected: B1, the blank in the fold (tried 2026-11-19).** Non-round segments folded as round blanks,
+with their teeth, flats and gaps cut afterwards. The surface was right, but the field gained phantom
+faces: the cut's end cap where nothing stands beyond it (contours stepping at a flat's end, up to
+1.5–3 mm short), and bridge material that the cut removes (up to 1.4 mm short beside a hex). Removing
+them returns the fold to the finished prisms. It was also slower: on the CPU, 94 against 90 ns a point
+for the pinion and 37 against 27 for a hobbed runout, with the larger shader (105,041 against 102,557 B).
 
 ### 3.5 What falls out of the construction
 

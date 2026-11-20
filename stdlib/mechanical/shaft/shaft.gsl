@@ -51,7 +51,16 @@
 // unbounded above it and seg(big, big, 0) both ways; seg(0, 0, 1) is the plane it
 // starts on and seg(0, 0, 2) the plane it ends on, which is how body finds the
 // shaft's two end faces without being told. Beyond its span a segment continues
-// at the diameter it ends with.
+// at the diameter it ends with. seg(0, 0, 3) is its cut: nothing, unless an end
+// is a cutter runout.
+//
+// RUNOUTS. A hob or a disc cutter cannot stop at a gear's or a spline's end
+// plane. Named with shaft.runout(cutterDia), that end's gaps run on into the
+// neighbour, their floor rising from the root along the cutter's arc until it
+// breaks out of the neighbour's diameter, and within the cutter's reach the
+// neighbour is cut to the segment's profile. body cuts the runouts after the
+// fold, as it cuts the end holes. A chamfered end, shaft.chamferEnd(size), cuts
+// the segment's own prism at 45 degrees.
 //
 // THE ENDS. body(segments, bottomHole, topHole) cuts a mechanical/drill hole
 // stack into each end face, each depth measured from its own face as a drawing
@@ -89,7 +98,10 @@ body(segments) {
     return [min(acc.x, seg(0.0, 0.0, 0.0), max(openRuns, seg(100000.0, 0.0, 0.0))),
             min(max(openRuns, seg(100000.0, 100000.0, 0.0)), seg(0.0, 100000.0, 0.0))];
   }, segments, [100000.0, 100000.0]);
-  return shaftSoFar.x;
+  // The runouts, cut after the fold: where a cutter runs out past a segment's
+  // end, its gaps run on into the neighbour.
+  cuts = reduce((c, seg) { return min(c, seg(0.0, 0.0, 3.0)); }, segments, 100000.0);
+  return max(shaftSoFar.x, -cuts);
 }
 
 /// The same shaft with a hole stack cut into each end face: `bottomHole` into
@@ -108,6 +120,7 @@ body(segments, bottomHole, topHole) {
     return [min(acc.x, seg(0.0, 0.0, 0.0), max(openRuns, seg(100000.0, 0.0, 0.0))),
             min(max(openRuns, seg(100000.0, 100000.0, 0.0)), seg(0.0, 100000.0, 0.0))];
   }, segments, [100000.0, 100000.0]);
+  cuts = reduce((c, seg) { return min(c, seg(0.0, 0.0, 3.0)); }, segments, 100000.0);
   // The end faces, asked of the segments: the lowest starting plane and the
   // highest ending one.
   bottomFace = reduce((low, seg) { return min(low, seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
@@ -116,7 +129,7 @@ body(segments, bottomHole, topHole) {
   // of either lies in the face it opens onto.
   topVoid = drill.hole(topHole, topFace);
   bottomVoid = remap(drill.hole(bottomHole, 0.0), [p.x, -p.y, bottomFace - p.z]);
-  return max(shaftSoFar.x, -topVoid, -bottomVoid);
+  return max(shaftSoFar.x, -cuts, -topVoid, -bottomVoid);
 }
 
 // =========================================================
@@ -131,7 +144,7 @@ diameter(dia, from, to) {
     radial = length(p.xy) - dia / 2.0;
     axial = max((from - eDown) - p.z, p.z - (to + eUp));
     field = sqrt(max(radial, 0.0) * max(radial, 0.0) + max(axial, 0.0) * max(axial, 0.0)) + min(max(radial, axial), 0.0);
-    return segmentAnswer(want, field, from, to);
+    return want > 2.5 ? nothing : segmentAnswer(want, field, from, to);
   }
   return seg;
 }
@@ -141,7 +154,7 @@ diameter(dia, from, to) {
 /// diameters, a chamfer at a shaft's end.
 taper(diaFrom, diaTo, from, to) {
   seg(eDown, eUp, want) {
-    return segmentAnswer(want, turnedTaper(diaFrom / 2.0, diaTo / 2.0, from, to, from - eDown, to + eUp), from, to);
+    return want > 2.5 ? nothing : segmentAnswer(want, turnedTaper(diaFrom / 2.0, diaTo / 2.0, from, to, from - eDown, to + eUp), from, to);
   }
   return seg;
 }
@@ -160,7 +173,7 @@ section(field, from, to) {
 /// drill.hexSocket's do. Exact.
 hex(acrossFlats, from, to) {
   seg(eDown, eUp, want) {
-    return prismSegment(hexSection(acrossFlats), from, to, eDown, eUp, want);
+    return want > 2.5 ? nothing : prismSegment(hexSection(acrossFlats), from, to, eDown, eUp, want);
   }
   return seg;
 }
@@ -170,7 +183,7 @@ hex(acrossFlats, from, to) {
 /// bore is. Exact.
 dFlat(dia, acrossFlat, from, to) {
   seg(eDown, eUp, want) {
-    return prismSegment(dFlatSection(dia, acrossFlat), from, to, eDown, eUp, want);
+    return want > 2.5 ? nothing : prismSegment(dFlatSection(dia, acrossFlat), from, to, eDown, eUp, want);
   }
   return seg;
 }
@@ -179,7 +192,7 @@ dFlat(dia, acrossFlat, from, to) {
 /// -x, `acrossFlats` apart, as drill.doubleD's bore is. Exact.
 doubleD(dia, acrossFlats, from, to) {
   seg(eDown, eUp, want) {
-    return prismSegment(doubleDSection(dia, acrossFlats), from, to, eDown, eUp, want);
+    return want > 2.5 ? nothing : prismSegment(doubleDSection(dia, acrossFlats), from, to, eDown, eUp, want);
   }
   return seg;
 }
@@ -190,7 +203,18 @@ doubleD(dia, acrossFlats, from, to) {
 /// drill.spline(count, major, width) over a bore at `minor`. Exact outside.
 spline(count, minor, major, width, from, to) {
   seg(eDown, eUp, want) {
-    return prismSegment(splineSection(count, minor, major, width), from, to, eDown, eUp, want);
+    return want > 2.5 ? nothing : prismSegment(splineSection(count, minor, major, width), from, to, eDown, eUp, want);
+  }
+  return seg;
+}
+
+/// The same spline with its two ends named, `bottomEnd` at `from` and
+/// `topEnd` at `to`, each shaft.planeEnd(), shaft.runout(cutterDia) or
+/// shaft.chamferEnd(size).
+spline(count, minor, major, width, from, to, bottomEnd, topEnd) {
+  seg(eDown, eUp, want) {
+    return want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(topEnd.x > 0.5 && topEnd.x < 1.5) ? nothing : machinedSegment(splineSection(count, minor, major, width), major / 2.0, minor / 2.0,
+                           from, to, eDown, eUp, want, bottomEnd, topEnd);
   }
   return seg;
 }
@@ -205,9 +229,46 @@ spline(count, minor, major, width, from, to) {
 /// distance.
 gear(numTeeth, moduleVal, pressureAngle, helixAngle, from, to) {
   seg(eDown, eUp, want) {
-    return prismSegment(gearSection(numTeeth, moduleVal, pressureAngle, helixAngle, from), from, to, eDown, eUp, want);
+    return want > 2.5 ? nothing : prismSegment(gearSection(numTeeth, moduleVal, pressureAngle, helixAngle, from), from, to, eDown, eUp, want);
   }
   return seg;
+}
+
+/// The same gear with its two ends named, `bottomEnd` at `from` and `topEnd`
+/// at `to`, each shaft.planeEnd(), shaft.runout(hobDia) or
+/// shaft.chamferEnd(size).
+///
+///   shaft.gear(20.0, 2.0, radians(20.0), 0.0, 20.0, 50.0, shaft.planeEnd(), shaft.runout(80.0))
+gear(numTeeth, moduleVal, pressureAngle, helixAngle, from, to, bottomEnd, topEnd) {
+  seg(eDown, eUp, want) {
+    return want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(topEnd.x > 0.5 && topEnd.x < 1.5) ? nothing : machinedSegment(gearSection(numTeeth, moduleVal, pressureAngle, helixAngle, from),
+                           numTeeth * moduleVal / 2.0 + moduleVal, numTeeth * moduleVal / 2.0 - 1.25 * moduleVal,
+                           from, to, eDown, eUp, want, bottomEnd, topEnd);
+  }
+  return seg;
+}
+
+// =========================================================
+// Ends
+// =========================================================
+
+/// A machined segment's end at its plane: the teeth, flats or gaps stop there.
+planeEnd() {
+  return [0.0, 0.0];
+}
+
+/// A machined segment's end where the cutter, of diameter `cutterDia`, runs
+/// out: a hob or a disc cutter cannot stop at the plane, so past it the gaps
+/// run on into the neighbour, their floor rising from the root along the
+/// cutter's arc until it breaks out of the neighbour's diameter.
+runout(cutterDia) {
+  return [1.0, cutterDia / 2.0];
+}
+
+/// A machined segment's end with its blank chamfered by `size` at 45 degrees
+/// before the teeth are cut: the tips fall away toward the end plane.
+chamferEnd(size) {
+  return [2.0, size];
 }
 
 // =========================================================
@@ -220,7 +281,7 @@ gear(numTeeth, moduleVal, pressureAngle, helixAngle, from, to) {
 prismSegment(sectionField, from, to, eDown, eUp, want) {
   axial = max((from - eDown) - p.z, p.z - (to + eUp));
   field = sqrt(max(sectionField, 0.0) * max(sectionField, 0.0) + max(axial, 0.0) * max(axial, 0.0)) + min(max(sectionField, axial), 0.0);
-  return segmentAnswer(want, field, from, to);
+  return want > 2.5 ? nothing : segmentAnswer(want, field, from, to);
 }
 
 // The hexagon's six corners, counterclockwise from 30 degrees, so its flats
@@ -280,11 +341,38 @@ gearSection(numTeeth, moduleVal, pressureAngle, helixAngle, from) {
   return profile / sqrt(1.0 + tipRadius * twistRate * tipRadius * twistRate);
 }
 
+// A machined segment whose ends are named. In the fold it is its finished
+// prism, capped and extended, as Phase 3's segments are, cut back at 45
+// degrees by `size` at a chamferEnd (the blank chamfered before the teeth).
+// Its cut, asked only when an end is a runout, is the space outside
+// `sectionField` within the cutter's reach past that end: the cutter's disc
+// in the half-section, of radius Rc centred at (rootR + Rc, the end plane),
+// so the floor of the gaps rises from the root along the cutter's arc into
+// the neighbour, which body cuts after the fold. An end is [kind, size]: 0 a
+// plane, 1 a runout (size the cutter's radius), 2 a chamfer. The ternaries
+// choose only between constants.
+machinedSegment(sectionField, blankR, rootR, from, to, eDown, eUp, want, bottomEnd, topEnd) {
+  r = length(p.xy);
+  radial = r - blankR;
+  axial = max((from - eDown) - p.z, p.z - (to + eUp));
+  chamferBottom = min((radial + (from - p.z) + bottomEnd.y) / sqrt2, bottomEnd.x > 1.5 ? nothing : neg(nothing));
+  chamferTop = min((radial + (p.z - to) + topEnd.y) / sqrt2, topEnd.x > 1.5 ? nothing : neg(nothing));
+  prism = sqrt(max(sectionField, 0.0) * max(sectionField, 0.0) + max(axial, 0.0) * max(axial, 0.0)) + min(max(sectionField, axial), 0.0);
+  ownField = max(prism, chamferBottom, chamferTop);
+  runoutBottom = bottomEnd.x > 0.5 && bottomEnd.x < 1.5;
+  runoutTop = topEnd.x > 0.5 && topEnd.x < 1.5;
+  reachBottom = max(length([r - (rootR + bottomEnd.y), p.z - from]) - bottomEnd.y, runoutBottom ? neg(nothing) : nothing);
+  reachTop = max(length([r - (rootR + topEnd.y), p.z - to]) - topEnd.y, runoutTop ? neg(nothing) : nothing);
+  cut = max(neg(sectionField), min(reachBottom, reachTop));
+  return want > 2.5 ? (runoutBottom || runoutTop ? cut : nothing) : segmentAnswer(want, ownField, from, to);
+}
+
 // What a segment answers: its field when `want` is 0, the plane it starts on
-// when 1 and the plane it ends on when 2. body always asks with a constant, so
-// each answer is one of the three outright.
+// when 1, the plane it ends on when 2 and its cut when 3, which is nothing
+// unless an end runs out. body always asks with a constant, so
+// each answer is one of the four outright.
 segmentAnswer(want, field, from, to) {
-  return want > 1.5 ? to : (want > 0.5 ? from : field);
+  return want > 2.5 ? nothing : (want > 1.5 ? to : (want > 0.5 ? from : field));
 }
 
 // The distance from q to the segment from a to b, in 2D. A segment of length

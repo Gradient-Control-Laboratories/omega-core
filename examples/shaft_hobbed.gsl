@@ -1,0 +1,28 @@
+@scene(160)
+
+// A hobbed gear shaft, its machined ends named. A straight-sided spline at the
+// left end, milled with a disc cutter that runs out into the shoulder beside
+// it. A spur gear in the middle, chamfered where it steps down to the journal
+// on its left and hobbed into the larger shoulder on its right: a hob cannot
+// stop at the gear's end plane, so the gaps run on into the shoulder, their
+// floor rising along the hob's arc until it breaks out of the shoulder's
+// diameter. Every segment is placed by the two planes it runs between,
+// measured from the left end. Lengths are in mm.
+
+@range(50, 120) hobDia = 80.0;
+@range(30, 90) sideCutterDia = 60.0;
+@range(0, 2) toothChamfer = 1.0;
+
+hobbedShaft = shaft.body(
+  [shaft.spline(6.0, 16.0, 20.0, 4.0, 0.0, 20.0, shaft.planeEnd(), shaft.runout(sideCutterDia)),
+   shaft.diameter(26.0, 20.0, 40.0),
+   shaft.diameter(25.0, 40.0, 50.0),
+   shaft.gear(20.0, 2.0, radians(20.0), 0.0, 50.0, 80.0, shaft.chamferEnd(toothChamfer), shaft.runout(hobDia)),
+   shaft.diameter(50.0, 80.0, 106.0),
+   shaft.diameter(30.0, 106.0, 120.0)],
+  drill.centerHole(3.15, 6.7, 8.0),
+  drill.centerHole(3.15, 6.7, 8.0));
+hobbedShaft.color = [0.58, 0.60, 0.64];
+
+// Laid along X and centred, so the viewer frames the whole shaft.
+return remap(hobbedShaft, [p.z, p.y, 60.0 - p.x]);

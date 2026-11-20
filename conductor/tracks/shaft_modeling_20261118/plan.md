@@ -162,11 +162,15 @@ treatment), the phase opens with a proposal for the owner to approve before any 
 
 ## Phase 4: End Treatments
 
-- [ ] Task: Proposal: how a segment names its end (plane, cutter-radius runout, chamfer)
-- [ ] Task: Write failing tests (Red Phase): a hobbed gear's runout and a milled spline's runout follow
-      the cutter's radius; chamfered tooth ends; plane ends unchanged
-- [ ] Task: Implement (Green & Refactor Phase)
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Proposal: how a segment names its end (plane, cutter-radius runout, chamfer). Decided
+      2026-11-19: finished prisms in the fold, runouts cut after it, the Phase 3 API kept (spec 3.4;
+      B1, the blank in the fold, tried and dropped)
+- [x] Task: Write failing tests (Red Phase): a hobbed gear's runout and a milled spline's runout follow
+      the cutter's radius, into a larger neighbour, and the runout reads as a void; chamfered tooth
+      ends; plane ends unchanged
+- [x] Task: Implement (Green & Refactor Phase)
+- [x] Task: `examples/shaft_hobbed.gsl`; WGSL size; the owner's viewer check
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 5: Threads
 
