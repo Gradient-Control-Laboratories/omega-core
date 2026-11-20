@@ -654,61 +654,46 @@ remapEdges(fields, profile) {
   }, fields));
 }
 
-/// Exact rounded union of two fields (nullary field1/field2) that uses their
-/// surface normals normal1, normal2 to scale the blend, staying accurate where the
-/// two gradients differ. The zero set is the sharp union; the field is its
-/// exact SDF, so offsetting the result by r rounds the seam with radius r.
-unionRoundExact(field1, field2, normal1, normal2) {
-  d1 = field1();
-  d2 = field2();
+/// Exact rounded union of two fields with fillet `radius`, in one step from the
+/// faces' tangent planes at p, whose normals are handed in as normal1, normal2: the fields are grown by the radius, their
+/// union's distance is taken near the seam from those planes, and it is shrunk
+/// back by the radius. Exact where the faces are flat, at any angle between
+/// them; on curved faces use the forms that take a step count. At radius 0 the
+/// zero set is the sharp union and the field is its exact distance.
+unionRoundExact(field1, field2, radius, normal1, normal2) {
+  d1 = field1 - radius;
+  d2 = field2 - radius;
   sumScale = length(normal1 + normal2);
   diffScale = length(normal1 - normal2);
   sum = (d1 + d2) / sumScale;
   diff = (d1 - d2) / diffScale;
   sharp = min(d1, d2);
-  field1OnSurface2 = remap(field1(), p - d2 * normal2);
-  field2OnSurface1 = remap(field2(), p - d1 * normal1);
+  field1OnSurface2 = remap(field1, p - d2 * normal2) - radius;
+  field2OnSurface1 = remap(field2, p - d1 * normal1) - radius;
 
-  return max(field1OnSurface2, field2OnSurface1) > 0 ? sharp : -length([sum, diff]);
+  return (max(field1OnSurface2, field2OnSurface1) > 0 ? sharp : -length([sum, diff])) + radius;
 }
 
-/// Exact rounded union of two fields (nullary field1/field2), taking each field's
-/// surface normal from its own gradient instead of being handed them. Use the
-/// four-argument form when a normal is known analytically, or when the same
-/// gradient is already computed elsewhere.
-unionRoundExact(field1, field2) {
-  return unionRoundExact(field1, field2, field1().dp, field2().dp);
-}
-
-/// Exact rounded intersection of two fields (nullary field1/field2) that uses
-/// their surface normals normal1, normal2 to scale the blend. The De Morgan dual of
-/// unionRoundExact: negating a field flips its gradient, so the normals are
-/// negated alongside it.
-intersectRoundExact(field1, field2, normal1, normal2) {
+/// Exact rounded intersection of two fields with fillet `radius`, in one step
+/// from the faces' tangent planes, whose normals are handed in as normal1,
+/// normal2: the De Morgan dual of the five-argument
+/// unionRoundExact, which negates the normals along with the fields.
+intersectRoundExact(field1, field2, radius, normal1, normal2) {
   return neg(unionRoundExact(
-    () { return neg(field1()); },
-    () { return neg(field2()); },
-    neg(normal1), neg(normal2)));
+    neg(field1),
+    neg(field2),
+    radius, neg(normal1), neg(normal2)));
 }
 
-/// Exact rounded intersection of two fields (nullary field1/field2), taking each
-/// field's surface normal from its own gradient instead of being handed them.
-/// The gradients are of field1 and field2 themselves; the four-argument form
-/// negates them along with the fields.
-intersectRoundExact(field1, field2) {
-  return intersectRoundExact(field1, field2, field1().dp, field2().dp);
-}
-
-/// The point nearest c on both fields' tangent planes at c (nullary
-/// field1/field2): one Newton step from c toward the edge {field1 = 0, field2 =
-/// 0}, the least-norm step c - Jᵀ(JJᵀ)⁻¹[field1, field2] with J the fields'
+/// The point nearest c on both fields' tangent planes at c: one Newton step
+/// from c toward the edge {field1 = 0, field2 = 0}, the least-norm step c - Jᵀ(JJᵀ)⁻¹[field1, field2] with J the fields'
 /// gradients at c. Where the faces are parallel there is no edge, and the guard
 /// on the determinant keeps the step finite.
 edgeProject(field1, field2, c) {
-  v1 = remap(field1(), c);
-  v2 = remap(field2(), c);
-  n1 = remap(field1().dp, c);
-  n2 = remap(field2().dp, c);
+  v1 = remap(field1, c);
+  v2 = remap(field2, c);
+  n1 = remap(field1.dp, c);
+  n2 = remap(field2.dp, c);
   a = dot(n1, n1);
   b = dot(n1, n2);
   d = dot(n2, n2);
@@ -723,14 +708,14 @@ edgeProject(field1, field2, c) {
 }
 
 /// One Newton step from c toward the point of the edge {field1 = 0, field2 =
-/// 0} nearest p (nullary field1/field2): edgeProject's step, then a slide along
+/// 0} nearest p: edgeProject's step, then a slide along
 /// the edge's tangent at c, the cross product of the fields' gradients there,
 /// to the foot of p.
 edgeNewtonStep(field1, field2, c) {
-  v1 = remap(field1(), c);
-  v2 = remap(field2(), c);
-  n1 = remap(field1().dp, c);
-  n2 = remap(field2().dp, c);
+  v1 = remap(field1, c);
+  v2 = remap(field2, c);
+  n1 = remap(field1.dp, c);
+  n2 = remap(field2.dp, c);
   a = dot(n1, n1);
   b = dot(n1, n2);
   d = dot(n2, n2);
@@ -746,25 +731,22 @@ edgeNewtonStep(field1, field2, c) {
   return q + clamp(slide, neg(span), span);
 }
 
-/// Exact sharp intersection of two fields (nullary field1/field2) whose faces
-/// may be curved: outside the intersection and nearest its edge, the distance
-/// to the point c of the edge {field1 = 0, field2 = 0} nearest p, found by
-/// `iterations` Newton steps from p (1 to 8). Each step moves to the nearest
-/// point of both fields' tangent planes, then slides along the edge to the foot
-/// of p; the last step only projects. Near the edge, one step gives the
-/// two-argument form's distance, off by 7% of a round's radius on a sphere and
-/// a plane; three give 1e-6 mm where the edge is a circle, and five where it is
-/// not. Where p - c lies between the two faces' normals at c, p is nearest the
-/// edge and the field is |p - c|; elsewhere it is the sharp intersection, exact
-/// where the fields are. That test is only as good as c, so use three steps or
-/// more. Pass `iterations` as a constant: the steps it does not take are
-/// dropped at compile time.
-///
-/// Offset the fields in by r and the result out by r to round the edge with
-/// radius r: intersectRoundExact(() { return f1() + r; }, () { return f2() + r;
-/// }, 3) - r. Each step evaluates both fields and their gradients at a new
-/// point, so the field costs about iterations + 1 times the sharp one.
-intersectRoundExact(field1, field2, iterations) {
+/// Exact distance to the sharp intersection of two fields  whose faces may be curved: outside the intersection and
+/// nearest its edge, the distance to the point c of the edge {field1 = 0,
+/// field2 = 0} nearest p, found by `iterations` Newton steps from p (1 to 8).
+/// Each step moves to the nearest point of both fields' tangent planes, then
+/// slides along the edge to the foot of p; the last step only projects. Near
+/// the edge, one step gives the five-argument exact rounds' distance, off by 7%
+/// of a round's radius on a sphere and a plane; three give 1e-6 mm where the
+/// edge is a circle, and five where it is not. Where p - c lies between the two
+/// faces' normals at c, p is nearest the edge and the field is |p - c|;
+/// elsewhere it is the sharp intersection, exact where the fields are. That
+/// test is only as good as c, so use three steps or more. Pass `iterations` as
+/// a constant: the steps it does not take are dropped at compile time. Each
+/// step evaluates both fields and their gradients at a new point, so the field
+/// costs about iterations + 1 times the sharp one. The exact rounds that take a
+/// step count are built on it.
+edgeDistance(field1, field2, iterations) {
   // Start a hair off p: where every point of the edge is equally near (on the
   // axis of a circular edge), a gradient at p may be undefined and no step
   // would pick a direction; from beside p the steps reach one of those points.
@@ -786,8 +768,8 @@ intersectRoundExact(field1, field2, iterations) {
     : edgeProject(field1, field2, s0);
 
   // p is nearest the edge where p - c = w1 n1 + w2 n2 with both weights positive.
-  n1 = remap(field1().dp, c);
-  n2 = remap(field2().dp, c);
+  n1 = remap(field1.dp, c);
+  n2 = remap(field2.dp, c);
   e = p - c;
   a = dot(n1, n1);
   b = dot(n1, n2);
@@ -803,22 +785,70 @@ intersectRoundExact(field1, field2, iterations) {
   // point far from the edge the steps can reach another point of it where the
   // distance along it is stationary (the far side of a circular edge), whose
   // normals also hold p - c, and this bound, with room for curvature, rejects it.
-  sharp = max(field1(), field2());
+  sharp = max(field1, field2);
   plausible = length(e) * length(n1 + n2) / 2 <= 1.5 * sharp + 0.001;
   return min(w1, w2, sharp) > 0 && plausible ? max(length(e), sharp) : sharp;
 }
 
-/// Exact sharp union of two fields (nullary field1/field2) whose faces may be
-/// curved, the De Morgan dual of intersectRoundExact(field1, field2,
-/// iterations): inside the union and nearest its seam, minus the distance to
-/// the seam's point nearest p. Offset the fields out by r and the result in by
-/// r to round the seam with radius r: unionRoundExact(() { return f1() - r; },
-/// () { return f2() - r; }, 3) + r.
-unionRoundExact(field1, field2, iterations) {
+/// Exact rounded intersection of two fields with fillet
+/// `radius`, for faces that may be curved: the fields are shrunk by the radius,
+/// the exact distance to their intersection is found by `iterations` Newton
+/// steps (edgeDistance), and it is grown back by the radius, so the fillet is
+/// the surface a ball of that radius sweeps rolling along the edge. Pass the
+/// step count as a constant; three are exact to 1e-6 mm where the edge is a
+/// circle, five on a saddle. At radius 0 the field is the sharp intersection's
+/// exact distance.
+intersectRoundExact(field1, field2, radius, iterations) {
+  return edgeDistance(
+    field1 + radius,
+    field2 + radius,
+    iterations) - radius;
+}
+
+/// intersectRoundExact(field1, field2, radius, 4).
+intersectRoundExact(field1, field2, radius) {
+  return intersectRoundExact(field1, field2, radius, 4);
+}
+
+/// Exact rounded union of two fields with fillet
+/// `radius`, for faces that may be curved: the De Morgan dual of
+/// intersectRoundExact(field1, field2, radius, iterations), so the fillet is
+/// the surface a ball of that radius sweeps rolling along the seam, touching
+/// both solids from outside.
+unionRoundExact(field1, field2, radius, iterations) {
   return neg(intersectRoundExact(
-    () { return neg(field1()); },
-    () { return neg(field2()); },
-    iterations));
+    neg(field1),
+    neg(field2),
+    radius, iterations));
+}
+
+/// unionRoundExact(field1, field2, radius, 4).
+unionRoundExact(field1, field2, radius) {
+  return unionRoundExact(field1, field2, radius, 4);
+}
+
+/// Partial application of intersectRoundExact: binds the fillet radius and
+/// returns the intersection operator, ready to hand to a primitive that takes
+/// its own blend and blends two fields, as extrude does its profile and its
+/// slab. The returned operator takes the list of the two fields.
+intersectRoundExact(radius) {
+  return (fields) { return intersectRoundExact(fields[0], fields[1], radius); };
+}
+
+/// intersectRoundExact(radius) with the step count bound too.
+intersectRoundExact(radius, iterations) {
+  return (fields) { return intersectRoundExact(fields[0], fields[1], radius, iterations); };
+}
+
+/// Partial application of unionRoundExact: binds the fillet radius and returns
+/// the union operator over a list of two fields.
+unionRoundExact(radius) {
+  return (fields) { return unionRoundExact(fields[0], fields[1], radius); };
+}
+
+/// unionRoundExact(radius) with the step count bound too.
+unionRoundExact(radius, iterations) {
+  return (fields) { return unionRoundExact(fields[0], fields[1], radius, iterations); };
 }
 
 /// Rvachev R0 intersection of a list of SDFs, gated to a transition band of

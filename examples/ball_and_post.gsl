@@ -2,17 +2,16 @@
 
 // A post rising out of a ball, its junction rounded with an exact fillet.
 //
-// A rolling-ball fillet of radius r between two solids is their union grown
-// by r and then shrunk by r. That needs the exact distance to the grown
-// solids' union near the seam where they meet, which for curved faces means
-// the point of that seam nearest p. unionRoundExact(field1, field2) takes one
-// step toward it, from the faces' tangent planes at p: exact where the faces
-// are flat, but here, where a sphere meets a cylinder, its fillet is off by a
-// few percent of r. The three-argument form, unionRoundExact(field1, field2,
-// iterations), takes Newton steps along the seam: three put the fillet within
-// a millionth of a millimetre of the torus a ball of radius r sweeps around
-// the junction. Each step evaluates both fields again, so the fillet costs
-// several times the one-step form to mesh. Pass the step count as a constant.
+// unionRoundExact(field1, field2, radius, iterations) rounds the seam of a
+// union with a rolling-ball fillet of that radius: the surface a ball of the
+// radius sweeps as it rolls around the junction touching both solids, here a
+// torus tangent to the ball and to the post. It finds the seam's point nearest
+// p by Newton steps; three put this fillet within a millionth of a millimetre
+// of the torus. The five-argument form, which takes the faces' normals and one
+// step, is exact only where the faces are flat: here, where a sphere meets a
+// cylinder, its fillet is off by a few percent of the radius. Each step
+// evaluates both fields again, so the fillet costs several times the one-step
+// form to mesh. Pass the step count as a constant.
 //
 // Try the slider: radius sets the fillet.
 
@@ -24,10 +23,7 @@ radius = 2;
 radius.min = 0.5;
 radius.max = 3;
 
-// The two solids, each grown by the fillet's radius.
-ball = () { return length(p) - ballRadius - radius; };
-post = () { return extrude(circleXY([0, 0], postRadius), 0, postHeight, intersectRound(0)) - radius; };
+ball = length(p) - ballRadius;
+post = extrude(circleXY([0, 0], postRadius), 0, postHeight, intersectRound(0));
 
-// Their union, exact near the seam, shrunk back by the radius: the fillet is
-// the torus whose tube has the given radius, tangent to the ball and the post.
-return unionRoundExact(ball, post, 3) + radius;
+return unionRoundExact(ball, post, radius, 3);

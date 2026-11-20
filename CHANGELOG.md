@@ -9,15 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `intersectRoundExact(field1, field2, iterations)` and `unionRoundExact(field1, field2, iterations)` in builtin:
-  the exact rounds for curved faces. The two- and four-argument forms take one step toward the seam's point
-  nearest p, from the faces' tangent planes, which is exact only where the faces are flat: on a sphere and a
-  plane rounded by 2 their distance is off by up to 0.14 mm. These take `iterations` Newton steps along the
-  seam (each moves to both fields' tangent planes, then slides along the seam to the foot of p), and judge
-  whether p is nearest the seam at the point they reach: three steps are right to 1e-6 mm where the seam is a
-  circle, five where it is not. Steps not taken are dropped at compile time, so pass the count as a constant;
-  each one evaluates both fields again, and fillet/ball-and-post meshes in about 17 to 25 times the CPU of the
-  one-step form. `edgeProject` and `edgeNewtonStep` are their steps. `examples/ball_and_post.gsl` shows them.
+- `intersectRoundExact(field1, field2, radius[, iterations])` and `unionRoundExact(field1, field2, radius[,
+  iterations])` in builtin: exact rolling-ball rounds for curved faces. They find the seam's point nearest p by
+  `iterations` Newton steps (4 when omitted; each moves to both fields' tangent planes, then slides along the
+  seam to the foot of p) and judge whether p is nearest the seam at the point they reach: three steps are right
+  to 1e-6 mm where the seam is a circle, five where it is not, where the one-step form is off by up to 0.14 mm on
+  a sphere and a plane rounded by 2. Steps not taken are dropped at compile time, so pass the count as a
+  constant; each one evaluates both fields again, and fillet/ball-and-post meshes in about 17 to 25 times the
+  CPU of the one-step form. `intersectRoundExact(radius[, iterations])` and `unionRoundExact(radius[,
+  iterations])` bind the radius and return the operator, to hand a primitive that blends two fields, as
+  `extrude` does. `edgeDistance`, `edgeProject` and `edgeNewtonStep` are their parts.
+  `examples/ball_and_post.gsl` shows them.
 - `nested(fields)` combines exact fields whose surfaces do not cross, each wound with its solid on the negative
   side (counterclockwise outlines and islands, clockwise holes), into one exact distance in any order: an outline
   with holes in a single profile, or a 3D solid with a void.
@@ -45,6 +47,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The exact rounds take field values, like every other blend, and a radius: `unionRoundExact(field1, field2,
+  radius, normal1, normal2)` and `intersectRoundExact(...)` are the one-step forms that were `(field1, field2,
+  normal1, normal2)` and took their fields as nullary functions; the two-argument forms, which took the normals
+  from the fields' gradients, are gone, replaced by the forms above. At radius 0 they are the sharp union's or
+  intersection's exact distance, as before: `unionRoundExact(a, b, 0, a.dp, b.dp)` is what
+  `unionRoundExact(() { return a; }, () { return b; })` was.
 - The fast chamfers' parameter is named `offset`, not `setback`, in builtin's `intersectChamfer`,
   `unionChamfer`, `differenceChamfer`, `intersectChamferEdges`, `intersectChamferVertices`, their union
   counterparts, and the `ChamferRound` and `ChamferBlend` families (`[edgeOffset, vertexOffset]` for the

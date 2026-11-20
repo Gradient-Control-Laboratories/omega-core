@@ -136,12 +136,12 @@ func maxAbsError(got, want []float64) float64 {
 }
 
 func intersectRoundExactSource(g spineGeometry, iterations int) string {
-	return fmt.Sprintf("import . \"omega\";\ng1 = () { return %s; };\ng2 = () { return %s; };\nreturn intersectRoundExact(g1, g2, %d);\n",
+	return fmt.Sprintf("import . \"omega\";\ng1 = %s;\ng2 = %s;\nreturn intersectRoundExact(g1, g2, 0, %d);\n",
 		g.g1, g.g2, iterations)
 }
 
 // Near each round, the iterated form's distance to E is right to single precision in three steps
-// where Γ is a circle and in five on the tee's saddle; the two-argument form's is off by up to 7%
+// where Γ is a circle and in five on the tee's saddle; the one-step form's is off by up to 7%
 // of the round's radius.
 func TestIntersectRoundExactIterations_SeamDistance(t *testing.T) {
 	rng := rand.New(rand.NewPCG(1, 2))
@@ -149,23 +149,23 @@ func TestIntersectRoundExactIterations_SeamDistance(t *testing.T) {
 	for _, g := range spineGeometries() {
 		xs, ys, zs, want := seamSamples(t, g, 400, rng)
 		today := maxAbsError(evalRound(t, assembleRound(t,
-			fmt.Sprintf("import . \"omega\";\ng1 = () { return %s; };\ng2 = () { return %s; };\nreturn intersectRoundExact(g1, g2);\n", g.g1, g.g2)),
+			fmt.Sprintf("import . \"omega\";\ng1 = %s;\ng2 = %s;\nreturn intersectRoundExact(g1, g2, 0, g1.dp, g2.dp);\n", g.g1, g.g2)),
 			xs, ys, zs), want)
 		got := maxAbsError(evalRound(t, assembleRound(t, intersectRoundExactSource(g, steps[g.name])), xs, ys, zs), want)
-		t.Logf("%s: %d steps %.2e, two-argument form %.2e", g.name, steps[g.name], got, today)
+		t.Logf("%s: %d steps %.2e, one-step form %.2e", g.name, steps[g.name], got, today)
 		if got > 2e-5 {
 			t.Errorf("%s: %d steps, error %.2e, want under 2e-5", g.name, steps[g.name], got)
 		}
 	}
 }
 
-// One step's distance to the edge is the two-argument form's: wherever both take the edge's
+// One step's distance to the edge is the five-argument form's: wherever both take the edge's
 // branch (their region tests differ, the iterated one judging at c), they agree.
-func TestIntersectRoundExactIterations_OneStepIsTheTwoArgumentFormsDistance(t *testing.T) {
+func TestIntersectRoundExactIterations_OneStepIsTheFiveArgumentFormsDistance(t *testing.T) {
 	rng := rand.New(rand.NewPCG(3, 4))
 	for _, g := range spineGeometries() {
 		xs, ys, zs, _ := seamSamples(t, g, 200, rng)
-		two := evalRound(t, assembleRound(t, twoArgumentSource(g)), xs, ys, zs)
+		two := evalRound(t, assembleRound(t, oneStepSource(g)), xs, ys, zs)
 		one := evalRound(t, assembleRound(t, intersectRoundExactSource(g, 1)), xs, ys, zs)
 		sharp := evalRound(t, assembleRound(t,
 			fmt.Sprintf("import . \"omega\";\nreturn max(%s, %s);\n", g.g1, g.g2)), xs, ys, zs)
@@ -184,8 +184,8 @@ func TestIntersectRoundExactIterations_OneStepIsTheTwoArgumentFormsDistance(t *t
 	}
 }
 
-func twoArgumentSource(g spineGeometry) string {
-	return fmt.Sprintf("import . \"omega\";\ng1 = () { return %s; };\ng2 = () { return %s; };\nreturn intersectRoundExact(g1, g2);\n", g.g1, g.g2)
+func oneStepSource(g spineGeometry) string {
+	return fmt.Sprintf("import . \"omega\";\ng1 = %s;\ng2 = %s;\nreturn intersectRoundExact(g1, g2, 0, g1.dp, g2.dp);\n", g.g1, g.g2)
 }
 
 // meridianDistance is the signed distance, in a meridian half-plane (ρ >= 0, z), to a region
@@ -275,8 +275,8 @@ func TestIntersectRoundExactIterations_WholeField(t *testing.T) {
 			xs[i], ys[i], zs[i] = float32(pt[0]), float32(pt[1]), float32(pt[2])
 			want[i] = c.oracle([3]float64{float64(xs[i]), float64(ys[i]), float64(zs[i])})
 		}
-		today := evalRound(t, assembleRound(t, twoArgumentSource(c.g)), xs, ys, zs)
-		t.Logf("%s, two-argument form: worst %.2e", c.g.name, maxAbsError(today, want))
+		today := evalRound(t, assembleRound(t, oneStepSource(c.g)), xs, ys, zs)
+		t.Logf("%s, one-step form: worst %.2e", c.g.name, maxAbsError(today, want))
 		for _, iterations := range []int{1, 3, 5} {
 			got := evalRound(t, assembleRound(t, intersectRoundExactSource(c.g, iterations)), xs, ys, zs)
 			worst, at := 0.0, 0
@@ -443,4 +443,21 @@ func scale(a [3]float64, s float64) [3]float64 { return [3]float64{a[0] * s, a[1
 
 func normalized(a [3]float64) [3]float64 {
 	return scale(a, 1/math.Sqrt(a[0]*a[0]+a[1]*a[1]+a[2]*a[2]))
+}
+
+// The partial form hands a primitive an exact round as its blend: an extruded disk's rims rounded
+// by intersectRoundExact(1) are the rims intersectRound(1) gives, which is exact there, the side
+// and the caps meeting square.
+func TestIntersectRoundExactPartialFormAsABlend(t *testing.T) {
+	exact := assembleRound(t, "import . \"omega\";\nreturn extrude(circleXY([0, 0], 5), 0, 10, intersectRoundExact(1));\n")
+	plain := assembleRound(t, "import . \"omega\";\nreturn extrude(circleXY([0, 0], 5), 0, 10, intersectRound(1));\n")
+	rng := rand.New(rand.NewPCG(9, 10))
+	const n = 2000
+	xs, ys, zs := make([]float32, n), make([]float32, n), make([]float32, n)
+	for i := range n {
+		xs[i], ys[i], zs[i] = float32(rng.Float64()*14-7), float32(rng.Float64()*14-7), float32(rng.Float64()*14-2)
+	}
+	if e := maxAbsError(evalRound(t, exact, xs, ys, zs), evalRound(t, plain, xs, ys, zs)); e > 2e-5 {
+		t.Errorf("extrude with intersectRoundExact(1) differs from intersectRound(1) by %.2e", e)
+	}
 }
