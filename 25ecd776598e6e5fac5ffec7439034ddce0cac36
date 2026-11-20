@@ -1,0 +1,22 @@
+Phase 6 (Joint Blends) verification report
+
+Automated: go vet ./eval/ ./stdlib/... ./internal/closure/ && go test ./... -count=1 -> all ok.
+New: eval/shaft_blends_test.go, eval/fold_previous_test.go, internal/closure/fold_previous_test.go;
+examples/shaft_blended.gsl.
+- Compiler: internal/closure/unroll.go hands a reduce over functions the previous element as an optional
+  4th callback argument (the first is handed itself); closure test + numeric test (46) pass. Owner's call.
+- Fillet (r 2) at a 20/40 shoulder: exact outside, worst 1e-6 mm over 36157 points, 0 wrong side.
+- Chamfer (c 2): worst 9.5e-7 mm over 34938 points. Control (plain shoulder vs sharp meridian) 9.5e-7.
+- |grad f| within 1.9e-7 (fillet) and 1.3e-7 (chamfer) of 1, outside within 1.5 mm of the blend.
+- No sheet: 1108 / 1116 joint points read solid; 1/sqrt2 depth beyond the blend's size from the corner.
+- Rest unchanged where the true distance is: worst 6e-8 mm (fillet), 0 (chamfer).
+- Two Red tests corrected with the owner's approval: the chamfer changes the true distance in a strip
+  along the bisector (~3.4c); the blend's own material deepens the solid near the corner.
+- Cost: shipped shaft examples' WGSL identical up to temp numbering (turned 18770, hobbed 55714, pinion
+  96651, end holes 27056, threaded 9807 B by the CLI). Five fillets on six segments +1399 B (12710 ->
+  14109). shaft_blended 15128 B.
+- Found on the way: a number in a fold accumulator is a runtime select; field-argument closure calls
+  emit generic functions (up to +8.5 KB); a pruned ': nothing' operand leaves min(..., 1e5) behind.
+
+Manual verification: owner's viewer check of examples/shaft_blended.gsl on the 9001 viewer.
+User confirmation: chose 'Looks right: checkpoint', the owner, 2026-11-20.
