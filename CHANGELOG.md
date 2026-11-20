@@ -38,6 +38,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   distances by the curve's parameter and scaled by it, so the field was not a distance bound, and they carried no
   frame, box or material. A document that needs them can keep a copy in its own library.
 
+### Fixed
+
+- `gears.gearProfile` chamfers its tooth tips with `intersectChamferNormalized`, given the flank's and the
+  tip circle's normals at the edge, in place of `intersectChamfer`. The flank meets the tip circle at an
+  obtuse edge, where `intersectChamfer`'s bevel, scaled for a right angle, has a gradient above 1; the
+  normalized bevel has unit gradient there. The surface is unchanged. Gear and bevel-gear WGSL grows by
+  586 bytes.
+
 ## [0.1.3] - 2026-11-17
 
 ### Added
