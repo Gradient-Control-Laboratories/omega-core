@@ -143,6 +143,20 @@ faces: the cut's end cap where nothing stands beyond it (contours stepping at a 
 them returns the fold to the finished prisms. It was also slower: on the CPU, 94 against 90 ns a point
 for the pinion and 37 against 27 for a hobbed runout, with the larger shader (105,041 against 102,557 B).
 
+**Threads (Phase 5, approved 2026-11-20).** `shaft.thread(major, pitch, from, to)` is `thread.male`, the
+exact ISO 68-1 field, as a prism segment; it engages `drill.tap` of the same size flank to flank. Its
+ends take the same values, and one more: `shaft.threadRunout(length)`, the runout a lathe tool or a die
+leaves as it retracts, the groove's floor rising in a straight line from the root to the major diameter
+over `length` (ISO 4755 gives about 2.5 pitches). It is cut after the fold as a cutter's runout is, a
+line in the half-section in place of the cutter's disc. A thread-milled thread can use
+`shaft.runout(cutterDia)`.
+
+As built: the runout's cut is the groove (outside `thread.male`) within the triangle the line closes in
+the half-section, past the end plane and inside the major diameter; unbounded, it would cut the groove
+back through the whole shaft. A neighbour wider than the major within the runout's length is not
+grooved above the major, where a real tool would crash. In `shaft.gsl` the thread package is imported
+as `isoThread`, since `thread` names the segment there.
+
 ### 3.5 What falls out of the construction
 
 - A retaining-ring groove or a shoulder undercut is a short, smaller segment.

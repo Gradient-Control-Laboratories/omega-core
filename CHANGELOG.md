@@ -27,7 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   helical). `shaft.body(segments)` joins them with no surface inside the solid at any joint, whatever the
   convexity on either side. `shaft.body(segments, bottomHole, topHole)` cuts a `drill` hole stack into each end
   face. Gears and splines can name their ends: `shaft.runout(cutterDia)` runs the gaps on into the neighbour
-  along the cutter's arc, and `shaft.chamferEnd(size)` chamfers the tips.
+  along the cutter's arc, and `shaft.chamferEnd(size)` chamfers the tips. `shaft.thread(major, pitch, from,
+  to)` cuts an ISO 68-1 thread (`thread.male`) that engages `drill.tap` of the same size; its ends can be
+  chamfered or run out as a lathe tool retracts, `shaft.threadRunout(length)`.
 
 ### Changed
 

@@ -174,11 +174,20 @@ treatment), the phase opens with a proposal for the owner to approve before any 
 
 ## Phase 5: Threads
 
-- [ ] Task: Write failing tests (Red Phase): a thread segment from `thread.male` is exact between its
-      runouts; it engages a `drill.tap` of the same size (`thread.engaged`)
-- [ ] Task: Implement (Green & Refactor Phase)
-- [ ] Task: An example; WGSL size; the owner's viewer check
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Proposal (approved 2026-11-20): `shaft.thread(major, pitch, from, to[, bottomEnd, topEnd])`,
+      `thread.male` as a prism segment; ends `planeEnd`, `chamferEnd`, `runout(cutterDia)` and a new
+      `threadRunout(length)`, whose groove floor rises in a straight line from the root to the major
+      diameter (a lathe tool or a die retracting), cut after the fold (spec 3.4)
+- [x] Task: Write failing tests (Red Phase): a thread segment from `thread.male` is exact between its
+      runouts; it engages a `drill.tap` of the same size (`thread.engaged`); a thread runout follows its
+      line into a larger neighbour and reads as a void; a chamfered start; no sheet on the joints
+- [x] Task: Implement (Green & Refactor Phase): `thread` both ways, `threadRunout`, `threadedSegment`
+      (the runout cut is the groove within the triangle the floor's line closes in the half-section:
+      past the end plane, inside the major diameter); the thread package imported as `isoThread`,
+      since `thread` names the segment in shaft.gsl
+- [x] Task: `examples/shaft_threaded.gsl` (M10x1.5, chamfered start, runout into the neck, shoulder,
+      journal); WGSL 15,609 B; the owner's viewer check
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 6: Joint Blends
 

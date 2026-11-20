@@ -1,0 +1,22 @@
+@scene(120)
+
+// A threaded shaft end. An M10 x 1.5 thread at the left, chamfered where it
+// starts so a nut finds it, and run out at its other end as a lathe tool
+// retracts: the groove's floor rises in a straight line from the root to the
+// major diameter, here over 2.5 pitches, into the plain neck beside it. Then a
+// shoulder for the nut to seat against, and a journal. Every segment is placed
+// by the two planes it runs between, measured from the left end. Lengths are
+// in mm.
+
+@range(0, 2) threadChamfer = 1.0;
+@range(0, 8) runoutLength = 3.75;
+
+threadedShaft = shaft.body(
+  [shaft.thread(10.0, 1.5, 0.0, 20.0, shaft.chamferEnd(threadChamfer), shaft.threadRunout(runoutLength)),
+   shaft.diameter(10.0, 20.0, 26.0),
+   shaft.diameter(18.0, 26.0, 40.0),
+   shaft.diameter(14.0, 40.0, 70.0)]);
+threadedShaft.color = [0.58, 0.60, 0.64];
+
+// Laid along X and centred, so the viewer frames the whole shaft.
+return remap(threadedShaft, [p.z, p.y, 35.0 - p.x]);
