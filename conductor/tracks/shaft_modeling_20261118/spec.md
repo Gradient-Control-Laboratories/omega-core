@@ -190,6 +190,22 @@ neighbours unchanged, and `shaft.fillet` between pin and web is the exact arc, t
 to the web's face. Tested as Phase 6: exact outside against the min of the capped prisms' exact
 distances, a unit gradient outside, no sheet on the joints, the pin fillet's arc.
 
+**Bearings and bushings (Phase 9, approved 2026-11-20).** A new package, `stdlib/mechanical/bearing`, in
+the catalog's pattern: one table per standard, rows found with `catalog.onRow`, every column cited, and
+tests holding transcribed rows to their sources. Deep-groove ball bearings, series 60, 62 and 63, bore codes
+00 to 10 (d 10 to 50), keyed by designation (`bearing.outerDia(6205)`): d, D, B and r_s min from ISO 15, and
+the abutment columns ISO 15 does not give (shoulder d_a min, fillet r_a max) from a maker's catalogue.
+`bearing.deepGroove(designation, at)` looks like a bearing: two rings with raceway grooves and one ball
+repeated round the pitch circle by the polar pattern, so its cost does not grow with the count, and no
+cage; ball size 0.3(D - d) and count from a spacing of 1.5 ball diameters on the pitch circle, an
+approximation labelled as one, not a sourced value. `bearing.deepGrooveEnvelope(designation, at)` is the
+simplified version, the boundary-dimension ring rounded by r_s, exact: for proofs, meshing and assemblies.
+Plain bushes, ISO 4379 forms C and F: bore d1, outside d2, flange d3 and b2 from the table, the length the
+caller's. The seat is segments that exist: a journal at the bore, `shaft.fillet` within r_a max, a shoulder
+at d_a min, and a retaining-ring groove from a DIN 471 table (groove diameter and width). Fits are nominal,
+line to line; `joint.cylindrical`'s fits are ISO 273 screw clearances, not bearing fits, and ISO 286 is
+recorded for later.
+
 ### 3.5 What falls out of the construction
 
 - A retaining-ring groove or a shoulder undercut is a short, smaller segment.

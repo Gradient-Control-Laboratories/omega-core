@@ -231,14 +231,26 @@ treatment), the phase opens with a proposal for the owner to approve before any 
 
 ## Phase 9: Bearings and Bushings
 
-- [ ] Task: Proposal: the `stdlib/mechanical/bearing` package. It covers seat segments (journal,
-      locating shoulder, retaining-ring groove) and bodies from ISO tables (ISO 15 deep-groove first),
-      with sources for every table
-- [ ] Task: Write failing tests (Red Phase): a bearing body seats on its journal under a
-      `joint.cylindrical` fit; table values against their sources
-- [ ] Task: Implement (Green & Refactor Phase)
-- [ ] Task: An example: a shaft on two bearings; WGSL size; the owner's viewer check
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Proposal (approved 2026-11-20): `stdlib/mechanical/bearing`; deep-groove 60/62/63, d 10-50
+      (ISO 15 + a maker's abutment columns); a detailed body (rings, raceways, balls by polar repeat) and an
+      envelope; ISO 4379 bushes C and F; DIN 471 grooves; nominal fits (ISO 286 later; `joint.cylindrical`
+      is ISO 273 screw clearance, not a bearing fit) (spec 3.4)
+- [x] Task: Write failing tests (Red Phase), `eval/bearing_test.go`: the three tables row by row against
+      their sources (SKF 2018 + NTN-SNR for ISO 15's columns, SKF for abutment; DIN 471:2011 via Westfield and
+      Mädler; ISO 4379:2018 itself); the ball rule; the envelope exact; the detailed body within it, balls
+      and gaps where the rule puts them; a 6205 seats on journal and shoulder (proven) and a fillet past the
+      chamfer is disproven; bushes (series argument) exact and seated; a control for the rounded ring
+- [x] Task: Implement (Green & Refactor Phase): `stdlib/mechanical/bearing` (three sourced tables via
+      `catalog.onRow`; `deepGroove` and `deepGrooveEnvelope`; Type C and F bushes and their envelopes, the
+      flanged one a `profileXY` turned about the axis), registered in `pkg_info.go` and the mechanical index.
+      Two tests corrected with the owner's approval: seat proofs run with a 20M-evaluation certify budget
+      (1-4 s each); detailed-within-envelope is sampled, not proven, since intervals cannot separate
+      coincident surfaces
+- [x] Task: An example: a shaft on two bearings (`examples/shaft_bearings.gsl`: two 6205s on journals
+      against shoulders, a DIN 471 groove, a flanged bush, a detail slider); WGSL 54,202 B; the owner's
+      viewer check. Its test found a flanged-bush chamfer cutting the tube; fixed, and a mid-length check
+      added to the bush test with the owner's approval
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 10: Box Override and Simplified Model
 
