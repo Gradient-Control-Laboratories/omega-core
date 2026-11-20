@@ -1,0 +1,18 @@
+Phase 8 (Cranks) verification report
+
+Automated: go vet ./eval/ ./stdlib/... ./internal/closure/ && go test ./... -count=1 -> all ok.
+New: eval/shaft_cranks_test.go; examples/shaft_crank.gsl. Phase 7 skipped for now (the owner's call).
+- shaft.eccentric(28, offset 40, 0.7 rad) alone: exact inside and out, worst 1.1e-5 mm over 56350 points.
+- shaft.web(25, 18, 40, 0.7) alone: worst 3.5e-5 mm over 36064 points, against the convex hull of
+  2000 points per circle (sag <= 3.1e-5); hull polygon vs closed-form capsule control 2.5e-5.
+- Single-throw crank (journals 30, webs 25/18, pin 28): exact outside, worst 3.3e-5 mm over 56716 points,
+  0 on the wrong side; coaxial control 7.4e-6.
+- |grad f| within 1.7e-7 of 1 outside within 3 mm (12922 points).
+- No sheet on the four joints: 10506 points read solid and reach 1/sqrt2 of a lower bound of the true depth.
+- Pin fillet (2 mm): the exact arc on the pin's outer side, worst 2.9e-6 mm over 5868 points.
+- The web's section has no selects (clamp in place of branches).
+- Shipped shaft examples' WGSL unchanged up to temp numbering. shaft_crank 22437 B.
+- Parameter renamed throw -> offset (throw is a reserved word for document names; the owner's call).
+
+Manual verification: owner's viewer check of examples/shaft_crank.gsl on the 9001 viewer.
+User confirmation: chose 'Looks right: checkpoint', the owner, 2026-11-20.
