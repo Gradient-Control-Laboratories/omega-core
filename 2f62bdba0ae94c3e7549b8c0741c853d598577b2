@@ -1,0 +1,18 @@
+Phase 4 (End Treatments) verification report
+
+Automated: go vet ./eval/ ./stdlib/... ./internal/closure/ && go test ./... -count=1 -> all ok.
+New: eval/shaft_ends_test.go; examples/shaft_hobbed.gsl.
+- Hob runout (20 teeth m2 into a 50 shoulder, hob 80): gap floor on the cutter's arc and tooth plane cut
+  to the tip within reach, worst 5.1e-6 mm over 160 heights; band of 774 points reads empty.
+- Spline runout (6x16x20x4 into a 26 shoulder, cutter 60): worst 1.8e-6 mm; band of 330 points empty.
+- Chamfered tooth end (1 mm): tip at tip - (c - d), worst 2.2e-6 mm; gaps unchanged.
+- Plane ends: hex, d-flat, double-d, spline alone and between neighbours, and the gear, 0 points on the
+  wrong side. No sheet on the hobbed gear's joints (11994 points). Every Phase 0-3 test unchanged, passing.
+- Found and fixed: the active runout was gated with max(disc, 0), a zero band, not a void; the surface
+  tests missed it because -0 is not < 0. The void check now catches it (774/774 and 330/330 with the bug).
+- Design: B1 (round blanks in the fold) tried and dropped for phantom faces (up to 3 mm short) and slower
+  evaluation (CPU 94 vs 90 ns/pt pinion, 37 vs 27 hobbed); owner chose the hybrid.
+- WGSL: shaft_hobbed 61568; pinion 102557 (+961); turned 24780; end holes 33014.
+
+Manual verification: owner's viewer check of examples/shaft_hobbed.gsl.
+User confirmation: "looks great", the owner, 2026-11-19.
