@@ -172,7 +172,7 @@ treatment), the phase opens with a proposal for the owner to approve before any 
 - [x] Task: `examples/shaft_hobbed.gsl`; WGSL size; the owner's viewer check
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
-## Phase 5: Threads
+## Phase 5: Threads [checkpoint: f690d4a]
 
 - [x] Task: Proposal (approved 2026-11-20): `shaft.thread(major, pitch, from, to[, bottomEnd, topEnd])`,
       `thread.male` as a prism segment; ends `planeEnd`, `chamferEnd`, `runout(cutterDia)` and a new
