@@ -1,0 +1,18 @@
+Phase 5 (Threads) verification report
+
+Automated: go vet ./eval/ ./stdlib/... ./internal/closure/ && go test ./... -count=1 -> all ok.
+New: eval/shaft_threads_test.go; examples/shaft_threaded.gsl.
+- shaft.thread equals thread.male between its planes: 32340 points within 0.9 mm, worst miss 0.
+- Engages drill.tap: certify proves stud + tapped plate within thread.engaged (margin 0.1); disproves without.
+- threadRunout(2.5) into a neck at the major: groove floor on its line within 3.4e-7 mm, crest 1.3e-7 mm,
+  over 160 heights; band of 590 points reads empty (> 0.005).
+- chamferEnd(0.6) start: crest within 2e-7 mm over 32 heights.
+- No sheet on the joints (4562 points). Every Phase 0-4 test unchanged, passing; no golden moved.
+- Design as built: the runout cut is the groove within the triangle the line closes in the half-section
+  (past the end plane, inside the major). machinedSegment untouched; thread package imported as isoThread.
+- WGSL: shaft_threaded 15609; shaft_hobbed unchanged 61568.
+- Found, not fixed: the PNG renderer's auto-framing (eval/fidget_render.go frameCanvas) crops stepped
+  shafts, threaded or plain; with --extent the thread renders whole. Outside this track.
+
+Manual verification: owner's viewer check of examples/shaft_threaded.gsl on the 9001 viewer.
+User confirmation: chose 'Checkpoint Phase 5' (the viewer looks right), the owner, 2026-11-20.
