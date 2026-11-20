@@ -1,0 +1,22 @@
+Phase 9 (Bearings and Bushings) verification report
+
+Automated: go vet ./eval/ ./stdlib/... ./internal/closure/ && go test ./... -count=1 -> all ok.
+New: stdlib/mechanical/bearing; eval/bearing_test.go; examples/shaft_bearings.gsl.
+- Tables against their sources: 232 deep-groove values (SKF 2018 + NTN-SNR for ISO 15 columns, SKF for
+  abutment), 88 DIN 471 (Westfield + Mädler, 2011 edition), 250 ISO 4379 (the 2018 standard), 0 wrong;
+  missing sizes return 0.
+- Ball approximation: 6205 -> 9 balls of 8.1, 6204 -> 8.
+- 6205 envelope exact, worst 3.7e-6 mm over 103917 points; rounded-ring control 7.7e-8.
+- Detailed 6205 within its envelope on 407040 sampled points (sampled, not proven: coincident surfaces);
+  ball centres read -Dw/2, gaps between balls empty, bore and OD match the envelope.
+- 6205 seats on journal (bore) and shoulder (d_a min, fillet r_a max) without interference, proven for
+  envelope and detail (certify budget 20M, 1-4 s); a fillet of chamfer + 1 is disproven.
+- Bushes C (series 2) and F (series 1) for d1 20: envelopes exact (1e-6), detail within (655720 points
+  each), equal half way along; each seats on its journal, proven.
+- Found by the example's test: the flanged bush's top rim chamfer cut its tube (4.7 mm wrong); fixed; a
+  flanged mid-length check added to the bush test (owner's approval), shown to fail with the bug restored.
+- Test edits with the owner's approval: certify budget 20M for seats; within-envelope sampled.
+- Shipped shaft examples' WGSL unchanged. shaft_bearings 54202 B.
+
+Manual verification: owner's viewer check of examples/shaft_bearings.gsl on the 9001 viewer.
+User confirmation: chose 'Looks right: checkpoint', the owner, 2026-11-20.
