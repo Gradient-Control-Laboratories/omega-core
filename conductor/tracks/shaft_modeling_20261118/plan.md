@@ -229,7 +229,7 @@ treatment), the phase opens with a proposal for the owner to approve before any 
       the offset and its angle); WGSL 22,437 B; the owner's viewer check
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
-## Phase 9: Bearings and Bushings
+## Phase 9: Bearings and Bushings [checkpoint: 0e6c8bc]
 
 - [x] Task: Proposal (approved 2026-11-20): `stdlib/mechanical/bearing`; deep-groove 60/62/63, d 10-50
       (ISO 15 + a maker's abutment columns); a detailed body (rings, raceways, balls by polar repeat) and an
