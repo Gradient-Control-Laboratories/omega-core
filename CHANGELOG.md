@@ -321,6 +321,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   until a pass folds a property's expression to a new one; the range kept the old tree, which read `hi`, and `hi` was
   removed as dead. Slider extraction now reads such a range's bounds from the properties as the passes left them
   (`Assignment.LiveRange`).
+- A gradient's interval bound is no longer NaN over a box that holds a length's zero. The derivative of
+  `length`, `distance` and the cellular F1, F2 and wall fields divided by the norm with a guard that holds at a
+  point but not over an interval, so `.dp` of a circle, a cylinder or a ball read NaN over any box holding its
+  axis or centre, and up to 1e16 near it. It is now the clamped unit vector dotted with the tangent, bounded by
+  the tangent's length over any box; no value changes. `clamp`'s derivative compares the clamped value with its
+  argument, not the argument with the bounds, so it differentiates a vector clamped by scalar bounds.
 
 ## [0.1.3] - 2026-11-17
 
