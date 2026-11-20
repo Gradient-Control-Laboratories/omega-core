@@ -202,27 +202,36 @@ arcTwoPointTangentExtendedXY(pointA, pointB, tangentA) {
 // corner that turns by less than a millionth of a radian faces neither way.
 //
 // profileXY reads the two pools only for the sign, and takes the distance from
-// a third pass that counts every feature whichever way it faces. Over a cell
+// a third pool that counts every feature whichever way it faces. Over a cell
 // the profile's edge runs through, that edge is undecided in both pools and
-// neither is bounded by it; the third pass is, so the result is bounded by the
+// neither is bounded by it; the third pool is, so the result is bounded by the
 // distance to the edge and not by nothing.
-profilePoolXY(points, whenOutside, whenInside) {
+//
+// The three pools are filled in one pass, [outside, inside, nearest]: each
+// feature is computed once and offers itself to all three (profileSidedXY),
+// the nearest pool by a constant gate of its own. Three passes, one per pool,
+// computed every feature three times.
+profilePoolsXY(points) {
   count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
-  return reduce([nothing, 0], (nearest, start, index) {
-    previous = points[mod(index - 1 + count, count)];
-    end = points[mod(index + 1, count)];
-    incoming = start - previous;
-    edge = end - start;
-    offset = p.xy - start;
-    edgeLength = length(edge);
-    along = dot(offset, edge) / edgeLength;
-    turn = (incoming.x * edge.y - incoming.y * edge.x) / (length(incoming) * edgeLength);
-    side = offset.x * edge.y - offset.y * edge.x;
-    cornerDistance = max(length(offset), turn > 1e-6 ? whenOutside : (turn < neg(1e-6) ? whenInside : nothing));
-    lineDistance = abs(side) / edgeLength + 2 * max(0, neg(along), along - edgeLength);
-    edgeDistance = max(lineDistance, side >= 0 ? whenOutside : whenInside);
-    return [min(nearest.x, cornerDistance, edgeDistance), 0];
-  }, points).x;
+  return reduce([nothing, nothing, nothing], (pools, start, index) {
+    return min(pools, profilePolygonStepXY(points[mod(index - 1 + count, count)], start, points[mod(index + 1, count)]));
+  }, points);
+}
+
+// The corner at `start`, between the edge from `previous` and the edge to
+// `end`, and that edge, as profilePoolsXY takes them: their least offer to
+// each pool.
+profilePolygonStepXY(previous, start, end) {
+  incoming = start - previous;
+  edge = end - start;
+  offset = p.xy - start;
+  edgeLength = length(edge);
+  along = dot(offset, edge) / edgeLength;
+  turn = (incoming.x * edge.y - incoming.y * edge.x) / (length(incoming) * edgeLength);
+  side = offset.x * edge.y - offset.y * edge.x;
+  lineDistance = abs(side) / edgeLength + 2 * max(0, neg(along), along - edgeLength);
+  return min(profileVertexSidedXY(start, turn),
+             profileSidedXY(lineDistance, side >= 0 ? 0 : nothing, side >= 0 ? nothing : 0, 0));
 }
 
 /// Closed polygon profile in the XY plane, convex or concave: the exact signed
@@ -232,10 +241,8 @@ profilePoolXY(points, whenOutside, whenInside) {
 /// X and Y. Its frame: .u the distance along the loop, from its first point,
 /// to the point of the loop nearest p, in mm.
 profileXY(points) {
-  outside = profilePoolXY(points, 0, nothing);
-  inside = profilePoolXY(points, nothing, 0);
-  nearest = profilePoolXY(points, 0, 0);
-  form = outside <= inside ? nearest : neg(nearest);
+  pools = profilePoolsXY(points);
+  form = pools.x <= pools.y ? pools.z : neg(pools.z);
   low, high = profileBoundsXY(points);
   form.box = [[low.x, low.y, neg(nothing)], [high.x, high.y, nothing]];
   form.u = profileRunXY(points);
@@ -291,7 +298,7 @@ profileLengthXY(points) {
   }, points).x;
 }
 
-// profilePoolXY for a loop whose edges may be arcs: edge i, from point i to
+// profilePoolsXY for a loop whose edges may be arcs: edge i, from point i to
 // the next, has signed curvature curvatures[i]. An edge is a piece of a
 // circline through its start, with tangent T there and normal N to its right:
 // F = N . offset + curvature / 2 * |offset|^2 is zero on it, a line at
@@ -311,46 +318,49 @@ profileLengthXY(points) {
 // the edge keeps a finite bound everywhere, and it is zero all over an edge's
 // own region and all round a straight edge. A corner's turn is between
 // the tangents that meet there, so an arc that leaves a line tangentially
-// has no corner, as a point on a straight side has none.
-profileArcPoolXY(points, curvatures, whenOutside, whenInside) {
+// has no corner, as a point on a straight side has none. The three pools are
+// filled in one pass, as profilePoolsXY fills them.
+profileArcPoolsXY(points, curvatures) {
   count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
-  return reduce([nothing, 0], (nearest, start, index) {
+  return reduce([nothing, nothing, nothing], (pools, start, index) {
     previousIndex = mod(index - 1 + count, count);
-    previous = points[previousIndex];
-    end = points[mod(index + 1, count)];
+    return min(pools, profileArcStepXY(points[previousIndex], start, points[mod(index + 1, count)],
+                                       curvatures[previousIndex], curvatures[index]));
+  }, points);
+}
 
-    curvature = curvatures[index];
-    chord = end - start;
-    chordLength = length(chord);
-    along = chord / chordLength;
-    sine = curvature * chordLength / 2;
-    cosine = sqrt(max(1 - sine * sine, 0));
-    startTangent = [along.x * cosine + along.y * sine, along.y * cosine - along.x * sine];
-    endTangent = [along.x * cosine - along.y * sine, along.y * cosine + along.x * sine];
+// The corner at `start` and the edge leaving it to `end`, bent to
+// `curvature`, as profileArcPoolsXY takes them: their least offer to each
+// pool.
+profileArcStepXY(previous, start, end, previousCurvature, curvature) {
+  chord = end - start;
+  chordLength = length(chord);
+  along = chord / chordLength;
+  sine = curvature * chordLength / 2;
+  cosine = sqrt(max(1 - sine * sine, 0));
+  startTangent = [along.x * cosine + along.y * sine, along.y * cosine - along.x * sine];
+  endTangent = [along.x * cosine - along.y * sine, along.y * cosine + along.x * sine];
 
-    previousChord = start - previous;
-    previousLength = length(previousChord);
-    previousAlong = previousChord / previousLength;
-    previousSine = curvatures[previousIndex] * previousLength / 2;
-    previousCosine = sqrt(max(1 - previousSine * previousSine, 0));
-    incoming = [previousAlong.x * previousCosine - previousAlong.y * previousSine, previousAlong.y * previousCosine + previousAlong.x * previousSine];
-    turn = incoming.x * startTangent.y - incoming.y * startTangent.x;
+  previousChord = start - previous;
+  previousLength = length(previousChord);
+  previousAlong = previousChord / previousLength;
+  previousSine = previousCurvature * previousLength / 2;
+  previousCosine = sqrt(max(1 - previousSine * previousSine, 0));
+  incoming = [previousAlong.x * previousCosine - previousAlong.y * previousSine, previousAlong.y * previousCosine + previousAlong.x * previousSine];
+  turn = incoming.x * startTangent.y - incoming.y * startTangent.x;
 
-    offset = p.xy - start;
-    carrier = offset.x * startTangent.y - offset.y * startTangent.x + curvature / 2 * dot(offset, offset);
-    carrierDistance = 2 * carrier / (1 + sqrt(max(1 + 2 * curvature * carrier, 0)));
-    fromEnd = p.xy - end;
-    startOvershoot = neg(dot(offset, startTangent));
-    endOvershoot = dot(fromEnd, endTangent);
-    overshoot = max(0, startOvershoot, endOvershoot);
-    startDepth = 1 + curvature * (offset.x * startTangent.y - offset.y * startTangent.x);
-    endDepth = 1 + curvature * (fromEnd.x * endTangent.y - fromEnd.y * endTangent.x);
-    behindCenter = max(0, neg(max(startDepth, endDepth))) / max(abs(curvature), 1e-30);
+  offset = p.xy - start;
+  carrier = offset.x * startTangent.y - offset.y * startTangent.x + curvature / 2 * dot(offset, offset);
+  carrierDistance = 2 * carrier / (1 + sqrt(max(1 + 2 * curvature * carrier, 0)));
+  fromEnd = p.xy - end;
+  overshoot = max(0, neg(dot(offset, startTangent)), dot(fromEnd, endTangent));
+  startDepth = 1 + curvature * (offset.x * startTangent.y - offset.y * startTangent.x);
+  endDepth = 1 + curvature * (fromEnd.x * endTangent.y - fromEnd.y * endTangent.x);
+  behindCenter = max(0, neg(max(startDepth, endDepth))) / max(abs(curvature), 1e-30);
 
-    cornerDistance = max(length(offset), turn > 1e-6 ? whenOutside : (turn < neg(1e-6) ? whenInside : nothing));
-    edgeDistance = max(abs(carrierDistance) + 2 * overshoot + 2 * behindCenter, carrier >= 0 ? whenOutside : whenInside);
-    return [min(nearest.x, cornerDistance, edgeDistance), 0];
-  }, points).x;
+  return min(profileVertexSidedXY(start, turn),
+             profileSidedXY(abs(carrierDistance) + 2 * overshoot + 2 * behindCenter,
+                            carrier >= 0 ? 0 : nothing, carrier >= 0 ? nothing : 0, 0));
 }
 
 /// Closed profile of lines and circular arcs in the XY plane: the exact signed
@@ -363,10 +373,8 @@ profileArcPoolXY(points, curvatures, whenOutside, whenInside) {
 /// edges must not cross. Its box and its .u are as profileXY(points)'s,
 /// the distance along an arc being its arc length.
 profileXY(points, curvatures) {
-  outside = profileArcPoolXY(points, curvatures, 0, nothing);
-  inside = profileArcPoolXY(points, curvatures, nothing, 0);
-  nearest = profileArcPoolXY(points, curvatures, 0, 0);
-  form = outside <= inside ? nearest : neg(nearest);
+  pools = profileArcPoolsXY(points, curvatures);
+  form = pools.x <= pools.y ? pools.z : neg(pools.z);
   low, high = profileArcBoundsXY(points, curvatures);
   form.box = [[low.x, low.y, neg(nothing)], [high.x, high.y, nothing]];
   form.u = profileArcRunXY(points, curvatures);
@@ -556,7 +564,7 @@ profileSidedXY(reach, outsideGate, insideGate, nearestGate) {
   return [max(reach, outsideGate), max(reach, insideGate), max(reach, nearestGate)];
 }
 
-// The feature of one edge, start to end at `curvature`, as profileArcPoolXY
+// The feature of one edge, start to end at `curvature`, as profileArcPoolsXY
 // takes it (its circline distance, held off past its ends), offered to the
 // pools by its side.
 profileEdgeSidedXY(start, end, curvature) {
@@ -585,7 +593,7 @@ profileVertexSidedXY(at, turn) {
   return profileSidedXY(length(p.xy - at), turn > 1e-6 ? 0 : nothing, turn < neg(1e-6) ? 0 : nothing, abs(turn) > 1e-6 ? 0 : nothing);
 }
 
-// profileArcPoolXY with corners blended, its three pools in one pass:
+// profileArcPoolsXY with corners blended, its three pools in one pass:
 // [outside, inside, nearest], each feature computed once
 // (profileCornerStepXY). The lookups by index are made here, where the index
 // is a constant, and handed on as values.
@@ -630,7 +638,7 @@ profileCornerBlendPoolsXY(points, curvatures, corners, blend) {
 }
 
 // Corner `index`'s features and the edge leaving it, their least offer to
-// each pool. A sharp corner is its point, as in profileArcPoolXY. A fillet is
+// each pool. A sharp corner is its point, as in profileArcPoolsXY. A fillet is
 // an arc edge between its two trim points, tangent to the edges at both, so
 // neither joint turns. A chamfer is a line edge between them and two points
 // turning half the corner's turn each. A blended corner (while `blending`) is

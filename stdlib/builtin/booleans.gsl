@@ -63,7 +63,7 @@ differenceSharp(target, tool) {
 // inside separately, and only their comparison picks the sign; the magnitude
 // comes from the ungated pool, so a cell on a surface is bounded by that
 // surface's own field, not by nothing. Each reduce starts from a list, as
-// profilePoolXY's do: a scalar first argument is read as the function here.
+// profilePoolsXY's do: a scalar first argument is read as the function here.
 nested(fields) {
   outside = reduce([nothing, 0], (best, field) { return [min(best.x, max(abs(field), field >= 0 ? 0 : nothing)), 0]; }, fields).x;
   inside = reduce([nothing, 0], (best, field) { return [min(best.x, max(abs(field), field < 0 ? 0 : nothing)), 0]; }, fields).x;
