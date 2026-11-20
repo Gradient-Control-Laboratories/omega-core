@@ -2114,6 +2114,7 @@ class AudioSystem {
         this.gainNode = null;
         this.enabled = true;
         this.hasAudio = false;
+        this.jsCode = null; // the compiled audio JS, for renderWav
         this.initPromise = null;
         this.initialized = false;
         // Mirror of the worklet's slider-value map. setSlider/setSliderMap
@@ -2224,6 +2225,8 @@ class AudioSystem {
     }
 
     async updateShader(jsCode, hasAudio) {
+        // Kept for renderWav, which needs no live audio context.
+        this.jsCode = hasAudio && jsCode ? jsCode : null;
         // Wait for initialization to complete
         if (this.initPromise && !this.initialized) {
             try {
@@ -2365,6 +2368,44 @@ class AudioSystem {
         }
     }
 
+    // renderWav renders the program's audio from time 0 for the given
+    // seconds and returns it as a 16-bit stereo WAV Blob. It runs the same
+    // worklet processor the viewer plays through, in an
+    // OfflineAudioContext (faster than real time), with the current slider
+    // values and the noise tile, so the file is what playback sounds like
+    // at full volume (before the volume control).
+    async renderWav(seconds) {
+        if (!this.jsCode) throw new Error('This program returns no audio');
+        await noiseTileReady;
+        const sampleRate = 44100;
+        const frames = Math.max(1, Math.ceil(seconds * sampleRate));
+        const ctx = new OfflineAudioContext({ numberOfChannels: 2, length: frames, sampleRate });
+        await ctx.audioWorklet.addModule('render/gsl-audio-processor.js?v=' + Date.now());
+        const node = new AudioWorkletNode(ctx, 'gsl-audio-processor', {
+            numberOfInputs: 0,
+            numberOfOutputs: 1,
+            outputChannelCount: [2],
+            processorOptions: {
+                code: this.jsCode,
+                sliderValues: { ...this.sliderValues },
+                noiseTile: noiseTileData.slice().buffer,
+                sampleRate,
+                startTime: 0,
+            },
+        });
+        const errors = [];
+        node.port.onmessage = (event) => {
+            if (event.data.type === 'error') errors.push(event.data.message);
+        };
+        node.onprocessorerror = () => errors.push('the audio processor failed');
+        node.connect(ctx.destination);
+        const rendered = await ctx.startRendering();
+        // Let the worklet's last messages land before checking them.
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        if (errors.length) throw new Error(errors[0]);
+        return encodeWav16([rendered.getChannelData(0), rendered.getChannelData(1)], sampleRate);
+    }
+
     cleanup() {
         if (this.workletNode) {
             this.workletNode.disconnect();
@@ -2373,6 +2414,37 @@ class AudioSystem {
             this.audioContext.close();
         }
     }
+}
+
+// encodeWav16 writes interleaved 16-bit PCM WAV from per-channel float
+// samples in [-1, 1] (the worklet has already clamped them).
+function encodeWav16(channels, sampleRate) {
+    const n = channels[0].length, k = channels.length;
+    const dataBytes = n * k * 2;
+    const view = new DataView(new ArrayBuffer(44 + dataBytes));
+    const text = (at, s) => { for (let i = 0; i < s.length; i++) view.setUint8(at + i, s.charCodeAt(i)); };
+    text(0, 'RIFF');
+    view.setUint32(4, 36 + dataBytes, true);
+    text(8, 'WAVE');
+    text(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, k, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * k * 2, true);
+    view.setUint16(32, k * 2, true);
+    view.setUint16(34, 16, true);
+    text(36, 'data');
+    view.setUint32(40, dataBytes, true);
+    let at = 44;
+    for (let i = 0; i < n; i++) {
+        for (let c = 0; c < k; c++) {
+            const s = Math.max(-1, Math.min(1, channels[c][i]));
+            view.setInt16(at, Math.round(s * 32767), true);
+            at += 2;
+        }
+    }
+    return new Blob([view.buffer], { type: 'audio/wav' });
 }
 
 // Create global audio system instance

@@ -15,7 +15,7 @@ function swapMaps(target, source) {
 }
 
 class GSLAudioProcessor extends AudioWorkletProcessor {
-    constructor() {
+    constructor(options) {
         super();
 
         this.currentSampleTime = 0;
@@ -112,6 +112,22 @@ class GSLAudioProcessor extends AudioWorkletProcessor {
                     break;
             }
         };
+
+        // An offline render (AudioSystem.renderWav) hands over the whole
+        // setup at construction, since port messages could arrive after an
+        // OfflineAudioContext has already started rendering. The node
+        // then plays from its first sample.
+        const setup = options && options.processorOptions;
+        if (setup && setup.code) {
+            this.sampleRate = setup.sampleRate;
+            this.crossfadeDuration = Math.max(1, Math.round(this.crossfadeSeconds * this.sampleRate));
+            if (setup.noiseTile) this.noiseTile.set(new Uint8Array(setup.noiseTile));
+            this.snapSliderMap(setup.sliderValues || {});
+            this.currentSampleTime = setup.startTime || 0;
+            this.shaderCode = setup.code;
+            this.isPlaying = true;
+            this.compileShader();
+        }
     }
 
     // snapSliderMap replaces the current values with the given map,
