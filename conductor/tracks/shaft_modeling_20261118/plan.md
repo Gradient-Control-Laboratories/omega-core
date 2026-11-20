@@ -213,7 +213,7 @@ treatment), the phase opens with a proposal for the owner to approve before any 
 - [ ] Task: Implement (Green & Refactor Phase)
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
-## Phase 8: Cranks
+## Phase 8: Cranks [checkpoint: 9cf9e41]
 
 - [x] Task: Proposal (approved 2026-11-20; Phase 7 skipped for now): `shaft.eccentric(dia, offset, angle,
       from, to)` and `shaft.web(mainR, pinR, offset, angle, from, to)` (`offset` was `throw`, a reserved word), the exact two-circle hull; webs of
