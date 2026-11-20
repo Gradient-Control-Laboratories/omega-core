@@ -2,8 +2,11 @@
 // time: a swung drum kit with an open hi-hat choked by the closed one, an FM
 // bass line and FM electric-piano stabs played from note patterns, and an
 // additive pad whose low-pass filter sweeps in the partial domain. The pad and
-// keys play alone for two bars, then the drums and bass come in. Press play
-// and turn the volume up.
+// keys play alone for two bars, then the drums and bass come in. Three bodies
+// move with the drums and bass, driven by the same hits as the sound. Press
+// play and turn the volume up.
+
+@scene(200, 20)
 
 import "synth";
 import "synth/seq";
@@ -79,4 +82,24 @@ pad = (synth.filtered(synth.mtof(45), time, synth.sawPartials, padFilter) + synt
 center = kick * 0.85 + snare * 0.45 + clap * 0.35 + bass * 0.8;
 mixed = synth.pan(center, 0) + synth.pan(hatC * 0.5 + hatO * 0.35, 0.35) + synth.pan(keys * 0.3, -0.3) + synth.pan(pad * 0.07, -0.6) + synth.pan(pad * 0.07, 0.6);
 
-return audio(synth.softclip(mixed.x, 1.1), synth.softclip(mixed.y, 1.1));
+// --- Visuals: the hits that play the sound also move the shapes. The ball
+// swells on each kick and rides the bass note, the inner ring thickens on the
+// snare and clap, and the outer ring shimmers with the closed hat and swells
+// with the open one, cut off when the closed hat chokes it. ---
+pulse(h, rate) {
+  return h.y * exp(-h.x * rate);
+}
+held(h) {
+  return h.y > 0 && h.x < h[4] ? 1 : 0;
+}
+kickHit = drumsIn(seq.hit(clk, kickPat));
+snareHit = drumsIn(seq.hit(clk, snarePat));
+clapHit = drumsIn(seq.hit(clk, clapPat));
+hatHit = drumsIn(seq.hit(clk, closedPat));
+openHit = drumsIn(seq.hit(clk, openPat));
+bassNote = drumsIn(seq.note(clk, bassPat));
+ball = sphere([0, 0, held(bassNote) * (bassNote.w - 33) * 2], 16 + 10 * pulse(kickHit, 9));
+snareRing = torus(42, 2 + 6 * max(pulse(snareHit, 7), pulse(clapHit, 9)));
+hatRing = torus(64, 1 + 2.5 * pulse(hatHit, 25) + 4 * pulse(openHit, 3) * seq.choke(clk, closedPat, openHit, 0.01));
+
+return ball, snareRing, hatRing, audio(synth.softclip(mixed.x, 1.1), synth.softclip(mixed.y, 1.1));
