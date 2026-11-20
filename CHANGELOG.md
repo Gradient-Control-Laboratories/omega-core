@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `intersectRoundExact(field1, field2, iterations)` and `unionRoundExact(field1, field2, iterations)` in builtin:
+  the exact rounds for curved faces. The two- and four-argument forms take one step toward the seam's point
+  nearest p, from the faces' tangent planes, which is exact only where the faces are flat: on a sphere and a
+  plane rounded by 2 their distance is off by up to 0.14 mm. These take `iterations` Newton steps along the
+  seam (each moves to both fields' tangent planes, then slides along the seam to the foot of p), and judge
+  whether p is nearest the seam at the point they reach: three steps are right to 1e-6 mm where the seam is a
+  circle, five where it is not. Steps not taken are dropped at compile time, so pass the count as a constant;
+  each one evaluates both fields again, and fillet/ball-and-post meshes in about 17 to 25 times the CPU of the
+  one-step form. `edgeProject` and `edgeNewtonStep` are their steps. `examples/ball_and_post.gsl` shows them.
 - `nested(fields)` combines exact fields whose surfaces do not cross, each wound with its solid on the negative
   side (counterclockwise outlines and islands, clockwise holes), into one exact distance in any order: an outline
   with holes in a single profile, or a 3D solid with a void.

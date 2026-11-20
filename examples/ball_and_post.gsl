@@ -1,0 +1,33 @@
+@scene(40)
+
+// A post rising out of a ball, its junction rounded with an exact fillet.
+//
+// A rolling-ball fillet of radius r between two solids is their union grown
+// by r and then shrunk by r. That needs the exact distance to the grown
+// solids' union near the seam where they meet, which for curved faces means
+// the point of that seam nearest p. unionRoundExact(field1, field2) takes one
+// step toward it, from the faces' tangent planes at p: exact where the faces
+// are flat, but here, where a sphere meets a cylinder, its fillet is off by a
+// few percent of r. The three-argument form, unionRoundExact(field1, field2,
+// iterations), takes Newton steps along the seam: three put the fillet within
+// a millionth of a millimetre of the torus a ball of radius r sweeps around
+// the junction. Each step evaluates both fields again, so the fillet costs
+// several times the one-step form to mesh. Pass the step count as a constant.
+//
+// Try the slider: radius sets the fillet.
+
+ballRadius = 10;
+postRadius = 4;
+postHeight = 15;
+
+radius = 2;
+radius.min = 0.5;
+radius.max = 3;
+
+// The two solids, each grown by the fillet's radius.
+ball = () { return length(p) - ballRadius - radius; };
+post = () { return extrude(circleXY([0, 0], postRadius), 0, postHeight, intersectRound(0)) - radius; };
+
+// Their union, exact near the seam, shrunk back by the radius: the fillet is
+// the torus whose tube has the given radius, tangent to the ball and the post.
+return unionRoundExact(ball, post, 3) + radius;

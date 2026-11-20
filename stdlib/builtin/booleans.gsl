@@ -699,6 +699,128 @@ intersectRoundExact(field1, field2) {
   return intersectRoundExact(field1, field2, field1().dp, field2().dp);
 }
 
+/// The point nearest c on both fields' tangent planes at c (nullary
+/// field1/field2): one Newton step from c toward the edge {field1 = 0, field2 =
+/// 0}, the least-norm step c - Jᵀ(JJᵀ)⁻¹[field1, field2] with J the fields'
+/// gradients at c. Where the faces are parallel there is no edge, and the guard
+/// on the determinant keeps the step finite.
+edgeProject(field1, field2, c) {
+  v1 = remap(field1(), c);
+  v2 = remap(field2(), c);
+  n1 = remap(field1().dp, c);
+  n2 = remap(field2().dp, c);
+  a = dot(n1, n1);
+  b = dot(n1, n2);
+  d = dot(n2, n2);
+  det = max(a * d - b * b, 0.000001);
+  step = ((d * v1 - b * v2) * n1 + (a * v2 - b * v1) * n2) / det;
+  // A trust region: no component of the step longer than four times the
+  // fields' values at c, so a far point or near-parallel faces cannot throw c
+  // out of range. It is a clamp, not a rescaling, so that an interval bound
+  // over a cell stays as finite as the fields' own.
+  reach = 4 * (abs(v1) + abs(v2)) + 0.001;
+  return c - clamp(step, neg(reach), reach);
+}
+
+/// One Newton step from c toward the point of the edge {field1 = 0, field2 =
+/// 0} nearest p (nullary field1/field2): edgeProject's step, then a slide along
+/// the edge's tangent at c, the cross product of the fields' gradients there,
+/// to the foot of p.
+edgeNewtonStep(field1, field2, c) {
+  v1 = remap(field1(), c);
+  v2 = remap(field2(), c);
+  n1 = remap(field1().dp, c);
+  n2 = remap(field2().dp, c);
+  a = dot(n1, n1);
+  b = dot(n1, n2);
+  d = dot(n2, n2);
+  det = max(a * d - b * b, 0.000001);
+  step = ((d * v1 - b * v2) * n1 + (a * v2 - b * v1) * n2) / det;
+  reach = 4 * (abs(v1) + abs(v2)) + 0.001;
+  q = c - clamp(step, neg(reach), reach);
+  t = cross(n1, n2);
+  // The slide is to the foot of p on the tangent line, so no component of it
+  // is longer than |p - q|; clamped to that, for the same finite bounds.
+  slide = dot(p - q, t) / max(dot(t, t), 0.000001) * t;
+  span = length(p - q);
+  return q + clamp(slide, neg(span), span);
+}
+
+/// Exact sharp intersection of two fields (nullary field1/field2) whose faces
+/// may be curved: outside the intersection and nearest its edge, the distance
+/// to the point c of the edge {field1 = 0, field2 = 0} nearest p, found by
+/// `iterations` Newton steps from p (1 to 8). Each step moves to the nearest
+/// point of both fields' tangent planes, then slides along the edge to the foot
+/// of p; the last step only projects. Near the edge, one step gives the
+/// two-argument form's distance, off by 7% of a round's radius on a sphere and
+/// a plane; three give 1e-6 mm where the edge is a circle, and five where it is
+/// not. Where p - c lies between the two faces' normals at c, p is nearest the
+/// edge and the field is |p - c|; elsewhere it is the sharp intersection, exact
+/// where the fields are. That test is only as good as c, so use three steps or
+/// more. Pass `iterations` as a constant: the steps it does not take are
+/// dropped at compile time.
+///
+/// Offset the fields in by r and the result out by r to round the edge with
+/// radius r: intersectRoundExact(() { return f1() + r; }, () { return f2() + r;
+/// }, 3) - r. Each step evaluates both fields and their gradients at a new
+/// point, so the field costs about iterations + 1 times the sharp one.
+intersectRoundExact(field1, field2, iterations) {
+  // Start a hair off p: where every point of the edge is equally near (on the
+  // axis of a circular edge), a gradient at p may be undefined and no step
+  // would pick a direction; from beside p the steps reach one of those points.
+  s0 = p + [0.0001, 0.00007, 0.00003];
+  s1 = edgeNewtonStep(field1, field2, s0);
+  s2 = edgeNewtonStep(field1, field2, s1);
+  s3 = edgeNewtonStep(field1, field2, s2);
+  s4 = edgeNewtonStep(field1, field2, s3);
+  s5 = edgeNewtonStep(field1, field2, s4);
+  s6 = edgeNewtonStep(field1, field2, s5);
+  s7 = edgeNewtonStep(field1, field2, s6);
+  c = iterations >= 8 ? edgeProject(field1, field2, s7)
+    : iterations >= 7 ? edgeProject(field1, field2, s6)
+    : iterations >= 6 ? edgeProject(field1, field2, s5)
+    : iterations >= 5 ? edgeProject(field1, field2, s4)
+    : iterations >= 4 ? edgeProject(field1, field2, s3)
+    : iterations >= 3 ? edgeProject(field1, field2, s2)
+    : iterations >= 2 ? edgeProject(field1, field2, s1)
+    : edgeProject(field1, field2, s0);
+
+  // p is nearest the edge where p - c = w1 n1 + w2 n2 with both weights positive.
+  n1 = remap(field1().dp, c);
+  n2 = remap(field2().dp, c);
+  e = p - c;
+  a = dot(n1, n1);
+  b = dot(n1, n2);
+  d = dot(n2, n2);
+  det = max(a * d - b * b, 0.000001);
+  x1 = dot(e, n1);
+  x2 = dot(e, n2);
+  w1 = (d * x1 - b * x2) / det;
+  w2 = (a * x2 - b * x1) / det;
+  // Only outside the intersection can p be nearest its edge; there the
+  // distance to it is at least either field's, and at most sharp / sin(φ/2),
+  // φ the angle between the faces, |normal1 + normal2| / 2 = sin(φ/2): from a
+  // point far from the edge the steps can reach another point of it where the
+  // distance along it is stationary (the far side of a circular edge), whose
+  // normals also hold p - c, and this bound, with room for curvature, rejects it.
+  sharp = max(field1(), field2());
+  plausible = length(e) * length(n1 + n2) / 2 <= 1.5 * sharp + 0.001;
+  return min(w1, w2, sharp) > 0 && plausible ? max(length(e), sharp) : sharp;
+}
+
+/// Exact sharp union of two fields (nullary field1/field2) whose faces may be
+/// curved, the De Morgan dual of intersectRoundExact(field1, field2,
+/// iterations): inside the union and nearest its seam, minus the distance to
+/// the seam's point nearest p. Offset the fields out by r and the result in by
+/// r to round the seam with radius r: unionRoundExact(() { return f1() - r; },
+/// () { return f2() - r; }, 3) + r.
+unionRoundExact(field1, field2, iterations) {
+  return neg(intersectRoundExact(
+    () { return neg(field1()); },
+    () { return neg(field2()); },
+    iterations));
+}
+
 /// Rvachev R0 intersection of a list of SDFs, gated to a transition band of
 /// width `band`. Beyond -band (well inside the sharp solid) it is the sharp
 /// intersection; within the band it eases (cubic smoothstep) toward pure R0,
