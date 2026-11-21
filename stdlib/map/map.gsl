@@ -216,6 +216,33 @@ remapCylindrical(circumference) {
   return [radial, theta * circumference / tau, p.z];
 }
 
+/// Bend space in the XZ plane, for remap: returns where the point `v` of bent
+/// space was before the bend. The plane x = 0 is bent along z into an arc of
+/// `curvature`, 1 / radius, that touches the plane at the origin and has its
+/// centre on +x when the curvature is positive, so the plane's ends curl toward
+/// +x. A negative curvature curls them toward -x, and 0 is no bend. v.y passes
+/// through unchanged. To bow a plate about a point `origin` on it:
+///
+///   bowed = remap(plate, map.bendXZ(p - origin, 1 / 400) + origin);
+///
+/// Lengths along z are kept on the plane itself. Off it they change by
+/// 1 - curvature * x: stretched on the outside of the bend and squeezed on the
+/// inside, where a remapped field reads longer than the distance by as much.
+/// Where the field must stay a distance bound, multiply it by
+/// min(1, length([1 - curvature * v.x, curvature * v.z])). Keep the shape
+/// nearer the plane than the arc's centre, 1 / |curvature| away on the inside
+/// of the bend: every plane of the bend meets there.
+bendXZ(v, curvature) {
+  // The centre of the arc is 1 / k away, which nothing here divides by except
+  // the last term, and that only needs k not to be exactly 0.
+  k = abs(curvature) < 1e-9 ? 1e-9 : curvature;
+  across = 1 - k * v.x;
+  along = k * v.z;
+  // (1 - length([across, along])) / k, written so that it does not cancel as
+  // k goes to 0.
+  return [(2 * v.x - k * (v.x * v.x + v.z * v.z)) / (1 + length([across, along])), v.y, atan(along, across) / k];
+}
+
 /// The remap coordinate that puts a +Z-datum shape at `point` with its datum
 /// axis aligned to `axis` — for a hole, the direction the drill enters, which
 /// is the outward normal of the face it goes into. Pass it to remap:

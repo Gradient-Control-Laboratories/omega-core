@@ -389,6 +389,38 @@ body.resizing #stl-canvas-container {
     border-radius: 0;
 }
 
+/* @caption lines (ui/captions.js): centred at the bottom of the canvas, over
+   the model but under the panels, and never in the way of a click. */
+.caption-layer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 6%;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    pointer-events: none;
+}
+
+.caption-line {
+    max-width: 80%;
+    padding: 6px 14px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    font-family: 'Public Sans', sans-serif;
+    font-size: clamp(14px, 2.2vw, 30px);
+    line-height: 1.3;
+    text-align: center;
+    white-space: pre-line;
+}
+
+.caption-line[hidden] {
+    display: none;
+}
+
 .btn-regular {
     background: #171717;
     color: #d1d1d1;
@@ -1065,4 +1097,49 @@ body.resizing #stl-canvas-container {
 #body-panel.open,
 #material-panel.open {
     min-width: 180px;
+}
+
+/* A page `gsl export` wrote compiles nothing (host-static.js), so what changes
+ * or saves the document is not offered: Save As, the GSL reference, the tools
+ * that write a picked point into the source, Imports, Export and Materials. */
+body.read-only-host #btn-save-as,
+body.read-only-host #help-menu,
+body.read-only-host #btn-point-select,
+body.read-only-host #btn-point-normal-select,
+body.read-only-host #mesh-import-panel,
+body.read-only-host #stl-bounds-panel,
+body.read-only-host #material-panel {
+    display: none;
+}
+
+/* A page opened with ?embed sits in another page and shows the one document
+ * its address names: no menu of documents, so no top bar. main.js moves the
+ * Code button in with the viewport's buttons, where it is an icon like them,
+ * and the code's own controls to the top of the code panel. */
+body.embedded #top-bar {
+    display: none;
+}
+
+body.embedded #btn-toggle-code {
+    padding: 10px;
+    border: none;
+}
+
+body.embedded #btn-toggle-code span {
+    display: none;
+}
+
+body.embedded #btn-toggle-code img {
+    display: block;
+    width: 13px;
+    height: 13px;
+}
+
+body.embedded #btn-toggle-code.active {
+    outline: 1px solid #4a4a4a;
+}
+
+body.embedded #editor-top-controls {
+    flex-shrink: 0;
+    margin: 10px 10px 0;
 }

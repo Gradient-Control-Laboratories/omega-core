@@ -91,4 +91,3 @@ func TestWarpedBuiltinArities(t *testing.T) {
 		t.Error("meshWarped without a scale must be rejected")
 	}
 }
-

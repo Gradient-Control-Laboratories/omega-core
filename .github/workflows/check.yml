@@ -1,0 +1,132 @@
+name: Check
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "conductor/**"
+  pull_request:
+    paths-ignore:
+      - "**.md"
+      - "conductor/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  lint:
+    name: Lint & Vet
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/go-build
+          key: go-build-lint-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-build-lint-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('go.sum') }}-
+      - name: Run lint and vet checks
+        run: ./tool/check.sh --shard lint
+
+  build:
+    name: Build Native Libraries
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Rust and CMake
+        run: |
+          command -v cargo || curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+          command -v cmake || (sudo apt-get update && sudo apt-get install -y cmake)
+          cargo --version; cmake --version | head -1
+      - name: Restore protoc cache
+        id: protoc-cache
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/protoc
+          key: protoc-35.0-linux-x86_64
+      - name: Install protoc
+        if: steps.protoc-cache.outputs.cache-hit != 'true'
+        env:
+          PROTOC_VERSION: "35.0"
+          PROTOC_ASSET: linux-x86_64
+          PROTOC_SHA256: a45cda0989c17dd950db55f6fbe1e5814c50fda08e87aa422980ac1f89dddbbc
+        run: |
+          curl -sSfL -o "$RUNNER_TEMP/protoc.zip" \
+            "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-${PROTOC_ASSET}.zip"
+          python3 -c 'import hashlib, sys; d = hashlib.sha256(open(sys.argv[1], "rb").read()).hexdigest(); sys.exit(None if d == sys.argv[2] else f"protoc sha256 {d}, pinned {sys.argv[2]}")' "$RUNNER_TEMP/protoc.zip" "$PROTOC_SHA256"
+          python3 -m zipfile -e "$RUNNER_TEMP/protoc.zip" "$RUNNER_TEMP/protoc"
+          chmod +x "$RUNNER_TEMP/protoc/bin/protoc"
+      - name: Configure protoc
+        run: |
+          echo "PROTOC=$RUNNER_TEMP/protoc/bin/protoc" >> "$GITHUB_ENV"
+          "$RUNNER_TEMP/protoc/bin/protoc" --version
+      - name: The submodules' revisions (the cache key)
+        id: submodules
+        run: echo "hash=$(git ls-tree -r HEAD | awk '$2 == "commit"' | cksum | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/release
+          key: check-release-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/Cargo.lock') }}-${{ steps.submodules.outputs.hash }}
+          restore-keys: check-release-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/Cargo.lock') }}-
+      - name: Build native Fidget/Manifold libraries
+        run: ./tool/build-fidget.sh --no-prompt
+      - uses: actions/upload-artifact@v7
+        with:
+          name: native-libs
+          retention-days: 1
+          path: |
+            target/release/librender.so
+            target/release/libmanifold_glue.so
+            target/release/gpu-eval
+          if-no-files-found: error
+
+  test:
+    name: Test (${{ matrix.shard }})
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [eval-core, eval-heavy, other]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/go-build
+          key: go-build-test-${{ matrix.shard }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-build-test-${{ matrix.shard }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('go.sum') }}-
+      - uses: actions/download-artifact@v8
+        with:
+          name: native-libs
+          path: target/release
+      - name: Ensure gpu-eval is executable
+        run: chmod +x target/release/gpu-eval
+      - name: Run quality checks (${{ matrix.shard }})
+        run: ./tool/check.sh --shard "${{ matrix.shard }}"
