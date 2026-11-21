@@ -1054,6 +1054,186 @@ unionRoundExact(radius) {
   return (fields) { return unionRoundExact(fields, radius); };
 }
 
+// Chamfers whose faces may be curved: the Steps tier of the chamfer family, after
+// intersectChamfer (offset, no normals) and intersectChamferNormalized and
+// intersectChamferSetbacks (exact where both faces are straight in section). For
+// each point p, `steps` Newton steps (edgeNewtonStep) find the point c of the edge
+// {field1 = 0, field2 = 0} nearest p and the faces' normals there. In the plane
+// normal to the edge at c a flat chamfer is a straight line, through the point of
+// face 1 at the first distance from c and the point of face 2 at the second (each a
+// straight-line distance in that plane, found by Newton steps on the face), and the
+// field is the distance to that line. Swept along the edge, the line is the ruled
+// surface a boundary-representation chamfer makes, flat on a ball as on a plane.
+
+// A unit vector along v, finite where v vanishes: far from the edge the frame
+// means nothing and its normals may be parallel.
+chamferUnit(v) {
+  return v / max(length(v), 0.000001);
+}
+
+// a / b, finite where b vanishes: a Newton step there does nothing useful.
+chamferRatio(a, b) {
+  return a * b / max(b * b, 0.000000000001);
+}
+
+// The point of the edge {field1 = 0, field2 = 0} nearest p: `iterations` (1 to 8)
+// of edgeDistance's Newton steps, started a hair off `seed`, the last only
+// projecting. Pass `iterations` as a constant.
+chamferEdgePoint(field1, field2, iterations, seed) {
+  s0 = seed + [0.0001, 0.00007, 0.00003];
+  s1 = edgeNewtonStep(field1, field2, s0);
+  s2 = edgeNewtonStep(field1, field2, s1);
+  s3 = edgeNewtonStep(field1, field2, s2);
+  s4 = edgeNewtonStep(field1, field2, s3);
+  s5 = edgeNewtonStep(field1, field2, s4);
+  s6 = edgeNewtonStep(field1, field2, s5);
+  s7 = edgeNewtonStep(field1, field2, s6);
+  return iterations >= 8 ? edgeProject(field1, field2, s7)
+    : iterations >= 7 ? edgeProject(field1, field2, s6)
+    : iterations >= 6 ? edgeProject(field1, field2, s5)
+    : iterations >= 5 ? edgeProject(field1, field2, s4)
+    : iterations >= 4 ? edgeProject(field1, field2, s3)
+    : iterations >= 3 ? edgeProject(field1, field2, s2)
+    : iterations >= 2 ? edgeProject(field1, field2, s1)
+    : edgeProject(field1, field2, s0);
+}
+
+// The point of `face` at the straight-line distance d from the edge point c, in
+// the plane of `along` (the face's direction away from the edge) and `bend`:
+// three Newton steps on the angle t from along, each kept within 1.5 radians, so
+// that the face may curve either way.
+chamferChordPoint(face, c, along, bend, d) {
+  q0 = c + along * d;
+  t1 = clamp(neg(chamferRatio(remap(face, q0), dot(remap(face.dp, q0), bend * d))), -1, 1);
+  q1 = c + (along * cos(t1) + bend * sin(t1)) * d;
+  t2 = clamp(t1 - chamferRatio(remap(face, q1), dot(remap(face.dp, q1), (bend * cos(t1) - along * sin(t1)) * d)), -1.5, 1.5);
+  q2 = c + (along * cos(t2) + bend * sin(t2)) * d;
+  t3 = clamp(t2 - chamferRatio(remap(face, q2), dot(remap(face.dp, q2), (bend * cos(t2) - along * sin(t2)) * d)), -1.5, 1.5);
+  return c + (along * cos(t3) + bend * sin(t3)) * d;
+}
+
+// Where the line from `start` along the unit `along` meets `face`: three Newton
+// steps on the distance from s0, each kept between 0 and 4·s0.
+chamferLinePoint(face, start, along, s0) {
+  q0 = start + along * s0;
+  s1 = clamp(s0 - chamferRatio(remap(face, q0), dot(remap(face.dp, q0), along)), 0, 4 * s0);
+  q1 = start + along * s1;
+  s2 = clamp(s1 - chamferRatio(remap(face, q1), dot(remap(face.dp, q1), along)), 0, 4 * s0);
+  q2 = start + along * s2;
+  s3 = clamp(s2 - chamferRatio(remap(face, q2), dot(remap(face.dp, q2), along)), 0, 4 * s0);
+  return start + along * s3;
+}
+
+// What the chamfer cuts from the sharp intersection, positive where it cuts: the
+// side of the line through `start` and `end` (in the edge's normal plane at c) that
+// holds c, kept to the chamfer's own reach of c and to face 1's side of its tangent
+// plane at c (but for face 1's own bend at the start and a quarter of the setback),
+// and nothing where the steps missed the edge (c on neither face, as exact round
+// requires) or the frame degenerates.
+chamferCut(field1, field2, c, n1, start, end) {
+  along = chamferUnit(end - start);
+  e = c - start;
+  m = chamferUnit(e - along * dot(e, along));
+  side = dot(p - start, m) - (1 - length(m)) * 1000;
+  missed = 1000 * max(max(abs(remap(field1, c)), abs(remap(field2, c))) - 0.001, 0);
+  reach = max(length(start - c), length(end - c)) * 1.05 - missed - length(p - c);
+  face1Side = abs(dot(start - c, n1)) + length(start - c) / 4 - dot(p - c, n1);
+  return min(side, reach, face1Side);
+}
+
+/// Chamfered intersection of two fields whose faces may be curved, by two
+/// setbacks: the chamfer meets face 1 `setback1` from the edge and face 2
+/// `setback2` from it, each a straight-line distance in the plane normal to the
+/// edge, and is flat. `steps` (1 to 8, a constant) Newton steps find the nearest
+/// point of the edge, as for intersectRoundExactSteps; four or five suffice where
+/// the edge is a circle. `seed` is where the steps start: p, or a point that
+/// selects one edge where the faces meet in several. Exact to the steps'
+/// tolerance on a revolved part; elsewhere the field is the distance within the
+/// edge's normal plane. Each step evaluates both fields and their gradients, so it
+/// costs several times intersectChamferSetbacks, which is exact where both faces
+/// are straight in section.
+intersectChamferSetbacksSteps(field1, field2, setback1, setback2, steps, seed) {
+  c = chamferEdgePoint(field1, field2, steps, seed);
+  n1 = chamferUnit(remap(field1.dp, c));
+  n2 = chamferUnit(remap(field2.dp, c));
+  start = chamferChordPoint(field1, c, chamferUnit(n1 * dot(n1, n2) - n2), neg(n1), setback1);
+  end = chamferChordPoint(field2, c, chamferUnit(n2 * dot(n1, n2) - n1), neg(n2), setback2);
+  return max(field1, field2, chamferCut(field1, field2, c, n1, start, end));
+}
+
+/// intersectChamferSetbacksSteps with the steps started from p.
+intersectChamferSetbacksSteps(field1, field2, setback1, setback2, steps) {
+  return intersectChamferSetbacksSteps(field1, field2, setback1, setback2, steps, p);
+}
+
+/// Union counterpart of intersectChamferSetbacksSteps, by De Morgan: the chamfer
+/// fills the groove, meeting solid 1's face `setback1` from the seam and solid
+/// 2's `setback2` from it.
+unionChamferSetbacksSteps(field1, field2, setback1, setback2, steps, seed) {
+  return neg(intersectChamferSetbacksSteps(neg(field1), neg(field2), setback1, setback2, steps, seed));
+}
+
+/// unionChamferSetbacksSteps with the steps started from p.
+unionChamferSetbacksSteps(field1, field2, setback1, setback2, steps) {
+  return unionChamferSetbacksSteps(field1, field2, setback1, setback2, steps, p);
+}
+
+/// Difference counterpart of intersectChamferSetbacksSteps: target minus tool,
+/// `targetSetback` along the target's face and `toolSetback` along the cut's.
+differenceChamferSetbacksSteps(target, tool, targetSetback, toolSetback, steps, seed) {
+  return intersectChamferSetbacksSteps(target, neg(tool), targetSetback, toolSetback, steps, seed);
+}
+
+/// differenceChamferSetbacksSteps with the steps started from p.
+differenceChamferSetbacksSteps(target, tool, targetSetback, toolSetback, steps) {
+  return differenceChamferSetbacksSteps(target, tool, targetSetback, toolSetback, steps, p);
+}
+
+/// Chamfered intersection of two fields whose faces may be curved, by a distance
+/// and an angle: the chamfer starts on face 1 `distance` from the edge (a
+/// straight-line distance in the plane normal to the edge) and runs flat at
+/// `angle` to face 1, measured from the direction back toward the edge and
+/// turned into the solid, until it meets face 2. `steps` and `seed` as for
+/// intersectChamferSetbacksSteps.
+intersectChamferAngleSteps(field1, field2, distance, angle, steps, seed) {
+  c = chamferEdgePoint(field1, field2, steps, seed);
+  n1 = chamferUnit(remap(field1.dp, c));
+  n2 = chamferUnit(remap(field2.dp, c));
+  start = chamferChordPoint(field1, c, chamferUnit(n1 * dot(n1, n2) - n2), neg(n1), distance);
+  back = chamferUnit(c - start);
+  into = chamferUnit(neg(n1) - back * dot(neg(n1), back));
+  end = chamferLinePoint(field2, start, back * cos(angle) + into * sin(angle), distance);
+  return max(field1, field2, chamferCut(field1, field2, c, n1, start, end));
+}
+
+/// intersectChamferAngleSteps with the steps started from p.
+intersectChamferAngleSteps(field1, field2, distance, angle, steps) {
+  return intersectChamferAngleSteps(field1, field2, distance, angle, steps, p);
+}
+
+/// Union counterpart of intersectChamferAngleSteps, by De Morgan: the chamfer
+/// starts on solid 1's face `distance` from the seam and fills the groove at
+/// `angle` to that face, turned away from solid 1.
+unionChamferAngleSteps(field1, field2, distance, angle, steps, seed) {
+  return neg(intersectChamferAngleSteps(neg(field1), neg(field2), distance, angle, steps, seed));
+}
+
+/// unionChamferAngleSteps with the steps started from p.
+unionChamferAngleSteps(field1, field2, distance, angle, steps) {
+  return unionChamferAngleSteps(field1, field2, distance, angle, steps, p);
+}
+
+/// Difference counterpart of intersectChamferAngleSteps: target minus tool, the
+/// chamfer starting on the target's face.
+differenceChamferAngleSteps(target, tool, distance, angle, steps, seed) {
+  return intersectChamferAngleSteps(target, neg(tool), distance, angle, steps, seed);
+}
+
+/// differenceChamferAngleSteps with the steps started from p.
+differenceChamferAngleSteps(target, tool, distance, angle, steps) {
+  return differenceChamferAngleSteps(target, tool, distance, angle, steps, p);
+}
+
 /// Rvachev R0 intersection of a list of SDFs, gated to a transition band of
 /// width `band`. Beyond -band (well inside the sharp solid) it is the sharp
 /// intersection; within the band it eases (cubic smoothstep) toward pure R0,
