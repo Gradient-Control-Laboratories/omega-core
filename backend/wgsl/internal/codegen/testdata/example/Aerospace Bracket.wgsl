@@ -24,9 +24,9 @@ fn gsl_remap_2(p: vec3<f32>, gsl_param_7_7: f32, gsl_param_11_7: f32, gsl_param_
   return builtin_plane(vec3<f32>(abs(p.x), p.y, p.z), vec3<f32>(4.7, 7.3000746, -2.6998363), vec3<f32>(0.70710677, 0.0, 0.70710677));
 }
 
-fn builtin_intersectChamfer(d1: f32, d2: f32, setback: f32) -> f32 {
+fn builtin_intersectChamfer(d1: f32, d2: f32, offset: f32) -> f32 {
   let face = max(d1, d2);
-  let edge = (d1 + d2 + setback) / 1.4142135;
+  let edge = (d1 + d2 + offset) / 1.4142135;
   return max(face, edge);
 }
 

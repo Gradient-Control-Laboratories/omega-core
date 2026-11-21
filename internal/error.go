@@ -17,4 +17,3 @@ func (e *InternalError) Error() string {
 func (e *InternalError) Unwrap() error {
 	return e.err
 }
-

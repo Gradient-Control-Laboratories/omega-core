@@ -68,4 +68,3 @@ func TestSliceMultiReturnConstFold(t *testing.T) {
 		}
 	}
 }
-

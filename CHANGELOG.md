@@ -7,12 +7,74 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `map.bendXZ(v, curvature)` bends space in the XZ plane for `remap`: the plane x = 0 becomes an arc of the
+  given curvature, 1 / radius, with lengths along it kept, for a bow, a camber or a warp, as in
+  `remap(plate, map.bendXZ(p - origin, 1 / 400) + origin)`. A curvature of 0 is no bend.
+- `gsl export part.gsl [more.gsl ...] -o dir` writes the WebGPU viewer and each file's compiled field as a folder
+  of static web pages, which any web server can host: the page draws what `gsl viewer` draws, with its sliders,
+  gizmos, time, sections and render settings, and compiles nothing, so the source is shown read-only and Save As,
+  Imports, Export, Materials and Help are not offered. Several files share the one page and are picked from its
+  menu. The folder is about 12 MB, without the material catalog's previews.
+- `intersectChamferNormalized`, `unionChamferNormalized` and `differenceChamferNormalized` in builtin:
+  chamfers by depth, the bevel the plane `depth` in from the edge, square to the bisector of the angle
+  between the faces, with a field of unit gradient at an edge of any angle: the sum of the two fields
+  divided by the length of the sum of their normals, offset by the depth. `intersectChamfer`'s bevel is the
+  same plane, but its field is divided by sqrt2, which is right only at a square edge (at a 120-degree
+  edge it changes 1.22 times as fast as distance and at 150 degrees 1.37), and its parameter is added
+  before dividing, so it is a setback along each face only at a square edge. Pass the normals, or omit
+  them to take each field's gradient. `intersectChamfer` and its callers are unchanged.
+- `chamferDepthFromSetback(setback, normal1, normal2)` and `chamferDepthFromWidth(width, normal1, normal2)`
+  in builtin: the depth of a chamfer set back `setback` along each face, s·cos(φ/2), or `width` across,
+  (w/2)·cot(φ/2), with φ the angle between the faces through the material, taken from the faces' normals.
+- `intersectChamferSetbacks(d1, d2, setback1, setback2, normal1, normal2)` in builtin, with
+  `unionChamferSetbacks` and `differenceChamferSetbacks`: a bevel that meets the first face `setback1` from
+  the edge and the second `setback2` from it, with a field of unit gradient. Equal setbacks give the
+  Normalized chamfer at `chamferDepthFromSetback`'s depth.
+- The viewer's Export panel has a `Web page (.zip)` format: it downloads the same folder for the open document,
+  as the editor shows it, zipped (`POST /api/export`).
+- `@caption("text", startTime, endTime [, fade])` is a top-level directive that shows a line of text centred at
+  the bottom of the viewer while the animation clock is between the two times, in seconds. It fades in after
+  `startTime` and out before `endTime` over `fade` seconds (0.5 by default, at most half the interval; `0` cuts).
+  Captions whose times overlap stack. They reach the compile response as `captions`, so a page `gsl export`
+  writes shows them too. Only the primary package's captions show.
+- `@duration(seconds)` is a top-level directive, written with `@scene` at the top of the first file, that
+  gives the length of the document's animation. It is to time what `@scene` is to space: the viewer's Time
+  slider and end time span it, and the animation clock starts over on passing it, so an animation and its
+  captions loop. It reaches the compile response as `duration`, so a page `gsl export` writes loops too.
+
 ### Changed
 
+- The fast chamfers' parameter is named `offset`, not `setback`, in builtin's `intersectChamfer`,
+  `unionChamfer`, `differenceChamfer`, `intersectChamferEdges`, `intersectChamferVertices`, their union
+  counterparts, and the `ChamferRound` and `ChamferBlend` families (`[edgeOffset, vertexOffset]` for the
+  list forms). It is added to the two fields before dividing by sqrt2, so it is a setback along each face
+  only at a square edge; `intersectChamferSetbacks` and `chamferDepthFromSetback` take true setbacks.
+  Arguments are positional, so callers are unchanged.
+- The viewer reaches its server through one module, `examples/viewer/host.js`; `host-static.js` answers the same
+  calls from files beside the page, and takes its place in a page `gsl export` writes.
 - A part's box declares what its corners repeat once, as a value before the part, instead of writing every copy
   out in the WGSL, where the viewer evaluates it per point to cull. The box is unchanged; parts whose boxes read
   profile bounds shrink most: `examples/profile_cylinder.gsl` from 190 KB of WGSL to 83 KB, about half its time
   per point on the GPU.
+
+### Removed
+
+- `sweepLoft`, `sweepLoftScale`, `sweepLoftScaleSmooth`, `sweepLoftScaleSmoothSeparateCaps` and
+  `bezierTubeDir` from builtin. They lofted two sections along a 3D quadratic Bezier, but mixed the sections'
+  distances by the curve's parameter and scaled by it, so the field was not a distance bound, and they carried no
+  frame, box or material. A document that needs them can keep a copy in its own library.
+
+### Fixed
+
+- `gears.gearProfile` chamfers its tooth tips with `intersectChamferNormalized`, given the flank's and the
+  tip circle's normals at the edge, in place of `intersectChamfer`. The flank meets the tip circle at an
+  obtuse edge, where `intersectChamfer`'s bevel, scaled for a right angle, has a gradient above 1; the
+  normalized bevel has unit gradient there. The tip chamfer is now `kSmall` deep, measured from the edge to
+  the bevel, about 1.7 to 1.8 times as deep as before at these edges (116 to 129 degrees through the
+  material); the body, standoff and bore chamfers are unchanged. Gear and bevel-gear WGSL grows by
+  582 bytes.
 
 ## [0.1.3] - 2026-11-17
 

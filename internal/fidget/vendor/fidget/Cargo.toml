@@ -1,10 +1,10 @@
 [package]
 name = "fidget"
-version = "0.5.0"
+version = "0.5.1"
 edition = "2024"
 rust-version = "1.95"
 authors = ["Matt Keeter <matt.j.keeter@gmail.com>"]
-description = "Infrastructure for complex closed-form implicit surfaces (vendored at fidget e329a898)"
+description = "Infrastructure for complex closed-form implicit surfaces (vendored from the GCL fork of fidget, see ../FIDGET_PIN)"
 readme = "README.md"
 license = "MPL-2.0"
 repository = "https://github.com/mkeeter/fidget"
@@ -29,15 +29,15 @@ wgpu = ["dep:fidget-wgpu"]
 
 [dependencies]
 document-features = "0.2"
-fidget-bytecode = { path = "../fidget-bytecode", version = "=0.5.0", optional = true }
-fidget-core = { path = "../fidget-core", version = "=0.5.0" }
-fidget-gui = { path = "../fidget-gui", version = "=0.5.0", optional = true }
-fidget-mesh = { path = "../fidget-mesh", version = "=0.5.0", optional = true }
+fidget-bytecode = { path = "../fidget-bytecode", version = "=0.5.1", optional = true }
+fidget-core = { path = "../fidget-core", version = "=0.5.1" }
+fidget-gui = { path = "../fidget-gui", version = "=0.5.1", optional = true }
+fidget-mesh = { path = "../fidget-mesh", version = "=0.5.1", optional = true }
 fidget-raster = { path = "../fidget-raster", version = "=0.5.1", optional = true }
-fidget-rhai = { path = "../fidget-rhai", version = "=0.5.0", optional = true }
-fidget-shapes = { path = "../fidget-shapes", version = "=0.5.0", optional = true }
-fidget-solver = { path = "../fidget-solver", version = "=0.5.0", optional = true }
+fidget-rhai = { path = "../fidget-rhai", version = "=0.5.1", optional = true }
+fidget-shapes = { path = "../fidget-shapes", version = "=0.5.1", optional = true }
+fidget-solver = { path = "../fidget-solver", version = "=0.5.1", optional = true }
 fidget-wgpu = { path = "../fidget-wgpu", version = "=0.5.1", optional = true }
 
 [target."cfg(not(target_arch = \"wasm32\"))".dependencies]
-fidget-jit = { path = "../fidget-jit", version = "=0.5.0", optional = true }
+fidget-jit = { path = "../fidget-jit", version = "=0.5.1", optional = true }

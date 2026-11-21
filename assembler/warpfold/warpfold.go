@@ -14,4 +14,3 @@ type WarpedAsset struct {
 	WarpPath    string
 	Scale       float64
 }
-
