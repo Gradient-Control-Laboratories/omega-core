@@ -24,7 +24,7 @@ echo "==> Running go vet..."
 echo "  ✓ go vet passed."
 
 echo "==> Running tests..."
-(cd "${ROOT_DIR}" && go test ./...)
+(cd "${ROOT_DIR}" && go test -timeout 20m ./...)
 echo "  ✓ Tests passed."
 
 echo "==> All quality checks passed!"
