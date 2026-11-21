@@ -54,6 +54,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   everything outside it; set `.box` on the result to override it. `shaft.envelope(segments[, bottomHole,
   topHole])` is the simplified model: gears at their tip circles, splines and threads at their major
   diameters, no runouts, for proofs, meshing and assemblies.
+- `shaft.bevel(numTeeth, mateTeeth, moduleVal, pressureAngle, shaftAngle, spiralAngle, faceWidth, backlash,
+  apex, from, to)`: a bevel gear as a shaft segment, placed by its pitch apex and its two flat faces, facing
+  whichever way the apex lies, with `gears.bevelGear`'s tooth and ends; its toe teeth may stand past its toe
+  face and the box holds them. `shaft.gear(..., bottomEnd, topEnd, backlash)` thins the teeth for a running
+  pair, and `gears.bevelApexToCrown` gives the distance the faces are placed from. The gear and bevel gear
+  examples are now shafts.
 - A `reduce` over a list of functions can take the element before this one as a fourth callback parameter,
   `reduce((acc, f, i, prev) { ... }, fs, seed)`; the first element is handed itself.
   along the cutter's arc, and `shaft.chamferEnd(size)` chamfers the tips.

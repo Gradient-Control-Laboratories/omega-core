@@ -302,6 +302,10 @@ The numbering is the order.
         detail. Each segment reduces to its smooth envelope: a gear at its tip diameter, a thread or a
         spline at its major diameter. It is for proofs, meshing and assemblies, following
         `thread.male`'s advice to "prove against the smooth cylinder".
+12. **Gears as shafts** (added 2026-11-21). A gear is a shaft: teeth, a hub after a chamfer joint, a
+    through bore. `shaft.bevel` is the missing segment, placed by its flat faces and its pitch apex.
+    Backlash on it and on `shaft.gear`; the gear and bevel gear examples rewritten as shafts. An audit
+    of the bevel against independent references comes first.
 
 **Phase 3 depends on gears for the gear segment:** `gears.gearProfile` is not yet a bound (plan, Phase 3), so
 neither is `shaft.gear`; the fix is its own PR off main (a bounded involute flank, and the normalized

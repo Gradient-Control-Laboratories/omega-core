@@ -1,8 +1,8 @@
 /// Generalized shafts as stacks of segments along +Z: diameters, tapers,
-/// sections, hexes and flats, splines, gears, threads and crank pins and webs,
-/// with their machined ends, blended joints and end holes, joined so that no
-/// surface lies inside the solid where one segment meets the next; and the same
-/// list as its smooth envelope.
+/// sections, hexes and flats, splines, gears, bevel gears, threads and crank
+/// pins and webs, with their machined ends, blended joints and end holes,
+/// joined so that no surface lies inside the solid where one segment meets the
+/// next; and the same list as its smooth envelope.
 
 // Shaft: generalized shafts
 //
@@ -18,8 +18,9 @@
 // its ends come from mechanical/drill.
 //
 // THE VOCABULARY. Segments: shaft.diameter, taper, section (any 2D field),
-// hex, dFlat, doubleD, spline, gear (spur or helical), thread (ISO 68-1),
-// eccentric (a crank pin) and web (a crank web). Ends, on spline, gear and
+// hex, dFlat, doubleD, spline, gear (spur or helical), bevel (a bevel gear,
+// placed by its pitch apex and flat faces), thread (ISO 68-1), eccentric (a
+// crank pin) and web (a crank web). Ends, on spline, gear and
 // thread: shaft.planeEnd, runout (a cutter's), chamferEnd and threadRunout.
 // Joints, listed between two segments: shaft.fillet and shaft.chamfer. The
 // body declares its box from its end faces and its segments' reach, which a
@@ -67,7 +68,10 @@
 // is a cutter runout. seg(e, e, 4) is its envelope, extended as its field is,
 // and seg(0, 0, 5) its reach from the axis. A joint answers seg(0, 0, 6) with a
 // fillet's radius and seg(0, 0, 7) with a chamfer's size, and everything else
-// so that the fold passes it unchanged. Every question is a constant, so each
+// so that the fold passes it unchanged. A segment whose material stands past
+// its own planes (a bevel's toe teeth) answers seg(0, 0, 8) with the lowest
+// point it reaches and seg(0, 0, 9) with the highest, negated, for the box;
+// every other segment, and every joint, answers nothing to both. Every question is a constant, so each
 // call folds to the one answer asked for.
 //
 // RUNOUTS. A hob or a disc cutter cannot stop at a gear's or a spline's end
@@ -95,8 +99,8 @@ import isoThread "mechanical/thread";
 // =========================================================
 
 /// The solid of a shaft: `segments`, a list of segments from this package
-/// (shaft.diameter, taper, section, hex, dFlat, doubleD, spline, gear, thread,
-/// eccentric, web), each between its own two planes, in order along +Z, each
+/// (shaft.diameter, taper, section, hex, dFlat, doubleD, spline, gear, bevel,
+/// thread, eccentric, web), each between its own two planes, in order along +Z, each
 /// starting where the one before it ends, with a joint's blend (shaft.fillet,
 /// shaft.chamfer) listed between the two segments it joins. A lone segment
 /// needs no list. Exact outside wherever the segments are, a bound inside, and
@@ -137,13 +141,24 @@ body(segments) {
   // end, its gaps run on into the neighbour.
   cuts = reduce((c, seg) { return min(c, seg(0.0, 0.0, 3.0)); }, segments, 100000.0);
   // The box: from the lowest end face to the highest, and out to the farthest
-  // any segment reaches from the axis (seg(0, 0, 5)). A caller's own .box
-  // replaces it.
+  // any segment reaches from the axis (seg(0, 0, 5)). A segment whose material
+  // stands past its own planes, a bevel's toe teeth past its toe face, says how
+  // far: seg(0, 0, 8) the lowest it reaches and seg(0, 0, 9) the highest,
+  // negated, every other segment nothing to both. Each such segment counts by
+  // its extent and every other by its planes; when no segment has one, every
+  // test against 50000 folds and the box is the end faces, with nothing added
+  // to the shader of a shaft whose faces move with a slider. A caller's own
+  // .box replaces it.
   bottomFace = reduce((low, seg) { return min(low, seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
   topFace = reduce((high, seg) { return max(high, seg(0.0, 0.0, 2.0)); }, segments, -100000.0);
   reach = reduce((r, seg) { return max(r, seg(0.0, 0.0, 5.0)); }, segments, 0.0);
+  extentLow = reduce((n, seg) { return min(n, seg(0.0, 0.0, 8.0)); }, segments, 100000.0);
+  extentHigh = reduce((n, seg) { return min(n, seg(0.0, 0.0, 9.0)); }, segments, 100000.0);
+  boxLow = reduce((below, seg) { return min(below, seg(0.0, 0.0, 8.0) < 50000.0 ? seg(0.0, 0.0, 8.0) : seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
+  boxHigh = reduce((above, seg) { return max(above, seg(0.0, 0.0, 9.0) < 50000.0 ? neg(seg(0.0, 0.0, 9.0)) : seg(0.0, 0.0, 2.0)); }, segments, -100000.0);
   solid = max(shaftSoFar.x, -cuts);
-  solid.box = [[neg(reach), neg(reach), bottomFace], [reach, reach, topFace]];
+  solid.box = [[neg(reach), neg(reach), extentLow < 50000.0 ? boxLow : bottomFace],
+               [reach, reach, extentHigh < 50000.0 ? boxHigh : topFace]];
   return solid;
 }
 
@@ -178,8 +193,13 @@ body(segments, bottomHole, topHole) {
   bottomVoid = remap(drill.hole(bottomHole, 0.0), [p.x, -p.y, bottomFace - p.z]);
   // The box, as body(segments) gives it: the holes only take material away.
   reach = reduce((r, seg) { return max(r, seg(0.0, 0.0, 5.0)); }, segments, 0.0);
+  extentLow = reduce((n, seg) { return min(n, seg(0.0, 0.0, 8.0)); }, segments, 100000.0);
+  extentHigh = reduce((n, seg) { return min(n, seg(0.0, 0.0, 9.0)); }, segments, 100000.0);
+  boxLow = reduce((below, seg) { return min(below, seg(0.0, 0.0, 8.0) < 50000.0 ? seg(0.0, 0.0, 8.0) : seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
+  boxHigh = reduce((above, seg) { return max(above, seg(0.0, 0.0, 9.0) < 50000.0 ? neg(seg(0.0, 0.0, 9.0)) : seg(0.0, 0.0, 2.0)); }, segments, -100000.0);
   solid = max(shaftSoFar.x, -cuts, -topVoid, -bottomVoid);
-  solid.box = [[neg(reach), neg(reach), bottomFace], [reach, reach, topFace]];
+  solid.box = [[neg(reach), neg(reach), extentLow < 50000.0 ? boxLow : bottomFace],
+               [reach, reach, extentHigh < 50000.0 ? boxHigh : topFace]];
   return solid;
 }
 
@@ -206,8 +226,13 @@ envelope(segments) {
   bottomFace = reduce((low, seg) { return min(low, seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
   topFace = reduce((high, seg) { return max(high, seg(0.0, 0.0, 2.0)); }, segments, -100000.0);
   reach = reduce((r, seg) { return max(r, seg(0.0, 0.0, 5.0)); }, segments, 0.0);
+  extentLow = reduce((n, seg) { return min(n, seg(0.0, 0.0, 8.0)); }, segments, 100000.0);
+  extentHigh = reduce((n, seg) { return min(n, seg(0.0, 0.0, 9.0)); }, segments, 100000.0);
+  boxLow = reduce((below, seg) { return min(below, seg(0.0, 0.0, 8.0) < 50000.0 ? seg(0.0, 0.0, 8.0) : seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
+  boxHigh = reduce((above, seg) { return max(above, seg(0.0, 0.0, 9.0) < 50000.0 ? neg(seg(0.0, 0.0, 9.0)) : seg(0.0, 0.0, 2.0)); }, segments, -100000.0);
   solid = shaftSoFar.x;
-  solid.box = [[neg(reach), neg(reach), bottomFace], [reach, reach, topFace]];
+  solid.box = [[neg(reach), neg(reach), extentLow < 50000.0 ? boxLow : bottomFace],
+               [reach, reach, extentHigh < 50000.0 ? boxHigh : topFace]];
   return solid;
 }
 
@@ -228,8 +253,13 @@ envelope(segments, bottomHole, topHole) {
   topVoid = drill.hole(topHole, topFace);
   bottomVoid = remap(drill.hole(bottomHole, 0.0), [p.x, -p.y, bottomFace - p.z]);
   reach = reduce((r, seg) { return max(r, seg(0.0, 0.0, 5.0)); }, segments, 0.0);
+  extentLow = reduce((n, seg) { return min(n, seg(0.0, 0.0, 8.0)); }, segments, 100000.0);
+  extentHigh = reduce((n, seg) { return min(n, seg(0.0, 0.0, 9.0)); }, segments, 100000.0);
+  boxLow = reduce((below, seg) { return min(below, seg(0.0, 0.0, 8.0) < 50000.0 ? seg(0.0, 0.0, 8.0) : seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
+  boxHigh = reduce((above, seg) { return max(above, seg(0.0, 0.0, 9.0) < 50000.0 ? neg(seg(0.0, 0.0, 9.0)) : seg(0.0, 0.0, 2.0)); }, segments, -100000.0);
   solid = max(shaftSoFar.x, -topVoid, -bottomVoid);
-  solid.box = [[neg(reach), neg(reach), bottomFace], [reach, reach, topFace]];
+  solid.box = [[neg(reach), neg(reach), extentLow < 50000.0 ? boxLow : bottomFace],
+               [reach, reach, extentHigh < 50000.0 ? boxHigh : topFace]];
   return solid;
 }
 
@@ -404,6 +434,65 @@ gear(numTeeth, moduleVal, pressureAngle, helixAngle, from, to, bottomEnd, topEnd
   return seg;
 }
 
+/// The same gear with a `backlash`, for a running pair: every tooth thinned
+/// by that much across its flanks, by offsetting its section half of it
+/// inward, as gears.bevelTeeth does, so the tip also falls and the root
+/// deepens by half of it. A circular tooth thickness on the pitch circle falls
+/// by backlash / cos(pressureAngle).
+///
+///   shaft.gear(20.0, 2.0, radians(20.0), 0.0, 0.0, 20.0, shaft.planeEnd(), shaft.planeEnd(), 0.1)
+gear(numTeeth, moduleVal, pressureAngle, helixAngle, from, to, bottomEnd, topEnd, backlash) {
+  seg(eDown, eUp, want) {
+    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
+         : (want > 4.5 ? (want > 5.5 ? nothing : numTeeth * moduleVal / 2.0 + moduleVal)
+         : (want > 3.5 ? prismSegment(length(p.xy) - (numTeeth * moduleVal / 2.0 + moduleVal), from, to, eDown, eUp, 0.0) : (want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(topEnd.x > 0.5 && topEnd.x < 1.5) ? nothing : machinedSegment(gearSection(numTeeth, moduleVal, pressureAngle, helixAngle, from, backlash),
+                           numTeeth * moduleVal / 2.0 + moduleVal, numTeeth * moduleVal / 2.0 - 1.25 * moduleVal,
+                           from, to, eDown, eUp, want, bottomEnd, topEnd))));
+  }
+  return seg;
+}
+
+/// A bevel gear: `numTeeth` teeth running against a mate of `mateTeeth` on
+/// shafts crossing at `shaftAngle`, of module `moduleVal` at the outer end and
+/// pressure angle `pressureAngle`, gears.bevelTeeth's tooth with shaft.gear's
+/// root clearance and tip break (a quarter and a twentieth of a module). The
+/// pitch cone follows from the two tooth counts and the shaft angle, as
+/// gears.bevelTooth derives it, so a gear and its mate cannot disagree.
+/// `spiralAngle` is signed by hand, 0 for a straight bevel, and a mate takes
+/// the opposite hand; `faceWidth` runs along the cone element in from the outer
+/// end, and `backlash` thins every tooth as gears.bevelTeeth does.
+///
+/// It is placed by its pitch apex `apex` on the axis and its two flat faces,
+/// the planes z = `from` and z = `to`; apex to back face is the gear's mounting
+/// distance. The teeth face the apex: with it below `from` they face -Z, the
+/// toe face at `from` and the back face at `to`, as gears.bevelGear's do; with
+/// it above `to` they face +Z, the same gear turned a half turn about X, which
+/// keeps the hand of the spiral. The ends are gears.bevelGear's: each tooth
+/// end runs out on its cone normal to the pitch cone, the back cone at the heel
+/// and the front cone at the toe, and the flat face cuts across it. The faces
+/// are where the drawing puts them; gears.bevelApexToCrown places them from the
+/// crown, the toe's tip corner lying (1 - faceWidth / outer cone distance) of
+/// the way along. A toe face set past the toe's tip corner leaves the toe teeth
+/// standing proud of it toward the apex, beyond the segment's plane, and the
+/// shaft's box holds them.
+///
+///   shaft.bevel(16.0, 24.0, 2.0, radians(20.0), pi / 2.0, 0.0, 9.0, 0.05, 50.0, 25.0, 33.0)
+bevel(numTeeth, mateTeeth, moduleVal, pressureAngle, shaftAngle, spiralAngle, faceWidth, backlash, apex, from, to) {
+  // The field and the envelope are asked with want 0 and a flag, as every
+  // segment passes its envelope through as want 0: handed the raw want, a
+  // helper that tells 4 from 0 itself leaves the shaft's box unbounded (the
+  // box analysis loses the closure's answers to every question then).
+  seg(eDown, eUp, want) {
+    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
+         : (want > 4.5 ? (want > 5.5 && want < 7.5 ? nothing : bevelBoxAnswer(numTeeth, mateTeeth, moduleVal, shaftAngle, faceWidth, apex, from, to, want))
+                      : (want > 2.5 && want < 3.5 ? nothing
+                                                  : bevelSegment(bevelTeethField(numTeeth, mateTeeth, moduleVal, pressureAngle, shaftAngle, spiralAngle, backlash, apex, to),
+                                                                 numTeeth, mateTeeth, moduleVal, shaftAngle, faceWidth, apex, from, to, eDown, eUp,
+                                                                 want > 3.5 ? 0.0 : want, want > 3.5 ? 1.0 : 0.0)));
+  }
+  return seg;
+}
+
 /// An external ISO 68-1 thread of `major` diameter and pitch `pitchVal`, cut
 /// from z = `from` to z = `to`: thread.male, the exact basic profile, as a
 /// prism segment. Its helix is phased from z = 0, as drill.tap's is, so a stud
@@ -463,7 +552,7 @@ fillet(radius) {
 /// it is the exact line.
 chamfer(size) {
   joint(eDown, eUp, want) {
-    return want > 6.5 ? size : (want > 5.5 ? nothing : jointAnswer(eDown, eUp, want));
+    return want > 7.5 ? nothing : (want > 6.5 ? size : (want > 5.5 ? nothing : jointAnswer(eDown, eUp, want)));
   }
   return joint;
 }
@@ -586,6 +675,72 @@ gearSection(numTeeth, moduleVal, pressureAngle, helixAngle, from) {
   profile = remap(gears.gearProfile(numTeeth, moduleVal, pressureAngle, 0.0, 0.25, 0.05 * moduleVal),
                   [p.x * cosT + p.y * sinT, p.y * cosT - p.x * sinT, p.z]);
   return profile / sqrt(1.0 + tipRadius * twistRate * tipRadius * twistRate);
+}
+
+// The same section with every tooth thinned by `backlash` across its flanks:
+// offset half of it inward in the transverse section, before the twist's
+// stretch is divided out.
+gearSection(numTeeth, moduleVal, pressureAngle, helixAngle, from, backlash) {
+  pitchRadius = numTeeth * moduleVal / 2.0;
+  tipRadius = pitchRadius + moduleVal;
+  twistRate = tan(helixAngle) / pitchRadius;
+  twist = (p.z - from) * twistRate;
+  cosT = cos(twist);
+  sinT = sin(twist);
+  profile = remap(gears.gearProfile(numTeeth, moduleVal, pressureAngle, 0.0, 0.25, 0.05 * moduleVal),
+                  [p.x * cosT + p.y * sinT, p.y * cosT - p.x * sinT, p.z]);
+  return (profile + backlash / 2.0) / sqrt(1.0 + tipRadius * twistRate * tipRadius * twistRate);
+}
+
+// The bevel gear in its own frame: apex at the origin, the teeth facing it
+// down -Z. With the apex above `to` the frame is turned a half turn about X,
+// (x, -y, apex - z), so the same field faces +Z with the spiral's hand kept.
+// Its ends are gears.bevelGear's: the heel is its back cone AND its back face,
+// the toe its front cone OR its toe face (the front cone's continuation runs
+// through the blank, so as an intersection it would punch out the bore's
+// surroundings). Extending an end moves only its face: past the heel the back
+// cone still binds, well inside any neighbour's span; past the toe the root
+// cone narrows toward the apex. Asked for its envelope (want 4) it is the
+// blank, the tip cone between the same ends, which the teeth lie within.
+bevelSegment(teeth, numTeeth, mateTeeth, moduleVal, shaftAngle, faceWidth, apex, from, to, eDown, eUp, want, envelope) {
+  pitchAngle = atan(sin(shaftAngle), mateTeeth / numTeeth + cos(shaftAngle));
+  sinD = sin(pitchAngle);
+  cosD = cos(pitchAngle);
+  outerCone = numTeeth * moduleVal / (2.0 * sinD);
+  innerCone = outerCone - faceWidth;
+  lz = (apex > to ? neg(1.0) : 1.0) * (p.z - apex);
+  toeFace = min(abs(from - apex), abs(to - apex)) - (apex > to ? eUp : eDown);
+  heelFace = max(abs(from - apex), abs(to - apex)) + (apex > to ? eDown : eUp);
+  elementDist = length(p.xy) * sinD + lz * cosD;
+  heelCap = max(elementDist - outerCone, lz - heelFace);
+  toeCap = min(innerCone - elementDist, toeFace - lz);
+  ends = max(heelCap, toeCap);
+  tipAngle = pitchAngle + moduleVal / outerCone;
+  tipCone = length([p.x, p.y, lz]) * sin(clamp(atan(length(p.xy), lz) - tipAngle, neg(pi) / 2.0, pi / 2.0));
+  return want > 2.5 ? nothing : segmentAnswer(want, envelope > 0.5 ? max(tipCone, ends) : intersectChamfer(teeth, ends, 0.05 * moduleVal), from, to);
+}
+
+// What a bevel answers for the box. With the pitch angle d, the outer cone
+// distance R and the addendum angle a = moduleVal / R: its reach (want 5) is
+// the crown, R sin(d + a) / cos(a) from the axis, as gears.bevelReach gives
+// it; its toe teeth reach the toe's tip corner, (R - faceWidth) cos(d + a) /
+// cos(a) from the apex, or the toe face where that is the nearer, the lowest
+// point (want 8) of a gear facing -Z or the highest (want 9, negated) of one
+// facing +Z.
+bevelBoxAnswer(numTeeth, mateTeeth, moduleVal, shaftAngle, faceWidth, apex, from, to, want) {
+  pitchAngle = atan(sin(shaftAngle), mateTeeth / numTeeth + cos(shaftAngle));
+  outerCone = numTeeth * moduleVal / (2.0 * sin(pitchAngle));
+  addendumAngle = moduleVal / outerCone;
+  toeTeeth = min(min(abs(from - apex), abs(to - apex)), (outerCone - faceWidth) * cos(pitchAngle + addendumAngle) / cos(addendumAngle));
+  return want < 5.5 ? outerCone * sin(pitchAngle + addendumAngle) / cos(addendumAngle)
+       : (want < 8.5 ? (apex > to ? nothing : apex + toeTeeth) : (apex > to ? neg(apex - toeTeeth) : nothing));
+}
+
+// The bevel's teeth, gears.bevelTeeth, in the frame bevelSegment describes.
+bevelTeethField(numTeeth, mateTeeth, moduleVal, pressureAngle, shaftAngle, spiralAngle, backlash, apex, to) {
+  facing = apex > to ? neg(1.0) : 1.0;
+  return remap(gears.bevelTeeth(numTeeth, moduleVal, pressureAngle, gears.bevelPitchAngle(numTeeth, mateTeeth, shaftAngle), spiralAngle, 0.0, backlash, 0.25, 0.05 * moduleVal),
+               [p.x, facing * p.y, facing * (p.z - apex)]);
 }
 
 // A machined segment whose ends are named. In the fold it is its finished

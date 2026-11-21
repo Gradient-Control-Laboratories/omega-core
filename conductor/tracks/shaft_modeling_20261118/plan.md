@@ -296,3 +296,42 @@ Phase 0 has no start commit; Phase 7 was skipped.
       fourth `prev` parameter in the spec and the skill text; `bearing` documented since Phase 9;
       CHANGELOG already had every phase)
 - [x] Task: Metrics recorded (from commit times, wall-clock)
+
+## Phase 12: Gears as Shafts [checkpoint: 9ac230a]
+
+- [x] Task: Review of `gears` against the shaft (2026-11-21): the gear and bevel gear examples are
+      simple shafts (teeth, a hub after a chamfer joint, a through bore), short only a bevel segment.
+      An audit of the bevel against references independent of its construction,
+      `eval/gears_bevel_reference_test.go`: the standard equal-addendum straight-bevel formulas (face and
+      root angles within 2.3e-4 rad, the arc m/R against atan(m/R); outside diameter +4.7 um; apex to crown
+      -2.4 um; tooth thickness exact at both ends), and the profile against the spherical involute, the
+      conjugate tooth (2.3 um at module 2, held to 5 um). A transmission-error sweep found none above its
+      0.37 um resolution (backlash exactly 2b/cos(alpha)) and was dropped as too slow (47 s)
+- [x] Task: Proposal (approved 2026-11-21): `shaft.bevel(numTeeth, mateTeeth, moduleVal, pressureAngle,
+      shaftAngle, spiralAngle, faceWidth, backlash, apex, from, to)`, its planes the two flat faces, its
+      facing from where the apex lies (a half turn about X when it faces +Z), bevelGear's ends, the blank as
+      its envelope; box-extent queries (want 8, 9) so the toe teeth proud of the toe face stay in the box;
+      backlash on shaft.bevel and a `shaft.gear` overload; `gears.bevelApexToCrown`; `gears.bevelGear` and
+      the other part builders kept (spec 5, item 12)
+- [x] Task: Write failing tests (Red Phase), `eval/shaft_bevel_test.go`: equal to gears.bevelGear facing
+      -Z (straight, spiral, backlash); facing +Z is the half turn; a pinion on a shaft end (solid across
+      the joint, no material added or lost, exact outside); a straddle journal keeps the toe teeth; the box
+      holds them; the envelope holds the gear and is the tip cone outside; backlash thins by b/cos(alpha) on
+      both segments; bevelApexToCrown
+- [x] Task: Implement (Green & Refactor Phase): `shaft.bevel` (its teeth `bevelTeethField`, capped by
+      `bevelSegment`, its box answers `bevelBoxAnswer`); a `shaft.gear` overload with a backlash (the
+      section offset by half of it, as gears.bevelTeeth does); `gears.bevelApexToCrown`; the box reads
+      extents (want 8, 9) through a test against 50000 that folds, so every example's WGSL is unchanged; the
+      chamfer joint answers nothing to them. Three test defects corrected with the owner's approval (`ref` is
+      a reserved word; bevelGear's zero bore caps its inside, so the comparison skips where it binds;
+      backlash was defined twice). Findings: a `.box` sees only names declared before its value; handed the
+      raw `want`, a helper that tells the envelope from the field itself leaves the shaft's box unbounded, so
+      the bevel is asked with want 0 and a flag, as every segment's envelope is; `tool/check.sh` passed
+- [x] Task: Examples: `gears.gsl` and `bevel_gears.gsl` as shafts placed with transform (teeth, a chamfer
+      joint, a hub; `drill.thru` chamfered at both ends; phase a rotateZ, gear 2 turned pi (n - 1) / n and,
+      for the bevel, swung by rotateY(shaftAngle)); both mesh with a steady clearance across a tooth (0.043,
+      0.088); WGSL 11,427 -> 18,961 B and 37,664 -> 43,222 B; the owner's viewer check. The placed gears are
+      returned unnamed: named, their part boxes (time and sliders, through rotation) took `bevel_gears` to
+      276,697 B. No golden moved: `internal/testdata/example/` holds older documents of its own, built on
+      gearPair and bevelPair
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
