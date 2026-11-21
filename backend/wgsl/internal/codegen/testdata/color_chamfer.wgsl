@@ -1,11 +1,11 @@
-fn builtin_intersectChamfer(d1: f32, d2: f32, setback: f32) -> f32 {
+fn builtin_intersectChamfer(d1: f32, d2: f32, offset: f32) -> f32 {
   let face = max(d1, d2);
-  let edge = (d1 + d2 + setback) / 1.4142135;
+  let edge = (d1 + d2 + offset) / 1.4142135;
   return max(face, edge);
 }
 
-fn builtin_unionChamfer(d1: f32, d2: f32, setback: f32) -> f32 {
-  return -builtin_intersectChamfer(-d1, -d2, setback);
+fn builtin_unionChamfer(d1: f32, d2: f32, offset: f32) -> f32 {
+  return -builtin_intersectChamfer(-d1, -d2, offset);
 }
 
 fn gsl_remap(p: vec3<f32>) -> vec3<f32> {

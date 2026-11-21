@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 
+	participle "github.com/alecthomas/participle/v2"
+
 	"gradientcontrol.com/omega/core/internal/scope"
 )
 
@@ -32,6 +34,10 @@ func buildDeclaration(buildScope scope.BuilderScope, declNode Declaration) error
 		return buildPropertyAssignment(buildScope, decl)
 	case *NamedFunction:
 		return buildFunction(buildScope, decl)
+	case *CaptionDirective:
+		// takeCaptions lifts every top-level @caption out before the build,
+		// so one reaching here stands in a function body.
+		return participle.Errorf(decl.Pos, "@caption is a top-level directive and cannot appear inside a function")
 	default:
 		return fmt.Errorf("unhandled declaration type: %T", declNode)
 	}

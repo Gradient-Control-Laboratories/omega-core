@@ -5,8 +5,8 @@ import (
 
 	"gradientcontrol.com/omega/core/backend/wgsl/internal/wgsl"
 	"gradientcontrol.com/omega/core/internal/build"
-	"gradientcontrol.com/omega/core/program/noise/spinodoid"
 	"gradientcontrol.com/omega/core/program"
+	"gradientcontrol.com/omega/core/program/noise/spinodoid"
 )
 
 // The spinodoid in the preview (lattice Gabor; see common/noise/spinodoid).

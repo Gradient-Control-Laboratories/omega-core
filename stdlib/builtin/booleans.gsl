@@ -46,6 +46,31 @@ differenceSharp(target, tool) {
   return max(target, neg(tool));
 }
 
+/// The solid bounded by several surfaces that do not cross or touch: an
+/// outline with its holes, islands inside those holes, separate parts, in any
+/// order. Pass [field1, field2, ...] as one collection, each field negative on
+/// the solid's side of its own surface: a profileXY loop wound counterclockwise
+/// for an outline or an island and clockwise for a hole, or neg() of a solid to
+/// make it a void. Where each field is an exact distance the result is exact
+/// everywhere: the nearest surface's distance, with that surface's sign.
+/// Nothing checks the winding. A field negative on the wrong side reads as its
+/// own distance wherever its surface is the nearest: void just outside an
+/// island wound as a hole, and the field jumps sign where another surface
+/// becomes the nearer.
+//
+// Internal: the nearest surface with its sign, as profileXY's pools take it. A
+// field gated to its sign by max with a constant pools the outside and the
+// inside separately, and only their comparison picks the sign; the magnitude
+// comes from the ungated pool, so a cell on a surface is bounded by that
+// surface's own field, not by nothing. Each reduce starts from a list, as
+// profilePoolsXY's do: a scalar first argument is read as the function here.
+nested(fields) {
+  outside = reduce([nothing, 0], (best, field) { return [min(best.x, max(abs(field), field >= 0 ? 0 : nothing)), 0]; }, fields).x;
+  inside = reduce([nothing, 0], (best, field) { return [min(best.x, max(abs(field), field < 0 ? 0 : nothing)), 0]; }, fields).x;
+  nearest = reduce([nothing, 0], (best, field) { return [min(best.x, abs(field)), 0]; }, fields).x;
+  return outside <= inside ? nearest : neg(nearest);
+}
+
 /// Round CSG intersection with fillet `radius`. The intersection edge
 /// becomes a smooth arc of about that radius. At radius 0 the surface is
 /// intersectSharp's, but the field is not: outside a convex corner it
@@ -267,167 +292,274 @@ differenceExponential(target, tool, width) {
 // would otherwise blow up interval bounds in the mesher. The union
 // counterparts negate, intersect, and negate back, as elsewhere.
 
-/// Strongest pairwise (edge) chamfer plane of a list of SDFs at `setback`.
-intersectChamferEdges(fields, setback) {
+/// Strongest pairwise (edge) chamfer plane of a list of SDFs at `offset`.
+intersectChamferEdges(fields, offset) {
   face = intersectSharp(fields);
   return intersectSharp(map((di, i) {
     return intersectSharp(map((dj, j) {
-      return (j > i) ? (di + dj + setback) / sqrt2 : face;
+      return (j > i) ? (di + dj + offset) / sqrt2 : face;
     }, fields));
   }, fields));
 }
 
-/// Strongest three-way (vertex) chamfer plane of a list of SDFs at `setback`.
-intersectChamferVertices(fields, setback) {
+/// Strongest three-way (vertex) chamfer plane of a list of SDFs at `offset`.
+intersectChamferVertices(fields, offset) {
   face = intersectSharp(fields);
   return intersectSharp(map((di, i) {
     return intersectSharp(map((dj, j) {
       return intersectSharp(map((dl, l) {
-        return (l > j) && (j > i) ? (di + dj + dl + setback) / sqrt3 : face;
+        return (l > j) && (j > i) ? (di + dj + dl + offset) / sqrt3 : face;
       }, fields));
     }, fields));
   }, fields));
 }
 
 /// Union counterpart of intersectChamferEdges.
-unionChamferEdges(fields, setback) {
+unionChamferEdges(fields, offset) {
   negated = map((field) {
     return neg(field);
   }, fields);
-  return neg(intersectChamferEdges(negated, setback));
+  return neg(intersectChamferEdges(negated, offset));
 }
 
 /// Union counterpart of intersectChamferVertices.
-unionChamferVertices(fields, setback) {
+unionChamferVertices(fields, offset) {
   negated = map((field) {
     return neg(field);
   }, fields);
-  return neg(intersectChamferVertices(negated, setback));
+  return neg(intersectChamferVertices(negated, offset));
 }
 
-/// Chamfered CSG intersection: a bevel set back by `setback` along each face
-/// replaces the sharp intersection edge. The bevel is at 45° only where the
-/// faces meet at a right angle; its plane's gradient has length
-/// sqrt(1 + normal1·normal2), so at obtuse edges the field overstates distance.
-intersectChamfer(d1, d2, setback) {
+/// Chamfered CSG intersection: the bevel (d1 + d2 + offset) / sqrt2 replaces
+/// the sharp intersection edge. `offset` is added before dividing, so it is a
+/// setback along each face, and the bevel is at 45°, only where the faces meet
+/// at a right angle; the plane's gradient has length sqrt(1 + normal1·normal2),
+/// so at obtuse edges the field overstates distance. To size a chamfer by its
+/// depth, a setback along each face or its width at an edge of any angle, use
+/// intersectChamferNormalized (with chamferDepthFromSetback or
+/// chamferDepthFromWidth) or intersectChamferSetbacks.
+intersectChamfer(d1, d2, offset) {
   face = max(d1, d2);
-  edge = (d1 + d2 + setback) / sqrt2;
+  edge = (d1 + d2 + offset) / sqrt2;
   return max(face, edge);
 }
 
 /// Chamfered CSG intersection of three SDFs. Chamfers all three pairwise
 /// edges and the three-way vertex where they meet.
-intersectChamfer(d1, d2, d3, setback) {
+intersectChamfer(d1, d2, d3, offset) {
   face = max(d1, d2, d3);
   total = d1 + d2 + d3;
   // The strongest edge is between the two nearest faces: the two largest
   // d's, whose sum is the total minus the smallest.
-  edge = (total - min(d1, d2, d3) + setback) / sqrt2;
-  corner = (total + setback) / sqrt3;
+  edge = (total - min(d1, d2, d3) + offset) / sqrt2;
+  corner = (total + offset) / sqrt3;
   return max(face, edge, corner);
 }
 
-/// Chamfered CSG intersection of N SDFs. `setback` is a scalar that applies
-/// to edges and vertices alike, or pass [edgeSetback, vertexSetback] to
+/// Chamfered CSG intersection of N SDFs. `offset` is a scalar that applies
+/// to edges and vertices alike, or pass [edgeOffset, vertexOffset] to
 /// set them separately.
-intersectChamfer(fields, setback) {
+intersectChamfer(fields, offset) {
   return max(intersectSharp(fields),
-    intersectChamferEdges(fields, firstOf(setback)),
-    intersectChamferVertices(fields, lastOf(setback)));
+    intersectChamferEdges(fields, firstOf(offset)),
+    intersectChamferVertices(fields, lastOf(offset)));
 }
 
-/// Partial application of intersectChamfer: binds the chamfer setback and
+/// Partial application of intersectChamfer: binds the chamfer offset and
 /// returns the operator, ready to hand to a primitive that takes its own blend.
-intersectChamfer(setback) {
-  return (fields) { return intersectChamfer(fields, setback); };
+intersectChamfer(offset) {
+  return (fields) { return intersectChamfer(fields, offset); };
 }
 
-/// Chamfered CSG union with bevel set back by `setback`.
-unionChamfer(d1, d2, setback) {
-  return neg(intersectChamfer(neg(d1), neg(d2), setback));
+/// Chamfered CSG union with the bevel at `offset`, as for intersectChamfer.
+unionChamfer(d1, d2, offset) {
+  return neg(intersectChamfer(neg(d1), neg(d2), offset));
 }
 
 /// Chamfered CSG union of three SDFs.
-unionChamfer(d1, d2, d3, setback) {
-  return neg(intersectChamfer(neg(d1), neg(d2), neg(d3), setback));
+unionChamfer(d1, d2, d3, offset) {
+  return neg(intersectChamfer(neg(d1), neg(d2), neg(d3), offset));
 }
 
-/// Chamfered CSG union of N SDFs. `setback` is a scalar, or
-/// [edgeSetback, vertexSetback] to set edges and vertices separately.
-unionChamfer(fields, setback) {
+/// Chamfered CSG union of N SDFs. `offset` is a scalar, or
+/// [edgeOffset, vertexOffset] to set edges and vertices separately.
+unionChamfer(fields, offset) {
   negated = map((field) {
     return neg(field);
   }, fields);
-  return neg(intersectChamfer(negated, setback));
+  return neg(intersectChamfer(negated, offset));
 }
 
-/// Partial application of unionChamfer: binds the chamfer setback and returns
+/// Partial application of unionChamfer: binds the chamfer offset and returns
 /// the operator, ready to hand to a primitive that takes its own blend.
-unionChamfer(setback) {
-  return (fields) { return unionChamfer(fields, setback); };
+unionChamfer(offset) {
+  return (fields) { return unionChamfer(fields, offset); };
 }
 
 /// Chamfered CSG difference: target minus tool with a chamfered cut.
-differenceChamfer(target, tool, setback) {
-  return intersectChamfer(target, neg(tool), setback);
+differenceChamfer(target, tool, offset) {
+  return intersectChamfer(target, neg(tool), offset);
+}
+
+/// Chamfered CSG intersection by depth: the bevel is the plane `depth` in from
+/// the edge, square to the bisector of the angle between the faces, and its
+/// field has unit gradient at an edge of any angle. (d1 + d2) / |normal1 +
+/// normal2| is the signed distance to the plane through the edge square to that
+/// bisector, normal1 and normal2 being the two faces' outward unit normals at
+/// the edge, and the bevel is that field offset by `depth`.
+///
+/// intersectChamfer's bevel is the same plane, but its parameter is added to
+/// d1 + d2 before dividing (by sqrt2), so it is the depth times |normal1 +
+/// normal2|, a setback along each face only at a square edge. To chamfer by a
+/// setback along each face or by the bevel's width, convert with
+/// chamferDepthFromSetback or chamferDepthFromWidth.
+///
+/// Pass the normals when they are known, constant along the edge or
+/// analytic; the three-argument form takes them from the fields' gradients.
+/// Faces that face opposite ways have no edge to chamfer, and the guard on the
+/// divisor keeps the result finite there.
+intersectChamferNormalized(d1, d2, depth, normal1, normal2) {
+  face = max(d1, d2);
+  edge = (d1 + d2) / max(length(normal1 + normal2), 0.000001) + depth;
+  return max(face, edge);
+}
+
+/// intersectChamferNormalized taking each face's normal from its own field's
+/// gradient.
+intersectChamferNormalized(d1, d2, depth) {
+  return intersectChamferNormalized(d1, d2, depth, d1.dp, d2.dp);
+}
+
+/// The depth of a chamfer whose bevel meets each face `setback` from the edge,
+/// for the Normalized chamfers. With φ the angle between the faces, through the
+/// material, the depth is setback·cos(φ/2), and cos(φ/2) is |normal1 −
+/// normal2| / 2, the faces' outward unit normals at the edge: pass the same
+/// normals as to the chamfer (d1.dp and d2.dp for its three-argument form).
+chamferDepthFromSetback(setback, normal1, normal2) {
+  return setback * length(normal1 - normal2) / 2;
+}
+
+/// The depth of a chamfer whose bevel is `width` across, edge to edge, for the
+/// Normalized chamfers: width/2 · cot(φ/2), with φ the angle between the faces
+/// through the material. cot(φ/2) is |normal1 − normal2| / |normal1 + normal2|,
+/// the faces' outward unit normals at the edge, as for chamferDepthFromSetback.
+chamferDepthFromWidth(width, normal1, normal2) {
+  return width / 2 * length(normal1 - normal2) / max(length(normal1 + normal2), 0.000001);
+}
+
+/// Union counterpart of intersectChamferNormalized: unionChamfer's surface,
+/// with unit gradient at an edge of any angle. The normals are each solid's
+/// outward ones, as for the intersection.
+unionChamferNormalized(d1, d2, depth, normal1, normal2) {
+  return neg(intersectChamferNormalized(neg(d1), neg(d2), depth, neg(normal1), neg(normal2)));
+}
+
+/// unionChamferNormalized taking each face's normal from its own field's
+/// gradient.
+unionChamferNormalized(d1, d2, depth) {
+  return unionChamferNormalized(d1, d2, depth, d1.dp, d2.dp);
+}
+
+/// Difference counterpart of intersectChamferNormalized: target minus tool,
+/// differenceChamfer's surface with unit gradient at any edge. `toolNormal` is
+/// the tool's own outward normal; the cut's face points the other way.
+differenceChamferNormalized(target, tool, depth, targetNormal, toolNormal) {
+  return intersectChamferNormalized(target, neg(tool), depth, targetNormal, neg(toolNormal));
+}
+
+/// differenceChamferNormalized taking each face's normal from its own field's
+/// gradient.
+differenceChamferNormalized(target, tool, depth) {
+  return differenceChamferNormalized(target, tool, depth, target.dp, tool.dp);
+}
+
+/// Chamfered CSG intersection by two setbacks: the bevel meets the first face
+/// `setback1` from the edge and the second `setback2` from it, and its field has
+/// unit gradient. With φ the angle between the faces through the material, a
+/// point on the first face `setback1` from the edge is setback1·sinφ inside the
+/// second, so the bevel is the plane setback1·d1 + setback2·d2 + setback1·
+/// setback2·sinφ = 0, divided by the length of its gradient, setback1·normal1 +
+/// setback2·normal2. sinφ is taken from the normals' dot product. Equal
+/// setbacks give intersectChamferNormalized at chamferDepthFromSetback's depth.
+intersectChamferSetbacks(d1, d2, setback1, setback2, normal1, normal2) {
+  face = max(d1, d2);
+  cosine = dot(normal1, normal2);
+  sine = sqrt(max(1 - cosine * cosine, 0));
+  edge = (setback1 * d1 + setback2 * d2 + setback1 * setback2 * sine) / max(length(normal1 * setback1 + normal2 * setback2), 0.000001);
+  return max(face, edge);
+}
+
+/// Union counterpart of intersectChamferSetbacks: `setback1` along the first
+/// solid's face, `setback2` along the second's. The normals are each solid's
+/// outward ones, as for the intersection.
+unionChamferSetbacks(d1, d2, setback1, setback2, normal1, normal2) {
+  return neg(intersectChamferSetbacks(neg(d1), neg(d2), setback1, setback2, neg(normal1), neg(normal2)));
+}
+
+/// Difference counterpart of intersectChamferSetbacks: target minus tool,
+/// `targetSetback` along the target's face and `toolSetback` along the cut's.
+/// `toolNormal` is the tool's own outward normal; the cut's face points the
+/// other way.
+differenceChamferSetbacks(target, tool, targetSetback, toolSetback, targetNormal, toolNormal) {
+  return intersectChamferSetbacks(target, neg(tool), targetSetback, toolSetback, targetNormal, neg(toolNormal));
 }
 
 /// Chamfered intersection whose chamfer planes are joined by a round fillet
 /// of `radius`: intersectChamferBlend with intersectRound(radius). A
 /// bevel that fades into a fillet rather than ending in a hard line.
 /// Radius 0 gives intersectChamfer's surface.
-intersectChamferRound(d1, d2, setback, radius) {
-  return intersectChamferBlend(d1, d2, setback, intersectRound(radius));
+intersectChamferRound(d1, d2, offset, radius) {
+  return intersectChamferBlend(d1, d2, offset, intersectRound(radius));
 }
 
 /// Chamfered + rounded intersection of three SDFs.
-intersectChamferRound(d1, d2, d3, setback, radius) {
-  return intersectChamferBlend(d1, d2, d3, setback, intersectRound(radius));
+intersectChamferRound(d1, d2, d3, offset, radius) {
+  return intersectChamferBlend(d1, d2, d3, offset, intersectRound(radius));
 }
 
-/// Chamfered + rounded CSG intersection of N SDFs. `setback` is a scalar, or
-/// [edgeSetback, vertexSetback] to set edges and vertices separately;
+/// Chamfered + rounded CSG intersection of N SDFs. `offset` is a scalar, or
+/// [edgeOffset, vertexOffset] to set edges and vertices separately;
 /// `radius` is the fillet radius. One fillet joins the face, edge
 /// and vertex planes, so edge and vertex rounding are not independent.
-intersectChamferRound(fields, setback, radius) {
-  return intersectChamferBlend(fields, setback, intersectRound(radius));
+intersectChamferRound(fields, offset, radius) {
+  return intersectChamferBlend(fields, offset, intersectRound(radius));
 }
 
-/// Partial application of intersectChamferRound: binds the chamfer setback and
+/// Partial application of intersectChamferRound: binds the chamfer offset and
 /// rounding radius and returns the operator, ready to hand to a primitive that
 /// takes its own blend.
-intersectChamferRound(setback, radius) {
-  return (fields) { return intersectChamferRound(fields, setback, radius); };
+intersectChamferRound(offset, radius) {
+  return (fields) { return intersectChamferRound(fields, offset, radius); };
 }
 
 /// Chamfered union whose chamfer planes are joined by a round fillet of
 /// `radius`: unionChamferBlend with unionRound(radius).
-unionChamferRound(d1, d2, setback, radius) {
-  return unionChamferBlend(d1, d2, setback, unionRound(radius));
+unionChamferRound(d1, d2, offset, radius) {
+  return unionChamferBlend(d1, d2, offset, unionRound(radius));
 }
 
 /// Chamfered + rounded union of three SDFs.
-unionChamferRound(d1, d2, d3, setback, radius) {
-  return unionChamferBlend(d1, d2, d3, setback, unionRound(radius));
+unionChamferRound(d1, d2, d3, offset, radius) {
+  return unionChamferBlend(d1, d2, d3, offset, unionRound(radius));
 }
 
 /// Chamfered + rounded CSG union of N SDFs (see intersectChamferRound for the
-/// setback and radius parameters).
-unionChamferRound(fields, setback, radius) {
-  return unionChamferBlend(fields, setback, unionRound(radius));
+/// offset and radius parameters).
+unionChamferRound(fields, offset, radius) {
+  return unionChamferBlend(fields, offset, unionRound(radius));
 }
 
-/// Partial application of unionChamferRound: binds the chamfer setback and
+/// Partial application of unionChamferRound: binds the chamfer offset and
 /// rounding radius and returns the operator, ready to hand to a primitive that
 /// takes its own blend.
-unionChamferRound(setback, radius) {
-  return (fields) { return unionChamferRound(fields, setback, radius); };
+unionChamferRound(offset, radius) {
+  return (fields) { return unionChamferRound(fields, offset, radius); };
 }
 
 /// Chamfered + rounded CSG difference: target minus tool with a chamfered cut
 /// whose planes are joined by a round fillet of `radius`.
-differenceChamferRound(target, tool, setback, radius) {
-  return intersectChamferRound(target, neg(tool), setback, radius);
+differenceChamferRound(target, tool, offset, radius) {
+  return intersectChamferRound(target, neg(tool), offset, radius);
 }
 
 /// Chamfered intersection whose chamfer planes are combined by `blend`
@@ -435,76 +567,76 @@ differenceChamferRound(target, tool, setback, radius) {
 /// such as intersectRound(radius), intersectLp(width, exponent) or
 /// intersectExponential(width);
 /// its width is used as given. intersectSharp gives back intersectChamfer.
-intersectChamferBlend(d1, d2, setback, blend) {
+intersectChamferBlend(d1, d2, offset, blend) {
   face = max(d1, d2);
-  edge = (d1 + d2 + setback) / sqrt2;
+  edge = (d1 + d2 + offset) / sqrt2;
   return blend([face, edge]);
 }
 
 /// Chamfered intersection of three SDFs with its chamfer planes combined by
 /// `blend`.
-intersectChamferBlend(d1, d2, d3, setback, blend) {
+intersectChamferBlend(d1, d2, d3, offset, blend) {
   face = max(d1, d2, d3);
   total = d1 + d2 + d3;
-  edge = (total - min(d1, d2, d3) + setback) / sqrt2;
-  corner = (total + setback) / sqrt3;
+  edge = (total - min(d1, d2, d3) + offset) / sqrt2;
+  corner = (total + offset) / sqrt3;
   return blend([face, edge, corner]);
 }
 
 /// Chamfered CSG intersection of N SDFs with its chamfer planes combined by
-/// `blend`. `setback` is a scalar, or [edgeSetback, vertexSetback].
+/// `blend`. `offset` is a scalar, or [edgeOffset, vertexOffset].
 /// One blend joins the face, edge and vertex planes, so edge and vertex
 /// blending are not independent.
-intersectChamferBlend(fields, setback, blend) {
+intersectChamferBlend(fields, offset, blend) {
   return blend([intersectSharp(fields),
-    intersectChamferEdges(fields, firstOf(setback)),
-    intersectChamferVertices(fields, lastOf(setback))]);
+    intersectChamferEdges(fields, firstOf(offset)),
+    intersectChamferVertices(fields, lastOf(offset))]);
 }
 
-/// Partial application of intersectChamferBlend: binds the chamfer setback and
+/// Partial application of intersectChamferBlend: binds the chamfer offset and
 /// blend and returns the operator, ready to hand to a primitive that takes its
 /// own blend.
-intersectChamferBlend(setback, blend) {
-  return (fields) { return intersectChamferBlend(fields, setback, blend); };
+intersectChamferBlend(offset, blend) {
+  return (fields) { return intersectChamferBlend(fields, offset, blend); };
 }
 
 /// Chamfered union whose chamfer planes are combined by `blend`, a union
 /// operator over a list such as unionRound(radius), unionLp(width, exponent) or
 /// unionExponential(width). unionSharp gives back unionChamfer.
-unionChamferBlend(d1, d2, setback, blend) {
+unionChamferBlend(d1, d2, offset, blend) {
   face = min(d1, d2);
-  edge = (d1 + d2 - setback) / sqrt2;
+  edge = (d1 + d2 - offset) / sqrt2;
   return blend([face, edge]);
 }
 
 /// Chamfered union of three SDFs with its chamfer planes combined by `blend`.
-unionChamferBlend(d1, d2, d3, setback, blend) {
+unionChamferBlend(d1, d2, d3, offset, blend) {
   face = min(d1, d2, d3);
   total = d1 + d2 + d3;
-  edge = (total - max(d1, d2, d3) - setback) / sqrt2;
-  corner = (total - setback) / sqrt3;
+  edge = (total - max(d1, d2, d3) - offset) / sqrt2;
+  corner = (total - offset) / sqrt3;
   return blend([face, edge, corner]);
 }
 
 /// Chamfered CSG union of N SDFs with its chamfer planes combined by the
-/// union operator `blend` (see intersectChamferBlend for setback).
-unionChamferBlend(fields, setback, blend) {
+/// union operator `blend` (see intersectChamferBlend for offset).
+unionChamferBlend(fields, offset, blend) {
   return blend([unionSharp(fields),
-    unionChamferEdges(fields, firstOf(setback)),
-    unionChamferVertices(fields, lastOf(setback))]);
+    unionChamferEdges(fields, firstOf(offset)),
+    unionChamferVertices(fields, lastOf(offset))]);
 }
 
-/// Partial application of unionChamferBlend: binds the chamfer setback and
+/// Partial application of unionChamferBlend: binds the chamfer offset and
 /// blend and returns the operator, ready to hand to a primitive that takes its
 /// own blend.
-unionChamferBlend(setback, blend) {
-  return (fields) { return unionChamferBlend(fields, setback, blend); };
+unionChamferBlend(offset, blend) {
+  return (fields) { return unionChamferBlend(fields, offset, blend); };
 }
 
 /// Chamfered CSG difference: target minus tool, with the chamfer planes
 /// combined by the intersection operator `blend` (see intersectChamferBlend).
-differenceChamferBlend(target, tool, setback, blend) {
-  return intersectChamferBlend(target, neg(tool), setback, blend);
+differenceChamferBlend(target, tool, offset, blend) {
+  return intersectChamferBlend(target, neg(tool), offset, blend);
 }
 
 /// Edge-coordinate fillets. For each pair of fields in the list, `profile`

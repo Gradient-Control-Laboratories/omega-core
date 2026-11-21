@@ -77,4 +77,3 @@ return mesh(0, matrix.inverse(placement));
 		}
 	}
 }
-
