@@ -43,8 +43,8 @@
 
 #![warn(missing_docs)]
 
-use fidget_core::{compiler::RegOp, vm::VmData};
-use std::collections::HashMap;
+use fidget_core::{compiler::RegOp, var::VarMap, vm::VmData};
+use std::{collections::HashMap, sync::Arc};
 use zerocopy::IntoBytes;
 
 /// Error type indicating that the reserved register (255) was used
@@ -168,6 +168,7 @@ pub struct Bytecode {
     reg_count: u8,
     mem_count: u32,
     data: Vec<u32>,
+    vars: Arc<VarMap>,
 }
 
 impl Bytecode {
@@ -180,6 +181,11 @@ impl Bytecode {
     /// Raw serialized operations
     pub fn data(&self) -> &[u32] {
         &self.data
+    }
+
+    /// Variable map
+    pub fn vars(&self) -> &VarMap {
+        &self.vars
     }
 
     /// Number of registers (0-indexed) used by the tape
@@ -372,6 +378,7 @@ impl Bytecode {
             data,
             mem_count,
             reg_count,
+            vars: t.vars.clone(),
         })
     }
 }
