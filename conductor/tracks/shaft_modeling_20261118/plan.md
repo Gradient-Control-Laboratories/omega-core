@@ -252,7 +252,7 @@ treatment), the phase opens with a proposal for the owner to approve before any 
       added to the bush test with the owner's approval
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
-## Phase 10: Box Override and Simplified Model
+## Phase 10: Box Override and Simplified Model [checkpoint: c6de608]
 
 - [x] Task: Proposal (approved 2026-11-20): `shaft.body` declares a box from its end faces and each
       segment's reach; a caller overrides it with their own `.box`; `shaft.envelope(segments[, bottomHole,
