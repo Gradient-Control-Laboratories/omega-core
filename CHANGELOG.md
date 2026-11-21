@@ -71,6 +71,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the bevel, about 1.7 to 1.8 times as deep as before at these edges (116 to 129 degrees through the
   material); the body, standoff and bore chamfers are unchanged. Gear and bevel-gear WGSL grows by
   582 bytes.
+- A box declared in a function written in the document may read locals assigned after the shape it bounds:
+  the crop that applies it was written on the shape's own line, so such a local was read before its assignment
+  ("undefined identifier"). A cropped body is now put in an order its reads allow; one that compiled before is
+  unchanged, and every reader of the shape still reads it cropped.
 
 ## [0.1.3] - 2026-11-17
 
