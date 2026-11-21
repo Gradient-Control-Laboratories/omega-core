@@ -62,8 +62,7 @@ impl Grad {
         // both zero -- the root of a sum of squared clamped terms, such as
         // length(max(d, 0)), which is identically zero wherever every clamp
         // is -- that quotient is 0 / 0, and one NaN gradient breaks a mesh.
-        // The derivative there is zero: take it, as omega's own symbolic
-        // derivative does (internal/assembler/property/derivative.go).
+        // The derivative there is zero: take it.
         let d = |g: f32| if g == 0.0 { 0.0 } else { g / (2.0 * v) };
         Grad {
             v,
@@ -176,20 +175,24 @@ impl Grad {
     /// Minimum of two values
     ///
     /// If either value is `NAN`, then this returns `NAN` (with empty gradients)
+    ///
+    /// If the values are equal, prefers the left-hand argument
     #[inline]
     pub fn min(self, rhs: Self) -> Self {
         if self.v.is_nan() || rhs.v.is_nan() {
             f32::NAN.into()
-        } else if self.v < rhs.v {
-            self
-        } else {
+        } else if self.v > rhs.v {
             rhs
+        } else {
+            self
         }
     }
 
     /// Maximum of two values
     ///
     /// If either value is `NAN`, then this returns `NAN` (with empty gradients)
+    ///
+    /// If the values are equal, prefers the right-hand argument
     #[inline]
     pub fn max(self, rhs: Self) -> Self {
         if self.v.is_nan() || rhs.v.is_nan() {

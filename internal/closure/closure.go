@@ -44,6 +44,10 @@ type transformer struct {
 	// function takes the whole chain and not just the innermost link — see
 	// bindsValueName.
 	fnStack []*program.Function
+	// fileEnvs is each file's top-level closure bindings (filled in as
+	// transformFile walks its assignments): the environment a package-level
+	// function body is transformed in, whoever calls it. See lexicalEnv.
+	fileEnvs map[*program.PackageFile]map[string]*closureVal
 }
 
 // listParamKey identifies one parameter of one function.
@@ -71,6 +75,7 @@ func newTransformer(prog *program.Program) *transformer {
 		liftedFns:      make(map[liftKey]string),
 		listBindings:   make(map[*program.Function]map[string][]*program.Operand),
 		listParamCache: make(map[listParamKey]bool),
+		fileEnvs:       make(map[*program.PackageFile]map[string]*closureVal),
 	}
 }
 

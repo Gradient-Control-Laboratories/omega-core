@@ -1,10 +1,10 @@
 [package]
 name = "fidget-rhai"
-version = "0.5.0"
+version = "0.5.1"
 edition = "2024"
 rust-version = "1.95"
 authors = ["Matt Keeter <matt.j.keeter@gmail.com>"]
-description = "Rhai script evaluation for complex closed-form implicit surfaces (vendored at fidget e329a898)"
+description = "Rhai script evaluation for complex closed-form implicit surfaces (vendored from the GCL fork of fidget, see ../FIDGET_PIN)"
 readme = "README.md"
 license = "MPL-2.0"
 repository = "https://github.com/mkeeter/fidget"
@@ -18,8 +18,8 @@ path = "src/lib.rs"
 [dependencies]
 enum-map = "3.1.0"
 facet = { version = "0.46", features = ["reflect", "doc"] }
-fidget-core = { path = "../fidget-core", version = "=0.5.0" }
-fidget-shapes = { path = "../fidget-shapes", version = "=0.5.0" }
+fidget-core = { path = "../fidget-core", version = "=0.5.1" }
+fidget-shapes = { path = "../fidget-shapes", version = "=0.5.1" }
 heck = "0.5"
 rhai = { version = "1.24", features = ["sync"] }
 strum = { version = "0.28", features = ["derive"] }
