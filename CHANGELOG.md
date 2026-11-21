@@ -46,6 +46,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   between round segments, and free on a shaft that has none. Cranks: `shaft.eccentric(dia, offset, angle,
   from, to)` is a crank pin or an eccentric journal, and `shaft.web(mainR, pinR, offset, angle, from, to)`
   the exact hull of a circle about the axis and one about the pin.
+- `mechanical/bearing`: deep-groove ball bearings (series 60, 62, 63, bores 10 to 50) by designation, as
+  `bearing.deepGroove(6205.0, at)`, rings and balls, or `bearing.deepGrooveEnvelope`, the boundary dimensions
+  alone; their seat dimensions (`shoulderDia`, `filletMax`); ISO 4379 plain and flanged bushes by series; and
+  DIN 471 retaining-ring grooves. Every table cites its sources. Fits are nominal.
 - A `reduce` over a list of functions can take the element before this one as a fourth callback parameter,
   `reduce((acc, f, i, prev) { ... }, fs, seed)`; the first element is handed itself.
   along the cutter's arc, and `shaft.chamferEnd(size)` chamfers the tips.
