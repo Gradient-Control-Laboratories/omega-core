@@ -860,6 +860,22 @@ export function setTapesAvailable(on) {
     refreshControls();
 }
 
+const NO_AUDIO = "This program returns no audio";
+let audioTitle = null;
+let audioAvailable = false;
+
+// setAudioAvailable enables the Audio (.wav) format while the program returns
+// audio, and disables it otherwise.
+export function setAudioAvailable(on) {
+    audioAvailable = !!on;
+    const option = document.querySelector('#export-format option[value="wav"]');
+    if (!option) return;
+    if (audioTitle === null) audioTitle = option.title;
+    option.disabled = !audioAvailable;
+    option.title = audioAvailable ? audioTitle : NO_AUDIO;
+    refreshControls();
+}
+
 export function initExportPanel(hooks) {
     deps = hooks || {};
 
@@ -956,6 +972,10 @@ export function initExportPanel(hooks) {
     if (!deps.onServerExport || !deps.serverMarchingCubes) mesherOption('server-mc').remove();
     if (!deps.onSaveTape) formatSelect.querySelector('option[value="tape"]').remove();
     if (!deps.onExportPage) formatSelect.querySelector('option[value="page"]')?.remove();
+    if (!deps.onExportAudio) formatSelect.querySelector('option[value="wav"]')?.remove();
+    setAudioAvailable(audioAvailable);
+    const secondsRow = stlBoundsPanel.querySelector('.export-seconds');
+    const secondsInput = document.getElementById('export-seconds');
     // GLB is written by the server, so only an app whose server writes the
     // format (serverFormats) offers it, and only for a server mesher.
     const glbOption = formatSelect.querySelector('option[value="glb"]');
@@ -966,6 +986,7 @@ export function initExportPanel(hooks) {
     const SERVER_NOT_CLEANED = "This app's server export is not cleaned";
     const TAPE_NOT_MESHED = "A tape is the implicit field itself; nothing is meshed";
     const PAGE_NOT_MESHED = "A web page draws the implicit field itself; nothing is meshed";
+    const AUDIO_NOT_MESHED = "Audio is the program's sound; nothing is meshed";
     // The default is dual contouring: the server's where the host has one,
     // the browser's otherwise, marching cubes only failing both.
     const pickDefaultMesher = () => {
@@ -986,8 +1007,10 @@ export function initExportPanel(hooks) {
         // A tape or a web page is not meshed, so Detail, the mesher and Clean
         // have nothing to do.
         const page = formatSelect.value === 'page';
-        const unmeshed = formatSelect.value === 'tape' || page;
-        const NOT_MESHED = page ? PAGE_NOT_MESHED : TAPE_NOT_MESHED;
+        const wav = formatSelect.value === 'wav';
+        const unmeshed = formatSelect.value === 'tape' || page || wav;
+        const NOT_MESHED = page ? PAGE_NOT_MESHED : wav ? AUDIO_NOT_MESHED : TAPE_NOT_MESHED;
+        if (secondsRow) secondsRow.hidden = !wav;
         const onServer = mesherSelect.value === 'server' || mesherSelect.value === 'server-mc';
         // A server export the app downloads itself is STL only, unless the
         // server writes the format (serverFormats); either way it is not cleaned.
@@ -1019,6 +1042,14 @@ export function initExportPanel(hooks) {
         if (btnExport.classList.contains('unavailable')) return;
         if (formatSelect.value === 'tape') return deps.onSaveTape();
         if (formatSelect.value === 'page') return deps.onExportPage();
+        if (formatSelect.value === 'wav') {
+            const seconds = parseFloat(secondsInput.value);
+            if (!(seconds > 0)) {
+                showNotification(true, "Seconds must be a positive number");
+                return;
+            }
+            return deps.onExportAudio(Math.min(seconds, 600));
+        }
         const options = { format: formatSelect.value, clean: cleanBox.checked };
         switch (mesherSelect.value) {
             case 'mc': return exportBrowserMc(options);

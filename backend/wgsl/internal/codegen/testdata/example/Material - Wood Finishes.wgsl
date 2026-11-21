@@ -2,11 +2,11 @@ fn gsl_floored(a: f32, n: f32) -> f32 {
   return a - n * floor(a / n);
 }
 
-fn builtin_intersectChamfer(d1: f32, d2: f32, d3: f32, setback: f32, noiseTex: texture_3d<f32>) -> f32 {
+fn builtin_intersectChamfer(d1: f32, d2: f32, d3: f32, offset: f32, noiseTex: texture_3d<f32>) -> f32 {
   let face = max(max(d1, d2), d3);
   let total = d1 + d2 + d3;
-  let edge = (total - min(min(d1, d2), d3) + setback) / 1.4142135;
-  let corner = (total + setback) / 1.7320508;
+  let edge = (total - min(min(d1, d2), d3) + offset) / 1.4142135;
+  let corner = (total + offset) / 1.7320508;
   return max(max(face, edge), corner);
 }
 
