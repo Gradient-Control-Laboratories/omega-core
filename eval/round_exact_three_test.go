@@ -263,8 +263,8 @@ func TestIntersectRoundExactList_Opening(t *testing.T) {
 	}
 }
 
-// For three fields the list form, whose gradients are differences, is the three-field form,
-// whose gradients are .dp's.
+// For three fields the list form, whose folds the compiler unrolls and differentiates through, is
+// the three-field form, which calls the edges and the corner itself.
 func TestIntersectRoundExactList_IsTheThreeFieldForm(t *testing.T) {
 	rng := rand.New(rand.NewPCG(17, 18))
 	for _, c := range threeFieldCases() {

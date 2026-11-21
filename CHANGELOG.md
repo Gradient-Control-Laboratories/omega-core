@@ -24,14 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `unionRoundExact(fields, radius)` and their `Steps` forms round a list of fields: the largest of every pair's
   edge distance and every three's corner distance, which is exact where the intersection is convex, at any
   number of faces to a corner, among them the apex of fillet/rectangular-pyramid-all-edges, where four faces
-  meet and no ball touches all four. `.dp` cannot follow a field through `map`'s functions, so the list forms
-  take their gradients by central differences (`differenceGradient`); for three fields they cost about eight
-  times the three-field forms, N fields need N(N-1)/2 edges and N(N-1)(N-2)/6 corners, and Fidget's JIT
+  meet and no ball touches all four. N fields need N(N-1)/2 edges and N(N-1)(N-2)/6 corners; Fidget's JIT
   cannot build eight. A seam or corner point is accepted only where the fields vanish at it and the faces
   make an edge (normals more than about 0.6 degrees from parallel) or a corner (normals not near coplanar).
   `intersectRoundExact(radius)`, `intersectRoundExactSteps(radius, steps)` and their union duals bind the
   radius and return the operator, to hand a primitive that blends two fields, as `extrude` does.
-  `edgeDistance`, `cornerDistance`, `intersectDistance` and their `Differenced` forms, `edgeProject`,
+  `edgeDistance`, `cornerDistance`, `intersectDistance`, `offsetIntersectDistance`, `edgeProject`,
   `edgeNewtonStep`, `cornerNewtonStep` and the `...From` and `...Verdict` arithmetic they share are their
   parts. `examples/ball_and_post.gsl` shows them.
 - `nested(fields)` combines exact fields whose surfaces do not cross, each wound with its solid on the negative

@@ -900,124 +900,41 @@ intersectDistance(field1, field2, field3, iterations) {
     cornerDistance(field1, field2, field3, iterations));
 }
 
-/// The gradient of a field at c by central differences 0.001 apart. The list
-/// forms of the exact rounds take their gradients so, because they reach their
-/// fields through map's functions, where .dp cannot follow them. In single
-/// precision the difference of two values near a coordinate of size L is good
-/// to about L * 6e-8, so the gradient to about L * 6e-5: Newton's steps still
-/// converge to the same point, judged by the fields' own values, but at a
-/// metre's scale the region tests near their boundaries are looser.
-differenceGradient(field, c) {
-  h = 0.001;
-  return [
-    remap(field, c + [h, 0, 0]) - remap(field, c - [h, 0, 0]),
-    remap(field, c + [0, h, 0]) - remap(field, c - [0, h, 0]),
-    remap(field, c + [0, 0, h]) - remap(field, c - [0, 0, h])
-  ] / (2 * h);
-}
-
-/// edgeProject with differenceGradient's gradients.
-edgeProjectDifferenced(field1, field2, c) {
-  return edgeProjectFrom(
-    remap(field1, c), remap(field2, c),
-    differenceGradient(field1, c), differenceGradient(field2, c), c);
-}
-
-/// edgeNewtonStep with differenceGradient's gradients.
-edgeNewtonStepDifferenced(field1, field2, c) {
-  n1 = differenceGradient(field1, c);
-  n2 = differenceGradient(field2, c);
-  return edgeSlideFrom(
-    edgeProjectFrom(remap(field1, c), remap(field2, c), n1, n2, c), n1, n2);
-}
-
-/// edgeDistance with differenceGradient's gradients, for fields reached
-/// through map's functions. Each gradient costs six evaluations of its field.
-edgeDistanceDifferenced(field1, field2, iterations) {
-  s0 = p + [0.0001, 0.00007, 0.00003];
-  s1 = edgeNewtonStepDifferenced(field1, field2, s0);
-  s2 = edgeNewtonStepDifferenced(field1, field2, s1);
-  s3 = edgeNewtonStepDifferenced(field1, field2, s2);
-  s4 = edgeNewtonStepDifferenced(field1, field2, s3);
-  s5 = edgeNewtonStepDifferenced(field1, field2, s4);
-  s6 = edgeNewtonStepDifferenced(field1, field2, s5);
-  s7 = edgeNewtonStepDifferenced(field1, field2, s6);
-  c = iterations >= 8 ? edgeProjectDifferenced(field1, field2, s7)
-    : iterations >= 7 ? edgeProjectDifferenced(field1, field2, s6)
-    : iterations >= 6 ? edgeProjectDifferenced(field1, field2, s5)
-    : iterations >= 5 ? edgeProjectDifferenced(field1, field2, s4)
-    : iterations >= 4 ? edgeProjectDifferenced(field1, field2, s3)
-    : iterations >= 3 ? edgeProjectDifferenced(field1, field2, s2)
-    : iterations >= 2 ? edgeProjectDifferenced(field1, field2, s1)
-    : edgeProjectDifferenced(field1, field2, s0);
-  return edgeVerdict(
-    p - c,
-    differenceGradient(field1, c),
-    differenceGradient(field2, c),
-    max(field1, field2),
-    max(abs(remap(field1, c)), abs(remap(field2, c))));
-}
-
-/// cornerNewtonStep with differenceGradient's gradients.
-cornerNewtonStepDifferenced(field1, field2, field3, c) {
-  return cornerStepFrom(
-    remap(field1, c), remap(field2, c), remap(field3, c),
-    differenceGradient(field1, c), differenceGradient(field2, c), differenceGradient(field3, c), c);
-}
-
-/// cornerDistance with differenceGradient's gradients, for fields reached
-/// through map's functions.
-cornerDistanceDifferenced(field1, field2, field3, iterations) {
-  s0 = p + [0.0001, 0.00007, 0.00003];
-  s1 = cornerNewtonStepDifferenced(field1, field2, field3, s0);
-  s2 = cornerNewtonStepDifferenced(field1, field2, field3, s1);
-  s3 = cornerNewtonStepDifferenced(field1, field2, field3, s2);
-  s4 = cornerNewtonStepDifferenced(field1, field2, field3, s3);
-  s5 = cornerNewtonStepDifferenced(field1, field2, field3, s4);
-  s6 = cornerNewtonStepDifferenced(field1, field2, field3, s5);
-  s7 = cornerNewtonStepDifferenced(field1, field2, field3, s6);
-  s8 = cornerNewtonStepDifferenced(field1, field2, field3, s7);
-  c = iterations >= 8 ? s8
-    : iterations >= 7 ? s7
-    : iterations >= 6 ? s6
-    : iterations >= 5 ? s5
-    : iterations >= 4 ? s4
-    : iterations >= 3 ? s3
-    : iterations >= 2 ? s2
-    : s1;
-  return cornerVerdict(
-    p - c,
-    differenceGradient(field1, c),
-    differenceGradient(field2, c),
-    differenceGradient(field3, c),
-    max(field1, field2, field3),
-    max(abs(remap(field1, c)), abs(remap(field2, c)), abs(remap(field3, c))));
-}
-
-/// Exact distance to the sharp intersection of a list of fields whose faces
-/// may be curved: the largest of every pair's edge distance and every three's
-/// corner distance, as the three-field intersectDistance, with gradients by
-/// differences (differenceGradient), since .dp cannot follow a field through
-/// map's functions. N fields cost N(N-1)/2 edges and N(N-1)(N-2)/6 corners,
-/// each `iterations` steps; interval pruning of the max drops most of them in
-/// a cell. The JIT cannot build eight fields (28 edges and 56 corners); seven
-/// build. Pass `iterations` as a constant.
-intersectDistance(fields, iterations) {
-  // A pair or three not taken returns the first field, also no more than the
+/// Exact distance to the sharp intersection of a list of fields, each first
+/// taken as sign * field + offset: the largest of every pair's edgeDistance and
+/// every three's cornerDistance, as the three-field intersectDistance. The sign
+/// and offset are applied inside the folds, so the folds are over the list
+/// passed in, whose elements the compiler binds and differentiates. N fields
+/// cost N(N-1)/2 edges and N(N-1)(N-2)/6 corners, each `iterations` steps.
+/// Pass `iterations` as a constant.
+offsetIntersectDistance(fields, sign, offset, iterations) {
+  // A pair or three not taken returns its first field, also no more than the
   // distance, so the max needs no identity.
   edges = intersectSharp(map((fieldI, i) {
     return intersectSharp(map((fieldJ, j) {
-      return j > i ? edgeDistanceDifferenced(fieldI, fieldJ, iterations) : fieldI;
+      return j > i
+        ? edgeDistance(sign * fieldI + offset, sign * fieldJ + offset, iterations)
+        : sign * fieldI + offset;
     }, fields));
   }, fields));
   corners = intersectSharp(map((fieldI, i) {
     return intersectSharp(map((fieldJ, j) {
       return intersectSharp(map((fieldK, k) {
-        return k > j && j > i ? cornerDistanceDifferenced(fieldI, fieldJ, fieldK, iterations) : fieldI;
+        return k > j && j > i
+          ? cornerDistance(sign * fieldI + offset, sign * fieldJ + offset, sign * fieldK + offset, iterations)
+          : sign * fieldI + offset;
       }, fields));
     }, fields));
   }, fields));
   return max(edges, corners);
+}
+
+/// Exact distance to the sharp intersection of a list of fields whose faces
+/// may be curved: offsetIntersectDistance(fields, 1, 0, iterations). Where the
+/// intersection is convex the point of it nearest p touches at most three
+/// faces, so the largest of the pairs' and threes' distances is the distance.
+intersectDistance(fields, iterations) {
+  return offsetIntersectDistance(fields, 1, 0, iterations);
 }
 
 /// Exact rounded intersection of two fields with fillet
@@ -1054,12 +971,9 @@ intersectRoundExactSteps(field1, field2, field3, radius, steps) {
 /// fields are shrunk by the radius, the exact distance to their intersection is
 /// found by the list intersectDistance, and it is grown back by the radius.
 /// Exact where the intersection is convex, at any number of faces to a corner,
-/// including a corner no ball touches on every face, which splits. Its
-/// gradients are differences, and it costs about eight times the three-field
-/// form for three fields, and more as the list grows; up to seven fields.
+/// including a corner no ball touches on every face, which splits.
 intersectRoundExactSteps(fields, radius, steps) {
-  grown = map((field) { return field + radius; }, fields);
-  return intersectDistance(grown, steps) - radius;
+  return offsetIntersectDistance(fields, 1, radius, steps) - radius;
 }
 
 /// Partial application of intersectRoundExactSteps: binds the fillet radius
@@ -1110,8 +1024,7 @@ unionRoundExactSteps(field1, field2, field3, radius, steps) {
 /// intersectRoundExactSteps. Its fillets are concave, so it is exact near each
 /// seam and corner, as the two-field form is.
 unionRoundExactSteps(fields, radius, steps) {
-  negated = map((field) { return neg(field); }, fields);
-  return neg(intersectRoundExactSteps(negated, radius, steps));
+  return neg(offsetIntersectDistance(fields, -1, radius, steps) - radius);
 }
 
 /// Partial application of unionRoundExactSteps over a list of two fields.
