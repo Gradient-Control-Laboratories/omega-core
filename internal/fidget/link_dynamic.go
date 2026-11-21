@@ -8,5 +8,6 @@ package fidget
 // debug profile is ~10x slower. The launcher script does `cargo build
 // --release` to match.
 #cgo LDFLAGS: -L../../target/release -lrender
+#cgo linux LDFLAGS: -Wl,-rpath,${SRCDIR}/../../target/release
 */
 import "C"

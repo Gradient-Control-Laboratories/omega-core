@@ -63,6 +63,7 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("POST /api/save", s.handleSave)
 	s.mux.HandleFunc("POST /api/compile", s.handleCompile)
 	s.mux.HandleFunc("POST /api/mesh", s.handleMesh)
+	s.mux.HandleFunc("POST /api/export", s.handleExport)
 	s.mux.HandleFunc("POST /api/asset", s.handleAsset)
 
 	// The Help panel's GSL reference, generated from the standard library

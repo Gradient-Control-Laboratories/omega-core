@@ -27,4 +27,3 @@ type GeometryResolver interface {
 	GetMesh(slot int) (MeshGeometry, bool)
 	GetAnnotatedMesh(slot int) (AnnotatedMesh, bool, error)
 }
-

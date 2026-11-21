@@ -1,0 +1,13 @@
+// A reduce whose callback reads its accumulator twice, inside a compiled
+// function. Each fold step must be bound to a variable. Regression test: the
+// accumulator expression was substituted textually into both uses, doubling
+// the code with every element (2^n for n elements); audio expressions all
+// looked constant to the build layer, so it never bound the steps.
+
+nearest(xs, s) {
+  return reduce(1e9, (acc, v, i) {
+    return v > 0 ? min(acc, abs(s - i)) : acc;
+  }, xs);
+}
+
+return audio(sin(time * 220) * 0.1 / (1 + nearest([1, 0, 0, 1, 0, 1, 1, 0], fract(time) * 8)));
