@@ -21,7 +21,7 @@ fn op_recip(lhs: Value) -> Value {
 
 fn op_sqrt(lhs: Value) -> Value {
     let v = sqrt(lhs.v.w);
-    // omega fork: an argument with no gradient gives none, rather than
+    // An argument with no gradient gives none, rather than
     // 0 / (2 sqrt(0)) = NaN where it is also zero. A length of max(d, 0)
     // terms (a box's exterior distance) is identically 0 inside, so its
     // gradient there is 0; the NaN made every hit inside such a shape, which
@@ -149,10 +149,10 @@ fn op_sub(lhs: Value, rhs: Value) -> Value {
 }
 
 fn op_min(lhs: Value, rhs: Value, stack: ptr<function, Stack>) -> Value {
-    if lhs.v.w < rhs.v.w {
-        return lhs;
-    } else {
+    if lhs.v.w > rhs.v.w {
         return rhs;
+    } else {
+        return lhs;
     }
 }
 
