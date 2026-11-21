@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
+	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/backend/wgsl/internal/codegen"
 	"gradientcontrol.com/omega/core/backend/wgsl/internal/wgsltest"
-	"gradientcontrol.com/omega/core/assembler"
 	"gradientcontrol.com/omega/core/internal/source"
 	"gradientcontrol.com/omega/core/internal/test/require"
 )

@@ -2,8 +2,10 @@ import { showNotification, clearNotification } from "./ui/notification.js";
 import { clearError, showError, startErrorTimer, stopErrorTimer, resetErrorTimer } from "./ui/error.js";
 import { ProgressBar, operationKindLabels } from "./ui/progress-bar.js";
 import eventManager from "./ui/event-manager.js";
+import * as host from "./host.js";
 import "./ui/panel-resize.js";
 import "./ui/tooltip.js";
+import { createCaptions } from "./ui/captions.js";
 import {
     updateShader,
     setParts,
@@ -23,6 +25,7 @@ import {
     setMeshShapeVisible,
     setAnimPaused,
     setAnimTime,
+    setAnimDuration,
     getAnimTime,
     audioSystem,
     pickWorldPoint,
@@ -42,6 +45,7 @@ import {
     setSliderValue,
     setUiControlValues,
     syncUiControls,
+    defaultWGSL,
 } from "./render/viewer.js";
 import {
     initEditor,
@@ -51,6 +55,7 @@ import {
     clearHighlights,
     insertAtCursor,
     setLineWrap,
+    setReadOnly,
     replaceSourceSpan,
     refreshEditorLayout,
 } from "./editor/editor.js";
@@ -73,7 +78,7 @@ import {
 import { initHelpPanel } from "./docs/help-panel.js";
 import { initSliderPanel, renderSliderPanel, sliderAnimTick, previewColor } from "./panels/slider-panel.js";
 import { initMeshImport } from "./panels/mesh-import.js";
-import { initExportPanel } from "./panels/export-panel.js";
+import { initExportPanel, setAudioAvailable } from "./panels/export-panel.js";
 import { initBodyPanel, setBodies, pickBody, materialVariables, getVisibleBodies, getBodyStates } from "./panels/body-panel.js";
 
 const clientId = (typeof crypto !== "undefined" && crypto.randomUUID)
@@ -109,6 +114,21 @@ const saveAsPopover = document.getElementById("save-as-popover");
 const saveAsInput = document.getElementById("save-as-input");
 const btnSaveConfirm = document.getElementById("btn-save-confirm");
 const btnSaveCancel = document.getElementById("btn-save-cancel");
+
+// A host that compiles nothing (host-static.js, in a page `gsl export` wrote) shows the document
+// as it was exported: style.css hides what would change or save it, and the editor is read-only.
+document.body.classList.toggle("read-only-host", !host.editable);
+
+// ?embed on the address is a page set into another one, as a frame in an article: it shows the one
+// document its address names (?file=), so there is no menu of documents, and no top bar to hold it.
+// The Code button joins the viewport's own buttons, above Fullscreen, and what stands over the code
+// (Wrap, the GSL/WGSL tabs) moves to the top of the code panel, so the viewport keeps the page's height.
+const embedded = new URLSearchParams(window.location.search).has("embed");
+document.body.classList.toggle("embedded", embedded);
+if (embedded) {
+    document.getElementById("canvas-left-btns").prepend(btnToggleCode);
+    editorContainerEl.prepend(editorTopControlsEl);
+}
 
 function nextCompileID() {
     latestCompileID = `compile-${Date.now()}-${++compileSeq}`;
@@ -205,15 +225,7 @@ async function submitSaveAs() {
     }
     const source = getGslSourceForServer();
     try {
-        const res = await fetch("/api/save", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, source }),
-        });
-        const data = await res.json();
-        if (!res.ok || data.error) {
-            throw new Error(data.error || `HTTP ${res.status}`);
-        }
+        const data = await host.saveExample(name, source);
         const savedName = data.name || name;
         currentExampleName = savedName;
         await refreshExampleList(savedName);
@@ -350,13 +362,18 @@ function detectShapeCount(wgslCode) {
     return Math.max(maxIndex, 1);
 }
 
+const setCaptions = createCaptions(document.getElementById("canvas-container"), getAnimTime);
+
 eventManager.addListener("canvas/update-shader", (event) => {
-    if (event.wgsl) {
-        currentWGSL = event.wgsl;
+    // A program that returns only audio has nothing to draw: it shows the
+    // empty scene in place of the previous document's model.
+    const wgsl = event.wgsl || (event.audio ? defaultWGSL : "");
+    if (wgsl) {
+        currentWGSL = wgsl;
         currentShapeLocations = event.shapeLocations || [];
         setParts(event.parts || []);
         updateShader(
-            event.wgsl,
+            wgsl,
             event.shapeCount || 1,
             event.shapeNames || [],
             event.meshSdfBindings || event.meshSdfSlots || [],
@@ -382,6 +399,12 @@ eventManager.addListener("canvas/update-shader", (event) => {
             if (sizeChanged) frameWorldExtent();
         }
 
+        // The document's @caption lines, which the clock shows and hides.
+        setCaptions(event.captions || []);
+
+        // The document's @duration, which the Time slider spans and the clock loops on.
+        applyDuration(event.duration);
+
         const decls = event.meshDecls || [];
         const unknowns = syncMeshInstances(decls);
         if (unknowns.length > 0) {
@@ -402,7 +425,7 @@ eventManager.addListener("canvas/update-shader", (event) => {
     }
 });
 
-// ── HTTP /api/compile & /api/mesh Client ──
+// ── Compile & Mesh, by the Host (host.js) ──
 
 async function compileGsl(source) {
     if (!source || source.trim() === "") return;
@@ -412,24 +435,15 @@ async function compileGsl(source) {
     showNotification(false, "Compiling...");
 
     try {
-        const res = await fetch("/api/compile", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                id: reqId,
-                clientId,
-                source,
-            }),
-        });
-        const data = await res.json();
+        const { ok, status, data } = await host.compile({ id: reqId, clientId, source });
         if (reqId !== latestCompileID) return;
 
-        if (!res.ok || (data.errors && data.errors.length > 0)) {
+        if (!ok || (data.errors && data.errors.length > 0)) {
             // Structured diagnostics go as { errors, warnings } so the handler
             // can place each one in the editor; anything else falls back to plain text.
             const errs = data.errors && data.errors.length > 0
                 ? { errors: data.errors, warnings: data.warnings }
-                : [`Compile failed (HTTP ${res.status})`];
+                : [`Compile failed (HTTP ${status})`];
             eventManager.dispatchEvent("canvas/errors", errs);
             return;
         }
@@ -485,21 +499,17 @@ async function requestStlExport(detail, surfaceBbox, algo, format = "stl") {
     startErrorTimer("stl export");
 
     try {
-        const res = await fetch("/api/mesh", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                id: reqId,
-                clientId,
-                source,
-                subdivision,
-                bbox,
-                algo,
-                time: getAnimTime(),
-                format,
-                bodies,
-                colors,
-            }),
+        const res = await host.mesh({
+            id: reqId,
+            clientId,
+            source,
+            subdivision,
+            bbox,
+            algo,
+            time: getAnimTime(),
+            format,
+            bodies,
+            colors,
         });
 
         stopErrorTimer();
@@ -541,7 +551,75 @@ async function requestStlExport(detail, surfaceBbox, algo, format = "stl") {
     }
 }
 
-// ── Streaming NDJSON Progress Reader (/api/progress) ──
+// exportPage downloads the open document as `gsl export` writes it: this viewer and the document's
+// field as static web pages, zipped. It is the Export panel's Web page format.
+// exportAudio renders the program's audio from time 0 for the given seconds
+// and downloads it as a WAV named after the document.
+async function exportAudio(seconds) {
+    showNotification(false, `Rendering ${seconds} s of audio...`, true);
+    try {
+        const blob = await audioSystem.renderWav(seconds);
+        const fileName = (currentExampleName || "model.gsl").replace(/\.gsl$/i, "") + ".wav";
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showNotification(false, `Exported ${fileName}`);
+        return true;
+    } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        showError(`Audio export failed: ${msg}`, false, true);
+        return false;
+    }
+}
+
+async function exportPage() {
+    const source = getGslSourceForServer();
+    if (!source || source.trim() === "") {
+        showNotification(true, "Nothing to export");
+        return false;
+    }
+    showNotification(false, "Exporting web page...", true);
+    try {
+        const res = await host.exportPage({ name: currentExampleName || "model.gsl", source });
+        if (!res.ok) {
+            let errText = `HTTP ${res.status}`;
+            try {
+                const errJson = await res.json();
+                if (errJson && errJson.error) errText = errJson.error;
+            } catch (_) {
+                // ignore JSON parse error on non-JSON body
+            }
+            showError(`Export failed: ${errText}`, false, true);
+            return false;
+        }
+
+        // The reply names the file: the document's name, -html.zip in place of .gsl.
+        const named = /filename="?([^";]+)"?/.exec(res.headers.get("Content-Disposition") || "");
+        const fileName = named ? named[1] : "model-html.zip";
+        const url = URL.createObjectURL(await res.blob());
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        const note = res.headers.get("X-Export-Note");
+        showNotification(false, note ? `Exported ${fileName}. ${note}` : `Exported ${fileName}: unzip it onto any web server`);
+        return true;
+    } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        showError(`Export failed: ${msg}`, false, true);
+        return false;
+    }
+}
+
+// ── Progress Events from the Host ──
 
 function handleProgressEvent(ev) {
     if (!ev) return;
@@ -555,40 +633,7 @@ function handleProgressEvent(ev) {
     progressBar.startProgress(stage, label, 10000, ev.completed || 0, ev.total || 0);
 }
 
-async function connectProgressStream() {
-    while (true) {
-        try {
-            const res = await fetch(`/api/progress?clientId=${encodeURIComponent(clientId)}`);
-            if (!res.ok || !res.body) {
-                throw new Error(`HTTP ${res.status}`);
-            }
-            const reader = res.body.getReader();
-            const decoder = new TextDecoder();
-            let buffer = "";
-            while (true) {
-                const { value, done } = await reader.read();
-                if (done) break;
-                buffer += decoder.decode(value, { stream: true });
-                let newlineIdx;
-                while ((newlineIdx = buffer.indexOf("\n")) >= 0) {
-                    const line = buffer.slice(0, newlineIdx).trim();
-                    buffer = buffer.slice(newlineIdx + 1);
-                    if (!line) continue;
-                    try {
-                        handleProgressEvent(JSON.parse(line));
-                    } catch (parseErr) {
-                        console.warn("Invalid progress JSON line:", parseErr);
-                    }
-                }
-            }
-        } catch (err) {
-            // Reconnect after a short delay if the server restarts or closes the stream.
-            await new Promise((r) => setTimeout(r, 1500));
-        }
-    }
-}
-
-connectProgressStream();
+host.connectProgress(clientId, handleProgressEvent);
 
 // ── Surface Point & Point+Normal Picking Tools ──
 
@@ -709,7 +754,8 @@ document.getElementById("canvas-container").addEventListener("click", async (eve
 
 const btnFullscreen = document.getElementById("btn-fullscreen");
 btnFullscreen.addEventListener("click", () => {
-    const container = document.getElementById("canvas-container");
+    // An embedded page goes full screen whole, so its code panel comes along; otherwise the viewport does.
+    const container = embedded ? document.documentElement : document.getElementById("canvas-container");
     if (!document.fullscreenElement) {
         container.requestFullscreen();
     } else {
@@ -754,6 +800,7 @@ function onEditorChange(content) {
 }
 
 initEditor(editorHost, initialContent.trim(), onEditorChange);
+setReadOnly(!host.editable);
 
 eventManager.addListener("tab/selected", (event) => {
     const nextTab = event.tab;
@@ -785,7 +832,9 @@ btnWrap.addEventListener("click", () => {
 
 // ── Help Panel, Slider Panel, Mesh Import Panel, Export Panel ──
 
-initHelpPanel({
+// The reference for writing GSL, importing meshes into the document and meshing it on the server
+// are for a host that compiles.
+if (host.editable) initHelpPanel({
     menuHost: document.getElementById("help-menu"),
     panelHost: document.getElementById("canvas-container"),
 });
@@ -810,7 +859,7 @@ document.getElementById("slider-panel-header").addEventListener("click", (e) => 
     }
 });
 
-initMeshImport({
+if (host.editable) initMeshImport({
     addMesh,
     removeMesh,
     getMeshEntries,
@@ -833,20 +882,12 @@ initMeshImport({
     // so bvhSdf / vdbSdf on its slot load it when the program compiles.
     onImported: async (index, file, bytes) => {
         if (!/\.stl$/i.test(file.name)) return;
-        const res = await fetch(`/api/asset?name=${encodeURIComponent(file.name)}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/octet-stream" },
-            body: bytes,
-        });
-        if (!res.ok) {
-            const data = await res.json().catch(() => ({}));
-            throw new Error(data.error || `upload failed (HTTP ${res.status})`);
-        }
+        await host.uploadAsset(file.name, bytes);
     },
     dropTarget: document.getElementById("canvas-container"),
 });
 
-initExportPanel({
+if (host.editable) initExportPanel({
     getMeshGeometry,
     getWorldExtent,
     getSource: getGslSourceForServer,
@@ -856,6 +897,8 @@ initExportPanel({
     },
     serverMarchingCubes: true,
     serverFormats: true,
+    onExportPage: exportPage,
+    onExportAudio: exportAudio,
 });
 
 // ── Bodies Panel ──
@@ -888,6 +931,7 @@ initBodyPanel({
     previewColor,
     selectShape: setSelectedShape,
     popupParent: document.getElementById("canvas-container"),
+    readOnly: !host.editable,
 });
 
 eventManager.addListener("shapes/detected", (event) => {
@@ -965,6 +1009,18 @@ animTimeInput.addEventListener("change", () => {
     }
 });
 
+// A document's @duration(seconds) sets the end time and the Time slider's
+// range, and the clock starts over there. A document without one leaves the
+// end time as it is and lets the clock run on.
+function applyDuration(duration) {
+    const seconds = duration && duration.seconds > 0 ? duration.seconds : 0;
+    setAnimDuration(seconds);
+    if (seconds > 0) {
+        animEndTimeInput.value = String(seconds);
+        timeRange.max = String(seconds);
+    }
+}
+
 // Scrub time with the range input (active only while paused). Stays within
 // [0, endTime].
 timeRange.addEventListener("input", () => {
@@ -996,6 +1052,7 @@ eventManager.addListener("canvas/update-audio", (event) => {
     const audioVolumeRow = document.getElementById("audio-volume-row");
     audioVolumeRow.style.display = hasAudio ? "" : "none";
     audioSystem.updateShader(javascript, hasAudio);
+    setAudioAvailable(hasAudio && !!javascript);
 });
 
 // ── Section Panel ──
@@ -1424,11 +1481,7 @@ gridSpacingLabel.addEventListener("blur", () => {
 async function loadExample(name) {
     if (!name) return;
     try {
-        const res = await fetch(`/api/example?name=${encodeURIComponent(name)}`);
-        const data = await res.json();
-        if (!res.ok || data.error) {
-            throw new Error(data.error || `HTTP ${res.status}`);
-        }
+        const data = await host.loadExample(name);
         currentExampleName = data.name || name;
         exampleSelectEl.value = currentExampleName;
         selectTab("GSL");
@@ -1448,9 +1501,7 @@ async function loadExample(name) {
 
 async function refreshExampleList(selectedName = "") {
     try {
-        const res = await fetch("/api/examples");
-        const data = await res.json();
-        const examples = (data && Array.isArray(data.examples)) ? data.examples : [];
+        const examples = await host.listExamples();
         exampleSelectEl.innerHTML = "";
         for (const ex of examples) {
             const opt = document.createElement("option");
@@ -1463,7 +1514,7 @@ async function refreshExampleList(selectedName = "") {
         }
         return examples;
     } catch (err) {
-        console.error("Failed to fetch /api/examples:", err);
+        console.error("Failed to list the examples:", err);
         return [];
     }
 }

@@ -41,7 +41,7 @@ return v;
 
 func TestMultipleDotImports(t *testing.T) {
 	srcs := map[string][]string{
-		"mybuiltin":             {`omegaRadius = 1.0; sphere(r) { return length(p) - r; }`},
+		"mybuiltin":               {`omegaRadius = 1.0; sphere(r) { return length(p) - r; }`},
 		"example.com/common/base": {`baseRadius = 2.0;`},
 	}
 	primary := `import . "mybuiltin";

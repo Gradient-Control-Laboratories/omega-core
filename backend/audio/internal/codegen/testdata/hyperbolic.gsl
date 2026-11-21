@@ -1,0 +1,8 @@
+// The hyperbolic builtins and trunc in audio output. Regression test: they
+// were emitted as calls to gsl_tanh and friends, helpers that were never
+// defined, so a program using them failed at run time.
+
+x = sin(time * 220);
+shaped = tanh(x * 3) + sinh(x) * 0.1 + cosh(x) * 0.1 + asinh(x) * 0.1 + atanh(x * 0.5) * 0.1 + acosh(2 + x) * 0.1 + trunc(x * 4) * 0.01;
+
+return audio(shaped * 0.2);
