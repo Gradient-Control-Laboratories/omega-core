@@ -1,0 +1,20 @@
+// A function passed by name to a higher-order function whose parameter has
+// the same name as a parameter further down the call chain. Specializing
+// apply binds f to voice; that binding belongs to apply's body only.
+// Regression test: the closure pass carried it into voice and then osc,
+// rewriting osc's own parameter f to voice ("incompatible types: num and fn
+// voice", or "undefined identifier: voice" when osc is in another package).
+
+osc(f, t) {
+  return sin(tau * f * t);
+}
+
+voice(h) {
+  return osc(220, h);
+}
+
+apply(f, x) {
+  return f(x);
+}
+
+return audio(apply(voice, time) * 0.1, osc(330, time) * 0.1);

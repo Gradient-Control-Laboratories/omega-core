@@ -298,8 +298,11 @@ func (t *transformer) specializeHigherOrderCall(file *program.PackageFile, enclo
 		}
 	}
 
+	// The clone is the callee's body, so it starts from the callee's lexical
+	// environment, not the caller's, and adds the functions bound to its
+	// parameters.
 	paramEnv := make(map[string]*closureVal)
-	for k, v := range env {
+	for k, v := range t.lexicalEnv(calleeFile, calleeFt, env) {
 		paramEnv[k] = v
 	}
 	for paramName, cv := range argFnMap {

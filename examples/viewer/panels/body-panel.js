@@ -24,6 +24,9 @@
 //   previewColor(name, rgb)         the same for a @color variable
 //   selectShape(i)                  optional, outline shader slot i in the viewer
 //   popupParent                     where the palette popup is attached
+//   readOnly                        optional; true when the document cannot be
+//                                   written (an exported page): the rows show
+//                                   each body and take no color or material
 //
 // The app drives the list with setBodies() from the viewer's shapes/detected
 // and pickBody() from shape/picked, so clicking a body in the 3D view selects
@@ -103,6 +106,7 @@ export function initBodyPanel(options) {
         getBodyColor: selectedColor,
         setSliderValue: deps.setSliderValue,
         previewColor: deps.previewColor,
+        readOnly: deps.readOnly,
     });
 }
 
@@ -283,6 +287,12 @@ function rowEl(source, body) {
         chip.style.setProperty("--chip-schematic", schematic);
         row.classList.add("applied");
         chip.title += ` The border is the schematic color, ${schematic}.`;
+    }
+    // A read-only host has no document to write a pick to, so the chip only
+    // shows the colour; the palette strip still recolours the viewer.
+    if (deps.readOnly) {
+        chip.disabled = true;
+        chip.title = "The color this body is drawn in.";
     }
     // While the picker is open the viewer previews the colour, as the Shapes
     // panel always did; it shows wherever the document sets no colour of its

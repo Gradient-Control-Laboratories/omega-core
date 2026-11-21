@@ -47,4 +47,3 @@ type SpinodoidSlot struct {
 	Slot int    `json:"slot"`
 	Key  string `json:"key"`
 }
-

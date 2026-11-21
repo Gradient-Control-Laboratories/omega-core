@@ -33,6 +33,11 @@ func main() {
 		stop()
 		os.Exit(code)
 	}
+	// `compile export` (which `gsl export` runs) writes the viewer and the files' compiled fields as a folder
+	// that needs no server.
+	if len(os.Args) > 1 && os.Args[1] == "export" {
+		os.Exit(viewer.Export(os.Args[2:], os.Stdout, os.Stderr))
+	}
 	if err := cli.Run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr); err != nil {
 		fmt.Fprintf(os.Stderr, "compile: %v\n", err)
 		os.Exit(1)
