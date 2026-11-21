@@ -132,7 +132,7 @@ func TestChamferNormalized_SameSurfaceUnitGradient(t *testing.T) {
 					if nearCrease(interior, probe[i], step, 1) {
 						continue
 					}
-					g :=math.Hypot((got[i+1]-got[i])/step, (got[i+2]-got[i])/step)
+					g := math.Hypot((got[i+1]-got[i])/step, (got[i+2]-got[i])/step)
 					gOld := math.Hypot((oldVals[i+1]-oldVals[i])/step, (oldVals[i+2]-oldVals[i])/step)
 					worstGrad = math.Max(worstGrad, g)
 					worstOld = math.Max(worstOld, gOld)
@@ -178,7 +178,7 @@ func TestChamferNormalized_UnionAndDifference(t *testing.T) {
 			if nearCrease(120, probe[i], step, sign) {
 				continue
 			}
-			worst =math.Max(worst, math.Hypot((got[i+1]-got[i])/step, (got[i+2]-got[i])/step))
+			worst = math.Max(worst, math.Hypot((got[i+1]-got[i])/step, (got[i+2]-got[i])/step))
 		}
 		t.Logf("%s: steepest gradient %.4f", name, worst)
 		if worst > 1.002 {
