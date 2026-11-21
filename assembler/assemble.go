@@ -55,6 +55,7 @@ type Result struct {
 	Sliders        []slider.SliderInfo
 	UIControls     []ui.Control
 	Scene          *program.Scene
+	Captions       []*program.Caption
 	MeshPlan       *meshplan.MeshExportPlan
 	SdfSubtrees    []meshplan.SdfSubtree
 	PreviewBodies  []meshplan.PreviewBody
@@ -365,6 +366,7 @@ func assembleWithOptions(primarySources []string, srcMgr source.Manager, o *opti
 		result.Sliders = slider.Extract(sourceText, prog.Primary)
 		result.UIControls = ui.Extract(prog.Primary, prog.GetImport)
 		result.Scene = prog.Scene()
+		result.Captions = prog.Primary.Captions // an imported package's captions never show
 	}
 
 	return result, nil

@@ -14,6 +14,11 @@ func (d *TopLevel) Parse(lex *lexer.PeekingLexer) error {
 		return err
 	}
 
+	err = d.parseLeadingCaptions(lex)
+	if err != nil {
+		return err
+	}
+
 	err = d.parseImports(lex)
 	if err != nil {
 		return err
@@ -88,6 +93,8 @@ func isCompleteDeclaration(decl Declaration) bool {
 		return d.EndPos.Line > 0
 	case *AnnotatedDeclaration:
 		return d.EndPos.Line > 0 && isCompleteDeclaration(d.Declaration)
+	case *CaptionDirective:
+		return d.EndPos.Line > 0
 	default:
 		return false
 	}

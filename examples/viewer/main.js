@@ -5,6 +5,7 @@ import eventManager from "./ui/event-manager.js";
 import * as host from "./host.js";
 import "./ui/panel-resize.js";
 import "./ui/tooltip.js";
+import { createCaptions } from "./ui/captions.js";
 import {
     updateShader,
     setParts,
@@ -359,6 +360,8 @@ function detectShapeCount(wgslCode) {
     return Math.max(maxIndex, 1);
 }
 
+const setCaptions = createCaptions(document.getElementById("canvas-container"), getAnimTime);
+
 eventManager.addListener("canvas/update-shader", (event) => {
     if (event.wgsl) {
         currentWGSL = event.wgsl;
@@ -390,6 +393,9 @@ eventManager.addListener("canvas/update-shader", (event) => {
             if (event.scene.grid > 0) commitGridSpacing(event.scene.grid);
             if (sizeChanged) frameWorldExtent();
         }
+
+        // The document's @caption lines, which the clock shows and hides.
+        setCaptions(event.captions || []);
 
         const decls = event.meshDecls || [];
         const unknowns = syncMeshInstances(decls);
