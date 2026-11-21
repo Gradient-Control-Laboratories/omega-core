@@ -46,6 +46,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   calls from files beside the page, and takes its place in a page `gsl export` writes.
 - `profileXY` fills its three distance pools in one pass instead of three, with the same values: 2.6 to 11 times
   faster on the GPU across the profile examples.
+- A profile's box is exact: the union of its edges' own boxes, an arc's extremes where they lie on it and a
+  Bezier's extremum along each axis, for `profileXY` with arcs, its corner forms (the loop's box without the
+  corners, which holds every fillet) and `profileEdgesXY`; it was the points' box grown by the most an edge can
+  bulge, 28 mm loose a side on an L with arcs. `sweepOpen` and `sweepOpenEdges` grow their chain's exact box.
+
+### Removed
+
+- `sweepLoft`, `sweepLoftScale`, `sweepLoftScaleSmooth`, `sweepLoftScaleSmoothSeparateCaps` and
+  `bezierTubeDir` from builtin. They lofted two sections along a 3D quadratic Bezier, but mixed the sections'
+  distances by the curve's parameter and scaled by it, so the field was not a distance bound, and they carried no
+  frame, box or material. A document that needs them can keep a copy in its own library.
+
+### Fixed
+
+- `gears.gearProfile` chamfers its tooth tips with `intersectChamferNormalized`, given the flank's and the
+  tip circle's normals at the edge, in place of `intersectChamfer`. The flank meets the tip circle at an
+  obtuse edge, where `intersectChamfer`'s bevel, scaled for a right angle, has a gradient above 1; the
+  normalized bevel has unit gradient there. The tip chamfer is now `kSmall` deep, measured from the edge to
+  the bevel, about 1.7 to 1.8 times as deep as before at these edges (116 to 129 degrees through the
+  material); the body, standoff and bore chamfers are unchanged. Gear and bevel-gear WGSL grows by
+  582 bytes.
+- A three-way select on a constant vector condition folded to its positive branch whatever the condition's signs:
+  `[-1, -2] ? a : b : c` compiled as `a`, where the shader picks `c`. It now folds per component, as the shader
+  selects, and is pruned to one branch only when every component picks it.
+- A `reduce` whose function takes the index, `(accumulator, element, index)`, now folds to a constant; it was
+  left to run per point, so a box written with one did not fold to numbers.
+- A constant that folds to infinity or NaN, a division or a mod by zero, is a compile error naming it, instead of
+  `+Inf.0` or `NaN.0` in a WGSL shader the browser refuses.
 - `map.bendXZ(v, curvature)` bends space in the XZ plane for `remap`: the plane x = 0 becomes an arc of the
   given curvature, 1 / radius, with lengths along it kept, for a bow, a camber or a warp, as in
   `remap(plate, map.bendXZ(p - origin, 1 / 400) + origin)`. A curvature of 0 is no bend.
@@ -80,23 +108,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   gives the length of the document's animation. It is to time what `@scene` is to space: the viewer's Time
   slider and end time span it, and the animation clock starts over on passing it, so an animation and its
   captions loop. It reaches the compile response as `duration`, so a page `gsl export` writes loops too.
-
-### Removed
-
-- `sweepLoft`, `sweepLoftScale`, `sweepLoftScaleSmooth`, `sweepLoftScaleSmoothSeparateCaps` and
-  `bezierTubeDir` from builtin. They lofted two sections along a 3D quadratic Bezier, but mixed the sections'
-  distances by the curve's parameter and scaled by it, so the field was not a distance bound, and they carried no
-  frame, box or material. A document that needs them can keep a copy in its own library.
-
-### Fixed
-
-- `gears.gearProfile` chamfers its tooth tips with `intersectChamferNormalized`, given the flank's and the
-  tip circle's normals at the edge, in place of `intersectChamfer`. The flank meets the tip circle at an
-  obtuse edge, where `intersectChamfer`'s bevel, scaled for a right angle, has a gradient above 1; the
-  normalized bevel has unit gradient there. The tip chamfer is now `kSmall` deep, measured from the edge to
-  the bevel, about 1.7 to 1.8 times as deep as before at these edges (116 to 129 degrees through the
-  material); the body, standoff and bore chamfers are unchanged. Gear and bevel-gear WGSL grows by
-  582 bytes.
 
 ## [0.1.3] - 2026-11-17
 

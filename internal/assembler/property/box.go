@@ -605,6 +605,16 @@ func (dd *boxDomain) Call(name string, args []Value) (Value, bool, error) {
 	if name == "sweepOpen" && (len(vs) == 2 || len(vs) == 3) {
 		return sweptOpen(vs[0], vs[1:], "openProfileLowXY", "openProfileHighXY"), true, nil
 	}
+	if name == "profileXY" && len(vs) >= 2 && len(vs) <= 4 {
+		if v, ok := profileBox(vs[:2], "profileArcLowXY", "profileArcHighXY"); ok {
+			return v, true, nil
+		}
+	}
+	if name == "profileEdgesXY" && len(vs) == 2 {
+		if v, ok := profileBox(vs, "profileEdgesLowXY", "profileEdgesHighXY"); ok {
+			return v, true, nil
+		}
+	}
 	if name == "sweepOpenEdges" && len(vs) == 3 {
 		return sweptOpen(vs[0], vs[1:], "openProfileEdgesLowXY", "openProfileEdgesHighXY"), true, nil
 	}
@@ -707,6 +717,36 @@ func sweptOpen(section boxVal, chain []boxVal, lowName, highName string) boxVal 
 		lo: [3]*program.Operand{planar(low, 0), planar(low, 1)},
 		hi: [3]*program.Operand{planar(high, 0), planar(high, 1)},
 	})
+}
+
+// profileBox is the box of a profile of curves (2d.gsl): profileXY(points,
+// curvatures) and its corner forms, read from (points, curvatures), and
+// profileEdgesXY(points, edges). The exact box is the union of the edges'
+// boxes, and an edge's box needs its neighbour, a reduce reading its index,
+// which a .box declared in the stdlib cannot hold: the box domain dropped it
+// and a read of it failed to link. So the corners come from builtin's helpers,
+// lowName and highName, called on the same arguments, which compile as any
+// function does. The box is the declared box such a profile had: padded by
+// boxPad, unbounded in z. A corner form's blends lie within their corners'
+// triangles, which its loop's box holds. Arguments that depend on p leave the
+// call to its body.
+func profileBox(args []boxVal, lowName, highName string) (boxVal, bool) {
+	ops, ok := opsOf(args)
+	if !ok {
+		return boxVal{}, false
+	}
+	// The low corner is never above the high one, so each side reads one
+	// corner, not the least and most of both as between does: each helper is
+	// called once an axis instead of twice, which matters where the box does
+	// not fold to numbers.
+	low, high := call(lowName, ops...), call(highName, ops...)
+	far, pad := ref(nothingName), ref(boxPadName)
+	bx := &bbox{}
+	for i := 0; i < 2; i++ {
+		bx.lo[i], bx.hi[i] = subOp(planar(low, i), pad), addOp(planar(high, i), pad)
+	}
+	bx.lo[2], bx.hi[2] = subOp(neg(far), pad), addOp(far, pad)
+	return boxVal{box: bx}, true
 }
 
 // sweptAround is a sweep's box about pb, its path's box in x and y: pb grown
