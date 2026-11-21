@@ -31,6 +31,8 @@ use wasm_bindgen::prelude::*;
 use wgpu_gbuf::{Renderer, Scene};
 
 struct State {
+    /// The scene's tapes live in this device's buffers.
+    gpu: Gpu,
     renderer: Renderer,
     scene: Option<Scene>,
 }
@@ -57,7 +59,7 @@ fn set(obj: &js_sys::Object, key: &str, value: JsValue) -> Result<(), JsError> {
 #[wasm_bindgen]
 pub async fn init() -> Result<(), JsError> {
     let gpu = Gpu::init().await.map_err(|e| JsError::new(&format!("WebGPU: {e}")))?;
-    put(State { renderer: Renderer::new(&gpu), scene: None });
+    put(State { renderer: Renderer::new(&gpu), scene: None, gpu });
     Ok(())
 }
 
@@ -105,7 +107,7 @@ fn load_into(state: &mut State, bytes: &[u8], palette: &[f32]) -> Result<JsValue
     set(&info, "bbox", bbox)?;
 
     let palette: Vec<[f32; 3]> = palette.chunks_exact(3).map(|c| [c[0], c[1], c[2]]).collect();
-    let scene = Scene::new(decoded, &palette).map_err(|e| JsError::new(&e))?;
+    let scene = Scene::new(&state.gpu, decoded, &palette).map_err(|e| JsError::new(&e))?;
     let flags = |v: &[bool]| -> JsValue {
         let a = js_sys::Array::new();
         for &b in v {
