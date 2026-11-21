@@ -401,7 +401,7 @@ Phase 0 has no start commit; Phase 7 was skipped.
       stand-in, as a returned one does; the finished knurl's paint carries one). No golden moved
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`); the owner's recheck of the Textures rung in the viewer is pending (away; to be reminded at wrap-up)
 
-## Phase 15: Thread Undercuts
+## Phase 15: Thread Undercuts [checkpoint: a9798b1]
 
 - [x] Task: Proposal (approved 2026-11-21): `shaft.undercut(form)`, a thread end. The thread keeps its planes
       up to the shoulder and its last g2 becomes the DIN 76 groove: floor at d - I, a 30-degree flank (to the
@@ -429,4 +429,4 @@ Phase 0 has no start commit; Phase 7 was skipped.
 - [x] Task: An example (`shaft_undercut.gsl`: an M12 x 1.75 thread chamfered at its end and run up to a
       22 mm shoulder through a DIN 76 undercut, g2 6.1): WGSL 13,319 B; the CPU render shows the groove and
       the flank-cut last teeth; the owner's viewer check
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
