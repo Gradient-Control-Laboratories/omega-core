@@ -5,17 +5,21 @@ package eval
 import (
 	"fmt"
 	"math"
+	"sort"
+	"strings"
 	"testing"
 
 	"gradientcontrol.com/omega/core/internal/source"
 )
 
-// intersectChamferNormalized: intersectChamfer's bevel divided by the length
-// of the sum of the two faces' normals rather than by sqrt2. At a right angle
-// the two agree; at any other angle the bevel plane is the same plane (only
-// its scale differs, so the surface is the same), but its field has unit
-// gradient where intersectChamfer's has sqrt(1 + n1.n2), overstating the
-// distance at an obtuse edge.
+// intersectChamferNormalized: a bevel `depth` in from the edge, the sum of the
+// two fields divided by the length of the sum of the two faces' normals rather
+// than by sqrt2, offset by the depth. intersectChamfer with k = depth·|n1 + n2|
+// has the same bevel plane, so the old operators below are given that k. At a
+// right angle the two agree; at any other angle the bevel plane is the same
+// plane (only its scale differs, so the surface is the same), but its field
+// has unit gradient where intersectChamfer's has sqrt(1 + n1.n2), overstating
+// the distance at an obtuse edge.
 
 func evalChamferField(t *testing.T, doc, name string, points [][3]float64) []float64 {
 	t.Helper()
@@ -47,17 +51,36 @@ n1 = %s;
 n2 = %s;
 d1 = dot(p, n1);
 d2 = dot(p, n2);
-old = intersectChamfer(d1, d2, 1.5);
+old = intersectChamfer(d1, d2, 1.5 * length(n1 + n2));
 normals = intersectChamferNormalized(d1, d2, 1.5, n1, n2);
 gradients = intersectChamferNormalized(d1, d2, 1.5);
-oldUnion = unionChamfer(d1, d2, 1.5);
+oldUnion = unionChamfer(d1, d2, 1.5 * length(n1 + n2));
 normUnion = unionChamferNormalized(d1, d2, 1.5, n1, n2);
 normUnionGradients = unionChamferNormalized(d1, d2, 1.5);
-oldDifference = differenceChamfer(d1, neg(d2), 1.5);
+oldDifference = differenceChamfer(d1, neg(d2), 1.5 * length(n1 + n2));
 normDifference = differenceChamferNormalized(d1, neg(d2), 1.5, n1, neg(n2));
 normDifferenceGradients = differenceChamferNormalized(d1, neg(d2), 1.5);
 return old;
 `, vec(n1), vec(n2))
+}
+
+// nearCrease reports whether q is within two finite-difference steps of a crease of wedgeDoc's
+// chamfer at depth 1.5, where two of its three planes (the faces d1 and d2 and the bevel) meet:
+// a difference taken across a crease mixes the planes' gradients and can read above 1 though
+// neither plane does. A crease is where the two largest planes are equal, and each plane has
+// unit gradient, so their difference changes at most twice as fast as distance. sign is 1 for
+// the intersection and the difference, which is the intersection with d2's side flipped, and
+// -1 for the union, the intersection of the complements.
+func nearCrease(interior float64, q [3]float64, step, sign float64) bool {
+	half := (180 - interior) / 2 * math.Pi / 180
+	n1 := [2]float64{math.Cos(half), math.Sin(half)}
+	n2 := [2]float64{math.Cos(half), -math.Sin(half)}
+	d1 := sign * (q[0]*n1[0] + q[1]*n1[1])
+	d2 := sign * (q[0]*n2[0] + q[1]*n2[1])
+	bevel := (d1+d2)/math.Hypot(n1[0]+n2[0], n1[1]+n2[1]) + 1.5
+	planes := []float64{d1, d2, bevel}
+	sort.Float64s(planes)
+	return planes[2]-planes[1] < 2*2*step
 }
 
 func wedgePoints() [][3]float64 {
@@ -106,6 +129,9 @@ func TestChamferNormalized_SameSurfaceUnitGradient(t *testing.T) {
 					if math.Abs(oldVals[i]) > 1e-3 && (got[i] > 0) != (oldVals[i] > 0) {
 						t.Fatalf("%s at %v: %v against intersectChamfer's %v: a different surface", name, probe[i], got[i], oldVals[i])
 					}
+					if nearCrease(interior, probe[i], step, 1) {
+						continue
+					}
 					g := math.Hypot((got[i+1]-got[i])/step, (got[i+2]-got[i])/step)
 					gOld := math.Hypot((oldVals[i+1]-oldVals[i])/step, (oldVals[i+2]-oldVals[i])/step)
 					worstGrad = math.Max(worstGrad, g)
@@ -144,6 +170,13 @@ func TestChamferNormalized_UnionAndDifference(t *testing.T) {
 		for i := 0; i < len(probe); i += 3 {
 			if math.Abs(old[i]) > 1e-3 && (got[i] > 0) != (old[i] > 0) {
 				t.Fatalf("%s at %v: %v against %s's %v: a different surface", name, probe[i], got[i], oldName, old[i])
+			}
+			sign := 1.0
+			if strings.HasPrefix(name, "normUnion") {
+				sign = -1
+			}
+			if nearCrease(120, probe[i], step, sign) {
+				continue
 			}
 			worst = math.Max(worst, math.Hypot((got[i+1]-got[i])/step, (got[i+2]-got[i])/step))
 		}
