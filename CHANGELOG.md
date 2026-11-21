@@ -50,6 +50,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `bearing.deepGroove(6205.0, at)`, rings and balls, or `bearing.deepGrooveEnvelope`, the boundary dimensions
   alone; their seat dimensions (`shoulderDia`, `filletMax`); ISO 4379 plain and flanged bushes by series; and
   DIN 471 retaining-ring grooves. Every table cites its sources. Fits are nominal.
+- `shaft.body` declares its `.box` (its end faces and its segments' farthest reach), so the renderer skips
+  everything outside it; set `.box` on the result to override it. `shaft.envelope(segments[, bottomHole,
+  topHole])` is the simplified model: gears at their tip circles, splines and threads at their major
+  diameters, no runouts, for proofs, meshing and assemblies.
 - A `reduce` over a list of functions can take the element before this one as a fourth callback parameter,
   `reduce((acc, f, i, prev) { ... }, fs, seed)`; the first element is handed itself.
   along the cutter's arc, and `shaft.chamferEnd(size)` chamfers the tips.
