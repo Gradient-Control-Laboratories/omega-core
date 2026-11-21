@@ -33,4 +33,4 @@ turned = shaft.body(
 turned.color = [0.62, 0.64, 0.68];
 
 // Laid along X and centred, so the viewer frames the whole shaft.
-return remap(turned, [p.z, p.y, endAt / 2.0 - p.x]);
+return transform.translate(transform.rotateY(turned, neg(pi) / 2.0), [endAt / 2.0, 0.0, 0.0]);

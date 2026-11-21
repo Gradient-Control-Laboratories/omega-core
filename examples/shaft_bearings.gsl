@@ -42,6 +42,7 @@ bush = bearing.flangedBushing(20.0, 1.0, 20.0, 105.0);
 bush.color = [0.72, 0.52, 0.28];
 
 // Laid along X and centred, so the viewer frames the whole shaft.
-return remap(bearingShaft, [p.z, p.y, 62.5 - p.x]),
-       remap(bearings, [p.z, p.y, 62.5 - p.x]),
-       remap(bush, [p.z, p.y, 62.5 - p.x]);
+laidShaft = transform.translate(transform.rotateY(bearingShaft, neg(pi) / 2.0), [62.5, 0.0, 0.0]);
+laidBearings = transform.translate(transform.rotateY(bearings, neg(pi) / 2.0), [62.5, 0.0, 0.0]);
+laidBush = transform.translate(transform.rotateY(bush, neg(pi) / 2.0), [62.5, 0.0, 0.0]);
+return laidShaft, laidBearings, laidBush;
