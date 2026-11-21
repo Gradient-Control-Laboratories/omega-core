@@ -1,0 +1,39 @@
+@scene(140)
+
+// A pinion shaft: a helical pinion cut on the shaft between two bearing
+// journals, a straight-sided spline at the left end to take a coupling, and a
+// hex at the right to hold the shaft with a spanner. Every segment is placed
+// by the two planes it runs between, measured from the left end.
+//
+// The pinion's tip circle stands above the journals beside it and its root
+// circle lies below them, so at some angles the pinion is the larger side of
+// each joint and at others the smaller. shaft.body joins them all the same.
+// The hex, the spline and the D are exact sections; the pinion is as exact as
+// gears.gearProfile, which it is cut from.
+// Lengths are in mm.
+
+@range(12, 24) pinionTeeth = 15.0;
+@range(0.8, 2.0) pinionModule = 1.25;
+// Helix angle at the pitch circle, in degrees; 0 cuts a spur.
+@range(0, 35) helixDegrees = 20.0;
+@range(14, 24) journalDia = 17.0;
+
+pinionFrom = 34.0;
+pinionTo = 54.0;
+
+pinionShaft = shaft.body(
+  [shaft.spline(6.0, 13.0, 16.0, 3.5, 0.0, 18.0),
+   shaft.diameter(13.0, 18.0, 20.0),
+   shaft.taper(13.0, journalDia, 20.0, 22.0),
+   shaft.diameter(journalDia, 22.0, pinionFrom),
+   shaft.gear(pinionTeeth, pinionModule, radians(20.0), radians(helixDegrees), pinionFrom, pinionTo),
+   shaft.diameter(journalDia, pinionTo, 66.0),
+   shaft.diameter(journalDia - 3.0, 66.0, 70.0),
+   shaft.hex(13.0, 70.0, 80.0),
+   shaft.dFlat(10.0, 8.5, 80.0, 92.0)],
+  drill.centerHole(2.5, 5.3, 6.0),
+  drill.centerHole(2.5, 5.3, 6.0));
+pinionShaft.color = [0.58, 0.60, 0.64];
+
+// Laid along X and centred, so the viewer frames the whole shaft.
+return remap(pinionShaft, [p.z, p.y, 46.0 - p.x]);
