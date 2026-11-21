@@ -297,7 +297,7 @@ Phase 0 has no start commit; Phase 7 was skipped.
       CHANGELOG already had every phase)
 - [x] Task: Metrics recorded (from commit times, wall-clock)
 
-## Phase 12: Gears as Shafts
+## Phase 12: Gears as Shafts [checkpoint: 9ac230a]
 
 - [x] Task: Review of `gears` against the shaft (2026-11-21): the gear and bevel gear examples are
       simple shafts (teeth, a hub after a chamfer joint, a through bore), short only a bevel segment.
@@ -334,4 +334,4 @@ Phase 0 has no start commit; Phase 7 was skipped.
       returned unnamed: named, their part boxes (time and sliders, through rotation) took `bevel_gears` to
       276,697 B. No golden moved: `internal/testdata/example/` holds older documents of its own, built on
       gearPair and bevelPair
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
