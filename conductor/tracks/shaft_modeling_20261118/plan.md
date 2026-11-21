@@ -335,3 +335,33 @@ Phase 0 has no start commit; Phase 7 was skipped.
       276,697 B. No golden moved: `internal/testdata/example/` holds older documents of its own, built on
       gearPair and bevelPair
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+
+## Phase 13: Fixes
+
+- [x] Task: Proposal (approved 2026-11-21), each from a diagnosis:
+  - 13a: the box analysis folds comparisons of literals but not and/or/not, so every segment's first
+    test, `want > 0.5 && want < 2.5`, stays symbolic and the select unions its branches; a field branch
+    with no guard of its own then leaves every corner unbounded (Phase 12's "raw want" finding). Fold
+    and/or/not in `foldOperation`.
+  - 13b: `MarkParts` writes a part's box corners into its vanish guard as one tree, so what a turn shares
+    is written again at every use (two nested turns of a slider box: 14 KB a corner). Run the corners
+    through `sharedLocals`.
+  - 13c: the fold bridges the first segment to its seed (`max(100000, seg)`), which can never win.
+    `i < 0.5 ? ...` in the four fold bodies (measured: bevel_gears 43.2 -> 33.7 KB, every shaft
+    example 1-9% smaller).
+  - 13d: the PNG framing scan returns only the inside cells once any is found, losing a part thinner
+    than the 85 mm coarse cells (the threaded shaft's thread). Union the inside and near bands.
+- [x] Task: Write failing tests (Red Phase), `eval/shaft_fixes_test.go`: and/or/not of literals pick a
+      branch; a caller's unguarded segment keeps the shaft's box; a turned part's WGSL grows linearly
+      with nesting; the first segment is written no more often than a middle one (and the field is
+      unchanged, which passes before and after); framing keeps a thin rod beside a block
+- [x] Task: Implement (Green & Refactor Phase): and/or/not folded in `foldOperation`; `sharePartBox` names
+      the shared nodes of a part's six corners as top-level `gsl_partShare__N` declarations before the part
+      (`shareNames` gained a prefix); `i < 0.5` in the four fold bodies; framing unions the inside and near
+      bands. A turned part's WGSL by depth: 10,838 / 15,871 / 39,162 -> 10,570 / 11,709 / 12,962 B. Shaft
+      examples: bevel_gears 43,222 -> 33,680 B, gears 18,961 -> 15,995 B, every shaft example 1-9% smaller;
+      the bevel pair with its placed gears named is 46,649 B (276,697 before), but they stay unnamed (their
+      boxes move). Four codegen goldens moved by spelling only and were regenerated with the owner's
+      approval: Bevel Gears 37,643 -> 16,422 B, Gears -2.7%, transform_box -0.4%, CoreXY Printer +0.14%.
+      Found: every segment's field is still written about 20 times into the shader (a later item)
+- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)

@@ -1613,6 +1613,12 @@ func foldOperation(operation program.Operation, vs []boxVal) (float64, bool) {
 		return two(func(a, b float64) float64 { return b2i(a == b) })
 	case program.Operation_NE:
 		return two(func(a, b float64) float64 { return b2i(a != b) })
+	case program.Operation_AND:
+		return two(func(a, b float64) float64 { return b2i(a > 0 && b > 0) })
+	case program.Operation_OR:
+		return two(func(a, b float64) float64 { return b2i(a > 0 || b > 0) })
+	case program.Operation_NOT:
+		return one(func(a float64) float64 { return b2i(!(a > 0)) })
 	}
 	return 0, false
 }

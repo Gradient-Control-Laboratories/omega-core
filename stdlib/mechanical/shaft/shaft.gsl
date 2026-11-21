@@ -117,8 +117,10 @@ body(segments) {
   // the bridges of all runs ending here are then max(open, this unbounded
   // below), since max distributes over min. Passing this segment, every open
   // run takes it as a member between (unbounded both ways) and a new run opens
-  // at it (unbounded above). The seed's second component keeps the first
-  // segment from bridging with anything.
+  // at it (unbounded above). The first segment has nothing before it to bridge
+  // to, so at i = 0 the fold takes it alone and opens its run; bridging it to
+  // the seed could never win and would still evaluate it twice. The index is a
+  // constant once the fold is unrolled, so the choice costs nothing.
   //
   // A joint's blend, shaft.fillet or shaft.chamfer, is an entry between two
   // segments. Passing it, the fold changes nothing: it answers nothing capped
@@ -134,8 +136,8 @@ body(segments) {
     chamferC = prev(0.0, 0.0, 7.0);
     here = filletR < 50000.0 ? unionRound(acc.x, seg(0.0, 0.0, 0.0), filletR)
                              : (chamferC < 50000.0 ? unionChamfer(acc.x, seg(0.0, 0.0, 0.0), chamferC) : seg(0.0, 0.0, 0.0));
-    return [min(acc.x, here, max(openRuns, seg(100000.0, 0.0, 0.0))),
-            min(max(openRuns, seg(100000.0, 100000.0, 0.0)), seg(0.0, 100000.0, 0.0))];
+    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, seg(100000.0, 0.0, 0.0))),
+            i < 0.5 ? seg(0.0, 100000.0, 0.0) : min(max(openRuns, seg(100000.0, 100000.0, 0.0)), seg(0.0, 100000.0, 0.0))];
   }, segments, [100000.0, 100000.0]);
   // The runouts, cut after the fold: where a cutter runs out past a segment's
   // end, its gaps run on into the neighbour.
@@ -179,8 +181,8 @@ body(segments, bottomHole, topHole) {
     chamferC = prev(0.0, 0.0, 7.0);
     here = filletR < 50000.0 ? unionRound(acc.x, seg(0.0, 0.0, 0.0), filletR)
                              : (chamferC < 50000.0 ? unionChamfer(acc.x, seg(0.0, 0.0, 0.0), chamferC) : seg(0.0, 0.0, 0.0));
-    return [min(acc.x, here, max(openRuns, seg(100000.0, 0.0, 0.0))),
-            min(max(openRuns, seg(100000.0, 100000.0, 0.0)), seg(0.0, 100000.0, 0.0))];
+    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, seg(100000.0, 0.0, 0.0))),
+            i < 0.5 ? seg(0.0, 100000.0, 0.0) : min(max(openRuns, seg(100000.0, 100000.0, 0.0)), seg(0.0, 100000.0, 0.0))];
   }, segments, [100000.0, 100000.0]);
   cuts = reduce((c, seg) { return min(c, seg(0.0, 0.0, 3.0)); }, segments, 100000.0);
   // The end faces, asked of the segments: the lowest starting plane and the
@@ -220,8 +222,8 @@ envelope(segments) {
     chamferC = prev(0.0, 0.0, 7.0);
     here = filletR < 50000.0 ? unionRound(acc.x, seg(0.0, 0.0, 4.0), filletR)
                              : (chamferC < 50000.0 ? unionChamfer(acc.x, seg(0.0, 0.0, 4.0), chamferC) : seg(0.0, 0.0, 4.0));
-    return [min(acc.x, here, max(openRuns, seg(100000.0, 0.0, 4.0))),
-            min(max(openRuns, seg(100000.0, 100000.0, 4.0)), seg(0.0, 100000.0, 4.0))];
+    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, seg(100000.0, 0.0, 4.0))),
+            i < 0.5 ? seg(0.0, 100000.0, 4.0) : min(max(openRuns, seg(100000.0, 100000.0, 4.0)), seg(0.0, 100000.0, 4.0))];
   }, segments, [100000.0, 100000.0]);
   bottomFace = reduce((low, seg) { return min(low, seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
   topFace = reduce((high, seg) { return max(high, seg(0.0, 0.0, 2.0)); }, segments, -100000.0);
@@ -245,8 +247,8 @@ envelope(segments, bottomHole, topHole) {
     chamferC = prev(0.0, 0.0, 7.0);
     here = filletR < 50000.0 ? unionRound(acc.x, seg(0.0, 0.0, 4.0), filletR)
                              : (chamferC < 50000.0 ? unionChamfer(acc.x, seg(0.0, 0.0, 4.0), chamferC) : seg(0.0, 0.0, 4.0));
-    return [min(acc.x, here, max(openRuns, seg(100000.0, 0.0, 4.0))),
-            min(max(openRuns, seg(100000.0, 100000.0, 4.0)), seg(0.0, 100000.0, 4.0))];
+    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, seg(100000.0, 0.0, 4.0))),
+            i < 0.5 ? seg(0.0, 100000.0, 4.0) : min(max(openRuns, seg(100000.0, 100000.0, 4.0)), seg(0.0, 100000.0, 4.0))];
   }, segments, [100000.0, 100000.0]);
   bottomFace = reduce((low, seg) { return min(low, seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
   topFace = reduce((high, seg) { return max(high, seg(0.0, 0.0, 2.0)); }, segments, -100000.0);

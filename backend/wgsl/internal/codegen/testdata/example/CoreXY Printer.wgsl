@@ -1907,12 +1907,16 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_13: f32, gsl_param_51_11: f32, 
     if (abs(gsl_part_108) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_108), gsl_partVanish_108.zw); }
   }
   let fasteners = gsl_part_108;
-  let gsl_partLo_149 = vec3<f32>(min(min(-233.5, -(-0.0 - gx) - 19.95), -221.15), min(min(min(min(min(-170.0, -(gy - 10.0 - 3.25) / -1.0 - 3.25), -(-0.0 - gy) - 22.7), -(-0.0 - gy) - 22.7), -(gy - 10.0 - 6.5) / -1.0 - 3.5), -206.15), -238.0);
-  let gsl_partHi_149 = vec3<f32>(max(max(233.5, -(-0.0 - gx) + 19.95), 221.15), max(max(max(max(max(170.0, -(gy - 10.0 - 3.25) / -1.0 + 3.25), -(-0.0 - gy) + 22.7), -(-0.0 - gy) + 22.7), -(gy - 10.0 - 6.5) / -1.0 + 3.5), 221.15), 298.0);
+  let gsl_partShare__676 = -(gy - 10.0 - 3.25) / -1.0;
+  let gsl_partShare__677 = -(gy - 10.0 - 6.5) / -1.0;
+  let gsl_partLo_149 = vec3<f32>(min(min(-233.5, -(-0.0 - gx) - 19.95), -221.15), min(min(min(min(min(-170.0, gsl_partShare__676 - 3.25), -(-0.0 - gy) - 22.7), -(-0.0 - gy) - 22.7), gsl_partShare__677 - 3.5), -206.15), -238.0);
+  let gsl_partHi_149 = vec3<f32>(max(max(233.5, -(-0.0 - gx) + 19.95), 221.15), max(max(max(max(max(170.0, gsl_partShare__676 + 3.25), -(-0.0 - gy) + 22.7), -(-0.0 - gy) + 22.7), gsl_partShare__677 + 3.5), 221.15), 298.0);
   let gsl_partBox_149 = gsl_boxDistance(p, gsl_partLo_149, gsl_partHi_149);
   var gsl_part_149 = gsl_partBox_149;
-  let gsl_partLo_150 = vec3<f32>(min(-233.5, -(-0.0 - gx) - 19.95), min(min(min(min(-170.0, -(gy - 10.0 - 3.25) / -1.0 - 3.25), -(-0.0 - gy) - 22.7), -(-0.0 - gy) - 22.7), -(gy - 10.0 - 6.5) / -1.0 - 3.5), 200.0);
-  let gsl_partHi_150 = vec3<f32>(max(233.5, -(-0.0 - gx) + 19.95), max(max(max(max(170.0, -(gy - 10.0 - 3.25) / -1.0 + 3.25), -(-0.0 - gy) + 22.7), -(-0.0 - gy) + 22.7), -(gy - 10.0 - 6.5) / -1.0 + 3.5), 233.0);
+  let gsl_partShare__666 = -(gy - 10.0 - 3.25) / -1.0;
+  let gsl_partShare__667 = -(gy - 10.0 - 6.5) / -1.0;
+  let gsl_partLo_150 = vec3<f32>(min(-233.5, -(-0.0 - gx) - 19.95), min(min(min(min(-170.0, gsl_partShare__666 - 3.25), -(-0.0 - gy) - 22.7), -(-0.0 - gy) - 22.7), gsl_partShare__667 - 3.5), 200.0);
+  let gsl_partHi_150 = vec3<f32>(max(233.5, -(-0.0 - gx) + 19.95), max(max(max(max(170.0, gsl_partShare__666 + 3.25), -(-0.0 - gy) + 22.7), -(-0.0 - gy) + 22.7), gsl_partShare__667 + 3.5), 233.0);
   let gsl_partBox_150 = gsl_boxDistance(p, gsl_partLo_150, gsl_partHi_150);
   var gsl_part_150 = gsl_partBox_150;
   let gsl_partLo_151 = vec3<f32>(-226.0, -170.0, 200.0);
@@ -1937,8 +1941,9 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_13: f32, gsl_param_51_11: f32, 
     if (abs(gsl_part_152) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_152), gsl_partVanish_152.zw); }
   }
   let railR = gsl_part_152;
-  let gsl_partLo_153 = vec3<f32>(-175.0, -(gy - 10.0 - 3.25) / -1.0 - 3.25, 218.5);
-  let gsl_partHi_153 = vec3<f32>(175.0, -(gy - 10.0 - 3.25) / -1.0 + 3.25, 227.5);
+  let gsl_partShare__0 = -(gy - 10.0 - 3.25) / -1.0;
+  let gsl_partLo_153 = vec3<f32>(-175.0, gsl_partShare__0 - 3.25, 218.5);
+  let gsl_partHi_153 = vec3<f32>(175.0, gsl_partShare__0 + 3.25, 227.5);
   let gsl_partBox_153 = gsl_boxDistance(p, gsl_partLo_153, gsl_partHi_153);
   var gsl_part_153 = gsl_partBox_153;
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_153 <= gsl_vanishView.w) {
@@ -1970,8 +1975,9 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_13: f32, gsl_param_51_11: f32, 
     if (abs(gsl_part_155) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_155), gsl_partVanish_155.zw); }
   }
   let carriageR = gsl_part_155;
-  let gsl_partLo_156 = vec3<f32>(-(-0.0 - gx) - 19.95, -(gy - 10.0 - 6.5) / -1.0 - 3.5, 213.0);
-  let gsl_partHi_156 = vec3<f32>(-(-0.0 - gx) + 19.95, -(gy - 10.0 - 6.5) / -1.0 + 3.5, 233.0);
+  let gsl_partShare__1 = -(gy - 10.0 - 6.5) / -1.0;
+  let gsl_partLo_156 = vec3<f32>(-(-0.0 - gx) - 19.95, gsl_partShare__1 - 3.5, 213.0);
+  let gsl_partHi_156 = vec3<f32>(-(-0.0 - gx) + 19.95, gsl_partShare__1 + 3.5, 233.0);
   let gsl_partBox_156 = gsl_boxDistance(p, gsl_partLo_156, gsl_partHi_156);
   var gsl_part_156 = gsl_partBox_156;
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_156 <= gsl_vanishView.w) {
