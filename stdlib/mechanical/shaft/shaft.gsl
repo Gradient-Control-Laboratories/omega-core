@@ -117,7 +117,15 @@ body(segments) {
   // The runouts, cut after the fold: where a cutter runs out past a segment's
   // end, its gaps run on into the neighbour.
   cuts = reduce((c, seg) { return min(c, seg(0.0, 0.0, 3.0)); }, segments, 100000.0);
-  return max(shaftSoFar.x, -cuts);
+  // The box: from the lowest end face to the highest, and out to the farthest
+  // any segment reaches from the axis (seg(0, 0, 5)). A caller's own .box
+  // replaces it.
+  bottomFace = reduce((low, seg) { return min(low, seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
+  topFace = reduce((high, seg) { return max(high, seg(0.0, 0.0, 2.0)); }, segments, -100000.0);
+  reach = reduce((r, seg) { return max(r, seg(0.0, 0.0, 5.0)); }, segments, 0.0);
+  solid = max(shaftSoFar.x, -cuts);
+  solid.box = [[neg(reach), neg(reach), bottomFace], [reach, reach, topFace]];
+  return solid;
 }
 
 /// The same shaft with a hole stack cut into each end face: `bottomHole` into
@@ -149,7 +157,61 @@ body(segments, bottomHole, topHole) {
   // of either lies in the face it opens onto.
   topVoid = drill.hole(topHole, topFace);
   bottomVoid = remap(drill.hole(bottomHole, 0.0), [p.x, -p.y, bottomFace - p.z]);
-  return max(shaftSoFar.x, -cuts, -topVoid, -bottomVoid);
+  // The box, as body(segments) gives it: the holes only take material away.
+  reach = reduce((r, seg) { return max(r, seg(0.0, 0.0, 5.0)); }, segments, 0.0);
+  solid = max(shaftSoFar.x, -cuts, -topVoid, -bottomVoid);
+  solid.box = [[neg(reach), neg(reach), bottomFace], [reach, reach, topFace]];
+  return solid;
+}
+
+/// The simplified model of the same shaft: its smooth envelope, for proofs,
+/// meshing and assemblies, as thread.male's docs advise ("prove against the
+/// smooth cylinder"). A gear is its tip circle, a spline and a thread their
+/// major diameter, and runouts and their cuts are gone; the smooth segments
+/// and the joints' blends are as body has them, under the same box. It holds
+/// the detailed shaft.
+///
+///   shaft.envelope([shaft.gear(18.0, 2.0, radians(20.0), 0.0, 0.0, 30.0), shaft.diameter(30.0, 30.0, 60.0)])
+envelope(segments) {
+  // Cloned into the caller's file as body is; the fold is body's, asking each
+  // segment for its envelope (want 4) in place of its field.
+  shaftSoFar = reduce((acc, seg, i, prev) {
+    openRuns = acc.y;
+    filletR = prev(0.0, 0.0, 6.0);
+    chamferC = prev(0.0, 0.0, 7.0);
+    here = filletR < 50000.0 ? unionRound(acc.x, seg(0.0, 0.0, 4.0), filletR)
+                             : (chamferC < 50000.0 ? unionChamfer(acc.x, seg(0.0, 0.0, 4.0), chamferC) : seg(0.0, 0.0, 4.0));
+    return [min(acc.x, here, max(openRuns, seg(100000.0, 0.0, 4.0))),
+            min(max(openRuns, seg(100000.0, 100000.0, 4.0)), seg(0.0, 100000.0, 4.0))];
+  }, segments, [100000.0, 100000.0]);
+  bottomFace = reduce((low, seg) { return min(low, seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
+  topFace = reduce((high, seg) { return max(high, seg(0.0, 0.0, 2.0)); }, segments, -100000.0);
+  reach = reduce((r, seg) { return max(r, seg(0.0, 0.0, 5.0)); }, segments, 0.0);
+  solid = shaftSoFar.x;
+  solid.box = [[neg(reach), neg(reach), bottomFace], [reach, reach, topFace]];
+  return solid;
+}
+
+/// The simplified model with its end holes, as body(segments, bottomHole,
+/// topHole) cuts them: a tapped or centre hole matters to a fit.
+envelope(segments, bottomHole, topHole) {
+  shaftSoFar = reduce((acc, seg, i, prev) {
+    openRuns = acc.y;
+    filletR = prev(0.0, 0.0, 6.0);
+    chamferC = prev(0.0, 0.0, 7.0);
+    here = filletR < 50000.0 ? unionRound(acc.x, seg(0.0, 0.0, 4.0), filletR)
+                             : (chamferC < 50000.0 ? unionChamfer(acc.x, seg(0.0, 0.0, 4.0), chamferC) : seg(0.0, 0.0, 4.0));
+    return [min(acc.x, here, max(openRuns, seg(100000.0, 0.0, 4.0))),
+            min(max(openRuns, seg(100000.0, 100000.0, 4.0)), seg(0.0, 100000.0, 4.0))];
+  }, segments, [100000.0, 100000.0]);
+  bottomFace = reduce((low, seg) { return min(low, seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
+  topFace = reduce((high, seg) { return max(high, seg(0.0, 0.0, 2.0)); }, segments, -100000.0);
+  topVoid = drill.hole(topHole, topFace);
+  bottomVoid = remap(drill.hole(bottomHole, 0.0), [p.x, -p.y, bottomFace - p.z]);
+  reach = reduce((r, seg) { return max(r, seg(0.0, 0.0, 5.0)); }, segments, 0.0);
+  solid = max(shaftSoFar.x, -topVoid, -bottomVoid);
+  solid.box = [[neg(reach), neg(reach), bottomFace], [reach, reach, topFace]];
+  return solid;
 }
 
 // =========================================================
@@ -164,7 +226,9 @@ diameter(dia, from, to) {
     radial = length(p.xy) - dia / 2.0;
     axial = max((from - eDown) - p.z, p.z - (to + eUp));
     field = sqrt(max(radial, 0.0) * max(radial, 0.0) + max(axial, 0.0) * max(axial, 0.0)) + min(max(radial, axial), 0.0);
-    return want > 2.5 ? nothing : segmentAnswer(want, field, from, to);
+    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
+         : (want > 4.5 ? (want > 5.5 ? nothing : dia / 2.0)
+                      : (want > 2.5 && want < 3.5 ? nothing : segmentAnswer(want > 3.5 ? 0.0 : want, field, from, to)));
   }
   return seg;
 }
@@ -174,7 +238,10 @@ diameter(dia, from, to) {
 /// diameters, a chamfer at a shaft's end.
 taper(diaFrom, diaTo, from, to) {
   seg(eDown, eUp, want) {
-    return want > 2.5 ? nothing : segmentAnswer(want, turnedTaper(diaFrom / 2.0, diaTo / 2.0, from, to, from - eDown, to + eUp), from, to);
+    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
+         : (want > 4.5 ? (want > 5.5 ? nothing : max(diaFrom, diaTo) / 2.0)
+                      : (want > 2.5 && want < 3.5 ? nothing
+                                                  : segmentAnswer(want > 3.5 ? 0.0 : want, turnedTaper(diaFrom / 2.0, diaTo / 2.0, from, to, from - eDown, to + eUp), from, to)));
   }
   return seg;
 }
@@ -184,7 +251,9 @@ taper(diaFrom, diaTo, from, to) {
 /// wherever the section is: the segment is the section's prism, square-ended.
 section(field, from, to) {
   seg(eDown, eUp, want) {
-    return prismSegment(field, from, to, eDown, eUp, want);
+    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
+         : (want > 4.5 ? (want > 5.5 ? nothing : sectionReach(field))
+                      : prismSegment(field, from, to, eDown, eUp, want > 3.5 ? 0.0 : want));
   }
   return seg;
 }
@@ -197,8 +266,10 @@ section(field, from, to) {
 ///   shaft.eccentric(28.0, 40.0, 0.0, 45.0, 75.0)
 eccentric(dia, offset, angle, from, to) {
   seg(eDown, eUp, want) {
-    return want > 2.5 ? nothing : prismSegment(length([p.x - offset * cos(angle), p.y - offset * sin(angle)]) - dia / 2.0,
-                                               from, to, eDown, eUp, want);
+    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
+         : (want > 4.5 ? (want > 5.5 ? nothing : abs(offset) + dia / 2.0)
+                      : prismSegment(length([p.x - offset * cos(angle), p.y - offset * sin(angle)]) - dia / 2.0,
+                                     from, to, eDown, eUp, want > 3.5 ? 0.0 : want));
   }
   return seg;
 }
@@ -212,7 +283,9 @@ eccentric(dia, offset, angle, from, to) {
 ///   shaft.web(25.0, 18.0, 40.0, 0.0, 30.0, 45.0)
 web(mainR, pinR, offset, angle, from, to) {
   seg(eDown, eUp, want) {
-    return want > 2.5 ? nothing : prismSegment(webSection(mainR, pinR, offset, angle), from, to, eDown, eUp, want);
+    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
+         : (want > 4.5 ? (want > 5.5 ? nothing : max(mainR, abs(offset) + pinR))
+                      : prismSegment(webSection(mainR, pinR, offset, angle), from, to, eDown, eUp, want > 3.5 ? 0.0 : want));
   }
   return seg;
 }
@@ -221,7 +294,9 @@ web(mainR, pinR, offset, angle, from, to) {
 /// drill.hexSocket's do. Exact.
 hex(acrossFlats, from, to) {
   seg(eDown, eUp, want) {
-    return want > 2.5 ? nothing : prismSegment(hexSection(acrossFlats), from, to, eDown, eUp, want);
+    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
+         : (want > 4.5 ? (want > 5.5 ? nothing : acrossFlats / 1.7320508075688772)
+                      : prismSegment(hexSection(acrossFlats), from, to, eDown, eUp, want > 3.5 ? 0.0 : want));
   }
   return seg;
 }
@@ -231,7 +306,9 @@ hex(acrossFlats, from, to) {
 /// bore is. Exact.
 dFlat(dia, acrossFlat, from, to) {
   seg(eDown, eUp, want) {
-    return want > 2.5 ? nothing : prismSegment(dFlatSection(dia, acrossFlat), from, to, eDown, eUp, want);
+    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
+         : (want > 4.5 ? (want > 5.5 ? nothing : dia / 2.0)
+                      : prismSegment(dFlatSection(dia, acrossFlat), from, to, eDown, eUp, want > 3.5 ? 0.0 : want));
   }
   return seg;
 }
@@ -240,7 +317,9 @@ dFlat(dia, acrossFlat, from, to) {
 /// -x, `acrossFlats` apart, as drill.doubleD's bore is. Exact.
 doubleD(dia, acrossFlats, from, to) {
   seg(eDown, eUp, want) {
-    return want > 2.5 ? nothing : prismSegment(doubleDSection(dia, acrossFlats), from, to, eDown, eUp, want);
+    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
+         : (want > 4.5 ? (want > 5.5 ? nothing : dia / 2.0)
+                      : prismSegment(doubleDSection(dia, acrossFlats), from, to, eDown, eUp, want > 3.5 ? 0.0 : want));
   }
   return seg;
 }
@@ -251,7 +330,10 @@ doubleD(dia, acrossFlats, from, to) {
 /// drill.spline(count, major, width) over a bore at `minor`. Exact outside.
 spline(count, minor, major, width, from, to) {
   seg(eDown, eUp, want) {
-    return want > 2.5 ? nothing : prismSegment(splineSection(count, minor, major, width), from, to, eDown, eUp, want);
+    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
+         : (want > 4.5 ? (want > 5.5 ? nothing : major / 2.0)
+                      : (want > 3.5 ? prismSegment(length(p.xy) - major / 2.0, from, to, eDown, eUp, 0.0)
+                                    : (want > 2.5 ? nothing : prismSegment(splineSection(count, minor, major, width), from, to, eDown, eUp, want))));
   }
   return seg;
 }
@@ -261,8 +343,10 @@ spline(count, minor, major, width, from, to) {
 /// shaft.chamferEnd(size).
 spline(count, minor, major, width, from, to, bottomEnd, topEnd) {
   seg(eDown, eUp, want) {
-    return want > 3.5 ? nothing : (want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(topEnd.x > 0.5 && topEnd.x < 1.5) ? nothing : machinedSegment(splineSection(count, minor, major, width), major / 2.0, minor / 2.0,
-                           from, to, eDown, eUp, want, bottomEnd, topEnd));
+    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
+         : (want > 4.5 ? (want > 5.5 ? nothing : major / 2.0)
+         : (want > 3.5 ? prismSegment(length(p.xy) - major / 2.0, from, to, eDown, eUp, 0.0) : (want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(topEnd.x > 0.5 && topEnd.x < 1.5) ? nothing : machinedSegment(splineSection(count, minor, major, width), major / 2.0, minor / 2.0,
+                           from, to, eDown, eUp, want, bottomEnd, topEnd))));
   }
   return seg;
 }
@@ -277,7 +361,10 @@ spline(count, minor, major, width, from, to, bottomEnd, topEnd) {
 /// distance.
 gear(numTeeth, moduleVal, pressureAngle, helixAngle, from, to) {
   seg(eDown, eUp, want) {
-    return want > 2.5 ? nothing : prismSegment(gearSection(numTeeth, moduleVal, pressureAngle, helixAngle, from), from, to, eDown, eUp, want);
+    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
+         : (want > 4.5 ? (want > 5.5 ? nothing : numTeeth * moduleVal / 2.0 + moduleVal)
+                      : (want > 3.5 ? prismSegment(length(p.xy) - (numTeeth * moduleVal / 2.0 + moduleVal), from, to, eDown, eUp, 0.0)
+                                    : (want > 2.5 ? nothing : prismSegment(gearSection(numTeeth, moduleVal, pressureAngle, helixAngle, from), from, to, eDown, eUp, want))));
   }
   return seg;
 }
@@ -289,9 +376,11 @@ gear(numTeeth, moduleVal, pressureAngle, helixAngle, from, to) {
 ///   shaft.gear(20.0, 2.0, radians(20.0), 0.0, 20.0, 50.0, shaft.planeEnd(), shaft.runout(80.0))
 gear(numTeeth, moduleVal, pressureAngle, helixAngle, from, to, bottomEnd, topEnd) {
   seg(eDown, eUp, want) {
-    return want > 3.5 ? nothing : (want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(topEnd.x > 0.5 && topEnd.x < 1.5) ? nothing : machinedSegment(gearSection(numTeeth, moduleVal, pressureAngle, helixAngle, from),
+    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
+         : (want > 4.5 ? (want > 5.5 ? nothing : numTeeth * moduleVal / 2.0 + moduleVal)
+         : (want > 3.5 ? prismSegment(length(p.xy) - (numTeeth * moduleVal / 2.0 + moduleVal), from, to, eDown, eUp, 0.0) : (want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(topEnd.x > 0.5 && topEnd.x < 1.5) ? nothing : machinedSegment(gearSection(numTeeth, moduleVal, pressureAngle, helixAngle, from),
                            numTeeth * moduleVal / 2.0 + moduleVal, numTeeth * moduleVal / 2.0 - 1.25 * moduleVal,
-                           from, to, eDown, eUp, want, bottomEnd, topEnd));
+                           from, to, eDown, eUp, want, bottomEnd, topEnd))));
   }
   return seg;
 }
@@ -304,7 +393,10 @@ gear(numTeeth, moduleVal, pressureAngle, helixAngle, from, to, bottomEnd, topEnd
 ///   shaft.thread(6.0, 1.0, 0.0, 20.0)
 thread(major, pitchVal, from, to) {
   seg(eDown, eUp, want) {
-    return want > 2.5 ? nothing : prismSegment(isoThread.male(major, pitchVal), from, to, eDown, eUp, want);
+    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
+         : (want > 4.5 ? (want > 5.5 ? nothing : major / 2.0)
+                      : (want > 3.5 ? prismSegment(length(p.xy) - major / 2.0, from, to, eDown, eUp, 0.0)
+                                    : (want > 2.5 ? nothing : prismSegment(isoThread.male(major, pitchVal), from, to, eDown, eUp, want))));
   }
   return seg;
 }
@@ -317,9 +409,11 @@ thread(major, pitchVal, from, to) {
 ///   shaft.thread(6.0, 1.0, 0.0, 20.0, shaft.chamferEnd(0.6), shaft.threadRunout(2.5))
 thread(major, pitchVal, from, to, bottomEnd, topEnd) {
   seg(eDown, eUp, want) {
-    return want > 3.5 ? nothing : (want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(bottomEnd.x > 2.5)
+    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
+         : (want > 4.5 ? (want > 5.5 ? nothing : major / 2.0)
+         : (want > 3.5 ? prismSegment(length(p.xy) - major / 2.0, from, to, eDown, eUp, 0.0) : (want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(bottomEnd.x > 2.5)
                                      && !(topEnd.x > 0.5 && topEnd.x < 1.5) && !(topEnd.x > 2.5)
-           ? nothing : threadedSegment(major, pitchVal, from, to, eDown, eUp, want, bottomEnd, topEnd));
+           ? nothing : threadedSegment(major, pitchVal, from, to, eDown, eUp, want, bottomEnd, topEnd))));
   }
   return seg;
 }
@@ -532,12 +626,24 @@ threadedSegment(major, pitchVal, from, to, eDown, eUp, want, bottomEnd, topEnd) 
 // as an ending plane the lowest there is, so body's end faces pass it too.
 // Asked with want 6 a fillet answers its radius, and with want 7 a chamfer its
 // size; everything else answers nothing to both, and body blends with what it
-// is told.
+// is told. Its envelope (want 4) is its field, so shaft.envelope passes it as
+// body does, and its reach (want 5) is none: a blend stays inside the larger of
+// the segments it joins.
 jointAnswer(eDown, eUp, want) {
-  return want > 2.5 ? nothing
-                    : (want > 1.5 ? neg(nothing)
-                                  : (want > 0.5 ? nothing
-                                                : (eDown > 1.0 && eUp > 1.0 ? neg(nothing) : nothing)));
+  return want > 4.5 ? 0.0
+       : (want > 3.5 ? (eDown > 1.0 && eUp > 1.0 ? neg(nothing) : nothing)
+       : (want > 2.5 ? nothing
+       : (want > 1.5 ? neg(nothing)
+       : (want > 0.5 ? nothing
+                     : (eDown > 1.0 && eUp > 1.0 ? neg(nothing) : nothing)))));
+}
+
+// A section segment's reach from the axis: unbounded. Its field is the
+// caller's, and a library function cannot read a parameter's .box (the box is
+// expanded before the clone reaches the caller's file), so the shaft's box is
+// unbounded across a section; a caller who knows better sets the shaft's .box.
+sectionReach(field) {
+  return nothing;
 }
 
 // What a segment answers: its field when `want` is 0, the plane it starts on

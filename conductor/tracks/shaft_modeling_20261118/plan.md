@@ -254,15 +254,21 @@ treatment), the phase opens with a proposal for the owner to approve before any 
 
 ## Phase 10: Box Override and Simplified Model
 
-- [ ] Task: Proposal: how a caller replaces the shaft's `.box`, and how the simplified model is asked for
-      (a second entry point over the same segment list, or a flag)
-- [ ] Task: Write failing tests (Red Phase)
-  - [ ] The computed box contains the shaft; an override replaces it
-  - [ ] The simplified model contains the detailed one (a gear at its tip, a thread or spline at its
-        major diameter) and has no teeth, threads or knurling
-  - [ ] `certify` on the simplified model proves faster than on the detailed one
-- [ ] Task: Implement (Green & Refactor Phase)
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Proposal (approved 2026-11-20): `shaft.body` declares a box from its end faces and each
+      segment's reach; a caller overrides it with their own `.box`; `shaft.envelope(segments[, bottomHole,
+      topHole])` is the simplified model (gear at tip, spline and thread at major, runouts dropped, smooth
+      segments, blends and end holes kept) (spec 3.4)
+- [x] Task: Write failing tests (Red Phase), `eval/shaft_box_test.go`
+  - [x] The computed box contains the shaft (seven stacks, body and envelope, with holes); an override
+        replaces it (passes already: a caller's `.box` replaces a library's)
+  - [x] The simplified model contains the detailed one (sampled) and is exactly the tip and major
+        cylinders outside, so no teeth, threads or splines; it keeps blends and end holes
+  - [x] `certify` on the simplified model proves in fewer evaluations than on the detailed one
+- [x] Task: Implement (Green & Refactor Phase): every segment answers its planes first, its envelope
+      (want 4) and its reach (want 5); body declares the box; `shaft.envelope` both ways. A section leaves the
+      box unbounded radially (a library cannot read a parameter's `.box`). One test corrected with the
+      owner's approval: the envelope holds the detail by sign, since a helical gear's field is a bound
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 11: Verification and Records
 
