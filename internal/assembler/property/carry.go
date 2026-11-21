@@ -2,6 +2,7 @@ package property
 
 import (
 	"fmt"
+	"slices"
 
 	"google.golang.org/protobuf/proto"
 	"gradientcontrol.com/omega/core/program"
@@ -198,6 +199,11 @@ func CarryReturnProperties(prog *program.Program) error {
 		}
 		if frames.sweep = findSweep(pkgs, paths); frames.sweep != nil {
 			carriers[frames.sweep.key] = carrier{slots: [][]string{{uProperty, vProperty}}}
+			for _, params := range frames.sweep.open {
+				open := frames.sweep.key
+				open.name, open.params = sweepOpenName, params
+				carriers[open] = carrier{slots: [][]string{{uProperty, vProperty}}}
+			}
 		}
 	}
 	if len(carriers) == 0 {
@@ -231,12 +237,22 @@ func (f builtinFrames) valueOr(fc *program.FnCall, prop string, companion *progr
 //	                                           gslCarry2 = remap(moulding.u, <sweep's coordinate>);
 //	                                           rail = sweep(moulding, route);
 //	                                           rail.u = gslCarry1;  rail.v = gslCarry2;
+//
+// The open sweep, sweepOpen(section, points[, curvatures]), has the same
+// frame about the chain's openProfileXY on the same points: its body is not
+// one remap (its caps read the section elsewhere), so its values are written
+// from sweep's coordinate with that profile as the path.
 type sweepFrame struct {
-	key carrierKey
-	fn  *program.Function
+	key  carrierKey
+	fn   *program.Function
+	open []int // the parameter counts of builtin's sweepOpen overloads
 }
 
-const sweepName = "sweep"
+const (
+	sweepName         = "sweep"
+	sweepOpenName     = "sweepOpen"
+	openProfileXYName = "openProfileXY"
+)
 
 // findSweep finds builtin's two-parameter sweep among pkgs, or nil when it is
 // not there or its body is no longer one remap of its first parameter.
@@ -261,7 +277,8 @@ func findSweep(pkgs []*program.Package, paths []string) *sweepFrame {
 					if remapCoordinate(fn, 2) == nil {
 						return nil
 					}
-					return &sweepFrame{key: carrierKey{pkgPath: paths[i], name: sweepName, params: 2}, fn: fn}
+					return &sweepFrame{key: carrierKey{pkgPath: paths[i], name: sweepName, params: 2}, fn: fn,
+						open: sweepOpenArities(pkg)}
 				}
 			}
 		}
@@ -269,20 +286,58 @@ func findSweep(pkgs []*program.Package, paths []string) *sweepFrame {
 	return nil
 }
 
-// valueOr is the value of prop for the call fc when fc is a sweep, and
-// otherwise, the value it was handed.
+// sweepOpenArities are the parameter counts of pkg's sweepOpen overloads.
+func sweepOpenArities(pkg *program.Package) []int {
+	var out []int
+	for _, f := range pkg.Files {
+		if f == nil {
+			continue
+		}
+		for _, ft := range f.FnTypes {
+			if ft == nil || ft.Name != sweepOpenName {
+				continue
+			}
+			for _, params := range []int{2, 3} {
+				if hasOverload(ft, params) {
+					out = append(out, params)
+				}
+			}
+		}
+	}
+	return out
+}
+
+// valueOr is the value of prop for the call fc when fc is a sweep or an open
+// sweep, and otherwise, the value it was handed.
 func (sw *sweepFrame) valueOr(fc *program.FnCall, prop string, otherwise *program.Operand) *program.Operand {
-	if sw == nil || fc == nil || fc.Reference == nil || len(fc.Arguments) != 2 ||
-		fc.Reference.Name != sw.key.name || fc.Reference.PkgPath != sw.key.pkgPath {
+	if sw == nil || fc == nil || fc.Reference == nil || fc.Reference.PkgPath != sw.key.pkgPath {
 		return otherwise
 	}
 	arg := func(i int) *program.Operand { return proto.Clone(fc.Arguments[i]).(*program.Operand) }
-	if prop == uProperty {
-		return nary(program.Operation_SURFACEU, arg(1))
+	var path, u *program.Operand
+	switch {
+	case fc.Reference.Name == sw.key.name && len(fc.Arguments) == 2:
+		path = arg(1)
+		u = nary(program.Operation_SURFACEU, arg(1))
+	case fc.Reference.Name == sweepOpenName && slices.Contains(sw.open, len(fc.Arguments)):
+		// The chain's openProfileXY, called as sweepOpen was; its u is its
+		// companion's, since a frame read of a call written here would reach
+		// no companion.
+		profile := &program.FnCall{
+			Reference: &program.Reference{Prefix: fc.Reference.Prefix, Name: openProfileXYName, PkgPath: fc.Reference.PkgPath},
+			Arguments: fc.Arguments[1:],
+		}
+		path = &program.Operand{T: &program.Operand_FnCall{FnCall: proto.Clone(profile).(*program.FnCall)}}
+		u = companionCall(profile, uProperty, 0, false)
+	default:
+		return otherwise
 	}
-	params := make(map[string]*program.Operand, 2)
-	for i, prm := range sw.fn.Parameters {
-		params[prm.Name] = fc.Arguments[i]
+	if prop == uProperty {
+		return u
+	}
+	params := map[string]*program.Operand{
+		sw.fn.Parameters[0].Name: fc.Arguments[0],
+		sw.fn.Parameters[1].Name: path,
 	}
 	return nary(program.Operation_REMAP,
 		nary(program.Operation_SURFACEU, arg(0)),

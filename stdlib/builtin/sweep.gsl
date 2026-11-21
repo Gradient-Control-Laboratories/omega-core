@@ -140,3 +140,77 @@ revolve(profile, axisPoint, axisDirection, angle) {
 sweep(section, path) {
   return remap(section, [path, p.z, 0]);
 }
+
+/// A 2D section swept along an open chain of lines in the XY plane, through
+/// `points` (at least two 2D points), and capped flat at both ends. `section`
+/// is drawn as sweep's is, x across the path and y up as z, its positive x on
+/// the right of travel along the chain, which is the outside of a
+/// counterclockwise loop: a piece of a closed path sweeps as the closed path
+/// does. The side wall is the section read at openProfileXY's distance to the
+/// chain; each cap is the section standing in the plane square to the chain
+/// at its end. The chain obeys openProfileXY's rule, its end lines crossing
+/// neither the chain nor each other, and the section stays inside the
+/// chain's tube, on the inside of every bend no farther across than its
+/// radius. Then the sign is right everywhere, and the distance is exact
+/// beside the chain and over the caps. Beyond a cap it is that cap's
+/// distance, which reads too far wherever another part of the sweep is
+/// nearer than the cap: a chain that bends back toward its end, with the
+/// section reaching out toward the point. There it is not a bound, though
+/// its sign stays right. A sharp corner is swept round on the outside and
+/// mitred on the inside, as sweep does, with the distance a bound near it.
+/// Its frame: .u the distance along the chain, as openProfileXY's .u, and .v
+/// the section's .u. Its box is the chain's grown by the section's reach
+/// across it, between the section's lowest and highest.
+//
+// Internal: the section is read three times, at the wall and in each cap's
+// plane, as the partial revolve reads its profile; the magnitude is the
+// least of the wall's distance, gated off where p's nearest point of the
+// extended chain is on one of its rays, and each cap's, the distance to the
+// section standing in that plane; the sign is negative where the wall's is
+// and the nearest point is on the chain. The frame is written at the call
+// (property's sweepFrame) and the box by property's sweptOpen rule.
+sweepOpen(section, points) {
+  count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
+  pools = openProfilePolygonPoolsXY(points);
+  first = normalize(points[1] - points[0]);
+  last = normalize(points[count - 1] - points[count - 2]);
+  nearest = min(pools.z, pools.w);
+  across = pools.x <= pools.y ? nearest : neg(nearest);
+  wall = remap(section, [across, p.z, 0]);
+  fromFirst = p.xy - points[0];
+  firstDepth = neg(dot(fromFirst, first));
+  firstCap = remap(section, [fromFirst.x * first.y - fromFirst.y * first.x, p.z, 0]);
+  fromLast = p.xy - points[count - 1];
+  lastDepth = dot(fromLast, last);
+  lastCap = remap(section, [fromLast.x * last.y - fromLast.y * last.x, p.z, 0]);
+  onRay = pools.z - pools.w;
+  reach = min(max(abs(wall), onRay <= 0 ? 0 : nothing),
+              length([firstDepth, max(firstCap, 0)]),
+              length([lastDepth, max(lastCap, 0)]));
+  return max(wall, onRay) < 0 ? neg(reach) : reach;
+}
+
+/// sweepOpen along a chain of lines and circular arcs, each edge bent to a
+/// signed curvature as openProfileXY(points, curvatures) bends it, one per
+/// edge: positive curving left along the chain. The caps stand square to the
+/// tangents at the chain's two ends.
+sweepOpen(section, points, curvatures) {
+  count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
+  pools = openProfilePoolsXY(points, curvatures);
+  first = profileEdgeTangentsXY(points[0], points[1], curvatures[0]).xy;
+  last = profileEdgeTangentsXY(points[count - 2], points[count - 1], curvatures[count - 2]).zw;
+  nearest = min(pools.z, pools.w);
+  across = pools.x <= pools.y ? nearest : neg(nearest);
+  wall = remap(section, [across, p.z, 0]);
+  fromFirst = p.xy - points[0];
+  firstDepth = neg(dot(fromFirst, first));
+  firstCap = remap(section, [fromFirst.x * first.y - fromFirst.y * first.x, p.z, 0]);
+  fromLast = p.xy - points[count - 1];
+  lastDepth = dot(fromLast, last);
+  lastCap = remap(section, [fromLast.x * last.y - fromLast.y * last.x, p.z, 0]);
+  onRay = pools.z - pools.w;
+  reach = min(max(abs(wall), onRay <= 0 ? 0 : nothing),
+              length([firstDepth, max(firstCap, 0)]),
+              length([lastDepth, max(lastCap, 0)]));
+  return max(wall, onRay) < 0 ? neg(reach) : reach;
+}

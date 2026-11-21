@@ -192,7 +192,19 @@ Taken next after Phase 2, before Phases 3 and 4 (the owner, 2026-11-18).
         its frame by `sweepFrame` and its box by the `swept` rule (`internal/assembler/property`);
         `profile_sweep.gsl` rewritten on it, its values and frame unchanged at sample points. Removing the
         box rule fails the box test. No golden moved
-- [ ] Task: Open and non-planar paths, with a stated Lipschitz bound
+- [x] Task: Proposal for open paths. Decided: `openProfileXY(points[, curvatures])`, signed, its ends
+      extended as tangent rays; flat caps by `sweepOpen` (Phase 7); finite 2D strokes later; non-planar
+      paths split off (spec section 4, C4 and C5)
+- [x] Task: Open planar profiles (`eval/profile_open_test.go`)
+  - [x] Write failing tests (Red Phase): exact against a reference distance to the extended chain, straight
+        and with arcs (worst 5.2e-6); the sign right of travel; a piece of a closed profile agrees with it
+        beside that piece; `.u` along the chain and past its ends (worst 3.1e-5); surface cells (widest
+        1.79); `certify` on the right side (at most 1,737 evaluations)
+  - [x] Implement (Green & Refactor Phase): `openProfileXY` in `stdlib/builtin/2d.gsl`, one pass of pools
+        through the closed profile's own steps, the first point's turn made nothing by a mirrored previous
+        edge and the last point shut by a constant gate; the rays offered beside the pass. Flipping the
+        first ray's overshoot fails the reference test by 54.7 mm
+- [ ] Task: Non-planar paths, with a stated Lipschitz bound
   - [ ] Proposal: frame transport along the path, and the bound
   - [ ] Write failing tests (Red Phase): the field never exceeds the reference distance and stays within the
         bound; `certify` holds
@@ -203,9 +215,26 @@ Taken next after Phase 2, before Phases 3 and 4 (the owner, 2026-11-18).
 
 ## Phase 7: Caps for Sweeps (C5)
 
-- [ ] Task: Write failing tests (Red Phase): an open sweep's ends capped flat, exact where the path is,
-      frames across the rim
-- [ ] Task: Implement (Green & Refactor Phase)
+- [x] Task: Write failing tests (Red Phase) (`eval/profile_sweep_open_test.go`): the formula from the
+      references (worst 7.3e-6); against the swept solid sampled on its own, wall and caps apart: where the
+      condition holds never over (worst 0.0003 mm) and, on the smooth S, never short by more than the
+      sampling (0.055 mm); beyond a cap with another part nearer, over by up to 1.73 mm, logged; surface
+      cells (S widest 3.00, limit 6; zigzag 9.00, soundness only); `certify` above and beyond the first
+      cap; the box, lines and arcs; the frame. Written after the implementation, so checked by mutation:
+      without the box rule the box test fails, without the wall's gate the formula is off by 9.4 mm
+- [x] Task: Implement (Green & Refactor Phase): `sweepOpen(section, points[, curvatures])` in
+      `stdlib/builtin/sweep.gsl`, three reads of the section; the frame by `sweepFrame` from
+      `openProfileXY`'s companion (a frame read of a call written at the call reaches none) and `sweep`'s
+      coordinate; the box by the `sweptOpen` rule from `openProfileLowXY` and `openProfileHighXY`. Owner's decision on
+      the cap formula and the corner cells in spec section 4, C5. `package.pb` regenerated (it was stale
+      after the `openProfileXY` commit). Full suite clean, no golden moved
+- [x] Task: An example; WGSL size; the GPU cost of reading the section three times; the owner's viewer check:
+      `examples/profile_sweep_open.gsl`, a coved moulding along an S with flat caps; 55 KB of WGSL with its
+      frame and sliders, 45 KB without the frame, most of it the box (the `swept` rule repeats the
+      section's bounds, whole expressions, where `revolved` reads each a few times). The other examples'
+      WGSL unchanged (sweep and revolve byte for byte). GPU, slider-free copies without colour, 64
+      evaluations a point over 1M points, less a trivial field's 25.9 ms: closed `sweep` 2.9 ms,
+      `sweepOpen` three reads 8.8 ms, the one-read alternative 4.9 ms. Checked by the owner: looks right
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 8: Verification and Records

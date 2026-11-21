@@ -456,6 +456,199 @@ profileLengthXY(points, curvatures) {
 }
 
 // =========================================================
+// OPEN PROFILES (XY plane)
+// =========================================================
+
+// An open chain's pools, [outside, inside, chain, rays]: profilePoolsXY's
+// three, the nearest split in two, the chain's own features and the two
+// rays', so a sweep can tell where p's nearest point is on the chain. The
+// chain's two end edges carry on along their end tangents as rays, so the
+// chain splits the plane and the closed profile's argument holds unchanged,
+// the rays standing in for the closing edge. Each ray is the distance to its
+// line, held off behind its end by twice the overshoot as an edge is past
+// its ends, and offered by its side.
+//
+// The chain offers its edges and its inner corners, one step a point, through
+// profilePolygonStepXY as a closed loop does. Its first point has no corner:
+// it runs straight on into its ray, so its step is handed a previous point
+// mirrored behind it, which makes its turn nothing and its corner face
+// neither way. Its last point starts no edge, so its step is shut by a gate
+// of its index, a constant. Those choices are made by constants, so they are
+// exact over any cell.
+openProfilePolygonPoolsXY(points) {
+  count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
+  chain = reduce([nothing, nothing, nothing], (pools, start, index) {
+    inner = index > 0 ? 1 : 0;
+    shut = index < count - 1 ? 0 : nothing;
+    end = points[mod(index + 1, count)];
+    previous = points[mod(index - 1 + count, count)] * inner + (2 * start - end) * (1 - inner);
+    return min(pools, max(profilePolygonStepXY(previous, start, end), [shut, shut, shut]));
+  }, points);
+  first = normalize(points[1] - points[0]);
+  last = normalize(points[count - 1] - points[count - 2]);
+  rays = min(profileRaySidedXY(points[0], first, neg(1)), profileRaySidedXY(points[count - 1], last, 1));
+  return [min(chain.x, rays.x), min(chain.y, rays.y), chain.z, rays.z];
+}
+
+// openProfilePolygonPoolsXY for a chain whose edges may be arcs, one curvature
+// an edge, through profileArcStepXY. The first point's mirrored previous edge
+// is bent the other way, so its end tangent is the first edge's start tangent
+// and the turn between them nothing.
+openProfilePoolsXY(points, curvatures) {
+  count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
+  chain = reduce([nothing, nothing, nothing], (pools, start, index) {
+    inner = index > 0 ? 1 : 0;
+    shut = index < count - 1 ? 0 : nothing;
+    end = points[mod(index + 1, count)];
+    curvature = curvatures[min(index, count - 2)];
+    previous = points[mod(index - 1 + count, count)] * inner + (2 * start - end) * (1 - inner);
+    previousCurvature = curvatures[max(index - 1, 0)] * inner - curvature * (1 - inner);
+    return min(pools, max(profileArcStepXY(previous, start, end, previousCurvature, curvature), [shut, shut, shut]));
+  }, points);
+  first = profileEdgeTangentsXY(points[0], points[1], curvatures[0]);
+  last = profileEdgeTangentsXY(points[count - 2], points[count - 1], curvatures[count - 2]);
+  rays = min(profileRaySidedXY(points[0], first.xy, neg(1)), profileRaySidedXY(points[count - 1], last.zw, 1));
+  return [min(chain.x, rays.x), min(chain.y, rays.y), chain.z, rays.z];
+}
+
+// The unit tangents at the two ends of the edge from `start` to `end` bent to
+// `curvature`, as profileArcStepXY finds them: [start's, end's].
+profileEdgeTangentsXY(start, end, curvature) {
+  chord = end - start;
+  chordLength = length(chord);
+  along = chord / chordLength;
+  sine = curvature * chordLength / 2;
+  cosine = sqrt(max(1 - sine * sine, 0));
+  return [along.x * cosine + along.y * sine, along.y * cosine - along.x * sine,
+          along.x * cosine - along.y * sine, along.y * cosine + along.x * sine];
+}
+
+// The feature of a ray from `at`, whose line runs along `tangent` (the unit
+// tangent of travel there): out along the tangent from the chain's last
+// point (`outward` 1), back against it from its first (`outward` -1). Its
+// distance to its line, held off behind `at` by twice the overshoot, offered
+// to the pools by its side.
+profileRaySidedXY(at, tangent, outward) {
+  offset = p.xy - at;
+  side = offset.x * tangent.y - offset.y * tangent.x;
+  overshoot = max(0, neg(outward * dot(offset, tangent)));
+  return profileSidedXY(abs(side) + 2 * overshoot, side >= 0 ? 0 : nothing, side >= 0 ? nothing : 0, 0);
+}
+
+/// Open profile in the XY plane: a chain of lines through `points` (a list of
+/// at least two 2D points), its first and last edges carried on as rays along
+/// their directions, so the chain splits the plane. The exact signed distance
+/// to that extended chain, positive to the right of travel and negative to
+/// the left, as a counterclockwise loop is positive outside; a piece of a
+/// closed profile has that profile's distance beside it. The chain must not
+/// cross itself, and neither ray may cross the chain or the other ray: a
+/// chain that turns by more than half a turn, a C, gets its sign wrong where
+/// the rays meet. It has no box, its negative side being unbounded, and its
+/// absolute value is a band that runs out along both rays, not a finite
+/// stroke. Its frame: .u the distance along the chain, from its first point,
+/// to the point of the extended chain nearest p, in mm; negative along the
+/// first ray and more than the chain's length along the last.
+openProfileXY(points) {
+  pools = openProfilePolygonPoolsXY(points);
+  nearest = min(pools.z, pools.w);
+  form = pools.x <= pools.y ? nearest : neg(nearest);
+  form.u = openProfileRunXY(points);
+  return form;
+}
+
+/// Open profile of lines and circular arcs in the XY plane: as
+/// openProfileXY(points), with each edge bent to a signed curvature.
+/// `curvatures` holds one per edge, one fewer than the points, in 1/mm, as
+/// profileXY(points, curvatures) reads them: 0 straight, positive curving to
+/// the left along the chain. The rays carry on along the tangents at the
+/// chain's two ends.
+openProfileXY(points, curvatures) {
+  pools = openProfilePoolsXY(points, curvatures);
+  nearest = min(pools.z, pools.w);
+  form = pools.x <= pools.y ? nearest : neg(nearest);
+  form.u = openProfileArcRunXY(points, curvatures);
+  return form;
+}
+
+// An open profile's u: profileRunXY's two passes over the chain's edges, the
+// last point's wrap-round edge shut out, then the rays. Where a ray is
+// nearest, u is the distance back along the first ray, negated, or the
+// chain's length and the distance out along the last.
+openProfileRunXY(points) {
+  count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
+  nearest = reduce([nothing, 0], (best, start, index) {
+    shut = index < count - 1 ? 0 : nothing;
+    run = profileEdgeRun(start, points[mod(index + 1, count)]);
+    return [min(best.x, max(run.x, shut)), 0];
+  }, points).x;
+  chain = reduce([0, 0], (best, start, index) {
+    shut = index < count - 1 ? 0 : nothing;
+    keep = index < count - 1 ? 1 : 0;
+    run = profileEdgeRun(start, points[mod(index + 1, count)]);
+    return [max(best.x, max(run.x, shut) <= nearest + 1e-4 ? best.y + run.y : 0), best.y + run.z * keep];
+  }, points);
+  first = normalize(points[1] - points[0]);
+  last = normalize(points[count - 1] - points[count - 2]);
+  return openProfileRaysRun(points[0], first, points[count - 1], last, nearest, chain);
+}
+
+// openProfileRunXY for a chain whose edges may be arcs, through
+// profileArcEdgeRun.
+openProfileArcRunXY(points, curvatures) {
+  count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
+  nearest = reduce([nothing, 0], (best, start, index) {
+    shut = index < count - 1 ? 0 : nothing;
+    run = profileArcEdgeRun(start, points[mod(index + 1, count)], curvatures[min(index, count - 2)]);
+    return [min(best.x, max(run.x, shut)), 0];
+  }, points).x;
+  chain = reduce([0, 0], (best, start, index) {
+    shut = index < count - 1 ? 0 : nothing;
+    keep = index < count - 1 ? 1 : 0;
+    run = profileArcEdgeRun(start, points[mod(index + 1, count)], curvatures[min(index, count - 2)]);
+    return [max(best.x, max(run.x, shut) <= nearest + 1e-4 ? best.y + run.y : 0), best.y + run.z * keep];
+  }, points);
+  first = profileEdgeTangentsXY(points[0], points[1], curvatures[0]);
+  last = profileEdgeTangentsXY(points[count - 2], points[count - 1], curvatures[count - 2]);
+  return openProfileRaysRun(points[0], first.xy, points[count - 1], last.zw, nearest, chain);
+}
+
+// The rays' part of an open profile's u. `chainNearest` is the distance to the
+// nearest point of the chain itself, and `chain` its pass's [u, length].
+openProfileRaysRun(first, firstTangent, last, lastTangent, chainNearest, chain) {
+  fromFirst = p.xy - first;
+  back = max(0, neg(dot(fromFirst, firstTangent)));
+  firstReach = length(fromFirst + firstTangent * back);
+  fromLast = p.xy - last;
+  onward = max(0, dot(fromLast, lastTangent));
+  lastReach = length(fromLast - lastTangent * onward);
+  nearest = min(chainNearest, firstReach, lastReach);
+  return firstReach <= nearest + 1e-4 ? neg(back) : (lastReach <= nearest + 1e-4 ? chain.y + onward : chain.x);
+}
+
+// The low and high corners of an open chain's box in XY, without its rays,
+// for sweepOpen's box rule (property's sweptOpen): its points' box, and with
+// arcs that box grown by the most an edge can bulge, as a closed profile's.
+openProfileLowXY(points) {
+  low, high = profileBoundsXY(points);
+  return low;
+}
+
+openProfileHighXY(points) {
+  low, high = profileBoundsXY(points);
+  return high;
+}
+
+openProfileLowXY(points, curvatures) {
+  low, high = profileArcBoundsXY(points, curvatures);
+  return low;
+}
+
+openProfileHighXY(points, curvatures) {
+  low, high = profileArcBoundsXY(points, curvatures);
+  return high;
+}
+
+// =========================================================
 // PROFILE CORNERS
 // =========================================================
 
