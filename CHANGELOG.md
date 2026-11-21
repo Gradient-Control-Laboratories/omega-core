@@ -351,6 +351,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   until a pass folds a property's expression to a new one; the range kept the old tree, which read `hi`, and `hi` was
   removed as dead. Slider extraction now reads such a range's bounds from the properties as the passes left them
   (`Assignment.LiveRange`).
+- Inlining was quadratic in a program's size: before inlining a local it counted every later use of it, over
+  bodies whose calls were already inlined, where it needs only to know whether there are two. It now stops at
+  the second. The eight-field exact round of fillet/octahedron-all-edges compiles in 8.9 s, from 35.9 s; the
+  compiled output is unchanged.
 - `.dp` through `map` and `reduce`: a fold over a list of fields whose function applies `.dp` to its element,
   directly or through a function it calls, failed with "the .dtime/.dp derivative operators are only supported
   in top-level expressions". The property pass, which expands `.dp`, runs before folds are unrolled, and it
