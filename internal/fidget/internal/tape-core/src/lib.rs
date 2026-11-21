@@ -39,8 +39,9 @@ pub struct Decoded {
 pub struct Appearance {
     /// sRGB [r, g, b].
     pub color: Option<[Tree; 3]>,
-    /// The material record, rows flattened (see tape.proto's Appearance).
-    pub material: Option<[Tree; 12]>,
+    /// The material record, four rows of four flattened: surface, emissive,
+    /// volume, lay (see tape.proto's Appearance).
+    pub material: Option<[Tree; 16]>,
     /// The material's displacement is not a constant zero.
     pub displaced: bool,
 }
@@ -275,8 +276,8 @@ pub fn decode(
         };
         let material = match a.material.len() {
             0 => None,
-            12 => channels(&a.material)?.try_into().ok(),
-            n => return Err(format!("appearance material has {} entries, not 12", n)),
+            16 => channels(&a.material)?.try_into().ok(),
+            n => return Err(format!("appearance material has {} entries, not 16", n)),
         };
         appearance.push(Appearance { color, material, displaced: a.displaced });
     }
@@ -307,5 +308,63 @@ pub fn decode(
         shape_vars,
         bbox,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A one-constant tape whose only output has the given appearance.
+    fn tape_with(color: Vec<u32>, material: Vec<u32>) -> tape_proto::Tape {
+        tape_proto::Tape {
+            version: 1,
+            nodes: vec![tape_proto::Node { n: Some(tape_proto::node::N::Constant(1.0)) }],
+            outputs: vec![0],
+            appearance: vec![tape_proto::Appearance { color, material, displaced: false }],
+            ..Default::default()
+        }
+    }
+
+    fn decode_plain(tape: &tape_proto::Tape) -> Result<Decoded, String> {
+        decode(tape, &mut |_| Err("this test has no oracles".to_string()))
+    }
+
+    #[test]
+    fn a_four_row_material_decodes_whole() {
+        let d = decode_plain(&tape_with(vec![0, 0, 0], vec![0; 16])).unwrap();
+        assert!(d.appearance[0].color.is_some());
+        assert!(d.appearance[0].material.is_some());
+    }
+
+    #[test]
+    fn an_output_may_have_no_material_or_no_colour() {
+        let d = decode_plain(&tape_with(vec![0, 0, 0], vec![])).unwrap();
+        assert!(d.appearance[0].color.is_some());
+        assert!(d.appearance[0].material.is_none());
+
+        let d = decode_plain(&tape_with(vec![], vec![0; 16])).unwrap();
+        assert!(d.appearance[0].color.is_none());
+        assert!(d.appearance[0].material.is_some());
+    }
+
+    /// The three-row record, written before the lay row, is an error, and the
+    /// message names what is wanted.
+    #[test]
+    fn the_old_three_row_material_is_refused() {
+        let e = decode_plain(&tape_with(vec![], vec![0; 12])).err().expect("12 entries must not decode");
+        assert!(e.contains("12") && e.contains("16"), "{e}");
+    }
+
+    #[test]
+    fn any_other_material_length_is_refused() {
+        for n in [1, 4, 15, 17, 20] {
+            assert!(decode_plain(&tape_with(vec![], vec![0; n])).is_err(), "{n} entries decoded");
+        }
+    }
+
+    #[test]
+    fn a_colour_is_three_channels() {
+        assert!(decode_plain(&tape_with(vec![0, 0], vec![])).is_err());
+    }
 }
 
