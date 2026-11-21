@@ -37,18 +37,8 @@ jobs:
           key: go-build-lint-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('go.sum') }}-${{ github.sha }}
           restore-keys: |
             go-build-lint-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('go.sum') }}-
-      - name: Check gofmt
-        run: |
-          UNFORMATTED=$(gofmt -l .)
-          if [ -n "${UNFORMATTED}" ]; then
-            echo "The following files are not properly formatted:"
-            echo "${UNFORMATTED}"
-            exit 1
-          fi
-      - name: Architectural dependency check
-        run: go run ./tool/analyze-deps -rules
-      - name: Run go vet
-        run: go vet ./...
+      - name: Run lint and vet checks
+        run: ./tool/check.sh --shard lint
 
   build:
     name: Build Native Libraries
@@ -138,18 +128,5 @@ jobs:
           path: target/release
       - name: Ensure gpu-eval is executable
         run: chmod +x target/release/gpu-eval
-      - name: Build stdlib
-        run: ./tool/build-stdlib.sh
-      - name: Run tests (${{ matrix.shard }})
-        run: |
-          case "${{ matrix.shard }}" in
-            eval-core)
-              go test -timeout 20m ./eval ./eval/joints ./eval/internal/libflattest ./eval/internal/environment
-              ;;
-            eval-heavy)
-              go test -timeout 20m ./eval/internal/libboxtest ./eval/internal/boxsweep/...
-              ;;
-            other)
-              go test -timeout 20m $(go list ./... | grep -v '^gradientcontrol.com/omega/core/eval')
-              ;;
-          esac
+      - name: Run quality checks (${{ matrix.shard }})
+        run: ./tool/check.sh --shard "${{ matrix.shard }}"
