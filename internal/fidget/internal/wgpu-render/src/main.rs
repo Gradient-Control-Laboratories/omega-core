@@ -293,7 +293,7 @@ fn gbuf(decoded: tape_core::Decoded, bbox: [f32; 6], args: &Args) -> Result<(), 
     let mut occl = vec![0u8; 4 * px];
     let hues: [[u8; 3]; 6] = [[230, 80, 80], [80, 200, 100], [80, 120, 230], [230, 200, 80], [180, 100, 230], [80, 210, 210]];
     let grey = |v: f32| -> [u8; 4] { let b = (v.clamp(0.0, 1.0) * 255.0) as u8; [b, b, b, 255] };
-    let mut per_return = vec![(0usize, [0f64; 12]); scene.returns()];
+    let mut per_return = vec![(0usize, [0f64; wgpu_gbuf::MATERIAL_FLOATS]); scene.returns()];
     // Per return: normals that are not finite, and ones that are zero.
     let mut bad_normals = vec![(0usize, 0usize); scene.returns()];
     for i in 0..px {
@@ -310,12 +310,12 @@ fn gbuf(decoded: tape_core::Decoded, bbox: [f32; 6], args: &Args) -> Result<(), 
         colour[4 * i..4 * i + 4].copy_from_slice(&[g.color[4 * i], g.color[4 * i + 1], g.color[4 * i + 2], 255]);
         let h = hues[k % hues.len()];
         index[4 * i..4 * i + 4].copy_from_slice(&[h[0], h[1], h[2], 255]);
-        let m = &g.material[12 * i..12 * i + 12];
+        let m = &g.material[wgpu_gbuf::MATERIAL_FLOATS * i..wgpu_gbuf::MATERIAL_FLOATS * (i + 1)];
         rough[4 * i..4 * i + 4].copy_from_slice(&grey(m[0]));
         metal[4 * i..4 * i + 4].copy_from_slice(&grey(m[1]));
         occl[4 * i..4 * i + 4].copy_from_slice(&grey(g.occlusion[i]));
         per_return[k].0 += 1;
-        for c in 0..12 {
+        for c in 0..wgpu_gbuf::MATERIAL_FLOATS {
             per_return[k].1[c] += m[c] as f64;
         }
     }
