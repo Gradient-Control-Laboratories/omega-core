@@ -698,7 +698,8 @@ impl<const N: usize> RegisterAllocator<N> {
         let r_x = self.force_input_reg(x_ssa);
         let r_y = self.force_input_reg(y_ssa);
         let r_z = self.force_input_reg(z_ssa);
-        self.out.push(RegOp::MeshOracle(r_out, asset_id, r_x, r_y, r_z));
+        let slot = self.out.oracle_slot(asset_id);
+        self.out.push(RegOp::MeshOracle(r_out, slot, r_x, r_y, r_z));
         self.release_reg(r_out);
     }
 

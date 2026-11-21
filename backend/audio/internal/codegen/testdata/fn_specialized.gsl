@@ -1,0 +1,16 @@
+// One generic function called with lists of two different lengths: it is
+// specialized twice, and each specialization must be emitted under its own JS
+// name. Regression test: both used to be emitted as `function total(xs)`, so
+// the second definition won for both call sites and the 3-element call read
+// past the end of its list (NaN).
+
+total(xs) {
+  return reduce(0, (acc, v) {
+    return acc + v;
+  }, xs);
+}
+
+three = total([sin(time), sin(time * 2), sin(time * 3)]);
+five = total([sin(time), sin(time * 2), sin(time * 3), sin(time * 4), sin(time * 5)]);
+
+return audio(three * 0.1, five * 0.1);

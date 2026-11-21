@@ -58,6 +58,8 @@ func ProgramWithExtraRoots(prog *program.Program, returns, extraRoots []*program
 			Path:         module.Path,
 			Files:        files,
 			Scene:        program.CloneScene(module.Scene),
+			Captions:     program.CloneCaptions(module.Captions),
+			Duration:     program.CloneDuration(module.Duration),
 		},
 	}
 	if len(prog.Dependencies) > 0 {
@@ -127,6 +129,8 @@ func PrunePrimary(prog *program.Program) *program.Program {
 			Path:         module.Path,
 			Files:        files,
 			Scene:        program.CloneScene(module.Scene),
+			Captions:     program.CloneCaptions(module.Captions),
+			Duration:     program.CloneDuration(module.Duration),
 		},
 	}
 	if len(prog.Dependencies) > 0 {

@@ -5,6 +5,7 @@ import eventManager from "./ui/event-manager.js";
 import * as host from "./host.js";
 import "./ui/panel-resize.js";
 import "./ui/tooltip.js";
+import { createCaptions } from "./ui/captions.js";
 import {
     updateShader,
     setParts,
@@ -24,6 +25,7 @@ import {
     setMeshShapeVisible,
     setAnimPaused,
     setAnimTime,
+    setAnimDuration,
     getAnimTime,
     audioSystem,
     pickWorldPoint,
@@ -43,6 +45,7 @@ import {
     setSliderValue,
     setUiControlValues,
     syncUiControls,
+    defaultWGSL,
 } from "./render/viewer.js";
 import {
     initEditor,
@@ -75,7 +78,7 @@ import {
 import { initHelpPanel } from "./docs/help-panel.js";
 import { initSliderPanel, renderSliderPanel, sliderAnimTick, previewColor } from "./panels/slider-panel.js";
 import { initMeshImport } from "./panels/mesh-import.js";
-import { initExportPanel } from "./panels/export-panel.js";
+import { initExportPanel, setAudioAvailable } from "./panels/export-panel.js";
 import { initBodyPanel, setBodies, pickBody, materialVariables, getVisibleBodies, getBodyStates } from "./panels/body-panel.js";
 
 const clientId = (typeof crypto !== "undefined" && crypto.randomUUID)
@@ -359,13 +362,18 @@ function detectShapeCount(wgslCode) {
     return Math.max(maxIndex, 1);
 }
 
+const setCaptions = createCaptions(document.getElementById("canvas-container"), getAnimTime);
+
 eventManager.addListener("canvas/update-shader", (event) => {
-    if (event.wgsl) {
-        currentWGSL = event.wgsl;
+    // A program that returns only audio has nothing to draw: it shows the
+    // empty scene in place of the previous document's model.
+    const wgsl = event.wgsl || (event.audio ? defaultWGSL : "");
+    if (wgsl) {
+        currentWGSL = wgsl;
         currentShapeLocations = event.shapeLocations || [];
         setParts(event.parts || []);
         updateShader(
-            event.wgsl,
+            wgsl,
             event.shapeCount || 1,
             event.shapeNames || [],
             event.meshSdfBindings || event.meshSdfSlots || [],
@@ -390,6 +398,12 @@ eventManager.addListener("canvas/update-shader", (event) => {
             if (event.scene.grid > 0) commitGridSpacing(event.scene.grid);
             if (sizeChanged) frameWorldExtent();
         }
+
+        // The document's @caption lines, which the clock shows and hides.
+        setCaptions(event.captions || []);
+
+        // The document's @duration, which the Time slider spans and the clock loops on.
+        applyDuration(event.duration);
 
         const decls = event.meshDecls || [];
         const unknowns = syncMeshInstances(decls);
@@ -539,6 +553,30 @@ async function requestStlExport(detail, surfaceBbox, algo, format = "stl") {
 
 // exportPage downloads the open document as `gsl export` writes it: this viewer and the document's
 // field as static web pages, zipped. It is the Export panel's Web page format.
+// exportAudio renders the program's audio from time 0 for the given seconds
+// and downloads it as a WAV named after the document.
+async function exportAudio(seconds) {
+    showNotification(false, `Rendering ${seconds} s of audio...`, true);
+    try {
+        const blob = await audioSystem.renderWav(seconds);
+        const fileName = (currentExampleName || "model.gsl").replace(/\.gsl$/i, "") + ".wav";
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showNotification(false, `Exported ${fileName}`);
+        return true;
+    } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        showError(`Audio export failed: ${msg}`, false, true);
+        return false;
+    }
+}
+
 async function exportPage() {
     const source = getGslSourceForServer();
     if (!source || source.trim() === "") {
@@ -860,6 +898,7 @@ if (host.editable) initExportPanel({
     serverMarchingCubes: true,
     serverFormats: true,
     onExportPage: exportPage,
+    onExportAudio: exportAudio,
 });
 
 // ── Bodies Panel ──
@@ -970,6 +1009,18 @@ animTimeInput.addEventListener("change", () => {
     }
 });
 
+// A document's @duration(seconds) sets the end time and the Time slider's
+// range, and the clock starts over there. A document without one leaves the
+// end time as it is and lets the clock run on.
+function applyDuration(duration) {
+    const seconds = duration && duration.seconds > 0 ? duration.seconds : 0;
+    setAnimDuration(seconds);
+    if (seconds > 0) {
+        animEndTimeInput.value = String(seconds);
+        timeRange.max = String(seconds);
+    }
+}
+
 // Scrub time with the range input (active only while paused). Stays within
 // [0, endTime].
 timeRange.addEventListener("input", () => {
@@ -1001,6 +1052,7 @@ eventManager.addListener("canvas/update-audio", (event) => {
     const audioVolumeRow = document.getElementById("audio-volume-row");
     audioVolumeRow.style.display = hasAudio ? "" : "none";
     audioSystem.updateShader(javascript, hasAudio);
+    setAudioAvailable(hasAudio && !!javascript);
 });
 
 // ── Section Panel ──

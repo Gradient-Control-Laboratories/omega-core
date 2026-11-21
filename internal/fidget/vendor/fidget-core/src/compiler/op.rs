@@ -318,11 +318,15 @@ opcodes!(
         Store(u8, u32),
 
         /// Mesh-distance oracle leaf:
-        /// `(out, asset_id, x_reg, y_reg, z_reg)`. See [`SsaOp::MeshOracle`]
-        /// for semantics — the x/y/z operands carry register indices for
-        /// the sample-point computation, allowing `remap()` to substitute
-        /// non-default coordinates.
-        MeshOracle(u8, u32, u8, u8, u8),
+        /// `(out, asset_slot, x_reg, y_reg, z_reg)`. See
+        /// [`SsaOp::MeshOracle`] for semantics — the x/y/z operands carry
+        /// register indices for the sample-point computation, allowing
+        /// `remap()` to substitute non-default coordinates. `asset_slot`
+        /// indexes the tape's table of asset ids
+        /// ([`RegTape::oracle_asset`](crate::compiler::RegTape::oracle_asset)),
+        /// which keeps the op at 8 bytes where a `u32` id would make every
+        /// op 12.
+        MeshOracle(u8, u16, u8, u8, u8),
     }
 );
 
@@ -405,8 +409,8 @@ impl RegOp {
                 let _: u32 = *imm; // type-checking pattern
                 f(reg)
             }
-            RegOp::MeshOracle(out, asset_id, x, y, z) => {
-                let _: u32 = *asset_id; // type-checking pattern
+            RegOp::MeshOracle(out, asset_slot, x, y, z) => {
+                let _: u16 = *asset_slot; // type-checking pattern
                 f(out);
                 f(x);
                 f(y);
@@ -493,8 +497,8 @@ impl RegOp {
                 let _: u32 = *imm; // type-checking pattern
                 f(*reg)
             }
-            RegOp::MeshOracle(out, asset_id, x, y, z) => {
-                let _: u32 = *asset_id; // type-checking pattern
+            RegOp::MeshOracle(out, asset_slot, x, y, z) => {
+                let _: u16 = *asset_slot; // type-checking pattern
                 f(*out);
                 f(*x);
                 f(*y);
