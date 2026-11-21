@@ -661,8 +661,8 @@ thread(major, pitchVal, from, to, bottomEnd, topEnd) {
   seg(eDown, eUp, want) {
     return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
          : (want > 4.5 ? (want > 5.5 ? nothing : major / 2.0)
-         : (want > 3.5 ? prismSegment(length(p.xy) - major / 2.0, from, to, eDown, eUp, 0.0) : (want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(bottomEnd.x > 2.5)
-                                     && !(topEnd.x > 0.5 && topEnd.x < 1.5) && !(topEnd.x > 2.5)
+         : (want > 3.5 ? prismSegment(length(p.xy) - major / 2.0, from, to, eDown, eUp, 0.0) : (want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(bottomEnd.x > 2.5 && bottomEnd.x < 3.5)
+                                     && !(topEnd.x > 0.5 && topEnd.x < 1.5) && !(topEnd.x > 2.5 && topEnd.x < 3.5)
            ? nothing : threadedSegment(major, pitchVal, from, to, eDown, eUp, want, bottomEnd, topEnd))));
   }
   return seg;
@@ -782,6 +782,19 @@ chamferEnd(size) {
 /// major diameter over `length` (ISO 4755 gives about 2.5 pitches).
 threadRunout(length) {
   return [3.0, length];
+}
+
+/// A thread's end against a shoulder, with the undercut a threading tool runs
+/// out into: `form` thread.din76A (DIN 76-1 form A) or thread.iso4755. The
+/// thread keeps its planes, up to the shoulder, and its last g2
+/// (thread.undercutLength) is the groove: a floor at thread.undercutDia, a
+/// 30-degree flank rising from it to the major diameter on the thread's side,
+/// which cuts the last teeth down, and a radius thread.undercutRadius where
+/// the floor meets the shoulder.
+///
+///   shaft.thread(10.0, 1.5, 0.0, 30.0, shaft.chamferEnd(1.0), shaft.undercut(thread.din76A))
+undercut(form) {
+  return [4.0, form];
 }
 
 // =========================================================
@@ -1020,10 +1033,54 @@ threadedSegment(major, pitchVal, from, to, eDown, eUp, want, bottomEnd, topEnd) 
   depth = majorR - rootR;
   bottomLine = (depth * (from - p.z) - (r - rootR) * bottomEnd.y) / length([depth, bottomEnd.y]);
   topLine = (depth * (p.z - to) - (r - rootR) * topEnd.y) / length([depth, topEnd.y]);
-  reachBottom = max(bottomLine, p.z - from, r - majorR, bottomEnd.x > 2.5 ? neg(nothing) : nothing);
-  reachTop = max(topLine, to - p.z, r - majorR, topEnd.x > 2.5 ? neg(nothing) : nothing);
+  reachBottom = max(bottomLine, p.z - from, r - majorR, bottomEnd.x > 2.5 && bottomEnd.x < 3.5 ? neg(nothing) : nothing);
+  reachTop = max(topLine, to - p.z, r - majorR, topEnd.x > 2.5 && topEnd.x < 3.5 ? neg(nothing) : nothing);
   runoutCut = max(neg(section), min(reachBottom, reachTop));
-  return want > 2.5 ? min(machined, runoutCut) : machined;
+  // A DIN 76 undercut at an end (kind 4, its size the form): the threaded part
+  // cut by the groove's flank, and the groove's floor and fillet added back
+  // over it, overlapping the threaded part under its last teeth so no surface
+  // lies inside between them.
+  flank = max(topEnd.x > 3.5 ? undercutFlank(major, pitchVal, topEnd.y, to, -1.0) : neg(nothing),
+              bottomEnd.x > 3.5 ? undercutFlank(major, pitchVal, bottomEnd.y, from, 1.0) : neg(nothing));
+  groove = min(topEnd.x > 3.5 ? undercutGroove(major, pitchVal, topEnd.y, to, -1.0, eUp) : nothing,
+               bottomEnd.x > 3.5 ? undercutGroove(major, pitchVal, bottomEnd.y, from, 1.0, eDown) : nothing);
+  return want > 2.5 ? min(machined, runoutCut)
+                    : (topEnd.x > 3.5 || bottomEnd.x > 3.5 ? min(max(machined, flank), groove) : machined);
+}
+
+// A DIN 76 thread undercut's flank, as a half-space positive outside it: the
+// line in the half-section rising at 30 degrees to the axis from the floor to
+// the major diameter, which it reaches g2 in from the end plane `plane`.
+// `inward` is the direction from that plane into the thread along z, -1 at a
+// top end and +1 at a bottom one, so w below is the distance in from the
+// plane. Only the threaded part is cut by it.
+undercutFlank(major, pitchVal, form, plane, inward) {
+  w = inward * (p.z - plane);
+  return (1.7320508075688772 * (length(p.xy) - major / 2.0) + (isoThread.undercutLength(pitchVal, form) - w)) / 2.0;
+}
+
+// The undercut's floor and fillet, turned about the axis: in the half-section
+// (radius, distance in from the plane), the floor at dg / 2 from the plane to
+// g2 in, under the threaded part as far as the flank starts, and where it
+// meets the plane a fillet of radius r, concave, rising to dg / 2 + r. Past
+// the plane, extended by `ext`, it continues at that radius. Written as two
+// rectangles in the half-section, the floor's and the fillet's corner, the
+// second with the fillet's disc taken out, rather than as an outline: a
+// thread end whose kind a slider decides is a runtime choice, and both of its
+// branches are built, so what a thread without an undercut carries must cost
+// little.
+undercutGroove(major, pitchVal, form, plane, inward, ext) {
+  w = inward * (p.z - plane);
+  r = length(p.xy);
+  floorR = isoThread.undercutDia(major, pitchVal) / 2.0;
+  rho = isoThread.undercutRadius(pitchVal, form);
+  g2 = isoThread.undercutLength(pitchVal, form);
+  floorAxial = max(neg(ext) - w, w - g2);
+  floorBox = length([max(r - floorR, 0.0), max(floorAxial, 0.0)]) + min(max(r - floorR, floorAxial), 0.0);
+  cornerAxial = max(neg(ext) - w, w - rho);
+  cornerBox = length([max(r - floorR - rho, 0.0), max(cornerAxial, 0.0)]) + min(max(r - floorR - rho, cornerAxial), 0.0);
+  disc = length([r - floorR - rho, w - rho]) - rho;
+  return min(floorBox, max(cornerBox, neg(disc)));
 }
 
 // What a joint answers, other than its blend: nothing as a field, capped or

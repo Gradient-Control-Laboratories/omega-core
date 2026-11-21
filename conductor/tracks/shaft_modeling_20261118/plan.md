@@ -400,3 +400,33 @@ Phase 0 has no start commit; Phase 7 was skipped.
       `.detailSize`. Red first, `eval/simple_local_test.go` (a document function's local colour keeps its
       stand-in, as a returned one does; the finished knurl's paint carries one). No golden moved
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`); the owner's recheck of the Textures rung in the viewer is pending (away; to be reminded at wrap-up)
+
+## Phase 15: Thread Undercuts
+
+- [x] Task: Proposal (approved 2026-11-21): `shaft.undercut(form)`, a thread end. The thread keeps its planes
+      up to the shoulder and its last g2 becomes the DIN 76 groove: floor at d - I, a 30-degree flank (to the
+      axis) to the major diameter on the thread's side, cutting the last teeth down, and radius r at the end
+      plane; a revolved half-section overlapping the threaded part, so no sheet. Forms `thread.din76A` (g2
+      3.5 P, the table) and `thread.iso4755` (g2 3 P); Form B (2.5 P, one 2004 source) left out. The table
+      (P 0.2-6: I, g2, r) in mechanical/thread: `undercutDia`, `undercutLength`, `undercutRadius`. Sources:
+      HEIDENHAIN MANUALplus manual's "undercut DIN 76" table (I, K, R, W = 30 deg); ISO 4755:1983 via IS
+      1369-2:1993 (turngcode.com). g1 = g2 - sqrt(3) (d - dg) / 2 reproduces ISO's printed g1.
+      DIN 76-1:2025-10 corrected some g2 and r values; not included
+- [x] Task: Write failing tests (Red Phase), `eval/shaft_undercut_test.go`: the table row by row (DIN g2 and r,
+      ISO g2 and r, the undercut diameter); g1 from the flank (passes: a check of the relation); the floor,
+      fillet and flank where the table puts them, nothing outside the flank and a tooth reaching it; the
+      plain thread below the groove and solid across the overlap; ISO's shorter groove; the bottom end; the
+      box
+- [x] Task: Implement (Green & Refactor Phase): the table and `thread.din76A` / `thread.iso4755` in
+      thread.gsl; `shaft.undercut(form)`, end kind 4, in `threadedSegment`: the threaded part cut by
+      `undercutFlank`'s half-space and `undercutGroove` (a floor rectangle and a fillet corner less its disc,
+      in the half-section) added over it; the thread's runout cut now keyed to kind 3 alone. A first groove
+      built with profileXY was NaN capped (two coincident corners) and cost 52 KB on a thread whose end a
+      slider picks (both branches are built), so it is plain fields. Threads with literal ends compile
+      identically; the threaded example, whose ends sliders set, carries the table lookups: 11,305 ->
+      17,400 B. Two test defects corrected with the owner's approval: the fillet's point was on the wrong
+      quarter of its circle, and NaN passed every comparison (undercutEval now fails on it)
+- [x] Task: An example (`shaft_undercut.gsl`: an M12 x 1.75 thread chamfered at its end and run up to a
+      22 mm shoulder through a DIN 76 undercut, g2 6.1): WGSL 13,319 B; the CPU render shows the groove and
+      the flank-cut last teeth; the owner's viewer check
+- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)

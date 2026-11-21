@@ -53,6 +53,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   diameter; the teeth are a displacement height, `shaft.relief(segments)`, painted on where they are not
   drawn, `shaft.paint(color, segments)`. `shaft.body(segments, finish)` applies both and the envelope as the
   stand-in, as a fastener's finish does.
+- `shaft.undercut(form)`: a thread's end against a shoulder, with the DIN 76-1 form A (`thread.din76A`) or
+  ISO 4755 (`thread.iso4755`) undercut a threading tool runs out into: the floor a little under the minor
+  diameter, a 30-degree flank cutting the last teeth down, and a radius at the shoulder.
+  `thread.undercutDia`, `undercutLength` and `undercutRadius` give its sizes, pitch 0.2 to 6, with sources.
 - A `reduce` over a list of functions can take the element before this one as a fourth callback parameter,
   `reduce((acc, f, i, prev) { ... }, fs, seed)`; the first element is handed itself.
 
