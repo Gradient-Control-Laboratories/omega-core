@@ -3,7 +3,7 @@
 //! Each return is voxel-rendered on its own and the images merged on the GPU,
 //! which keeps the nearest hit and tags it with its return; the colour pass
 //! then evaluates each return's colour tapes at its hits, the channel pass
-//! (an omega fork addition) its twelve material tapes, and SSAO runs over the
+//! (an omega fork addition) its sixteen material tapes, and SSAO runs over the
 //! merged depth. A return without a colour takes the caller's palette colour,
 //! and one without a material the default record, both as constants. Normals
 //! are each return's own full-precision ones, not the merged image's packed
@@ -28,9 +28,17 @@ use fidget_wgpu::{
 };
 use tape_core::Decoded;
 
+/// How many floats a material record is: four rows of four (surface, emissive,
+/// volume, lay), as `gsl_material` and the tape's `appearance` carry it.
+pub const MATERIAL_FLOATS: usize = 16;
+
 /// The material record's default, as the viewer's GSL_MATERIAL_DEFAULT_WGSL:
-/// roughness 0.5, metallic 0, ior 1.5, no emission, no volume.
-pub const DEFAULT_MATERIAL: [f32; 12] = [0.5, 0.0, 1.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+/// roughness 0.5, metallic 0, ior 1.5, no emission, no volume, no lay.
+pub const DEFAULT_MATERIAL: [f32; MATERIAL_FLOATS] =
+    [0.5, 0.0, 1.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+
+/// The material record's rows, each one channel pass of four floats a pixel.
+const MATERIAL_ROWS: usize = MATERIAL_FLOATS / 4;
 
 fn to_shape(tree: &Tree) -> Result<VmShape, String> {
     let mut ctx = Context::new();
@@ -42,10 +50,11 @@ fn to_shape(tree: &Tree) -> Result<VmShape, String> {
 pub struct Scene {
     shapes: Vec<RenderShape>,
     colors: RenderColor,
-    // One channel pass per material row, four floats a pixel each: twelve at
-    // once is 48 bytes a pixel, which passes WebGPU's 128 MiB storage binding
-    // above 2.8 megapixels; 16 matches fidget's own geometry buffers.
-    materials: Option<[RenderChannels; 3]>,
+    // One channel pass per material row, four floats a pixel each: all sixteen
+    // at once is 64 bytes a pixel, which passes WebGPU's default 128 MiB
+    // storage binding above 2.1 megapixels (a viewer can ask for the adapter's
+    // larger limit); one row is 16, as fidget's own geometry buffers.
+    materials: Option<[RenderChannels; MATERIAL_ROWS]>,
     vars: ShapeVars<f32>,
     /// Per return: its colour came from the tape (else the palette).
     pub has_color: Vec<bool>,
@@ -111,7 +120,7 @@ impl Scene {
                 let rows: Vec<Vec<VmShape>> = materials.iter().map(|m| m[4 * r..4 * r + 4].to_vec()).collect();
                 gpu.build_render_channels(&rows, 4).map_err(|e| format!("material: {e}"))
             };
-            Some([row(0)?, row(1)?, row(2)?])
+            Some([row(0)?, row(1)?, row(2)?, row(3)?])
         } else {
             None
         };
@@ -137,7 +146,7 @@ pub struct GBuffer {
     pub normal: Vec<f32>,
     /// sRGB colour, 4 bytes per pixel (alpha 255 on a hit).
     pub color: Vec<u8>,
-    /// The material record, 12 per pixel.
+    /// The material record, `MATERIAL_FLOATS` (16) per pixel: four rows of four.
     pub material: Vec<f32>,
     /// Blurred SSAO occlusion, 1 for none; NaN on a miss.
     pub occlusion: Vec<f32>,
@@ -153,7 +162,7 @@ struct Frame {
     ssao: ssao::Buffers,
     /// One per material row, built the first time a scene with materials is
     /// drawn at this size (they are 16 bytes a pixel each).
-    channels: Option<[channels::Buffers; 3]>,
+    channels: Option<[channels::Buffers; MATERIAL_ROWS]>,
 }
 
 /// Copies a GPU buffer into a buffer the host can map.
@@ -174,7 +183,7 @@ pub struct Renderer {
     voxel_ws: render::Workspace,
     merge_ws: merge::Workspace,
     color_ws: color::Workspace,
-    channel_ws: [channels::Workspace; 3],
+    channel_ws: [channels::Workspace; MATERIAL_ROWS],
     ssao_ws: ssao::Workspace,
     frame: Option<Frame>,
 }
@@ -190,7 +199,7 @@ impl Renderer {
             voxel_ws: voxel.workspace(),
             merge_ws: merge.workspace(),
             color_ws: color.workspace(),
-            channel_ws: [channels.workspace(), channels.workspace(), channels.workspace()],
+            channel_ws: std::array::from_fn(|_| channels.workspace()),
             ssao_ws: ssao.workspace(),
             voxel,
             merge,
@@ -226,7 +235,7 @@ impl Renderer {
         if scene.materials.is_some() && frame.channels.is_none() {
             let cs = ChannelSize { size, channels: 4 };
             let build = || self.channels.buffers(cs).map_err(|e| format!("material buffers: {e}"));
-            frame.channels = Some([build()?, build()?, build()?]);
+            frame.channels = Some([build()?, build()?, build()?, build()?]);
         }
 
         // Each return on its own, its geometry kept for the full-precision
@@ -302,7 +311,7 @@ impl Renderer {
             depth: vec![0; px],
             normal: vec![0.0; 3 * px],
             color: Vec::with_capacity(4 * px),
-            material: Vec::with_capacity(12 * px),
+            material: Vec::with_capacity(MATERIAL_FLOATS * px),
             occlusion,
         };
         for i in 0..px {

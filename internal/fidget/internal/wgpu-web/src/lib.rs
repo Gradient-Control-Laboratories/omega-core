@@ -10,8 +10,9 @@
 //! gives none. g, per pixel from the top left: index (Uint16Array, the return
 //! hit, 1-based, 0 for a miss), depth (Uint32Array, voxel depth), normal
 //! (Float32Array, 3: the hit return's gradient in fidget's screen space),
-//! color (Uint8Array, 4: sRGB), material (Float32Array, 12: the record, rows
-//! flattened), occlusion (Float32Array: SSAO, 1 for none).
+//! color (Uint8Array, 4: sRGB), material (Float32Array, 16: the record, four
+//! rows of four flattened: surface, emissive, volume, lay), occlusion
+//! (Float32Array: SSAO, 1 for none).
 //!
 //! worldToModel is a column-major 4x4 taking fidget's screen cube [-1, 1]^3
 //! (x right, y up, z toward the viewer) to world space; its bottom row may be

@@ -427,13 +427,16 @@ type Appearance struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// sRGB colour, [r, g, b] in [0, 1]. Empty when the output has no colour.
 	Color []uint32 `protobuf:"varint,1,rep,packed,name=color,proto3" json:"color,omitempty"`
-	// The material record, three rows of four flattened row-major (12 entries):
+	// The material record, four rows of four flattened row-major (16 entries):
 	//
 	//	surface  [roughness, metallic, ior, reserved]
 	//	emissive [sRGB r, g, b, strength]
 	//	volume   [transmission, absorptionDistance, displacement, reserved]
+	//	lay      [lay x, y, z, anisotropy]
 	//
-	// Empty when the output has no material.
+	// Empty when the output has no material. Any other length is not a material:
+	// a reader rejects it, as a record of three rows (12 entries) was written
+	// before the lay row.
 	Material []uint32 `protobuf:"varint,2,rep,packed,name=material,proto3" json:"material,omitempty"`
 	// The material's displacement (volume row, third entry) is not a constant
 	// zero: the rendered surface is the field minus it.
