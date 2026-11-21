@@ -47,4 +47,3 @@ type Oracle struct {
 	Periodic bool
 	Domain   []float64 // 6 entries when bounded, nil otherwise
 }
-

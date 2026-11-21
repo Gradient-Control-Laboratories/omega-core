@@ -178,4 +178,3 @@ func (p *MeshExportPlan) HasImplicit() bool {
 	}
 	return check(p.Root)
 }
-

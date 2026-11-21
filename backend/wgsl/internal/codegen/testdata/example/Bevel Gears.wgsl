@@ -6,9 +6,9 @@ fn builtin_circleXY(p: vec3<f32>, center: vec2<f32>, radius: f32) -> f32 {
   return length(p.xy - center) - radius;
 }
 
-fn builtin_intersectChamfer(d1: f32, d2: f32, setback: f32) -> f32 {
+fn builtin_intersectChamferNormalized(d1: f32, d2: f32, depth: f32, normal1: vec2<f32>, normal2: vec2<f32>) -> f32 {
   let face = max(d1, d2);
-  let edge = (d1 + d2 + setback) / 1.4142135;
+  let edge = (d1 + d2) / max(length(normal1 + normal2), 0.000001) + depth;
   return max(face, edge);
 }
 
@@ -20,6 +20,12 @@ fn builtin_intersectRound(d1: f32, d2: f32, radius: f32) -> f32 {
 
 fn builtin_unionRound(d1: f32, d2: f32, radius: f32) -> f32 {
   return -builtin_intersectRound(-d1, -d2, radius);
+}
+
+fn builtin_intersectChamfer(d1: f32, d2: f32, offset: f32) -> f32 {
+  let face = max(d1, d2);
+  let edge = (d1 + d2 + offset) / 1.4142135;
+  return max(face, edge);
 }
 
 fn builtin_axis(p: vec3<f32>, center: vec3<f32>, direction: vec3<f32>) -> f32 {
@@ -38,12 +44,12 @@ fn builtin_cylinderZ(p: vec3<f32>, vector_dirZ: vec3<f32>, center: vec3<f32>, ra
   return builtin_cylinder(p, center, vector_dirZ, radius);
 }
 
-fn builtin_unionChamfer(d1: f32, d2: f32, setback: f32) -> f32 {
-  return -builtin_intersectChamfer(-d1, -d2, setback);
+fn builtin_unionChamfer(d1: f32, d2: f32, offset: f32) -> f32 {
+  return -builtin_intersectChamfer(-d1, -d2, offset);
 }
 
-fn builtin_differenceChamfer(gsl_var_target: f32, tool: f32, setback: f32) -> f32 {
-  return builtin_intersectChamfer(gsl_var_target, -tool, setback);
+fn builtin_differenceChamfer(gsl_var_target: f32, tool: f32, offset: f32) -> f32 {
+  return builtin_intersectChamfer(gsl_var_target, -tool, offset);
 }
 
 fn gears_bevelPitchAngle(numTeeth: f32, mateTeeth: f32, shaftAngle: f32) -> f32 {
@@ -107,7 +113,10 @@ fn gears_gearProfile(p: vec3<f32>, numTeeth: f32, moduleVal: f32, pressureAngle:
   let pitchRadius = numTeeth / 2.0 * moduleVal;
   let addendumRadius = pitchRadius + moduleVal;
   let addClip = builtin_circleXY(vec3<f32>(opx, opy, p.z), vec2<f32>(0.0, 0.0), addendumRadius);
-  let toothProfile = builtin_intersectChamfer(repeatedTooth, addClip, kSmall);
+  let baseRadius = pitchRadius * cos(pressureAngle);
+  let tipRoll = sqrt(addendumRadius * addendumRadius - baseRadius * baseRadius) / baseRadius;
+  let tipCorner = vec2<f32>(cos(tipRoll) + tipRoll * sin(tipRoll), sin(tipRoll) - tipRoll * cos(tipRoll));
+  let toothProfile = builtin_intersectChamferNormalized(repeatedTooth, addClip, kSmall, vec2<f32>(sin(tipRoll), -cos(tipRoll)), tipCorner / length(tipCorner));
   let dedendumRadius = pitchRadius - (1.0 + dedendumClearance) * moduleVal;
   let dedBody = builtin_circleXY(vec3<f32>(opx, opy, p.z), vec2<f32>(0.0, 0.0), dedendumRadius);
   let roundK = dedendumClearance * moduleVal;

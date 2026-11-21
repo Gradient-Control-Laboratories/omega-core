@@ -3,7 +3,7 @@
 ## 1. Overview
 
 This specification serves as the self-contained master improvement backlog for `omega-core`
-(`module gradientcontrol.com/omega/core`). It consolidates planned Geometric Specification Language
+(`module gradientcontrol.com/omega/core`). It consolidates planned Geometric Shape Language
 (GSL) evolution from [README.md](../../../README.md) and
 [doc/gsl_lang_spec_future.md](../../../doc/gsl_lang_spec_future.md) alongside compiler, evaluator,
 backend, native Rust/C++ FFI, interactive viewer, CLI toolchain, and code-hygiene improvements.
