@@ -300,6 +300,40 @@ func CloneScene(s *Scene) *Scene {
 	}
 }
 
+// CloneDuration returns a copy of Duration.
+func CloneDuration(d *Duration) *Duration {
+	if d == nil {
+		return nil
+	}
+	return &Duration{
+		Start:   CloneLocation(d.Start),
+		End:     CloneLocation(d.End),
+		Seconds: d.Seconds,
+	}
+}
+
+// CloneCaptions returns a deep copy of a package's captions.
+func CloneCaptions(cs []*Caption) []*Caption {
+	if len(cs) == 0 {
+		return nil
+	}
+	out := make([]*Caption, len(cs))
+	for i, c := range cs {
+		if c == nil {
+			continue
+		}
+		out[i] = &Caption{
+			Start:     CloneLocation(c.Start),
+			End:       CloneLocation(c.End),
+			Text:      c.Text,
+			StartTime: c.StartTime,
+			EndTime:   c.EndTime,
+			Fade:      c.Fade,
+		}
+	}
+	return out
+}
+
 // CloneImport returns a copy of Import.
 func CloneImport(imp *Import) *Import {
 	if imp == nil {
@@ -394,5 +428,7 @@ func ClonePackage(pkg *Package) *Package {
 		Path:         pkg.Path,
 		Files:        files,
 		Scene:        CloneScene(pkg.Scene),
+		Captions:     CloneCaptions(pkg.Captions),
+		Duration:     CloneDuration(pkg.Duration),
 	}
 }

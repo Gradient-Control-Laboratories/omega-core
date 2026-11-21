@@ -74,11 +74,14 @@ message Appearance {
   // sRGB colour, [r, g, b] in [0, 1]. Empty when the output has no colour.
   repeated uint32 color = 1;
 
-  // The material record, three rows of four flattened row-major (12 entries):
+  // The material record, four rows of four flattened row-major (16 entries):
   //   surface  [roughness, metallic, ior, reserved]
   //   emissive [sRGB r, g, b, strength]
   //   volume   [transmission, absorptionDistance, displacement, reserved]
-  // Empty when the output has no material.
+  //   lay      [lay x, y, z, anisotropy]
+  // Empty when the output has no material. Any other length is not a material:
+  // a reader rejects it, as a record of three rows (12 entries) was written
+  // before the lay row.
   repeated uint32 material = 2;
 
   // The material's displacement (volume row, third entry) is not a constant

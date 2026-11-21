@@ -1,0 +1,255 @@
+/// Step sequencing for audio: a clock that turns time into steps (with swing),
+/// patterns written as plain lists, and hits, the bundle a voice needs to play
+/// one onset. Stateless like everything in audio: at each sample the sequencer
+/// looks back through the pattern for the most recent onset, so there is no
+/// event queue. Use qualified, e.g.
+///   clk = seq.clock(time, 120, 4);
+///   kick = seq.play(clk, [9,0,0,0, 9,0,0,0], (h) { return drum.kick(h, 50, 0.4); });
+///
+/// A hit is a 5-element list [age, vel, step, note, gate]:
+///   age  (h.x)  seconds since the onset;
+///   vel  (h.y)  velocity 0-1 (pattern values 1-9 map to 1/9 ... 1);
+///   step (h.z)  absolute step index of the onset, a seed for per-hit variation;
+///   note (h.w)  MIDI note number (0 for drum patterns);
+///   gate (h[4]) seconds after the onset that the note is released.
+///
+/// Drum patterns are lists of numbers, one per step: 0 is a rest, 1-9 a
+/// velocity. Note patterns are lists of [note, vel, len] with len in steps
+/// (0 = held until the next note) and seq.rest for silent steps. A pattern
+/// loops over its own length, so a 12-step and a 16-step pattern drift
+/// against each other (polymeter).
+
+/// A silent step in a note pattern.
+rest = [0, 0, 0];
+
+// count is the length of a list (folds to a constant).
+count(xs) {
+  return reduce(0, (acc, v) {
+    return acc + 1;
+  }, xs);
+}
+
+// total adds the elements of a list.
+total(xs) {
+  return reduce(0, (acc, v) {
+    return acc + v;
+  }, xs);
+}
+
+/// x modulo n, always in [0, n) (unlike %, which keeps the sign of x).
+wrap(x, n) {
+  return x - n * floor(x / n);
+}
+
+/// The clock: [t, stepDur, swing, step] for time t at bpm beats per minute,
+/// stepsPerBeat steps per beat (4 = sixteenth notes). swing is where the odd
+/// step of each pair lands, as a fraction of the pair: 0.5 is straight, 0.58
+/// a light shuffle, 0.667 a triplet swing. Pass the clock to every seq
+/// function; pass an earlier t to hear the whole arrangement delayed.
+clock(t, bpm, stepsPerBeat, swing) {
+  dur = 60 / (bpm * stepsPerBeat);
+  u = t / (2 * dur);
+  return [t, dur, swing, 2 * floor(u) + (u - floor(u) >= swing ? 1 : 0)];
+}
+
+/// The straight clock (no swing).
+clock(t, bpm, stepsPerBeat) {
+  return clock(t, bpm, stepsPerBeat, 0.5);
+}
+
+/// Start time in seconds of absolute step j on the clock, swing included.
+onset(clk, j) {
+  return 2 * clk.y * (floor(j / 2) + (j - 2 * floor(j / 2)) * clk.z);
+}
+
+/// The value at index i of a list (i computed at run time; the lookup is an
+/// unrolled select, so it costs one comparison per element). Handy for
+/// per-step extras kept in a list beside a pattern, indexed by wrap(h.z, n).
+pick(xs, i) {
+  return total(map((v, k) {
+    return k == i ? v : 0;
+  }, xs));
+}
+
+// gapBack is how many steps back pattern index i is from pattern step s,
+// cyclically over n steps (0 = this step). With k0 >= 0 it is the gap of the
+// onset before the one k0 steps back: gaps not beyond k0 move a loop earlier.
+// Pass k0 = -1 for the most recent onset.
+gapBack(s, i, n, k0) {
+  return s - i + (s < i ? n : 0) + (s - i + (s < i ? n : 0) > k0 ? 0 : n);
+}
+
+// gapAhead is how many steps after pattern index i index m is (1 to n; the
+// same index one loop later counts as n).
+gapAhead(m, i, n) {
+  return m - i + (m > i ? 0 : n);
+}
+
+// The drum-pattern search packs each onset as gap * 16 + value (values are
+// below 16), so one scalar min finds both the onset and its velocity, with no
+// lists built per sample. 1e9 means no onset.
+drumKey(clk, pat, k0) {
+  n = count(pat);
+  s = wrap(clk.w, n);
+  return reduce(1e9, (acc, v, i) {
+    return min(acc, v > 0 ? gapBack(s, i, n, k0) * 16 + v : 1e9);
+  }, pat);
+}
+
+// started silences hits whose onset is before t = 0, so a pattern doesn't
+// open on the tail of a note from the loop before the song began.
+started(clk, j) {
+  return onset(clk, j) >= 0 ? 1 : 0;
+}
+
+// drumHit unpacks a drumKey into a hit.
+drumHit(clk, key) {
+  k = floor(key / 16);
+  j = clk.w - k;
+  vel = min((key - 16 * k) / 9, 1) * started(clk, j);
+  return [clk.x - onset(clk, j), vel, j, 0, 1e9];
+}
+
+/// The most recent onset of a drum pattern at or before now, as a hit.
+hit(clk, pat) {
+  return drumHit(clk, drumKey(clk, pat, -1));
+}
+
+/// The onset before the most recent one, as a hit, so its tail can ring on
+/// under the new one.
+prev(clk, pat) {
+  return drumHit(clk, drumKey(clk, pat, floor(drumKey(clk, pat, -1) / 16)));
+}
+
+// sounding plays voice for hit h only while it can be heard: velocity above 0
+// and less than tail seconds past its release (the gate; for drums, the
+// onset). Otherwise the voice isn't evaluated at all, which is where most of
+// the cost of a busy arrangement goes.
+sounding(h, release, tail, voice) {
+  return h.y > 0 && h.x < release + tail ? voice(h) : 0;
+}
+
+/// Play a drum pattern through voice, a function of a hit. Two voices: the
+/// latest onset and the one before, summed, so tails overlap instead of being
+/// cut (and clicking) at each new onset. A voice stops being computed tail
+/// seconds after its onset: set tail to where the sound has died away (about
+/// 7 decay time constants for -60 dB), to save work in a busy mix.
+play(clk, pat, voice, tail) {
+  key0 = drumKey(clk, pat, -1);
+  h0 = drumHit(clk, key0);
+  h1 = drumHit(clk, drumKey(clk, pat, floor(key0 / 16)));
+  return sounding(h0, 0, tail, voice) + sounding(h1, 0, tail, voice);
+}
+
+/// Play a drum pattern with no tail limit.
+play(clk, pat, voice) {
+  return play(clk, pat, voice, 1e9);
+}
+
+// noteKey finds an onset of note pattern ns by gapBack (k0 = -1 for the most
+// recent), packed as gap * n + index so one scalar min carries both. The
+// search and the column picks below are scalar folds: no lists are built per
+// sample.
+noteKey(clk, ns, k0) {
+  n = count(ns);
+  s = wrap(clk.w, n);
+  return reduce(1e9, (acc, v, i) {
+    return min(acc, v.y > 0 ? gapBack(s, i, n, k0) * n + i : 1e9);
+  }, ns);
+}
+
+// Column picks of note pattern ns at index i: note, velocity, length.
+noteAtIndex(ns, i) {
+  return reduce(0, (acc, v, k) {
+    return k == i ? v.x : acc;
+  }, ns);
+}
+
+velAtIndex(ns, i) {
+  return reduce(0, (acc, v, k) {
+    return k == i ? v.y : acc;
+  }, ns);
+}
+
+lenAtIndex(ns, i) {
+  return reduce(0, (acc, v, k) {
+    return k == i ? v.z : acc;
+  }, ns);
+}
+
+// nextNoteGap is how many steps after pattern index i the next note starts.
+nextNoteGap(ns, i) {
+  n = count(ns);
+  return reduce(1e9, (acc, v, m) {
+    return min(acc, v.y > 0 ? gapAhead(m, i, n) : 1e9);
+  }, ns);
+}
+
+// noteHit turns a noteKey into a hit. The gate is len steps, or up to the
+// next note when len is 0, following the swing.
+noteHit(clk, ns, key) {
+  n = count(ns);
+  gap = floor(key / n);
+  i = key - n * gap;
+  j = clk.w - gap;
+  len = lenAtIndex(ns, i);
+  steps = len > 0 ? len : nextNoteGap(ns, i);
+  vel = min(velAtIndex(ns, i) / 9, 1) * started(clk, j);
+  return [clk.x - onset(clk, j), vel, j, noteAtIndex(ns, i), onset(clk, j + steps) - onset(clk, j)];
+}
+
+/// The most recent note of a note pattern at or before now, as a hit.
+note(clk, ns) {
+  return noteHit(clk, ns, noteKey(clk, ns, -1));
+}
+
+/// The note before the most recent one, as a hit (for release tails).
+prevNote(clk, ns) {
+  return noteHit(clk, ns, noteKey(clk, ns, floor(noteKey(clk, ns, -1) / count(ns))));
+}
+
+/// Play a note pattern through voice: the latest note plus the one before, so
+/// a release tail rings on under the next note. A voice stops being computed
+/// tail seconds after its note is released (the end of its gate).
+playNotes(clk, ns, voice, tail) {
+  key0 = noteKey(clk, ns, -1);
+  h0 = noteHit(clk, ns, key0);
+  h1 = noteHit(clk, ns, noteKey(clk, ns, floor(key0 / count(ns))));
+  return sounding(h0, h0[4], tail, voice) + sounding(h1, h1[4], tail, voice);
+}
+
+/// Play a note pattern with no tail limit.
+playNotes(clk, ns, voice) {
+  return playNotes(clk, ns, voice, 1e9);
+}
+
+/// Choke gain for hit h: 1 until the first onset of pattern pat after h's
+/// onset, then a fade to 0 over fade seconds. Multiply an open hi-hat by it
+/// with the closed-hat pattern as pat, inside the open hat's voice.
+choke(clk, pat, h, fade) {
+  n = count(pat);
+  i = wrap(h.z, n);
+  gap = reduce(1e9, (acc, v, m) {
+    return min(acc, v > 0 ? gapAhead(m, i, n) : 1e9);
+  }, pat);
+  tc = onset(clk, h.z + gap);
+  return clamp(1 - (clk.x - tc) / fade, 0, 1);
+}
+
+/// Bar number (from 0) of the current step, with stepsPerBar steps per bar.
+bar(clk, stepsPerBar) {
+  return floor(clk.w / stepsPerBar);
+}
+
+/// Hit h, silenced unless its onset falls in bars [fromBar, toBar). Gating by
+/// onset lets a note that starts inside the section ring out past its end.
+during(h, stepsPerBar, fromBar, toBar) {
+  b = floor(h.z / stepsPerBar);
+  return [h.x, h.y * (b >= fromBar && b < toBar ? 1 : 0), h.z, h.w, h[4]];
+}
+
+/// Hit h with its velocity varied by up to amount (0-1), differently for every
+/// onset but the same on every playback.
+humanize(h, amount) {
+  return [h.x, h.y * (1 - amount * noiseHash3([h.z, 17, 5]).x), h.z, h.w, h[4]];
+}

@@ -32,4 +32,3 @@ func TestInternalError(t *testing.T) {
 		t.Error("expected errors.As to match *InternalError")
 	}
 }
-

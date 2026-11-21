@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"math"
 
+	"gradientcontrol.com/omega/core/assembler/meshslots"
 	"gradientcontrol.com/omega/core/assembler/warpfold"
 	"gradientcontrol.com/omega/core/internal/eval"
 	"gradientcontrol.com/omega/core/internal/meshfold"
-	"gradientcontrol.com/omega/core/assembler/meshslots"
 	"gradientcontrol.com/omega/core/program"
 )
 

@@ -41,7 +41,9 @@ gearProfile(numTeeth, moduleVal, pressureAngle, rotOffset, dedendumClearance, kS
    rpy = (pRho * sin(pAngleCentered))
    repeatedTooth = remap(singleTooth(), collect(rpx, rpy, access(p, z)))
    addClip = remap(circleXY(collect(0, 0), addendumRadius), collect(opx, opy, access(p, z)))
-   toothProfile = intersectChamfer(repeatedTooth, addClip, kSmall)
+   tipRoll = (sqrt(((addendumRadius * addendumRadius) - (baseRadius * baseRadius))) / baseRadius)
+   tipCorner = collect((cos(tipRoll) + (tipRoll * sin(tipRoll))), (sin(tipRoll) - (tipRoll * cos(tipRoll))))
+   toothProfile = intersectChamferNormalized(repeatedTooth, addClip, kSmall, collect(sin(tipRoll), neg(cos(tipRoll))), vector.divideByScalar(tipCorner, length(tipCorner)))
    dedBody = remap(circleXY(collect(0, 0), dedendumRadius), collect(opx, opy, access(p, z)))
 
    rotInv() {

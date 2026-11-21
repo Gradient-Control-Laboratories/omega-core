@@ -1,0 +1,448 @@
+/// Six-operator FM synthesis in the style of the classic 1980s digital FM
+/// keyboards: phase modulation between sine operators, the 32 standard
+/// operator routings (algorithms), a 4-rate/4-level envelope per operator,
+/// operator feedback, velocity and keyboard scaling, an LFO, and optional
+/// low-resolution "grit". Plays hits from synth/seq. All closed form:
+/// feedback, which is a one-sample loop in hardware, is solved per sample as
+/// a fixed point (see fbLoop). Use qualified, e.g.
+///   seq.playNotes(clk, notes, (h) { return fm.ePiano(h); })
+///
+/// An operator is a 16-element list (indices in brackets):
+///   [0] coarse ratio (0 = 0.5)    [1] fine (0-99, ratio x (1 + fine/100))
+///   [2] detune in cents            [3] output level (0-99)
+///   [4..7] envelope rates R1-R4 (0-99, higher = faster)
+///   [8..11] envelope levels L1-L4 (0-99)
+///   [12] velocity sensitivity (0-7)
+///   [13] fixed frequency in Hz (0 = follow the note by ratio)
+///   [14] rate scaling (0-7: 7 doubles envelope speed per octave above C4)
+///   [15] level scaling (output levels lost per octave above C4)
+/// Levels are logarithmic: 8 level units = 6 dB. A patch is 6 operators (a
+/// 6x16 list, operator 1 first), an algorithm function such as fm.alg5, a
+/// feedback amount (0-7) and an LFO [rate Hz, pitch depth cents, amp depth
+/// 0-1, wave 0 sine / 1 triangle / 2 saw / 3 square]. Play one with
+/// fm.voice(h, ops, fm.alg5, feedback, lfo, grit).
+
+import "synth";
+
+/// Phase modulation depth in radians for a modulator at full output (level
+/// 99 with its envelope at 99). Level 75 gives about 1.6 rad, level 85 about
+/// 3.7 rad.
+modDepth = 4 * pi;
+
+/// Feedback amount (0-7) to the loop gain, in radians per unit of output: 6
+/// is the bright, sawtooth-like region; 7 is harsh.
+fbBeta(fb) {
+  return fb > 0 ? pi * exp2(fb - 7) : 0;
+}
+
+/// An operator's frequency in Hz for a note whose frequency is base Hz.
+opFreq(row, base) {
+  return row[13] > 0 ? row[13] : base * (row[0] > 0 ? row[0] : 0.5) * (1 + row[1] / 100) * exp2(row[2] / 1200);
+}
+
+/// Seconds a full 0-99 envelope sweep takes at rate r (0-99): about 40 s at
+/// 0, 0.12 s at 50, under a millisecond at 99.
+rateTime(r) {
+  return 40 * exp2(-clamp(r, 0, 99) / 6);
+}
+
+/// Envelope level (0-99) at time t into a note released at gate seconds.
+/// From L4 it moves to L1 at rate R1, to L2 at R2, to L3 at R3 and holds
+/// there; on release it moves from wherever it got to back to L4 at R4. Each
+/// segment is linear in level, so exponential in amplitude. Rates speed up
+/// with the note by the operator's rate scaling.
+egLevel(t, gate, row, note) {
+  rs = row[14] * (note - 60) / 14;
+  d1 = max(rateTime(row[4] + rs) * abs(row[8] - row[11]) / 99, 0.00001);
+  d2 = max(rateTime(row[5] + rs) * abs(row[9] - row[8]) / 99, 0.00001);
+  d3 = max(rateTime(row[6] + rs) * abs(row[10] - row[9]) / 99, 0.00001);
+  u = clamp(min(t, gate), 0, 1e9);
+  held = u < d1 ? row[11] + (row[8] - row[11]) * u / d1 : u < d1 + d2 ? row[8] + (row[9] - row[8]) * (u - d1) / d2 : u < d1 + d2 + d3 ? row[9] + (row[10] - row[9]) * (u - d1 - d2) / d3 : row[10];
+  dr = max(rateTime(row[7] + rs) * abs(row[11] - held) / 99, 0.00001);
+  return t <= gate ? held : held + (row[11] - held) * min((t - gate) / dr, 1);
+}
+
+/// An operator's output amplitude (0-1) for hit h: output level and envelope
+/// level added in the log domain, reduced by velocity sensitivity for soft
+/// notes and by level scaling for high ones.
+opAmp(row, h) {
+  lvl = row[3] - row[12] * (1 - h.y) * 4 - row[15] * max(h.w - 60, 0) / 12;
+  eg = egLevel(h.x, h[4], row, h.w);
+  return exp2((lvl + eg - 198) / 8) * clamp(min(lvl, eg), 0, 1);
+}
+
+/// Phase quantized to 4096 steps per cycle (the coarse sine tables of the
+/// early chips), when grit > 0.
+gritPhase(x, grit) {
+  return grit > 0 ? floor(x * 4096 / tau) * tau / 4096 : x;
+}
+
+/// Output quantized to 12 bits, when grit > 0.
+gritOut(x, grit) {
+  return grit > 0 ? floor(x * 2048 + 0.5) / 2048 : x;
+}
+
+/// One operator: amplitude amp times the sine of its phase (radians) plus
+/// phase modulation by m, a modulator's output (0-1, scaled by modDepth).
+op(amp, phase, m, grit) {
+  return gritOut(amp * sin(gritPhase(phase + modDepth * m, grit)), grit);
+}
+
+// opRaw is op with the modulation already in radians (for feedback).
+opRaw(amp, phase, x, grit) {
+  return gritOut(amp * sin(gritPhase(phase + x, grit)), grit);
+}
+
+/// Operator feedback: the output y of an operator (amplitude amp, phase
+/// phase) fed back into its own phase with gain b (radians per unit output),
+/// y = amp sin(phase + b y). Hardware solves it one sample late, averaging the last two
+/// outputs; here it is solved in place by four steps of the same averaged
+/// iteration, which converges in the bright region (feedback up to about 6)
+/// and stays bounded at 7.
+fbLoop(amp, phase, b, grit) {
+  y0 = opRaw(amp, phase, 0, grit);
+  y1 = 0.5 * (y0 + opRaw(amp, phase, b * y0, grit));
+  y2 = 0.5 * (y1 + opRaw(amp, phase, b * y1, grit));
+  y3 = 0.5 * (y2 + opRaw(amp, phase, b * y2, grit));
+  return 0.5 * (y3 + opRaw(amp, phase, b * y3, grit));
+}
+
+/// LFO waveform at phase u (cycles): 0 sine, 1 triangle, 2 saw, 3 square,
+/// all in [-1, 1].
+lfoWave(u, wave) {
+  fr = u - floor(u);
+  return wave < 0.5 ? sin(tau * u) : wave < 1.5 ? 4 * abs(fr - 0.5) - 1 : wave < 2.5 ? 2 * fr - 1 : fr < 0.5 ? 1 : -1;
+}
+
+/// Integral of lfoWave over [0, u], in cycles: periodic and zero at whole
+/// cycles, so pitch modulation by the LFO can be integrated in closed form.
+lfoIntegral(u, wave) {
+  fr = u - floor(u);
+  return wave < 0.5 ? (1 - cos(tau * u)) / tau : wave < 1.5 ? (fr < 0.5 ? fr - 2 * fr * fr : 2 * fr * fr - 3 * fr + 1) : wave < 2.5 ? fr * fr - fr : fr < 0.5 ? fr : 1 - fr;
+}
+
+/// Note time t warped by the pitch LFO [rate, cents, amp depth, wave], so
+/// that sin(tau * f * warp) wobbles in pitch by +-cents without clicks.
+lfoWarp(t, lfo) {
+  return t + (exp2(lfo.y / 1200) - 1) * lfoIntegral(lfo.x * t, lfo.w) / max(lfo.x, 0.0001);
+}
+
+/// Amplitude factor of the LFO's amp modulation (1 = none).
+lfoAmp(t, lfo) {
+  return 1 - lfo.z * (0.5 + 0.5 * lfoWave(lfo.x * t, lfo.w));
+}
+
+/// Play hit h through a patch: ops is the 6x16 operator list, alg one of the
+/// algorithm functions, fb the feedback amount (0-7), lfo [rate, cents, amp
+/// depth, wave], grit 0 for clean or 1 for quantized phase and output.
+voice(h, ops, alg, fb, lfo, grit) {
+  // Each operator's amplitude and phase are computed once; the algorithm
+  // only wires them together.
+  base = synth.mtof(h.w);
+  tw = tau * lfoWarp(h.x, lfo);
+  amps = [opAmp(ops[0], h), opAmp(ops[1], h), opAmp(ops[2], h), opAmp(ops[3], h), opAmp(ops[4], h), opAmp(ops[5], h)];
+  phases = [opFreq(ops[0], base) * tw, opFreq(ops[1], base) * tw, opFreq(ops[2], base) * tw, opFreq(ops[3], base) * tw, opFreq(ops[4], base) * tw, opFreq(ops[5], base) * tw];
+  return alg(amps, phases, fbBeta(fb), grit) * lfoAmp(h.x, lfo) * (h.y > 0 ? 1 : 0);
+}
+
+// Algorithms. Each takes the operators' amplitudes A and phases P (operator k
+// at index k - 1), the feedback gain b and the grit flag g; wires the
+// operators; and sums the carriers scaled by 1/sqrt(carrier count). "a > b"
+// means operator a modulates operator b. Algorithms 4 and 6 loop feedback
+// through several operators in hardware; here, as in common software
+// emulations, they feed back on operator 6 alone.
+
+/// 2>1, 6>5>4>3, feedback on 6. Carriers 1, 3.
+alg1(A, P, b, g) {
+  y6 = fbLoop(A[5], P[5], b, g);
+  y4 = op(A[3], P[3], op(A[4], P[4], y6, g), g);
+  return (op(A[0], P[0], op(A[1], P[1], 0, g), g) + op(A[2], P[2], y4, g)) * 0.7071;
+}
+
+/// 2>1, 6>5>4>3, feedback on 2. Carriers 1, 3.
+alg2(A, P, b, g) {
+  y4 = op(A[3], P[3], op(A[4], P[4], op(A[5], P[5], 0, g), g), g);
+  return (op(A[0], P[0], fbLoop(A[1], P[1], b, g), g) + op(A[2], P[2], y4, g)) * 0.7071;
+}
+
+/// 3>2>1, 6>5>4, feedback on 6. Carriers 1, 4.
+alg3(A, P, b, g) {
+  y2 = op(A[1], P[1], op(A[2], P[2], 0, g), g);
+  y5 = op(A[4], P[4], fbLoop(A[5], P[5], b, g), g);
+  return (op(A[0], P[0], y2, g) + op(A[3], P[3], y5, g)) * 0.7071;
+}
+
+/// 3>2>1, 6>5>4, feedback (4 to 6 in hardware) on 6. Carriers 1, 4.
+alg4(A, P, b, g) {
+  return alg3(A, P, b, g);
+}
+
+/// 2>1, 4>3, 6>5, feedback on 6. Carriers 1, 3, 5.
+alg5(A, P, b, g) {
+  return (op(A[0], P[0], op(A[1], P[1], 0, g), g) + op(A[2], P[2], op(A[3], P[3], 0, g), g) + op(A[4], P[4], fbLoop(A[5], P[5], b, g), g)) * 0.5774;
+}
+
+/// 2>1, 4>3, 6>5, feedback (5 to 6 in hardware) on 6. Carriers 1, 3, 5.
+alg6(A, P, b, g) {
+  return alg5(A, P, b, g);
+}
+
+/// 2>1, 4>3, 6>5>3, feedback on 6. Carriers 1, 3.
+alg7(A, P, b, g) {
+  y5 = op(A[4], P[4], fbLoop(A[5], P[5], b, g), g);
+  return (op(A[0], P[0], op(A[1], P[1], 0, g), g) + op(A[2], P[2], op(A[3], P[3], 0, g) + y5, g)) * 0.7071;
+}
+
+/// 2>1, 4>3, 6>5>3, feedback on 4. Carriers 1, 3.
+alg8(A, P, b, g) {
+  y5 = op(A[4], P[4], op(A[5], P[5], 0, g), g);
+  return (op(A[0], P[0], op(A[1], P[1], 0, g), g) + op(A[2], P[2], fbLoop(A[3], P[3], b, g) + y5, g)) * 0.7071;
+}
+
+/// 2>1, 4>3, 6>5>3, feedback on 2. Carriers 1, 3.
+alg9(A, P, b, g) {
+  y5 = op(A[4], P[4], op(A[5], P[5], 0, g), g);
+  return (op(A[0], P[0], fbLoop(A[1], P[1], b, g), g) + op(A[2], P[2], op(A[3], P[3], 0, g) + y5, g)) * 0.7071;
+}
+
+/// 3>2>1, 5>4, 6>4, feedback on 3. Carriers 1, 4.
+alg10(A, P, b, g) {
+  y2 = op(A[1], P[1], fbLoop(A[2], P[2], b, g), g);
+  return (op(A[0], P[0], y2, g) + op(A[3], P[3], op(A[4], P[4], 0, g) + op(A[5], P[5], 0, g), g)) * 0.7071;
+}
+
+/// 3>2>1, 5>4, 6>4, feedback on 6. Carriers 1, 4.
+alg11(A, P, b, g) {
+  y2 = op(A[1], P[1], op(A[2], P[2], 0, g), g);
+  return (op(A[0], P[0], y2, g) + op(A[3], P[3], op(A[4], P[4], 0, g) + fbLoop(A[5], P[5], b, g), g)) * 0.7071;
+}
+
+/// 2>1, 4>3, 5>3, 6>3, feedback on 2. Carriers 1, 3.
+alg12(A, P, b, g) {
+  m3 = op(A[3], P[3], 0, g) + op(A[4], P[4], 0, g) + op(A[5], P[5], 0, g);
+  return (op(A[0], P[0], fbLoop(A[1], P[1], b, g), g) + op(A[2], P[2], m3, g)) * 0.7071;
+}
+
+/// 2>1, 4>3, 5>3, 6>3, feedback on 6. Carriers 1, 3.
+alg13(A, P, b, g) {
+  m3 = op(A[3], P[3], 0, g) + op(A[4], P[4], 0, g) + fbLoop(A[5], P[5], b, g);
+  return (op(A[0], P[0], op(A[1], P[1], 0, g), g) + op(A[2], P[2], m3, g)) * 0.7071;
+}
+
+/// 2>1, 5>4, 6>4, 4>3, feedback on 6. Carriers 1, 3.
+alg14(A, P, b, g) {
+  y4 = op(A[3], P[3], op(A[4], P[4], 0, g) + fbLoop(A[5], P[5], b, g), g);
+  return (op(A[0], P[0], op(A[1], P[1], 0, g), g) + op(A[2], P[2], y4, g)) * 0.7071;
+}
+
+/// 2>1, 5>4, 6>4, 4>3, feedback on 2. Carriers 1, 3.
+alg15(A, P, b, g) {
+  y4 = op(A[3], P[3], op(A[4], P[4], 0, g) + op(A[5], P[5], 0, g), g);
+  return (op(A[0], P[0], fbLoop(A[1], P[1], b, g), g) + op(A[2], P[2], y4, g)) * 0.7071;
+}
+
+/// 2>1, 4>3>1, 6>5>1, feedback on 6. Carrier 1.
+alg16(A, P, b, g) {
+  m1 = op(A[1], P[1], 0, g) + op(A[2], P[2], op(A[3], P[3], 0, g), g) + op(A[4], P[4], fbLoop(A[5], P[5], b, g), g);
+  return op(A[0], P[0], m1, g);
+}
+
+/// 2>1, 4>3>1, 6>5>1, feedback on 2. Carrier 1.
+alg17(A, P, b, g) {
+  m1 = fbLoop(A[1], P[1], b, g) + op(A[2], P[2], op(A[3], P[3], 0, g), g) + op(A[4], P[4], op(A[5], P[5], 0, g), g);
+  return op(A[0], P[0], m1, g);
+}
+
+/// 2>1, 3>1, 6>5>4>1, feedback on 3. Carrier 1.
+alg18(A, P, b, g) {
+  y4 = op(A[3], P[3], op(A[4], P[4], op(A[5], P[5], 0, g), g), g);
+  return op(A[0], P[0], op(A[1], P[1], 0, g) + fbLoop(A[2], P[2], b, g) + y4, g);
+}
+
+/// 3>2>1, 6>4, 6>5, feedback on 6. Carriers 1, 4, 5.
+alg19(A, P, b, g) {
+  y6 = fbLoop(A[5], P[5], b, g);
+  y2 = op(A[1], P[1], op(A[2], P[2], 0, g), g);
+  return (op(A[0], P[0], y2, g) + op(A[3], P[3], y6, g) + op(A[4], P[4], y6, g)) * 0.5774;
+}
+
+/// 3>1, 3>2, 5>4, 6>4, feedback on 3. Carriers 1, 2, 4.
+alg20(A, P, b, g) {
+  y3 = fbLoop(A[2], P[2], b, g);
+  return (op(A[0], P[0], y3, g) + op(A[1], P[1], y3, g) + op(A[3], P[3], op(A[4], P[4], 0, g) + op(A[5], P[5], 0, g), g)) * 0.5774;
+}
+
+/// 3>1, 3>2, 6>4, 6>5, feedback on 3. Carriers 1, 2, 4, 5.
+alg21(A, P, b, g) {
+  y3 = fbLoop(A[2], P[2], b, g);
+  y6 = op(A[5], P[5], 0, g);
+  return (op(A[0], P[0], y3, g) + op(A[1], P[1], y3, g) + op(A[3], P[3], y6, g) + op(A[4], P[4], y6, g)) * 0.5;
+}
+
+/// 2>1, 6>3, 6>4, 6>5, feedback on 6. Carriers 1, 3, 4, 5.
+alg22(A, P, b, g) {
+  y6 = fbLoop(A[5], P[5], b, g);
+  return (op(A[0], P[0], op(A[1], P[1], 0, g), g) + op(A[2], P[2], y6, g) + op(A[3], P[3], y6, g) + op(A[4], P[4], y6, g)) * 0.5;
+}
+
+/// 3>2, 6>4, 6>5, feedback on 6. Carriers 1, 2, 4, 5.
+alg23(A, P, b, g) {
+  y6 = fbLoop(A[5], P[5], b, g);
+  return (op(A[0], P[0], 0, g) + op(A[1], P[1], op(A[2], P[2], 0, g), g) + op(A[3], P[3], y6, g) + op(A[4], P[4], y6, g)) * 0.5;
+}
+
+/// 6>3, 6>4, 6>5, feedback on 6. Carriers 1-5.
+alg24(A, P, b, g) {
+  y6 = fbLoop(A[5], P[5], b, g);
+  return (op(A[0], P[0], 0, g) + op(A[1], P[1], 0, g) + op(A[2], P[2], y6, g) + op(A[3], P[3], y6, g) + op(A[4], P[4], y6, g)) * 0.4472;
+}
+
+/// 6>4, 6>5, feedback on 6. Carriers 1-5.
+alg25(A, P, b, g) {
+  y6 = fbLoop(A[5], P[5], b, g);
+  return (op(A[0], P[0], 0, g) + op(A[1], P[1], 0, g) + op(A[2], P[2], 0, g) + op(A[3], P[3], y6, g) + op(A[4], P[4], y6, g)) * 0.4472;
+}
+
+/// 3>2, 5>4, 6>4, feedback on 6. Carriers 1, 2, 4.
+alg26(A, P, b, g) {
+  return (op(A[0], P[0], 0, g) + op(A[1], P[1], op(A[2], P[2], 0, g), g) + op(A[3], P[3], op(A[4], P[4], 0, g) + fbLoop(A[5], P[5], b, g), g)) * 0.5774;
+}
+
+/// 3>2, 5>4, 6>4, feedback on 3. Carriers 1, 2, 4.
+alg27(A, P, b, g) {
+  return (op(A[0], P[0], 0, g) + op(A[1], P[1], fbLoop(A[2], P[2], b, g), g) + op(A[3], P[3], op(A[4], P[4], 0, g) + op(A[5], P[5], 0, g), g)) * 0.5774;
+}
+
+/// 2>1, 5>4>3, feedback on 5. Carriers 1, 3, 6.
+alg28(A, P, b, g) {
+  y4 = op(A[3], P[3], fbLoop(A[4], P[4], b, g), g);
+  return (op(A[0], P[0], op(A[1], P[1], 0, g), g) + op(A[2], P[2], y4, g) + op(A[5], P[5], 0, g)) * 0.5774;
+}
+
+/// 4>3, 6>5, feedback on 6. Carriers 1, 2, 3, 5.
+alg29(A, P, b, g) {
+  return (op(A[0], P[0], 0, g) + op(A[1], P[1], 0, g) + op(A[2], P[2], op(A[3], P[3], 0, g), g) + op(A[4], P[4], fbLoop(A[5], P[5], b, g), g)) * 0.5;
+}
+
+/// 5>4>3, feedback on 5. Carriers 1, 2, 3, 6.
+alg30(A, P, b, g) {
+  y4 = op(A[3], P[3], fbLoop(A[4], P[4], b, g), g);
+  return (op(A[0], P[0], 0, g) + op(A[1], P[1], 0, g) + op(A[2], P[2], y4, g) + op(A[5], P[5], 0, g)) * 0.5;
+}
+
+/// 6>5, feedback on 6. Carriers 1-5.
+alg31(A, P, b, g) {
+  return (op(A[0], P[0], 0, g) + op(A[1], P[1], 0, g) + op(A[2], P[2], 0, g) + op(A[3], P[3], 0, g) + op(A[4], P[4], fbLoop(A[5], P[5], b, g), g)) * 0.4472;
+}
+
+/// No modulation, feedback on 6. Carriers 1-6 (additive, drawbar-style).
+alg32(A, P, b, g) {
+  return (op(A[0], P[0], 0, g) + op(A[1], P[1], 0, g) + op(A[2], P[2], 0, g) + op(A[3], P[3], 0, g) + op(A[4], P[4], 0, g) + fbLoop(A[5], P[5], b, g)) * 0.4082;
+}
+
+// Patches. Original settings, written for this library. Each is a function
+// of a hit, ready for seq.playNotes.
+
+/// No LFO.
+lfoOff = [5, 0, 0, 0];
+
+/// Electric piano: three carrier/modulator pairs (algorithm 5). A ratio-14
+/// modulator with a fast decay gives the tine's metallic attack, a detuned
+/// pair the body, and velocity drives brightness.
+ePianoOps = [
+  [1, 0, 0, 99, 95, 28, 22, 60, 99, 80, 0, 0, 2, 0, 3, 0],
+  [1, 0, 0, 72, 95, 45, 30, 70, 99, 70, 0, 0, 6, 0, 3, 4],
+  [1, 0, 6, 92, 95, 24, 20, 60, 99, 85, 0, 0, 2, 0, 3, 0],
+  [14, 0, 0, 58, 97, 75, 30, 70, 99, 0, 0, 0, 7, 0, 4, 8],
+  [1, 0, -6, 86, 95, 30, 22, 60, 99, 80, 0, 0, 1, 0, 3, 0],
+  [1, 0, 0, 60, 95, 40, 30, 70, 99, 60, 0, 0, 5, 0, 3, 0]];
+
+ePiano(h) {
+  return voice(h, ePianoOps, alg5, 3, [5.2, 0, 0.12, 0], 0);
+}
+
+/// FM bass: a carrier and a sub-octave carrier (algorithm 1), with a fast
+/// plucked modulator and a feedback stack for growl.
+bassOps = [
+  [1, 0, 0, 99, 99, 45, 30, 75, 99, 94, 88, 0, 2, 0, 2, 0],
+  [1, 0, 0, 80, 99, 60, 35, 75, 99, 60, 40, 0, 5, 0, 2, 0],
+  [0, 0, 0, 90, 99, 35, 25, 75, 99, 94, 90, 0, 1, 0, 2, 0],
+  [1, 0, 0, 66, 99, 55, 35, 75, 99, 50, 25, 0, 4, 0, 2, 0],
+  [1, 0, 0, 55, 99, 50, 35, 75, 99, 50, 30, 0, 3, 0, 2, 0],
+  [1, 0, 0, 50, 99, 50, 35, 75, 99, 60, 40, 0, 0, 0, 2, 0]];
+
+bass(h) {
+  return voice(h, bassOps, alg1, 5, lfoOff, 0);
+}
+
+/// Bell: carrier/modulator pairs at inharmonic ratios (algorithm 5), with long
+/// decays that are shorter for the upper partials.
+bellOps = [
+  [1, 0, 0, 99, 98, 22, 18, 40, 99, 75, 0, 0, 2, 0, 2, 0],
+  [3, 50, 0, 78, 98, 30, 20, 40, 99, 60, 0, 0, 5, 0, 2, 0],
+  [2, 0, 3, 85, 98, 28, 20, 40, 99, 70, 0, 0, 2, 0, 2, 0],
+  [5, 41, 0, 70, 98, 36, 24, 40, 99, 50, 0, 0, 5, 0, 2, 0],
+  [4, 0, -3, 70, 98, 34, 24, 40, 99, 60, 0, 0, 2, 0, 2, 0],
+  [7, 13, 0, 60, 98, 45, 28, 40, 99, 40, 0, 0, 4, 0, 2, 0]];
+
+bell(h) {
+  return voice(h, bellOps, alg5, 0, lfoOff, 0);
+}
+
+/// Brass: one modulator with feedback driving three slightly detuned carriers
+/// (algorithm 22). The modulator's envelope opens more slowly than the
+/// carriers', the brightening "blat" of a horn attack.
+brassOps = [
+  [1, 0, 0, 96, 72, 50, 40, 65, 99, 92, 88, 0, 2, 0, 1, 0],
+  [1, 0, 0, 74, 55, 45, 40, 65, 99, 85, 80, 0, 4, 0, 1, 0],
+  [1, 0, 4, 90, 70, 50, 40, 65, 99, 92, 88, 0, 2, 0, 1, 0],
+  [1, 0, -4, 90, 70, 50, 40, 65, 99, 92, 88, 0, 2, 0, 1, 0],
+  [2, 0, 0, 70, 70, 50, 40, 65, 99, 90, 85, 0, 2, 0, 1, 0],
+  [1, 0, 0, 76, 50, 42, 40, 65, 99, 82, 78, 0, 4, 0, 1, 0]];
+
+brass(h) {
+  return voice(h, brassOps, alg22, 6, [5.5, 12, 0, 0], 0);
+}
+
+/// Marimba: a short woody fundamental with a fast-decaying fourth-ratio
+/// overtone pair (algorithm 5).
+marimbaOps = [
+  [1, 0, 0, 99, 99, 33, 30, 50, 99, 0, 0, 0, 3, 0, 4, 0],
+  [1, 0, 0, 62, 99, 48, 30, 50, 99, 0, 0, 0, 5, 0, 4, 0],
+  [4, 0, 0, 80, 99, 45, 30, 50, 99, 0, 0, 0, 4, 0, 4, 6],
+  [1, 0, 0, 52, 99, 58, 30, 50, 99, 0, 0, 0, 5, 0, 4, 0],
+  [10, 0, 0, 62, 99, 60, 30, 50, 99, 0, 0, 0, 3, 0, 4, 10],
+  [1, 0, 0, 0, 99, 80, 40, 60, 99, 0, 0, 0, 0, 0, 4, 0]];
+
+marimba(h) {
+  return voice(h, marimbaOps, alg5, 0, lfoOff, 0);
+}
+
+/// Pad: detuned carrier pairs with gentle octave modulators that swell in
+/// slowly (algorithm 5), and a soft vibrato.
+padOps = [
+  [1, 0, 0, 92, 40, 30, 30, 35, 99, 90, 85, 0, 1, 0, 0, 0],
+  [2, 0, 0, 62, 30, 25, 30, 35, 85, 80, 75, 0, 2, 0, 0, 0],
+  [1, 0, 8, 90, 38, 30, 30, 35, 99, 90, 85, 0, 1, 0, 0, 0],
+  [2, 0, 0, 58, 28, 25, 30, 35, 85, 78, 72, 0, 2, 0, 0, 0],
+  [1, 0, -8, 90, 38, 30, 30, 35, 99, 90, 85, 0, 1, 0, 0, 0],
+  [1, 0, 0, 55, 30, 25, 30, 35, 85, 80, 75, 0, 2, 0, 0, 0]];
+
+pad(h) {
+  return voice(h, padOps, alg5, 2, [4.8, 8, 0, 0], 0);
+}
+
+/// Organ: six unmodulated carriers at drawbar ratios (0.5, 1, 2, 3, 4, 6;
+/// algorithm 32) with an instant on/off envelope, a little feedback on the top
+/// one for edge, and a slow tremolo.
+organOps = [
+  [0, 0, 0, 92, 99, 99, 99, 90, 99, 99, 99, 0, 0, 0, 0, 0],
+  [1, 0, 0, 96, 99, 99, 99, 90, 99, 99, 99, 0, 0, 0, 0, 0],
+  [2, 0, 0, 90, 99, 99, 99, 90, 99, 99, 99, 0, 0, 0, 0, 0],
+  [3, 0, 0, 84, 99, 99, 99, 90, 99, 99, 99, 0, 0, 0, 0, 0],
+  [4, 0, 0, 82, 99, 99, 99, 90, 99, 99, 99, 0, 0, 0, 0, 0],
+  [6, 0, 0, 78, 99, 99, 99, 90, 99, 99, 99, 0, 0, 0, 0, 0]];
+
+organ(h) {
+  return voice(h, organOps, alg32, 2, [6.5, 0, 0.1, 1], 0);
+}

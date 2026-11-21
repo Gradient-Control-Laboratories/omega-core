@@ -15,4 +15,3 @@ type VdbOracle struct {
 	VoxelSize      float32
 	HalfBandVoxels float32
 }
-

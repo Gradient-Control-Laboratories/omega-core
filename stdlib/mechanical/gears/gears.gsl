@@ -111,7 +111,17 @@ gearProfile(numTeeth, moduleVal, pressureAngle, rotOffset, dedendumClearance, kS
 
   repeatedTooth = remap(singleTooth(), [rpx, rpy, p.z]);
   addClip = remap(circleXY([0, 0], addendumRadius), [opx, opy, p.z]);
-  toothProfile = intersectChamfer(repeatedTooth, addClip, kSmall);
+  // The flank meets the tip circle at an obtuse edge, where intersectChamfer's
+  // bevel overstates the distance; the normalized one is the same surface. Its
+  // normals are the two faces' at that edge, in the flank's own frame: the
+  // involute's outward normal at the tip, [sin, -cos] of its roll, and the tip
+  // circle's, the corner's own direction. Only the angle between them counts,
+  // and it is the same at every tooth, so they are given rather than taken from
+  // the fields' gradients, which would differentiate the whole tooth.
+  tipRoll = sqrt(addendumRadius * addendumRadius - baseRadius * baseRadius) / baseRadius;
+  tipCorner = [cos(tipRoll) + tipRoll * sin(tipRoll), sin(tipRoll) - tipRoll * cos(tipRoll)];
+  toothProfile = intersectChamferNormalized(repeatedTooth, addClip, kSmall,
+                                            [sin(tipRoll), neg(cos(tipRoll))], tipCorner / length(tipCorner));
   dedBody = remap(circleXY([0, 0], dedendumRadius), [opx, opy, p.z]);
   return unionRound(toothProfile, dedBody, roundK);
 }
