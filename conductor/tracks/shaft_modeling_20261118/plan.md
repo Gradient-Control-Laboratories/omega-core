@@ -336,7 +336,7 @@ Phase 0 has no start commit; Phase 7 was skipped.
       gearPair and bevelPair
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
-## Phase 13: Fixes
+## Phase 13: Fixes [checkpoint: d56bff4]
 
 - [x] Task: Proposal (approved 2026-11-21), each from a diagnosis:
   - 13a: the box analysis folds comparisons of literals but not and/or/not, so every segment's first
@@ -364,4 +364,4 @@ Phase 0 has no start commit; Phase 7 was skipped.
       boxes move). Four codegen goldens moved by spelling only and were regenerated with the owner's
       approval: Bevel Gears 37,643 -> 16,422 B, Gears -2.7%, transform_box -0.4%, CoreXY Printer +0.14%.
       Found: every segment's field is still written about 20 times into the shader (a later item)
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
