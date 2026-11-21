@@ -1,0 +1,16 @@
+Phase 14 (Knurls) verification report
+
+Automated: tool/check.sh -> all quality checks passed; no golden moved.
+New: eval/shaft_knurl_test.go (7 tests), eval/simple_local_test.go (2 tests).
+- Every pattern's height; straight along the axis, annular round it, a helix along itself; crest 0, root a
+  tooth depth; nothing at and past the planes, at the axis or on the plain neighbours; the geometry is the
+  blank; paint darkens a root and leaves a crest; the finished body carries the relief in its material and
+  a stand-in; a plain shaft's relief is 0. Every shaft example's WGSL unchanged. Example shaft_knurled.gsl
+  71,287 B; the CPU render draws all six patterns, a right-hand knurl rising to the right on its near face.
+- Test edit with the owner's approval: the finished-body markers (a lone displaced part's height rides in its
+  material record; the stand-in guard is gsl_simple).
+- The owner's viewer check: the paint stayed with textures off. Fixed in carry.go (companionOf kept no
+  property; now keeps .simple, .detail, .detailSize), Red first, with the owner's approval.
+
+Manual verification: PENDING. The owner went away from the computer before rechecking the Textures rung in the
+viewer, and asked to be reminded at the next wrap-up; 'Move on', the owner, 2026-11-21.
