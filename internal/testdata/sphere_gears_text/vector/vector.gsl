@@ -4,6 +4,14 @@ zero = collect(0, 0, 0)
 dirX = collect(1, 0, 0)
 dirZ = collect(0, 0, 1)
 
+addVector(a, b) {
+   gsl_anon(x, i) {
+      return (x + index(b, i));
+   }
+
+   return map(gsl_anon, a);
+}
+
 subtractVector(a, b) {
    gsl_anon(x, i) {
       return (x - index(b, i));
@@ -15,6 +23,14 @@ subtractVector(a, b) {
 multiplyScalar(v, s) {
    gsl_anon(x) {
       return (x * s);
+   }
+
+   return map(gsl_anon, v);
+}
+
+divideByScalar(v, s) {
+   gsl_anon(x) {
+      return (x / s);
    }
 
    return map(gsl_anon, v);

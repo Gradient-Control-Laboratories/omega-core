@@ -4,7 +4,8 @@ name: Wheels
 # render library statically (tool/build-wheel.sh). Each platform's wheel is built on its own runner -- Linux inside
 # the manylinux_2_28 image, so the programs need nothing newer than glibc 2.28 -- then installed and tested on a
 # plain runner of that platform, so a wheel that needs anything the build machine had and a user's does not fails
-# here. Every pull request and push to main builds and tests them all.
+# here. Pull requests smoke-test linux/x86_64 and macos/arm64; pushes to main, version tags, and manual dispatches
+# build and test all platforms.
 #
 # Publishing is explicit, never a merge: pushing a tag v<version> whose version is the toolchain's
 # (internal/version/version.go), or running the workflow on main with `publish` set (which tags the commit
@@ -16,6 +17,9 @@ on:
     branches: [main]
     tags: ["v*"]
   pull_request:
+    paths-ignore:
+      - "**.md"
+      - "conductor/**"
   workflow_dispatch:
     inputs:
       publish:
@@ -31,19 +35,37 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  plan:
+    name: Plan Matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      build_matrix: ${{ steps.matrices.outputs.build_matrix }}
+      test_matrix: ${{ steps.matrices.outputs.test_matrix }}
+    steps:
+      - id: matrices
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            cat <<'EOF' >> "$GITHUB_OUTPUT"
+          build_matrix={"include":[{"tag":"macosx_11_0_arm64","runner":"macos-latest","protoc":"osx-aarch_64","protoc_sha256":"45444963204757fd3e2fbe304bc1fdadfb488d8556ff099c4cc06575eab88976"},{"tag":"manylinux_2_28_x86_64","runner":"ubuntu-latest","container":"quay.io/pypa/manylinux_2_28_x86_64","protoc":"linux-x86_64","protoc_sha256":"a45cda0989c17dd950db55f6fbe1e5814c50fda08e87aa422980ac1f89dddbbc"}]}
+          test_matrix={"include":[{"runner":"ubuntu-latest","python":"3.14","tag":"manylinux_2_28_x86_64"},{"runner":"macos-latest","python":"3.12","tag":"macosx_11_0_arm64"}]}
+          EOF
+          else
+            cat <<'EOF' >> "$GITHUB_OUTPUT"
+          build_matrix={"include":[{"tag":"macosx_11_0_arm64","runner":"macos-latest","protoc":"osx-aarch_64","protoc_sha256":"45444963204757fd3e2fbe304bc1fdadfb488d8556ff099c4cc06575eab88976"},{"tag":"macosx_11_0_x86_64","runner":"macos-15-intel","protoc":"osx-x86_64","protoc_sha256":"3580c2d115fccb5b0239960c8f70f8da14787b1973a46b2f39c315ad71c11e01"},{"tag":"manylinux_2_28_x86_64","runner":"ubuntu-latest","container":"quay.io/pypa/manylinux_2_28_x86_64","protoc":"linux-x86_64","protoc_sha256":"a45cda0989c17dd950db55f6fbe1e5814c50fda08e87aa422980ac1f89dddbbc"},{"tag":"manylinux_2_28_aarch64","runner":"ubuntu-24.04-arm","container":"quay.io/pypa/manylinux_2_28_aarch64","protoc":"linux-aarch_64","protoc_sha256":"36b518ac14d90351cc6598228ed2bbe5afe4e357b1af470b07e0ec1609875de2"}]}
+          test_matrix={"include":[{"runner":"ubuntu-24.04","python":"3.9","tag":"manylinux_2_28_x86_64"},{"runner":"ubuntu-latest","python":"3.14","tag":"manylinux_2_28_x86_64"},{"runner":"ubuntu-24.04-arm","python":"3.12","tag":"manylinux_2_28_aarch64"},{"runner":"macos-15-intel","python":"3.12","tag":"macosx_11_0_x86_64"},{"runner":"macos-latest","python":"3.12","tag":"macosx_11_0_arm64"}]}
+          EOF
+          fi
+
   build:
     name: Build (${{ matrix.tag }})
+    needs: plan
     runs-on: ${{ matrix.runner }}
     container: ${{ matrix.container }}
     timeout-minutes: 90
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - { tag: macosx_11_0_arm64, runner: macos-latest, protoc: osx-aarch_64, protoc_sha256: 45444963204757fd3e2fbe304bc1fdadfb488d8556ff099c4cc06575eab88976 }
-          - { tag: macosx_11_0_x86_64, runner: macos-15-intel, protoc: osx-x86_64, protoc_sha256: 3580c2d115fccb5b0239960c8f70f8da14787b1973a46b2f39c315ad71c11e01 }
-          - { tag: manylinux_2_28_x86_64, runner: ubuntu-latest, container: "quay.io/pypa/manylinux_2_28_x86_64", protoc: linux-x86_64, protoc_sha256: a45cda0989c17dd950db55f6fbe1e5814c50fda08e87aa422980ac1f89dddbbc }
-          - { tag: manylinux_2_28_aarch64, runner: ubuntu-24.04-arm, container: "quay.io/pypa/manylinux_2_28_aarch64", protoc: linux-aarch_64, protoc_sha256: 36b518ac14d90351cc6598228ed2bbe5afe4e357b1af470b07e0ec1609875de2 }
+      matrix: ${{ fromJson(needs.plan.outputs.build_matrix) }}
     env:
       OMEGA_CORE_TAG: ${{ matrix.tag }}
     steps:
@@ -66,6 +88,12 @@ jobs:
         with:
           go-version-file: go.mod
           cache-dependency-path: go.sum
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/go-build
+          key: go-build-wheel-${{ matrix.tag }}-${{ hashFiles('go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-build-wheel-${{ matrix.tag }}-${{ hashFiles('go.sum') }}-
       - name: Rust and CMake
         run: |
           command -v cargo || curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
@@ -74,7 +102,14 @@ jobs:
           cargo --version; cmake --version | head -1; go version; python3 --version
       # tape-core's build compiles backend/tape/tape.proto with prost-build, which runs protoc: the release's own
       # binary, pinned and checked.
-      - name: protoc
+      - name: Restore protoc cache
+        id: protoc-cache
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/protoc
+          key: protoc-35.0-${{ matrix.protoc }}
+      - name: Install protoc
+        if: steps.protoc-cache.outputs.cache-hit != 'true'
         env:
           PROTOC_VERSION: "35.0"
           PROTOC_ASSET: ${{ matrix.protoc }}
@@ -85,6 +120,8 @@ jobs:
           python3 -c 'import hashlib, sys; d = hashlib.sha256(open(sys.argv[1], "rb").read()).hexdigest(); sys.exit(None if d == sys.argv[2] else f"protoc sha256 {d}, pinned {sys.argv[2]}")' "$RUNNER_TEMP/protoc.zip" "$PROTOC_SHA256"
           python3 -m zipfile -e "$RUNNER_TEMP/protoc.zip" "$RUNNER_TEMP/protoc"
           chmod +x "$RUNNER_TEMP/protoc/bin/protoc"
+      - name: Configure protoc
+        run: |
           echo "PROTOC=$RUNNER_TEMP/protoc/bin/protoc" >> "$GITHUB_ENV"
           "$RUNNER_TEMP/protoc/bin/protoc" --version
       - name: The submodules' revisions (the cache key)
@@ -96,8 +133,8 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target/static
-          key: static-${{ matrix.tag }}-${{ hashFiles('Cargo.lock') }}-${{ steps.submodules.outputs.hash }}
-          restore-keys: static-${{ matrix.tag }}-${{ hashFiles('Cargo.lock') }}-
+          key: static-${{ matrix.tag }}-${{ hashFiles('**/Cargo.lock') }}-${{ steps.submodules.outputs.hash }}
+          restore-keys: static-${{ matrix.tag }}-${{ hashFiles('**/Cargo.lock') }}-
       - name: Build the programs and the wheel
         run: tool/build-wheel.sh
       - uses: actions/upload-artifact@v7
@@ -108,18 +145,12 @@ jobs:
 
   test:
     name: Test (${{ matrix.runner }}, Python ${{ matrix.python }})
-    needs: build
+    needs: [plan, build]
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 15
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - { runner: ubuntu-24.04, python: "3.9" }  # the oldest Python the wheel takes; ubuntu-latest has none
-          - { runner: ubuntu-latest, python: "3.14" }
-          - { runner: ubuntu-24.04-arm, python: "3.12" }
-          - { runner: macos-15-intel, python: "3.12" }
-          - { runner: macos-latest, python: "3.12" }
+      matrix: ${{ fromJson(needs.plan.outputs.test_matrix) }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -129,8 +160,7 @@ jobs:
           python-version: ${{ matrix.python }}
       - uses: actions/download-artifact@v8
         with:
-          pattern: wheel-*
-          merge-multiple: true
+          name: wheel-${{ matrix.tag }}
           path: dist
       # pip takes the one wheel this platform can install, from the built ones alone.
       - name: Install this platform's wheel
