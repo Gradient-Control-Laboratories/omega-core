@@ -1,0 +1,17 @@
+Phase 13 (Fixes) verification report
+
+Automated: tool/check.sh -> all quality checks passed (after regenerating four goldens).
+New: eval/shaft_fixes_test.go (6 tests), all failing before for the reason targeted except the field
+lock test, which passes before and after.
+- 13a: and/or/not of literals take one branch; a caller's unguarded segment keeps the shaft box (+-5 x 0..20).
+- 13b: a turned part's WGSL by depth 10,838/15,871/39,162 -> 10,570/11,709/12,962 B. Bevel pair with its
+  placed gears named 276,697 -> 46,649 B (kept unnamed: boxes move).
+- 13c: first segment written 22 -> 20 times (= the middle one's); bevel_gears 43,222 -> 33,680 B, gears
+  18,961 -> 15,995 B, every shaft example 1-9% smaller; fields unchanged.
+- 13d: framing keeps a 6 mm rod beside a 120 mm block; the threaded shaft renders whole without --extent.
+- Goldens regenerated with the owner's approval (spelling only): Bevel Gears 37,643 -> 16,422 B, Gears
+  -2.7%, transform_box -0.4%, CoreXY Printer +0.14%. GPU parity tests pass.
+- Found: every segment's field is still written about 20 times into the shader.
+
+Manual verification: viewer restarted on 9001 with the build.
+User confirmation: chose 'Checkpoint, no push', the owner, 2026-11-21.
