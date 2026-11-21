@@ -1,0 +1,15 @@
+Phase 15 (Thread Undercuts) verification report
+
+Automated: tool/check.sh -> all quality checks passed; no golden moved.
+New: eval/shaft_undercut_test.go (7 tests): the table row by row against HEIDENHAIN's DIN 76 table and ISO
+4755 (IS 1369-2); g1 from the flank matches ISO's printed g1; floor, fillet and flank where the table puts
+them, nothing outside the flank and a tooth reaching it; the plain thread below the groove; solid across the
+overlap; ISO's shorter groove; the bottom end; the box.
+- Threads with literal ends compile identically; shaft_threaded (ends set by sliders) 11,305 -> 17,400 B for
+  the table lookups both branches carry. A profileXY groove was NaN capped and cost 52 KB; replaced.
+- Test edits with the owner's approval: the fillet point's quarter; NaN fails undercutEval.
+- Example shaft_undercut.gsl 13,319 B.
+- DIN 76-1:2025-10 corrected some g2 and r values; the rows are the earlier edition's.
+
+Manual verification: the owner's viewer check ('It looks fine'; DIN 76 confirmed as the feature meant).
+User confirmation: 2026-11-21.
