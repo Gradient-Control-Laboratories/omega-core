@@ -286,6 +286,9 @@ func renderLit(prog *program.Program, opts LitOptions, done func([]byte, *LitLin
 			if err != nil {
 				return err
 			}
+			if opts.Progress != nil {
+				opts.Progress(1)
+			}
 			done(nil, lin)
 			return nil
 		}
@@ -331,6 +334,9 @@ func renderLit(prog *program.Program, opts LitOptions, done func([]byte, *LitLin
 		if err != nil {
 			return err
 		}
+		if opts.Progress != nil {
+			opts.Progress(1)
+		}
 		done(png, lin)
 		return nil
 	})
@@ -353,6 +359,12 @@ func marchLit(
 	opts LitOptions,
 ) (*image.RGBA, *LitLinear, error) {
 	w, h := opts.Width, opts.Height
+	// Progress is reported along the viewer's march and the phases after it
+	// (litShares); any other render reports only that it is done (renderLit).
+	var progress *litProgress
+	if opts.ViewerMarch {
+		progress = newLitProgress(opts.Progress)
+	}
 	aspect := float64(w) / float64(h)
 
 	// Camera: the viewer's corner-on framing by default — position
@@ -480,7 +492,7 @@ func marchLit(
 			}
 		}
 		if err := litViewerMarch(shapeCanvases, cheapCanvases, origins, dirs, tv, tExit, active, pixelScale, ortho, boxHalf, proxy,
-			isHit, surfT, hitPos, viewShape); err != nil {
+			isHit, surfT, hitPos, viewShape, progress.span(0, litShares.march)); err != nil {
 			return nil, nil, err
 		}
 	}
@@ -574,6 +586,7 @@ func marchLit(
 		if err := litViewerNormals(shapeCanvases, hitIdx, hitPos, dirs, surfT, pixelScale, ortho, litBackDim(opts.BackDim), hitNormal, dim, behind); err != nil {
 			return nil, nil, err
 		}
+		progress.at(litShares.normals)
 	}
 	if len(hitIdx) > 0 && len(shapes) > 1 && !opts.ViewerMarch {
 		hx, hy, hz := gatherPoints(hitPos, hitIdx)
@@ -670,6 +683,7 @@ func marchLit(
 				ao[j] += (hStep - d) * aoScale
 			}
 			aoScale *= 0.95
+			progress.at(litShares.normals + (litShares.occlusion-litShares.normals)*float64(step+1)/float64(litAOSteps))
 		}
 		for j, i := range hitIdx {
 			aoFactor[i] = clamp(1.0-3.0*ao[j], 0, 1)
@@ -705,6 +719,7 @@ func marchLit(
 			matAt[i] = mats[j]
 		}
 	}
+	progress.at(litShares.appearance)
 
 	// Glass: a hit whose material transmits is shaded by marching the refracted
 	// ray (see litglass.go), which replaces its opaque shading below.
@@ -728,6 +743,7 @@ func marchLit(
 	if err != nil {
 		return nil, nil, err
 	}
+	progress.at(litShares.glass)
 
 	// World-axis overlay: thin capsules along +x, +y, +z from the world
 	// origin, occluded by the geometry. Without a frame cue, a render of a
