@@ -523,6 +523,11 @@ func walkFile(file *program.PackageFile, f func(*program.Operand, []*program.Fun
 	}); err != nil {
 		return err
 	}
+	if err := walkReturns(file.GradientReturns, func(op *program.Operand) (*program.Operand, error) {
+		return f(op, nil)
+	}); err != nil {
+		return err
+	}
 	if err := walkFnTypes(file.FnTypes, nil, f); err != nil {
 		return err
 	}
