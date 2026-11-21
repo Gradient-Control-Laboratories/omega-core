@@ -181,14 +181,19 @@ deepGroove(designation, at) {
   outerRing = roundedRing(pitchR + 0.25 * ball, 0.5 * bigD, at, at + b, rs);
   raceway = length([length(p.xy) - pitchR, p.z - mid]) - 0.52 * ball;
   balls = remap(length([p.x - pitchR, p.y, p.z - mid]) - 0.5 * ball, map.patternPolarXY(ballCount(designation)));
-  return min(max(min(innerRing, outerRing), neg(raceway)), balls);
+  solid = min(max(min(innerRing, outerRing), neg(raceway)), balls);
+  solid.box = [[-0.5 * bigD, -0.5 * bigD, at], [0.5 * bigD, 0.5 * bigD, at + b]];
+  return solid;
 }
 
 /// The same bearing reduced to its boundary dimensions: the ring from bore to
 /// outside diameter, `width` wide from z = `at`, its corners rounded by the
 /// chamfer. Exact, inside and out.
 deepGrooveEnvelope(designation, at) {
-  return roundedRing(0.5 * bore(designation), 0.5 * outerDia(designation), at, at + width(designation), chamfer(designation));
+  ro = 0.5 * outerDia(designation);
+  solid = roundedRing(0.5 * bore(designation), ro, at, at + width(designation), chamfer(designation));
+  solid.box = [[neg(ro), neg(ro), at], [ro, ro, at + width(designation)]];
+  return solid;
 }
 
 // =========================================================
@@ -333,15 +338,20 @@ bushing(boreDia, series, length, at) {
   c = bushingChamfer(boreDia);
   rho = length(p.xy);
   top = at + length;
-  return max(bushingEnvelope(boreDia, series, length, at),
-             (ri + c - rho - (p.z - at)) / sqrt2, (ri + c - rho - (top - p.z)) / sqrt2,
-             (rho - (ro - c) - (p.z - at)) / sqrt2, (rho - (ro - c) - (top - p.z)) / sqrt2);
+  solid = max(bushingEnvelope(boreDia, series, length, at),
+              (ri + c - rho - (p.z - at)) / sqrt2, (ri + c - rho - (top - p.z)) / sqrt2,
+              (rho - (ro - c) - (p.z - at)) / sqrt2, (rho - (ro - c) - (top - p.z)) / sqrt2);
+  solid.box = [[neg(ro), neg(ro), at], [ro, ro, top]];
+  return solid;
 }
 
 /// The same bush without its chamfers: the ring from bore to outside
 /// diameter. Exact, inside and out.
 bushingEnvelope(boreDia, series, length, at) {
-  return roundedRing(0.5 * boreDia, 0.5 * bushingOuterDia(boreDia, series), at, at + length, 0.0);
+  ro = 0.5 * bushingOuterDia(boreDia, series);
+  solid = roundedRing(0.5 * boreDia, ro, at, at + length, 0.0);
+  solid.box = [[neg(ro), neg(ro), at], [ro, ro, at + length]];
+  return solid;
 }
 
 /// An ISO 4379 Type F bush: `series` 1 or 2, `length` long overall from
@@ -357,13 +367,15 @@ flangedBushing(boreDia, series, length, at) {
   c = bushingChamfer(boreDia);
   rho = length(p.xy);
   top = at + length;
-  return max(flangedBushingEnvelope(boreDia, series, length, at),
+  solid = max(flangedBushingEnvelope(boreDia, series, length, at),
              (ri + c - rho - (p.z - at)) / sqrt2, (ri + c - rho - (top - p.z)) / sqrt2,
              (rho - (ro - c) - (top - p.z)) / sqrt2,
              (rho - (rf - c) - (p.z - at)) / sqrt2,
              // The rim's top chamfer reaches no higher than the flange: above
              // it the tube stands, and the half-plane would cut it.
              min((rho - (rf - c) - (at + bf - p.z)) / sqrt2, at + bf - p.z));
+  solid.box = [[neg(rf), neg(rf), at], [rf, rf, top]];
+  return solid;
 }
 
 /// The same flanged bush without its chamfers: its L-shaped section turned
@@ -374,8 +386,10 @@ flangedBushingEnvelope(boreDia, series, length, at) {
   rf = 0.5 * flangeDia(boreDia, series);
   bf = flangeThickness(boreDia, series);
   top = at + length;
-  return remap(profileXY([[ri, at], [rf, at], [rf, at + bf], [ro, at + bf], [ro, top], [ri, top]]),
-               [length(p.xy), p.z, 0.0]);
+  solid = remap(profileXY([[ri, at], [rf, at], [rf, at + bf], [ro, at + bf], [ro, top], [ri, top]]),
+                [length(p.xy), p.z, 0.0]);
+  solid.box = [[neg(rf), neg(rf), at], [rf, rf, top]];
+  return solid;
 }
 
 // =========================================================
