@@ -1,0 +1,20 @@
+Phase 10 (Box Override and Simplified Model) verification report
+
+Automated: go vet ./eval/ ./stdlib/... ./internal/closure/ && go test ./... -count=1 -> all ok.
+New: eval/shaft_box_test.go (8 tests).
+- Box: turned, pinion, threaded, hobbed, crank, blended give exactly their reach and end faces (within the
+  analysis's 0.01 growth) for body and envelope; every sampled solid point inside; section shaft unbounded
+  radially, bounded axially; end holes leave the box unchanged; a caller's .box replaces it.
+- Envelope: holds the detail by sign on ~200k points per stack (0 pokes out); a gear, thread and spline in a
+  row are exactly their tip/major cylinders outside (worst 4.8e-6 mm, 0 wrong side); for a smooth filleted
+  centre-drilled shaft it equals the body (0 difference).
+- Proof speed: pinion within 0.3 mm of its tip circle proven on the envelope in 98281 evaluations; on the
+  detail not proven in the default 200k budget.
+- Found: face queries evaluated whole fields as unused arguments (since Phase 2); every segment now answers
+  planes first. Shipped examples' WGSL: end holes -25%, crank -22%, hobbed -12%, pinion -10%; turned,
+  threaded, blended +7-8% (crop). Fields unchanged.
+- Found: a library function cannot read a parameter's .box (internal error); section reach is unbounded.
+- Test edit with the owner's approval: envelope-holds-detail by sign (helical gear's field is a bound).
+
+Manual verification: none planned for this phase (no example); the owner chose to checkpoint.
+User confirmation: chose 'Checkpoint', the owner, 2026-11-20.
