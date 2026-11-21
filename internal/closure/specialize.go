@@ -68,7 +68,18 @@ func (t *transformer) specializeHigherOrderCall(file *program.PackageFile, enclo
 			hasFunctionArg = true
 			listArgs[paramName] = els
 			continue
-		} else if calleeFn != nil {
+		} else if t.paramFoldedDifferentiating(calleeFileOr(calleeFile, file), calleeFn, paramName, map[listParamKey]bool{}) {
+			// A list of fields the callee folds with a function that
+			// differentiates binds the same way: the property pass, which runs
+			// before folds over values are unrolled, needs each element as an
+			// argument it can see.
+			if els := t.foldElements(file, enclosingFn, arg); len(els) > 0 {
+				hasFunctionArg = true
+				listArgs[paramName] = els
+				continue
+			}
+		}
+		if calleeFn != nil {
 			scopeFile := calleeFile
 			if scopeFile == nil {
 				scopeFile = file

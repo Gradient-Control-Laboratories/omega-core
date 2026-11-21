@@ -39,6 +39,21 @@ func TestMapWhoseFunctionDifferentiatesIsTheCallsWrittenOut(t *testing.T) {
 			"u = intersectSharp(map((x, i) { return intersectSharp(map((y, j) { return intersectSharp(map((z, k) { return k > j && j > i ? cornerDistance(x, y, z, 3) : x; }, fs)); }, fs)); }, fs));\n",
 			"u = cornerDistance(a, b, c, 3);\n",
 		},
+		{
+			"a list passed to the function that folds it",
+			"g(f) { return f.dp.x; }\nh(fields) { return intersectSharp(map((x) { return g(x); }, fields)); }\nu = h([a, b]);\n",
+			"u = max(a.dp.x, b.dp.x);\n",
+		},
+		{
+			"a list passed down two calls to nested folds",
+			"pairs(fields, n) { return intersectSharp(map((x, i) { return intersectSharp(map((y, j) { return j > i ? edgeDistance(x, y, n) : x; }, fields)); }, fields)); }\nouter(fields) { return pairs(fields, 3); }\nu = outer([a, b, c]);\n",
+			"u = max(edgeDistance(a, b, 3), edgeDistance(a, c, 3), edgeDistance(b, c, 3));\n",
+		},
+		{
+			"a list named by a variable",
+			"pairs(fields) { return intersectSharp(map((x, i) { return intersectSharp(map((y, j) { return j > i ? edgeDistance(x, y, 3) : x; }, fields)); }, fields)); }\nu = pairs(fs);\n",
+			"u = max(edgeDistance(a, b, 3), edgeDistance(a, c, 3), edgeDistance(b, c, 3));\n",
+		},
 	}
 	xs, ys, zs := []float32{1.2, 2, 2.3, -0.4}, []float32{0.3, 0.1, 0.4, 1.1}, []float32{0.7, -0.4, 0.5, 0.2}
 	eval := func(t *testing.T, body string) [][4]float64 {

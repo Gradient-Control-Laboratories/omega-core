@@ -61,6 +61,20 @@ func (t *transformer) unrollFunctionFold(file *program.PackageFile, enclosingFn 
 				// as arguments, under the same names: the property pass follows a
 				// parameter to its argument, but not a name read from an enclosing
 				// function's scope.
+				// A list bound into the enclosing clone is not one of its
+				// parameters: the lambda folds it by the same binding.
+				for _, fg := range ft.Groups {
+					for _, cbFn := range fg.Functions {
+						for listName, els := range t.listBindings[enclosingFn] {
+							if functionReads(cbFn, listName) {
+								if t.listBindings[cbFn] == nil {
+									t.listBindings[cbFn] = map[string][]*program.Operand{}
+								}
+								t.listBindings[cbFn][listName] = cloneOperands(els)
+							}
+						}
+					}
+				}
 				extra = liftEnclosingReads(enclosingFn, ft)
 				// And it moves to the file's own functions: the property pass
 				// differentiates through a function declared at the top level of
