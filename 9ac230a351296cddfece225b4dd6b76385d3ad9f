@@ -1,0 +1,23 @@
+Phase 12 (Gears as Shafts) verification report
+
+Automated: tool/check.sh -> all quality checks passed (stdlib regenerated, gofmt, architecture invariants,
+vet, full Go suite).
+New: eval/gears_bevel_reference_test.go (2 tests), eval/shaft_bevel_test.go (8 tests).
+- Audit (independent references): face/root angles within 2.3e-4 rad of the equal-addendum standard taper
+  formulas (the arc m/R against atan(m/R)); outside diameter +4.7 um; apex to crown -2.4 um; tooth thickness
+  exact at both ends; profile within 2.3 um of the spherical involute at module 2 (held to 5 um). A
+  transmission-error sweep found none above 0.37 um and was dropped (47 s).
+- shaft.bevel equals gears.bevelGear where bevelGear's zero bore does not bind (0 difference); facing +Z is
+  the half turn; a pinion on a shaft end is solid across the joint, adds and loses no material, exact
+  outside; a straddle journal keeps the toe teeth; the box holds them; the envelope holds the gear and is
+  the tip cone outside; backlash thins by b/cos(alpha) on shaft.gear and shaft.bevel; bevelApexToCrown.
+- Every shipped shaft example's WGSL unchanged. Examples: gears 11,427 -> 18,961 B, bevel_gears 37,664 ->
+  43,222 B; both mesh with a steady clearance across a tooth (0.043, 0.088).
+- Found: a .box sees only names declared before its value; handed the raw want, a helper that tells the
+  envelope from the field itself leaves the box unbounded; named placed gears' part boxes (time and sliders
+  through rotation) took bevel_gears to 276,697 B, so they are returned unnamed.
+- Test edits with the owner's approval: `ref` is reserved; skip where bevelGear's zero bore binds; backlash
+  defined twice.
+
+Manual verification: the owner's viewer check of both examples on 9001.
+User confirmation: chose 'Looks right' and 'Checkpoint, no push', the owner, 2026-11-21.
