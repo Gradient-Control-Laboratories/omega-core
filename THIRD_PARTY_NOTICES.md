@@ -18,9 +18,12 @@ appendices at the end of this file.
 ### Fidget — MPL-2.0
 
 `internal/fidget/vendor/` (11 crates), from
-<https://github.com/mkeeter/fidget> by Matt Keeter, vendored at upstream commit
-`e329a898` **with local modifications** (for example the `MeshOracle` op in
-`fidget-core`, `fidget-jit` panicking on `MeshOracle`, and wasm `getrandom`
+<https://github.com/mkeeter/fidget> by Matt Keeter, vendored from our fork
+<https://github.com/Gradient-Control-Laboratories/fidget> (the commit is pinned
+in `internal/fidget/vendor/FIDGET_PIN`), which is upstream commit `1879743d`
+**with local modifications** (listed in the fork's `FORK.md`; for example the
+`MeshOracle` op in `fidget-core`, `fidget-jit` panicking on `MeshOracle`, mesher
+fixes in `fidget-mesh`, a GPU channel pass in `fidget-wgpu`, and wasm `getrandom`
 selection). Every file in these crates, including the modified ones, remains
 under MPL-2.0. The license text is `internal/fidget/vendor/LICENSE`.
 The MPL is file-level: it does not apply to this repository's own files.

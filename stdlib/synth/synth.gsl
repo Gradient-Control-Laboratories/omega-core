@@ -1,0 +1,234 @@
+/// Audio synthesis building blocks: oscillators, additive and modal synthesis,
+/// filters applied in the partial domain, envelopes, noise, panning and
+/// mixing. Everything is a pure function of time, as audio output requires:
+/// the program is evaluated afresh for every sample, so there is no state, no
+/// IIR filter and no running phase. Pitch changes are integrated in closed
+/// form, and an echo re-evaluates a signal at an earlier time. Sequencing is in
+/// synth/seq, drums in synth/drum and DX-style FM in synth/fm. Use qualified,
+/// e.g. synth.saw(synth.mtof(45), time).
+
+// Frequencies above this fade out of every additive sum (band-limiting), so
+// high notes don't alias. The fade runs from nyquistFade below it.
+nyquistLimit = 20000;
+nyquistFade = 2000;
+
+/// The rate (cells per second) of the white-noise source. noise() changes
+/// value every 1/noiseRate seconds; at 48 kHz playback every sample gets a
+/// fresh value, at 44.1 kHz a few cells are skipped (still white), at 96 kHz
+/// each value is held for two samples. The FIR filters below use it as their
+/// tap spacing.
+noiseRate = 48000;
+
+/// MIDI note number to frequency in Hz: 69 = A4 = 440 Hz, 60 = middle C.
+mtof(note) {
+  return 440 * exp2((note - 69) / 12);
+}
+
+/// Gain for a partial at frequency fk: 1 in the audible band, fading to 0
+/// approaching 20 kHz. Multiply additive partials by it to band-limit them.
+bandGain(fk) {
+  return clamp((nyquistLimit - fk) / nyquistFade, 0, 1);
+}
+
+/// Sine oscillator at f Hz: sin(tau * f * t).
+osc(f, t) {
+  return sin(tau * f * t);
+}
+
+// partialTerm is one band-limited partial: amp * sin(tau * fk * t).
+partialTerm(fk, amp, t) {
+  return amp * bandGain(fk) * sin(tau * fk * t);
+}
+
+// sum adds the elements of a list.
+sum(xs) {
+  return reduce(0, (acc, v) {
+    return acc + v;
+  }, xs);
+}
+
+/// Sum of harmonic partials: amps[k] is the amplitude of harmonic k + 1, so
+/// amps = [1, 0.5, 0.25] plays f, 2f and 3f. Partials near Nyquist are faded
+/// out. The list length is the partial count (fixed at compile time).
+additive(f, t, amps) {
+  return sum(map((a, k) {
+    return partialTerm(f * (k + 1), a, t);
+  }, amps));
+}
+
+/// Sum of arbitrary partials: each entry is [ratio, amp], a sine at f * ratio.
+/// Use for inharmonic spectra, or the prebuilt sawPartials / squarePartials /
+/// triPartials lists.
+partials(f, t, parts) {
+  return sum(map((pr) {
+    return partialTerm(f * pr.x, pr.y, t);
+  }, parts));
+}
+
+/// Partials passed through a filter in the partial domain: each [ratio, amp]
+/// partial is scaled by gainFn(frequency), the filter's magnitude response at
+/// that partial. Exact and stateless, so a filter sweep (a gainFn whose cutoff
+/// moves with t) is click-free. Pair with lowpass, highpass or bandpass.
+filtered(f, t, parts, gainFn) {
+  return sum(map((pr) {
+    return partialTerm(f * pr.x, pr.y * gainFn(f * pr.x), t);
+  }, parts));
+}
+
+/// Modal synthesis: each mode is [ratio, amp, decay], a sine at f * ratio whose
+/// amplitude decays as exp(-t / decay) seconds. Bells, bars, plates, metal.
+/// Silent for t < 0.
+modes(f, t, ms) {
+  return sum(map((m) {
+    return partialTerm(f * m.x, m.y * exp(-max(t, 0) / m.z), t);
+  }, ms)) * (t >= 0 ? 1 : 0);
+}
+
+/// 16 partials of a sawtooth (all harmonics, amplitude 1/k), scaled so the
+/// wave peaks near +-1. For partials() or filtered().
+sawPartials = [[1, 0.6366], [2, 0.3183], [3, 0.2122], [4, 0.1592],
+  [5, 0.1273], [6, 0.1061], [7, 0.0909], [8, 0.0796],
+  [9, 0.0707], [10, 0.0637], [11, 0.0579], [12, 0.0531],
+  [13, 0.0490], [14, 0.0455], [15, 0.0424], [16, 0.0398]];
+
+/// 12 partials of a square wave (odd harmonics, amplitude 1/k), scaled to
+/// peak near +-1.
+squarePartials = [[1, 1.2732], [3, 0.4244], [5, 0.2546], [7, 0.1819],
+  [9, 0.1415], [11, 0.1157], [13, 0.0979], [15, 0.0849],
+  [17, 0.0749], [19, 0.0670], [21, 0.0606], [23, 0.0554]];
+
+/// 6 partials of a triangle wave (odd harmonics, alternating sign, 1/k^2),
+/// scaled to peak near +-1. The partials fall off fast, so 6 is plenty.
+triPartials = [[1, 0.8106], [3, -0.0901], [5, 0.0324], [7, -0.0165],
+  [9, 0.0100], [11, -0.0067]];
+
+/// Band-limited sawtooth at f Hz (16 partials).
+saw(f, t) {
+  return partials(f, t, sawPartials);
+}
+
+/// Band-limited square wave at f Hz (12 odd partials).
+squareWave(f, t) {
+  return partials(f, t, squarePartials);
+}
+
+/// Band-limited triangle wave at f Hz (6 odd partials).
+tri(f, t) {
+  return partials(f, t, triPartials);
+}
+
+/// Resonant 2-pole low-pass, as a gain function for filtered(): the magnitude
+/// response at frequency fk for cutoff fc Hz and resonance q (0.707 = flat,
+/// higher = a peak at the cutoff).
+lowpass(fc, q) {
+  return (fk) {
+    r = fk / fc;
+    return 1 / sqrt(square(1 - r * r) + square(r / q));
+  };
+}
+
+/// Resonant 2-pole high-pass, as a gain function for filtered().
+highpass(fc, q) {
+  return (fk) {
+    r = fk / fc;
+    return r * r / sqrt(square(1 - r * r) + square(r / q));
+  };
+}
+
+/// 2-pole band-pass (unity gain at fc), as a gain function for filtered().
+/// Higher q is narrower.
+bandpass(fc, q) {
+  return (fk) {
+    r = fk / fc;
+    return (r / q) / sqrt(square(1 - r * r) + square(r / q));
+  };
+}
+
+/// Phase (radians) of an exponential glide from f0 to f1 Hz with time constant
+/// tc seconds, integrated in closed form so it stays click-free: the
+/// instantaneous frequency is f1 + (f0 - f1) * exp(-t / tc). Use as sin(glide(...)).
+/// Drum pitch drops and portamento.
+glide(f0, f1, tc, t) {
+  return tau * (f1 * t + (f0 - f1) * tc * (1 - exp(-t / tc)));
+}
+
+/// Phase (radians) of a sine vibrato on f Hz: rate in Hz, depth in cents.
+/// Integrated in closed form, so the pitch wobbles without clicks.
+vibrato(f, t, rate, cents) {
+  dev = f * (exp2(cents / 1200) - 1);
+  return tau * f * t + dev / rate * (1 - cos(tau * rate * t));
+}
+
+/// Exponential decay envelope: 1 at t = 0 falling as exp(-t / d), 0 for t < 0.
+decay(t, d) {
+  return t >= 0 ? exp(-t / d) : 0;
+}
+
+/// Attack-decay envelope: a linear rise over a seconds, then exponential decay
+/// with time constant d. 0 for t < 0.
+ad(t, a, d) {
+  rise = clamp(t / max(a, 0.00001), 0, 1);
+  fall = exp(-max(t - a, 0) / d);
+  return t >= 0 ? rise * fall : 0;
+}
+
+/// ADSR envelope for a note held for gate seconds: linear attack over a,
+/// exponential decay (time constant d) toward sustain level s, then after the
+/// gate an exponential release (time constant r) from wherever it got to.
+/// 0 for t < 0.
+adsr(t, gate, a, d, s, r) {
+  held = min(t, gate);
+  rise = clamp(held / max(a, 0.00001), 0, 1);
+  level = rise * (s + (1 - s) * exp(-max(held - a, 0) / d));
+  rel = exp(-max(t - gate, 0) / r);
+  return t >= 0 ? level * rel : 0;
+}
+
+/// White noise in [-1, 1], a new value every 1/noiseRate seconds. Built on the
+/// noiseHash3 tile (shared with the geometry noise), one lookup per value:
+/// the sample index walks all 64^3 cells of the tile, so the sequence repeats
+/// every 262144 values (about 5.5 s), too long to hear as a loop.
+noise(t) {
+  n = floor(t * noiseRate);
+  return noiseHash3([n, floor(n / 64), floor(n / 4096)], 1).x * 2 - 1;
+}
+
+/// High-passed white noise: the first difference of noise(), a +6 dB/octave
+/// tilt that leaves the hiss and drops the rumble. Snares, hats.
+noiseHP(t) {
+  return 0.5 * (noise(t) - noise(t - 1 / noiseRate));
+}
+
+/// Band-passed noise around fc Hz: a 9-tap Hann-windowed cosine FIR over
+/// noise(). The band is wide (about noiseRate / 9 Hz); claps, breaths, washes.
+noiseBP(t, fc) {
+  return sum(map((k) {
+    return (0.5 + 0.5 * cos(pi * k / 5)) * cos(tau * fc * k / noiseRate) * noise(t - k / noiseRate);
+  }, [-4, -3, -2, -1, 0, 1, 2, 3, 4])) * 0.4;
+}
+
+/// Equal-power pan: x placed at pos in [-1 (left), 1 (right)], returned as
+/// [left, right]. Sum panned tracks and pass .x and .y to audio().
+pan(x, pos) {
+  a = (clamp(pos, -1, 1) + 1) * pi / 4;
+  return [x * cos(a), x * sin(a)];
+}
+
+/// Soft clipper: tanh(x * drive). The output never leaves (-1, 1); quiet
+/// signals pass with gain drive, loud ones round off. Warmth on a voice
+/// (drive 1-3), or a master limiter before audio() (drive about 1).
+softclip(x, drive) {
+  return tanh(x * drive);
+}
+
+/// Decibels to linear gain: dbGain(-6) is about 0.5.
+dbGain(db) {
+  return exp2(db / 6.0206);
+}
+
+/// Echo: signal(t) plus three repeats delay seconds apart, each fb times the last.
+/// signal is any signal written as a function of time (scalar or [L, R]), so the
+/// echo re-evaluates it at earlier times; cost is 4 evaluations of signal.
+echo(signal, t, delay, fb) {
+  return signal(t) + signal(t - delay) * fb + signal(t - 2 * delay) * fb * fb + signal(t - 3 * delay) * fb * fb * fb;
+}
