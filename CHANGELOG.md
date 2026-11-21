@@ -48,6 +48,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   face and the box holds them. `shaft.gear(..., bottomEnd, topEnd, backlash)` thins the teeth for a running
   pair, and `gears.bevelApexToCrown` gives the distance the faces are placed from. The gear and bevel gear
   examples are now shafts.
+- `shaft.knurl(dia, pitch, pattern, from, to)`: an ISO 13444 knurl on a shaft, straight, left- or
+  right-hand, diamond with its points raised or sunk, or annular. The geometry is the blank, a plain
+  diameter; the teeth are a displacement height, `shaft.relief(segments)`, painted on where they are not
+  drawn, `shaft.paint(color, segments)`. `shaft.body(segments, finish)` applies both and the envelope as the
+  stand-in, as a fastener's finish does.
 - A `reduce` over a list of functions can take the element before this one as a fourth callback parameter,
   `reduce((acc, f, i, prev) { ... }, fs, seed)`; the first element is handed itself.
 
@@ -60,6 +65,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   document's WGSL is 56% smaller.
 - `shaft.body` and `shaft.envelope` no longer bridge their first segment to nothing, which evaluated it
   twice for no effect: every shaft's WGSL is 1 to 22% smaller, its field unchanged.
+- A colour or material built in a local with a stand-in or fine detail of its own (`t.simple`, `t.detail`)
+  and set on a part inside a function (`s.color = t`) keeps them out of the function, as one returned from a
+  function always did; before, the part's colour lost its stand-in and stayed textured with textures off.
 - PNG renders frame a part too thin to be sampled inside beside a thick one (a threaded shaft's thread
   went missing without `--extent`).
 - The viewer reaches its server through one module, `examples/viewer/host.js`; `host-static.js` answers the same

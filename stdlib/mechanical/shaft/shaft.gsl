@@ -265,6 +265,146 @@ envelope(segments, bottomHole, topHole) {
   return solid;
 }
 
+/// The relief of a shaft's segments as a displacement height, for
+/// material.withDisplacement: every knurl's teeth, at most zero, and nothing
+/// anywhere else. The geometry stays the blank, at its maximum material
+/// condition, for the mesher, export and proofs; the renderer alone moves the
+/// surface.
+///
+///   steelMat, steelColor = metal.steel();
+///   knob.material = material.withDisplacement(steelMat, shaft.relief(segments));
+relief(segments) {
+  // Cloned into the caller's file as body is. Each segment answers its height
+  // to want 10; one with no relief answers nothing, and min with the seed
+  // folds it away.
+  return reduce((h, seg) { return min(h, seg(0.0, 0.0, 10.0)); }, segments, 0.0);
+}
+
+/// The relief as paint on `baseColor`: darker toward the root as deep as the
+/// teeth go, wherever the renderer is not drawing them as displacement (a
+/// part small on screen, a mesh, an export), as thread.reliefColor paints a
+/// thread. Too small to resolve, it is `baseColor`.
+///
+///   knob.color = shaft.paint(steelColor, segments);
+paint(baseColor, segments) {
+  // Each segment answers minus the fraction of its depth here to want 11.
+  depth = clamp(neg(reduce((d, seg) { return min(d, seg(0.0, 0.0, 11.0)); }, segments, 0.0)), 0.0, 1.0);
+  painted = color.mixOklab(baseColor, baseColor * 0.35, depth * (1.0 - displacementDrawn()));
+  painted.simple = baseColor;
+  return painted;
+}
+
+/// The shaft FINISHED in `finish`, a material, as a fastener is: body's solid
+/// wearing `finish` with every knurl's teeth as its displacement
+/// (shaft.relief), steel painted with them wherever they are not drawn
+/// (shaft.paint), and its envelope, painted at full strength, as its
+/// stand-in. So detail gives way by itself as the part shrinks on screen:
+/// teeth, then paint, then the plain blank. Setting .color after the call
+/// replaces the paint.
+///
+///   steelMat, steelColor = metal.steel();
+///   knob = shaft.body([shaft.knurl(20.0, 1.0, shaft.knurlDiamond, 0.0, 15.0),
+///                      shaft.diameter(12.0, 15.0, 40.0)], steelMat);
+body(segments, finish) {
+  // Cloned into the caller's file, and written out in full, as body is: the
+  // fold, its box, then the relief and the envelope, which are folds too.
+  shaftSoFar = reduce((acc, seg, i, prev) {
+    openRuns = acc.y;
+    filletR = prev(0.0, 0.0, 6.0);
+    chamferC = prev(0.0, 0.0, 7.0);
+    here = filletR < 50000.0 ? unionRound(acc.x, seg(0.0, 0.0, 0.0), filletR)
+                             : (chamferC < 50000.0 ? unionChamfer(acc.x, seg(0.0, 0.0, 0.0), chamferC) : seg(0.0, 0.0, 0.0));
+    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, seg(100000.0, 0.0, 0.0))),
+            i < 0.5 ? seg(0.0, 100000.0, 0.0) : min(max(openRuns, seg(100000.0, 100000.0, 0.0)), seg(0.0, 100000.0, 0.0))];
+  }, segments, [100000.0, 100000.0]);
+  cuts = reduce((c, seg) { return min(c, seg(0.0, 0.0, 3.0)); }, segments, 100000.0);
+  bottomFace = reduce((low, seg) { return min(low, seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
+  topFace = reduce((high, seg) { return max(high, seg(0.0, 0.0, 2.0)); }, segments, -100000.0);
+  reach = reduce((r, seg) { return max(r, seg(0.0, 0.0, 5.0)); }, segments, 0.0);
+  extentLow = reduce((n, seg) { return min(n, seg(0.0, 0.0, 8.0)); }, segments, 100000.0);
+  extentHigh = reduce((n, seg) { return min(n, seg(0.0, 0.0, 9.0)); }, segments, 100000.0);
+  boxLow = reduce((below, seg) { return min(below, seg(0.0, 0.0, 8.0) < 50000.0 ? seg(0.0, 0.0, 8.0) : seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
+  boxHigh = reduce((above, seg) { return max(above, seg(0.0, 0.0, 9.0) < 50000.0 ? neg(seg(0.0, 0.0, 9.0)) : seg(0.0, 0.0, 2.0)); }, segments, -100000.0);
+  relief = reduce((h, seg) { return min(h, seg(0.0, 0.0, 10.0)); }, segments, 0.0);
+  depth = clamp(neg(reduce((d, seg) { return min(d, seg(0.0, 0.0, 11.0)); }, segments, 0.0)), 0.0, 1.0);
+  envelopeSoFar = reduce((acc, seg, i, prev) {
+    openRuns = acc.y;
+    filletR = prev(0.0, 0.0, 6.0);
+    chamferC = prev(0.0, 0.0, 7.0);
+    here = filletR < 50000.0 ? unionRound(acc.x, seg(0.0, 0.0, 4.0), filletR)
+                             : (chamferC < 50000.0 ? unionChamfer(acc.x, seg(0.0, 0.0, 4.0), chamferC) : seg(0.0, 0.0, 4.0));
+    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, seg(100000.0, 0.0, 4.0))),
+            i < 0.5 ? seg(0.0, 100000.0, 4.0) : min(max(openRuns, seg(100000.0, 100000.0, 4.0)), seg(0.0, 100000.0, 4.0))];
+  }, segments, [100000.0, 100000.0]);
+  steelMat, steelColor = metal.steel();
+  tint = color.mixOklab(steelColor, steelColor * 0.35, depth * (1.0 - displacementDrawn()));
+  tint.simple = steelColor;
+  standTint = color.mixOklab(steelColor, steelColor * 0.35, depth);
+  standTint.simple = steelColor;
+  stand = envelopeSoFar.x;
+  stand.color = standTint;
+  stand.box = [[neg(reach), neg(reach), extentLow < 50000.0 ? boxLow : bottomFace],
+               [reach, reach, extentHigh < 50000.0 ? boxHigh : topFace]];
+  solid = max(shaftSoFar.x, -cuts);
+  solid.box = [[neg(reach), neg(reach), extentLow < 50000.0 ? boxLow : bottomFace],
+               [reach, reach, extentHigh < 50000.0 ? boxHigh : topFace]];
+  solid.material = material.withDisplacement(finish, relief);
+  solid.color = tint;
+  solid.simple = stand;
+  return solid;
+}
+
+/// The shaft finished in `finish` with a hole stack cut into each end face,
+/// as body(segments, bottomHole, topHole) cuts them; its stand-in keeps them.
+body(segments, bottomHole, topHole, finish) {
+  shaftSoFar = reduce((acc, seg, i, prev) {
+    openRuns = acc.y;
+    filletR = prev(0.0, 0.0, 6.0);
+    chamferC = prev(0.0, 0.0, 7.0);
+    here = filletR < 50000.0 ? unionRound(acc.x, seg(0.0, 0.0, 0.0), filletR)
+                             : (chamferC < 50000.0 ? unionChamfer(acc.x, seg(0.0, 0.0, 0.0), chamferC) : seg(0.0, 0.0, 0.0));
+    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, seg(100000.0, 0.0, 0.0))),
+            i < 0.5 ? seg(0.0, 100000.0, 0.0) : min(max(openRuns, seg(100000.0, 100000.0, 0.0)), seg(0.0, 100000.0, 0.0))];
+  }, segments, [100000.0, 100000.0]);
+  cuts = reduce((c, seg) { return min(c, seg(0.0, 0.0, 3.0)); }, segments, 100000.0);
+  bottomFace = reduce((low, seg) { return min(low, seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
+  topFace = reduce((high, seg) { return max(high, seg(0.0, 0.0, 2.0)); }, segments, -100000.0);
+  topVoid = drill.hole(topHole, topFace);
+  bottomVoid = remap(drill.hole(bottomHole, 0.0), [p.x, -p.y, bottomFace - p.z]);
+  reach = reduce((r, seg) { return max(r, seg(0.0, 0.0, 5.0)); }, segments, 0.0);
+  extentLow = reduce((n, seg) { return min(n, seg(0.0, 0.0, 8.0)); }, segments, 100000.0);
+  extentHigh = reduce((n, seg) { return min(n, seg(0.0, 0.0, 9.0)); }, segments, 100000.0);
+  boxLow = reduce((below, seg) { return min(below, seg(0.0, 0.0, 8.0) < 50000.0 ? seg(0.0, 0.0, 8.0) : seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
+  boxHigh = reduce((above, seg) { return max(above, seg(0.0, 0.0, 9.0) < 50000.0 ? neg(seg(0.0, 0.0, 9.0)) : seg(0.0, 0.0, 2.0)); }, segments, -100000.0);
+  relief = reduce((h, seg) { return min(h, seg(0.0, 0.0, 10.0)); }, segments, 0.0);
+  depth = clamp(neg(reduce((d, seg) { return min(d, seg(0.0, 0.0, 11.0)); }, segments, 0.0)), 0.0, 1.0);
+  envelopeSoFar = reduce((acc, seg, i, prev) {
+    openRuns = acc.y;
+    filletR = prev(0.0, 0.0, 6.0);
+    chamferC = prev(0.0, 0.0, 7.0);
+    here = filletR < 50000.0 ? unionRound(acc.x, seg(0.0, 0.0, 4.0), filletR)
+                             : (chamferC < 50000.0 ? unionChamfer(acc.x, seg(0.0, 0.0, 4.0), chamferC) : seg(0.0, 0.0, 4.0));
+    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, seg(100000.0, 0.0, 4.0))),
+            i < 0.5 ? seg(0.0, 100000.0, 4.0) : min(max(openRuns, seg(100000.0, 100000.0, 4.0)), seg(0.0, 100000.0, 4.0))];
+  }, segments, [100000.0, 100000.0]);
+  steelMat, steelColor = metal.steel();
+  tint = color.mixOklab(steelColor, steelColor * 0.35, depth * (1.0 - displacementDrawn()));
+  tint.simple = steelColor;
+  standTint = color.mixOklab(steelColor, steelColor * 0.35, depth);
+  standTint.simple = steelColor;
+  stand = max(envelopeSoFar.x, -topVoid, -bottomVoid);
+  stand.color = standTint;
+  stand.box = [[neg(reach), neg(reach), extentLow < 50000.0 ? boxLow : bottomFace],
+               [reach, reach, extentHigh < 50000.0 ? boxHigh : topFace]];
+  solid = max(shaftSoFar.x, -cuts, -topVoid, -bottomVoid);
+  solid.box = [[neg(reach), neg(reach), extentLow < 50000.0 ? boxLow : bottomFace],
+               [reach, reach, extentHigh < 50000.0 ? boxHigh : topFace]];
+  solid.material = material.withDisplacement(finish, relief);
+  solid.color = tint;
+  solid.simple = stand;
+  return solid;
+}
+
 // =========================================================
 // Segments
 // =========================================================
@@ -486,7 +626,7 @@ bevel(numTeeth, mateTeeth, moduleVal, pressureAngle, shaftAngle, spiralAngle, fa
   // box analysis loses the closure's answers to every question then).
   seg(eDown, eUp, want) {
     return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
-         : (want > 4.5 ? (want > 5.5 && want < 7.5 ? nothing : bevelBoxAnswer(numTeeth, mateTeeth, moduleVal, shaftAngle, faceWidth, apex, from, to, want))
+         : (want > 4.5 ? (want > 9.5 || (want > 5.5 && want < 7.5) ? nothing : bevelBoxAnswer(numTeeth, mateTeeth, moduleVal, shaftAngle, faceWidth, apex, from, to, want))
                       : (want > 2.5 && want < 3.5 ? nothing
                                                   : bevelSegment(bevelTeethField(numTeeth, mateTeeth, moduleVal, pressureAngle, shaftAngle, spiralAngle, backlash, apex, to),
                                                                  numTeeth, mateTeeth, moduleVal, shaftAngle, faceWidth, apex, from, to, eDown, eUp,
@@ -527,6 +667,61 @@ thread(major, pitchVal, from, to, bottomEnd, topEnd) {
   }
   return seg;
 }
+
+/// A knurl rolled on a round `dia` across, from z = `from` to z = `to`: ISO
+/// 13444's 90-degree teeth `pitchVal` apart (0.5, 0.6, 0.8, 1.0, 1.2 or 1.6)
+/// and pitchVal / 2 deep, in a `pattern`: shaft.knurlStraight,
+/// knurlLeft, knurlRight, knurlDiamond, knurlDiamondSunk or knurlAnnular. The
+/// count of teeth round it is whole, round(pi dia / pitchVal), so the pattern
+/// closes on itself.
+///
+/// A KNURL IS A FINISH, as a fastener's thread is: the geometry is the blank,
+/// a plain diameter at its maximum material condition, which the mesher,
+/// export and every proof see, and the teeth are a displacement height only
+/// the renderer reads, with paint standing in for them wherever they are not
+/// drawn. shaft.body(segments, finish) applies both, and the envelope as the
+/// stand-in; shaft.relief and shaft.paint give them to a part built otherwise.
+/// The teeth run out over about a pitch inside each end plane, the way a
+/// rolled knurl does, and fade a tooth depth under the root, so a section cut
+/// shows no pattern pressed into its face.
+///
+///   shaft.knurl(20.0, 1.0, shaft.knurlDiamond, 0.0, 15.0)
+knurl(dia, pitchVal, pattern, from, to) {
+  seg(eDown, eUp, want) {
+    radial = length(p.xy) - dia / 2.0;
+    axial = max((from - eDown) - p.z, p.z - (to + eUp));
+    field = sqrt(max(radial, 0.0) * max(radial, 0.0) + max(axial, 0.0) * max(axial, 0.0)) + min(max(radial, axial), 0.0);
+    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
+         : (want > 9.5 ? (want > 11.5 ? nothing
+                                      : (want > 10.5 ? knurlHeight(dia, pitchVal, pattern, from, to) / (pitchVal / 2.0)
+                                                     : knurlHeight(dia, pitchVal, pattern, from, to)))
+         : (want > 4.5 ? (want > 5.5 ? nothing : dia / 2.0)
+                      : (want > 2.5 && want < 3.5 ? nothing : segmentAnswer(want > 3.5 ? 0.0 : want, field, from, to))));
+  }
+  return seg;
+}
+
+/// Straight knurl teeth, along the axis (ISO 13444 RAA): a pattern for
+/// shaft.knurl.
+knurlStraight = 1.0;
+
+/// A left-hand knurl (RBL): one set of teeth on a helix at 30 degrees to the
+/// axis, turning clockwise, seen from +Z, as it rises.
+knurlLeft = 2.0;
+
+/// A right-hand knurl (RBR): teeth on a helix at 30 degrees to the axis,
+/// turning counterclockwise, seen from +Z, as it rises.
+knurlRight = 3.0;
+
+/// A diamond knurl with its points raised (RGE): both helices crossed.
+knurlDiamond = 4.0;
+
+/// A diamond knurl with its points sunk (RGV): both helices crossed, the
+/// diamonds pressed in.
+knurlDiamondSunk = 5.0;
+
+/// Annular knurl rings round the axis, `pitchVal` apart along it.
+knurlAnnular = 6.0;
 
 // =========================================================
 // Joints
@@ -611,6 +806,41 @@ prismSegment(sectionField, from, to, eDown, eUp, want) {
 // at that slope: its position, clamped to the segment, is t below. Within it
 // the distance is to a tangent line, beyond either end to that end's circle:
 // the two-circle hull's closed form, with clamp in place of branches.
+// A 90-degree knurl tooth's profile, 0 on its crest and -0.5 at its root, in
+// pitches, u pitches along: material/process/machined's tooth.
+knurlTooth(u) {
+  return neg(abs(u - floor(u) - 0.5));
+}
+
+// A knurl's teeth as a displacement height in the shaft's frame. Round the
+// axis a point is `around` teeth along, along it `along` pitches; a helix at
+// 30 degrees to the axis advances tan(30) of a tooth round it for each pitch
+// along it, so a right-hand one turns counterclockwise, seen from +Z, as it
+// rises. The ternaries choose between patterns, which are constants. The
+// bounds are thread.maleRelief's: zero on and beyond the end planes and the
+// cylinder a tooth depth outside the blank, rising half as fast as the
+// distance inside them (at a rate of one the height would cancel the end
+// face's own distance and leave a slab of exact zero), and zero a tooth depth
+// under the root, rising toward it at the full rate. A root, where the
+// renderer reads the height a tooth depth inside the blank, is bound by
+// neither.
+knurlHeight(dia, pitchVal, pattern, from, to) {
+  teeth = floor(pi * dia / pitchVal + 0.5);
+  around = atan(p.y, p.x) / (2.0 * pi) * teeth;
+  along = p.z / pitchVal;
+  left = knurlTooth(around + 0.57735026918962576 * along);
+  right = knurlTooth(around - 0.57735026918962576 * along);
+  tooth = pattern < 1.5 ? knurlTooth(around)
+        : (pattern < 2.5 ? left
+        : (pattern < 3.5 ? right
+        : (pattern < 4.5 ? min(left, right)
+        : (pattern < 5.5 ? max(left, right) : knurlTooth(along)))));
+  depth = pitchVal / 2.0;
+  r = length(p.xy);
+  runout = max(0.0, 0.5 * min(to - p.z, p.z - from, dia / 2.0 + depth - r));
+  return neg(min(neg(tooth) * pitchVal, runout, max(0.0, r - (dia / 2.0 - 2.0 * depth))));
+}
+
 webSection(mainR, pinR, offset, angle) {
   c = cos(angle);
   s = sin(angle);
