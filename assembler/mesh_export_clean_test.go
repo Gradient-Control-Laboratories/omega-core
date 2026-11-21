@@ -150,4 +150,3 @@ return solid, meshOut;
 		t.Error("expected mesh plan to capture placed mesh")
 	}
 }
-

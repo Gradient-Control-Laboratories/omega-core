@@ -382,8 +382,11 @@ const tintCache = new Map();       // "file|surface|#rrggbb" -> data URL
 // loadBasis fetches a basis file — the finishes' (finishBasis) or the coats'
 // (coatBasis, the presets with one colour parameter, drawn in an adjusted
 // body's coat colour) — with the sheet for the ground around each sphere.
+//
+// A read-only host (a page `gsl export` wrote) does not carry the basis files,
+// which are for picking materials, so there every swatch stays as rendered.
 function loadBasis(desc) {
-    if (!desc) return Promise.resolve(null);
+    if (!desc || deps.readOnly) return Promise.resolve(null);
     if (!basisPromises.has(desc.file)) {
         basisPromises.set(desc.file, Promise.all([
             fetch(new URL(`../materials/${desc.file}`, import.meta.url)).then((r) => r.arrayBuffer()),
