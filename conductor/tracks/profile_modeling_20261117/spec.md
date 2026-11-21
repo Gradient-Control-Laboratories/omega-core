@@ -86,6 +86,45 @@ Profiles first, then the operations on them. The numbering is the order.
    (`bezierQuadPointRound` in `stdlib/builtin/quad_bezier_curves.gsl`, Quilez's closed-form cubic solve);
    the 2D case is simpler. A profile edge can be a line, an arc or a quadratic Bezier, and the profile stays
    exact. Higher-order splines are not in this track.
+
+   Decided 2026-11-18 (taken after C4 and C5): an edge is named by a descriptor, `edgeLine()`,
+   `edgeArc(curvature)` or `edgeBezier(control)`, and a profile of mixed edges is `profileEdgesXY(points,
+   edges)`, one descriptor per edge; a name of its own, since overloads are told apart by arity alone and
+   `profileXY` already takes two and three arguments. Open chains too: `openProfileEdgesXY(points, edges)`
+   and `sweepOpenEdges(section, points, edges)`, one descriptor per edge (one fewer than the points).
+   Corners on these forms, and corners next to a Bezier, come later. A Bezier edge joins the three pools as
+   an arc does: its distance is the least over the cubic solve's candidate parameters, each clamped to the
+   edge and each a point on it, with its two ends, so no select chooses among them; its side is the sign
+   of the implicit parabola it lies on, F(q) = D (g x q) - (q x f)^2 with g = 2 (control - start),
+   f = start - 2 control + end, D = g x f and q = p - start, or the chord's side where D vanishes (a choice
+   made by the points alone, so exact over any cell); it is held off past its ends by twice the overshoot,
+   or gated by its parameter, whichever the reference and surface cells bear out. `.u` along it is its arc
+   length, in closed form; its box takes the hull of its points and control.
+
+   Found 2026-11-18 while building it. The overshoot penalty is not valid for a Bezier as it is for an arc:
+   on its concave side the normals meet, and a point before an end normal can still be nearest a point
+   within the edge (the mixed loop's, 0.94 mm off with the penalty in all three pools). Gating by "a point
+   within the edge is nearer than both its ends" is exact, but where an end is nearest it compares two equal
+   quantities, so no interval decides it, and certify failed everywhere. Kept: the penalty in the two sided
+   pools only, the nearest pool taking the distance itself, so the magnitude is always exact and the sign
+   exact on every reference. Over a cell the cubic's roots can span the edge, so its distance is helped
+   without changing a value: three fixed points of the edge (t = 1/4, 1/2, 3/4) bound it above, and the
+   triangle of its points and control below; the trigonometric root's divisor is held below zero, which
+   ended a NaN in intervals. `.u` takes one Newton step on the root, which float32 gives to a part in ten
+   thousand. Certify proves the test loops in the default budget; surface cells on a curved Bezier reach
+   5.93 diagonals, allowed 6 by the owner (lines and arcs keep 4).
+
+   Found by the owner in the viewer, the same day: the side from the parabola's sign was wrong. Past the edge
+   the parabola swings back, and where the control polygon turns sharply its other arm passes between the
+   edge and points near it, so the sign flipped inside the example's plate (24 mm off; the test loops had
+   not had so tight an edge). The side is now the edge's own: concave where p is across the chord from the
+   control, or within the triangle of the points and control and inside the parabola, which within the
+   triangle is sound, since the edge leaves it along two of its sides. The plate is now a test loop. Each
+   candidate root also takes one Newton step (float32 left 3e-4 mm on the tight edge), the roots as solved
+   kept beside the stepped ones so the bounds do not widen. Its cells reach 9.18 diagonals; the owner set
+   the limit for curved Beziers to 10. Two WGSL-only failures the CPU tests could not see, both found by
+   compiling the example: a list indexed through a parameter (not a constant in WGSL), and an `||` mixed
+   with `&&`, whose brackets the codegen drops and WGSL refuses.
 4. **C7. Tighter arc (and Bezier) boxes.** The arc profile's box is the points' box padded by
    `min(span / 2, span^2 * maxCurvature / 4)`: sound, but loose, because a `.box` could not hold the reduce
    an exact box needs (see section 5).
