@@ -50,6 +50,11 @@ func TestMapWhoseFunctionDifferentiatesIsTheCallsWrittenOut(t *testing.T) {
 			"u = max(edgeDistance(a, b, 3), edgeDistance(a, c, 3), edgeDistance(b, c, 3));\n",
 		},
 		{
+			"a list of a function's own locals, folded two calls down",
+			"pairs(fields) { return intersectSharp(map((x, i) { return intersectSharp(map((y, j) { return j > i ? edgeDistance(x, y, 3) : x; }, fields)); }, fields)); }\nslabs(q) { d = abs(p - q) - [1, 2, 3]; return pairs([d.x, d.y, d.z]); }\nu = slabs([0.5, 0, 0]);\n",
+			"slabs(q) { d = abs(p - q) - [1, 2, 3]; return max(edgeDistance(d.x, d.y, 3), edgeDistance(d.x, d.z, 3), edgeDistance(d.y, d.z, 3)); }\nu = slabs([0.5, 0, 0]);\n",
+		},
+		{
 			"a list named by a variable",
 			"pairs(fields) { return intersectSharp(map((x, i) { return intersectSharp(map((y, j) { return j > i ? edgeDistance(x, y, 3) : x; }, fields)); }, fields)); }\nu = pairs(fs);\n",
 			"u = max(edgeDistance(a, b, 3), edgeDistance(a, c, 3), edgeDistance(b, c, 3));\n",

@@ -28,7 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   cannot build eight. A seam or corner point is accepted only where the fields vanish at it and the faces
   make an edge (normals more than about 0.6 degrees from parallel) or a corner (normals not near coplanar).
   `intersectRoundExact(radius)`, `intersectRoundExactSteps(radius, steps)` and their union duals bind the
-  radius and return the operator, to hand a primitive that blends two fields, as `extrude` does.
+  radius and return the operator over a list of any length, to hand a primitive that takes its own blend:
+  `extrude` blends two fields, `box` and `boxCentered` three.
   `edgeDistance`, `cornerDistance`, `intersectDistance`, `offsetIntersectDistance`, `edgeProject`,
   `edgeNewtonStep`, `cornerNewtonStep` and the `...From` and `...Verdict` arithmetic they share are their
   parts. `examples/ball_and_post.gsl` shows them.

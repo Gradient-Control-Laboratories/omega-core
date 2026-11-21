@@ -299,3 +299,33 @@ func TestIntersectDistanceList_FoldedOctahedron(t *testing.T) {
 		}
 	}
 }
+
+// The partial form takes a list of any length: boxCentered hands its blend its three slabs, and
+// the box rounded by intersectRoundExact(r) is the box's opening, its edges cylinders and its
+// corners balls. (It once took the first two fields only, and the box lost its third pair of faces.)
+func TestIntersectRoundExactPartialFormTakesABoxsThreeSlabs(t *testing.T) {
+	rng := rand.New(rand.NewPCG(23, 24))
+	half := [3]float64{8, 11, 16.5}
+	r := 5.0
+	var xs, ys, zs []float32
+	var want []float64
+	for range 400 {
+		p := [3]float64{24 * (2*rng.Float64() - 1), 24 * (2*rng.Float64() - 1), 24 * (2*rng.Float64() - 1)}
+		xs, ys, zs = append(xs, float32(p[0])), append(ys, float32(p[1])), append(zs, float32(p[2]))
+		inside, out := math.Inf(-1), 0.0
+		for k := range 3 {
+			q := math.Abs(p[k]) - (half[k] - r)
+			inside = math.Max(inside, q)
+			out += math.Max(q, 0) * math.Max(q, 0)
+		}
+		if inside <= 0 {
+			want = append(want, inside-r)
+		} else {
+			want = append(want, math.Sqrt(out)-r)
+		}
+	}
+	got := evalRound(t, assembleRound(t, "import . \"omega\";\nbox = boxCentered(vector.zero, [16, 22, 33], intersectRoundExact(5));\nreturn box;\n"), xs, ys, zs)
+	if worst := maxAbsError(got, want); worst > 2e-5 {
+		t.Errorf("boxCentered with intersectRoundExact(5): worst error %.2e", worst)
+	}
+}

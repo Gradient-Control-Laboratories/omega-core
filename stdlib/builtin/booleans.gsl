@@ -977,10 +977,10 @@ intersectRoundExactSteps(fields, radius, steps) {
 }
 
 /// Partial application of intersectRoundExactSteps: binds the fillet radius
-/// and step count and returns the intersection operator over a list of two
-/// fields, ready to hand to a primitive that takes its own blend.
+/// and step count and returns the intersection operator over a list of
+/// fields of any length, ready to hand to a primitive that takes its own blend.
 intersectRoundExactSteps(radius, steps) {
-  return (fields) { return intersectRoundExactSteps(fields[0], fields[1], radius, steps); };
+  return (fields) { return intersectRoundExactSteps(fields, radius, steps); };
 }
 
 /// intersectRoundExactSteps(field1, field2, radius, 4).
@@ -999,11 +999,11 @@ intersectRoundExact(fields, radius) {
 }
 
 /// Partial application of intersectRoundExact: binds the fillet radius and
-/// returns the intersection operator over a list of two fields, ready to hand
-/// to a primitive that takes its own blend, as extrude does its profile and its
-/// slab.
+/// returns the intersection operator over a list of fields of any length,
+/// ready to hand to a primitive that takes its own blend: extrude blends its
+/// profile and its slab, box and boxCentered their three slabs.
 intersectRoundExact(radius) {
-  return (fields) { return intersectRoundExact(fields[0], fields[1], radius); };
+  return (fields) { return intersectRoundExact(fields, radius); };
 }
 
 /// Exact rounded union of two fields with fillet `radius`, for faces that may
@@ -1027,9 +1027,10 @@ unionRoundExactSteps(fields, radius, steps) {
   return neg(offsetIntersectDistance(fields, -1, radius, steps) - radius);
 }
 
-/// Partial application of unionRoundExactSteps over a list of two fields.
+/// Partial application of unionRoundExactSteps over a list of fields of any
+/// length.
 unionRoundExactSteps(radius, steps) {
-  return (fields) { return unionRoundExactSteps(fields[0], fields[1], radius, steps); };
+  return (fields) { return unionRoundExactSteps(fields, radius, steps); };
 }
 
 /// unionRoundExactSteps(field1, field2, radius, 4).
@@ -1048,9 +1049,9 @@ unionRoundExact(fields, radius) {
 }
 
 /// Partial application of unionRoundExact: binds the fillet radius and returns
-/// the union operator over a list of two fields.
+/// the union operator over a list of fields of any length.
 unionRoundExact(radius) {
-  return (fields) { return unionRoundExact(fields[0], fields[1], radius); };
+  return (fields) { return unionRoundExact(fields, radius); };
 }
 
 /// Rvachev R0 intersection of a list of SDFs, gated to a transition band of

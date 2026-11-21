@@ -99,11 +99,11 @@ func (t *transformer) operandDifferentiates(file *program.PackageFile, fn *progr
 }
 
 // liftEnclosingReads gives each function of ft the names it reads (in its body
-// or its nested functions' bodies) that are enclosingFn's parameters or locals
-// and not its own, as trailing parameters of the same names, and returns those
+// or its nested functions' bodies, or in the carried elements of lists bound to
+// it) that are enclosingFn's parameters or locals and not its own, as trailing parameters of the same names, and returns those
 // names in order: the caller passes them as arguments. A top-level fold
 // (enclosingFn nil) reads only package names, which need nothing.
-func liftEnclosingReads(enclosingFn *program.Function, ft *program.FnType) []string {
+func liftEnclosingReads(enclosingFn *program.Function, ft *program.FnType, carried []*program.Operand) []string {
 	if enclosingFn == nil || ft == nil {
 		return nil
 	}
@@ -185,6 +185,9 @@ func liftEnclosingReads(enclosingFn *program.Function, ft *program.FnType) []str
 				}
 			}
 			walk(fn)
+			for _, el := range carried {
+				read(el)
+			}
 			for _, n := range names {
 				fn.Parameters = append(fn.Parameters, &program.Parameter{Name: n})
 			}
