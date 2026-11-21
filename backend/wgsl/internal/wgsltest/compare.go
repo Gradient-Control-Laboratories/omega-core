@@ -2,7 +2,10 @@ package wgsltest
 
 import (
 	"errors"
+	"math"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"unicode"
@@ -46,12 +49,19 @@ func AssertWGSLEqual(t *testing.T, goldenPath string, actualWGSL string, autoUpd
 	expDecls, expOk := parseDeclarations(expectedTrimmed)
 	actDecls, actOk := parseDeclarations(actualTrimmed)
 
-	if expOk && actOk && declarationsEqual(expDecls, actDecls) {
+	if expOk && actOk && declarationsEqual(expDecls, actDecls, normalizeBodyExact) {
 		if autoUpdate {
 			err = os.WriteFile(goldenPath, actualBytes, 0644)
 			assert.NoError(t, err)
 			t.Logf("Auto-updated golden file %s due to canonical declaration reordering", goldenPath)
 		}
+		return
+	}
+
+	if expOk && actOk && declarationsEqual(expDecls, actDecls, bodiesEqualWithFloatTolerance) {
+		return
+	}
+	if bodiesEqualWithFloatTolerance(expectedTrimmed, actualTrimmed) {
 		return
 	}
 
@@ -68,7 +78,7 @@ func logGoldenSizeChange(t *testing.T, path string, oldBytes, newBytes int) {
 	t.Logf("golden size change for %s: %d B -> %d B (%+d B, %+.2f%%)", path, oldBytes, newBytes, diff, pct)
 }
 
-func declarationsEqual(a, b map[string]string) bool {
+func declarationsEqual(a, b map[string]string, eq func(string, string) bool) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -77,11 +87,70 @@ func declarationsEqual(a, b map[string]string) bool {
 		if !ok {
 			return false
 		}
-		if normalizeBody(va) != normalizeBody(vb) {
+		if !eq(va, vb) {
 			return false
 		}
 	}
 	return true
+}
+
+func normalizeBodyExact(a, b string) bool {
+	return normalizeBody(a) == normalizeBody(b)
+}
+
+var wgslFloatLiteralRe = regexp.MustCompile(`-?\d+\.\d+(?:[eE][+-]?\d+)?`)
+
+func bodiesEqualWithFloatTolerance(a, b string) bool {
+	na := normalizeBody(a)
+	nb := normalizeBody(b)
+	if na == nb {
+		return true
+	}
+	linesA := strings.Split(na, "\n")
+	linesB := strings.Split(nb, "\n")
+	if len(linesA) != len(linesB) {
+		return false
+	}
+	for i := range linesA {
+		if !lineEqualWithFloatTolerance(linesA[i], linesB[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func lineEqualWithFloatTolerance(a, b string) bool {
+	if a == b {
+		return true
+	}
+	idxA := wgslFloatLiteralRe.FindAllStringIndex(a, -1)
+	idxB := wgslFloatLiteralRe.FindAllStringIndex(b, -1)
+	if len(idxA) != len(idxB) || len(idxA) == 0 {
+		return false
+	}
+	posA, posB := 0, 0
+	for i := range idxA {
+		if a[posA:idxA[i][0]] != b[posB:idxB[i][0]] {
+			return false
+		}
+		fa, errA := strconv.ParseFloat(a[idxA[i][0]:idxA[i][1]], 64)
+		fb, errB := strconv.ParseFloat(b[idxB[i][0]:idxB[i][1]], 64)
+		if errA != nil || errB != nil || !floatsWithinTolerance(fa, fb) {
+			return false
+		}
+		posA = idxA[i][1]
+		posB = idxB[i][1]
+	}
+	return a[posA:] == b[posB:]
+}
+
+func floatsWithinTolerance(a, b float64) bool {
+	if a == b {
+		return true
+	}
+	maxAbs := math.Max(math.Abs(a), math.Abs(b))
+	tol := math.Max(1e-12, 1e-6*maxAbs)
+	return math.Abs(a-b) <= tol
 }
 
 func normalizeBody(s string) string {

@@ -429,6 +429,21 @@ func extractElementsWithVisited(
 	return nil
 }
 
+// searchFnTypesShallow is searchFnTypes without descending into the functions
+// nested inside fnTypes.
+func searchFnTypesShallow(fnTypes []*program.FnType, targetName, name string) (int, bool) {
+	for _, ft := range fnTypes {
+		if ft != nil && (ft.Name == targetName || ft.Name == name) {
+			for _, g := range ft.Groups {
+				if len(g.Functions) > 0 {
+					return len(g.Functions[0].Parameters), true
+				}
+			}
+		}
+	}
+	return 0, false
+}
+
 func searchFnTypes(fnTypes []*program.FnType, targetName, name string) (int, bool) {
 	for _, ft := range fnTypes {
 		if ft != nil && (ft.Name == targetName || ft.Name == name) {
@@ -502,6 +517,31 @@ func resolveFnArity(
 		}
 		if fnOp.Type.PkgPath != "" {
 			targetPrefix = fnOp.Type.PkgPath
+		}
+	}
+
+	// 0. A function declared at one of the visible levels (an enclosing
+	// function, this file, this package) wins over one nested inside some
+	// other function: hoisted lambdas are all named gsl_anon in their own
+	// scope, so the deep search below can otherwise find another function's
+	// private lambda first and take its parameter count.
+	for i := len(fnStack) - 1; i >= 0; i-- {
+		if fn := fnStack[i]; fn != nil {
+			if arity, ok := searchFnTypesShallow(fn.FnTypes, targetName, name); ok {
+				return prefix, name, arity
+			}
+		}
+	}
+	if file != nil {
+		if arity, ok := searchFnTypesShallow(file.FnTypes, targetName, name); ok {
+			return prefix, name, arity
+		}
+	}
+	if pkg != nil {
+		for _, f := range pkg.Files {
+			if arity, ok := searchFnTypesShallow(f.FnTypes, targetName, name); ok {
+				return prefix, name, arity
+			}
 		}
 	}
 

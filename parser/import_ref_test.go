@@ -52,4 +52,3 @@ func TestImportRefExpressionLowers(t *testing.T) {
 		t.Fatalf("legacy StepImports = %+v", pkg2.Files[0].StepImports)
 	}
 }
-

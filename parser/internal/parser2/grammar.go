@@ -7,6 +7,8 @@ import (
 
 type TopLevel struct {
 	Scene        *SceneDirective
+	Duration     *DurationDirective
+	Captions     []*CaptionDirective
 	Imports      []*Import     // `parser:"@@*"`
 	MeshImports  []*MeshImport // `parser:"@@*"`
 	StepImports  []*StepImport // `parser:"@@*"`
@@ -20,6 +22,12 @@ type SceneDirective struct {
 	Size   float64
 	Grid   *float64
 	EndPos lexer.Position
+}
+
+type DurationDirective struct {
+	Pos     lexer.Position
+	Seconds float64
+	EndPos  lexer.Position
 }
 
 type Imports struct {

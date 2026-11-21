@@ -91,4 +91,3 @@ func resolvePath(p string) string {
 
 	return p
 }
-
