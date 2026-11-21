@@ -530,7 +530,7 @@ func TestBearing_BearingsExampleCompilesToWGSL(t *testing.T) {
 		t.Fatalf("shader: %v", err)
 	}
 	t.Logf("examples/shaft_bearings.gsl: %d bytes of WGSL", len(res.Code))
-	groups, err := e.EvalGsl(t.Context(), nil, string(src), "", []string{"bearingShaft", "bearings", "bush"},
+	groups, err := e.EvalGsl(t.Context(), nil, string(src), "", []string{"bearingShaft", "leftBearing", "bush"},
 		[][3]float64{{0, 0, 50}, {19.25, 0, 17.5}, {10.7, 0, 115}, {0, 0, 130}})
 	if err != nil {
 		t.Fatalf("eval: %v", err)

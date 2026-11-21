@@ -35,14 +35,15 @@ bearingShaft.color = [0.58, 0.60, 0.64];
 
 leftBearing = detail > 0.5 ? bearing.deepGroove(6205.0, leftFace) : bearing.deepGrooveEnvelope(6205.0, leftFace);
 rightBearing = detail > 0.5 ? bearing.deepGroove(6205.0, rightFace) : bearing.deepGrooveEnvelope(6205.0, rightFace);
-bearings = min(leftBearing, rightBearing);
-bearings.color = [0.42, 0.50, 0.62];
+leftBearing.color = [0.42, 0.50, 0.62];
+rightBearing.color = [0.42, 0.50, 0.62];
 
 bush = bearing.flangedBushing(20.0, 1.0, 20.0, 105.0);
 bush.color = [0.72, 0.52, 0.28];
 
 // Laid along X and centred, so the viewer frames the whole shaft.
 laidShaft = transform.translate(transform.rotateY(bearingShaft, neg(pi) / 2.0), [62.5, 0.0, 0.0]);
-laidBearings = transform.translate(transform.rotateY(bearings, neg(pi) / 2.0), [62.5, 0.0, 0.0]);
+laidLeftBearing = transform.translate(transform.rotateY(leftBearing, neg(pi) / 2.0), [62.5, 0.0, 0.0]);
+laidRightBearing = transform.translate(transform.rotateY(rightBearing, neg(pi) / 2.0), [62.5, 0.0, 0.0]);
 laidBush = transform.translate(transform.rotateY(bush, neg(pi) / 2.0), [62.5, 0.0, 0.0]);
-return laidShaft, laidBearings, laidBush;
+return laidShaft, laidLeftBearing, laidRightBearing, laidBush;
