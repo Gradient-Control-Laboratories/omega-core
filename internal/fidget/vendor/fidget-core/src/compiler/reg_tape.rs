@@ -14,6 +14,10 @@ pub struct RegTape {
     /// This is a continuous space of registers (`0..N`) and memory (`N..`),
     /// where `N` is the parameter in [`RegTape::new`].
     pub(super) slot_count: u32,
+
+    /// Asset ids of the mesh oracles this tape calls, indexed by the slot a
+    /// [`RegOp::MeshOracle`] carries
+    oracle_assets: Vec<u32>,
 }
 
 impl RegTape {
@@ -65,6 +69,7 @@ impl RegTape {
         Self {
             tape: vec![],
             slot_count: 0,
+            oracle_assets: vec![],
         }
     }
 
@@ -72,6 +77,28 @@ impl RegTape {
     pub fn reset(&mut self) {
         self.tape.clear();
         self.slot_count = 0;
+        self.oracle_assets.clear();
+    }
+
+    /// Returns the asset id of the mesh oracle in the given slot
+    #[inline]
+    pub fn oracle_asset(&self, slot: u16) -> u32 {
+        self.oracle_assets[slot as usize]
+    }
+
+    /// Returns the slot holding the given asset id, adding it if needed
+    ///
+    /// # Panics
+    /// If the tape already calls 65536 distinct oracles
+    pub(crate) fn oracle_slot(&mut self, asset_id: u32) -> u16 {
+        let i = match self.oracle_assets.iter().position(|&a| a == asset_id) {
+            Some(i) => i,
+            None => {
+                self.oracle_assets.push(asset_id);
+                self.oracle_assets.len() - 1
+            }
+        };
+        u16::try_from(i).expect("more than 65536 mesh oracles in one tape")
     }
 
     /// Returns the number of unique register and memory locations that are used

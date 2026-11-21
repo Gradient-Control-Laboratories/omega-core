@@ -16,16 +16,21 @@ members = [
     "internal/fidget/vendor/fidget-shapes",
     "internal/fidget/vendor/fidget-solver",
     "internal/fidget/vendor/fidget-wgpu",
+    "internal/fidget/vendor/workspace-hack",
 ]
 
-# All of fidget is vendored from mkeeter/fidget@e329a898 (unreleased 0.5.1,
-# which carries the all-GPU fidget-wgpu pipeline), so every fidget crate comes
-# from one revision. Four of them are our forks:
+# All of fidget is vendored from our fork, Gradient-Control-Laboratories/fidget
+# (the commit is pinned in internal/fidget/vendor/FIDGET_PIN, and the fork's
+# FORK.md lists what it changes), so every fidget crate comes from one revision
+# of mkeeter/fidget, including the all-GPU fidget-wgpu pipeline. Five of them
+# are changed in the fork:
 # fidget-core adds the Op::MeshOracle leaf for bvhSdf()/vdbSdf() integration,
 # the bytecode/jit backends add a match arm that panics on MeshOracle
-# (programs containing one must use the VM evaluator), and fidget-mesh
+# (programs containing one must use the VM evaluator), fidget-mesh
 # adds a per-mille progress callback to Settings so callers
-# can drive a live progress bar during Octree::build / walk_dual.
+# can drive a live progress bar during Octree::build / walk_dual, along with
+# fixes to its dual-contouring output, and fidget-wgpu adds a channel pass
+# (N unclamped floats per pixel).
 [patch.crates-io]
 fidget = { path = "internal/fidget/vendor/fidget" }
 fidget-core = { path = "internal/fidget/vendor/fidget-core" }

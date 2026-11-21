@@ -82,7 +82,7 @@ func TestBoundingBoxLibraryDeclared(t *testing.T) {
 	const hair = 2e-3 // less than pad, so a proof covers the crop
 	ctx := context.Background()
 
-	bare := eval.New(source.NewLocalManager(undeclaredPackages(t)), nil)
+	undeclaredDir := undeclaredPackages(t)
 	declared := eval.New(source.NewLocalManager(packageRoot), nil)
 
 	code := `
@@ -203,71 +203,70 @@ return sphere(1);
 	boxes := boxEval(t, declared, code, exprs)
 	for i, expr := range exprs {
 		bx := boxes[i]
-		var box [6]float64
-		for k := 0; k < 3; k++ {
-			box[k], box[k+3] = bx[k]+pad, bx[k+3]-pad
-		}
-		size := 0.0
-		for k := 0; k < 3; k++ {
-			if !finiteAxis(box[k]) || !finiteAxis(box[k+3]) {
-				t.Errorf("%s: declared box %v is unbounded", expr, bx)
-				size = -1
-				break
+		t.Run(expr, func(t *testing.T) {
+			t.Parallel()
+			bare := eval.New(source.NewLocalManager(undeclaredDir), nil)
+			var box [6]float64
+			for k := 0; k < 3; k++ {
+				box[k], box[k+3] = bx[k]+pad, bx[k+3]-pad
 			}
-			size = math.Max(size, box[k+3]-box[k])
-		}
-		if size < 0 {
-			continue
-		}
-		reach := size + 5
-		var region [6]float64
-		for k := 0; k < 3; k++ {
-			region[k], region[k+3] = box[k]-reach, box[k+3]+reach
-		}
-		for k := 0; k < 3; k++ {
-			band := 0.05*(box[k+3]-box[k]) + 0.05
-			for side := 0; side < 2; side++ {
-				// Outside this face: no material.
-				out := region
-				in := box
-				if side == 0 {
-					out[k+3] = box[k] - hair
-					in[k+3] = box[k] + band
-				} else {
-					out[k] = box[k+3] + hair
-					in[k] = box[k+3] - band
+			size := 0.0
+			for k := 0; k < 3; k++ {
+				if !finiteAxis(box[k]) || !finiteAxis(box[k+3]) {
+					t.Fatalf("%s: declared box %v is unbounded", expr, bx)
 				}
-				res, err := bare.Certify(ctx, nil, code, "", expr, out, 0, 1e-4)
-				if err != nil {
-					t.Fatalf("%s: certify outside %v: %v", expr, out, err)
-				}
-				face := fmt.Sprintf("%d%s", k, [2]string{"-", "+"}[side])
-				if res.Disproven {
-					t.Errorf("%s: material outside its box %v, at %v", expr, box, res.CounterBox)
-				} else if res.Indeterminate {
-					if at, found := materialNear(t, bare, code, expr, box, k, side, hair); found {
-						t.Errorf("%s: material outside face %s of its box %v, at %v", expr, face, box, at)
+				size = math.Max(size, box[k+3]-box[k])
+			}
+			reach := size + 5
+			var region [6]float64
+			for k := 0; k < 3; k++ {
+				region[k], region[k+3] = box[k]-reach, box[k+3]+reach
+			}
+			for k := 0; k < 3; k++ {
+				band := 0.05*(box[k+3]-box[k]) + 0.05
+				for side := 0; side < 2; side++ {
+					// Outside this face: no material.
+					out := region
+					in := box
+					if side == 0 {
+						out[k+3] = box[k] - hair
+						in[k+3] = box[k] + band
 					} else {
-						t.Logf("%s: face %s sampled, not proven (%s)", expr, face, res.Reason)
+						out[k] = box[k+3] + hair
+						in[k] = box[k+3] - band
+					}
+					res, err := bare.Certify(ctx, nil, code, "", expr, out, 0, 1e-4)
+					if err != nil {
+						t.Fatalf("%s: certify outside %v: %v", expr, out, err)
+					}
+					face := fmt.Sprintf("%d%s", k, [2]string{"-", "+"}[side])
+					if res.Disproven {
+						t.Errorf("%s: material outside its box %v, at %v", expr, box, res.CounterBox)
+					} else if res.Indeterminate {
+						if at, found := materialNear(t, bare, code, expr, box, k, side, hair); found {
+							t.Errorf("%s: material outside face %s of its box %v, at %v", expr, face, box, at)
+						} else {
+							t.Logf("%s: face %s sampled, not proven (%s)", expr, face, res.Reason)
+						}
+					}
+					// Just inside it: some.
+					if soundOnly[expr] {
+						continue
+					}
+					res, err = bare.Certify(ctx, nil, code, "", expr, in, 0, 1e-4)
+					if err != nil {
+						t.Fatalf("%s: certify inside %v: %v", expr, in, err)
+					}
+					if res.Indeterminate {
+						t.Logf("%s: whether anything is within %.3g of face %s is undecided (%s)",
+							expr, band, face, res.Reason)
+					} else if !res.Disproven {
+						t.Errorf("%s: box %v is loose, nothing within %.3g of face %s",
+							expr, box, band, face)
 					}
 				}
-				// Just inside it: some.
-				if soundOnly[expr] {
-					continue
-				}
-				res, err = bare.Certify(ctx, nil, code, "", expr, in, 0, 1e-4)
-				if err != nil {
-					t.Fatalf("%s: certify inside %v: %v", expr, in, err)
-				}
-				if res.Indeterminate {
-					t.Logf("%s: whether anything is within %.3g of face %s is undecided (%s)",
-						expr, band, face, res.Reason)
-				} else if !res.Disproven {
-					t.Errorf("%s: box %v is loose, nothing within %.3g of face %s",
-						expr, box, band, face)
-				}
 			}
-		}
+		})
 	}
 }
 

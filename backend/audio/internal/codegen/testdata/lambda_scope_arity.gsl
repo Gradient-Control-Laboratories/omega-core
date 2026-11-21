@@ -1,0 +1,19 @@
+// Two hoisted lambdas with the same name in different scopes: total's reduce
+// callback (two parameters) and a top-level map callback (one). Both are
+// gsl_anon in their own scope. Regression test: unrolling the top-level map
+// looked the callback up depth-first through other functions' nested scopes,
+// found total's two-parameter lambda first, called the one-parameter lambda
+// with (value, index), and failed with `no function named "gsl_anon" with 2
+// parameters`.
+
+total(xs) {
+  return reduce(0, (acc, v) {
+    return acc + v;
+  }, xs);
+}
+
+doubled = map((r) {
+  return r * 2;
+}, [1, 2, 3]);
+
+return audio(total([sin(time), sin(2 * time), sin(3 * time)]) * 0.1 + doubled.x * 0.01);
