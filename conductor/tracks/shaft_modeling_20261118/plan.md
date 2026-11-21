@@ -366,7 +366,7 @@ Phase 0 has no start commit; Phase 7 was skipped.
       Found: every segment's field is still written about 20 times into the shader (a later item)
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
-## Phase 14: Knurls
+## Phase 14: Knurls [checkpoint: ceeb5d4]
 
 - [x] Task: Proposal (approved 2026-11-21): `shaft.knurl(dia, pitchVal, pattern, from, to)`, the blank as
       geometry (a plain diameter in the fold, the envelope and the box) and ISO 13444 teeth (90 degrees,
@@ -399,4 +399,4 @@ Phase 0 has no start commit; Phase 7 was skipped.
       its own. Fixed with the owner's approval: the companion keeps a value's `.simple`, `.detail` and
       `.detailSize`. Red first, `eval/simple_local_test.go` (a document function's local colour keeps its
       stand-in, as a returned one does; the finished knurl's paint carries one). No golden moved
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`); the owner's recheck of the Textures rung in the viewer is pending (away; to be reminded at wrap-up)
