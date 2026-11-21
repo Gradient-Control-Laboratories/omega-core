@@ -1,0 +1,22 @@
+# The Fidget revision vendored in this directory.
+#
+# The Rust sources under the fidget* crate directories are an in-tree copy of
+# the fork below at "commit". The fork is upstream Fidget plus our commits (see
+# its FORK.md), so "git log <upstream-base>..<commit>" in the fork lists every
+# change we carry.
+#
+# To update: check out the commit you want in the fork, change "commit" here,
+# and from the repository root run
+#
+#   go run ./tool/vendor-fidget -fork <checkout of the fork>
+#
+# It replaces the sources and reports how the fork's Cargo.toml files differ
+# from the vendored ones; the manifests are reconciled by hand.
+#
+# workspace-hack/ is not copied from the fork: it is an empty stand-in for
+# upstream's cargo-hakari crate, which fidget-core's lib.rs names.
+fork: https://github.com/Gradient-Control-Laboratories/fidget
+branch: omega
+commit: 673b451073aa9a92d701851f0a6191c443bfa0a6
+upstream: https://github.com/mkeeter/fidget
+upstream-base: 1879743ddc1d73dac14a42a8184a3c5b758dcca5

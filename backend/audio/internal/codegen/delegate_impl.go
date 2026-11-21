@@ -68,6 +68,7 @@ func (d *Delegate) BuildFunc(
 	name := fnDecl.Name
 	declBScope := d.GetScope().Parent()
 	jsName := d.pkgQualifiedName(declBScope, name)
+	jsName = uniqueJSName(d.fnJSNames, jsName)
 
 	params := make([]build.VarInfo, len(fn.Parameters))
 	paramNames := make([]string, len(fn.Parameters))
@@ -179,12 +180,21 @@ func (d *Delegate) BuildBuiltinCall(op *program.Operand, fnCall *program.FnCall,
 
 	builtins := map[string]string{
 		"clamp": "clamp", "fract": "fract", "sign": "sign",
-		"sinh": "sinh", "cosh": "cosh", "tanh": "tanh",
-		"asinh": "asinh", "acosh": "acosh", "atanh": "atanh",
-		"exp2": "exp2", "trunc": "trunc",
+		"exp2":    "exp2",
 		"radians": "radians", "degrees": "degrees",
 		"normalize": "normalize", "length": "length",
 		"distance": "distance", "dot": "dot", "cross": "cross",
+	}
+
+	// Scalar builtins JavaScript's Math has directly. (These were once mapped
+	// to gsl_* helpers that were never emitted, so they failed at run time.)
+	mathBuiltins := map[string]bool{
+		"sinh": true, "cosh": true, "tanh": true,
+		"asinh": true, "acosh": true, "atanh": true,
+		"trunc": true,
+	}
+	if mathBuiltins[builtin.Name] {
+		return d.mathFunc(builtin.Name, args)
 	}
 
 	if jsName, ok := builtins[builtin.Name]; ok {
@@ -194,6 +204,21 @@ func (d *Delegate) BuildBuiltinCall(op *program.Operand, fnCall *program.FnCall,
 		}
 		code := fmt.Sprintf("gsl_%s(%s)", jsName, joinArgs(argCodes))
 		return newExpression(code), nil
+	}
+
+	if builtin.Name == "noiseHash3" {
+		// noiseHash3(cell) / noiseHash3(cell, octaves): the octave count is a
+		// literal 1 or 2 (validated by the type checker), passed through as JS.
+		d.noiseUsed = true
+		argCodes := make([]string, len(args))
+		for i, arg := range args {
+			argCodes[i] = getCode(arg)
+		}
+		if len(argCodes) == 1 {
+			argCodes = append(argCodes, "2")
+		}
+		code := fmt.Sprintf("gsl_noiseHash3(%s)", joinArgs(argCodes))
+		return &jsExpression{code: code, precedence: build.PrecedenceHighest, typ: jsVec3Type}, nil
 	}
 
 	return nil, fmt.Errorf("unsupported builtin function for audio: %s", builtin.Name)
@@ -244,27 +269,32 @@ func (d *Delegate) BuildSingleAssignment(decl *program.Assignment, op *program.O
 	jsName := toJSIdentifier(name)
 	code := getCode(expr)
 
+	// An inlined function body (each element of an unrolled map, say) declares
+	// its locals in the enclosing JS scope, so the same GSL name can be
+	// declared there more than once; later declarations get a numeric suffix.
 	if d.inFunction() {
+		jsName = uniqueJSName(d.currentFrame().names, jsName)
 		d.currentFrame().body.WriteString(fmt.Sprintf("    const %s = %s;\n", jsName, code))
 	} else {
 		// Top-level decls in imported packages get pkg-qualified names so
 		// two imports declaring the same constant don't collide.
-		jsName = d.pkgQualifiedName(d.currBScope, jsName)
+		jsName = uniqueJSName(d.topNames(), d.pkgQualifiedName(d.currBScope, jsName))
 		d.topDecls.WriteString(fmt.Sprintf("    const %s = %s;\n", jsName, code))
 	}
 	d.complexityScore++
 
 	// VarInfo.Name() stays the GSL name (scope lookups key on it). The
-	// possibly-mangled JS identifier rides in expr.
-	var constVals []float64
-	if ce, ok := expr.(build.ConstExpression); ok {
-		constVals = ce.ConstValues()
+	// possibly-mangled JS identifier rides in expr; a constant stays constant.
+	ref := &jsExpression{code: jsName, precedence: build.PrecedenceHighest, typ: expr.Type()}
+	var refExpr build.Expression = ref
+	if ce, ok := expr.(build.ConstExpression); ok && ce.ConstValues() != nil {
+		refExpr = &jsConst{jsExpression: ref, values: ce.ConstValues()}
 	}
 	varInfo := &simpleVarInfo{
 		bScope: d.currBScope,
 		name:   name,
 		typ:    expr.Type(),
-		expr:   &jsExpression{code: jsName, precedence: build.PrecedenceHighest, typ: expr.Type(), constValues: constVals},
+		expr:   refExpr,
 	}
 	return varInfo, nil
 }
@@ -275,9 +305,7 @@ func (d *Delegate) BuildMultiAssignment(decl *program.Assignment, op *program.Op
 
 func (d *Delegate) BuildValue(op *program.Operand, value float64) (build.ConstExpression, error) {
 	code := fmt.Sprintf("%g", value)
-	expr := newExpression(code)
-	expr.constValues = []float64{value}
-	return expr, nil
+	return &jsConst{jsExpression: newExpression(code), values: []float64{value}}, nil
 }
 
 var memberIndex = map[byte]int{'x': 0, 'y': 1, 'z': 2, 'w': 3}
@@ -286,7 +314,7 @@ func (d *Delegate) BuildMemberAccess(op *program.Operand, expr *program.Expressi
 	// For a single-component swizzle, use array indexing: JS arrays have no .x/.y/.z.
 	if len(member) == 1 {
 		if idx, ok := memberIndex[member[0]]; ok {
-			targetCode := getCode(target)
+			targetCode := indexTarget(target)
 			// p is [0,0,0] in audio context; its components are always 0.
 			if targetCode == "[0, 0, 0]" {
 				return newExpression("0"), nil
@@ -297,7 +325,7 @@ func (d *Delegate) BuildMemberAccess(op *program.Operand, expr *program.Expressi
 	// Multi-component swizzle (.xy, .zyx, etc.): gather the selected
 	// components into a new array and keep it typed as a vector so further
 	// indexing/swizzling type-checks.
-	targetCode := getCode(target)
+	targetCode := indexTarget(target)
 	components := make([]string, len(member))
 	for i := 0; i < len(member); i++ {
 		idx, ok := memberIndex[member[i]]
@@ -311,7 +339,7 @@ func (d *Delegate) BuildMemberAccess(op *program.Operand, expr *program.Expressi
 }
 
 func (d *Delegate) BuildIndexAccess(op *program.Operand, expr *program.Expression, targetOp *program.Operand, indexOp *program.Operand, target build.Expression, index int) (build.Expression, error) {
-	code := fmt.Sprintf("%s[%d]", getCode(target), index)
+	code := fmt.Sprintf("%s[%d]", indexTarget(target), index)
 	// Indexing a list of vectors yields the element vector, so keep the
 	// element type for further indexing/swizzling.
 	if target.Type().IsMatrix() {
@@ -377,7 +405,7 @@ func (d *Delegate) BuildOperation(op *program.Operand, expr *program.Expression,
 		if len(expressions) != 1 {
 			return nil, fmt.Errorf("square requires 1 operand")
 		}
-		e := expressions[0].(*jsExpression).ParenIf(build.PrecedenceMultiplication)
+		e := asJS(expressions[0]).ParenIf(build.PrecedenceMultiplication)
 		code := fmt.Sprintf("%s * %s", e.Code(), e.Code())
 		return &jsExpression{code: code, precedence: build.PrecedenceMultiplication, typ: jsNumType}, nil
 
@@ -396,13 +424,13 @@ func (d *Delegate) BuildOpCall(op *program.Operand, expr *program.Expression, op
 }
 
 func (d *Delegate) BuildNot(op *program.Operand, expr *program.Expression, targetOp *program.Operand, target build.Expression) (build.Expression, error) {
-	targetExpr := target.(*jsExpression).ParenIf(build.PrecedenceUnary)
+	targetExpr := asJS(target).ParenIf(build.PrecedenceUnary)
 	code := fmt.Sprintf("!%s", targetExpr.Code())
 	return &jsExpression{code: code, precedence: build.PrecedenceUnary, typ: target.Type()}, nil
 }
 
 func (d *Delegate) BuildNeg(op *program.Operand, expr *program.Expression, targetOp *program.Operand, target build.Expression) (build.Expression, error) {
-	targetExpr := target.(*jsExpression).ParenIf(build.PrecedenceUnary)
+	targetExpr := asJS(target).ParenIf(build.PrecedenceUnary)
 	targetCode := targetExpr.Code()
 	if strings.HasPrefix(targetCode, "-") {
 		targetCode = " " + targetCode
@@ -434,8 +462,8 @@ func (d *Delegate) BuildComparison(op *program.Operand, expr *program.Expression
 		return nil, fmt.Errorf("unsupported comparison: %v", expr.Operation)
 	}
 
-	expr1 := expressions[0].(*jsExpression).ParenIf(precedence)
-	expr2 := expressions[1].(*jsExpression)
+	expr1 := asJS(expressions[0]).ParenIf(precedence)
+	expr2 := asJS(expressions[1])
 	expr2Code := expr2.Code()
 	if expr2.Precedence() > precedence {
 		expr2Code = "(" + expr2Code + ")"
@@ -446,8 +474,8 @@ func (d *Delegate) BuildComparison(op *program.Operand, expr *program.Expression
 }
 
 func (d *Delegate) BuildCompare(op *program.Operand, expr *program.Expression, operands []*program.Operand, expr1 build.Expression, expr2 build.Expression, resultType *program.Type) (build.Expression, error) {
-	e1 := expr1.(*jsExpression)
-	e2 := expr2.(*jsExpression)
+	e1 := asJS(expr1)
+	e2 := asJS(expr2)
 	e1Code := e1.Code()
 	if e1.Precedence() > build.PrecedenceComparison {
 		e1Code = "(" + e1Code + ")"
@@ -461,7 +489,7 @@ func (d *Delegate) BuildCompare(op *program.Operand, expr *program.Expression, o
 }
 
 func (d *Delegate) BuildSelect2(op *program.Operand, expr *program.Expression, operands []*program.Operand, conditionExpr build.Expression, trueResultExpr build.Expression, falseResultExpr build.Expression, resultType *program.Type) (build.Expression, error) {
-	cond := conditionExpr.(*jsExpression)
+	cond := asJS(conditionExpr)
 	condCode := cond.Code()
 	if cond.Precedence() > build.PrecedenceComparison {
 		condCode = "(" + condCode + ")"
@@ -471,7 +499,7 @@ func (d *Delegate) BuildSelect2(op *program.Operand, expr *program.Expression, o
 }
 
 func (d *Delegate) BuildSelect3(op *program.Operand, expr *program.Expression, operands []*program.Operand, valueExpr build.Expression, ltZeroResultExpr build.Expression, eqZeroResultExpr build.Expression, gtZeroResultExpr build.Expression, resultType *program.Type) (build.Expression, error) {
-	val := valueExpr.(*jsExpression)
+	val := asJS(valueExpr)
 	valCode := val.Code()
 	if val.Precedence() > build.PrecedenceComparison {
 		valCode = "(" + valCode + ")"
@@ -513,9 +541,7 @@ func (d *Delegate) BuildConstCollect(
 	if err != nil {
 		return nil, err
 	}
-	jsExpr := collected.(*jsExpression)
-	jsExpr.constValues = constValues
-	return jsExpr, nil
+	return &jsConst{jsExpression: asJS(collected), values: constValues}, nil
 }
 
 // Helper functions
@@ -540,9 +566,9 @@ func (d *Delegate) binaryOp(op string, operands []build.Expression) (build.Expre
 	}
 
 	wgslExprs := make([]*jsExpression, len(operands))
-	wgslExprs[0] = operands[0].(*jsExpression).ParenIf(precedence)
+	wgslExprs[0] = asJS(operands[0]).ParenIf(precedence)
 	for i := 1; i < len(operands); i++ {
-		e := operands[i].(*jsExpression)
+		e := asJS(operands[i])
 		if e.Precedence() >= precedence {
 			e = e.ParenIf(build.PrecedenceHighest)
 		}

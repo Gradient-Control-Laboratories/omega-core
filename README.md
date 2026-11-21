@@ -1,9 +1,39 @@
 # Omega Core SDK (`omega-core`)
 
-`omega-core` is the standalone Go SDK for the Geometric Specification Language (GSL). It provides
+[![Check](https://github.com/Gradient-Control-Laboratories/omega-core/actions/workflows/check.yml/badge.svg?branch=main)](https://github.com/Gradient-Control-Laboratories/omega-core/actions/workflows/check.yml)
+[![Wheels](https://github.com/Gradient-Control-Laboratories/omega-core/actions/workflows/wheels.yml/badge.svg?branch=main)](https://github.com/Gradient-Control-Laboratories/omega-core/actions/workflows/wheels.yml)
+
+<p align="center">
+  <a href="doc/assets/showcase/glass.png"><img src="doc/assets/showcase/glass_thumb.png" width="196" alt="Glass"></a>
+  <a href="doc/assets/showcase/fastener_cosmetics.png"><img src="doc/assets/showcase/fastener_cosmetics_thumb.png" width="196" alt="Fastener Cosmetics"></a>
+  <a href="doc/assets/showcase/detail_ladder.png"><img src="doc/assets/showcase/detail_ladder_thumb.png" width="196" alt="Detail Ladder"></a>
+  <a href="doc/assets/showcase/corexy_printer.png"><img src="doc/assets/showcase/corexy_printer_thumb.png" width="196" alt="CoreXY Printer"></a>
+  <br>
+  <a href="doc/assets/showcase/material_coated.png"><img src="doc/assets/showcase/material_coated_thumb.png" width="196" alt="Material Coated"></a>
+  <a href="doc/assets/showcase/fastener_matrix.png"><img src="doc/assets/showcase/fastener_matrix_thumb.png" width="196" alt="Fastener Matrix"></a>
+  <a href="doc/assets/showcase/beam_lattice_gallery.png"><img src="doc/assets/showcase/beam_lattice_gallery_thumb.png" width="196" alt="Beam Lattice"></a>
+  <a href="doc/assets/showcase/gyroid.png"><img src="doc/assets/showcase/gyroid_thumb.png" width="196" alt="Gyroid"></a>
+</p>
+
+`omega-core` is the standalone Go SDK for the Geometric Shape Language (GSL). It provides
 pure, modular compiler libraries and the `gsl` command-line toolchain (`compile`, `serve`, `fix`)
 for parsing, analyzing, refactoring, and compiling GSL models into WebGPU compute shaders (WGSL),
 3D meshes (STL), bytecode tapes, and audio synthesizers.
+
+<table>
+  <tr>
+    <td valign="top">
+      <strong>Video Demo — Interactive WebGPU Viewer</strong><br><br>
+      Watch a short walkthrough of the <code>gsl serve</code> / <code>gsl viewer</code> example viewer in action.<br><br>
+      Watch on YouTube: <a href="https://youtu.be/wlTj_TXmRJk">https://youtu.be/wlTj_TXmRJk</a>
+    </td>
+    <td align="right" valign="middle" width="340">
+      <a href="https://youtu.be/wlTj_TXmRJk">
+        <img src="https://img.youtube.com/vi/wlTj_TXmRJk/maxresdefault.jpg" width="320" alt="Watch the omega-core interactive WebGPU viewer video">
+      </a>
+    </td>
+  </tr>
+</table>
 
 ## Architecture & Package Topology
 
@@ -112,6 +142,8 @@ Subcommands delegate to sibling tool binaries in `bin/`:
 - `gsl serve`: Launch the local HTTP server and interactive WebGPU viewer (`bin/serve`).
 - `gsl viewer [part.gsl]`: Open a file, or the examples, in the WebGPU viewer in the default browser
   (`bin/compile viewer`); the file's folder is served, and Save writes back to it.
+- `gsl export part.gsl [more.gsl ...] -o dir`: Write the viewer and the files' compiled fields as a folder of
+  static web pages that needs no server of ours (`bin/compile export`); the page shows the source read-only.
 - `gsl fix`: Refactor GSL source files to current syntax (`bin/fix`).
 - `gsl help [command]`: Display help for `gsl` or a specific subcommand.
 

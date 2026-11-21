@@ -78,4 +78,3 @@ func GenerateSTL(
 	}
 	return stlBytes, nil
 }
-
