@@ -71,6 +71,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the bevel, about 1.7 to 1.8 times as deep as before at these edges (116 to 129 degrees through the
   material); the body, standoff and bore chamfers are unchanged. Gear and bevel-gear WGSL grows by
   582 bytes.
+- A declared `.box` that reduces over a list a function call returned failed to assemble ("vector subtraction
+  dimension mismatch", "collection elements must be all scalars or all vectors"): the box pass handed the
+  reduce the whole list as one element. `profileXY(points, curvatures)` with its curvatures made by a function
+  (a `map` in a helper) failed this way once the profile was named.
+- A declared `.box` that reads names assigned after its shape (`form = ...; low, high = ...; form.box = ...`)
+  failed with "undefined identifier" wherever the function's body was inlined into its caller: any document
+  function called with constants, or a library function handed a blend made from a slider. The shape's
+  assignment now moves after the names its box reads; a shape read in between is refused with a message.
 
 ## [0.1.3] - 2026-11-17
 
