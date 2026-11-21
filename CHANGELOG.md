@@ -9,17 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `intersectRoundExact(field1, field2, radius[, iterations])` and `unionRoundExact(field1, field2, radius[,
-  iterations])` in builtin: exact rolling-ball rounds for curved faces. They find the seam's point nearest p by
-  `iterations` Newton steps (4 when omitted; each moves to both fields' tangent planes, then slides along the
-  seam to the foot of p) and judge whether p is nearest the seam at the point they reach: three steps are right
-  to 1e-6 mm where the seam is a circle, five where it is not, where the one-step form is off by up to 0.14 mm on
-  a sphere and a plane rounded by 2. Steps not taken are dropped at compile time, so pass the count as a
-  constant; each one evaluates both fields again, and fillet/ball-and-post meshes in about 17 to 25 times the
-  CPU of the one-step form. `intersectRoundExact(radius[, iterations])` and `unionRoundExact(radius[,
-  iterations])` bind the radius and return the operator, to hand a primitive that blends two fields, as
-  `extrude` does. `edgeDistance`, `edgeProject` and `edgeNewtonStep` are their parts.
-  `examples/ball_and_post.gsl` shows them.
+- `intersectRoundExact(field1, field2, radius)` and `unionRoundExact(field1, field2, radius)` in builtin: exact
+  rolling-ball rounds for curved faces. They find the seam's point nearest p by four Newton steps (each moves to
+  both fields' tangent planes, then slides along the seam to the foot of p) and judge whether p is nearest the
+  seam at the point they reach: three steps are right to 1e-6 mm where the seam is a circle, five where it is
+  not, where the one-step form is off by up to 0.14 mm on a sphere and a plane rounded by 2.
+  `intersectRoundExactSteps(field1, field2, radius, steps)` and `unionRoundExactSteps(...)` take the step count;
+  steps not taken are dropped at compile time, so pass it as a constant. Each step evaluates both fields again,
+  and fillet/ball-and-post meshes in about 17 to 25 times the CPU of the one-step form.
+  `intersectRoundExact(field1, field2, field3, radius)`, `unionRoundExact(field1, field2, field3, radius)` and
+  their `Steps` forms round three fields: each edge as the two-field form does, and the corner with the patch
+  of the ball touching all three faces, found by Newton steps on the three fields at once; right to 1e-6 mm at
+  a box's corner, a pyramid's and a ball cut by two planes. `intersectRoundExact(fields, radius)`,
+  `unionRoundExact(fields, radius)` and their `Steps` forms round a list of fields: the largest of every pair's
+  edge distance and every three's corner distance, which is exact where the intersection is convex, at any
+  number of faces to a corner, among them the apex of fillet/rectangular-pyramid-all-edges, where four faces
+  meet and no ball touches all four. `.dp` cannot follow a field through `map`'s functions, so the list forms
+  take their gradients by central differences (`differenceGradient`); for three fields they cost about eight
+  times the three-field forms, N fields need N(N-1)/2 edges and N(N-1)(N-2)/6 corners, and Fidget's JIT
+  cannot build eight. A seam or corner point is accepted only where the fields vanish at it and the faces
+  make an edge (normals more than about 0.6 degrees from parallel) or a corner (normals not near coplanar).
+  `intersectRoundExact(radius)`, `intersectRoundExactSteps(radius, steps)` and their union duals bind the
+  radius and return the operator, to hand a primitive that blends two fields, as `extrude` does.
+  `edgeDistance`, `cornerDistance`, `intersectDistance` and their `Differenced` forms, `edgeProject`,
+  `edgeNewtonStep`, `cornerNewtonStep` and the `...From` and `...Verdict` arithmetic they share are their
+  parts. `examples/ball_and_post.gsl` shows them.
 - `nested(fields)` combines exact fields whose surfaces do not cross, each wound with its solid on the negative
   side (counterclockwise outlines and islands, clockwise holes), into one exact distance in any order: an outline
   with holes in a single profile, or a 3D solid with a void.

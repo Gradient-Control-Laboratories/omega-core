@@ -136,7 +136,7 @@ func maxAbsError(got, want []float64) float64 {
 }
 
 func intersectRoundExactSource(g spineGeometry, iterations int) string {
-	return fmt.Sprintf("import . \"omega\";\ng1 = %s;\ng2 = %s;\nreturn intersectRoundExact(g1, g2, 0, %d);\n",
+	return fmt.Sprintf("import . \"omega\";\ng1 = %s;\ng2 = %s;\nreturn intersectRoundExactSteps(g1, g2, 0, %d);\n",
 		g.g1, g.g2, iterations)
 }
 

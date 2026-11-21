@@ -1,29 +1,41 @@
 @scene(40)
 
-// A post rising out of a ball, its junction rounded with an exact fillet.
+// A post rising out of a ball set off its axis, the junction rounded with an
+// exact fillet, which is shaded.
 //
-// unionRoundExact(field1, field2, radius, iterations) rounds the seam of a
+// unionRoundExactSteps(field1, field2, radius, steps) rounds the seam of a
 // union with a rolling-ball fillet of that radius: the surface a ball of the
-// radius sweeps as it rolls around the junction touching both solids, here a
-// torus tangent to the ball and to the post. It finds the seam's point nearest
-// p by Newton steps; three put this fillet within a millionth of a millimetre
-// of the torus. The five-argument form, which takes the faces' normals and one
-// step, is exact only where the faces are flat: here, where a sphere meets a
-// cylinder, its fillet is off by a few percent of the radius. Each step
-// evaluates both fields again, so the fillet costs several times the one-step
-// form to mesh. Pass the step count as a constant.
+// radius sweeps as it rolls around the junction touching both solids. With the
+// ball off the post's axis the seam is no circle and the fillet no torus; its
+// section changes all the way round. The round finds the seam's point nearest
+// p by Newton steps: where the seam is a circle (offset 0) three are exact to
+// a millionth of a millimetre, and here the fillet moves by about 1e-4 of its
+// volume between three steps and six, so about five settle it. The
+// five-argument form, which takes the faces' normals and one step, is exact
+// only where the faces are flat: where a sphere meets a cylinder its fillet is
+// off by a few percent of the radius. Each step evaluates both fields again,
+// so the fillet costs several times the one-step form to mesh, and more as the
+// radius grows. Pass the step count as a constant.
 //
-// Try the slider: radius sets the fillet.
+// Try the sliders: radius sets the fillet, offset moves the ball off the axis.
 
 ballRadius = 10;
 postRadius = 4;
 postHeight = 15;
 
-radius = 2;
-radius.min = 0.5;
-radius.max = 3;
+radius = 3.96;
+radius.min = 0;
+radius.max = 10;
 
-ball = length(p) - ballRadius;
+offset = 7;
+offset.min = 0;
+offset.max = 10;
+
+ball = length(p - offset * vector.dirX) - ballRadius;
 post = extrude(circleXY([0, 0], postRadius), 0, postHeight, intersectRound(0));
 
-return unionRoundExact(ball, post, radius, 3);
+sharp = unionSharp(ball, post);
+exact = unionRoundExactSteps(ball, post, radius, 3);
+exact.color = (exact - sharp < 0 ? 0.6 : 1) * [1, 1, 1];
+
+return exact;
