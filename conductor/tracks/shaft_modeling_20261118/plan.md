@@ -213,14 +213,21 @@ treatment), the phase opens with a proposal for the owner to approve before any 
 - [ ] Task: Implement (Green & Refactor Phase)
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
-## Phase 8: Cranks
+## Phase 8: Cranks [checkpoint: 9cf9e41]
 
-- [ ] Task: Proposal: the eccentric segment (offset, angle) and the section segment (a 2D field)
-- [ ] Task: Write failing tests (Red Phase): crank pin and web against the reference; bridges between
-      coaxial and eccentric segments
-- [ ] Task: Implement (Green & Refactor Phase)
-- [ ] Task: Example: a single-throw crank; WGSL size; the owner's viewer check
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Proposal (approved 2026-11-20; Phase 7 skipped for now): `shaft.eccentric(dia, offset, angle,
+      from, to)` and `shaft.web(mainR, pinR, offset, angle, from, to)` (`offset` was `throw`, a reserved word), the exact two-circle hull; webs of
+      other outlines stay `shaft.section` (spec 3.4)
+- [x] Task: Write failing tests (Red Phase), `eval/shaft_cranks_test.go`: the pin and the web exact
+      alone; the crank exact outside against the min of its capped prisms; a unit gradient outside; no
+      sheet on the four joints (against a lower bound of the true depth); the pin fillet's arc; controls
+      for the hull polygon and the reference
+- [x] Task: Implement (Green & Refactor Phase): `eccentric` and `web`; the web's section is the
+      two-circle hull as the nearest of the discs between them, clamped, so it has no selects; the
+      shipped examples' WGSL unchanged
+- [x] Task: Example: a single-throw crank (`examples/shaft_crank.gsl`, fillets, centre holes, sliders for
+      the offset and its angle); WGSL 22,437 B; the owner's viewer check
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 9: Bearings and Bushings
 
