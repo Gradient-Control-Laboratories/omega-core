@@ -45,6 +45,7 @@ import {
     setSliderValue,
     setUiControlValues,
     syncUiControls,
+    defaultWGSL,
 } from "./render/viewer.js";
 import {
     initEditor,
@@ -77,7 +78,7 @@ import {
 import { initHelpPanel } from "./docs/help-panel.js";
 import { initSliderPanel, renderSliderPanel, sliderAnimTick, previewColor } from "./panels/slider-panel.js";
 import { initMeshImport } from "./panels/mesh-import.js";
-import { initExportPanel } from "./panels/export-panel.js";
+import { initExportPanel, setAudioAvailable } from "./panels/export-panel.js";
 import { initBodyPanel, setBodies, pickBody, materialVariables, getVisibleBodies, getBodyStates } from "./panels/body-panel.js";
 
 const clientId = (typeof crypto !== "undefined" && crypto.randomUUID)
@@ -364,12 +365,15 @@ function detectShapeCount(wgslCode) {
 const setCaptions = createCaptions(document.getElementById("canvas-container"), getAnimTime);
 
 eventManager.addListener("canvas/update-shader", (event) => {
-    if (event.wgsl) {
-        currentWGSL = event.wgsl;
+    // A program that returns only audio has nothing to draw: it shows the
+    // empty scene in place of the previous document's model.
+    const wgsl = event.wgsl || (event.audio ? defaultWGSL : "");
+    if (wgsl) {
+        currentWGSL = wgsl;
         currentShapeLocations = event.shapeLocations || [];
         setParts(event.parts || []);
         updateShader(
-            event.wgsl,
+            wgsl,
             event.shapeCount || 1,
             event.shapeNames || [],
             event.meshSdfBindings || event.meshSdfSlots || [],
@@ -549,6 +553,30 @@ async function requestStlExport(detail, surfaceBbox, algo, format = "stl") {
 
 // exportPage downloads the open document as `gsl export` writes it: this viewer and the document's
 // field as static web pages, zipped. It is the Export panel's Web page format.
+// exportAudio renders the program's audio from time 0 for the given seconds
+// and downloads it as a WAV named after the document.
+async function exportAudio(seconds) {
+    showNotification(false, `Rendering ${seconds} s of audio...`, true);
+    try {
+        const blob = await audioSystem.renderWav(seconds);
+        const fileName = (currentExampleName || "model.gsl").replace(/\.gsl$/i, "") + ".wav";
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showNotification(false, `Exported ${fileName}`);
+        return true;
+    } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        showError(`Audio export failed: ${msg}`, false, true);
+        return false;
+    }
+}
+
 async function exportPage() {
     const source = getGslSourceForServer();
     if (!source || source.trim() === "") {
@@ -870,6 +898,7 @@ if (host.editable) initExportPanel({
     serverMarchingCubes: true,
     serverFormats: true,
     onExportPage: exportPage,
+    onExportAudio: exportAudio,
 });
 
 // ── Bodies Panel ──
@@ -1023,6 +1052,7 @@ eventManager.addListener("canvas/update-audio", (event) => {
     const audioVolumeRow = document.getElementById("audio-volume-row");
     audioVolumeRow.style.display = hasAudio ? "" : "none";
     audioSystem.updateShader(javascript, hasAudio);
+    setAudioAvailable(hasAudio && !!javascript);
 });
 
 // ── Section Panel ──
