@@ -25,9 +25,26 @@ treatment), the phase opens with a proposal for the owner to approve before any 
 | :----------------- | :----------- |
 | **Spec Creation**  | `~30 mins`   |
 | **Plan Creation**  | `~10 mins`   |
-| **Implementation** | `pending`    |
-| **Code Review**    | `pending`    |
-| **Effort**         | `pending`    |
+| **Implementation** | `~49.5 h wall-clock, 2026-11-18 20:02 to 2026-11-20 21:35 (first to last commit)` |
+| **Code Review**    | `not measured: commits carry no review signal` |
+| **Effort**         | `per phase below, wall-clock between checkpoints` |
+
+Recorded from commit times at the owner's choice (2026-11-20), so these are wall-clock, not active
+time: they include nights and other work in the same days (Phase 4's span holds the gear PR #94).
+Phase 0 has no start commit; Phase 7 was skipped.
+
+| Phase | Checkpoint | Wall-clock since the previous |
+| :---- | :--------- | :---------------------------- |
+| 0 Ground truth and spikes | `f390b8c` 11-18 20:02 | (no start commit) |
+| 1 Coaxial round stack | `516a000` 11-18 22:22 | 2 h 20 |
+| 2 End holes | `7259b77` 11-18 23:51 | 1 h 29 |
+| 3 Non-axisymmetric segments | `d2634b1` 11-19 00:46 | 0 h 55 |
+| 4 End treatments | `2f62bdb` 11-19 23:08 | 22 h 22 |
+| 5 Threads | `f690d4a` 11-20 12:11 | 13 h 03 |
+| 6 Joint blends | `25ecd77` 11-20 13:32 | 1 h 21 |
+| 8 Cranks | `9cf9e41` 11-20 15:11 | 1 h 39 |
+| 9 Bearings and bushings | `0e6c8bc` 11-20 18:29 | 3 h 18 |
+| 10 Box and simplified model | `c6de608` 11-20 20:32, bearing boxes `44ef859` 21:35 | 3 h 06 |
 
 ---
 
@@ -272,7 +289,10 @@ treatment), the phase opens with a proposal for the owner to approve before any 
 
 ## Phase 11: Verification and Records
 
-- [ ] Task: Full Go suite with `go vet`; `tool/check.sh`
-- [ ] Task: The stdlib's doc comments, `gsl skill`'s text and the language spec describe the new
-      packages; CHANGELOG
-- [ ] Task: Metrics recorded
+- [x] Task: Full Go suite with `go vet`; `tool/check.sh` (all passed: stdlib regenerated unchanged, gofmt,
+      architecture invariants, vet, tests)
+- [x] Task: The stdlib's doc comments, `gsl skill`'s text and the language spec describe the new
+      packages; CHANGELOG (shaft.gsl's summary, header and body docs brought up to date; `reduce`'s
+      fourth `prev` parameter in the spec and the skill text; `bearing` documented since Phase 9;
+      CHANGELOG already had every phase)
+- [x] Task: Metrics recorded (from commit times, wall-clock)

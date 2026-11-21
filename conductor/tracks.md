@@ -21,7 +21,7 @@
   *Link: [index.md](./tracks/profile_modeling_20261117/index.md)*
 
 ---
-- [ ] **Track: Shaft Modeling**
+- [x] **Track: Shaft Modeling** (Phase 7, chained positions, deferred)
   *Link: [index.md](./tracks/shaft_modeling_20261118/index.md)*
 
 ---

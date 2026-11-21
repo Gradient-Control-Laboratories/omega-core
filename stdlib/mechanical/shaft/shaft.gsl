@@ -1,6 +1,8 @@
-/// Generalized shafts as stacks of coaxial segments along +Z: diameters and
-/// tapers so far, joined so that no surface lies inside the solid where one
-/// segment meets the next.
+/// Generalized shafts as stacks of segments along +Z: diameters, tapers,
+/// sections, hexes and flats, splines, gears, threads and crank pins and webs,
+/// with their machined ends, blended joints and end holes, joined so that no
+/// surface lies inside the solid where one segment meets the next; and the same
+/// list as its smooth envelope.
 
 // Shaft: generalized shafts
 //
@@ -14,6 +16,16 @@
 //
 // A segment is a solid, so the body is too: min it into the scene. Holes into
 // its ends come from mechanical/drill.
+//
+// THE VOCABULARY. Segments: shaft.diameter, taper, section (any 2D field),
+// hex, dFlat, doubleD, spline, gear (spur or helical), thread (ISO 68-1),
+// eccentric (a crank pin) and web (a crank web). Ends, on spline, gear and
+// thread: shaft.planeEnd, runout (a cutter's), chamferEnd and threadRunout.
+// Joints, listed between two segments: shaft.fillet and shaft.chamfer. The
+// body declares its box from its end faces and its segments' reach, which a
+// caller's own .box replaces; shaft.envelope is the same list with its detail
+// dropped (a gear at its tip, a spline or a thread at its major diameter), for
+// proofs, meshing and assemblies.
 //
 // THE JOINTS. Segments that meet at a plane cannot simply be min'd: on the
 // joint plane, inside both, each capped segment reads 0, so their min is 0
@@ -52,7 +64,11 @@
 // starts on and seg(0, 0, 2) the plane it ends on, which is how body finds the
 // shaft's two end faces without being told. Beyond its span a segment continues
 // at the diameter it ends with. seg(0, 0, 3) is its cut: nothing, unless an end
-// is a cutter runout.
+// is a cutter runout. seg(e, e, 4) is its envelope, extended as its field is,
+// and seg(0, 0, 5) its reach from the axis. A joint answers seg(0, 0, 6) with a
+// fillet's radius and seg(0, 0, 7) with a chamfer's size, and everything else
+// so that the fold passes it unchanged. Every question is a constant, so each
+// call folds to the one answer asked for.
 //
 // RUNOUTS. A hob or a disc cutter cannot stop at a gear's or a spline's end
 // plane. Named with shaft.runout(cutterDia), that end's gaps run on into the
@@ -79,9 +95,12 @@ import isoThread "mechanical/thread";
 // =========================================================
 
 /// The solid of a shaft: `segments`, a list of segments from this package
-/// (shaft.diameter, shaft.taper), each between its own two planes, in order
-/// along +Z, each starting where the one before it ends. A lone segment needs
-/// no list. Exact outside, a bound inside, and solid across every joint.
+/// (shaft.diameter, taper, section, hex, dFlat, doubleD, spline, gear, thread,
+/// eccentric, web), each between its own two planes, in order along +Z, each
+/// starting where the one before it ends, with a joint's blend (shaft.fillet,
+/// shaft.chamfer) listed between the two segments it joins. A lone segment
+/// needs no list. Exact outside wherever the segments are, a bound inside, and
+/// solid across every joint; its box is declared.
 body(segments) {
   // This body is CLONED INTO THE CALLER'S FILE, where the segments' own
   // arguments live, so every name in it has to resolve there: builtin is

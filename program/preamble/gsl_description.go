@@ -341,6 +341,9 @@ to each element and collects the results. A function that returns a vector
 produces a list of vectors, which can be indexed, mapped, or reduced.
 ` + "`reduce(initial, fn, collection)`" + ` folds ` + "`fn(accumulator, value)`" + `
 over the elements starting from the initial value; the accumulator may be a vector.
+The callback may also take the element's ` + "`index`" + `, and a fold over a list of
+functions a fourth parameter, ` + "`prev`" + `, the element before (the first is handed
+itself), which it can call with constant arguments.
 
 ### **Operators**
 

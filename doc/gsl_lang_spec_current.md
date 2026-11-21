@@ -1072,6 +1072,10 @@ The following multi-argument numeric primitives and built-ins share these common
       - For lists, `index` is a 0-indexed scalar integer (`0.0`, `1.0`, etc.).
       - For matrices, `index` is passed
         as a 2-element list `[col, row]` representing 0-indexed column and row indices.
+      - A fold over a list of functions may also take `fn(accumulator, value, index, prev)`:
+        `prev` is the element before `value`, a function the callback can call (the first element
+        is handed itself, which `index` tells apart). Called with constant arguments it folds to a
+        constant, as a call on `value` does; a number carried in the accumulator does not.
     - The second argument (`numeric`) must be a list or matrix.
     - The length of lists and dimensions of matrices must be known at compile time.
     - The optional third argument (`initial`) is the starting accumulator value.
