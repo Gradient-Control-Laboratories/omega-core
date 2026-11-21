@@ -18,11 +18,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Imports, Export, Materials and Help are not offered. Several files share the one page and are picked from its
   menu. The folder is about 12 MB, without the material catalog's previews.
 - `intersectChamferNormalized`, `unionChamferNormalized` and `differenceChamferNormalized` in builtin:
-  `intersectChamfer`'s surface with a bevel whose field has unit gradient at an edge of any angle. The
-  bevel is divided by the length of the sum of the two faces' normals rather than by sqrt2, which is right
-  only at a square edge; at a 120-degree edge `intersectChamfer`'s field changes 1.22 times as fast as
-  distance and at 150 degrees 1.37. Pass the normals, or omit them to take each field's gradient.
-  Existing callers are unchanged.
+  chamfers by depth, the bevel the plane `depth` in from the edge, square to the bisector of the angle
+  between the faces, with a field of unit gradient at an edge of any angle: the sum of the two fields
+  divided by the length of the sum of their normals, offset by the depth. `intersectChamfer`'s bevel is the
+  same plane, but its field is divided by sqrt2, which is right only at a square edge (at a 120-degree
+  edge it changes 1.22 times as fast as distance and at 150 degrees 1.37), and its parameter is added
+  before dividing, so it is a setback along each face only at a square edge. Pass the normals, or omit
+  them to take each field's gradient. `intersectChamfer` and its callers are unchanged.
+- `chamferDepthFromSetback(setback, normal1, normal2)` and `chamferDepthFromWidth(width, normal1, normal2)`
+  in builtin: the depth of a chamfer set back `setback` along each face, s·cos(φ/2), or `width` across,
+  (w/2)·cot(φ/2), with φ the angle between the faces through the material, taken from the faces' normals.
+- `intersectChamferSetbacks(d1, d2, setback1, setback2, normal1, normal2)` in builtin, with
+  `unionChamferSetbacks` and `differenceChamferSetbacks`: a bevel that meets the first face `setback1` from
+  the edge and the second `setback2` from it, with a field of unit gradient. Equal setbacks give the
+  Normalized chamfer at `chamferDepthFromSetback`'s depth.
 - The viewer's Export panel has a `Web page (.zip)` format: it downloads the same folder for the open document,
   as the editor shows it, zipped (`POST /api/export`).
 - `@caption("text", startTime, endTime [, fade])` is a top-level directive that shows a line of text centred at
@@ -37,6 +46,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The fast chamfers' parameter is named `offset`, not `setback`, in builtin's `intersectChamfer`,
+  `unionChamfer`, `differenceChamfer`, `intersectChamferEdges`, `intersectChamferVertices`, their union
+  counterparts, and the `ChamferRound` and `ChamferBlend` families (`[edgeOffset, vertexOffset]` for the
+  list forms). It is added to the two fields before dividing by sqrt2, so it is a setback along each face
+  only at a square edge; `intersectChamferSetbacks` and `chamferDepthFromSetback` take true setbacks.
+  Arguments are positional, so callers are unchanged.
 - The viewer reaches its server through one module, `examples/viewer/host.js`; `host-static.js` answers the same
   calls from files beside the page, and takes its place in a page `gsl export` writes.
 
@@ -52,8 +67,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `gears.gearProfile` chamfers its tooth tips with `intersectChamferNormalized`, given the flank's and the
   tip circle's normals at the edge, in place of `intersectChamfer`. The flank meets the tip circle at an
   obtuse edge, where `intersectChamfer`'s bevel, scaled for a right angle, has a gradient above 1; the
-  normalized bevel has unit gradient there. The surface is unchanged. Gear and bevel-gear WGSL grows by
-  586 bytes.
+  normalized bevel has unit gradient there. The tip chamfer is now `kSmall` deep, measured from the edge to
+  the bevel, about 1.7 to 1.8 times as deep as before at these edges (116 to 129 degrees through the
+  material); the body, standoff and bore chamfers are unchanged. Gear and bevel-gear WGSL grows by
+  582 bytes.
 
 ## [0.1.3] - 2026-11-17
 

@@ -11,24 +11,24 @@ unionRound(d1, d2, radius) {
    return neg(intersectRound(neg(d1), neg(d2), radius));
 }
 
-intersectChamfer(d1, d2, setback) {
+intersectChamfer(d1, d2, offset) {
    face = max(d1, d2)
-   edge = ((d1 + d2 + setback) / sqrt2)
+   edge = ((d1 + d2 + offset) / sqrt2)
 
    return max(face, edge);
 }
 
-unionChamfer(d1, d2, setback) {
-   return neg(intersectChamfer(neg(d1), neg(d2), setback));
+unionChamfer(d1, d2, offset) {
+   return neg(intersectChamfer(neg(d1), neg(d2), offset));
 }
 
-differenceChamfer(target, tool, setback) {
-   return intersectChamfer(target, neg(tool), setback);
+differenceChamfer(target, tool, offset) {
+   return intersectChamfer(target, neg(tool), offset);
 }
 
-intersectChamferNormalized(d1, d2, setback, normal1, normal2) {
+intersectChamferNormalized(d1, d2, depth, normal1, normal2) {
    face = max(d1, d2)
-   edge = ((d1 + d2 + setback) / max(length(vector.addVector(normal1, normal2)), 1e-06))
+   edge = (((d1 + d2) / max(length(vector.addVector(normal1, normal2)), 1e-06)) + depth)
 
    return max(face, edge);
 }

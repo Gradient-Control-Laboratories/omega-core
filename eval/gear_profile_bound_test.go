@@ -17,6 +17,9 @@ type gearProfileCase struct {
 
 // oldGearProfile is gearProfile as it was before its flanks were bounded
 // (85a0152), built from the still-public involuteRadial and intersectChamfer.
+// Its tip chamfer is given the bevel of the new one's, which is kSmall deep:
+// intersectChamfer's k for a depth is the depth times |n1 + n2|, the length of
+// the sum of the flank's and the tip circle's normals at the edge.
 const oldGearProfile = `
 oldProfile(numTeeth, moduleVal, pressureAngle, rotOffset, dedendumClearance, kSmall) {
   pitchRadius = (numTeeth / 2.0) * moduleVal;
@@ -57,7 +60,10 @@ oldProfile(numTeeth, moduleVal, pressureAngle, rotOffset, dedendumClearance, kSm
   rpy = pRho * sin(pAngleCentered);
   repeatedTooth = remap(singleTooth(), [rpx, rpy, p.z]);
   addClip = remap(circleXY([0, 0], addendumRadius), [opx, opy, p.z]);
-  toothProfile = intersectChamfer(repeatedTooth, addClip, kSmall);
+  tipRoll = sqrt(addendumRadius * addendumRadius - baseRadius * baseRadius) / baseRadius;
+  tipCorner = [cos(tipRoll) + tipRoll * sin(tipRoll), sin(tipRoll) - tipRoll * cos(tipRoll)];
+  tipNormalSum = length([sin(tipRoll), neg(cos(tipRoll))] + tipCorner / length(tipCorner));
+  toothProfile = intersectChamfer(repeatedTooth, addClip, kSmall * tipNormalSum);
   dedBody = remap(circleXY([0, 0], dedendumRadius), [opx, opy, p.z]);
   return unionRound(toothProfile, dedBody, roundK);
 }
