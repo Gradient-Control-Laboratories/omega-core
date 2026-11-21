@@ -3,8 +3,8 @@ package codegen_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/backend/wgsl"
 	"gradientcontrol.com/omega/core/assembler"
+	"gradientcontrol.com/omega/core/backend/wgsl"
 	src_test "gradientcontrol.com/omega/core/internal/srctest"
 )
 

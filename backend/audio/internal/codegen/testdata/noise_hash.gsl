@@ -1,0 +1,10 @@
+// Exercises noiseHash3 in audio output: the builtin lowers to the
+// gsl_noiseHash3 tile oracle, which is emitted only when used. Both forms:
+// the default two-octave lookup and the one-octave literal.
+
+n = floor(time * 96000);
+cell = [n - 4096 * floor(n / 4096), floor(n / 4096), 0];
+white = noiseHash3(cell).x * 2 - 1;
+coarse = noiseHash3([floor(time * 8), 0, 0], 1).y;
+
+return audio(white * 0.1, white * coarse * 0.1);

@@ -16,9 +16,27 @@ type Delegate struct {
 	currBScope      *build.Scope
 
 	builtFns map[string]bool // which functions have been code-generated
-	fnDefs   strings.Builder // accumulated JS function definitions
-	topDecls strings.Builder // accumulated top-level const declarations across primary + imports
-	fnStack  []*fnFrame      // stack of in-progress function compilations
+
+	// fnJSNames holds the JS names given to functions so far. A generic
+	// function is specialized once per argument shape (e.g. a list of 3 and a
+	// list of 16), and each specialization is its own JS function, so every one
+	// after the first gets the first free numeric suffix. Without it the JS
+	// definitions share a name and the last one silently wins for every call
+	// site. Checking against all names, not a count per name, keeps a suffixed
+	// name clear of functions already named that way (gcl_closure_f_2).
+	fnJSNames map[string]bool
+	fnDefs    strings.Builder // accumulated JS function definitions
+	topDecls  strings.Builder // accumulated top-level const declarations across primary + imports
+	fnStack   []*fnFrame      // stack of in-progress function compilations
+
+	// noiseUsed is true when the program (or an import) calls noiseHash3, so
+	// the noise-tile oracle helper is emitted. Emitting it only on demand
+	// keeps programs that don't use noise byte-identical.
+	noiseUsed bool
+
+	// topDeclNames holds the JS identifiers declared at the top of computeAudio
+	// (see topNames).
+	topDeclNames map[string]bool
 }
 
 // Ensure that Delegate implements the build.Delegate interface.

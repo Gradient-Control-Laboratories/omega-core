@@ -511,12 +511,25 @@ fn map_binary(op: BinaryOpcode) -> Result<tape_proto::BinaryOp, String> {
     })
 }
 
+/// What one output's appearance takes in the flat array of tree indices the Go
+/// side hands `serialize_tape_appearance`: its colour's three, then its
+/// material's sixteen (four rows of four: surface, emissive, volume, lay).
+pub const APPEARANCE_COLOR_TREES: usize = 3;
+pub const APPEARANCE_MATERIAL_TREES: usize = 16;
+pub const APPEARANCE_SLOTS: usize = APPEARANCE_COLOR_TREES + APPEARANCE_MATERIAL_TREES;
+
+/// The result code of `serialize_tape_appearance` for a caller that laid its
+/// appearances out with a different number of slots an output than
+/// `APPEARANCE_SLOTS`: the two sides, or a stale library, disagree.
+pub const ERR_APPEARANCE_LAYOUT: i32 = -43;
+
 /// One output's colour and material trees, for `serialize_outputs_with_appearance`.
 pub struct AppearanceTrees {
     /// sRGB [r, g, b] tree indices, when the output has a colour.
-    pub color: Option<[usize; 3]>,
-    /// The 12 material tree indices, rows flattened, when it has a material.
-    pub material: Option<[usize; 12]>,
+    pub color: Option<[usize; APPEARANCE_COLOR_TREES]>,
+    /// The 16 material tree indices, four rows of four flattened, when it has a
+    /// material.
+    pub material: Option<[usize; APPEARANCE_MATERIAL_TREES]>,
     /// The material's displacement is not a constant zero.
     pub displaced: bool,
 }
@@ -1287,40 +1300,55 @@ pub unsafe extern "C" fn serialize_tape(outputs_ptr: *const c_ulong, count: usiz
     }
 }
 
+/// Unpack the flat array `serialize_tape_appearance` takes: `APPEARANCE_SLOTS`
+/// tree indices per output (colour, then material), `u64::MAX` for a colour or
+/// material the output lacks, and one displaced flag per output.
+fn appearance_from_flat(app: &[c_ulong], disp: &[u8]) -> Vec<AppearanceTrees> {
+    let absent = c_ulong::MAX;
+    disp.iter()
+        .enumerate()
+        .map(|(k, &displaced)| {
+            let a = &app[APPEARANCE_SLOTS * k..APPEARANCE_SLOTS * (k + 1)];
+            let (color, material) = a.split_at(APPEARANCE_COLOR_TREES);
+            AppearanceTrees {
+                color: (color[0] != absent).then(|| std::array::from_fn(|i| color[i] as usize)),
+                material: (material[0] != absent).then(|| std::array::from_fn(|i| material[i] as usize)),
+                displaced: displaced != 0,
+            }
+        })
+        .collect()
+}
+
 /// Serialize the outputs with their appearance (see
-/// `serialize_outputs_with_appearance`): `appearance_ptr` holds 15 tree indices
-/// per output, colour r, g, b then the 12 material entries, `u64::MAX` for a
-/// colour or material the output does not have (all three, or all twelve), and
-/// `displaced_ptr` one flag per output.
+/// `serialize_outputs_with_appearance`): `appearance_ptr` holds `slots` tree
+/// indices per output, which must be `APPEARANCE_SLOTS` (19): colour r, g, b
+/// then the 16 material entries, `u64::MAX` for a colour or material the output
+/// does not have (all three, or all sixteen), and `displaced_ptr` one flag per
+/// output. Any other `slots` returns `ERR_APPEARANCE_LAYOUT` without reading
+/// `appearance_ptr`: the caller was built for another layout.
 ///
 /// # Safety
 /// `outputs_ptr` and `displaced_ptr` must point to `count` values and
-/// `appearance_ptr` to `15 * count`.
+/// `appearance_ptr` to `slots * count`.
 #[no_mangle]
 pub unsafe extern "C" fn serialize_tape_appearance(
     outputs_ptr: *const c_ulong,
     count: usize,
     appearance_ptr: *const c_ulong,
+    slots: usize,
     displaced_ptr: *const u8,
 ) -> RenderResult {
     if outputs_ptr.is_null() || appearance_ptr.is_null() || displaced_ptr.is_null() {
         return build_render_error(-40);
     }
+    if slots != APPEARANCE_SLOTS {
+        return build_render_error(ERR_APPEARANCE_LAYOUT);
+    }
     let raw = unsafe { std::slice::from_raw_parts(outputs_ptr, count) };
     let indices: Vec<usize> = raw.iter().map(|&v| v as usize).collect();
-    let app = unsafe { std::slice::from_raw_parts(appearance_ptr, 15 * count) };
+    let app = unsafe { std::slice::from_raw_parts(appearance_ptr, APPEARANCE_SLOTS * count) };
     let disp = unsafe { std::slice::from_raw_parts(displaced_ptr, count) };
-    let absent = c_ulong::MAX;
-    let appearance: Vec<AppearanceTrees> = (0..count)
-        .map(|k| {
-            let a = &app[15 * k..15 * k + 15];
-            AppearanceTrees {
-                color: (a[0] != absent).then(|| [a[0] as usize, a[1] as usize, a[2] as usize]),
-                material: (a[3] != absent).then(|| std::array::from_fn(|i| a[3 + i] as usize)),
-                displaced: disp[k] != 0,
-            }
-        })
-        .collect();
+    let appearance = appearance_from_flat(app, disp);
     match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         serialize_outputs_with_appearance(&indices, &appearance)
     })) {
@@ -2017,5 +2045,79 @@ mod tests {
         assert_eq!(uses.len(), 1);
         assert_eq!(uses[0].1, "noise");
         assert!(uses[0].2, "a noise tile is library-baked");
+    }
+}
+
+/// The flat appearance layout the Go serializer hands over: 19 trees an output,
+/// a colour's three then a material's sixteen (four rows of four), `u64::MAX`
+/// for one an output lacks.
+#[cfg(test)]
+mod appearance_layout_tests {
+    use super::*;
+
+    #[test]
+    fn a_material_is_sixteen_trees_after_the_colour() {
+        assert_eq!(APPEARANCE_SLOTS, 19);
+        let absent = c_ulong::MAX;
+        let mut app = vec![absent; APPEARANCE_SLOTS * 3];
+        // Output 0: a colour (100..) and a material (200..), displaced.
+        for i in 0..APPEARANCE_COLOR_TREES {
+            app[i] = 100 + i as c_ulong;
+        }
+        for i in 0..APPEARANCE_MATERIAL_TREES {
+            app[APPEARANCE_COLOR_TREES + i] = 200 + i as c_ulong;
+        }
+        // Output 1: neither. Output 2: a colour (300..) and a material (400..),
+        // so a stride of the wrong width would read this one as output 1's.
+        for i in 0..APPEARANCE_COLOR_TREES {
+            app[2 * APPEARANCE_SLOTS + i] = 300 + i as c_ulong;
+        }
+        for i in 0..APPEARANCE_MATERIAL_TREES {
+            app[2 * APPEARANCE_SLOTS + APPEARANCE_COLOR_TREES + i] = 400 + i as c_ulong;
+        }
+        let out = appearance_from_flat(&app, &[1, 0, 0]);
+
+        assert_eq!(out[0].color, Some([100, 101, 102]));
+        assert_eq!(out[0].material, Some(std::array::from_fn(|i| 200 + i)));
+        assert!(out[0].displaced);
+        assert_eq!(out[1].color, None);
+        assert_eq!(out[1].material, None);
+        assert!(!out[1].displaced);
+        assert_eq!(out[2].color, Some([300, 301, 302]));
+        assert_eq!(out[2].material, Some(std::array::from_fn(|i| 400 + i)));
+        assert!(!out[2].displaced);
+    }
+
+    #[test]
+    fn a_colour_and_a_material_are_independent() {
+        let absent = c_ulong::MAX;
+        let mut colour_only = vec![absent; APPEARANCE_SLOTS];
+        colour_only[..APPEARANCE_COLOR_TREES].copy_from_slice(&[7, 8, 9]);
+        let out = appearance_from_flat(&colour_only, &[0]);
+        assert_eq!(out[0].color, Some([7, 8, 9]));
+        assert_eq!(out[0].material, None);
+
+        let mut material_only = vec![absent; APPEARANCE_SLOTS];
+        for i in 0..APPEARANCE_MATERIAL_TREES {
+            material_only[APPEARANCE_COLOR_TREES + i] = i as c_ulong;
+        }
+        let out = appearance_from_flat(&material_only, &[0]);
+        assert_eq!(out[0].color, None);
+        assert_eq!(out[0].material, Some(std::array::from_fn(|i| i)));
+    }
+
+    #[test]
+    fn a_caller_built_for_another_layout_is_refused() {
+        let outputs = [0 as c_ulong];
+        let app = vec![c_ulong::MAX; APPEARANCE_SLOTS];
+        let displaced = [0u8];
+        // Three rows of material was the layout before the lay row: 15 slots.
+        for slots in [15, APPEARANCE_SLOTS - 1, APPEARANCE_SLOTS + 1] {
+            let result = unsafe {
+                serialize_tape_appearance(outputs.as_ptr(), 1, app.as_ptr(), slots, displaced.as_ptr())
+            };
+            assert_eq!(result.code, ERR_APPEARANCE_LAYOUT, "slots = {slots}");
+            crate::render_result_free(result);
+        }
     }
 }
