@@ -102,6 +102,11 @@ const animFrameMs = 1000 / 30; // cap animation loop at 30fps
 let animPaused = true;
 let pauseStartMs = performance.now();   // performance.now() when last paused
 let timeOffsetMs = 0;   // total ms to subtract (accumulated pauses + manual seeks)
+// @duration: how long the document says its animation runs, in seconds. The
+// clock starts over on passing it. 0 means the document names none, and the
+// clock runs on. Declared up here with the rest of the clock: the first frame
+// is drawn before the functions below are reached.
+let loopSeconds = 0;
 const fieldEnabledU = uniform(0.0);
 const fieldHeightU = uniform(0.0);
 const fieldNormalU = uniform(new THREE.Vector3(0, 0, 1));
@@ -921,7 +926,7 @@ function render(allowDraft = false, useAccum = true) {
     accumN = 0;
   }
   accumNU.value = useAccum ? accumN : 0;
-  timeU.value = getElapsedMs() / 1000;
+  timeU.value = getAnimTime();
   updateCameraUniforms();
   updatePartView();
 
@@ -2073,8 +2078,15 @@ function getElapsedMs() {
     return performance.now() - startTimeMs - timeOffsetMs;
 }
 
+export function setAnimDuration(seconds) {
+    loopSeconds = seconds > 0 ? seconds : 0;
+    scheduleRender();
+}
+
 export function getAnimTime() {
-    return getElapsedMs() / 1000;
+    const t = getElapsedMs() / 1000;
+    // Only once past the end, so the end itself can be scrubbed to and seen.
+    return loopSeconds > 0 && t > loopSeconds ? t % loopSeconds : t;
 }
 
 export function setAnimTime(t) {

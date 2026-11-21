@@ -340,6 +340,10 @@ func (p *Package) PrettyPrint(indent int) string {
 		result.WriteString(strings.Repeat(" ", indent*3))
 		result.WriteString(fmt.Sprintf("@scene(%g, %g)\n\n", p.Scene.Size, p.Scene.Grid))
 	}
+	if p.Duration != nil {
+		result.WriteString(strings.Repeat(" ", indent*3))
+		result.WriteString(fmt.Sprintf("@duration(%g)\n\n", p.Duration.Seconds))
+	}
 	for _, c := range p.Captions {
 		if c == nil {
 			continue

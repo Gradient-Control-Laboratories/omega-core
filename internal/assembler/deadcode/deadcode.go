@@ -137,6 +137,7 @@ func removePkg(pkgScope *scope.PkgScope, returnExpr []*program.Operand, outOfSco
 		Files:        files,
 		Scene:        program.CloneScene(pkgScope.Package.Scene),
 		Captions:     program.CloneCaptions(pkgScope.Package.Captions),
+		Duration:     program.CloneDuration(pkgScope.Package.Duration),
 	}, outOfScope, nil
 }
 
