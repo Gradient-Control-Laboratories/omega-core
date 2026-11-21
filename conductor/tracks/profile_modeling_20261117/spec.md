@@ -102,6 +102,16 @@ Profiles first, then the operations on them. The numbering is the order.
    [profile_sweep.gsl](../../../examples/profile_sweep.gsl). Open and non-planar paths come after, with a
    stated Lipschitz bound: there the section's frame is transported and the swept distance stops being exact
    past the path's radius of curvature.
+
+   Decided 2026-11-18: `sweep(section, path)`, the path any exact 2D field in XY whose zero line it is
+   (`profileXY`, `nested(...)`, a circle), the section a 2D profile with x across the path (positive outside)
+   and y up as z. It is the remap `profile_sweep.gsl` writes by hand, `remap(section, [path, p.z, 0])`:
+   1-Lipschitz and zero on the swept surface everywhere, so never more than the distance, and exact where
+   p's nearest path point is unique, which holds while the section stays inside the path's tube (on the
+   inside of a bend, within its radius; nowhere past the path's medial axis). At a sharp corner of the path
+   it sweeps round the outside and mitres the inside, as documented; fillet the path for a smooth sweep.
+   Frame and box by Go rules beside revolve's: `.u` the path's `.u`, `.v` the section's `.u`, the box the
+   path's grown by the section's reach across and its height.
 7. **C5. Caps for sweeps.** Cylinder-style caps where an open sweep ends.
 
 ## 5. Constraints Met While Writing #45
@@ -139,7 +149,11 @@ probe documents compiled to WGSL and queried with `gsl eval`; the result follows
   smallest fillet's radius (an interval over a curve is as loose as the cell is wide against its radius:
   at a radius-1 fillet, 4.35 diagonals at 0.5 mm cells, 2.43 at 0.04 mm), and `certify` proves the space just off the part empty, including above a
   rounded rim, and `bounds` (`Evaluator.Enclose`) proves the part's box. Whether `Enclose` proves can hang on
-  where its cuts land: Phase 0's star proves over one region and runs out of budget over another.
+  where its cuts land: Phase 0's star proves over one region and runs out of budget over another. A sweep
+  reads its section at the path's distance, so the path's interval feeds the section's and their looseness
+  compounds (owner's decision, 2026-11-18): its cells may be six diagonals wide (5.54 measured), `certify`
+  proves it with a larger budget (about 300,000 evaluations above it, against a default of 200,000), and
+  `bounds` is not asserted, its budget fixed short of what it needs (backlog `M16`).
 - **Backends:** each example compiles to WGSL; its size is checked against a budget, and the viewer shows
   what the CPU evaluates.
 - **Tests:** in Go. A Python test of the wheel's API only where `AGENTS.md`'s owner allows one.
