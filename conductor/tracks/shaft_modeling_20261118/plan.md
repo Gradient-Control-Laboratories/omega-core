@@ -364,3 +364,38 @@ Phase 0 has no start commit; Phase 7 was skipped.
       unnamed (their boxes move). No codegen golden moves: the sharing that moved them is already in main's.
       Found: every segment's field is still written about 20 times into the shader (a later item)
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+
+## Phase 14: Knurls [checkpoint: ceeb5d4]
+
+- [x] Task: Proposal (approved 2026-11-21): `shaft.knurl(dia, pitchVal, pattern, from, to)`, the blank as
+      geometry (a plain diameter in the fold, the envelope and the box) and ISO 13444 teeth (90 degrees,
+      pitch / 2 deep, a whole number round) as a displacement height bounded as thread.maleRelief is;
+      patterns as constants (knurlStraight, knurlLeft, knurlRight, knurlDiamond, knurlDiamondSunk,
+      knurlAnnular; helices at 30 degrees); new questions want 10 (height) and want 11 (minus depth
+      fraction), which every other segment answers nothing; `shaft.relief(segments)`,
+      `shaft.paint(baseColor, segments)` and finished `shaft.body(segments, finish)` /
+      `(segments, bottomHole, topHole, finish)`: steel with the paint, the envelope painted as `.simple`
+- [x] Task: Write failing tests (Red Phase), `eval/shaft_knurl_test.go`: every pattern's height; the
+      invariants (straight along the axis, annular round it, a helix along itself, crest 0, root a tooth
+      depth); the bounds (planes, beyond, axis, plain neighbours); the geometry is the blank; paint darkens a
+      root and leaves a crest; the finished body is the plain one with displacement and a stand-in in its
+      shader; a plain shaft's relief is 0
+- [x] Task: Implement (Green & Refactor Phase): `shaft.knurl` (a diameter's closure answering want 10 with
+      `knurlHeight` and want 11 with it over the tooth depth), the six pattern constants, `knurlTooth`;
+      `shaft.relief`, `shaft.paint`, finished `body(segments, finish)` and `body(segments, bottomHole,
+      topHole, finish)` (each written out in full, as body is: the fold, the box, the relief, the depth and
+      the envelope); the bevel answers nothing to wants 10 and 11. Every shaft example's WGSL unchanged.
+      One test defect corrected with the owner's approval: a lone displaced part's height rides in its
+      material record (`gsl_sdShapeDisplaced` is written only for several parts of different heights),
+      and its stand-in is `gsl_simple`
+- [x] Task: An example (`shaft_knurled.gsl`: the six patterns side by side, each finished in steel, named
+      parts with constant boxes): WGSL 71,287 B; the CPU render draws the teeth (a right-hand knurl rises to
+      the right on its near face, as a right-hand thread does); the owner's viewer check
+- [x] Task: The owner's viewer check found the paint stayed with textures off, where a fastener's goes
+      plain. Cause, general and not the shaft's: a property's companion (`companionOf`, carry.go) copied
+      its function's assignments with every property stripped, so a colour built in a local with a
+      stand-in (`t.simple`) and set as `s.color = t` lost it; only a colour returned from a function kept
+      its own. Fixed with the owner's approval: the companion keeps a value's `.simple`, `.detail` and
+      `.detailSize`. Red first, `eval/simple_local_test.go` (a document function's local colour keeps its
+      stand-in, as a returned one does; the finished knurl's paint carries one). No golden moved
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`); the owner's recheck of the Textures rung in the viewer is pending (away; to be reminded at wrap-up)
