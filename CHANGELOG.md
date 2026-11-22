@@ -142,6 +142,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the bevel, about 1.7 to 1.8 times as deep as before at these edges (116 to 129 degrees through the
   material); the body, standoff and bore chamfers are unchanged. Gear and bevel-gear WGSL grows by
   582 bytes.
+- A one-element list indexed at run time, such as `curvatures[0]` of `[0.1]` read in a reduce, failed on the CPU
+  paths (`gsl eval`, tape and meshing) with "target must be a collection, got num": the fidget backend builds the
+  list as one value. Index 0 now reads it there as WGSL already did; past 0 is an error.
 - A declared `.box` that reduces over a list a function call returned failed to assemble ("vector subtraction
   dimension mismatch", "collection elements must be all scalars or all vectors"): the box pass handed the
   reduce the whole list as one element. `profileXY(points, curvatures)` with its curvatures made by a function
