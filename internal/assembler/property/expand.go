@@ -1696,8 +1696,8 @@ func isOperator(operation program.Operation) bool {
 		operation == program.Operation_SURFACEU || operation == program.Operation_SURFACEV
 }
 
-// sliderNames names a package's slider declarations: those given an @range, or
-// a .min, .max or .period, which the viewer turns into live controls.
+// sliderNames names a package's slider declarations: those given an @range, which
+// the viewer turns into live controls.
 func sliderNames(pkg *program.Package) map[string]bool {
 	out := map[string]bool{}
 	for _, f := range pkg.Files {
@@ -1714,11 +1714,6 @@ func sliderNames(pkg *program.Package) map[string]bool {
 				}
 				if a.Range != nil {
 					out[v.Name] = true
-				}
-				for _, prop := range v.Properties {
-					if prop != nil && (prop.Name == "min" || prop.Name == "max" || prop.Name == "period") {
-						out[v.Name] = true
-					}
 				}
 			}
 		}

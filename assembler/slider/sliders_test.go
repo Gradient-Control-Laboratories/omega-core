@@ -49,13 +49,12 @@ type sliderUnderTest struct {
 	Period      float64
 }
 
-// A variable with both .min and .max whose RHS is a plain integer
+// A variable with an @range whose RHS is a plain integer
 // literal surfaces as a slider; the literal's source span is
 // 1-based, end-exclusive.
 func TestExtractSliders_LiteralInt(t *testing.T) {
-	src := "radius = 5;\n" +
-		"radius.min = 1;\n" +
-		"radius.max = 10;\n" +
+	src := "@range(1, 10)\n" +
+		"radius = 5;\n" +
 		"return radius;\n"
 	sliders := runExtract(t, src)
 	assert.Equal(t, 1, len(sliders))
@@ -66,22 +65,21 @@ func TestExtractSliders_LiteralInt(t *testing.T) {
 	assert.Equal(t, 5.0, got.Initial)
 	// "5" has no decimal point → 0 decimal places → integer step.
 	assert.Equal(t, 0, got.Decimals)
-	// "5" sits at line 1, columns 10..11 (1-based, end-exclusive).
-	assert.Equal(t, 1, got.StartLine)
+	// "5" sits at line 2, columns 10..11 (1-based, end-exclusive).
+	assert.Equal(t, 2, got.StartLine)
 	assert.Equal(t, 10, got.StartColumn)
-	assert.Equal(t, 1, got.EndLine)
+	assert.Equal(t, 2, got.EndLine)
 	assert.Equal(t, 11, got.EndColumn)
 	// ParamName encodes the operand's actual position so codegen can
 	// match it during literal-to-parameter lifting.
-	assert.Equal(t, "gsl_param_1_10", got.ParamName)
+	assert.Equal(t, "gsl_param_2_10", got.ParamName)
 }
 
 // Decimal literal: the author wrote N digits after the decimal point,
 // so the slider rounds to that precision (step = 10^-N).
 func TestExtractSliders_LiteralDecimal(t *testing.T) {
-	src := "radius = 0.25;\n" +
-		"radius.min = 0;\n" +
-		"radius.max = 1;\n" +
+	src := "@range(0, 1)\n" +
+		"radius = 0.25;\n" +
 		"return radius;\n"
 	sliders := runExtract(t, src)
 	assert.Equal(t, 1, len(sliders))
@@ -94,9 +92,8 @@ func TestExtractSliders_LiteralDecimal(t *testing.T) {
 // precision, so `5.00` rounds at hundredths even though the value
 // could be written as just `5`.
 func TestExtractSliders_TrailingDecimalZero(t *testing.T) {
-	src := "radius = 5.00;\n" +
-		"radius.min = 0;\n" +
-		"radius.max = 10;\n" +
+	src := "@range(0, 10)\n" +
+		"radius = 5.00;\n" +
 		"return radius;\n"
 	sliders := runExtract(t, src)
 	assert.Equal(t, 1, len(sliders))
@@ -113,9 +110,8 @@ func TestExtractSliders_TrailingDecimalZero(t *testing.T) {
 // authoring intent is "tenths precision with a trailing zero showing
 // two decimals", and the slider should round to 0.01 step.
 func TestExtractSliders_LeadingZeroTrailingZero(t *testing.T) {
-	src := "radius = 0.50;\n" +
-		"radius.min = 0;\n" +
-		"radius.max = 1;\n" +
+	src := "@range(0, 1)\n" +
+		"radius = 0.50;\n" +
 		"return radius;\n"
 	sliders := runExtract(t, src)
 	assert.Equal(t, 1, len(sliders))
@@ -131,9 +127,8 @@ func TestExtractSliders_LeadingZeroTrailingZero(t *testing.T) {
 // interpret trailing-integer-zeros as "tens precision" because the
 // author can opt into that explicitly by adding a decimal point.
 func TestExtractSliders_IntegerTrailingZero(t *testing.T) {
-	src := "n = 100;\n" +
-		"n.min = 0;\n" +
-		"n.max = 1000;\n" +
+	src := "@range(0, 1000)\n" +
+		"n = 100;\n" +
 		"return n;\n"
 	sliders := runExtract(t, src)
 	assert.Equal(t, 1, len(sliders))
@@ -144,9 +139,8 @@ func TestExtractSliders_IntegerTrailingZero(t *testing.T) {
 // A signed-literal RHS: the parser folds `-` into the Operand_Value,
 // and correctly sets the start position at the leading `-`.
 func TestExtractSliders_LiteralNegative(t *testing.T) {
-	src := "offset = -3;\n" +
-		"offset.min = -10;\n" +
-		"offset.max = 10;\n" +
+	src := "@range(-10, 10)\n" +
+		"offset = -3;\n" +
 		"return offset;\n"
 	sliders := runExtract(t, src)
 	assert.Equal(t, 1, len(sliders))
@@ -156,10 +150,10 @@ func TestExtractSliders_LiteralNegative(t *testing.T) {
 	assert.Equal(t, 12, got.EndColumn)
 	// ParamName uses the operand's actual start column (10) since the
 	// parser now correctly points to the leading `-`.
-	assert.Equal(t, "gsl_param_1_10", got.ParamName)
+	assert.Equal(t, "gsl_param_2_10", got.ParamName)
 }
 
-// Without min/max properties the variable is just a regular
+// Without an @range the variable is just a regular
 // declaration and produces no slider entry.
 func TestExtractSliders_NoProperties(t *testing.T) {
 	src := "radius = 5;\n" +
@@ -168,55 +162,17 @@ func TestExtractSliders_NoProperties(t *testing.T) {
 	assert.Equal(t, 0, len(sliders))
 }
 
-// Only one of the two required properties is set — rejected by property validation.
-func TestExtractSliders_OnlyMin(t *testing.T) {
-	src := "radius = 5;\n" +
-		"radius.min = 0;\n" +
-		"return radius;\n"
-	_, err := assembler.Assemble([]string{src}, assembler.SourceManager(&source.MockManager{}))
-	assert.Error(t, err)
-}
-
-// An expression RHS (`27 + 3`) has no single literal to rewrite, so
-// the slider UI has nowhere to commit changes — skip.
 func TestExtractSliders_ExpressionRHS(t *testing.T) {
-	src := "radius = 27 + 3;\n" +
-		"radius.min = 0;\n" +
-		"radius.max = 100;\n" +
+	src := "@range(0, 100)\n" +
+		"radius = 27 + 3;\n" +
 		"return radius;\n"
 	sliders := runExtract(t, src)
 	assert.Equal(t, 0, len(sliders))
 }
 
-// .period turns a slider into an animated one — the host drives a
-// sinusoid through [min, max] with the given period (seconds). It's
-// optional; min/max are still required.
-func TestExtractSliders_Period(t *testing.T) {
-	src := "radius = 5;\n" +
-		"radius.min = 1;\n" +
-		"radius.max = 10;\n" +
-		"radius.period = 4.0;\n" +
-		"return radius;\n"
-	sliders := runExtract(t, src)
-	assert.Equal(t, 1, len(sliders))
-	assert.Equal(t, 4.0, sliders[0].Period)
-}
-
-// A zero or negative period is rejected by property validation.
 func TestExtractSliders_PeriodNonPositive(t *testing.T) {
-	src := "radius = 5;\n" +
-		"radius.min = 1;\n" +
-		"radius.max = 10;\n" +
-		"radius.period = 0;\n" +
-		"return radius;\n"
-	_, err := assembler.Assemble([]string{src}, assembler.SourceManager(&source.MockManager{}))
-	assert.Error(t, err)
-}
-
-// .period without .min or .max is rejected by property validation.
-func TestExtractSliders_PeriodWithoutMinMax(t *testing.T) {
-	src := "radius = 5;\n" +
-		"radius.period = 2.0;\n" +
+	src := "@range(1, 10, 0)\n" +
+		"radius = 5;\n" +
 		"return radius;\n"
 	_, err := assembler.Assemble([]string{src}, assembler.SourceManager(&source.MockManager{}))
 	assert.Error(t, err)
@@ -246,28 +202,4 @@ func TestExtractSliders_ExplicitRangeWithPeriod(t *testing.T) {
 	assert.Equal(t, 1.0, sliders[0].Min)
 	assert.Equal(t, 10.0, sliders[0].Max)
 	assert.Equal(t, 3.5, sliders[0].Period)
-}
-
-// A bound computed from other constants folds, as Slider Mechanism's
-// `slidePos.min = abs(slideRadius - baseRadius) - slideOffset` does. Skipping
-// it dropped the slider and its .period animation.
-func TestExtractSliders_ComputedBounds(t *testing.T) {
-	src := "slideRadius = 6.00;\n" +
-		"slideRadius.min = 4;\n" +
-		"slideRadius.max = 8;\n" +
-		"baseRadius = 4.00;\n" +
-		"slideOffset = 4;\n" +
-		"slidePos = 2.02;\n" +
-		"slidePos.min = abs(slideRadius - baseRadius) - slideOffset;\n" +
-		"slidePos.max = slideRadius + baseRadius - slideOffset;\n" +
-		"slidePos.period = 10;\n" +
-		"return slideRadius + slidePos;\n"
-	sliders := runExtract(t, src)
-	assert.Equal(t, 2, len(sliders))
-	got := sliders[1]
-	assert.Equal(t, "slidePos", got.Name)
-	assert.Equal(t, -2.0, got.Min)
-	assert.Equal(t, 6.0, got.Max)
-	assert.Equal(t, 10.0, got.Period)
-	assert.Equal(t, "gsl_param_6_12", got.ParamName)
 }

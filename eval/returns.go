@@ -16,7 +16,7 @@ func SliderRanges(code string) (map[string][2]float64, error) {
 	}
 	sliders := slider.Extract(code, res.Package)
 	if len(sliders) == 0 {
-		return nil, fmt.Errorf("document declares no sliders (variables with .min and .max) to certify over")
+		return nil, fmt.Errorf("document declares no sliders (variables with @range) to certify over")
 	}
 	params := make(map[string][2]float64, len(sliders))
 	for _, s := range sliders {
@@ -209,7 +209,7 @@ func topLevelStatements(source string) []gslStmt {
 // it is the `import` keyword, skipping leading whitespace, comments, the
 // `@scene(...)` directive (which ends without a `;`, so it leads the
 // statement after it) and the declaration's own annotations (`@range(5, 15)
-// r = 10.0;`). A statement that sets a property (`r.min = 5.0;`) declares
+// r = 10.0;`). A statement that sets a property (`a.color = [1, 0, 0];`) declares
 // nothing: its name is "". keep is where the declaration begins, its
 // annotations included: what precedes it (whitespace, comments, `@scene`)
 // stays when the declaration is replaced.
