@@ -477,6 +477,41 @@ defined in [README.md](../../../README.md):
     `gsl eval`'s `bounds` request takes a budget as `certify`'s does. Test: a sweep's box proves with a
     raised budget and not with the default.
 
+- [ ] **M17. Share What a Part's Box Repeats**
+  - A part's box reaches the WGSL as the `lo` and `hi` of `shrinkToVanish(shape, lo, hi, solid)`
+    (`internal/assembler/property/parts.go`), six expressions the box domain builds as trees, and the
+    codegen writes them out whole, evaluated per point for the viewer's culling. A profile's bounds arrive
+    fully expanded (min and max over every point's slider expression, read again in an arc profile's
+    bulge), and a rule such as `swept` reads a section's bound in several corners, so the same subtrees
+    repeat many times. Measured on 2026-11-18 in the Profile Modeling track
+    ([profile_modeling_20261117](../profile_modeling_20261117/plan.md), Phase 7): the box is 52 KB of a
+    60 KB closed `sweep` whose path keeps its box, and 33 KB of `profile_sweep_open.gsl`'s 45 KB.
+  - Prototyped (not kept, the patch in the session's scratchpad): before wrapping a part, hoist each
+    subtree its box repeats into a value of its own declared just before the part, largest saving first,
+    ordered so each value follows those it reads; the codegen writes them as `let`s. Values identical
+    (GPU checksums equal); with sliders as runtime values, 64 evaluations a point over 1M points:
+
+    | Field                          | WGSL now | Shared  | GPU per point              |
+    | :----------------------------- | -------: | ------: | :------------------------- |
+    | closed `sweep`, path with box  |  59.7 KB |  9.8 KB | within noise (0–6 ms)      |
+    | `profile_cylinder.gsl`         | 131.8 KB | 24.3 KB | 8–10 ms faster, about half |
+    | `profile_sweep_open.gsl`       |  55.4 KB | 23.8 KB | 2–5 ms faster              |
+    | the other `profile_*` examples | unchanged | unchanged |                          |
+
+    The alternative, keeping a library call that reads neither p nor time as a call in the box domain (with
+    `profileXY`'s bounds through single-return helpers), did less (19.8, 44.2 and 30.1 KB), grew
+    `profile_star.gsl` from 4.4 to 7.0 KB by keeping a box that folded to constants as a call, and needs a
+    p-read analysis in the box domain; both together were no better than sharing alone.
+  - Goldens: of the 87 example goldens (`backend/wgsl/internal/codegen/testdata/example`), four move with
+    the prototype, each slightly larger: CoreXY Printer 164,701 → 165,376 bytes, Printer Gantry 59,652 →
+    60,392, Motion Proof 4,205 → 4,242, Parametric Proof 4,348 → 4,369. They repeat only small subtrees,
+    where a `let` costs more than it saves; a minimum saving per hoist (to be measured) should leave them
+    as they are. Regenerating any golden waits for the owner's authorization, with the diff shown.
+  - Proposal: the pass in `MarkParts`, on the part's six corners together, hoisting a subtree only when
+    its saving passes the threshold; the hoisted values named so they cannot clash (`freshName`). Tests:
+    a part's values unchanged with the pass on and off; the closed sweep's and `profile_cylinder`'s WGSL
+    under a size bound; the four goldens above unchanged once the threshold is set.
+
 ## 6. Small Targeted Cleanups
 
 - [x] **S1. Generalized Postfix Modifier Chaining (`Modifiers []*Modifier`)**

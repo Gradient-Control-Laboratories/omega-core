@@ -602,6 +602,9 @@ func (dd *boxDomain) Call(name string, args []Value) (Value, bool, error) {
 	if name == "sweep" && len(vs) == 2 {
 		return swept(vs[0], vs[1]), true, nil
 	}
+	if name == "sweepOpen" && (len(vs) == 2 || len(vs) == 3) {
+		return sweptOpen(vs[0], vs[1:]), true, nil
+	}
 	if name == "revolve" && (len(vs) == 3 || len(vs) == 4) {
 		return revolved(vs[0], vs[1], vs[2]), true, nil
 	}
@@ -673,11 +676,40 @@ func revolved(profile, axisPoint, axisDirection boxVal) boxVal {
 // path's line than the section reaches. A section or path without a bounded
 // box leaves the result unbounded.
 func swept(section, path boxVal) boxVal {
-	sb, pb := section.box, path.surf
+	pb := path.surf
 	if pb == nil {
 		pb = path.box
 	}
-	if section.op != nil || path.op != nil || sb == nil || pb == nil {
+	if path.op != nil {
+		return boxVal{}
+	}
+	return sweptAround(section, pb)
+}
+
+// sweptOpen is the box of sweepOpen(section, points[, curvatures])
+// (sweep.gsl): the chain's own box, without its rays, from builtin's
+// openProfileLowXY and openProfileHighXY called on the same arguments, grown
+// as swept grows a closed path's. The caps stand square to the chain at its
+// ends, so no point of the solid is farther across from the chain itself
+// than the section reaches. A chain that depends on p, or a section without
+// a bounded box, leaves the result unbounded.
+func sweptOpen(section boxVal, chain []boxVal) boxVal {
+	ops, ok := opsOf(chain)
+	if !ok {
+		return boxVal{}
+	}
+	low, high := call("openProfileLowXY", ops...), call("openProfileHighXY", ops...)
+	return sweptAround(section, &bbox{
+		lo: [3]*program.Operand{planar(low, 0), planar(low, 1)},
+		hi: [3]*program.Operand{planar(high, 0), planar(high, 1)},
+	})
+}
+
+// sweptAround is a sweep's box about pb, its path's box in x and y: pb grown
+// by the section's reach across, and the section's extent in y as z.
+func sweptAround(section boxVal, pb *bbox) boxVal {
+	sb := section.box
+	if section.op != nil || sb == nil || pb == nil {
 		return boxVal{}
 	}
 	if sb.empty || pb.empty {

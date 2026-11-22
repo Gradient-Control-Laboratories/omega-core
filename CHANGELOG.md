@@ -9,6 +9,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `nested(fields)` combines exact fields whose surfaces do not cross, each wound with its solid on the negative
+  side (counterclockwise outlines and islands, clockwise holes), into one exact distance in any order: an outline
+  with holes in a single profile, or a 3D solid with a void.
+- Corners per vertex on `profileXY`: `profileXY(points, curvatures, corners)` and
+  `profileXY(points, curvatures, corners, blend)`, with `cornerSharp()`, `cornerFillet(radius)`,
+  `cornerChamfer(setback)`, `cornerBlend()` and `everyCorner(points, corner)`. Fillets and chamfers are edges of
+  the loop, so the distance stays exact, and are clamped to fit; `cornerBlend()` applies any edge-blend operator
+  (`intersectRound(r)`, `intersectChamfer(d)`, …) at that vertex. Corners between two straight edges.
+- `revolve(profile, axisPoint, axisDirection, angle)`, a partial revolve with flat caps, exact; `.u` is the angle
+  and `.v` the profile's `.u`.
+- `sweep(section, path)` sweeps a 2D section along a closed planar path, any exact 2D field: exact while the
+  section stays inside the path's tube, never more than the distance anywhere. `.u` runs along the path and `.v`
+  round the section.
+- `openProfileXY(points)` and `openProfileXY(points, curvatures)`, an open chain of lines and arcs whose ends carry
+  on as rays along their tangents: the exact signed distance to that extended chain, positive to the right of
+  travel. `.u` runs along the chain.
+- `sweepOpen(section, points)` and `sweepOpen(section, points, curvatures)` sweep a section along an open chain,
+  capped flat at both ends: exact beside the chain and over the caps; beyond a cap where another part of the sweep
+  is nearer, the distance reads that cap's and is too large, though its sign stays right.
+
+### Changed
+
+- The fast chamfers' parameter is named `offset`, not `setback`, in builtin's `intersectChamfer`,
+  `unionChamfer`, `differenceChamfer`, `intersectChamferEdges`, `intersectChamferVertices`, their union
+  counterparts, and the `ChamferRound` and `ChamferBlend` families (`[edgeOffset, vertexOffset]` for the
+  list forms). It is added to the two fields before dividing by sqrt2, so it is a setback along each face
+  only at a square edge; `intersectChamferSetbacks` and `chamferDepthFromSetback` take true setbacks.
+  Arguments are positional, so callers are unchanged.
+- The viewer reaches its server through one module, `examples/viewer/host.js`; `host-static.js` answers the same
+  calls from files beside the page, and takes its place in a page `gsl export` writes.
+- `profileXY` fills its three distance pools in one pass instead of three, with the same values: 2.6 to 11 times
+  faster on the GPU across the profile examples.
 - `map.bendXZ(v, curvature)` bends space in the XZ plane for `remap`: the plane x = 0 becomes an arc of the
   given curvature, 1 / radius, with lengths along it kept, for a bow, a camber or a warp, as in
   `remap(plate, map.bendXZ(p - origin, 1 / 400) + origin)`. A curvature of 0 is no bend.
