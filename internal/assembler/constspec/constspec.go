@@ -206,7 +206,7 @@ func (s *specializer) call(fc *program.FnCall, pkgPath string) {
 		path = pkgPath
 	}
 	e := s.fns[fnKey{path, fc.Reference.Name, len(fc.Arguments)}]
-	if e == nil || len(e.fn.FnTypes) > 0 {
+	if e == nil || len(e.fn.FnTypes) > 0 || isChoose(path, fc) {
 		return
 	}
 	type bound struct {
@@ -450,4 +450,12 @@ func walkSelects(op *program.Operand, cond func(*program.Operand)) {
 			}
 		}
 	}
+}
+
+// isChoose reports whether fc calls builtin's choose(condition, onTrue,
+// onFalse), which is never specialized: the WGSL codegen writes every call as
+// a branch, or as a select its GPU compiler folds where the condition is
+// constant, while a clone would be a call that computes both sides.
+func isChoose(path string, fc *program.FnCall) bool {
+	return (path == "builtin" || path == "") && fc.Reference.Name == "choose" && len(fc.Arguments) == 3
 }

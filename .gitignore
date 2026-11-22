@@ -17,3 +17,7 @@ tmp/
 
 # Python wheels (tool/build-wheel.sh)
 dist/
+
+# The browser Fidget bundle, built by tool/build-fidget.sh --wasm-out examples/viewer/vendor
+examples/viewer/vendor/fidget-wgpu/
+examples/viewer/vendor/fidget-wasm/

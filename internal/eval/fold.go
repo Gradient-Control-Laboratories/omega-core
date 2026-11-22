@@ -436,23 +436,37 @@ func (v *foldVisitor) VisitExpression(op *program.Operand, expr *program.Express
 					}
 				}
 			} else {
-				// Vector condition: check if all non-zero or all zero
-				allNonZero := true
-				allZero := true
+				// Vector condition: a branch is taken whole only when every
+				// component selects it. A 2-way select reads each component
+				// as non-zero or zero; a 3-way select by its sign, so a
+				// condition with components of both signs selects per
+				// component and is not pruned.
+				positive, zero, negative := 0, 0, 0
 				for _, c := range condOp.ConstValues {
-					if c == 0 {
-						allNonZero = false
-					} else {
-						allZero = false
+					switch {
+					case c > 0:
+						positive++
+					case c == 0:
+						zero++
+					default:
+						negative++
 					}
 				}
-				if allNonZero {
-					selectedBranch = expr.Operands[1]
-				} else if allZero {
-					if len(expr.Operands) == 3 {
+				all := len(condOp.ConstValues)
+				if len(expr.Operands) == 3 {
+					if zero == 0 {
+						selectedBranch = expr.Operands[1]
+					} else if zero == all {
 						selectedBranch = expr.Operands[2]
-					} else if len(expr.Operands) == 4 {
+					}
+				} else if len(expr.Operands) == 4 {
+					switch all {
+					case positive:
+						selectedBranch = expr.Operands[1]
+					case zero:
 						selectedBranch = expr.Operands[2]
+					case negative:
+						selectedBranch = expr.Operands[3]
 					}
 				}
 			}

@@ -46,6 +46,10 @@ import {
     setUiControlValues,
     syncUiControls,
     defaultWGSL,
+    setCpuFrameSource,
+    setCpuTapeSource,
+    setCpuProgress,
+    setCompileFailed,
 } from "./render/viewer.js";
 import {
     initEditor,
@@ -660,6 +664,11 @@ async function exportPage() {
 
 function handleProgressEvent(ev) {
     if (!ev) return;
+    // How far a CPU frame has got goes to the Draw on note, not the progress bar.
+    if (ev.stage === "render") {
+        if (ev.total) setCpuProgress(ev.completed / ev.total);
+        return;
+    }
     resetErrorTimer();
     const stage = ev.stage || "compile";
     if (ev.done) {
@@ -671,6 +680,46 @@ function handleProgressEvent(ev) {
 }
 
 host.connectProgress(clientId, handleProgressEvent);
+
+// ── The CPU and Fidget Draw on devices ──
+
+// The viewer asks for the lit renderer's frame of the document it shows (see setCpuFrameSource), and
+// for its tape, which the Fidget device draws in the page (setCpuTapeSource). A page `gsl export`
+// wrote has no server for either, so it does not offer the devices.
+let litCount = 0;
+let tapeCount = 0;
+// The tape is made once per source and scene size, with each return's colour and material fields
+// for the Fidget device; a failed request is forgotten, so the next frame asks again.
+let fidgetTape = null;
+if (host.editable) {
+    setCpuFrameSource((request) => {
+        const source = getGslSourceForServer();
+        if (!source || source.trim() === "") return Promise.reject(new Error("no code to draw"));
+        return host.renderLit({ ...request, id: `lit-${++litCount}`, clientId, source });
+    });
+    setCpuTapeSource(() => {
+        const source = getGslSourceForServer();
+        if (!source || source.trim() === "") return Promise.reject(new Error("no code to draw"));
+        const key = `${source}\u0000${getWorldExtent()}`;
+        if (fidgetTape?.key !== key) {
+            const bytes = host.tape({ id: `tape-${++tapeCount}`, clientId, source, appearance: true });
+            fidgetTape = { key, bytes };
+            bytes.catch(() => { if (fidgetTape?.bytes === bytes) fidgetTape = null; });
+        }
+        return fidgetTape.bytes;
+    });
+} else {
+    document.getElementById("draw-on-row")?.remove();
+}
+
+// Whether the source compiles, for the CPU device, which says nothing of a compile error the editor
+// already shows.
+eventManager.addListener("canvas/errors", (_payload) => {
+    setCompileFailed(true);
+});
+eventManager.addListener("canvas/update-shader", (_event) => {
+    setCompileFailed(false);
+});
 
 // ── Surface Point & Point+Normal Picking Tools ──
 
