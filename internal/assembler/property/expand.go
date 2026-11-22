@@ -3,6 +3,7 @@ package property
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"google.golang.org/protobuf/proto"
 	"gradientcontrol.com/omega/core/program"
@@ -832,7 +833,8 @@ func cropFnType(ft *program.FnType, apply string, pkg *program.Package) error {
 }
 
 func cropAssignments(assigns []*program.Assignment, apply string, pkg *program.Package) error {
-	for _, a := range assigns {
+	for i := 0; i < len(assigns); i++ {
+		a := assigns[i]
 		if a == nil {
 			continue
 		}
@@ -876,9 +878,58 @@ func cropAssignments(assigns []*program.Assignment, apply string, pkg *program.P
 				hi = resolveAutoCorner(hi, calcHi)
 			}
 			a.Expression = call(apply, a.Expression, lo, hi)
+			moved, err := moveAfterBoxReads(assigns, i, v.Name, lo, hi)
+			if err != nil {
+				return err
+			}
+			if moved {
+				i-- // the next assignment has shifted into i
+			}
 		}
 	}
 	return nil
+}
+
+// moveAfterBoxReads moves the cropped assignment at i to just after the last
+// assignment in the same list that defines a name its box corners read, and
+// reports whether it moved. The crop is made on the shape's own assignment,
+// and a box may read names assigned after it (form = ...; low, high = ...;
+// form.box = [low, high]); a body read in order, as when a call to it is
+// inlined, would read them before they are defined. The shape's own
+// expression reads only names assigned before it, so moving it later is safe
+// unless an assignment it passes reads the shape, which is refused.
+func moveAfterBoxReads(assigns []*program.Assignment, i int, name string, lo, hi *program.Operand) (bool, error) {
+	reads := map[string]bool{}
+	collectRefs(lo, reads)
+	collectRefs(hi, reads)
+	last := i
+	for j := i + 1; j < len(assigns); j++ {
+		if assigns[j] == nil {
+			continue
+		}
+		for _, w := range assigns[j].Variables {
+			if w != nil && reads[w.Name] {
+				last = j
+			}
+		}
+	}
+	if last == i {
+		return false, nil
+	}
+	for j := i + 1; j <= last; j++ {
+		if assigns[j] != nil && assignmentReads(assigns[j], name) {
+			names := make([]string, 0, len(assigns[j].Variables))
+			for _, w := range assigns[j].Variables {
+				names = append(names, w.Name)
+			}
+			return false, fmt.Errorf("%s.box reads a name assigned after %s, and %s, assigned between them, reads %s: assign what the box reads before %s",
+				name, name, strings.Join(names, ", "), name, name)
+		}
+	}
+	a := assigns[i]
+	copy(assigns[i:last], assigns[i+1:last+1])
+	assigns[last] = a
+	return true, nil
 }
 
 func isAuto(op *program.Operand) bool {
