@@ -318,6 +318,18 @@ The numbering is the order.
 16. **Cross holes and set screws.** Radial drill stacks on a segment, plain or tapped, and a set screw
     seated in one.
 17. **Stand-ins and fits.** `shaft.envelope` as a shaft's `.simple`; ISO 286 fits for the bearing seats.
+18. **Shader CSE** (added 2026-11-21). The fold's four copies of each segment's section merged by a
+    common-subexpression pass in the WGSL codegen.
+19. **Feature pruning** (added 2026-11-21, the owner: "BBOXes could work if we remembered them for small
+    features. Could we prune CSG operations based on the chain of bounding boxes?"). A small feature
+    (a drill hole, a gear's teeth, a thread) gives way when it is small on screen even though its part is
+    not: a part's box is the wrong measure, since the part is not what disappears. A geometric property,
+    not `.detail` (a wood gear has both, independently). The size a feature is pruned at is declared by
+    the library where it builds the feature, else inferred from the operand's box, else it is never
+    pruned. The footprint is measured at the point, from the world position and the eye, so it holds
+    inside rigid remaps and on every ray. Only a union operand or a subtracted one can be pruned (both
+    become nothing); a gear's profile is re-authored as its pitch disc with tips added and gaps taken
+    away, so its teeth give way to the pitch cylinder.
 
 **Phase 3 depends on gears for the gear segment:** `gears.gearProfile` is not yet a bound (plan, Phase 3), so
 neither is `shaft.gear`; the fix is its own PR off main (a bounded involute flank, and the normalized

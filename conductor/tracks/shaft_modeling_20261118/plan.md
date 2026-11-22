@@ -544,3 +544,70 @@ Phase 0 has no start commit; Phase 7 was skipped.
       the cost and merges pure duplicates itself; the corpus it can time shrank 0-11%, and the shafts (25-58%
       smaller) are not in it
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+
+## Phase 19: Feature Pruning [checkpoint: 86b42c7]
+
+- [x] Task: Proposal (approved 2026-11-21: direction, opt-in, declared else inferred). Findings: the box
+      analysis (property/box.go) is an abstract interpreter over the source, before inlining; every remap
+      but the transform library's clears a box, so a polar fold, map.pattern* and drill.hole's own remap
+      are unbounded. Vanish (gsl_vanish) measures a part's world box against the eye, which is why
+      MarkParts refuses anything read through a remap, and the features to prune nearly all are (holes,
+      teeth in their fold, a shaft laid along X). gsl_pw, the detail footprint, is set only at a hit, so
+      the march, normals, shadows and AO never see it. Design:
+      (a) The footprint: at sdShape's entry, from the world p and gsl_vanishEye,
+          gsl_featurePixel = eye.w * mix(max(|eye - p|, 1), 1, ortho), vanish's own pixel, in a private
+          global every guard reads; rigid remaps keep distance, so it holds inside a translate, rotate or
+          fold, and every kind of ray reads the same one. A host without the eye (w <= 0) prunes nothing.
+      (b) The size, the owner's choices: opt-in, and declared, else inferred, else never. A feature opts
+          in with a geometric property, `name.featureSize = size` (mm); nothing else is ever pruned, so
+          every other model draws as before. The stdlib sets it where it builds a feature (drill
+          features their diameter; gear teeth the tooth thickness, pi m / 2; threads and knurls the
+          pitch). A size of 0 asks for it to be inferred: the smallest extent of the operand's box,
+          where the analysis bounds it, and if it does not, the feature is never pruned.
+      (c) The marker: builtin pruneBelow(field, size), the field everywhere but the viewer's WGSL, which
+          writes it as a guard that does not evaluate the field once pruned, with vanish's thresholds
+          (the Detail slider's) on size / gsl_featurePixel and vanish's fade, field + (1 - w) * size / 2.
+          Allowed only as a union operand or a subtracted one (min(a, x), max(a, -x)), where nothing is
+          the identity: a bump drops out, a hole closes. Anywhere else (an intersection) it is an error.
+      (d) gears.gearProfile re-authored as the pitch disc, with the tips added and the gaps taken away,
+          each a pruned operand overlapping the disc across the pitch circle so no sheet of zero lies
+          inside; pruned, the teeth leave the pitch cylinder. shaft.gear and gears.gear inherit it.
+      Not in this phase: meshing passing its cell as the footprint; scaled features (transform.scale's
+      factor); teaching box.go which remaps keep distance.
+- [x] Task: Write failing tests (Red Phase), proposal approved 2026-11-21 ("Approve + Red tests"):
+      `eval/feature_prune_test.go`: opt-in (no feature, no footprint; a featured hole guarded); the
+      footprint set as sdShape is entered, from p and the eye; a feature under an intersection an error
+      naming featureSize and the union it may stand in; union and subtracted operands allowed; the CPU
+      field unchanged (the hole reads 0.5); drill holes and shaft.gear's teeth opt in; the re-authored
+      gearProfile the same solid as the old one, frozen in the test, and as deep at the pitch circle inside
+      a tooth as half the old one's (no sheet). `internal/fidget/internal/gpuparity/prune_test.go`, on the
+      GPU through gpu-eval with the camera set: the plate's hole open from 50 away, closed from 1500 (the
+      plate stays), open with no camera; a 60-tooth module-2 gear from 5000 away reads its pitch cylinder,
+      r - 60, at every angle, and from 60 away does not. Red: all fail on the missing property or guard
+      (the GPU gear on the undeclared camera); the two profile tests pass, guarding the re-authoring
+- [x] Task: Implement (Green & Refactor Phase). Threads deferred (the owner): a thread is one profile,
+      pruned whole it would take the shaft; it needs the gear's treatment, a pitch-diameter cylinder plus
+      crests less roots. Knurls need nothing (their teeth are a displacement). Built: `featureSize` a
+      property (propval, scope); property/feature.go lowers it to builtin pruneBelow and checks every read
+      of a feature in its scope (a min's operand, a max's negated one, a union or difference combiner's,
+      a remap's or select's carrying, a return; anything else an error naming featureSize and the union);
+      size 0 reads builtin featureExtent of the value's box. codegen/prune.go writes the guard (the weight,
+      the fade, nothing once gone), sdShape's first statement measures gsl_featurePixel, the vanish
+      snippet declares the camera (so both hosts set it, as for parts) and a program with features but no
+      parts resets gsl_partNear for the shading. gears.gearProfile re-authored: the pitch disc, min the
+      tips (down to the root), max the gaps taken away (out to the tip circle), both a tooth thickness, pi
+      m / 2. drill.hole: a library function cannot read a box (".box ... not supported inside a
+      differentiated function body"), so, the owner's choice, the void sizes itself by probing its own
+      field, twice its depth on its axis 0.01 under the mouth. That found two things, both fixed with the
+      owner's go, Red first: the WGSL wrote remap(f, constant point) as a translation, p - c
+      (wgsl/func_call.go, since the initial commit), where the language spec, the CPU and exports read the
+      field at the point (gpuparity/remap_point_test.go); and the fold could not evaluate a remap to a
+      constant point, so each hole evaluated its stack twice: the constant evaluator binds p while it reads
+      one (internal/eval, eval/remap_fold_test.go). A drill's size is now a literal (Drill: 12.15, 12.0,
+      7.34, ...); inside a fastener function that stays a function (Bolted Joint, Interface Joints) the
+      probe still runs, one extra evaluation of that hole. References updated with authorization:
+      parser2 property.gsl's error list; sphere_gears_text.assembled and its dependency snapshot; font2.wgsl
+- [x] Task: Example and the owner's viewer check: examples/feature_pruning.gsl, a 150 mm gear with 1.6 mm teeth
+      and a plate of 1.5 mm holes on a 6 mm grid; the owner: "Looks right". Goldens regenerated with authorization;
+      GPU parity 61 pass, 0 fail
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
