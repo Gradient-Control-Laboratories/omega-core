@@ -74,6 +74,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   left to run per point, so a box written with one did not fold to numbers.
 - A constant that folds to infinity or NaN, a division or a mod by zero, is a compile error naming it, instead of
   `+Inf.0` or `NaN.0` in a WGSL shader the browser refuses.
+- A one-element list indexed at run time, such as `curvatures[0]` of `[0.1]` read in a reduce, failed on the CPU
+  paths (`gsl eval`, tape and meshing) with "target must be a collection, got num": the fidget backend builds the
+  list as one value. Index 0 now reads it there as WGSL already did; past 0 is an error.
+- A box declared in a function from a `reduce` whose step indexes a list by its `index`, such as
+  `points[mod(index + 1, count)]`, now holds: read with `.box` it failed to link ("undefined identifier: index"),
+  and in builtin the part it bounds lost its box without a word.
+- A box declared in a function written in the document may read locals assigned after the shape it bounds:
+  the crop that applies it was written on the shape's own line, so such a local was read before its assignment
+  ("undefined identifier"). A cropped body is now put in an order its reads allow; one that compiled before is
+  unchanged, and every reader of the shape still reads it cropped.
 - `map.bendXZ(v, curvature)` bends space in the XZ plane for `remap`: the plane x = 0 becomes an arc of the
   given curvature, 1 / radius, with lengths along it kept, for a bow, a camber or a warp, as in
   `remap(plate, map.bendXZ(p - origin, 1 / 400) + origin)`. A curvature of 0 is no bend.

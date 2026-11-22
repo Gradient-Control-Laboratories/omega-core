@@ -396,8 +396,9 @@ profileArcBoundsXY(points, curvatures) {
 
 // The low and high corners of an arc profile's box, closed or open, one value
 // each, for the box rules (property's profileBox and sweptOpen): an exact box
-// needs each edge's neighbour, a reduce reading its index, which a .box in
-// the stdlib cannot hold, so the rules call these instead.
+// needs each edge's neighbour, a reduce reading its index. A .box in the
+// stdlib can hold one, but where the points follow a slider it is unrolled
+// into every corner; the rules call these instead, compiled once.
 profileArcLowXY(points, curvatures) {
   low, high = profileArcBoundsXY(points, curvatures);
   return low;
@@ -608,7 +609,8 @@ profileRaySidedXY(at, tangent, outward) {
 /// closed profile has that profile's distance beside it. The chain must not
 /// cross itself, and neither ray may cross the chain or the other ray: a
 /// chain that turns by more than half a turn, a C, gets its sign wrong where
-/// the rays meet. It has no box, its negative side being unbounded, and its
+/// the rays meet. Consecutive points must differ: an edge of no length has no
+/// direction, and the field is wrong or NaN everywhere. It has no box, its negative side being unbounded, and its
 /// absolute value is a band that runs out along both rays, not a finite
 /// stroke. Its frame: .u the distance along the chain, from its first point,
 /// to the point of the extended chain nearest p, in mm; negative along the
@@ -751,15 +753,29 @@ profileEdgeControlXY(start, end, edge) {
 }
 
 // The unit tangents at an edge's two ends, [start's, end's]: an arc's or a
-// line's as profileEdgeTangentsXY finds them, a Bezier's along its control
-// polygon.
+// line's as profileEdgeTangentsXY finds them, a Bezier's as
+// profileBezierTangentsXY does.
 profileAnyEdgeTangentsXY(start, end, edge) {
   kind = profileEdgeKindXY(edge);
   arc = profileEdgeTangentsXY(start, end, edge.y * kind.x);
-  control = profileEdgeControlXY(start, end, edge);
-  bezierStart = normalize(control - start);
-  bezierEnd = normalize(end - control);
-  return arc * kind.x + [bezierStart.x, bezierStart.y, bezierEnd.x, bezierEnd.y] * kind.y;
+  bezier = profileBezierTangentsXY(start, profileEdgeControlXY(start, end, edge), end);
+  return arc * kind.x + bezier * kind.y;
+}
+
+// The unit tangents at a Bezier edge's two ends, [start's, end's], along its
+// control polygon. A control on an end leaves that leg with no direction; the
+// edge's tangent there is then its chord's, the limit of its derivative at
+// that end, so the leg is taken as the chord. Nothing here divides by a length
+// that can vanish, so no NaN reaches the side of a select not taken, which the
+// CPU evaluates too.
+profileBezierTangentsXY(start, control, end) {
+  chord = end - start;
+  tiny = 1e-12 * dot(chord, chord);
+  firstLeg = control - start + chord * (dot(control - start, control - start) <= tiny ? 1 : 0);
+  lastLeg = end - control + chord * (dot(end - control, end - control) <= tiny ? 1 : 0);
+  first = firstLeg / max(length(firstLeg), 1e-30);
+  last = lastLeg / max(length(lastLeg), 1e-30);
+  return [first.x, first.y, last.x, last.y];
 }
 
 // The candidate parameters of the point of the Bezier from `start` through
@@ -824,22 +840,52 @@ profileBezierChordTXY(start, end) {
   return clamp(dot(p.xy - start, chord) / max(dot(chord, chord), 1e-20), 0.0, 1.0);
 }
 
-// The feature of one Bezier edge, as profileEdgeSidedXY is an arc's: its
-// distance (the nearest of its candidate points), held off past its ends by
-// twice the overshoot past the normals there, offered by its side.
+// The feature of one Bezier edge, as profileEdgeSidedXY is an arc's. Its side
+// is profileBezierPieceSidedXY's, which holds while the edge is a graph over its
+// chord, each end tangent within a right angle of the chord. An edge that hooks
+// back past its chord, an end tangent turned beyond a right angle from it, has
+// points of its convex side across the chord, which that rule calls concave. It
+// is taken as two pieces, split where its tangent bisects its turn: each turns
+// by less than a right angle, so each is such a graph, and they meet smoothly,
+// as two edges of a loop do, so no corner is offered between them. Whether it
+// hooks is a constant of its points, so choose computes one form on the GPU.
+profileBezierSidedXY(start, control, end) {
+  chord = end - start;
+  tangents = profileBezierTangentsXY(start, control, end);
+  hooked = min(dot(tangents.xy, chord), dot(tangents.zw, chord)) < 0;
+  // The tangent B'(t) ~ e + f t is along the bisector where (e + f t) x b = 0.
+  // Held off a vanishing divisor and within the edge, so the form not taken
+  // stays finite.
+  e = control - start;
+  f = start - 2 * control + end;
+  bisector = tangents.xy + tangents.zw;
+  across = e.x * bisector.y - e.y * bisector.x;
+  bend = f.x * bisector.y - f.y * bisector.x;
+  split = clamp(neg(across) * bend / max(bend * bend, 1e-30), 0.001, 0.999);
+  middle = start + 2 * e * split + f * split * split;
+  first = profileBezierPieceSidedXY(start, start + e * split, middle);
+  second = profileBezierPieceSidedXY(middle, control + (end - control) * split, end);
+  whole = profileBezierPieceSidedXY(start, control, end);
+  return choose(hooked, min(first, second), whole);
+}
+
+// The feature of a Bezier edge, or a piece of one, that does not hook back past
+// its chord: its distance (the nearest of its candidate points), held off past
+// its ends by twice the overshoot past the normals there, offered by its side.
 //
 // Its side: a curved edge turns one way, so it has a concave side, the left
 // where it turns left. p is on that side where it is across the chord from the
 // control, or within the triangle of the points and the control and inside the
 // parabola the edge lies on: F(q) = D (g x q) - (q x f)^2 > 0, with
 // q = p - start, g = 2 (control - start), f = start - 2 control + end and
-// D = g x f. The parabola alone will not do: past the edge it swings back,
-// and where the control polygon turns sharply its other arm passes between
-// the edge and points near it. Within the triangle it does not: the edge
-// leaves the triangle along two of its sides. A straight edge, D = 0, takes
-// its chord's side; that choice reads the points alone, so it is the same over
-// every cell.
-profileBezierSidedXY(start, control, end) {
+// D = g x f. Across the chord holds because the edge is a graph over it: the
+// normals on its convex side never cross the chord's line. The parabola alone
+// will not do: past the edge it swings back, and where the control polygon
+// turns sharply its other arm passes between the edge and points near it.
+// Within the triangle it does not: the edge leaves the triangle along two of
+// its sides. A straight edge, D = 0, takes its chord's side; that choice reads
+// the points alone, so it is the same over every cell.
+profileBezierPieceSidedXY(start, control, end) {
   roots = profileBezierRootsXY(start, control, end);
   gap = min(min(profileBezierGapXY(start, control, end, roots.x), profileBezierGapXY(start, control, end, roots.y)),
             min(profileBezierGapXY(start, control, end, roots.z), profileBezierGapXY(start, control, end, roots.w)));
@@ -883,16 +929,15 @@ profileBezierSidedXY(start, control, end) {
   // so no mix of || and && reaches the WGSL, which refuses one unbracketed.
   triangle = min(winding * sideA, winding * sideB, winding * sideC);
   concave = max(neg(chordSide * bulge), min(triangle, turning * across - bend * bend));
-  right = straight ? neg(across) : (concave >= 0 ? neg(1) : 1) * sign(turning);
+  right = straight ? neg(chordSide) : (concave >= 0 ? neg(1) : 1) * sign(turning);
 
   // Past its ends it is held off by twice the overshoot past the normals
   // there, in the sided pools only. On its concave side the normals meet, and
   // a point before an end normal can still be nearest a point within the edge,
   // so the nearest pool takes the distance itself and the magnitude is always
   // exact.
-  startTangent = normalize(control - start);
-  endTangent = normalize(end - control);
-  overshoot = max(0, neg(dot(q, startTangent)), dot(p.xy - end, endTangent));
+  tangents = profileBezierTangentsXY(start, control, end);
+  overshoot = max(0, neg(dot(q, tangents.xy)), dot(p.xy - end, tangents.zw));
   held = reach + 2 * overshoot;
   return [max(held, right >= 0 ? 0 : nothing), max(held, right >= 0 ? nothing : 0), reach];
 }

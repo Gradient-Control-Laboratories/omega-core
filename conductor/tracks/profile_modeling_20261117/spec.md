@@ -125,6 +125,13 @@ Profiles first, then the operations on them. The numbering is the order.
    the limit for curved Beziers to 10. Two WGSL-only failures the CPU tests could not see, both found by
    compiling the example: a list indexed through a parameter (not a constant in WGSL), and an `||` mixed
    with `&&`, whose brackets the codegen drops and WGSL refuses.
+
+   Found 2026-11-19, probing open profiles: "across the chord from the control" is concave only while the
+   edge is a graph over its chord. An edge whose end tangent turns more than a right angle from the chord
+   hooks back past it, and its convex side's normals cross the chord's line (51 mm off on a closed loop).
+   Decided by the owner: such an edge is two pieces, split where its tangent bisects its turn, each turning
+   by less than a right angle; the hook is a constant of the points, so `choose` keeps an ordinary edge to
+   one piece on the GPU. A control on an end point takes the chord as its tangent there.
 4. **C7. Tighter arc (and Bezier) boxes.** The arc profile's box is the points' box padded by
    `min(span / 2, span^2 * maxCurvature / 4)`: sound, but loose, because a `.box` could not hold the reduce
    an exact box needs (see section 5).
@@ -219,7 +226,12 @@ probe documents compiled to WGSL and queried with `gsl eval`; the result follows
    is silently dropped by the box domain (the extruded arc L lost its part box), and a document reading
    `x.box` where the box holds one, in its own function too, fails to link (`undefined identifier: index`);
    #81 and #82 do not change it. Profile boxes are therefore given by Go rules calling GSL helpers opaquely,
-   as the sweeps' are (spec section 4, C7).
+   as the sweeps' are (spec section 4, C7). **Lifted, 2026-11-19:** the box domain did
+   not fold a reduce step's index, as the gradient and `.second` domains do (`frame.indexOperand` asks the
+   domain for `Primal`), so the name `index` reached the box corners; `boxDomain.Primal` fixes both
+   symptoms (`box-index-primal`, merged here). The profile boxes stay Go rules for WGSL size: a declared
+   box is unrolled into every corner where the points follow a slider (the arc L, 14.9 KB against 262 KB
+   to 1 MB).
 2. `.u`, `.v` and `.box` could not be read inside a function body. **Holds:** each is refused with a message
    to read it at the call site.
 3. A function's internal `remap` carries frame, colour and material only when its whole body is one
@@ -263,6 +275,6 @@ probe documents compiled to WGSL and queried with `gsl eval`; the result follows
 | Corner blends (C2)              | Both, chosen per vertex: exact arc fillets and line chamfers as edges, or a field blend where exactness is not needed. Field blends are the stdlib's edge-blend operators, one per profile (section 4). |
 | Splines (C6)                    | Quadratic Bezier edges, exact, from the existing 3D distance. Higher orders are out of this track.               |
 | Sweep guarantee (C4)            | Exact first, on closed planar paths; open and non-planar paths later, with a stated Lipschitz bound.             |
-| The `sweepLoft*` family         | Kept as it is; revisited once `sweep()` exists.                                                                  |
+| The `sweepLoft*` family         | Kept as it is; revisited once `sweep()` exists. Revisited 2026-11-19: retired from builtin (`retire-sweeploft`, off `main`), ported unchanged to dm/documents' `dm/sweep_loft` for the one tree that used it. |
 | Sketch planes                   | Profiles stay in XY and are placed with `transform`; no sketch-plane argument.                                   |
 | Backlog `M8`                    | Not waited for: `revolve`, `sweep` and caps are written within constraint 3, as `revolve` is now.                |

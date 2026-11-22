@@ -722,14 +722,15 @@ func sweptOpen(section boxVal, chain []boxVal, lowName, highName string) boxVal 
 // profileBox is the box of a profile of curves (2d.gsl): profileXY(points,
 // curvatures) and its corner forms, read from (points, curvatures), and
 // profileEdgesXY(points, edges). The exact box is the union of the edges'
-// boxes, and an edge's box needs its neighbour, a reduce reading its index,
-// which a .box declared in the stdlib cannot hold: the box domain dropped it
-// and a read of it failed to link. So the corners come from builtin's helpers,
-// lowName and highName, called on the same arguments, which compile as any
-// function does. The box is the declared box such a profile had: padded by
-// boxPad, unbounded in z. A corner form's blends lie within their corners'
-// triangles, which its loop's box holds. Arguments that depend on p leave the
-// call to its body.
+// boxes, and an edge's box needs its neighbour, a reduce reading its index. A
+// .box declared in the stdlib can hold one, but where the points follow a
+// slider it is inlined and unrolled into every corner (the arc L extruded,
+// 14.9 KB of WGSL by this rule, 262 KB to 1 MB declared), so the corners come
+// from builtin's helpers, lowName and highName, called on the same arguments,
+// which compile once as any function does. The box is the declared box such a
+// profile had: padded by boxPad, unbounded in z. A corner form's blends lie
+// within their corners' triangles, which its loop's box holds. Arguments that
+// depend on p leave the call to its body.
 func profileBox(args []boxVal, lowName, highName string) (boxVal, bool) {
 	ops, ok := opsOf(args)
 	if !ok {
