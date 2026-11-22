@@ -6,7 +6,8 @@ import { LineSegments2 } from "three/addons/lines/webgpu/LineSegments2.js";
 import { LineSegmentsGeometry } from "three/addons/lines/LineSegmentsGeometry.js";
 import { GslUiControls } from "./gsl-ui.js";
 import { OrthoViewHelper, ViewCameraRig, bindFieldOfView } from "./ortho-view-helper.js";
-import { DRAFT_SCALE, FrameRateMeter, MotionTracker, withDraftKnobs, bindTierButtons, getRestTier, getRestDevice, setDrawnBy, setDrawStatus, getAperture, bindRenderControls, showRenderProgress, getImageScale } from "./gsl-render-tier.js";
+import { DRAFT_SCALE, FrameRateMeter, MotionTracker, withDraftKnobs, bindTierButtons, getMovingTier, getRestTier, getRestDevice, setDrawnBy, setDrawStatus, getAperture, bindRenderControls, showRenderProgress, getImageScale } from "./gsl-render-tier.js";
+import { FrameGovernor, FLOOR_FPS } from "./gsl-frame-governor.js";
 import { SIMPLE, srgbToLinear, simpleRay } from "./gsl-simple.js";
 import { fidgetGpuFrame } from "./fidget-gpu.js";
 import { traceKnobsU, lensKnobsU, traceFlagsU, TRACE_STANDARD_WEIGHT, LENS_RADIUS_AT_FULL, FINAL_RENDER_SAMPLES } from "./gsl-trace.js";
@@ -55,6 +56,9 @@ let shapeScene, shapeCam, shapeTarget, mainTarget;
 // draftTarget takes the shape pass while the view moves; shapeTexNode is the
 // composite's handle on whichever of the two was drawn last.
 let draftTarget, shapeTexNode;
+// The frame-rate governor (gsl-frame-governor.js), made where the motion
+// tracker is; the draft target's size reads it, so it is declared here.
+let governor = null;
 // The progressive tier (gsl-trace.js): ptScene draws one path per pixel and
 // adds it to the running sum, which ping-pongs between the two accumTargets.
 // accumN counts the samples in the sum; while it is 0 the composite shows the
@@ -1313,6 +1317,52 @@ onEnvironmentChange(() => scheduleRender());
 // that tier is chosen); once they stop, one standard frame follows.
 const motion = new MotionTracker(() => scheduleRender());
 
+// The frame-rate governor: while the view moves, a frame rate under FLOOR_FPS
+// takes the moving frames to a smaller share of the still frame's size, and the
+// Resolution row shows what is happening next to what was chosen. The still
+// frame is always the size chosen.
+const movingBaseline = () => (getMovingTier() === "draft" ? DRAFT_SCALE : 1);
+governor = new FrameGovernor(() => {
+  if (shapeTarget && draftTarget) {
+    const scale = draftTargetScale();
+    draftTarget.setSize(
+      Math.max(1, Math.floor(shapeTarget.width * scale)),
+      Math.max(1, Math.floor(shapeTarget.height * scale)),
+    );
+  }
+  showMovingScale();
+  scheduleRender();
+}, movingBaseline());
+motion.governor = governor;
+
+// draftTargetScale is the draft target's size as a share of the shape target's.
+function draftTargetScale() {
+  return Math.min(governor?.scale ?? 1, DRAFT_SCALE);
+}
+
+// The Resolution buttons say what was chosen (the filled one) and, while the
+// view moves below it because the frame rate asked for that, what is drawn (the
+// outlined one, as the Draw on buttons outline the device that drew the frame).
+let movingScaleShown = "";
+function showMovingScale() {
+  const degraded = motion.moving && governor.scale < governor.baseline;
+  const at = renderScale * governor.scale;
+  const size = at === 1 ? "1x" : at >= 1 / 16 ? `1/${Math.round(1 / at)}` : at.toFixed(3);
+  const text = degraded ? `moving at ${size}: under ${FLOOR_FPS} fps` : "";
+  if (text === movingScaleShown) return;
+  movingScaleShown = text;
+  document.querySelectorAll("[data-render-scale]").forEach((b) => {
+    b.classList.toggle("drawn-at", degraded && Math.abs(Number(b.dataset.renderScale) - at) < 1e-9);
+  });
+  const note = document.getElementById("resolution-status");
+  if (note) {
+    note.textContent = text;
+    note.title = text
+      ? `The frame rate fell under ${FLOOR_FPS} fps, so moving frames are drawn smaller than Moving and Resolution ask for; the still frame is drawn at the resolution chosen`
+      : "";
+  }
+}
+
 // The Render panel's Frame rate row, with how far the progressive sum has
 // got when that tier is chosen.
 const frameRate = new FrameRateMeter(() => {
@@ -1334,6 +1384,10 @@ function scheduleRender(opts) {
       // standard frame follows once it pauses.
       if (!animPaused) motion.note();
       render(true);
+      motion.frameDrawn();
+      if (motion.moving) governor.frame(performance.now());
+      else governor.rest();
+      showMovingScale();
       frameCount++;
       const now = performance.now();
       if (now - lastLogTime > 1000) {
@@ -1539,12 +1593,13 @@ function initComposite() {
     type: THREE.FloatType,
   });
 
-  // draftTarget: the same encoding at DRAFT_SCALE, drawn while the view
-  // moves. Nearest sampling keeps the packed shape index whole when the
-  // composite upscales it.
+  // draftTarget: the same encoding at DRAFT_SCALE, or smaller when the frame
+  // rate has taken it there (draftTargetScale), drawn while the view moves.
+  // Nearest sampling keeps the packed shape index whole when the composite
+  // upscales it.
   draftTarget = new THREE.WebGLRenderTarget(
-    Math.max(1, Math.floor(w * DRAFT_SCALE)),
-    Math.max(1, Math.floor(h * DRAFT_SCALE)),
+    Math.max(1, Math.floor(w * draftTargetScale())),
+    Math.max(1, Math.floor(h * draftTargetScale())),
     {
       format: THREE.RGBAFormat,
       type: THREE.FloatType,
@@ -1963,7 +2018,10 @@ document.querySelectorAll("[data-render-scale]").forEach((button) => {
   });
 });
 
-bindTierButtons(() => scheduleRender());
+bindTierButtons(() => {
+  governor.setBaseline(movingBaseline());
+  scheduleRender();
+});
 bindEnvironmentControls();
 // The Detail slider sets the detail ladder's rungs (gsl-shading.js): what a
 // part gives up as it gets smaller on screen.

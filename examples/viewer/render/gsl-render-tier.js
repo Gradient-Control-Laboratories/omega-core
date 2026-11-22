@@ -23,6 +23,7 @@ import { glassKnobsU, renderKnobsU, detailKnobsU, detailKnobs2U, setShading } fr
 
 export const DRAFT_SCALE = 0.5;
 export const DRAFT_SETTLE_MS = 150;
+const MAX_SETTLE_MS = 1500;
 
 const MOVING_TIER_KEY = "gsl.movingTier";
 const REST_TIER_KEY = "gsl.restTier";
@@ -164,16 +165,47 @@ export class MotionTracker {
     this.settleMs = settleMs;
     this.moving = false;
     this.timer = null;
+    this.frameGaps = [];
+    this.lastFrameAt = null;
   }
 
   note() {
     this.moving = true;
+    this.arm();
+  }
+
+  // arm starts the wait for the view to settle over again.
+  arm() {
     if (this.timer) clearTimeout(this.timer);
     this.timer = setTimeout(() => {
       this.timer = null;
       this.moving = false;
       this.onSettle();
-    }, this.settleMs);
+    }, this.settleDelay());
+  }
+
+  // settleDelay is how long without input takes the view for still: settleMs,
+  // or longer when frames are slow. Input reaches the page once a frame, so
+  // when a frame takes longer than settleMs the wait runs out between every two
+  // frames, and a standard frame, as slow as the rest, is drawn in each gap.
+  // The wait is one and a half times the slowest of the last few frames, at
+  // most MAX_SETTLE_MS.
+  settleDelay() {
+    return Math.min(MAX_SETTLE_MS, Math.max(this.settleMs, 1.5 * Math.max(0, ...this.frameGaps)));
+  }
+
+  // frameDrawn is called when a frame has been drawn, at time now in ms. It
+  // measures the time between frames and starts the wait over from the end of
+  // the frame.
+  frameDrawn(now = performance.now()) {
+    if (this.lastFrameAt !== null && now - this.lastFrameAt < MAX_SETTLE_MS) {
+      this.frameGaps.push(now - this.lastFrameAt);
+      if (this.frameGaps.length > 4) this.frameGaps.shift();
+    } else {
+      this.frameGaps = [];
+    }
+    this.lastFrameAt = now;
+    if (this.timer) this.arm();
   }
 
   // noteCamera is note() for a controls "change", counted only when the
@@ -194,9 +226,12 @@ export class MotionTracker {
     return true;
   }
 
-  // draftNow reports whether the next shape pass should be a draft.
+  // draftNow reports whether the next shape pass should be a draft: while the
+  // view moves, when Moving is Draft or when the frame-rate governor (a
+  // FrameGovernor, gsl-frame-governor.js, set as this.governor) has taken the
+  // moving frames below full resolution.
   draftNow() {
-    return this.moving && movingTier === "draft";
+    return this.moving && (movingTier === "draft" || (this.governor?.scale ?? 1) < 1);
   }
 }
 

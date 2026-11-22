@@ -114,13 +114,14 @@
                         <div id="render-panel">
                             <div id="render-panel-header">Render <span class="panel-close">&#x2715;</span></div>
                             <div class="panel-body">
-                                <div class="field-panel-row">
+                                <div class="field-panel-row resolution-row">
                                     <label>Resolution</label>
                                     <div class="resolution-controls" role="group" aria-label="Viewer resolution">
                                         <button class="resolution-btn active" type="button" data-render-scale="1" aria-pressed="true" title="Full rendering resolution">1x</button>
                                         <button class="resolution-btn" type="button" data-render-scale="0.5" aria-pressed="false" title="Half rendering resolution for faster interaction">1/2</button>
                                         <button class="resolution-btn" type="button" data-render-scale="0.25" aria-pressed="false" title="Quarter rendering resolution for fastest interaction">1/4</button>
                                     </div>
+                                    <span id="resolution-status" class="draw-status" role="status" aria-live="polite"></span>
                                 </div>
                                 <div class="field-panel-row">
                                     <label>At rest</label>
