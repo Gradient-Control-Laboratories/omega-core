@@ -62,7 +62,7 @@ var primitiveDescriptions = map[pb.Operation]string{
 
 	pb.Operation_COLLECT: "Collects the arguments and returns a collection with the arguments as elements: 2 to 4 scalars form a vector, more form a longer list, and vectors of the same length form a list of vectors.",
 	pb.Operation_MAP:     "Applies the first argument, a function taking (value, index), to each element of the second argument, a collection, and returns a new collection of the results. A function that returns a vector produces a list of vectors, which can be indexed, mapped, or reduced.",
-	pb.Operation_REDUCE:  "Folds the third argument, a collection, with the second argument, a function taking (accumulator, value), starting from the first argument, the initial accumulator, and returns the final accumulator. The accumulator may be a vector.",
+	pb.Operation_REDUCE:  "Folds the third argument, a collection, with the second argument, a function taking (accumulator, value), or (accumulator, value, index), or over a list of functions (accumulator, value, index, prev) with prev the element before (the first handed itself), starting from the first argument, the initial accumulator, and returns the final accumulator. The accumulator may be a vector.",
 
 	pb.Operation_ACCESS: skipDescription,
 	pb.Operation_SELECT: skipDescription,

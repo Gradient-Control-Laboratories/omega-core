@@ -1253,6 +1253,128 @@ dowel(diameter, pinLength) {
 }
 
 // =========================================================
+// ISO Set Screws
+// =========================================================
+//
+// Hexagon socket set screws to ISO 4026 (flat point), 4027 (cone point), 4028
+// (dog point) and 4029 (cup point), M3 to M12, built on the set screw datum:
+// the socket end at z = 0, the point at z = -length. The shank is smooth at
+// the major diameter, the thread a finish, as on every fastener here.
+//
+// THE TABLE is the 2003 editions' (DIN EN ISO 4026-4029:2004). Each row is
+// d, the socket s, its depth t for short and for long screws, the length at
+// or below which each standard takes its short values (4026, 4027, 4028,
+// 4029: the shorter socket, the 120-degree cone, the short dog), then the
+// flat point's dp, the cone point's dt, the dog's dp, the short and the long
+// dog's z, and the cup's dz. Point diameters and dog lengths are the maxima.
+// Sources: ISO 4029:2003 and ISO 4026, 4027 and 4028:1993 (the standards'
+// own tables, in iTeh's samples), Westfield Fasteners' ISO sheets, fasten.it
+// (DIN EN ISO 402x:2004) and amesweb.info, which agree; the 2003 thresholds of
+// 4026 and 4027 rest on amesweb alone. ISO issued new editions of all four in
+// 2026, not consulted.
+setScrewTable = [[3.0, 1.5, 1.2, 2.0, 3.0, 4.0, 5.0, 4.0, 2.0, 0.75, 2.0, 1.0, 1.75, 1.4],
+                 [4.0, 2.0, 1.5, 2.5, 4.0, 5.0, 6.0, 5.0, 2.5, 1.0, 2.5, 1.25, 2.25, 2.0],
+                 [5.0, 2.5, 2.0, 3.0, 5.0, 6.0, 6.0, 5.0, 3.5, 1.25, 3.5, 1.5, 2.75, 2.5],
+                 [6.0, 3.0, 2.0, 3.5, 6.0, 6.0, 8.0, 6.0, 4.0, 1.5, 4.0, 1.75, 3.25, 3.0],
+                 [8.0, 4.0, 3.0, 5.0, 8.0, 8.0, 10.0, 8.0, 5.5, 2.0, 5.5, 2.25, 4.3, 5.0],
+                 [10.0, 5.0, 4.0, 6.0, 10.0, 10.0, 12.0, 10.0, 7.0, 2.5, 7.0, 2.75, 5.3, 6.0],
+                 [12.0, 6.0, 4.8, 8.0, 12.0, 12.0, 16.0, 12.0, 8.5, 3.0, 8.5, 3.25, 6.3, 8.0]];
+
+/// A flat point (ISO 4026), for setScrew.
+pointFlat = 1.0;
+
+/// A cone point (ISO 4027), for setScrew: 90 degrees, or 120 on the shortest
+/// lengths, truncated to dt.
+pointCone = 2.0;
+
+/// A dog point (ISO 4028), for setScrew: the short dog on the shortest
+/// lengths, the long dog otherwise.
+pointDog = 3.0;
+
+/// A cup point (ISO 4029), for setScrew: a 120-degree cup inside a rim dz
+/// across.
+pointCup = 4.0;
+
+// setScrewDim: column `col` of the set screw table's row for `nominalDia`,
+// zero for a size it does not list.
+setScrewDim(nominalDia, col) {
+  k = nominalDia;
+  return reduce((acc, v) { return acc + v; },
+                map((r) { return r[col] * catalog.onRow(k, r[0], 0.0001); }, setScrewTable));
+}
+
+/// The hexagon socket's width across flats s of an M`nominalDia` set screw.
+setScrewSocket(nominalDia) {
+  return setScrewDim(nominalDia, 1);
+}
+
+/// The socket's depth t of an M`nominalDia` set screw `screwLength` long with
+/// `point`: the shorter one at or below its standard's threshold length.
+setScrewSocketDepth(nominalDia, screwLength, point) {
+  threshold = point < 1.5 ? setScrewDim(nominalDia, 4)
+            : (point < 2.5 ? setScrewDim(nominalDia, 5)
+            : (point < 3.5 ? setScrewDim(nominalDia, 6) : setScrewDim(nominalDia, 7)));
+  return screwLength < threshold + 0.0001 ? setScrewDim(nominalDia, 2) : setScrewDim(nominalDia, 3);
+}
+
+/// The point's diameter: the flat's dp, the cone's tip dt, the dog's dp or the
+/// cup's rim dz.
+setScrewPointDia(nominalDia, point) {
+  return point < 1.5 ? setScrewDim(nominalDia, 8)
+       : (point < 2.5 ? setScrewDim(nominalDia, 9)
+       : (point < 3.5 ? setScrewDim(nominalDia, 10) : setScrewDim(nominalDia, 13)));
+}
+
+/// A dog point's length z: the short dog at or below ISO 4028's threshold
+/// length, the long dog above it.
+setScrewDogLength(nominalDia, screwLength) {
+  return screwLength < setScrewDim(nominalDia, 6) + 0.0001 ? setScrewDim(nominalDia, 11) : setScrewDim(nominalDia, 12);
+}
+
+/// A hexagon socket set screw, M`nominalDia` x `screwLength`, with `point`
+/// fastener.pointFlat, pointCone, pointDog or pointCup (ISO 4026-4029), on the
+/// set screw datum: the socket end at z = 0, broken by a 45-degree chamfer to
+/// the thread's root, the point at z = -screwLength. The shank is smooth at
+/// the major diameter; give it a finish with the five-argument form.
+///
+///   screw = fastener.setScrew(6.0, 10.0, fastener.pointCup)
+setScrew(nominalDia, screwLength, point) {
+  d = nominalDia;
+  pd = setScrewPointDia(d, point);
+  dogZ = point > 2.5 && point < 3.5 ? setScrewDogLength(d, screwLength) : 0.0;
+  shankEnd = dogZ - screwLength;
+  coneAngle = screwLength < setScrewDim(d, 5) + 0.0001 ? radians(120.0) : radians(90.0);
+  shank = max(length(p.xy) - d / 2.0, shankEnd - p.z, p.z);
+  pointCut = point < 1.5 ? flatEnd(d, shankEnd, (d - pd) / 2.0)
+           : (point < 2.5 ? coneEnd(d, shankEnd - (pd / 2.0) / tan(coneAngle / 2.0), coneAngle)
+           : (point < 3.5 ? flatEnd(d, shankEnd, (d - pd) / 2.0)
+           : min(flatEnd(d, shankEnd, (d - pd) / 2.0), cupEnd(d, shankEnd, (pd / 2.0) / tan(radians(60.0)), radians(120.0)))));
+  topBreak = flatTop(d, 0.0, (d - thread.minorDia(d, thread.metricPitch(d))) / 2.0);
+  dog = point > 2.5 && point < 3.5 ? dogPoint(pd, shankEnd, dogZ) : nothing;
+  form = screw(noHead(), ended(shank, min(topBreak, pointCut), dog),
+               drill.hexSocketAt(0.0, setScrewSocket(d), setScrewSocketDepth(d, screwLength, point)));
+  form.box = [[neg(d) / 2.0, neg(d) / 2.0, neg(screwLength)], [d / 2.0, d / 2.0, 0.0]];
+  form.color = plainSteel();
+  return form;
+}
+
+/// The set screw FINISHED: `finish` its material, with the thread of `form`
+/// (threadIso, threadSin or threadPaint) along its threaded length, as a cap
+/// screw's finish carries one, and its plain stand-in.
+setScrew(nominalDia, screwLength, point, finish, form) {
+  s = setScrew(nominalDia, screwLength, point);
+  pitchVal = thread.metricPitch(nominalDia);
+  threadEnd = (point > 2.5 && point < 3.5 ? setScrewDogLength(nominalDia, screwLength) : 0.0) - screwLength;
+  s.material = maleFinish(finish, nominalDia, pitchVal, 0.0, threadEnd, form);
+  s.color = maleColor(nominalDia, pitchVal, 0.0, threadEnd, form);
+  stand = max(length(p.xy) - nominalDia / 2.0, neg(screwLength) - p.z, p.z);
+  stand.material = finish;
+  stand.color = maleStandColor(nominalDia, pitchVal, 0.0, threadEnd, form);
+  s.simple = stand;
+  return s;
+}
+
+// =========================================================
 // Finishes
 // =========================================================
 //

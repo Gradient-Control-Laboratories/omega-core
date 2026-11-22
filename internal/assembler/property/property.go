@@ -560,10 +560,15 @@ func (f *frame) listElements(op *program.Operand) ([]Value, error) {
 // value.
 //
 // ok is false when the call is not ours to resolve — a builtin, an unknown or
-// multi-return function, or a call a Domain handles itself. eval and evalFnCall
-// consult the Domain BEFORE imports, and this preserves that precedence: the
-// colour gradient and the second-closest property intercept calls and still see
-// them exactly as they did.
+// multi-return function, or a call a Domain handles itself. evalCall consults
+// the Domain BEFORE inlining, and this preserves that precedence, asking the
+// Domain in the same order (ArgsCall, then Call) and leaving to it exactly the
+// calls it handles: the colour gradient and the second-closest property
+// intercept calls and still see them exactly as they did. A call the Domain
+// declines is listed here like any other. It once was not: any intercepting
+// Domain stopped the listing, so in the box domain a reduce over a list a
+// user function returned (profileXY's curvatures, made by map in another
+// function) was handed the whole list as one element.
 func (f *frame) callListElements(fc *program.FnCall) ([]Value, bool, error) {
 	if fc.Reference == nil || program.IsBuiltin(fc.Reference.Name) {
 		return nil, false, nil
@@ -578,8 +583,12 @@ func (f *frame) callListElements(fc *program.FnCall) ([]Value, bool, error) {
 			return nil, false, nil
 		}
 		scope = f.namespaceFrame(ns)
-	} else if _, intercepts := f.eng.dom.(CallDomain); intercepts {
-		return nil, false, nil
+	} else if ad, ok := f.eng.dom.(ArgsCallDomain); ok {
+		if _, handled, err := ad.ArgsCall(fc.Reference.Name, fc.Arguments, f.eval); err != nil {
+			return nil, false, err
+		} else if handled {
+			return nil, false, nil
+		}
 	}
 	fn := scope.resolveFunc(fc.Reference.Name, len(fc.Arguments))
 	if fn == nil || len(fn.Returns) != 1 {
@@ -588,6 +597,13 @@ func (f *frame) callListElements(fc *program.FnCall) ([]Value, bool, error) {
 	args, err := f.evalAll(fc.Arguments)
 	if err != nil {
 		return nil, false, err
+	}
+	if cd, ok := f.eng.dom.(CallDomain); ok && fc.Reference.Prefix == "" {
+		if _, handled, err := cd.Call(fc.Reference.Name, args); err != nil {
+			return nil, false, err
+		} else if handled {
+			return nil, false, nil
+		}
 	}
 	// A non-list return falls through to single-value eval inside listElements,
 	// which is what the old path did for it anyway.

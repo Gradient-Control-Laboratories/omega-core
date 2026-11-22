@@ -1395,8 +1395,15 @@ func (c *constCtx) reduceValues(operands []*program.Operand) (value, error) {
 			return value{}, err
 		}
 	}
-	for _, element := range elements {
-		acc, err = c.callFn2(fnOp, acc, element)
+	// The index is the element's in the whole collection, as the lowering's
+	// unroll passes it: from 0 with an initial value, from 1 without, the
+	// first element having seeded the accumulator.
+	first := 0
+	if len(operands) == 2 {
+		first = 1
+	}
+	for i, element := range elements {
+		acc, err = c.callReduceFn(fnOp, acc, element, first+i)
 		if err != nil {
 			return value{}, err
 		}
@@ -1404,14 +1411,18 @@ func (c *constCtx) reduceValues(operands []*program.Operand) (value, error) {
 	return acc, nil
 }
 
-// callFn2 invokes a two-parameter function operand — a reduce's
-// (accumulator, value) fold function — with the given arguments.
-func (c *constCtx) callFn2(fnOp *program.Operand, a, b value) (value, error) {
+// callReduceFn invokes a reduce's fold function operand: with (accumulator,
+// value) when it has a two-parameter form, otherwise with (accumulator,
+// value, index).
+func (c *constCtx) callReduceFn(fnOp *program.Operand, acc, element value, index int) (value, error) {
 	ref := fnOp.GetReference()
 	if ref == nil {
 		return value{}, fmt.Errorf("reduce expects a function reference")
 	}
-	return c.userFunctionCall(ref.Prefix, ref.Name, []value{a, b})
+	if _, _, _, err := c.lookupFunction(ref.Prefix, ref.Name, 2); err == nil {
+		return c.userFunctionCall(ref.Prefix, ref.Name, []value{acc, element})
+	}
+	return c.userFunctionCall(ref.Prefix, ref.Name, []value{acc, element, scalarVal(float64(index))})
 }
 
 // mapElements expands a map call's collection operands to elements, matching

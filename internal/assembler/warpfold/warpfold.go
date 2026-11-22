@@ -115,6 +115,9 @@ func HasWarpCall(pkg *program.Package) bool {
 		for _, r := range file.MaterialReturns {
 			walkOp(r)
 		}
+		for _, r := range file.GradientReturns {
+			walkOp(r)
+		}
 	}
 	return found
 }
@@ -241,6 +244,9 @@ func AssignWarpSlots(pkgs []WarpGraphPkg, primaryPkgName string) *WarpSlots {
 				walkOperand(r, gp)
 			}
 			for _, r := range file.MaterialReturns {
+				walkOperand(r, gp)
+			}
+			for _, r := range file.GradientReturns {
 				walkOperand(r, gp)
 			}
 		}
@@ -390,6 +396,13 @@ func (f *warpFolder) foldPackage() error {
 				return err
 			}
 			file.MaterialReturns[i] = out
+		}
+		for i, ret := range file.GradientReturns {
+			out, err := f.foldOperand(ret)
+			if err != nil {
+				return err
+			}
+			file.GradientReturns[i] = out
 		}
 	}
 	return nil
@@ -582,6 +595,9 @@ func foldWarpFieldPackage(pkg *program.Package) {
 		}
 		for i, ret := range file.MaterialReturns {
 			file.MaterialReturns[i] = foldWarpFieldOperand(ret)
+		}
+		for i, ret := range file.GradientReturns {
+			file.GradientReturns[i] = foldWarpFieldOperand(ret)
 		}
 	}
 }
