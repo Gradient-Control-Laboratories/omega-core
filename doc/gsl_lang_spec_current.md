@@ -593,7 +593,8 @@ scaleRadius(@range(0.5, 10.0) r) {
 
 In addition to explicit `@range(...)` annotations, GSL v1 supports defining slider metadata using
 dot-syntax property assignments (e.g., `name.min`, `name.max`, `name.period`), which the compiler
-automatically synthesizes into canonical AST range annotations. See section 8 below.
+automatically synthesizes into canonical AST range annotations. See section 8 below. The
+dot-syntax is deprecated in favor of `@range(...)`; `gsl fix -range` rewrites it.
 
 #### Point Annotations
 
@@ -893,6 +894,10 @@ animation clock is in `[startTime, endTime]`:
 * **Syntax**: Must not end with a semicolon.
 
 ### 8. Variables, Sliders, and Properties
+
+> **Deprecated:** the slider properties `.min`, `.max` and `.period` below are superseded by
+> `@range(min, max[, period])` (see the Annotations section), which takes the same expressions.
+> They still compile. `gsl fix -range` rewrites them to `@range`.
 
 A top-level variable assigned a single numeric literal can be decorated with property values to
 register it as a dynamic slider in the host user interface:

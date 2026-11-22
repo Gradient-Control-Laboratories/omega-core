@@ -131,6 +131,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   places meshes, and a displaced material keep numeric normals, and the panel says which (`gradientNotes`). Frame
   time is unchanged within noise; the shader is larger and compiles slower (boolean_blends: 37 to 614 KB of WGSL,
   about 2.7 s more per compile).
+- `gsl fix` has a `range` fixer: it replaces a top-level variable's `.min`, `.max` and `.period` property statements
+  with one `@range(min, max[, period])` in front of the variable, copying the expressions as written, so
+  Slider Mechanism's `slidePos`, whose bounds read other variables, converts too. The annotation shares the
+  assignment's line when that fits in 100 columns and takes the line above otherwise. A variable is left as it is
+  when it has an explicit `@range` already, shares its assignment with other variables, or has a comment inside a
+  property's expression; a comment after a removed property stays on its own line. Run on the examples and the
+  example documents (30 files), every slider (name, bounds, period, initial value) and every compiled shader is
+  unchanged.
 
 ### Changed
 
@@ -161,6 +169,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   switches). A switch is a chip that wears the label of its state ("Shadows on", "Shadows off"). Occlusion, the loop
   Standard draws that marches the field out along each normal, has a chip of its own and no longer goes off with
   Shadows. The labels of the Render, Scene, Section and Export panels are as light as the Parameters panel's.
+
+### Deprecated
+
+- The `.min`, `.max` and `.period` slider properties, in favor of `@range(min, max[, period])`. They still compile,
+  and the compiler does not warn about them yet; `gsl fix -range` rewrites them.
 
 ### Removed
 
