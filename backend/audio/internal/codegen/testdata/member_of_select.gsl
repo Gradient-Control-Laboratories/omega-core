@@ -1,0 +1,12 @@
+// Reading a component of a select between lists inside a compiled function:
+// (c ? a : b).y must index the select, not just its last branch. Regression
+// test: `c ? a : b[1]` was emitted for (c ? a : b)[1].
+
+louder(a, b) {
+  return (a.x > b.x ? a : b).y;
+}
+
+lo = [sin(time), 110];
+hi = [cos(time), 220];
+
+return audio(sin(time * louder(lo, hi)) * 0.1);

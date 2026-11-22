@@ -411,6 +411,30 @@ message Scene {
     repeated double spinodoidBounds = 5;
 }
 
+// How long the document's animation runs, written @duration(seconds). It is
+// to time what Scene is to space: the viewer's time slider spans it, and the
+// animation clock starts over on reaching it.
+message Duration {
+    Location start   = 1; // the '@'
+    Location end     = 2; // the closing ')'
+    double   seconds = 3; // on the animation clock, greater than zero
+}
+
+// A line of text the viewer shows centred at the bottom of the canvas while
+// the animation clock is in [startTime, endTime], written
+// @caption("text", startTime, endTime[, fade]).
+message Caption {
+    Location start     = 1; // the '@'
+    Location end       = 2; // the closing ')'
+    string   text      = 3; // unquoted: escapes such as \n are resolved
+    double   startTime = 4; // seconds on the animation clock
+    double   endTime   = 5; // seconds, greater than startTime
+    // Seconds the caption takes to fade in after startTime and out before
+    // endTime, at most half the interval. The parser resolves the default
+    // (0.5 s, capped at half the interval) so a reader never applies one.
+    double   fade      = 6;
+}
+
 // The parser parses one or more source files comprising a package
 // and returns this structure as a result.
 message Package {
@@ -426,6 +450,12 @@ message Package {
 
     // Scene framing (extent and grid) declared for this package
     Scene scene = 5;
+
+    // Timed captions, in source order across the package's files
+    repeated Caption captions = 6;
+
+    // Animation length declared for this package
+    Duration duration = 7;
 }
 
 

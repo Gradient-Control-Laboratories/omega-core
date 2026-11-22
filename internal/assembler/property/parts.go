@@ -46,7 +46,6 @@ func MarkParts(prog *program.Program) (*program.Program, error) {
 
 	cloned := proto.Clone(prog).(*program.Program)
 	taken := declaredNames(cloned.Primary)
-	shared := &shareNames{taken: func(name string) bool { return taken[name] }, prefix: "gsl_partShare"}
 	for _, f := range cloned.Primary.Files {
 		if f == nil {
 			continue
@@ -59,8 +58,9 @@ func MarkParts(prog *program.Program) (*program.Program, error) {
 			}
 			if len(a.Variables) == 1 && a.Variables[0] != nil {
 				if part, ok := parts[a.Variables[0].Name]; ok {
-					part, locals := sharePartBox(part, shared, taken)
-					out = append(append(out[:len(out)-1], locals...), a)
+					var shared []*program.Assignment
+					shared, part.box = shareBoxRepeats(part.box, taken)
+					out = append(append(out[:len(out)-1], shared...), a)
 					a.Expression = shrinkToVanish(simplified(a.Expression, a.Variables[0], part), part)
 				} else {
 					dropCarriedSimple(a.Variables[0])
@@ -82,8 +82,9 @@ func MarkParts(prog *program.Program) (*program.Program, error) {
 				}
 				hidden := freshName("gsl_part_"+v.Name, taken)
 				named := &program.Variable{Name: v.Name, Properties: v.Properties}
-				part, locals := sharePartBox(part, shared, taken)
-				out = append(out, locals...)
+				var shared []*program.Assignment
+				shared, part.box = shareBoxRepeats(part.box, taken)
+				out = append(out, shared...)
 				out = append(out, &program.Assignment{
 					Start:      a.Start,
 					End:        a.End,
@@ -151,37 +152,6 @@ func placeStandIns(assigns []*program.Assignment) ([]*program.Assignment, error)
 		i-- // the assignment now at i has not been looked at
 	}
 	return assigns, nil
-}
-
-// sharePartBox writes a part's box corners down with their sharing kept. The
-// box analysis builds them as a DAG, a turn reading each corner of the box it
-// turns more than once, but they reach the backends as trees, where every
-// shared node is written again at each use, so nested turns multiplied the
-// corners' arithmetic (two turns of a box sized by a slider: 14 KB a corner).
-// Each node the six corners reach more than once, and big enough to be worth
-// it, becomes a top-level declaration placed before the part, as Expand's
-// sharedLocals does for an expansion, and the corners name it. The values
-// are the same; only their spelling changes. The declarations' names are
-// marked taken.
-func sharePartBox(part partBox, names *shareNames, taken map[string]bool) (partBox, []*program.Assignment) {
-	corners := append(append([]*program.Operand{}, part.box.lo[:]...), part.box.hi[:]...)
-	root, locals := sharedLocals(nary(program.Operation_COLLECT, corners...), names)
-	if len(locals) == 0 {
-		return part, nil
-	}
-	for _, l := range locals {
-		for _, v := range l.Variables {
-			taken[v.Name] = true
-		}
-	}
-	ops := root.GetExpression().GetOperands()
-	if len(ops) != 6 {
-		return part, nil
-	}
-	bx := *part.box
-	copy(bx.lo[:], ops[:3])
-	copy(bx.hi[:], ops[3:])
-	return partBox{box: &bx, solid: part.solid}, locals
 }
 
 // shrinkToVanish wraps a part's expression in builtin's marker.

@@ -353,7 +353,8 @@ impl<const N: usize> TracingEvaluator for VmIntervalEval<N> {
                 RegOp::Input(out, i) => {
                     v[out] = vars[i as usize];
                 }
-                RegOp::MeshOracle(out, asset_id, x_in, y_in, z_in) => {
+                RegOp::MeshOracle(out, slot, x_in, y_in, z_in) => {
+                    let asset_id = tape.asm().oracle_asset(slot);
                     // Read x/y/z from registers — these were filled in
                     // either by RegOp::Input (the no-remap case where
                     // x_in/y_in/z_in are the X/Y/Z input slots) or by an
@@ -585,7 +586,8 @@ impl<const N: usize> TracingEvaluator for VmPointEval<N> {
                 RegOp::Input(out, i) => {
                     v[out] = vars[i as usize];
                 }
-                RegOp::MeshOracle(out, asset_id, x_in, y_in, z_in) => {
+                RegOp::MeshOracle(out, slot, x_in, y_in, z_in) => {
+                    let asset_id = tape.asm().oracle_asset(slot);
                     let x = v[x_in];
                     let y = v[y_in];
                     let z = v[z_in];
@@ -847,7 +849,8 @@ impl<const N: usize> BulkEvaluator for VmFloatSliceEval<N> {
                 RegOp::Input(out, i) => {
                     v[out][0..size].copy_from_slice(&vars[i as usize]);
                 }
-                RegOp::MeshOracle(out, asset_id, x_in, y_in, z_in) => {
+                RegOp::MeshOracle(out, slot, x_in, y_in, z_in) => {
+                    let asset_id = tape.asm().oracle_asset(slot);
                     let oracle = mesh_oracle::lookup(asset_id);
                     for i in 0..size {
                         let x = v[x_in][i];
@@ -1106,9 +1109,7 @@ impl<const N: usize> BulkEvaluator for VmFloatSliceEval<N> {
                     }
                 }
                 RegOp::CopyImm(out, imm) => {
-                    for i in 0..size {
-                        v[out][i] = imm;
-                    }
+                    v[out][..size].fill(imm);
                 }
                 RegOp::Load(out, mem) => {
                     for i in 0..size {
@@ -1158,7 +1159,8 @@ impl<const N: usize> BulkEvaluator for VmGradSliceEval<N> {
                 RegOp::Input(out, i) => {
                     v[out][0..size].copy_from_slice(&vars[i as usize]);
                 }
-                RegOp::MeshOracle(out, asset_id, x_in, y_in, z_in) => {
+                RegOp::MeshOracle(out, slot, x_in, y_in, z_in) => {
+                    let asset_id = tape.asm().oracle_asset(slot);
                     // The oracle's `grad` returns (f, df/dx_local,
                     // df/dy_local, df/dz_local) where the locals are
                     // whatever (possibly remapped) coordinates the
@@ -1464,9 +1466,7 @@ impl<const N: usize> BulkEvaluator for VmGradSliceEval<N> {
                 }
                 RegOp::CopyImm(out, imm) => {
                     let imm: Grad = imm.into();
-                    for i in 0..size {
-                        v[out][i] = imm;
-                    }
+                    v[out][..size].fill(imm);
                 }
                 RegOp::Load(out, mem) => {
                     for i in 0..size {

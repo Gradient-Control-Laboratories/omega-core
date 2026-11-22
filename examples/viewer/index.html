@@ -114,20 +114,14 @@
                         <div id="render-panel">
                             <div id="render-panel-header">Render <span class="panel-close">&#x2715;</span></div>
                             <div class="panel-body">
-                                <div class="field-panel-row">
+                                <div class="field-panel-row resolution-row">
                                     <label>Resolution</label>
                                     <div class="resolution-controls" role="group" aria-label="Viewer resolution">
                                         <button class="resolution-btn active" type="button" data-render-scale="1" aria-pressed="true" title="Full rendering resolution">1x</button>
                                         <button class="resolution-btn" type="button" data-render-scale="0.5" aria-pressed="false" title="Half rendering resolution for faster interaction">1/2</button>
                                         <button class="resolution-btn" type="button" data-render-scale="0.25" aria-pressed="false" title="Quarter rendering resolution for fastest interaction">1/4</button>
                                     </div>
-                                </div>
-                                <div class="field-panel-row">
-                                    <label>Moving</label>
-                                    <div class="resolution-controls" role="group" aria-label="Render quality while the view moves">
-                                        <button class="resolution-btn active" type="button" data-moving-tier="draft" aria-pressed="true" title="While the view moves: half resolution, no ambient occlusion, one sharp refraction through glass">Draft</button>
-                                        <button class="resolution-btn" type="button" data-moving-tier="standard" aria-pressed="false" title="While the view moves: full quality">Full</button>
-                                    </div>
+                                    <span id="resolution-status" class="draw-status" role="status" aria-live="polite"></span>
                                 </div>
                                 <div class="field-panel-row">
                                     <label>At rest</label>
@@ -139,43 +133,6 @@
                                     </div>
                                 </div>
                                 <div class="field-panel-row">
-                                    <label>Shadows</label>
-                                    <div class="resolution-controls" role="group" aria-label="Shadows in the path tracer">
-                                        <button class="resolution-btn active" type="button" data-trace-shadows="on" aria-pressed="true" title="Each light casts shadows in Progressive and Render image; Standard darkens corners with ambient occlusion">On</button>
-                                        <button class="resolution-btn" type="button" data-trace-shadows="off" aria-pressed="false" title="No shadows from the lights in Progressive and Render image (bounce light still darkens corners), and no ambient occlusion in Standard">Off</button>
-                                    </div>
-                                </div>
-                                <div class="field-panel-row">
-                                    <label>Back faces</label>
-                                    <div class="resolution-controls" role="group" aria-label="How a surface seen from behind is drawn">
-                                        <button class="resolution-btn active" type="button" data-back-faces="dim" aria-pressed="true" title="Every tier draws a surface seen from behind, such as the inside of a part cut open, at 25% brightness">Dim</button>
-                                        <button class="resolution-btn" type="button" data-back-faces="full" aria-pressed="false" title="Every tier draws a surface seen from behind as brightly as one seen from the front">Full</button>
-                                    </div>
-                                </div>
-                                <div class="field-panel-row">
-                                    <label>Displacement</label>
-                                    <div class="resolution-controls" role="group" aria-label="Displacement of surfaces">
-                                        <button class="resolution-btn active" type="button" data-displacement="on" aria-pressed="true" title="Materials with displacement move the surface, such as open pores and weathered relief">On</button>
-                                        <button class="resolution-btn" type="button" data-displacement="off" aria-pressed="false" title="Draw every surface undisplaced: faster, and the pores and relief show as colour only">Off</button>
-                                    </div>
-                                </div>
-                                <div class="field-panel-row">
-                                    <label>Fine relief</label>
-                                    <div class="resolution-controls" role="group" aria-label="Where fine relief fades in Standard">
-                                        <button class="resolution-btn active" type="button" data-march-fade="hit" aria-pressed="true" title="Relief too fine to see fades only where the surface is shaded; the ray marches the full relief">At hit</button>
-                                        <button class="resolution-btn" type="button" data-march-fade="march" aria-pressed="false" title="Relief too fine to see fades while the ray marches too, so the surface found and the surface shaded agree">In march</button>
-                                    </div>
-                                </div>
-                                <div class="field-panel-row">
-                                    <label>Pixel filter</label>
-                                    <input type="range" id="render-pixel-filter" min="0" max="3" value="1" step="0.05" style="width: 80px;" title="How many pixels wide detail must be to show: textures fade detail finer than this, and lines thinner than this are drawn this wide and fainter; 0 filters nothing, so fine detail aliases">
-                                    <span id="render-pixel-filter-label" class="field-panel-label">1.00</span>
-                                </div>
-                                <div class="field-panel-row detail-row">
-                                    <label>Detail</label>
-                                    <div id="detail-slider" role="group" aria-label="What a part keeps as it gets smaller on screen"></div>
-                                </div>
-                                <div class="field-panel-row">
                                     <label>Field of view</label>
                                     <input type="range" id="render-fov" min="9" max="90" value="50" step="1" style="width: 80px;" title="Lens angle; leftmost is orthographic. The view keeps its size at the orbit pivot, so a narrower lens stands farther back">
                                     <span id="render-fov-label" class="field-panel-label">50&deg;</span>
@@ -185,20 +142,6 @@
                                     <input type="range" id="render-aperture" min="0" max="1" value="0" step="0.01" style="width: 80px;" title="Lens blur for the path tracer; 0 is off">
                                     <span id="render-aperture-label" class="field-panel-label">0.00</span>
                                     <div id="btn-render-focus" class="btn-icon" title="Focus: click a point on the model to focus on it (until then, the orbit pivot)"><img src="icons/crosshair.svg" alt="Focus"></div>
-                                </div>
-                                <div class="field-panel-row">
-                                    <label>Light</label>
-                                    <div class="resolution-controls" role="group" aria-label="Environment light">
-                                        <button class="resolution-btn active" type="button" data-env-preset="Viewer" aria-pressed="true" title="The viewer's lights, which turn with the camera, over a dim sky">Viewer</button>
-                                        <button class="resolution-btn" type="button" data-env-preset="Softbox" aria-pressed="false" title="Large soft panels around a dark room, turning with the camera like the rig: highlights slide across polished surfaces as you orbit">Softbox</button>
-                                        <button class="resolution-btn" type="button" data-env-preset="Overcast" aria-pressed="false" title="A bright cloudy sky: even light that shows colour and grain">Overcast</button>
-                                        <button class="resolution-btn" type="button" data-env-preset="Horizon" aria-pressed="false" title="Blue sky over dark ground with a small sun: a horizon line and a glint in chrome and glass">Horizon</button>
-                                    </div>
-                                </div>
-                                <div class="field-panel-row">
-                                    <label>Turn</label>
-                                    <input type="range" id="env-azimuth" min="0" max="360" value="0" step="1" style="width: 80px;" title="Turn the environment about the vertical axis">
-                                    <span id="env-azimuth-label" class="field-panel-label">0&deg;</span>
                                 </div>
                                 <div class="field-panel-row">
                                     <div id="btn-render-image" class="btn-light" title="Path trace this view to 1024 samples in the background and download it as a PNG with a transparent background; press again to cancel">Render image</div>
@@ -213,6 +156,60 @@
                                     <span id="render-fps" title="Frames drawn in the last second; the viewer draws only when something changes, so at rest it is idle">Idle</span>
                                     <span id="render-progress" title="How much of the progressive sum is done"></span>
                                 </div>
+                                <details class="render-section" id="render-detail">
+                                    <summary>Detail</summary>
+                                    <div class="field-panel-row detail-row">
+                                        <div id="detail-slider" role="group" aria-label="What a part keeps as it gets smaller on screen"></div>
+                                    </div>
+                                    <div class="field-panel-row">
+                                        <label>Pixel filter</label>
+                                        <input type="range" id="render-pixel-filter" min="0" max="3" value="1" step="0.05" style="width: 80px;" title="How many pixels wide detail must be to show: textures fade detail finer than this, and lines thinner than this are drawn this wide and fainter; 0 filters nothing, so fine detail aliases">
+                                        <span id="render-pixel-filter-label" class="field-panel-label">1.00</span>
+                                    </div>
+                                    <div class="chip-row" role="group" aria-label="Relief switches">
+                                        <button class="render-chip active" type="button" id="chip-displacement" aria-pressed="true" data-on="Relief on" data-off="Relief off" title="Relief: materials with displacement move the surface, such as open pores and weathered relief. Off, every surface is drawn undisplaced: faster, and the pores and relief show as colour only">Relief on</button>
+                                        <button class="render-chip" type="button" id="chip-march-fade" aria-pressed="false" data-on="Fine relief in march" data-off="Fine relief at hit" title="Fine relief: relief too fine to see fades only where the surface is shaded (at hit; the ray marches the full relief), or while the ray marches too (in march), so the surface found and the surface shaded agree">Fine relief at hit</button>
+                                    </div>
+                                </details>
+                                <details class="render-section" id="render-advanced">
+                                    <summary>Advanced</summary>
+                                    <div class="field-panel-row">
+                                        <label>Moving</label>
+                                        <div class="resolution-controls" role="group" aria-label="Render quality while the view moves">
+                                            <button class="resolution-btn active" type="button" data-moving-tier="draft" aria-pressed="true" title="While the view moves: half resolution, no ambient occlusion, one sharp refraction through glass">Draft</button>
+                                            <button class="resolution-btn" type="button" data-moving-tier="standard" aria-pressed="false" title="While the view moves: full quality">Full</button>
+                                        </div>
+                                    </div>
+                                    <div class="field-panel-row draw-on-row" id="draw-on-row">
+                                        <label>Draw on</label>
+                                        <div class="resolution-controls" role="group" aria-label="What draws the frame at rest">
+                                            <button class="resolution-btn active" type="button" data-rest-device="gpu" aria-pressed="true" title="At rest: the chosen mode drawn on this machine&#39;s GPU">GPU</button>
+                                            <button class="resolution-btn" type="button" data-rest-device="cpu" aria-pressed="false" title="At rest: the chosen mode redrawn on the server&#39;s CPU by the lit renderer, from the same camera, to compare with the GPU (sliders at their defaults, hidden shapes shown); not for Progressive">CPU</button>
+                                            <button class="resolution-btn" type="button" data-rest-device="fidget" aria-pressed="false" title="At rest: fidget&#39;s own GPU pipeline, run in this page on the document&#39;s tape, from the same camera, lit as the GPU lights it (sliders at their defaults, hidden shapes shown, glass opaque, fidget&#39;s own ambient occlusion); not for Progressive or documents that read an imported mesh or noise">Fidget</button>
+                                            <button class="resolution-btn" type="button" data-rest-device="fidget-only" aria-pressed="false" title="Fidget as above, with no GPU frame behind it: the GPU draws no shapes, every view change asks fidget for a frame (the last one stays up until the next lands), and a failure shows its error, not the GPU&#39;s picture. Hover, outlines and picking read the GPU frame and do not see shapes. Not for Progressive or documents that read an imported mesh or noise">Fidget only</button>
+                                        </div>
+                                        <span id="draw-status" class="draw-status" role="status" aria-live="polite"></span>
+                                    </div>
+                                    <div class="field-panel-row">
+                                        <label>Environment</label>
+                                        <div class="resolution-controls" role="group" aria-label="Environment light">
+                                            <button class="resolution-btn active" type="button" data-env-preset="Viewer" aria-pressed="true" title="The viewer's lights, which turn with the camera, over a dim sky">Viewer</button>
+                                            <button class="resolution-btn" type="button" data-env-preset="Softbox" aria-pressed="false" title="Large soft panels around a dark room, turning with the camera like the rig: highlights slide across polished surfaces as you orbit">Softbox</button>
+                                            <button class="resolution-btn" type="button" data-env-preset="Overcast" aria-pressed="false" title="A bright cloudy sky: even light that shows colour and grain">Overcast</button>
+                                            <button class="resolution-btn" type="button" data-env-preset="Horizon" aria-pressed="false" title="Blue sky over dark ground with a small sun: a horizon line and a glint in chrome and glass">Horizon</button>
+                                        </div>
+                                    </div>
+                                    <div class="field-panel-row">
+                                        <label>Light rotation</label>
+                                        <input type="range" id="env-azimuth" min="0" max="360" value="0" step="1" style="width: 80px;" title="Turn the environment light about the vertical axis">
+                                        <span id="env-azimuth-label" class="field-panel-label">0&deg;</span>
+                                    </div>
+                                    <div class="chip-row" role="group" aria-label="Render switches">
+                                        <button class="render-chip active" type="button" id="chip-shadows" aria-pressed="true" data-on="Shadows on" data-off="Shadows off" title="Shadows: each light casts shadows in Progressive and Render image. Off, there are none (bounce light still darkens corners)">Shadows on</button>
+                                        <button class="render-chip active" type="button" id="chip-occlusion" aria-pressed="true" data-on="Occlusion on" data-off="Occlusion off" title="Occlusion: Standard and Color darken creases and corners by marching the field out along each surface normal. Not drawn while the view moves; Progressive and Render image take occlusion from bounce light instead">Occlusion on</button>
+                                        <button class="render-chip active" type="button" id="chip-back-faces" aria-pressed="true" data-on="Back faces dim" data-off="Back faces full" title="Back faces: every tier draws a surface seen from behind, such as the inside of a part cut open, at 25% brightness when dim and as brightly as a front face when full">Back faces dim</button>
+                                    </div>
+                                </details>
                             </div>
                         </div>
                         <div id="field-panel">

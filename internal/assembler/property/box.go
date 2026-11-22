@@ -1804,3 +1804,14 @@ func absOp(a *program.Operand) *program.Operand {
 	}
 	return un(program.Operation_ABS, a)
 }
+
+// Primal is a p-independent value's operand, for an index the Engine evaluates
+// (see frame.indexOperand): a reduce step's index, or a local of an inlined
+// body, folds to the constant it is rather than reaching the output by name.
+func (dd *boxDomain) Primal(v Value) (*program.Operand, bool) {
+	b, ok := v.(boxVal)
+	if !ok || b.op == nil {
+		return nil, false
+	}
+	return b.op, true
+}

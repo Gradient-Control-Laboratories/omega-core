@@ -1,0 +1,17 @@
+// A map lambda that declares locals, inside a compiled function. Each element
+// of the unrolled map declares the lambda's locals in the function's JS scope,
+// so repeats must get their own names. Regression test: every element used to
+// emit `const fk = ...`, and the duplicate declarations were a SyntaxError
+// that stopped the whole audio function from loading.
+
+partialSum(f, t, ratios) {
+  return reduce(0, (acc, v) {
+    return acc + v;
+  }, map((r) {
+    fk = f * r;
+    gain = 1 / r;
+    return gain * sin(fk * t);
+  }, ratios));
+}
+
+return audio(partialSum(220, time, [1, 2, 3, 4]) * 0.1);

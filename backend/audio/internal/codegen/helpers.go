@@ -1,5 +1,35 @@
 package codegen
 
+// JSNoiseHelper returns the JavaScript port of the noiseHash3 builtin, emitted
+// only when a program uses it. It mirrors program/noise.Hash3Octaves (and the
+// WGSL textureLoad form): a nearest lookup into the baked 64^3 RGBA8 tile, plus
+// for two octaves a supercell lookup at floor(cell/64), folded with fract, all
+// in f32 (Math.fround) so the result matches the Go, WGSL and Fidget backends.
+//
+// The host supplies the tile bytes as gsl_noiseTile (a Uint8Array closed over
+// by the compiled function; the viewer's audio worklet passes it in). Without
+// a tile the hash returns zeros rather than throwing. The helper avoids
+// `const` declarations because the worklet rewrites every `const NAME = ...;`
+// into a live slider lookup.
+func JSNoiseHelper() string {
+	return `
+function gsl_noiseHash3(c, octaves) {
+    if (typeof gsl_noiseTile === 'undefined' || !gsl_noiseTile) return [0, 0, 0];
+    var tile = gsl_noiseTile;
+    var i = ((((Math.floor(c[2]) & 63) * 64 + (Math.floor(c[1]) & 63)) * 64) + (Math.floor(c[0]) & 63)) * 4;
+    var r = Math.fround(tile[i] / 255), g = Math.fround(tile[i + 1] / 255), b = Math.fround(tile[i + 2] / 255);
+    if (octaves < 2) {
+        return [r - Math.floor(r), g - Math.floor(g), b - Math.floor(b)];
+    }
+    var j = ((((Math.floor(c[2] / 64) & 63) * 64 + (Math.floor(c[1] / 64) & 63)) * 64) + (Math.floor(c[0] / 64) & 63)) * 4;
+    r = Math.fround(r + Math.fround(tile[j] / 255));
+    g = Math.fround(g + Math.fround(tile[j + 1] / 255));
+    b = Math.fround(b + Math.fround(tile[j + 2] / 255));
+    return [r - Math.floor(r), g - Math.floor(g), b - Math.floor(b)];
+}
+`
+}
+
 // JSRuntimeHelpers returns JavaScript helper functions that may be needed at runtime
 func JSRuntimeHelpers() string {
 	return `
