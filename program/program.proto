@@ -481,6 +481,12 @@ message PackageFile {
 
     // Declaration-level annotations on this file's top-level declarations
     repeated Annotation   annotations  = 12;
+
+    // Lowered spatial gradient (vec3, d/dp) of each return, parallel to returns
+    // on the primary package's last file. Only set when assembly is asked for
+    // analytic gradients; a nil entry is a return the derivative could not go
+    // through.
+    repeated Operand      gradientReturns = 13;
 }
 
 enum MeshSdfKind {

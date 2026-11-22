@@ -111,6 +111,9 @@ type Delegate struct {
 	// materialFieldSrc is the generated gsl_materialField function (empty when
 	// the program authors no material), woven in after colorFieldSrc.
 	materialFieldSrc string
+	// gradFieldSrc is the generated gsl_gradField function (empty unless
+	// assembly lowered analytic gradients), woven in after materialFieldSrc.
+	gradFieldSrc string
 	// heightsSrc is the generated gsl_heights function, every return's
 	// displacement height at once (empty when no return is displaced), and
 	// displacedMask marks the returns it carries a height for.

@@ -268,7 +268,7 @@ fn gsl_shadeGlass(
             camDist = camDist + h.t;
             let surfOff = gsl_surfaceOffset(camDist, pixelScale, camOrtho);
             let normalEps = max(baseGradEps, pixelScale * mix(max(camDist, 1.0), 1.0, camOrtho) * 0.05);
-            let nRaw = gsl_calcNormal(h.pos, time, normalEps);
+            let nRaw = gsl_calcNormal(h.pos, time, normalEps, h.sd.shapeIndex);
             ${colorStmt("hColor", "h.pos", "h.sd")}
             let hMat = ${materialAt("h.pos", "h.sd")};
             let hT = clamp(hMat.volume.x, 0.0, 1.0);
