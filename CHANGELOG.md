@@ -173,7 +173,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Deprecated
 
 - The `.min`, `.max` and `.period` slider properties, in favor of `@range(min, max[, period])`. They still compile,
-  and the compiler does not warn about them yet; `gsl fix -range` rewrites them.
+  and the compiler does not warn about them yet; `gsl fix -range` rewrites them. The language description that
+  `gsl skill` and the viewer's Help panel serve teaches `@range`, and mentions the properties only as deprecated.
 
 ### Removed
 

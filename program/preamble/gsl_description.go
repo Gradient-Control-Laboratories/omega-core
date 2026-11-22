@@ -101,30 +101,32 @@ No semicolon follows the directive.
 Supports multiple assignment: ` + "`x, y = someFunc();`" + `
 Top-level variables are evaluated in order: declare a name before any line that uses it. Functions may be called before their definition.
 
-* **Variable Properties (sliders):**
-A top-level variable assigned a single numeric literal can be annotated
-with ` + "`name.min` and `name.max`" + ` properties (constant expressions).
-The two properties together turn that variable into a live slider in
-the editor's Parameters panel: dragging the slider rewrites the literal
-in place and updates the running shader / audio without recompiling.
+* **Sliders (` + "`@range`" + `):**
+A top-level variable assigned a single numeric literal becomes a live slider
+in the editor's Parameters panel when it carries
+` + "`@range(min, max)`" + `, with constant expressions for the limits. They may
+read other top-level variables declared above, so one slider's limits can
+follow another's. Dragging the slider rewrites the literal in place and
+updates the running shader / audio without recompiling.
 The literal's decimal places set the slider's rounding step
 (` + "`radius = 5;`" + ` snaps to integers, ` + "`radius = 0.50;`" + ` snaps to 0.01).
-An optional ` + "`name.period`" + ` property (seconds, must be > 0) makes
-the host drive the slider as a sinusoid through ` + "`[min, max]`" + ` while
+An optional third argument, ` + "`@range(min, max, period)`" + ` (seconds, must be > 0),
+makes the host drive the slider as a sinusoid through ` + "`[min, max]`" + ` while
 the animation clock runs; each animated row gets a play/pause toggle so
 the user can grab the slider manually at any time. For example:
   ` + "```gsl" + `
-  radius = 5.0;
-  radius.min = 0.5;
-  radius.max = 10.0;
-  radius.period = 4.0;  // animate radius over 4 seconds
+  @range(0.5, 10.0, 4.0) radius = 5.0;  // animate radius over 4 seconds
   return remap(sphere(radius), p);
   ` + "```" + `
+Older sources write the same limits as ` + "`radius.min = 0.5;`" + `,
+` + "`radius.max = 10.0;`" + ` and ` + "`radius.period = 4.0;`" + ` below the variable.
+Those properties are deprecated: write ` + "`@range`" + `, and ` + "`gsl fix -range`" + `
+rewrites old sources.
 
 * **Control annotations:**
 A top-level variable assigned a literal can instead carry one annotation
-naming the control it wants: ` + "`@range(min, max)`" + ` is the slider
-above in one line; ` + "`@point`" + ` on an ` + "`[x, y, z]`" + ` marks a
+naming the control it wants: ` + "`@range(min, max[, period])`" + ` is the slider
+above; ` + "`@point`" + ` on an ` + "`[x, y, z]`" + ` marks a
 point in the scene, ` + "`@direction`" + ` on an ` + "`[x, y, z]`" + ` a
 direction, drawn from the origin or from ` + "`@direction(anchor)`" + `'s
 point (a ` + "`@point`" + ` variable or a constant),
