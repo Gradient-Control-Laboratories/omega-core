@@ -8,6 +8,7 @@ import { GslUiControls } from "./gsl-ui.js";
 import { OrthoViewHelper, ViewCameraRig, bindFieldOfView } from "./ortho-view-helper.js";
 import { DRAFT_SCALE, FrameRateMeter, MotionTracker, withDraftKnobs, bindTierButtons, getRestTier, getRestDevice, setDrawnBy, setDrawStatus, getAperture, bindRenderControls, showRenderProgress, getImageScale } from "./gsl-render-tier.js";
 import { SIMPLE, srgbToLinear, simpleRay } from "./gsl-simple.js";
+import { fidgetGpuFrame } from "./fidget-gpu.js";
 import { traceKnobsU, lensKnobsU, traceFlagsU, TRACE_STANDARD_WEIGHT, LENS_RADIUS_AT_FULL, FINAL_RENDER_SAMPLES } from "./gsl-trace.js";
 import { buildRenderJob, RenderJob } from "./gsl-render-job.js";
 import { showNotification } from "../ui/notification.js";
@@ -74,17 +75,31 @@ let renderJob = null;
 let simpleScene;
 // The Color tier's pass: the standard frame without the program's materials.
 let colorScene;
-// Drawing on the CPU: at rest, the chosen tier (Schematic, Color or Standard)
-// redrawn on the server by the lit renderer (fidget's JIT, every core) from the
-// same camera, shown in the GPU frame's place once it arrives. cpuFrameSource
-// (main.js) asks for it; cpuJob counts the changes that make a CPU frame stale;
-// cpuFailedFor is the program a CPU frame last failed on, which is not retried.
+// Drawing on the CPU or on Fidget: at rest, the chosen tier (Schematic, Color
+// or Standard) redrawn from the same camera, shown in the GPU frame's place once
+// it arrives. The CPU's frame is the server's lit renderer's (fidget's JIT,
+// every core): cpuFrameSource (main.js) asks for it. Fidget's is fidget's own
+// GPU pipeline, run in this page on the document's tape: cpuTapeSource
+// (main.js) resolves with its bytes. cpuJob counts the changes that make a
+// frame stale; cpuFailedFor is the program a frame last failed on, which is not
+// retried.
 let cpuFrameSource = null;
+let cpuTapeSource = null;
 let cpuJob = 0;
 let cpuRunning = false;
 let cpuShowing = false;
+// With "Fidget only" chosen, the frame on screen may be one for a view the
+// camera has since left: it stays up (cpuShowing) until the next lands.
+let cpuStale = false;
 let cpuTexture = null;
 let cpuFailedFor = null;
+
+// fidgetOnly: the "Fidget only" device is chosen and applies (not Progressive,
+// which only the GPU draws): the GPU draws no shapes, and fidget's frame is all
+// there is.
+function fidgetOnly() {
+  return getRestDevice() === "fidget-only" && getRestTier() !== "progressive" && !!cpuTapeSource;
+}
 
 // Whether the source last compiled with errors. A CPU frame asked for a source
 // that does not compile fails with the compile error, which the editor already
@@ -104,14 +119,14 @@ let cpuProgress = null;
 export function setCpuProgress(share) {
   cpuProgress = share;
 }
-function startDrawClock(job) {
+function startDrawClock(label, job) {
   const t0 = performance.now();
   cpuProgress = null;
   const tick = () => {
     const s = Math.floor((performance.now() - t0) / 1000);
     const time = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
     const percent = cpuProgress == null ? "" : `, ${Math.floor(cpuProgress * 100)}%`;
-    setDrawStatus(`CPU frame in progress, ${time}${percent}${job !== cpuJob ? " (view changed, will redraw)" : ""}`);
+    setDrawStatus(`${label} frame in progress, ${time}${percent}${job !== cpuJob ? " (view changed, will redraw)" : ""}`);
   };
   stopDrawClock();
   tick();
@@ -153,11 +168,13 @@ function noteCpuSizeOk() {
   setDrawStatus("");
 }
 
-// showCpuFrame sets whether the CPU frame is the one on screen, and tells the
-// Render panel which device drew what is shown (the GPU, when not).
-function showCpuFrame(showing) {
+// showCpuFrame sets whether the CPU or Fidget frame is the one on screen, and
+// tells the Render panel which device drew what is shown (the GPU, when not, or
+// with "Fidget only" that device, which the GPU never backs up).
+function showCpuFrame(showing, device = "gpu") {
   cpuShowing = showing;
-  setDrawnBy(showing ? "cpu" : "gpu");
+  cpuStale = false;
+  setDrawnBy(showing ? device : getRestDevice() === "fidget-only" ? "fidget-only" : "gpu");
 }
 // The depth-of-field focus the Focus tool picked (Z-up world), or null to
 // focus on the orbit pivot; focusToolOn while the tool waits for its click.
@@ -1012,9 +1029,11 @@ function render(allowDraft = false, useAccum = true) {
   if (accumDirty) {
     accumDirty = false;
     accumN = 0;
-    // Whatever changed makes a CPU frame stale: the GPU's takes the screen back.
+    // Whatever changed makes a CPU or Fidget frame stale: the GPU's takes the
+    // screen back. "Fidget only" keeps the last frame up until the next lands.
     cpuJob++;
-    showCpuFrame(false);
+    if (fidgetOnly()) cpuStale = true;
+    else showCpuFrame(false);
   }
   accumNU.value = useAccum ? accumN : 0;
   timeU.value = getAnimTime();
@@ -1030,7 +1049,10 @@ function render(allowDraft = false, useAccum = true) {
   if (shapeTarget) {
     // The Simple tier draws the Simple pass, moving or not.
     const simple = getRestTier() === "simple";
-    const draft = !simple && allowDraft && motion.draftNow();
+    // "Fidget only" draws no shapes here, for the screen and not for a capture
+    // (useAccum false), which still wants the GPU's frame of its own view.
+    const noGpu = useAccum && fidgetOnly();
+    const draft = !simple && !noGpu && allowDraft && motion.draftNow();
     const target = draft ? draftTarget : shapeTarget;
     const drawShapes = () => {
       renderer.setRenderTarget(target);
@@ -1038,7 +1060,10 @@ function render(allowDraft = false, useAccum = true) {
       renderer.render(simple ? simpleScene : getRestTier() === "color" ? colorScene : shapeScene, shapeCam);
       renderer.setRenderTarget(null);
     };
-    if (draft) {
+    if (noGpu) {
+      // Nothing to draw: the last Fidget frame (or what the target last held)
+      // stays up until the next one lands.
+    } else if (draft) {
       // Every hit epsilon scales with the pixel footprint, so it follows
       // the smaller target.
       const pixelScale = pixelScaleU.value;
@@ -1097,7 +1122,7 @@ function render(allowDraft = false, useAccum = true) {
   }
 }
 
-// ── The CPU device ──
+// ── The CPU and Fidget devices ──
 
 // setCpuFrameSource gives the CPU its frames: fn(request) resolves with the
 // lit renderer's frame of the current document, where request is {width,
@@ -1110,16 +1135,40 @@ export function setCpuFrameSource(fn) {
   cpuFrameSource = fn;
 }
 
-// cpuWanted reports whether the CPU should draw: it is chosen, the tier has a
-// CPU form (every one but Progressive), there is a server to draw it, and
-// nothing moves or animates.
-function cpuWanted() {
-  return getRestDevice() === "cpu" && getRestTier() !== "progressive" && !!cpuFrameSource
-    && animPaused && !motion.moving && !renderDisabled && cpuFailedFor !== currentWGSL;
+// setCpuTapeSource gives the Fidget device its tape: fn() resolves with the
+// bytes of the current document's tape, with each return's colour and material
+// fields in it.
+export function setCpuTapeSource(fn) {
+  cpuTapeSource = fn;
 }
 
-// cpuSnapshot is what a CPU frame is drawn from, taken from the uniforms the
-// last GPU frame used.
+// cpuWanted reports whether the CPU or Fidget should draw: it is chosen, the
+// tier has a form for it (every one but Progressive), there is a source to draw
+// from, and nothing moves or animates ("Fidget only" asks while the view moves
+// too: the GPU has no frame to show meanwhile).
+function cpuWanted() {
+  const device = getRestDevice();
+  const source = device === "cpu" ? cpuFrameSource : device.startsWith("fidget") ? cpuTapeSource : null;
+  return getRestTier() !== "progressive" && !!source
+    && animPaused && (device === "fidget-only" || !motion.moving) && !renderDisabled && cpuFailedFor !== currentWGSL;
+}
+
+// partsBounds is the box around every guarded part the document reports,
+// [xmin, ymin, zmin, xmax, ymax, zmax] in the world, or null with none.
+function partsBounds() {
+  if (!currentParts.length) return null;
+  const box = [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity];
+  for (const { lo, hi } of currentParts) {
+    for (let k = 0; k < 3; k++) {
+      box[k] = Math.min(box[k], lo[k]);
+      box[3 + k] = Math.max(box[3 + k], hi[k]);
+    }
+  }
+  return box.every(Number.isFinite) ? box : null;
+}
+
+// cpuSnapshot is what a CPU or Fidget frame is drawn from, taken from the
+// uniforms the last GPU frame used.
 function cpuSnapshot() {
   const cam = {
     pos: camPosZUpVal.toArray(),
@@ -1129,13 +1178,24 @@ function cpuSnapshot() {
     tanFov: camTanFovVal.toArray(),
     ortho: camOrthoU.value,
   };
+  const width = shapeTarget.width;
+  const height = shapeTarget.height;
   return {
-    width: shapeTarget.width,
-    height: shapeTarget.height,
-    cam,
+    width, height, cam,
+    // Fidget's camera, ending in the pixel footprint and the world extent.
+    camArgs: [...cam.pos, ...cam.right, ...cam.up, ...cam.fwd, ...cam.tanFov, cam.ortho, pixelScaleU.value, worldExtent],
+    visible: Array.from({ length: currentShapeCount }, (_, i) => shapeVisibles.get(i + 1)?.value ?? 1),
+    bounds: partsBounds(),
     far: nearFarVal.y,
     field: { active: fieldEnabledU.value > 0.5, normal: fieldNormalU.value.toArray(), height: fieldHeightU.value },
     backDim: renderKnobsU.value.z,
+    // What the standard frame lights with, for a frame lit outside it.
+    shading: {
+      zUpToView: zUpToViewMatVal.toArray(),
+      sky: skyColorVal.toArray(),
+      ground: groundColorVal.toArray(),
+      knobs: shadingKnobsU.value.toArray(),
+    },
   };
 }
 
@@ -1192,42 +1252,51 @@ async function startCpu() {
     return;
   }
   noteCpuSizeOk();
-  if (cpuRunning || cpuShowing || !cpuWanted() || !shapeTarget) return;
+  if (cpuRunning || (cpuShowing && !cpuStale) || !cpuWanted() || !shapeTarget) return;
   cpuRunning = true;
   const job = cpuJob;
   const wgsl = currentWGSL;
-  startDrawClock(job);
+  const fidget = getRestDevice().startsWith("fidget");
+  startDrawClock(fidget ? "Fidget" : "CPU", job);
   try {
     const snap = cpuSnapshot();
     const { width, height, cam } = snap;
     const mode = getRestTier();
+    const colors = mode === "simple" ? schematicColors() : viewerColors();
     const t0 = performance.now();
-    const frame = await cpuFrameSource({
-      width, height, worldExtent,
-      time: getAnimTime(),
-      camera: { pos: cam.pos, right: cam.right, up: cam.up, fwd: cam.fwd, tanFov: cam.tanFov, ortho: cam.ortho > 0.5 },
-      colors: mode === "simple" ? schematicColors() : viewerColors(),
-      mode,
-      ...(mode === "simple" ? { simple: { ...SIMPLE } } : {}),
-      backDim: snap.backDim,
-    });
-    console.log(`[cpu] ${mode} ${width}x${height} frame in ${Math.round(performance.now() - t0)} ms`);
-    if (job === cpuJob) {
-      if (frame.width !== width || frame.height !== height) throw new Error(`the server drew ${frame.width}x${frame.height}, not ${width}x${height}`);
+    // Fidget draws in this page, from the tape, lit as the standard frame is
+    // whatever the tier; the CPU asks the server for the tier.
+    const frame = fidget
+      ? await fidgetGpuFrame(await cpuTapeSource(), snap, colors)
+      : await cpuFrameSource({
+        width, height, worldExtent,
+        time: getAnimTime(),
+        camera: { pos: cam.pos, right: cam.right, up: cam.up, fwd: cam.fwd, tanFov: cam.tanFov, ortho: cam.ortho > 0.5 },
+        colors,
+        mode,
+        ...(mode === "simple" ? { simple: { ...SIMPLE } } : {}),
+        backDim: snap.backDim,
+      });
+    console.log(`[${fidget ? "fidget" : "cpu"}] ${fidget ? "fidget-wgpu" : mode} ${width}x${height} frame in ${Math.round(performance.now() - t0)} ms`);
+    // "Fidget only" shows a frame that finished after the view moved on, too:
+    // it is newer than what is up, and the GPU has nothing to show instead.
+    if (job === cpuJob || fidgetOnly()) {
+      if (frame.width !== width || frame.height !== height) throw new Error(`the ${fidget ? "Fidget" : "server"} drew ${frame.width}x${frame.height}, not ${width}x${height}`);
       if (!cpuTexture || cpuTexture.image.width !== width || cpuTexture.image.height !== height) {
         cpuTexture?.dispose();
         cpuTexture = new THREE.DataTexture(new Float32Array(width * height * 4), width, height, THREE.RGBAFormat, THREE.FloatType);
       }
       encodeLitFrame(frame, snap, cpuTexture.image.data);
       cpuTexture.needsUpdate = true;
-      showCpuFrame(true);
+      showCpuFrame(true, fidgetOnly() ? "fidget-only" : fidget ? "fidget" : "cpu");
+      cpuStale = job !== cpuJob;
       scheduleRender({ keepAccum: true });
     }
   } catch (err) {
     if (job === cpuJob) {
       cpuFailedFor = wgsl;
       showCpuFrame(false);
-      if (!compileFailed) showNotification(true, `CPU render failed: ${err.message}`);
+      if (!compileFailed) showNotification(true, `${fidget ? "Fidget GPU" : "CPU"} render failed: ${err.message}`);
       scheduleRender({ keepAccum: true });
     }
   } finally {

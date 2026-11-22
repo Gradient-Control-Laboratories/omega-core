@@ -47,6 +47,7 @@ import {
     syncUiControls,
     defaultWGSL,
     setCpuFrameSource,
+    setCpuTapeSource,
     setCpuProgress,
     setCompileFailed,
 } from "./render/viewer.js";
@@ -643,16 +644,32 @@ function handleProgressEvent(ev) {
 
 host.connectProgress(clientId, handleProgressEvent);
 
-// ── The CPU Draw on device ──
+// ── The CPU and Fidget Draw on devices ──
 
-// The viewer asks for the lit renderer's frame of the document it shows (see setCpuFrameSource). A
-// page `gsl export` wrote has no server to draw it, so it does not offer the device.
+// The viewer asks for the lit renderer's frame of the document it shows (see setCpuFrameSource), and
+// for its tape, which the Fidget device draws in the page (setCpuTapeSource). A page `gsl export`
+// wrote has no server for either, so it does not offer the devices.
 let litCount = 0;
+let tapeCount = 0;
+// The tape is made once per source and scene size, with each return's colour and material fields
+// for the Fidget device; a failed request is forgotten, so the next frame asks again.
+let fidgetTape = null;
 if (host.editable) {
     setCpuFrameSource((request) => {
         const source = getGslSourceForServer();
         if (!source || source.trim() === "") return Promise.reject(new Error("no code to draw"));
         return host.renderLit({ ...request, id: `lit-${++litCount}`, clientId, source });
+    });
+    setCpuTapeSource(() => {
+        const source = getGslSourceForServer();
+        if (!source || source.trim() === "") return Promise.reject(new Error("no code to draw"));
+        const key = `${source}\u0000${getWorldExtent()}`;
+        if (fidgetTape?.key !== key) {
+            const bytes = host.tape({ id: `tape-${++tapeCount}`, clientId, source, appearance: true });
+            fidgetTape = { key, bytes };
+            bytes.catch(() => { if (fidgetTape?.bytes === bytes) fidgetTape = null; });
+        }
+        return fidgetTape.bytes;
     });
 } else {
     document.getElementById("draw-on-row")?.remove();

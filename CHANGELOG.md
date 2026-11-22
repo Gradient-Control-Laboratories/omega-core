@@ -80,6 +80,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   view over 2 megapixels is not drawn, and the note says to lower Resolution. The page `gsl export` writes has no
   server to ask, and does not offer the device. The CPU frame has no axis lines, which the GPU draws in its shape
   pass.
+- The viewer can draw the frame at rest with fidget's own GPU pipeline, run in the page: Render > Advanced > Draw on >
+  Fidget, or Fidget only, which draws no shapes on the GPU and shows only fidget's frame (the last one stays up until
+  the next lands, and hover, outlines and picking, which read the GPU frame, do not see shapes). The page asks
+  `gsl serve` for the document's tape, with each return's colour and material fields (`POST /api/tape`), and
+  fidget-wgpu, compiled to WebAssembly, finds each pixel's hit, its return, and its colour and material there; the
+  standard frame's own shading lights it, with fidget's ambient occlusion and glass drawn opaque. A document that
+  reads an imported mesh or noise has no such tape and is refused with a message. The buttons appear only where the
+  bundle is built: `tool/build-fidget.sh --wasm-out examples/viewer/vendor` puts it in `examples/viewer/vendor/fidget-wgpu`
+  (ignored by git).
 
 ### Changed
 

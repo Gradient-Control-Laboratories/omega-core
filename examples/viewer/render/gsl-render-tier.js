@@ -64,9 +64,12 @@ export function setRestTier(tier) {
   }
 }
 
-// What draws the tier at rest: "gpu", or "cpu", the same tier redrawn
-// on the server by litrender once nothing moves. Progressive is GPU only.
-const REST_DEVICES = ["gpu", "cpu"];
+// What draws the tier at rest: "gpu", or "cpu", the same tier redrawn on the
+// server by the lit renderer once nothing moves, or "fidget", fidget's own GPU
+// pipeline run in the page on the document's tape. Progressive has neither
+// form. "fidget-only" is "fidget" with the GPU's frame taken away: the viewer
+// draws no shapes on the GPU and shows only fidget's.
+const REST_DEVICES = ["gpu", "cpu", "fidget", "fidget-only"];
 let restDevice = "gpu";
 try {
   const saved = localStorage.getItem(REST_DEVICE_KEY);
@@ -200,7 +203,7 @@ export class MotionTracker {
 // bindTierButtons wires the Render panel: its header opens and closes it
 // like the other viewer panels, its "Moving" and "At rest" button groups
 // (data-moving-tier, data-rest-tier) pick the tiers, and its "Draw on" group
-// (data-rest-device), GPU or CPU, which Progressive disables.
+// (data-rest-device), GPU, CPU or Fidget, which Progressive disables.
 export function bindTierButtons(onChange) {
   const panel = document.getElementById("render-panel");
   document.getElementById("render-panel-header")?.addEventListener("click", (e) => {
@@ -255,6 +258,24 @@ export function bindTierButtons(onChange) {
       onChange();
     });
   });
+  // The Fidget devices run fidget-wgpu, which tool/build-fidget.sh --wasm-out
+  // builds into vendor/: they are offered only where the bundle is there, and a
+  // saved choice of one falls back to the GPU where it is not.
+  const fidgetButtons = [...device].filter((b) => b.dataset.restDevice.startsWith("fidget"));
+  if (fidgetButtons.length) {
+    fidgetButtons.forEach((b) => { b.hidden = true; });
+    const wgpuUrl = new URL("../vendor/fidget-wgpu/fidget_wgpu.js", import.meta.url);
+    fetch(wgpuUrl, { method: "HEAD" })
+      .then((r) => r.ok, () => false)
+      .then((built) => {
+        fidgetButtons.forEach((b) => { b.hidden = !built; });
+        if (!built && restDevice.startsWith("fidget")) {
+          setRestDevice("gpu");
+          sync();
+          onChange();
+        }
+      });
+  }
   // A tier saved by a viewer that offers it, in one that does not.
   if (rest.length && ![...rest].some((b) => b.dataset.restTier === restTier)) setRestTier("standard");
   sync();

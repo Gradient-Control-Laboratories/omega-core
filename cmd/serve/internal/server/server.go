@@ -64,6 +64,7 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("POST /api/compile", s.handleCompile)
 	s.mux.HandleFunc("POST /api/mesh", s.handleMesh)
 	s.mux.HandleFunc("POST /api/render-lit", s.handleRenderLit)
+	s.mux.HandleFunc("POST /api/tape", s.handleTape)
 	s.mux.HandleFunc("POST /api/export", s.handleExport)
 	s.mux.HandleFunc("POST /api/asset", s.handleAsset)
 
