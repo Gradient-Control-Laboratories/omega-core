@@ -132,6 +132,9 @@ func (s *specializer) rewritePackage(pkg *program.Package, pkgPath string) {
 						s.operand(prop.Expression, pkgPath)
 					}
 				}
+				for _, op := range a.Range.OwnOperands() {
+					s.operand(op, pkgPath)
+				}
 			}
 		}
 		for _, r := range f.Returns {

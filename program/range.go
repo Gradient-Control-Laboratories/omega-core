@@ -6,6 +6,25 @@ func (r *Range) IsSynthetic() bool {
 	return r.Start.Line == r.End.Line && r.Start.Column == r.End.Column
 }
 
+// OwnOperands returns the bound and period expressions an explicit @range wrote,
+// for a pass that walks a declaration's expressions the way it walks its
+// properties'. A range synthesized from .min/.max/.period has none: its operands
+// are those properties' own expressions, which the passes already walk, and
+// walking them again would transform them twice. A range with no source
+// locations was not synthesized from properties either, so its operands count.
+func (r *Range) OwnOperands() []*Operand {
+	if r == nil || (r.Start != nil && r.End != nil && r.IsSynthetic()) {
+		return nil
+	}
+	var ops []*Operand
+	for _, op := range []*Operand{r.Min, r.Max, r.Period} {
+		if op != nil {
+			ops = append(ops, op)
+		}
+	}
+	return ops
+}
+
 func operandConst(op *Operand) (float64, bool) {
 	if len(op.ConstValues) == 1 {
 		return op.ConstValues[0], true

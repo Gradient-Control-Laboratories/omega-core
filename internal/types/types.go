@@ -210,6 +210,11 @@ func analyzePackage(pkg *program.Package, path string, prog *program.Program, pk
 					}
 				}
 			}
+			for _, op := range assign.Range.OwnOperands() {
+				if _, err := inferOperandType(op, pa.env, file, pa); err != nil {
+					return nil, err
+				}
+			}
 		}
 	}
 

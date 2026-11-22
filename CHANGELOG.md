@@ -207,6 +207,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   left to run per point, so a box written with one did not fold to numbers.
 - A constant that folds to infinity or NaN, a division or a mod by zero, is a compile error naming it, instead of
   `+Inf.0` or `NaN.0` in a WGSL shader the browser refuses.
+- A bound of an explicit `@range` that reads another top-level variable works: `@range(abs(a - b) - offset, a + b - offset)`
+  lost its slider, and its `.period` animation, whenever `offset` was a plain constant. The assembler's passes (link,
+  closure, inline, constspec, types and dead-code removal) walked a variable's `.min`/`.max`/`.period` expressions but
+  not the bounds written in `@range`, so `offset` was inlined away while the bound still named it and could no longer
+  fold. They walk the bounds now. A range synthesized from `.min`/`.max`/`.period` is unchanged.
 
 ## [0.1.3] - 2026-11-17
 
