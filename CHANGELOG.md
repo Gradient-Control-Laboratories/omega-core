@@ -148,6 +148,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the bevel, about 1.7 to 1.8 times as deep as before at these edges (116 to 129 degrees through the
   material); the body, standoff and bore chamfers are unchanged. Gear and bevel-gear WGSL grows by
   582 bytes.
+- A box declared in a function from a `reduce` whose step indexes a list by its `index`, such as
+  `points[mod(index + 1, count)]`, now holds: read with `.box` it failed to link ("undefined identifier: index"),
+  and in builtin the part it bounds lost its box without a word.
+- A one-element list indexed at run time, such as `curvatures[0]` of `[0.1]` read in a reduce, failed on the CPU
+  paths (`gsl eval`, tape and meshing) with "target must be a collection, got num": the fidget backend builds the
+  list as one value. Index 0 now reads it there as WGSL already did; past 0 is an error.
 - A declared `.box` that reduces over a list a function call returned failed to assemble ("vector subtraction
   dimension mismatch", "collection elements must be all scalars or all vectors"): the box pass handed the
   reduce the whole list as one element. `profileXY(points, curvatures)` with its curvatures made by a function
@@ -160,6 +166,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`f(blend) { return reduce(..., (best, q) { ... inner(q, blend) ... }) }`) failed to assemble with
   "undefined identifier" once called with a closure: the closure transform pruned the template it called but
   kept it, not seeing that its callback made it a template too.
+- A three-way select on a constant vector condition folded to its positive branch whatever the condition's signs:
+  `[-1, -2] ? a : b : c` compiled as `a`, where the shader picks `c`. It now folds per component, as the shader
+  selects, and is pruned to one branch only when every component picks it.
+- A `reduce` whose function takes the index, `(accumulator, element, index)`, now folds to a constant; it was
+  left to run per point, so a box written with one did not fold to numbers.
+- A constant that folds to infinity or NaN, a division or a mod by zero, is a compile error naming it, instead of
+  `+Inf.0` or `NaN.0` in a WGSL shader the browser refuses.
 
 ## [0.1.3] - 2026-11-17
 
