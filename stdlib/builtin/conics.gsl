@@ -64,10 +64,18 @@ quadricRoot(q, m, b, c) {
 // The signed distance from Newton's multiplier t: x(t), and the least of it and the axis candidates' upper bounds.
 quadricFinish(q, m, b, c, t) {
   x = (q - b * t) / max([1, 1, 1] + m * t, [1e-20, 1e-20, 1e-20]);
-  // Newton's point, if the steps have not reached the surface, is off it by about |g| / |∇Q|: adding that keeps its
-  // distance an upper bound, so the least of the bounds below is the distance.
+  // Newton's point, if the steps have not reached the surface, is off it by about r = |g| / |∇Q|; adding r keeps its
+  // distance an upper bound, so that the axis candidates below win where the steps stall. They stall only on an axis
+  // inside the evolute, at least the least radius of curvature from the surface, never near it. Near the surface the
+  // penalty is therefore switched off by a factor that is exactly zero there, also in the mesher's interval bounds:
+  // the first-order distance |Q| / |∇Q| at q, below a depth under that radius, 0.1 / sqrt(max |m_i|). Left on, its
+  // bounds, wide over a cell though its value is nearly zero, make the mesher refine every cell near the surface and
+  // ripple it.
   g = dot(m * x, x) + 2 * dot(b, x) + c;
-  newton = length(q - x) + abs(g) / max(length(m * x + b) * 2, 1e-12);
+  q0 = dot(m * q, q) + 2 * dot(b, q) + c;
+  depth = 0.1 / sqrt(max(abs(m.x), abs(m.y), abs(m.z), 1e-30));
+  deep = clamp((abs(q0) / max(length(m * q + b) * 2, 1e-12) - depth) / depth, 0, 1);
+  newton = length(q - x) + deep * abs(g) / max(length(m * x + b) * 2, 1e-12);
   nearest = min(newton, quadricPole(q, m, b, c, m.x), quadricPole(q, m, b, c, m.y), quadricPole(q, m, b, c, m.z));
   return nearest * sign(dot(m * q, q) + 2 * dot(b, q) + c);
 }
