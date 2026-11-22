@@ -431,7 +431,7 @@ Phase 0 has no start commit; Phase 7 was skipped.
       the flank-cut last teeth; the owner's viewer check
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
-## Phase 16: Cross Holes and Set Screws
+## Phase 16: Cross Holes and Set Screws [checkpoint: 61e4b57]
 
 - [x] Task: Proposal (approved 2026-11-21): `shaft.crossHole(features, dia, z, angle)`, a list entry the fold
       passes, its drill stack's void cut after the fold (want 3), the mouth the plane tangent to the cylinder
@@ -459,4 +459,4 @@ Phase 0 has no start commit; Phase 7 was skipped.
       WGSL 65,805 B; the owner's viewer check found the shaft's ends cut like a huge centre drill (the
       example had passed drill.chamfer as end holes, a cone void 17.6 across); its ends are now 0.8 mm
       tapers
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
