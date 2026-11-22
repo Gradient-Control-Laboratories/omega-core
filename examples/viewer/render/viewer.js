@@ -1685,6 +1685,9 @@ bindDetailSlider("detail-slider", () => scheduleRender(), (show) => {
   partBoxes.object.visible = show;
   scheduleRender();
 });
+// The part-size histogram is sized to the track when it is drawn, which a
+// folded Detail section has no width for: a frame when it opens draws it.
+document.getElementById("render-detail")?.addEventListener("toggle", () => scheduleRender());
 
 bindFieldOfView((deg) => {
   cameraRig.fov = deg;
@@ -1698,9 +1701,12 @@ const focusToolButton = bindRenderControls({
   },
   onRenderImage: startRenderImage,
   onShadows: (on) => {
-    // Standard has no shadows to switch; its ambient occlusion is the
-    // nearest thing, so it goes with them.
+    // Standard has no shadows to switch, and its occlusion has a switch of
+    // its own, below.
     traceFlagsU.value.x = on ? 1 : 0;
+    scheduleRender();
+  },
+  onOcclusion: (on) => {
     renderKnobsU.value.x = on ? 1 : 0;
     scheduleRender();
   },
