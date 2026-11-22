@@ -241,6 +241,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `.box` treats a variable declared with `@range` as a slider, as it does one declared with `.min`/`.max`. It found
   sliders by their properties alone, so an `@range` variable read as the constant it starts as: `min(a, r).box` was
   bounded by `a` for an `@range` `r`, a box that is wrong once `r` moves, and unbounded for a `.min`/`.max` one.
+- A slider set with `.min`/`.max`/`.period` keeps its slider when a bound reads a computed constant: with
+  `hi = 10 + 2;`, `x.max = hi * 2;` lost the slider. The range synthesized from the properties shares their expressions
+  until a pass folds a property's expression to a new one; the range kept the old tree, which read `hi`, and `hi` was
+  removed as dead. Slider extraction now reads such a range's bounds from the properties as the passes left them
+  (`Assignment.LiveRange`).
 
 ## [0.1.3] - 2026-11-17
 

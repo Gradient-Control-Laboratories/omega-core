@@ -25,6 +25,38 @@ func (r *Range) OwnOperands() []*Operand {
 	return ops
 }
 
+// LiveRange returns the range that bounds the assignment's slider as the
+// assembler's passes have left it. An explicit @range is its own range. A range
+// synthesized from .min/.max/.period starts out sharing its operands with those
+// properties, but a pass that replaces a property's expression (folding it to a
+// constant, say) leaves the range holding the old tree, which can read a variable
+// the passes have since removed; so the range returned for it is built from the
+// properties' current expressions.
+func (a *Assignment) LiveRange() *Range {
+	if a == nil || a.Range == nil {
+		return nil
+	}
+	r := a.Range
+	if r.Start == nil || r.End == nil || !r.IsSynthetic() || len(a.Variables) != 1 || a.Variables[0] == nil {
+		return r
+	}
+	live := &Range{Start: r.Start, End: r.End, Min: r.Min, Max: r.Max, Period: r.Period}
+	for _, p := range a.Variables[0].Properties {
+		if p == nil || p.Expression == nil {
+			continue
+		}
+		switch p.Name {
+		case "min":
+			live.Min = p.Expression
+		case "max":
+			live.Max = p.Expression
+		case "period":
+			live.Period = p.Expression
+		}
+	}
+	return live
+}
+
 func operandConst(op *Operand) (float64, bool) {
 	if len(op.ConstValues) == 1 {
 		return op.ConstValues[0], true

@@ -83,18 +83,19 @@ func topLevel(pkg *program.Package) ([]*program.Assignment, []*program.FnType) {
 
 func sliderFromAssignment(source string, a *program.Assignment,
 	assignments []*program.Assignment, fnTypes []*program.FnType) (SliderInfo, bool) {
-	if len(a.Variables) != 1 || a.Range == nil || a.Expression == nil {
+	rng := a.LiveRange()
+	if len(a.Variables) != 1 || rng == nil || a.Expression == nil {
 		return SliderInfo{}, false
 	}
 	v := a.Variables[0]
 
-	minVal, okMin := a.Range.MinConst()
+	minVal, okMin := rng.MinConst()
 	if !okMin {
-		minVal, okMin = foldBound(a.Range.Min, assignments, fnTypes)
+		minVal, okMin = foldBound(rng.Min, assignments, fnTypes)
 	}
-	maxVal, okMax := a.Range.MaxConst()
+	maxVal, okMax := rng.MaxConst()
 	if !okMax {
-		maxVal, okMax = foldBound(a.Range.Max, assignments, fnTypes)
+		maxVal, okMax = foldBound(rng.Max, assignments, fnTypes)
 	}
 	if !okMin || !okMax {
 		return SliderInfo{}, false
@@ -117,9 +118,9 @@ func sliderFromAssignment(source string, a *program.Assignment,
 	}
 
 	var period float64
-	p, okPeriod := a.Range.PeriodConst()
-	if !okPeriod && a.Range.Period != nil {
-		p, okPeriod = foldBound(a.Range.Period, assignments, fnTypes)
+	p, okPeriod := rng.PeriodConst()
+	if !okPeriod && rng.Period != nil {
+		p, okPeriod = foldBound(rng.Period, assignments, fnTypes)
 	}
 	if okPeriod && p > 0 {
 		period = p
