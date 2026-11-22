@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Exact distances to conics and quadrics in builtin: `ellipseXY(center, radii)`, `parabolaXY(vertex, focalLength)`,
+  `hyperbolaXY(center, semiAxes)`, `ellipsoid(center, radii)` and `paraboloid(vertex, focalLength)`, and under them
+  `quadricDistance(q, m, b, c, steps)` for any quadric Σ m_i x_i² + 2 Σ b_i x_i + c = 0 in its own frame. The nearest
+  point is x(t) = (q - t·b) / (1 + t·m) for one Lagrange multiplier t, the single root of a function that decreases
+  strictly over a known interval for every conic and quadric alike; twelve Newton steps from t = 0, each kept within
+  the interval, find it, and on an axis of symmetry, where the nearest points are a ring or a pair and the root is at
+  the interval's end, the closed form there gives the distance. No step branches on the point. Against brute force
+  they are within 2.6e-6 near the surface and 7.5e-6 of the distance far from it, on the axes too.
 - `nested(fields)` combines exact fields whose surfaces do not cross, each wound with its solid on the negative
   side (counterclockwise outlines and islands, clockwise holes), into one exact distance in any order: an outline
   with holes in a single profile, or a 3D solid with a void.
