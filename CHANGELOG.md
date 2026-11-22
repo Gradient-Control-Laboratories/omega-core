@@ -229,6 +229,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   closure, inline, constspec, types and dead-code removal) walked a variable's `.min`/`.max`/`.period` expressions but
   not the bounds written in `@range`, so `offset` was inlined away while the bound still named it and could no longer
   fold. They walk the bounds now. A range synthesized from `.min`/`.max`/`.period` is unchanged.
+- `.box` treats a variable declared with `@range` as a slider, as it does one declared with `.min`/`.max`. It found
+  sliders by their properties alone, so an `@range` variable read as the constant it starts as: `min(a, r).box` was
+  bounded by `a` for an `@range` `r`, a box that is wrong once `r` moves, and unbounded for a `.min`/`.max` one.
 
 ## [0.1.3] - 2026-11-17
 
