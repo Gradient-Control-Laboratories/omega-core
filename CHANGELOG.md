@@ -109,9 +109,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The box analysis folds `&&`, `||` and `!` of constants, so a select on them takes one branch: a shaft
   segment whose field branch has no guard of its own no longer leaves the shaft's box unbounded.
-- A part's box is written with its shared pieces named once: a part turned twice by sliders or time had
-  its box arithmetic multiplied about sixteenfold, and now grows with each turn. The old Bevel Gears
-  document's WGSL is 56% smaller.
 - `shaft.body` and `shaft.envelope` no longer bridge their first segment to nothing, which evaluated it
   twice for no effect: every shaft's WGSL is 1 to 22% smaller, its field unchanged.
 - PNG renders frame a part too thin to be sampled inside beside a thick one (a threaded shaft's thread
