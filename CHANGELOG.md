@@ -95,6 +95,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reads an imported mesh or noise has no such tape and is refused with a message. The buttons appear only where the
   bundle is built: `tool/build-fidget.sh --wasm-out examples/viewer/vendor` puts it in `examples/viewer/vendor/fidget-wgpu`
   (ignored by git).
+- The viewer draws its moving frames smaller when it cannot keep 5 frames a second. While the view moves, four frames
+  in a row slower than that halve the size the moving frames are drawn at (Draft draws them at half the still frame's,
+  so this takes them to a quarter, and at the least an eighth); it steps back up when the frame time at the larger size,
+  predicted from the pixel count, would clear 7.5 frames a second, and waits longer after a step up that turned out
+  wrong. The still frame is always the size chosen. The Resolution buttons show it: the one chosen stays filled, the
+  size being drawn is outlined, and a note beside them says "moving at 1/4: under 5 fps". The wait that takes the view
+  for still, 150 ms without input, now follows the frame time when frames are slower than that (one and a half times the
+  slowest of the last four, at most 1.5 s): input reaches the page once a frame, so with half-second frames the wait ran
+  out between every two and a standard frame, as slow as the rest, was drawn in each gap.
 
 ### Changed
 
