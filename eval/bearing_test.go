@@ -541,3 +541,58 @@ func TestBearing_BearingsExampleCompilesToWGSL(t *testing.T) {
 			shaftAt[0].Value, bearingsAt[1].Value, bushAt[2].Value, shaftAt[3].Value)
 	}
 }
+
+// Each bearing and bush body declares its box, exactly its table dimensions:
+// across its outside (or flange) diameter, from its face along its width or
+// length; and every solid point of it lies inside (the analysis grows a box
+// by 0.01, so it is checked to within 0.02).
+func TestBearing_BoxesHoldTheirBodies(t *testing.T) {
+	cases := []struct {
+		expr   string
+		r      float64
+		z0, z1 float64
+	}{
+		{"bearing.deepGroove(6205.0, 10.0)", 26, 10, 25},
+		{"bearing.deepGrooveEnvelope(6205.0, 10.0)", 26, 10, 25},
+		{"bearing.bushing(20.0, 2.0, 20.0, 5.0)", 12, 5, 25},
+		{"bearing.bushingEnvelope(20.0, 2.0, 20.0, 5.0)", 12, 5, 25},
+		{"bearing.flangedBushing(20.0, 1.0, 20.0, 5.0)", 13, 5, 25},
+		{"bearing.flangedBushingEnvelope(20.0, 1.0, 20.0, 5.0)", 13, 5, 25},
+	}
+	for _, c := range cases {
+		doc := fmt.Sprintf("@scene(80)\nsolid = %s;\nreturn solid;\n", c.expr)
+		lo, hi := readBox(t, doc, "solid")
+		want := [2][3]float64{{-c.r, -c.r, c.z0}, {c.r, c.r, c.z1}}
+		for k := 0; k < 3; k++ {
+			if math.Abs(lo[k]-want[0][k]) > 0.02 || math.Abs(hi[k]-want[1][k]) > 0.02 {
+				t.Errorf("%s: box %v .. %v, want %v .. %v", c.expr, lo, hi, want[0], want[1])
+				break
+			}
+		}
+		var pts [][3]float64
+		for x := -c.r - 3; x <= c.r+3; x += 0.43 {
+			for y := -c.r - 3; y <= c.r+3; y += 0.47 {
+				for z := c.z0 - 3; z <= c.z1+3; z += 0.41 {
+					pts = append(pts, [3]float64{x, y, z})
+				}
+			}
+		}
+		f := evalBearingDoc(t, doc, "solid", pts)
+		inside, out := 0, 0
+		for i, q := range pts {
+			if f[i] >= 0 {
+				continue
+			}
+			inside++
+			for k := 0; k < 3; k++ {
+				if q[k] < lo[k] || q[k] > hi[k] {
+					if out++; out <= 3 {
+						t.Errorf("%s: solid point %v outside its box %v .. %v", c.expr, q, lo, hi)
+					}
+					break
+				}
+			}
+		}
+		t.Logf("%s: box %.2f .. %.2f; %d solid points, %d outside", c.expr, lo, hi, inside, out)
+	}
+}

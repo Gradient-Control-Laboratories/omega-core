@@ -206,6 +206,28 @@ at d_a min, and a retaining-ring groove from a DIN 471 table (groove diameter an
 line to line; `joint.cylindrical`'s fits are ISO 273 screw clearances, not bearing fits, and ISO 286 is
 recorded for later.
 
+**Box and simplified model (Phase 10, approved 2026-11-20).** `shaft.body` declares its `.box`: along the axis
+from the lowest end face to the highest, and radially to the largest reach of any segment, which each
+segment answers to one more constant question (half the larger diameter, half across a hex's corners, a
+gear's tip, an eccentric's offset plus its radius, a web's further circle; a section's from its field's
+box where the analysis bounds it, unbounded where not; a joint nothing). The renderer then evaluates
+nothing outside it, so every shipped shaft example's WGSL changes, by intent. A caller overrides it by
+assigning `.box` to their own value, which already replaces a library's declared box. The simplified
+model is a second entry point over the same list, `shaft.envelope(segments)` and
+`shaft.envelope(segments, bottomHole, topHole)`: a gear at its tip circle, a spline and a thread at their
+major diameters, runouts and their cuts dropped, the smooth segments, the joints' blends and the end holes
+kept, the same box declared.
+
+As built: a section segment leaves the box unbounded across the axis, since a library function cannot
+read a parameter's `.box` (the compiler expands the box before the clone reaches the caller's file); the
+caller sets the shaft's `.box` there. Asking the segments for the end faces used to evaluate each
+segment's whole field as an unused argument, which the three-argument body had paid since Phase 2; every
+segment now answers its planes before anything else. With the crop the box adds, the shipped examples
+moved: end holes 27,056 to 20,353 B, crank 16,635 to 12,989, hobbed 55,714 to 49,270, pinion 96,651 to
+86,656 (the face queries), and turned 18,770 to 20,083, threaded 9,807 to 10,530, blended 9,326 to
+10,054 (the crop). Fields are unchanged. The proof that the pinion stays within 0.3 mm of its tip circle
+takes 98,281 evaluations on the envelope; on the detailed shaft it does not finish in the default budget.
+
 ### 3.5 What falls out of the construction
 
 - A retaining-ring groove or a shoulder undercut is a short, smaller segment.
