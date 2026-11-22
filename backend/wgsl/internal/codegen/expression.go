@@ -1,6 +1,9 @@
 package codegen
 
 import (
+	"fmt"
+	"math"
+
 	"gradientcontrol.com/omega/core/backend/wgsl/internal/wgsl"
 	"gradientcontrol.com/omega/core/internal/build"
 	"gradientcontrol.com/omega/core/program"
@@ -59,7 +62,28 @@ func (d *Delegate) BuildValue(op *program.Operand, value float64) (build.ConstEx
 		d.recordRef(param)
 		return wgsl.NewVarRef(op, param), nil
 	}
+	if err := finiteConstants(d, op, value); err != nil {
+		return nil, err
+	}
 	return wgsl.NewValue(op, value), nil
+}
+
+// finiteConstants refuses a constant that is not a finite number: WGSL has no
+// literal for NaN or infinity, so one written out is a shader that will not
+// compile. Folding makes one only from a constant division by zero or mod by
+// zero, or an overflow, so the error names the expression.
+func finiteConstants(d *Delegate, op *program.Operand, values ...float64) error {
+	for _, v := range values {
+		if math.IsNaN(v) || math.IsInf(v, 0) {
+			var loc *program.Location
+			if op != nil {
+				loc = op.Start
+			}
+			return build.ErrLoc(d.GetScope(), loc, fmt.Errorf(
+				"this constant evaluates to %v, which WGSL cannot write; is it divided by zero or taken mod zero?", v))
+		}
+	}
+	return nil
 }
 
 func (d *Delegate) uiParam(op *program.Operand) (*wgsl.VarInfo, bool) {

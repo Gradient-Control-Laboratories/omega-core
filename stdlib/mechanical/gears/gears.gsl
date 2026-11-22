@@ -300,6 +300,22 @@ bevelPitchAngle(numTeeth, mateTeeth, shaftAngle) {
   return atan(sin(shaftAngle), mateTeeth / numTeeth + cos(shaftAngle));
 }
 
+/// The distance along the axis from a bevel gear's pitch apex to its crown,
+/// the outer tooth-tip corner where the tip cone meets the back cone: the
+/// drawing dimension a bevel gear's faces are placed from. The gear is
+/// `numTeeth` teeth against a mate of `mateTeeth` at `shaftAngle`, module
+/// `moduleVal` at the outer end, as bevelGear and bevelTooth build it. Its toe's
+/// tip corner lies at the same distance scaled by (outer cone distance - face
+/// width) / outer cone distance. A shade from the textbook R cos(delta) -
+/// m sin(delta), which takes the addendum angle as atan(m / R) where these
+/// teeth have m / R.
+bevelApexToCrown(numTeeth, mateTeeth, moduleVal, shaftAngle) {
+  pitchAngle = bevelPitchAngle(numTeeth, mateTeeth, shaftAngle);
+  outerCone = numTeeth * moduleVal / (2 * sin(pitchAngle));
+  addendumAngle = moduleVal / outerCone;
+  return outerCone * cos(pitchAngle + addendumAngle) / cos(addendumAngle);
+}
+
 /// The teeth of a bevel gear as an unbounded conical field: apex at the
 /// origin, axis +Z, teeth converging on the apex, and no ends — bevelGear
 /// faces it off, or bound it yourself. `pitchAngle` is the pitch cone

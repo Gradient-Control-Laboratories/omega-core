@@ -262,6 +262,13 @@ func scanNegativeBox(canvasIndex fidget.CanvasIndex, region [2][3]float32) (box 
 	}
 	switch {
 	case negFound:
+		// The near band too: a part too thin for any cell centre to fall inside
+		// it is only ever near, and the refinement widens by a cell at most, so
+		// one dropped here never comes back.
+		for k := 0; k < 3; k++ {
+			negative[0][k] = float32(math.Min(float64(negative[0][k]), float64(nearBand[0][k])))
+			negative[1][k] = float32(math.Max(float64(negative[1][k]), float64(nearBand[1][k])))
+		}
 		return negative, true
 	case nearCount > 0 && nearCount < n*4/5:
 		return nearBand, true
