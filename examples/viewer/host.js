@@ -80,6 +80,22 @@ export async function renderLit(request) {
     };
 }
 
+// tape asks the server for request's document ({ id, clientId, source, appearance }) as an
+// evaluation tape and answers its bytes, as a Uint8Array: every return of the document, and with
+// appearance each return's colour and material fields. The Fidget device draws from it.
+export async function tape(request) {
+    const res = await fetch("/api/tape", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+    });
+    if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `HTTP ${res.status}`);
+    }
+    return new Uint8Array(await res.arrayBuffer());
+}
+
 // exportPage asks for request's document ({ name, source }) as `gsl export` writes it, and answers
 // the HTTP response, whose body is a zip of the folder: this viewer with the static host in this
 // file's place, and the document's field beside it.
