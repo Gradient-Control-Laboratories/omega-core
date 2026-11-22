@@ -393,7 +393,11 @@ func (d *Delegate) BuildPackageReturns(_ []*program.Operand, expressions []build
 	}
 
 	// Inlining writes a value once per call it came from: merge the repeats
-	// in every structured function (ir/cse.go).
+	// in every structured function (ir/cse.go). Merging gives guards that
+	// share a weight the same condition text; merging them (ir/guard_merge.go)
+	// puts a split form's two bodies in one branch, where CSE names it once.
+	d.module.EliminateCommonSubexpressions()
+	d.module.MergeGuards()
 	d.module.EliminateCommonSubexpressions()
 	d.wgslSource = d.module.WGSL()
 	return nil

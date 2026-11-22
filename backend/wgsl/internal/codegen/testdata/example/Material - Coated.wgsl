@@ -633,22 +633,20 @@ fn coating_chippedPaint(p: vec3<f32>, baseMaterial: mat4x4<f32>, baseColor: vec3
   let primerGone = gsl_result_9.v_2;
   let primerShows = clamp((paintGone - primerGone) / max(1.0 - primerGone, 0.0001), 0.0, 1.0);
   var gsl_simpleValue = coating_chippedStandInMaterial(baseMaterial, glossUnits, wear, noiseTex);
+  var gsl_simpleValue_2 = coating_chippedStandInColor(baseColor, paintColor, primerColor, wear, noiseTex);
   if (gsl_simpleDetail > 0.0) {
     let paintMat = material_make(coating_glossRoughness(glossUnits, noiseTex) + 0.02 * chalk, 0.0, 1.5, noiseTex);
     let coated = material_blend(paintMat, mat4x4<f32>(vec4<f32>(0.85, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), primerShows, noiseTex);
     let worn = material_blend(coated, baseMaterial, primerGone, noiseTex);
     let gsl_simpleFull = material_withDisplacement(worn, material_displacement(baseMaterial, noiseTex) + 0.05 * (coating_chipUnion__spec1(reach, noiseTex) - paintGone) + 0.03 * (coating_chipUnion__spec2(reach, noiseTex) - primerGone), noiseTex);
     gsl_simpleValue = mat4x4<f32>(mix(gsl_simpleValue[0], gsl_simpleFull[0], gsl_simpleDetail), mix(gsl_simpleValue[1], gsl_simpleFull[1], gsl_simpleDetail), mix(gsl_simpleValue[2], gsl_simpleFull[2], gsl_simpleDetail), mix(gsl_simpleValue[3], gsl_simpleFull[3], gsl_simpleDetail));
-  }
-  let chipped = gsl_simpleValue;
-  var gsl_simpleValue_2 = coating_chippedStandInColor(baseColor, paintColor, primerColor, wear, noiseTex);
-  if (gsl_simpleDetail > 0.0) {
     let paintLab = color_rgb2oklab(paintColor, noiseTex);
     let dL = 0.009 * chalk;
     let mottled = color_oklab2rgb(paintLab + vec3<f32>(dL, -8.0 * dL * paintLab.y, -8.0 * dL * paintLab.z), noiseTex);
     let coatColor = color_mixOklab(mottled, primerColor, primerShows, noiseTex);
     gsl_simpleValue_2 = mix(gsl_simpleValue_2, color_mixOklab(coatColor, baseColor, primerGone, noiseTex), gsl_simpleDetail);
   }
+  let chipped = gsl_simpleValue;
   let finish = gsl_simpleValue_2;
   var gsl_result : gsl_struct;
   gsl_result.v_1 = chipped;

@@ -376,13 +376,13 @@ fn natural_terrain(p: vec3<f32>, scale: f32, snowBias: f32, noiseTex: texture_3d
   let band = (height + 0.25 * unit * noise_gradient(p, scale / 4.0, noiseTex)) / unit;
   let seaLevel = height / unit;
   var gsl_simpleValue = mat4x4<f32>(vec4<f32>(1.0, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+  var gsl_simpleValue_2 = natural_terrainStandMaterial(snowBias, noiseTex);
+  var gsl_simpleValue_3 = vec3<f32>(0.6596159, 0.61961985, 0.49138752);
+  var gsl_simpleValue_4 = natural_terrainStandColor(snowBias, noiseTex);
   if (gsl_simpleDetail > 0.0) {
     let measured = mat4x4<f32>(vec4<f32>(1.0, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     let gsl_simpleFull = material_withDisplacement(measured, texture_grainRelief(p, 0.3, 0.12, noiseTex), noiseTex);
     gsl_simpleValue = mat4x4<f32>(mix(gsl_simpleValue[0], gsl_simpleFull[0], gsl_simpleDetail), mix(gsl_simpleValue[1], gsl_simpleFull[1], gsl_simpleDetail), mix(gsl_simpleValue[2], gsl_simpleFull[2], gsl_simpleDetail), mix(gsl_simpleValue[3], gsl_simpleFull[3], gsl_simpleDetail));
-  }
-  var gsl_simpleValue_2 = natural_terrainStandMaterial(snowBias, noiseTex);
-  if (gsl_simpleDetail > 0.0) {
     let sandMat = gsl_simpleValue;
     let sandy = texture_paintMaterial(seaLevel, 0.0, 0.02, mat4x4<f32>(vec4<f32>(0.08, 0.0, 1.33, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), sandMat, noiseTex);
     let grassMat = mat4x4<f32>(vec4<f32>(0.5, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
@@ -391,15 +391,8 @@ fn natural_terrain(p: vec3<f32>, scale: f32, snowBias: f32, noiseTex: texture_3d
     let snowMat = mat4x4<f32>(vec4<f32>(0.5, 0.0, 1.3098, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     let gsl_simpleFull_2 = texture_paintMaterial(band + snowBias, 2.0, 0.2, stony, snowMat, noiseTex);
     gsl_simpleValue_2 = mat4x4<f32>(mix(gsl_simpleValue_2[0], gsl_simpleFull_2[0], gsl_simpleDetail), mix(gsl_simpleValue_2[1], gsl_simpleFull_2[1], gsl_simpleDetail), mix(gsl_simpleValue_2[2], gsl_simpleFull_2[2], gsl_simpleDetail), mix(gsl_simpleValue_2[3], gsl_simpleFull_2[3], gsl_simpleDetail));
-  }
-  let landMat = gsl_simpleValue_2;
-  var gsl_simpleValue_3 = vec3<f32>(0.6596159, 0.61961985, 0.49138752);
-  if (gsl_simpleDetail > 0.0) {
     let measuredColor = vec3<f32>(0.6944, 0.6546, 0.5176);
     gsl_simpleValue_3 = mix(gsl_simpleValue_3, color_mixOklab(measuredColor, vec3<f32>(0.3, 0.26, 0.22), texture_grainSpecks(p, 0.3, 0.083, noiseTex), noiseTex), gsl_simpleDetail);
-  }
-  var gsl_simpleValue_4 = natural_terrainStandColor(snowBias, noiseTex);
-  if (gsl_simpleDetail > 0.0) {
     let sea = vec3<f32>(0.49309835, -0.060483743, -0.05850419) + vec3<f32>(-0.2985687, 0.053410567, -0.009546458) * clamp(-seaLevel / 1.2, 0.0, 1.0);
     let sandColor = gsl_simpleValue_3;
     let coast = sea + (color_rgb2oklab(sandColor, noiseTex) - sea) * texture_mask(seaLevel, 0.0, 0.02, noiseTex);
@@ -413,6 +406,7 @@ fn natural_terrain(p: vec3<f32>, scale: f32, snowBias: f32, noiseTex: texture_3d
     let land = rocky + (vec3<f32>(dot(vec3<f32>(0.21045426, 0.7936178, -0.004072047), gsl_cse_1), dot(vec3<f32>(1.9779985, -2.4285922, 0.4505937), gsl_cse_1), dot(vec3<f32>(0.025904037, 0.78277177, -0.80867577), gsl_cse_1)) - rocky) * texture_mask(band + snowBias, 2.0, 0.2, noiseTex);
     gsl_simpleValue_4 = mix(gsl_simpleValue_4, color_oklab2rgb(land, noiseTex), gsl_simpleDetail);
   }
+  let landMat = gsl_simpleValue_2;
   let landColor = gsl_simpleValue_4;
   var gsl_result : gsl_struct_5;
   gsl_result.v_1 = landMat;

@@ -336,6 +336,9 @@ The numbering is the order.
     cylinder. The crests and roots are the whole form and its complement, unbounded, so drawn the field
     is the form's, unchanged; the gear's tips and gaps are made the same (the owner, after cross sections
     showed Phase 19's band bounds distorting the field in the gaps).
+21. **Guard merging** (added 2026-11-22, the owner: "Merge guards next"). Guards that share a condition
+    merge into one branch where that is legal, so a split form is evaluated once when drawn; the
+    prerequisite for expressing shape stand-ins (`.simple`) as features, max(min(S, f), neg(neg(f))).
 
 **Phase 3 depends on gears for the gear segment:** `gears.gearProfile` is not yet a bound (plan, Phase 3), so
 neither is `shaft.gear`; the fix is its own PR off main (a bounded involute flank, and the normalized

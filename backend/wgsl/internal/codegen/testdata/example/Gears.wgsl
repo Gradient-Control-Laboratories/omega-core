@@ -122,14 +122,13 @@ fn gears_gearProfile(p: vec3<f32>, numTeeth: f32, moduleVal: f32, pressureAngle:
   let roundK = dedendumClearance * moduleVal;
   let profile = builtin_unionRound(toothProfile, dedBody, roundK);
   var gsl_feature = 100000.0;
-  if (gsl_featureWeight > 0.0) {
-    gsl_feature = profile + (1.0 - gsl_featureWeight) * 0.5 * gsl_featureSize;
-  }
-  let tips = gsl_feature;
   var gsl_feature_2 = 100000.0;
   if (gsl_featureWeight > 0.0) {
-    gsl_feature_2 = -profile + (1.0 - gsl_featureWeight) * 0.5 * gsl_featureSize;
+    let gsl_cse_2 = (1.0 - gsl_featureWeight) * 0.5 * gsl_featureSize;
+    gsl_feature = profile + gsl_cse_2;
+    gsl_feature_2 = -profile + gsl_cse_2;
   }
+  let tips = gsl_feature;
   let gaps = gsl_feature_2;
   return max(min(pitchDisc, tips), -gaps);
 }

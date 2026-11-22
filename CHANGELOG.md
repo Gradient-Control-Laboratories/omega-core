@@ -240,7 +240,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   private global) is merged. A shaft's fold computes each section once rather than four times: the
   pinion's WGSL is 59% smaller and the hobbed shaft's 52%, and the example documents are 2.2% smaller in
   all. Fields are unchanged, and shader compile time on Metal is unchanged too, since the driver
-  already merged the copies.
+  already merged the copies. Guards that test the same condition are then merged into one branch where
+  nothing between them depends on the order, so a thread's or a gear's two features, its crests and roots
+  or its tips and gaps, evaluate its form once when drawn, and a document's colour and material
+  stand-ins share one Textures-rung branch.
 - PNG renders frame a part too thin to be sampled inside beside a thick one (a threaded shaft's thread
   went missing without `--extent`).
 - The fast chamfers' parameter is named `offset`, not `setback`, in builtin's `intersectChamfer`,

@@ -188,15 +188,13 @@ fn animated_mudPot(p: vec3<f32>, time: f32, bubbleSize: f32, period: f32, thinne
   let found = gsl_fold;
   let dry = texture_mask(found.y / cellSize, 0.55, 0.15, noiseTex);
   var gsl_simpleValue = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.25855, 0.0, 1.4167, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), 0.003 * bubbleSize, noiseTex);
+  var gsl_simpleValue_2 = vec3<f32>(0.34137827, 0.33132967, 0.309709);
   if (gsl_simpleDetail > 0.0) {
     let gsl_simpleFull = material_withDisplacement(material_blend(mat4x4<f32>(vec4<f32>(0.15, 0.0, 1.4, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), mat4x4<f32>(vec4<f32>(0.8, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), dry, noiseTex), found.x, noiseTex);
     gsl_simpleValue = mat4x4<f32>(mix(gsl_simpleValue[0], gsl_simpleFull[0], gsl_simpleDetail), mix(gsl_simpleValue[1], gsl_simpleFull[1], gsl_simpleDetail), mix(gsl_simpleValue[2], gsl_simpleFull[2], gsl_simpleDetail), mix(gsl_simpleValue[3], gsl_simpleFull[3], gsl_simpleDetail));
-  }
-  let pot = gsl_simpleValue;
-  var gsl_simpleValue_2 = vec3<f32>(0.34137827, 0.33132967, 0.309709);
-  if (gsl_simpleDetail > 0.0) {
     gsl_simpleValue_2 = mix(gsl_simpleValue_2, color_mixOklab(vec3<f32>(0.3, 0.29, 0.27), vec3<f32>(0.56, 0.55, 0.52), dry, noiseTex), gsl_simpleDetail);
   }
+  let pot = gsl_simpleValue;
   let col = gsl_simpleValue_2;
   var gsl_result : gsl_struct;
   gsl_result.v_1 = pot;

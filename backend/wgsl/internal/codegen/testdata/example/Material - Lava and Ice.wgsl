@@ -322,21 +322,19 @@ fn gcl_closure_iceFloes(p: vec3<f32>, wind: vec3<f32>, time: f32, floeSize: f32,
   let rimWidth = 0.06 * floeSize;
   let rim = pancake * exp(-((cells.x - leadHalf - rimWidth) / rimWidth) * (cells.x - leadHalf - rimWidth) / rimWidth);
   var gsl_simpleValue = material_withDisplacement(material_blend(mat4x4<f32>(vec4<f32>(0.06, 0.0, 1.33, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), material_make(roughness, 0.0, 1.31, noiseTex), covered, noiseTex), 0.03 * floeSize * covered * (1.0 + 0.285 * pancake), noiseTex);
+  let albedo = animated_iceStage(stage, array<f32, 7>(0.1, 0.15, 0.25, 0.4, 0.35, 0.6, 0.85), noiseTex);
+  let flat = pow(clamp(albedo + (0.8 - albedo) * 0.285 * pancake, 0.0, 1.0), 0.45454547);
+  var gsl_simpleValue_2 = color_mixOklab(vec3<f32>(0.02, 0.05, 0.08), color_mixOklab(vec3<f32>(flat * 0.9, flat * 0.96, flat), vec3<f32>(flat, flat, flat), clamp(stage * 2.0 - 1.0, 0.0, 1.0), noiseTex), covered, noiseTex);
   if (gsl_simpleDetail > 0.0) {
     let mat = material_blend(mat4x4<f32>(vec4<f32>(0.06, 0.0, 1.33, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), material_make(roughness, 0.0, 1.31, noiseTex), onFloe, noiseTex);
     let relief = onFloe * (0.03 * floeSize * (1.0 + 0.3 * snow * clamp(stage * 2.0 - 1.0, 0.0, 1.0)) + 0.03 * floeSize * rim);
     let gsl_simpleFull = material_withDisplacement(mat, relief, noiseTex);
     gsl_simpleValue = mat4x4<f32>(mix(gsl_simpleValue[0], gsl_simpleFull[0], gsl_simpleDetail), mix(gsl_simpleValue[1], gsl_simpleFull[1], gsl_simpleDetail), mix(gsl_simpleValue[2], gsl_simpleFull[2], gsl_simpleDetail), mix(gsl_simpleValue[3], gsl_simpleFull[3], gsl_simpleDetail));
-  }
-  let pack = gsl_simpleValue;
-  let albedo = animated_iceStage(stage, array<f32, 7>(0.1, 0.15, 0.25, 0.4, 0.35, 0.6, 0.85), noiseTex);
-  let flat = pow(clamp(albedo + (0.8 - albedo) * 0.285 * pancake, 0.0, 1.0), 0.45454547);
-  var gsl_simpleValue_2 = color_mixOklab(vec3<f32>(0.02, 0.05, 0.08), color_mixOklab(vec3<f32>(flat * 0.9, flat * 0.96, flat), vec3<f32>(flat, flat, flat), clamp(stage * 2.0 - 1.0, 0.0, 1.0), noiseTex), covered, noiseTex);
-  if (gsl_simpleDetail > 0.0) {
     let tone = pow(clamp(albedo + (0.8 - albedo) * rim + 0.04 * snow, 0.0, 1.0), 0.45454547);
     let ice = color_mixOklab(vec3<f32>(tone * 0.9, tone * 0.96, tone), vec3<f32>(tone, tone, tone), clamp(stage * 2.0 - 1.0, 0.0, 1.0), noiseTex);
     gsl_simpleValue_2 = mix(gsl_simpleValue_2, color_mixOklab(vec3<f32>(0.02, 0.05, 0.08), ice, onFloe, noiseTex), gsl_simpleDetail);
   }
+  let pack = gsl_simpleValue;
   let floes = gsl_simpleValue_2;
   var gsl_result : gsl_struct_2;
   gsl_result.v_1 = pack;
