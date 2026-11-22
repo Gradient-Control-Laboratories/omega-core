@@ -306,6 +306,18 @@ The numbering is the order.
     through bore. `shaft.bevel` is the missing segment, placed by its flat faces and its pitch apex.
     Backlash on it and on `shaft.gear`; the gear and bevel gear examples rewritten as shafts. An audit
     of the bevel against independent references comes first.
+13. **Fixes** (added 2026-11-21, the owner: "yes to working on all of those problems"). The box analysis
+    folds and/or/not of literals; a part's box corners share their subexpressions (#88's `shareBoxRepeats`);
+    the fold stops bridging the first segment to its seed; PNG framing keeps a part too thin to be sampled
+    inside.
+14. **Knurls.** `shaft.knurl`, ISO 13444: straight, 30-degree diamond, one-way diagonal and annular. The
+    geometry is the blank at its maximum material condition; the teeth are a displacement, backed by a
+    colour texture where the displacement is not drawn, backed by the plain blank as the stand-in (the
+    fastener thread's ladder; `material/process/machined.knurled` has the tooth).
+15. **Thread undercuts.** DIN 76 thread relief grooves, sized from the thread.
+16. **Cross holes and set screws.** Radial drill stacks on a segment, plain or tapped, and a set screw
+    seated in one.
+17. **Stand-ins and fits.** `shaft.envelope` as a shaft's `.simple`; ISO 286 fits for the bearing seats.
 
 **Phase 3 depends on gears for the gear segment:** `gears.gearProfile` is not yet a bound (plan, Phase 3), so
 neither is `shaft.gear`; the fix is its own PR off main (a bounded involute flank, and the normalized

@@ -114,6 +114,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The box analysis folds `&&`, `||` and `!` of constants, so a select on them takes one branch: a shaft
+  segment whose field branch has no guard of its own no longer leaves the shaft's box unbounded.
+- `shaft.body` and `shaft.envelope` no longer bridge their first segment to nothing, which evaluated it
+  twice for no effect: every shaft's WGSL is 1 to 22% smaller, its field unchanged.
+- PNG renders frame a part too thin to be sampled inside beside a thick one (a threaded shaft's thread
+  went missing without `--extent`).
 - The fast chamfers' parameter is named `offset`, not `setback`, in builtin's `intersectChamfer`,
   `unionChamfer`, `differenceChamfer`, `intersectChamferEdges`, `intersectChamferVertices`, their union
   counterparts, and the `ChamferRound` and `ChamferBlend` families (`[edgeOffset, vertexOffset]` for the
