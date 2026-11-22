@@ -93,6 +93,26 @@ detailValue(coarse, fine, size) {
   return fine;
 }
 
+// Internal: a geometric feature, name.featureSize = size mm across (0 for its
+// box's smallest extent), that gives way when it is too small to see
+// (property.Expand). It stands only in a union or as what a difference takes
+// away, where nothing leaves the rest unchanged: a bump drops out, a hole
+// closes. The viewer's WGSL measures the pixel at the point, from the world
+// position and the eye, and fades the feature to nothing across the Detail
+// slider's band, without evaluating it once gone (agent/wgsl/internal/codegen/
+// prune.go); everywhere else it is the field.
+pruneBelow(field, size) {
+  return field;
+}
+
+// Internal: the smallest extent of a box [lo, hi], a feature's size when its
+// featureSize is 0. An axis the box analysis cannot bound reads +-nothing, so
+// a box unbounded every way is a size no pixel reaches.
+featureExtent(b) {
+  e = b[1] - b[0];
+  return min(e.x, min(e.y, e.z));
+}
+
 // Internal: simpleValue for a stand-in that has a stand-in of its own, a
 // simpler texture before the flat look (property.MarkParts). The viewer
 // switches both below the Textures rung, so the simpler texture shows only

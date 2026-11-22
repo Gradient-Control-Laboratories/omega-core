@@ -1,0 +1,27 @@
+@scene(400)
+
+// Feature pruning. A part's size on screen is the wrong measure of its small
+// features: this gear is 150 mm across, so it never vanishes, but its teeth
+// are 1.6 mm, and from far enough away they are smaller than a pixel. A
+// feature carries its own size (name.featureSize, set here by the library),
+// and the viewer measures it against the pixel at the point it is looking
+// at: once it is too small to see, it gives way. The gear's teeth leave its
+// pitch cylinder, the circle that rolls on its mate's; the plate's 1.5 mm
+// holes close and the plate reads solid. Neither is evaluated once gone.
+//
+// The band is the Detail slider's, as for parts: raise the slider and zoom
+// out. Lengths are in mm.
+
+// 150 teeth of module 1: a 150 mm pitch circle, teeth pi / 2 = 1.6 mm thick.
+bigGear = max(gears.gearProfile(150.0, 1.0, radians(20.0), 0.0, 0.25, 0.05), abs(p.z) - 4.0);
+bigGear.color = [0.62, 0.64, 0.68];
+
+// A plate perforated on a 6 mm grid with 1.5 mm through holes, each one
+// sized by drill.hole from its own field.
+perforated = max(box([-60.0, -60.0, -3.0], [60.0, 60.0, 3.0]),
+                 neg(remap(drill.hole(drill.thru(1.5), 3.0), map.patternRectangularXY([6.0, 6.0]))));
+perforated.color = [0.42, 0.50, 0.62];
+
+laidGear = transform.translate(bigGear, [-90.0, 0.0, 0.0]);
+laidPlate = transform.translate(perforated, [90.0, 0.0, 0.0]);
+return laidGear, laidPlate;

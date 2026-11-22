@@ -65,6 +65,10 @@ type Delegate struct {
 	// vanishUsed is true when a part is guarded by shrinkToVanish, so the camera
 	// it reads and gsl_vanish are declared after sdShape (vanish.go).
 	vanishUsed bool
+	// featureUsed is true when a feature is guarded by pruneBelow, so sdShape
+	// measures the pixel first and the camera and gsl_featureWeight are
+	// declared after it (prune.go).
+	featureUsed bool
 	// simpleUsed is true when a part switches to a stand-in, so gsl_simple and
 	// its rung are declared after sdShape (simple.go). deferSimple is set while
 	// a part's guard generates its shape, and pendingSimple then holds the

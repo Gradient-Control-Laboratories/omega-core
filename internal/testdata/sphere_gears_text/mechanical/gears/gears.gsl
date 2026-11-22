@@ -45,6 +45,12 @@ gearProfile(numTeeth, moduleVal, pressureAngle, rotOffset, dedendumClearance, kS
    tipCorner = collect((cos(tipRoll) + (tipRoll * sin(tipRoll))), (sin(tipRoll) - (tipRoll * cos(tipRoll))))
    toothProfile = intersectChamferNormalized(repeatedTooth, addClip, kSmall, collect(sin(tipRoll), neg(cos(tipRoll))), vector.divideByScalar(tipCorner, length(tipCorner)))
    dedBody = remap(circleXY(collect(0, 0), dedendumRadius), collect(opx, opy, access(p, z)))
+   profile = unionRound(toothProfile, dedBody, roundK)
+   pitchDisc = remap(circleXY(collect(0, 0), pitchRadius), collect(opx, opy, access(p, z)))
+   tips = max(profile, (dedendumRadius - pRho))
+   tips.featureSize = ((pi * moduleVal) / 2)
+   gaps = max(neg(profile), (pRho - addendumRadius))
+   gaps.featureSize = ((pi * moduleVal) / 2)
 
    rotInv() {
       rx = ((access(p, x) * cosR) + (access(p, y) * sinR))
@@ -64,7 +70,7 @@ gearProfile(numTeeth, moduleVal, pressureAngle, rotOffset, dedendumClearance, kS
       return min(left, right);
    }
 
-   return unionRound(toothProfile, dedBody, roundK);
+   return max(min(pitchDisc, tips), neg(gaps));
 }
 
 gearReach(numTeeth, moduleVal, standoffDiameter, standoffChamfer) {

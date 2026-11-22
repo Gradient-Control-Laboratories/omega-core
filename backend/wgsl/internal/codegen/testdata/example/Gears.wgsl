@@ -96,6 +96,11 @@ fn gears_gearProfile(p: vec3<f32>, numTeeth: f32, moduleVal: f32, pressureAngle:
   let sinO = sin(rotOffset);
   let opx = p.x * cosO + p.y * sinO;
   let opy = -p.x * sinO + p.y * cosO;
+  let pitchRadius = numTeeth / 2.0 * moduleVal;
+  let gsl_cse_1 = vec3<f32>(opx, opy, p.z);
+  let pitchDisc = builtin_circleXY(gsl_cse_1, vec2<f32>(0.0, 0.0), pitchRadius);
+  let gsl_featureSize = 3.1415927 * moduleVal / 2.0;
+  let gsl_featureWeight = gsl_featureWeight(gsl_featureSize);
   let pRho = length(vec2<f32>(opx, opy));
   let pAngle = atan2(opy, opx);
   let pitchAngle = 3.1415927 / numTeeth;
@@ -106,17 +111,27 @@ fn gears_gearProfile(p: vec3<f32>, numTeeth: f32, moduleVal: f32, pressureAngle:
   let rpx = pRho * cos(pAngleCentered);
   let rpy = pRho * sin(pAngleCentered);
   let repeatedTooth = gsl_gears_gearProfile_remap_2(vec3<f32>(rpx, rpy, p.z), dedendumClearance, kSmall, moduleVal, numTeeth, pressureAngle, rotOffset);
-  let pitchRadius = numTeeth / 2.0 * moduleVal;
   let addendumRadius = pitchRadius + moduleVal;
-  let addClip = builtin_circleXY(vec3<f32>(opx, opy, p.z), vec2<f32>(0.0, 0.0), addendumRadius);
+  let addClip = builtin_circleXY(gsl_cse_1, vec2<f32>(0.0, 0.0), addendumRadius);
   let baseRadius = pitchRadius * cos(pressureAngle);
   let tipRoll = sqrt(addendumRadius * addendumRadius - baseRadius * baseRadius) / baseRadius;
   let tipCorner = vec2<f32>(cos(tipRoll) + tipRoll * sin(tipRoll), sin(tipRoll) - tipRoll * cos(tipRoll));
   let toothProfile = builtin_intersectChamferNormalized(repeatedTooth, addClip, kSmall, vec2<f32>(sin(tipRoll), -cos(tipRoll)), tipCorner / length(tipCorner));
   let dedendumRadius = pitchRadius - (1.0 + dedendumClearance) * moduleVal;
-  let dedBody = builtin_circleXY(vec3<f32>(opx, opy, p.z), vec2<f32>(0.0, 0.0), dedendumRadius);
+  let dedBody = builtin_circleXY(gsl_cse_1, vec2<f32>(0.0, 0.0), dedendumRadius);
   let roundK = dedendumClearance * moduleVal;
-  return builtin_unionRound(toothProfile, dedBody, roundK);
+  let profile = builtin_unionRound(toothProfile, dedBody, roundK);
+  var gsl_feature = 100000.0;
+  if (gsl_featureWeight > 0.0) {
+    gsl_feature = max(profile, dedendumRadius - pRho) + (1.0 - gsl_featureWeight) * 0.5 * gsl_featureSize;
+  }
+  let tips = gsl_feature;
+  var gsl_feature_2 = 100000.0;
+  if (gsl_featureWeight > 0.0) {
+    gsl_feature_2 = max(-profile, pRho - addendumRadius) + (1.0 - gsl_featureWeight) * 0.5 * gsl_featureSize;
+  }
+  let gaps = gsl_feature_2;
+  return max(min(pitchDisc, tips), -gaps);
 }
 
 fn gears_gear(p: vec3<f32>, vector_zero: vec3<f32>, vector_dirZ: vec3<f32>, numTeeth: f32, moduleVal: f32, pressureAngle: f32, rotOffset: f32, thickness: f32, helixAngle: f32, standoffDiameter: f32, standoffHeight: f32, standoffChamfer: f32, boreDiameter: f32, dedendumClearance: f32, kSmall: f32) -> f32 {
@@ -157,6 +172,7 @@ fn gears_gearPair(p: vec3<f32>, vector_zero: vec3<f32>, vector_dirZ: vec3<f32>, 
 }
 
 fn sdShape(p: vec3<f32>, time: f32, gsl_param_6_28: f32, gsl_param_7_28: f32, gsl_param_8_30: f32, gsl_param_9_34: f32, gsl_param_13_32: f32) -> gsl_shape {
+  gsl_featurePixel = select(0.0, gsl_vanishEye.w * mix(max(length(gsl_vanishEye.xyz - p), 1.0), 1.0, gsl_vanishView.x), gsl_vanishEye.w > 0.0);
   gsl_partNear = vec3<f32>(1e10, 1e10, 1e10);
   let numTeeth1 = gsl_param_6_28;
   let moduleVal = gsl_param_8_30;
@@ -218,6 +234,13 @@ fn gsl_vanish(lo: vec3<f32>, hi: vec3<f32>) -> vec4<f32> {
 
 fn gsl_boxDistance(q: vec3<f32>, lo: vec3<f32>, hi: vec3<f32>) -> f32 {
   return length(max(max(lo - q, q - hi), vec3<f32>(0.0)));
+}
+
+var<private> gsl_featurePixel: f32 = 0.0;
+
+fn gsl_featureWeight(size: f32) -> f32 {
+  if (gsl_featurePixel <= 0.0) { return 1.0; }
+  return smoothstep(gsl_vanishView.y, max(gsl_vanishView.z, gsl_vanishView.y + 1e-3), size / gsl_featurePixel);
 }
 
 struct gsl_struct {

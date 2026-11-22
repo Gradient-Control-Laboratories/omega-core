@@ -214,6 +214,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   property's expression; a comment after a removed property stays on its own line. Run on the examples and the
   example documents (30 files), every slider (name, bounds, period, initial value) and every compiled shader is
   unchanged.
+- Feature pruning: `name.featureSize = size` (mm) marks a value as a geometric feature that the viewer drops
+  once it is too small to see, even when its part is large: a hole closes, a bump goes. The size is measured
+  against the pixel at the point, from the camera, so it holds inside any rigid placement, and the feature
+  fades across the Detail slider's band, as a part does, and is not evaluated once gone. A size of 0 takes
+  the smallest extent of the value's box. A feature may stand only in a union or as what a difference takes
+  away. Gear teeth (`gears.gearProfile`, so every gear and `shaft.gear`) give way to the pitch cylinder, and
+  `drill.hole` voids close, sized by their own field at the mouth. CPU evaluation, meshing and export are
+  unchanged.
 
 ### Changed
 
@@ -328,6 +336,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   until a pass folds a property's expression to a new one; the range kept the old tree, which read `hi`, and `hi` was
   removed as dead. Slider extraction now reads such a range's bounds from the properties as the passes left them
   (`Assignment.LiveRange`).
+- `remap(field, [x, y, z])` with a constant point reads the field at that point in the WGSL too. The viewer
+  drew it as the field moved by that point, while CPU evaluation and exports read the point, as the language
+  defines it. Such a remap now folds to its value when the field reads nothing but p and constants.
 
 ## [0.1.3] - 2026-11-17
 

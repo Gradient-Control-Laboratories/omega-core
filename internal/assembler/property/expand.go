@@ -94,6 +94,10 @@ func expand(prog *program.Program, share bool) (*program.Program, error) {
 		if err := applyDeclaredBoxes(pkg); err != nil {
 			return nil, err
 		}
+		// Features first: a feature's size may read its own box.
+		if err := lowerFeatures(pkg); err != nil {
+			return nil, err
+		}
 		// A value's fine detail first, so a value with both is
 		// simpleValue(detailValue(coarse, fine), stand).
 		if err := eachAssignments(pkg, true, lowerDetailValues); err != nil {
@@ -1582,7 +1586,7 @@ func assignsDeclareBox(assigns []*program.Assignment) bool {
 // --- operator scanning ------------------------------------------------------
 
 func packageHasOperator(pkg *program.Package) bool {
-	if packageDeclaresBox(pkg) || packageDeclaresSimple(pkg) || packageDeclaresDetail(pkg) {
+	if packageDeclaresBox(pkg) || packageDeclaresSimple(pkg) || packageDeclaresDetail(pkg) || packageDeclaresFeature(pkg) {
 		return true
 	}
 	for _, f := range pkg.Files {

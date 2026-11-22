@@ -82,6 +82,13 @@ func (d *Delegate) buildFuncCall(
 		}
 		return d.detailGuard(fnCallOp, args, returnType), nil
 	}
+	if pruneBelows(wgslName, len(expressions)) {
+		args := make([]wgsl.Expression, len(expressions))
+		for i, e := range expressions {
+			args[i] = e.(wgsl.Expression)
+		}
+		return d.pruneGuard(fnCallOp, args, returnType), nil
+	}
 
 	args := make([]wgsl.Expression, 0, len(expressions))
 
