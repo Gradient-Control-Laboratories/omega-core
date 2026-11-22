@@ -66,6 +66,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   gives the length of the document's animation. It is to time what `@scene` is to space: the viewer's Time
   slider and end time span it, and the animation clock starts over on passing it, so an animation and its
   captions loop. It reaches the compile response as `duration`, so a page `gsl export` writes loops too.
+- `gsl serve` answers `POST /api/render-lit` with the lit renderer's frame of a document from the viewer's camera:
+  the request names the source, the frame's size (at most 4096 x 4096 pixels), the camera, the world extent, the
+  colours, the tier (standard, color or Schematic) and the back-face brightness; the reply is the frame as raw
+  bytes, five little-endian float32s a pixel (the colour, the return hit, 0 for none, and the depth), its size in
+  `X-Frame-Width` and `X-Frame-Height`. While it draws, the share done goes to the asking client on
+  `/api/progress` as stage `render`, in thousandths.
 
 ### Changed
 
