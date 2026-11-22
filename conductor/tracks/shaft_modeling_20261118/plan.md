@@ -611,3 +611,42 @@ Phase 0 has no start commit; Phase 7 was skipped.
       and a plate of 1.5 mm holes on a 6 mm grid; the owner: "Looks right". Goldens regenerated with authorization;
       GPU parity 61 pass, 0 fail
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+
+## Phase 20: Thread Pruning [checkpoint: 7a85702]
+
+- [x] Task: Proposal (approved 2026-11-22: "basicForm + sinForm"; the fastener probe closed, no work). Every
+      geometric thread is thread.basicForm or thread.sinForm (male, female, maleSin, femaleSin; the fastener
+      shanks and nuts, drill.tapThreaded and tapSin, shaft.thread). Both re-authored as gearProfile was: the
+      cylinder at the pitch diameter, min the crests (the form outside it), max the roots taken away (the
+      groove inside it), each a feature P / 2, the tooth thickness at the pitch line, as a gear's is pi m / 2.
+      Pruned, a screw, a tapped hole or a shaft.thread reads its pitch cylinder; both forms prune to the same
+      one. The cost: near, the form is evaluated in both guards (CSE never hoists into a guard). The probe in
+      fastener functions (Bolted Joint, Interface Joints) measured: one extra pass over the hole's cutters,
+      two cylinders, against catalog sums that run anyway; closed as negligible.
+- [x] Task: Write failing tests (Red Phase), approved 2026-11-22 ("Go: implement"): `eval/thread_prune_test.go`: every geometric thread opts in
+      (two guards, a tapped hole three); an M6 x 1's two feature sizes the number 0.5; the re-authored forms
+      the same solid as the old ones, frozen in the test; on the pitch cylinder at least half as deep in a
+      crest and as far out in a root as the old (no sheet). `gpuparity/thread_prune_test.go`: male, maleSin
+      and female from 1000 away read the pitch cylinder, r - 2.67525, at any angle and height, and from 20
+      away do not. Red: opt-in and sizes fail (no guards), the GPU test on the undeclared camera; the two
+      form tests pass, guarding the re-authoring
+- [x] Task: Implement (Green & Refactor Phase). thread.basicForm and sinForm are the pitch cylinder, min the
+      crests, max the roots taken away; the crests are the whole form (isoForm, sinusoid) and the roots the
+      whole space outside it, unbounded, so drawn the field is the form itself, max(min(cyl, f), f) = f,
+      and pruned it is the cylinder. A first cut bounded them to the band about the pitch diameter, as the
+      gear is, and TestThreadIsADistance caught it: in the groove at the major radius the cylinder's 0.325
+      stood where the flank's 0.379 is. A helper taking the form as a value was a WGSL function computing
+      it before either guard; each guard now calls the form itself. Sizes fold to literals (an M6 x 1's
+      0.5); the two guards share one weight (CSE). Goldens regenerated with authorization: Fastener
+      Cosmetics +5.3% (16 guards), Glass Block Blends +10.7% (2); GPU parity all pass; tool/check.sh passes.
+      The gear, folded in with the owner's go after before/after cross sections with isocontours: Phase 19's
+      band bounds on gearProfile's tips and gaps left the field measuring to the pitch and tip circles in
+      each gap (closed contours on the pitch circle, a seam on the tip circle, up to 0.9 mm short); tips =
+      profile, gaps = neg(profile), so drawn it is the profile's field and pruned still the disc; the tip
+      chamfer is inside the profile and unchanged. eval/gear_field_test.go (Red: 611 of 9801 points
+      differ, worst 0.82 at r 61). Gears and Bevel Gears goldens regenerated with authorization, 57 B
+      smaller each; sphere_gears_text.assembled and its dependency snapshot likewise. Next (the owner):
+      Phase 21, guards that share a weight merged into one branch, so a split form is evaluated once
+- [x] Task: Example and the owner's viewer check: examples/feature_pruning.gsl gains an M10 x 1.5 stud,
+      shaft.thread chamfered both ends, crests 0.75 mm; the owner: "Looks right"
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
