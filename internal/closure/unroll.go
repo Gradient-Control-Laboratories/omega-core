@@ -67,8 +67,21 @@ func (t *transformer) unrollFunctionFold(file *program.PackageFile, enclosingFn 
 	}
 	for i := start; i < len(elements); i++ {
 		args := []*program.Operand{acc, elements[i]}
-		if arity == 3 {
+		if arity >= 3 {
 			args = append(args, program.NewValue(float64(i), op.Start, op.End))
+		}
+		// A fourth parameter is handed the element before this one, so the
+		// callback can ask its predecessor with constant arguments, which fold
+		// as any call on an element does; a number carried in the accumulator
+		// would not. The first element has none and is handed itself, which
+		// its index tells apart. Each is a copy: specialization rewrites its
+		// arguments in place, and the element is passed as `elem` too.
+		if arity == 4 {
+			prev := elements[i]
+			if i > 0 {
+				prev = elements[i-1]
+			}
+			args = append(args, proto.Clone(prev).(*program.Operand))
 		}
 		acc = program.NewFnCall(prefix, name, args, op.Start, op.End)
 	}
@@ -209,8 +222,9 @@ func (t *transformer) anyFunctionValue(file *program.PackageFile, enclosingFn *p
 }
 
 // callbackArity resolves the fold's callback to a name this pass can emit a
-// call to, and the number of parameters it declares — 2 or 3 for reduce
-// (accumulator and element, plus an optional index), 1 or 2 for map.
+// call to, and the number of parameters it declares — 2 to 4 for reduce
+// (accumulator and element, plus an optional index and then the element
+// before), 1 or 2 for map.
 func (t *transformer) callbackArity(file *program.PackageFile, enclosingFn *program.Function, cbOp *program.Operand) (string, string, int, bool) {
 	if cbOp == nil {
 		return "", "", 0, false
