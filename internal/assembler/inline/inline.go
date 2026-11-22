@@ -318,6 +318,11 @@ func (in *inliner) transformPackage(pkg *program.Package, pkgScope *scope.PkgSco
 					}
 				}
 			}
+			for _, op := range assign.Range.OwnOperands() {
+				if err := in.transformOperand(op, fileScope, file, currentPkgPath); err != nil {
+					return err
+				}
+			}
 			// A property is written below the part it belongs to and may read a
 			// top-level variable declared between the two, in order as written:
 			// a = sphere(5); x = 8; a.color = pattern(x). Its temporaries go in
@@ -441,6 +446,11 @@ func (in *inliner) transformFunction(fn *program.Function, fileScope *scope.PkgF
 				if err := in.transformOperand(prop.Expression, fileScope, targetFile, currentPkgPath); err != nil {
 					return err
 				}
+			}
+		}
+		for _, op := range assign.Range.OwnOperands() {
+			if err := in.transformOperand(op, fileScope, targetFile, currentPkgPath); err != nil {
+				return err
 			}
 		}
 		if len(in.hoistedAssignments) > 0 {

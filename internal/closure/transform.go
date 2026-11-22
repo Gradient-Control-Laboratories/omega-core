@@ -878,13 +878,19 @@ func (t *transformer) rewriteOperand(file *program.PackageFile, enclosingFn *pro
 }
 
 // rewriteProperties rewrites the expressions of `name.prop = ...` statements,
-// which live on the assignment's variables rather than in its expression.
+// which live on the assignment's variables rather than in its expression, and
+// the bounds an explicit @range wrote, which hang off the assignment the same way.
 func (t *transformer) rewriteProperties(file *program.PackageFile, fn *program.Function, assign *program.Assignment, env map[string]*closureVal) error {
 	for _, v := range assign.Variables {
 		for _, prop := range v.Properties {
 			if err := t.rewriteOperand(file, fn, prop.Expression, env); err != nil {
 				return err
 			}
+		}
+	}
+	for _, op := range assign.Range.OwnOperands() {
+		if err := t.rewriteOperand(file, fn, op, env); err != nil {
+			return err
 		}
 	}
 	return nil

@@ -128,9 +128,7 @@ return usedSdf, unusedSdf;
 
 func TestVariationProgramEmptyReturnsRetainsUIControls(t *testing.T) {
 	res, err := parser.ParsePackage([]string{`
-r = 10;
-r.min = 1;
-r.max = 20;
+@range(1, 20) r = 10;
 pt = uiPoint([1, 2, 3]);
 unused = 42;
 m = mesh(0);

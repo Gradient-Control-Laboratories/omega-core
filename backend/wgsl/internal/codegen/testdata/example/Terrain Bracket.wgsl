@@ -16,11 +16,11 @@ fn builtin_circleXY(p: vec3<f32>, center: vec2<f32>, radius: f32, noiseTex: text
   return length(p.xy - center) - radius;
 }
 
-fn gsl_remap(p: vec3<f32>, gsl_param_14_7: f32, gsl_param_18_7: f32, gsl_param_22_7: f32, gsl_param_26_7: f32, gsl_param_49_13: f32, vector_zero: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
+fn gsl_remap(p: vec3<f32>, gsl_param_14_28: f32, gsl_param_15_28: f32, gsl_param_16_28: f32, gsl_param_17_28: f32, gsl_param_37_29: f32, vector_zero: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
   return 1.025 - abs(p.x);
 }
 
-fn gsl_remap_2(p: vec3<f32>, gsl_param_14_7: f32, gsl_param_18_7: f32, gsl_param_22_7: f32, gsl_param_26_7: f32, gsl_param_49_13: f32, vector_zero: vec3<f32>, vector_dirZ: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
+fn gsl_remap_2(p: vec3<f32>, gsl_param_14_28: f32, gsl_param_15_28: f32, gsl_param_16_28: f32, gsl_param_17_28: f32, gsl_param_37_29: f32, vector_zero: vec3<f32>, vector_dirZ: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
   return builtin_plane(vec3<f32>(abs(p.x), p.y, p.z), vec3<f32>(4.7, 7.3000746, -2.6998363), vec3<f32>(0.70710677, 0.0, 0.70710677), noiseTex);
 }
 
@@ -30,11 +30,11 @@ fn builtin_intersectChamfer(d1: f32, d2: f32, offset: f32, noiseTex: texture_3d<
   return max(face, edge);
 }
 
-fn gsl_remap_3(p: vec3<f32>, gsl_param_14_7: f32, gsl_param_18_7: f32, gsl_param_22_7: f32, gsl_param_26_7: f32, gsl_param_49_13: f32, vector_zero: vec3<f32>, vector_dirZ: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
+fn gsl_remap_3(p: vec3<f32>, gsl_param_14_28: f32, gsl_param_15_28: f32, gsl_param_16_28: f32, gsl_param_17_28: f32, gsl_param_37_29: f32, vector_zero: vec3<f32>, vector_dirZ: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
   return abs(p.x) - 1.45;
 }
 
-fn gsl_remap_4(p: vec3<f32>, gsl_param_14_7: f32, gsl_param_18_7: f32, gsl_param_22_7: f32, gsl_param_26_7: f32, gsl_param_49_13: f32, vector_zero: vec3<f32>, vector_dirZ: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
+fn gsl_remap_4(p: vec3<f32>, gsl_param_14_28: f32, gsl_param_15_28: f32, gsl_param_16_28: f32, gsl_param_17_28: f32, gsl_param_37_29: f32, vector_zero: vec3<f32>, vector_dirZ: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
   return 0.6 - abs(p.x);
 }
 
@@ -540,15 +540,15 @@ fn boltHole(p: vec3<f32>, vector_dirZ: vec3<f32>, corner2D: vec2<f32>, noiseTex:
   return builtin_cylinderZ(p, vector_dirZ, vec3<f32>(corner2D.x, corner2D.y, 0.0), 0.42, noiseTex);
 }
 
-fn sdShape(p: vec3<f32>, time: f32, gsl_param_14_7: f32, gsl_param_18_7: f32, gsl_param_22_7: f32, gsl_param_26_7: f32, gsl_param_49_13: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
-  let p0x = gsl_param_14_7;
+fn sdShape(p: vec3<f32>, time: f32, gsl_param_14_28: f32, gsl_param_15_28: f32, gsl_param_16_28: f32, gsl_param_17_28: f32, gsl_param_37_29: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
+  let p0x = gsl_param_14_28;
   let quadV0X = -5.9 + p0x;
-  let p0y = gsl_param_18_7;
+  let p0y = gsl_param_15_28;
   let quadV0Y = 1.5 + p0y;
   let v0 = vec2<f32>(quadV0X, quadV0Y);
-  let p2x = gsl_param_22_7;
+  let p2x = gsl_param_16_28;
   let quadV2X = 5.9 + p2x;
-  let p2y = gsl_param_26_7;
+  let p2y = gsl_param_17_28;
   let quadV2Y = 6.1 + p2y;
   let v2 = vec2<f32>(quadV2X, quadV2Y);
   let bottomPlane = -(p.z - -3.5);
@@ -556,29 +556,29 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_14_7: f32, gsl_param_18_7: f32, gs
   let gsl_tmp_1 = p.z - -2.7;
   let gsl_tmp_2 = builtin_plane(vec3<f32>(abs(p.x), p.y, p.z), vec3<f32>(4.7, 7.3000746, -2.6998363), vec3<f32>(0.70710677, 0.0, 0.70710677), noiseTex);
   let vector_zero = vec3<f32>(0.0, 0.0, 0.0);
-  let unionTop = select(-length(vec2<f32>((gsl_tmp_1 + gsl_tmp_2) / 1.847759, (gsl_tmp_1 - gsl_tmp_2) / 0.76536685)), min(gsl_tmp_1, gsl_tmp_2), max(gcl_closure_gsl_anon(p - vec3<f32>(0.70710677, 0.0, 0.70710677) * gsl_tmp_2, noiseTex), gsl_remap_2(p - vector_dirZ * gsl_tmp_1, gsl_param_14_7, gsl_param_18_7, gsl_param_22_7, gsl_param_26_7, gsl_param_49_13, vector_zero, vector_dirZ, noiseTex)) > 0.0);
-  let clevisAng = gsl_param_49_13;
+  let unionTop = select(-length(vec2<f32>((gsl_tmp_1 + gsl_tmp_2) / 1.847759, (gsl_tmp_1 - gsl_tmp_2) / 0.76536685)), min(gsl_tmp_1, gsl_tmp_2), max(gcl_closure_gsl_anon(p - vec3<f32>(0.70710677, 0.0, 0.70710677) * gsl_tmp_2, noiseTex), gsl_remap_2(p - vector_dirZ * gsl_tmp_1, gsl_param_14_28, gsl_param_15_28, gsl_param_16_28, gsl_param_17_28, gsl_param_37_29, vector_zero, vector_dirZ, noiseTex)) > 0.0);
+  let clevisAng = gsl_param_37_29;
   let clevisRot = map_rotateZX(p, radians(clevisAng), noiseTex);
   let gsl_result = arcShape(clevisRot, vector_zero, noiseTex);
   let horizPlane = gsl_result.v_2;
   let frontPlane = planeXY(p, vec2<f32>(5.9, 1.5), v0, noiseTex) - 1.2;
-  let eyeSpan = gsl_remap(clevisRot, gsl_param_14_7, gsl_param_18_7, gsl_param_22_7, gsl_param_26_7, gsl_param_49_13, vector_zero, noiseTex);
+  let eyeSpan = gsl_remap(clevisRot, gsl_param_14_28, gsl_param_15_28, gsl_param_16_28, gsl_param_17_28, gsl_param_37_29, vector_zero, noiseTex);
   let eyeDraft = builtin_plane(clevisRot, vec3<f32>(1.45, 0.30003822, -1.3846282), vec3<f32>(0.0, -1.0, 1.7320508), noiseTex);
   let eyeStep = max(min(eyeSpan, eyeDraft + 0.8), eyeDraft);
   let topSurf = builtin_intersectChamfer(builtin_intersectChamfer(unionTop, horizPlane, 0.05, noiseTex), builtin_intersectChamfer(frontPlane, eyeStep, 0.05, noiseTex), 0.05, noiseTex);
   let base = max(builtin_intersectChamfer(max(max(builtin_quadXY(p, v0, vec2<f32>(-5.9, 6.1), v2, vec2<f32>(5.9, 1.5), noiseTex) - 1.2, bottomPlane), -min(min(min(boltHole(p, vector_dirZ, v0, noiseTex), builtin_axis(p, vec3<f32>(-5.9, 6.1, 0.0), vector_dirZ, noiseTex) - 0.42), boltHole(p, vector_dirZ, v2, noiseTex)), builtin_axis(p, vec3<f32>(5.9, 1.5, 0.0), vector_dirZ, noiseTex) - 0.42)), topSurf, 0.05, noiseTex), -topSurf - 0.8);
   let clevisShape = gsl_result.v_1;
-  let clevisSpan = gsl_remap_3(clevisRot, gsl_param_14_7, gsl_param_18_7, gsl_param_22_7, gsl_param_26_7, gsl_param_49_13, vector_zero, vector_dirZ, noiseTex);
+  let clevisSpan = gsl_remap_3(clevisRot, gsl_param_14_28, gsl_param_15_28, gsl_param_16_28, gsl_param_17_28, gsl_param_37_29, vector_zero, vector_dirZ, noiseTex);
   let rearPlane = planeXY(p, vec2<f32>(-5.9, 6.1), v2, noiseTex) - 1.2;
   let clevis = max(max(max(builtin_intersectChamfer(clevisShape, clevisSpan, 0.05, noiseTex), bottomPlane), -topSurf), rearPlane);
-  let clevisCut = max(min(-eyeStep - 0.8, rearPlane), gsl_remap_4(clevisRot, gsl_param_14_7, gsl_param_18_7, gsl_param_22_7, gsl_param_26_7, gsl_param_49_13, vector_zero, vector_dirZ, noiseTex));
+  let clevisCut = max(min(-eyeStep - 0.8, rearPlane), gsl_remap_4(clevisRot, gsl_param_14_28, gsl_param_15_28, gsl_param_16_28, gsl_param_17_28, gsl_param_37_29, vector_zero, vector_dirZ, noiseTex));
   let clevisFinal = builtin_intersectChamfer(clevis, clevisCut, 0.05, noiseTex);
   let body = min(base, clevisFinal);
   let gsl_s1 = gsl_shape(body, 1u);
   return gsl_s1;
 }
 
-fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_14_7: f32, gsl_param_18_7: f32, gsl_param_22_7: f32, gsl_param_26_7: f32, gsl_param_49_13: f32, noiseTex: texture_3d<f32>) -> vec4<f32> {
+fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_14_28: f32, gsl_param_15_28: f32, gsl_param_16_28: f32, gsl_param_17_28: f32, gsl_param_37_29: f32, noiseTex: texture_3d<f32>) -> vec4<f32> {
   if (gsl_colorIdx == 1u) {
     let altitude = 3.0 * clamp((p.z - 0.2) / 1.2, 0.0, 1.0);
     let gsl_result_9 = natural_terrain(p, 3.0, altitude, noiseTex);
@@ -587,7 +587,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_14_7: f3
   }
   return vec4<f32>(0.0, 0.0, 0.0, 0.0);
 }
-fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_14_7: f32, gsl_param_18_7: f32, gsl_param_22_7: f32, gsl_param_26_7: f32, gsl_param_49_13: f32, noiseTex: texture_3d<f32>) -> gsl_material {
+fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_14_28: f32, gsl_param_15_28: f32, gsl_param_16_28: f32, gsl_param_17_28: f32, gsl_param_37_29: f32, noiseTex: texture_3d<f32>) -> gsl_material {
   if (gsl_materialIdx == 1u) {
     let altitude = 3.0 * clamp((p.z - 0.2) / 1.2, 0.0, 1.0);
     let gsl_result_9 = natural_terrain(p, 3.0, altitude, noiseTex);

@@ -98,7 +98,7 @@ func marchGPU(t *testing.T, e *eval.Evaluator, doc string, pts [][3]float32) (*e
 // in closed form, reports the body, and returns the field's gradient there.
 func TestGpuMarchMeetsABall(t *testing.T) {
 	const radius = 5.0
-	doc := "@scene(40)\nr = 5.0;\nr.min = 2.0;\nr.max = 12.0;\nball = length(p) - r;\nreturn ball;\n"
+	doc := "@scene(40)\n@range(2.0, 12.0) r = 5.0;\nball = length(p) - r;\nreturn ball;\n"
 	pts := marchTargets(24, 8)
 	_, out := marchGPU(t, eval.New(pkgMgr, nil), doc, pts)
 

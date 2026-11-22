@@ -7,15 +7,11 @@
 // Press play to start the clock.
 
 // Rain, in mm/h: 2 is drizzle, 50 a downpour.
-rainfall = 10;
-rainfall.min = 1;
-rainfall.max = 60;
+@range(1, 60) rainfall = 10;
 
 // How thin the mud is: stiff mud, 0, keeps each burst's crater; watery mud,
 // 1, rings like water.
-thinness = 0.3;
-thinness.min = 0;
-thinness.max = 1;
+@range(0, 1) thinness = 0.3;
 
 // Each piece is a slab 24 mm square, 32 mm apart.
 slab(column, row) {

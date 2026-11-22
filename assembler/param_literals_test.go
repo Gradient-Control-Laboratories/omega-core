@@ -12,9 +12,7 @@ import (
 // call to 3, which left the slider moving nothing.
 func TestAssembleKeepsSliderReadInsideACall(t *testing.T) {
 	src := `
-r = 2.0;
-r.min = 1.0;
-r.max = 3.0;
+@range(1.0, 3.0) r = 2.0;
 f(x) { return x + r; }
 return sphere(f(1.0));
 `

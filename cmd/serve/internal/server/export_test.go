@@ -68,7 +68,7 @@ func TestExport_ZipsTheViewerAndTheDocument(t *testing.T) {
 
 	// The source is not a file of the examples folder, and has space around it: the page exports
 	// what its editor shows, as it compiles it.
-	source := "r = 5; r.min = 1; r.max = 10; return sphere(r);"
+	source := "@range(1, 10) r = 5; return sphere(r);"
 	res := postExport(t, ts.URL, map[string]any{"name": "part.gsl", "source": "\n" + source + "\n\n"})
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200 OK, got %d: %s", res.StatusCode, exportError(t, res))

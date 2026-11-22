@@ -12,10 +12,10 @@ fn builtin_unionSharp(d1: f32, d2: f32) -> f32 {
   return min(d1, d2);
 }
 
-fn sdShape(p: vec3<f32>, time: f32, gsl_param_3_9: f32) -> gsl_shape {
+fn sdShape(p: vec3<f32>, time: f32, gsl_param_3_28: f32) -> gsl_shape {
   let a = p.x;
   let vector_zero = vec3<f32>(0.0, 0.0, 0.0);
-  let angle = gsl_param_3_9;
+  let angle = gsl_param_3_28;
   let b = builtin_plane(p, vector_zero, vec3<f32>(1.0 * cos(angle) + 0.0 * sin(angle), -1.0 * sin(angle) + 0.0 * cos(angle), 0.0));
   let blend = builtin_intersectRound(a, b, 50.0);
   let separation = builtin_unionSharp(a + 50.0, b + 50.0);

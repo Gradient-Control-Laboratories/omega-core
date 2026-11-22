@@ -16,9 +16,7 @@ import (
 // the slider's current value into the shader. Direct references
 // (sphere(radius)) were always live — the derived forms are the regression.
 func TestSliderArithmetic(t *testing.T) {
-	src := "radius = 2;\n" +
-		"radius.min = 1;\n" +
-		"radius.max = 5;\n" +
+	src := "@range(1, 5) radius = 2;\n" +
 		"sphere(r) { return length(p) - r; }\n" +
 		"scale = radius * 2;\n" +
 		"a = sphere(radius);\n" +

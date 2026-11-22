@@ -29,7 +29,7 @@ fn builtin_gcl_closure_boxCentered(p: vec3<f32>, center: vec3<f32>, size: vec3<f
   return solid;
 }
 
-fn sdShape(p: vec3<f32>, time: f32, gsl_param_5_5: f32) -> gsl_shape {
+fn sdShape(p: vec3<f32>, time: f32, gsl_param_5_22: f32) -> gsl_shape {
   gsl_partNear = vec3<f32>(1e10, 1e10, 1e10);
   let gsl_partLo = vec3<f32>(-0.35, -0.35, -0.35);
   let gsl_partHi = vec3<f32>(1.85, 2.85, 3.85);
@@ -42,7 +42,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_5_5: f32) -> gsl_shape {
     if (abs(gsl_part) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part), gsl_partVanish.zw); }
   }
   let hull = gsl_part;
-  let r = gsl_param_5_5;
+  let r = gsl_param_5_22;
   let gsl_partLo_2 = vec3<f32>(min(0.0 - r, 0.0 + r), min(0.0 - r, 0.0 + r), min(0.0 - r, 0.0 + r));
   let gsl_partHi_2 = vec3<f32>(max(0.0 - r, 0.0 + r), max(0.0 - r, 0.0 + r), max(0.0 - r, 0.0 + r));
   let gsl_partBox_2 = gsl_boxDistance(p, gsl_partLo_2, gsl_partHi_2);

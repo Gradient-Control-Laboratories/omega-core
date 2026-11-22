@@ -12,9 +12,7 @@ import (
 )
 
 func TestUIShaderParametersMatchViewer(t *testing.T) {
-	source := `radius = 5;
-radius.min = 1;
-radius.max = 10;
+	source := `@range(1, 10) radius = 5;
 center = uiPoint([1, 2, 3]);
 xf = uiTransform([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [4, 5, 6, 1]]);
 path = uiSpline([xf, xf, xf]);
@@ -93,9 +91,7 @@ func TestUIParametersDoNotCaptureInlinedControls(t *testing.T) {
 
 func TestZeroReturnShaderParametersMatchViewer(t *testing.T) {
 	src := `importId = importStep "part.step";
-radius = 5;
-radius.min = 1;
-radius.max = 10;
+@range(1, 10) radius = 5;
 center = uiPoint([1, 2, 3]);
 xf = uiTransform([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [4, 5, 6, 1]]);
 cavity = length(p - center) - radius;

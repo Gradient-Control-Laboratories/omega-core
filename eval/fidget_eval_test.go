@@ -93,9 +93,7 @@ return a, b;
 func TestEvalGradWithSlider(t *testing.T) {
 	// A slider-driven sphere: eval uses the slider's current literal value.
 	prog := parseProgram(t, `
-radius = 2.0;
-radius.min = 1.0;
-radius.max = 3.0;
+@range(1.0, 3.0) radius = 2.0;
 return length(p) - radius;
 `)
 

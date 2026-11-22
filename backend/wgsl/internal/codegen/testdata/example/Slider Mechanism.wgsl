@@ -1,9 +1,9 @@
-fn gsl_remap(p: vec3<f32>, gsl_param_4_15: f32, gsl_param_7_14: f32, gsl_param_13_12: f32, vector_zero: vec3<f32>, vector_dirY: vec3<f32>) -> f32 {
+fn gsl_remap(p: vec3<f32>, gsl_param_4_28: f32, gsl_param_5_27: f32, gsl_param_10_12: f32, vector_zero: vec3<f32>, vector_dirY: vec3<f32>) -> f32 {
   return max(builtin_axis(p, vector_zero, vector_dirY) - 0.5, abs(p.y) - 6.5);
 }
 
-fn gsl_remap_2(p: vec3<f32>, gsl_param_4_15: f32, gsl_param_7_14: f32, gsl_param_13_12: f32, vector_zero: vec3<f32>, vector_dirY: vec3<f32>) -> vec2<f32> {
-  let slidePos = gsl_param_13_12;
+fn gsl_remap_2(p: vec3<f32>, gsl_param_4_28: f32, gsl_param_5_27: f32, gsl_param_10_12: f32, vector_zero: vec3<f32>, vector_dirY: vec3<f32>) -> vec2<f32> {
+  let slidePos = gsl_param_10_12;
   return vec2<f32>(-1.7, slidePos);
 }
 
@@ -59,16 +59,16 @@ fn coupler(p: vec3<f32>, x0: f32, x1: f32, y: f32, height: f32, width: f32) -> f
   return select(max(cap1, slab1), max(cap0, slab0), t > 0.5);
 }
 
-fn sdShape(p: vec3<f32>, time: f32, gsl_param_4_15: f32, gsl_param_7_14: f32, gsl_param_13_12: f32) -> gsl_shape {
+fn sdShape(p: vec3<f32>, time: f32, gsl_param_4_28: f32, gsl_param_5_27: f32, gsl_param_10_12: f32) -> gsl_shape {
   let vector_zero = vec3<f32>(0.0, 0.0, 0.0);
   let vector_dirY = vec3<f32>(0.0, 1.0, 0.0);
-  let shaft = gsl_remap(vec3<f32>(p.x + 3.3, p.y - 1.7, p.z), gsl_param_4_15, gsl_param_7_14, gsl_param_13_12, vector_zero, vector_dirY);
-  let baseRadius = gsl_param_7_14;
+  let shaft = gsl_remap(vec3<f32>(p.x + 3.3, p.y - 1.7, p.z), gsl_param_4_28, gsl_param_5_27, gsl_param_10_12, vector_zero, vector_dirY);
+  let baseRadius = gsl_param_5_27;
   let r1 = baseRadius;
-  let slideRadius = gsl_param_4_15;
+  let slideRadius = gsl_param_4_28;
   let r2 = slideRadius;
-  let slidePos = gsl_param_13_12;
-  let slideCenter = gsl_remap_2(p - vec3<f32>(0.0, 0.0, slidePos), gsl_param_4_15, gsl_param_7_14, gsl_param_13_12, vector_zero, vector_dirY);
+  let slidePos = gsl_param_10_12;
+  let slideCenter = gsl_remap_2(p - vec3<f32>(0.0, 0.0, slidePos), gsl_param_4_28, gsl_param_5_27, gsl_param_10_12, vector_zero, vector_dirY);
   let dx_c = slideCenter.x - -1.7;
   let dy_c = slideCenter.y - -4.0;
   let d = sqrt(dx_c * dx_c + dy_c * dy_c);

@@ -133,7 +133,7 @@ fn builtin_gcl_closure_boxCentered(p: vec3<f32>, center: vec3<f32>, size: vec3<f
   return solid;
 }
 
-fn sdShape(p: vec3<f32>, time: f32, gsl_param_10_13: f32, gsl_param_13_13: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
+fn sdShape(p: vec3<f32>, time: f32, gsl_param_10_27: f32, gsl_param_11_31: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
   gsl_partNear = vec3<f32>(1e10, 1e10, 1e10);
   let gsl_partLo = vec3<f32>(-12.0, -12.0, -4.0);
   let gsl_partHi = vec3<f32>(12.0, 12.0, 4.0);
@@ -150,9 +150,9 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_10_13: f32, gsl_param_13_13: f32, 
   return gsl_s1;
 }
 
-fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_10_13: f32, gsl_param_13_13: f32, noiseTex: texture_3d<f32>) -> vec4<f32> {
+fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_10_27: f32, gsl_param_11_31: f32, noiseTex: texture_3d<f32>) -> vec4<f32> {
   if (gsl_colorIdx == 1u) {
-    let windSpeed = gsl_param_10_13;
+    let windSpeed = gsl_param_10_27;
     let gsl_tmp_14 = (vec3<f32>(0.7029593, 0.013074556, 0.07086855) + vec3<f32>(0.12094366, -0.0037923725, -0.004386356) * 0.0375 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * (3.0 - 2.0 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0))).x + 0.39633778 * (vec3<f32>(0.7029593, 0.013074556, 0.07086855) + vec3<f32>(0.12094366, -0.0037923725, -0.004386356) * 0.0375 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * (3.0 - 2.0 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0))).y + 0.21580376 * (vec3<f32>(0.7029593, 0.013074556, 0.07086855) + vec3<f32>(0.12094366, -0.0037923725, -0.004386356) * 0.0375 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * (3.0 - 2.0 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0))).z;
     let gsl_tmp_15 = (vec3<f32>(0.7029593, 0.013074556, 0.07086855) + vec3<f32>(0.12094366, -0.0037923725, -0.004386356) * 0.0375 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * (3.0 - 2.0 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0))).x - 0.105561346 * (vec3<f32>(0.7029593, 0.013074556, 0.07086855) + vec3<f32>(0.12094366, -0.0037923725, -0.004386356) * 0.0375 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * (3.0 - 2.0 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0))).y - 0.06385417 * (vec3<f32>(0.7029593, 0.013074556, 0.07086855) + vec3<f32>(0.12094366, -0.0037923725, -0.004386356) * 0.0375 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * (3.0 - 2.0 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0))).z;
     let gsl_tmp_16 = (vec3<f32>(0.7029593, 0.013074556, 0.07086855) + vec3<f32>(0.12094366, -0.0037923725, -0.004386356) * 0.0375 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * (3.0 - 2.0 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0))).x - 0.08948418 * (vec3<f32>(0.7029593, 0.013074556, 0.07086855) + vec3<f32>(0.12094366, -0.0037923725, -0.004386356) * 0.0375 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * (3.0 - 2.0 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0))).y - 1.2914855 * (vec3<f32>(0.7029593, 0.013074556, 0.07086855) + vec3<f32>(0.12094366, -0.0037923725, -0.004386356) * 0.0375 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * (3.0 - 2.0 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0))).z;
@@ -165,7 +165,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_10_13: f
     }
     var gsl_simpleValue = color_mixOklab(color_gammaEncode(vec3<f32>(dot(vec3<f32>(4.0767417, -3.3077116, 0.23096994), gsl_tmp_17), dot(vec3<f32>(-1.268438, 2.6097574, -0.34131938), gsl_tmp_17), dot(vec3<f32>(-0.0041960864, -0.7034186, 1.7076147), gsl_tmp_17)), noiseTex), vec3<f32>(0.3, 0.26, 0.22), 0.083, noiseTex);
     if (gsl_simpleDetail > 0.0) {
-      let windAngle = gsl_param_13_13;
+      let windAngle = gsl_param_11_31;
       let wind = vec3<f32>(cos(windAngle * 3.1415927 / 180.0), sin(windAngle * 3.1415927 / 180.0), 0.0);
       let gsl_tmp_1 = p - normalize(wind) * 0.00035 * pow(windSpeed / 8.0, 3.0) * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * (3.0 - 2.0 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0)) * 60.0 * (0.06 + 0.0075 * windSpeed) / (0.06 + 0.0075 * windSpeed) * time;
       let gsl_tmp_2 = fract(dot(gsl_tmp_1, normalize(wind)) / (60.0 * (0.06 + 0.0075 * windSpeed)) + 0.35 * noise_gradientLattice(gsl_tmp_1 / (3.0 * 60.0 * (0.06 + 0.0075 * windSpeed)) + vec3<f32>(5.0, 23.0, 41.0), noiseTex));
@@ -177,9 +177,9 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_10_13: f
   }
   return vec4<f32>(0.0, 0.0, 0.0, 0.0);
 }
-fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_10_13: f32, gsl_param_13_13: f32, noiseTex: texture_3d<f32>) -> gsl_material {
+fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_10_27: f32, gsl_param_11_31: f32, noiseTex: texture_3d<f32>) -> gsl_material {
   if (gsl_materialIdx == 1u) {
-    let windSpeed = gsl_param_10_13;
+    let windSpeed = gsl_param_10_27;
     var gsl_detailValue_2 = 0.0;
     if (max(gsl_pw, gsl_detailPw) < 0.15) { let gsl_detailOuterPw_2 = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
       let gsl_tmp_4 = clamp(1.0 - noise_cellularF1Lattice(p / 0.3, noiseTex) * 0.3 / 0.135, 0.0, 1.0);
@@ -188,7 +188,7 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_10
     }
     var gsl_simpleValue_2 = mat4x4<f32>(vec4<f32>(0.91341454, 0.0, 1.54, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 60.0 * (0.06 + 0.0075 * windSpeed) / 17.0 * 0.637, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     if (gsl_simpleDetail > 0.0) {
-      let windAngle = gsl_param_13_13;
+      let windAngle = gsl_param_11_31;
       let wind = vec3<f32>(cos(windAngle * 3.1415927 / 180.0), sin(windAngle * 3.1415927 / 180.0), 0.0);
       let gsl_tmp_1 = p - normalize(wind) * 0.00035 * pow(windSpeed / 8.0, 3.0) * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * (3.0 - 2.0 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0)) * 60.0 * (0.06 + 0.0075 * windSpeed) / (0.06 + 0.0075 * windSpeed) * time;
       let gsl_tmp_2 = fract(dot(gsl_tmp_1, normalize(wind)) / (60.0 * (0.06 + 0.0075 * windSpeed)) + 0.35 * noise_gradientLattice(gsl_tmp_1 / (3.0 * 60.0 * (0.06 + 0.0075 * windSpeed)) + vec3<f32>(5.0, 23.0, 41.0), noiseTex));

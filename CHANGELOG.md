@@ -206,6 +206,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   places meshes, and a displaced material keep numeric normals, and the panel says which (`gradientNotes`). Frame
   time is unchanged within noise; the shader is larger and compiles slower (boolean_blends: 37 to 614 KB of WGSL,
   about 2.7 s more per compile).
+- `gsl fix` has a `range` fixer: it replaces a top-level variable's `.min`, `.max` and `.period` property statements
+  with one `@range(min, max[, period])` in front of the variable, copying the expressions as written, so
+  Slider Mechanism's `slidePos`, whose bounds read other variables, converts too. The annotation shares the
+  assignment's line when that fits in 100 columns and takes the line above otherwise. A variable is left as it is
+  when it has an explicit `@range` already, shares its assignment with other variables, or has a comment inside a
+  property's expression; a comment after a removed property stays on its own line. Run on the examples and the
+  example documents (30 files), every slider (name, bounds, period, initial value) and every compiled shader is
+  unchanged.
 
 ### Changed
 
@@ -236,6 +244,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   switches). A switch is a chip that wears the label of its state ("Shadows on", "Shadows off"). Occlusion, the loop
   Standard draws that marches the field out along each normal, has a chip of its own and no longer goes off with
   Shadows. The labels of the Render, Scene, Section and Export panels are as light as the Parameters panel's.
+- The six `examples/` models that set slider limits with `.min`, `.max` and `.period` (blend, can, gyroid,
+  hybrid_bracket, kinetic_sculpture, slider_mechanism) use `@range`, as `gsl fix -range` writes it. Their sliders and
+  compiled shaders are unchanged. So are the example documents under `internal/testdata/example` and three codegen
+  fixtures, whose WGSL goldens move only in their `gsl_param_<line>_<col>` names (every golden is identical with those
+  names normalized), and the tests that used the properties only to declare a slider. Tests about the properties
+  themselves keep them.
+- The viewer's Materials panel writes `@range(min, max) <body><Param> = value;` for a preset's scalar parameters in place of
+  the `.min`/`.max` lines, reads a variable's limits from its `@range` (or from `.min`/`.max` in an older document),
+  and prunes either shape. A document already on `@range` used to have its limits read as the catalog's defaults the
+  next time the panel adjusted it.
+
+### Deprecated
+
+- The `.min`, `.max` and `.period` slider properties, in favor of `@range(min, max[, period])`. They still compile,
+  and the compiler warns about each variable that sets its slider with them, once, on the first of its property
+  statements, pointing at `@range` and `gsl fix -range`, which rewrites them. The warning is in the compile
+  response's diagnostics, with the `// Scene Size:` one. The language description that `gsl skill` and the viewer's
+  Help panel serve teaches `@range`, and mentions the properties only as deprecated.
 
 ### Removed
 
@@ -282,6 +308,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   left to run per point, so a box written with one did not fold to numbers.
 - A constant that folds to infinity or NaN, a division or a mod by zero, is a compile error naming it, instead of
   `+Inf.0` or `NaN.0` in a WGSL shader the browser refuses.
+- A bound of an explicit `@range` that reads another top-level variable works: `@range(abs(a - b) - offset, a + b - offset)`
+  lost its slider, and its `.period` animation, whenever `offset` was a plain constant. The assembler's passes (link,
+  closure, inline, constspec, types and dead-code removal) walked a variable's `.min`/`.max`/`.period` expressions but
+  not the bounds written in `@range`, so `offset` was inlined away while the bound still named it and could no longer
+  fold. They walk the bounds now. A range synthesized from `.min`/`.max`/`.period` is unchanged.
+- `.box` treats a variable declared with `@range` as a slider, as it does one declared with `.min`/`.max`. It found
+  sliders by their properties alone, so an `@range` variable read as the constant it starts as: `min(a, r).box` was
+  bounded by `a` for an `@range` `r`, a box that is wrong once `r` moves, and unbounded for a `.min`/`.max` one.
+- A slider set with `.min`/`.max`/`.period` keeps its slider when a bound reads a computed constant: with
+  `hi = 10 + 2;`, `x.max = hi * 2;` lost the slider. The range synthesized from the properties shares their expressions
+  until a pass folds a property's expression to a new one; the range kept the old tree, which read `hi`, and `hi` was
+  removed as dead. Slider extraction now reads such a range's bounds from the properties as the passes left them
+  (`Assignment.LiveRange`).
 
 ## [0.1.3] - 2026-11-17
 

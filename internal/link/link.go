@@ -314,6 +314,11 @@ func (l *linker) linkFile(fileScope *scope.PkgFileScope) error {
 				}
 			}
 		}
+		for _, op := range assign.Range.OwnOperands() {
+			if _, err := program.VisitOperand(op, visitor); err != nil {
+				return err
+			}
+		}
 	}
 
 	// Link returns in the file
@@ -380,6 +385,11 @@ func (l *linker) linkFn(fnScope *scope.FnScope) error {
 				if _, err := program.VisitOperand(prop.Expression, visitor); err != nil {
 					return err
 				}
+			}
+		}
+		for _, op := range assign.Range.OwnOperands() {
+			if _, err := program.VisitOperand(op, visitor); err != nil {
+				return err
 			}
 		}
 	}

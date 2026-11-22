@@ -400,6 +400,7 @@ func (v *RemoveVisitor) ResolveNamed(elems ...scope.NamedElem) ([]scope.NamedEle
 							todo = append(todo, prop.Expression)
 						}
 					}
+					todo = append(todo, assign.Range.OwnOperands()...)
 				}
 				continue
 			case *scope.Param:
@@ -501,6 +502,7 @@ func (v *RemoveVisitor) VisitReference(op *program.Operand, ref *program.Referen
 						v.todo = append(v.todo, prop.Expression)
 					}
 				}
+				v.todo = append(v.todo, assign.Range.OwnOperands()...)
 			} else {
 				v.refCounts[varName]++
 			}

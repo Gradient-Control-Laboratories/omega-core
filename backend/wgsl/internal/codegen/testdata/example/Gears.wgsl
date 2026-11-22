@@ -156,10 +156,10 @@ fn gears_gearPair(p: vec3<f32>, vector_zero: vec3<f32>, vector_dirZ: vec3<f32>, 
   return gsl_result;
 }
 
-fn sdShape(p: vec3<f32>, time: f32, gsl_param_6_13: f32, gsl_param_9_13: f32, gsl_param_12_13: f32, gsl_param_15_17: f32, gsl_param_21_14: f32) -> gsl_shape {
+fn sdShape(p: vec3<f32>, time: f32, gsl_param_6_28: f32, gsl_param_7_28: f32, gsl_param_8_30: f32, gsl_param_9_34: f32, gsl_param_13_32: f32) -> gsl_shape {
   gsl_partNear = vec3<f32>(1e10, 1e10, 1e10);
-  let numTeeth1 = gsl_param_6_13;
-  let moduleVal = gsl_param_12_13;
+  let numTeeth1 = gsl_param_6_28;
+  let moduleVal = gsl_param_8_30;
   let gslBox = max((numTeeth1 / 2.0 + 1.0) * moduleVal, 1.6);
   let gsl_partLo = vec3<f32>(min(-(numTeeth1 / 2.0 * moduleVal) - gslBox, gslBox - numTeeth1 / 2.0 * moduleVal) - 0.01, min(-gslBox, gslBox) - 0.01, -1.76);
   let gsl_partHi = vec3<f32>(max(-(numTeeth1 / 2.0 * moduleVal) - gslBox, gslBox - numTeeth1 / 2.0 * moduleVal) + 0.01, max(-gslBox, gslBox) + 0.01, 2.51);
@@ -167,9 +167,9 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_6_13: f32, gsl_param_9_13: f32, gs
   var gsl_part = gsl_partBox;
   let vector_zero = vec3<f32>(0.0, 0.0, 0.0);
   let vector_dirZ = vec3<f32>(0.0, 0.0, 1.0);
-  let numTeeth2 = gsl_param_9_13;
-  let pressureAngle = gsl_param_15_17;
-  let helixAngle = gsl_param_21_14;
+  let numTeeth2 = gsl_param_7_28;
+  let pressureAngle = gsl_param_9_34;
+  let helixAngle = gsl_param_13_32;
   let animate = gsl_floored(time, 1.0);
   let gsl_result = gears_gearPair(p, vector_zero, vector_dirZ, numTeeth1, numTeeth2, moduleVal, pressureAngle, 3.5, helixAngle, 3.0, 4.0, 2.5, 0.1, 1.2, 1.6, 0.25, 0.025, animate);
   let gsl_part_g1 = gsl_result.v_1;

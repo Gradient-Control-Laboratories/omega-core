@@ -145,6 +145,8 @@ func Parse(sources []string) (*program.Package, []program.Diagnostic, error) {
 			return p, diags, err
 		}
 
+		diags = append(diags, legacySliderDiagnostics(source, pkgFile)...)
+
 		if i < len(sources)-1 && len(topLevel.Return) > 0 {
 			p, err := recordFileError(pkg, pkgFile, source, participle.Errorf(topLevel.Return[0].Pos, "return statement is only allowed in the last source file"))
 			return p, diags, err

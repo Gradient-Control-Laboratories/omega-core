@@ -612,7 +612,7 @@ fn wood_speciesMaterial(p: vec3<f32>, number: f32, axisOrigin: vec3<f32>, axisDi
   return surfaceMat;
 }
 
-fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_7: f32, gsl_param_51_7: f32, gsl_param_54_11: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
+fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_20: f32, gsl_param_49_20: f32, gsl_param_50_24: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
   gsl_partNear = vec3<f32>(1e10, 1e10, 1e10);
   let gsl_partLo = vec3<f32>(-290.01, -195.01, -0.01);
   let gsl_partHi = vec3<f32>(290.01, 195.01, 40.01);
@@ -683,16 +683,16 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_7: f32, gsl_param_51_7: f32, gs
   return gsl_s1;
 }
 
-fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_48_7: f32, gsl_param_51_7: f32, gsl_param_54_11: f32, noiseTex: texture_3d<f32>) -> vec4<f32> {
+fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_48_20: f32, gsl_param_49_20: f32, gsl_param_50_24: f32, noiseTex: texture_3d<f32>) -> vec4<f32> {
   if (gsl_colorIdx == 1u) {
     let rank = clamp(floor((210.0 - p.y) / 70.0), 0.0, 5.0);
     let column = clamp(floor(p.x / 60.0 + 5.0), 0.0, 9.0);
     let number = select(select(select(select(select(select(select(select(select(select(0.0, select(select(select(select(select(14.0, 20.0, rank < 4.5), 15.0, rank < 3.5), 5.0, rank < 2.5), 0.0, rank < 1.5), 3.0, rank < 0.5), 0.0 == column), select(select(select(select(select(12.0, 18.0, rank < 4.5), 17.0, rank < 3.5), 9.0, rank < 2.5), 1.0, rank < 1.5), 34.0, rank < 0.5), 1.0 == column), select(select(select(select(select(22.0, 6.0, rank < 4.5), 29.0, rank < 3.5), 10.0, rank < 2.5), 2.0, rank < 1.5), 35.0, rank < 0.5), 2.0 == column), select(select(select(select(select(23.0, 7.0, rank < 4.5), 30.0, rank < 3.5), 11.0, rank < 2.5), 19.0, rank < 1.5), 36.0, rank < 0.5), 3.0 == column), select(select(select(select(select(13.0, 41.0, rank < 4.5), 4.0, rank < 3.5), 28.0, rank < 2.5), 8.0, rank < 1.5), 40.0, rank < 0.5), 4.0 == column), select(select(select(select(select(24.0, 21.0, rank < 4.5), 16.0, rank < 3.5), 31.0, rank < 2.5), 44.0, rank < 1.5), 37.0, rank < 0.5), 5.0 == column), select(select(select(select(select(45.0, 42.0, rank < 4.5), 27.0, rank < 3.5), 32.0, rank < 2.5), 0.0, rank < 1.5), 38.0, rank < 0.5), 6.0 == column), select(select(select(select(select(46.0, 43.0, rank < 4.5), 0.0, rank < 3.5), 33.0, rank < 2.5), 0.0, rank < 1.5), 39.0, rank < 0.5), 7.0 == column), select(select(select(select(select(47.0, 48.0, rank < 4.5), 0.0, rank < 3.5), 25.0, rank < 2.5), 0.0, rank < 1.5), 0.0, rank < 0.5), 8.0 == column), select(select(select(select(select(0.0, 0.0, rank < 4.5), 0.0, rank < 3.5), 26.0, rank < 2.5), 0.0, rank < 1.5), 0.0, rank < 0.5), 9.0 == column);
     let centre = vec2<f32>((column - 4.5) * 60.0, (2.5 - rank) * 70.0);
     let stem = vec3<f32>(centre.x - 60.0, centre.y - 35.0, 0.0);
-    let oil = gsl_param_48_7;
-    let age = gsl_param_51_7;
-    let weather = gsl_param_54_11;
+    let oil = gsl_param_48_20;
+    let age = gsl_param_49_20;
+    let weather = gsl_param_50_24;
     let look = vec3<f32>(oil, age, weather);
     let material_bulk_wood_hollyData = array<vec4<f32>, 12>(vec4<f32>(1.4, 0.45, 0.45, 0.125), vec4<f32>(0.98, 0.9, 0.74, 0.08), vec4<f32>(0.91, 0.83, 0.67, 0.15), vec4<f32>(0.74, 0.63, 0.56, 0.5), vec4<f32>(0.56, 0.5, 0.4, 0.5), vec4<f32>(0.97, 0.91, 0.78, 40.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.35, 0.2, 0.0, 0.0), vec4<f32>(0.937, 0.863, 0.707, 0.0), vec4<f32>(0.0, 0.0, 0.0, 3.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 0.0));
     let material_bulk_wood_aromaticCedarData = array<vec4<f32>, 12>(vec4<f32>(1.6, 0.15, 0.3, 0.25), vec4<f32>(0.68, 0.49, 0.45, 0.0), vec4<f32>(0.61, 0.42, 0.39, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.49, 0.36, 0.33, 1.0), vec4<f32>(0.86, 0.7, 0.55, 12.0), vec4<f32>(0.86, 0.7, 0.55, 0.5), vec4<f32>(0.4, 0.5, 150.0, 0.0), vec4<f32>(0.948, 0.977, 0.706, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.5), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.948, 0.977, 0.706, 0.0));
@@ -748,16 +748,16 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_48_7: f3
   }
   return vec4<f32>(0.0, 0.0, 0.0, 0.0);
 }
-fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_48_7: f32, gsl_param_51_7: f32, gsl_param_54_11: f32, noiseTex: texture_3d<f32>) -> gsl_material {
+fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_48_20: f32, gsl_param_49_20: f32, gsl_param_50_24: f32, noiseTex: texture_3d<f32>) -> gsl_material {
   if (gsl_materialIdx == 1u) {
     let rank = clamp(floor((210.0 - p.y) / 70.0), 0.0, 5.0);
     let column = clamp(floor(p.x / 60.0 + 5.0), 0.0, 9.0);
     let number = select(select(select(select(select(select(select(select(select(select(0.0, select(select(select(select(select(14.0, 20.0, rank < 4.5), 15.0, rank < 3.5), 5.0, rank < 2.5), 0.0, rank < 1.5), 3.0, rank < 0.5), 0.0 == column), select(select(select(select(select(12.0, 18.0, rank < 4.5), 17.0, rank < 3.5), 9.0, rank < 2.5), 1.0, rank < 1.5), 34.0, rank < 0.5), 1.0 == column), select(select(select(select(select(22.0, 6.0, rank < 4.5), 29.0, rank < 3.5), 10.0, rank < 2.5), 2.0, rank < 1.5), 35.0, rank < 0.5), 2.0 == column), select(select(select(select(select(23.0, 7.0, rank < 4.5), 30.0, rank < 3.5), 11.0, rank < 2.5), 19.0, rank < 1.5), 36.0, rank < 0.5), 3.0 == column), select(select(select(select(select(13.0, 41.0, rank < 4.5), 4.0, rank < 3.5), 28.0, rank < 2.5), 8.0, rank < 1.5), 40.0, rank < 0.5), 4.0 == column), select(select(select(select(select(24.0, 21.0, rank < 4.5), 16.0, rank < 3.5), 31.0, rank < 2.5), 44.0, rank < 1.5), 37.0, rank < 0.5), 5.0 == column), select(select(select(select(select(45.0, 42.0, rank < 4.5), 27.0, rank < 3.5), 32.0, rank < 2.5), 0.0, rank < 1.5), 38.0, rank < 0.5), 6.0 == column), select(select(select(select(select(46.0, 43.0, rank < 4.5), 0.0, rank < 3.5), 33.0, rank < 2.5), 0.0, rank < 1.5), 39.0, rank < 0.5), 7.0 == column), select(select(select(select(select(47.0, 48.0, rank < 4.5), 0.0, rank < 3.5), 25.0, rank < 2.5), 0.0, rank < 1.5), 0.0, rank < 0.5), 8.0 == column), select(select(select(select(select(0.0, 0.0, rank < 4.5), 0.0, rank < 3.5), 26.0, rank < 2.5), 0.0, rank < 1.5), 0.0, rank < 0.5), 9.0 == column);
     let centre = vec2<f32>((column - 4.5) * 60.0, (2.5 - rank) * 70.0);
     let stem = vec3<f32>(centre.x - 60.0, centre.y - 35.0, 0.0);
-    let oil = gsl_param_48_7;
-    let age = gsl_param_51_7;
-    let weather = gsl_param_54_11;
+    let oil = gsl_param_48_20;
+    let age = gsl_param_49_20;
+    let weather = gsl_param_50_24;
     let look = vec3<f32>(oil, age, weather);
     let gsl_m = wood_speciesMaterial(p, number, stem, vec3<f32>(0.0, 0.0, 1.0), look, 0.0, noiseTex); return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
   }

@@ -18,12 +18,8 @@ cylinderRounded(a, b, radius) {
   return length(pa - ba * h) - radius;
 }
 
-semiMajor = 4.0;
-semiMajor.min = 2;
-semiMajor.max = 8;
-ecc = 0.65;
-ecc.min = 0;
-ecc.max = 0.95;
+@range(2, 8) semiMajor = 4.0;
+@range(0, 0.95) ecc = 0.65;
 
 meanAnomaly = time;
 

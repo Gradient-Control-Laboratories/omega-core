@@ -9,16 +9,12 @@
 
 // The direction the wind blows, in degrees from x. It drifts the floes and
 // the lava's plates.
-windAngle = 20;
-windAngle.min = -180;
-windAngle.max = 180;
+@range(-180, 180) windAngle = 20;
 wind = [cos(windAngle * 3.14159265 / 180), sin(windAngle * 3.14159265 / 180), 0];
 
 // The ice's stage: grease ice 0, nilas 0.2 to 0.35, pancakes 0.5, grey ice
 // 0.65, first-year ice 0.8, snow 1.
-iceStage = 0.5;
-iceStage.min = 0;
-iceStage.max = 1;
+@range(0, 1) iceStage = 0.5;
 
 // Each piece is a slab 24 mm square, 32 mm apart.
 slab(column, row) {

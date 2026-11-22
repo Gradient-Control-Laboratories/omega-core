@@ -8,13 +8,13 @@ fn builtin_unionRound(d1: f32, d2: f32, radius: f32) -> f32 {
   return -builtin_intersectRound_2(-d1, -d2, radius);
 }
 
-fn gsl_remap(p: vec3<f32>, gsl_param_3_9: f32) -> f32 {
+fn gsl_remap(p: vec3<f32>, gsl_param_3_26: f32) -> f32 {
   let body = builtin_unionRound(builtin_gcl_closure_boxCentered(p, vec3<f32>(2.0, 1.0, 1.0) * 0.5, abs(vec3<f32>(2.0, 1.0, 1.0))), length(p - vec3<f32>(2.0, 0.5, 0.5)) - 0.6, 0.2);
   return body;
 }
 
-fn gsl_remap_2(p: vec3<f32>, gsl_param_3_9: f32) -> f32 {
-  return gsl_remap(p - vec3<f32>(1.0, 2.0, 0.0), gsl_param_3_9);
+fn gsl_remap_2(p: vec3<f32>, gsl_param_3_26: f32) -> f32 {
+  return gsl_remap(p - vec3<f32>(1.0, 2.0, 0.0), gsl_param_3_26);
 }
 
 fn builtin_gcl_closure_box(p: vec3<f32>, pointA: vec3<f32>, pointB: vec3<f32>) -> f32 {
@@ -48,9 +48,9 @@ fn builtin_gcl_closure_boxCentered(p: vec3<f32>, center: vec3<f32>, size: vec3<f
   return solid;
 }
 
-fn sdShape(p: vec3<f32>, time: f32, gsl_param_3_9: f32) -> gsl_shape {
+fn sdShape(p: vec3<f32>, time: f32, gsl_param_3_26: f32) -> gsl_shape {
   gsl_partNear = vec3<f32>(1e10, 1e10, 1e10);
-  let angle = gsl_param_3_9;
+  let angle = gsl_param_3_26;
   let gslBox_4 = cos(angle) * 2.3 - sin(angle) * 2.5;
   let gslBox_2 = abs(cos(angle)) * 1.5 + abs(sin(angle)) * 0.8;
   let gslBox_3 = sin(angle) * 2.3 + cos(angle) * 2.5;
@@ -62,7 +62,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_3_9: f32) -> gsl_shape {
   if (gsl_vanishView.w <= 0.0 || gsl_partBox <= gsl_vanishView.w) {
     let gsl_partVanish = gsl_vanish(gsl_partLo, gsl_partHi);
     gsl_part = 1e10;
-    if (gsl_partVanish.x > 0.0) { gsl_part = gsl_remap_2(vec3<f32>(p.x * cos(angle) + p.y * sin(angle), -p.x * sin(angle) + p.y * cos(angle), p.z), gsl_param_3_9) + gsl_partVanish.y; }
+    if (gsl_partVanish.x > 0.0) { gsl_part = gsl_remap_2(vec3<f32>(p.x * cos(angle) + p.y * sin(angle), -p.x * sin(angle) + p.y * cos(angle), p.z), gsl_param_3_26) + gsl_partVanish.y; }
     if (abs(gsl_part) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part), gsl_partVanish.zw); }
   }
   let placed = gsl_part;
@@ -73,7 +73,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_3_9: f32) -> gsl_shape {
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_2 <= gsl_vanishView.w) {
     let gsl_partVanish_2 = gsl_vanish(gsl_partLo_2, gsl_partHi_2);
     gsl_part_2 = 1e10;
-    if (gsl_partVanish_2.x > 0.0) { gsl_part_2 = gsl_remap(p / 0.5, gsl_param_3_9) * 0.5 + gsl_partVanish_2.y; }
+    if (gsl_partVanish_2.x > 0.0) { gsl_part_2 = gsl_remap(p / 0.5, gsl_param_3_26) * 0.5 + gsl_partVanish_2.y; }
     if (abs(gsl_part_2) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_2), gsl_partVanish_2.zw); }
   }
   let scaled = gsl_part_2;

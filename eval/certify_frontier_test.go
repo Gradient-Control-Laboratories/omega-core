@@ -102,9 +102,7 @@ func TestCertifyDefaultRunsToTheBudget(t *testing.T) {
 // [0, 0.1] the wall's surface stands 0.4 to 0.5 off the ball's, so
 // max(ball, wall) is never below 0.2.
 const paramReasonDoc = `
-gap = 0.1;
-gap.min = 0.0;
-gap.max = 0.1;
+@range(0.0, 0.1) gap = 0.1;
 ball = length(p) - 3.0;
 wall = length(p - [8.0, 3.0, 0.0]) - (5.144 - gap);
 return ball;

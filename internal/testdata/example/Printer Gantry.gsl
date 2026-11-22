@@ -30,12 +30,8 @@ steelMat, steelColor = metal.steel();
 brassMat, brassColor = metal.brass();
 
 z0 = -200.0;
-lift = 180.0;
-lift.min = 60.0;
-lift.max = 300.0;
-travel = 0.0;
-travel.min = -110.0;
-travel.max = 110.0;
+@range(60.0, 300.0) lift = 180.0;
+@range(-110.0, 110.0) travel = 0.0;
 gz = z0 + lift;
 
 // =========================================================

@@ -28,8 +28,8 @@ fn builtin_cropToBox(p: vec3<f32>, shape: f32, low: vec3<f32>, high: vec3<f32>, 
 
 var<private> gsl_boxCap: bool = false;
 
-fn gsl_remap(p: vec3<f32>, gsl_param_23_5: f32, noiseTex: texture_3d<f32>) -> f32 {
-  let P = gsl_param_23_5;
+fn gsl_remap(p: vec3<f32>, gsl_param_23_19: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let P = gsl_param_23_19;
   let gsl_tmp_5 = abs(p - vec3<f32>(0.0, 0.0, 0.0)) - vec3<f32>(3.5, 3.5, 3.5);
   return builtin_cropToBox(p, builtin_gcl_closure_intersectLp(0.25 * P, P, vec3<f32>(gsl_tmp_5.x, gsl_tmp_5.y, gsl_tmp_5.z), noiseTex), vec3<f32>(-3.5, -3.5, -3.5), vec3<f32>(3.5, 3.5, 3.5), noiseTex);
 }
@@ -38,11 +38,11 @@ fn ease_cubic(t: f32, noiseTex: texture_3d<f32>) -> f32 {
   return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
 }
 
-fn gsl_remap_2(p: vec3<f32>, gsl_param_23_5: f32, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> f32 {
+fn gsl_remap_2(p: vec3<f32>, gsl_param_23_19: f32, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> f32 {
   return noise_gradientLattice(p / 4.0, noiseTex) + 0.5 * noise_gradientLattice(p / 1.3333334, noiseTex);
 }
 
-fn gsl_remap_3(p: vec3<f32>, gsl_param_23_5: f32, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> f32 {
+fn gsl_remap_3(p: vec3<f32>, gsl_param_23_19: f32, material_plastic: mat4x4<f32>, noiseTex: texture_3d<f32>) -> f32 {
   return noise_gradientLattice(p / 4.0, noiseTex);
 }
 
@@ -132,9 +132,9 @@ fn pin(p: vec3<f32>, x: f32, noiseTex: texture_3d<f32>) -> f32 {
   return gsl_pin_remap(p - vec3<f32>(x, 0.0, 0.0), x, noiseTex);
 }
 
-fn sdShape(p: vec3<f32>, time: f32, gsl_param_23_5: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
+fn sdShape(p: vec3<f32>, time: f32, gsl_param_23_19: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
   gsl_partNear = vec3<f32>(1e10, 1e10, 1e10);
-  let lp = gsl_remap(p - vec3<f32>(-5.0, 0.0, 0.0), gsl_param_23_5, noiseTex);
+  let lp = gsl_remap(p - vec3<f32>(-5.0, 0.0, 0.0), gsl_param_23_19, noiseTex);
   let exponential = builtin_gcl_closure_boxCentered_2(p - vec3<f32>(5.0, 0.0, 0.0), vec3<f32>(0.0, 0.0, 0.0) * 0.5, abs(vec3<f32>(7.0, 7.0, 7.0)), noiseTex);
   let pinLp = pin(p, -5.0, noiseTex);
   let pinExp = pin(p, 5.0, noiseTex);
@@ -157,7 +157,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_23_5: f32, noiseTex: texture_3d<f3
   return gsl_min(gsl_min(gsl_min(gsl_min(gsl_s1, gsl_s2), gsl_s3), gsl_s4), gsl_s5);
 }
 
-fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_23_5: f32, noiseTex: texture_3d<f32>) -> vec4<f32> {
+fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_23_19: f32, noiseTex: texture_3d<f32>) -> vec4<f32> {
   if (gsl_colorIdx == 1u) { return vec4<f32>(vec3<f32>(1.0, 1.0, 1.0), 1.0); }
   if (gsl_colorIdx == 2u) { return vec4<f32>(vec3<f32>(1.0, 1.0, 1.0), 1.0); }
   if (gsl_colorIdx == 3u) { return vec4<f32>(vec3<f32>(0.8373, 0.8204, 0.7966), 1.0); }
@@ -168,7 +168,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_23_5: f3
   }
   return vec4<f32>(0.0, 0.0, 0.0, 0.0);
 }
-fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_23_5: f32, noiseTex: texture_3d<f32>) -> gsl_material {
+fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_23_19: f32, noiseTex: texture_3d<f32>) -> gsl_material {
   if (gsl_materialIdx == 1u) { let gsl_m = mat4x4<f32>(vec4<f32>(0.02, 0.0, 1.52, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)); return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0); }
   if (gsl_materialIdx == 2u) { let gsl_m = mat4x4<f32>(vec4<f32>(0.02, 0.0, 1.52, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)); return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0); }
   if (gsl_materialIdx == 3u) { let gsl_m = mat4x4<f32>(vec4<f32>(0.35, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)); return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0); }
@@ -176,7 +176,7 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_23
   if (gsl_materialIdx == 5u) {
     let material_plastic = mat4x4<f32>(vec4<f32>(0.35, 0.0, 1.46, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     let floorPoint = p - vec3<f32>(select(5.0, -5.0, p.x < 0.0), 0.0, 0.0);
-    let gsl_m = material_withIor(material_withRoughness(material_plastic, 0.22 + 0.25 * gsl_remap_2(floorPoint, gsl_param_23_5, material_plastic, noiseTex), noiseTex), 1.5 + 0.5 * gsl_remap_3(floorPoint, gsl_param_23_5, material_plastic, noiseTex), noiseTex); return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
+    let gsl_m = material_withIor(material_withRoughness(material_plastic, 0.22 + 0.25 * gsl_remap_2(floorPoint, gsl_param_23_19, material_plastic, noiseTex), noiseTex), 1.5 + 0.5 * gsl_remap_3(floorPoint, gsl_param_23_19, material_plastic, noiseTex), noiseTex); return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
   }
   return gsl_material(vec4<f32>(0.5, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), 0.0);
 }
