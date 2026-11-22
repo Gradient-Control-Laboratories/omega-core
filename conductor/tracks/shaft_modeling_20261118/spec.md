@@ -330,6 +330,12 @@ The numbering is the order.
     inside rigid remaps and on every ray. Only a union operand or a subtracted one can be pruned (both
     become nothing); a gear's profile is re-authored as its pitch disc with tips added and gaps taken
     away, so its teeth give way to the pitch cylinder.
+20. **Thread pruning** (added 2026-11-22, the owner: "basicForm + sinForm"). Threads get the gear's
+    treatment: the cylinder at the pitch diameter, the crests added and the roots taken away, each a
+    feature half a pitch across, so a screw, a tapped hole or a shaft.thread gives way to its pitch
+    cylinder. The crests and roots are the whole form and its complement, unbounded, so drawn the field
+    is the form's, unchanged; the gear's tips and gaps are made the same (the owner, after cross sections
+    showed Phase 19's band bounds distorting the field in the gaps).
 
 **Phase 3 depends on gears for the gear segment:** `gears.gearProfile` is not yet a bound (plan, Phase 3), so
 neither is `shaft.gear`; the fix is its own PR off main (a bounded involute flank, and the normalized

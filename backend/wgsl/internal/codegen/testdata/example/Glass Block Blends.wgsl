@@ -30,8 +30,8 @@ var<private> gsl_boxCap: bool = false;
 
 fn gsl_remap(p: vec3<f32>, gsl_param_23_19: f32, noiseTex: texture_3d<f32>) -> f32 {
   let P = gsl_param_23_19;
-  let gsl_tmp_5 = abs(p - vec3<f32>(0.0, 0.0, 0.0)) - vec3<f32>(3.5, 3.5, 3.5);
-  return builtin_cropToBox(p, builtin_gcl_closure_intersectLp(0.25 * P, P, vec3<f32>(gsl_tmp_5.x, gsl_tmp_5.y, gsl_tmp_5.z), noiseTex), vec3<f32>(-3.5, -3.5, -3.5), vec3<f32>(3.5, 3.5, 3.5), noiseTex);
+  let gsl_tmp_8 = abs(p - vec3<f32>(0.0, 0.0, 0.0)) - vec3<f32>(3.5, 3.5, 3.5);
+  return builtin_cropToBox(p, builtin_gcl_closure_intersectLp(0.25 * P, P, vec3<f32>(gsl_tmp_8.x, gsl_tmp_8.y, gsl_tmp_8.z), noiseTex), vec3<f32>(-3.5, -3.5, -3.5), vec3<f32>(3.5, 3.5, 3.5), noiseTex);
 }
 
 fn ease_cubic(t: f32, noiseTex: texture_3d<f32>) -> f32 {
@@ -122,10 +122,24 @@ fn noise_gradientLattice(q: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
 }
 
 fn gsl_pin_remap(p: vec3<f32>, x: f32, noiseTex: texture_3d<f32>) -> f32 {
-  let gsl_tmp_1 = length(p.xy);
-  let gsl_tmp_3 = 6.2831855 * p.z / 0.25;
-  let gsl_tmp_2 = max(gsl_tmp_1, 0.2);
-  return max(max(max(gsl_tmp_1 - 0.6, -max(0.46468353 - gsl_tmp_1, ((1.0 - acos(clamp(cos(gsl_tmp_3) * p.x / gsl_tmp_2 + sin(gsl_tmp_3) * p.y / gsl_tmp_2, -1.0, 1.0)) / 3.1415927) * 0.125 - 0.03125 - (gsl_tmp_1 - 0.46468353) * 0.57735026) * 0.8604493)), abs(p.z) - 2.5), (gsl_tmp_1 - 0.6 + abs(p.z) - 2.5 + 0.15) * 0.7071);
+  let gsl_featureSize = 0.125;
+  let gsl_featureWeight = gsl_featureWeight(gsl_featureSize);
+  var gsl_feature = 100000.0;
+  if (gsl_featureWeight > 0.0) {
+    let gsl_tmp_1 = length(p.xy);
+    let gsl_tmp_3 = 6.2831855 * p.z / 0.25;
+    let gsl_tmp_2 = max(gsl_tmp_1, 0.2);
+    gsl_feature = max(gsl_tmp_1 - 0.6, -max(0.46468353 - gsl_tmp_1, ((1.0 - acos(clamp(cos(gsl_tmp_3) * p.x / gsl_tmp_2 + sin(gsl_tmp_3) * p.y / gsl_tmp_2, -1.0, 1.0)) / 3.1415927) * 0.125 - 0.03125 - (gsl_tmp_1 - 0.46468353) * 0.57735026) * 0.8604493)) + (1.0 - gsl_featureWeight) * 0.5 * gsl_featureSize;
+  }
+  let gsl_featureSize_2 = 0.125;
+  var gsl_feature_2 = 100000.0;
+  if (gsl_featureWeight > 0.0) {
+    let gsl_tmp_4 = length(p.xy);
+    let gsl_tmp_6 = 6.2831855 * p.z / 0.25;
+    let gsl_tmp_5 = max(gsl_tmp_4, 0.2);
+    gsl_feature_2 = -max(gsl_tmp_4 - 0.6, -max(0.46468353 - gsl_tmp_4, ((1.0 - acos(clamp(cos(gsl_tmp_6) * p.x / gsl_tmp_5 + sin(gsl_tmp_6) * p.y / gsl_tmp_5, -1.0, 1.0)) / 3.1415927) * 0.125 - 0.03125 - (gsl_tmp_4 - 0.46468353) * 0.57735026) * 0.8604493)) + (1.0 - gsl_featureWeight) * 0.5 * gsl_featureSize_2;
+  }
+  return max(max(max(min(length(p.xy) - 0.5188125, gsl_feature), -gsl_feature_2), abs(p.z) - 2.5), (length(p.xy) - 0.6 + abs(p.z) - 2.5 + 0.15) * 0.7071);
 }
 
 fn pin(p: vec3<f32>, x: f32, noiseTex: texture_3d<f32>) -> f32 {
@@ -133,6 +147,7 @@ fn pin(p: vec3<f32>, x: f32, noiseTex: texture_3d<f32>) -> f32 {
 }
 
 fn sdShape(p: vec3<f32>, time: f32, gsl_param_23_19: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
+  gsl_featurePixel = select(0.0, gsl_vanishEye.w * mix(max(length(gsl_vanishEye.xyz - p), 1.0), 1.0, gsl_vanishView.x), gsl_vanishEye.w > 0.0);
   gsl_partNear = vec3<f32>(1e10, 1e10, 1e10);
   let lp = gsl_remap(p - vec3<f32>(-5.0, 0.0, 0.0), gsl_param_23_19, noiseTex);
   let exponential = builtin_gcl_closure_boxCentered_2(p - vec3<f32>(5.0, 0.0, 0.0), vec3<f32>(0.0, 0.0, 0.0) * 0.5, abs(vec3<f32>(7.0, 7.0, 7.0)), noiseTex);
@@ -197,6 +212,13 @@ fn gsl_vanish(lo: vec3<f32>, hi: vec3<f32>) -> vec4<f32> {
 
 fn gsl_boxDistance(q: vec3<f32>, lo: vec3<f32>, hi: vec3<f32>) -> f32 {
   return length(max(max(lo - q, q - hi), vec3<f32>(0.0)));
+}
+
+var<private> gsl_featurePixel: f32 = 0.0;
+
+fn gsl_featureWeight(size: f32) -> f32 {
+  if (gsl_featurePixel <= 0.0) { return 1.0; }
+  return smoothstep(gsl_vanishView.y, max(gsl_vanishView.z, gsl_vanishView.y + 1e-3), size / gsl_featurePixel);
 }
 
 const gsl_foldK = array<vec3<f32>, 8>(vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 0.0, 0.0), vec3<f32>(0.0, 1.0, 0.0), vec3<f32>(1.0, 1.0, 0.0), vec3<f32>(0.0, 0.0, 1.0), vec3<f32>(1.0, 0.0, 1.0), vec3<f32>(0.0, 1.0, 1.0), vec3<f32>(1.0, 1.0, 1.0));
