@@ -897,7 +897,7 @@ animation clock is in `[startTime, endTime]`:
 
 > **Deprecated:** the slider properties `.min`, `.max` and `.period` below are superseded by
 > `@range(min, max[, period])` (see the Annotations section), which takes the same expressions.
-> They still compile. `gsl fix -range` rewrites them to `@range`.
+> They still compile, with a warning on each variable that uses them. `gsl fix -range` rewrites them to `@range`.
 
 A top-level variable assigned a single numeric literal can be decorated with property values to
 register it as a dynamic slider in the host user interface:

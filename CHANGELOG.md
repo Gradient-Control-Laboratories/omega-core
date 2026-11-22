@@ -176,8 +176,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Deprecated
 
 - The `.min`, `.max` and `.period` slider properties, in favor of `@range(min, max[, period])`. They still compile,
-  and the compiler does not warn about them yet; `gsl fix -range` rewrites them. The language description that
-  `gsl skill` and the viewer's Help panel serve teaches `@range`, and mentions the properties only as deprecated.
+  and the compiler warns about each variable that sets its slider with them, once, on the first of its property
+  statements, pointing at `@range` and `gsl fix -range`, which rewrites them. The warning is in the compile
+  response's diagnostics, with the `// Scene Size:` one. The language description that `gsl skill` and the viewer's
+  Help panel serve teaches `@range`, and mentions the properties only as deprecated.
 
 ### Removed
 

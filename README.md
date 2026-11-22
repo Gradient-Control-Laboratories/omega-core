@@ -281,7 +281,7 @@ Planned
   and inline scalar literals for discrete UI selection and parameter presets.
 - **Retire slider dot-properties (`.min`, `.max`, `.period`)**: Remove legacy `.min`, `.max`,
   and `.period` property assignments in favor of `@range(min, max [, period])`. They are
-  deprecated and `gsl fix -range` rewrites them; the compiler does not warn about them yet.
+  deprecated: the compiler warns about them and `gsl fix -range` rewrites them.
 - **Retire viewport manipulator built-ins (`uiPoint`, `uiTransform`, `uiSpline`)**: Remove
   direct calls to `uiPoint`, `uiTransform`, and `uiSpline` from the language surface in favor of
   `@point`, `@transform`, and `@spline` annotations, with compiler migration diagnostics.
