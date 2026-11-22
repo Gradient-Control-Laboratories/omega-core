@@ -55,7 +55,7 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
   let gsl_partBox = gsl_boxDistance(p, gsl_partLo, gsl_partHi);
   var gsl_part_3 = gsl_partBox;
   if (gsl_vanishView.w <= 0.0 || gsl_partBox <= gsl_vanishView.w) {
-    let gsl_partVanish_3 = gsl_vanish(gsl_partLo, gsl_partHi);
+    let gsl_partVanish_3 = gsl_partVanish_2;
     gsl_part_3 = 1e10;
     if (gsl_partVanish_3.x > 0.0) { gsl_part_3 = builtin_gcl_closure_boxCentered(p, vec3<f32>(0.0, 0.0, 0.0) * 0.5, abs(vec3<f32>(6.52, 6.52, 0.52))) + gsl_partVanish_3.y; }
     if (abs(gsl_part_3) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_3), gsl_partVanish_3.zw); }

@@ -16,12 +16,17 @@ fn gcl_closure_unionRoundExact(p: vec3<f32>, normal1: vec3<f32>, normal2: vec3<f
 }
 
 fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
-  let blended = gcl_closure_unionRoundExact(p, vec3<f32>(dot(p - vec3<f32>(-0.5, 0.0, 0.0), vec3<f32>(1.0, 0.0, 0.0)) / (length(p - vec3<f32>(-0.5, 0.0, 0.0)) + 1.0 - select(0.0, 1.0, (length(p - vec3<f32>(-0.5, 0.0, 0.0)) > 0.0))), dot(p - vec3<f32>(-0.5, 0.0, 0.0), vec3<f32>(0.0, 1.0, 0.0)) / (length(p - vec3<f32>(-0.5, 0.0, 0.0)) + 1.0 - select(0.0, 1.0, (length(p - vec3<f32>(-0.5, 0.0, 0.0)) > 0.0))), dot(p - vec3<f32>(-0.5, 0.0, 0.0), vec3<f32>(0.0, 0.0, 1.0)) / (length(p - vec3<f32>(-0.5, 0.0, 0.0)) + 1.0 - select(0.0, 1.0, (length(p - vec3<f32>(-0.5, 0.0, 0.0)) > 0.0)))), vec3<f32>(dot(p - vec3<f32>(0.5, 0.0, 0.0), vec3<f32>(1.0, 0.0, 0.0)) / (length(p - vec3<f32>(0.5, 0.0, 0.0)) + 1.0 - select(0.0, 1.0, (length(p - vec3<f32>(0.5, 0.0, 0.0)) > 0.0))), dot(p - vec3<f32>(0.5, 0.0, 0.0), vec3<f32>(0.0, 1.0, 0.0)) / (length(p - vec3<f32>(0.5, 0.0, 0.0)) + 1.0 - select(0.0, 1.0, (length(p - vec3<f32>(0.5, 0.0, 0.0)) > 0.0))), dot(p - vec3<f32>(0.5, 0.0, 0.0), vec3<f32>(0.0, 0.0, 1.0)) / (length(p - vec3<f32>(0.5, 0.0, 0.0)) + 1.0 - select(0.0, 1.0, (length(p - vec3<f32>(0.5, 0.0, 0.0)) > 0.0)))));
-  let sphereNormal = vec3<f32>(dot(p, vec3<f32>(1.0, 0.0, 0.0)) / (length(p) + 1.0 - select(0.0, 1.0, (length(p) > 0.0))), dot(p, vec3<f32>(0.0, 1.0, 0.0)) / (length(p) + 1.0 - select(0.0, 1.0, (length(p) > 0.0))), dot(p, vec3<f32>(0.0, 0.0, 1.0)) / (length(p) + 1.0 - select(0.0, 1.0, (length(p) > 0.0))));
+  let gsl_cse_6 = p - vec3<f32>(-0.5, 0.0, 0.0);
+  let gsl_cse_1 = length(gsl_cse_6) + 1.0 - select(0.0, 1.0, (length(gsl_cse_6) > 0.0));
+  let gsl_cse_7 = p - vec3<f32>(0.5, 0.0, 0.0);
+  let gsl_cse_2 = length(gsl_cse_7) + 1.0 - select(0.0, 1.0, (length(gsl_cse_7) > 0.0));
+  let blended = gcl_closure_unionRoundExact(p, vec3<f32>(dot(gsl_cse_6, vec3<f32>(1.0, 0.0, 0.0)) / gsl_cse_1, dot(gsl_cse_6, vec3<f32>(0.0, 1.0, 0.0)) / gsl_cse_1, dot(gsl_cse_6, vec3<f32>(0.0, 0.0, 1.0)) / gsl_cse_1), vec3<f32>(dot(gsl_cse_7, vec3<f32>(1.0, 0.0, 0.0)) / gsl_cse_2, dot(gsl_cse_7, vec3<f32>(0.0, 1.0, 0.0)) / gsl_cse_2, dot(gsl_cse_7, vec3<f32>(0.0, 0.0, 1.0)) / gsl_cse_2));
+  let gsl_cse_5 = length(p) + 1.0 - select(0.0, 1.0, (length(p) > 0.0));
+  let sphereNormal = vec3<f32>(dot(p, vec3<f32>(1.0, 0.0, 0.0)) / gsl_cse_5, dot(p, vec3<f32>(0.0, 1.0, 0.0)) / gsl_cse_5, dot(p, vec3<f32>(0.0, 0.0, 1.0)) / gsl_cse_5);
   let gsl_tmp_1 = vec2<f32>(length(p.xy) - 2.0, p.z);
-  let gsl_tmp_2 = vec2<f32>(length(p.xy) - 2.0, p.z);
-  let gsl_tmp_3 = vec2<f32>(length(p.xy) - 2.0, p.z);
-  let torusNormal = vec3<f32>(dot(gsl_tmp_1, vec2<f32>(dot(p.xy, vec2<f32>(1.0, 0.0)) / (length(p.xy) + 1.0 - select(0.0, 1.0, (length(p.xy) > 0.0))), 0.0)) / (length(gsl_tmp_1) + 1.0 - select(0.0, 1.0, (length(gsl_tmp_1) > 0.0))), dot(gsl_tmp_2, vec2<f32>(dot(p.xy, vec2<f32>(0.0, 1.0)) / (length(p.xy) + 1.0 - select(0.0, 1.0, (length(p.xy) > 0.0))), 0.0)) / (length(gsl_tmp_2) + 1.0 - select(0.0, 1.0, (length(gsl_tmp_2) > 0.0))), dot(gsl_tmp_3, vec2<f32>(dot(p.xy, vec2<f32>(0.0, 0.0)) / (length(p.xy) + 1.0 - select(0.0, 1.0, (length(p.xy) > 0.0))), 1.0)) / (length(gsl_tmp_3) + 1.0 - select(0.0, 1.0, (length(gsl_tmp_3) > 0.0))));
+  let gsl_cse_3 = length(gsl_tmp_1) + 1.0 - select(0.0, 1.0, (length(gsl_tmp_1) > 0.0));
+  let gsl_cse_4 = length(p.xy) + 1.0 - select(0.0, 1.0, (length(p.xy) > 0.0));
+  let torusNormal = vec3<f32>(dot(gsl_tmp_1, vec2<f32>(dot(p.xy, vec2<f32>(1.0, 0.0)) / gsl_cse_4, 0.0)) / gsl_cse_3, dot(gsl_tmp_1, vec2<f32>(dot(p.xy, vec2<f32>(0.0, 1.0)) / gsl_cse_4, 0.0)) / gsl_cse_3, dot(gsl_tmp_1, vec2<f32>(dot(p.xy, vec2<f32>(0.0, 0.0)) / gsl_cse_4, 1.0)) / gsl_cse_3);
   let gsl_s1 = gsl_shape(blended + 0.0 * (sphereNormal.x + torusNormal.z), 1u);
   return gsl_s1;
 }

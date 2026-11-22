@@ -45,7 +45,7 @@ fn sdShape(p: vec3<f32>, time: f32, spinodoidTex: texture_2d<f32>) -> gsl_shape 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_2 <= gsl_vanishView.w) {
     let gsl_partVanish_2 = gsl_vanish(gsl_partLo_2, gsl_partHi_2);
     gsl_part_2 = 1e10;
-    if (gsl_partVanish_2.x > 0.0) { gsl_part_2 = min(min(min(min(1000000000.0, length(p - vec3<f32>(0.0, 0.0, 15.0))), length(p - vec3<f32>(15.0, 0.0, 0.0))), length(p - vec3<f32>(-15.0, -15.0, -15.0))), length(p - vec3<f32>(0.0, -15.0, 5.0))) - 1.5 + gsl_partVanish_2.y; }
+    if (gsl_partVanish_2.x > 0.0) { gsl_part_2 = min(min(min(min(1000000000.0, length(p - vec3<f32>(0.0, 0.0, 15.0))), length(p - vec3<f32>(15.0, 0.0, 0.0))), length(p - gsl_partLo)), length(p - vec3<f32>(0.0, -15.0, 5.0))) - 1.5 + gsl_partVanish_2.y; }
     if (abs(gsl_part_2) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_2), gsl_partVanish_2.zw); }
   }
   let markers = gsl_part_2;

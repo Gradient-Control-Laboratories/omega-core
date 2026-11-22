@@ -164,10 +164,11 @@ fn material_withDisplacement(m: mat4x4<f32>, height: f32, noiseTex: texture_3d<f
 }
 
 fn stone_grainAt(q: vec3<f32>, noiseTex: texture_3d<f32>) -> gsl_struct {
-  let f1 = gsl_cellularScan(q, 1, noiseTex).f1;
-  let f2 = gsl_cellularScan(q, 1, noiseTex).f2;
-  let far = gsl_cellularScan(q, 1, noiseTex).farCell;
-  let near = gsl_cellularScan(q, 1, noiseTex).nearCell;
+  let gsl_cse_1 = gsl_cellularScan(q, 1, noiseTex);
+  let f1 = gsl_cse_1.f1;
+  let f2 = gsl_cse_1.f2;
+  let far = gsl_cse_1.farCell;
+  let near = gsl_cse_1.nearCell;
   let gap = length(far + fract(textureLoad(noiseTex, vec3<i32>(floor(far)) & vec3<i32>(63), 0).rgb) - near - fract(textureLoad(noiseTex, vec3<i32>(floor(near)) & vec3<i32>(63), 0).rgb));
   var gsl_result : gsl_struct;
   gsl_result.v_1 = f1;

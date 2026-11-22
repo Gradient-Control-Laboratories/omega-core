@@ -532,13 +532,13 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f
   if (gsl_vanishView.w <= 0.0 || gsl_partBox <= gsl_vanishView.w) {
     let gsl_partVanish = gsl_vanish(gsl_partLo, gsl_partHi);
     gsl_part = 1e10;
-    let gsl_simpleWeight_16 = gsl_simple(vec3<f32>(-81.91, -62.91, -5.01), vec3<f32>(-78.09, -59.09, 1.01));
+    let gsl_simpleWeight_16 = gsl_simple(gsl_partLo, gsl_partHi);
     var gsl_simplePart = 1e10;
     if (gsl_simpleWeight_16 > 0.0) {
       gsl_simplePart = gsl_remap(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, noiseTex);
     }
     if (gsl_simpleWeight_16 < 1.0) {
-      gsl_simplePart = mix(max(gsl_remap_2(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, noiseTex), gsl_boxSdf(p, vec3<f32>(-81.91, -62.91, -5.01), vec3<f32>(-78.09, -59.09, 1.01))), gsl_simplePart, gsl_simpleWeight_16);
+      gsl_simplePart = mix(max(gsl_remap_2(p - vec3<f32>(-80.0, -61.0, -1.0), material_brushedMetal, noiseTex), gsl_boxSdf(p, gsl_partLo, gsl_partHi)), gsl_simplePart, gsl_simpleWeight_16);
     }
     if (gsl_partVanish.x > 0.0) { gsl_part = gsl_simplePart + gsl_partVanish.y; }
     if (abs(gsl_part) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part), gsl_partVanish.zw); }
@@ -551,13 +551,13 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_2 <= gsl_vanishView.w) {
     let gsl_partVanish_2 = gsl_vanish(gsl_partLo_2, gsl_partHi_2);
     gsl_part_2 = 1e10;
-    let gsl_simpleWeight_17 = gsl_simple(vec3<f32>(-2.0, -63.0, -2.0), vec3<f32>(2.0, -59.0, 2.0));
+    let gsl_simpleWeight_17 = gsl_simple(gsl_partLo_2, gsl_partHi_2);
     var gsl_simplePart_2 = 1e10;
     if (gsl_simpleWeight_17 > 0.0) {
       gsl_simplePart_2 = knob(p - vec3<f32>(0.0, -61.0, 0.0), 2.0, noiseTex);
     }
     if (gsl_simpleWeight_17 < 1.0) {
-      gsl_simplePart_2 = mix(max(builtin_sphere_2(p - vec3<f32>(0.0, -61.0, 0.0), 2.0, noiseTex), gsl_boxSdf(p, vec3<f32>(-2.0, -63.0, -2.0), vec3<f32>(2.0, -59.0, 2.0))), gsl_simplePart_2, gsl_simpleWeight_17);
+      gsl_simplePart_2 = mix(max(builtin_sphere_2(p - vec3<f32>(0.0, -61.0, 0.0), 2.0, noiseTex), gsl_boxSdf(p, gsl_partLo_2, gsl_partHi_2)), gsl_simplePart_2, gsl_simpleWeight_17);
     }
     if (gsl_partVanish_2.x > 0.0) { gsl_part_2 = gsl_simplePart_2 + gsl_partVanish_2.y; }
     if (abs(gsl_part_2) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_2), gsl_partVanish_2.zw); }
@@ -570,13 +570,13 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_3 <= gsl_vanishView.w) {
     let gsl_partVanish_3 = gsl_vanish(gsl_partLo_3, gsl_partHi_3);
     gsl_part_3 = 1e10;
-    let gsl_simpleWeight_18 = gsl_simple(vec3<f32>(78.0, -63.0, -2.0), vec3<f32>(82.0, -59.0, 2.0));
+    let gsl_simpleWeight_18 = gsl_simple(gsl_partLo_3, gsl_partHi_3);
     var gsl_simplePart_3 = 1e10;
     if (gsl_simpleWeight_18 > 0.0) {
       gsl_simplePart_3 = knob(p - vec3<f32>(80.0, -61.0, 0.0), 2.0, noiseTex);
     }
     if (gsl_simpleWeight_18 < 1.0) {
-      gsl_simplePart_3 = mix(max(builtin_sphere_2(p - vec3<f32>(80.0, -61.0, 0.0), 2.0, noiseTex), gsl_boxSdf(p, vec3<f32>(78.0, -63.0, -2.0), vec3<f32>(82.0, -59.0, 2.0))), gsl_simplePart_3, gsl_simpleWeight_18);
+      gsl_simplePart_3 = mix(max(builtin_sphere_2(p - vec3<f32>(80.0, -61.0, 0.0), 2.0, noiseTex), gsl_boxSdf(p, gsl_partLo_3, gsl_partHi_3)), gsl_simplePart_3, gsl_simpleWeight_18);
     }
     if (gsl_partVanish_3.x > 0.0) { gsl_part_3 = gsl_simplePart_3 + gsl_partVanish_3.y; }
     if (abs(gsl_part_3) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_3), gsl_partVanish_3.zw); }
@@ -590,13 +590,13 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_4 <= gsl_vanishView.w) {
     let gsl_partVanish_4 = gsl_vanish(gsl_partLo_4, gsl_partHi_4);
     gsl_part_4 = 1e10;
-    let gsl_simpleWeight_19 = gsl_simple(vec3<f32>(-83.51, -50.51, -10.01), vec3<f32>(-76.49, -43.49, 2.01));
+    let gsl_simpleWeight_19 = gsl_simple(gsl_partLo_4, gsl_partHi_4);
     var gsl_simplePart_4 = 1e10;
     if (gsl_simpleWeight_19 > 0.0) {
       gsl_simplePart_4 = gsl_remap_4(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_gray, noiseTex);
     }
     if (gsl_simpleWeight_19 < 1.0) {
-      gsl_simplePart_4 = mix(max(gsl_remap_5(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_gray, noiseTex), gsl_boxSdf(p, vec3<f32>(-83.51, -50.51, -10.01), vec3<f32>(-76.49, -43.49, 2.01))), gsl_simplePart_4, gsl_simpleWeight_19);
+      gsl_simplePart_4 = mix(max(gsl_remap_5(p - vec3<f32>(-80.0, -47.0, -2.0), material_brushedMetal, color_gray, noiseTex), gsl_boxSdf(p, gsl_partLo_4, gsl_partHi_4)), gsl_simplePart_4, gsl_simpleWeight_19);
     }
     if (gsl_partVanish_4.x > 0.0) { gsl_part_4 = gsl_simplePart_4 + gsl_partVanish_4.y; }
     if (abs(gsl_part_4) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_4), gsl_partVanish_4.zw); }
@@ -609,13 +609,13 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_5 <= gsl_vanishView.w) {
     let gsl_partVanish_5 = gsl_vanish(gsl_partLo_5, gsl_partHi_5);
     gsl_part_5 = 1e10;
-    let gsl_simpleWeight_20 = gsl_simple(vec3<f32>(-4.0, -51.0, -4.0), vec3<f32>(4.0, -43.0, 4.0));
+    let gsl_simpleWeight_20 = gsl_simple(gsl_partLo_5, gsl_partHi_5);
     var gsl_simplePart_5 = 1e10;
     if (gsl_simpleWeight_20 > 0.0) {
       gsl_simplePart_5 = knob(p - vec3<f32>(0.0, -47.0, 0.0), 4.0, noiseTex);
     }
     if (gsl_simpleWeight_20 < 1.0) {
-      gsl_simplePart_5 = mix(max(builtin_sphere_2(p - vec3<f32>(0.0, -47.0, 0.0), 4.0, noiseTex), gsl_boxSdf(p, vec3<f32>(-4.0, -51.0, -4.0), vec3<f32>(4.0, -43.0, 4.0))), gsl_simplePart_5, gsl_simpleWeight_20);
+      gsl_simplePart_5 = mix(max(builtin_sphere_2(p - vec3<f32>(0.0, -47.0, 0.0), 4.0, noiseTex), gsl_boxSdf(p, gsl_partLo_5, gsl_partHi_5)), gsl_simplePart_5, gsl_simpleWeight_20);
     }
     if (gsl_partVanish_5.x > 0.0) { gsl_part_5 = gsl_simplePart_5 + gsl_partVanish_5.y; }
     if (abs(gsl_part_5) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_5), gsl_partVanish_5.zw); }
@@ -628,13 +628,13 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_6 <= gsl_vanishView.w) {
     let gsl_partVanish_6 = gsl_vanish(gsl_partLo_6, gsl_partHi_6);
     gsl_part_6 = 1e10;
-    let gsl_simpleWeight_21 = gsl_simple(vec3<f32>(76.0, -51.0, -4.0), vec3<f32>(84.0, -43.0, 4.0));
+    let gsl_simpleWeight_21 = gsl_simple(gsl_partLo_6, gsl_partHi_6);
     var gsl_simplePart_6 = 1e10;
     if (gsl_simpleWeight_21 > 0.0) {
       gsl_simplePart_6 = knob(p - vec3<f32>(80.0, -47.0, 0.0), 4.0, noiseTex);
     }
     if (gsl_simpleWeight_21 < 1.0) {
-      gsl_simplePart_6 = mix(max(builtin_sphere_2(p - vec3<f32>(80.0, -47.0, 0.0), 4.0, noiseTex), gsl_boxSdf(p, vec3<f32>(76.0, -51.0, -4.0), vec3<f32>(84.0, -43.0, 4.0))), gsl_simplePart_6, gsl_simpleWeight_21);
+      gsl_simplePart_6 = mix(max(builtin_sphere_2(p - vec3<f32>(80.0, -47.0, 0.0), 4.0, noiseTex), gsl_boxSdf(p, gsl_partLo_6, gsl_partHi_6)), gsl_simplePart_6, gsl_simpleWeight_21);
     }
     if (gsl_partVanish_6.x > 0.0) { gsl_part_6 = gsl_simplePart_6 + gsl_partVanish_6.y; }
     if (abs(gsl_part_6) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_6), gsl_partVanish_6.zw); }
@@ -647,13 +647,13 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_7 <= gsl_vanishView.w) {
     let gsl_partVanish_7 = gsl_vanish(gsl_partLo_7, gsl_partHi_7);
     gsl_part_7 = 1e10;
-    let gsl_simpleWeight_22 = gsl_simple(vec3<f32>(-86.51, -33.51, -20.01), vec3<f32>(-73.49, -20.49, 4.01));
+    let gsl_simpleWeight_22 = gsl_simple(gsl_partLo_7, gsl_partHi_7);
     var gsl_simplePart_7 = 1e10;
     if (gsl_simpleWeight_22 > 0.0) {
       gsl_simplePart_7 = gsl_remap_7(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_gray, noiseTex);
     }
     if (gsl_simpleWeight_22 < 1.0) {
-      gsl_simplePart_7 = mix(max(gsl_remap_8(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_gray, noiseTex), gsl_boxSdf(p, vec3<f32>(-86.51, -33.51, -20.01), vec3<f32>(-73.49, -20.49, 4.01))), gsl_simplePart_7, gsl_simpleWeight_22);
+      gsl_simplePart_7 = mix(max(gsl_remap_8(p - vec3<f32>(-80.0, -27.0, -4.0), material_brushedMetal, color_gray, noiseTex), gsl_boxSdf(p, gsl_partLo_7, gsl_partHi_7)), gsl_simplePart_7, gsl_simpleWeight_22);
     }
     if (gsl_partVanish_7.x > 0.0) { gsl_part_7 = gsl_simplePart_7 + gsl_partVanish_7.y; }
     if (abs(gsl_part_7) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_7), gsl_partVanish_7.zw); }
@@ -666,13 +666,13 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_8 <= gsl_vanishView.w) {
     let gsl_partVanish_8 = gsl_vanish(gsl_partLo_8, gsl_partHi_8);
     gsl_part_8 = 1e10;
-    let gsl_simpleWeight_23 = gsl_simple(vec3<f32>(-8.0, -35.0, -8.0), vec3<f32>(8.0, -19.0, 8.0));
+    let gsl_simpleWeight_23 = gsl_simple(gsl_partLo_8, gsl_partHi_8);
     var gsl_simplePart_8 = 1e10;
     if (gsl_simpleWeight_23 > 0.0) {
       gsl_simplePart_8 = knob(p - vec3<f32>(0.0, -27.0, 0.0), 8.0, noiseTex);
     }
     if (gsl_simpleWeight_23 < 1.0) {
-      gsl_simplePart_8 = mix(max(builtin_sphere_2(p - vec3<f32>(0.0, -27.0, 0.0), 8.0, noiseTex), gsl_boxSdf(p, vec3<f32>(-8.0, -35.0, -8.0), vec3<f32>(8.0, -19.0, 8.0))), gsl_simplePart_8, gsl_simpleWeight_23);
+      gsl_simplePart_8 = mix(max(builtin_sphere_2(p - vec3<f32>(0.0, -27.0, 0.0), 8.0, noiseTex), gsl_boxSdf(p, gsl_partLo_8, gsl_partHi_8)), gsl_simplePart_8, gsl_simpleWeight_23);
     }
     if (gsl_partVanish_8.x > 0.0) { gsl_part_8 = gsl_simplePart_8 + gsl_partVanish_8.y; }
     if (abs(gsl_part_8) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_8), gsl_partVanish_8.zw); }
@@ -685,13 +685,13 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_9 <= gsl_vanishView.w) {
     let gsl_partVanish_9 = gsl_vanish(gsl_partLo_9, gsl_partHi_9);
     gsl_part_9 = 1e10;
-    let gsl_simpleWeight_24 = gsl_simple(vec3<f32>(72.0, -35.0, -8.0), vec3<f32>(88.0, -19.0, 8.0));
+    let gsl_simpleWeight_24 = gsl_simple(gsl_partLo_9, gsl_partHi_9);
     var gsl_simplePart_9 = 1e10;
     if (gsl_simpleWeight_24 > 0.0) {
       gsl_simplePart_9 = knob(p - vec3<f32>(80.0, -27.0, 0.0), 8.0, noiseTex);
     }
     if (gsl_simpleWeight_24 < 1.0) {
-      gsl_simplePart_9 = mix(max(builtin_sphere_2(p - vec3<f32>(80.0, -27.0, 0.0), 8.0, noiseTex), gsl_boxSdf(p, vec3<f32>(72.0, -35.0, -8.0), vec3<f32>(88.0, -19.0, 8.0))), gsl_simplePart_9, gsl_simpleWeight_24);
+      gsl_simplePart_9 = mix(max(builtin_sphere_2(p - vec3<f32>(80.0, -27.0, 0.0), 8.0, noiseTex), gsl_boxSdf(p, gsl_partLo_9, gsl_partHi_9)), gsl_simplePart_9, gsl_simpleWeight_24);
     }
     if (gsl_partVanish_9.x > 0.0) { gsl_part_9 = gsl_simplePart_9 + gsl_partVanish_9.y; }
     if (abs(gsl_part_9) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_9), gsl_partVanish_9.zw); }
@@ -704,13 +704,13 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_10 <= gsl_vanishView.w) {
     let gsl_partVanish_10 = gsl_vanish(gsl_partLo_10, gsl_partHi_10);
     gsl_part_10 = 1e10;
-    let gsl_simpleWeight_25 = gsl_simple(vec3<f32>(-92.01, -7.01, -40.01), vec3<f32>(-67.99, 17.01, 8.01));
+    let gsl_simpleWeight_25 = gsl_simple(gsl_partLo_10, gsl_partHi_10);
     var gsl_simplePart_10 = 1e10;
     if (gsl_simpleWeight_25 > 0.0) {
       gsl_simplePart_10 = gsl_remap_10(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_gray, noiseTex);
     }
     if (gsl_simpleWeight_25 < 1.0) {
-      gsl_simplePart_10 = mix(max(gsl_remap_11(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_gray, noiseTex), gsl_boxSdf(p, vec3<f32>(-92.01, -7.01, -40.01), vec3<f32>(-67.99, 17.01, 8.01))), gsl_simplePart_10, gsl_simpleWeight_25);
+      gsl_simplePart_10 = mix(max(gsl_remap_11(p - vec3<f32>(-80.0, 5.0, -8.0), material_brushedMetal, color_gray, noiseTex), gsl_boxSdf(p, gsl_partLo_10, gsl_partHi_10)), gsl_simplePart_10, gsl_simpleWeight_25);
     }
     if (gsl_partVanish_10.x > 0.0) { gsl_part_10 = gsl_simplePart_10 + gsl_partVanish_10.y; }
     if (abs(gsl_part_10) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_10), gsl_partVanish_10.zw); }
@@ -723,13 +723,13 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_11 <= gsl_vanishView.w) {
     let gsl_partVanish_11 = gsl_vanish(gsl_partLo_11, gsl_partHi_11);
     gsl_part_11 = 1e10;
-    let gsl_simpleWeight_26 = gsl_simple(vec3<f32>(-16.0, -11.0, -16.0), vec3<f32>(16.0, 21.0, 16.0));
+    let gsl_simpleWeight_26 = gsl_simple(gsl_partLo_11, gsl_partHi_11);
     var gsl_simplePart_11 = 1e10;
     if (gsl_simpleWeight_26 > 0.0) {
       gsl_simplePart_11 = knob(p - vec3<f32>(0.0, 5.0, 0.0), 16.0, noiseTex);
     }
     if (gsl_simpleWeight_26 < 1.0) {
-      gsl_simplePart_11 = mix(max(builtin_sphere_2(p - vec3<f32>(0.0, 5.0, 0.0), 16.0, noiseTex), gsl_boxSdf(p, vec3<f32>(-16.0, -11.0, -16.0), vec3<f32>(16.0, 21.0, 16.0))), gsl_simplePart_11, gsl_simpleWeight_26);
+      gsl_simplePart_11 = mix(max(builtin_sphere_2(p - vec3<f32>(0.0, 5.0, 0.0), 16.0, noiseTex), gsl_boxSdf(p, gsl_partLo_11, gsl_partHi_11)), gsl_simplePart_11, gsl_simpleWeight_26);
     }
     if (gsl_partVanish_11.x > 0.0) { gsl_part_11 = gsl_simplePart_11 + gsl_partVanish_11.y; }
     if (abs(gsl_part_11) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_11), gsl_partVanish_11.zw); }
@@ -742,13 +742,13 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_12 <= gsl_vanishView.w) {
     let gsl_partVanish_12 = gsl_vanish(gsl_partLo_12, gsl_partHi_12);
     gsl_part_12 = 1e10;
-    let gsl_simpleWeight_27 = gsl_simple(vec3<f32>(64.0, -11.0, -16.0), vec3<f32>(96.0, 21.0, 16.0));
+    let gsl_simpleWeight_27 = gsl_simple(gsl_partLo_12, gsl_partHi_12);
     var gsl_simplePart_12 = 1e10;
     if (gsl_simpleWeight_27 > 0.0) {
       gsl_simplePart_12 = knob(p - vec3<f32>(80.0, 5.0, 0.0), 16.0, noiseTex);
     }
     if (gsl_simpleWeight_27 < 1.0) {
-      gsl_simplePart_12 = mix(max(builtin_sphere_2(p - vec3<f32>(80.0, 5.0, 0.0), 16.0, noiseTex), gsl_boxSdf(p, vec3<f32>(64.0, -11.0, -16.0), vec3<f32>(96.0, 21.0, 16.0))), gsl_simplePart_12, gsl_simpleWeight_27);
+      gsl_simplePart_12 = mix(max(builtin_sphere_2(p - vec3<f32>(80.0, 5.0, 0.0), 16.0, noiseTex), gsl_boxSdf(p, gsl_partLo_12, gsl_partHi_12)), gsl_simplePart_12, gsl_simpleWeight_27);
     }
     if (gsl_partVanish_12.x > 0.0) { gsl_part_12 = gsl_simplePart_12 + gsl_partVanish_12.y; }
     if (abs(gsl_part_12) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_12), gsl_partVanish_12.zw); }
@@ -761,13 +761,13 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_13 <= gsl_vanishView.w) {
     let gsl_partVanish_13 = gsl_vanish(gsl_partLo_13, gsl_partHi_13);
     gsl_part_13 = 1e10;
-    let gsl_simpleWeight_28 = gsl_simple(vec3<f32>(-102.51, 38.49, -75.01), vec3<f32>(-57.49, 83.51, 15.01));
+    let gsl_simpleWeight_28 = gsl_simple(gsl_partLo_13, gsl_partHi_13);
     var gsl_simplePart_13 = 1e10;
     if (gsl_simpleWeight_28 > 0.0) {
       gsl_simplePart_13 = gsl_remap_13(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_gray, noiseTex);
     }
     if (gsl_simpleWeight_28 < 1.0) {
-      gsl_simplePart_13 = mix(max(gsl_remap_14(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_gray, noiseTex), gsl_boxSdf(p, vec3<f32>(-102.51, 38.49, -75.01), vec3<f32>(-57.49, 83.51, 15.01))), gsl_simplePart_13, gsl_simpleWeight_28);
+      gsl_simplePart_13 = mix(max(gsl_remap_14(p - vec3<f32>(-80.0, 61.0, -15.0), material_brushedMetal, color_gray, noiseTex), gsl_boxSdf(p, gsl_partLo_13, gsl_partHi_13)), gsl_simplePart_13, gsl_simpleWeight_28);
     }
     if (gsl_partVanish_13.x > 0.0) { gsl_part_13 = gsl_simplePart_13 + gsl_partVanish_13.y; }
     if (abs(gsl_part_13) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_13), gsl_partVanish_13.zw); }
@@ -780,13 +780,13 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_14 <= gsl_vanishView.w) {
     let gsl_partVanish_14 = gsl_vanish(gsl_partLo_14, gsl_partHi_14);
     gsl_part_14 = 1e10;
-    let gsl_simpleWeight_29 = gsl_simple(vec3<f32>(-32.0, 29.0, -32.0), vec3<f32>(32.0, 93.0, 32.0));
+    let gsl_simpleWeight_29 = gsl_simple(gsl_partLo_14, gsl_partHi_14);
     var gsl_simplePart_14 = 1e10;
     if (gsl_simpleWeight_29 > 0.0) {
       gsl_simplePart_14 = knob(p - vec3<f32>(0.0, 61.0, 0.0), 32.0, noiseTex);
     }
     if (gsl_simpleWeight_29 < 1.0) {
-      gsl_simplePart_14 = mix(max(builtin_sphere_2(p - vec3<f32>(0.0, 61.0, 0.0), 32.0, noiseTex), gsl_boxSdf(p, vec3<f32>(-32.0, 29.0, -32.0), vec3<f32>(32.0, 93.0, 32.0))), gsl_simplePart_14, gsl_simpleWeight_29);
+      gsl_simplePart_14 = mix(max(builtin_sphere_2(p - vec3<f32>(0.0, 61.0, 0.0), 32.0, noiseTex), gsl_boxSdf(p, gsl_partLo_14, gsl_partHi_14)), gsl_simplePart_14, gsl_simpleWeight_29);
     }
     if (gsl_partVanish_14.x > 0.0) { gsl_part_14 = gsl_simplePart_14 + gsl_partVanish_14.y; }
     if (abs(gsl_part_14) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_14), gsl_partVanish_14.zw); }
@@ -799,13 +799,13 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_15 <= gsl_vanishView.w) {
     let gsl_partVanish_15 = gsl_vanish(gsl_partLo_15, gsl_partHi_15);
     gsl_part_15 = 1e10;
-    let gsl_simpleWeight_30 = gsl_simple(vec3<f32>(48.0, 29.0, -32.0), vec3<f32>(112.0, 93.0, 32.0));
+    let gsl_simpleWeight_30 = gsl_simple(gsl_partLo_15, gsl_partHi_15);
     var gsl_simplePart_15 = 1e10;
     if (gsl_simpleWeight_30 > 0.0) {
       gsl_simplePart_15 = knob(p - vec3<f32>(80.0, 61.0, 0.0), 32.0, noiseTex);
     }
     if (gsl_simpleWeight_30 < 1.0) {
-      gsl_simplePart_15 = mix(max(builtin_sphere_2(p - vec3<f32>(80.0, 61.0, 0.0), 32.0, noiseTex), gsl_boxSdf(p, vec3<f32>(48.0, 29.0, -32.0), vec3<f32>(112.0, 93.0, 32.0))), gsl_simplePart_15, gsl_simpleWeight_30);
+      gsl_simplePart_15 = mix(max(builtin_sphere_2(p - vec3<f32>(80.0, 61.0, 0.0), 32.0, noiseTex), gsl_boxSdf(p, gsl_partLo_15, gsl_partHi_15)), gsl_simplePart_15, gsl_simpleWeight_30);
     }
     if (gsl_partVanish_15.x > 0.0) { gsl_part_15 = gsl_simplePart_15 + gsl_partVanish_15.y; }
     if (abs(gsl_part_15) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_15), gsl_partVanish_15.zw); }

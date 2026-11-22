@@ -3,25 +3,32 @@ fn builtin_sphere(p: vec3<f32>, center: vec3<f32>, radius: f32) -> f32 {
 }
 
 fn gsl_remap(p: vec3<f32>) -> f32 {
-  let gsl_tmp_2 = sign(p - vec3<f32>(0.0, 0.0, 0.0)) * vec3<f32>(1.0, 0.0, 0.0);
+  let gsl_cse_7 = sign(p - vec3<f32>(0.0, 0.0, 0.0));
+  let gsl_tmp_2 = gsl_cse_7 * vec3<f32>(1.0, 0.0, 0.0);
   let gsl_tmp_1 = abs(p - vec3<f32>(0.0, 0.0, 0.0)) - vec3<f32>(0.8, 0.8, 0.8);
   let gsl_tmp_4 = select(0.0, gsl_tmp_2.x, gsl_tmp_1.x + 0.0 > 0.0);
   let gsl_tmp_5 = select(0.0, gsl_tmp_2.y, gsl_tmp_1.y + 0.0 > 0.0);
   let gsl_tmp_6 = select(0.0, gsl_tmp_2.z, gsl_tmp_1.z + 0.0 > 0.0);
-  let gsl_tmp_3 = 0.0 + max(gsl_tmp_1.x + 0.0, 0.0) * max(gsl_tmp_1.x + 0.0, 0.0) + max(gsl_tmp_1.y + 0.0, 0.0) * max(gsl_tmp_1.y + 0.0, 0.0) + max(gsl_tmp_1.z + 0.0, 0.0) * max(gsl_tmp_1.z + 0.0, 0.0);
-  let gsl_tmp_8 = sign(p - vec3<f32>(0.0, 0.0, 0.0)) * vec3<f32>(0.0, 1.0, 0.0);
-  let gsl_tmp_7 = abs(p - vec3<f32>(0.0, 0.0, 0.0)) - vec3<f32>(0.8, 0.8, 0.8);
-  let gsl_tmp_10 = select(0.0, gsl_tmp_8.x, gsl_tmp_7.x + 0.0 > 0.0);
-  let gsl_tmp_11 = select(0.0, gsl_tmp_8.y, gsl_tmp_7.y + 0.0 > 0.0);
-  let gsl_tmp_12 = select(0.0, gsl_tmp_8.z, gsl_tmp_7.z + 0.0 > 0.0);
-  let gsl_tmp_9 = 0.0 + max(gsl_tmp_7.x + 0.0, 0.0) * max(gsl_tmp_7.x + 0.0, 0.0) + max(gsl_tmp_7.y + 0.0, 0.0) * max(gsl_tmp_7.y + 0.0, 0.0) + max(gsl_tmp_7.z + 0.0, 0.0) * max(gsl_tmp_7.z + 0.0, 0.0);
-  let gsl_tmp_14 = sign(p - vec3<f32>(0.0, 0.0, 0.0)) * vec3<f32>(0.0, 0.0, 1.0);
-  let gsl_tmp_13 = abs(p - vec3<f32>(0.0, 0.0, 0.0)) - vec3<f32>(0.8, 0.8, 0.8);
-  let gsl_tmp_16 = select(0.0, gsl_tmp_14.x, gsl_tmp_13.x + 0.0 > 0.0);
-  let gsl_tmp_17 = select(0.0, gsl_tmp_14.y, gsl_tmp_13.y + 0.0 > 0.0);
-  let gsl_tmp_18 = select(0.0, gsl_tmp_14.z, gsl_tmp_13.z + 0.0 > 0.0);
-  let gsl_tmp_15 = 0.0 + max(gsl_tmp_13.x + 0.0, 0.0) * max(gsl_tmp_13.x + 0.0, 0.0) + max(gsl_tmp_13.y + 0.0, 0.0) * max(gsl_tmp_13.y + 0.0, 0.0) + max(gsl_tmp_13.z + 0.0, 0.0) * max(gsl_tmp_13.z + 0.0, 0.0);
-  let notch = gcl_closure_intersectRoundExact_2(p, vec3<f32>(select(0.0, select(gsl_tmp_2.z, select(gsl_tmp_2.y, gsl_tmp_2.x, gsl_tmp_1.x > gsl_tmp_1.y), max(gsl_tmp_1.x, gsl_tmp_1.y) > gsl_tmp_1.z), max(max(gsl_tmp_1.x, gsl_tmp_1.y), gsl_tmp_1.z) < 0.000000000000000000000000000001) + select(0.0, gsl_tmp_4 * max(gsl_tmp_1.x + 0.0, 0.0) + max(gsl_tmp_1.x + 0.0, 0.0) * gsl_tmp_4 + gsl_tmp_5 * max(gsl_tmp_1.y + 0.0, 0.0) + max(gsl_tmp_1.y + 0.0, 0.0) * gsl_tmp_5 + gsl_tmp_6 * max(gsl_tmp_1.z + 0.0, 0.0) + max(gsl_tmp_1.z + 0.0, 0.0) * gsl_tmp_6, gsl_tmp_3 > 0.000000000000000000000000000001) / (2.0 * (sqrt(max(gsl_tmp_3, 0.000000000000000000000000000001)) + 1.0 - select(0.0, 1.0, (sqrt(max(gsl_tmp_3, 0.000000000000000000000000000001)) > 0.0)))), select(0.0, select(gsl_tmp_8.z, select(gsl_tmp_8.y, gsl_tmp_8.x, gsl_tmp_7.x > gsl_tmp_7.y), max(gsl_tmp_7.x, gsl_tmp_7.y) > gsl_tmp_7.z), max(max(gsl_tmp_7.x, gsl_tmp_7.y), gsl_tmp_7.z) < 0.000000000000000000000000000001) + select(0.0, gsl_tmp_10 * max(gsl_tmp_7.x + 0.0, 0.0) + max(gsl_tmp_7.x + 0.0, 0.0) * gsl_tmp_10 + gsl_tmp_11 * max(gsl_tmp_7.y + 0.0, 0.0) + max(gsl_tmp_7.y + 0.0, 0.0) * gsl_tmp_11 + gsl_tmp_12 * max(gsl_tmp_7.z + 0.0, 0.0) + max(gsl_tmp_7.z + 0.0, 0.0) * gsl_tmp_12, gsl_tmp_9 > 0.000000000000000000000000000001) / (2.0 * (sqrt(max(gsl_tmp_9, 0.000000000000000000000000000001)) + 1.0 - select(0.0, 1.0, (sqrt(max(gsl_tmp_9, 0.000000000000000000000000000001)) > 0.0)))), select(0.0, select(gsl_tmp_14.z, select(gsl_tmp_14.y, gsl_tmp_14.x, gsl_tmp_13.x > gsl_tmp_13.y), max(gsl_tmp_13.x, gsl_tmp_13.y) > gsl_tmp_13.z), max(max(gsl_tmp_13.x, gsl_tmp_13.y), gsl_tmp_13.z) < 0.000000000000000000000000000001) + select(0.0, gsl_tmp_16 * max(gsl_tmp_13.x + 0.0, 0.0) + max(gsl_tmp_13.x + 0.0, 0.0) * gsl_tmp_16 + gsl_tmp_17 * max(gsl_tmp_13.y + 0.0, 0.0) + max(gsl_tmp_13.y + 0.0, 0.0) * gsl_tmp_17 + gsl_tmp_18 * max(gsl_tmp_13.z + 0.0, 0.0) + max(gsl_tmp_13.z + 0.0, 0.0) * gsl_tmp_18, gsl_tmp_15 > 0.000000000000000000000000000001) / (2.0 * (sqrt(max(gsl_tmp_15, 0.000000000000000000000000000001)) + 1.0 - select(0.0, 1.0, (sqrt(max(gsl_tmp_15, 0.000000000000000000000000000001)) > 0.0))))), vec3<f32>(dot(p - vec3<f32>(0.8, 0.0, 0.0), vec3<f32>(1.0, 0.0, 0.0)) / (length(p - vec3<f32>(0.8, 0.0, 0.0)) + 1.0 - select(0.0, 1.0, (length(p - vec3<f32>(0.8, 0.0, 0.0)) > 0.0))), dot(p - vec3<f32>(0.8, 0.0, 0.0), vec3<f32>(0.0, 1.0, 0.0)) / (length(p - vec3<f32>(0.8, 0.0, 0.0)) + 1.0 - select(0.0, 1.0, (length(p - vec3<f32>(0.8, 0.0, 0.0)) > 0.0))), dot(p - vec3<f32>(0.8, 0.0, 0.0), vec3<f32>(0.0, 0.0, 1.0)) / (length(p - vec3<f32>(0.8, 0.0, 0.0)) + 1.0 - select(0.0, 1.0, (length(p - vec3<f32>(0.8, 0.0, 0.0)) > 0.0)))));
+  let gsl_cse_9 = max(gsl_tmp_1.x + 0.0, 0.0);
+  let gsl_cse_10 = max(gsl_tmp_1.y + 0.0, 0.0);
+  let gsl_cse_11 = max(gsl_tmp_1.z + 0.0, 0.0);
+  let gsl_tmp_3 = 0.0 + gsl_cse_9 * gsl_cse_9 + gsl_cse_10 * gsl_cse_10 + gsl_cse_11 * gsl_cse_11;
+  let gsl_tmp_8 = gsl_cse_7 * vec3<f32>(0.0, 1.0, 0.0);
+  let gsl_tmp_10 = select(0.0, gsl_tmp_8.x, gsl_tmp_1.x + 0.0 > 0.0);
+  let gsl_tmp_11 = select(0.0, gsl_tmp_8.y, gsl_tmp_1.y + 0.0 > 0.0);
+  let gsl_tmp_12 = select(0.0, gsl_tmp_8.z, gsl_tmp_1.z + 0.0 > 0.0);
+  let gsl_tmp_14 = gsl_cse_7 * vec3<f32>(0.0, 0.0, 1.0);
+  let gsl_tmp_16 = select(0.0, gsl_tmp_14.x, gsl_tmp_1.x + 0.0 > 0.0);
+  let gsl_tmp_17 = select(0.0, gsl_tmp_14.y, gsl_tmp_1.y + 0.0 > 0.0);
+  let gsl_tmp_18 = select(0.0, gsl_tmp_14.z, gsl_tmp_1.z + 0.0 > 0.0);
+  let gsl_cse_4 = sqrt(max(gsl_tmp_3, 0.000000000000000000000000000001));
+  let gsl_cse_1 = 2.0 * (gsl_cse_4 + 1.0 - select(0.0, 1.0, (gsl_cse_4 > 0.0)));
+  let gsl_cse_8 = p - vec3<f32>(0.8, 0.0, 0.0);
+  let gsl_cse_2 = length(gsl_cse_8) + 1.0 - select(0.0, 1.0, (length(gsl_cse_8) > 0.0));
+  let gsl_cse_3 = max(max(gsl_tmp_1.x, gsl_tmp_1.y), gsl_tmp_1.z) < 0.000000000000000000000000000001;
+  let gsl_cse_5 = gsl_tmp_3 > 0.000000000000000000000000000001;
+  let gsl_cse_6 = max(gsl_tmp_1.x, gsl_tmp_1.y) > gsl_tmp_1.z;
+  let notch = gcl_closure_intersectRoundExact_2(p, vec3<f32>(select(0.0, select(gsl_tmp_2.z, select(gsl_tmp_2.y, gsl_tmp_2.x, gsl_tmp_1.x > gsl_tmp_1.y), gsl_cse_6), gsl_cse_3) + select(0.0, gsl_tmp_4 * gsl_cse_9 + gsl_cse_9 * gsl_tmp_4 + gsl_tmp_5 * gsl_cse_10 + gsl_cse_10 * gsl_tmp_5 + gsl_tmp_6 * gsl_cse_11 + gsl_cse_11 * gsl_tmp_6, gsl_cse_5) / gsl_cse_1, select(0.0, select(gsl_tmp_8.z, select(gsl_tmp_8.y, gsl_tmp_8.x, gsl_tmp_1.x > gsl_tmp_1.y), gsl_cse_6), gsl_cse_3) + select(0.0, gsl_tmp_10 * gsl_cse_9 + gsl_cse_9 * gsl_tmp_10 + gsl_tmp_11 * gsl_cse_10 + gsl_cse_10 * gsl_tmp_11 + gsl_tmp_12 * gsl_cse_11 + gsl_cse_11 * gsl_tmp_12, gsl_cse_5) / gsl_cse_1, select(0.0, select(gsl_tmp_14.z, select(gsl_tmp_14.y, gsl_tmp_14.x, gsl_tmp_1.x > gsl_tmp_1.y), gsl_cse_6), gsl_cse_3) + select(0.0, gsl_tmp_16 * gsl_cse_9 + gsl_cse_9 * gsl_tmp_16 + gsl_tmp_17 * gsl_cse_10 + gsl_cse_10 * gsl_tmp_17 + gsl_tmp_18 * gsl_cse_11 + gsl_cse_11 * gsl_tmp_18, gsl_cse_5) / gsl_cse_1), vec3<f32>(dot(gsl_cse_8, vec3<f32>(1.0, 0.0, 0.0)) / gsl_cse_2, dot(gsl_cse_8, vec3<f32>(0.0, 1.0, 0.0)) / gsl_cse_2, dot(gsl_cse_8, vec3<f32>(0.0, 0.0, 1.0)) / gsl_cse_2));
   return notch;
 }
 
@@ -93,7 +100,11 @@ fn gcl_closure_intersectRoundExact_2(p: vec3<f32>, normal1: vec3<f32>, normal2: 
 }
 
 fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
-  let lens = gcl_closure_unionRoundExact_2(p, vec3<f32>(dot(p - vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 0.0, 0.0)) / (length(p - vec3<f32>(0.0, 0.0, 0.0)) + 1.0 - select(0.0, 1.0, (length(p - vec3<f32>(0.0, 0.0, 0.0)) > 0.0))), dot(p - vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(0.0, 1.0, 0.0)) / (length(p - vec3<f32>(0.0, 0.0, 0.0)) + 1.0 - select(0.0, 1.0, (length(p - vec3<f32>(0.0, 0.0, 0.0)) > 0.0))), dot(p - vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(0.0, 0.0, 1.0)) / (length(p - vec3<f32>(0.0, 0.0, 0.0)) + 1.0 - select(0.0, 1.0, (length(p - vec3<f32>(0.0, 0.0, 0.0)) > 0.0)))), vec3<f32>(dot(p - vec3<f32>(1.2, 0.0, 0.0), vec3<f32>(1.0, 0.0, 0.0)) / (length(p - vec3<f32>(1.2, 0.0, 0.0)) + 1.0 - select(0.0, 1.0, (length(p - vec3<f32>(1.2, 0.0, 0.0)) > 0.0))), dot(p - vec3<f32>(1.2, 0.0, 0.0), vec3<f32>(0.0, 1.0, 0.0)) / (length(p - vec3<f32>(1.2, 0.0, 0.0)) + 1.0 - select(0.0, 1.0, (length(p - vec3<f32>(1.2, 0.0, 0.0)) > 0.0))), dot(p - vec3<f32>(1.2, 0.0, 0.0), vec3<f32>(0.0, 0.0, 1.0)) / (length(p - vec3<f32>(1.2, 0.0, 0.0)) + 1.0 - select(0.0, 1.0, (length(p - vec3<f32>(1.2, 0.0, 0.0)) > 0.0)))));
+  let gsl_cse_3 = p - vec3<f32>(0.0, 0.0, 0.0);
+  let gsl_cse_1 = length(gsl_cse_3) + 1.0 - select(0.0, 1.0, (length(gsl_cse_3) > 0.0));
+  let gsl_cse_4 = p - vec3<f32>(1.2, 0.0, 0.0);
+  let gsl_cse_2 = length(gsl_cse_4) + 1.0 - select(0.0, 1.0, (length(gsl_cse_4) > 0.0));
+  let lens = gcl_closure_unionRoundExact_2(p, vec3<f32>(dot(gsl_cse_3, vec3<f32>(1.0, 0.0, 0.0)) / gsl_cse_1, dot(gsl_cse_3, vec3<f32>(0.0, 1.0, 0.0)) / gsl_cse_1, dot(gsl_cse_3, vec3<f32>(0.0, 0.0, 1.0)) / gsl_cse_1), vec3<f32>(dot(gsl_cse_4, vec3<f32>(1.0, 0.0, 0.0)) / gsl_cse_2, dot(gsl_cse_4, vec3<f32>(0.0, 1.0, 0.0)) / gsl_cse_2, dot(gsl_cse_4, vec3<f32>(0.0, 0.0, 1.0)) / gsl_cse_2));
   let gsl_s1 = gsl_shape(builtin_unionSharp(vec2<f32>(lens, gsl_remap(p - vec3<f32>(4.0, 0.0, 0.0)))), 1u);
   return gsl_s1;
 }

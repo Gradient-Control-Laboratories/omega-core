@@ -111,12 +111,18 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
   let gsl_tmp_1 = vec3<f32>(gsl_floored((gsl_floored((p.x + 2.0), 4.0) + 4.0), 4.0) - 2.0, gsl_floored((gsl_floored((p.y + 2.0), 4.0) + 4.0), 4.0) - 2.0, gsl_floored((gsl_floored((p.z + 2.0), 4.0) + 4.0), 4.0) - 2.0);
   let vector_dirZ = vec3<f32>(0.0, 0.0, 1.0);
   let vector_dirY = vec3<f32>(0.0, 1.0, 0.0);
-  let filleted = builtin_gcl_closure_unionRound(vec4<f32>(length(gsl_tmp_1 - normalize(vec3<f32>(1.0, 1.0, 0.0) + vector_dirZ) * clamp(dot(gsl_tmp_1, normalize(vec3<f32>(1.0, 1.0, 0.0) + vector_dirZ)), -3.4641016, 3.4641016)) - 0.3, length(gsl_tmp_1 - normalize(vec3<f32>(-1.0, -0.0, -0.0) + vector_dirY + vector_dirZ) * clamp(dot(gsl_tmp_1, normalize(vec3<f32>(-1.0, -0.0, -0.0) + vector_dirY + vector_dirZ)), -3.4641016, 3.4641016)) - 0.3, length(gsl_tmp_1 - normalize(vec3<f32>(1.0, -1.0, 0.0) + vector_dirZ) * clamp(dot(gsl_tmp_1, normalize(vec3<f32>(1.0, -1.0, 0.0) + vector_dirZ)), -3.4641016, 3.4641016)) - 0.3, length(gsl_tmp_1 - normalize(vec3<f32>(1.0, 1.0, 0.0) - vector_dirZ) * clamp(dot(gsl_tmp_1, normalize(vec3<f32>(1.0, 1.0, 0.0) - vector_dirZ)), -3.4641016, 3.4641016)) - 0.3));
-  let gsl_tmp_2 = vec3<f32>(gsl_floored((gsl_floored((p.x + 2.0), 4.0) + 4.0), 4.0) - 2.0, gsl_floored((gsl_floored((p.y + 2.0), 4.0) + 4.0), 4.0) - 2.0, gsl_floored((gsl_floored((p.z + 2.0), 4.0) + 4.0), 4.0) - 2.0);
-  let sharp = builtin_unionSharp(vec4<f32>(length(gsl_tmp_2 - normalize(vec3<f32>(1.0, 1.0, 0.0) + vector_dirZ) * clamp(dot(gsl_tmp_2, normalize(vec3<f32>(1.0, 1.0, 0.0) + vector_dirZ)), -3.4641016, 3.4641016)) - 0.3, length(gsl_tmp_2 - normalize(vec3<f32>(-1.0, -0.0, -0.0) + vector_dirY + vector_dirZ) * clamp(dot(gsl_tmp_2, normalize(vec3<f32>(-1.0, -0.0, -0.0) + vector_dirY + vector_dirZ)), -3.4641016, 3.4641016)) - 0.3, length(gsl_tmp_2 - normalize(vec3<f32>(1.0, -1.0, 0.0) + vector_dirZ) * clamp(dot(gsl_tmp_2, normalize(vec3<f32>(1.0, -1.0, 0.0) + vector_dirZ)), -3.4641016, 3.4641016)) - 0.3, length(gsl_tmp_2 - normalize(vec3<f32>(1.0, 1.0, 0.0) - vector_dirZ) * clamp(dot(gsl_tmp_2, normalize(vec3<f32>(1.0, 1.0, 0.0) - vector_dirZ)), -3.4641016, 3.4641016)) - 0.3));
+  let gsl_cse_2 = normalize(vec3<f32>(-1.0, -0.0, -0.0) + vector_dirY + vector_dirZ);
+  let gsl_cse_4 = normalize(vec3<f32>(1.0, -1.0, 0.0) + vector_dirZ);
+  let gsl_cse_5 = normalize(vec3<f32>(1.0, 1.0, 0.0) + vector_dirZ);
+  let gsl_cse_6 = normalize(vec3<f32>(1.0, 1.0, 0.0) - vector_dirZ);
+  let gsl_cse_1 = vec4<f32>(length(gsl_tmp_1 - gsl_cse_5 * clamp(dot(gsl_tmp_1, gsl_cse_5), -3.4641016, 3.4641016)) - 0.3, length(gsl_tmp_1 - gsl_cse_2 * clamp(dot(gsl_tmp_1, gsl_cse_2), -3.4641016, 3.4641016)) - 0.3, length(gsl_tmp_1 - gsl_cse_4 * clamp(dot(gsl_tmp_1, gsl_cse_4), -3.4641016, 3.4641016)) - 0.3, length(gsl_tmp_1 - gsl_cse_6 * clamp(dot(gsl_tmp_1, gsl_cse_6), -3.4641016, 3.4641016)) - 0.3);
+  let filleted = builtin_gcl_closure_unionRound(gsl_cse_1);
+  let sharp = builtin_unionSharp(gsl_cse_1);
   let vector_dirX = vec3<f32>(1.0, 0.0, 0.0);
-  let truss = builtin_gcl_closure_unionRound_2(vec2<f32>(gsl_remap(map_repeatCentered(p, vec3<f32>(4.0, 4.0, 4.0)), vector_dirX, vector_dirY, vector_dirZ), gsl_remap_2(abs(map_repeatCentered(p, vec3<f32>(4.0, 4.0, 4.0))), vector_dirX, vector_dirY, vector_dirZ)));
-  let folded = builtin_gcl_closure_unionRound_3(vec2<f32>(gsl_remap_3(abs(map_repeatCentered(p, vec3<f32>(4.0, 4.0, 4.0))), vector_dirX, vector_dirY, vector_dirZ), builtin_lineSegment(map_repeatCentered(p, vec3<f32>(4.0, 4.0, 4.0)), vec3<f32>(0.0, 0.0, -1.6), vec3<f32>(0.0, 0.0, 1.6))));
+  let gsl_cse_7 = map_repeatCentered(p, vec3<f32>(4.0, 4.0, 4.0));
+  let gsl_cse_3 = abs(gsl_cse_7);
+  let truss = builtin_gcl_closure_unionRound_2(vec2<f32>(gsl_remap(gsl_cse_7, vector_dirX, vector_dirY, vector_dirZ), gsl_remap_2(gsl_cse_3, vector_dirX, vector_dirY, vector_dirZ)));
+  let folded = builtin_gcl_closure_unionRound_3(vec2<f32>(gsl_remap_3(gsl_cse_3, vector_dirX, vector_dirY, vector_dirZ), builtin_lineSegment(gsl_cse_7, vec3<f32>(0.0, 0.0, -1.6), vec3<f32>(0.0, 0.0, 1.6))));
   let gsl_s1 = gsl_shape(builtin_intersectSharp_2(vec2<f32>(block, builtin_unionSharp(vec4<f32>(filleted, sharp, truss, folded)))), 1u);
   return gsl_s1;
 }

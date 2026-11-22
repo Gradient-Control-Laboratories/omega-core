@@ -51,7 +51,7 @@ func TestSliderArithmetic(t *testing.T) {
 	// lets it shrink away (vanish.go) rather than as its own let.
 	for _, want := range []string{
 		"sphere(p, radius)",
-		"sphere(p, radius * 2.0)",
+		"sphere(p, scale)",
 		"sphere(p, radius + 1.0)",
 		"let scale = radius * 2.0;",
 		"sphere(p, scale + 1.0)",

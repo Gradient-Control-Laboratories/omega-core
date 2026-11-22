@@ -190,7 +190,7 @@ fn gsl_remap_37(p: vec3<f32>) -> f32 {
   let gsl_tmp_65 = abs(p.y);
   let gsl_tmp_66 = abs(gsl_tmp_64 - gsl_tmp_65) * 0.70710677;
   let gsl_tmp_67 = ((gsl_tmp_64 + gsl_tmp_65) * 0.70710677 - 0.735) * 0.99496853 - (p.z - 0.38236797) * 0.10018806;
-  return max(min(max(max(length(p.xy) - 4.0, -p.z), length(vec3<f32>(p.x, p.y, p.z - -3.4)) - 6.5), max(max(max(length(p.xy) - 2.0, -10.0 - p.z), p.z - 1.55), (length(p.xy) - 2.0 + -p.z - 10.0 + 0.6) * 0.7071)), -max(max(gsl_tmp_63 * 0.89493436 + (2.7163715 - p.z) * 0.4461978 - 1.9688556, (-0.008438476 - p.z) * 0.88294756 + gsl_tmp_63 * 0.46947157), -max(gsl_tmp_66 * 0.34202015 - gsl_tmp_67 * 0.9396926, (gsl_tmp_66 - 0.4075) * 0.6946584 - (gsl_tmp_67 - 0.14831787) * 0.7193398)));
+  return max(min(max(max(gsl_tmp_63 - 4.0, -p.z), length(vec3<f32>(p.x, p.y, p.z - -3.4)) - 6.5), max(max(max(gsl_tmp_63 - 2.0, -10.0 - p.z), p.z - 1.55), (gsl_tmp_63 - 2.0 + -p.z - 10.0 + 0.6) * 0.7071)), -max(max(gsl_tmp_63 * 0.89493436 + (2.7163715 - p.z) * 0.4461978 - 1.9688556, (-0.008438476 - p.z) * 0.88294756 + gsl_tmp_63 * 0.46947157), -max(gsl_tmp_66 * 0.34202015 - gsl_tmp_67 * 0.9396926, (gsl_tmp_66 - 0.4075) * 0.6946584 - (gsl_tmp_67 - 0.14831787) * 0.7193398)));
 }
 
 fn gsl_remap_38(p: vec3<f32>) -> f32 {
@@ -202,7 +202,7 @@ fn gsl_remap_39(p: vec3<f32>) -> f32 {
   let gsl_tmp_119 = abs(p.x);
   let gsl_tmp_121 = (0.915 + (p.z - 0.7685499) * 0.10069471) * 0.70710677;
   let gsl_tmp_120 = abs(p.y);
-  return max(min(max(max(length(p.xy) - 4.0, -p.z), length(vec3<f32>(p.x, p.y, p.z - -3.4)) - 6.5), max(max(max(length(p.xy) - 2.0, -10.0 - p.z), p.z - 1.55), (length(p.xy) - 2.0 + -p.z - 10.0 + 0.6) * 0.7071)), -min(max(max(gsl_tmp_118 * 0.89493436 + (2.7341259 - p.z) * 0.4461978 - 1.9241089, (0.1464499 - p.z) * 0.88294756 + gsl_tmp_118 * 0.46947157), min(min(abs(p.y) - 0.515, abs(p.x) - 0.515), max((gsl_tmp_119 - gsl_tmp_121) * 0.99939084 + (gsl_tmp_120 - gsl_tmp_121) * 0.0348995, (gsl_tmp_120 - gsl_tmp_121) * 0.99939084 + (gsl_tmp_119 - gsl_tmp_121) * 0.0348995) / 1.002708)), (abs(abs(p.x) - abs(p.y)) * 0.70710677 * 0.8660254 - (p.z - (2.5841258 + ((abs(p.x) + abs(p.y)) * 0.70710677 - 1.1129231) * 0.1446373)) * 0.5) / 1.0026116));
+  return max(min(max(max(gsl_tmp_118 - 4.0, -p.z), length(vec3<f32>(p.x, p.y, p.z - -3.4)) - 6.5), max(max(max(gsl_tmp_118 - 2.0, -10.0 - p.z), p.z - 1.55), (gsl_tmp_118 - 2.0 + -p.z - 10.0 + 0.6) * 0.7071)), -min(max(max(gsl_tmp_118 * 0.89493436 + (2.7341259 - p.z) * 0.4461978 - 1.9241089, (0.1464499 - p.z) * 0.88294756 + gsl_tmp_118 * 0.46947157), min(min(abs(p.y) - 0.515, abs(p.x) - 0.515), max((gsl_tmp_119 - gsl_tmp_121) * 0.99939084 + (gsl_tmp_120 - gsl_tmp_121) * 0.0348995, (gsl_tmp_120 - gsl_tmp_121) * 0.99939084 + (gsl_tmp_119 - gsl_tmp_121) * 0.0348995) / 1.002708)), (abs(abs(p.x) - abs(p.y)) * 0.70710677 * 0.8660254 - (p.z - (2.5841258 + ((abs(p.x) + abs(p.y)) * 0.70710677 - 1.1129231) * 0.1446373)) * 0.5) / 1.0026116));
 }
 
 fn gsl_remap_40(p: vec3<f32>) -> f32 {
@@ -222,7 +222,8 @@ fn gsl_remap_43(p: vec3<f32>) -> f32 {
 }
 
 fn gsl_remap_44(p: vec3<f32>) -> f32 {
-  return gsl_remap_43(vec3<f32>(0.0, 0.0, 0.0) + (p - vec3<f32>(0.0, 0.0, 0.0)) * -0.5 - cross(vec3<f32>(0.57735026, 0.57735026, 0.57735026), p - vec3<f32>(0.0, 0.0, 0.0)) * 0.8660254 + vec3<f32>(0.57735026, 0.57735026, 0.57735026) * dot(vec3<f32>(0.57735026, 0.57735026, 0.57735026), p - vec3<f32>(0.0, 0.0, 0.0)) * 1.5);
+  let gsl_cse_1 = p - vec3<f32>(0.0, 0.0, 0.0);
+  return gsl_remap_43(vec3<f32>(0.0, 0.0, 0.0) + gsl_cse_1 * -0.5 - cross(vec3<f32>(0.57735026, 0.57735026, 0.57735026), gsl_cse_1) * 0.8660254 + vec3<f32>(0.57735026, 0.57735026, 0.57735026) * dot(vec3<f32>(0.57735026, 0.57735026, 0.57735026), gsl_cse_1) * 1.5);
 }
 
 fn gsl_remap_45(p: vec3<f32>) -> f32 {
@@ -231,7 +232,8 @@ fn gsl_remap_45(p: vec3<f32>) -> f32 {
 }
 
 fn gsl_remap_46(p: vec3<f32>) -> f32 {
-  return gsl_remap_45(vec3<f32>(0.0, 0.0, 0.0) + (p - vec3<f32>(0.0, 0.0, 0.0)) * -0.5 - cross(vec3<f32>(0.57735026, 0.57735026, 0.57735026), p - vec3<f32>(0.0, 0.0, 0.0)) * 0.8660254 + vec3<f32>(0.57735026, 0.57735026, 0.57735026) * dot(vec3<f32>(0.57735026, 0.57735026, 0.57735026), p - vec3<f32>(0.0, 0.0, 0.0)) * 1.5);
+  let gsl_cse_1 = p - vec3<f32>(0.0, 0.0, 0.0);
+  return gsl_remap_45(vec3<f32>(0.0, 0.0, 0.0) + gsl_cse_1 * -0.5 - cross(vec3<f32>(0.57735026, 0.57735026, 0.57735026), gsl_cse_1) * 0.8660254 + vec3<f32>(0.57735026, 0.57735026, 0.57735026) * dot(vec3<f32>(0.57735026, 0.57735026, 0.57735026), gsl_cse_1) * 1.5);
 }
 
 fn gsl_remap_47(p: vec3<f32>) -> f32 {
@@ -244,7 +246,8 @@ fn gsl_remap_47(p: vec3<f32>) -> f32 {
 }
 
 fn gsl_remap_48(p: vec3<f32>) -> f32 {
-  return gsl_remap_47(vec3<f32>(0.0, 0.0, 0.0) + (p - vec3<f32>(0.0, 0.0, 0.0)) * -0.5 - cross(vec3<f32>(0.57735026, 0.57735026, 0.57735026), p - vec3<f32>(0.0, 0.0, 0.0)) * 0.8660254 + vec3<f32>(0.57735026, 0.57735026, 0.57735026) * dot(vec3<f32>(0.57735026, 0.57735026, 0.57735026), p - vec3<f32>(0.0, 0.0, 0.0)) * 1.5);
+  let gsl_cse_1 = p - vec3<f32>(0.0, 0.0, 0.0);
+  return gsl_remap_47(vec3<f32>(0.0, 0.0, 0.0) + gsl_cse_1 * -0.5 - cross(vec3<f32>(0.57735026, 0.57735026, 0.57735026), gsl_cse_1) * 0.8660254 + vec3<f32>(0.57735026, 0.57735026, 0.57735026) * dot(vec3<f32>(0.57735026, 0.57735026, 0.57735026), gsl_cse_1) * 1.5);
 }
 
 fn gsl_remap_49(p: vec3<f32>) -> f32 {
@@ -252,19 +255,23 @@ fn gsl_remap_49(p: vec3<f32>) -> f32 {
 }
 
 fn gsl_remap_50(p: vec3<f32>) -> f32 {
-  return gsl_remap_49(vec3<f32>(0.0, 0.0, 0.0) + (p - vec3<f32>(0.0, 0.0, 0.0)) * -0.5 - cross(vec3<f32>(0.57735026, 0.57735026, 0.57735026), p - vec3<f32>(0.0, 0.0, 0.0)) * 0.8660254 + vec3<f32>(0.57735026, 0.57735026, 0.57735026) * dot(vec3<f32>(0.57735026, 0.57735026, 0.57735026), p - vec3<f32>(0.0, 0.0, 0.0)) * 1.5);
+  let gsl_cse_1 = p - vec3<f32>(0.0, 0.0, 0.0);
+  return gsl_remap_49(vec3<f32>(0.0, 0.0, 0.0) + gsl_cse_1 * -0.5 - cross(vec3<f32>(0.57735026, 0.57735026, 0.57735026), gsl_cse_1) * 0.8660254 + vec3<f32>(0.57735026, 0.57735026, 0.57735026) * dot(vec3<f32>(0.57735026, 0.57735026, 0.57735026), gsl_cse_1) * 1.5);
 }
 
 fn gsl_remap_51(p: vec3<f32>) -> f32 {
-  return driver_screwdriverHandle(vec3<f32>(0.0, 0.0, 0.0) + (p - vec3<f32>(0.0, 0.0, 0.0)) * -0.5 - cross(vec3<f32>(0.57735026, 0.57735026, 0.57735026), p - vec3<f32>(0.0, 0.0, 0.0)) * 0.8660254 + vec3<f32>(0.57735026, 0.57735026, 0.57735026) * dot(vec3<f32>(0.57735026, 0.57735026, 0.57735026), p - vec3<f32>(0.0, 0.0, 0.0)) * 1.5, 77.78, 30.0, 111.0);
+  let gsl_cse_1 = p - vec3<f32>(0.0, 0.0, 0.0);
+  return driver_screwdriverHandle(vec3<f32>(0.0, 0.0, 0.0) + gsl_cse_1 * -0.5 - cross(vec3<f32>(0.57735026, 0.57735026, 0.57735026), gsl_cse_1) * 0.8660254 + vec3<f32>(0.57735026, 0.57735026, 0.57735026) * dot(vec3<f32>(0.57735026, 0.57735026, 0.57735026), gsl_cse_1) * 1.5, 77.78, 30.0, 111.0);
 }
 
 fn gsl_remap_52(p: vec3<f32>) -> f32 {
-  return driver_screwdriverHandle(vec3<f32>(0.0, 0.0, 0.0) + (p - vec3<f32>(0.0, 0.0, 0.0)) * -0.5 - cross(vec3<f32>(0.57735026, 0.57735026, 0.57735026), p - vec3<f32>(0.0, 0.0, 0.0)) * 0.8660254 + vec3<f32>(0.57735026, 0.57735026, 0.57735026) * dot(vec3<f32>(0.57735026, 0.57735026, 0.57735026), p - vec3<f32>(0.0, 0.0, 0.0)) * 1.5, 104.37, 36.0, 118.0);
+  let gsl_cse_1 = p - vec3<f32>(0.0, 0.0, 0.0);
+  return driver_screwdriverHandle(vec3<f32>(0.0, 0.0, 0.0) + gsl_cse_1 * -0.5 - cross(vec3<f32>(0.57735026, 0.57735026, 0.57735026), gsl_cse_1) * 0.8660254 + vec3<f32>(0.57735026, 0.57735026, 0.57735026) * dot(vec3<f32>(0.57735026, 0.57735026, 0.57735026), gsl_cse_1) * 1.5, 104.37, 36.0, 118.0);
 }
 
 fn gsl_remap_53(p: vec3<f32>) -> f32 {
-  return driver_screwdriverHandle(vec3<f32>(0.0, 0.0, 0.0) + (p - vec3<f32>(0.0, 0.0, 0.0)) * -0.5 - cross(vec3<f32>(0.57735026, 0.57735026, 0.57735026), p - vec3<f32>(0.0, 0.0, 0.0)) * 0.8660254 + vec3<f32>(0.57735026, 0.57735026, 0.57735026) * dot(vec3<f32>(0.57735026, 0.57735026, 0.57735026), p - vec3<f32>(0.0, 0.0, 0.0)) * 1.5, 130.0, 36.0, 118.0);
+  let gsl_cse_1 = p - vec3<f32>(0.0, 0.0, 0.0);
+  return driver_screwdriverHandle(vec3<f32>(0.0, 0.0, 0.0) + gsl_cse_1 * -0.5 - cross(vec3<f32>(0.57735026, 0.57735026, 0.57735026), gsl_cse_1) * 0.8660254 + vec3<f32>(0.57735026, 0.57735026, 0.57735026) * dot(vec3<f32>(0.57735026, 0.57735026, 0.57735026), gsl_cse_1) * 1.5, 130.0, 36.0, 118.0);
 }
 
 fn thread_formDepth(pitchVal: f32) -> f32 {
@@ -669,13 +676,13 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32) -> array<f32, 32> {
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_19 <= gsl_vanishView.w) {
     let gsl_partVanish_19 = gsl_vanish(gsl_partLo_19, gsl_partHi_19);
     gsl_part_19 = 1e10;
-    let gsl_simpleWeight = gsl_simple(vec3<f32>(-34.01, 0.99, -0.01), vec3<f32>(-25.99, 9.01, 13.11));
+    let gsl_simpleWeight = gsl_simple(gsl_partLo_19, gsl_partHi_19);
     var gsl_simplePart = 1e10;
     if (gsl_simpleWeight > 0.0) {
       gsl_simplePart = gsl_remap_37(p - vec3<f32>(-30.0, 5.0, 10.0));
     }
     if (gsl_simpleWeight < 1.0) {
-      gsl_simplePart = mix(max(gsl_remap_38(p - vec3<f32>(-30.0, 5.0, 10.0)), gsl_boxSdf(p, vec3<f32>(-34.01, 0.99, -0.01), vec3<f32>(-25.99, 9.01, 13.11))), gsl_simplePart, gsl_simpleWeight);
+      gsl_simplePart = mix(max(gsl_remap_38(p - vec3<f32>(-30.0, 5.0, 10.0)), gsl_boxSdf(p, gsl_partLo_19, gsl_partHi_19)), gsl_simplePart, gsl_simpleWeight);
     }
     if (gsl_partVanish_19.x > 0.0) { gsl_part_19 = gsl_simplePart + gsl_partVanish_19.y; }
     if (abs(gsl_part_19) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_19), gsl_partVanish_19.zw); }
@@ -688,13 +695,13 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32) -> array<f32, 32> {
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_20 <= gsl_vanishView.w) {
     let gsl_partVanish_20 = gsl_vanish(gsl_partLo_20, gsl_partHi_20);
     gsl_part_20 = 1e10;
-    let gsl_simpleWeight_2 = gsl_simple(vec3<f32>(-4.01, 0.99, -0.01), vec3<f32>(4.01, 9.01, 13.11));
+    let gsl_simpleWeight_2 = gsl_simple(gsl_partLo_20, gsl_partHi_20);
     var gsl_simplePart_2 = 1e10;
     if (gsl_simpleWeight_2 > 0.0) {
       gsl_simplePart_2 = gsl_remap_39(p - vec3<f32>(0.0, 5.0, 10.0));
     }
     if (gsl_simpleWeight_2 < 1.0) {
-      gsl_simplePart_2 = mix(max(gsl_remap_38(p - vec3<f32>(0.0, 5.0, 10.0)), gsl_boxSdf(p, vec3<f32>(-4.01, 0.99, -0.01), vec3<f32>(4.01, 9.01, 13.11))), gsl_simplePart_2, gsl_simpleWeight_2);
+      gsl_simplePart_2 = mix(max(gsl_remap_38(p - vec3<f32>(0.0, 5.0, 10.0)), gsl_boxSdf(p, gsl_partLo_20, gsl_partHi_20)), gsl_simplePart_2, gsl_simpleWeight_2);
     }
     if (gsl_partVanish_20.x > 0.0) { gsl_part_20 = gsl_simplePart_2 + gsl_partVanish_20.y; }
     if (abs(gsl_part_20) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_20), gsl_partVanish_20.zw); }
@@ -707,13 +714,13 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32) -> array<f32, 32> {
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_21 <= gsl_vanishView.w) {
     let gsl_partVanish_21 = gsl_vanish(gsl_partLo_21, gsl_partHi_21);
     gsl_part_21 = 1e10;
-    let gsl_simpleWeight_3 = gsl_simple(vec3<f32>(25.24, 0.24, -0.01), vec3<f32>(34.76, 9.76, 13.71));
+    let gsl_simpleWeight_3 = gsl_simple(gsl_partLo_21, gsl_partHi_21);
     var gsl_simplePart_3 = 1e10;
     if (gsl_simpleWeight_3 > 0.0) {
       gsl_simplePart_3 = gsl_remap_41(p - vec3<f32>(30.0, 5.0, 10.0));
     }
     if (gsl_simpleWeight_3 < 1.0) {
-      gsl_simplePart_3 = mix(max(gsl_remap_42(p - vec3<f32>(30.0, 5.0, 10.0)), gsl_boxSdf(p, vec3<f32>(25.24, 0.24, -0.01), vec3<f32>(34.76, 9.76, 13.71))), gsl_simplePart_3, gsl_simpleWeight_3);
+      gsl_simplePart_3 = mix(max(gsl_remap_42(p - vec3<f32>(30.0, 5.0, 10.0)), gsl_boxSdf(p, gsl_partLo_21, gsl_partHi_21)), gsl_simplePart_3, gsl_simpleWeight_3);
     }
     if (gsl_partVanish_21.x > 0.0) { gsl_part_21 = gsl_simplePart_3 + gsl_partVanish_21.y; }
     if (abs(gsl_part_21) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_21), gsl_partVanish_21.zw); }

@@ -380,6 +380,9 @@ func (d *Delegate) BuildPackageReturns(_ []*program.Operand, expressions []build
 		d.module.AddStruct(structDecl)
 	}
 
+	// Inlining writes a value once per call it came from: merge the repeats
+	// in every structured function (ir/cse.go).
+	d.module.EliminateCommonSubexpressions()
 	d.wgslSource = d.module.WGSL()
 	return nil
 }

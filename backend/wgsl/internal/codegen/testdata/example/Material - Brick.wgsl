@@ -138,7 +138,8 @@ fn texture_paintMaterial(field: f32, edge: f32, width: f32, matA: mat4x4<f32>, m
 }
 
 fn headJoint(course: f32, k: f32, noiseTex: texture_3d<f32>) -> f32 {
-  return (k + (fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(k, course, k + course + 5.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(k, course, k + course + 5.0)) / 64.0)) & vec3<i32>(63), 0).rgb).x - 0.5) * 0.036) * 225.0;
+  let gsl_cse_1 = vec3<f32>(k, course, k + course + 5.0);
+  return (k + (fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_1)) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_1 / 64.0)) & vec3<i32>(63), 0).rgb).x - 0.5) * 0.036) * 225.0;
 }
 
 fn sdShape(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
@@ -148,16 +149,20 @@ fn sdShape(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
   let gsl_partBox = gsl_boxDistance(p, gsl_partLo, gsl_partHi);
   var gsl_part = gsl_partBox;
   let course = floor(p.z / 75.0);
-  let courseHash = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(course, course + 3.0, 2.0 * course + 11.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(course, course + 3.0, 2.0 * course + 11.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
+  let gsl_cse_1 = vec3<f32>(course, course + 3.0, 2.0 * course + 11.0);
+  let courseHash = fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_1)) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_1 / 64.0)) & vec3<i32>(63), 0).rgb);
   let shifted = p.x + 225.0 * fract(course * 0.5) + (courseHash.x - 0.5) * 30.0;
   let slot = floor(shifted / 225.0);
-  let after = shifted >= headJoint(course, slot + 1.0, noiseTex);
-  let before = shifted < headJoint(course, slot, noiseTex);
-  let brickEnd = select(select(headJoint(course, slot + 1.0, noiseTex), headJoint(course, slot + 2.0, noiseTex), after), headJoint(course, slot, noiseTex), before);
-  let brickStart = select(select(headJoint(course, slot, noiseTex), headJoint(course, slot + 1.0, noiseTex), after), headJoint(course, slot - 1.0, noiseTex), before);
+  let gsl_cse_3 = headJoint(course, slot + 1.0, noiseTex);
+  let after = shifted >= gsl_cse_3;
+  let gsl_cse_4 = headJoint(course, slot, noiseTex);
+  let before = shifted < gsl_cse_4;
+  let brickEnd = select(select(gsl_cse_3, headJoint(course, slot + 2.0, noiseTex), after), gsl_cse_4, before);
+  let brickStart = select(select(gsl_cse_4, gsl_cse_3, after), headJoint(course, slot - 1.0, noiseTex), before);
   let brickMid = (brickStart + brickEnd) * 0.5;
   let alongBrick = shifted - brickMid;
-  let brickHash = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(brickMid, course, brickMid + course))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(brickMid, course, brickMid + course)) / 64.0)) & vec3<i32>(63), 0).rgb);
+  let gsl_cse_2 = vec3<f32>(brickMid, course, brickMid + course);
+  let brickHash = fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_2)) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_2 / 64.0)) & vec3<i32>(63), 0).rgb);
   let upBrick = p.z - (course + 0.5) * 75.0 - (brickHash.z - 0.5) * 3.0;
   let toJoint = min((brickEnd - brickStart) * 0.5 - abs(alongBrick), 37.5 - abs(upBrick));
   let inJoint = 1.0 - texture_mask(toJoint, 5.0, 0.8, noiseTex);

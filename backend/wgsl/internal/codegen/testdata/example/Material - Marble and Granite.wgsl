@@ -60,10 +60,11 @@ fn texture_fadeTo(gsl_var_value: f32, mean: f32, size: f32, noiseTex: texture_3d
 
 fn noise_cellularF1F2PairLattice(q: vec3<f32>, noiseTex: texture_3d<f32>) -> gsl_struct {
   var gsl_result : gsl_struct;
-  gsl_result.v_1 = gsl_cellularScan(q, 1, noiseTex).f1;
-  gsl_result.v_2 = gsl_cellularScan(q, 1, noiseTex).f2;
-  gsl_result.v_3 = gsl_cellularScan(q, 1, noiseTex).nearCell;
-  gsl_result.v_4 = gsl_cellularScan(q, 1, noiseTex).farCell;
+  let gsl_cse_1 = gsl_cellularScan(q, 1, noiseTex);
+  gsl_result.v_1 = gsl_cse_1.f1;
+  gsl_result.v_2 = gsl_cse_1.f2;
+  gsl_result.v_3 = gsl_cse_1.nearCell;
+  gsl_result.v_4 = gsl_cse_1.farCell;
   return gsl_result;
 }
 
@@ -195,7 +196,8 @@ fn stone_veinedMarble(p: vec3<f32>, q: vec3<f32>, sheets: f32, foldSize: f32, fo
   let along = stone_gradientAt(q + vec3<f32>(71.0, 13.0, 29.0), veinScale * 0.7, noiseTex);
   let halfWidth = 0.5 * veinWidth * (0.2 + 1.3 * texture_mask(along, -0.1, 0.5, noiseTex));
   let halo = haloStrength * zone * cracked * (1.0 - texture_mask(wall, 2.5 * halfWidth, 1.5 * halfWidth, noiseTex));
-  let grain = (fract(textureLoad(noiseTex, vec3<i32>(floor(floor(p / 0.35) + vec3<f32>(9.0, 0.0, 0.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((floor(p / 0.35) + vec3<f32>(9.0, 0.0, 0.0)) / 64.0)) & vec3<i32>(63), 0).rgb).x - 0.5) * 0.025 * (1.0 - texture_mask(gsl_pw, 0.13125, 0.04375, noiseTex));
+  let gsl_cse_2 = floor(p / 0.35) + vec3<f32>(9.0, 0.0, 0.0);
+  let grain = (fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_2)) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_2 / 64.0)) & vec3<i32>(63), 0).rgb).x - 0.5) * 0.025 * (1.0 - texture_mask(gsl_pw, 0.13125, 0.04375, noiseTex));
   let ground = groundLab + (color_rgb2oklab(cloudColor, noiseTex) - groundLab) * clamp(0.5 * cloud + halo, 0.0, 1.0) + vec3<f32>(grain, 0.0, 0.0);
   let veinLab = color_rgb2oklab(veinColor, noiseTex);
   let tinted = veinLab + (color_rgb2oklab(accentColor, noiseTex) - veinLab) * texture_mask(along, 0.3, 0.25, noiseTex);
@@ -204,7 +206,8 @@ fn stone_veinedMarble(p: vec3<f32>, q: vec3<f32>, sheets: f32, foldSize: f32, fo
   let farFine = gsl_result_2.v_4;
   let nearFine = gsl_result_2.v_3;
   let fineNormal = normalize(farFine + fract(textureLoad(noiseTex, vec3<i32>(floor(farFine)) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((farFine) / 64.0)) & vec3<i32>(63), 0).rgb) - nearFine - fract(textureLoad(noiseTex, vec3<i32>(floor(nearFine)) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((nearFine) / 64.0)) & vec3<i32>(63), 0).rgb));
-  let fineCracked = (0.3 + 0.7 * zone) * texture_mask(abs(fineNormal.x), facing * 0.7, 0.1, noiseTex) * select(0.0, 1.0, fract(textureLoad(noiseTex, vec3<i32>(floor(nearFine + farFine + vec3<f32>(5.0, 2.0, 13.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((nearFine + farFine + vec3<f32>(5.0, 2.0, 13.0)) / 64.0)) & vec3<i32>(63), 0).rgb).x < 0.5);
+  let gsl_cse_1 = nearFine + farFine + vec3<f32>(5.0, 2.0, 13.0);
+  let fineCracked = (0.3 + 0.7 * zone) * texture_mask(abs(fineNormal.x), facing * 0.7, 0.1, noiseTex) * select(0.0, 1.0, fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_1)) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_1 / 64.0)) & vec3<i32>(63), 0).rgb).x < 0.5);
   let g2 = gsl_result_2.v_2;
   let g1 = gsl_result_2.v_1;
   let fineWall = (g2 - g1) * veinScale / 6.0;
@@ -292,12 +295,13 @@ fn stone_statuarioNetwork(p: vec3<f32>, noiseTex: texture_3d<f32>) -> gsl_struct
   let cracked = select(0.15, 1.0, wallHash.x < 0.7);
   let tone = 0.6 + 0.4 * texture_mask(noise_gradientLattice(p / 18.0, noiseTex), -0.1, 0.25, noiseTex);
   let wall = gsl_result_3.v_1;
-  let width = 0.12 + 1.0 * texture_mask(noise_gradientLattice(p / 25.0, noiseTex) + 0.5 * noise_gradientLattice(p / 9.0, noiseTex), 0.05, 0.3, noiseTex);
+  let gsl_cse_1 = noise_gradientLattice(p / 9.0, noiseTex);
+  let width = 0.12 + 1.0 * texture_mask(noise_gradientLattice(p / 25.0, noiseTex) + 0.5 * gsl_cse_1, 0.05, 0.3, noiseTex);
   let fringe = tone * texture_mask(noise_gradientLattice(p / 2.5, noiseTex), -0.1, 0.25, noiseTex);
   let vein = max(cracked * tone * stone_softLine(wall, width, 0.45 + 0.3 * width, noiseTex), 0.35 * fringe * stone_softLine(wall, 1.5 * width, 0.3 + 0.5 * width, noiseTex));
   let gsl_result_4 = stone_sheetEdge(jagged + vec3<f32>(31.0, 17.0, 5.0), 15.0, 15.0, noiseTex);
   let midHash = gsl_result_4.v_2;
-  let midTone = texture_mask(noise_gradientLattice(p / 9.0, noiseTex), -0.15, 0.2, noiseTex);
+  let midTone = texture_mask(gsl_cse_1, -0.15, 0.2, noiseTex);
   let midWall = gsl_result_4.v_1;
   let mid = (0.3 + 0.35 * midHash.z) * select(0.0, 1.0, midHash.x < 0.7) * midTone * stone_softLine(midWall, 0.15 + 0.3 * midHash.y, 0.6, noiseTex);
   let smoke = texture_mask(noise_gradientLattice(p / 7.0, noiseTex), 0.05, 0.2, noiseTex);
@@ -317,12 +321,7 @@ fn stone_statuario(p: vec3<f32>, direction: vec3<f32>, noiseTex: texture_3d<f32>
     let gsl_tmp_147 = vec2<f32>(gsl_tmp_146.x + 0.25 * (1.0 - ease_quadratic(clamp((gsl_pw - 2.8125) / 0.9375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 7.5, noiseTex), gsl_tmp_146.y + 0.25);
     let gsl_tmp_148 = vec2<f32>(gsl_tmp_147.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.40625) / 0.46875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 3.75, noiseTex), gsl_tmp_147.y + 0.0);
     let gsl_tmp_149 = vec2<f32>(gsl_tmp_148.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.703125) / 0.234375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.875, noiseTex), gsl_tmp_148.y + 0.0);
-    let gsl_tmp_150 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 11.25) / 3.75 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 30.0, noiseTex), 1.0);
-    let gsl_tmp_151 = vec2<f32>(gsl_tmp_150.x + 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 5.625) / 1.875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 15.0, noiseTex), gsl_tmp_150.y + 0.5);
-    let gsl_tmp_152 = vec2<f32>(gsl_tmp_151.x + 0.25 * (1.0 - ease_quadratic(clamp((gsl_pw - 2.8125) / 0.9375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 7.5, noiseTex), gsl_tmp_151.y + 0.25);
-    let gsl_tmp_153 = vec2<f32>(gsl_tmp_152.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.40625) / 0.46875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 3.75, noiseTex), gsl_tmp_152.y + 0.0);
-    let gsl_tmp_154 = vec2<f32>(gsl_tmp_153.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.703125) / 0.234375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.875, noiseTex), gsl_tmp_153.y + 0.0);
-    let cloud = texture_mask(2.0 * (gsl_tmp_149.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.3515625) / 0.1171875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.9375, noiseTex)) / max(gsl_tmp_154.y + 0.0, 0.000001), -0.05, 0.35, noiseTex);
+    let cloud = texture_mask(2.0 * (gsl_tmp_149.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.3515625) / 0.1171875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.9375, noiseTex)) / max(gsl_tmp_149.y + 0.0, 0.000001), -0.05, 0.35, noiseTex);
     let gsl_result_5 = stone_statuarioNetwork(stone_veinFrame(p, direction, 1.1, 1.0, noiseTex), noiseTex);
     let halo = gsl_result_5.v_2;
     let gsl_tmp_155 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.3) / 0.1 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.8, noiseTex), 1.0);
@@ -330,12 +329,8 @@ fn stone_statuario(p: vec3<f32>, direction: vec3<f32>, noiseTex: texture_3d<f32>
     let gsl_tmp_157 = vec2<f32>(gsl_tmp_156.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.075) / 0.025 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.2, noiseTex), gsl_tmp_156.y + 0.0);
     let gsl_tmp_158 = vec2<f32>(gsl_tmp_157.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.0375) / 0.0125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.1, noiseTex), gsl_tmp_157.y + 0.0);
     let gsl_tmp_159 = vec2<f32>(gsl_tmp_158.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.01875) / 0.00625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.05, noiseTex), gsl_tmp_158.y + 0.0);
-    let gsl_tmp_160 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.3) / 0.1 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.8, noiseTex), 1.0);
-    let gsl_tmp_161 = vec2<f32>(gsl_tmp_160.x + 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.15) / 0.05 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.4, noiseTex), gsl_tmp_160.y + 0.5);
-    let gsl_tmp_162 = vec2<f32>(gsl_tmp_161.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.075) / 0.025 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.2, noiseTex), gsl_tmp_161.y + 0.0);
-    let gsl_tmp_163 = vec2<f32>(gsl_tmp_162.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.0375) / 0.0125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.1, noiseTex), gsl_tmp_162.y + 0.0);
-    let gsl_tmp_164 = vec2<f32>(gsl_tmp_163.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.01875) / 0.00625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.05, noiseTex), gsl_tmp_163.y + 0.0);
-    let grain = 2.0 * (gsl_tmp_159.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.009375) / 0.003125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.025, noiseTex)) / max(gsl_tmp_164.y + 0.0, 0.000001) + (fract(textureLoad(noiseTex, vec3<i32>(floor(floor(p / 0.25) + vec3<f32>(9.0, 0.0, 0.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((floor(p / 0.25) + vec3<f32>(9.0, 0.0, 0.0)) / 64.0)) & vec3<i32>(63), 0).rgb).x - 0.5) * (1.0 - texture_mask(gsl_pw, 0.09375, 0.03125, noiseTex));
+    let gsl_cse_1 = floor(p / 0.25) + vec3<f32>(9.0, 0.0, 0.0);
+    let grain = 2.0 * (gsl_tmp_159.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.009375) / 0.003125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.025, noiseTex)) / max(gsl_tmp_159.y + 0.0, 0.000001) + (fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_1)) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_1 / 64.0)) & vec3<i32>(63), 0).rgb).x - 0.5) * (1.0 - texture_mask(gsl_pw, 0.09375, 0.03125, noiseTex));
     let ground = vec3<f32>(0.9737285, 0.00047567784, -0.0016194935) + vec3<f32>(-0.06 * cloud - 0.11 * halo + 0.012 * grain, 0.0, 0.0);
     let vein = gsl_result_5.v_1;
     gsl_simpleValue = mix(gsl_simpleValue, color_oklab2rgb(ground + (vec3<f32>(0.329599, -0.0021425667, -0.0053033656) - ground) * vein, noiseTex), gsl_simpleDetail);
@@ -350,12 +345,7 @@ fn gsl_stone_carraraWisps_remap(p: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 
   let gsl_tmp_167 = vec2<f32>(gsl_tmp_166.x + 0.36 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.6875) / 0.5625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 4.5, noiseTex), gsl_tmp_166.y + 0.36);
   let gsl_tmp_168 = vec2<f32>(gsl_tmp_167.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.84375) / 0.28125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 2.25, noiseTex), gsl_tmp_167.y + 0.0);
   let gsl_tmp_169 = vec2<f32>(gsl_tmp_168.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.421875) / 0.140625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.125, noiseTex), gsl_tmp_168.y + 0.0);
-  let gsl_tmp_170 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 6.75) / 2.25 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 18.0, noiseTex), 1.0);
-  let gsl_tmp_171 = vec2<f32>(gsl_tmp_170.x + 0.6 * (1.0 - ease_quadratic(clamp((gsl_pw - 3.375) / 1.125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 9.0, noiseTex), gsl_tmp_170.y + 0.6);
-  let gsl_tmp_172 = vec2<f32>(gsl_tmp_171.x + 0.36 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.6875) / 0.5625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 4.5, noiseTex), gsl_tmp_171.y + 0.36);
-  let gsl_tmp_173 = vec2<f32>(gsl_tmp_172.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.84375) / 0.28125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 2.25, noiseTex), gsl_tmp_172.y + 0.0);
-  let gsl_tmp_174 = vec2<f32>(gsl_tmp_173.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.421875) / 0.140625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.125, noiseTex), gsl_tmp_173.y + 0.0);
-  let gsl_tmp_175 = clamp((2.0 * (gsl_tmp_169.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.2109375) / 0.0703125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.5625, noiseTex)) / max(gsl_tmp_174.y + 0.0, 0.000001) - 0.1) / 0.35 * 0.5 + 0.5, 0.0, 1.0);
+  let gsl_tmp_175 = clamp((2.0 * (gsl_tmp_169.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.2109375) / 0.0703125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.5625, noiseTex)) / max(gsl_tmp_169.y + 0.0, 0.000001) - 0.1) / 0.35 * 0.5 + 0.5, 0.0, 1.0);
   return gsl_tmp_175 * gsl_tmp_175 * (3.0 - 2.0 * gsl_tmp_175);
 }
 
@@ -369,12 +359,7 @@ fn gsl_stone_carraraWisps_remap_3(p: vec3<f32>, noiseTex: texture_3d<f32>) -> f3
   let gsl_tmp_178 = vec2<f32>(gsl_tmp_177.x + 0.3025 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.328125) / 0.109375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.875, noiseTex), gsl_tmp_177.y + 0.3025);
   let gsl_tmp_179 = vec2<f32>(gsl_tmp_178.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.1640625) / 0.0546875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.4375, noiseTex), gsl_tmp_178.y + 0.0);
   let gsl_tmp_180 = vec2<f32>(gsl_tmp_179.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.08203125) / 0.02734375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.21875, noiseTex), gsl_tmp_179.y + 0.0);
-  let gsl_tmp_181 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.3125) / 0.4375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 3.5, noiseTex), 1.0);
-  let gsl_tmp_182 = vec2<f32>(gsl_tmp_181.x + 0.55 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.65625) / 0.21875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.75, noiseTex), gsl_tmp_181.y + 0.55);
-  let gsl_tmp_183 = vec2<f32>(gsl_tmp_182.x + 0.3025 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.328125) / 0.109375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.875, noiseTex), gsl_tmp_182.y + 0.3025);
-  let gsl_tmp_184 = vec2<f32>(gsl_tmp_183.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.1640625) / 0.0546875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.4375, noiseTex), gsl_tmp_183.y + 0.0);
-  let gsl_tmp_185 = vec2<f32>(gsl_tmp_184.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.08203125) / 0.02734375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.21875, noiseTex), gsl_tmp_184.y + 0.0);
-  let gsl_tmp_186 = clamp((2.0 * (gsl_tmp_180.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.041015625) / 0.013671875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.109375, noiseTex)) / max(gsl_tmp_185.y + 0.0, 0.000001) - 0.34) / 0.25 * 0.5 + 0.5, 0.0, 1.0);
+  let gsl_tmp_186 = clamp((2.0 * (gsl_tmp_180.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.041015625) / 0.013671875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.109375, noiseTex)) / max(gsl_tmp_180.y + 0.0, 0.000001) - 0.34) / 0.25 * 0.5 + 0.5, 0.0, 1.0);
   return gsl_tmp_186 * gsl_tmp_186 * (3.0 - 2.0 * gsl_tmp_186);
 }
 
@@ -396,24 +381,17 @@ fn stone_carrara(p: vec3<f32>, direction: vec3<f32>, noiseTex: texture_3d<f32>) 
     let gsl_tmp_188 = vec2<f32>(gsl_tmp_187.x + 0.45 * (1.0 - ease_quadratic(clamp((gsl_pw - 3.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 8.0, noiseTex), gsl_tmp_187.y + 0.45);
     let gsl_tmp_189 = vec2<f32>(gsl_tmp_188.x + 0.2025 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.5) / 0.5 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 4.0, noiseTex), gsl_tmp_188.y + 0.2025);
     let gsl_tmp_190 = vec2<f32>(gsl_tmp_189.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.75) / 0.25 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 2.0, noiseTex), gsl_tmp_189.y + 0.0);
-    let gsl_tmp_191 = vec2<f32>(gsl_tmp_190.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.375) / 0.125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.0, noiseTex), gsl_tmp_190.y + 0.0);
-    let gsl_tmp_192 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 6.0) / 2.0 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 16.0, noiseTex), 1.0);
-    let gsl_tmp_193 = vec2<f32>(gsl_tmp_192.x + 0.45 * (1.0 - ease_quadratic(clamp((gsl_pw - 3.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 8.0, noiseTex), gsl_tmp_192.y + 0.45);
-    let gsl_tmp_194 = vec2<f32>(gsl_tmp_193.x + 0.2025 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.5) / 0.5 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 4.0, noiseTex), gsl_tmp_193.y + 0.2025);
-    let gsl_tmp_195 = vec2<f32>(gsl_tmp_194.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.75) / 0.25 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 2.0, noiseTex), gsl_tmp_194.y + 0.0);
-    let gsl_tmp_196 = vec2<f32>(gsl_tmp_195.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.375) / 0.125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.0, noiseTex), gsl_tmp_195.y + 0.0);
-    let cloud = 2.0 * (gsl_tmp_191.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.1875) / 0.0625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.5, noiseTex)) / max(gsl_tmp_196.y + 0.0, 0.000001);
-    let gsl_tmp_197 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.375) / 0.125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.0, noiseTex), 1.0);
-    let gsl_tmp_198 = vec2<f32>(gsl_tmp_197.x + 0.6 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.1875) / 0.0625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.5, noiseTex), gsl_tmp_197.y + 0.6);
+    let gsl_cse_2 = 1.0 - ease_quadratic(clamp((gsl_pw - 0.375) / 0.125 * 0.5 + 0.5, 0.0, 1.0), noiseTex);
+    let gsl_tmp_191 = vec2<f32>(gsl_tmp_190.x + 0.0 * gsl_cse_2 * noise_gradientLattice(p / 1.0, noiseTex), gsl_tmp_190.y + 0.0);
+    let gsl_cse_1 = 1.0 - ease_quadratic(clamp((gsl_pw - 0.1875) / 0.0625 * 0.5 + 0.5, 0.0, 1.0), noiseTex);
+    let cloud = 2.0 * (gsl_tmp_191.x + 0.0 * gsl_cse_1 * noise_gradientLattice(p / 0.5, noiseTex)) / max(gsl_tmp_191.y + 0.0, 0.000001);
+    let gsl_tmp_197 = vec2<f32>(0.0 + 1.0 * gsl_cse_2 * noise_gradientLattice(p / 1.0, noiseTex), 1.0);
+    let gsl_tmp_198 = vec2<f32>(gsl_tmp_197.x + 0.6 * gsl_cse_1 * noise_gradientLattice(p / 0.5, noiseTex), gsl_tmp_197.y + 0.6);
     let gsl_tmp_199 = vec2<f32>(gsl_tmp_198.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.09375) / 0.03125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.25, noiseTex), gsl_tmp_198.y + 0.0);
     let gsl_tmp_200 = vec2<f32>(gsl_tmp_199.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.046875) / 0.015625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.125, noiseTex), gsl_tmp_199.y + 0.0);
     let gsl_tmp_201 = vec2<f32>(gsl_tmp_200.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.0234375) / 0.0078125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.0625, noiseTex), gsl_tmp_200.y + 0.0);
-    let gsl_tmp_202 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.375) / 0.125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.0, noiseTex), 1.0);
-    let gsl_tmp_203 = vec2<f32>(gsl_tmp_202.x + 0.6 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.1875) / 0.0625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.5, noiseTex), gsl_tmp_202.y + 0.6);
-    let gsl_tmp_204 = vec2<f32>(gsl_tmp_203.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.09375) / 0.03125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.25, noiseTex), gsl_tmp_203.y + 0.0);
-    let gsl_tmp_205 = vec2<f32>(gsl_tmp_204.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.046875) / 0.015625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.125, noiseTex), gsl_tmp_204.y + 0.0);
-    let gsl_tmp_206 = vec2<f32>(gsl_tmp_205.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.0234375) / 0.0078125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.0625, noiseTex), gsl_tmp_205.y + 0.0);
-    let grain = 0.3 * 2.0 * (gsl_tmp_201.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.01171875) / 0.00390625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.03125, noiseTex)) / max(gsl_tmp_206.y + 0.0, 0.000001) + (fract(textureLoad(noiseTex, vec3<i32>(floor(floor(p / 0.3) + vec3<f32>(9.0, 0.0, 0.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((floor(p / 0.3) + vec3<f32>(9.0, 0.0, 0.0)) / 64.0)) & vec3<i32>(63), 0).rgb).x - 0.5) * 1.3 * (1.0 - texture_mask(gsl_pw, 0.1125, 0.0375, noiseTex));
+    let gsl_cse_3 = floor(p / 0.3) + vec3<f32>(9.0, 0.0, 0.0);
+    let grain = 0.3 * 2.0 * (gsl_tmp_201.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.01171875) / 0.00390625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.03125, noiseTex)) / max(gsl_tmp_201.y + 0.0, 0.000001) + (fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_3)) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_3 / 64.0)) & vec3<i32>(63), 0).rgb).x - 0.5) * 1.3 * (1.0 - texture_mask(gsl_pw, 0.1125, 0.0375, noiseTex));
     let gsl_result_6 = stone_carraraWisps(stone_veinFrame(p, direction, 1.4, 4.0, noiseTex), noiseTex);
     let zone = gsl_result_6.v_1;
     let dash = gsl_result_6.v_2;

@@ -10,7 +10,7 @@ fn gsl_remap(p: vec3<f32>) -> f32 {
   let gsl_tmp_1 = length(p.xy);
   let gsl_tmp_2 = gsl_floored((atan2(p.y, p.x) + 0.3926991), 0.7853982) - 0.3926991;
   let rosette = motif(vec3<f32>(gsl_tmp_1 * cos(gsl_tmp_2), gsl_tmp_1 * sin(gsl_tmp_2), p.z));
-  let rosetteDisk = max(rosette, length(p.xy) - 11.0);
+  let rosetteDisk = max(rosette, gsl_tmp_1 - 11.0);
   return rosetteDisk;
 }
 

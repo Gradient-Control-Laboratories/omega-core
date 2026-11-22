@@ -11,7 +11,8 @@ fn gsl_remap_2(p: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
 
 fn gsl_remap_3(p: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
   let gsl_tmp_2 = p / 5.0;
-  let edges = max((gsl_cellularScan(gsl_tmp_2, 1, noiseTex).f2 - gsl_cellularScan(gsl_tmp_2, 1, noiseTex).f1) * 5.0 - 0.6, length(p) - 7.0);
+  let gsl_cse_1 = gsl_cellularScan(gsl_tmp_2, 1, noiseTex);
+  let edges = max((gsl_cse_1.f2 - gsl_cse_1.f1) * 5.0 - 0.6, length(p) - 7.0);
   return edges;
 }
 

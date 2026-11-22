@@ -14,7 +14,7 @@ fn rotationalGeodesic(p: vec3<f32>, count: f32, halfShift: f32) -> f32 {
   let geoDistance = 1.0 / cos(sectorAngle);
   let geoRadius = tan(sectorAngle);
   let geodesicDisc = length(vec2<f32>(px, py) - vec2<f32>(geoDistance, 0.0)) - geoRadius;
-  let insideDisc = length(p.xy) - 1.0;
+  let insideDisc = r - 1.0;
   return max(max(geodesicDisc, insideDisc), abs(p.z) - 0.05);
 }
 

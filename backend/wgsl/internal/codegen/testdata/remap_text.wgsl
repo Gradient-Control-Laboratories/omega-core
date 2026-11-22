@@ -11,9 +11,10 @@ fn gsl_remap_3(p: vec3<f32>) -> f32 {
 }
 
 fn gsl_remap_4(p: vec3<f32>) -> f32 {
-  let gsl_tmp_1 = vec2<f32>(8.9997, min(1000000.0, gsl_remap(vec3<f32>((p.x - 0.0) / 1.1111112 - 0.0, (p.y - -5.0) / 1.1111112, p.z / 1.1111112))));
-  let gsl_tmp_2 = vec2<f32>(gsl_tmp_1.x + 6.9997, min(gsl_tmp_1.y, gsl_remap_2(vec3<f32>((p.x - 0.0) / 1.1111112 - gsl_tmp_1.x, (p.y - -5.0) / 1.1111112, p.z / 1.1111112))));
-  return min(gsl_tmp_2.y, gsl_remap_3(vec3<f32>((p.x - 0.0) / 1.1111112 - gsl_tmp_2.x, (p.y - -5.0) / 1.1111112, p.z / 1.1111112))) * 1.1111112 - 0.389;
+  let gsl_cse_1 = (p.y - -5.0) / 1.1111112;
+  let gsl_tmp_1 = vec2<f32>(8.9997, min(1000000.0, gsl_remap(vec3<f32>((p.x - 0.0) / 1.1111112 - 0.0, gsl_cse_1, p.z / 1.1111112))));
+  let gsl_tmp_2 = vec2<f32>(gsl_tmp_1.x + 6.9997, min(gsl_tmp_1.y, gsl_remap_2(vec3<f32>((p.x - 0.0) / 1.1111112 - gsl_tmp_1.x, gsl_cse_1, p.z / 1.1111112))));
+  return min(gsl_tmp_2.y, gsl_remap_3(vec3<f32>((p.x - 0.0) / 1.1111112 - gsl_tmp_2.x, gsl_cse_1, p.z / 1.1111112))) * 1.1111112 - 0.389;
 }
 
 fn text_segmentDist(p: vec3<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {

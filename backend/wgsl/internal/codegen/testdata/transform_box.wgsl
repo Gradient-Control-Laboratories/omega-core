@@ -77,18 +77,14 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_3_26: f32) -> gsl_shape {
     if (abs(gsl_part_2) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_2), gsl_partVanish_2.zw); }
   }
   let scaled = gsl_part_2;
-  let gslBox_8 = cos(angle) * 2.3 - sin(angle) * 2.5;
-  let gslBox_6 = abs(cos(angle)) * 1.5 + abs(sin(angle)) * 0.8;
-  let gslBox_7 = sin(angle) * 2.3 + cos(angle) * 2.5;
-  let gslBox_5 = abs(sin(angle)) * 1.5 + abs(cos(angle)) * 0.8;
-  let gsl_partLo_3 = vec3<f32>(min(gslBox_8 - gslBox_6, gslBox_8 + gslBox_6), min(gslBox_7 - gslBox_5, gslBox_7 + gslBox_5), -0.3);
-  let gsl_partHi_3 = vec3<f32>(max(gslBox_8 - gslBox_6, gslBox_8 + gslBox_6), max(gslBox_7 - gslBox_5, gslBox_7 + gslBox_5), 1.3);
+  let gsl_partLo_3 = vec3<f32>(min(gslBox_4 - gslBox_2, gslBox_4 + gslBox_2), min(gslBox_3 - gslBox, gslBox_3 + gslBox), -0.3);
+  let gsl_partHi_3 = vec3<f32>(max(gslBox_4 - gslBox_2, gslBox_4 + gslBox_2), max(gslBox_3 - gslBox, gslBox_3 + gslBox), 1.3);
   let gsl_partBox_3 = gsl_boxDistance(p, gsl_partLo_3, gsl_partHi_3);
   var gsl_part_3 = gsl_partBox_3;
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_3 <= gsl_vanishView.w) {
     let gsl_partVanish_3 = gsl_vanish(gsl_partLo_3, gsl_partHi_3);
     gsl_part_3 = 1e10;
-    if (gsl_partVanish_3.x > 0.0) { gsl_part_3 = builtin_box(p, vec3<f32>(cos(angle) * 2.3 - sin(angle) * 2.5 - (abs(cos(angle)) * 1.5 + abs(sin(angle)) * 0.8), sin(angle) * 2.3 + cos(angle) * 2.5 - (abs(sin(angle)) * 1.5 + abs(cos(angle)) * 0.8), -0.3), vec3<f32>(cos(angle) * 2.3 - sin(angle) * 2.5 + abs(cos(angle)) * 1.5 + abs(sin(angle)) * 0.8, sin(angle) * 2.3 + cos(angle) * 2.5 + abs(sin(angle)) * 1.5 + abs(cos(angle)) * 0.8, 1.3)) + gsl_partVanish_3.y; }
+    if (gsl_partVanish_3.x > 0.0) { gsl_part_3 = builtin_box(p, gsl_partLo, vec3<f32>(gslBox_4 + abs(cos(angle)) * 1.5 + abs(sin(angle)) * 0.8, gslBox_3 + abs(sin(angle)) * 1.5 + abs(cos(angle)) * 0.8, 1.3)) + gsl_partVanish_3.y; }
     if (abs(gsl_part_3) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_3), gsl_partVanish_3.zw); }
   }
   let hull = gsl_part_3;

@@ -224,6 +224,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A colour or material built in a local with a stand-in or fine detail of its own (`t.simple`, `t.detail`)
   and set on a part inside a function (`s.color = t`) keeps them out of the function, as one returned from a
   function always did; before, the part's colour lost its stand-in and stayed textured with textures off.
+- The WGSL codegen merges repeated expressions in every function it writes: a let that repeats an
+  earlier one is read as it, and a subexpression repeated within one block is named once where that
+  shortens the function. Nothing leaves a guard or a loop, and nothing that reads a written name (a var, a
+  private global) is merged. A shaft's fold computes each section once rather than four times: the
+  pinion's WGSL is 59% smaller and the hobbed shaft's 52%, and the example documents are 2.2% smaller in
+  all. Fields are unchanged, and shader compile time on Metal is unchanged too, since the driver
+  already merged the copies.
 - PNG renders frame a part too thin to be sampled inside beside a thick one (a threaded shaft's thread
   went missing without `--extent`).
 - The fast chamfers' parameter is named `offset`, not `setback`, in builtin's `intersectChamfer`,

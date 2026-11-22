@@ -34,10 +34,11 @@ fn noise_gradientLattice(q: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
 
 fn noise_cellularF1F2PairLattice(q: vec3<f32>, noiseTex: texture_3d<f32>) -> gsl_struct {
   var gsl_result : gsl_struct;
-  gsl_result.v_1 = gsl_cellularScan(q, 1, noiseTex).f1;
-  gsl_result.v_2 = gsl_cellularScan(q, 1, noiseTex).f2;
-  gsl_result.v_3 = gsl_cellularScan(q, 1, noiseTex).nearCell;
-  gsl_result.v_4 = gsl_cellularScan(q, 1, noiseTex).farCell;
+  let gsl_cse_1 = gsl_cellularScan(q, 1, noiseTex);
+  gsl_result.v_1 = gsl_cse_1.f1;
+  gsl_result.v_2 = gsl_cse_1.f2;
+  gsl_result.v_3 = gsl_cse_1.nearCell;
+  gsl_result.v_4 = gsl_cse_1.farCell;
   return gsl_result;
 }
 
@@ -286,7 +287,8 @@ fn stone_veinedMarble__spec1(p: vec3<f32>, q: vec3<f32>, foldSize: f32, foldDept
   let along = stone_gradientAt(q + vec3<f32>(71.0, 13.0, 29.0), veinScale * 0.7, noiseTex);
   let halfWidth = 0.5 * veinWidth * (0.2 + 1.3 * texture_mask(along, -0.1, 0.5, noiseTex));
   let halo = haloStrength * zone * cracked * (1.0 - texture_mask(wall, 2.5 * halfWidth, 1.5 * halfWidth, noiseTex));
-  let grain = (fract(textureLoad(noiseTex, vec3<i32>(floor(floor(p / 0.35) + vec3<f32>(9.0, 0.0, 0.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((floor(p / 0.35) + vec3<f32>(9.0, 0.0, 0.0)) / 64.0)) & vec3<i32>(63), 0).rgb).x - 0.5) * 0.025 * (1.0 - texture_mask(gsl_pw, 0.13125, 0.04375, noiseTex));
+  let gsl_cse_2 = floor(p / 0.35) + vec3<f32>(9.0, 0.0, 0.0);
+  let grain = (fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_2)) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_2 / 64.0)) & vec3<i32>(63), 0).rgb).x - 0.5) * 0.025 * (1.0 - texture_mask(gsl_pw, 0.13125, 0.04375, noiseTex));
   let ground = groundLab + (color_rgb2oklab(cloudColor, noiseTex) - groundLab) * clamp(0.5 * cloud + halo, 0.0, 1.0) + vec3<f32>(grain, 0.0, 0.0);
   let veinLab = color_rgb2oklab(veinColor, noiseTex);
   let tinted = veinLab + (color_rgb2oklab(accentColor, noiseTex) - veinLab) * texture_mask(along, 0.3, 0.25, noiseTex);
@@ -295,7 +297,8 @@ fn stone_veinedMarble__spec1(p: vec3<f32>, q: vec3<f32>, foldSize: f32, foldDept
   let farFine = gsl_result_2.v_4;
   let nearFine = gsl_result_2.v_3;
   let fineNormal = normalize(farFine + fract(textureLoad(noiseTex, vec3<i32>(floor(farFine)) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((farFine) / 64.0)) & vec3<i32>(63), 0).rgb) - nearFine - fract(textureLoad(noiseTex, vec3<i32>(floor(nearFine)) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((nearFine) / 64.0)) & vec3<i32>(63), 0).rgb));
-  let fineCracked = (0.3 + 0.7 * zone) * texture_mask(abs(fineNormal.x), facing * 0.7, 0.1, noiseTex) * select(0.0, 1.0, fract(textureLoad(noiseTex, vec3<i32>(floor(nearFine + farFine + vec3<f32>(5.0, 2.0, 13.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((nearFine + farFine + vec3<f32>(5.0, 2.0, 13.0)) / 64.0)) & vec3<i32>(63), 0).rgb).x < 0.5);
+  let gsl_cse_1 = nearFine + farFine + vec3<f32>(5.0, 2.0, 13.0);
+  let fineCracked = (0.3 + 0.7 * zone) * texture_mask(abs(fineNormal.x), facing * 0.7, 0.1, noiseTex) * select(0.0, 1.0, fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_1)) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_1 / 64.0)) & vec3<i32>(63), 0).rgb).x < 0.5);
   let g2 = gsl_result_2.v_2;
   let g1 = gsl_result_2.v_1;
   let fineWall = (g2 - g1) * veinScale / 6.0;

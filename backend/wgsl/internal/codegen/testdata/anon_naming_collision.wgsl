@@ -19,8 +19,9 @@ fn gcl_closure_remapEdges_2(p: vec3<f32>, fields: vec3<f32>) -> f32 {
 }
 
 fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
-  let circle = gcl_closure_remapEdges(p, vec3<f32>(length(p) - 1.0, length(p) - 2.0, length(p) - 3.0));
-  let diamond = gcl_closure_remapEdges_2(p, vec3<f32>(length(p) - 1.0, length(p) - 2.0, length(p) - 3.0));
+  let gsl_cse_1 = vec3<f32>(length(p) - 1.0, length(p) - 2.0, length(p) - 3.0);
+  let circle = gcl_closure_remapEdges(p, gsl_cse_1);
+  let diamond = gcl_closure_remapEdges_2(p, gsl_cse_1);
   let gsl_s1 = gsl_shape(min(circle, diamond), 1u);
   return gsl_s1;
 }

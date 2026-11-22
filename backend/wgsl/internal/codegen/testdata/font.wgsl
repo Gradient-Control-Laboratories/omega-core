@@ -42,10 +42,13 @@ fn text_arcDist(p: vec3<f32>, cx: f32, cy: f32, ra: f32, mid: f32, half: f32) ->
 }
 
 fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
-  let gsl_tmp_1 = vec2<f32>(6.9997, min(1000000.0, gsl_remap(vec3<f32>((p.x - 0.0) / 0.055555556 - 0.0, (p.y - 0.0) / 0.055555556, p.z / 0.055555556))));
-  let gsl_tmp_2 = vec2<f32>(gsl_tmp_1.x + 6.9997, min(gsl_tmp_1.y, gsl_remap_2(vec3<f32>((p.x - 0.0) / 0.055555556 - gsl_tmp_1.x, (p.y - 0.0) / 0.055555556, p.z / 0.055555556))));
-  let gsl_tmp_3 = vec2<f32>(gsl_tmp_2.x + 3.9997, min(gsl_tmp_2.y, gsl_remap_3(vec3<f32>((p.x - 0.0) / 0.055555556 - gsl_tmp_2.x, (p.y - 0.0) / 0.055555556, p.z / 0.055555556))));
-  let gsl_tmp_4 = vec2<f32>(gsl_tmp_3.x + 3.9997, min(gsl_tmp_3.y, gsl_remap_3(vec3<f32>((p.x - 0.0) / 0.055555556 - gsl_tmp_3.x, (p.y - 0.0) / 0.055555556, p.z / 0.055555556))));
-  let gsl_s1 = gsl_shape(min(gsl_tmp_4.y, gsl_remap_4(vec3<f32>((p.x - 0.0) / 0.055555556 - gsl_tmp_4.x, (p.y - 0.0) / 0.055555556, p.z / 0.055555556))) * 0.055555556 - 0.01945, 1u);
+  let gsl_cse_1 = (p.x - 0.0) / 0.055555556;
+  let gsl_cse_2 = (p.y - 0.0) / 0.055555556;
+  let gsl_cse_3 = p.z / 0.055555556;
+  let gsl_tmp_1 = vec2<f32>(6.9997, min(1000000.0, gsl_remap(vec3<f32>(gsl_cse_1 - 0.0, gsl_cse_2, gsl_cse_3))));
+  let gsl_tmp_2 = vec2<f32>(gsl_tmp_1.x + 6.9997, min(gsl_tmp_1.y, gsl_remap_2(vec3<f32>(gsl_cse_1 - gsl_tmp_1.x, gsl_cse_2, gsl_cse_3))));
+  let gsl_tmp_3 = vec2<f32>(gsl_tmp_2.x + 3.9997, min(gsl_tmp_2.y, gsl_remap_3(vec3<f32>(gsl_cse_1 - gsl_tmp_2.x, gsl_cse_2, gsl_cse_3))));
+  let gsl_tmp_4 = vec2<f32>(gsl_tmp_3.x + 3.9997, min(gsl_tmp_3.y, gsl_remap_3(vec3<f32>(gsl_cse_1 - gsl_tmp_3.x, gsl_cse_2, gsl_cse_3))));
+  let gsl_s1 = gsl_shape(min(gsl_tmp_4.y, gsl_remap_4(vec3<f32>(gsl_cse_1 - gsl_tmp_4.x, gsl_cse_2, gsl_cse_3))) * 0.055555556 - 0.01945, 1u);
   return gsl_s1;
 }
