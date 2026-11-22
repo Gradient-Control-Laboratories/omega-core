@@ -143,9 +143,46 @@ func (s *SimpleGuardExpr) Codegen(ctx wgsl.CodegenContext) string {
 // draws as its value. Inside a part's guard (deferSimple) the statements are
 // handed to the guard, in pendingSimple, to write inside its own branch.
 func (d *Delegate) simpleGuard(op *program.Operand, args []wgsl.Expression, returnType wgsl.TypeInfo) build.Expression {
-	d.simpleUsed = true
 	shape, proxy, lo, hi := args[0], args[1], args[2], args[3]
+	// A stand-in of nothing is none: the part is drawn as itself at every
+	// size. A library part whose stand-in depends on what it is made of says
+	// so this way (shaft.body: its envelope when it has detail, nothing when it
+	// has not), so a part with nothing simpler to show costs no switch.
+	if noStandIn(proxy) || (op.GetFnCall() != nil && len(op.GetFnCall().Arguments) == 4 && nothingOperand(op.GetFnCall().Arguments[1])) {
+		return shape
+	}
+	d.simpleUsed = true
 	return NewSimpleGuardExpr(op, d, shape, proxy, lo, hi, returnType)
+}
+
+// noStandIn reports whether a part's stand-in is the constant nothing (1e5,
+// builtin's empty field), or farther: the part has no simpler model.
+func noStandIn(proxy wgsl.Expression) bool {
+	ce, ok := proxy.(build.ConstExpression)
+	if !ok {
+		return false
+	}
+	vals := ce.ConstValues()
+	return len(vals) == 1 && vals[0] >= 1e5
+}
+
+// nothingOperand reports whether a stand-in's operand is nothing placed: the
+// constant itself, or a remap of it, which a part placed with transform hands
+// its stand-in (a remap of a constant is that constant).
+func nothingOperand(op *program.Operand) bool {
+	if op == nil {
+		return false
+	}
+	if vals := op.GetConstValues(); len(vals) == 1 {
+		return vals[0] >= 1e5
+	}
+	if _, ok := op.T.(*program.Operand_Value); ok {
+		return op.GetValue() >= 1e5
+	}
+	if e := op.GetExpression(); e != nil && e.Operation == program.Operation_REMAP && len(e.Operands) == 2 {
+		return nothingOperand(e.Operands[0])
+	}
+	return false
 }
 
 // shapeInGuard generates a part's shape for its guard (vanishGuard) and

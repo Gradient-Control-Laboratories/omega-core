@@ -158,9 +158,24 @@ body(segments) {
   extentHigh = reduce((n, seg) { return min(n, seg(0.0, 0.0, 9.0)); }, segments, 100000.0);
   boxLow = reduce((below, seg) { return min(below, seg(0.0, 0.0, 8.0) < 50000.0 ? seg(0.0, 0.0, 8.0) : seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
   boxHigh = reduce((above, seg) { return max(above, seg(0.0, 0.0, 9.0) < 50000.0 ? neg(seg(0.0, 0.0, 9.0)) : seg(0.0, 0.0, 2.0)); }, segments, -100000.0);
+  // The stand-in: the envelope, when any segment has detail to give up
+  // (seg(0, 0, 12): a gear, spline, thread, knurl or bevel), and nothing
+  // otherwise, which the viewer takes for no stand-in, so a plain shaft is
+  // drawn as itself and costs no switch.
+  detailed = reduce((d, seg) { return min(d, seg(0.0, 0.0, 12.0)); }, segments, 100000.0);
+  envelopeSoFar = reduce((acc, seg, i, prev) {
+    openRuns = acc.y;
+    filletR = prev(0.0, 0.0, 6.0);
+    chamferC = prev(0.0, 0.0, 7.0);
+    here = filletR < 50000.0 ? unionRound(acc.x, seg(0.0, 0.0, 4.0), filletR)
+                             : (chamferC < 50000.0 ? unionChamfer(acc.x, seg(0.0, 0.0, 4.0), chamferC) : seg(0.0, 0.0, 4.0));
+    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, seg(100000.0, 0.0, 4.0))),
+            i < 0.5 ? seg(0.0, 100000.0, 4.0) : min(max(openRuns, seg(100000.0, 100000.0, 4.0)), seg(0.0, 100000.0, 4.0))];
+  }, segments, [100000.0, 100000.0]);
   solid = max(shaftSoFar.x, -cuts);
   solid.box = [[neg(reach), neg(reach), extentLow < 50000.0 ? boxLow : bottomFace],
                [reach, reach, extentHigh < 50000.0 ? boxHigh : topFace]];
+  solid.simple = detailed < 50000.0 ? envelopeSoFar.x : nothing;
   return solid;
 }
 
@@ -199,9 +214,24 @@ body(segments, bottomHole, topHole) {
   extentHigh = reduce((n, seg) { return min(n, seg(0.0, 0.0, 9.0)); }, segments, 100000.0);
   boxLow = reduce((below, seg) { return min(below, seg(0.0, 0.0, 8.0) < 50000.0 ? seg(0.0, 0.0, 8.0) : seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
   boxHigh = reduce((above, seg) { return max(above, seg(0.0, 0.0, 9.0) < 50000.0 ? neg(seg(0.0, 0.0, 9.0)) : seg(0.0, 0.0, 2.0)); }, segments, -100000.0);
+  // The stand-in: the envelope, when any segment has detail to give up
+  // (seg(0, 0, 12): a gear, spline, thread, knurl or bevel), and nothing
+  // otherwise, which the viewer takes for no stand-in, so a plain shaft is
+  // drawn as itself and costs no switch.
+  detailed = reduce((d, seg) { return min(d, seg(0.0, 0.0, 12.0)); }, segments, 100000.0);
+  envelopeSoFar = reduce((acc, seg, i, prev) {
+    openRuns = acc.y;
+    filletR = prev(0.0, 0.0, 6.0);
+    chamferC = prev(0.0, 0.0, 7.0);
+    here = filletR < 50000.0 ? unionRound(acc.x, seg(0.0, 0.0, 4.0), filletR)
+                             : (chamferC < 50000.0 ? unionChamfer(acc.x, seg(0.0, 0.0, 4.0), chamferC) : seg(0.0, 0.0, 4.0));
+    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, seg(100000.0, 0.0, 4.0))),
+            i < 0.5 ? seg(0.0, 100000.0, 4.0) : min(max(openRuns, seg(100000.0, 100000.0, 4.0)), seg(0.0, 100000.0, 4.0))];
+  }, segments, [100000.0, 100000.0]);
   solid = max(shaftSoFar.x, -cuts, -topVoid, -bottomVoid);
   solid.box = [[neg(reach), neg(reach), extentLow < 50000.0 ? boxLow : bottomFace],
                [reach, reach, extentHigh < 50000.0 ? boxHigh : topFace]];
+  solid.simple = detailed < 50000.0 ? max(envelopeSoFar.x, -topVoid, -bottomVoid) : nothing;
   return solid;
 }
 
@@ -521,7 +551,7 @@ doubleD(dia, acrossFlats, from, to) {
 /// drill.spline(count, major, width) over a bore at `minor`. Exact outside.
 spline(count, minor, major, width, from, to) {
   seg(eDown, eUp, want) {
-    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
+    return want > 11.5 && want < 12.5 ? 0.0 : want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
          : (want > 4.5 ? (want > 5.5 ? nothing : major / 2.0)
                       : (want > 3.5 ? prismSegment(length(p.xy) - major / 2.0, from, to, eDown, eUp, 0.0)
                                     : (want > 2.5 ? nothing : prismSegment(splineSection(count, minor, major, width), from, to, eDown, eUp, want))));
@@ -534,7 +564,7 @@ spline(count, minor, major, width, from, to) {
 /// shaft.chamferEnd(size).
 spline(count, minor, major, width, from, to, bottomEnd, topEnd) {
   seg(eDown, eUp, want) {
-    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
+    return want > 11.5 && want < 12.5 ? 0.0 : want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
          : (want > 4.5 ? (want > 5.5 ? nothing : major / 2.0)
          : (want > 3.5 ? prismSegment(length(p.xy) - major / 2.0, from, to, eDown, eUp, 0.0) : (want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(topEnd.x > 0.5 && topEnd.x < 1.5) ? nothing : machinedSegment(splineSection(count, minor, major, width), major / 2.0, minor / 2.0,
                            from, to, eDown, eUp, want, bottomEnd, topEnd))));
@@ -552,7 +582,7 @@ spline(count, minor, major, width, from, to, bottomEnd, topEnd) {
 /// distance.
 gear(numTeeth, moduleVal, pressureAngle, helixAngle, from, to) {
   seg(eDown, eUp, want) {
-    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
+    return want > 11.5 && want < 12.5 ? 0.0 : want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
          : (want > 4.5 ? (want > 5.5 ? nothing : numTeeth * moduleVal / 2.0 + moduleVal)
                       : (want > 3.5 ? prismSegment(length(p.xy) - (numTeeth * moduleVal / 2.0 + moduleVal), from, to, eDown, eUp, 0.0)
                                     : (want > 2.5 ? nothing : prismSegment(gearSection(numTeeth, moduleVal, pressureAngle, helixAngle, from), from, to, eDown, eUp, want))));
@@ -567,7 +597,7 @@ gear(numTeeth, moduleVal, pressureAngle, helixAngle, from, to) {
 ///   shaft.gear(20.0, 2.0, radians(20.0), 0.0, 20.0, 50.0, shaft.planeEnd(), shaft.runout(80.0))
 gear(numTeeth, moduleVal, pressureAngle, helixAngle, from, to, bottomEnd, topEnd) {
   seg(eDown, eUp, want) {
-    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
+    return want > 11.5 && want < 12.5 ? 0.0 : want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
          : (want > 4.5 ? (want > 5.5 ? nothing : numTeeth * moduleVal / 2.0 + moduleVal)
          : (want > 3.5 ? prismSegment(length(p.xy) - (numTeeth * moduleVal / 2.0 + moduleVal), from, to, eDown, eUp, 0.0) : (want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(topEnd.x > 0.5 && topEnd.x < 1.5) ? nothing : machinedSegment(gearSection(numTeeth, moduleVal, pressureAngle, helixAngle, from),
                            numTeeth * moduleVal / 2.0 + moduleVal, numTeeth * moduleVal / 2.0 - 1.25 * moduleVal,
@@ -585,7 +615,7 @@ gear(numTeeth, moduleVal, pressureAngle, helixAngle, from, to, bottomEnd, topEnd
 ///   shaft.gear(20.0, 2.0, radians(20.0), 0.0, 0.0, 20.0, shaft.planeEnd(), shaft.planeEnd(), 0.1)
 gear(numTeeth, moduleVal, pressureAngle, helixAngle, from, to, bottomEnd, topEnd, backlash) {
   seg(eDown, eUp, want) {
-    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
+    return want > 11.5 && want < 12.5 ? 0.0 : want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
          : (want > 4.5 ? (want > 5.5 ? nothing : numTeeth * moduleVal / 2.0 + moduleVal)
          : (want > 3.5 ? prismSegment(length(p.xy) - (numTeeth * moduleVal / 2.0 + moduleVal), from, to, eDown, eUp, 0.0) : (want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(topEnd.x > 0.5 && topEnd.x < 1.5) ? nothing : machinedSegment(gearSection(numTeeth, moduleVal, pressureAngle, helixAngle, from, backlash),
                            numTeeth * moduleVal / 2.0 + moduleVal, numTeeth * moduleVal / 2.0 - 1.25 * moduleVal,
@@ -625,7 +655,7 @@ bevel(numTeeth, mateTeeth, moduleVal, pressureAngle, shaftAngle, spiralAngle, fa
   // helper that tells 4 from 0 itself leaves the shaft's box unbounded (the
   // box analysis loses the closure's answers to every question then).
   seg(eDown, eUp, want) {
-    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
+    return want > 11.5 && want < 12.5 ? 0.0 : want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
          : (want > 4.5 ? (want > 9.5 || (want > 5.5 && want < 7.5) ? nothing : bevelBoxAnswer(numTeeth, mateTeeth, moduleVal, shaftAngle, faceWidth, apex, from, to, want))
                       : (want > 2.5 && want < 3.5 ? nothing
                                                   : bevelSegment(bevelTeethField(numTeeth, mateTeeth, moduleVal, pressureAngle, shaftAngle, spiralAngle, backlash, apex, to),
@@ -643,7 +673,7 @@ bevel(numTeeth, mateTeeth, moduleVal, pressureAngle, shaftAngle, spiralAngle, fa
 ///   shaft.thread(6.0, 1.0, 0.0, 20.0)
 thread(major, pitchVal, from, to) {
   seg(eDown, eUp, want) {
-    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
+    return want > 11.5 && want < 12.5 ? 0.0 : want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
          : (want > 4.5 ? (want > 5.5 ? nothing : major / 2.0)
                       : (want > 3.5 ? prismSegment(length(p.xy) - major / 2.0, from, to, eDown, eUp, 0.0)
                                     : (want > 2.5 ? nothing : prismSegment(isoThread.male(major, pitchVal), from, to, eDown, eUp, want))));
@@ -659,7 +689,7 @@ thread(major, pitchVal, from, to) {
 ///   shaft.thread(6.0, 1.0, 0.0, 20.0, shaft.chamferEnd(0.6), shaft.threadRunout(2.5))
 thread(major, pitchVal, from, to, bottomEnd, topEnd) {
   seg(eDown, eUp, want) {
-    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
+    return want > 11.5 && want < 12.5 ? 0.0 : want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
          : (want > 4.5 ? (want > 5.5 ? nothing : major / 2.0)
          : (want > 3.5 ? prismSegment(length(p.xy) - major / 2.0, from, to, eDown, eUp, 0.0) : (want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(bottomEnd.x > 2.5 && bottomEnd.x < 3.5)
                                      && !(topEnd.x > 0.5 && topEnd.x < 1.5) && !(topEnd.x > 2.5 && topEnd.x < 3.5)
@@ -691,7 +721,7 @@ knurl(dia, pitchVal, pattern, from, to) {
     radial = length(p.xy) - dia / 2.0;
     axial = max((from - eDown) - p.z, p.z - (to + eUp));
     field = sqrt(max(radial, 0.0) * max(radial, 0.0) + max(axial, 0.0) * max(axial, 0.0)) + min(max(radial, axial), 0.0);
-    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
+    return want > 11.5 && want < 12.5 ? 0.0 : want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
          : (want > 9.5 ? (want > 11.5 ? nothing
                                       : (want > 10.5 ? knurlHeight(dia, pitchVal, pattern, from, to) / (pitchVal / 2.0)
                                                      : knurlHeight(dia, pitchVal, pattern, from, to)))

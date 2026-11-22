@@ -8,6 +8,9 @@
 // the shaft from its left end.
 
 journal = bearing.bore(6205.0);
+// Each bearing seats on a k5 journal, the usual fit for an inner ring that
+// turns under load: 25.002 to 25.011 (ISO 286), drawn at maximum material.
+seat = bearing.seatDia(6205.0, tolerance.k5, tolerance.maxMaterial);
 groove = bearing.ringGrooveWidth(journal);
 leftFace = 10.0;
 rightFace = 85.0;
@@ -15,7 +18,7 @@ rightFace = 85.0;
 bearingShaft = shaft.body(
   [shaft.diameter(journal, 0.0, leftFace - groove),
    shaft.diameter(bearing.ringGrooveDia(journal), leftFace - groove, leftFace),
-   shaft.diameter(journal, leftFace, leftFace + bearing.width(6205.0)),
+   shaft.diameter(seat, leftFace, leftFace + bearing.width(6205.0)),
    shaft.fillet(bearing.filletMax(6205.0)),
    shaft.diameter(bearing.shoulderDia(6205.0), leftFace + bearing.width(6205.0), 35.0),
    shaft.fillet(1.0),
@@ -23,7 +26,7 @@ bearingShaft = shaft.body(
    shaft.fillet(1.0),
    shaft.diameter(bearing.shoulderDia(6205.0), 75.0, rightFace),
    shaft.fillet(bearing.filletMax(6205.0)),
-   shaft.diameter(journal, rightFace, rightFace + bearing.width(6205.0)),
+   shaft.diameter(seat, rightFace, rightFace + bearing.width(6205.0)),
    shaft.diameter(20.0, rightFace + bearing.width(6205.0), 125.0)],
   drill.centerHole(3.15, 6.7, 8.0),
   drill.centerHole(3.15, 6.7, 8.0));

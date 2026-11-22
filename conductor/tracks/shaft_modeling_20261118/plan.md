@@ -459,3 +459,29 @@ Phase 0 has no start commit; Phase 7 was skipped.
       example had passed drill.chamfer as end holes, a cone void 17.6 across); its ends are now 0.8 mm
       tapers
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+
+## Phase 17: Stand-ins and Fits [checkpoint: 21e521a]
+
+- [x] Task: Proposal (approved 2026-11-21): (a) shaft.body gives a shaft with detail its envelope as its
+      stand-in: a new question, want 12 "has detail" (gear, spline, thread, knurl, bevel), folded to a
+      constant; the approved "drop a stand-in identical to its part" proved unworkable (part and stand-in are
+      different calls where stand-ins are attached, and the cost was the solid read twice, not the wrapper),
+      so, the owner's choice: `.simple = detailed ? envelope : nothing`, and the codegen writes a part whose
+      stand-in is the constant nothing as the part alone. (b) A new mechanical/tolerance package: ISO 286
+      limit deviations, shaft j5 j6 k5 k6 m5 m6 n6 p6 and hole H6 H7 J6 J7 K6 K7 M6 M7, and IT5-IT7, over 6 to
+      120 mm; bearing.seatDia and bearing.housingDia in a zone at maximum or minimum material; a k5 journal in
+      the bearing example
+- [x] Task: Write failing tests (Red Phase): `eval/shaft_standin_test.go` (a detailed shaft has the switch,
+      a plain one none, a part whose stand-in is nothing none) and `eval/tolerance_test.go` (every zone and
+      grade in every range, inside and at its upper end; a 6205's k5 journal and H7 housing at both
+      conditions). Sources: Simply Bearings' ISO 286 tables and Miki Pulley's JIS B 0401 excerpt (agree but
+      K6 6-10, where -7 is right by IT6); Wikipedia's IT table; neither source states 286-2's edition
+- [x] Task: Implement (Green & Refactor Phase): want 12 answered 0 by gear, spline, thread, knurl and bevel
+      (all nine closures); body and body-with-holes set `.simple = detailed ? envelope : nothing`; the codegen
+      (simple.go) writes a part whose stand-in is nothing, or a remap of it (a part placed with transform
+      hands its stand-in the same remap), as the part alone. mechanical/tolerance (registered in pkg_info and
+      the mechanical index), its table, zone, grade and condition constants, deviations, grade, shaftDia and
+      holeDia; bearing.seatDia and housingDia. Every shipped shaft example's WGSL unchanged; no golden moved
+- [x] Task: The bearing example's two seats as k5 journals at maximum material (25.011, an interference fit
+      with the 25 mm bore as designed): WGSL 36,801 -> 37,134 B; the owner's viewer check
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)

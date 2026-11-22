@@ -74,6 +74,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   dia, z, angle)` puts a part, a set screw say, on the same axis. `fastener.setScrew(nominalDia, length,
   point)`: hexagon socket set screws to ISO 4026, 4027, 4028 and 4029 (flat, cone, dog and cup point),
   M3 to M12, from a sourced table, plain or finished with their thread as relief.
+- `mechanical/tolerance`: ISO 286 limits and fits, the grades IT5 to IT7 and the limit deviations of shaft
+  zones j5 to p6 and hole zones H6 to M7 over 6 up to 120 mm (`tolerance.shaftUpper`, `shaftLower`,
+  `holeUpper`, `holeLower`, `grade`, `shaftDia`, `holeDia`), with sources. `bearing.seatDia` and
+  `bearing.housingDia` size a bearing's journal and housing bore in a zone at maximum or minimum material.
+- A shaft with a gear, spline, thread, knurl or bevel stands in as its envelope (`.simple`) far off; a plain
+  turned shaft has no stand-in and compiles as before. A part whose stand-in is `nothing` is drawn as itself.
 - A `reduce` over a list of functions can take the element before this one as a fourth callback parameter,
   `reduce((acc, f, i, prev) { ... }, fs, seed)`; the first element is handed itself.
   along the cutter's arc, and `shaft.chamferEnd(size)` chamfers the tips.
