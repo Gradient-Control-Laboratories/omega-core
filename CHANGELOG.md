@@ -57,6 +57,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ISO 4755 (`thread.iso4755`) undercut a threading tool runs out into: the floor a little under the minor
   diameter, a 30-degree flank cutting the last teeth down, and a radius at the shoulder.
   `thread.undercutDia`, `undercutLength` and `undercutRadius` give its sizes, pitch 0.2 to 6, with sources.
+- Cross holes: `shaft.crossVoid(features, dia, z, angle)` drills a `drill` stack radially into a shaft, its
+  depths from the surface, and `shaft.crossHole(void)` cuts it in a shaft's list; `shaft.crossPlace(part,
+  dia, z, angle)` puts a part, a set screw say, on the same axis. `fastener.setScrew(nominalDia, length,
+  point)`: hexagon socket set screws to ISO 4026, 4027, 4028 and 4029 (flat, cone, dog and cup point),
+  M3 to M12, from a sourced table, plain or finished with their thread as relief.
 - A `reduce` over a list of functions can take the element before this one as a fourth callback parameter,
   `reduce((acc, f, i, prev) { ... }, fs, seed)`; the first element is handed itself.
 

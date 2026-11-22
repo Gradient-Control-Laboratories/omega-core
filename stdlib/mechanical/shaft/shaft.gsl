@@ -755,6 +755,54 @@ chamfer(size) {
 }
 
 // =========================================================
+// Cross holes
+// =========================================================
+
+/// A cross hole's void: `features`, a mechanical/drill stack or a lone
+/// feature, drilled radially into a shaft. Its mouth is the plane tangent to
+/// the cylinder `dia` across at height z = `z`, `angle` radians from +x about
+/// the axis, so every depth is measured from the surface, as a drawing gives
+/// it; drill.thru goes out the far side. shaft.crossHole cuts it from a
+/// shaft; it is a void like any other, to cut from anything.
+crossVoid(features, dia, z, angle) {
+  return remap(drill.hole(features, 0.0),
+               drill.axisAt([dia / 2.0 * cos(angle), dia / 2.0 * sin(angle), z], [cos(angle), sin(angle), 0.0]));
+}
+
+/// A cross hole, as an entry in a shaft's list: `void`, a shaft.crossVoid, cut
+/// from the shaft. List it after the segments:
+///
+///   shaft.body([shaft.diameter(20.0, 0.0, 40.0),
+///               shaft.crossHole(shaft.crossVoid([drill.tap(6.0, 10.0), drill.blind(5.0, 12.0)], 20.0, 15.0, 0.0))])
+///
+/// The fold passes it, as it passes a joint, and body cuts its void after the
+/// fold, as it cuts a runout's; the box is the shaft's, and a finished body's
+/// material, paint and stand-in go on as they would without it. Never list it
+/// between a shaft.fillet or shaft.chamfer and the segment it blends into. The
+/// simplified model, shaft.envelope, leaves it out.
+//
+// The void arrives placed: an entry cannot take the drill stack itself, since
+// a list of functions it captured is not one the fold can see.
+crossHole(void) {
+  hole(eDown, eUp, want) {
+    return want > 5.5 ? nothing : (want > 2.5 && want < 3.5 ? void : jointAnswer(eDown, eUp, want));
+  }
+  return hole;
+}
+
+/// `part`, built on a +Z datum the way a fastener is (its seating plane at
+/// z = 0, its shank down), placed on the axis of shaft.crossHole(…, dia, z,
+/// angle): its datum on the shaft's surface, its +Z pointing out. Placed with
+/// transform, so it keeps its box; a set screw in a tapped cross hole and the
+/// hole cannot drift apart.
+///
+///   screw = shaft.crossPlace(fastener.setScrew(6.0, 8.0, fastener.pointCup), 20.0, 15.0, 0.0)
+crossPlace(part, dia, z, angle) {
+  return transform.translate(transform.rotateZ(transform.rotateY(part, pi / 2.0), angle),
+                             [dia / 2.0 * cos(angle), dia / 2.0 * sin(angle), z]);
+}
+
+// =========================================================
 // Ends
 // =========================================================
 
