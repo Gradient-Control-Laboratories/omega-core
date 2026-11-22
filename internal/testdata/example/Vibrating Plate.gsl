@@ -2,14 +2,8 @@
 // Scene Grid: 10
 
 // Kirchhoff-Love vibrating plate simulation
-plateW = 3.00;
-plateW.min = 2.0;
-plateW.max = 6.0;
-plateW.period = 12;
-plateD = 5.00;
-plateD.min = 2.0;
-plateD.max = 6.0;
-plateD.period = 11;
+@range(2.0, 6.0, 12) plateW = 3.00;
+@range(2.0, 6.0, 11) plateD = 5.00;
 plateH = 0.05;
 
 // Edge boundary conditions: 0 = free, 1 = fixed (pinned)

@@ -749,9 +749,7 @@ return map(doubleVal, xs);
 func TestAssemble_SliderVariablePreservedInPreLoweringFold(t *testing.T) {
 	pkgMgr := &source.MockManager{}
 	src := `
-radius = 25.0;
-radius.min = 5.0;
-radius.max = 50.0;
+@range(5.0, 50.0) radius = 25.0;
 scaled = radius * 2.0;
 return sphere(scaled);
 `
@@ -775,9 +773,7 @@ return sphere(scaled);
 func TestAssemble_ExtractUI_Populated(t *testing.T) {
 	pkgMgr := &source.MockManager{}
 	src := `@scene(200, 10)
-radius = 25.0;
-radius.min = 5.0;
-radius.max = 50.0;
+@range(5.0, 50.0) radius = 25.0;
 return sphere(radius);
 `
 	res, err := Assemble([]string{src}, SourceManager(pkgMgr), ExtractUI())
@@ -801,9 +797,7 @@ return sphere(radius);
 func TestAssemble_ExtractUI_ZeroHeadlessOverhead(t *testing.T) {
 	pkgMgr := &source.MockManager{}
 	src := `@scene(200, 10)
-radius = 25.0;
-radius.min = 5.0;
-radius.max = 50.0;
+@range(5.0, 50.0) radius = 25.0;
 return sphere(radius);
 `
 	res, err := Assemble([]string{src}, SourceManager(pkgMgr))

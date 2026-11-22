@@ -15,9 +15,7 @@ import (
 // in BuildValue — and (2) keep the slider live in the derivative (reference the
 // uniform, not bake in its value), so dragging the slider updates the result.
 func TestSliderDerivative(t *testing.T) {
-	src := "radius = 5;\n" +
-		"radius.min = 1;\n" +
-		"radius.max = 10;\n" +
+	src := "@range(1, 10) radius = 5;\n" +
 		"center = radius * [sin(time), cos(time), 0];\n" +
 		"vel = center.dtime;\n" +
 		"return length(p - center) - 1 + vel.x;\n"

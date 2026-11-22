@@ -65,9 +65,7 @@ func countInPackage(pkg *program.Package, pred func(*program.Operand) bool) int 
 // parameter-blind eval.Fold over the program: `r > 0.5 ? 5 : 2` became 5 and
 // r disappeared from the program and from the slider list.
 func TestAssembleKeepsSliderSelect(t *testing.T) {
-	src := `r = 1.0;
-r.min = 0.0;
-r.max = 2.0;
+	src := `@range(0.0, 2.0) r = 1.0;
 b = sphere(r > 0.5 ? 5 : 2);
 return b;
 `

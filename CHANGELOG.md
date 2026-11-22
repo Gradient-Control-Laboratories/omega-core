@@ -171,7 +171,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Shadows. The labels of the Render, Scene, Section and Export panels are as light as the Parameters panel's.
 - The six `examples/` models that set slider limits with `.min`, `.max` and `.period` (blend, can, gyroid,
   hybrid_bracket, kinetic_sculpture, slider_mechanism) use `@range`, as `gsl fix -range` writes it. Their sliders and
-  compiled shaders are unchanged. The example documents under `internal/testdata/example` keep the old syntax.
+  compiled shaders are unchanged. So are the example documents under `internal/testdata/example` and three codegen
+  fixtures, whose WGSL goldens move only in their `gsl_param_<line>_<col>` names (every golden is identical with those
+  names normalized), and the tests that used the properties only to declare a slider. Tests about the properties
+  themselves keep them.
 
 ### Deprecated
 

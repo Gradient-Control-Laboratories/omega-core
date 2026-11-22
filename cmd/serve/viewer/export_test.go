@@ -15,9 +15,7 @@ import (
 )
 
 const exportedPart = `
-r = 10;
-r.min = 2;
-r.max = 20;
+@range(2, 20) r = 10;
 body = sphere(r);
 return body;
 `

@@ -3,24 +3,14 @@
 
 animate = mod(time, 1);
 
-numTeeth1 = 20;
-numTeeth1.min = 9;
-numTeeth1.max = 100;
-numTeeth2 = 26;
-numTeeth2.min = 9;
-numTeeth2.max = 100;
-moduleVal = 0.4;
-moduleVal.min = 0.1;
-moduleVal.max = 1.0;
-pressureAngle = 0.26;
-pressureAngle.min = 0.0;
-pressureAngle.max = 0.5;
+@range(9, 100) numTeeth1 = 20;
+@range(9, 100) numTeeth2 = 26;
+@range(0.1, 1.0) moduleVal = 0.4;
+@range(0.0, 0.5) pressureAngle = 0.26;
 thickness = 3.5;
 dedendumClearance = 0.25;
 kSmall = 0.025;
-helixAngle = 0.5;
-helixAngle.min = -1.0;
-helixAngle.max = 1.0;
+@range(-1.0, 1.0) helixAngle = 0.5;
 standoffHeight = 2.5;
 standoffChamfer = 0.1;
 standoffDiam1 = 3.0;

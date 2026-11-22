@@ -16,11 +16,11 @@ fn builtin_circleXY(p: vec3<f32>, center: vec2<f32>, radius: f32) -> f32 {
   return length(p.xy - center) - radius;
 }
 
-fn gsl_remap(p: vec3<f32>, gsl_param_7_7: f32, gsl_param_11_7: f32, gsl_param_15_7: f32, gsl_param_19_7: f32, gsl_param_42_13: f32, vector_zero: vec3<f32>) -> f32 {
+fn gsl_remap(p: vec3<f32>, gsl_param_7_28: f32, gsl_param_8_28: f32, gsl_param_9_28: f32, gsl_param_10_28: f32, gsl_param_30_29: f32, vector_zero: vec3<f32>) -> f32 {
   return 1.025 - abs(p.x);
 }
 
-fn gsl_remap_2(p: vec3<f32>, gsl_param_7_7: f32, gsl_param_11_7: f32, gsl_param_15_7: f32, gsl_param_19_7: f32, gsl_param_42_13: f32, vector_zero: vec3<f32>, vector_dirZ: vec3<f32>) -> f32 {
+fn gsl_remap_2(p: vec3<f32>, gsl_param_7_28: f32, gsl_param_8_28: f32, gsl_param_9_28: f32, gsl_param_10_28: f32, gsl_param_30_29: f32, vector_zero: vec3<f32>, vector_dirZ: vec3<f32>) -> f32 {
   return builtin_plane(vec3<f32>(abs(p.x), p.y, p.z), vec3<f32>(4.7, 7.3000746, -2.6998363), vec3<f32>(0.70710677, 0.0, 0.70710677));
 }
 
@@ -30,11 +30,11 @@ fn builtin_intersectChamfer(d1: f32, d2: f32, offset: f32) -> f32 {
   return max(face, edge);
 }
 
-fn gsl_remap_3(p: vec3<f32>, gsl_param_7_7: f32, gsl_param_11_7: f32, gsl_param_15_7: f32, gsl_param_19_7: f32, gsl_param_42_13: f32, vector_zero: vec3<f32>, vector_dirZ: vec3<f32>) -> f32 {
+fn gsl_remap_3(p: vec3<f32>, gsl_param_7_28: f32, gsl_param_8_28: f32, gsl_param_9_28: f32, gsl_param_10_28: f32, gsl_param_30_29: f32, vector_zero: vec3<f32>, vector_dirZ: vec3<f32>) -> f32 {
   return abs(p.x) - 1.45;
 }
 
-fn gsl_remap_4(p: vec3<f32>, gsl_param_7_7: f32, gsl_param_11_7: f32, gsl_param_15_7: f32, gsl_param_19_7: f32, gsl_param_42_13: f32, vector_zero: vec3<f32>, vector_dirZ: vec3<f32>) -> f32 {
+fn gsl_remap_4(p: vec3<f32>, gsl_param_7_28: f32, gsl_param_8_28: f32, gsl_param_9_28: f32, gsl_param_10_28: f32, gsl_param_30_29: f32, vector_zero: vec3<f32>, vector_dirZ: vec3<f32>) -> f32 {
   return 0.6 - abs(p.x);
 }
 
@@ -122,15 +122,15 @@ fn boltHole(p: vec3<f32>, vector_dirZ: vec3<f32>, corner2D: vec2<f32>) -> f32 {
   return builtin_cylinderZ(p, vector_dirZ, vec3<f32>(corner2D.x, corner2D.y, 0.0), 0.42);
 }
 
-fn sdShape(p: vec3<f32>, time: f32, gsl_param_7_7: f32, gsl_param_11_7: f32, gsl_param_15_7: f32, gsl_param_19_7: f32, gsl_param_42_13: f32) -> gsl_shape {
-  let p0x = gsl_param_7_7;
+fn sdShape(p: vec3<f32>, time: f32, gsl_param_7_28: f32, gsl_param_8_28: f32, gsl_param_9_28: f32, gsl_param_10_28: f32, gsl_param_30_29: f32) -> gsl_shape {
+  let p0x = gsl_param_7_28;
   let quadV0X = -5.9 + p0x;
-  let p0y = gsl_param_11_7;
+  let p0y = gsl_param_8_28;
   let quadV0Y = 1.5 + p0y;
   let v0 = vec2<f32>(quadV0X, quadV0Y);
-  let p2x = gsl_param_15_7;
+  let p2x = gsl_param_9_28;
   let quadV2X = 5.9 + p2x;
-  let p2y = gsl_param_19_7;
+  let p2y = gsl_param_10_28;
   let quadV2Y = 6.1 + p2y;
   let v2 = vec2<f32>(quadV2X, quadV2Y);
   let bottomPlane = -(p.z - -3.5);
@@ -138,22 +138,22 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_7_7: f32, gsl_param_11_7: f32, gsl
   let gsl_tmp_1 = p.z - -2.7;
   let gsl_tmp_2 = builtin_plane(vec3<f32>(abs(p.x), p.y, p.z), vec3<f32>(4.7, 7.3000746, -2.6998363), vec3<f32>(0.70710677, 0.0, 0.70710677));
   let vector_zero = vec3<f32>(0.0, 0.0, 0.0);
-  let unionTop = select(-length(vec2<f32>((gsl_tmp_1 + gsl_tmp_2) / 1.847759, (gsl_tmp_1 - gsl_tmp_2) / 0.76536685)), min(gsl_tmp_1, gsl_tmp_2), max(gcl_closure_gsl_anon(p - vec3<f32>(0.70710677, 0.0, 0.70710677) * gsl_tmp_2), gsl_remap_2(p - vector_dirZ * gsl_tmp_1, gsl_param_7_7, gsl_param_11_7, gsl_param_15_7, gsl_param_19_7, gsl_param_42_13, vector_zero, vector_dirZ)) > 0.0);
-  let clevisAng = gsl_param_42_13;
+  let unionTop = select(-length(vec2<f32>((gsl_tmp_1 + gsl_tmp_2) / 1.847759, (gsl_tmp_1 - gsl_tmp_2) / 0.76536685)), min(gsl_tmp_1, gsl_tmp_2), max(gcl_closure_gsl_anon(p - vec3<f32>(0.70710677, 0.0, 0.70710677) * gsl_tmp_2), gsl_remap_2(p - vector_dirZ * gsl_tmp_1, gsl_param_7_28, gsl_param_8_28, gsl_param_9_28, gsl_param_10_28, gsl_param_30_29, vector_zero, vector_dirZ)) > 0.0);
+  let clevisAng = gsl_param_30_29;
   let clevisRot = map_rotateZX(p, radians(clevisAng));
   let gsl_result = arcShape(clevisRot, vector_zero);
   let horizPlane = gsl_result.v_2;
   let frontPlane = planeXY(p, vec2<f32>(5.9, 1.5), v0) - 1.2;
-  let eyeSpan = gsl_remap(clevisRot, gsl_param_7_7, gsl_param_11_7, gsl_param_15_7, gsl_param_19_7, gsl_param_42_13, vector_zero);
+  let eyeSpan = gsl_remap(clevisRot, gsl_param_7_28, gsl_param_8_28, gsl_param_9_28, gsl_param_10_28, gsl_param_30_29, vector_zero);
   let eyeDraft = builtin_plane(clevisRot, vec3<f32>(1.45, 0.30003822, -1.3846282), vec3<f32>(0.0, -1.0, 1.7320508));
   let eyeStep = max(min(eyeSpan, eyeDraft + 0.8), eyeDraft);
   let topSurf = builtin_intersectChamfer(builtin_intersectChamfer(unionTop, horizPlane, 0.05), builtin_intersectChamfer(frontPlane, eyeStep, 0.05), 0.05);
   let base = max(builtin_intersectChamfer(max(max(builtin_quadXY(p, v0, vec2<f32>(-5.9, 6.1), v2, vec2<f32>(5.9, 1.5)) - 1.2, bottomPlane), -min(min(min(boltHole(p, vector_dirZ, v0), builtin_axis(p, vec3<f32>(-5.9, 6.1, 0.0), vector_dirZ) - 0.42), boltHole(p, vector_dirZ, v2)), builtin_axis(p, vec3<f32>(5.9, 1.5, 0.0), vector_dirZ) - 0.42)), topSurf, 0.05), -topSurf - 0.8);
   let clevisShape = gsl_result.v_1;
-  let clevisSpan = gsl_remap_3(clevisRot, gsl_param_7_7, gsl_param_11_7, gsl_param_15_7, gsl_param_19_7, gsl_param_42_13, vector_zero, vector_dirZ);
+  let clevisSpan = gsl_remap_3(clevisRot, gsl_param_7_28, gsl_param_8_28, gsl_param_9_28, gsl_param_10_28, gsl_param_30_29, vector_zero, vector_dirZ);
   let rearPlane = planeXY(p, vec2<f32>(-5.9, 6.1), v2) - 1.2;
   let clevis = max(max(max(builtin_intersectChamfer(clevisShape, clevisSpan, 0.05), bottomPlane), -topSurf), rearPlane);
-  let clevisCut = max(min(-eyeStep - 0.8, rearPlane), gsl_remap_4(clevisRot, gsl_param_7_7, gsl_param_11_7, gsl_param_15_7, gsl_param_19_7, gsl_param_42_13, vector_zero, vector_dirZ));
+  let clevisCut = max(min(-eyeStep - 0.8, rearPlane), gsl_remap_4(clevisRot, gsl_param_7_28, gsl_param_8_28, gsl_param_9_28, gsl_param_10_28, gsl_param_30_29, vector_zero, vector_dirZ));
   let clevisFinal = builtin_intersectChamfer(clevis, clevisCut, 0.05);
   let body = min(base, clevisFinal);
   let gsl_s1 = gsl_shape(body, 1u);

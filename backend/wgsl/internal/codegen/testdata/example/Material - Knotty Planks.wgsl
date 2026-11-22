@@ -824,7 +824,7 @@ fn wood_speciesMaterial(p: vec3<f32>, number: f32, axisOrigin: vec3<f32>, axisDi
   return surfaceMat;
 }
 
-fn sdShape(p: vec3<f32>, time: f32, gsl_param_29_7: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
+fn sdShape(p: vec3<f32>, time: f32, gsl_param_29_20: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
   gsl_partNear = vec3<f32>(1e10, 1e10, 1e10);
   let gsl_partLo = vec3<f32>(-1250.01, -470.01, -0.01);
   let gsl_partHi = vec3<f32>(1250.01, 470.01, 20.01);
@@ -841,7 +841,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_29_7: f32, noiseTex: texture_3d<f3
   return gsl_s1;
 }
 
-fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_29_7: f32, noiseTex: texture_3d<f32>) -> vec4<f32> {
+fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_29_20: f32, noiseTex: texture_3d<f32>) -> vec4<f32> {
   if (gsl_colorIdx == 1u) {
     let material_bulk_wood_walnutNumber = 4.0;
     let material_bulk_wood_cherryNumber = 5.0;
@@ -854,7 +854,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_29_7: f3
     let knotty = select(0.0, 1.0, p.x < 0.0);
     let index = 2.0 * pair + knotty;
     let stem = vec3<f32>(select(650.0, -650.0, knotty > 0.5) - 600.0 - gsl_floored(911.0 * index, 2100.0), (pair - 2.5) * 160.0, -80.0);
-    let age = gsl_param_29_7;
+    let age = gsl_param_29_20;
     let look = vec3<f32>(0.0, age, 0.0);
     let spacing = select(select(700.0, 850.0, pair < 4.5), -1.0, pair < 3.5);
     let knots = select(0.0, spacing, knotty > 0.5);
@@ -889,7 +889,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_29_7: f3
   }
   return vec4<f32>(0.0, 0.0, 0.0, 0.0);
 }
-fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_29_7: f32, noiseTex: texture_3d<f32>) -> gsl_material {
+fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_29_20: f32, noiseTex: texture_3d<f32>) -> gsl_material {
   if (gsl_materialIdx == 1u) {
     let material_bulk_wood_walnutNumber = 4.0;
     let material_bulk_wood_cherryNumber = 5.0;
@@ -902,7 +902,7 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_29
     let knotty = select(0.0, 1.0, p.x < 0.0);
     let index = 2.0 * pair + knotty;
     let stem = vec3<f32>(select(650.0, -650.0, knotty > 0.5) - 600.0 - gsl_floored(911.0 * index, 2100.0), (pair - 2.5) * 160.0, -80.0);
-    let age = gsl_param_29_7;
+    let age = gsl_param_29_20;
     let look = vec3<f32>(0.0, age, 0.0);
     let spacing = select(select(700.0, 850.0, pair < 4.5), -1.0, pair < 3.5);
     let knots = select(0.0, spacing, knotty > 0.5);

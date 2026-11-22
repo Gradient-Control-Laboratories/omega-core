@@ -18,9 +18,7 @@ func TestCompiler_StdlibAndImports(t *testing.T) {
 	sourcePath := filepath.Join(tempDir, "stdlib_test.gsl")
 	// Use embedded stdlib packages color and vector
 	src := `
-r = 1.0;
-r.min = 0.5;
-r.max = 2.5;
+@range(0.5, 2.5) r = 1.0;
 
 len = sqrt(p.x * p.x + p.y * p.y + p.z * p.z);
 return len - r;

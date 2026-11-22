@@ -118,9 +118,7 @@ func TestInline_RemapOfScalarParameterStays(t *testing.T) {
 ring(radius) {
 	return remap(length(p.xy) - radius, [p.x, p.y, 0]);
 }
-r = 2;
-r.min = 1;
-r.max = 3;
+@range(1, 3) r = 2;
 return ring(r * time);
 `
 	prog, err := runPipeline(src)

@@ -21,10 +21,10 @@ fn cylinderRounded(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, radius: f32) -> f32
   return length(pa - ba * h) - radius;
 }
 
-fn sdShape(p: vec3<f32>, time: f32, gsl_param_21_13: f32, gsl_param_24_7: f32) -> gsl_shape {
+fn sdShape(p: vec3<f32>, time: f32, gsl_param_21_26: f32, gsl_param_22_23: f32) -> gsl_shape {
   gsl_partNear = vec3<f32>(1e10, 1e10, 1e10);
-  let semiMajor = gsl_param_21_13;
-  let ecc = gsl_param_24_7;
+  let semiMajor = gsl_param_21_26;
+  let ecc = gsl_param_22_23;
   let semiMinor = semiMajor * sqrt(1.0 - ecc * ecc);
   let focusOffset = semiMajor * ecc;
   let meanAnomaly = time;

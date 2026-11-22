@@ -186,25 +186,25 @@ fn gears_bevelPair(p: vec3<f32>, vector_zero: vec3<f32>, vector_dirZ: vec3<f32>,
   return gsl_result;
 }
 
-fn sdShape(p: vec3<f32>, time: f32, gsl_param_14_13: f32, gsl_param_17_13: f32, gsl_param_20_13: f32, gsl_param_23_17: f32, gsl_param_31_14: f32, gsl_param_38_15: f32, gsl_param_44_16: f32, gsl_param_54_15: f32, gsl_param_57_10: f32, gsl_param_64_18: f32) -> gsl_shape {
+fn sdShape(p: vec3<f32>, time: f32, gsl_param_14_28: f32, gsl_param_15_28: f32, gsl_param_16_30: f32, gsl_param_17_34: f32, gsl_param_23_32: f32, gsl_param_28_33: f32, gsl_param_32_33: f32, gsl_param_40_32: f32, gsl_param_41_27: f32, gsl_param_46_35: f32) -> gsl_shape {
   gsl_partNear = vec3<f32>(1e10, 1e10, 1e10);
-  let numTeeth1 = gsl_param_14_13;
-  let moduleVal = gsl_param_20_13;
-  let shaftAngle = gsl_param_31_14;
-  let numTeeth2 = gsl_param_17_13;
+  let numTeeth1 = gsl_param_14_28;
+  let moduleVal = gsl_param_16_30;
+  let shaftAngle = gsl_param_23_32;
+  let numTeeth2 = gsl_param_15_28;
   let gslBox_6 = atan2(sin(shaftAngle), numTeeth2 / numTeeth1 + cos(shaftAngle));
   let gslBox = numTeeth1 * moduleVal / (2.0 * sin(gslBox_6));
   let gslBox_3 = gslBox_6 + moduleVal / gslBox;
   let gslBox_2 = max(gslBox * sin(gslBox_3) / cos(moduleVal / gslBox), 1.6);
   let pitchAngle1 = atan2(sin(shaftAngle), numTeeth2 / numTeeth1 + cos(shaftAngle));
   let outerCone = numTeeth1 * moduleVal / (2.0 * sin(pitchAngle1));
-  let faceFraction = gsl_param_44_16;
+  let faceFraction = gsl_param_32_33;
   let faceWidth = outerCone * faceFraction;
   let gslBox_4 = (gslBox - faceWidth) * cos(gslBox_3) / cos(moduleVal / gslBox);
-  let recess = gsl_param_57_10;
+  let recess = gsl_param_41_27;
   let gslBox_7 = min(gslBox_4 + recess - 0.1, gslBox_4);
-  let crownToBack = gsl_param_54_15;
-  let standoffHeight = gsl_param_64_18;
+  let crownToBack = gsl_param_40_32;
+  let standoffHeight = gsl_param_46_35;
   let gslBox_5 = gslBox * cos(gslBox_3) / cos(moduleVal / gslBox) + crownToBack + max(standoffHeight, 0.1);
   let gsl_partLo = vec3<f32>(min(-gslBox_2, gslBox_2) - 0.01, min(-gslBox_2, gslBox_2) - 0.01, min(gslBox_7, gslBox_5) - 0.01);
   let gsl_partHi = vec3<f32>(max(-gslBox_2, gslBox_2) + 0.01, max(-gslBox_2, gslBox_2) + 0.01, max(gslBox_7, gslBox_5) + 0.01);
@@ -212,8 +212,8 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_14_13: f32, gsl_param_17_13: f32, 
   var gsl_part = gsl_partBox;
   let vector_zero = vec3<f32>(0.0, 0.0, 0.0);
   let vector_dirZ = vec3<f32>(0.0, 0.0, 1.0);
-  let pressureAngle = gsl_param_23_17;
-  let spiralAngle = gsl_param_38_15;
+  let pressureAngle = gsl_param_17_34;
+  let spiralAngle = gsl_param_28_33;
   let animate = gsl_floored(time, 1.0);
   let gsl_result = gears_bevelPair(p, vector_zero, vector_dirZ, numTeeth1, numTeeth2, moduleVal, pressureAngle, shaftAngle, spiralAngle, faceWidth, crownToBack, recess, 0.025, 3.0, 3.6, standoffHeight, 0.1, 1.5, 2.0, 0.25, 0.025, animate);
   let gsl_part_g1 = gsl_result.v_1;

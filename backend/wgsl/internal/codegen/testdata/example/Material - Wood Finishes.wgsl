@@ -828,13 +828,13 @@ fn cube(p: vec3<f32>, x: f32, y: f32, noiseTex: texture_3d<f32>) -> f32 {
   return max(flat, blended);
 }
 
-fn sdShape(p: vec3<f32>, time: f32, gsl_param_29_7: f32, gsl_param_32_11: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
+fn sdShape(p: vec3<f32>, time: f32, gsl_param_29_20: f32, gsl_param_30_24: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
   let cubes = min(min(min(min(min(min(min(min(min(min(min(min(min(min(min(1000.0, cube(p, -360.0, 105.0, noiseTex)), cube(p, -300.0, 105.0, noiseTex)), cube(p, -240.0, 105.0, noiseTex)), cube(p, -180.0, 105.0, noiseTex)), cube(p, -120.0, 105.0, noiseTex)), cube(p, -60.0, 105.0, noiseTex)), cube(p, 0.0, 105.0, noiseTex)), cube(p, 60.0, 105.0, noiseTex)), cube(p, 120.0, 105.0, noiseTex)), cube(p, 180.0, 105.0, noiseTex)), cube(p, 240.0, 105.0, noiseTex)), cube(p, 300.0, 105.0, noiseTex)), cube(p, 360.0, 105.0, noiseTex)), min(min(min(min(min(min(min(min(min(min(min(min(min(1000.0, cube(p, -360.0, 35.0, noiseTex)), cube(p, -300.0, 35.0, noiseTex)), cube(p, -240.0, 35.0, noiseTex)), cube(p, -180.0, 35.0, noiseTex)), cube(p, -120.0, 35.0, noiseTex)), cube(p, -60.0, 35.0, noiseTex)), cube(p, 0.0, 35.0, noiseTex)), cube(p, 60.0, 35.0, noiseTex)), cube(p, 120.0, 35.0, noiseTex)), cube(p, 180.0, 35.0, noiseTex)), cube(p, 240.0, 35.0, noiseTex)), cube(p, 300.0, 35.0, noiseTex)), cube(p, 360.0, 35.0, noiseTex))), min(min(min(min(min(min(min(min(min(min(min(min(min(min(1000.0, cube(p, -360.0, -35.0, noiseTex)), cube(p, -300.0, -35.0, noiseTex)), cube(p, -240.0, -35.0, noiseTex)), cube(p, -180.0, -35.0, noiseTex)), cube(p, -120.0, -35.0, noiseTex)), cube(p, -60.0, -35.0, noiseTex)), cube(p, 0.0, -35.0, noiseTex)), cube(p, 60.0, -35.0, noiseTex)), cube(p, 120.0, -35.0, noiseTex)), cube(p, 180.0, -35.0, noiseTex)), cube(p, 240.0, -35.0, noiseTex)), cube(p, 300.0, -35.0, noiseTex)), cube(p, 360.0, -35.0, noiseTex)), min(min(min(min(min(min(min(min(min(min(min(min(min(1000.0, cube(p, -360.0, -105.0, noiseTex)), cube(p, -300.0, -105.0, noiseTex)), cube(p, -240.0, -105.0, noiseTex)), cube(p, -180.0, -105.0, noiseTex)), cube(p, -120.0, -105.0, noiseTex)), cube(p, -60.0, -105.0, noiseTex)), cube(p, 0.0, -105.0, noiseTex)), cube(p, 60.0, -105.0, noiseTex)), cube(p, 120.0, -105.0, noiseTex)), cube(p, 180.0, -105.0, noiseTex)), cube(p, 240.0, -105.0, noiseTex)), cube(p, 300.0, -105.0, noiseTex)), cube(p, 360.0, -105.0, noiseTex))));
   let gsl_s1 = gsl_shape(cubes, 1u);
   return gsl_s1;
 }
 
-fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_29_7: f32, gsl_param_32_11: f32, noiseTex: texture_3d<f32>) -> vec4<f32> {
+fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_29_20: f32, gsl_param_30_24: f32, noiseTex: texture_3d<f32>) -> vec4<f32> {
   if (gsl_colorIdx == 1u) {
     let material_bulk_wood_pineNumber = 14.0;
     let material_bulk_wood_sugarMapleNumber = 6.0;
@@ -845,8 +845,8 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_29_7: f3
     let column = clamp(floor(p.x / 60.0 + 6.5), 0.0, 12.0);
     let centre = vec2<f32>((column - 6.0) * 60.0, (1.5 - rank) * 70.0);
     let stem = vec3<f32>(centre.x - 60.0, centre.y - 35.0, 0.0);
-    let age = gsl_param_29_7;
-    let weather = gsl_param_32_11;
+    let age = gsl_param_29_20;
+    let weather = gsl_param_30_24;
     let look = vec3<f32>(0.0, age, weather);
     let gsl_tmp_17 = floor(p.x / 60.0 + 6.5);
     let gsl_tmp_18 = floor((140.0 - p.y) / 70.0);
@@ -913,7 +913,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_29_7: f3
   }
   return vec4<f32>(0.0, 0.0, 0.0, 0.0);
 }
-fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_29_7: f32, gsl_param_32_11: f32, noiseTex: texture_3d<f32>) -> gsl_material {
+fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_29_20: f32, gsl_param_30_24: f32, noiseTex: texture_3d<f32>) -> gsl_material {
   if (gsl_materialIdx == 1u) {
     let material_bulk_wood_pineNumber = 14.0;
     let material_bulk_wood_sugarMapleNumber = 6.0;
@@ -924,8 +924,8 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_29
     let column = clamp(floor(p.x / 60.0 + 6.5), 0.0, 12.0);
     let centre = vec2<f32>((column - 6.0) * 60.0, (1.5 - rank) * 70.0);
     let stem = vec3<f32>(centre.x - 60.0, centre.y - 35.0, 0.0);
-    let age = gsl_param_29_7;
-    let weather = gsl_param_32_11;
+    let age = gsl_param_29_20;
+    let weather = gsl_param_30_24;
     let look = vec3<f32>(0.0, age, weather);
     let gsl_tmp_17 = floor(p.x / 60.0 + 6.5);
     let gsl_tmp_18 = floor((140.0 - p.y) / 70.0);
