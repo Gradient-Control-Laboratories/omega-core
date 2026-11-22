@@ -1,6 +1,6 @@
 // Slider panel — the "Parameters" side panel: one row per top-level
-// variable assigned a literal with both `.min` and `.max` set, and one per
-// `@color` variable, which gets a chip in place of the slider.
+// variable assigned a literal under an `@range(min, max[, period])`, and one
+// per `@color` variable, which gets a chip in place of the slider.
 //
 // Shared across viewer frontends. The editor is
 // imported directly; everything that lives in a host's viewer or compile state
@@ -41,8 +41,9 @@ export function initSliderPanel(options = {}) {
 }
 
 //
-// One row per top-level variable assigned a literal with both `.min`
-// and `.max` properties set. Dragging a slider rewrites the literal in
+// One row per top-level variable assigned a literal under an `@range`.
+// (The deprecated `.min` and `.max` properties declare the same sliders.)
+// Dragging a slider rewrites the literal in
 // the editor (replaceSourceSpan tags it as a "scrub" userEvent), which
 // triggers the normal debounced recompile path. The next compile
 // returns updated `sliders[]` whose Span reflects any
@@ -107,7 +108,8 @@ function sliderStep() {
     return 'any';
 }
 
-// Per-row animation state for sliders annotated with `.period`. Keyed
+// Per-row animation state for sliders with a period, the third `@range`
+// argument (or the deprecated `.period` property). Keyed
 // by variableName. `paused` is per-row (the play/pause button); `last`
 // is the most recent quantised value we wrote so the tick can skip the
 // uniform write when nothing changed — which keeps the rAF loop cheap
@@ -195,7 +197,7 @@ function renderSliderPanel(allSliders, uiControls = []) {
         const needsPlayBtn = !!(s.period && s.period > 0);
         const hasPlayBtn = row ? !!row.querySelector('.slider-play-btn') : false;
         if (row && needsPlayBtn !== hasPlayBtn) {
-            // The .period property was added or removed since the last
+            // The slider's period was added or removed since the last
             // compile. Replace the row so the leading control cell
             // matches and listeners stay clean.
             row.remove();
