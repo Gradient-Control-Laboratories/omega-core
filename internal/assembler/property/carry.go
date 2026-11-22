@@ -186,22 +186,107 @@ func CarryReturnProperties(prog *program.Program) error {
 	}
 	// revolve's frame is not one a companion can return (see revolveFrame),
 	// and like any frame it is carried only in a program that reads one.
-	var rev *revolveFrame
+	var frames builtinFrames
 	if packageReadsFrame(prog.Primary) {
-		if rev = findRevolve(pkgs, paths); rev != nil {
-			carriers[rev.key] = carrier{slots: [][]string{{uProperty, vProperty}}}
-			if rev.partial {
-				partial := rev.key
+		if frames.rev = findRevolve(pkgs, paths); frames.rev != nil {
+			carriers[frames.rev.key] = carrier{slots: [][]string{{uProperty, vProperty}}}
+			if frames.rev.partial {
+				partial := frames.rev.key
 				partial.params = 4
 				carriers[partial] = carrier{slots: [][]string{{uProperty, vProperty}}}
 			}
+		}
+		if frames.sweep = findSweep(pkgs, paths); frames.sweep != nil {
+			carriers[frames.sweep.key] = carrier{slots: [][]string{{uProperty, vProperty}}}
 		}
 	}
 	if len(carriers) == 0 {
 		return nil
 	}
-	carryCalls(prog.Primary, carriers, rev)
+	carryCalls(prog.Primary, carriers, frames)
 	return nil
+}
+
+// builtinFrames are the builtin functions whose frame is written at the call,
+// from frame reads of their arguments no companion could make: revolve's
+// (revolveFrame) and sweep's (sweepFrame).
+type builtinFrames struct {
+	rev   *revolveFrame
+	sweep *sweepFrame
+}
+
+// valueOr is the value of prop for the call fc when fc is one of these, and
+// companion, the call of an ordinary carrier's companion, when it is not.
+func (f builtinFrames) valueOr(fc *program.FnCall, prop string, companion *program.Operand) *program.Operand {
+	return f.sweep.valueOr(fc, prop, f.rev.valueOr(fc, prop, companion))
+}
+
+// SWEEP'S FRAME. builtin's sweep(section, path) (sweep.gsl) is one remap of its
+// section, read at the path's distance and the height. Its frame is the
+// path's own u, the distance along the path, and v the section's own u where
+// the sweep reads the section; both are frame reads of arguments, so, as for
+// revolve, they are written at the call:
+//
+//	rail = sweep(moulding, route);   becomes   gslCarry1 = route.u;
+//	                                           gslCarry2 = remap(moulding.u, <sweep's coordinate>);
+//	                                           rail = sweep(moulding, route);
+//	                                           rail.u = gslCarry1;  rail.v = gslCarry2;
+type sweepFrame struct {
+	key carrierKey
+	fn  *program.Function
+}
+
+const sweepName = "sweep"
+
+// findSweep finds builtin's two-parameter sweep among pkgs, or nil when it is
+// not there or its body is no longer one remap of its first parameter.
+func findSweep(pkgs []*program.Package, paths []string) *sweepFrame {
+	for i, pkg := range pkgs {
+		if pkg == nil || pkg.Path != builtinPath {
+			continue
+		}
+		for _, f := range pkg.Files {
+			if f == nil {
+				continue
+			}
+			for _, ft := range f.FnTypes {
+				if ft == nil || ft.Name != sweepName {
+					continue
+				}
+				for _, g := range ft.Groups {
+					if g == nil || g.ParamCount != 2 || len(g.Functions) == 0 {
+						continue
+					}
+					fn := g.Functions[0]
+					if remapCoordinate(fn, 2) == nil {
+						return nil
+					}
+					return &sweepFrame{key: carrierKey{pkgPath: paths[i], name: sweepName, params: 2}, fn: fn}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// valueOr is the value of prop for the call fc when fc is a sweep, and
+// otherwise, the value it was handed.
+func (sw *sweepFrame) valueOr(fc *program.FnCall, prop string, otherwise *program.Operand) *program.Operand {
+	if sw == nil || fc == nil || fc.Reference == nil || len(fc.Arguments) != 2 ||
+		fc.Reference.Name != sw.key.name || fc.Reference.PkgPath != sw.key.pkgPath {
+		return otherwise
+	}
+	arg := func(i int) *program.Operand { return proto.Clone(fc.Arguments[i]).(*program.Operand) }
+	if prop == uProperty {
+		return nary(program.Operation_SURFACEU, arg(1))
+	}
+	params := make(map[string]*program.Operand, 2)
+	for i, prm := range sw.fn.Parameters {
+		params[prm.Name] = fc.Arguments[i]
+	}
+	return nary(program.Operation_REMAP,
+		nary(program.Operation_SURFACEU, arg(0)),
+		substituteParams(remapCoordinate(sw.fn, 2), params))
 }
 
 // REVOLVE'S FRAME. builtin's revolve(profile, axisPoint, axisDirection)
@@ -274,7 +359,14 @@ func findRevolve(pkgs []*program.Package, paths []string) *revolveFrame {
 // revolveCoordinate is the coordinate fn's body remaps its first parameter by,
 // or nil when the body is not that one remap.
 func revolveCoordinate(fn *program.Function) *program.Operand {
-	if fn == nil || len(fn.Parameters) != 3 || len(fn.Returns) != 1 || len(fn.Assignments) != 0 {
+	return remapCoordinate(fn, 3)
+}
+
+// remapCoordinate is the coordinate the body of fn, a function of params
+// parameters, remaps its first parameter by, or nil when the body is not that
+// one remap.
+func remapCoordinate(fn *program.Function, params int) *program.Operand {
+	if fn == nil || len(fn.Parameters) != params || len(fn.Returns) != 1 || len(fn.Assignments) != 0 {
 		return nil
 	}
 	e, ok := fn.Returns[0].T.(*program.Operand_Expression)
@@ -616,7 +708,7 @@ func companionOf(fn *program.Function, expr *program.Operand, keep bool) *progra
 
 // carryCalls gives every call to a carrier in pkg's declarations and returns
 // the carried properties, hoisting a nested call into a declaration of its own.
-func carryCalls(pkg *program.Package, carriers map[carrierKey]carrier, rev *revolveFrame) {
+func carryCalls(pkg *program.Package, carriers map[carrierKey]carrier, frames builtinFrames) {
 	taken := map[string]bool{}
 	for _, f := range pkg.Files {
 		if f == nil {
@@ -653,7 +745,7 @@ func carryCalls(pkg *program.Package, carriers map[carrierKey]carrier, rev *revo
 				Start:      at.Start,
 				End:        at.End,
 				Variables:  []*program.Variable{{Name: name}},
-				Expression: rev.valueOr(fc, prop, companionCall(fc, prop, i, multi)),
+				Expression: frames.valueOr(fc, prop, companionCall(fc, prop, i, multi)),
 			})
 			return &program.Property{
 				Start:      at.Start,
