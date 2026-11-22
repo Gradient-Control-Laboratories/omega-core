@@ -58,6 +58,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   out in the WGSL, where the viewer evaluates it per point to cull. The box is unchanged; parts whose boxes read
   profile bounds shrink most: `examples/profile_cylinder.gsl` from 190 KB of WGSL to 83 KB, about half its time
   per point on the GPU.
+- The viewer's Render panel is regrouped. Resolution comes first, then At rest, Field of view, Depth of field,
+  Render image and Frame rate, with two folded sections: Detail (the detail ladder, Pixel filter, and the Relief and
+  Fine relief switches) and Advanced (Moving, Environment, Light rotation, and the Shadows, Occlusion and Back faces
+  switches). A switch is a chip that wears the label of its state ("Shadows on", "Shadows off"). Occlusion, the loop
+  Standard draws that marches the field out along each normal, has a chip of its own and no longer goes off with
+  Shadows. The labels of the Render, Scene, Section and Export panels are as light as the Parameters panel's.
 
 ### Removed
 
