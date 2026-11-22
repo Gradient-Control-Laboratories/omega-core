@@ -650,3 +650,33 @@ Phase 0 has no start commit; Phase 7 was skipped.
 - [x] Task: Example and the owner's viewer check: examples/feature_pruning.gsl gains an M10 x 1.5 stud,
       shaft.thread chamfered both ends, crests 0.75 mm; the owner: "Looks right"
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+
+## Phase 21: Guard Merging [checkpoint: d8b717d]
+
+- [x] Task: Proposal (approved 2026-11-22, "Approve + Red tests"). A split form (a thread's crests and roots,
+      a gear's tips and gaps) is two features of one size, and CSE gives both guards one weight; each body
+      evaluates the whole form and CSE never hoists out of a guard, so near it is computed twice (Fastener
+      Cosmetics 16 feature guards over 8 weights; Glass Block Blends, Gears, Bevel Gears 2 over 1; Drill's 8
+      holes 8 over 8). ir.MergeGuards, generic over guards: within a block, a later non-inline guard whose
+      condition and header are the same text moves into the earlier one, legal only where every statement
+      between either commutes with the earlier guard (hoisted above it) or stays behind and neither feeds
+      the later body nor reads its writes; otherwise both stay. build.go runs CSE, MergeGuards, CSE, so the
+      merged body names the form once. The stand-in switch's w > 0 and w < 1 differ and are untouched.
+      Also the prerequisite for shape stand-ins as features (the owner chose this phase first).
+- [x] Task: Write failing tests (Red Phase), approved 2026-11-22 ("Go: implement"): `ir/guard_merge_test.go`: same condition merges with
+      independent statements hoisted; merged then CSE'd the form is written once; three become one; a
+      statement reading the first guard's write stays behind; a later body reading it does not merge; a
+      statement reading the later guard's write blocks; different or rewritten conditions and inline guards
+      kept; nested bodies merge. `eval/guard_merge_test.go`: thread.male one feature guard and one acos, the
+      gear one guard. Red (MergeGuards a no-op stub): the five merging tests and both eval tests fail; the
+      four keeping tests pass, guarding
+- [x] Task: Implement (Green & Refactor Phase). ir/guard_merge.go: MergeGuards (function and module); reads are
+      every identifier of a statement's text, writes a let's, var's or assignment's name, a loop index, a
+      body's writes, and the private globals a called module function writes (found by scanning the
+      functions, transitively); a return or opaque statement between or inside stops a merge, and so does a
+      name both bodies declare. build.go: CSE, MergeGuards, CSE. The thread's form is one gsl_cse let in one
+      branch, both features reading it. The Textures-rung colour and material stand-in guards
+      (gsl_simpleDetail > 0.0) merge too. Goldens regenerated with authorization, all smaller: Fastener
+      Cosmetics 134,012 -> 131,549 (221 -> 213 ifs), Glass Block Blends, Gears, Bevel Gears, Terrain Bracket
+      and Planet (13 -> 10), Material Coated, Lava and Ice, Rain and Mud. GPU parity all pass
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
