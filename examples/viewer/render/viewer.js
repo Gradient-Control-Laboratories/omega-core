@@ -2076,6 +2076,11 @@ const focusToolButton = bindRenderControls({
     traceFlagsU.value.y = backDim;
     scheduleRender();
   },
+  // Analytic normals need the server to emit gsl_gradField, so the switch
+  // recompiles (main.js); the shader then picks it up in gsl_calcNormal.
+  onNormals: (analytic) => {
+    eventManager.dispatchEvent("render/normals", { analytic });
+  },
 });
 
 // The Focus tool takes the next click on the model before the shape picker

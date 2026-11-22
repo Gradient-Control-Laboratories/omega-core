@@ -93,6 +93,9 @@ func (w *walker) walkPackage(pkg *program.Package) {
 		for _, r := range file.MaterialReturns {
 			w.walkOperand(r)
 		}
+		for _, r := range file.GradientReturns {
+			w.walkOperand(r)
+		}
 	}
 }
 

@@ -369,6 +369,16 @@ func (in *inliner) transformPackage(pkg *program.Package, pkgScope *scope.PkgSco
 				in.hoistedAssignments = nil
 			}
 		}
+		for _, ret := range file.GradientReturns {
+			in.hoistedAssignments = nil
+			if err := in.transformOperand(ret, fileScope, file, currentPkgPath); err != nil {
+				return err
+			}
+			if len(in.hoistedAssignments) > 0 {
+				file.Assignments = append(file.Assignments, in.hoistedAssignments...)
+				in.hoistedAssignments = nil
+			}
+		}
 	}
 	return nil
 }
@@ -610,6 +620,9 @@ func (in *inliner) buildCallCounts() {
 				countInOperand(r)
 			}
 			for _, r := range file.MaterialReturns {
+				countInOperand(r)
+			}
+			for _, r := range file.GradientReturns {
 				countInOperand(r)
 			}
 			for _, ft := range file.FnTypes {

@@ -394,6 +394,13 @@ func ClonePackageFile(file *PackageFile) *PackageFile {
 			materialReturns[i] = CloneOperand(ret)
 		}
 	}
+	var gradientReturns []*Operand
+	if len(file.GradientReturns) > 0 {
+		gradientReturns = make([]*Operand, len(file.GradientReturns))
+		for i, ret := range file.GradientReturns {
+			gradientReturns[i] = CloneOperand(ret)
+		}
+	}
 	return &PackageFile{
 		Path:            file.Path,
 		Source:          file.Source,
@@ -406,6 +413,7 @@ func ClonePackageFile(file *PackageFile) *PackageFile {
 		WarpImports:     file.WarpImports,
 		ColorReturns:    colorReturns,
 		MaterialReturns: materialReturns,
+		GradientReturns: gradientReturns,
 		Annotations:     file.Annotations,
 	}
 }

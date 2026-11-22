@@ -170,6 +170,14 @@
                                         <button class="render-chip active" type="button" id="chip-displacement" aria-pressed="true" data-on="Relief on" data-off="Relief off" title="Relief: materials with displacement move the surface, such as open pores and weathered relief. Off, every surface is drawn undisplaced: faster, and the pores and relief show as colour only">Relief on</button>
                                         <button class="render-chip" type="button" id="chip-march-fade" aria-pressed="false" data-on="Fine relief in march" data-off="Fine relief at hit" title="Fine relief: relief too fine to see fades only where the surface is shaded (at hit; the ray marches the full relief), or while the ray marches too (in march), so the surface found and the surface shaded agree">Fine relief at hit</button>
                                     </div>
+                                    <div class="field-panel-row">
+                                        <label>Normals</label>
+                                        <div class="resolution-controls" role="group" aria-label="How surface normals are computed">
+                                            <button class="resolution-btn active" type="button" data-normals="numeric" aria-pressed="true" title="Central differences of the field, six samples a pixel-footprint apart: detail finer than a pixel averages out">Numeric</button>
+                                            <button class="resolution-btn" type="button" data-normals="analytic" aria-pressed="false" title="The field&#39;s exact gradient, differentiated by the compiler (recompiles). Falls back to Numeric for a shape it cannot differentiate, and wherever displacement is drawn">Analytic</button>
+                                        </div>
+                                        <span id="render-normals-note" class="field-panel-label" hidden></span>
+                                    </div>
                                 </details>
                                 <details class="render-section" id="render-advanced">
                                     <summary>Advanced</summary>

@@ -348,17 +348,18 @@ function bindChip(id, onChange) {
 
 // bindRenderControls wires the Render panel's Depth of field slider, its
 // Focus tool, its Render image button and the image size beside it, and its
-// switch chips (Shadows, Occlusion, Back faces, Relief, Fine relief):
-//   onAperture()      the slider moved
-//   onFocusTool(on)   the Focus tool was switched on or off
-//   onRenderImage()   the button was pressed
-//   onShadows(on)     Shadows was switched on or off
-//   onOcclusion(on)   Occlusion was switched on or off
-//   onBackFaces(dim)  Back faces was set to dim (true) or full (false)
+// switch chips (Shadows, Occlusion, Back faces, Relief, Fine relief) and Normals:
+//   onAperture()        the slider moved
+//   onFocusTool(on)     the Focus tool was switched on or off
+//   onRenderImage()     the button was pressed
+//   onShadows(on)       Shadows was switched on or off
+//   onOcclusion(on)     Occlusion was switched on or off
+//   onBackFaces(dim)    Back faces was set to dim (true) or full (false)
+//   onNormals(analytic) Normals was set to Analytic (true) or Numeric (false)
 // Relief, Fine relief and Pixel filter need no callback: they set the
 // surface knobs through setShading, whose listeners re-render every viewer.
 // The tool button is returned so the viewer can switch it off after a pick.
-export function bindRenderControls({ onAperture, onFocusTool, onRenderImage, onShadows, onOcclusion, onBackFaces }) {
+export function bindRenderControls({ onAperture, onFocusTool, onRenderImage, onShadows, onOcclusion, onBackFaces, onNormals }) {
   const slider = document.getElementById("render-aperture");
   const label = document.getElementById("render-aperture-label");
   slider?.addEventListener("input", () => {
@@ -384,6 +385,17 @@ export function bindRenderControls({ onAperture, onFocusTool, onRenderImage, onS
     const scale = Number(pixelFilter.value);
     if (pixelFilterLabel) pixelFilterLabel.textContent = scale.toFixed(2);
     setShading({ pixelFilter: scale });
+  });
+  const normals = document.querySelectorAll("[data-normals]");
+  normals.forEach((b) => {
+    b.addEventListener("click", () => {
+      if (b.classList.contains("active")) return;
+      normals.forEach((o) => {
+        o.classList.toggle("active", o === b);
+        o.setAttribute("aria-pressed", o === b);
+      });
+      onNormals?.(b.dataset.normals === "analytic");
+    });
   });
   const scales = document.querySelectorAll("[data-image-scale]");
   scales.forEach((b) => {
