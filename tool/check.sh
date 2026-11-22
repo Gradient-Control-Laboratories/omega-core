@@ -9,7 +9,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --shard)
       if [ $# -lt 2 ]; then
-        echo "Error: --shard requires a value (all, lint, eval-core, eval-heavy, other)" >&2
+        echo "Error: --shard requires a value (all, lint, eval-core, eval-heavy, other-heavy, other)" >&2
         exit 1
       fi
       SHARD="$2"
@@ -58,8 +58,11 @@ run_tests() {
     eval-heavy)
       (cd "${ROOT_DIR}" && go test -timeout 20m ./eval/internal/libboxtest ./eval/internal/boxsweep/...)
       ;;
+    other-heavy)
+      (cd "${ROOT_DIR}" && go test -timeout 20m ./internal/fidget/internal/gpuparity ./tool/materialswatch)
+      ;;
     other)
-      (cd "${ROOT_DIR}" && go test -timeout 20m $(go list ./... | grep -v '^gradientcontrol.com/omega/core/eval'))
+      (cd "${ROOT_DIR}" && go test -timeout 20m $(go list ./... | grep -v -E '^gradientcontrol\.com/omega/core/(eval|internal/fidget/internal/gpuparity|tool/materialswatch)'))
       ;;
     *)
       echo "Unknown shard: ${SHARD}" >&2
@@ -80,7 +83,7 @@ case "${SHARD}" in
   lint)
     run_lint
     ;;
-  eval-core|eval-heavy|other)
+  eval-core|eval-heavy|other-heavy|other)
     run_tests
     ;;
   *)

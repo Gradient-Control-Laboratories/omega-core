@@ -1,0 +1,41 @@
+@scene(120)
+
+// A collar held on a shaft by a set screw. The shaft has a D-flat where the
+// collar sits, so the screw bears on a flat rather than marking the round, and
+// a cross hole drilled through it farther along for a pin. The collar is a
+// shaft too: a 30 mm ring bored to the shaft's 16 mm, with an M6 tapped cross
+// hole through its wall. The screw is an ISO 4029 cup point set screw, M6 x 8,
+// in steel with its thread as relief, set half a millimetre below the collar's
+// surface so its cup reaches the flat.
+//
+// shaft.crossVoid places a drill stack radially, its depth measured from the
+// surface; shaft.crossHole cuts it from the shaft in the list; and
+// shaft.crossPlace puts the screw on the same axis, so the hole and the screw
+// cannot drift apart. Lengths are in mm, along the shaft from its left end.
+
+steelMat, steelColor = metal.steel();
+
+// Each end broken by a 0.8 mm chamfer: a short taper.
+pinnedShaft = shaft.body(
+  [shaft.taper(14.4, 16.0, 0.0, 0.8),
+   shaft.diameter(16.0, 0.8, 30.0),
+   shaft.dFlat(16.0, 14.5, 30.0, 60.0),
+   shaft.diameter(16.0, 60.0, 89.2),
+   shaft.taper(16.0, 14.4, 89.2, 90.0),
+   shaft.crossHole(shaft.crossVoid(drill.thru(4.0), 16.0, 78.0, pi / 2.0))]);
+pinnedShaft.color = [0.58, 0.60, 0.64];
+
+// The collar from 40 to 52 along the shaft, its screw 6 in from its left face.
+ring = shaft.body(
+  [shaft.diameter(30.0, 40.0, 52.0),
+   shaft.crossHole(shaft.crossVoid(drill.tap(6.0, 8.0), 30.0, 46.0, 0.0))],
+  drill.thru(16.0),
+  drill.thru(16.0));
+ring.color = [0.42, 0.50, 0.62];
+
+// Laid along X and centred, so the viewer frames the whole shaft.
+laidShaft = transform.translate(transform.rotateY(pinnedShaft, neg(pi) / 2.0), [45.0, 0.0, 0.0]);
+laidRing = transform.translate(transform.rotateY(ring, neg(pi) / 2.0), [45.0, 0.0, 0.0]);
+laidScrew = transform.translate(transform.rotateY(shaft.crossPlace(fastener.setScrew(6.0, 8.0, fastener.pointCup, steelMat, fastener.threadIso), 29.0, 46.0, 0.0), neg(pi) / 2.0), [45.0, 0.0, 0.0]);
+
+return laidShaft, laidRing, laidScrew;

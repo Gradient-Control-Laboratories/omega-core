@@ -1,9 +1,10 @@
 @scene(250, 25)
 
-// A pair of meshing helical spur gears, all lengths in millimetres. The gears
-// sit side by side with their pitch circles touching and turn in step as time
-// runs. Try the tooth counts, the module (tooth size), the pressure angle and
-// the helix angle: each gear stays in mesh as you drag.
+// A pair of meshing helical spur gears, all lengths in millimetres. Each gear
+// is a shaft: its teeth, a hub after a chamfer, and a bore drilled through.
+// The gears sit side by side with their pitch circles touching and turn in
+// step as time runs. Try the tooth counts, the module (tooth size), the
+// pressure angle and the helix angle: each gear stays in mesh as you drag.
 
 // One full tooth of travel per second; both gears advance by this phase.
 animate = mod(time, 1);
@@ -21,16 +22,17 @@ animate = mod(time, 1);
 
 thickness = 35;
 
-// Extra root depth, as a fraction of the module, and the small chamfer (mm)
-// that breaks the tooth tips and edges.
-dedendumClearance = 0.25;
-kSmall = 0.25;
-
-// Helix angle of the teeth in radians; zero is a plain spur gear. The two
-// gears take opposite hands automatically.
+// Helix angle of the teeth in radians; zero is a plain spur gear. A meshing
+// pair takes opposite hands, so gear 2 is given the negative.
 @range(-1, 1) helixAngle = 0.5;
 
-// Hub on the front face of each gear, and the through bore, all in mm.
+// Running clearance between the teeth (mm), and the small chamfer (mm) that
+// breaks the tooth tips and the bore's edges.
+backlash = 0.1;
+kSmall = 0.25;
+
+// Hub on the front face of each gear, and the through bore, all in mm. The
+// hub runs from the gear's face to standoffHeight above its mid-plane.
 standoffHeight = 25;
 standoffChamfer = 1;
 standoffDiam1 = 30;
@@ -38,6 +40,29 @@ standoffDiam2 = 40;
 boreDiam1 = 12;
 boreDiam2 = 16;
 
-g1, g2 = gears.gearPair(numTeeth1, numTeeth2, moduleVal, pressureAngle, thickness, helixAngle, standoffDiam1, standoffDiam2, standoffHeight, standoffChamfer, boreDiam1, boreDiam2, dedendumClearance, kSmall, animate);
+pitchR1 = numTeeth1 * moduleVal / 2;
+pitchR2 = numTeeth2 * moduleVal / 2;
 
-return g1, g2;
+gear1 = shaft.body(
+  [shaft.gear(numTeeth1, moduleVal, pressureAngle, helixAngle, neg(thickness) / 2, thickness / 2,
+              shaft.chamferEnd(kSmall), shaft.chamferEnd(kSmall), backlash),
+   shaft.chamfer(standoffChamfer),
+   shaft.diameter(standoffDiam1, thickness / 2, standoffHeight)],
+  drill.chamfer(boreDiam1, kSmall),
+  [drill.chamfer(boreDiam1, kSmall), drill.thru(boreDiam1)]);
+
+gear2 = shaft.body(
+  [shaft.gear(numTeeth2, moduleVal, pressureAngle, neg(helixAngle), neg(thickness) / 2, thickness / 2,
+              shaft.chamferEnd(kSmall), shaft.chamferEnd(kSmall), backlash),
+   shaft.chamfer(standoffChamfer),
+   shaft.diameter(standoffDiam2, thickness / 2, standoffHeight)],
+  drill.chamfer(boreDiam2, kSmall),
+  [drill.chamfer(boreDiam2, kSmall), drill.thru(boreDiam2)]);
+
+// Each gear turns about its own axis and sits with its pitch circle on the
+// origin. A tooth space of gear 1 faces gear 2 at azimuth 0, so gear 2 puts a
+// tooth on its azimuth pi: a turn of pi (n - 1) / n does it for either parity
+// of its count. Then gear 1 turns forward a tooth per unit of phase and gear 2
+// back by the tooth ratio.
+return transform.translate(transform.rotateZ(gear1, 2 * pi * animate / numTeeth1), [neg(pitchR1), 0, 0]),
+       transform.translate(transform.rotateZ(gear2, pi * (numTeeth2 - 1) / numTeeth2 - 2 * pi * animate / numTeeth2), [pitchR2, 0, 0]);

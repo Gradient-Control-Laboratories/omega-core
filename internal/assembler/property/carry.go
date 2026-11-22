@@ -737,8 +737,19 @@ func companionOf(fn *program.Function, expr *program.Operand, keep bool) *progra
 	for _, a := range fn.Assignments {
 		ca := proto.Clone(a).(*program.Assignment)
 		if !keep {
+			// What a value looks like stays with it: a colour built in a local
+			// with a stand-in or a fine detail of its own (t.simple, t.detail),
+			// set on the part as s.color = t, is that colour only with them, and
+			// Expand lowers them inside the companion as it would inside fn.
+			// Every other property is the part's, carried by its own companion.
 			for _, v := range ca.Variables {
-				v.Properties = nil
+				kept := v.Properties[:0]
+				for _, prop := range v.Properties {
+					if prop != nil && (prop.Name == simplePropName || prop.Name == detailPropName || prop.Name == detailSizePropName) {
+						kept = append(kept, prop)
+					}
+				}
+				v.Properties = kept
 			}
 		}
 		c.Assignments = append(c.Assignments, ca)

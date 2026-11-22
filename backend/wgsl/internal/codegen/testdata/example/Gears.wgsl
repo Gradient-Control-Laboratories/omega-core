@@ -160,8 +160,9 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_6_13: f32, gsl_param_9_13: f32, gs
   gsl_partNear = vec3<f32>(1e10, 1e10, 1e10);
   let numTeeth1 = gsl_param_6_13;
   let moduleVal = gsl_param_12_13;
-  let gsl_partLo = vec3<f32>(min(-(numTeeth1 / 2.0 * moduleVal) - max((numTeeth1 / 2.0 + 1.0) * moduleVal, 1.6), max((numTeeth1 / 2.0 + 1.0) * moduleVal, 1.6) - numTeeth1 / 2.0 * moduleVal) - 0.01, min(-max((numTeeth1 / 2.0 + 1.0) * moduleVal, 1.6), max((numTeeth1 / 2.0 + 1.0) * moduleVal, 1.6)) - 0.01, -1.76);
-  let gsl_partHi = vec3<f32>(max(-(numTeeth1 / 2.0 * moduleVal) - max((numTeeth1 / 2.0 + 1.0) * moduleVal, 1.6), max((numTeeth1 / 2.0 + 1.0) * moduleVal, 1.6) - numTeeth1 / 2.0 * moduleVal) + 0.01, max(-max((numTeeth1 / 2.0 + 1.0) * moduleVal, 1.6), max((numTeeth1 / 2.0 + 1.0) * moduleVal, 1.6)) + 0.01, 2.51);
+  let gslBox = max((numTeeth1 / 2.0 + 1.0) * moduleVal, 1.6);
+  let gsl_partLo = vec3<f32>(min(-(numTeeth1 / 2.0 * moduleVal) - gslBox, gslBox - numTeeth1 / 2.0 * moduleVal) - 0.01, min(-gslBox, gslBox) - 0.01, -1.76);
+  let gsl_partHi = vec3<f32>(max(-(numTeeth1 / 2.0 * moduleVal) - gslBox, gslBox - numTeeth1 / 2.0 * moduleVal) + 0.01, max(-gslBox, gslBox) + 0.01, 2.51);
   let gsl_partBox = gsl_boxDistance(p, gsl_partLo, gsl_partHi);
   var gsl_part = gsl_partBox;
   let vector_zero = vec3<f32>(0.0, 0.0, 0.0);
@@ -179,8 +180,9 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_6_13: f32, gsl_param_9_13: f32, gs
     if (abs(gsl_part) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part), gsl_partVanish.zw); }
   }
   let g1 = gsl_part;
-  let gsl_partLo_2 = vec3<f32>(min(numTeeth2 / 2.0 * moduleVal - max((numTeeth2 / 2.0 + 1.0) * moduleVal, 2.1), numTeeth2 / 2.0 * moduleVal + max((numTeeth2 / 2.0 + 1.0) * moduleVal, 2.1)) - 0.01, min(-max((numTeeth2 / 2.0 + 1.0) * moduleVal, 2.1), max((numTeeth2 / 2.0 + 1.0) * moduleVal, 2.1)) - 0.01, -1.76);
-  let gsl_partHi_2 = vec3<f32>(max(numTeeth2 / 2.0 * moduleVal - max((numTeeth2 / 2.0 + 1.0) * moduleVal, 2.1), numTeeth2 / 2.0 * moduleVal + max((numTeeth2 / 2.0 + 1.0) * moduleVal, 2.1)) + 0.01, max(-max((numTeeth2 / 2.0 + 1.0) * moduleVal, 2.1), max((numTeeth2 / 2.0 + 1.0) * moduleVal, 2.1)) + 0.01, 2.51);
+  let gslBox_3 = max((numTeeth2 / 2.0 + 1.0) * moduleVal, 2.1);
+  let gsl_partLo_2 = vec3<f32>(min(numTeeth2 / 2.0 * moduleVal - gslBox_3, numTeeth2 / 2.0 * moduleVal + gslBox_3) - 0.01, min(-gslBox_3, gslBox_3) - 0.01, -1.76);
+  let gsl_partHi_2 = vec3<f32>(max(numTeeth2 / 2.0 * moduleVal - gslBox_3, numTeeth2 / 2.0 * moduleVal + gslBox_3) + 0.01, max(-gslBox_3, gslBox_3) + 0.01, 2.51);
   let gsl_partBox_2 = gsl_boxDistance(p, gsl_partLo_2, gsl_partHi_2);
   var gsl_part_2 = gsl_partBox_2;
   let gsl_part_g2 = gsl_result.v_2;

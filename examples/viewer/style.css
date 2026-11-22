@@ -615,6 +615,93 @@ body.resizing #stl-canvas-container {
     cursor: default;
 }
 
+/* The device that drew the frame on screen when it is not the chosen one (the
+   GPU, while the CPU frame is still to come), and the resolution a moving frame
+   is drawn at when the frame rate has forced it below the one chosen. */
+.resolution-btn.drew-frame,
+.resolution-btn.drawn-at {
+    color: #fff;
+    box-shadow: inset 0 0 0 1px #d8d8d8;
+}
+
+/* A CPU frame in progress: what is drawing it, and for how long. It takes the
+   row's second line, which it does not have when it is empty. */
+.draw-on-row,
+.resolution-row {
+    flex-wrap: wrap;
+}
+
+.draw-status {
+    flex: 1 0 100%;
+    color: #9a9a9a;
+    font: 11px 'Public Sans', sans-serif;
+    font-variant-numeric: tabular-nums;
+}
+
+.draw-status:empty {
+    display: none;
+}
+
+/* The Render panel's switches: one chip each, in a row that wraps. A chip
+   wears the label of its state ("Shadows on", "Shadows off") and is lit while
+   the switch is on. */
+.chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.render-chip {
+    padding: 5px 8px;
+    border: 0;
+    border-radius: 6px;
+    color: #888;
+    background: #262626;
+    font: 11px 'Public Sans', sans-serif;
+    cursor: pointer;
+}
+
+.render-chip:hover {
+    color: #fff;
+}
+
+.render-chip.active {
+    color: #fff;
+    background: #3a3a3a;
+}
+
+/* The Render panel's folded sections, Detail and Advanced. */
+.render-section {
+    border-top: 1px solid #262626;
+}
+
+.render-section > summary {
+    padding: 8px 0;
+    color: #bababa;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+}
+
+.render-section > summary::-webkit-details-marker {
+    display: none;
+}
+
+.render-section > summary::before {
+    content: "\25B8";
+    display: inline-block;
+    width: 14px;
+}
+
+.render-section[open] > summary::before {
+    content: "\25BE";
+}
+
+.render-section > summary:hover {
+    color: #fff;
+}
+
 #scene-panel,
 #render-panel,
 #field-panel,
@@ -892,6 +979,16 @@ body.resizing #stl-canvas-container {
     color: #888;
     font-size: 12px;
     min-width: 40px;
+}
+
+/* The Render, Scene, Section and Export panels' labels are as light as the
+   Parameters panel's (its .slider-label), and their values. */
+#render-panel .field-panel-row label,
+#scene-panel .field-panel-row label,
+#field-panel .field-panel-row label,
+#field-panel .stl-row-loose label,
+#stl-bounds-panel .field-panel-row label {
+    color: #d1d1d1;
 }
 
 #render-fps,

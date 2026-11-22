@@ -149,6 +149,7 @@ func removeFile(fileScope *scope.PkgFileScope, returnExprs []*program.Operand, o
 		roots := append([]*program.Operand{}, returnExprs...)
 		roots = append(roots, fileScope.File.ColorReturns...)
 		roots = append(roots, fileScope.File.MaterialReturns...)
+		roots = append(roots, fileScope.File.GradientReturns...)
 		outOfScope, err = linker.ResolveExpr(roots...)
 	} else {
 		outOfScope, err = linker.ResolveNamed(outOfScope...)
@@ -194,6 +195,7 @@ func removeFile(fileScope *scope.PkgFileScope, returnExprs []*program.Operand, o
 		WarpImports:     fileScope.File.WarpImports,
 		ColorReturns:    fileScope.File.ColorReturns,
 		MaterialReturns: fileScope.File.MaterialReturns,
+		GradientReturns: fileScope.File.GradientReturns,
 		// Annotations describe the source, not the reachable code, so they
 		// survive deadcoding: a material browser wants every library material,
 		// not only the ones the document being assembled happens to use.

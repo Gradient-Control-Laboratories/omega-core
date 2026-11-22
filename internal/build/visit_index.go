@@ -19,7 +19,11 @@ func (b *Builder) visitIndex(op *program.Operand, expr *program.Expression, oper
 		indexType = operands[1].Type
 	}
 
-	if targetType == nil || (!targetType.IsList() && !targetType.IsMatrix()) {
+	// A backend may build a one-element list as a scalar (fidget's TreeNode
+	// does); the type check has already accepted the index, so a scalar
+	// target stands for a list of length one.
+	scalarTarget := targetType != nil && targetType.IsScalar()
+	if targetType == nil || (!targetType.IsList() && !targetType.IsMatrix() && !scalarTarget) {
 		return nil, ErrLoc(b.delegate.GetScope(), operands[0].Start,
 			fmt.Errorf("target must be a collection, got %s", targetType.TypeString()))
 	}
@@ -41,6 +45,14 @@ func (b *Builder) visitIndex(op *program.Operand, expr *program.Expression, oper
 	if f != float64(index) {
 		return nil, ErrLoc(b.delegate.GetScope(), operands[1].Start,
 			fmt.Errorf("index must be an integer, got %f", f))
+	}
+
+	if scalarTarget {
+		if index != 0 {
+			return nil, ErrLoc(b.delegate.GetScope(), operands[1].Start,
+				fmt.Errorf("index must be in range [0, 1), got %d", index))
+		}
+		return targetExpr, nil
 	}
 
 	if col, ok := targetExpr.(CollectExpression); ok {

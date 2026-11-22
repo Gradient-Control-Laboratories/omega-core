@@ -168,7 +168,7 @@ export function setEnvironment(patch) {
 }
 
 // bindEnvironmentControls wires the Render panel's Environment row: a button
-// per preset (data-env-preset) and the Turn slider (env-azimuth).
+// per preset (data-env-preset) and the Light rotation slider (env-azimuth).
 export function bindEnvironmentControls() {
   document.querySelectorAll("[data-env-preset]").forEach((btn) => {
     btn.addEventListener("click", () => setEnvironment({ preset: btn.dataset.envPreset }));

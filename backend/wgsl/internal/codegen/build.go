@@ -318,6 +318,9 @@ func (d *Delegate) BuildPackageReturns(_ []*program.Operand, expressions []build
 	if d.materialFieldSrc != "" {
 		d.module.AddFunction(ir.NewRawFuncDecl(d.materialFieldSrc))
 	}
+	if d.gradFieldSrc != "" {
+		d.module.AddFunction(ir.NewRawFuncDecl(d.gradFieldSrc))
+	}
 	if d.cellularUsed {
 		d.module.AddRuntimeSnippet(cellularWGSL)
 		if d.cellularWallUsed {
