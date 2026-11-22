@@ -34,6 +34,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Normalized chamfer at `chamferDepthFromSetback`'s depth.
 - The viewer's Export panel has a `Web page (.zip)` format: it downloads the same folder for the open document,
   as the editor shows it, zipped (`POST /api/export`).
+- `mechanical/shaft`: generalized shafts as a stack of segments along +Z, each placed by its two planes:
+  `shaft.diameter`, `taper`, `section` (any 2D field), `hex`, `dFlat`, `doubleD`, `spline` and `gear` (spur or
+  helical). `shaft.body(segments)` joins them with no surface inside the solid at any joint, whatever the
+  convexity on either side. `shaft.body(segments, bottomHole, topHole)` cuts a `drill` hole stack into each end
+  face. Gears and splines can name their ends: `shaft.runout(cutterDia)` runs the gaps on into the neighbour
+  along the cutter's arc, and `shaft.chamferEnd(size)` chamfers the tips. `shaft.thread(major, pitch, from,
+  to)` cuts an ISO 68-1 thread (`thread.male`) that engages `drill.tap` of the same size; its ends can be
+  chamfered or run out as a lathe tool retracts, `shaft.threadRunout(length)`. A joint is blended by an
+  entry between its two segments, `shaft.fillet(r)` or `shaft.chamfer(c)`: exact at a square shoulder
+  between round segments, and free on a shaft that has none. Cranks: `shaft.eccentric(dia, offset, angle,
+  from, to)` is a crank pin or an eccentric journal, and `shaft.web(mainR, pinR, offset, angle, from, to)`
+  the exact hull of a circle about the axis and one about the pin.
+- `mechanical/bearing`: deep-groove ball bearings (series 60, 62, 63, bores 10 to 50) by designation, as
+  `bearing.deepGroove(6205.0, at)`, rings and balls, or `bearing.deepGrooveEnvelope`, the boundary dimensions
+  alone; their seat dimensions (`shoulderDia`, `filletMax`); ISO 4379 plain and flanged bushes by series; and
+  DIN 471 retaining-ring grooves. Every table cites its sources. Fits are nominal.
+- `shaft.body` declares its `.box` (its end faces and its segments' farthest reach), so the renderer skips
+  everything outside it; set `.box` on the result to override it. `shaft.envelope(segments[, bottomHole,
+  topHole])` is the simplified model: gears at their tip circles, splines and threads at their major
+  diameters, no runouts, for proofs, meshing and assemblies.
+- `shaft.bevel(numTeeth, mateTeeth, moduleVal, pressureAngle, shaftAngle, spiralAngle, faceWidth, backlash,
+  apex, from, to)`: a bevel gear as a shaft segment, placed by its pitch apex and its two flat faces, facing
+  whichever way the apex lies, with `gears.bevelGear`'s tooth and ends; its toe teeth may stand past its toe
+  face and the box holds them. `shaft.gear(..., bottomEnd, topEnd, backlash)` thins the teeth for a running
+  pair, and `gears.bevelApexToCrown` gives the distance the faces are placed from. The gear and bevel gear
+  examples are now shafts.
+- A `reduce` over a list of functions can take the element before this one as a fourth callback parameter,
+  `reduce((acc, f, i, prev) { ... }, fs, seed)`; the first element is handed itself.
+  along the cutter's arc, and `shaft.chamferEnd(size)` chamfers the tips.
 - `@caption("text", startTime, endTime [, fade])` is a top-level directive that shows a line of text centred at
   the bottom of the viewer while the animation clock is between the two times, in seconds. It fades in after
   `startTime` and out before `endTime` over `fade` seconds (0.5 by default, at most half the interval; `0` cuts).
@@ -43,6 +72,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   gives the length of the document's animation. It is to time what `@scene` is to space: the viewer's Time
   slider and end time span it, and the animation clock starts over on passing it, so an animation and its
   captions loop. It reaches the compile response as `duration`, so a page `gsl export` writes loops too.
+- `gsl serve` answers `POST /api/render-lit` with the lit renderer's frame of a document from the viewer's camera:
+  the request names the source, the frame's size (at most 4096 x 4096 pixels), the camera, the world extent, the
+  colours, the tier (standard, color or Schematic) and the back-face brightness; the reply is the frame as raw
+  bytes, five little-endian float32s a pixel (the colour, the return hit, 0 for none, and the depth), its size in
+  `X-Frame-Width` and `X-Frame-Height`. While it draws, the share done goes to the asking client on
+  `/api/progress` as stage `render`, in thousandths.
+- The viewer can draw the frame at rest on the server's CPU: Render > Advanced > Draw on > CPU asks `gsl serve` for the
+  lit renderer's frame of the document from the viewer's camera (`POST /api/render-lit`) and shows it in the GPU
+  frame's place once it arrives, in the tier chosen at rest (Schematic, Color or Standard). The note beside the
+  buttons counts the seconds and the percent done; the GPU button is outlined while the GPU's frame is the one on
+  screen and the CPU's is still to come, and a change of view takes the screen back to the GPU and asks again. A
+  view over 2 megapixels is not drawn, and the note says to lower Resolution. The page `gsl export` writes has no
+  server to ask, and does not offer the device. The CPU frame has no axis lines, which the GPU draws in its shape
+  pass.
+- The viewer can draw the frame at rest with fidget's own GPU pipeline, run in the page: Render > Advanced > Draw on >
+  Fidget, or Fidget only, which draws no shapes on the GPU and shows only fidget's frame (the last one stays up until
+  the next lands, and hover, outlines and picking, which read the GPU frame, do not see shapes). The page asks
+  `gsl serve` for the document's tape, with each return's colour and material fields (`POST /api/tape`), and
+  fidget-wgpu, compiled to WebAssembly, finds each pixel's hit, its return, and its colour and material there; the
+  standard frame's own shading lights it, with fidget's ambient occlusion and glass drawn opaque. A document that
+  reads an imported mesh or noise has no such tape and is refused with a message. The buttons appear only where the
+  bundle is built: `tool/build-fidget.sh --wasm-out examples/viewer/vendor` puts it in `examples/viewer/vendor/fidget-wgpu`
+  (ignored by git).
+- The viewer draws its moving frames smaller when it cannot keep 5 frames a second. While the view moves, four frames
+  in a row slower than that halve the size the moving frames are drawn at (Draft draws them at half the still frame's,
+  so this takes them to a quarter, and at the least an eighth); it steps back up when the frame time at the larger size,
+  predicted from the pixel count, would clear 7.5 frames a second, and waits longer after a step up that turned out
+  wrong. The still frame is always the size chosen. The Resolution buttons show it: the one chosen stays filled, the
+  size being drawn is outlined, and a note beside them says "moving at 1/4: under 5 fps". The wait that takes the view
+  for still, 150 ms without input, now follows the frame time when frames are slower than that (one and a half times the
+  slowest of the last four, at most 1.5 s): input reaches the page once a frame, so with half-second frames the wait ran
+  out between every two and a standard frame, as slow as the rest, was drawn in each gap.
 
 ### Changed
 
@@ -54,6 +115,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Arguments are positional, so callers are unchanged.
 - The viewer reaches its server through one module, `examples/viewer/host.js`; `host-static.js` answers the same
   calls from files beside the page, and takes its place in a page `gsl export` writes.
+- A part's box declares what its corners repeat once, as a value before the part, instead of writing every copy
+  out in the WGSL, where the viewer evaluates it per point to cull. The box is unchanged; parts whose boxes read
+  profile bounds shrink most: `examples/profile_cylinder.gsl` from 190 KB of WGSL to 83 KB, about half its time
+  per point on the GPU.
+- The viewer's Render panel is regrouped. Resolution comes first, then At rest, Field of view, Depth of field,
+  Render image and Frame rate, with two folded sections: Detail (the detail ladder, Pixel filter, and the Relief and
+  Fine relief switches) and Advanced (Moving, Environment, Light rotation, and the Shadows, Occlusion and Back faces
+  switches). A switch is a chip that wears the label of its state ("Shadows on", "Shadows off"). Occlusion, the loop
+  Standard draws that marches the field out along each normal, has a chip of its own and no longer goes off with
+  Shadows. The labels of the Render, Scene, Section and Export panels are as light as the Parameters panel's.
 
 ### Removed
 
@@ -74,6 +145,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A box declared in a function from a `reduce` whose step indexes a list by its `index`, such as
   `points[mod(index + 1, count)]`, now holds: read with `.box` it failed to link ("undefined identifier: index"),
   and in builtin the part it bounds lost its box without a word.
+- A one-element list indexed at run time, such as `curvatures[0]` of `[0.1]` read in a reduce, failed on the CPU
+  paths (`gsl eval`, tape and meshing) with "target must be a collection, got num": the fidget backend builds the
+  list as one value. Index 0 now reads it there as WGSL already did; past 0 is an error.
+- A declared `.box` that reduces over a list a function call returned failed to assemble ("vector subtraction
+  dimension mismatch", "collection elements must be all scalars or all vectors"): the box pass handed the
+  reduce the whole list as one element. `profileXY(points, curvatures)` with its curvatures made by a function
+  (a `map` in a helper) failed this way once the profile was named.
+- A declared `.box` that reads names assigned after its shape (`form = ...; low, high = ...; form.box = ...`)
+  failed with "undefined identifier" wherever the function's body was inlined into its caller: any document
+  function called with constants, or a library function handed a blend made from a slider. The shape's
+  assignment now moves after the names its box reads; a shape read in between is refused with a message.
+- A function that passes its function parameter on to another only inside a fold's callback
+  (`f(blend) { return reduce(..., (best, q) { ... inner(q, blend) ... }) }`) failed to assemble with
+  "undefined identifier" once called with a closure: the closure transform pruned the template it called but
+  kept it, not seeing that its callback made it a template too.
+- A three-way select on a constant vector condition folded to its positive branch whatever the condition's signs:
+  `[-1, -2] ? a : b : c` compiled as `a`, where the shader picks `c`. It now folds per component, as the shader
+  selects, and is pruned to one branch only when every component picks it.
+- A `reduce` whose function takes the index, `(accumulator, element, index)`, now folds to a constant; it was
+  left to run per point, so a box written with one did not fold to numbers.
+- A constant that folds to infinity or NaN, a division or a mod by zero, is a compile error naming it, instead of
+  `+Inf.0` or `NaN.0` in a WGSL shader the browser refuses.
 
 ## [0.1.3] - 2026-11-17
 
