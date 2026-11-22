@@ -72,6 +72,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   gives the length of the document's animation. It is to time what `@scene` is to space: the viewer's Time
   slider and end time span it, and the animation clock starts over on passing it, so an animation and its
   captions loop. It reaches the compile response as `duration`, so a page `gsl export` writes loops too.
+- `gsl serve` answers `POST /api/render-lit` with the lit renderer's frame of a document from the viewer's camera:
+  the request names the source, the frame's size (at most 4096 x 4096 pixels), the camera, the world extent, the
+  colours, the tier (standard, color or Schematic) and the back-face brightness; the reply is the frame as raw
+  bytes, five little-endian float32s a pixel (the colour, the return hit, 0 for none, and the depth), its size in
+  `X-Frame-Width` and `X-Frame-Height`. While it draws, the share done goes to the asking client on
+  `/api/progress` as stage `render`, in thousandths.
+- The viewer can draw the frame at rest on the server's CPU: Render > Advanced > Draw on > CPU asks `gsl serve` for the
+  lit renderer's frame of the document from the viewer's camera (`POST /api/render-lit`) and shows it in the GPU
+  frame's place once it arrives, in the tier chosen at rest (Schematic, Color or Standard). The note beside the
+  buttons counts the seconds and the percent done; the GPU button is outlined while the GPU's frame is the one on
+  screen and the CPU's is still to come, and a change of view takes the screen back to the GPU and asks again. A
+  view over 2 megapixels is not drawn, and the note says to lower Resolution. The page `gsl export` writes has no
+  server to ask, and does not offer the device. The CPU frame has no axis lines, which the GPU draws in its shape
+  pass.
 
 ### Changed
 
@@ -83,6 +97,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Arguments are positional, so callers are unchanged.
 - The viewer reaches its server through one module, `examples/viewer/host.js`; `host-static.js` answers the same
   calls from files beside the page, and takes its place in a page `gsl export` writes.
+- A part's box declares what its corners repeat once, as a value before the part, instead of writing every copy
+  out in the WGSL, where the viewer evaluates it per point to cull. The box is unchanged; parts whose boxes read
+  profile bounds shrink most: `examples/profile_cylinder.gsl` from 190 KB of WGSL to 83 KB, about half its time
+  per point on the GPU.
+- The viewer's Render panel is regrouped. Resolution comes first, then At rest, Field of view, Depth of field,
+  Render image and Frame rate, with two folded sections: Detail (the detail ladder, Pixel filter, and the Relief and
+  Fine relief switches) and Advanced (Moving, Environment, Light rotation, and the Shadows, Occlusion and Back faces
+  switches). A switch is a chip that wears the label of its state ("Shadows on", "Shadows off"). Occlusion, the loop
+  Standard draws that marches the field out along each normal, has a chip of its own and no longer goes off with
+  Shadows. The labels of the Render, Scene, Section and Export panels are as light as the Parameters panel's.
 
 ### Removed
 
@@ -100,6 +124,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the bevel, about 1.7 to 1.8 times as deep as before at these edges (116 to 129 degrees through the
   material); the body, standoff and bore chamfers are unchanged. Gear and bevel-gear WGSL grows by
   582 bytes.
+- A declared `.box` that reduces over a list a function call returned failed to assemble ("vector subtraction
+  dimension mismatch", "collection elements must be all scalars or all vectors"): the box pass handed the
+  reduce the whole list as one element. `profileXY(points, curvatures)` with its curvatures made by a function
+  (a `map` in a helper) failed this way once the profile was named.
+- A declared `.box` that reads names assigned after its shape (`form = ...; low, high = ...; form.box = ...`)
+  failed with "undefined identifier" wherever the function's body was inlined into its caller: any document
+  function called with constants, or a library function handed a blend made from a slider. The shape's
+  assignment now moves after the names its box reads; a shape read in between is refused with a message.
+- A function that passes its function parameter on to another only inside a fold's callback
+  (`f(blend) { return reduce(..., (best, q) { ... inner(q, blend) ... }) }`) failed to assemble with
+  "undefined identifier" once called with a closure: the closure transform pruned the template it called but
+  kept it, not seeing that its callback made it a template too.
 
 ## [0.1.3] - 2026-11-17
 

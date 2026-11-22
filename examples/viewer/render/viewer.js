@@ -6,7 +6,8 @@ import { LineSegments2 } from "three/addons/lines/webgpu/LineSegments2.js";
 import { LineSegmentsGeometry } from "three/addons/lines/LineSegmentsGeometry.js";
 import { GslUiControls } from "./gsl-ui.js";
 import { OrthoViewHelper, ViewCameraRig, bindFieldOfView } from "./ortho-view-helper.js";
-import { DRAFT_SCALE, FrameRateMeter, MotionTracker, withDraftKnobs, bindTierButtons, getRestTier, getAperture, bindRenderControls, showRenderProgress, getImageScale } from "./gsl-render-tier.js";
+import { DRAFT_SCALE, FrameRateMeter, MotionTracker, withDraftKnobs, bindTierButtons, getRestTier, getRestDevice, setDrawnBy, setDrawStatus, getAperture, bindRenderControls, showRenderProgress, getImageScale } from "./gsl-render-tier.js";
+import { SIMPLE, srgbToLinear, simpleRay } from "./gsl-simple.js";
 import { traceKnobsU, lensKnobsU, traceFlagsU, TRACE_STANDARD_WEIGHT, LENS_RADIUS_AT_FULL, FINAL_RENDER_SAMPLES } from "./gsl-trace.js";
 import { buildRenderJob, RenderJob } from "./gsl-render-job.js";
 import { showNotification } from "../ui/notification.js";
@@ -73,6 +74,91 @@ let renderJob = null;
 let simpleScene;
 // The Color tier's pass: the standard frame without the program's materials.
 let colorScene;
+// Drawing on the CPU: at rest, the chosen tier (Schematic, Color or Standard)
+// redrawn on the server by the lit renderer (fidget's JIT, every core) from the
+// same camera, shown in the GPU frame's place once it arrives. cpuFrameSource
+// (main.js) asks for it; cpuJob counts the changes that make a CPU frame stale;
+// cpuFailedFor is the program a CPU frame last failed on, which is not retried.
+let cpuFrameSource = null;
+let cpuJob = 0;
+let cpuRunning = false;
+let cpuShowing = false;
+let cpuTexture = null;
+let cpuFailedFor = null;
+
+// Whether the source last compiled with errors. A CPU frame asked for a source
+// that does not compile fails with the compile error, which the editor already
+// shows where it is made, so the viewer does not put it up again.
+let compileFailed = false;
+export function setCompileFailed(failed) {
+  compileFailed = failed;
+}
+
+// A CPU frame in flight is shown beside the Draw on buttons with the time it
+// has been out, and says so when the view has moved on since it was asked for
+// (it is still drawn, and the next is asked for after it).
+let drawClock = null;
+// How far the CPU frame in flight has got, a share in [0, 1) from the server's
+// renderer (an estimate), or null before it says; the clock shows it as a %.
+let cpuProgress = null;
+export function setCpuProgress(share) {
+  cpuProgress = share;
+}
+function startDrawClock(job) {
+  const t0 = performance.now();
+  cpuProgress = null;
+  const tick = () => {
+    const s = Math.floor((performance.now() - t0) / 1000);
+    const time = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+    const percent = cpuProgress == null ? "" : `, ${Math.floor(cpuProgress * 100)}%`;
+    setDrawStatus(`CPU frame in progress, ${time}${percent}${job !== cpuJob ? " (view changed, will redraw)" : ""}`);
+  };
+  stopDrawClock();
+  tick();
+  drawClock = setInterval(tick, 500);
+}
+function stopDrawClock() {
+  if (drawClock) clearInterval(drawClock);
+  drawClock = null;
+  setDrawStatus("");
+}
+
+// A CPU frame is drawn on the server's cores in one call that cannot be
+// cancelled, and costs on the order of tens of seconds a megapixel for a scene
+// of a few shapes and much more for a scene of many. The viewer does not ask
+// for more pixels than this; Render > Resolution brings a frame under it.
+const MAX_CPU_FRAME_PIXELS = 2000000;
+
+// cpuTooBig: the CPU device is chosen and the view's frame is past the cap.
+function cpuTooBig() {
+  return getRestDevice() === "cpu" && !!shapeTarget && shapeTarget.width * shapeTarget.height > MAX_CPU_FRAME_PIXELS;
+}
+
+// noteCpuTooBig says, beside the Draw on buttons and once as a notice, why no
+// CPU frame is coming; noteCpuSizeOk takes it away once the frame fits.
+let cpuTooBigShown = false;
+function noteCpuTooBig() {
+  const { width, height } = shapeTarget;
+  const mp = (width * height) / 1e6;
+  const max = MAX_CPU_FRAME_PIXELS / 1e6;
+  setDrawStatus(`CPU frame not drawn: ${width}x${height} is ${mp.toFixed(1)} megapixels, over ${max}; lower Render > Resolution`);
+  if (!cpuTooBigShown) {
+    cpuTooBigShown = true;
+    showNotification(false, `The CPU device draws up to ${max} megapixels and this view is ${mp.toFixed(1)}: lower Render > Resolution (1/2 or 1/4) to use it.`);
+  }
+}
+function noteCpuSizeOk() {
+  if (!cpuTooBigShown) return;
+  cpuTooBigShown = false;
+  setDrawStatus("");
+}
+
+// showCpuFrame sets whether the CPU frame is the one on screen, and tells the
+// Render panel which device drew what is shown (the GPU, when not).
+function showCpuFrame(showing) {
+  cpuShowing = showing;
+  setDrawnBy(showing ? "cpu" : "gpu");
+}
 // The depth-of-field focus the Focus tool picked (Z-up world), or null to
 // focus on the orbit pivot; focusToolOn while the tool waits for its click.
 let focusPointZUp = null;
@@ -926,6 +1012,9 @@ function render(allowDraft = false, useAccum = true) {
   if (accumDirty) {
     accumDirty = false;
     accumN = 0;
+    // Whatever changed makes a CPU frame stale: the GPU's takes the screen back.
+    cpuJob++;
+    showCpuFrame(false);
   }
   accumNU.value = useAccum ? accumN : 0;
   timeU.value = getAnimTime();
@@ -959,7 +1048,7 @@ function render(allowDraft = false, useAccum = true) {
     } else {
       drawShapes();
     }
-    shapeTexNode.value = target.texture;
+    shapeTexNode.value = cpuShowing ? cpuTexture : target.texture;
     compositePixelSizeVec.set(1 / target.width, 1 / target.height);
   }
 
@@ -1002,7 +1091,150 @@ function render(allowDraft = false, useAccum = true) {
   }
   gslUiControls?.render(renderer);
   orthoViewHelper?.render(renderer);
-  if (useAccum) startProgressive();
+  if (useAccum) {
+    startProgressive();
+    startCpu();
+  }
+}
+
+// ── The CPU device ──
+
+// setCpuFrameSource gives the CPU its frames: fn(request) resolves with the
+// lit renderer's frame of the current document, where request is {width,
+// height, camera: {pos, right, up, fwd, tanFov, ortho}, worldExtent, time,
+// colors, mode, simple, backDim}: mode is the tier ("simple", "color" or
+// "standard") and simple the Schematic spec's constants. The frame is {width,
+// height, data}: five floats a pixel from the top left, the colour, the return
+// hit (0 for none) and the depth.
+export function setCpuFrameSource(fn) {
+  cpuFrameSource = fn;
+}
+
+// cpuWanted reports whether the CPU should draw: it is chosen, the tier has a
+// CPU form (every one but Progressive), there is a server to draw it, and
+// nothing moves or animates.
+function cpuWanted() {
+  return getRestDevice() === "cpu" && getRestTier() !== "progressive" && !!cpuFrameSource
+    && animPaused && !motion.moving && !renderDisabled && cpuFailedFor !== currentWGSL;
+}
+
+// cpuSnapshot is what a CPU frame is drawn from, taken from the uniforms the
+// last GPU frame used.
+function cpuSnapshot() {
+  const cam = {
+    pos: camPosZUpVal.toArray(),
+    right: camRightZUpVal.toArray(),
+    up: camUpZUpVal.toArray(),
+    fwd: camFwdZUpVal.toArray(),
+    tanFov: camTanFovVal.toArray(),
+    ortho: camOrthoU.value,
+  };
+  return {
+    width: shapeTarget.width,
+    height: shapeTarget.height,
+    cam,
+    far: nearFarVal.y,
+    field: { active: fieldEnabledU.value > 0.5, normal: fieldNormalU.value.toArray(), height: fieldHeightU.value },
+    backDim: renderKnobsU.value.z,
+  };
+}
+
+// viewerColors are the returns' colors in the viewer, as the Render panel
+// holds them; schematicColors, linear, as the Schematic tier's shader decodes
+// them.
+function viewerColors() {
+  return Array.from({ length: currentShapeCount }, (_, i) => gsl_shapeColors.get(i + 1)?.uniform.value.toArray() ?? [1, 1, 1]);
+}
+
+function schematicColors() {
+  return viewerColors().map((c) => c.map(srgbToLinear));
+}
+
+// encodeLitFrame writes a server frame into `out` in the shape target's
+// encoding: the colour, and in alpha the return, + 0.5 below the section
+// plane, + depth / far (at most 0.498), as the standard frame writes them.
+function encodeLitFrame(frame, snap, out) {
+  const { width, height, data } = frame;
+  const { cam, far, field } = snap;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = y * width + x;
+      const src = 5 * i;
+      const dst = 4 * i;
+      const shape = data[src + 3];
+      if (!(shape > 0)) {
+        out[dst] = out[dst + 1] = out[dst + 2] = out[dst + 3] = 0;
+        continue;
+      }
+      const depth = data[src + 4];
+      let below = false;
+      if (field.active) {
+        const { origin, dir } = simpleRay(cam, x, y, width, height);
+        const t = depth / (dir[0] * cam.fwd[0] + dir[1] * cam.fwd[1] + dir[2] * cam.fwd[2]);
+        const hit = [0, 1, 2].map((k) => origin[k] + dir[k] * t);
+        below = field.normal[0] * hit[0] + field.normal[1] * hit[1] + field.normal[2] * hit[2] < field.height;
+      }
+      out[dst] = data[src];
+      out[dst + 1] = data[src + 1];
+      out[dst + 2] = data[src + 2];
+      out[dst + 3] = shape + (below ? 0.5 : 0) + Math.min(Math.max(depth / far, 0), 0.498);
+    }
+  }
+}
+
+// startCpu asks the server for a CPU frame of the chosen tier and the view the
+// last render drew, and shows it when it arrives, unless the view has changed
+// since; a change while it runs asks again for the new view.
+async function startCpu() {
+  // Past the cap no CPU frame is asked for; say why where one would be drawn.
+  if (cpuTooBig()) {
+    if (cpuWanted()) noteCpuTooBig();
+    return;
+  }
+  noteCpuSizeOk();
+  if (cpuRunning || cpuShowing || !cpuWanted() || !shapeTarget) return;
+  cpuRunning = true;
+  const job = cpuJob;
+  const wgsl = currentWGSL;
+  startDrawClock(job);
+  try {
+    const snap = cpuSnapshot();
+    const { width, height, cam } = snap;
+    const mode = getRestTier();
+    const t0 = performance.now();
+    const frame = await cpuFrameSource({
+      width, height, worldExtent,
+      time: getAnimTime(),
+      camera: { pos: cam.pos, right: cam.right, up: cam.up, fwd: cam.fwd, tanFov: cam.tanFov, ortho: cam.ortho > 0.5 },
+      colors: mode === "simple" ? schematicColors() : viewerColors(),
+      mode,
+      ...(mode === "simple" ? { simple: { ...SIMPLE } } : {}),
+      backDim: snap.backDim,
+    });
+    console.log(`[cpu] ${mode} ${width}x${height} frame in ${Math.round(performance.now() - t0)} ms`);
+    if (job === cpuJob) {
+      if (frame.width !== width || frame.height !== height) throw new Error(`the server drew ${frame.width}x${frame.height}, not ${width}x${height}`);
+      if (!cpuTexture || cpuTexture.image.width !== width || cpuTexture.image.height !== height) {
+        cpuTexture?.dispose();
+        cpuTexture = new THREE.DataTexture(new Float32Array(width * height * 4), width, height, THREE.RGBAFormat, THREE.FloatType);
+      }
+      encodeLitFrame(frame, snap, cpuTexture.image.data);
+      cpuTexture.needsUpdate = true;
+      showCpuFrame(true);
+      scheduleRender({ keepAccum: true });
+    }
+  } catch (err) {
+    if (job === cpuJob) {
+      cpuFailedFor = wgsl;
+      showCpuFrame(false);
+      if (!compileFailed) showNotification(true, `CPU render failed: ${err.message}`);
+      scheduleRender({ keepAccum: true });
+    }
+  } finally {
+    cpuRunning = false;
+    stopDrawClock();
+  }
+  if (job !== cpuJob) startCpu();
 }
 
 onShadingChange(() => scheduleRender());
@@ -1685,6 +1917,9 @@ bindDetailSlider("detail-slider", () => scheduleRender(), (show) => {
   partBoxes.object.visible = show;
   scheduleRender();
 });
+// The part-size histogram is sized to the track when it is drawn, which a
+// folded Detail section has no width for: a frame when it opens draws it.
+document.getElementById("render-detail")?.addEventListener("toggle", () => scheduleRender());
 
 bindFieldOfView((deg) => {
   cameraRig.fov = deg;
@@ -1698,9 +1933,12 @@ const focusToolButton = bindRenderControls({
   },
   onRenderImage: startRenderImage,
   onShadows: (on) => {
-    // Standard has no shadows to switch; its ambient occlusion is the
-    // nearest thing, so it goes with them.
+    // Standard has no shadows to switch, and its occlusion has a switch of
+    // its own, below.
     traceFlagsU.value.x = on ? 1 : 0;
+    scheduleRender();
+  },
+  onOcclusion: (on) => {
     renderKnobsU.value.x = on ? 1 : 0;
     scheduleRender();
   },

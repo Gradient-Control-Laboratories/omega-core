@@ -88,6 +88,27 @@ export function setRestDevice(device) {
   }
 }
 
+// setDrawStatus puts a note beside the Draw on buttons while a CPU frame is
+// being drawn ("CPU frame in progress, 0:42, 31%"), or says why none is
+// coming; "" takes it away.
+export function setDrawStatus(text) {
+  const el = document.getElementById("draw-status");
+  if (el) el.textContent = text || "";
+}
+
+// The device whose frame is on screen: the GPU's unless a CPU frame has
+// replaced it. The viewer reports it (setDrawnBy), and the button of a device
+// that drew the frame but is not the chosen one is outlined (.drew-frame), so a
+// frame that is not from the chosen device can be told from one that is.
+let drawnBy = "gpu";
+let syncDevices = () => {};
+
+export function setDrawnBy(device) {
+  if (device === drawnBy) return;
+  drawnBy = device;
+  syncDevices();
+}
+
 export function getMovingTier() {
   return movingTier;
 }
@@ -209,8 +230,10 @@ export function bindTierButtons(onChange) {
       b.classList.toggle("active", active);
       b.setAttribute("aria-pressed", active);
       b.disabled = b.dataset.restDevice !== "gpu" && restTier === "progressive";
+      b.classList.toggle("drew-frame", b.dataset.restDevice === drawnBy && drawnBy !== restDevice);
     });
   };
+  syncDevices = sync;
   moving.forEach((b) => {
     b.addEventListener("click", () => {
       setMovingTier(b.dataset.movingTier);
@@ -252,18 +275,34 @@ export function getAperture() {
   return aperture;
 }
 
+// bindChip wires one of the Render panel's switch chips, found by id: a click
+// flips it, it wears the label for its state (its data-on or data-off) and is
+// lit while on, and onChange gets the new state. Its markup holds the
+// starting state.
+function bindChip(id, onChange) {
+  const chip = document.getElementById(id);
+  chip?.addEventListener("click", () => {
+    const on = chip.getAttribute("aria-pressed") !== "true";
+    chip.classList.toggle("active", on);
+    chip.setAttribute("aria-pressed", on);
+    chip.textContent = on ? chip.dataset.on : chip.dataset.off;
+    onChange?.(on);
+  });
+}
+
 // bindRenderControls wires the Render panel's Depth of field slider, its
-// Focus tool, its Render image button and the image size beside it, the
-// Shadows, Displacement and Back faces switches:
-//   onAperture()     the slider moved
-//   onFocusTool(on)  the Focus tool was switched on or off
-//   onRenderImage()  the button was pressed
-//   onShadows(on)    Shadows was switched on or off
-//   onBackFaces(dim) Back faces was set to Dim (true) or Full (false)
-// Displacement, Fine relief and Pixel filter need no callback: they set the
+// Focus tool, its Render image button and the image size beside it, and its
+// switch chips (Shadows, Occlusion, Back faces, Relief, Fine relief):
+//   onAperture()      the slider moved
+//   onFocusTool(on)   the Focus tool was switched on or off
+//   onRenderImage()   the button was pressed
+//   onShadows(on)     Shadows was switched on or off
+//   onOcclusion(on)   Occlusion was switched on or off
+//   onBackFaces(dim)  Back faces was set to dim (true) or full (false)
+// Relief, Fine relief and Pixel filter need no callback: they set the
 // surface knobs through setShading, whose listeners re-render every viewer.
 // The tool button is returned so the viewer can switch it off after a pick.
-export function bindRenderControls({ onAperture, onFocusTool, onRenderImage, onShadows, onBackFaces }) {
+export function bindRenderControls({ onAperture, onFocusTool, onRenderImage, onShadows, onOcclusion, onBackFaces }) {
   const slider = document.getElementById("render-aperture");
   const label = document.getElementById("render-aperture-label");
   slider?.addEventListener("input", () => {
@@ -278,52 +317,17 @@ export function bindRenderControls({ onAperture, onFocusTool, onRenderImage, onS
     onFocusTool(on);
   });
   document.getElementById("btn-render-image")?.addEventListener("click", onRenderImage);
-  const shadows = document.querySelectorAll("[data-trace-shadows]");
-  shadows.forEach((b) => {
-    b.addEventListener("click", () => {
-      shadows.forEach((o) => {
-        o.classList.toggle("active", o === b);
-        o.setAttribute("aria-pressed", o === b);
-      });
-      onShadows?.(b.dataset.traceShadows === "on");
-    });
-  });
-  const displacement = document.querySelectorAll("[data-displacement]");
-  displacement.forEach((b) => {
-    b.addEventListener("click", () => {
-      displacement.forEach((o) => {
-        o.classList.toggle("active", o === b);
-        o.setAttribute("aria-pressed", o === b);
-      });
-      setShading({ displacementScale: b.dataset.displacement === "on" ? 1 : 0 });
-    });
-  });
+  bindChip("chip-shadows", onShadows);
+  bindChip("chip-occlusion", onOcclusion);
+  bindChip("chip-back-faces", onBackFaces);
+  bindChip("chip-displacement", (on) => setShading({ displacementScale: on ? 1 : 0 }));
+  bindChip("chip-march-fade", (on) => setShading({ marchFade: on ? 1 : 0 }));
   const pixelFilter = document.getElementById("render-pixel-filter");
   const pixelFilterLabel = document.getElementById("render-pixel-filter-label");
   pixelFilter?.addEventListener("input", () => {
     const scale = Number(pixelFilter.value);
     if (pixelFilterLabel) pixelFilterLabel.textContent = scale.toFixed(2);
     setShading({ pixelFilter: scale });
-  });
-  const marchFade = document.querySelectorAll("[data-march-fade]");
-  marchFade.forEach((b) => {
-    b.addEventListener("click", () => {
-      marchFade.forEach((o) => {
-        o.classList.toggle("active", o === b);
-        o.setAttribute("aria-pressed", o === b);
-      });
-      setShading({ marchFade: b.dataset.marchFade === "march" ? 1 : 0 });
-    });
-  });
-  const backFaces = document.querySelectorAll("[data-back-faces]");
-  backFaces.forEach((b) => {
-    b.addEventListener("click", () => {
-      backFaces.forEach((o) => {
-        o.classList.toggle("active", o === b);
-        o.setAttribute("aria-pressed", o === b);
-      });
-      onBackFaces?.(b.dataset.backFaces === "dim");
-    });
   });
   const scales = document.querySelectorAll("[data-image-scale]");
   scales.forEach((b) => {
