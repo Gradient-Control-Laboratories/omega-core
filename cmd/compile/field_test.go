@@ -26,7 +26,8 @@ func fieldOf(t *testing.T, data []byte) map[string]any {
 }
 
 // -t field writes <source>.field.json: the WGSL and what a viewer draws it with, byte for byte the bundle
-// compile.Process (gsl serve's /api/compile) makes for the same document, and no companion metadata.
+// compile.Process (gsl serve's /api/compile) makes for the same document, named by its file name alone (never its
+// path), and no companion metadata.
 func TestRun_Field_IsTheViewersBundle(t *testing.T) {
 	dir := t.TempDir()
 	source := filepath.Join(dir, "slab.gsl")
@@ -40,12 +41,14 @@ func TestRun_Field_IsTheViewersBundle(t *testing.T) {
 	assert.True(t, os.IsNotExist(metaErr), "no companion metadata beside the bundle")
 
 	want, err := json.Marshal(compile.Process(compile.Request{
-		ID: source, Source: fieldSlab, Meshes: meshimport.Dirs(dir),
+		ID: "slab.gsl", Source: fieldSlab, Meshes: meshimport.Dirs(dir),
 	}, []string{dir}, nil))
 	require.NoError(t, err)
 	assert.Equal(t, string(want)+"\n", string(data))
 
 	bundle := fieldOf(t, data)
+	assert.Equal(t, "slab.gsl", bundle["id"])
+	assert.False(t, strings.Contains(string(data), dir), "the bundle names no folder")
 	assert.True(t, strings.Contains(bundle["wgsl"].(string), "fn sdShape"), "the bundle carries the shader")
 	assert.Equal(t, []any{"slab"}, bundle["shapeNames"])
 	sliders := bundle["sliders"].([]any)
