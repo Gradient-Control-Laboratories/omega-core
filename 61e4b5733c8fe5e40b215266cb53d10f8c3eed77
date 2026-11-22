@@ -1,0 +1,18 @@
+Phase 16 (Cross Holes and Set Screws) verification report
+
+Automated: tool/check.sh -> all quality checks passed; no golden moved.
+New: eval/shaft_crosshole_test.go (6 tests), eval/fastener_setscrew_test.go (3 tests).
+- Cross holes: blind, through and tapped where their placement puts them; the shaft and its box unchanged
+  elsewhere; a fillet before the entry still blends; a placed pin on the axis keeps its box.
+- Set screws: the table row by row (socket width, depth either side of each standard's threshold, point
+  diameters, dog lengths) against ISO 4029:2003, ISO 4026/4027/4028:1993, Westfield, fasten.it, amesweb; each
+  point's end and the socket on M6 x 10; the box. 2003 thresholds of 4026/4027 rest on amesweb alone; 2026
+  editions not consulted.
+- Design change, the owner's choice: an entry cannot capture its own drill list in the fold, so
+  crossHole(void) takes shaft.crossVoid(...); the tests' calls followed.
+- Test edits with the owner's approval: three points (drill point nearer than the wall; a point on the hole's
+  axis; two solids within 0.2 of a surface).
+- Example shaft_set_screw.gsl 65,805 B; the owner's viewer check found the example's ends cut by a misused
+  drill.chamfer end hole, now 0.8 mm tapers.
+
+Manual verification: the owner's viewer check, 'Looks right', 2026-11-21.
