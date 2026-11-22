@@ -1,0 +1,14 @@
+Phase 17 (Stand-ins and Fits) verification report
+
+Automated: tool/check.sh -> all quality checks passed; no golden moved.
+New: eval/shaft_standin_test.go (3 tests), eval/tolerance_test.go (2 tests).
+- Stand-in: a shaft with a gear, thread, spline, knurl or bevel carries the switch; a plain one (fillets and
+  tapers) none; a part whose stand-in is nothing none. Design change, the owner's choice: the approved
+  'identical stand-in' rule could not work (different calls; the cost was the solid read twice), so
+  '.simple = detailed ? envelope : nothing' and a codegen rule for nothing (and a remap of it).
+- Fits: every zone (shaft j5 j6 k5 k6 m5 m6 n6 p6, hole H6 H7 J6 J7 K6 K7 M6 M7) and IT5-IT7 in all six ranges,
+  inside and at the upper end; 6205 k5 journal 25.002-25.011, H7 housing 52.000-52.030. Sources: Simply
+  Bearings (ISO 286-2), Miki Pulley (JIS B 0401:2016), Wikipedia IT table; K6 6-10 = -7 by IT6.
+- Every shipped shaft example's WGSL unchanged; shaft_bearings 36,801 -> 37,134 B with k5 seats.
+
+User confirmation: 'Checkpoint, no push', the owner, 2026-11-21.
