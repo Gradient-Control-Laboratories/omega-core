@@ -185,6 +185,9 @@ func (c *importCollector) collectFromPackageFile(file *PackageFile) {
 	for _, op := range file.MaterialReturns {
 		c.visit(op)
 	}
+	for _, op := range file.GradientReturns {
+		c.visit(op)
+	}
 	for _, fnType := range file.FnTypes {
 		if fnType != nil {
 			for _, group := range fnType.Groups {

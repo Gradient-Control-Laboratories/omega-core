@@ -139,6 +139,21 @@ func (c *unrollContext) transformFile(file *program.PackageFile) error {
 			c.hoisted = nil
 		}
 	}
+	for i, ret := range file.GradientReturns {
+		if ret == nil {
+			continue
+		}
+		c.hoisted = nil
+		walked, err := c.unrollOperand(ret)
+		if err != nil {
+			return err
+		}
+		file.GradientReturns[i] = walked
+		if len(c.hoisted) > 0 {
+			file.Assignments = append(file.Assignments, c.hoisted...)
+			c.hoisted = nil
+		}
+	}
 
 	// 3. Walk functions
 	if err := c.transformFnTypes(file.FnTypes); err != nil {

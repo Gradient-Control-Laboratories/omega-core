@@ -179,17 +179,26 @@ Taken next after Phase 2, before Phases 3 and 4 (the owner, 2026-11-18).
 
 ## Phase 6: `sweep()` (C4)
 
-- [ ] Task: Proposal: the signature, starting from the remap in `profile_sweep.gsl`
-- [ ] Task: Closed planar paths, exact
-  - [ ] Write failing tests (Red Phase): exact against a reference swept section, inside and outside the
-        path, at its corners and arcs; frame `.u` along the path
-  - [ ] Implement (Green & Refactor Phase); `profile_sweep.gsl` rewritten on it, its picture unchanged
+- [x] Task: Proposal: the signature, starting from the remap in `profile_sweep.gsl`. Decided: `sweep(section,
+      path)`, the path any exact 2D field; corners as the distance makes them; Go frame and box rules (spec
+      section 4, C4)
+- [x] Task: Closed planar paths, exact (`eval/profile_sweep_test.go`)
+  - [x] Write failing tests (Red Phase): the composition, from the references (worst 5.6e-6); against the
+        swept surface sampled on its own by level sets of the path's distance, never more than its distance
+        anywhere, exact to the sampling on a filleted path (0.097 mm at 0.2 mm), short by up to 0.355 mm near
+        a sharp corner, as documented; surface cells (widest 5.54, limit 6); `certify` above it (291,497 and
+        303,329 evaluations); the box; the frame
+  - [x] Implement (Green & Refactor Phase): `sweep(section, path)` in `stdlib/builtin/sweep.gsl`, one remap;
+        its frame by `sweepFrame` and its box by the `swept` rule (`internal/assembler/property`);
+        `profile_sweep.gsl` rewritten on it, its values and frame unchanged at sample points. Removing the
+        box rule fails the box test. No golden moved
 - [ ] Task: Open and non-planar paths, with a stated Lipschitz bound
   - [ ] Proposal: frame transport along the path, and the bound
   - [ ] Write failing tests (Red Phase): the field never exceeds the reference distance and stays within the
         bound; `certify` holds
   - [ ] Implement (Green & Refactor Phase)
-- [ ] Task: WGSL size; the owner's viewer check
+- [x] Task: WGSL size; the owner's viewer check: `profile_sweep.gsl` on `sweep()`, 17 KB of WGSL, checked by
+      the owner (closed planar paths; open and non-planar paths to come)
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 7: Caps for Sweeps (C5)

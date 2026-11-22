@@ -23,6 +23,7 @@ import { glassKnobsU, renderKnobsU, detailKnobsU, detailKnobs2U, setShading } fr
 
 export const DRAFT_SCALE = 0.5;
 export const DRAFT_SETTLE_MS = 150;
+const MAX_SETTLE_MS = 1500;
 
 const MOVING_TIER_KEY = "gsl.movingTier";
 const REST_TIER_KEY = "gsl.restTier";
@@ -64,9 +65,12 @@ export function setRestTier(tier) {
   }
 }
 
-// What draws the tier at rest: "gpu", or "cpu", the same tier redrawn
-// on the server by litrender once nothing moves. Progressive is GPU only.
-const REST_DEVICES = ["gpu", "cpu"];
+// What draws the tier at rest: "gpu", or "cpu", the same tier redrawn on the
+// server by the lit renderer once nothing moves, or "fidget", fidget's own GPU
+// pipeline run in the page on the document's tape. Progressive has neither
+// form. "fidget-only" is "fidget" with the GPU's frame taken away: the viewer
+// draws no shapes on the GPU and shows only fidget's.
+const REST_DEVICES = ["gpu", "cpu", "fidget", "fidget-only"];
 let restDevice = "gpu";
 try {
   const saved = localStorage.getItem(REST_DEVICE_KEY);
@@ -86,6 +90,27 @@ export function setRestDevice(device) {
   } catch {
     // See above.
   }
+}
+
+// setDrawStatus puts a note beside the Draw on buttons while a CPU frame is
+// being drawn ("CPU frame in progress, 0:42, 31%"), or says why none is
+// coming; "" takes it away.
+export function setDrawStatus(text) {
+  const el = document.getElementById("draw-status");
+  if (el) el.textContent = text || "";
+}
+
+// The device whose frame is on screen: the GPU's unless a CPU frame has
+// replaced it. The viewer reports it (setDrawnBy), and the button of a device
+// that drew the frame but is not the chosen one is outlined (.drew-frame), so a
+// frame that is not from the chosen device can be told from one that is.
+let drawnBy = "gpu";
+let syncDevices = () => {};
+
+export function setDrawnBy(device) {
+  if (device === drawnBy) return;
+  drawnBy = device;
+  syncDevices();
 }
 
 export function getMovingTier() {
@@ -140,16 +165,47 @@ export class MotionTracker {
     this.settleMs = settleMs;
     this.moving = false;
     this.timer = null;
+    this.frameGaps = [];
+    this.lastFrameAt = null;
   }
 
   note() {
     this.moving = true;
+    this.arm();
+  }
+
+  // arm starts the wait for the view to settle over again.
+  arm() {
     if (this.timer) clearTimeout(this.timer);
     this.timer = setTimeout(() => {
       this.timer = null;
       this.moving = false;
       this.onSettle();
-    }, this.settleMs);
+    }, this.settleDelay());
+  }
+
+  // settleDelay is how long without input takes the view for still: settleMs,
+  // or longer when frames are slow. Input reaches the page once a frame, so
+  // when a frame takes longer than settleMs the wait runs out between every two
+  // frames, and a standard frame, as slow as the rest, is drawn in each gap.
+  // The wait is one and a half times the slowest of the last few frames, at
+  // most MAX_SETTLE_MS.
+  settleDelay() {
+    return Math.min(MAX_SETTLE_MS, Math.max(this.settleMs, 1.5 * Math.max(0, ...this.frameGaps)));
+  }
+
+  // frameDrawn is called when a frame has been drawn, at time now in ms. It
+  // measures the time between frames and starts the wait over from the end of
+  // the frame.
+  frameDrawn(now = performance.now()) {
+    if (this.lastFrameAt !== null && now - this.lastFrameAt < MAX_SETTLE_MS) {
+      this.frameGaps.push(now - this.lastFrameAt);
+      if (this.frameGaps.length > 4) this.frameGaps.shift();
+    } else {
+      this.frameGaps = [];
+    }
+    this.lastFrameAt = now;
+    if (this.timer) this.arm();
   }
 
   // noteCamera is note() for a controls "change", counted only when the
@@ -170,16 +226,19 @@ export class MotionTracker {
     return true;
   }
 
-  // draftNow reports whether the next shape pass should be a draft.
+  // draftNow reports whether the next shape pass should be a draft: while the
+  // view moves, when Moving is Draft or when the frame-rate governor (a
+  // FrameGovernor, gsl-frame-governor.js, set as this.governor) has taken the
+  // moving frames below full resolution.
   draftNow() {
-    return this.moving && movingTier === "draft";
+    return this.moving && (movingTier === "draft" || (this.governor?.scale ?? 1) < 1);
   }
 }
 
 // bindTierButtons wires the Render panel: its header opens and closes it
 // like the other viewer panels, its "Moving" and "At rest" button groups
 // (data-moving-tier, data-rest-tier) pick the tiers, and its "Draw on" group
-// (data-rest-device), GPU or CPU, which Progressive disables.
+// (data-rest-device), GPU, CPU or Fidget, which Progressive disables.
 export function bindTierButtons(onChange) {
   const panel = document.getElementById("render-panel");
   document.getElementById("render-panel-header")?.addEventListener("click", (e) => {
@@ -209,8 +268,10 @@ export function bindTierButtons(onChange) {
       b.classList.toggle("active", active);
       b.setAttribute("aria-pressed", active);
       b.disabled = b.dataset.restDevice !== "gpu" && restTier === "progressive";
+      b.classList.toggle("drew-frame", b.dataset.restDevice === drawnBy && drawnBy !== restDevice);
     });
   };
+  syncDevices = sync;
   moving.forEach((b) => {
     b.addEventListener("click", () => {
       setMovingTier(b.dataset.movingTier);
@@ -232,6 +293,24 @@ export function bindTierButtons(onChange) {
       onChange();
     });
   });
+  // The Fidget devices run fidget-wgpu, which tool/build-fidget.sh --wasm-out
+  // builds into vendor/: they are offered only where the bundle is there, and a
+  // saved choice of one falls back to the GPU where it is not.
+  const fidgetButtons = [...device].filter((b) => b.dataset.restDevice.startsWith("fidget"));
+  if (fidgetButtons.length) {
+    fidgetButtons.forEach((b) => { b.hidden = true; });
+    const wgpuUrl = new URL("../vendor/fidget-wgpu/fidget_wgpu.js", import.meta.url);
+    fetch(wgpuUrl, { method: "HEAD" })
+      .then((r) => r.ok, () => false)
+      .then((built) => {
+        fidgetButtons.forEach((b) => { b.hidden = !built; });
+        if (!built && restDevice.startsWith("fidget")) {
+          setRestDevice("gpu");
+          sync();
+          onChange();
+        }
+      });
+  }
   // A tier saved by a viewer that offers it, in one that does not.
   if (rest.length && ![...rest].some((b) => b.dataset.restTier === restTier)) setRestTier("standard");
   sync();
@@ -252,18 +331,35 @@ export function getAperture() {
   return aperture;
 }
 
+// bindChip wires one of the Render panel's switch chips, found by id: a click
+// flips it, it wears the label for its state (its data-on or data-off) and is
+// lit while on, and onChange gets the new state. Its markup holds the
+// starting state.
+function bindChip(id, onChange) {
+  const chip = document.getElementById(id);
+  chip?.addEventListener("click", () => {
+    const on = chip.getAttribute("aria-pressed") !== "true";
+    chip.classList.toggle("active", on);
+    chip.setAttribute("aria-pressed", on);
+    chip.textContent = on ? chip.dataset.on : chip.dataset.off;
+    onChange?.(on);
+  });
+}
+
 // bindRenderControls wires the Render panel's Depth of field slider, its
-// Focus tool, its Render image button and the image size beside it, the
-// Shadows, Displacement and Back faces switches:
-//   onAperture()     the slider moved
-//   onFocusTool(on)  the Focus tool was switched on or off
-//   onRenderImage()  the button was pressed
-//   onShadows(on)    Shadows was switched on or off
-//   onBackFaces(dim) Back faces was set to Dim (true) or Full (false)
-// Displacement, Fine relief and Pixel filter need no callback: they set the
+// Focus tool, its Render image button and the image size beside it, and its
+// switch chips (Shadows, Occlusion, Back faces, Relief, Fine relief) and Normals:
+//   onAperture()        the slider moved
+//   onFocusTool(on)     the Focus tool was switched on or off
+//   onRenderImage()     the button was pressed
+//   onShadows(on)       Shadows was switched on or off
+//   onOcclusion(on)     Occlusion was switched on or off
+//   onBackFaces(dim)    Back faces was set to dim (true) or full (false)
+//   onNormals(analytic) Normals was set to Analytic (true) or Numeric (false)
+// Relief, Fine relief and Pixel filter need no callback: they set the
 // surface knobs through setShading, whose listeners re-render every viewer.
 // The tool button is returned so the viewer can switch it off after a pick.
-export function bindRenderControls({ onAperture, onFocusTool, onRenderImage, onShadows, onBackFaces }) {
+export function bindRenderControls({ onAperture, onFocusTool, onRenderImage, onShadows, onOcclusion, onBackFaces, onNormals }) {
   const slider = document.getElementById("render-aperture");
   const label = document.getElementById("render-aperture-label");
   slider?.addEventListener("input", () => {
@@ -278,26 +374,11 @@ export function bindRenderControls({ onAperture, onFocusTool, onRenderImage, onS
     onFocusTool(on);
   });
   document.getElementById("btn-render-image")?.addEventListener("click", onRenderImage);
-  const shadows = document.querySelectorAll("[data-trace-shadows]");
-  shadows.forEach((b) => {
-    b.addEventListener("click", () => {
-      shadows.forEach((o) => {
-        o.classList.toggle("active", o === b);
-        o.setAttribute("aria-pressed", o === b);
-      });
-      onShadows?.(b.dataset.traceShadows === "on");
-    });
-  });
-  const displacement = document.querySelectorAll("[data-displacement]");
-  displacement.forEach((b) => {
-    b.addEventListener("click", () => {
-      displacement.forEach((o) => {
-        o.classList.toggle("active", o === b);
-        o.setAttribute("aria-pressed", o === b);
-      });
-      setShading({ displacementScale: b.dataset.displacement === "on" ? 1 : 0 });
-    });
-  });
+  bindChip("chip-shadows", onShadows);
+  bindChip("chip-occlusion", onOcclusion);
+  bindChip("chip-back-faces", onBackFaces);
+  bindChip("chip-displacement", (on) => setShading({ displacementScale: on ? 1 : 0 }));
+  bindChip("chip-march-fade", (on) => setShading({ marchFade: on ? 1 : 0 }));
   const pixelFilter = document.getElementById("render-pixel-filter");
   const pixelFilterLabel = document.getElementById("render-pixel-filter-label");
   pixelFilter?.addEventListener("input", () => {
@@ -305,24 +386,15 @@ export function bindRenderControls({ onAperture, onFocusTool, onRenderImage, onS
     if (pixelFilterLabel) pixelFilterLabel.textContent = scale.toFixed(2);
     setShading({ pixelFilter: scale });
   });
-  const marchFade = document.querySelectorAll("[data-march-fade]");
-  marchFade.forEach((b) => {
+  const normals = document.querySelectorAll("[data-normals]");
+  normals.forEach((b) => {
     b.addEventListener("click", () => {
-      marchFade.forEach((o) => {
+      if (b.classList.contains("active")) return;
+      normals.forEach((o) => {
         o.classList.toggle("active", o === b);
         o.setAttribute("aria-pressed", o === b);
       });
-      setShading({ marchFade: b.dataset.marchFade === "march" ? 1 : 0 });
-    });
-  });
-  const backFaces = document.querySelectorAll("[data-back-faces]");
-  backFaces.forEach((b) => {
-    b.addEventListener("click", () => {
-      backFaces.forEach((o) => {
-        o.classList.toggle("active", o === b);
-        o.setAttribute("aria-pressed", o === b);
-      });
-      onBackFaces?.(b.dataset.backFaces === "dim");
+      onNormals?.(b.dataset.normals === "analytic");
     });
   });
   const scales = document.querySelectorAll("[data-image-scale]");

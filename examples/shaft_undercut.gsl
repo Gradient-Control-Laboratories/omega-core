@@ -1,0 +1,24 @@
+@scene(110)
+
+// A thread run up to a shoulder. An M12 x 1.75 thread can't be cut right up
+// to a shoulder: the tool needs somewhere to run out. So its last g2, here
+// 6.1 mm, is a DIN 76 undercut: a groove whose floor is a little under the
+// thread's minor diameter, with a 30 degree flank on the thread's side that
+// cuts the last teeth down, and a radius where the floor meets the shoulder.
+// The thread is chamfered at its free end, and the shoulder and journal
+// beyond it are plain. Every segment is placed by the two planes it runs
+// between, measured from the left end. Lengths are in mm.
+//
+// thread.undercutDia, undercutLength and undercutRadius give the groove's
+// sizes; shaft.undercut(thread.iso4755) cuts ISO 4755's shorter one instead.
+
+undercutShaft = shaft.body(
+  [shaft.thread(12.0, 1.75, 0.0, 28.0, shaft.chamferEnd(1.2), shaft.undercut(thread.din76A)),
+   shaft.diameter(22.0, 28.0, 36.0),
+   shaft.fillet(1.0),
+   shaft.diameter(16.0, 36.0, 70.0)]);
+undercutShaft.color = [0.58, 0.60, 0.64];
+
+// Laid along X and centred, so the viewer frames the whole shaft.
+laid = transform.translate(transform.rotateY(undercutShaft, neg(pi) / 2.0), [35.0, 0.0, 0.0]);
+return laid;

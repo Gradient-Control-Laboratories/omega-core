@@ -294,6 +294,16 @@ func (p *Program) MaterialReturns() []*Operand {
 	return p.Primary.Files[len(p.Primary.Files)-1].MaterialReturns
 }
 
+// GradientReturns returns the lowered spatial gradient (d/dp) of each return,
+// set only when assembly was asked for analytic gradients. A nil entry is a
+// return the derivative could not go through.
+func (p *Program) GradientReturns() []*Operand {
+	if len(p.Primary.Files) == 0 {
+		return nil
+	}
+	return p.Primary.Files[len(p.Primary.Files)-1].GradientReturns
+}
+
 // ModuleFunction finds a package-local function declaration with the given
 // name and parameter count.
 func ModuleFunction(pkg *Package, name string, paramCount int) *Function {
