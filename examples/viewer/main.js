@@ -46,6 +46,10 @@ import {
     setUiControlValues,
     syncUiControls,
     defaultWGSL,
+    setCpuFrameSource,
+    setCpuTapeSource,
+    setCpuProgress,
+    setCompileFailed,
 } from "./render/viewer.js";
 import {
     initEditor,
@@ -427,6 +431,42 @@ eventManager.addListener("canvas/update-shader", (event) => {
 
 // ── Compile & Mesh, by the Host (host.js) ──
 
+// The Render panel's Normals switch. Analytic asks the server for each
+// return's gradient (gsl_gradField), so switching recompiles.
+let analyticNormals = false;
+eventManager.addListener("render/normals", (event) => {
+    analyticNormals = Boolean(event && event.analytic);
+    if (!analyticNormals) showNormalsNote(null);
+    const source = getGslSourceForServer();
+    if (!source || source.trim() === "") return;
+    compileGsl(source);
+});
+
+// showNormalsNote says, beside the Normals switch, which shapes fall back to
+// numeric normals and why (hover for the reasons); data null hides it.
+function showNormalsNote(data) {
+    const note = document.getElementById("render-normals-note");
+    if (!note) return;
+    if (!analyticNormals || !data || !data.wgsl) {
+        note.hidden = true;
+        note.textContent = "";
+        note.title = "";
+        return;
+    }
+    const notes = data.gradientNotes || [];
+    const names = data.shapeNames || [];
+    if (notes.length === 0) {
+        note.hidden = !data.wgsl.includes("fn gsl_gradField(");
+        note.textContent = "all exact";
+        note.title = "Every shape has an analytic gradient (numeric only where displacement is drawn)";
+        return;
+    }
+    const label = (n) => (n.return === 0 ? "all" : (names[n.return - 1] || `#${n.return}`));
+    note.hidden = false;
+    note.textContent = `numeric: ${notes.map(label).join(", ")}`;
+    note.title = notes.map((n) => `${label(n)}: ${n.reason}`).join("\n");
+}
+
 async function compileGsl(source) {
     if (!source || source.trim() === "") return;
     const reqId = nextCompileID();
@@ -435,7 +475,7 @@ async function compileGsl(source) {
     showNotification(false, "Compiling...");
 
     try {
-        const { ok, status, data } = await host.compile({ id: reqId, clientId, source });
+        const { ok, status, data } = await host.compile({ id: reqId, clientId, source, analyticNormals });
         if (reqId !== latestCompileID) return;
 
         if (!ok || (data.errors && data.errors.length > 0)) {
@@ -459,6 +499,7 @@ async function compileGsl(source) {
         }
         eventManager.dispatchEvent("canvas/update-shader", data);
         applyCompileWarnings(data.warnings || []);
+        showNormalsNote(data);
 
         const audioJs = data.audio && (data.audio.jsCode || data.audio.javascript) || "";
         const hasAudio = Boolean(audioJs);
@@ -623,6 +664,11 @@ async function exportPage() {
 
 function handleProgressEvent(ev) {
     if (!ev) return;
+    // How far a CPU frame has got goes to the Draw on note, not the progress bar.
+    if (ev.stage === "render") {
+        if (ev.total) setCpuProgress(ev.completed / ev.total);
+        return;
+    }
     resetErrorTimer();
     const stage = ev.stage || "compile";
     if (ev.done) {
@@ -634,6 +680,46 @@ function handleProgressEvent(ev) {
 }
 
 host.connectProgress(clientId, handleProgressEvent);
+
+// ── The CPU and Fidget Draw on devices ──
+
+// The viewer asks for the lit renderer's frame of the document it shows (see setCpuFrameSource), and
+// for its tape, which the Fidget device draws in the page (setCpuTapeSource). A page `gsl export`
+// wrote has no server for either, so it does not offer the devices.
+let litCount = 0;
+let tapeCount = 0;
+// The tape is made once per source and scene size, with each return's colour and material fields
+// for the Fidget device; a failed request is forgotten, so the next frame asks again.
+let fidgetTape = null;
+if (host.editable) {
+    setCpuFrameSource((request) => {
+        const source = getGslSourceForServer();
+        if (!source || source.trim() === "") return Promise.reject(new Error("no code to draw"));
+        return host.renderLit({ ...request, id: `lit-${++litCount}`, clientId, source });
+    });
+    setCpuTapeSource(() => {
+        const source = getGslSourceForServer();
+        if (!source || source.trim() === "") return Promise.reject(new Error("no code to draw"));
+        const key = `${source}\u0000${getWorldExtent()}`;
+        if (fidgetTape?.key !== key) {
+            const bytes = host.tape({ id: `tape-${++tapeCount}`, clientId, source, appearance: true });
+            fidgetTape = { key, bytes };
+            bytes.catch(() => { if (fidgetTape?.bytes === bytes) fidgetTape = null; });
+        }
+        return fidgetTape.bytes;
+    });
+} else {
+    document.getElementById("draw-on-row")?.remove();
+}
+
+// Whether the source compiles, for the CPU device, which says nothing of a compile error the editor
+// already shows.
+eventManager.addListener("canvas/errors", (_payload) => {
+    setCompileFailed(true);
+});
+eventManager.addListener("canvas/update-shader", (_event) => {
+    setCompileFailed(false);
+});
 
 // ── Surface Point & Point+Normal Picking Tools ──
 

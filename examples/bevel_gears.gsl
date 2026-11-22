@@ -1,8 +1,9 @@
 @scene(300, 30)
 
 // A pair of meshing bevel gears, all lengths in millimetres. A bevel pair
-// carries motion around a corner. Both pitch cones share one apex at the
-// origin, so shaftAngle is the angle between the shafts and the two pitch
+// carries motion around a corner. Each gear is a shaft: its teeth, a hub after
+// a chamfer, and a bore drilled through. Both pitch cones share one apex at
+// the origin, so shaftAngle is the angle between the shafts and the two pitch
 // angles always add up to it. Drag it and the pair stays in mesh -- and the
 // gears change size, because a bevel gear's cone distance is fixed by its
 // teeth, module and pitch angle rather than being free the way a spur gear's
@@ -27,8 +28,8 @@ animate = mod(time, 1);
 @range(0.9, 1.75) shaftAngle = 1.5707963;
 
 // The angle the tooth trace makes with the cone element: 0 is a straight
-// bevel, anything else a spiral bevel. Gear 2 is given the opposite hand
-// automatically -- a same-hand pair collides instead of meshing.
+// bevel, anything else a spiral bevel. Gear 2 takes the opposite hand -- a
+// same-hand pair collides instead of meshing.
 @range(-1, 1) spiralAngle = 0.5;
 
 // Face width as a fraction of the cone distance; gear practice keeps it
@@ -45,27 +46,53 @@ animate = mod(time, 1);
 @range(0, 15) recess = 4.0;
 
 // The hub, which on a bevel gear rides the heel: standoffHeight is what it
-// projects past the back face, so zero (with the chamfer taken to zero too)
-// is a bare blank. Hub diameters, chamfer and bores are in mm.
+// projects past the back face. Hub diameters, chamfer and bores are in mm.
 @range(0, 25) standoffHeight = 12.0;
 standoffDiam1 = 30;
 standoffDiam2 = 36;
 standoffChamfer = 1;
 
-// Running clearance between the teeth (mm), the through bores (mm), the extra
-// root depth as a fraction of the module, and the small chamfer (mm) that
-// breaks the tooth tips and edges.
+// Running clearance between the teeth (mm), the through bores (mm), and the
+// small chamfer (mm) that breaks the bores' edges.
 backlash = 0.25;
 boreDiam1 = 15;
 boreDiam2 = 20;
-dedendumClearance = 0.25;
 kSmall = 0.25;
 
-// The outer cone distance fixes the face width from the fraction above.
-pitchAngle1 = gears.bevelPitchAngle(numTeeth1, numTeeth2, shaftAngle);
-outerCone = numTeeth1 * moduleVal / (2 * sin(pitchAngle1));
-faceWidth = outerCone * faceFraction;
+// Each gear's faces, measured along its axis from the apex: the back face
+// crownToBack past the crown (the outer tooth-tip corner), the toe face recess
+// past the toe's tip corner, which lies (1 - faceFraction) of the way out.
+outerCone1 = numTeeth1 * moduleVal / (2 * sin(gears.bevelPitchAngle(numTeeth1, numTeeth2, shaftAngle)));
+outerCone2 = numTeeth2 * moduleVal / (2 * sin(gears.bevelPitchAngle(numTeeth2, numTeeth1, shaftAngle)));
+crown1 = gears.bevelApexToCrown(numTeeth1, numTeeth2, moduleVal, shaftAngle);
+crown2 = gears.bevelApexToCrown(numTeeth2, numTeeth1, moduleVal, shaftAngle);
+back1 = crown1 + crownToBack;
+back2 = crown2 + crownToBack;
+toe1 = crown1 * (1 - faceFraction) + recess;
+toe2 = crown2 * (1 - faceFraction) + recess;
 
-g1, g2 = gears.bevelPair(numTeeth1, numTeeth2, moduleVal, pressureAngle, shaftAngle, spiralAngle, faceWidth, crownToBack, recess, backlash, standoffDiam1, standoffDiam2, standoffHeight, standoffChamfer, boreDiam1, boreDiam2, dedendumClearance, kSmall, animate);
+// Apex at the origin and below the toe face, so the teeth face -Z toward it
+// and the hub rises from the back face.
+gear1 = shaft.body(
+  [shaft.bevel(numTeeth1, numTeeth2, moduleVal, pressureAngle, shaftAngle, spiralAngle,
+               outerCone1 * faceFraction, backlash, 0, toe1, back1),
+   shaft.chamfer(standoffChamfer),
+   shaft.diameter(standoffDiam1, back1, back1 + standoffHeight)],
+  drill.chamfer(boreDiam1, kSmall),
+  [drill.chamfer(boreDiam1, kSmall), drill.thru(boreDiam1)]);
 
-return g1, g2;
+gear2 = shaft.body(
+  [shaft.bevel(numTeeth2, numTeeth1, moduleVal, pressureAngle, shaftAngle, neg(spiralAngle),
+               outerCone2 * faceFraction, backlash, 0, toe2, back2),
+   shaft.chamfer(standoffChamfer),
+   shaft.diameter(standoffDiam2, back2, back2 + standoffHeight)],
+  drill.chamfer(boreDiam2, kSmall),
+  [drill.chamfer(boreDiam2, kSmall), drill.thru(boreDiam2)]);
+
+// Gear 1 turns about +Z. Gear 2 turns about its own axis, then is swung
+// shaftAngle about y so its pitch cone meets gear 1's along the XZ plane, at
+// its azimuth pi: gear 1 has a tooth space on its azimuth 0, and a turn of
+// pi (n - 1) / n puts a tooth of gear 2 there facing it, for either parity of
+// its count.
+return transform.rotateZ(gear1, 2 * pi * animate / numTeeth1),
+       transform.rotateY(transform.rotateZ(gear2, pi * (numTeeth2 - 1) / numTeeth2 - 2 * pi * animate / numTeeth2), shaftAngle);

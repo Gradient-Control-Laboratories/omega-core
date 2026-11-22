@@ -846,7 +846,8 @@ func cropFnType(ft *program.FnType, apply string, pkg *program.Package) error {
 }
 
 func cropAssignments(assigns []*program.Assignment, apply string, pkg *program.Package) error {
-	for _, a := range assigns {
+	for i := 0; i < len(assigns); i++ {
+		a := assigns[i]
 		if a == nil {
 			continue
 		}
