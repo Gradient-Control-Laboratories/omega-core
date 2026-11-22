@@ -189,6 +189,34 @@ section(field, from, to) {
   return seg;
 }
 
+/// A round `dia` across whose axis stands `offset` from the shaft's, at
+/// `angle` in radians from +x about +z: a crank pin, an eccentric journal, a
+/// cam's base circle. Exact. A crank of several throws is its pins at their
+/// angles.
+///
+///   shaft.eccentric(28.0, 40.0, 0.0, 45.0, 75.0)
+eccentric(dia, offset, angle, from, to) {
+  seg(eDown, eUp, want) {
+    return want > 2.5 ? nothing : prismSegment(length([p.x - offset * cos(angle), p.y - offset * sin(angle)]) - dia / 2.0,
+                                               from, to, eDown, eUp, want);
+  }
+  return seg;
+}
+
+/// A crank web: the convex hull of a circle of radius `mainR` about the
+/// shaft's axis and one of `pinR` about a pin thrown `offset` at `angle`, as
+/// shaft.eccentric places it. Exact. The two circles must not contain one
+/// another, |mainR - pinR| < offset. A counterweight or any other outline is a
+/// shaft.section.
+///
+///   shaft.web(25.0, 18.0, 40.0, 0.0, 30.0, 45.0)
+web(mainR, pinR, offset, angle, from, to) {
+  seg(eDown, eUp, want) {
+    return want > 2.5 ? nothing : prismSegment(webSection(mainR, pinR, offset, angle), from, to, eDown, eUp, want);
+  }
+  return seg;
+}
+
 /// A hexagon `acrossFlats` wide, its flats facing +x and -x as
 /// drill.hexSocket's do. Exact.
 hex(acrossFlats, from, to) {
@@ -368,6 +396,26 @@ prismSegment(sectionField, from, to, eDown, eUp, want) {
   axial = max((from - eDown) - p.z, p.z - (to + eUp));
   field = sqrt(max(sectionField, 0.0) * max(sectionField, 0.0) + max(axial, 0.0) * max(axial, 0.0)) + min(max(sectionField, axial), 0.0);
   return want > 2.5 ? nothing : segmentAnswer(want, field, from, to);
+}
+
+// The web's section. The hull of two discs is the union of the discs between
+// them, centred along the segment joining their centres with the radius
+// running linearly from one to the other, so its distance is that to the
+// nearest of them. In the frame along the offset (`along`) and across it
+// (`across`, folded by symmetry), the radius falls by `slope` per unit of
+// offset, and the nearest disc is where the line from it to the point leaves
+// at that slope: its position, clamped to the segment, is t below. Within it
+// the distance is to a tangent line, beyond either end to that end's circle:
+// the two-circle hull's closed form, with clamp in place of branches.
+webSection(mainR, pinR, offset, angle) {
+  c = cos(angle);
+  s = sin(angle);
+  along = p.x * c + p.y * s;
+  across = abs(p.y * c - p.x * s);
+  slope = (mainR - pinR) / offset;
+  run = sqrt(1.0 - slope * slope);
+  t = clamp((along - slope * across / run) / offset, 0.0, 1.0);
+  return length([along - t * offset, across]) - (mainR + t * (pinR - mainR));
 }
 
 // The hexagon's six corners, counterclockwise from 30 degrees, so its flats

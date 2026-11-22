@@ -43,7 +43,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to)` cuts an ISO 68-1 thread (`thread.male`) that engages `drill.tap` of the same size; its ends can be
   chamfered or run out as a lathe tool retracts, `shaft.threadRunout(length)`. A joint is blended by an
   entry between its two segments, `shaft.fillet(r)` or `shaft.chamfer(c)`: exact at a square shoulder
-  between round segments, and free on a shaft that has none.
+  between round segments, and free on a shaft that has none. Cranks: `shaft.eccentric(dia, offset, angle,
+  from, to)` is a crank pin or an eccentric journal, and `shaft.web(mainR, pinR, offset, angle, from, to)`
+  the exact hull of a circle about the axis and one about the pin.
 - A `reduce` over a list of functions can take the element before this one as a fourth callback parameter,
   `reduce((acc, f, i, prev) { ... }, fs, seed)`; the first element is handed itself.
   along the cutter's arc, and `shaft.chamferEnd(size)` chamfers the tips.
