@@ -248,23 +248,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   hybrid_bracket, kinetic_sculpture, slider_mechanism) use `@range`, as `gsl fix -range` writes it. Their sliders and
   compiled shaders are unchanged. So are the example documents under `internal/testdata/example` and three codegen
   fixtures, whose WGSL goldens move only in their `gsl_param_<line>_<col>` names (every golden is identical with those
-  names normalized), and the tests that used the properties only to declare a slider. Tests about the properties
-  themselves keep them.
+  names normalized), and the tests that used the properties to declare a slider.
 - The viewer's Materials panel writes `@range(min, max) <body><Param> = value;` for a preset's scalar parameters in place of
   the `.min`/`.max` lines, reads a variable's limits from its `@range` (or from `.min`/`.max` in an older document),
   and prunes either shape. A document already on `@range` used to have its limits read as the catalog's defaults the
   next time the panel adjusted it.
 
-### Deprecated
-
-- The `.min`, `.max` and `.period` slider properties, in favor of `@range(min, max[, period])`. They still compile,
-  and the compiler warns about each variable that sets its slider with them, once, on the first of its property
-  statements, pointing at `@range` and `gsl fix -range`, which rewrites them. The warning is in the compile
-  response's diagnostics, with the `// Scene Size:` one. The language description that `gsl skill` and the viewer's
-  Help panel serve teaches `@range`, and mentions the properties only as deprecated.
-
 ### Removed
 
+- The `.min`, `.max` and `.period` slider properties, replaced by `@range(min, max[, period])`. A document that sets
+  one does not compile: the error is at its first such statement and names `@range` and `gsl fix -range`, which
+  rewrites the document. The parser still reads them, so the fixer can. The language description that `gsl skill`
+  and the viewer's Help panel serve teaches `@range` and says the properties were removed.
 - `sweepLoft`, `sweepLoftScale`, `sweepLoftScaleSmooth`, `sweepLoftScaleSmoothSeparateCaps` and
   `bezierTubeDir` from builtin. They lofted two sections along a 3D quadratic Bezier, but mixed the sections'
   distances by the curve's parameter and scaled by it, so the field was not a distance bound, and they carried no
@@ -312,15 +307,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   lost its slider, and its `.period` animation, whenever `offset` was a plain constant. The assembler's passes (link,
   closure, inline, constspec, types and dead-code removal) walked a variable's `.min`/`.max`/`.period` expressions but
   not the bounds written in `@range`, so `offset` was inlined away while the bound still named it and could no longer
-  fold. They walk the bounds now. A range synthesized from `.min`/`.max`/`.period` is unchanged.
-- `.box` treats a variable declared with `@range` as a slider, as it does one declared with `.min`/`.max`. It found
-  sliders by their properties alone, so an `@range` variable read as the constant it starts as: `min(a, r).box` was
-  bounded by `a` for an `@range` `r`, a box that is wrong once `r` moves, and unbounded for a `.min`/`.max` one.
-- A slider set with `.min`/`.max`/`.period` keeps its slider when a bound reads a computed constant: with
-  `hi = 10 + 2;`, `x.max = hi * 2;` lost the slider. The range synthesized from the properties shares their expressions
-  until a pass folds a property's expression to a new one; the range kept the old tree, which read `hi`, and `hi` was
-  removed as dead. Slider extraction now reads such a range's bounds from the properties as the passes left them
-  (`Assignment.LiveRange`).
+  fold. They walk the bounds now.
+- `.box` treats a variable declared with `@range` as a slider. It found sliders by the slider properties alone, so an
+  `@range` variable read as the constant it starts as: `min(a, r).box` was bounded by `a` for an `@range` `r`, a box
+  that is wrong once `r` moves.
 
 ## [0.1.3] - 2026-11-17
 
