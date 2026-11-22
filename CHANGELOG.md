@@ -142,6 +142,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the bevel, about 1.7 to 1.8 times as deep as before at these edges (116 to 129 degrees through the
   material); the body, standoff and bore chamfers are unchanged. Gear and bevel-gear WGSL grows by
   582 bytes.
+- A box declared in a function from a `reduce` whose step indexes a list by its `index`, such as
+  `points[mod(index + 1, count)]`, now holds: read with `.box` it failed to link ("undefined identifier: index"),
+  and in builtin the part it bounds lost its box without a word.
 - A one-element list indexed at run time, such as `curvatures[0]` of `[0.1]` read in a reduce, failed on the CPU
   paths (`gsl eval`, tape and meshing) with "target must be a collection, got num": the fidget backend builds the
   list as one value. Index 0 now reads it there as WGSL already did; past 0 is an error.
