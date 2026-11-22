@@ -603,7 +603,10 @@ func (dd *boxDomain) Call(name string, args []Value) (Value, bool, error) {
 		return swept(vs[0], vs[1]), true, nil
 	}
 	if name == "sweepOpen" && (len(vs) == 2 || len(vs) == 3) {
-		return sweptOpen(vs[0], vs[1:]), true, nil
+		return sweptOpen(vs[0], vs[1:], "openProfileLowXY", "openProfileHighXY"), true, nil
+	}
+	if name == "sweepOpenEdges" && len(vs) == 3 {
+		return sweptOpen(vs[0], vs[1:], "openProfileEdgesLowXY", "openProfileEdgesHighXY"), true, nil
 	}
 	if name == "revolve" && (len(vs) == 3 || len(vs) == 4) {
 		return revolved(vs[0], vs[1], vs[2]), true, nil
@@ -686,19 +689,20 @@ func swept(section, path boxVal) boxVal {
 	return sweptAround(section, pb)
 }
 
-// sweptOpen is the box of sweepOpen(section, points[, curvatures])
-// (sweep.gsl): the chain's own box, without its rays, from builtin's
-// openProfileLowXY and openProfileHighXY called on the same arguments, grown
+// sweptOpen is the box of sweepOpen(section, points[, curvatures]) and
+// sweepOpenEdges(section, points, edges) (sweep.gsl): the chain's own box,
+// without its rays, from builtin's low and high helpers (openProfileLowXY and
+// openProfileHighXY, or their Edges forms) called on the same arguments, grown
 // as swept grows a closed path's. The caps stand square to the chain at its
 // ends, so no point of the solid is farther across from the chain itself
 // than the section reaches. A chain that depends on p, or a section without
 // a bounded box, leaves the result unbounded.
-func sweptOpen(section boxVal, chain []boxVal) boxVal {
+func sweptOpen(section boxVal, chain []boxVal, lowName, highName string) boxVal {
 	ops, ok := opsOf(chain)
 	if !ok {
 		return boxVal{}
 	}
-	low, high := call("openProfileLowXY", ops...), call("openProfileHighXY", ops...)
+	low, high := call(lowName, ops...), call(highName, ops...)
 	return sweptAround(section, &bbox{
 		lo: [3]*program.Operand{planar(low, 0), planar(low, 1)},
 		hi: [3]*program.Operand{planar(high, 0), planar(high, 1)},

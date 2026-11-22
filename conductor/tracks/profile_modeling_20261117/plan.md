@@ -139,13 +139,37 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
 
 ## Phase 3: Quadratic Bezier Edges (C6)
 
-- [ ] Task: Proposal: how an edge is marked as a quadratic Bezier (its control point) alongside lines and
-      arcs, and how the 2D distance reuses `bezierQuadPointRound`'s closed-form solve
-- [ ] Task: Write failing tests (Red Phase): Bezier edges, alone and mixed with lines and arcs, exact against
-      the reference, with smooth and sharp joints
-- [ ] Task: Implement (Green & Refactor Phase); `.u` along a Bezier edge is its arc length
-- [ ] Task: An example; WGSL size (watch the per-step accumulator reads, spec section 5.5); the owner's
-      viewer check
+- [x] Task: Proposal: how an edge is marked as a quadratic Bezier (its control point) alongside lines and
+      arcs, and how the 2D distance reuses `bezierQuadPointRound`'s closed-form solve. Decided:
+      `profileEdgesXY(points, edges)` with `edgeLine()`, `edgeArc(curvature)`, `edgeBezier(control)`;
+      `openProfileEdgesXY` and `sweepOpenEdges` too (spec section 4, C6)
+- [x] Task: Write failing tests (Red Phase) (`eval/profile_edges_test.go`): Bezier edges, alone and mixed
+      with lines and arcs, exact against the reference (worst 5e-6), with smooth and sharp joints; a
+      straight Bezier is its chord; lines and arcs alone agree with `profileXY(points, curvatures)`; `.u`
+      the arc length (worst 2.6e-5); surface cells (curved Bezier 5.93, limit 6 by the owner; straight
+      2.18, limit 4); `certify` (18,089, 34,281 and 3,417 evaluations); the open forms against the extended
+      chain (worst 7.5e-6) and agreeing with `openProfileXY` and `sweepOpen` on lines and arcs;
+      `sweepOpenEdges`'s formula (worst 4.8e-6), frame and box
+- [x] Task: Implement (Green & Refactor Phase); `.u` along a Bezier edge is its arc length:
+      `edgeLine`, `edgeArc`, `edgeBezier`, `profileEdgesXY`, `openProfileEdgesXY` in
+      `stdlib/builtin/2d.gsl`; `sweepOpenEdges` in `stdlib/builtin/sweep.gsl`; the box and frame rules
+      generalised to it (`sweptOpen` takes the helpers' names, `sweepFrame` a table of open sweeps). The
+      Bezier step's choices in spec section 4, C6. Full suite clean but `internal/link`'s
+      `TestFastExitSingleOrZeroDotImports`, a 2 s timing test that failed on `main`'s worktree too under a
+      load average of 225; builtin's `package.pb` is 365 KB here against 181 KB on `main`, and the test
+      links it a thousand times, so it is close to its limit even unloaded (1.77 s)
+- [x] Task: An example; WGSL size (watch the per-step accumulator reads, spec section 5.5); the owner's
+      viewer check: `examples/profile_bezier.gsl`, a mixed-edge plate extruded and a rail swept along
+      Bezier bends; 52.7 KB of WGSL, accepted by naga. The owner's first look found the plate's sign wrong
+      beside a tight Bezier and its checkerboard read from the wrong place; both fixed (spec section 4,
+      C6), the plate added as the "tight Bezier" test loop (worst 5.8e-6, cells 9.18, limit 10 by the
+      owner). Checked by the owner: looks right
+- [x] Task: The GPU cost (2026-11-19, 64 evaluations a point over 1M points, less a trivial field): the arc
+      L as `profileXY` 4.3 ms, as `profileEdgesXY` 44 ms, the plate 33 ms; every edge runs the Bezier step.
+      Measured by removing each part: the Newton step costs ~10 ms and buys only the tight edge's last
+      3.2e-4 mm; the sampled points narrow the widest cells (11.2 → 9.18); the triangle bound is what
+      certify needs. A select on the constant kind is no faster. The owner kept the step and asked for a
+      codegen proposal, uniform branches: backlog M18, prototyped by hand at 14.5 and 17.8 ms
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 4: Tighter Boxes (C7)

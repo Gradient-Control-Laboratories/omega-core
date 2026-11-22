@@ -28,6 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `sweepOpen(section, points)` and `sweepOpen(section, points, curvatures)` sweep a section along an open chain,
   capped flat at both ends: exact beside the chain and over the caps; beyond a cap where another part of the sweep
   is nearer, the distance reads that cap's and is too large, though its sign stays right.
+- Quadratic Bezier edges: `edgeLine()`, `edgeArc(curvature)` and `edgeBezier(control)` name each edge of
+  `profileEdgesXY(points, edges)`, `openProfileEdgesXY(points, edges)` and
+  `sweepOpenEdges(section, points, edges)`, so lines, arcs and Beziers mix in one profile, still exact;
+  `.u` is the arc length along a curve. For lines and arcs alone `profileXY` remains much faster on the GPU:
+  every edge of the descriptor forms runs the Bezier step.
 
 ### Changed
 

@@ -512,6 +512,30 @@ defined in [README.md](../../../README.md):
     a part's values unchanged with the pass on and off; the closed sweep's and `profile_cylinder`'s WGSL
     under a size bound; the four goldens above unchanged once the threshold is set.
 
+- [ ] **M18. Branch, Not Select, Where a Ternary's Condition Is the Same Everywhere**
+  - A GSL ternary becomes WGSL `select(falseValue, trueValue, condition)`
+    (`backend/wgsl/internal/wgsl/select.go`), which evaluates both values. Where a value is costly, a call,
+    and the condition is the same at every point, a constant kind, a slider or a descriptor handed to a
+    function, both run everywhere though one is wanted. The descriptors of `profileEdgesXY` are such a case:
+    every edge runs the Bezier step, a cubic solve, whatever its kind. Measured 2026-11-19 in the Profile
+    Modeling track ([profile_modeling_20261117](../profile_modeling_20261117/plan.md), Phase 3), 64
+    evaluations a point over 1M points, less a trivial field: the arc L as `profileXY` 4.3 ms, the same L
+    as `profileEdgesXY` with line and arc descriptors 44 ms, the example's Bezier plate 33 ms. Choosing
+    by a select on the constant kind measured no faster: the descriptors reach the WGSL as a function's
+    array argument, so the GPU compiler cannot see the kind as a constant.
+  - Prototyped by hand in the generated WGSL, the one dispatch in `profileAnyEdgeSidedXY` written as
+    `if (kind.y > 0.5) { return bezier(...); } return arc(...);`: the L 44 → 14.5 ms, the plate
+    33 → 17.8 ms. Most of what is left is the second dispatch, the tangents of either kind.
+  - Proposal: where either value of a ternary holds a call and its condition reads nothing that depends on
+    p, the codegen writes `var v: T; if (condition) { v = trueValue; } else { v = falseValue; }`, with the
+    statements only one value needs moved into its branch. A branch every point takes the same way costs
+    one of the two; a divergent one costs about what the select did. WGSL refuses an implicit derivative
+    (`textureSample`, `dpdx`) in control flow that is not uniform, so a value holding one keeps the select.
+    The interval and CPU paths, which evaluate both as now, are unchanged.
+  - Tests: GPU parity, values unchanged; the edge profiles' time on the GPU against these numbers; the
+    WGSL goldens that move (any document whose ternaries choose between calls on a constant, the stdlib's
+    corner kinds among them), shown and regenerated only with the owner's authorization.
+
 ## 6. Small Targeted Cleanups
 
 - [x] **S1. Generalized Postfix Modifier Chaining (`Modifiers []*Modifier`)**
