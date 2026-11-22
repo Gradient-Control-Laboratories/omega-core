@@ -375,27 +375,92 @@ profileArcStepXY(previous, start, end, previousCurvature, curvature) {
 profileXY(points, curvatures) {
   pools = profileArcPoolsXY(points, curvatures);
   form = pools.x <= pools.y ? pools.z : neg(pools.z);
-  low, high = profileArcBoundsXY(points, curvatures);
-  form.box = [[low.x, low.y, neg(nothing)], [high.x, high.y, nothing]];
   form.u = profileArcRunXY(points, curvatures);
   return form;
 }
 
-// The corners of an arc profile's box in the XY plane: the box of its points,
-// grown all round by the most any edge can bulge. An edge of at most a
-// semicircle stands off its chord by its sagitta, which is no more than half
-// the chord and no more than chord^2 * curvature / 4; and no chord is longer
-// than the diagonal of the points' box. So the box is sound, and loose where
-// one edge bends much more than the rest. It is not walked edge by edge
-// because a box is read where a reduce's function can see only its own
-// arguments: not the curvatures, nor the next point.
+// The corners of an arc profile's box in the XY plane, exact: the union of its
+// edges' boxes (profileArcEdgeBoxXY). A loop has as many curvatures as points
+// and an open chain one fewer, its last point starting no edge; the
+// curvatures' own count says which, so every index is a constant.
 profileArcBoundsXY(points, curvatures) {
-  low = reduce((corner, point) { return min(corner, point); }, points);
-  high = reduce((corner, point) { return max(corner, point); }, points);
-  bend = reduce(0, (most, curvature) { return max(most, abs(curvature)); }, curvatures);
-  span = length(high - low);
-  bulge = min(span / 2, span * span * bend / 4);
-  return low - bulge, high + bulge;
+  count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
+  last = reduce([0, 0], (sum, curvature) { return sum + 1; }, curvatures).x;
+  box = reduce([nothing, nothing, neg(nothing), neg(nothing)], (box, start, index) {
+    edge = profileArcEdgeBoxXY(start, points[mod(index + 1, count)], curvatures[min(index, last - 1)]);
+    own = index < last ? edge : [start.x, start.y, start.x, start.y];
+    return [min(box.x, own.x), min(box.y, own.y), max(box.z, own.z), max(box.w, own.w)];
+  }, points);
+  return box.xy, box.zw;
+}
+
+// The low and high corners of an arc profile's box, closed or open, one value
+// each, for the box rules (property's profileBox and sweptOpen): an exact box
+// needs each edge's neighbour, a reduce reading its index, which a .box in
+// the stdlib cannot hold, so the rules call these instead.
+profileArcLowXY(points, curvatures) {
+  low, high = profileArcBoundsXY(points, curvatures);
+  return low;
+}
+
+profileArcHighXY(points, curvatures) {
+  low, high = profileArcBoundsXY(points, curvatures);
+  return high;
+}
+
+// The box of one arc edge, from `start` to `end` bent to `curvature`, as
+// [low x, low y, high x, high y]: its ends, and each of its circle's four axis
+// extremes that lies on it. An arc is at most a semicircle, so the part of its
+// circle on the side of the chord it bulges to, the right of travel where it
+// curves left, is the arc itself. An edge too straight to have a centre worth
+// the name, its curvature under a millionth, is its ends.
+profileArcEdgeBoxXY(start, end, curvature) {
+  chord = end - start;
+  chordLength = length(chord);
+  bend = profileArcCurvature(curvature);
+  radius = 1 / abs(bend);
+  rise = sqrt(max(radius * radius - chordLength * chordLength / 4, 0));
+  center = (start + end) / 2 + [neg(chord.y), chord.x] / chordLength * rise * sign(bend);
+  curved = abs(curvature) > 1e-6;
+  east = profileArcExtremeXY(start, chord, center + [radius, 0], bend, curved);
+  west = profileArcExtremeXY(start, chord, center - [radius, 0], bend, curved);
+  north = profileArcExtremeXY(start, chord, center + [0, radius], bend, curved);
+  south = profileArcExtremeXY(start, chord, center - [0, radius], bend, curved);
+  return [min(min(start.x, end.x), min(min(east.x, west.x), min(north.x, south.x))),
+          min(min(start.y, end.y), min(min(east.y, west.y), min(north.y, south.y))),
+          max(max(start.x, end.x), max(max(east.x, west.x), max(north.x, south.x))),
+          max(max(start.y, end.y), max(max(east.y, west.y), max(north.y, south.y)))];
+}
+
+// An axis extreme of an arc's circle where it lies on the arc, on the side of
+// the chord the arc bulges to; the arc's start where it does not.
+profileArcExtremeXY(start, chord, extreme, bend, curved) {
+  offset = extreme - start;
+  bulges = neg(bend) * (chord.x * offset.y - chord.y * offset.x) > 0;
+  return curved && bulges ? extreme : start;
+}
+
+// The box of one Bezier edge, from `start` through `control` to `end`, as
+// [low x, low y, high x, high y]: its ends, and its point at each axis's
+// extremum, t* = (start - control) / (start - 2 control + end) in that axis,
+// clamped to the edge (a point of it either way); where that axis has no
+// extremum, the start.
+profileBezierEdgeBoxXY(start, control, end) {
+  f = start - 2 * control + end;
+  tx = abs(f.x) > 1e-12 ? clamp((start.x - control.x) / f.x, 0, 1) : 0;
+  ty = abs(f.y) > 1e-12 ? clamp((start.y - control.y) / f.y, 0, 1) : 0;
+  atX = start + 2 * (control - start) * tx + f * tx * tx;
+  atY = start + 2 * (control - start) * ty + f * ty * ty;
+  return [min(min(start.x, end.x), min(atX.x, atY.x)), min(min(start.y, end.y), min(atX.y, atY.y)),
+          max(max(start.x, end.x), max(atX.x, atY.x)), max(max(start.y, end.y), max(atX.y, atY.y))];
+}
+
+// The box of one edge of any kind, chosen by its kind as its feature is.
+profileAnyEdgeBoxXY(start, end, edge) {
+  kind = profileEdgeKindXY(edge);
+  arc = profileArcEdgeBoxXY(start, end, edge.y * kind.x);
+  bezier = profileBezierEdgeBoxXY(start, profileEdgeControlXY(start, end, edge), end);
+  return choose(kind.y > 0.5, bezier, arc);
 }
 
 // An edge's curvature kept off zero, so a length along the edge can be an
@@ -929,29 +994,28 @@ profileEdgesRunXY(points, edges) {
   }, points).x;
 }
 
-// The corners of a mixed loop's box in XY: the box of its points and its
-// Beziers' controls, which hold each Bezier, grown by the most an arc edge can
-// bulge, as profileArcBoundsXY grows an arc profile's. A loop has as many
-// edges as points and an open chain one fewer, its last point starting none;
-// the edges' own count says which, so every index is a constant.
+// The low and high corners of a mixed profile's box, closed or open, for the
+// box rules, as profileArcLowXY.
+profileEdgesLowXY(points, edges) {
+  return profileEdgesBoundsXY(points, edges).xy;
+}
+
+profileEdgesHighXY(points, edges) {
+  return profileEdgesBoundsXY(points, edges).zw;
+}
+
+// The corners of a mixed loop's box in XY, exact: the union of its edges'
+// boxes (profileAnyEdgeBoxXY), [low x, low y, high x, high y]. A loop has as
+// many edges as points and an open chain one fewer, its last point starting
+// none; the edges' own count says which, so every index is a constant.
 profileEdgesBoundsXY(points, edges) {
+  count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
   last = reduce([0, 0], (sum, edge) { return sum + 1; }, edges).x;
-  hull = reduce([nothing, nothing, neg(nothing), neg(nothing)], (box, start, index) {
-    edge = edges[min(index, last - 1)];
-    starts = index < last ? 1 : 0;
-    bezier = profileEdgeKindXY(edge).y * starts;
-    control = [edge.y, edge.z] * bezier + start * (1 - bezier);
-    return [min(min(box.x, start.x), control.x), min(min(box.y, start.y), control.y),
-            max(max(box.z, start.x), control.x), max(max(box.w, start.y), control.y)];
+  return reduce([nothing, nothing, neg(nothing), neg(nothing)], (box, start, index) {
+    edge = profileAnyEdgeBoxXY(start, points[mod(index + 1, count)], edges[min(index, last - 1)]);
+    own = index < last ? edge : [start.x, start.y, start.x, start.y];
+    return [min(box.x, own.x), min(box.y, own.y), max(box.z, own.z), max(box.w, own.w)];
   }, points);
-  bend = reduce([0, 0], (most, start, index) {
-    edge = edges[min(index, last - 1)];
-    starts = index < last ? 1 : 0;
-    return [max(most.x, abs(edge.y) * profileEdgeKindXY(edge).x * starts), 0];
-  }, points).x;
-  span = length([hull.z - hull.x, hull.w - hull.y]);
-  bulge = min(span / 2, span * span * bend / 4);
-  return [hull.x - bulge, hull.y - bulge, hull.z + bulge, hull.w + bulge];
 }
 
 /// Closed profile of mixed edges in the XY plane: the exact signed distance to
@@ -965,8 +1029,6 @@ profileEdgesBoundsXY(points, edges) {
 profileEdgesXY(points, edges) {
   pools = profileEdgesPoolsXY(points, edges);
   form = pools.x <= pools.y ? pools.z : neg(pools.z);
-  bounds = profileEdgesBoundsXY(points, edges);
-  form.box = [[bounds.x, bounds.y, neg(nothing)], [bounds.z, bounds.w, nothing]];
   form.u = profileEdgesRunXY(points, edges);
   return form;
 }
@@ -1085,8 +1147,6 @@ everyCorner(points, corner) {
 profileXY(points, curvatures, corners) {
   pools = profileCornerPoolsXY(points, curvatures, corners);
   form = pools.x <= pools.y ? pools.z : neg(pools.z);
-  low, high = profileArcBoundsXY(points, curvatures);
-  form.box = [[low.x, low.y, neg(nothing)], [high.x, high.y, nothing]];
   form.u = profileCornerRunXY(points, curvatures, corners, 0);
   return form;
 }
@@ -1104,18 +1164,8 @@ profileXY(points, curvatures, corners) {
 profileXY(points, curvatures, corners, blend) {
   pools = profileCornerBlendPoolsXY(points, curvatures, corners, blend);
   form = pools.x <= pools.y ? pools.z : neg(pools.z);
-  form.box = profileArcBoxXY(points, curvatures);
   form.u = profileCornerBlendRunXY(points, curvatures, corners, blend);
   return form;
-}
-
-// profileArcBoundsXY's corners as a box, unbounded in Z. The blend form takes
-// its box from here rather than from a two-name assignment in its own body:
-// with a blend made from a slider, that assignment's names went undefined
-// when the box was read.
-profileArcBoxXY(points, curvatures) {
-  low, high = profileArcBoundsXY(points, curvatures);
-  return [[low.x, low.y, neg(nothing)], [high.x, high.y, nothing]];
 }
 
 // How far a corner's blend trims each of its edges back from the corner at

@@ -327,9 +327,9 @@ func TestSweepOpen_Box(t *testing.T) {
 		want       []float64
 	}{
 		{"lines", "[[0, 0], [40, 0], [40, 35]]", []float64{-4, -4, 0, 44, 39, 6}},
-		// An L whose bend is a quarter arc of radius 10: the points' box is
-		// 40 by 35 and the bulge min(span / 2, span^2 * 0.1 / 4) its half diagonal.
-		{"arcs", "[[0, 0], [30, 0], [40, 10], [40, 35]], [0, 0.1, 0]", nil},
+		// An L whose bend is a quarter arc of radius 10, which stays within
+		// its points' box: the chain's exact box is 40 by 35 (C7).
+		{"arcs", "[[0, 0], [30, 0], [40, 10], [40, 35]], [0, 0.1, 0]", []float64{-4, -4, 0, 44, 39, 6}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -339,13 +339,7 @@ func TestSweepOpen_Box(t *testing.T) {
 			if err != nil {
 				t.Fatalf("eval: %v", err)
 			}
-			want := c.want
-			if want == nil {
-				span := math.Hypot(40, 35)
-				bulge := math.Min(span/2, span*span*0.1/4)
-				want = []float64{-bulge - 4, -bulge - 4, 0, 40 + bulge + 4, 35 + bulge + 4, 6}
-			}
-			for k, w := range want {
+			for k, w := range c.want {
 				// The library pads a profile's box by 0.01 mm each way.
 				if got := float64(groups[0].Samples[k][0].Value); math.Abs(got-w) > 0.05 {
 					t.Errorf("solid.box component %d = %v, want %v", k, got, w)
