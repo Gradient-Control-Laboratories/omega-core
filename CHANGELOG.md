@@ -169,6 +169,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   switches). A switch is a chip that wears the label of its state ("Shadows on", "Shadows off"). Occlusion, the loop
   Standard draws that marches the field out along each normal, has a chip of its own and no longer goes off with
   Shadows. The labels of the Render, Scene, Section and Export panels are as light as the Parameters panel's.
+- The six `examples/` models that set slider limits with `.min`, `.max` and `.period` (blend, can, gyroid,
+  hybrid_bracket, kinetic_sculpture, slider_mechanism) use `@range`, as `gsl fix -range` writes it. Their sliders and
+  compiled shaders are unchanged. The example documents under `internal/testdata/example` keep the old syntax.
 
 ### Deprecated
 
