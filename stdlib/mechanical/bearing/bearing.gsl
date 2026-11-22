@@ -119,6 +119,23 @@ width(designation) {
                 map((r) { return r[3] * catalog.onRow(k, r[0], 0.0001); }, deepGrooveTable));
 }
 
+/// The journal a bearing's inner ring seats on, its bore made to the ISO 286
+/// shaft `zone` (mechanical/tolerance: k5 or k6 for an inner ring that turns
+/// under load, j5 or j6 for a light fit, m, n and p for heavier ones) at the
+/// maximum or minimum material `condition`: list shaft.diameter of it.
+///
+///   shaft.diameter(bearing.seatDia(6205.0, tolerance.k5, tolerance.maxMaterial), 10.0, 25.0)
+seatDia(designation, zone, condition) {
+  return tolerance.shaftDia(bore(designation), zone, condition);
+}
+
+/// The housing bore a bearing's outer ring seats in, its outside diameter made
+/// to the ISO 286 hole `zone` (H7 for an outer ring free to creep, J, K or M
+/// for tighter ones) at the maximum or minimum material `condition`.
+housingDia(designation, zone, condition) {
+  return tolerance.holeDia(outerDia(designation), zone, condition);
+}
+
 /// The smallest chamfer r_s min on the rings' corners, which a seat's fillet
 /// must stay inside.
 chamfer(designation) {
