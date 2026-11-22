@@ -49,6 +49,7 @@ var curatedImportPaths = []string{
 	"mechanical/driver",
 	"mechanical/joint",
 	"mechanical/shaft",
+	"mechanical/bearing",
 	"text",
 	"ease",
 	"noise",

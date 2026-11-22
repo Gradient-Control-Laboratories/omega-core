@@ -1,0 +1,393 @@
+/// Rolling bearings and plain bushes: deep-groove ball bearings from ISO 15's
+/// boundary dimensions, ISO 4379 copper alloy bushes, and the DIN 471 groove a
+/// retaining ring sits in on a shaft, with the dimensions a shaft needs to seat
+/// them.
+
+// Bearing: bearings, bushes and their seats
+//
+// A bearing is a solid, coaxial with +Z, its face at z = `at` and its width
+// running up from there, so it sits on a mechanical/shaft as the shaft's own
+// segments do:
+//
+//   journal = shaft.body([shaft.diameter(bearing.bore(6205.0), 0.0, 30.0),
+//                         shaft.fillet(bearing.filletMax(6205.0)),
+//                         shaft.diameter(bearing.shoulderDia(6205.0), 30.0, 40.0)]);
+//   ball = bearing.deepGroove(6205.0, 30.0 - bearing.width(6205.0));
+//
+// TWO BODIES FOR EACH BEARING. bearing.deepGroove looks like one, close up: two
+// rings with their raceways and the balls between them. bearing.deepGrooveEnvelope
+// is its boundary dimensions alone, the ring from bore to outside diameter
+// rounded by the chamfer, exact: the one to prove fits against, mesh for an
+// assembly or check for interference, as a simplified model is.
+//
+// THE BALLS ARE AN APPROXIMATION. ISO 15 gives a bearing's boundary dimensions
+// and nothing inside them; each maker chooses its own balls. Here a ball is
+// 0.3 (D - d) across and there are as many as fit round the pitch circle at
+// 1.5 ball diameters apart, which gives a 6205 nine and a 6204 eight, as real
+// ones have. One ball is drawn and repeated round the circle, so the count
+// costs nothing.
+//
+// FITS ARE NOMINAL. A bearing's bore is the journal's diameter and its outside
+// diameter the housing's, line to line; ISO 286's tolerance classes (k5 on a
+// rotating shaft, H7 in a housing) are not modelled. mechanical/joint's fits
+// are ISO 273's clearances for screws, not these.
+//
+// The tables follow mechanical/catalog: one row per size, found with
+// catalog.onRow, a zero where the size does not exist, and the sources under
+// each table. Doc convention follows builtin/base.gsl: `///` lines are public
+// docs.
+
+// =========================================================
+// Deep-Groove Ball Bearings
+// =========================================================
+
+// Columns, in order:
+//
+//   0  designation (6205 is series 62, bore code 05)
+//   1  bore d                         ISO 15
+//   2  outside diameter D             ISO 15
+//   3  width B                        ISO 15
+//   4  chamfer r_s min                ISO 15
+//   5  shaft shoulder diameter d_a min    SKF
+//   6  housing shoulder diameter D_a max  SKF
+//   7  fillet radius r_a max              SKF
+//
+// SOURCES. Columns 1-4 as SKF and NTN-SNR publish them, agreeing on every row,
+// both to ISO 15 (whose free sample stops before series 0, 2 and 3):
+//   SKF, "Rolling bearings", PUB BU/P1 17000/1 EN, October 2018, Table 1.1,
+//   PDF pages 266-283,
+//   https://www.skf.com/binaries/pub12/Images/0901d196802809de-Rolling-bearings---17000_1-EN_tcm_12-121486.pdf
+//   NTN-SNR product pages, https://eshop.ntn-snr.com/en/product/6205-SNR/6205
+//   and likewise for each designation.
+// Columns 5-7 from the same SKF table, "Abutment and fillet dimensions". These
+// are a maker's guidance, not a standard: SNR's differ on 28 rows by up to
+// 2 mm. Where r_s min is 1.1, the fillet's maximum is 1, as both makers give it.
+deepGrooveTable = [[6000.0, 10.0, 26.0,  8.0, 0.3, 12.0, 24.0, 0.3],
+                   [6001.0, 12.0, 28.0,  8.0, 0.3, 14.0, 26.0, 0.3],
+                   [6002.0, 15.0, 32.0,  9.0, 0.3, 17.0, 30.0, 0.3],
+                   [6003.0, 17.0, 35.0, 10.0, 0.3, 19.0, 33.0, 0.3],
+                   [6004.0, 20.0, 42.0, 12.0, 0.6, 23.2, 38.8, 0.6],
+                   [6005.0, 25.0, 47.0, 12.0, 0.6, 28.2, 43.8, 0.6],
+                   [6006.0, 30.0, 55.0, 13.0, 1.0, 34.6, 50.0, 1.0],
+                   [6007.0, 35.0, 62.0, 14.0, 1.0, 39.6, 57.0, 1.0],
+                   [6008.0, 40.0, 68.0, 15.0, 1.0, 44.6, 63.0, 1.0],
+                   [6009.0, 45.0, 75.0, 16.0, 1.0, 51.0, 69.0, 1.0],
+                   [6010.0, 50.0, 80.0, 16.0, 1.0, 55.0, 75.0, 1.0],
+                   [6200.0, 10.0, 30.0,  9.0, 0.6, 14.2, 25.8, 0.6],
+                   [6201.0, 12.0, 32.0, 10.0, 0.6, 16.2, 27.8, 0.6],
+                   [6202.0, 15.0, 35.0, 11.0, 0.6, 19.2, 30.8, 0.6],
+                   [6203.0, 17.0, 40.0, 12.0, 0.6, 21.2, 35.8, 0.6],
+                   [6204.0, 20.0, 47.0, 14.0, 1.0, 25.6, 41.4, 1.0],
+                   [6205.0, 25.0, 52.0, 15.0, 1.0, 30.6, 46.4, 1.0],
+                   [6206.0, 30.0, 62.0, 16.0, 1.0, 35.6, 56.0, 1.0],
+                   [6207.0, 35.0, 72.0, 17.0, 1.1, 42.0, 65.0, 1.0],
+                   [6208.0, 40.0, 80.0, 18.0, 1.1, 47.0, 73.0, 1.0],
+                   [6209.0, 45.0, 85.0, 19.0, 1.1, 52.0, 78.0, 1.0],
+                   [6210.0, 50.0, 90.0, 20.0, 1.1, 57.0, 83.0, 1.0],
+                   [6300.0, 10.0, 35.0, 11.0, 0.6, 14.2, 30.8, 0.6],
+                   [6301.0, 12.0, 37.0, 12.0, 1.0, 17.6, 31.4, 1.0],
+                   [6302.0, 15.0, 42.0, 13.0, 1.0, 20.6, 36.4, 1.0],
+                   [6303.0, 17.0, 47.0, 14.0, 1.0, 22.6, 41.4, 1.0],
+                   [6304.0, 20.0, 52.0, 15.0, 1.1, 27.0, 45.0, 1.0],
+                   [6305.0, 25.0, 62.0, 17.0, 1.1, 32.0, 55.0, 1.0],
+                   [6306.0, 30.0, 72.0, 19.0, 1.1, 37.0, 65.0, 1.0],
+                   [6307.0, 35.0, 80.0, 21.0, 1.5, 44.0, 71.0, 1.5],
+                   [6308.0, 40.0, 90.0, 23.0, 1.5, 49.0, 81.0, 1.5],
+                   [6309.0, 45.0, 100.0, 25.0, 1.5, 54.0, 91.0, 1.5],
+                   [6310.0, 50.0, 110.0, 27.0, 2.0, 61.0, 99.0, 2.0]];
+
+/// The bore d of the deep-groove ball bearing `designation`, series 60, 62 or
+/// 63 with bore codes 00 to 10: bearing.bore(6205.0) is 25. Zero for a
+/// designation with no row, and a zero dimension builds nothing.
+bore(designation) {
+  k = designation;
+  return reduce((acc, v) { return acc + v; },
+                map((r) { return r[1] * catalog.onRow(k, r[0], 0.0001); }, deepGrooveTable));
+}
+
+/// The outside diameter D.
+outerDia(designation) {
+  k = designation;
+  return reduce((acc, v) { return acc + v; },
+                map((r) { return r[2] * catalog.onRow(k, r[0], 0.0001); }, deepGrooveTable));
+}
+
+/// The width B.
+width(designation) {
+  k = designation;
+  return reduce((acc, v) { return acc + v; },
+                map((r) { return r[3] * catalog.onRow(k, r[0], 0.0001); }, deepGrooveTable));
+}
+
+/// The smallest chamfer r_s min on the rings' corners, which a seat's fillet
+/// must stay inside.
+chamfer(designation) {
+  k = designation;
+  return reduce((acc, v) { return acc + v; },
+                map((r) { return r[4] * catalog.onRow(k, r[0], 0.0001); }, deepGrooveTable));
+}
+
+/// The smallest shoulder diameter d_a min that locates the inner ring, SKF's
+/// guidance.
+shoulderDia(designation) {
+  k = designation;
+  return reduce((acc, v) { return acc + v; },
+                map((r) { return r[5] * catalog.onRow(k, r[0], 0.0001); }, deepGrooveTable));
+}
+
+/// The largest housing shoulder diameter D_a max that locates the outer
+/// ring, SKF's guidance.
+housingShoulderDia(designation) {
+  k = designation;
+  return reduce((acc, v) { return acc + v; },
+                map((r) { return r[6] * catalog.onRow(k, r[0], 0.0001); }, deepGrooveTable));
+}
+
+/// The largest fillet r_a max on the shoulder that clears the bearing's
+/// chamfer, SKF's guidance: list shaft.fillet of it between journal and
+/// shoulder.
+filletMax(designation) {
+  k = designation;
+  return reduce((acc, v) { return acc + v; },
+                map((r) { return r[7] * catalog.onRow(k, r[0], 0.0001); }, deepGrooveTable));
+}
+
+/// The ball diameter drawn: 0.3 (D - d), an approximation, not a maker's.
+ballDia(designation) {
+  return 0.3 * (outerDia(designation) - bore(designation));
+}
+
+/// The number of balls drawn: as many as fit round the pitch circle at 1.5
+/// ball diameters apart, an approximation, not a maker's.
+ballCount(designation) {
+  return floor(pi * 0.5 * (bore(designation) + outerDia(designation)) / (1.5 * ballDia(designation)));
+}
+
+/// A deep-groove ball bearing as it looks: an inner and an outer ring, each
+/// with its raceway, and the balls between them, the first on +x; its face at
+/// z = `at`, coaxial with +Z. Within its envelope everywhere, and the same as
+/// it at the bore, the outside diameter and the faces.
+///
+///   bearing.deepGroove(6205.0, 15.0)
+deepGroove(designation, at) {
+  d = bore(designation);
+  bigD = outerDia(designation);
+  b = width(designation);
+  rs = chamfer(designation);
+  ball = ballDia(designation);
+  pitchR = 0.25 * (d + bigD);
+  mid = at + 0.5 * b;
+  innerRing = roundedRing(0.5 * d, pitchR - 0.25 * ball, at, at + b, rs);
+  outerRing = roundedRing(pitchR + 0.25 * ball, 0.5 * bigD, at, at + b, rs);
+  raceway = length([length(p.xy) - pitchR, p.z - mid]) - 0.52 * ball;
+  balls = remap(length([p.x - pitchR, p.y, p.z - mid]) - 0.5 * ball, map.patternPolarXY(ballCount(designation)));
+  return min(max(min(innerRing, outerRing), neg(raceway)), balls);
+}
+
+/// The same bearing reduced to its boundary dimensions: the ring from bore to
+/// outside diameter, `width` wide from z = `at`, its corners rounded by the
+/// chamfer. Exact, inside and out.
+deepGrooveEnvelope(designation, at) {
+  return roundedRing(0.5 * bore(designation), 0.5 * outerDia(designation), at, at + width(designation), chamfer(designation));
+}
+
+// =========================================================
+// Retaining-Ring Grooves (DIN 471)
+// =========================================================
+
+// Columns: shaft diameter d1, groove diameter d2, groove width m (H13), and
+// the least margin n from the groove to the shaft's end. DIN 471:2011 as
+// Westfield Fasteners and Mädler reproduce it, agreeing on every row both
+// carry; DIN 471:2026 changes nothing here. 23, 27, 37, 39, 44, 46 and 47 are
+// not DIN 471 sizes.
+//   Westfield Fasteners, "DIN 471 - External Circlip", Tables 1-2,
+//   https://westfieldfasteners.co.uk/Standards/Clip-CircExt.pdf
+//   Mädler, catalogue page 726, "Retaining Rings DIN 471 for Shafts",
+//   https://static.mercateo.com/ff/e2d28082af85416a8a9b3a6f8a237259/pdf/K43_726_EN.pdf
+ringGrooveTable = [[10.0,  9.6, 1.1,  0.6], [11.0, 10.5, 1.1,  0.8], [12.0, 11.5, 1.1,  0.8],
+                   [13.0, 12.4, 1.1,  0.9], [14.0, 13.4, 1.1,  0.9], [15.0, 14.3, 1.1,  1.1],
+                   [16.0, 15.2, 1.1,  1.2], [17.0, 16.2, 1.1,  1.2], [18.0, 17.0, 1.3,  1.5],
+                   [19.0, 18.0, 1.3,  1.5], [20.0, 19.0, 1.3,  1.5], [21.0, 20.0, 1.3,  1.5],
+                   [22.0, 21.0, 1.3,  1.5], [24.0, 22.9, 1.3,  1.7], [25.0, 23.9, 1.3,  1.7],
+                   [26.0, 24.9, 1.3,  1.7], [28.0, 26.6, 1.6,  2.1], [29.0, 27.6, 1.6,  2.1],
+                   [30.0, 28.6, 1.6,  2.1], [32.0, 30.3, 1.6,  2.6], [34.0, 32.3, 1.6,  2.6],
+                   [35.0, 33.0, 1.6,  3.0], [36.0, 34.0, 1.85, 3.0], [38.0, 36.0, 1.85, 3.0],
+                   [40.0, 37.5, 1.85, 3.8], [42.0, 39.5, 1.85, 3.8], [45.0, 42.5, 1.85, 3.8],
+                   [48.0, 45.5, 1.85, 3.8], [50.0, 47.0, 2.15, 4.5]];
+
+/// The DIN 471 groove diameter for a retaining ring on a shaft `shaftDia`
+/// across: list shaft.diameter of it, ringGrooveWidth long, where the ring
+/// sits. Zero for a diameter DIN 471 does not list.
+ringGrooveDia(shaftDia) {
+  k = shaftDia;
+  return reduce((acc, v) { return acc + v; },
+                map((r) { return r[1] * catalog.onRow(k, r[0], 0.0001); }, ringGrooveTable));
+}
+
+/// The DIN 471 groove width m.
+ringGrooveWidth(shaftDia) {
+  k = shaftDia;
+  return reduce((acc, v) { return acc + v; },
+                map((r) { return r[2] * catalog.onRow(k, r[0], 0.0001); }, ringGrooveTable));
+}
+
+/// The least margin n from the groove to the shaft's end, for a load in one
+/// direction on a shaft of ReL 200 MPa or more.
+ringGrooveMargin(shaftDia) {
+  k = shaftDia;
+  return reduce((acc, v) { return acc + v; },
+                map((r) { return r[3] * catalog.onRow(k, r[0], 0.0001); }, ringGrooveTable));
+}
+
+// =========================================================
+// Plain Bushes (ISO 4379)
+// =========================================================
+
+// Columns: bore d1; Type C's three outside diameters, series 1 to 3 in the
+// order the standard lists them; Type F's series 1 and 2, each an outside
+// diameter d2, a flange diameter d3 and a flange thickness b2; and the
+// greatest 45-degree chamfer. ISO 4379:2018 Tables 1 and 2, the same in every
+// cell as ISO 4379:1993. 24, 27, 33 and 36 are for special applications only.
+//   https://cdn.standards.iteh.ai/samples/75584/f3f8c8dbadb842f9b451f38b7bdf6a77/ISO-4379-2018.pdf
+//   https://cdn.standards.iteh.ai/samples/10265/46b854248ed14ceaaeec8a8937f3ba2e/ISO-4379-1993.pdf
+bushTable = [[ 6.0,  8.0, 10.0, 12.0,  8.0, 10.0, 1.0, 12.0, 14.0, 3.0, 0.3],
+             [ 8.0, 10.0, 12.0, 14.0, 10.0, 12.0, 1.0, 14.0, 18.0, 3.0, 0.3],
+             [10.0, 12.0, 14.0, 16.0, 12.0, 14.0, 1.0, 16.0, 20.0, 3.0, 0.3],
+             [12.0, 14.0, 16.0, 18.0, 14.0, 16.0, 1.0, 18.0, 22.0, 3.0, 0.5],
+             [14.0, 16.0, 18.0, 20.0, 16.0, 18.0, 1.0, 20.0, 25.0, 3.0, 0.5],
+             [15.0, 17.0, 19.0, 21.0, 17.0, 19.0, 1.0, 21.0, 27.0, 3.0, 0.5],
+             [16.0, 18.0, 20.0, 22.0, 18.0, 20.0, 1.0, 22.0, 28.0, 3.0, 0.5],
+             [18.0, 20.0, 22.0, 24.0, 20.0, 22.0, 1.0, 24.0, 30.0, 3.0, 0.5],
+             [20.0, 23.0, 24.0, 26.0, 23.0, 26.0, 1.5, 26.0, 32.0, 3.0, 0.5],
+             [22.0, 25.0, 26.0, 28.0, 25.0, 28.0, 1.5, 28.0, 34.0, 3.0, 0.5],
+             [24.0, 27.0, 28.0, 30.0, 27.0, 30.0, 1.5, 30.0, 36.0, 3.0, 0.5],
+             [25.0, 28.0, 30.0, 32.0, 28.0, 31.0, 1.5, 32.0, 38.0, 4.0, 0.5],
+             [27.0, 30.0, 32.0, 34.0, 30.0, 33.0, 1.5, 34.0, 40.0, 4.0, 0.5],
+             [28.0, 32.0, 34.0, 36.0, 32.0, 36.0, 2.0, 36.0, 42.0, 4.0, 0.5],
+             [30.0, 34.0, 36.0, 38.0, 34.0, 38.0, 2.0, 38.0, 44.0, 4.0, 0.5],
+             [32.0, 36.0, 38.0, 40.0, 36.0, 40.0, 2.0, 40.0, 46.0, 4.0, 0.8],
+             [33.0, 37.0, 40.0, 42.0, 37.0, 41.0, 2.0, 42.0, 48.0, 5.0, 0.8],
+             [35.0, 39.0, 41.0, 45.0, 39.0, 43.0, 2.0, 45.0, 50.0, 5.0, 0.8],
+             [36.0, 40.0, 42.0, 46.0, 40.0, 44.0, 2.0, 46.0, 52.0, 5.0, 0.8],
+             [38.0, 42.0, 45.0, 48.0, 42.0, 46.0, 2.0, 48.0, 54.0, 5.0, 0.8],
+             [40.0, 44.0, 48.0, 50.0, 44.0, 48.0, 2.0, 50.0, 58.0, 5.0, 0.8],
+             [42.0, 46.0, 50.0, 52.0, 46.0, 50.0, 2.0, 52.0, 60.0, 5.0, 0.8],
+             [45.0, 50.0, 53.0, 55.0, 50.0, 55.0, 2.5, 55.0, 63.0, 5.0, 0.8],
+             [48.0, 53.0, 56.0, 58.0, 53.0, 58.0, 2.5, 58.0, 66.0, 5.0, 0.8],
+             [50.0, 55.0, 58.0, 60.0, 55.0, 60.0, 2.5, 60.0, 68.0, 5.0, 0.8]];
+
+/// The outside diameter of an ISO 4379 Type C (plain) bush for a bore of
+/// `boreDia`, `series` 1, 2 or 3, thinnest to thickest. Zero for a bore or
+/// series the standard does not list.
+bushingOuterDia(boreDia, series) {
+  k = boreDia;
+  s = series;
+  return reduce((acc, v) { return acc + v; },
+                map((r) { return (r[1] * catalog.onRow(s, 1.0, 0.0001) + r[2] * catalog.onRow(s, 2.0, 0.0001)
+                                  + r[3] * catalog.onRow(s, 3.0, 0.0001)) * catalog.onRow(k, r[0], 0.0001); }, bushTable));
+}
+
+/// The outside diameter of an ISO 4379 Type F (flanged) bush, `series` 1 or 2.
+flangedOuterDia(boreDia, series) {
+  k = boreDia;
+  s = series;
+  return reduce((acc, v) { return acc + v; },
+                map((r) { return (r[4] * catalog.onRow(s, 1.0, 0.0001) + r[7] * catalog.onRow(s, 2.0, 0.0001))
+                                 * catalog.onRow(k, r[0], 0.0001); }, bushTable));
+}
+
+/// The flange diameter d3 of an ISO 4379 Type F bush, `series` 1 or 2.
+flangeDia(boreDia, series) {
+  k = boreDia;
+  s = series;
+  return reduce((acc, v) { return acc + v; },
+                map((r) { return (r[5] * catalog.onRow(s, 1.0, 0.0001) + r[8] * catalog.onRow(s, 2.0, 0.0001))
+                                 * catalog.onRow(k, r[0], 0.0001); }, bushTable));
+}
+
+/// The flange thickness b2 of an ISO 4379 Type F bush, `series` 1 or 2.
+flangeThickness(boreDia, series) {
+  k = boreDia;
+  s = series;
+  return reduce((acc, v) { return acc + v; },
+                map((r) { return (r[6] * catalog.onRow(s, 1.0, 0.0001) + r[9] * catalog.onRow(s, 2.0, 0.0001))
+                                 * catalog.onRow(k, r[0], 0.0001); }, bushTable));
+}
+
+/// The greatest 45-degree chamfer ISO 4379 allows on a bush of this bore,
+/// which the bushes here are chamfered by.
+bushingChamfer(boreDia) {
+  k = boreDia;
+  return reduce((acc, v) { return acc + v; },
+                map((r) { return r[10] * catalog.onRow(k, r[0], 0.0001); }, bushTable));
+}
+
+/// An ISO 4379 Type C bush for a bore of `boreDia`, outside diameter of
+/// `series` 1 to 3, `length` long from z = `at`, coaxial with +Z: its bore and
+/// outside chamfered at both ends by the standard's greatest chamfer.
+///
+///   bearing.bushing(20.0, 2.0, 20.0, 0.0)
+bushing(boreDia, series, length, at) {
+  ri = 0.5 * boreDia;
+  ro = 0.5 * bushingOuterDia(boreDia, series);
+  c = bushingChamfer(boreDia);
+  rho = length(p.xy);
+  top = at + length;
+  return max(bushingEnvelope(boreDia, series, length, at),
+             (ri + c - rho - (p.z - at)) / sqrt2, (ri + c - rho - (top - p.z)) / sqrt2,
+             (rho - (ro - c) - (p.z - at)) / sqrt2, (rho - (ro - c) - (top - p.z)) / sqrt2);
+}
+
+/// The same bush without its chamfers: the ring from bore to outside
+/// diameter. Exact, inside and out.
+bushingEnvelope(boreDia, series, length, at) {
+  return roundedRing(0.5 * boreDia, 0.5 * bushingOuterDia(boreDia, series), at, at + length, 0.0);
+}
+
+/// An ISO 4379 Type F bush: `series` 1 or 2, `length` long overall from
+/// z = `at`, its flange at the bottom; bore chamfered at both ends, the tube's
+/// top and the flange's rim at both faces.
+///
+///   bearing.flangedBushing(20.0, 1.0, 20.0, 0.0)
+flangedBushing(boreDia, series, length, at) {
+  ri = 0.5 * boreDia;
+  ro = 0.5 * flangedOuterDia(boreDia, series);
+  rf = 0.5 * flangeDia(boreDia, series);
+  bf = flangeThickness(boreDia, series);
+  c = bushingChamfer(boreDia);
+  rho = length(p.xy);
+  top = at + length;
+  return max(flangedBushingEnvelope(boreDia, series, length, at),
+             (ri + c - rho - (p.z - at)) / sqrt2, (ri + c - rho - (top - p.z)) / sqrt2,
+             (rho - (ro - c) - (top - p.z)) / sqrt2,
+             (rho - (rf - c) - (p.z - at)) / sqrt2,
+             // The rim's top chamfer reaches no higher than the flange: above
+             // it the tube stands, and the half-plane would cut it.
+             min((rho - (rf - c) - (at + bf - p.z)) / sqrt2, at + bf - p.z));
+}
+
+/// The same flanged bush without its chamfers: its L-shaped section turned
+/// about the axis. Exact, inside and out.
+flangedBushingEnvelope(boreDia, series, length, at) {
+  ri = 0.5 * boreDia;
+  ro = 0.5 * flangedOuterDia(boreDia, series);
+  rf = 0.5 * flangeDia(boreDia, series);
+  bf = flangeThickness(boreDia, series);
+  top = at + length;
+  return remap(profileXY([[ri, at], [rf, at], [rf, at + bf], [ro, at + bf], [ro, top], [ri, top]]),
+               [length(p.xy), p.z, 0.0]);
+}
+
+// =========================================================
+// Internal Geometry
+// =========================================================
+
+// The exact distance to a ring from radius ri to ro and z from z0 to z1, the
+// four corners of its section rounded by r: a rounded rectangle's distance in
+// the half-section (distance from the axis, z).
+roundedRing(ri, ro, z0, z1, r) {
+  rho = length(p.xy);
+  dx = abs(rho - 0.5 * (ri + ro)) - (0.5 * (ro - ri) - r);
+  dz = abs(p.z - 0.5 * (z0 + z1)) - (0.5 * (z1 - z0) - r);
+  return length([max(dx, 0.0), max(dz, 0.0)]) + min(max(dx, dz), 0.0) - r;
+}
