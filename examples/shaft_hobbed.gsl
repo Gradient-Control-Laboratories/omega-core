@@ -25,4 +25,5 @@ hobbedShaft = shaft.body(
 hobbedShaft.color = [0.58, 0.60, 0.64];
 
 // Laid along X and centred, so the viewer frames the whole shaft.
-return remap(hobbedShaft, [p.z, p.y, 60.0 - p.x]);
+laid = transform.translate(transform.rotateY(hobbedShaft, neg(pi) / 2.0), [60.0, 0.0, 0.0]);
+return laid;

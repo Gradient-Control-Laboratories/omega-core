@@ -518,7 +518,8 @@ func TestBearing_RoundedRingControl(t *testing.T) {
 
 // The bearings example compiles to WGSL (its size logged as Phase 9's budget)
 // and evaluates: the shaft solid in its journal, a ball of the left bearing at
-// its place, the bush's wall solid, and empty beyond the shaft's end.
+// its place (on the placed part, the shaft laid along X), the bush's wall solid,
+// and empty beyond the shaft's end.
 func TestBearing_BearingsExampleCompilesToWGSL(t *testing.T) {
 	src, err := os.ReadFile("../examples/shaft_bearings.gsl")
 	if err != nil {
@@ -530,8 +531,8 @@ func TestBearing_BearingsExampleCompilesToWGSL(t *testing.T) {
 		t.Fatalf("shader: %v", err)
 	}
 	t.Logf("examples/shaft_bearings.gsl: %d bytes of WGSL", len(res.Code))
-	groups, err := e.EvalGsl(t.Context(), nil, string(src), "", []string{"bearingShaft", "bearings", "bush"},
-		[][3]float64{{0, 0, 50}, {19.25, 0, 17.5}, {10.7, 0, 115}, {0, 0, 130}})
+	groups, err := e.EvalGsl(t.Context(), nil, string(src), "", []string{"bearingShaft", "laidLeftBearing", "bush"},
+		[][3]float64{{0, 0, 50}, {45, 0, 19.25}, {10.7, 0, 115}, {0, 0, 130}})
 	if err != nil {
 		t.Fatalf("eval: %v", err)
 	}

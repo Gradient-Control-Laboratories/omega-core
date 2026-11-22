@@ -23,4 +23,5 @@ blendedShaft = shaft.body(
 blendedShaft.color = [0.58, 0.60, 0.64];
 
 // Laid along X and centred, so the viewer frames the whole shaft.
-return remap(blendedShaft, [p.z, p.y, 55.0 - p.x]);
+laid = transform.translate(transform.rotateY(blendedShaft, neg(pi) / 2.0), [55.0, 0.0, 0.0]);
+return laid;
