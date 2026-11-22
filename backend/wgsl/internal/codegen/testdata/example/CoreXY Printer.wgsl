@@ -274,11 +274,13 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_13: f32, gsl_param_51_11: f32, 
   let gx = carriageX;
   let gantryY = gsl_param_51_11;
   let gy = gantryY;
+  let gslBox_119 = min(min(min(gy, gy) - 6.0, min(gy, gy) - 9.0), min(gy, gy) - 9.0);
   let headY = gy - 46.0;
   let bedHeight = gsl_param_48_13;
   let bz = -300.0 + bedHeight;
-  let gsl_partLo = vec3<f32>(min(-230.0, min(min(min(min(-219.5, min(gx - 10.0, gx + 10.0)), -200.0), 10.0), 29.0)), min(min(min(min(min(-230.0, -(-0.0 - gy) - 10.0), -190.0), -190.0), 150.0), min(min(min(min(min(min(min(min(min(min(-209.0, min(min(min(min(gy, gy) - 6.0, min(gy, gy) - 9.0), min(gy, gy) - 9.0), min(min(min(gy, gy) - 6.0, min(gy, gy) - 9.0), min(gy, gy) - 9.0))), min(min(min(min(gy, gy) - 6.0, min(gy, gy) - 9.0), min(gy, gy) - 9.0), min(min(min(gy, gy) - 6.0, min(gy, gy) - 9.0), min(gy, gy) - 9.0))), -194.5), -194.5), 175.5), -155.0), min(headY - 8.0, headY + 8.0)), 45.0), -146.0), -265.0)), min(min(min(min(-300.0, -(-0.0 - (bz - 21.0)) - 10.0), -(-0.0 - (bz - 21.0)) - 10.0), -(-0.0 - (bz - 21.0)) - 10.0), min(min(min(min(min(-268.0, min(bz - 9.0, bz - 1.0)), 126.0), -277.0), -255.4), -257.0)));
-  let gsl_partHi = vec3<f32>(max(230.0, max(max(max(max(219.5, max(gx - 10.0, gx + 10.0)), 15.0), 100.0), 43.0)), max(max(max(max(max(230.0, -(-0.0 - gy) + 10.0), 190.0), 190.0), 170.0), max(max(max(max(max(max(max(max(max(max(219.5, max(max(max(max(gy, gy) + 6.0, max(gy, gy) + 9.0), max(gy, gy) + 9.0), max(max(max(gy, gy) + 6.0, max(gy, gy) + 9.0), max(gy, gy) + 9.0))), max(max(max(max(gy, gy) + 6.0, max(gy, gy) + 9.0), max(gy, gy) + 9.0), max(max(max(gy, gy) + 6.0, max(gy, gy) + 9.0), max(gy, gy) + 9.0))), -175.5), -175.5), 194.5), 155.0), max(headY - 8.0, headY + 8.0)), 160.0), -134.0), -243.0)), max(max(max(max(233.0, -(-0.0 - (bz - 21.0)) + 10.0), -(-0.0 - (bz - 21.0)) + 10.0), -(-0.0 - (bz - 21.0)) + 10.0), max(max(max(max(max(328.0, max(bz - 9.0, bz - 1.0)), 136.0), -247.0), -247.4), -243.0)));
+  let gslBox_120 = max(max(max(gy, gy) + 6.0, max(gy, gy) + 9.0), max(gy, gy) + 9.0);
+  let gsl_partLo = vec3<f32>(min(-230.0, min(min(min(min(-219.5, min(gx - 10.0, gx + 10.0)), -200.0), 10.0), 29.0)), min(min(min(min(min(-230.0, -(-0.0 - gy) - 10.0), -190.0), -190.0), 150.0), min(min(min(min(min(min(min(min(min(min(-209.0, min(gslBox_119, gslBox_119)), min(gslBox_119, gslBox_119)), -194.5), -194.5), 175.5), -155.0), min(headY - 8.0, headY + 8.0)), 45.0), -146.0), -265.0)), min(min(min(min(-300.0, -(-0.0 - (bz - 21.0)) - 10.0), -(-0.0 - (bz - 21.0)) - 10.0), -(-0.0 - (bz - 21.0)) - 10.0), min(min(min(min(min(-268.0, min(bz - 9.0, bz - 1.0)), 126.0), -277.0), -255.4), -257.0)));
+  let gsl_partHi = vec3<f32>(max(230.0, max(max(max(max(219.5, max(gx - 10.0, gx + 10.0)), 15.0), 100.0), 43.0)), max(max(max(max(max(230.0, -(-0.0 - gy) + 10.0), 190.0), 190.0), 170.0), max(max(max(max(max(max(max(max(max(max(219.5, max(gslBox_120, gslBox_120)), max(gslBox_120, gslBox_120)), -175.5), -175.5), 194.5), 155.0), max(headY - 8.0, headY + 8.0)), 160.0), -134.0), -243.0)), max(max(max(max(233.0, -(-0.0 - (bz - 21.0)) + 10.0), -(-0.0 - (bz - 21.0)) + 10.0), -(-0.0 - (bz - 21.0)) + 10.0), max(max(max(max(max(328.0, max(bz - 9.0, bz - 1.0)), 136.0), -247.0), -247.4), -243.0)));
   let gsl_partBox = gsl_boxDistance(p, gsl_partLo, gsl_partHi);
   var gsl_part = gsl_partBox;
   let gsl_partLo_2 = vec3<f32>(-230.0, min(min(min(min(-230.0, -(-0.0 - gy) - 10.0), -190.0), -190.0), 150.0), min(min(min(-300.0, -(-0.0 - (bz - 21.0)) - 10.0), -(-0.0 - (bz - 21.0)) - 10.0), -(-0.0 - (bz - 21.0)) - 10.0));
@@ -512,8 +514,10 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_13: f32, gsl_param_51_11: f32, 
     if (abs(gsl_part_2) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_2), gsl_partVanish_2.zw); }
   }
   let frame = gsl_part_2;
-  let gsl_partLo_23 = vec3<f32>(min(min(min(min(-219.5, min(gx - 10.0, gx + 10.0)), -200.0), 10.0), 29.0), min(min(min(min(min(min(min(min(min(min(-209.0, min(min(min(min(gy, gy) - 6.0, min(gy, gy) - 9.0), min(gy, gy) - 9.0), min(min(min(gy, gy) - 6.0, min(gy, gy) - 9.0), min(gy, gy) - 9.0))), min(min(min(min(gy, gy) - 6.0, min(gy, gy) - 9.0), min(gy, gy) - 9.0), min(min(min(gy, gy) - 6.0, min(gy, gy) - 9.0), min(gy, gy) - 9.0))), -194.5), -194.5), 175.5), -155.0), min(headY - 8.0, headY + 8.0)), 45.0), -146.0), -265.0), min(min(min(min(min(-268.0, min(bz - 9.0, bz - 1.0)), 126.0), -277.0), -255.4), -257.0));
-  let gsl_partHi_23 = vec3<f32>(max(max(max(max(219.5, max(gx - 10.0, gx + 10.0)), 15.0), 100.0), 43.0), max(max(max(max(max(max(max(max(max(max(219.5, max(max(max(max(gy, gy) + 6.0, max(gy, gy) + 9.0), max(gy, gy) + 9.0), max(max(max(gy, gy) + 6.0, max(gy, gy) + 9.0), max(gy, gy) + 9.0))), max(max(max(max(gy, gy) + 6.0, max(gy, gy) + 9.0), max(gy, gy) + 9.0), max(max(max(gy, gy) + 6.0, max(gy, gy) + 9.0), max(gy, gy) + 9.0))), -175.5), -175.5), 194.5), 155.0), max(headY - 8.0, headY + 8.0)), 160.0), -134.0), -243.0), max(max(max(max(max(328.0, max(bz - 9.0, bz - 1.0)), 136.0), -247.0), -247.4), -243.0));
+  let gslBox_111 = min(min(min(gy, gy) - 6.0, min(gy, gy) - 9.0), min(gy, gy) - 9.0);
+  let gslBox_112 = max(max(max(gy, gy) + 6.0, max(gy, gy) + 9.0), max(gy, gy) + 9.0);
+  let gsl_partLo_23 = vec3<f32>(min(min(min(min(-219.5, min(gx - 10.0, gx + 10.0)), -200.0), 10.0), 29.0), min(min(min(min(min(min(min(min(min(min(-209.0, min(gslBox_111, gslBox_111)), min(gslBox_111, gslBox_111)), -194.5), -194.5), 175.5), -155.0), min(headY - 8.0, headY + 8.0)), 45.0), -146.0), -265.0), min(min(min(min(min(-268.0, min(bz - 9.0, bz - 1.0)), 126.0), -277.0), -255.4), -257.0));
+  let gsl_partHi_23 = vec3<f32>(max(max(max(max(219.5, max(gx - 10.0, gx + 10.0)), 15.0), 100.0), 43.0), max(max(max(max(max(max(max(max(max(max(219.5, max(gslBox_112, gslBox_112)), max(gslBox_112, gslBox_112)), -175.5), -175.5), 194.5), 155.0), max(headY - 8.0, headY + 8.0)), 160.0), -134.0), -243.0), max(max(max(max(max(328.0, max(bz - 9.0, bz - 1.0)), 136.0), -247.0), -247.4), -243.0));
   let gsl_partBox_23 = gsl_boxDistance(p, gsl_partLo_23, gsl_partHi_23);
   var gsl_part_23 = gsl_partBox_23;
   let gsl_partLo_24 = vec3<f32>(-219.5, 180.5, 308.0);
@@ -615,8 +619,10 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_13: f32, gsl_param_51_11: f32, 
     if (abs(gsl_part_32) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_32), gsl_partVanish_32.zw); }
   }
   let idlersR = gsl_part_32;
-  let gsl_partLo_33 = vec3<f32>(-209.0, min(min(min(min(gy, gy) - 6.0, min(gy, gy) - 9.0), min(gy, gy) - 9.0), min(min(min(gy, gy) - 6.0, min(gy, gy) - 9.0), min(gy, gy) - 9.0)), 229.5);
-  let gsl_partHi_33 = vec3<f32>(-191.0, max(max(max(max(gy, gy) + 6.0, max(gy, gy) + 9.0), max(gy, gy) + 9.0), max(max(max(gy, gy) + 6.0, max(gy, gy) + 9.0), max(gy, gy) + 9.0)), 264.5);
+  let gslBox = min(min(min(gy, gy) - 6.0, min(gy, gy) - 9.0), min(gy, gy) - 9.0);
+  let gslBox_2 = max(max(max(gy, gy) + 6.0, max(gy, gy) + 9.0), max(gy, gy) + 9.0);
+  let gsl_partLo_33 = vec3<f32>(-209.0, min(gslBox, gslBox), 229.5);
+  let gsl_partHi_33 = vec3<f32>(-191.0, max(gslBox_2, gslBox_2), 264.5);
   let gsl_partBox_33 = gsl_boxDistance(p, gsl_partLo_33, gsl_partHi_33);
   var gsl_part_33 = gsl_partBox_33;
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_33 <= gsl_vanishView.w) {
@@ -626,8 +632,10 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_13: f32, gsl_param_51_11: f32, 
     if (abs(gsl_part_33) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_33), gsl_partVanish_33.zw); }
   }
   let jointIdlersL = gsl_part_33;
-  let gsl_partLo_34 = vec3<f32>(191.0, min(min(min(min(gy, gy) - 6.0, min(gy, gy) - 9.0), min(gy, gy) - 9.0), min(min(min(gy, gy) - 6.0, min(gy, gy) - 9.0), min(gy, gy) - 9.0)), 229.5);
-  let gsl_partHi_34 = vec3<f32>(209.0, max(max(max(max(gy, gy) + 6.0, max(gy, gy) + 9.0), max(gy, gy) + 9.0), max(max(max(gy, gy) + 6.0, max(gy, gy) + 9.0), max(gy, gy) + 9.0)), 264.5);
+  let gslBox_3 = min(min(min(gy, gy) - 6.0, min(gy, gy) - 9.0), min(gy, gy) - 9.0);
+  let gslBox_4 = max(max(max(gy, gy) + 6.0, max(gy, gy) + 9.0), max(gy, gy) + 9.0);
+  let gsl_partLo_34 = vec3<f32>(191.0, min(gslBox_3, gslBox_3), 229.5);
+  let gsl_partHi_34 = vec3<f32>(209.0, max(gslBox_4, gslBox_4), 264.5);
   let gsl_partBox_34 = gsl_boxDistance(p, gsl_partLo_34, gsl_partHi_34);
   var gsl_part_34 = gsl_partBox_34;
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_34 <= gsl_vanishView.w) {
@@ -927,12 +935,16 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_13: f32, gsl_param_51_11: f32, 
     if (abs(gsl_part_43) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_43), gsl_partVanish_43.zw); }
   }
   let blackMetal = gsl_part_43;
-  let gsl_partLo_60 = vec3<f32>(min(min(min(min(min(min(-236.0, -(-0.0 - gx) - 30.0), min(gx - 30.0, gx + 30.0)), min(gx - 38.0, gx - 24.0)), min(gx + 24.0, gx + 38.0)), 10.0), min(min(min(min(min(min(min(min(-208.75, min(-192.0, gx - 30.0)), min(gx + 30.0, 192.0)), min(-192.0, gx - 30.0)), min(gx + 30.0, 192.0)), -235.0), 205.0), -235.0), 205.0)), min(min(min(min(min(min(min(min(-226.0, min(min(gy - 26.0, gy + 26.0), -(-0.0 - gy) - 20.0 - 4.0)), min(min(gy - 26.0, gy + 26.0), -(-0.0 - gy) - 20.0 - 4.0)), -(-0.0 - headY) - 26.0), min(gy - 20.0, gy - 4.0)), min(gy - 64.0, gy - 28.0)), min(gy - 64.0, gy - 28.0)), -150.0), min(min(min(min(min(min(min(min(min(min(min(min(min(min(-200.0, min(gy, 200.0)), min(-200.0, gy)), -200.0), -200.0), min(gy, 200.0)), min(-200.0, gy)), min(gy - 8.0 - 0.75, gy - 8.0 + 0.75)), min(gy - 8.0 - 0.75, gy - 8.0 + 0.75)), min(gy - 8.0 - 0.75, gy - 8.0 + 0.75)), min(gy - 8.0 - 0.75, gy - 8.0 + 0.75)), -235.0), -235.0), 205.0), 205.0)), -330.0);
-  let gsl_partHi_60 = vec3<f32>(max(max(max(max(max(max(236.0, -(-0.0 - gx) + 30.0), max(gx - 30.0, gx + 30.0)), max(gx - 38.0, gx - 24.0)), max(gx + 24.0, gx + 38.0)), 124.0), max(max(max(max(max(max(max(max(208.75, max(-192.0, gx - 30.0)), max(gx + 30.0, 192.0)), max(-192.0, gx - 30.0)), max(gx + 30.0, 192.0)), -205.0), 235.0), -205.0), 235.0)), max(max(max(max(max(max(max(max(226.0, max(max(gy - 26.0, gy + 26.0), -(-0.0 - gy) + 20.0 + 4.0)), max(max(gy - 26.0, gy + 26.0), -(-0.0 - gy) + 20.0 + 4.0)), -(-0.0 - headY) + 26.0), max(gy - 20.0, gy - 4.0)), max(gy - 64.0, gy - 28.0)), max(gy - 64.0, gy - 28.0)), 150.0), max(max(max(max(max(max(max(max(max(max(max(max(max(max(200.0, max(gy, 200.0)), max(-200.0, gy)), 200.0), 200.0), max(gy, 200.0)), max(-200.0, gy)), max(gy - 8.0 - 0.75, gy - 8.0 + 0.75)), max(gy - 8.0 - 0.75, gy - 8.0 + 0.75)), max(gy - 8.0 - 0.75, gy - 8.0 + 0.75)), max(gy - 8.0 - 0.75, gy - 8.0 + 0.75)), -205.0), -205.0), 235.0), 235.0)), 258.0);
+  let gslBox_142 = min(min(gy - 26.0, gy + 26.0), -(-0.0 - gy) - 20.0 - 4.0);
+  let gslBox_144 = max(max(gy - 26.0, gy + 26.0), -(-0.0 - gy) + 20.0 + 4.0);
+  let gsl_partLo_60 = vec3<f32>(min(min(min(min(min(min(-236.0, -(-0.0 - gx) - 30.0), min(gx - 30.0, gx + 30.0)), min(gx - 38.0, gx - 24.0)), min(gx + 24.0, gx + 38.0)), 10.0), min(min(min(min(min(min(min(min(-208.75, min(-192.0, gx - 30.0)), min(gx + 30.0, 192.0)), min(-192.0, gx - 30.0)), min(gx + 30.0, 192.0)), -235.0), 205.0), -235.0), 205.0)), min(min(min(min(min(min(min(min(-226.0, gslBox_142), gslBox_142), -(-0.0 - headY) - 26.0), min(gy - 20.0, gy - 4.0)), min(gy - 64.0, gy - 28.0)), min(gy - 64.0, gy - 28.0)), -150.0), min(min(min(min(min(min(min(min(min(min(min(min(min(min(-200.0, min(gy, 200.0)), min(-200.0, gy)), -200.0), -200.0), min(gy, 200.0)), min(-200.0, gy)), min(gy - 8.0 - 0.75, gy - 8.0 + 0.75)), min(gy - 8.0 - 0.75, gy - 8.0 + 0.75)), min(gy - 8.0 - 0.75, gy - 8.0 + 0.75)), min(gy - 8.0 - 0.75, gy - 8.0 + 0.75)), -235.0), -235.0), 205.0), 205.0)), -330.0);
+  let gsl_partHi_60 = vec3<f32>(max(max(max(max(max(max(236.0, -(-0.0 - gx) + 30.0), max(gx - 30.0, gx + 30.0)), max(gx - 38.0, gx - 24.0)), max(gx + 24.0, gx + 38.0)), 124.0), max(max(max(max(max(max(max(max(208.75, max(-192.0, gx - 30.0)), max(gx + 30.0, 192.0)), max(-192.0, gx - 30.0)), max(gx + 30.0, 192.0)), -205.0), 235.0), -205.0), 235.0)), max(max(max(max(max(max(max(max(226.0, gslBox_144), gslBox_144), -(-0.0 - headY) + 26.0), max(gy - 20.0, gy - 4.0)), max(gy - 64.0, gy - 28.0)), max(gy - 64.0, gy - 28.0)), 150.0), max(max(max(max(max(max(max(max(max(max(max(max(max(max(200.0, max(gy, 200.0)), max(-200.0, gy)), 200.0), 200.0), max(gy, 200.0)), max(-200.0, gy)), max(gy - 8.0 - 0.75, gy - 8.0 + 0.75)), max(gy - 8.0 - 0.75, gy - 8.0 + 0.75)), max(gy - 8.0 - 0.75, gy - 8.0 + 0.75)), max(gy - 8.0 - 0.75, gy - 8.0 + 0.75)), -205.0), -205.0), 235.0), 235.0)), 258.0);
   let gsl_partBox_60 = gsl_boxDistance(p, gsl_partLo_60, gsl_partHi_60);
   var gsl_part_60 = gsl_partBox_60;
-  let gsl_partLo_61 = vec3<f32>(min(min(min(min(-236.0, -(-0.0 - gx) - 30.0), min(gx - 30.0, gx + 30.0)), min(gx - 38.0, gx - 24.0)), min(gx + 24.0, gx + 38.0)), min(min(min(min(min(min(-226.0, min(min(gy - 26.0, gy + 26.0), -(-0.0 - gy) - 20.0 - 4.0)), min(min(gy - 26.0, gy + 26.0), -(-0.0 - gy) - 20.0 - 4.0)), -(-0.0 - headY) - 26.0), min(gy - 20.0, gy - 4.0)), min(gy - 64.0, gy - 28.0)), min(gy - 64.0, gy - 28.0)), 128.0);
-  let gsl_partHi_61 = vec3<f32>(max(max(max(max(236.0, -(-0.0 - gx) + 30.0), max(gx - 30.0, gx + 30.0)), max(gx - 38.0, gx - 24.0)), max(gx + 24.0, gx + 38.0)), max(max(max(max(max(max(226.0, max(max(gy - 26.0, gy + 26.0), -(-0.0 - gy) + 20.0 + 4.0)), max(max(gy - 26.0, gy + 26.0), -(-0.0 - gy) + 20.0 + 4.0)), -(-0.0 - headY) + 26.0), max(gy - 20.0, gy - 4.0)), max(gy - 64.0, gy - 28.0)), max(gy - 64.0, gy - 28.0)), 258.0);
+  let gslBox_136 = min(min(gy - 26.0, gy + 26.0), -(-0.0 - gy) - 20.0 - 4.0);
+  let gslBox_138 = max(max(gy - 26.0, gy + 26.0), -(-0.0 - gy) + 20.0 + 4.0);
+  let gsl_partLo_61 = vec3<f32>(min(min(min(min(-236.0, -(-0.0 - gx) - 30.0), min(gx - 30.0, gx + 30.0)), min(gx - 38.0, gx - 24.0)), min(gx + 24.0, gx + 38.0)), min(min(min(min(min(min(-226.0, gslBox_136), gslBox_136), -(-0.0 - headY) - 26.0), min(gy - 20.0, gy - 4.0)), min(gy - 64.0, gy - 28.0)), min(gy - 64.0, gy - 28.0)), 128.0);
+  let gsl_partHi_61 = vec3<f32>(max(max(max(max(236.0, -(-0.0 - gx) + 30.0), max(gx - 30.0, gx + 30.0)), max(gx - 38.0, gx - 24.0)), max(gx + 24.0, gx + 38.0)), max(max(max(max(max(max(226.0, gslBox_138), gslBox_138), -(-0.0 - headY) + 26.0), max(gy - 20.0, gy - 4.0)), max(gy - 64.0, gy - 28.0)), max(gy - 64.0, gy - 28.0)), 258.0);
   let gsl_partBox_61 = gsl_boxDistance(p, gsl_partLo_61, gsl_partHi_61);
   var gsl_part_61 = gsl_partBox_61;
   let gsl_partLo_62 = vec3<f32>(-226.0, 174.0, 200.0);
@@ -1907,16 +1919,12 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_13: f32, gsl_param_51_11: f32, 
     if (abs(gsl_part_108) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_108), gsl_partVanish_108.zw); }
   }
   let fasteners = gsl_part_108;
-  let gsl_partShare__676 = -(gy - 10.0 - 3.25) / -1.0;
-  let gsl_partShare__677 = -(gy - 10.0 - 6.5) / -1.0;
-  let gsl_partLo_149 = vec3<f32>(min(min(-233.5, -(-0.0 - gx) - 19.95), -221.15), min(min(min(min(min(-170.0, gsl_partShare__676 - 3.25), -(-0.0 - gy) - 22.7), -(-0.0 - gy) - 22.7), gsl_partShare__677 - 3.5), -206.15), -238.0);
-  let gsl_partHi_149 = vec3<f32>(max(max(233.5, -(-0.0 - gx) + 19.95), 221.15), max(max(max(max(max(170.0, gsl_partShare__676 + 3.25), -(-0.0 - gy) + 22.7), -(-0.0 - gy) + 22.7), gsl_partShare__677 + 3.5), 221.15), 298.0);
+  let gsl_partLo_149 = vec3<f32>(min(min(-233.5, -(-0.0 - gx) - 19.95), -221.15), min(min(min(min(min(-170.0, -(gy - 10.0 - 3.25) / -1.0 - 3.25), -(-0.0 - gy) - 22.7), -(-0.0 - gy) - 22.7), -(gy - 10.0 - 6.5) / -1.0 - 3.5), -206.15), -238.0);
+  let gsl_partHi_149 = vec3<f32>(max(max(233.5, -(-0.0 - gx) + 19.95), 221.15), max(max(max(max(max(170.0, -(gy - 10.0 - 3.25) / -1.0 + 3.25), -(-0.0 - gy) + 22.7), -(-0.0 - gy) + 22.7), -(gy - 10.0 - 6.5) / -1.0 + 3.5), 221.15), 298.0);
   let gsl_partBox_149 = gsl_boxDistance(p, gsl_partLo_149, gsl_partHi_149);
   var gsl_part_149 = gsl_partBox_149;
-  let gsl_partShare__666 = -(gy - 10.0 - 3.25) / -1.0;
-  let gsl_partShare__667 = -(gy - 10.0 - 6.5) / -1.0;
-  let gsl_partLo_150 = vec3<f32>(min(-233.5, -(-0.0 - gx) - 19.95), min(min(min(min(-170.0, gsl_partShare__666 - 3.25), -(-0.0 - gy) - 22.7), -(-0.0 - gy) - 22.7), gsl_partShare__667 - 3.5), 200.0);
-  let gsl_partHi_150 = vec3<f32>(max(233.5, -(-0.0 - gx) + 19.95), max(max(max(max(170.0, gsl_partShare__666 + 3.25), -(-0.0 - gy) + 22.7), -(-0.0 - gy) + 22.7), gsl_partShare__667 + 3.5), 233.0);
+  let gsl_partLo_150 = vec3<f32>(min(-233.5, -(-0.0 - gx) - 19.95), min(min(min(min(-170.0, -(gy - 10.0 - 3.25) / -1.0 - 3.25), -(-0.0 - gy) - 22.7), -(-0.0 - gy) - 22.7), -(gy - 10.0 - 6.5) / -1.0 - 3.5), 200.0);
+  let gsl_partHi_150 = vec3<f32>(max(233.5, -(-0.0 - gx) + 19.95), max(max(max(max(170.0, -(gy - 10.0 - 3.25) / -1.0 + 3.25), -(-0.0 - gy) + 22.7), -(-0.0 - gy) + 22.7), -(gy - 10.0 - 6.5) / -1.0 + 3.5), 233.0);
   let gsl_partBox_150 = gsl_boxDistance(p, gsl_partLo_150, gsl_partHi_150);
   var gsl_part_150 = gsl_partBox_150;
   let gsl_partLo_151 = vec3<f32>(-226.0, -170.0, 200.0);
@@ -1941,9 +1949,8 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_13: f32, gsl_param_51_11: f32, 
     if (abs(gsl_part_152) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_152), gsl_partVanish_152.zw); }
   }
   let railR = gsl_part_152;
-  let gsl_partShare__0 = -(gy - 10.0 - 3.25) / -1.0;
-  let gsl_partLo_153 = vec3<f32>(-175.0, gsl_partShare__0 - 3.25, 218.5);
-  let gsl_partHi_153 = vec3<f32>(175.0, gsl_partShare__0 + 3.25, 227.5);
+  let gsl_partLo_153 = vec3<f32>(-175.0, -(gy - 10.0 - 3.25) / -1.0 - 3.25, 218.5);
+  let gsl_partHi_153 = vec3<f32>(175.0, -(gy - 10.0 - 3.25) / -1.0 + 3.25, 227.5);
   let gsl_partBox_153 = gsl_boxDistance(p, gsl_partLo_153, gsl_partHi_153);
   var gsl_part_153 = gsl_partBox_153;
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_153 <= gsl_vanishView.w) {
@@ -1975,9 +1982,8 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_13: f32, gsl_param_51_11: f32, 
     if (abs(gsl_part_155) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_155), gsl_partVanish_155.zw); }
   }
   let carriageR = gsl_part_155;
-  let gsl_partShare__1 = -(gy - 10.0 - 6.5) / -1.0;
-  let gsl_partLo_156 = vec3<f32>(-(-0.0 - gx) - 19.95, gsl_partShare__1 - 3.5, 213.0);
-  let gsl_partHi_156 = vec3<f32>(-(-0.0 - gx) + 19.95, gsl_partShare__1 + 3.5, 233.0);
+  let gsl_partLo_156 = vec3<f32>(-(-0.0 - gx) - 19.95, -(gy - 10.0 - 6.5) / -1.0 - 3.5, 213.0);
+  let gsl_partHi_156 = vec3<f32>(-(-0.0 - gx) + 19.95, -(gy - 10.0 - 6.5) / -1.0 + 3.5, 233.0);
   let gsl_partBox_156 = gsl_boxDistance(p, gsl_partLo_156, gsl_partHi_156);
   var gsl_part_156 = gsl_partBox_156;
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_156 <= gsl_vanishView.w) {
@@ -2100,8 +2106,10 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_13: f32, gsl_param_51_11: f32, 
     if (abs(gsl_part_149) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_149), gsl_partVanish_149.zw); }
   }
   let steel = gsl_part_149;
-  let gsl_partLo_166 = vec3<f32>(min(min(min(min(min(min(gx, gx) - 4.0, min(gx, gx) - 3.0), -196.0), 174.0), -11.0), 3.5), min(min(min(min(min(min(headY, headY) - 4.0, min(headY, headY) - 3.0), -196.0), -196.0), 174.0), -161.5), min(min(min(min(115.0, min(min(bz - 28.0, bz - 24.5) - 11.0, min(bz - 43.0, bz - 28.0) - 5.1)), min(min(bz - 28.0, bz - 24.5) - 11.0, min(bz - 43.0, bz - 28.0) - 5.1)), min(min(bz - 28.0, bz - 24.5) - 11.0, min(bz - 43.0, bz - 28.0) - 5.1)), -279.5));
-  let gsl_partHi_166 = vec3<f32>(max(max(max(max(max(max(gx, gx) + 4.0, max(gx, gx) + 3.0), -174.0), 196.0), 11.0), 156.5), max(max(max(max(max(max(headY, headY) + 4.0, max(headY, headY) + 3.0), -174.0), -174.0), 196.0), -68.5), max(max(max(max(130.0, max(max(bz - 28.0, bz - 24.5) + 11.0, max(bz - 43.0, bz - 28.0) + 5.1)), max(max(bz - 28.0, bz - 24.5) + 11.0, max(bz - 43.0, bz - 28.0) + 5.1)), max(max(bz - 28.0, bz - 24.5) + 11.0, max(bz - 43.0, bz - 28.0) + 5.1)), -264.5));
+  let gslBox_221 = min(min(bz - 28.0, bz - 24.5) - 11.0, min(bz - 43.0, bz - 28.0) - 5.1);
+  let gslBox_222 = max(max(bz - 28.0, bz - 24.5) + 11.0, max(bz - 43.0, bz - 28.0) + 5.1);
+  let gsl_partLo_166 = vec3<f32>(min(min(min(min(min(min(gx, gx) - 4.0, min(gx, gx) - 3.0), -196.0), 174.0), -11.0), 3.5), min(min(min(min(min(min(headY, headY) - 4.0, min(headY, headY) - 3.0), -196.0), -196.0), 174.0), -161.5), min(min(min(min(115.0, gslBox_221), gslBox_221), gslBox_221), -279.5));
+  let gsl_partHi_166 = vec3<f32>(max(max(max(max(max(max(gx, gx) + 4.0, max(gx, gx) + 3.0), -174.0), 196.0), 11.0), 156.5), max(max(max(max(max(max(headY, headY) + 4.0, max(headY, headY) + 3.0), -174.0), -174.0), 196.0), -68.5), max(max(max(max(130.0, gslBox_222), gslBox_222), gslBox_222), -264.5));
   let gsl_partBox_166 = gsl_boxDistance(p, gsl_partLo_166, gsl_partHi_166);
   var gsl_part_166 = gsl_partBox_166;
   let gsl_partLo_167 = vec3<f32>(min(min(gx, gx) - 4.0, min(gx, gx) - 3.0), min(min(headY, headY) - 4.0, min(headY, headY) - 3.0), 115.0);

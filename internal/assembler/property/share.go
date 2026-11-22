@@ -40,16 +40,9 @@ var shareMinSize = 8
 type shareNames struct {
 	next  int
 	taken func(name string) bool
-	// prefix, when set, replaces the one asked for: a part's box corners are
-	// shared at the top level of a document, where Expand's own share__ names
-	// are already the locals of the functions it synthesized.
-	prefix string
 }
 
 func (n *shareNames) fresh(prefix string) string {
-	if n.prefix != "" {
-		prefix = n.prefix
-	}
 	for {
 		name := fmt.Sprintf("%s__%d", prefix, n.next)
 		n.next++

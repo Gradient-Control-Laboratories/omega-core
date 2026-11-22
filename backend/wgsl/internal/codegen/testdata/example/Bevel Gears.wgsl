@@ -6,9 +6,9 @@ fn builtin_circleXY(p: vec3<f32>, center: vec2<f32>, radius: f32) -> f32 {
   return length(p.xy - center) - radius;
 }
 
-fn builtin_intersectChamfer(d1: f32, d2: f32, setback: f32) -> f32 {
+fn builtin_intersectChamferNormalized(d1: f32, d2: f32, depth: f32, normal1: vec2<f32>, normal2: vec2<f32>) -> f32 {
   let face = max(d1, d2);
-  let edge = (d1 + d2 + setback) / 1.4142135;
+  let edge = (d1 + d2) / max(length(normal1 + normal2), 0.000001) + depth;
   return max(face, edge);
 }
 
@@ -20,6 +20,12 @@ fn builtin_intersectRound(d1: f32, d2: f32, radius: f32) -> f32 {
 
 fn builtin_unionRound(d1: f32, d2: f32, radius: f32) -> f32 {
   return -builtin_intersectRound(-d1, -d2, radius);
+}
+
+fn builtin_intersectChamfer(d1: f32, d2: f32, offset: f32) -> f32 {
+  let face = max(d1, d2);
+  let edge = (d1 + d2 + offset) / 1.4142135;
+  return max(face, edge);
 }
 
 fn builtin_axis(p: vec3<f32>, center: vec3<f32>, direction: vec3<f32>) -> f32 {
@@ -38,12 +44,12 @@ fn builtin_cylinderZ(p: vec3<f32>, vector_dirZ: vec3<f32>, center: vec3<f32>, ra
   return builtin_cylinder(p, center, vector_dirZ, radius);
 }
 
-fn builtin_unionChamfer(d1: f32, d2: f32, setback: f32) -> f32 {
-  return -builtin_intersectChamfer(-d1, -d2, setback);
+fn builtin_unionChamfer(d1: f32, d2: f32, offset: f32) -> f32 {
+  return -builtin_intersectChamfer(-d1, -d2, offset);
 }
 
-fn builtin_differenceChamfer(gsl_var_target: f32, tool: f32, setback: f32) -> f32 {
-  return builtin_intersectChamfer(gsl_var_target, -tool, setback);
+fn builtin_differenceChamfer(gsl_var_target: f32, tool: f32, offset: f32) -> f32 {
+  return builtin_intersectChamfer(gsl_var_target, -tool, offset);
 }
 
 fn gears_bevelPitchAngle(numTeeth: f32, mateTeeth: f32, shaftAngle: f32) -> f32 {
@@ -107,7 +113,10 @@ fn gears_gearProfile(p: vec3<f32>, numTeeth: f32, moduleVal: f32, pressureAngle:
   let pitchRadius = numTeeth / 2.0 * moduleVal;
   let addendumRadius = pitchRadius + moduleVal;
   let addClip = builtin_circleXY(vec3<f32>(opx, opy, p.z), vec2<f32>(0.0, 0.0), addendumRadius);
-  let toothProfile = builtin_intersectChamfer(repeatedTooth, addClip, kSmall);
+  let baseRadius = pitchRadius * cos(pressureAngle);
+  let tipRoll = sqrt(addendumRadius * addendumRadius - baseRadius * baseRadius) / baseRadius;
+  let tipCorner = vec2<f32>(cos(tipRoll) + tipRoll * sin(tipRoll), sin(tipRoll) - tipRoll * cos(tipRoll));
+  let toothProfile = builtin_intersectChamferNormalized(repeatedTooth, addClip, kSmall, vec2<f32>(sin(tipRoll), -cos(tipRoll)), tipCorner / length(tipCorner));
   let dedendumRadius = pitchRadius - (1.0 + dedendumClearance) * moduleVal;
   let dedBody = builtin_circleXY(vec3<f32>(opx, opy, p.z), vec2<f32>(0.0, 0.0), dedendumRadius);
   let roundK = dedendumClearance * moduleVal;
@@ -183,22 +192,22 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_14_13: f32, gsl_param_17_13: f32, 
   let moduleVal = gsl_param_20_13;
   let shaftAngle = gsl_param_31_14;
   let numTeeth2 = gsl_param_17_13;
-  let gsl_partShare__0 = atan2(sin(shaftAngle), numTeeth2 / numTeeth1 + cos(shaftAngle));
-  let gsl_partShare__1 = numTeeth1 * moduleVal / (2.0 * sin(gsl_partShare__0));
-  let gsl_partShare__2 = max(gsl_partShare__1 * sin(gsl_partShare__0 + moduleVal / gsl_partShare__1) / cos(moduleVal / gsl_partShare__1), 1.6);
-  let gsl_partShare__3 = numTeeth1 * moduleVal / (2.0 * sin(gsl_partShare__0));
+  let gslBox_6 = atan2(sin(shaftAngle), numTeeth2 / numTeeth1 + cos(shaftAngle));
+  let gslBox = numTeeth1 * moduleVal / (2.0 * sin(gslBox_6));
+  let gslBox_3 = gslBox_6 + moduleVal / gslBox;
+  let gslBox_2 = max(gslBox * sin(gslBox_3) / cos(moduleVal / gslBox), 1.6);
   let pitchAngle1 = atan2(sin(shaftAngle), numTeeth2 / numTeeth1 + cos(shaftAngle));
   let outerCone = numTeeth1 * moduleVal / (2.0 * sin(pitchAngle1));
   let faceFraction = gsl_param_44_16;
   let faceWidth = outerCone * faceFraction;
-  let gsl_partShare__4 = (gsl_partShare__3 - faceWidth) * cos(gsl_partShare__0 + moduleVal / gsl_partShare__3) / cos(moduleVal / gsl_partShare__3);
+  let gslBox_4 = (gslBox - faceWidth) * cos(gslBox_3) / cos(moduleVal / gslBox);
   let recess = gsl_param_57_10;
-  let gsl_partShare__5 = numTeeth1 * moduleVal / (2.0 * sin(gsl_partShare__0));
+  let gslBox_7 = min(gslBox_4 + recess - 0.1, gslBox_4);
   let crownToBack = gsl_param_54_15;
   let standoffHeight = gsl_param_64_18;
-  let gsl_partShare__6 = gsl_partShare__5 * cos(gsl_partShare__0 + moduleVal / gsl_partShare__5) / cos(moduleVal / gsl_partShare__5) + crownToBack + max(standoffHeight, 0.1);
-  let gsl_partLo = vec3<f32>(min(-gsl_partShare__2, gsl_partShare__2) - 0.01, min(-gsl_partShare__2, gsl_partShare__2) - 0.01, min(min(gsl_partShare__4 + recess - 0.1, gsl_partShare__4), gsl_partShare__6) - 0.01);
-  let gsl_partHi = vec3<f32>(max(-gsl_partShare__2, gsl_partShare__2) + 0.01, max(-gsl_partShare__2, gsl_partShare__2) + 0.01, max(min(gsl_partShare__4 + recess - 0.1, gsl_partShare__4), gsl_partShare__6) + 0.01);
+  let gslBox_5 = gslBox * cos(gslBox_3) / cos(moduleVal / gslBox) + crownToBack + max(standoffHeight, 0.1);
+  let gsl_partLo = vec3<f32>(min(-gslBox_2, gslBox_2) - 0.01, min(-gslBox_2, gslBox_2) - 0.01, min(gslBox_7, gslBox_5) - 0.01);
+  let gsl_partHi = vec3<f32>(max(-gslBox_2, gslBox_2) + 0.01, max(-gslBox_2, gslBox_2) + 0.01, max(gslBox_7, gslBox_5) + 0.01);
   let gsl_partBox = gsl_boxDistance(p, gsl_partLo, gsl_partHi);
   var gsl_part = gsl_partBox;
   let vector_zero = vec3<f32>(0.0, 0.0, 0.0);
@@ -215,19 +224,19 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_14_13: f32, gsl_param_17_13: f32, 
     if (abs(gsl_part) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part), gsl_partVanish.zw); }
   }
   let g1 = gsl_part;
-  let gsl_partShare__7 = shaftAngle - atan2(sin(shaftAngle), numTeeth2 / numTeeth1 + cos(shaftAngle));
-  let gsl_partShare__8 = numTeeth2 * moduleVal / (2.0 * sin(gsl_partShare__7));
-  let gsl_partShare__9 = (gsl_partShare__8 - faceWidth) * cos(gsl_partShare__7 + moduleVal / gsl_partShare__8) / cos(moduleVal / gsl_partShare__8);
-  let gsl_partShare__10 = numTeeth2 * moduleVal / (2.0 * sin(gsl_partShare__7));
-  let gsl_partShare__11 = gsl_partShare__10 * cos(gsl_partShare__7 + moduleVal / gsl_partShare__10) / cos(moduleVal / gsl_partShare__10) + crownToBack + max(standoffHeight, 0.1);
-  let gsl_partShare__12 = numTeeth2 * moduleVal / (2.0 * sin(gsl_partShare__7));
-  let gsl_partShare__13 = max(gsl_partShare__12 * sin(gsl_partShare__7 + moduleVal / gsl_partShare__12) / cos(moduleVal / gsl_partShare__12), 1.9);
-  let gsl_partShare__14 = min(sin(shaftAngle) * min(gsl_partShare__9 + recess - 0.1, gsl_partShare__9), sin(shaftAngle) * gsl_partShare__11) - abs(cos(shaftAngle)) * gsl_partShare__13;
-  let gsl_partShare__15 = max(sin(shaftAngle) * min(gsl_partShare__9 + recess - 0.1, gsl_partShare__9), sin(shaftAngle) * gsl_partShare__11) + abs(cos(shaftAngle)) * gsl_partShare__13;
-  let gsl_partShare__16 = min(cos(shaftAngle) * min(gsl_partShare__9 + recess - 0.1, gsl_partShare__9), cos(shaftAngle) * gsl_partShare__11) - abs(sin(shaftAngle)) * gsl_partShare__13;
-  let gsl_partShare__17 = max(cos(shaftAngle) * min(gsl_partShare__9 + recess - 0.1, gsl_partShare__9), cos(shaftAngle) * gsl_partShare__11) + abs(sin(shaftAngle)) * gsl_partShare__13;
-  let gsl_partLo_2 = vec3<f32>(min(gsl_partShare__14, gsl_partShare__15) - 0.01, min(-gsl_partShare__13, gsl_partShare__13) - 0.01, min(gsl_partShare__16, gsl_partShare__17) - 0.01);
-  let gsl_partHi_2 = vec3<f32>(max(gsl_partShare__14, gsl_partShare__15) + 0.01, max(-gsl_partShare__13, gsl_partShare__13) + 0.01, max(gsl_partShare__16, gsl_partShare__17) + 0.01);
+  let gslBox_17 = shaftAngle - atan2(sin(shaftAngle), numTeeth2 / numTeeth1 + cos(shaftAngle));
+  let gslBox_8 = numTeeth2 * moduleVal / (2.0 * sin(gslBox_17));
+  let gslBox_9 = gslBox_17 + moduleVal / gslBox_8;
+  let gslBox_18 = (gslBox_8 - faceWidth) * cos(gslBox_9) / cos(moduleVal / gslBox_8);
+  let gslBox_10 = min(gslBox_18 + recess - 0.1, gslBox_18);
+  let gslBox_12 = gslBox_8 * cos(gslBox_9) / cos(moduleVal / gslBox_8) + crownToBack + max(standoffHeight, 0.1);
+  let gslBox_11 = max(gslBox_8 * sin(gslBox_9) / cos(moduleVal / gslBox_8), 1.9);
+  let gslBox_15 = min(sin(shaftAngle) * gslBox_10, sin(shaftAngle) * gslBox_12) - abs(cos(shaftAngle)) * gslBox_11;
+  let gslBox_13 = max(sin(shaftAngle) * gslBox_10, sin(shaftAngle) * gslBox_12) + abs(cos(shaftAngle)) * gslBox_11;
+  let gslBox_16 = min(cos(shaftAngle) * gslBox_10, cos(shaftAngle) * gslBox_12) - abs(sin(shaftAngle)) * gslBox_11;
+  let gslBox_14 = max(cos(shaftAngle) * gslBox_10, cos(shaftAngle) * gslBox_12) + abs(sin(shaftAngle)) * gslBox_11;
+  let gsl_partLo_2 = vec3<f32>(min(gslBox_15, gslBox_13) - 0.01, min(-gslBox_11, gslBox_11) - 0.01, min(gslBox_16, gslBox_14) - 0.01);
+  let gsl_partHi_2 = vec3<f32>(max(gslBox_15, gslBox_13) + 0.01, max(-gslBox_11, gslBox_11) + 0.01, max(gslBox_16, gslBox_14) + 0.01);
   let gsl_partBox_2 = gsl_boxDistance(p, gsl_partLo_2, gsl_partHi_2);
   var gsl_part_2 = gsl_partBox_2;
   let gsl_part_g2 = gsl_result.v_2;

@@ -9,17 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `map.bendXZ(v, curvature)` bends space in the XZ plane for `remap`: the plane x = 0 becomes an arc of the
+  given curvature, 1 / radius, with lengths along it kept, for a bow, a camber or a warp, as in
+  `remap(plate, map.bendXZ(p - origin, 1 / 400) + origin)`. A curvature of 0 is no bend.
 - `gsl export part.gsl [more.gsl ...] -o dir` writes the WebGPU viewer and each file's compiled field as a folder
   of static web pages, which any web server can host: the page draws what `gsl viewer` draws, with its sliders,
   gizmos, time, sections and render settings, and compiles nothing, so the source is shown read-only and Save As,
   Imports, Export, Materials and Help are not offered. Several files share the one page and are picked from its
   menu. The folder is about 12 MB, without the material catalog's previews.
 - `intersectChamferNormalized`, `unionChamferNormalized` and `differenceChamferNormalized` in builtin:
-  `intersectChamfer`'s surface with a bevel whose field has unit gradient at an edge of any angle. The
-  bevel is divided by the length of the sum of the two faces' normals rather than by sqrt2, which is right
-  only at a square edge; at a 120-degree edge `intersectChamfer`'s field changes 1.22 times as fast as
-  distance and at 150 degrees 1.37. Pass the normals, or omit them to take each field's gradient.
-  Existing callers are unchanged.
+  chamfers by depth, the bevel the plane `depth` in from the edge, square to the bisector of the angle
+  between the faces, with a field of unit gradient at an edge of any angle: the sum of the two fields
+  divided by the length of the sum of their normals, offset by the depth. `intersectChamfer`'s bevel is the
+  same plane, but its field is divided by sqrt2, which is right only at a square edge (at a 120-degree
+  edge it changes 1.22 times as fast as distance and at 150 degrees 1.37), and its parameter is added
+  before dividing, so it is a setback along each face only at a square edge. Pass the normals, or omit
+  them to take each field's gradient. `intersectChamfer` and its callers are unchanged.
+- `chamferDepthFromSetback(setback, normal1, normal2)` and `chamferDepthFromWidth(width, normal1, normal2)`
+  in builtin: the depth of a chamfer set back `setback` along each face, s·cos(φ/2), or `width` across,
+  (w/2)·cot(φ/2), with φ the angle between the faces through the material, taken from the faces' normals.
+- `intersectChamferSetbacks(d1, d2, setback1, setback2, normal1, normal2)` in builtin, with
+  `unionChamferSetbacks` and `differenceChamferSetbacks`: a bevel that meets the first face `setback1` from
+  the edge and the second `setback2` from it, with a field of unit gradient. Equal setbacks give the
+  Normalized chamfer at `chamferDepthFromSetback`'s depth.
 - The viewer's Export panel has a `Web page (.zip)` format: it downloads the same folder for the open document,
   as the editor shows it, zipped (`POST /api/export`).
 - `mechanical/shaft`: generalized shafts as a stack of segments along +Z, each placed by its two planes:
@@ -55,14 +67,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   stand-in, as a fastener's finish does.
 - A `reduce` over a list of functions can take the element before this one as a fourth callback parameter,
   `reduce((acc, f, i, prev) { ... }, fs, seed)`; the first element is handed itself.
+  along the cutter's arc, and `shaft.chamferEnd(size)` chamfers the tips.
+- `@caption("text", startTime, endTime [, fade])` is a top-level directive that shows a line of text centred at
+  the bottom of the viewer while the animation clock is between the two times, in seconds. It fades in after
+  `startTime` and out before `endTime` over `fade` seconds (0.5 by default, at most half the interval; `0` cuts).
+  Captions whose times overlap stack. They reach the compile response as `captions`, so a page `gsl export`
+  writes shows them too. Only the primary package's captions show.
+- `@duration(seconds)` is a top-level directive, written with `@scene` at the top of the first file, that
+  gives the length of the document's animation. It is to time what `@scene` is to space: the viewer's Time
+  slider and end time span it, and the animation clock starts over on passing it, so an animation and its
+  captions loop. It reaches the compile response as `duration`, so a page `gsl export` writes loops too.
+- `gsl serve` answers `POST /api/render-lit` with the lit renderer's frame of a document from the viewer's camera:
+  the request names the source, the frame's size (at most 4096 x 4096 pixels), the camera, the world extent, the
+  colours, the tier (standard, color or Schematic) and the back-face brightness; the reply is the frame as raw
+  bytes, five little-endian float32s a pixel (the colour, the return hit, 0 for none, and the depth), its size in
+  `X-Frame-Width` and `X-Frame-Height`. While it draws, the share done goes to the asking client on
+  `/api/progress` as stage `render`, in thousandths.
+- The viewer can draw the frame at rest on the server's CPU: Render > Advanced > Draw on > CPU asks `gsl serve` for the
+  lit renderer's frame of the document from the viewer's camera (`POST /api/render-lit`) and shows it in the GPU
+  frame's place once it arrives, in the tier chosen at rest (Schematic, Color or Standard). The note beside the
+  buttons counts the seconds and the percent done; the GPU button is outlined while the GPU's frame is the one on
+  screen and the CPU's is still to come, and a change of view takes the screen back to the GPU and asks again. A
+  view over 2 megapixels is not drawn, and the note says to lower Resolution. The page `gsl export` writes has no
+  server to ask, and does not offer the device. The CPU frame has no axis lines, which the GPU draws in its shape
+  pass.
+- The viewer can draw the frame at rest with fidget's own GPU pipeline, run in the page: Render > Advanced > Draw on >
+  Fidget, or Fidget only, which draws no shapes on the GPU and shows only fidget's frame (the last one stays up until
+  the next lands, and hover, outlines and picking, which read the GPU frame, do not see shapes). The page asks
+  `gsl serve` for the document's tape, with each return's colour and material fields (`POST /api/tape`), and
+  fidget-wgpu, compiled to WebAssembly, finds each pixel's hit, its return, and its colour and material there; the
+  standard frame's own shading lights it, with fidget's ambient occlusion and glass drawn opaque. A document that
+  reads an imported mesh or noise has no such tape and is refused with a message. The buttons appear only where the
+  bundle is built: `tool/build-fidget.sh --wasm-out examples/viewer/vendor` puts it in `examples/viewer/vendor/fidget-wgpu`
+  (ignored by git).
+- The viewer draws its moving frames smaller when it cannot keep 5 frames a second. While the view moves, four frames
+  in a row slower than that halve the size the moving frames are drawn at (Draft draws them at half the still frame's,
+  so this takes them to a quarter, and at the least an eighth); it steps back up when the frame time at the larger size,
+  predicted from the pixel count, would clear 7.5 frames a second, and waits longer after a step up that turned out
+  wrong. The still frame is always the size chosen. The Resolution buttons show it: the one chosen stays filled, the
+  size being drawn is outlined, and a note beside them says "moving at 1/4: under 5 fps". The wait that takes the view
+  for still, 150 ms without input, now follows the frame time when frames are slower than that (one and a half times the
+  slowest of the last four, at most 1.5 s): input reaches the page once a frame, so with half-second frames the wait ran
+  out between every two and a standard frame, as slow as the rest, was drawn in each gap.
 
 ### Changed
 
 - The box analysis folds `&&`, `||` and `!` of constants, so a select on them takes one branch: a shaft
   segment whose field branch has no guard of its own no longer leaves the shaft's box unbounded.
-- A part's box is written with its shared pieces named once: a part turned twice by sliders or time had
-  its box arithmetic multiplied about sixteenfold, and now grows with each turn. The old Bevel Gears
-  document's WGSL is 56% smaller.
 - `shaft.body` and `shaft.envelope` no longer bridge their first segment to nothing, which evaluated it
   twice for no effect: every shaft's WGSL is 1 to 22% smaller, its field unchanged.
 - A colour or material built in a local with a stand-in or fine detail of its own (`t.simple`, `t.detail`)
@@ -70,8 +121,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   function always did; before, the part's colour lost its stand-in and stayed textured with textures off.
 - PNG renders frame a part too thin to be sampled inside beside a thick one (a threaded shaft's thread
   went missing without `--extent`).
+- The fast chamfers' parameter is named `offset`, not `setback`, in builtin's `intersectChamfer`,
+  `unionChamfer`, `differenceChamfer`, `intersectChamferEdges`, `intersectChamferVertices`, their union
+  counterparts, and the `ChamferRound` and `ChamferBlend` families (`[edgeOffset, vertexOffset]` for the
+  list forms). It is added to the two fields before dividing by sqrt2, so it is a setback along each face
+  only at a square edge; `intersectChamferSetbacks` and `chamferDepthFromSetback` take true setbacks.
+  Arguments are positional, so callers are unchanged.
 - The viewer reaches its server through one module, `examples/viewer/host.js`; `host-static.js` answers the same
   calls from files beside the page, and takes its place in a page `gsl export` writes.
+- A part's box declares what its corners repeat once, as a value before the part, instead of writing every copy
+  out in the WGSL, where the viewer evaluates it per point to cull. The box is unchanged; parts whose boxes read
+  profile bounds shrink most: `examples/profile_cylinder.gsl` from 190 KB of WGSL to 83 KB, about half its time
+  per point on the GPU.
+- The viewer's Render panel is regrouped. Resolution comes first, then At rest, Field of view, Depth of field,
+  Render image and Frame rate, with two folded sections: Detail (the detail ladder, Pixel filter, and the Relief and
+  Fine relief switches) and Advanced (Moving, Environment, Light rotation, and the Shadows, Occlusion and Back faces
+  switches). A switch is a chip that wears the label of its state ("Shadows on", "Shadows off"). Occlusion, the loop
+  Standard draws that marches the field out along each normal, has a chip of its own and no longer goes off with
+  Shadows. The labels of the Render, Scene, Section and Export panels are as light as the Parameters panel's.
 
 ### Removed
 
@@ -79,6 +146,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `bezierTubeDir` from builtin. They lofted two sections along a 3D quadratic Bezier, but mixed the sections'
   distances by the curve's parameter and scaled by it, so the field was not a distance bound, and they carried no
   frame, box or material. A document that needs them can keep a copy in its own library.
+
+### Fixed
+
+- `gears.gearProfile` chamfers its tooth tips with `intersectChamferNormalized`, given the flank's and the
+  tip circle's normals at the edge, in place of `intersectChamfer`. The flank meets the tip circle at an
+  obtuse edge, where `intersectChamfer`'s bevel, scaled for a right angle, has a gradient above 1; the
+  normalized bevel has unit gradient there. The tip chamfer is now `kSmall` deep, measured from the edge to
+  the bevel, about 1.7 to 1.8 times as deep as before at these edges (116 to 129 degrees through the
+  material); the body, standoff and bore chamfers are unchanged. Gear and bevel-gear WGSL grows by
+  582 bytes.
+- A box declared in a function from a `reduce` whose step indexes a list by its `index`, such as
+  `points[mod(index + 1, count)]`, now holds: read with `.box` it failed to link ("undefined identifier: index"),
+  and in builtin the part it bounds lost its box without a word.
+- A one-element list indexed at run time, such as `curvatures[0]` of `[0.1]` read in a reduce, failed on the CPU
+  paths (`gsl eval`, tape and meshing) with "target must be a collection, got num": the fidget backend builds the
+  list as one value. Index 0 now reads it there as WGSL already did; past 0 is an error.
+- A declared `.box` that reduces over a list a function call returned failed to assemble ("vector subtraction
+  dimension mismatch", "collection elements must be all scalars or all vectors"): the box pass handed the
+  reduce the whole list as one element. `profileXY(points, curvatures)` with its curvatures made by a function
+  (a `map` in a helper) failed this way once the profile was named.
+- A declared `.box` that reads names assigned after its shape (`form = ...; low, high = ...; form.box = ...`)
+  failed with "undefined identifier" wherever the function's body was inlined into its caller: any document
+  function called with constants, or a library function handed a blend made from a slider. The shape's
+  assignment now moves after the names its box reads; a shape read in between is refused with a message.
+- A function that passes its function parameter on to another only inside a fold's callback
+  (`f(blend) { return reduce(..., (best, q) { ... inner(q, blend) ... }) }`) failed to assemble with
+  "undefined identifier" once called with a closure: the closure transform pruned the template it called but
+  kept it, not seeing that its callback made it a template too.
+- A three-way select on a constant vector condition folded to its positive branch whatever the condition's signs:
+  `[-1, -2] ? a : b : c` compiled as `a`, where the shader picks `c`. It now folds per component, as the shader
+  selects, and is pruned to one branch only when every component picks it.
+- A `reduce` whose function takes the index, `(accumulator, element, index)`, now folds to a constant; it was
+  left to run per point, so a box written with one did not fold to numbers.
+- A constant that folds to infinity or NaN, a division or a mod by zero, is a compile error naming it, instead of
+  `+Inf.0` or `NaN.0` in a WGSL shader the browser refuses.
 
 ## [0.1.3] - 2026-11-17
 

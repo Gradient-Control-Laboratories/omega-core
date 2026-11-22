@@ -1,6 +1,7 @@
 // The inside of #stl-bounds-panel: the "Export" side panel. export-panel.js
 // injects this at init when the host's #stl-bounds-panel is empty, and drops
-// the meshers and the Omega Tape format the host passes no handler for (or
+// the meshers and the Omega Tape, Web page and Audio formats the host passes
+// no handler for (or
 // disables Server DC when `serverExportUnavailable` is set). 3MF is the default
 // format: it is a fifth to a sixth the size of the same triangles as binary STL.
 // GLB is the server's to write, so it is dropped without `serverFormats` and
@@ -16,7 +17,12 @@ export const EXPORT_PANEL_MARKUP = `
             <option value="stl">STL</option>
             <option value="tape" title="The program's implicit field as an omega tape, for fidget; not meshed">Omega Tape</option>
             <option value="page" title="This viewer and the document as a folder of static web pages, zipped, for any web server; not meshed">Web page (.zip)</option>
+            <option value="wav" title="The program's audio from time 0, rendered in this browser as it plays; not meshed">Audio (.wav)</option>
         </select>
+    </div>
+    <div class="field-panel-row export-choice export-seconds" hidden>
+        <label for="export-seconds">Seconds</label>
+        <input type="number" id="export-seconds" min="1" max="600" step="1" value="16">
     </div>
     <div class="field-panel-row export-detail">
         <label>Detail</label>

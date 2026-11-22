@@ -15,6 +15,10 @@ use fidget_core::{
     vm::VmShape,
 };
 use fidget_raster::voxel::{Image as VoxelImage, RenderConfig};
+use fidget_wgpu::{
+    Context as _,
+    voxel::{merge, render, shade, ssao},
+};
 use nalgebra::{Matrix4, Rotation3, Vector3};
 use prost::Message;
 use zerocopy::IntoBytes;
@@ -142,40 +146,45 @@ fn run() -> Result<(), String> {
 
     // GPU: fidget-wgpu's voxel pipeline and its effects.
     let gpu = pollster::block_on(fidget_wgpu::Gpu::init()).map_err(|e| format!("gpu init: {e}"))?;
-    let rshape = fidget_wgpu::RenderShape::new(shape).map_err(|e| format!("render shape: {e}"))?;
-    let ctx = fidget_wgpu::voxel::Context::new(&gpu);
+    let rshape = gpu.build_render_shape(shape).map_err(|e| format!("render shape: {e}"))?;
+    let ctx = render::Context::new(&gpu);
     let mut ws = ctx.workspace();
-    let mut out = gpu.read_buffer_for(ws.output());
+    let mut geom = ctx.buffers(cfg.image_size).map_err(|e| format!("gpu buffers: {e}"))?;
+    let settings = render::Settings { vars, world_to_model: cfg.world_to_model };
+    let mut out = gpu.read_buffer_for(geom.output());
     // The first frame includes pipeline construction; time a second one too.
     let t = Instant::now();
-    let gpu_img = ctx
-        .run_with_vars(&rshape, vars, &mut ws, &mut out, cfg)
-        .map_err(|e| format!("gpu render: {e}"))?;
+    ctx.submit(&rshape, settings, &mut ws, &mut geom).map_err(|e| format!("gpu render: {e}"))?;
+    gpu.copy(geom.output(), &mut out).map_err(|e| format!("gpu copy: {e}"))?;
+    let gpu_img: VoxelImage = gpu.map_image(&mut out).image();
     let gpu_first = t.elapsed();
     let t = Instant::now();
-    let gpu_img2 = ctx
-        .run_with_vars(&rshape, vars, &mut ws, &mut out, cfg)
-        .map_err(|e| format!("gpu render: {e}"))?;
+    ctx.submit(&rshape, settings, &mut ws, &mut geom).map_err(|e| format!("gpu render: {e}"))?;
+    gpu.copy(geom.output(), &mut out).map_err(|e| format!("gpu copy: {e}"))?;
+    let gpu_img2: VoxelImage = gpu.map_image(&mut out).image();
     let gpu_geom = t.elapsed();
     let _ = gpu_img2;
 
-    let fx = fidget_wgpu::voxel::effects::Context::new(&gpu);
-    let mut merge = fx.merge_workspace();
-    let mut ssao = fx.ssao_workspace();
-    let mut shade = fx.shade_workspace();
+    let merge_ctx = merge::Context::new(&gpu);
+    let ssao_ctx = ssao::Context::new(&gpu);
+    let shade_ctx = shade::Context::new(&gpu);
+    let mut merge_ws = merge_ctx.workspace();
+    let mut ssao_ws = ssao_ctx.workspace();
+    let mut shade_ws = shade_ctx.workspace();
+    let mut merged = merge_ctx.buffers(cfg.image_size).map_err(|e| format!("merge buffers: {e}"))?;
+    let mut occlusion = ssao_ctx.buffers(cfg.image_size.into()).map_err(|e| format!("ssao buffers: {e}"))?;
+    let mut shaded = shade_ctx.buffers(cfg.image_size).map_err(|e| format!("shade buffers: {e}"))?;
     let t = Instant::now();
-    fx.submit_merge(
-        ws.output(),
-        fidget_wgpu::voxel::effects::MergeSettings { denoise: true, z_scale: 1.0 },
-        &mut merge,
-    )
-    .map_err(|e| format!("merge: {e}"))?;
+    merge_ctx
+        .submit(&geom, merge::Settings { denoise: true, z_scale: 1.0 }, &mut merge_ws, &mut merged)
+        .map_err(|e| format!("merge: {e}"))?;
     if args.ssao {
-        fx.submit_ssao(&merge, &mut ssao).map_err(|e| format!("ssao: {e}"))?;
+        ssao_ctx.submit(&merged, (), &mut ssao_ws, &mut occlusion).map_err(|e| format!("ssao: {e}"))?;
     }
-    fx.submit_shade(&merge, if args.ssao { Some(&ssao) } else { None }, &mut shade)
+    shade_ctx
+        .submit(&merged, if args.ssao { Some(&occlusion) } else { None }, &mut shade_ws, &mut shaded)
         .map_err(|e| format!("shade: {e}"))?;
-    let gpu_rgba: Vec<u8> = gpu.read_vec(shade.output()).as_bytes().to_vec();
+    let gpu_rgba: Vec<u8> = gpu.read_vec(shaded.output()).as_bytes().to_vec();
     let gpu_fx = t.elapsed();
     write_png(&format!("{}/gpu.png", args.out), n, &gpu_rgba)?;
     println!(
@@ -264,9 +273,9 @@ fn gbuf(decoded: tape_core::Decoded, bbox: [f32; 6], args: &Args) -> Result<(), 
         world_to_model: world_to_model(bbox, args.yaw, args.pitch),
     };
     let palette = [[0.9, 0.3, 0.3], [0.3, 0.8, 0.4], [0.3, 0.5, 0.9], [0.9, 0.8, 0.3], [0.7, 0.4, 0.9]];
-    let scene = wgpu_gbuf::Scene::new(decoded, &palette)?;
-    println!("returns {}, colour from the tape {:?}, material from the tape {:?}", scene.returns(), scene.has_color, scene.has_material);
     let gpu = pollster::block_on(fidget_wgpu::Gpu::init()).map_err(|e| format!("gpu init: {e}"))?;
+    let scene = wgpu_gbuf::Scene::new(&gpu, decoded, &palette)?;
+    println!("returns {}, colour from the tape {:?}, material from the tape {:?}", scene.returns(), scene.has_color, scene.has_material);
     let mut r = wgpu_gbuf::Renderer::new(&gpu);
     let t = Instant::now();
     let _ = pollster::block_on(r.render(&scene, cfg))?;
@@ -284,7 +293,7 @@ fn gbuf(decoded: tape_core::Decoded, bbox: [f32; 6], args: &Args) -> Result<(), 
     let mut occl = vec![0u8; 4 * px];
     let hues: [[u8; 3]; 6] = [[230, 80, 80], [80, 200, 100], [80, 120, 230], [230, 200, 80], [180, 100, 230], [80, 210, 210]];
     let grey = |v: f32| -> [u8; 4] { let b = (v.clamp(0.0, 1.0) * 255.0) as u8; [b, b, b, 255] };
-    let mut per_return = vec![(0usize, [0f64; 12]); scene.returns()];
+    let mut per_return = vec![(0usize, [0f64; wgpu_gbuf::MATERIAL_FLOATS]); scene.returns()];
     // Per return: normals that are not finite, and ones that are zero.
     let mut bad_normals = vec![(0usize, 0usize); scene.returns()];
     for i in 0..px {
@@ -301,12 +310,12 @@ fn gbuf(decoded: tape_core::Decoded, bbox: [f32; 6], args: &Args) -> Result<(), 
         colour[4 * i..4 * i + 4].copy_from_slice(&[g.color[4 * i], g.color[4 * i + 1], g.color[4 * i + 2], 255]);
         let h = hues[k % hues.len()];
         index[4 * i..4 * i + 4].copy_from_slice(&[h[0], h[1], h[2], 255]);
-        let m = &g.material[12 * i..12 * i + 12];
+        let m = &g.material[wgpu_gbuf::MATERIAL_FLOATS * i..wgpu_gbuf::MATERIAL_FLOATS * (i + 1)];
         rough[4 * i..4 * i + 4].copy_from_slice(&grey(m[0]));
         metal[4 * i..4 * i + 4].copy_from_slice(&grey(m[1]));
         occl[4 * i..4 * i + 4].copy_from_slice(&grey(g.occlusion[i]));
         per_return[k].0 += 1;
-        for c in 0..12 {
+        for c in 0..wgpu_gbuf::MATERIAL_FLOATS {
             per_return[k].1[c] += m[c] as f64;
         }
     }
