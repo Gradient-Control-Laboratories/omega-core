@@ -88,6 +88,27 @@ export function setRestDevice(device) {
   }
 }
 
+// setDrawStatus puts a note beside the Draw on buttons while a CPU frame is
+// being drawn ("CPU frame in progress, 0:42, 31%"), or says why none is
+// coming; "" takes it away.
+export function setDrawStatus(text) {
+  const el = document.getElementById("draw-status");
+  if (el) el.textContent = text || "";
+}
+
+// The device whose frame is on screen: the GPU's unless a CPU frame has
+// replaced it. The viewer reports it (setDrawnBy), and the button of a device
+// that drew the frame but is not the chosen one is outlined (.drew-frame), so a
+// frame that is not from the chosen device can be told from one that is.
+let drawnBy = "gpu";
+let syncDevices = () => {};
+
+export function setDrawnBy(device) {
+  if (device === drawnBy) return;
+  drawnBy = device;
+  syncDevices();
+}
+
 export function getMovingTier() {
   return movingTier;
 }
@@ -209,8 +230,10 @@ export function bindTierButtons(onChange) {
       b.classList.toggle("active", active);
       b.setAttribute("aria-pressed", active);
       b.disabled = b.dataset.restDevice !== "gpu" && restTier === "progressive";
+      b.classList.toggle("drew-frame", b.dataset.restDevice === drawnBy && drawnBy !== restDevice);
     });
   };
+  syncDevices = sync;
   moving.forEach((b) => {
     b.addEventListener("click", () => {
       setMovingTier(b.dataset.movingTier);

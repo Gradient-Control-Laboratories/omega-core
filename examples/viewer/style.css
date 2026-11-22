@@ -615,6 +615,30 @@ body.resizing #stl-canvas-container {
     cursor: default;
 }
 
+/* The device that drew the frame on screen when it is not the chosen one (the
+   GPU, while the CPU frame is still to come). */
+.resolution-btn.drew-frame {
+    color: #fff;
+    box-shadow: inset 0 0 0 1px #d8d8d8;
+}
+
+/* A CPU frame in progress: what is drawing it, and for how long. It takes the
+   row's second line, which it does not have when it is empty. */
+.draw-on-row {
+    flex-wrap: wrap;
+}
+
+.draw-status {
+    flex: 1 0 100%;
+    color: #9a9a9a;
+    font: 11px 'Public Sans', sans-serif;
+    font-variant-numeric: tabular-nums;
+}
+
+.draw-status:empty {
+    display: none;
+}
+
 /* The Render panel's switches: one chip each, in a row that wraps. A chip
    wears the label of its state ("Shadows on", "Shadows off") and is lit while
    the switch is on. */

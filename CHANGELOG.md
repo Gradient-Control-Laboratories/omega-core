@@ -49,6 +49,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   bytes, five little-endian float32s a pixel (the colour, the return hit, 0 for none, and the depth), its size in
   `X-Frame-Width` and `X-Frame-Height`. While it draws, the share done goes to the asking client on
   `/api/progress` as stage `render`, in thousandths.
+- The viewer can draw the frame at rest on the server's CPU: Render > Advanced > Draw on > CPU asks `gsl serve` for the
+  lit renderer's frame of the document from the viewer's camera (`POST /api/render-lit`) and shows it in the GPU
+  frame's place once it arrives, in the tier chosen at rest (Schematic, Color or Standard). The note beside the
+  buttons counts the seconds and the percent done; the GPU button is outlined while the GPU's frame is the one on
+  screen and the CPU's is still to come, and a change of view takes the screen back to the GPU and asks again. A
+  view over 2 megapixels is not drawn, and the note says to lower Resolution. The page `gsl export` writes has no
+  server to ask, and does not offer the device. The CPU frame has no axis lines, which the GPU draws in its shape
+  pass.
 
 ### Changed
 
