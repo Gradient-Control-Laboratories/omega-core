@@ -143,6 +143,43 @@ faces: the cut's end cap where nothing stands beyond it (contours stepping at a 
 them returns the fold to the finished prisms. It was also slower: on the CPU, 94 against 90 ns a point
 for the pinion and 37 against 27 for a hobbed runout, with the larger shader (105,041 against 102,557 B).
 
+**Threads (Phase 5, approved 2026-11-20).** `shaft.thread(major, pitch, from, to)` is `thread.male`, the
+exact ISO 68-1 field, as a prism segment; it engages `drill.tap` of the same size flank to flank. Its
+ends take the same values, and one more: `shaft.threadRunout(length)`, the runout a lathe tool or a die
+leaves as it retracts, the groove's floor rising in a straight line from the root to the major diameter
+over `length` (ISO 4755 gives about 2.5 pitches). It is cut after the fold as a cutter's runout is, a
+line in the half-section in place of the cutter's disc. A thread-milled thread can use
+`shaft.runout(cutterDia)`.
+
+As built: the runout's cut is the groove (outside `thread.male`) within the triangle the line closes in
+the half-section, past the end plane and inside the major diameter; unbounded, it would cut the groove
+back through the whole shaft. A neighbour wider than the major within the runout's length is not
+grooved above the major, where a real tool would crash. In `shaft.gsl` the thread package is imported
+as `isoThread`, since `thread` names the segment there.
+
+**Joint blends (Phase 6, approved 2026-11-20).** A joint names its blend by an entry in the segment
+list, between the two segments it blends: `[shaft.diameter(20, 0, 20), shaft.fillet(1.0),
+shaft.diameter(30, 20, 40)]`, and `shaft.chamfer(c)` the same way. The blend is the union blend of the two capped
+segments, `unionRound(A, B, r)` or `unionChamfer(A, B, c)`, min'd into the fold, so the bridges still
+close every joint. At a square shoulder between round segments the two fields are exact and orthogonal,
+so the circular blend is the torus fillet's arc exactly. A union blend fills concave corners only; a
+convex edge (a shoulder's rim, a diameter stepping into a narrowing taper) stays an end treatment. Limits:
+the size is at most the step's height and either segment's length. Inside, near the blend, the field reads
+deeper than the distance: an edge treatment's exception to the unit gradient. The fold carries the
+previous capped segment and the pending blend, so its accumulator grows; that cost is measured.
+
+As built: GSL could not carry the pending blend. A number in the accumulator compiles to a runtime
+select, an accumulator cannot mix numbers with a closure, and the fold body can neither make a closure
+nor see its list. So the closure pass was extended (the owner's call): a reduce over functions passes
+the element before this one as an optional fourth callback argument, the first being handed itself. At
+each segment the fold asks `prev(0, 0, 6)` for a fillet's radius and `prev(0, 0, 7)` for a chamfer's
+size; constant arguments inline, and the constant fold prunes the select. The blend stands in for the
+segment's own term, `unionRound(shaft so far, segment, r)`, which is never above the min of the two, so
+a plain joint folds back to exactly the old expression: the shipped shafts' WGSL is unchanged but for
+the numbering of temporaries. Five fillets on a six-segment shaft cost 1,399 B (12,710 to 14,109). The
+accumulator did not grow. Segments with named ends answer nothing past want 3, with the constant test
+outermost so it folds even when the ends come from sliders.
+
 ### 3.5 What falls out of the construction
 
 - A retaining-ring groove or a shoulder undercut is a short, smaller segment.

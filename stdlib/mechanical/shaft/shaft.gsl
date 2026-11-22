@@ -71,6 +71,9 @@
 //
 // Doc convention follows builtin/base.gsl: `///` lines are public docs.
 
+// The thread package under another name: in this file `thread` is the segment.
+import isoThread "mechanical/thread";
+
 // =========================================================
 // Entry Points
 // =========================================================
@@ -93,9 +96,22 @@ body(segments) {
   // run takes it as a member between (unbounded both ways) and a new run opens
   // at it (unbounded above). The seed's second component keeps the first
   // segment from bridging with anything.
-  shaftSoFar = reduce((acc, seg) {
+  //
+  // A joint's blend, shaft.fillet or shaft.chamfer, is an entry between two
+  // segments. Passing it, the fold changes nothing: it answers nothing capped
+  // or extended one way and everything extended both ways, so the shaft and
+  // the open runs carry straight through. At the segment after it, the fold
+  // asks the entry before, `prev`, for a fillet's radius and a chamfer's size,
+  // with constant arguments, so the question folds to a number; a segment
+  // answers nothing to both. A size it is told blends the shaft so far with
+  // this segment.
+  shaftSoFar = reduce((acc, seg, i, prev) {
     openRuns = acc.y;
-    return [min(acc.x, seg(0.0, 0.0, 0.0), max(openRuns, seg(100000.0, 0.0, 0.0))),
+    filletR = prev(0.0, 0.0, 6.0);
+    chamferC = prev(0.0, 0.0, 7.0);
+    here = filletR < 50000.0 ? unionRound(acc.x, seg(0.0, 0.0, 0.0), filletR)
+                             : (chamferC < 50000.0 ? unionChamfer(acc.x, seg(0.0, 0.0, 0.0), chamferC) : seg(0.0, 0.0, 0.0));
+    return [min(acc.x, here, max(openRuns, seg(100000.0, 0.0, 0.0))),
             min(max(openRuns, seg(100000.0, 100000.0, 0.0)), seg(0.0, 100000.0, 0.0))];
   }, segments, [100000.0, 100000.0]);
   // The runouts, cut after the fold: where a cutter runs out past a segment's
@@ -115,9 +131,13 @@ body(segments) {
 body(segments, bottomHole, topHole) {
   // Cloned into the caller's file like body(segments), and written out in full
   // for the same reason: it cannot call that one by name.
-  shaftSoFar = reduce((acc, seg) {
+  shaftSoFar = reduce((acc, seg, i, prev) {
     openRuns = acc.y;
-    return [min(acc.x, seg(0.0, 0.0, 0.0), max(openRuns, seg(100000.0, 0.0, 0.0))),
+    filletR = prev(0.0, 0.0, 6.0);
+    chamferC = prev(0.0, 0.0, 7.0);
+    here = filletR < 50000.0 ? unionRound(acc.x, seg(0.0, 0.0, 0.0), filletR)
+                             : (chamferC < 50000.0 ? unionChamfer(acc.x, seg(0.0, 0.0, 0.0), chamferC) : seg(0.0, 0.0, 0.0));
+    return [min(acc.x, here, max(openRuns, seg(100000.0, 0.0, 0.0))),
             min(max(openRuns, seg(100000.0, 100000.0, 0.0)), seg(0.0, 100000.0, 0.0))];
   }, segments, [100000.0, 100000.0]);
   cuts = reduce((c, seg) { return min(c, seg(0.0, 0.0, 3.0)); }, segments, 100000.0);
@@ -213,8 +233,8 @@ spline(count, minor, major, width, from, to) {
 /// shaft.chamferEnd(size).
 spline(count, minor, major, width, from, to, bottomEnd, topEnd) {
   seg(eDown, eUp, want) {
-    return want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(topEnd.x > 0.5 && topEnd.x < 1.5) ? nothing : machinedSegment(splineSection(count, minor, major, width), major / 2.0, minor / 2.0,
-                           from, to, eDown, eUp, want, bottomEnd, topEnd);
+    return want > 3.5 ? nothing : (want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(topEnd.x > 0.5 && topEnd.x < 1.5) ? nothing : machinedSegment(splineSection(count, minor, major, width), major / 2.0, minor / 2.0,
+                           from, to, eDown, eUp, want, bottomEnd, topEnd));
   }
   return seg;
 }
@@ -241,11 +261,70 @@ gear(numTeeth, moduleVal, pressureAngle, helixAngle, from, to) {
 ///   shaft.gear(20.0, 2.0, radians(20.0), 0.0, 20.0, 50.0, shaft.planeEnd(), shaft.runout(80.0))
 gear(numTeeth, moduleVal, pressureAngle, helixAngle, from, to, bottomEnd, topEnd) {
   seg(eDown, eUp, want) {
-    return want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(topEnd.x > 0.5 && topEnd.x < 1.5) ? nothing : machinedSegment(gearSection(numTeeth, moduleVal, pressureAngle, helixAngle, from),
+    return want > 3.5 ? nothing : (want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(topEnd.x > 0.5 && topEnd.x < 1.5) ? nothing : machinedSegment(gearSection(numTeeth, moduleVal, pressureAngle, helixAngle, from),
                            numTeeth * moduleVal / 2.0 + moduleVal, numTeeth * moduleVal / 2.0 - 1.25 * moduleVal,
-                           from, to, eDown, eUp, want, bottomEnd, topEnd);
+                           from, to, eDown, eUp, want, bottomEnd, topEnd));
   }
   return seg;
+}
+
+/// An external ISO 68-1 thread of `major` diameter and pitch `pitchVal`, cut
+/// from z = `from` to z = `to`: thread.male, the exact basic profile, as a
+/// prism segment. Its helix is phased from z = 0, as drill.tap's is, so a stud
+/// and a hole tapped to the same size at the same height mesh flank to flank.
+///
+///   shaft.thread(6.0, 1.0, 0.0, 20.0)
+thread(major, pitchVal, from, to) {
+  seg(eDown, eUp, want) {
+    return want > 2.5 ? nothing : prismSegment(isoThread.male(major, pitchVal), from, to, eDown, eUp, want);
+  }
+  return seg;
+}
+
+/// The same thread with its two ends named, `bottomEnd` at `from` and
+/// `topEnd` at `to`, each shaft.planeEnd(), shaft.chamferEnd(size),
+/// shaft.threadRunout(length) or, for a thread-milled thread,
+/// shaft.runout(cutterDia).
+///
+///   shaft.thread(6.0, 1.0, 0.0, 20.0, shaft.chamferEnd(0.6), shaft.threadRunout(2.5))
+thread(major, pitchVal, from, to, bottomEnd, topEnd) {
+  seg(eDown, eUp, want) {
+    return want > 3.5 ? nothing : (want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(bottomEnd.x > 2.5)
+                                     && !(topEnd.x > 0.5 && topEnd.x < 1.5) && !(topEnd.x > 2.5)
+           ? nothing : threadedSegment(major, pitchVal, from, to, eDown, eUp, want, bottomEnd, topEnd));
+  }
+  return seg;
+}
+
+// =========================================================
+// Joints
+// =========================================================
+
+/// A fillet of radius `radius` where the segments either side of it meet:
+/// list it between them.
+///
+///   shaft.body([shaft.diameter(20.0, 0.0, 20.0), shaft.fillet(1.0), shaft.diameter(30.0, 20.0, 40.0)])
+///
+/// It rounds the concave corners of the joint, where the smaller segment meets
+/// the face of the larger; a convex edge stays sharp. At a square shoulder
+/// between round segments it is the exact arc. No larger than the step, nor
+/// than either segment is long.
+fillet(radius) {
+  joint(eDown, eUp, want) {
+    return want > 6.5 ? nothing : (want > 5.5 ? radius : jointAnswer(eDown, eUp, want));
+  }
+  return joint;
+}
+
+/// A 45-degree chamfer of `size` along each face where the segments either
+/// side of it meet: list it between them, as shaft.fillet. It fills the
+/// concave corners of the joint; at a square shoulder between round segments
+/// it is the exact line.
+chamfer(size) {
+  joint(eDown, eUp, want) {
+    return want > 6.5 ? size : (want > 5.5 ? nothing : jointAnswer(eDown, eUp, want));
+  }
+  return joint;
 }
 
 // =========================================================
@@ -269,6 +348,13 @@ runout(cutterDia) {
 /// before the teeth are cut: the tips fall away toward the end plane.
 chamferEnd(size) {
   return [2.0, size];
+}
+
+/// A thread's end where a lathe tool or a die retracts as it runs out: past
+/// the plane the groove's floor rises in a straight line from the root to the
+/// major diameter over `length` (ISO 4755 gives about 2.5 pitches).
+threadRunout(length) {
+  return [3.0, length];
 }
 
 // =========================================================
@@ -365,6 +451,45 @@ machinedSegment(sectionField, blankR, rootR, from, to, eDown, eUp, want, bottomE
   reachTop = max(length([r - (rootR + topEnd.y), p.z - to]) - topEnd.y, runoutTop ? neg(nothing) : nothing);
   cut = max(neg(sectionField), min(reachBottom, reachTop));
   return want > 2.5 ? (runoutBottom || runoutTop ? cut : nothing) : segmentAnswer(want, ownField, from, to);
+}
+
+// A thread whose ends are named: machinedSegment of thread.male between the
+// major diameter and the basic minor, with a threadRunout handed to it as a
+// plane end, and its own cut for each threadRunout. That cut is the groove,
+// the space outside thread.male, within the triangle the floor's line closes
+// in the half-section: past the end plane, outside the line from (root, the
+// plane) to (major, the plane + length), and inside the major diameter. An
+// end is [kind, size], kind 3 a thread runout; the ternaries choose only
+// between constants.
+threadedSegment(major, pitchVal, from, to, eDown, eUp, want, bottomEnd, topEnd) {
+  section = isoThread.male(major, pitchVal);
+  majorR = major / 2.0;
+  rootR = isoThread.minorDia(major, pitchVal) / 2.0;
+  machined = machinedSegment(section, majorR, rootR, from, to, eDown, eUp, want,
+                             [bottomEnd.x > 2.5 ? 0.0 : bottomEnd.x, bottomEnd.y],
+                             [topEnd.x > 2.5 ? 0.0 : topEnd.x, topEnd.y]);
+  r = length(p.xy);
+  depth = majorR - rootR;
+  bottomLine = (depth * (from - p.z) - (r - rootR) * bottomEnd.y) / length([depth, bottomEnd.y]);
+  topLine = (depth * (p.z - to) - (r - rootR) * topEnd.y) / length([depth, topEnd.y]);
+  reachBottom = max(bottomLine, p.z - from, r - majorR, bottomEnd.x > 2.5 ? neg(nothing) : nothing);
+  reachTop = max(topLine, to - p.z, r - majorR, topEnd.x > 2.5 ? neg(nothing) : nothing);
+  runoutCut = max(neg(section), min(reachBottom, reachTop));
+  return want > 2.5 ? min(machined, runoutCut) : machined;
+}
+
+// What a joint answers, other than its blend: nothing as a field, capped or
+// extended one way, but everything extended both ways, so the fold's shaft
+// and open runs pass it unchanged; nothing as a starting plane or a cut, and
+// as an ending plane the lowest there is, so body's end faces pass it too.
+// Asked with want 6 a fillet answers its radius, and with want 7 a chamfer its
+// size; everything else answers nothing to both, and body blends with what it
+// is told.
+jointAnswer(eDown, eUp, want) {
+  return want > 2.5 ? nothing
+                    : (want > 1.5 ? neg(nothing)
+                                  : (want > 0.5 ? nothing
+                                                : (eDown > 1.0 && eUp > 1.0 ? neg(nothing) : nothing)));
 }
 
 // What a segment answers: its field when `want` is 0, the plane it starts on
