@@ -179,6 +179,14 @@
                                             <button class="resolution-btn" type="button" data-moving-tier="standard" aria-pressed="false" title="While the view moves: full quality">Full</button>
                                         </div>
                                     </div>
+                                    <div class="field-panel-row draw-on-row" id="draw-on-row">
+                                        <label>Draw on</label>
+                                        <div class="resolution-controls" role="group" aria-label="What draws the frame at rest">
+                                            <button class="resolution-btn active" type="button" data-rest-device="gpu" aria-pressed="true" title="At rest: the chosen mode drawn on this machine&#39;s GPU">GPU</button>
+                                            <button class="resolution-btn" type="button" data-rest-device="cpu" aria-pressed="false" title="At rest: the chosen mode redrawn on the server&#39;s CPU by the lit renderer, from the same camera, to compare with the GPU (sliders at their defaults, hidden shapes shown); not for Progressive">CPU</button>
+                                        </div>
+                                        <span id="draw-status" class="draw-status" role="status" aria-live="polite"></span>
+                                    </div>
                                     <div class="field-panel-row">
                                         <label>Environment</label>
                                         <div class="resolution-controls" role="group" aria-label="Environment light">

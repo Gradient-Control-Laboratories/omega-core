@@ -67,6 +67,10 @@ export function exportPage() {
     return unavailable("Exporting a web page");
 }
 
+export function renderLit() {
+    return unavailable("Drawing on the CPU");
+}
+
 export function uploadAsset() {
     return unavailable("Importing a mesh");
 }

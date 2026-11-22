@@ -46,6 +46,9 @@ import {
     setUiControlValues,
     syncUiControls,
     defaultWGSL,
+    setCpuFrameSource,
+    setCpuProgress,
+    setCompileFailed,
 } from "./render/viewer.js";
 import {
     initEditor,
@@ -623,6 +626,11 @@ async function exportPage() {
 
 function handleProgressEvent(ev) {
     if (!ev) return;
+    // How far a CPU frame has got goes to the Draw on note, not the progress bar.
+    if (ev.stage === "render") {
+        if (ev.total) setCpuProgress(ev.completed / ev.total);
+        return;
+    }
     resetErrorTimer();
     const stage = ev.stage || "compile";
     if (ev.done) {
@@ -634,6 +642,30 @@ function handleProgressEvent(ev) {
 }
 
 host.connectProgress(clientId, handleProgressEvent);
+
+// ── The CPU Draw on device ──
+
+// The viewer asks for the lit renderer's frame of the document it shows (see setCpuFrameSource). A
+// page `gsl export` wrote has no server to draw it, so it does not offer the device.
+let litCount = 0;
+if (host.editable) {
+    setCpuFrameSource((request) => {
+        const source = getGslSourceForServer();
+        if (!source || source.trim() === "") return Promise.reject(new Error("no code to draw"));
+        return host.renderLit({ ...request, id: `lit-${++litCount}`, clientId, source });
+    });
+} else {
+    document.getElementById("draw-on-row")?.remove();
+}
+
+// Whether the source compiles, for the CPU device, which says nothing of a compile error the editor
+// already shows.
+eventManager.addListener("canvas/errors", (_payload) => {
+    setCompileFailed(true);
+});
+eventManager.addListener("canvas/update-shader", (_event) => {
+    setCompileFailed(false);
+});
 
 // ── Surface Point & Point+Normal Picking Tools ──
 
