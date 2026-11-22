@@ -429,3 +429,33 @@ Phase 0 has no start commit; Phase 7 was skipped.
       22 mm shoulder through a DIN 76 undercut, g2 6.1): WGSL 13,319 B; the CPU render shows the groove and
       the flank-cut last teeth; the owner's viewer check
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+
+## Phase 16: Cross Holes and Set Screws [checkpoint: 61e4b57]
+
+- [x] Task: Proposal (approved 2026-11-21): `shaft.crossHole(features, dia, z, angle)`, a list entry the fold
+      passes, its drill stack's void cut after the fold (want 3), the mouth the plane tangent to the cylinder
+      `dia` across at height z, `angle` from +x, so depths are from the surface; `shaft.crossPlace(part, dia,
+      z, angle)` puts a +Z-datum part on the same axis with transform; `fastener.setScrew(nominalDia, length,
+      point)`, hex socket set screws to ISO 4026 (flat), 4027 (cone), 4028 (dog), 4029 (cup), M3-M12, from a
+      sourced table and the existing set screw blocks
+- [x] Task: Write failing tests (Red Phase): `eval/shaft_crosshole_test.go` (blind, through and tapped holes
+      where their placement puts them; the shaft unchanged elsewhere, its box too; a fillet before the entry
+      still blends; a placed pin on the axis, its box kept) and `eval/fastener_setscrew_test.go` (the table row
+      by row: socket width, depth either side of each standard's threshold, point diameters, dog lengths;
+      each point's end and the socket on an M6 x 10; the box). Sources for the table (2003 editions): ISO
+      4029:2003 and ISO 4026/4027/4028:1993 (iTeh samples), Westfield Fasteners, fasten.it, amesweb.info;
+      the 2003 thresholds of 4026 and 4027 rest on amesweb alone; the 2026 editions not consulted
+- [x] Task: Implement (Green & Refactor Phase): the approved entry form failed in the fold (an entry cannot
+      capture its own drill feature list: "a list of functions has to be visible where it is folded"); the
+      owner chose `shaft.crossHole(void)` with `shaft.crossVoid(features, dia, z, angle)` placing the stack,
+      and the tests' calls followed. `shaft.crossPlace` with transform. `fastener.setScrew` (plain and finished),
+      its table, `setScrewSocket`, `setScrewSocketDepth`, `setScrewPointDia`, `setScrewDogLength` and the point
+      constants, built from the existing blocks on a smooth shank. Three test defects corrected with the
+      owner's approval: the blind hole's deep point was nearest the drill point, not the wall; the "away"
+      point lay on the hole's axis; two "solid" points sat within the threshold's 0.2 of a surface
+- [x] Task: An example (`shaft_set_screw.gsl`: a collar on a D-flat held by an M6 x 8 cup point set screw in
+      a tapped cross hole, finished in steel with its thread as relief, and a 4 mm through hole for a pin):
+      WGSL 65,805 B; the owner's viewer check found the shaft's ends cut like a huge centre drill (the
+      example had passed drill.chamfer as end holes, a cone void 17.6 across); its ends are now 0.8 mm
+      tapers
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
