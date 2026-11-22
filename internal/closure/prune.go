@@ -287,6 +287,21 @@ func (t *transformer) paramIsFunction(file *program.PackageFile, fn *program.Fun
 	}
 
 	// Check if paramName is passed to an argument position of another function that treats it as a function
+	if t.bodyPassesParamToFunction(file, fn, paramName, visited) {
+		return true
+	}
+	// A nested function (a fold's callback) reads the parameter too, unless it
+	// binds the name itself: passing it on to a function that calls it there
+	// makes fn a template as surely as passing it in fn's own body. Missing this
+	// left f(blend) { return reduce(..., (best, q) { ... inner(q, blend) ... }) }
+	// unpruned after its call was specialized, still calling the template
+	// inner that was pruned, so the re-link failed: undefined identifier.
+	return t.nestedPassesParamToFunction(file, fn, paramName, visited)
+}
+
+// bodyPassesParamToFunction reports whether fn's own assignments or returns
+// pass paramName to a function that treats it as a function.
+func (t *transformer) bodyPassesParamToFunction(file *program.PackageFile, fn *program.Function, paramName string, visited map[*program.Function]bool) bool {
 	for _, assign := range fn.Assignments {
 		if t.operandPassesParamToFunction(file, assign.Expression, paramName, visited) {
 			return true
@@ -294,6 +309,36 @@ func (t *transformer) paramIsFunction(file *program.PackageFile, fn *program.Fun
 	}
 	for _, ret := range fn.Returns {
 		if t.operandPassesParamToFunction(file, ret, paramName, visited) {
+			return true
+		}
+	}
+	return false
+}
+
+// nestedPassesParamToFunction is bodyPassesParamToFunction for the functions
+// nested in fn, at any depth, skipping any that bind paramName as a
+// parameter of their own.
+func (t *transformer) nestedPassesParamToFunction(file *program.PackageFile, fn *program.Function, paramName string, visited map[*program.Function]bool) bool {
+	for _, nft := range fn.FnTypes {
+		for _, nfg := range nft.Groups {
+			for _, nfn := range nfg.Functions {
+				if nfn == nil || bindsParam(nfn, paramName) {
+					continue
+				}
+				if t.bodyPassesParamToFunction(file, nfn, paramName, visited) ||
+					t.nestedPassesParamToFunction(file, nfn, paramName, visited) {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+// bindsParam reports whether fn has a parameter named name.
+func bindsParam(fn *program.Function, name string) bool {
+	for _, p := range fn.Parameters {
+		if p.Name == name {
 			return true
 		}
 	}

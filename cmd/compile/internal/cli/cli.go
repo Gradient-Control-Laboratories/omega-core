@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"gradientcontrol.com/omega/core/assembler"
+	"gradientcontrol.com/omega/core/assembler/variation"
 	"gradientcontrol.com/omega/core/backend/audio"
 	"gradientcontrol.com/omega/core/backend/mesh"
 	"gradientcontrol.com/omega/core/backend/tape"
@@ -307,7 +308,18 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		outBytes = tapeBytes
 
 	case config.TargetAudio:
-		jsCode, _, audioErr := audio.AudioToJs(res.Program)
+		// Compile the audio returns alone, as the viewer's compile does
+		// (internal/compile): the whole program also holds the geometry
+		// and library packages the audio backend does not translate.
+		audioProg := res.Program
+		if len(res.AudioReturns) > 0 {
+			audioOps := make([]*program.Operand, len(res.AudioReturns))
+			for i, ar := range res.AudioReturns {
+				audioOps[i] = ar.Return
+			}
+			audioProg = variation.Program(res.Program, audioOps...)
+		}
+		jsCode, _, audioErr := audio.AudioToJs(audioProg)
 		if audioErr != nil {
 			return fmt.Errorf("compiling Web Audio JavaScript: %w", audioErr)
 		}
@@ -408,8 +420,10 @@ func runField(cfg *config.Config, sourceTexts []string, sourceName, source strin
 			fmt.Fprintf(stderr, "[%s] %s (%d/%d)\n", stage, label, completed, total)
 		}
 	}
+	// The bundle's id is the document's file name, never its path: a host serves the bundle to a page, which is
+	// told no more of the file system than the name it shows.
 	bundle := compile.Process(compile.Request{
-		ID:     sourceName,
+		ID:     filepath.Base(sourceName),
 		Source: source,
 		Meshes: meshimport.Dirs(meshDirsFor(docDir, srcPaths)...),
 	}, srcPaths, progress)

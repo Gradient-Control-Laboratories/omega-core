@@ -307,8 +307,9 @@ The numbering is the order.
     Backlash on it and on `shaft.gear`; the gear and bevel gear examples rewritten as shafts. An audit
     of the bevel against independent references comes first.
 13. **Fixes** (added 2026-11-21, the owner: "yes to working on all of those problems"). The box analysis
-    folds and/or/not of literals; a part's box corners share their subexpressions; the fold stops bridging
-    the first segment to its seed; PNG framing keeps a part too thin to be sampled inside.
+    folds and/or/not of literals; a part's box corners share their subexpressions (#88's `shareBoxRepeats`);
+    the fold stops bridging the first segment to its seed; PNG framing keeps a part too thin to be sampled
+    inside.
 14. **Knurls.** `shaft.knurl`, ISO 13444: straight, 30-degree diamond, one-way diagonal and annular. The
     geometry is the blank at its maximum material condition; the teeth are a displacement, backed by a
     colour texture where the displacement is not drawn, backed by the plain blank as the stand-in (the

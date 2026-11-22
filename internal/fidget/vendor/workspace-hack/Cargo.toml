@@ -1,0 +1,12 @@
+[package]
+name = "workspace-hack"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+description = "Empty stand-in for the workspace-hack crate of upstream Fidget"
+build = false
+publish = false
+
+[lib]
+name = "workspace_hack"
+path = "src/lib.rs"

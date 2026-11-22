@@ -60,9 +60,9 @@ fn gsl_remap_8(p: vec3<f32>, vector_dirX: vec3<f32>, vector_dirZ: vec3<f32>) -> 
   return builtin_intersectLp(vec3<f32>(gsl_tmp_37, -gsl_tmp_38, -gsl_tmp_39), 0.25, 3.0);
 }
 
-fn builtin_intersectChamferEdges(fields: vec3<f32>, setback: f32) -> f32 {
+fn builtin_intersectChamferEdges(fields: vec3<f32>, offset: f32) -> f32 {
   let face = builtin_intersectSharp(fields);
-  return builtin_intersectSharp(vec3<f32>(builtin_intersectSharp(vec3<f32>(select(face, (fields.x + fields.x + setback) / 1.4142135, 0.0 > 0.0), select(face, (fields.x + fields.y + setback) / 1.4142135, 1.0 > 0.0), select(face, (fields.x + fields.z + setback) / 1.4142135, 1.0 > 0.0))), builtin_intersectSharp(vec3<f32>(select(face, (fields.y + fields.x + setback) / 1.4142135, 0.0 > 0.0), select(face, (fields.y + fields.y + setback) / 1.4142135, 0.0 > 0.0), select(face, (fields.y + fields.z + setback) / 1.4142135, 1.0 > 0.0))), builtin_intersectSharp(vec3<f32>(select(face, (fields.z + fields.x + setback) / 1.4142135, 0.0 > 0.0), select(face, (fields.z + fields.y + setback) / 1.4142135, 0.0 > 0.0), select(face, (fields.z + fields.z + setback) / 1.4142135, 0.0 > 0.0)))));
+  return builtin_intersectSharp(vec3<f32>(builtin_intersectSharp(vec3<f32>(select(face, (fields.x + fields.x + offset) / 1.4142135, 0.0 > 0.0), select(face, (fields.x + fields.y + offset) / 1.4142135, 1.0 > 0.0), select(face, (fields.x + fields.z + offset) / 1.4142135, 1.0 > 0.0))), builtin_intersectSharp(vec3<f32>(select(face, (fields.y + fields.x + offset) / 1.4142135, 0.0 > 0.0), select(face, (fields.y + fields.y + offset) / 1.4142135, 0.0 > 0.0), select(face, (fields.y + fields.z + offset) / 1.4142135, 1.0 > 0.0))), builtin_intersectSharp(vec3<f32>(select(face, (fields.z + fields.x + offset) / 1.4142135, 0.0 > 0.0), select(face, (fields.z + fields.y + offset) / 1.4142135, 0.0 > 0.0), select(face, (fields.z + fields.z + offset) / 1.4142135, 0.0 > 0.0)))));
 }
 
 fn gsl_remap_9(p: vec3<f32>, vector_dirX: vec3<f32>, vector_dirZ: vec3<f32>) -> f32 {
@@ -76,9 +76,9 @@ fn gsl_remap_10(p: vec3<f32>, vector_dirX: vec3<f32>, vector_dirZ: vec3<f32>) ->
   return builtin_intersectChamferEdges(vec3<f32>(gsl_tmp_40, -gsl_tmp_41, -gsl_tmp_42), 0.25);
 }
 
-fn builtin_intersectChamferVertices(fields: vec3<f32>, setback: f32) -> f32 {
+fn builtin_intersectChamferVertices(fields: vec3<f32>, offset: f32) -> f32 {
   let face = builtin_intersectSharp(fields);
-  return builtin_intersectSharp(vec3<f32>(builtin_intersectSharp(vec3<f32>(builtin_intersectSharp(vec3<f32>(select(face, (fields.x + fields.x + fields.x + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.x + fields.x + fields.y + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.x + fields.x + fields.z + setback) / 1.7320508, 0.0 > 0.0))), builtin_intersectSharp(vec3<f32>(select(face, (fields.x + fields.y + fields.x + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.x + fields.y + fields.y + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.x + fields.y + fields.z + setback) / 1.7320508, 1.0 > 0.0))), builtin_intersectSharp(vec3<f32>(select(face, (fields.x + fields.z + fields.x + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.x + fields.z + fields.y + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.x + fields.z + fields.z + setback) / 1.7320508, 0.0 > 0.0))))), builtin_intersectSharp(vec3<f32>(builtin_intersectSharp(vec3<f32>(select(face, (fields.y + fields.x + fields.x + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.y + fields.x + fields.y + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.y + fields.x + fields.z + setback) / 1.7320508, 0.0 > 0.0))), builtin_intersectSharp(vec3<f32>(select(face, (fields.y + fields.y + fields.x + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.y + fields.y + fields.y + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.y + fields.y + fields.z + setback) / 1.7320508, 0.0 > 0.0))), builtin_intersectSharp(vec3<f32>(select(face, (fields.y + fields.z + fields.x + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.y + fields.z + fields.y + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.y + fields.z + fields.z + setback) / 1.7320508, 0.0 > 0.0))))), builtin_intersectSharp(vec3<f32>(builtin_intersectSharp(vec3<f32>(select(face, (fields.z + fields.x + fields.x + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.z + fields.x + fields.y + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.z + fields.x + fields.z + setback) / 1.7320508, 0.0 > 0.0))), builtin_intersectSharp(vec3<f32>(select(face, (fields.z + fields.y + fields.x + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.z + fields.y + fields.y + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.z + fields.y + fields.z + setback) / 1.7320508, 0.0 > 0.0))), builtin_intersectSharp(vec3<f32>(select(face, (fields.z + fields.z + fields.x + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.z + fields.z + fields.y + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.z + fields.z + fields.z + setback) / 1.7320508, 0.0 > 0.0)))))));
+  return builtin_intersectSharp(vec3<f32>(builtin_intersectSharp(vec3<f32>(builtin_intersectSharp(vec3<f32>(select(face, (fields.x + fields.x + fields.x + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.x + fields.x + fields.y + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.x + fields.x + fields.z + offset) / 1.7320508, 0.0 > 0.0))), builtin_intersectSharp(vec3<f32>(select(face, (fields.x + fields.y + fields.x + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.x + fields.y + fields.y + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.x + fields.y + fields.z + offset) / 1.7320508, 1.0 > 0.0))), builtin_intersectSharp(vec3<f32>(select(face, (fields.x + fields.z + fields.x + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.x + fields.z + fields.y + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.x + fields.z + fields.z + offset) / 1.7320508, 0.0 > 0.0))))), builtin_intersectSharp(vec3<f32>(builtin_intersectSharp(vec3<f32>(select(face, (fields.y + fields.x + fields.x + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.y + fields.x + fields.y + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.y + fields.x + fields.z + offset) / 1.7320508, 0.0 > 0.0))), builtin_intersectSharp(vec3<f32>(select(face, (fields.y + fields.y + fields.x + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.y + fields.y + fields.y + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.y + fields.y + fields.z + offset) / 1.7320508, 0.0 > 0.0))), builtin_intersectSharp(vec3<f32>(select(face, (fields.y + fields.z + fields.x + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.y + fields.z + fields.y + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.y + fields.z + fields.z + offset) / 1.7320508, 0.0 > 0.0))))), builtin_intersectSharp(vec3<f32>(builtin_intersectSharp(vec3<f32>(select(face, (fields.z + fields.x + fields.x + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.z + fields.x + fields.y + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.z + fields.x + fields.z + offset) / 1.7320508, 0.0 > 0.0))), builtin_intersectSharp(vec3<f32>(select(face, (fields.z + fields.y + fields.x + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.z + fields.y + fields.y + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.z + fields.y + fields.z + offset) / 1.7320508, 0.0 > 0.0))), builtin_intersectSharp(vec3<f32>(select(face, (fields.z + fields.z + fields.x + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.z + fields.z + fields.y + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.z + fields.z + fields.z + offset) / 1.7320508, 0.0 > 0.0)))))));
 }
 
 fn gsl_remap_11(p: vec3<f32>, vector_dirX: vec3<f32>, vector_dirZ: vec3<f32>) -> f32 {
@@ -100,8 +100,8 @@ fn builtin_lastOf(list: vec2<f32>) -> f32 {
   return list.y;
 }
 
-fn builtin_intersectChamfer(fields: vec3<f32>, setback: vec2<f32>) -> f32 {
-  return max(max(builtin_intersectSharp(fields), builtin_intersectChamferEdges(fields, builtin_firstOf(setback))), builtin_intersectChamferVertices(fields, builtin_lastOf(setback)));
+fn builtin_intersectChamfer(fields: vec3<f32>, offset: vec2<f32>) -> f32 {
+  return max(max(builtin_intersectSharp(fields), builtin_intersectChamferEdges(fields, builtin_firstOf(offset))), builtin_intersectChamferVertices(fields, builtin_lastOf(offset)));
 }
 
 fn gsl_remap_13(p: vec3<f32>, vector_dirX: vec3<f32>, vector_dirZ: vec3<f32>) -> f32 {
@@ -119,12 +119,12 @@ fn builtin_gcl_closure_intersectRound(radius: f32, fields: vec3<f32>) -> f32 {
   return builtin_intersectRound(fields, radius);
 }
 
-fn builtin_gcl_closure_intersectChamferBlend(radius: f32, fields: vec3<f32>, setback: vec2<f32>) -> f32 {
-  return builtin_gcl_closure_intersectRound(radius, vec3<f32>(builtin_intersectSharp(fields), builtin_intersectChamferEdges(fields, builtin_firstOf(setback)), builtin_intersectChamferVertices(fields, builtin_lastOf(setback))));
+fn builtin_gcl_closure_intersectChamferBlend(radius: f32, fields: vec3<f32>, offset: vec2<f32>) -> f32 {
+  return builtin_gcl_closure_intersectRound(radius, vec3<f32>(builtin_intersectSharp(fields), builtin_intersectChamferEdges(fields, builtin_firstOf(offset)), builtin_intersectChamferVertices(fields, builtin_lastOf(offset))));
 }
 
-fn builtin_intersectChamferRound(fields: vec3<f32>, setback: vec2<f32>, radius: f32) -> f32 {
-  return builtin_gcl_closure_intersectChamferBlend(radius, fields, setback);
+fn builtin_intersectChamferRound(fields: vec3<f32>, offset: vec2<f32>, radius: f32) -> f32 {
+  return builtin_gcl_closure_intersectChamferBlend(radius, fields, offset);
 }
 
 fn gsl_remap_15(p: vec3<f32>, vector_dirX: vec3<f32>, vector_dirZ: vec3<f32>) -> f32 {
