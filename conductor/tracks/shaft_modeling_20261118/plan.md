@@ -461,7 +461,7 @@ Phase 0 has no start commit; Phase 7 was skipped.
       tapers
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
-## Phase 17: Stand-ins and Fits
+## Phase 17: Stand-ins and Fits [checkpoint: 21e521a]
 
 - [x] Task: Proposal (approved 2026-11-21): (a) shaft.body gives a shaft with detail its envelope as its
       stand-in: a new question, want 12 "has detail" (gear, spline, thread, knurl, bevel), folded to a
@@ -485,4 +485,4 @@ Phase 0 has no start commit; Phase 7 was skipped.
       holeDia; bearing.seatDia and housingDia. Every shipped shaft example's WGSL unchanged; no golden moved
 - [x] Task: The bearing example's two seats as k5 journals at maximum material (25.011, an interference fit
       with the 25 mm bore as designed): WGSL 36,801 -> 37,134 B; the owner's viewer check
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
