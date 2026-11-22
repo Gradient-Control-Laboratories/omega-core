@@ -175,6 +175,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fixtures, whose WGSL goldens move only in their `gsl_param_<line>_<col>` names (every golden is identical with those
   names normalized), and the tests that used the properties only to declare a slider. Tests about the properties
   themselves keep them.
+- The viewer's Materials panel writes `@range(min, max) <body><Param> = value;` for a preset's scalar parameters in place of
+  the `.min`/`.max` lines, reads a variable's limits from its `@range` (or from `.min`/`.max` in an older document),
+  and prunes either shape. A document already on `@range` used to have its limits read as the catalog's defaults the
+  next time the panel adjusted it.
 
 ### Deprecated
 
