@@ -1615,6 +1615,12 @@ func foldOperation(operation program.Operation, vs []boxVal) (float64, bool) {
 		return two(func(a, b float64) float64 { return b2i(a == b) })
 	case program.Operation_NE:
 		return two(func(a, b float64) float64 { return b2i(a != b) })
+	case program.Operation_AND:
+		return two(func(a, b float64) float64 { return b2i(a > 0 && b > 0) })
+	case program.Operation_OR:
+		return two(func(a, b float64) float64 { return b2i(a > 0 || b > 0) })
+	case program.Operation_NOT:
+		return one(func(a float64) float64 { return b2i(!(a > 0)) })
 	}
 	return 0, false
 }
@@ -1799,4 +1805,15 @@ func absOp(a *program.Operand) *program.Operand {
 		return num(math.Abs(v))
 	}
 	return un(program.Operation_ABS, a)
+}
+
+// Primal is a p-independent value's operand, for an index the Engine evaluates
+// (see frame.indexOperand): a reduce step's index, or a local of an inlined
+// body, folds to the constant it is rather than reaching the output by name.
+func (dd *boxDomain) Primal(v Value) (*program.Operand, bool) {
+	b, ok := v.(boxVal)
+	if !ok || b.op == nil {
+		return nil, false
+	}
+	return b.op, true
 }

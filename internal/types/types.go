@@ -233,6 +233,12 @@ func analyzePackage(pkg *program.Package, path string, prog *program.Program, pk
 				return nil, err
 			}
 		}
+		for _, ret := range file.GradientReturns {
+			_, err := inferOperandType(ret, pa.env, file, pa)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	return pa.env, nil
