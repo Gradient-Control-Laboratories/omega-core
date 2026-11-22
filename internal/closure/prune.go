@@ -185,6 +185,9 @@ func (t *transformer) paramIsFunctionList(file *program.PackageFile, fn *program
 	if cached, ok := t.listParamCache[key]; ok {
 		return cached
 	}
+	// Provisionally not, so a chain of calls that comes back round to this
+	// parameter ends rather than recursing.
+	t.listParamCache[key] = false
 	found := false
 	var walk func(op *program.Operand)
 	walk = func(op *program.Operand) {
@@ -209,7 +212,18 @@ func (t *transformer) paramIsFunctionList(file *program.PackageFile, fn *program
 			if v.FnCall == nil {
 				return
 			}
-			for _, arg := range v.FnCall.Arguments {
+			for i, arg := range v.FnCall.Arguments {
+				// Handed on whole to a parameter that is itself a function
+				// list, it is one here too: the list is still only visible at
+				// the outermost call, so this function has to be specialized
+				// against it as a folding one is.
+				if ref, ok := arg.T.(*program.Operand_Reference); ok && ref.Reference != nil &&
+					ref.Reference.Prefix == "" && ref.Reference.Name == paramName {
+					if pf, pfn, pname := t.calleeParamAt(file, v.FnCall, i); pfn != nil && t.paramIsFunctionList(pf, pfn, pname) {
+						found = true
+						return
+					}
+				}
 				walk(arg)
 			}
 		}

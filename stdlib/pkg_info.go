@@ -48,6 +48,7 @@ var curatedImportPaths = []string{
 	"mechanical/drill",
 	"mechanical/driver",
 	"mechanical/joint",
+	"mechanical/shaft",
 	"text",
 	"ease",
 	"noise",

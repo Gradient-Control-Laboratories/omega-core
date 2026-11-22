@@ -1,0 +1,43 @@
+@scene(120)
+
+// A turned shaft built as one stack of coaxial segments along +Z, each placed
+// by the two planes it runs between, measured from the left end the way a
+// baseline-dimensioned drawing gives them: a chamfer, a journal, a groove for a
+// retaining ring, the journal again, a cone shoulder up to the body, the body,
+// a step down to a second journal and a chamfer to finish.
+//
+// Where one segment meets the next, a plain min of the two would leave a sheet
+// of zero inside the solid on the joint plane, invisible from outside and open
+// under any inset or shell. shaft.body bridges every joint instead, whichever
+// side is larger, so drag the diameters past one another freely: the body
+// stays solid across every joint, exact outside and a bound inside.
+// Lengths are in mm.
+
+@range(8, 20) journalDia = 12.0;
+@range(16, 36) bodyDia = 24.0;
+// The ring groove's diameter, and where along the journal it sits.
+@range(6, 18) grooveDia = 10.6;
+@range(6, 20) grooveAt = 12.0;
+@range(0.3, 2) chamferLeg = 1.0;
+// How far the cone shoulder runs: 0.1 is nearly a step.
+@range(0.1, 12) shoulderRun = 6.0;
+
+grooveWidth = 1.1;
+bodyFrom = 30.0;
+bodyTo = 80.0;
+endAt = 100.0;
+
+turned = shaft.body([
+  shaft.taper(journalDia - 2.0 * chamferLeg, journalDia, 0.0, chamferLeg),
+  shaft.diameter(journalDia, chamferLeg, grooveAt),
+  shaft.diameter(grooveDia, grooveAt, grooveAt + grooveWidth),
+  shaft.diameter(journalDia, grooveAt + grooveWidth, bodyFrom - shoulderRun),
+  shaft.taper(journalDia, bodyDia, bodyFrom - shoulderRun, bodyFrom),
+  shaft.diameter(bodyDia, bodyFrom, bodyTo),
+  shaft.diameter(journalDia, bodyTo, endAt - chamferLeg),
+  shaft.taper(journalDia, journalDia - 2.0 * chamferLeg, endAt - chamferLeg, endAt)
+]);
+turned.color = [0.62, 0.64, 0.68];
+
+// Laid along X and centred, so the viewer frames the whole shaft.
+return remap(turned, [p.z, p.y, endAt / 2.0 - p.x]);

@@ -34,6 +34,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Normalized chamfer at `chamferDepthFromSetback`'s depth.
 - The viewer's Export panel has a `Web page (.zip)` format: it downloads the same folder for the open document,
   as the editor shows it, zipped (`POST /api/export`).
+- `mechanical/shaft`: generalized shafts as a stack of segments along +Z, each placed by its two planes:
+  `shaft.diameter`, `taper`, `section` (any 2D field), `hex`, `dFlat`, `doubleD`, `spline` and `gear` (spur or
+  helical). `shaft.body(segments)` joins them with no surface inside the solid at any joint, whatever the
+  convexity on either side. `shaft.body(segments, bottomHole, topHole)` cuts a `drill` hole stack into each end
+  face. Gears and splines can name their ends: `shaft.runout(cutterDia)` runs the gaps on into the neighbour
+  along the cutter's arc, and `shaft.chamferEnd(size)` chamfers the tips.
 - `@caption("text", startTime, endTime [, fade])` is a top-level directive that shows a line of text centred at
   the bottom of the viewer while the animation clock is between the two times, in seconds. It fades in after
   `startTime` and out before `endTime` over `fade` seconds (0.5 by default, at most half the interval; `0` cuts).

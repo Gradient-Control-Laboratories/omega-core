@@ -1,0 +1,36 @@
+@scene(120)
+
+// A turned shaft with a hole stack cut into each end face: an ANSI centre at
+// the left end, so it can be turned between centres, and a tapped hole with a
+// countersunk lead-in at the right, for a retaining screw and washer. Each end
+// is a list of drill features, or a lone one, written the way a drawing calls
+// a hole out: every depth measured from that end's own face.
+//
+// shaft.body finds the two end faces itself, from the segments, so moving the
+// first or last segment carries its hole with it. The left stack is turned
+// over by a half turn about the shaft's cross axis, which keeps the hand of a
+// thread, so the same stack reads the same at either end.
+// Lengths are in mm.
+
+@range(10, 20) journalDia = 14.0;
+@range(16, 36) bodyDia = 26.0;
+@range(70, 120) endAt = 96.0;
+// The tapped hole: M5 to M8, and how deep the thread runs.
+@range(5, 8) tapMajor = 6.0;
+@range(6, 20) tapDepth = 12.0;
+
+turned = shaft.body(
+  [shaft.taper(journalDia - 2.0, journalDia, 0.0, 1.0),
+   shaft.diameter(journalDia, 1.0, 24.0),
+   shaft.taper(journalDia, bodyDia, 24.0, 30.0),
+   shaft.diameter(bodyDia, 30.0, endAt - 22.0),
+   shaft.diameter(journalDia, endAt - 22.0, endAt - 1.0),
+   shaft.taper(journalDia, journalDia - 2.0, endAt - 1.0, endAt)],
+  drill.centerHole(3.15, 6.7, 8.0),
+  [drill.countersink(tapMajor + 1.0, radians(90.0)),
+   drill.tap(tapMajor, tapDepth),
+   drill.blind(tapMajor * 0.8, tapDepth + 4.0)]);
+turned.color = [0.62, 0.64, 0.68];
+
+// Laid along X and centred, so the viewer frames the whole shaft.
+return remap(turned, [p.z, p.y, endAt / 2.0 - p.x]);
