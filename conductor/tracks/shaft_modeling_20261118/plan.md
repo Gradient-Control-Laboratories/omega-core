@@ -485,3 +485,62 @@ Phase 0 has no start commit; Phase 7 was skipped.
 - [x] Task: The bearing example's two seats as k5 journals at maximum material (25.011, an interference fit
       with the 25 mm bore as designed): WGSL 36,801 -> 37,134 B; the owner's viewer check
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+
+## Phase 18: Shader CSE [checkpoint: a0c443f]
+
+- [x] Task: Proposal (approved 2026-11-21). Measured: body's fold evaluates every segment four times,
+      capped and extended ((0,0), (E,0), (E,E), (0,E)), the stand-in's envelope fold four more, a runout's
+      cut one more; the section (gear profile, spline pattern, a helix's cos and sin, length(p.xy)) does not
+      depend on the extension and is the same expression in each copy: shaft_pinion's shader calls
+      gears_gearProfile 4 times with identical arguments, shaft_hobbed 5, and length(p.xy) appears 15-35
+      times per shaft (the "about 20 times" of the earlier notes was wrong). Fidget's context deduplicates,
+      so CPU renders, meshing and proofs already evaluate each once; only the WGSL kept them, because the
+      inliner names a value only when one variable is reused within one body. The owner's choices: a
+      compiler pass, not a segment-protocol rewrite; in the WGSL codegen, not the program IR (there the
+      remap's rebound p, fold loops, .simple/carry reference copies, meshplan names and the stand-in's
+      guards would all need barriers). Design: `ir.EliminateCommonSubexpressions` on every structured
+      function before formatting (raw sources and runtime snippets untouched): a parser for the
+      expressions the codegen emits, recording spans so a rewrite only replaces a span with a name; rule 1,
+      a let that repeats an earlier one in scope is dropped and read as it, and a subexpression an in-scope
+      let names is read as that let; rule 2, a subexpression repeated within one block is named
+      `gsl_cse_N` before its first use when that shortens the function, largest first. Never out of a
+      guard or a loop body, never what reads a written name (a var, an assignment's or an opaque
+      statement's target, a guard header's), never from the right of && or ||; opaque statements verbatim.
+      Frame time may not move (the driver may merge these already); WGSL size, naga/Tint and the driver's
+      compile will. Verification: golden diffs before any regeneration (owner's authorization), example
+      sizes, TestGpuFieldParity and TestShaderCompileCost through main's prebuilt gpu-eval symlinked in
+- [x] Task: Write failing tests (Red Phase): `backend/wgsl/internal/ir/cse_test.go` (parse shapes and
+      precedence; broken text rejected; every let, var and return expression of all codegen and example
+      goldens parses; both rules; a short repeat left; name collision; a name below an opaque early return;
+      sibling guards keep their own; a guard reads the let above it; a loop body keeps its own and names
+      its own repeat; var reads, opaque writes and a short circuit's right side not merged) and
+      `eval/shaft_cse_test.go` (shaft_pinion calls gears_gearProfile once; no function of shaft_turned
+      reads length(p.xy) twice). Red: 10 of the unit tests and both integration tests fail (4 calls; 28
+      reads in one function); the barrier tests and the rejection test pass against the no-op stub, as they
+      should
+- [x] Task: Implement (Green & Refactor Phase): `backend/wgsl/internal/ir/cse.go`: the parser; value
+      numbers (a let's name reads its value's, a written name a fresh one at every occurrence, so nothing
+      reading it merges); rule 1 in statement order with a scope per block; rule 2 per block, largest first,
+      a later let of the same value moved up to the first use in place of a new name; the length test
+      counts the new line's indentation and newline and an inline guard's reflow (without them one example
+      grew 6 bytes). `Module.EliminateCommonSubexpressions` counts the module's private globals as written
+      everywhere, and the codegen runs it before the module is written (codegen/build.go). Two tests
+      amended with the owner's authorization: the corpus test skips a line holding two statements (a raw
+      material function's `let gsl_m = ...; return ...;`), and the turned shaft's assertion became "no
+      function holds two lets of one expression" (four length(p.xy) stay: naming them would lengthen
+      gsl_remap), scanning the document's functions, not the host's march. Sizes (CLI): shaft_pinion 87,263
+      -> 35,728 B, shaft_hobbed 50,963 -> 24,439 (one gear profile, was five), shaft_set_screw 66,057 ->
+      41,215, bevel_gears 33,752 -> 24,317, shaft_turned 19,305 -> 14,565; the example corpus 2,912,121 ->
+      2,848,000 (-2.2%), 41 unchanged, none larger; compile time +0.06 s at most
+- [x] Task: Golden diffs and regeneration (owner's authorization: done, 46 example and 32 codegen goldens;
+      TestSliderArithmetic's `sphere(p, radius * 2.0)` became `sphere(p, scale)`, the let in scope holding
+      it); field parity and compile cost; the owner's viewer check. TestGpuFieldParity (main's prebuilt
+      gpu-eval symlinked in): 61 pass, 0 fail, 28 skipped by the harness's own limits (sliders, textures,
+      audio); it checks 26 of the 46 changed example goldens, every one matching fidget; the other 20 (the
+      gear examples, Kepler, CoreXY, the slider-driven materials) and the shaft examples, outside its
+      corpus, rest on the viewer. TestShaderCompileCost, medians of 3 cold runs, before (HEAD from git) and
+      after: the 26 changed examples' naga module 93 -> 94 ms and pipeline 2,830 -> 2,825 ms (-0.2%), the 35
+      unchanged ones 2,115 -> 2,118 ms (+0.2%): no measurable change. The driver's pipeline compile is 97% of
+      the cost and merges pure duplicates itself; the corpus it can time shrank 0-11%, and the shafts (25-58%
+      smaller) are not in it
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
