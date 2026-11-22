@@ -833,14 +833,13 @@ profileBezierSidedXY(start, control, end) {
 }
 
 // The feature of one edge of any kind: the arc's or the line's
-// (profileEdgeSidedXY) or the Bezier's, the other shut by a constant gate.
+// (profileEdgeSidedXY) or the Bezier's. The kind is the descriptor's, the same
+// at every point, so choose computes only that one on the GPU.
 profileAnyEdgeSidedXY(start, end, edge) {
   kind = profileEdgeKindXY(edge);
-  arcGate = kind.x > 0.5 ? 0 : nothing;
-  bezierGate = kind.y > 0.5 ? 0 : nothing;
   arc = profileEdgeSidedXY(start, end, edge.y * kind.x);
   bezier = profileBezierSidedXY(start, profileEdgeControlXY(start, end, edge), end);
-  return min(max(arc, [arcGate, arcGate, arcGate]), max(bezier, [bezierGate, bezierGate, bezierGate]));
+  return choose(kind.y > 0.5, bezier, arc);
 }
 
 // The corner at `start`, between the edge arriving from `previous` and the
@@ -908,11 +907,13 @@ profileBezierEdgeRun(start, control, end) {
   return [sqrt(min(min(min(gapA, gapB), min(gapC, gapD)), gapE)), profileBezierLengthXY(e, f, refined), profileBezierLengthXY(e, f, 1)];
 }
 
-// One edge of any kind's offer to a profile's u.
+// One edge of any kind's offer to a profile's u, chosen by its kind as
+// profileAnyEdgeSidedXY chooses.
 profileAnyEdgeRun(start, end, edge) {
   kind = profileEdgeKindXY(edge);
-  return profileArcEdgeRun(start, end, edge.y * kind.x) * kind.x
-       + profileBezierEdgeRun(start, profileEdgeControlXY(start, end, edge), end) * kind.y;
+  arc = profileArcEdgeRun(start, end, edge.y * kind.x);
+  bezier = profileBezierEdgeRun(start, profileEdgeControlXY(start, end, edge), end);
+  return choose(kind.y > 0.5, bezier, arc);
 }
 
 // A mixed loop's u, as profileArcRunXY.

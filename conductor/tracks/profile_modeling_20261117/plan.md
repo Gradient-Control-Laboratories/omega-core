@@ -170,6 +170,10 @@ Bezier), the phase opens with a proposal for the owner to approve before any cod
       3.2e-4 mm; the sampled points narrow the widest cells (11.2 → 9.18); the triangle bound is what
       certify needs. A select on the constant kind is no faster. The owner kept the step and asked for a
       codegen proposal, uniform branches: backlog M18, prototyped by hand at 14.5 and 17.8 ms
+- [x] Task: The edge dispatch on `choose` (M18, built as an explicit marker by the owner's choice, #92):
+      `profileAnyEdgeSidedXY` and `profileAnyEdgeRun` choose the edge's kind's step, so the GPU computes
+      only that one. The L 45.5 → 12.2 ms, the plate 32 → 16.4 ms (`profileXY` 5.1 ms), checksums identical;
+      the CPU and interval paths, which read the ternary, unchanged in every edge test
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ## Phase 4: Tighter Boxes (C7)
