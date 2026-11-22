@@ -1,0 +1,42 @@
+@scene(160)
+
+// A shaft on two ball bearings. Each 6205 sits on a journal at its bore and
+// against a shoulder at the diameter its maker gives, with the largest fillet
+// that clears the bearing's chamfer; a DIN 471 retaining ring's groove holds
+// the left one from outboard. A flanged ISO 4379 bush rides on the right end.
+// Every size comes from the bearing package's tables; lengths are in mm along
+// the shaft from its left end.
+
+journal = bearing.bore(6205.0);
+groove = bearing.ringGrooveWidth(journal);
+leftFace = 10.0;
+rightFace = 85.0;
+
+bearingShaft = shaft.body(
+  [shaft.diameter(journal, 0.0, leftFace - groove),
+   shaft.diameter(bearing.ringGrooveDia(journal), leftFace - groove, leftFace),
+   shaft.diameter(journal, leftFace, leftFace + bearing.width(6205.0)),
+   shaft.fillet(bearing.filletMax(6205.0)),
+   shaft.diameter(bearing.shoulderDia(6205.0), leftFace + bearing.width(6205.0), 35.0),
+   shaft.fillet(1.0),
+   shaft.diameter(40.0, 35.0, 75.0),
+   shaft.fillet(1.0),
+   shaft.diameter(bearing.shoulderDia(6205.0), 75.0, rightFace),
+   shaft.fillet(bearing.filletMax(6205.0)),
+   shaft.diameter(journal, rightFace, rightFace + bearing.width(6205.0)),
+   shaft.diameter(20.0, rightFace + bearing.width(6205.0), 125.0)],
+  drill.centerHole(3.15, 6.7, 8.0),
+  drill.centerHole(3.15, 6.7, 8.0));
+bearingShaft.color = [0.58, 0.60, 0.64];
+
+bush = bearing.flangedBushing(20.0, 1.0, 20.0, 105.0);
+bush.color = [0.72, 0.52, 0.28];
+
+// Laid along X and centred, so the viewer frames the whole shaft.
+laidShaft = transform.translate(transform.rotateY(bearingShaft, neg(pi) / 2.0), [62.5, 0.0, 0.0]);
+laidLeftBearing = transform.translate(transform.rotateY(bearing.deepGroove(6205.0, leftFace), neg(pi) / 2.0), [62.5, 0.0, 0.0]);
+laidRightBearing = transform.translate(transform.rotateY(bearing.deepGroove(6205.0, rightFace), neg(pi) / 2.0), [62.5, 0.0, 0.0]);
+laidLeftBearing.color = [0.42, 0.50, 0.62];
+laidRightBearing.color = [0.42, 0.50, 0.62];
+laidBush = transform.translate(transform.rotateY(bush, neg(pi) / 2.0), [62.5, 0.0, 0.0]);
+return laidShaft, laidLeftBearing, laidRightBearing, laidBush;

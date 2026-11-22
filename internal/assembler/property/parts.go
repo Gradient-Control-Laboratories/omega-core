@@ -58,6 +58,9 @@ func MarkParts(prog *program.Program) (*program.Program, error) {
 			}
 			if len(a.Variables) == 1 && a.Variables[0] != nil {
 				if part, ok := parts[a.Variables[0].Name]; ok {
+					var shared []*program.Assignment
+					shared, part.box = shareBoxRepeats(part.box, taken)
+					out = append(append(out[:len(out)-1], shared...), a)
 					a.Expression = shrinkToVanish(simplified(a.Expression, a.Variables[0], part), part)
 				} else {
 					dropCarriedSimple(a.Variables[0])
@@ -79,6 +82,9 @@ func MarkParts(prog *program.Program) (*program.Program, error) {
 				}
 				hidden := freshName("gsl_part_"+v.Name, taken)
 				named := &program.Variable{Name: v.Name, Properties: v.Properties}
+				var shared []*program.Assignment
+				shared, part.box = shareBoxRepeats(part.box, taken)
+				out = append(out, shared...)
 				out = append(out, &program.Assignment{
 					Start:      a.Start,
 					End:        a.End,

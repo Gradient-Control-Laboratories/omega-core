@@ -295,6 +295,10 @@ func (d *Delegate) buildFunc(
 	if vanishes(wgslName, len(paramNames)) {
 		return finalGlobalRefs, wgslName, nil
 	}
+	// Nor is choose: every call is its branch (branch.go).
+	if chooses(wgslName, len(paramNames)) {
+		return finalGlobalRefs, wgslName, nil
+	}
 	// Nor are simplified and simpleValue: every call is its switch
 	// (simple.go). Their parameters may include module state after their own.
 	if simplifiedNameRE.MatchString(wgslName) || simpleValueNameRE.MatchString(wgslName) || detailValueNameRE.MatchString(wgslName) {
