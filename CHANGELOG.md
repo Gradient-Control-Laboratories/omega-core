@@ -3,7 +3,10 @@
 All notable changes to `omega-core` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+where `### Breaking` lists changes that require updating existing code to the new version,
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
+(breaking changes increment the minor version while pre-`1.0.0` (`0.y.z`) and the major version
+from `1.0.0` onward).
 
 ## [Unreleased]
 
@@ -13,22 +16,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `sweepLoftScaleSmooth`, `sweepLoftScaleSmoothSeparateCaps` and `bezierTubeDir` were removed from
   `builtin`. They lofted two sections along a 3D quadratic Bezier, but mixed the sections' distances
   by the curve's parameter and scaled by it, so the field was not a distance bound, and they carried
-  no frame, box or material. Existing documents calling them will fail to compile and can keep a
-  copy in their own library.
+  no frame, box or material. Existing documents calling them will fail to compile. For constant-section
+  planar sweeps (including quadratic Bezier paths), migrate to `sweep`, `sweepOpen`, or
+  `sweepOpenEdges` with `edgeBezier`. There is no direct 3D lofting replacement or `gsl fix` migration;
+  documents that need the old 3D lofting behavior can keep a copy in their own library.
 - **Removed `.min`, `.max` and `.period` slider properties (replaced by `@range`)**: A document that
   sets `.min`, `.max` or `.period` no longer compiles: the error is at its first such statement and
   names `@range(min, max[, period])` and `gsl fix -range`, which rewrites the document. The parser
   still reads them so the fixer can. The language description served by `gsl skill` and the viewer's
   Help panel teaches `@range` and notes that the properties were removed.
-- **Non-finite constants are compile errors**: A constant that folds to infinity or NaN (such as
-  division or `mod` by zero) is now a compile error naming it, instead of emitting `+Inf.0` or
-  `NaN.0` into WGSL.
-- **`gears.gearProfile` tip chamfer depth**: `gears.gearProfile` now chamfers its tooth tips with
-  `intersectChamferNormalized` (given the flank's and tip circle's normals at the edge) in place of
-  `intersectChamfer`. The tip chamfer is now `kSmall` deep, measured from the edge to the bevel,
-  about 1.7 to 1.8 times as deep as before at these obtuse edges (116 to 129 degrees through the
-  material); the body, standoff and bore chamfers are unchanged. Gear and bevel-gear WGSL grows by
-  582 bytes.
 
 ### Added
 
@@ -74,6 +70,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `gears.gearProfile` now chamfers its tooth tips with `intersectChamferNormalized` (given the flank's
+  and tip circle's normals at the edge) in place of `intersectChamfer`. The tip chamfer is now `kSmall`
+  deep, measured from the edge to the bevel, about 1.7 to 1.8 times as deep as before at these obtuse
+  edges (116 to 129 degrees through the material); the body, standoff and bore chamfers are unchanged.
+  Callers compile without changes (no `gsl fix` is needed); callers needing the shallower tip chamfer
+  can adjust `kSmall` on `gearProfile`. Gear and bevel-gear WGSL grows by 582 bytes.
 - The box analysis folds `&&`, `||` and `!` of constants, so a select on them takes one branch: a shaft
   segment whose field branch has no guard of its own no longer leaves the shaft's box unbounded.
 - `shaft.body` and `shaft.envelope` no longer bridge their first segment to nothing, which evaluated it
@@ -147,6 +149,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   selects, and is pruned to one branch only when every component picks it.
 - A `reduce` whose function takes the index, `(accumulator, element, index)`, now folds to a constant; it was
   left to run per point, so a box written with one did not fold to numbers.
+- A constant that folds to infinity or NaN (such as division or `mod` by zero) is now a compile error naming
+  it, instead of emitting `+Inf.0` or `NaN.0` into a WGSL shader the browser refuses.
 - A bound of an explicit `@range` that reads another top-level variable works: `@range(abs(a - b) - offset, a + b - offset)`
   lost its slider, and its `.period` animation, whenever `offset` was a plain constant. The assembler's passes (link,
   closure, inline, constspec, types and dead-code removal) walked a variable's `.min`/`.max`/`.period` expressions but
