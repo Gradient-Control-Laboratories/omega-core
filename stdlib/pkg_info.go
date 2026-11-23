@@ -24,7 +24,7 @@ import (
 // material/bulk/metal) while excluding '_'-prefixed helper directories such as
 // text/_tools/ so offline font generation assets do not bloat compiled binaries.
 //
-//go:embed builtin color ease lattice map material matrix mechanical noise synth text texture transform vector
+//go:embed builtin color draft ease lattice map material matrix mechanical noise synth text texture transform vector
 var stdlibFS embed.FS
 
 // curatedImportPaths defines the canonical order in which standard library
@@ -34,6 +34,7 @@ var curatedImportPaths = []string{
 	"builtin",
 	"map",
 	"transform",
+	"draft",
 	"lattice",
 	"lattice/beam",
 	"lattice/honeycomb",

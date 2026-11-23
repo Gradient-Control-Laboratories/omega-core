@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Exact distances to conics and quadrics in builtin: `ellipseXY(center, radii)`, `parabolaXY(vertex, focalLength)`,
+  `hyperbolaXY(center, semiAxes)`, `ellipsoid(center, radii)` and `paraboloid(vertex, focalLength)`, and under them
+  `quadricDistance(q, m, b, c, steps)` for any quadric Σ m_i x_i² + 2 Σ b_i x_i + c = 0 in its own frame. The nearest
+  point is x(t) = (q - t·b) / (1 + t·m) for one Lagrange multiplier t, the single root of a function that decreases
+  strictly over a known interval for every conic and quadric alike; twelve Newton steps from t = 0, each kept within
+  the interval, find it, and on an axis of symmetry, where the nearest points are a ring or a pair and the root is at
+  the interval's end, the closed form there gives the distance. No step branches on the point. Against brute force
+  they are within 2.6e-6 near the surface and 7.5e-6 of the distance far from it, on the axes too.
+- A `draft` package: faces tapered from a hinge curve by an angle to a pull direction.
+  `draft.horizontalCurve(horizontal, vertical, angle)` is the surface through a curve in a plane normal to the
+  pull, `horizontal·cos(angle) + vertical·sin(angle)`, from the signed distance to the curve within planes
+  normal to the pull and the height above the curve's plane; the section at height h is the profile offset
+  inward by h·tan(angle), with unit gradient. `draft.point(center, pull, angle)` is the cone with its apex at a
+  point. A profile with sharp corners is given as the max or min of its sides' half-planes, so that its
+  corners stay sharp as draft keeps them.
 - `nested(fields)` combines exact fields whose surfaces do not cross, each wound with its solid on the negative
   side (counterclockwise outlines and islands, clockwise holes), into one exact distance in any order: an outline
   with holes in a single profile, or a 3D solid with a void.
@@ -36,6 +51,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The box analysis folds `&&`, `||` and `!` of constants, so a select on them takes one branch: a shaft
+  segment whose field branch has no guard of its own no longer leaves the shaft's box unbounded.
+- `shaft.body` and `shaft.envelope` no longer bridge their first segment to nothing, which evaluated it
+  twice for no effect: every shaft's WGSL is 1 to 22% smaller, its field unchanged.
+- A colour or material built in a local with a stand-in or fine detail of its own (`t.simple`, `t.detail`)
+  and set on a part inside a function (`s.color = t`) keeps them out of the function, as one returned from a
+  function always did; before, the part's colour lost its stand-in and stayed textured with textures off.
+- PNG renders frame a part too thin to be sampled inside beside a thick one (a threaded shaft's thread
+  went missing without `--extent`).
+- The fast chamfers' parameter is named `offset`, not `setback`, in builtin's `intersectChamfer`,
+  `unionChamfer`, `differenceChamfer`, `intersectChamferEdges`, `intersectChamferVertices`, their union
+  counterparts, and the `ChamferRound` and `ChamferBlend` families (`[edgeOffset, vertexOffset]` for the
+  list forms). It is added to the two fields before dividing by sqrt2, so it is a setback along each face
+  only at a square edge; `intersectChamferSetbacks` and `chamferDepthFromSetback` take true setbacks.
+  Arguments are positional, so callers are unchanged.
+- The viewer reaches its server through one module, `examples/viewer/host.js`; `host-static.js` answers the same
+  calls from files beside the page, and takes its place in a page `gsl export` writes.
+- A part's box declares what its corners repeat once, as a value before the part, instead of writing every copy
+  out in the WGSL, where the viewer evaluates it per point to cull. The box is unchanged; parts whose boxes read
+  profile bounds shrink most: `examples/profile_cylinder.gsl` from 190 KB of WGSL to 83 KB, about half its time
+  per point on the GPU.
+- The viewer's Render panel is regrouped. Resolution comes first, then At rest, Field of view, Depth of field,
+  Render image and Frame rate, with two folded sections: Detail (the detail ladder, Pixel filter, and the Relief and
+  Fine relief switches) and Advanced (Moving, Environment, Light rotation, and the Shadows, Occlusion and Back faces
+  switches). A switch is a chip that wears the label of its state ("Shadows on", "Shadows off"). Occlusion, the loop
+  Standard draws that marches the field out along each normal, has a chip of its own and no longer goes off with
+  Shadows. The labels of the Render, Scene, Section and Export panels are as light as the Parameters panel's.
+- The six `examples/` models that set slider limits with `.min`, `.max` and `.period` (blend, can, gyroid,
+  hybrid_bracket, kinetic_sculpture, slider_mechanism) use `@range`, as `gsl fix -range` writes it. Their sliders and
+  compiled shaders are unchanged. So are the example documents under `internal/testdata/example` and three codegen
+  fixtures, whose WGSL goldens move only in their `gsl_param_<line>_<col>` names (every golden is identical with those
+  names normalized), and the tests that used the properties only to declare a slider. Tests about the properties
+  themselves keep them.
+- The viewer's Materials panel writes `@range(min, max) <body><Param> = value;` for a preset's scalar parameters in place of
+  the `.min`/`.max` lines, reads a variable's limits from its `@range` (or from `.min`/`.max` in an older document),
+  and prunes either shape. A document already on `@range` used to have its limits read as the catalog's defaults the
+  next time the panel adjusted it.
 - The fast chamfers' parameter is named `offset`, not `setback`, in builtin's `intersectChamfer`,
   `unionChamfer`, `differenceChamfer`, `intersectChamferEdges`, `intersectChamferVertices`, their union
   counterparts, and the `ChamferRound` and `ChamferBlend` families (`[edgeOffset, vertexOffset]` for the
@@ -51,8 +103,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   corners, which holds every fillet) and `profileEdgesXY`; it was the points' box grown by the most an edge can
   bulge, 28 mm loose a side on an L with arcs. `sweepOpen` and `sweepOpenEdges` grow their chain's exact box.
 
+### Deprecated
+
+- The `.min`, `.max` and `.period` slider properties, in favor of `@range(min, max[, period])`. They still compile,
+  and the compiler warns about each variable that sets its slider with them, once, on the first of its property
+  statements, pointing at `@range` and `gsl fix -range`, which rewrites them. The warning is in the compile
+  response's diagnostics, with the `// Scene Size:` one. The language description that `gsl skill` and the viewer's
+  Help panel serve teaches `@range`, and mentions the properties only as deprecated.
+
 ### Removed
 
+- `sweepLoft`, `sweepLoftScale`, `sweepLoftScaleSmooth`, `sweepLoftScaleSmoothSeparateCaps` and
+  `bezierTubeDir` from builtin. They lofted two sections along a 3D quadratic Bezier, but mixed the sections'
+  distances by the curve's parameter and scaled by it, so the field was not a distance bound, and they carried no
+  frame, box or material. A document that needs them can keep a copy in its own library.
 - `sweepLoft`, `sweepLoftScale`, `sweepLoftScaleSmooth`, `sweepLoftScaleSmoothSeparateCaps` and
   `bezierTubeDir` from builtin. They lofted two sections along a 3D quadratic Bezier, but mixed the sections'
   distances by the curve's parameter and scaled by it, so the field was not a distance bound, and they carried no
@@ -60,6 +124,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `gears.gearProfile` chamfers its tooth tips with `intersectChamferNormalized`, given the flank's and the
+  tip circle's normals at the edge, in place of `intersectChamfer`. The flank meets the tip circle at an
+  obtuse edge, where `intersectChamfer`'s bevel, scaled for a right angle, has a gradient above 1; the
+  normalized bevel has unit gradient there. The tip chamfer is now `kSmall` deep, measured from the edge to
+  the bevel, about 1.7 to 1.8 times as deep as before at these edges (116 to 129 degrees through the
+  material); the body, standoff and bore chamfers are unchanged. Gear and bevel-gear WGSL grows by
+  582 bytes.
+- A box declared in a function from a `reduce` whose step indexes a list by its `index`, such as
+  `points[mod(index + 1, count)]`, now holds: read with `.box` it failed to link ("undefined identifier: index"),
+  and in builtin the part it bounds lost its box without a word.
+- A box declared in a function written in the document may read locals assigned after the shape it bounds:
+  the crop that applies it was written on the shape's own line, so such a local was read before its assignment
+  ("undefined identifier"). A cropped body is now put in an order its reads allow; one that compiled before is
+  unchanged, and every reader of the shape still reads it cropped.
+- A one-element list indexed at run time, such as `curvatures[0]` of `[0.1]` read in a reduce, failed on the CPU
+  paths (`gsl eval`, tape and meshing) with "target must be a collection, got num": the fidget backend builds the
+  list as one value. Index 0 now reads it there as WGSL already did; past 0 is an error.
+- A declared `.box` that reduces over a list a function call returned failed to assemble ("vector subtraction
+  dimension mismatch", "collection elements must be all scalars or all vectors"): the box pass handed the
+  reduce the whole list as one element. `profileXY(points, curvatures)` with its curvatures made by a function
+  (a `map` in a helper) failed this way once the profile was named.
+- A declared `.box` that reads names assigned after its shape (`form = ...; low, high = ...; form.box = ...`)
+  failed with "undefined identifier" wherever the function's body was inlined into its caller: any document
+  function called with constants, or a library function handed a blend made from a slider. The shape's
+  assignment now moves after the names its box reads; a shape read in between is refused with a message.
+- A function that passes its function parameter on to another only inside a fold's callback
+  (`f(blend) { return reduce(..., (best, q) { ... inner(q, blend) ... }) }`) failed to assemble with
+  "undefined identifier" once called with a closure: the closure transform pruned the template it called but
+  kept it, not seeing that its callback made it a template too.
+- A three-way select on a constant vector condition folded to its positive branch whatever the condition's signs:
+  `[-1, -2] ? a : b : c` compiled as `a`, where the shader picks `c`. It now folds per component, as the shader
+  selects, and is pruned to one branch only when every component picks it.
+- A `reduce` whose function takes the index, `(accumulator, element, index)`, now folds to a constant; it was
+  left to run per point, so a box written with one did not fold to numbers.
+- A constant that folds to infinity or NaN, a division or a mod by zero, is a compile error naming it, instead of
+  `+Inf.0` or `NaN.0` in a WGSL shader the browser refuses.
+- A bound of an explicit `@range` that reads another top-level variable works: `@range(abs(a - b) - offset, a + b - offset)`
+  lost its slider, and its `.period` animation, whenever `offset` was a plain constant. The assembler's passes (link,
+  closure, inline, constspec, types and dead-code removal) walked a variable's `.min`/`.max`/`.period` expressions but
+  not the bounds written in `@range`, so `offset` was inlined away while the bound still named it and could no longer
+  fold. They walk the bounds now. A range synthesized from `.min`/`.max`/`.period` is unchanged.
+- `.box` treats a variable declared with `@range` as a slider, as it does one declared with `.min`/`.max`. It found
+  sliders by their properties alone, so an `@range` variable read as the constant it starts as: `min(a, r).box` was
+  bounded by `a` for an `@range` `r`, a box that is wrong once `r` moves, and unbounded for a `.min`/`.max` one.
+- A slider set with `.min`/`.max`/`.period` keeps its slider when a bound reads a computed constant: with
+  `hi = 10 + 2;`, `x.max = hi * 2;` lost the slider. The range synthesized from the properties shares their expressions
+  until a pass folds a property's expression to a new one; the range kept the old tree, which read `hi`, and `hi` was
+  removed as dead. Slider extraction now reads such a range's bounds from the properties as the passes left them
+  (`Assignment.LiveRange`).
 - `gears.gearProfile` chamfers its tooth tips with `intersectChamferNormalized`, given the flank's and the
   tip circle's normals at the edge, in place of `intersectChamfer`. The flank meets the tip circle at an
   obtuse edge, where `intersectChamfer`'s bevel, scaled for a right angle, has a gradient above 1; the
@@ -215,6 +328,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   example documents (30 files), every slider (name, bounds, period, initial value) and every compiled shader is
   unchanged.
 
+<<<<<<< HEAD
 ### Changed
 
 - The box analysis folds `&&`, `||` and `!` of constants, so a select on them takes one branch: a shaft
@@ -328,6 +442,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the tangent's length over any box; no value changes. `clamp`'s derivative compares the clamped value with its
   argument, not the argument with the bounds, so it differentiates a vector clamped by scalar bounds.
 
+=======
+>>>>>>> origin/main
 ## [0.1.3] - 2026-11-17
 
 ### Added
