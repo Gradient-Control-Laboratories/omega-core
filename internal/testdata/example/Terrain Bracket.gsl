@@ -131,8 +131,9 @@ eyeStep = max(min(eyeSpan, eyeDraft + thickness), eyeDraft);
 sideDraftNormal = normalize([1, 0, 1]);
 
 unionTop = unionRoundExact(
-  () { return p.z - (qz + thickness); },
-  () { return remap(plane(pt1, sideDraftNormal), [abs(p.x), p.y, p.z]); },
+  p.z - (qz + thickness),
+  remap(plane(pt1, sideDraftNormal), [abs(p.x), p.y, p.z]),
+  0,
   vector.dirZ,
   sideDraftNormal
 );

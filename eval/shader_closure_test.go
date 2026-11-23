@@ -17,7 +17,7 @@ const closureSliderDoc = `@scene(40)
 @range(1, 5) r = 2.0;
 a = sphere(8);
 b = boxCentered([6, 0, 0], [8, 8, 8]);
-blob = unionRoundExact(() { return a - r; }, () { return b - r; }) + r;
+blob = unionRoundExact(a, b, r, a.dp, b.dp);
 return blob;
 `
 
