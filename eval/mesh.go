@@ -9,8 +9,8 @@ import (
 	"math"
 	"strings"
 
-	"gradientcontrol.com/omega/core/backend/mesh"
-	"gradientcontrol.com/omega/core/internal/fidget"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/mesh"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget"
 )
 
 // The mesher settings Mesh takes when the caller names none: gsl compile's.

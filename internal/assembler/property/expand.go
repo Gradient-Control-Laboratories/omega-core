@@ -5,9 +5,9 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	gsllibs "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/program"
-	gsllibs "gradientcontrol.com/omega/core/stdlib"
 )
 
 // Expand returns a program in which every property operator reachable from a

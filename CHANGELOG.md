@@ -12,6 +12,11 @@ from `1.0.0` onward).
 
 ### Breaking
 
+- **Changed Go module path to `github.com/Gradient-Control-Laboratories/omega-core`**: The root
+  `go.mod` module declaration and all internal package import paths changed from
+  `gradientcontrol.com/omega/core` to `github.com/Gradient-Control-Laboratories/omega-core` so
+  downstream Go modules can resolve and vendor `omega-core` directly from GitHub via `go get` and
+  `go mod vendor` without local `replace` directives.
 - **Exact rounds take field values and a radius (`intersectRoundExact`, `unionRoundExact`)**: The
   two-argument forms and nullary-function (thunk) arguments are removed, and the one-step forms
   `(field1, field2, normal1, normal2)` are now `(field1, field2, radius, normal1, normal2)` taking

@@ -3,8 +3,8 @@ package property
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func TestLowerReturnProperties_BothColorAndMaterial(t *testing.T) {

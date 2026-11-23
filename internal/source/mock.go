@@ -3,7 +3,7 @@ package source
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/assembler/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/source"
 )
 
 type MockManager struct {

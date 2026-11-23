@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"gradientcontrol.com/omega/core/cmd/serve/internal/server"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/serve/internal/server"
 )
 
 // litBody is a render-lit request for a sphere of radius 5, seen along +Y from 50 units away.

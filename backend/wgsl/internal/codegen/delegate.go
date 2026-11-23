@@ -1,12 +1,12 @@
 package codegen
 
 import (
-	"gradientcontrol.com/omega/core/assembler/ui"
-	"gradientcontrol.com/omega/core/backend/wgsl/internal/ir"
-	"gradientcontrol.com/omega/core/backend/wgsl/internal/wgsl"
-	"gradientcontrol.com/omega/core/internal/build"
-	"gradientcontrol.com/omega/core/program"
-	"gradientcontrol.com/omega/core/program/edit"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/ui"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl/internal/ir"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl/internal/wgsl"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/build"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/edit"
 )
 
 type Delegate struct {

@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"sync"
 
-	"gradientcontrol.com/omega/core/cmd/serve/internal/config"
-	"gradientcontrol.com/omega/core/program/preamble"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/serve/internal/config"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/preamble"
 )
 
 // ProgressEvent represents a single NDJSON progress update pushed over GET /api/progress.

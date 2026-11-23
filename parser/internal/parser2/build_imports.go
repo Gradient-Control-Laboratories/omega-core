@@ -6,10 +6,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
+	"github.com/Gradient-Control-Laboratories/omega-core/parser/internal/identifier2"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 	"github.com/alecthomas/participle/v2"
-	"gradientcontrol.com/omega/core/internal/scope"
-	"gradientcontrol.com/omega/core/parser/internal/identifier2"
-	"gradientcontrol.com/omega/core/program"
 )
 
 func buildImports(pkgFileScope scope.BuilderScope, imports []*Import) error {

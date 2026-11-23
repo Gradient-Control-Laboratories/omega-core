@@ -1,7 +1,7 @@
 package codegen
 
 import (
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 var jsNumType = program.NewScalarType()

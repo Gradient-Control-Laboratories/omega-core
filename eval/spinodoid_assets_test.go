@@ -6,8 +6,8 @@ import (
 	"context"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/source"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func TestMeshAssetsApplySharedSpinodoidDomainWithoutImportSlotFold(t *testing.T) {

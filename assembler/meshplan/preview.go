@@ -1,8 +1,8 @@
 package meshplan
 
 import (
-	"gradientcontrol.com/omega/core/assembler/variation"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/variation"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // PreviewBody is one top-level return as the Shapes panel lists it, sent with

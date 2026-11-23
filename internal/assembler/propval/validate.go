@@ -3,8 +3,8 @@ package propval
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/internal/eval"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 var validAssignablePropNames = map[string]bool{

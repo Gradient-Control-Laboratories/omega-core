@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"gradientcontrol.com/omega/core/cmd/fix/internal/config"
-	"gradientcontrol.com/omega/core/cmd/fix/internal/fix"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/fix/internal/config"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/fix/internal/fix"
 )
 
 // ErrDiffFound is returned in -diff mode when one or more files have pending fixes.

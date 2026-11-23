@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // importWarp has two spellings, and which one a document reaches for follows

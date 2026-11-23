@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/program"
 )
 
 // shrinkToVanishName is builtin's marker for a part (3d.gsl): the part itself

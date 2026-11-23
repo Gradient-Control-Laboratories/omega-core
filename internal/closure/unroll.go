@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/program"
 )
 
 // unrollFunctionFold rewrites, in place, a map or reduce whose COLLECTION is a

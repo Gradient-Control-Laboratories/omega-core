@@ -17,10 +17,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/stdpkg"
+	"github.com/Gradient-Control-Laboratories/omega-core/parser"
+	gsllibs "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/internal/stdpkg"
-	"gradientcontrol.com/omega/core/parser"
-	gsllibs "gradientcontrol.com/omega/core/stdlib"
 )
 
 type parseFunc func(sources []string) (*parser.Result, error)

@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // The reference bevel gear these tests read: 20 teeth, module 2 at the outer

@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"gradientcontrol.com/omega/core/cmd/compile/internal/cli"
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/compile/internal/cli"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
 )
 
 // glbNodeNames is a .glb's node names after the root, in order.

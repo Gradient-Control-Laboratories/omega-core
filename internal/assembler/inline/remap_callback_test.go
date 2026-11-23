@@ -3,7 +3,7 @@ package inline_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // A field whose only read of p sits in a map or reduce function its callee

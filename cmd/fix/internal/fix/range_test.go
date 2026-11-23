@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/cmd/fix/internal/fix"
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/fix/internal/fix"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
 )
 
 func TestRangeFixer_Registered(t *testing.T) {

@@ -3,7 +3,7 @@ package assembler
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // countUnder returns how many operands under op satisfy pred.

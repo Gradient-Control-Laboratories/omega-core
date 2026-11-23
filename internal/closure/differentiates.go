@@ -1,6 +1,6 @@
 package closure
 
-import "gradientcontrol.com/omega/core/program"
+import "github.com/Gradient-Control-Laboratories/omega-core/program"
 
 // callbackDifferentiates reports whether the function a fold names applies a
 // derivative operator (.dp, .dtime) to anything, in its own body or in a

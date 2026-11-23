@@ -25,8 +25,8 @@ import (
 	"strings"
 	"time"
 
-	"gradientcontrol.com/omega/core/cmd/serve/internal/config"
-	"gradientcontrol.com/omega/core/cmd/serve/internal/server"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/serve/internal/config"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/serve/internal/server"
 )
 
 const usage = `Usage of compile viewer (gsl viewer):

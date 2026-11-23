@@ -3,9 +3,9 @@ package parser2
 import (
 	"errors"
 
+	"github.com/Gradient-Control-Laboratories/omega-core/parser/internal/annotation"
 	participle "github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
-	"gradientcontrol.com/omega/core/parser/internal/annotation"
 )
 
 func (d *TopLevel) Parse(lex *lexer.PeekingLexer) error {

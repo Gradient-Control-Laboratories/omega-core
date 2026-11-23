@@ -4,17 +4,17 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler/source"
-	"gradientcontrol.com/omega/core/internal/assembler/inline"
-	"gradientcontrol.com/omega/core/internal/closure"
-	"gradientcontrol.com/omega/core/internal/collect"
-	"gradientcontrol.com/omega/core/internal/eval"
-	"gradientcontrol.com/omega/core/internal/link"
-	"gradientcontrol.com/omega/core/internal/lower"
-	internalsource "gradientcontrol.com/omega/core/internal/source"
-	"gradientcontrol.com/omega/core/internal/types"
-	parser "gradientcontrol.com/omega/core/parser"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/inline"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/closure"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/collect"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/link"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/lower"
+	internalsource "github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/types"
+	parser "github.com/Gradient-Control-Laboratories/omega-core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func runPipeline(src string) (*program.Program, error) {

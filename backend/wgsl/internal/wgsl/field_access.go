@@ -3,8 +3,8 @@ package wgsl
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/internal/build"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/build"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // FieldAccess models member access on a struct expression (e.g. gsl_result.v_1).

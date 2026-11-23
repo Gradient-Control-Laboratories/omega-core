@@ -11,7 +11,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	"gradientcontrol.com/omega/core/backend/tape"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/tape"
 )
 
 func postTape(t *testing.T, url string, req map[string]any) (*http.Response, []byte) {

@@ -4,7 +4,7 @@ import (
 	"math"
 	"strings"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // The bounding-box property (.box): an axis-aligned box containing a field's

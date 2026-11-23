@@ -16,7 +16,7 @@ import (
 	"sort"
 	"strings"
 
-	"gradientcontrol.com/omega/core/internal/stdpkg"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/stdpkg"
 )
 
 // Embed all top-level GSL library directories recursively. Go's embed.FS

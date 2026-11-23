@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package tape;
-option go_package = "gradientcontrol.com/omega/core/backend/tape";
+option go_package = "github.com/Gradient-Control-Laboratories/omega-core/backend/tape";
 
 // The omega tape: a serialized, post-GSL-lowering fidget-tree DAG for an
 // implicit field, produced by omega and replayed by other runtimes (notably

@@ -55,7 +55,7 @@ for parsing, analyzing, refactoring, and compiling GSL models into WebGPU comput
 
 ```text
 omega-core/
-├── go.mod                     # module gradientcontrol.com/omega/core
+├── go.mod                     # module github.com/Gradient-Control-Laboratories/omega-core
 ├── assembler/
 │   ├── assemble.go            # Assemble(primarySources, opts...) API
 │   ├── options.go             # Options (SourcePath, SourceManager, WithProgress...)

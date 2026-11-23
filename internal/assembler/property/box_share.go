@@ -1,8 +1,8 @@
 package property
 
 import (
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/program"
 )
 
 // SHARING WHAT A PART'S BOX REPEATS. The box domain builds a box's corners as

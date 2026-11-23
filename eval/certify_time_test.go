@@ -6,7 +6,7 @@ import (
 	"context"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // timeBallDoc: a ball translating with time toward a fixed wall. Early in the

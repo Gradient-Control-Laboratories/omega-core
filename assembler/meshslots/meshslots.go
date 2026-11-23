@@ -12,7 +12,7 @@
 package meshslots
 
 import (
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // Import describes a compiler-assigned slot for an imported STEP or mesh asset.

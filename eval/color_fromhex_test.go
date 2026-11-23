@@ -6,8 +6,8 @@ import (
 	"math"
 	"testing"
 
-	"gradientcontrol.com/omega/core/eval"
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // color.fromHex reads six hex digits, with or without '#', in either case, as the sRGB vec3 a color takes.

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // fromBuiltinCall handles built-in function calls that the parser recognizes (see

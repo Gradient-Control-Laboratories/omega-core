@@ -1,7 +1,7 @@
 package build
 
 import (
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 type calcConstValueUnaryFunc func(cv ConstExpression) (ConstExpression, error)

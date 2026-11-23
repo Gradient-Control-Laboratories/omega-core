@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"gradientcontrol.com/omega/core/internal/scope"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // ParameterChecker identifies dynamic parameter operands to prevent folding them.

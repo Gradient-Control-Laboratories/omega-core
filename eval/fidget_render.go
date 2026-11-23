@@ -10,8 +10,8 @@ import (
 	"sort"
 	"strings"
 
-	"gradientcontrol.com/omega/core/internal/fidget"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 type glslCompilationResult struct {

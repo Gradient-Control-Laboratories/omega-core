@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler/meshplan"
-	parser "gradientcontrol.com/omega/core/parser"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/meshplan"
+	parser "github.com/Gradient-Control-Laboratories/omega-core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func TestSelectPrimaryAndBodySdfProgram(t *testing.T) {

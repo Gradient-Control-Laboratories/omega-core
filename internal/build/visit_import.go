@@ -3,7 +3,7 @@ package build
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func (b *Builder) visitImport(imp *program.Import, rootScope *Scope, pkgScope *Scope) error {

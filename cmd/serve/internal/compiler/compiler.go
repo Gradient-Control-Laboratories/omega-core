@@ -1,12 +1,12 @@
 package compiler
 
 import (
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/assembler/variation"
-	"gradientcontrol.com/omega/core/backend/mesh"
-	"gradientcontrol.com/omega/core/internal/compile"
-	"gradientcontrol.com/omega/core/internal/meshimport"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/variation"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/mesh"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/compile"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/meshimport"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // MeshRequest describes a server-side binary STL meshing request.

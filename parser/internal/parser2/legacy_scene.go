@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 var (

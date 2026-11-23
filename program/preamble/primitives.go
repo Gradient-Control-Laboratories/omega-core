@@ -1,7 +1,7 @@
 package preamble
 
 import (
-	pb "gradientcontrol.com/omega/core/program"
+	pb "github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 const skipDescription = "skip"

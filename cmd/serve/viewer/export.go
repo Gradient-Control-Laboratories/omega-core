@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"gradientcontrol.com/omega/core/cmd/serve/internal/staticpage"
-	"gradientcontrol.com/omega/core/internal/compile"
-	"gradientcontrol.com/omega/core/internal/meshimport"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/serve/internal/staticpage"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/compile"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/meshimport"
 )
 
 // `compile export`, which `gsl export` runs: the viewer saved as a folder that needs no server. What the

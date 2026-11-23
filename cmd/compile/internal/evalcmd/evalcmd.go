@@ -24,9 +24,9 @@ import (
 	"strings"
 	"time"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/eval"
-	"gradientcontrol.com/omega/core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/parser"
 )
 
 // Exit codes of one request: answered (a disproven claim is an answer), the query failed, the request is malformed.

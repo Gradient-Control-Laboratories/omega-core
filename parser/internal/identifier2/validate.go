@@ -5,7 +5,7 @@ import (
 	"strings"
 	"unicode"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func Validate(name string) error {

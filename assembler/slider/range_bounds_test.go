@@ -3,7 +3,7 @@ package slider_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
 )
 
 // A bound written in @range that reads a plain constant keeps its slider and its

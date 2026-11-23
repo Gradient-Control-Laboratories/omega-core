@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/backend/wgsl/internal/wgsltest"
-	"gradientcontrol.com/omega/core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl/internal/wgsltest"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
 )
 
 func TestAssertWGSLEqual_Matches(t *testing.T) {

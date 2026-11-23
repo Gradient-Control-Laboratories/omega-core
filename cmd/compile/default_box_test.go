@@ -9,10 +9,10 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	"gradientcontrol.com/omega/core/backend/tape"
-	"gradientcontrol.com/omega/core/cmd/compile/internal/cli"
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/tape"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/compile/internal/cli"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
 )
 
 // meshBounds meshes source with no --bbox: how many triangles, and the box they span.

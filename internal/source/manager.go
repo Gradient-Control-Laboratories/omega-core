@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"gradientcontrol.com/omega/core/assembler/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/source"
 )
 
 // LocalManager searches local filesystem root directories

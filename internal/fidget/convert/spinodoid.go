@@ -9,10 +9,10 @@ import (
 
 	"google.golang.org/protobuf/encoding/protowire"
 
-	"gradientcontrol.com/omega/core/internal/build"
-	"gradientcontrol.com/omega/core/internal/fidget"
-	"gradientcontrol.com/omega/core/program"
-	"gradientcontrol.com/omega/core/program/noise/spinodoid"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/build"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/noise/spinodoid"
 )
 
 // builtinGaborSpinodoid lowers gaborSpinodoid / gaborSpinodoidGradient and

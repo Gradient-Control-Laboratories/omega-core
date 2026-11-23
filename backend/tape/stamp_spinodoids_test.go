@@ -3,8 +3,8 @@ package tape
 import (
 	"testing"
 
+	"github.com/Gradient-Control-Laboratories/omega-core/program/noise/spinodoid"
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/program/noise/spinodoid"
 )
 
 // A field driver travels as nodes appended to the tape. The splice has to

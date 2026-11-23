@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/tape"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget"
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/backend/tape"
-	"gradientcontrol.com/omega/core/internal/fidget"
 )
 
 // A material is four rows of four, and the tape keeps all sixteen trees of it,

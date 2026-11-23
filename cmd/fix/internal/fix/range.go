@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"gradientcontrol.com/omega/core/parser"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // maxRangeLine is the longest line the range fixer writes the annotation on the

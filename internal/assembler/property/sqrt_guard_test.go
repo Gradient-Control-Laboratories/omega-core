@@ -3,7 +3,7 @@ package property
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // TestSqrtGradientAtZero pins the guard on sqrt's derivative. The list form of

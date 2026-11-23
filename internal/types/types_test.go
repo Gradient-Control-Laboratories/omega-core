@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal"
-	parser "gradientcontrol.com/omega/core/parser"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal"
+	parser "github.com/Gradient-Control-Laboratories/omega-core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func parseProgram(t *testing.T, src string) *program.Program {

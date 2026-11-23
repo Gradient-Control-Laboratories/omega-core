@@ -6,11 +6,11 @@ import (
 	"encoding/json"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/backend/mesh/glb"
-	"gradientcontrol.com/omega/core/backend/mesh/threemf"
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/mesh/glb"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/mesh/threemf"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
 )
 
 // glbJSON is a .glb's glTF JSON chunk, decoded loosely.

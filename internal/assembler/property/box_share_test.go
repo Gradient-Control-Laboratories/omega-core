@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/program"
 )
 
 // repeatedBox is a box whose corners repeat a long subtree, a bound over

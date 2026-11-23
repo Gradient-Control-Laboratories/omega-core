@@ -6,7 +6,7 @@ import (
 
 	participle "github.com/alecthomas/participle/v2"
 
-	"gradientcontrol.com/omega/core/internal/scope"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
 )
 
 func buildDeclarations(buildScope scope.BuilderScope, declaration []Declaration) error {

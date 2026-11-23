@@ -1,7 +1,7 @@
 package types
 
 import (
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // TypeEnv represents a nested symbol table mapping names to GSL types.

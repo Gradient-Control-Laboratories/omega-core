@@ -3,8 +3,8 @@ package evalcmd_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
 )
 
 // z is 0 everywhere, but not a constant the compiler can fold, so 1 / z is infinite and z / z is NaN at every point.

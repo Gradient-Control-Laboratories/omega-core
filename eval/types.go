@@ -6,7 +6,7 @@ package eval
 import (
 	"context"
 
-	"gradientcontrol.com/omega/core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
 )
 
 // Option configures program assembly inside the evaluator.

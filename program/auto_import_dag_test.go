@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	gsllibs "gradientcontrol.com/omega/core/stdlib"
+	gsllibs "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
 )
 
 // sharedChain builds an operand graph `depth` levels deep in which every level

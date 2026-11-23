@@ -10,9 +10,9 @@ import (
 	"sort"
 	"strings"
 
-	"gradientcontrol.com/omega/core/backend/mesh"
-	"gradientcontrol.com/omega/core/cmd/serve/internal/compiler"
-	"gradientcontrol.com/omega/core/internal/compile"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/mesh"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/serve/internal/compiler"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/compile"
 )
 
 func (s *Server) handleExamples(w http.ResponseWriter, r *http.Request) {
