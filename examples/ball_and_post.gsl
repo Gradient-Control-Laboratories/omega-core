@@ -23,13 +23,9 @@ ballRadius = 10;
 postRadius = 4;
 postHeight = 15;
 
-radius = 3.96;
-radius.min = 0;
-radius.max = 10;
+@range(0, 10) radius = 3.96;
 
-offset = 7;
-offset.min = 0;
-offset.max = 10;
+@range(0, 10) offset = 7;
 
 ball = length(p - offset * vector.dirX) - ballRadius;
 post = extrude(circleXY([0, 0], postRadius), 0, postHeight, intersectRound(0));
