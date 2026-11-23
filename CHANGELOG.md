@@ -12,6 +12,11 @@ from `1.0.0` onward).
 
 ### Breaking
 
+- **Exact rounds take field values and a radius (`intersectRoundExact`, `unionRoundExact`)**: The
+  two-argument forms and nullary-function (thunk) arguments are removed, and the one-step forms
+  `(field1, field2, normal1, normal2)` are now `(field1, field2, radius, normal1, normal2)` taking
+  plain field values. Pass `radius = 0` to keep the previous sharp exact union/intersection
+  (`unionRoundExact(a, b, 0, a.dp, b.dp)` replaces `unionRoundExact(() { return a; }, () { return b; })`).
 - **Removed `sweepLoft` and `bezierTubeDir` from `builtin`**: `sweepLoft`, `sweepLoftScale`,
   `sweepLoftScaleSmooth`, `sweepLoftScaleSmoothSeparateCaps` and `bezierTubeDir` were removed from
   `builtin`. They lofted two sections along a 3D quadratic Bezier, but mixed the sections' distances
@@ -28,7 +33,6 @@ from `1.0.0` onward).
 
 ### Added
 
-<<<<<<< HEAD
 - `intersectRoundExact(field1, field2, radius)` and `unionRoundExact(field1, field2, radius)` in builtin: exact
   rolling-ball rounds for curved faces. They find the seam's point nearest p by four Newton steps (each moves to
   both fields' tangent planes, then slides along the seam to the foot of p) and judge whether p is nearest the
@@ -54,7 +58,6 @@ from `1.0.0` onward).
   `edgeDistance`, `cornerDistance`, `intersectDistance` and their `Differenced` forms, `edgeProject`,
   `edgeNewtonStep`, `cornerNewtonStep` and the `...From` and `...Verdict` arithmetic they share are their
   parts. `examples/ball_and_post.gsl` shows them.
-=======
 - Exact distances to conics and quadrics in builtin: `ellipseXY(center, radii)`, `parabolaXY(vertex, focalLength)`,
   `hyperbolaXY(center, semiAxes)`, `ellipsoid(center, radii)` and `paraboloid(vertex, focalLength)`, and under them
   `quadricDistance(q, m, b, c, steps)` for any quadric Σ m_i x_i² + 2 Σ b_i x_i + c = 0 in its own frame. The nearest
@@ -70,7 +73,6 @@ from `1.0.0` onward).
   inward by h·tan(angle), with unit gradient. `draft.point(center, pull, angle)` is the cone with its apex at a
   point. A profile with sharp corners is given as the max or min of its sides' half-planes, so that its
   corners stay sharp as draft keeps them.
->>>>>>> origin/blake/remap-param-dp
 - `nested(fields)` combines exact fields whose surfaces do not cross, each wound with its solid on the negative
   side (counterclockwise outlines and islands, clockwise holes), into one exact distance in any order: an outline
   with holes in a single profile, or a 3D solid with a void.
@@ -98,14 +100,6 @@ from `1.0.0` onward).
 
 ### Changed
 
-<<<<<<< HEAD
-- The exact rounds take field values, like every other blend, and a radius: `unionRoundExact(field1, field2,
-  radius, normal1, normal2)` and `intersectRoundExact(...)` are the one-step forms that were `(field1, field2,
-  normal1, normal2)` and took their fields as nullary functions; the two-argument forms, which took the normals
-  from the fields' gradients, are gone, replaced by the forms above. At radius 0 they are the sharp union's or
-  intersection's exact distance, as before: `unionRoundExact(a, b, 0, a.dp, b.dp)` is what
-  `unionRoundExact(() { return a; }, () { return b; })` was.
-=======
 - `gears.gearProfile` now chamfers its tooth tips with `intersectChamferNormalized` (given the flank's
   and tip circle's normals at the edge) in place of `intersectChamfer`. The tip chamfer is now `kSmall`
   deep, measured from the edge to the bevel, about 1.7 to 1.8 times as deep as before at these obtuse
@@ -121,7 +115,6 @@ from `1.0.0` onward).
   function always did; before, the part's colour lost its stand-in and stayed textured with textures off.
 - PNG renders frame a part too thin to be sampled inside beside a thick one (a threaded shaft's thread
   went missing without `--extent`).
->>>>>>> origin/blake/remap-param-dp
 - The fast chamfers' parameter is named `offset`, not `setback`, in builtin's `intersectChamfer`,
   `unionChamfer`, `differenceChamfer`, `intersectChamferEdges`, `intersectChamferVertices`, their union
   counterparts, and the `ChamferRound` and `ChamferBlend` families (`[edgeOffset, vertexOffset]` for the
