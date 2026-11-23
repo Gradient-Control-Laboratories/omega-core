@@ -152,6 +152,14 @@ from `1.0.0` onward).
 
 ### Fixed
 
+- `.dp` through `map` and `reduce`: a fold over a list of fields whose function applies `.dp` to its element,
+  directly or through a function it calls, failed with "the .dtime/.dp derivative operators are only supported
+  in top-level expressions". The property pass, which expands `.dp`, runs before folds are unrolled, and it
+  differentiates a parameter only at a call whose argument it can see. Such a fold over a list written at its
+  site is now unrolled first, as a fold over functions already was, its lambda given what it reads of the
+  function it is written in as parameters and moved to the file's own functions; nested folds, such as every
+  pair or every three of a list, unroll in turn. A list passed to a function that folds it so, directly or
+  through the functions it calls, is bound into that function's specialized clone, as a list of functions is.
 - `.dp` through a remap of a function's parameter. A call binds a parameter to its argument's value at the
   caller's p, and a remap inside the function read that value unmoved, so `f(v) { return remap(v, q); }` lost
   the chain rule through q: the value was right and its gradient was not. The argument is now evaluated again
