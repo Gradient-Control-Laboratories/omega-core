@@ -3,9 +3,9 @@ package tape_test
 import (
 	"testing"
 
-	"google.golang.org/protobuf/proto"
 	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
 	"github.com/Gradient-Control-Laboratories/omega-core/backend/tape"
+	"google.golang.org/protobuf/proto"
 )
 
 // A shape with a colour and a material reaches the tape with the colour's three

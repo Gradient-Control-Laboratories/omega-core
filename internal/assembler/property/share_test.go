@@ -5,8 +5,8 @@ import (
 	"math"
 	"testing"
 
-	"google.golang.org/protobuf/proto"
 	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	"google.golang.org/protobuf/proto"
 )
 
 // nestedRotations is f0 a box, and each f_i a rotation remap of f_{i-1}, with

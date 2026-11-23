@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"google.golang.org/protobuf/proto"
 	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	"google.golang.org/protobuf/proto"
 )
 
 func isParameter(fnStack []*program.Function, op *program.Operand) bool {

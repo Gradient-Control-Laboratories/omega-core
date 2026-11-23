@@ -5,10 +5,10 @@ import (
 	"crypto/sha256"
 	"testing"
 
-	"google.golang.org/protobuf/proto"
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/stdpkg"
 	"github.com/Gradient-Control-Laboratories/omega-core/program"
 	gsllibs "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
+	"google.golang.org/protobuf/proto"
 )
 
 // A package parsed a second time by CachingParser comes from the cache, and

@@ -3,11 +3,11 @@ package parser2
 import (
 	"fmt"
 
-	participle "github.com/alecthomas/participle/v2"
-	"github.com/alecthomas/participle/v2/lexer"
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
 	"github.com/Gradient-Control-Laboratories/omega-core/parser/internal/annotation"
 	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	participle "github.com/alecthomas/participle/v2"
+	"github.com/alecthomas/participle/v2/lexer"
 )
 
 func buildAnnotatedDeclaration(buildScope scope.BuilderScope, decl *AnnotatedDeclaration) error {

@@ -4,11 +4,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/alecthomas/participle/v2"
-	"github.com/alecthomas/participle/v2/lexer"
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/lang"
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
 	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	"github.com/alecthomas/participle/v2"
+	"github.com/alecthomas/participle/v2/lexer"
 )
 
 func buildExpressions(buildScope scope.BuilderScope, expressions []*Expression) ([]*program.Operand, error) {

@@ -3,13 +3,13 @@ package tape
 import (
 	"fmt"
 
-	"google.golang.org/protobuf/proto"
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget"
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget/convert"
 	"github.com/Gradient-Control-Laboratories/omega-core/program"
 	"github.com/Gradient-Control-Laboratories/omega-core/program/meshasset"
 	"github.com/Gradient-Control-Laboratories/omega-core/program/noise/spinodoid"
 	"github.com/Gradient-Control-Laboratories/omega-core/program/progress"
+	"google.golang.org/protobuf/proto"
 )
 
 // MeshSdfOracle holds the triangle soup for a bvhSdf(AssetID) leaf.

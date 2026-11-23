@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"google.golang.org/protobuf/proto"
 	"github.com/Gradient-Control-Laboratories/omega-core/parser"
 	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	"google.golang.org/protobuf/proto"
 )
 
 func TestParsePackage_Empty(t *testing.T) {

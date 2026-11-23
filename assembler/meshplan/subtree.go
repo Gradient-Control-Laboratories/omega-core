@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"google.golang.org/protobuf/proto"
 	"github.com/Gradient-Control-Laboratories/omega-core/assembler/variation"
 	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	"google.golang.org/protobuf/proto"
 )
 
 // SdfSubtree is an analytical leaf of the plan: the SDF expression the slicer

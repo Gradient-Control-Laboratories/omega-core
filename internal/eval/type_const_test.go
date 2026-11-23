@@ -3,10 +3,10 @@ package eval_test
 import (
 	"testing"
 
-	"google.golang.org/protobuf/reflect/protoreflect"
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/eval"
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
 	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 // A fold's verdict is stamped on the operand and nowhere else: no type in

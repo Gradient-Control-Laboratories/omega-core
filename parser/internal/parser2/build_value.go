@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/alecthomas/participle/v2"
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
 	"github.com/Gradient-Control-Laboratories/omega-core/program"
 	gsllibs "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
+	"github.com/alecthomas/participle/v2"
 )
 
 func buildValue(buildScope scope.BuilderScope, value Value) (*program.Operand, error) {

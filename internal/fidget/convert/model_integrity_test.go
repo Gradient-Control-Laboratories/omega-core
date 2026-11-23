@@ -4,12 +4,12 @@ import (
 	"strings"
 	"testing"
 
-	"google.golang.org/protobuf/proto"
 	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget"
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget/convert"
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
+	"google.golang.org/protobuf/proto"
 )
 
 // TestBuildDoesNotMutateModel guards against build passes mutating the shared

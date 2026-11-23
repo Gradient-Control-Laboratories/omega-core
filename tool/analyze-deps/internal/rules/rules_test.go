@@ -97,8 +97,8 @@ func TestCheckRules_FrameworkCreep(t *testing.T) {
 				Imports: []graph.ImportEdge{
 					{
 						FromPkg:   "assembler",
-						ToPkg:     "gradientcontrol.com/stirigma/common/errlog",
-						RawImport: "gradientcontrol.com/stirigma/common/errlog",
+						ToPkg:     "github.com/Gradient-Control-Laboratories/stirigma/common/errlog",
+						RawImport: "github.com/Gradient-Control-Laboratories/stirigma/common/errlog",
 						FilePath:  "assembler/bad.go",
 						Line:      8,
 					},

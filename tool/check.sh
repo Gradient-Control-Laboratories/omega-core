@@ -86,7 +86,7 @@ run_tests() {
       (cd "${ROOT_DIR}" && go test -timeout 20m ./tool/materialswatch)
       ;;
     other)
-      (cd "${ROOT_DIR}" && go test -timeout 20m $(go list ./... | grep -v -E '^gradientcontrol\.com/omega/core/(eval|internal/fidget/internal/gpuparity|tool/materialswatch)'))
+      (cd "${ROOT_DIR}" && go test -timeout 20m $(go list ./... | grep -v -E '^github\.com/Gradient-Control-Laboratories/omega-core/(eval|internal/fidget/internal/gpuparity|tool/materialswatch)'))
       ;;
     *)
       echo "Unknown shard: ${SHARD}" >&2

@@ -5,10 +5,10 @@ import (
 	"crypto/sha256"
 	"sync"
 
-	"google.golang.org/protobuf/proto"
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/stdpkg"
 	"github.com/Gradient-Control-Laboratories/omega-core/parser/internal/parser2"
 	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	"google.golang.org/protobuf/proto"
 )
 
 // defaultCacheLimit bounds the non-stdlib source bytes whose parses are kept by default (4 MiB).

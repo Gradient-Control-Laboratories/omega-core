@@ -12,7 +12,6 @@ import (
 	"strings"
 	"sync"
 
-	"google.golang.org/protobuf/proto"
 	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
 	"github.com/Gradient-Control-Laboratories/omega-core/assembler/source"
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget"
@@ -21,6 +20,7 @@ import (
 	"github.com/Gradient-Control-Laboratories/omega-core/parser"
 	"github.com/Gradient-Control-Laboratories/omega-core/program"
 	gsllibs "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
+	"google.golang.org/protobuf/proto"
 )
 
 // Evaluator evaluates GSL query expressions against a document via fidget.

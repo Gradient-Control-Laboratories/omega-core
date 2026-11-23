@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"sync"
 
-	"google.golang.org/protobuf/proto"
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/stdpkg"
 	_ "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
+	"google.golang.org/protobuf/proto"
 )
 
 // GetImportFunc resolves an import path to its package. It mirrors

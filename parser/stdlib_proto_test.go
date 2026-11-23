@@ -3,10 +3,10 @@ package parser
 import (
 	"testing"
 
-	"google.golang.org/protobuf/proto"
 	"github.com/Gradient-Control-Laboratories/omega-core/parser/internal/parser2"
 	"github.com/Gradient-Control-Laboratories/omega-core/program"
 	gsllibs "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
+	"google.golang.org/protobuf/proto"
 )
 
 // TestStdlibProtosUpToDate ensures every embedded <ImportPath>/package.pb in

@@ -5,12 +5,12 @@ import (
 	"math"
 	"slices"
 
-	"github.com/alecthomas/participle/v2"
-	"github.com/alecthomas/participle/v2/lexer"
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
 	"github.com/Gradient-Control-Laboratories/omega-core/parser/internal/annotation"
 	"github.com/Gradient-Control-Laboratories/omega-core/parser/internal/identifier2"
 	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	"github.com/alecthomas/participle/v2"
+	"github.com/alecthomas/participle/v2/lexer"
 )
 
 func buildFunction(parentScope scope.BuilderScope, decl *NamedFunction) error {

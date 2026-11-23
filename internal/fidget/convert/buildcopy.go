@@ -1,8 +1,8 @@
 package convert
 
 import (
-	"google.golang.org/protobuf/proto"
 	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	"google.golang.org/protobuf/proto"
 )
 
 // BuildCopy returns the copy of prog that one build folds. build.Build

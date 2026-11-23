@@ -3,9 +3,9 @@ package fidget_test
 import (
 	"testing"
 
-	"google.golang.org/protobuf/proto"
 	"github.com/Gradient-Control-Laboratories/omega-core/backend/tape"
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget"
+	"google.golang.org/protobuf/proto"
 )
 
 // Build a unit-sphere SDF (sqrt(x^2+y^2+z^2) - 1) via the tree FFI, serialize it

@@ -1,8 +1,8 @@
 package closure
 
 import (
-	"google.golang.org/protobuf/proto"
 	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	"google.golang.org/protobuf/proto"
 )
 
 // operandContainsCall reports whether fc is op or one of its operands or
