@@ -57,8 +57,9 @@ func PrintUsage(w io.Writer) {
 	fmt.Fprintf(w, "        Octree subdivision depth for mesh polygonization (default 9)\n")
 	fmt.Fprintf(w, "      --bbox string\n")
 	fmt.Fprintf(w, "        Bounding box as minX,minY,minZ,maxX,maxY,maxZ, or auto: the box the field fills,\n")
-	fmt.Fprintf(w, "        found within 1024 mm of the origin and grown by two cells (default: the @scene box, an edge of\n")
-	fmt.Fprintf(w, "        its size centred on the origin, as the viewer frames it; auto when there is no @scene)\n")
+	fmt.Fprintf(w, "        found within 1024 mm of the origin and grown by two cells (default: the returned value's .box,\n")
+	fmt.Fprintf(w, "        declared or inferred, when it is bounded; else the @scene box, an edge of\n")
+	fmt.Fprintf(w, "        its size centred on the origin, as the viewer frames it; else auto)\n")
 	fmt.Fprintf(w, "      --algo string\n")
 	fmt.Fprintf(w, "        Meshing algorithm (marching-cubes or mdc) (default \"mdc\")\n")
 	fmt.Fprintf(w, "      --time float\n")
@@ -215,9 +216,24 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 			mesh.WithAlgorithm(cfg.Algo),
 			mesh.WithTime(cfg.Time),
 		}
+		declared, hasDeclared := [6]float32{}, false
+		if !cfg.HasBbox && !cfg.AutoBbox && len(sourceTexts) == 1 {
+			box, ok, boxErr := returnBox(primarySourceText, srcPaths, meshDirs)
+			if boxErr != nil {
+				return boxErr
+			}
+			declared, hasDeclared = box, ok
+		}
 		switch {
 		case cfg.HasBbox:
 			meshOpts = append(meshOpts, mesh.WithBbox(cfg.Bbox))
+		case hasDeclared:
+			// No box named: the returned value's .box, which says where the part is, padded by the mesher by one of
+			// its own cells so a face lying on the box is meshed.
+			if cfg.Verbose {
+				fmt.Fprintf(stderr, "[mesh] returned .box: %g,%g,%g,%g,%g,%g\n", declared[0], declared[1], declared[2], declared[3], declared[4], declared[5])
+			}
+			meshOpts = append(meshOpts, mesh.WithBbox(declared), mesh.WithBboxPadCells(1))
 		case cfg.AutoBbox || res.Scene.GetSize() <= 0:
 			// --bbox auto, or no box named and no @scene to take one from: the box the field fills.
 			if len(sourceTexts) > 1 {
@@ -296,6 +312,22 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		}
 		bvhOracles, vdbOracles := meshimport.Oracles(meshUses)
 		tapeOpts := []tape.Option{tape.MeshOracles(bvhOracles), tape.VdbOracles(vdbOracles)}
+		// The box a mesh of this document would cover, stamped in the tape for whoever reads it: --bbox, else the
+		// returned value's .box, else the @scene box. With none of them it stays unset.
+		switch {
+		case cfg.HasBbox:
+			tapeOpts = append(tapeOpts, tape.Bbox(cfg.Bbox))
+		case len(sourceTexts) == 1:
+			box, ok, boxErr := returnBox(primarySourceText, srcPaths, meshDirs)
+			if boxErr != nil {
+				return boxErr
+			}
+			if ok {
+				tapeOpts = append(tapeOpts, tape.Bbox(box))
+			} else if half := float32(res.Scene.GetSize() / 2); half > 0 {
+				tapeOpts = append(tapeOpts, tape.Bbox([6]float32{-half, -half, -half, half, half, half}))
+			}
+		}
 		if cfg.Verbose {
 			tapeOpts = append(tapeOpts, tape.WithProgress(func(stage string, completed, total uint32) {
 				fmt.Fprintf(stderr, "[tape] %s (%d/%d)\n", stage, completed, total)
@@ -512,6 +544,34 @@ const autoReach = 1024.0
 
 // autoRescans bounds how many times --bbox auto widens its search around the box it has found.
 const autoRescans = 8
+
+// returnBox is the box the document says its returned value fills (eval's ReturnBox: a box declared on the name it
+// returns, as written, or the box the analysis carries), handed to the mesher as it is; ok is false when that box is
+// unbounded on some axis, and the caller falls back to @scene or --bbox auto.
+func returnBox(code string, srcPaths, meshDirs []string) ([6]float32, bool, error) {
+	var box [6]float32
+	returns := eval.TopLevelReturnExprs(code)
+	if len(returns) == 0 {
+		return box, false, nil
+	}
+	var opts []eval.Option
+	if len(srcPaths) > 0 {
+		opts = append(opts, assembler.SourcePaths(srcPaths...))
+	}
+	ev := eval.New(nil, nil, opts...)
+	ev.LoadMeshesFrom(meshDirs...)
+	found, ok, err := ev.ReturnBox(context.Background(), nil, code, "", returns)
+	if err != nil {
+		return box, false, fmt.Errorf("reading the returned value's .box: %w", err)
+	}
+	if !ok {
+		return box, false, nil
+	}
+	for k := range box {
+		box[k] = float32(found[k])
+	}
+	return box, true, nil
+}
 
 // autoBbox is --bbox auto: the box the program's field fills, searched within autoReach of the origin, grown by two
 // cells on every side so the surface lies inside the meshed box with room for the mesher's cells around it.

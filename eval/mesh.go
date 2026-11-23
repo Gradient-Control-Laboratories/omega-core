@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"gradientcontrol.com/omega/core/backend/mesh"
+	"gradientcontrol.com/omega/core/internal/fidget"
 )
 
 // The mesher settings Mesh takes when the caller names none: gsl compile's.
@@ -22,8 +23,9 @@ const (
 type MeshOptions struct {
 	// Subdivision is the octree depth; 0 takes 9.
 	Subdivision int
-	// Region is the box meshed, [x0, y0, z0, x1, y1, z1] in mm; nil takes the box the field fills, found by
-	// sampling as gsl compile --bbox auto finds it, with defs applied.
+	// Region is the box meshed, [x0, y0, z0, x1, y1, z1] in mm; nil takes the returned value's .box when it is
+	// bounded (ReturnBox), else the box the field fills, found by sampling as gsl compile
+	// --bbox auto finds it, with defs applied.
 	Region *[6]float64
 	// Algorithm is "mdc" or "marching-cubes"; "" takes "mdc".
 	Algorithm string
@@ -77,6 +79,7 @@ func (e *Evaluator) Mesh(ctx context.Context, manifest map[string]string, code, 
 	}
 
 	var region [6]float64
+	padCells := 0
 	if opt.Region != nil {
 		region = *opt.Region
 		for k := 0; k < 3; k++ {
@@ -84,6 +87,12 @@ func (e *Evaluator) Mesh(ctx context.Context, manifest map[string]string, code, 
 				return nil, fmt.Errorf("mesh region %v: finite, its max past its min on every axis", region)
 			}
 		}
+	} else if declared, ok, err := e.ReturnBox(ctx, manifest, code, defs, exprs); err != nil {
+		return nil, err
+	} else if ok {
+		// The returned value says where it is: mesh that, padded by the mesher by one of its own cells so a face
+		// lying on the box is meshed.
+		region, padCells = declared, 1
 	} else {
 		fit, err := e.fitBox(ctx, manifest, code, defs, exprs)
 		if err != nil {
@@ -97,11 +106,17 @@ func (e *Evaluator) Mesh(ctx context.Context, manifest map[string]string, code, 
 	}
 
 	bodies, err := e.meshBodies(ctx, manifest, code, defs, exprs,
-		mesh.WithSubdivision(subdivision), mesh.WithAlgorithm(algorithm), mesh.WithTime(opt.Time), mesh.WithBbox(box))
+		mesh.WithSubdivision(subdivision), mesh.WithAlgorithm(algorithm), mesh.WithTime(opt.Time), mesh.WithBbox(box),
+		mesh.WithBboxPadCells(padCells))
 	if err != nil {
 		return nil, err
 	}
 
+	// The region reported is the box the mesher meshed: the one given, with the room it padded it by.
+	meshed := fidget.PadBbox(box, subdivision, padCells)
+	for k := range meshed {
+		region[k] = float64(meshed[k])
+	}
 	result := &MeshResult{Region: region, Bodies: make([]MeshBody, len(bodies))}
 	for i, b := range bodies {
 		// A body with no triangles is never offered to the normals callback below, so its counts stay zero.
@@ -156,6 +171,52 @@ func (e *Evaluator) meshBodies(ctx context.Context, manifest map[string]string, 
 		return nil, err
 	}
 	return mesh.MeshBodies(prog, opts...)
+}
+
+// returnBoxReach is the largest coordinate a box ReturnBox gives may have: builtin's nothing (1e5) is how .box reads
+// an axis the analysis cannot bound, so anything at half of it or beyond is taken as unbounded.
+const returnBoxReach = 5e4
+
+// ReturnBox is the box the document says its returned value fills, defs applied. A box declared on the name it
+// returns, name.box = [lo, hi], is that box exactly as written (DeclaredReturnBox), not grown by the crop's boxPad:
+// declaring it is how a document names its box. Otherwise it is the box the analysis carries from the primitives
+// through the operations, as .box reads it (property/box.go). ok is false when the box is unbounded on some axis, or
+// empty, and the caller must find a box another way. Unlike fitBox it is no fit: a declared box is taken on trust,
+// and a derived one is sound.
+func (e *Evaluator) ReturnBox(ctx context.Context, manifest map[string]string, code, defs string, exprs []string) (box [6]float64, ok bool, err error) {
+	query := ""
+	if rhs, declared := DeclaredReturnBox(code); declared && defs == "" {
+		query = "(" + rhs + ")"
+	} else {
+		expr := exprs[0]
+		if len(exprs) > 1 {
+			expr = "min(" + strings.Join(exprs, ", ") + ")"
+		}
+		query = "(" + expr + ").box"
+	}
+	groups, err := e.EvalGsl(ctx, manifest, code, defs, []string{query}, [][3]float64{{0, 0, 0}})
+	if err != nil {
+		return box, false, err
+	}
+	if len(groups) != 1 || len(groups[0].Samples) != 6 {
+		return box, false, nil
+	}
+	for k, s := range groups[0].Samples {
+		if len(s) != 1 {
+			return box, false, nil
+		}
+		v := float64(s[0].Value)
+		if math.IsNaN(v) || math.Abs(v) >= returnBoxReach {
+			return box, false, nil
+		}
+		box[k] = v
+	}
+	for k := 0; k < 3; k++ {
+		if box[k] > box[k+3] {
+			return box, false, nil
+		}
+	}
+	return box, true, nil
 }
 
 // How far from the origin fitBox looks, and how many times it widens its search: gsl compile --bbox auto's.

@@ -38,7 +38,8 @@ func stlBounds(t *testing.T, data []byte) (int, [6]float64) {
 func TestRun_STL_BboxAuto(t *testing.T) {
 	dir := t.TempDir()
 	source := filepath.Join(dir, "plate.gsl")
-	require.NoError(t, os.WriteFile(source, []byte("@scene(60)\nplate = box([0, 0, 0], [40, 30, 5]);\nreturn plate;\n"), 0644))
+	// Remapped, the plate has no box of its own (a remap clears .box), which would otherwise be meshed ahead of @scene.
+	require.NoError(t, os.WriteFile(source, []byte("@scene(60)\nplate = remap(box([0, 0, 0], [40, 30, 5]), [p.x, p.y, p.z]);\nreturn plate;\n"), 0644))
 
 	out := filepath.Join(dir, "auto.stl")
 	var stdout, stderr bytes.Buffer

@@ -136,9 +136,7 @@ func indexOf(names []string, want string) int {
 func TestInline_PropertyTemporariesFollowTheSliderTheyRead(t *testing.T) {
 	src := patternFn + `
 a = sphere(5);
-x = 8;
-x.min = 0.5;
-x.max = 50;
+@range(0.5, 50) x = 8;
 a.color = pattern(x);
 return a;
 `
@@ -173,9 +171,7 @@ return a;
 // their place in front of the part, as before.
 func TestInline_PropertyTemporariesStayAheadOfThePartOtherwise(t *testing.T) {
 	src := patternFn + `
-x = 8;
-x.min = 0.5;
-x.max = 50;
+@range(0.5, 50) x = 8;
 a = sphere(5);
 a.color = pattern(x);
 return a;
