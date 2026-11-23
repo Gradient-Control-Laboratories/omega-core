@@ -15,8 +15,8 @@ import (
 	"syscall"
 	"time"
 
-	"gradientcontrol.com/omega/core/cmd/serve/internal/config"
-	"gradientcontrol.com/omega/core/cmd/serve/internal/server"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/serve/internal/config"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/serve/internal/server"
 )
 
 // openBrowserFunc launches the system default web browser for url. Overridable in tests.

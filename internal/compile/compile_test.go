@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/compile"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/compile"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func TestCompile_StandardSDFWithSlidersAndParts(t *testing.T) {

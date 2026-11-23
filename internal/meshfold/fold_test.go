@@ -3,8 +3,8 @@ package meshfold
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler/meshslots"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/meshslots"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // runeList builds the rune-list operand the parser lowers a string literal to.

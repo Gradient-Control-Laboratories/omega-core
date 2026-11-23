@@ -8,7 +8,7 @@ import (
 	"math"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // TestFastenerJointsHaveNoSheet: where a screw is built from two solids — head

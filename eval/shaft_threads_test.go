@@ -8,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // Shaft Modeling, Phase 5: threads. shaft.thread is thread.male, the exact

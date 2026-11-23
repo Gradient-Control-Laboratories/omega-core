@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"gradientcontrol.com/omega/core/internal/eval"
-	"gradientcontrol.com/omega/core/internal/scope"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // Transform runs a function inlining pass over the entire program AST.

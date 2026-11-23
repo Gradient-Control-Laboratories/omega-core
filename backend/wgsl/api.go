@@ -1,7 +1,7 @@
 package wgsl
 
 import (
-	"gradientcontrol.com/omega/core/program/edit"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/edit"
 )
 
 // ShapeLocations contains all source spans that contribute to a shape

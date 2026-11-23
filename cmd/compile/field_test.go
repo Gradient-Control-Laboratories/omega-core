@@ -8,11 +8,11 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/cmd/compile/internal/cli"
-	"gradientcontrol.com/omega/core/internal/compile"
-	"gradientcontrol.com/omega/core/internal/meshimport"
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/compile/internal/cli"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/compile"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/meshimport"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
 )
 
 const fieldSlab = "@scene(40)\n@range(0.5, 8) wall = 2.0;\n\nslab = boxCentered([0, 0, 0], [20, 20, wall]);\nreturn slab;\n"

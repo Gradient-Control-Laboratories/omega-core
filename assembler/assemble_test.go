@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
 )
 
 type stubSourceManager struct {

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
 )
 
 // A part's stand-in declared inside the function that builds the part comes

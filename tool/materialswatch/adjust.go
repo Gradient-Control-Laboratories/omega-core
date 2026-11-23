@@ -10,10 +10,10 @@ import (
 
 	// Registers every embedded library as a parsed program, which is where a
 	// constructor's parameter annotations live.
-	"gradientcontrol.com/omega/core/internal/eval"
-	_ "gradientcontrol.com/omega/core/parser"
-	"gradientcontrol.com/omega/core/program"
-	gsllibs "gradientcontrol.com/omega/core/stdlib"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/eval"
+	_ "github.com/Gradient-Control-Laboratories/omega-core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	gsllibs "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
 )
 
 // Adjustable is what the Bodies panel needs to open a preset up: the

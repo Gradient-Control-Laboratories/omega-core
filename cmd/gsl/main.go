@@ -9,7 +9,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"gradientcontrol.com/omega/core/cmd/gsl/internal/cli"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/gsl/internal/cli"
 )
 
 func main() {

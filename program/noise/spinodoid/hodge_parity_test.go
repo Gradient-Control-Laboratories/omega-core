@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/program/noise/spinodoid"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/noise/spinodoid"
 )
 
 // What hodge's Gabor spinodoid is, measured against hodge itself.

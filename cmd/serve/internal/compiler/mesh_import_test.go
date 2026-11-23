@@ -5,9 +5,9 @@ import (
 	"math"
 	"testing"
 
-	"gradientcontrol.com/omega/core/cmd/serve/internal/compiler"
-	"gradientcontrol.com/omega/core/internal/meshimport"
-	"gradientcontrol.com/omega/core/internal/test/stlbox"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/serve/internal/compiler"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/meshimport"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/stlbox"
 )
 
 var (

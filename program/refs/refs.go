@@ -5,7 +5,7 @@
 package refs
 
 import (
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // MeshReference is one call site's request for an imported mesh asset.

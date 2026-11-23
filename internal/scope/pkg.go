@@ -1,7 +1,7 @@
 package scope
 
 import (
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // PkgScope represents the scope of an entire GSL package.

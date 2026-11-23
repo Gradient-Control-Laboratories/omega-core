@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"gradientcontrol.com/omega/core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
 )
 
 // A mesh belongs to the return that reaches it, and that return's index is what

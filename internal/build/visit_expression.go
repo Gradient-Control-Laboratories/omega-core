@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func (b *Builder) VisitExpression(op *program.Operand, expr *program.Expression) (Expression, error) {

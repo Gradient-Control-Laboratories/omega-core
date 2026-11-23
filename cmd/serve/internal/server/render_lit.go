@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"gradientcontrol.com/omega/core/cmd/serve/internal/compiler"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/serve/internal/compiler"
 )
 
 // litProgressEvery and litProgressStep thin a CPU frame's progress, which is reported at every march step, to what

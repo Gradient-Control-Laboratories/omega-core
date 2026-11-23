@@ -1,9 +1,9 @@
 package parser
 
 import (
-	"gradientcontrol.com/omega/core/internal/stdpkg"
-	"gradientcontrol.com/omega/core/parser/internal/parser2"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/stdpkg"
+	"github.com/Gradient-Control-Laboratories/omega-core/parser/internal/parser2"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // Result holds the parsed package.

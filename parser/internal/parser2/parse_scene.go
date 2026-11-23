@@ -7,7 +7,7 @@ import (
 	participle "github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // newScene constructs and validates a new Scene protobuf message.

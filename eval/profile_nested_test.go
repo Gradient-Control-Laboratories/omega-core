@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // nested(fields): the solid bounded by surfaces that do not cross, each field

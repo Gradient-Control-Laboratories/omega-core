@@ -3,7 +3,7 @@ package property
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // A LIBRARY THAT RETURNS TWO SHAPES. fastener.setScrewSoftTip is the case that

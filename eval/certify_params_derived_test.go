@@ -6,7 +6,7 @@ import (
 	"context"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // derivedSliderDoc reaches its slider only through a declaration that does

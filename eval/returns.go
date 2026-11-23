@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"gradientcontrol.com/omega/core/assembler/slider"
-	"gradientcontrol.com/omega/core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/slider"
+	"github.com/Gradient-Control-Laboratories/omega-core/parser"
 )
 
 // SliderRanges parses the document and returns every declared slider's [min, max] range.

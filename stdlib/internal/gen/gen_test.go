@@ -8,10 +8,10 @@ import (
 	"testing"
 
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/internal/stdpkg"
-	"gradientcontrol.com/omega/core/parser"
-	"gradientcontrol.com/omega/core/program"
-	gsllibs "gradientcontrol.com/omega/core/stdlib"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/stdpkg"
+	"github.com/Gradient-Control-Laboratories/omega-core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	gsllibs "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
 )
 
 func TestGenerate_IncrementalSkipForceAndDeterminism(t *testing.T) {

@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/backend/tape"
-	"gradientcontrol.com/omega/core/internal/fidget"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/tape"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget"
 )
 
 // Build a unit-sphere SDF (sqrt(x^2+y^2+z^2) - 1) via the tree FFI, serialize it

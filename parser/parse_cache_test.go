@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/internal/stdpkg"
-	"gradientcontrol.com/omega/core/program"
-	gsllibs "gradientcontrol.com/omega/core/stdlib"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/stdpkg"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	gsllibs "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
 )
 
 // A package parsed a second time by CachingParser comes from the cache, and

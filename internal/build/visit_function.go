@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"gradientcontrol.com/omega/core/internal"
-	"gradientcontrol.com/omega/core/internal/scope"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func (b *Builder) visitFnType(fnType *program.FnType, scope *Scope) error {

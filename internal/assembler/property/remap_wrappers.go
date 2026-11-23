@@ -2,7 +2,7 @@ package property
 
 import (
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // A FUNCTION THAT ONLY MOVES ITS SHAPE IS A REMAP. transform.translate is

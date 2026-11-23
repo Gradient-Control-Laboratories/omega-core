@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"gradientcontrol.com/omega/core/tool/analyze-deps/internal/graph"
+	"github.com/Gradient-Control-Laboratories/omega-core/tool/analyze-deps/internal/graph"
 )
 
 // Violation represents an architectural invariant violation.

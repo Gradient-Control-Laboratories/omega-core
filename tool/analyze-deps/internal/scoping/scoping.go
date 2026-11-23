@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"gradientcontrol.com/omega/core/tool/analyze-deps/internal/graph"
+	"github.com/Gradient-Control-Laboratories/omega-core/tool/analyze-deps/internal/graph"
 )
 
 // ScopingReport contains diagnostic recommendations for narrowing an internal package.

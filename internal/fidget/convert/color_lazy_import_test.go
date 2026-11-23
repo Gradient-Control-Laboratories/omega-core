@@ -3,8 +3,8 @@ package convert_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/internal/fidget/convert"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget/convert"
 )
 
 // A coloured shape built on a library body that qualifies a package the

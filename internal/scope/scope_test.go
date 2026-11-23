@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/scope"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func TestScope_CoreNavigation(t *testing.T) {

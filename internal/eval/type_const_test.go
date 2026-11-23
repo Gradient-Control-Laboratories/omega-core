@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"gradientcontrol.com/omega/core/internal/eval"
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // A fold's verdict is stamped on the operand and nowhere else: no type in

@@ -1,7 +1,7 @@
 package build
 
 import (
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // Returns true if the types of the arguments match the types of the parameters.

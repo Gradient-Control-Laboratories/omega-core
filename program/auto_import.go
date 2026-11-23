@@ -3,7 +3,7 @@ package program
 import (
 	"sort"
 
-	gsllibs "gradientcontrol.com/omega/core/stdlib"
+	gsllibs "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
 )
 
 // UpdateImports prepares a GSL package by adding the implicit dot-import of "builtin"

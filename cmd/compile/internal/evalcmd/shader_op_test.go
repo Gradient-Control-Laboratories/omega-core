@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
 )
 
 // A ball with a slider, in a wall of noise: sliders, a texture, one body.

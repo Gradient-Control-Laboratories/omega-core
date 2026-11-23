@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // Shaft Modeling, Phase 1: a coaxial round stack in mechanical/shaft, held to

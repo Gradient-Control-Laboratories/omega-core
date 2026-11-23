@@ -4,11 +4,11 @@ import (
 	"errors"
 	"fmt"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/assembler/variation"
-	"gradientcontrol.com/omega/core/eval"
-	"gradientcontrol.com/omega/core/internal/compile"
-	"gradientcontrol.com/omega/core/internal/meshimport"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/variation"
+	"github.com/Gradient-Control-Laboratories/omega-core/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/compile"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/meshimport"
 )
 
 // MaxLitPixels bounds a CPU frame: 4096 x 4096.

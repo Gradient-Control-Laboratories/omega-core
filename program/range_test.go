@@ -3,8 +3,8 @@ package program_test
 import (
 	"testing"
 
-	parser "gradientcontrol.com/omega/core/parser"
-	"gradientcontrol.com/omega/core/program"
+	parser "github.com/Gradient-Control-Laboratories/omega-core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func TestRangeAnnotation_ConstAccessors(t *testing.T) {

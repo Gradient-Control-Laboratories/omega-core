@@ -3,10 +3,10 @@ package convert
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/internal"
-	"gradientcontrol.com/omega/core/internal/build"
-	"gradientcontrol.com/omega/core/internal/fidget"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/build"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // Each TreeNode represents a GSL number or vector

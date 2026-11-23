@@ -18,7 +18,7 @@ package property
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // Value is a property's abstract value for a single operand. Each Domain casts

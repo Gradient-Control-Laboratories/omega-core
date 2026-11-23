@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"gradientcontrol.com/omega/core/backend/wgsl/internal/wgsl"
-	"gradientcontrol.com/omega/core/internal/build"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl/internal/wgsl"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/build"
 )
 
 // DISPLACEMENT PER RETURN. A material's volume row carries a height the

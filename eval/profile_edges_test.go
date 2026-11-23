@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // profileEdgesXY(points, edges), openProfileEdgesXY(points, edges) and

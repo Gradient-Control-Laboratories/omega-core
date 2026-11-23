@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // computeSpinodoidBounds computes the 6-element [minX, minY, minZ, maxX, maxY, maxZ]

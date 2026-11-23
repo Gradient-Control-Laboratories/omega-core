@@ -1,7 +1,7 @@
 package build
 
 import (
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // FoldLooper is a Delegate that can build a reduce as a loop: one copy of its

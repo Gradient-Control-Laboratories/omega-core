@@ -3,7 +3,7 @@ package property
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // A companion keeps the plain __d name while its function has one overload,

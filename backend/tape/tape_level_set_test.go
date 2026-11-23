@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/backend/tape"
-	"gradientcontrol.com/omega/core/program/meshasset"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/tape"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/meshasset"
 )
 
 // A tape asked for level sets carries each vdbSdf's baked grid in its oracle

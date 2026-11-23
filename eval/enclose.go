@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"math"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 const (

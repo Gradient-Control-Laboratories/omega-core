@@ -3,8 +3,8 @@ package inline
 import (
 	"strings"
 
-	"gradientcontrol.com/omega/core/internal/scope"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // hardwareAccelPkgs registers packages whose operations are accelerated by

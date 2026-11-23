@@ -6,11 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/backend/wgsl/internal/codegen"
-	"gradientcontrol.com/omega/core/backend/wgsl/internal/wgsltest"
-	"gradientcontrol.com/omega/core/internal/source"
-	"gradientcontrol.com/omega/core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl/internal/codegen"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl/internal/wgsltest"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
 )
 
 func TestBuildUniform(t *testing.T) {

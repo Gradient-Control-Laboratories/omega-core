@@ -18,7 +18,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"gradientcontrol.com/omega/core/internal/compile"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/compile"
 )
 
 const (

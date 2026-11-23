@@ -13,14 +13,14 @@ import (
 	"sync"
 
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/assembler/source"
-	"gradientcontrol.com/omega/core/internal/fidget"
-	"gradientcontrol.com/omega/core/internal/meshfold"
-	"gradientcontrol.com/omega/core/internal/meshimport"
-	"gradientcontrol.com/omega/core/parser"
-	"gradientcontrol.com/omega/core/program"
-	gsllibs "gradientcontrol.com/omega/core/stdlib"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/meshfold"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/meshimport"
+	"github.com/Gradient-Control-Laboratories/omega-core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	gsllibs "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
 )
 
 // Evaluator evaluates GSL query expressions against a document via fidget.

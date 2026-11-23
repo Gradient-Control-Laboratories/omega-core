@@ -1,8 +1,8 @@
 package codegen
 
 import (
-	"gradientcontrol.com/omega/core/backend/wgsl/internal/ir"
-	"gradientcontrol.com/omega/core/backend/wgsl/internal/wgsl"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl/internal/ir"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl/internal/wgsl"
 )
 
 type BuildContext struct {

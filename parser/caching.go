@@ -6,9 +6,9 @@ import (
 	"sync"
 
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/internal/stdpkg"
-	"gradientcontrol.com/omega/core/parser/internal/parser2"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/stdpkg"
+	"github.com/Gradient-Control-Laboratories/omega-core/parser/internal/parser2"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // defaultCacheLimit bounds the non-stdlib source bytes whose parses are kept by default (4 MiB).

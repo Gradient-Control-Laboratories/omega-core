@@ -3,7 +3,7 @@ package scope
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // FnScope represents the scope inside a GSL function body.

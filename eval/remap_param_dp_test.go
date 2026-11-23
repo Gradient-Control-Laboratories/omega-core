@@ -5,8 +5,8 @@ package eval
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // .dp of a remap agrees with fidget's own gradient whether the remapped field is a declaration,

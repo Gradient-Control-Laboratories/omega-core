@@ -5,9 +5,9 @@ package eval_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/eval"
-	"gradientcontrol.com/omega/core/internal/source"
-	"gradientcontrol.com/omega/core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
 )
 
 // A slider read by a field that a closure's remap re-derives: unionRoundExact

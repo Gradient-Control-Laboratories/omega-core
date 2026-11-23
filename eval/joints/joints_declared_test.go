@@ -7,8 +7,8 @@ import (
 	"math"
 	"testing"
 
-	"gradientcontrol.com/omega/core/eval"
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // TestDeclaredInterfaces: joint.planar's two half-spaces are each negative on

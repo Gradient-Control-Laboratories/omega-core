@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 const ln2 = 0.6931471805599453

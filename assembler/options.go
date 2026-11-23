@@ -1,11 +1,11 @@
 package assembler
 
 import (
-	"gradientcontrol.com/omega/core/assembler/source"
-	"gradientcontrol.com/omega/core/assembler/topofold"
-	"gradientcontrol.com/omega/core/assembler/warpfold"
-	internalsource "gradientcontrol.com/omega/core/internal/source"
-	"gradientcontrol.com/omega/core/program/progress"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/topofold"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/warpfold"
+	internalsource "github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/progress"
 )
 
 // Option configures program assembly.

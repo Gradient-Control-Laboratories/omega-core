@@ -3,7 +3,7 @@ package closure_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // TestClosure_ParameterShadowsForeignFunction: a parameter named like a

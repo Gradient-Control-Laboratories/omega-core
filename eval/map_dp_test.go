@@ -6,8 +6,8 @@ import (
 	"math"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // A map over a list of fields whose function applies .dp to its element, directly or through a

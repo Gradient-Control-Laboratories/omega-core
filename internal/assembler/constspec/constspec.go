@@ -30,7 +30,7 @@ import (
 	"strings"
 
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // Transform specializes every call in prog that passes a scalar constant for a

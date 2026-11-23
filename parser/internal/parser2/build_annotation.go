@@ -5,9 +5,9 @@ import (
 
 	participle "github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
-	"gradientcontrol.com/omega/core/internal/scope"
-	"gradientcontrol.com/omega/core/parser/internal/annotation"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
+	"github.com/Gradient-Control-Laboratories/omega-core/parser/internal/annotation"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func buildAnnotatedDeclaration(buildScope scope.BuilderScope, decl *AnnotatedDeclaration) error {

@@ -3,7 +3,7 @@
 ## Primary Languages & Runtimes
 
 - **Go (`go 1.26`):** Core implementation language for the GSL lexer/parser, assembler passes,
-  evaluator, WGSL/Audio/Tape backends, and `gsl` CLI tools (`module gradientcontrol.com/omega/core`).
+  evaluator, WGSL/Audio/Tape backends, and `gsl` CLI tools (`module github.com/Gradient-Control-Laboratories/omega-core`).
 - **Rust (`Cargo.toml`):** Native Fidget interval-arithmetic / Manifold Dual Contouring (MDC)
   meshing and bytecode VM evaluation static library linked via CGO (`internal/fidget`).
 - **C / C++:** Native Manifold 3D CSG boolean library linked via CGO (`backend/internal/manifold`).

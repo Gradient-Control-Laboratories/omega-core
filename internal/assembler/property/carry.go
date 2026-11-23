@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // PROPERTIES CARRIED OUT OF A FUNCTION. A property is a fact about a named

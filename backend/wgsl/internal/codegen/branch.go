@@ -3,10 +3,10 @@ package codegen
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/backend/wgsl/internal/ir"
-	"gradientcontrol.com/omega/core/backend/wgsl/internal/wgsl"
-	"gradientcontrol.com/omega/core/internal/build"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl/internal/ir"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl/internal/wgsl"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/build"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // A CHOICE THE SAME EVERYWHERE. A GSL ternary is WGSL's select(falseValue,

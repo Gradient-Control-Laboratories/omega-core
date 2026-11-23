@@ -5,8 +5,8 @@ import (
 	"sync"
 
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/internal/stdpkg"
-	_ "gradientcontrol.com/omega/core/stdlib"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/stdpkg"
+	_ "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
 )
 
 // GetImportFunc resolves an import path to its package. It mirrors

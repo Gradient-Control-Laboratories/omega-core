@@ -5,7 +5,7 @@ import (
 	"math"
 	"testing"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // materialLit builds a material record literal: three vec4 rows.

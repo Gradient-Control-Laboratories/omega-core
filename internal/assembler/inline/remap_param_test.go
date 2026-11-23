@@ -3,7 +3,7 @@ package inline_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // A shape passed into a function that remaps it must inline. Built as a real

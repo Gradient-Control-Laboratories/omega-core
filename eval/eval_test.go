@@ -7,8 +7,8 @@ import (
 	"math"
 	"testing"
 
-	"gradientcontrol.com/omega/core/eval"
-	"gradientcontrol.com/omega/core/eval/joints"
+	"github.com/Gradient-Control-Laboratories/omega-core/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/eval/joints"
 )
 
 func TestEvalAPI(t *testing.T) {

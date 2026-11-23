@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/eval"
 )
 
 // Manifest is what the browser panel reads: the sheet's geometry and the

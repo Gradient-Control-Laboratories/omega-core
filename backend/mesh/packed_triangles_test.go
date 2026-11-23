@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 
-	"gradientcontrol.com/omega/core/backend/mesh"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/mesh"
 )
 
 func TestDecodePackedTriangles(t *testing.T) {

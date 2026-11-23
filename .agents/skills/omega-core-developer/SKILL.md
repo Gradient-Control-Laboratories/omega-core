@@ -36,7 +36,7 @@ documentation with `bin/gsl skill` (generated from `program/preamble/` and the e
 
 ## 3. Standalone SDK Boundary Invariants
 
-`omega-core` (`module gradientcontrol.com/omega/core`) is a standalone, pure compiler and geometry
+`omega-core` (`module github.com/Gradient-Control-Laboratories/omega-core`) is a standalone, pure compiler and geometry
 SDK:
 - Never introduce dependencies on Stirigma, gRPC microservice dispatchers, cloud SDKs, or parent
   `omega` packages.

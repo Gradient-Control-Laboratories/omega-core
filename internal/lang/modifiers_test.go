@@ -3,7 +3,7 @@ package lang_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/lang"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/lang"
 )
 
 func TestModifierKindString(t *testing.T) {

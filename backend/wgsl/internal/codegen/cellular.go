@@ -3,8 +3,8 @@ package codegen
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/program"
-	noise "gradientcontrol.com/omega/core/program/noise"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	noise "github.com/Gradient-Control-Laboratories/omega-core/program/noise"
 )
 
 // Cellular (Worley) noise, emitted as ONE helper with a real WGSL `for` loop.

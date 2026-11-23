@@ -4,8 +4,8 @@ import (
 	"math"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
 )
 
 // With no expr, a query asks of the document's returns however the return statement is led: by a comment above it,

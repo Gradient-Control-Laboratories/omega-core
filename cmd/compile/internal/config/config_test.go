@@ -3,9 +3,9 @@ package config_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/cmd/compile/internal/config"
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/compile/internal/config"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
 )
 
 func TestParseFlags_Defaults(t *testing.T) {

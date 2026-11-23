@@ -1,8 +1,8 @@
 package audio
 
 import (
-	"gradientcontrol.com/omega/core/backend/audio/internal/codegen"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/audio/internal/codegen"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // AudioToJs translates an assembled GSL program into Web Audio JavaScript.

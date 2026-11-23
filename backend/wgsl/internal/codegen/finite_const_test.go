@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // TestNonFiniteConstantIsAnError: a constant that folds to infinity or NaN, a

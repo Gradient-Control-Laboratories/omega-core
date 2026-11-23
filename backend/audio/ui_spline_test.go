@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/backend/audio"
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/audio"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 func TestSplinePreservesAudioCode(t *testing.T) {

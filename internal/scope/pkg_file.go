@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // PkgFileScope represents the scope of a single file in a GSL package.

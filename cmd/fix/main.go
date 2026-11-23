@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"gradientcontrol.com/omega/core/cmd/fix/internal/cli"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/fix/internal/cli"
 )
 
 func main() {

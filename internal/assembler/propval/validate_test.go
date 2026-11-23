@@ -4,11 +4,11 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/assembler/propval"
-	"gradientcontrol.com/omega/core/internal/collect"
-	"gradientcontrol.com/omega/core/internal/link"
-	"gradientcontrol.com/omega/core/internal/source"
-	parser "gradientcontrol.com/omega/core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/propval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/collect"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/link"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	parser "github.com/Gradient-Control-Laboratories/omega-core/parser"
 )
 
 func parseAndValidate(t *testing.T, src string) error {

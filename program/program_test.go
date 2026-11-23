@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
 )
 
 func TestOperationIsBool(t *testing.T) {

@@ -2,11 +2,11 @@ package meshfold
 
 import (
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/assembler/meshslots"
-	"gradientcontrol.com/omega/core/internal/closure"
-	"gradientcontrol.com/omega/core/internal/eval"
-	"gradientcontrol.com/omega/core/internal/types"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/meshslots"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/closure"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/types"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // TODO: Inline this func

@@ -3,7 +3,7 @@ package unroll
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // Transform lowers collection arithmetic, unary negation, and math op calls

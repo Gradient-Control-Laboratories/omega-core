@@ -6,9 +6,9 @@ import (
 	"sort"
 	"strings"
 
-	"gradientcontrol.com/omega/core/internal/eval"
-	"gradientcontrol.com/omega/core/program"
-	"gradientcontrol.com/omega/core/program/edit"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/edit"
 )
 
 const (

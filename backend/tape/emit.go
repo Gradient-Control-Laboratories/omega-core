@@ -4,12 +4,12 @@ import (
 	"fmt"
 
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/internal/fidget"
-	"gradientcontrol.com/omega/core/internal/fidget/convert"
-	"gradientcontrol.com/omega/core/program"
-	"gradientcontrol.com/omega/core/program/meshasset"
-	"gradientcontrol.com/omega/core/program/noise/spinodoid"
-	"gradientcontrol.com/omega/core/program/progress"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget/convert"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/meshasset"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/noise/spinodoid"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/progress"
 )
 
 // MeshSdfOracle holds the triangle soup for a bvhSdf(AssetID) leaf.

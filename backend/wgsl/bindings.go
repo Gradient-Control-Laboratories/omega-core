@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"math"
 
-	"gradientcontrol.com/omega/core/program/float16"
-	"gradientcontrol.com/omega/core/program/meshasset"
-	"gradientcontrol.com/omega/core/program/noise/spinodoid"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/float16"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/meshasset"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/noise/spinodoid"
 )
 
 // SpinodoidBinding is the 2D texture the viewer binds as spinodoidTex: Dims

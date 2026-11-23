@@ -2,7 +2,7 @@ package meshplan
 
 import (
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // inlineFnCall inlines single-expression functions returning mesh calls or SDFs.

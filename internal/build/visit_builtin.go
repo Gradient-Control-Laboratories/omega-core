@@ -3,7 +3,7 @@ package build
 import (
 	"math"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func (b *Builder) visitBuiltin(builtin *program.BuiltinType, op *program.Operand, fnCall *program.FnCall, args []Expression) (Expression, error) {

@@ -7,10 +7,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	"gradientcontrol.com/omega/core/cmd/compile/internal/cli"
-	"gradientcontrol.com/omega/core/cmd/compile/internal/evalcmd"
-	"gradientcontrol.com/omega/core/cmd/compile/internal/skillcmd"
-	"gradientcontrol.com/omega/core/cmd/serve/viewer"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/compile/internal/cli"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/compile/internal/evalcmd"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/compile/internal/skillcmd"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/serve/viewer"
 )
 
 func main() {

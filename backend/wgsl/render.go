@@ -3,9 +3,9 @@ package wgsl
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/backend/wgsl/internal/codegen"
-	"gradientcontrol.com/omega/core/program"
-	"gradientcontrol.com/omega/core/program/edit"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl/internal/codegen"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/edit"
 )
 
 // collectibleFunction groups a function name with its AST declaration.

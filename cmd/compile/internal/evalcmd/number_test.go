@@ -5,8 +5,8 @@ import (
 	"math"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
 )
 
 // A value that is not finite is written as null (encoding/json refuses NaN and infinities); a float32 is written at

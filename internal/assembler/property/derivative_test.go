@@ -5,7 +5,7 @@ import (
 	"math"
 	"testing"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // point holds concrete values for the implied variables used when numerically
