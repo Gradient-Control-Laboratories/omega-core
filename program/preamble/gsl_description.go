@@ -210,7 +210,9 @@ A declaration property that says where a shape is: ` + "`name.box = [lo, hi];`" 
 two vec3 corners. The declaration is cut to that box, grown by ` + "`boxPad`" + `, so
 a correct box changes nothing and a tight one crops. The viewer cuts the part
 open, so its inside shows through where the box crosses it; export caps it,
-so the exported part stays closed. Declare one where the box cannot be
+so the exported part stays closed. With no ` + "`--bbox`" + `, ` + "`gsl compile`" + ` meshes the
+returned value's box, when it is bounded, ahead of ` + "`@scene`" + `.
+Declare one where the box cannot be
 inferred — on a remapped
 shape, or inside a function in terms of its parameters, as a library part
 would — and read it back with ` + "`name.box`" + ` (see Bounding box below).

@@ -692,3 +692,35 @@ type fnResult struct {
 	outOfScope []scope.NamedElem
 	err        error
 }
+
+// Declarations counts the assignments and functions in prog, nested ones included: what Remove can remove. Remove
+// only removes, so a smaller count after it means it removed something.
+func Declarations(prog *program.Program) int {
+	if prog == nil {
+		return 0
+	}
+	n := 0
+	for _, pkg := range append([]*program.Package{prog.Primary}, prog.Dependencies...) {
+		if pkg == nil {
+			continue
+		}
+		for _, file := range pkg.Files {
+			if file != nil {
+				n += len(file.Assignments) + fnTypeDeclarations(file.FnTypes)
+			}
+		}
+	}
+	return n
+}
+
+func fnTypeDeclarations(fnTypes []*program.FnType) int {
+	n := 0
+	for _, ft := range fnTypes {
+		for _, group := range ft.GetGroups() {
+			for _, fn := range group.GetFunctions() {
+				n += 1 + len(fn.GetAssignments()) + fnTypeDeclarations(fn.GetFnTypes())
+			}
+		}
+	}
+	return n
+}

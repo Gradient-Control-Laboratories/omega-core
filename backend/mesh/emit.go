@@ -46,6 +46,7 @@ type options struct {
 	subdivision int
 	bbox        [6]float32
 	hasBbox     bool
+	padCells    int
 	algo        string
 	time        float64
 	meshOracles []meshasset.MeshSdfOracle
@@ -91,6 +92,15 @@ func Bbox(bbox [6]float32) Option {
 // If omitted, the bounding box is automatically derived from the program's @scene or AST bounds.
 func WithBbox(bbox [6]float32) Option {
 	return Bbox(bbox)
+}
+
+// WithBboxPadCells grows the bounding box by cells of the mesh's own octree, at its subdivision, just before meshing
+// (fidget.PadBbox): for a box that says where the part is, so a face lying on it falls inside the mesher's cells.
+// The room halves with each level of subdivision. Zero, the default, meshes the box as given.
+func WithBboxPadCells(cells int) Option {
+	return func(o *options) {
+		o.padCells = cells
+	}
 }
 
 // Algorithm selects the polygonization algorithm ("marching-cubes" or "mdc").
@@ -267,7 +277,8 @@ func Mesh(prog *program.Program, opts ...Option) ([]byte, error) {
 	var stlBytes []byte
 	var err error
 	err = convert.ToTreesAtTime(prog, o.time, func(treeIndices []fidget.TreeIndex, _ []string) error {
-		stlBytes, err = fidget.GenerateSTL(treeIndices, o.subdivision, o.bbox, o.algo, internalProgress)
+		stlBytes, err = fidget.GenerateSTL(treeIndices, o.subdivision, fidget.PadBbox(o.bbox, o.subdivision, o.padCells),
+			o.algo, internalProgress)
 		return err
 	})
 	return stlBytes, err

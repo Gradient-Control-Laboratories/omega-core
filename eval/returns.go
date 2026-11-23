@@ -57,6 +57,32 @@ func TopLevelReturnExprs(source string) []string {
 	return nil
 }
 
+// DeclaredReturnBox is the text of the box the document declares on what it returns: when it returns one name, the
+// right-hand side of that name's last top-level `name.box = [lo, hi];`, as written. ok is false when the document
+// returns more than one value or an expression, or declares no box on the name it returns.
+func DeclaredReturnBox(source string) (rhs string, ok bool) {
+	returns := TopLevelReturnExprs(source)
+	if len(returns) != 1 || identifierEnd(returns[0], 0) != len(returns[0]) {
+		return "", false
+	}
+	prefix := returns[0] + ".box"
+	for _, s := range topLevelStatements(source) {
+		decl := strings.TrimSpace(s.text[s.keep:])
+		if !strings.HasPrefix(decl, prefix) {
+			continue
+		}
+		rest := strings.TrimSpace(decl[len(prefix):])
+		if !strings.HasPrefix(rest, "=") || strings.HasPrefix(rest, "==") {
+			continue
+		}
+		value := strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(rest[1:]), ";"))
+		if value != "" {
+			rhs, ok = value, true
+		}
+	}
+	return rhs, ok
+}
+
 // splitTopLevelCommas splits src on commas at bracket depth zero, treating
 // strings and comments as opaque — the same conventions as
 // topLevelStatements.
