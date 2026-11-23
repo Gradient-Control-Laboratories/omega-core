@@ -118,10 +118,9 @@ the user can grab the slider manually at any time. For example:
   @range(0.5, 10.0, 4.0) radius = 5.0;  // animate radius over 4 seconds
   return remap(sphere(radius), p);
   ` + "```" + `
-Older sources write the same limits as ` + "`radius.min = 0.5;`" + `,
-` + "`radius.max = 10.0;`" + ` and ` + "`radius.period = 4.0;`" + ` below the variable.
-Those properties are deprecated: write ` + "`@range`" + `, and ` + "`gsl fix -range`" + `
-rewrites old sources.
+The ` + "`.min`, `.max` and `.period`" + ` properties older sources used for these limits
+were removed: a source that still sets one does not compile, and
+` + "`gsl fix -range`" + ` rewrites it to ` + "`@range`" + `.
 
 * **Control annotations:**
 A top-level variable assigned a literal can instead carry one annotation
@@ -211,7 +210,9 @@ A declaration property that says where a shape is: ` + "`name.box = [lo, hi];`" 
 two vec3 corners. The declaration is cut to that box, grown by ` + "`boxPad`" + `, so
 a correct box changes nothing and a tight one crops. The viewer cuts the part
 open, so its inside shows through where the box crosses it; export caps it,
-so the exported part stays closed. Declare one where the box cannot be
+so the exported part stays closed. With no ` + "`--bbox`" + `, ` + "`gsl compile`" + ` meshes the
+returned value's box, when it is bounded, ahead of ` + "`@scene`" + `.
+Declare one where the box cannot be
 inferred — on a remapped
 shape, or inside a function in terms of its parameters, as a library part
 would — and read it back with ` + "`name.box`" + ` (see Bounding box below).

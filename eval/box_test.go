@@ -60,9 +60,7 @@ func TestBoundingBox(t *testing.T) {
 	code := `
 a = sphere([1, 2, 3], 0.5);
 b = box([0, 0, 0], [1, 2, 3]);
-r = 0.5;
-r.min = 0.1;
-r.max = 2.0;
+@range(0.1, 2.0) r = 0.5;
 mySphere(c, rad) { return length(p - c) - rad; }
 return a;
 `

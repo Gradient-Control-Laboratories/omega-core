@@ -42,24 +42,3 @@ func TestExtractSliders_RangeBoundsReadComputedAndLaterConstants(t *testing.T) {
 	assert.Equal(t, 1.0, sliders[0].Min)
 	assert.Equal(t, 24.0, sliders[0].Max)
 }
-
-// The same bounds written as .min/.max/.period properties keep their slider when
-// they read a constant that is itself computed. The parser hands the synthesized
-// range the properties' own operands, but a pass that folds a property's
-// expression to 24 swaps in a new operand and leaves the range with the old tree,
-// which reads `hi`, a variable dead-code elimination had removed because nothing
-// live reads it any more: the slider vanished without an error.
-func TestExtractSliders_PropertyBoundsReadComputedConstants(t *testing.T) {
-	src := "hi = 10 + 2;\n" +
-		"x = 5;\n" +
-		"x.min = 0;\n" +
-		"x.max = hi * 2;\n" +
-		"x.period = hi / 4;\n" +
-		"return sphere(x);\n"
-	sliders := runExtract(t, src)
-	assert.Equal(t, 1, len(sliders))
-	assert.Equal(t, "x", sliders[0].Name)
-	assert.Equal(t, 0.0, sliders[0].Min)
-	assert.Equal(t, 24.0, sliders[0].Max)
-	assert.Equal(t, 3.0, sliders[0].Period)
-}

@@ -537,11 +537,19 @@ func optimizeProgram(prog *program.Program, o *options, srcMgr source.Manager) (
 			return nil, err
 		}
 
-		// 6. Dead code elimination: prune unused declarations between rounds
+		// 6. Dead code elimination: prune unused declarations between rounds.
+		// What it removes can leave a fold to make (a constant the removed code
+		// kept from folding), so it counts toward the fixed point: stopping here
+		// left such a fold undone, and made a program's output depend on what
+		// else the libraries hold, which can add rounds of their own.
 		if o.enableDeadcodeRemoval {
+			before := deadcode.Declarations(prog)
 			prog, err = deadcode.Remove(prog)
 			if err != nil {
 				return nil, err
+			}
+			if deadcode.Declarations(prog) != before {
+				modifiedAny = true
 			}
 		}
 
