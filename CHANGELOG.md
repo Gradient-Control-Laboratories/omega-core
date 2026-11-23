@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A `draft` package: faces tapered from a hinge curve by an angle to a pull direction.
+  `draft.horizontalCurve(horizontal, vertical, angle)` is the surface through a curve in a plane normal to the
+  pull, `horizontal·cos(angle) + vertical·sin(angle)`, from the signed distance to the curve within planes
+  normal to the pull and the height above the curve's plane; the section at height h is the profile offset
+  inward by h·tan(angle), with unit gradient. `draft.point(center, pull, angle)` is the cone with its apex at a
+  point. A profile with sharp corners is given as the max or min of its sides' half-planes, so that its
+  corners stay sharp as draft keeps them.
 - `nested(fields)` combines exact fields whose surfaces do not cross, each wound with its solid on the negative
   side (counterclockwise outlines and islands, clockwise holes), into one exact distance in any order: an outline
   with holes in a single profile, or a 3D solid with a void.
