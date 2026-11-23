@@ -6,6 +6,30 @@ import (
 	gotime "time"
 )
 
+// PadBbox grows bbox by cells of an octree of depth subdivisionLevel over it, on every axis: room for a surface lying
+// on the box to fall inside the mesher's cells. The room is the mesh's own cells, so it halves with each level. An
+// axis of zero size takes its cell from the largest axis.
+func PadBbox(bbox [6]float32, subdivisionLevel, cells int) [6]float32 {
+	if cells <= 0 {
+		return bbox
+	}
+	n := float32(int(1) << uint(subdivisionLevel))
+	largest := float32(0)
+	for k := 0; k < 3; k++ {
+		largest = max(largest, bbox[k+3]-bbox[k])
+	}
+	for k := 0; k < 3; k++ {
+		size := bbox[k+3] - bbox[k]
+		if size <= 0 {
+			size = largest
+		}
+		pad := float32(cells) * size / n
+		bbox[k] -= pad
+		bbox[k+3] += pad
+	}
+	return bbox
+}
+
 // GenerateSTL meshes the union of treeIndices into binary STL bytes using
 // either "marching-cubes" or Manifold Dual Contouring ("mdc").
 // It assumes the caller holds fidget.Lock().

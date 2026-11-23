@@ -215,9 +215,6 @@ func (f *FnScope) AddPropertyAssignment(varName, propName string, expr *program.
 	}
 
 	variable.Var.AddPropertyAssignment(propName, expr, start, end)
-	if propName == "min" || propName == "max" || propName == "period" {
-		synthesizeRangeAnnotation(variable)
-	}
 	return nil
 }
 

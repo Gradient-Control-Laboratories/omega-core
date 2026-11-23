@@ -143,9 +143,9 @@ type boxProp struct {
 	// a builtin primitive only when the package has not declared its own
 	// function of that name, since a user's box() owes nothing to builtin's.
 	own map[string]bool
-	// sliders names the declarations the viewer can move (those with @range,
-	// .min, .max or .period). Their declared value is only where they start, so one
-	// used as a field is not the positive constant it reads as here.
+	// sliders names the declarations the viewer can move (those with @range).
+	// Their declared value is only where they start, so one used as a field is not
+	// the positive constant it reads as here.
 	sliders map[string]bool
 }
 

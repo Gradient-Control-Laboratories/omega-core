@@ -11,21 +11,6 @@ Expected:
                 - value: 2
                 - value: 3
               operation: ADD
-          range:
-            max:
-              expression:
-                operands:
-                  - value: 12
-                  - reference:
-                      name: aValue
-                operation: ADD
-            min:
-              expression:
-                operands:
-                  - value: -7
-                  - reference:
-                      name: aValue
-                operation: SUB
           variables:
             - name: someValue
               properties:
@@ -47,11 +32,6 @@ Expected:
                   name: max
         - expression:
             value: 42
-          range:
-            max:
-              value: 100
-            min:
-              value: 10
           variables:
             - name: someValue2
               properties:

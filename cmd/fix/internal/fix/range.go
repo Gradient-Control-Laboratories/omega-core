@@ -111,7 +111,7 @@ func rangeEditsFor(src string, a *program.Assignment) (edits []rangeEdit, name s
 	if a == nil || a.Start == nil || len(a.Variables) != 1 || a.Variables[0] == nil {
 		return nil, "", false
 	}
-	if a.Range != nil && !a.Range.IsSynthetic() {
+	if a.Range != nil {
 		return nil, "", false
 	}
 	v := a.Variables[0]
@@ -287,7 +287,7 @@ func checkRangeFix(out string, converted []string) error {
 			continue
 		}
 		name := a.Variables[0].Name
-		if a.Range == nil || a.Range.IsSynthetic() {
+		if a.Range == nil {
 			return fmt.Errorf("range: %s has no @range after the rewrite", name)
 		}
 		for _, p := range a.Variables[0].Properties {

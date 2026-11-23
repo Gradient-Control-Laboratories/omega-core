@@ -107,7 +107,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [eval-core, eval-heavy, other-heavy, other]
+        shard: [eval-0, eval-1, eval-2, eval-sub, eval-heavy, other-gpu, other-swatch, other]
     steps:
       - uses: actions/checkout@v7
         with:

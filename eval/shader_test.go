@@ -66,23 +66,23 @@ func TestShader_BothTargets(t *testing.T) {
 	}
 }
 
-// defs apply as they do to every query. One that replaces a slider whose range is in .min and .max moves its
-// value and it stays a slider. One that replaces a slider declared with @range replaces the annotation too
-// (substituteTopLevelDecls), so the value is built into the field and there is no slider to move.
+// defs apply as they do to every query. One that replaces a slider declared with @range replaces the annotation
+// too (substituteTopLevelDecls), so the value is built into the field and there is no slider to move.
 func TestShader_DefsAndSliders(t *testing.T) {
 	e := eval.New(&source.MockManager{}, nil)
-	doc := "@scene(40)\nr = 5.0;\nr.min = 2.0;\nr.max = 12.0;\nball = length(p) - r;\nreturn ball;\n"
-	res, err := e.Shader(t.Context(), nil, doc, "r = 7.0;", eval.ShaderOptions{Target: "wgsl"})
-	require.NoError(t, err)
-	require.Len(t, res.Sliders, 1)
-	require.Equal(t, "r", res.Sliders[0].Name)
-	require.Equal(t, 7.0, res.Sliders[0].Value)
-	require.Equal(t, 2.0, res.Sliders[0].Min)
-
-	res, err = e.Shader(t.Context(), nil, meshBallDoc, "r = 7.0;", eval.ShaderOptions{Target: "wgsl"})
+	res, err := e.Shader(t.Context(), nil, meshBallDoc, "r = 7.0;", eval.ShaderOptions{Target: "wgsl"})
 	require.NoError(t, err)
 	require.Empty(t, res.Sliders)
 	require.Contains(t, res.Code, "7.0")
+
+	// Without the def the same document keeps its slider.
+	res, err = e.Shader(t.Context(), nil, meshBallDoc, "", eval.ShaderOptions{Target: "wgsl"})
+	require.NoError(t, err)
+	require.Len(t, res.Sliders, 1)
+	require.Equal(t, "r", res.Sliders[0].Name)
+	require.Equal(t, 5.0, res.Sliders[0].Value)
+	require.Equal(t, 2.0, res.Sliders[0].Min)
+	require.Equal(t, 12.0, res.Sliders[0].Max)
 }
 
 // The WGSL response is a module naga parses and validates once an entry point
