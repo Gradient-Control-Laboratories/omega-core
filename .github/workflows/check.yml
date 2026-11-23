@@ -7,6 +7,7 @@ on:
       - "**.md"
       - "conductor/**"
   pull_request:
+    types: [opened, synchronize, reopened, closed]
     paths-ignore:
       - "**.md"
       - "conductor/**"
@@ -16,11 +17,12 @@ permissions:
 
 concurrency:
   group: check-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: true
 
 jobs:
   lint:
     name: Lint & Vet
+    if: ${{ github.event_name != 'pull_request' || github.event.action != 'closed' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -42,6 +44,7 @@ jobs:
 
   build:
     name: Build Native Libraries
+    if: ${{ github.event_name != 'pull_request' || github.event.action != 'closed' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
