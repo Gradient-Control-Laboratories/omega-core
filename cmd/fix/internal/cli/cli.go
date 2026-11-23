@@ -143,9 +143,16 @@ func processFile(filePath string, activeFixers []fix.Fixer, diffMode bool, stdou
 	}
 
 	orig := string(rawBytes)
-	updated, changed, err := fix.Apply(orig, activeFixers)
+	updated, changed, notes, err := fix.ApplyWithNotes(orig, activeFixers)
 	if err != nil {
 		return false, fmt.Errorf("fixing %s: %w", filePath, err)
+	}
+	for _, n := range notes {
+		if n.Line > 0 {
+			fmt.Fprintf(stdout, "%s:%d: %s\n", filepath.ToSlash(filePath), n.Line, n.Message)
+		} else {
+			fmt.Fprintf(stdout, "%s: %s\n", filepath.ToSlash(filePath), n.Message)
+		}
 	}
 	if !changed || updated == orig {
 		return false, nil
