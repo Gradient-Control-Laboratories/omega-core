@@ -128,3 +128,24 @@ func TestRun_NonexistentPath(t *testing.T) {
 	err := cli.Run([]string{"/nonexistent/path/to/file.gsl"}, &stdout)
 	require.Error(t, err)
 }
+
+func TestRun_StdlibFlagAndNotes(t *testing.T) {
+	tmpDir := t.TempDir()
+	gslPath := filepath.Join(tmpDir, "legacy.gsl")
+	orig := `a = sphere([-0.5, 0, 0], 1);
+b = sphere([0.5, 0, 0], 1);
+u = unionRoundExact(() { return a; }, () { return b; });
+s = sweepLoft(circle(1), circle(2), [0, 0, 0], [5, 0, 5], [10, 0, 0]);
+return min(u, s);
+`
+	require.NoError(t, os.WriteFile(gslPath, []byte(orig), 0644))
+
+	var stdout bytes.Buffer
+	err := cli.Run([]string{"-stdlib", gslPath}, &stdout)
+	require.NoError(t, err)
+
+	updated, err := os.ReadFile(gslPath)
+	require.NoError(t, err)
+	assert.Contains(t, string(updated), "u = unionRoundExact(a, b, 0);")
+	assert.Contains(t, stdout.String(), ":4: sweepLoft was removed from builtin")
+}

@@ -17,13 +17,16 @@ from `1.0.0` onward).
   `(field1, field2, normal1, normal2)` are now `(field1, field2, radius, normal1, normal2)` taking
   plain field values. Pass `radius = 0` to keep the previous sharp exact union/intersection
   (`unionRoundExact(a, b, 0, a.dp, b.dp)` replaces `unionRoundExact(() { return a; }, () { return b; })`).
+  `gsl fix -stdlib` rewrites 2-argument and 4-argument thunk calls to value-based calls with
+  `radius = 0`.
 - **Removed `sweepLoft` and `bezierTubeDir` from `builtin`**: `sweepLoft`, `sweepLoftScale`,
   `sweepLoftScaleSmooth`, `sweepLoftScaleSmoothSeparateCaps` and `bezierTubeDir` were removed from
   `builtin`. They lofted two sections along a 3D quadratic Bezier, but mixed the sections' distances
   by the curve's parameter and scaled by it, so the field was not a distance bound, and they carried
   no frame, box or material. Existing documents calling them will fail to compile. For constant-section
   planar sweeps (including quadratic Bezier paths), migrate to `sweep`, `sweepOpen`, or
-  `sweepOpenEdges` with `edgeBezier`. There is no direct 3D lofting replacement or `gsl fix` migration;
+  `sweepOpenEdges` with `edgeBezier`. There is no direct 3D lofting replacement, so `gsl fix -stdlib`
+  cannot rewrite them automatically and instead prints manual migration suggestions at each call site;
   documents that need the old 3D lofting behavior can keep a copy in their own library.
 - **Removed `.min`, `.max` and `.period` slider properties (replaced by `@range`)**: A document that
   sets `.min`, `.max` or `.period` no longer compiles: the error is at its first such statement and
@@ -33,6 +36,10 @@ from `1.0.0` onward).
 
 ### Added
 
+- `gsl fix -stdlib`: migrates removed 2-argument and 4-argument thunk calls to `unionRoundExact` and
+  `intersectRoundExact` into field-value calls with `radius = 0`, and prints manual migration
+  suggestions for calls to removed `builtin` functions (`sweepLoft`, `sweepLoftScale`,
+  `sweepLoftScaleSmooth`, `sweepLoftScaleSmoothSeparateCaps`, `bezierTubeDir`).
 - `intersectChamferSetbacksSteps(field1, field2, setback1, setback2, steps)` and
   `intersectChamferAngleSteps(field1, field2, distance, angle, steps)` in builtin, with their union and
   difference counterparts: flat chamfers between faces that may be curved, the Steps tier of the chamfer family
