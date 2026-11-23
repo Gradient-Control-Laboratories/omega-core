@@ -33,6 +33,18 @@ from `1.0.0` onward).
 
 ### Added
 
+- `intersectChamferSetbacksSteps(field1, field2, setback1, setback2, steps)` and
+  `intersectChamferAngleSteps(field1, field2, distance, angle, steps)` in builtin, with their union and
+  difference counterparts: flat chamfers between faces that may be curved, the Steps tier of the chamfer family
+  after `intersectChamfer` and the Normalized and Setbacks chamfers, which are exact only where both faces are
+  straight in section. For each point, exact round's Newton steps find the nearest point of the edge and the
+  faces' normals there; in the plane normal to the edge the chamfer is the straight line through the point of
+  face 1 at the first distance from the edge and the point of face 2 at the second (each a straight-line
+  distance, found by Newton steps on the face), or from face 1's point at the angle until it meets face 2. Flat
+  on a ball as on a plane, as a boundary-representation chamfer is. A sixth argument, `seed`, starts the steps
+  elsewhere than p, to select one edge where the faces meet in several. Where the steps miss the edge, or the
+  frame degenerates far from it, there is no chamfer and the field stays finite. On brep-bench's 27 chamfer
+  cases with a ball face, they meet the grade in 26 at about 30 times the time of a hand-placed cone.
 - `intersectRoundExact(field1, field2, radius)` and `unionRoundExact(field1, field2, radius)` in builtin: exact
   rolling-ball rounds for curved faces. They find the seam's point nearest p by four Newton steps (each moves to
   both fields' tangent planes, then slides along the seam to the foot of p) and judge whether p is nearest the
