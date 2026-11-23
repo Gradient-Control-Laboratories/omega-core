@@ -20,13 +20,52 @@ func (in *inliner) countParamUses(fn *program.Function, paramName string) int {
 	return count
 }
 
-func (in *inliner) countVarUsesInRemaining(fn *program.Function, fromIndex int, varName string) int {
+// usedTwiceInRemaining reports whether varName is read at least twice in the
+// assignments after fromIndex and the returns. It stops at the second use: the
+// walk is over bodies whose calls are already inlined, which a program of many
+// unrolled calls makes large, and counting every use of every local there made
+// inlining quadratic in the program's size.
+func (in *inliner) usedTwiceInRemaining(fn *program.Function, fromIndex int, varName string) bool {
 	count := 0
-	for i := fromIndex + 1; i < len(fn.Assignments); i++ {
-		count += in.countUsesInOperand(fn.Assignments[i].Expression, varName)
+	for i := fromIndex + 1; i < len(fn.Assignments) && count < 2; i++ {
+		count = countUsesUpTo(fn.Assignments[i].Expression, varName, count, 2)
 	}
 	for _, r := range fn.Returns {
-		count += in.countUsesInOperand(r, varName)
+		if count >= 2 {
+			break
+		}
+		count = countUsesUpTo(r, varName, count, 2)
+	}
+	return count >= 2
+}
+
+// countUsesUpTo adds op's references to name to count, stopping once count
+// reaches limit, and returns the new count.
+func countUsesUpTo(op *program.Operand, name string, count, limit int) int {
+	if op == nil || count >= limit {
+		return count
+	}
+	switch t := op.T.(type) {
+	case *program.Operand_Reference:
+		if t.Reference.Prefix == "" && t.Reference.Name == name {
+			count++
+		}
+	case *program.Operand_PropRef:
+		if t.PropRef != nil && t.PropRef.Reference != nil && t.PropRef.Reference.Prefix == "" && t.PropRef.Reference.Name == name {
+			count++
+		}
+	case *program.Operand_Expression:
+		for _, child := range t.Expression.Operands {
+			if count = countUsesUpTo(child, name, count, limit); count >= limit {
+				return count
+			}
+		}
+	case *program.Operand_FnCall:
+		for _, arg := range t.FnCall.Arguments {
+			if count = countUsesUpTo(arg, name, count, limit); count >= limit {
+				return count
+			}
+		}
 	}
 	return count
 }
@@ -35,7 +74,7 @@ func (in *inliner) hoistIfReused(op *program.Operand, fn *program.Function, assi
 	if op == nil {
 		return nil
 	}
-	if !in.isCopyableConst(op, fileScope) && !in.isSimpleOperand(op) && in.countVarUsesInRemaining(fn, assignIndex, varName) > 1 {
+	if !in.isCopyableConst(op, fileScope) && !in.isSimpleOperand(op) && in.usedTwiceInRemaining(fn, assignIndex, varName) {
 		in.anonCounter++
 		tmpVar := fmt.Sprintf("gsl_tmp_%d", in.anonCounter)
 		in.hoistedAssignments = append(in.hoistedAssignments, &program.Assignment{
