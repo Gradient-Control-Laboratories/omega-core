@@ -122,6 +122,10 @@ from `1.0.0` onward).
 
 ### Fixed
 
+- `.dp` through a remap of a function's parameter. A call binds a parameter to its argument's value at the
+  caller's p, and a remap inside the function read that value unmoved, so `f(v) { return remap(v, q); }` lost
+  the chain rule through q: the value was right and its gradient was not. The argument is now evaluated again
+  where the remap reads it, and a parameter counts as varying with p when its argument does.
 - A box declared in a function from a `reduce` whose step indexes a list by its `index`, such as
   `points[mod(index + 1, count)]`, now holds: read with `.box` it failed to link ("undefined identifier: index"),
   and in builtin the part it bounds lost its box without a word.
