@@ -25,7 +25,7 @@ This spec will continue to be updated as the compiler and tools are being develo
 - Supports basic arithmetic, component-wise list algebra, modulo, logic, and comparison operators.
 - Provides first-class named and anonymous functions, allowing closures and function passing.
 - Exposes mesh/CAD STEP slot-numbered and expression-based asset imports.
-- Resolves variables and slider properties (`.min`, `.max`, `.period`) dynamically
+- Resolves variables and `@range` sliders dynamically
     to drive real-time parameter tweaking.
 - Evaluates mathematical primitives and built-in algorithms (like spatial remapping and
     cellular noise) either on CPU or compiles them to GPU shaders.
@@ -591,10 +591,9 @@ scaleRadius(@range(0.5, 10.0) r) {
 }
 ```
 
-In addition to explicit `@range(...)` annotations, GSL v1 supports defining slider metadata using
-dot-syntax property assignments (e.g., `name.min`, `name.max`, `name.period`), which the compiler
-automatically synthesizes into canonical AST range annotations. See section 8 below. The
-dot-syntax is deprecated in favor of `@range(...)`; `gsl fix -range` rewrites it.
+GSL v1 also set slider limits with dot-syntax property assignments (`name.min`, `name.max`,
+`name.period`). Those were removed in favor of `@range(...)`: a source that still sets one
+fails to compile, naming `@range`, and `gsl fix -range` rewrites it. See section 8 below.
 
 #### Point Annotations
 
@@ -895,40 +894,30 @@ animation clock is in `[startTime, endTime]`:
 
 ### 8. Variables, Sliders, and Properties
 
-> **Deprecated:** the slider properties `.min`, `.max` and `.period` below are superseded by
-> `@range(min, max[, period])` (see the Annotations section), which takes the same expressions.
-> They still compile, with a warning on each variable that uses them. `gsl fix -range` rewrites them to `@range`.
-
-A top-level variable assigned a single numeric literal can be decorated with property values to
-register it as a dynamic slider in the host user interface:
-- **`name.min`**: Minimum value constraint.
-- **`name.max`**: Maximum value constraint.
-- **`name.period`**: Animation clock driver period in seconds. The host drives the value
+A top-level variable assigned a single numeric literal can be given a slider range with an
+`@range(min, max[, period])` annotation (see the Annotations section), which registers it as a
+dynamic slider in the host user interface:
+- **`min`, `max`**: The slider's limits. Each is a compile-time constant expression and may read
+  other top-level constants.
+- **`period`** (optional): Animation clock driver period in seconds. The host drives the value
   sinusoidally between `min` and `max` using this timeframe.
 - **Snapping**: Snapping/rounding steps are configured by the decimal places of the original
   literal (`radius = 5;` snaps to integers, `radius = 0.50;` snaps to 0.01 increments).
 
 *Example Slider Configuration:*
 ```gsl
-radius = 5.00;
-radius.min = 0.5;
-radius.max = 10.0;
-radius.period = 4.0; // Oscillates over 4 seconds
+@range(0.5, 10.0, 4.0) radius = 5.00;  // Oscillates over 4 seconds
 ```
 
-#### Slider Validation Rules
-Slider properties (`.min`, `.max`, `.period`) are restricted strictly to top-level file scope.
-Assigning slider properties to function-local variables, parameters, or non-numeric types
-is rejected at compile time.
-A variable with any slider property must declare both `.min` and `.max`, where `min < max`.
-If `.period` is assigned, it must evaluate to a strictly positive constant (`period > 0`).
+> **Removed:** the `.min`, `.max` and `.period` properties (`radius.min = 0.5;`) were replaced by
+> `@range`. A source that sets one is rejected at compile time, naming `@range` and
+> `gsl fix -range`, which rewrites the source.
 
-#### Property-to-Annotation Canonicalization
-When `.min` and `.max` properties are defined on a top-level variable and no explicit `@range`
-annotation was declared in the source, the compiler's scope builder automatically synthesizes
-a canonical AST `Range` annotation on the defining `Assignment`.
-This allows downstream compiler stages (Assembler, constant-folding reachability, WGSL uniform emission)
-to operate uniformly on `Assignment.Range` without requiring dual-path handling for properties.
+#### Slider Validation Rules
+`@range` on a variable is restricted strictly to top-level file scope. Attaching it to
+function-local variables, parameters of other kinds, or non-numeric types is rejected at compile time.
+It must declare both bounds, where `min < max`.
+If a period is given, it must evaluate to a strictly positive constant (`period > 0`).
 
 #### Geometry and Field Properties
 Variables representing 3D geometry can be configured with metadata properties:

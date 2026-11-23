@@ -1,0 +1,167 @@
+// =========================================================
+// CONICS AND QUADRICS: exact distance
+// =========================================================
+
+// The nearest point of the quadric Q(x) = Σ m_i x_i² + 2 Σ b_i x_i + c = 0, in its own frame (M diagonal), to the
+// local point q is x(t) = (q - t·b) / (1 + t·m) for one Lagrange multiplier t, a root of g(t) = Q(x(t)). Where every
+// 1 + t·m_i > 0, g is strictly decreasing, g'(t) = -2 Σ (m_i q_i + b_i)² / (1 + t·m_i)³, so it has one root there, and
+// that root is the nearest point, whatever the quadric: ellipse or ellipsoid, hyperbola or hyperboloid, parabola or
+// paraboloid. Newton's method on t finds it from t = 0, whose first step is the first-order distance Q / |∇Q|; a step
+// that would leave the interval goes halfway to its end instead, and none branches on the point.
+
+// No function the named conics reach chooses with `?:` on its arguments: a constant argument deciding a choice
+// makes the compiler clone the function for it on every compile, wherever these are defined, so the ends, guards
+// and masks below are arithmetic. quadricDistance's own step-count choice is for callers who want it.
+
+// 1 where v > 0, else 0.
+quadricPositive(v) {
+  return max(sign(v), 0);
+}
+
+// The interval's ends set by one diagonal entry: -1/m from below where m > 0, from above where m < 0, and no bound
+// from a zero or opposite entry. The divisions are kept finite where they are not taken.
+quadricLow(mi) {
+  up = quadricPositive(mi);
+  return up * (-1 / max(mi, 1e-30)) - (1 - up) * 1e20;
+}
+
+quadricHigh(mi) {
+  down = quadricPositive(neg(mi));
+  return down * (-1 / min(mi, -1e-30)) + (1 - down) * 1e20;
+}
+
+// One Newton step on the multiplier t, kept within the interval (lo, hi) by going at most halfway to either end.
+quadricStep(q, m, b, c, t, lo, hi) {
+  // In the interval every entry is positive; the steps can come within rounding of an end, where an axis q lies on
+  // would give 0/0, so it is kept from zero.
+  den = max([1, 1, 1] + m * t, [1e-20, 1e-20, 1e-20]);
+  x = (q - b * t) / den;
+  g = dot(m * x, x) + 2 * dot(b, x) + c;
+  w = m * q + b;
+  slope = -2 * dot((w / den) * (w / den) / den, [1, 1, 1]);
+  next = t - g * slope / max(slope * slope, 1e-30);
+  return clamp(next, (t + lo) / 2, (t + hi) / 2);
+}
+
+// Twelve Newton steps on the multiplier from t = 0.
+quadricRoot(q, m, b, c) {
+  lo = max(quadricLow(m.x), quadricLow(m.y), quadricLow(m.z));
+  hi = min(quadricHigh(m.x), quadricHigh(m.y), quadricHigh(m.z));
+  t1 = quadricStep(q, m, b, c, 0, lo, hi);
+  t2 = quadricStep(q, m, b, c, t1, lo, hi);
+  t3 = quadricStep(q, m, b, c, t2, lo, hi);
+  t4 = quadricStep(q, m, b, c, t3, lo, hi);
+  t5 = quadricStep(q, m, b, c, t4, lo, hi);
+  t6 = quadricStep(q, m, b, c, t5, lo, hi);
+  t7 = quadricStep(q, m, b, c, t6, lo, hi);
+  t8 = quadricStep(q, m, b, c, t7, lo, hi);
+  t9 = quadricStep(q, m, b, c, t8, lo, hi);
+  t10 = quadricStep(q, m, b, c, t9, lo, hi);
+  t11 = quadricStep(q, m, b, c, t10, lo, hi);
+  return quadricStep(q, m, b, c, t11, lo, hi);
+}
+
+// The signed distance from Newton's multiplier t: x(t), and the least of it and the axis candidates' upper bounds.
+quadricFinish(q, m, b, c, t) {
+  x = (q - b * t) / max([1, 1, 1] + m * t, [1e-20, 1e-20, 1e-20]);
+  // Newton's point, if the steps have not reached the surface, is off it by about r = |g| / |∇Q|; adding r keeps its
+  // distance an upper bound, so that the axis candidates below win where the steps stall. They stall only on an axis
+  // inside the evolute, at least the least radius of curvature from the surface, never near it. Near the surface the
+  // penalty is therefore switched off by a factor that is exactly zero there, also in the mesher's interval bounds:
+  // the first-order distance |Q| / |∇Q| at q, below a depth under that radius, 0.1 / sqrt(max |m_i|). Left on, its
+  // bounds, wide over a cell though its value is nearly zero, make the mesher refine every cell near the surface and
+  // ripple it.
+  g = dot(m * x, x) + 2 * dot(b, x) + c;
+  q0 = dot(m * q, q) + 2 * dot(b, q) + c;
+  depth = 0.1 / sqrt(max(abs(m.x), abs(m.y), abs(m.z), 1e-30));
+  deep = clamp((abs(q0) / max(length(m * q + b) * 2, 1e-12) - depth) / depth, 0, 1);
+  newton = length(q - x) + deep * abs(g) / max(length(m * x + b) * 2, 1e-12);
+  nearest = min(newton, quadricPole(q, m, b, c, m.x), quadricPole(q, m, b, c, m.y), quadricPole(q, m, b, c, m.z));
+  return nearest * sign(dot(m * q, q) + 2 * dot(b, q) + c);
+}
+
+/// Exact signed distance from the local point q (a 3D vector, in the quadric's own frame) to the quadric
+/// Σ m_i x_i² + 2 Σ b_i x_i + c = 0, negative where that sum is negative. `m`, `b` and `c` give its diagonal,
+/// linear and constant terms: an ellipsoid has m = 1/radii² and c = -1; a hyperboloid takes a negative entry; a
+/// paraboloid a zero entry with the linear term along it; a conic in a plane has zero terms along the third axis.
+/// Twelve Newton steps on the nearest point's Lagrange multiplier, as the named conics and quadrics below take, are
+/// exact to single precision near the surface and to 7.5e-6 of the distance far from it, on the axes too.
+quadricDistance(q, m, b, c) {
+  return quadricFinish(q, m, b, c, quadricRoot(q, m, b, c));
+}
+
+/// quadricDistance with `steps` (1 to 12, a constant) Newton steps instead of twelve.
+quadricDistance(q, m, b, c, steps) {
+  lo = max(quadricLow(m.x), quadricLow(m.y), quadricLow(m.z));
+  hi = min(quadricHigh(m.x), quadricHigh(m.y), quadricHigh(m.z));
+  t1 = quadricStep(q, m, b, c, 0, lo, hi);
+  t2 = quadricStep(q, m, b, c, t1, lo, hi);
+  t3 = quadricStep(q, m, b, c, t2, lo, hi);
+  t4 = quadricStep(q, m, b, c, t3, lo, hi);
+  t5 = quadricStep(q, m, b, c, t4, lo, hi);
+  t6 = quadricStep(q, m, b, c, t5, lo, hi);
+  t7 = quadricStep(q, m, b, c, t6, lo, hi);
+  t8 = quadricStep(q, m, b, c, t7, lo, hi);
+  t9 = quadricStep(q, m, b, c, t8, lo, hi);
+  t10 = quadricStep(q, m, b, c, t9, lo, hi);
+  t11 = quadricStep(q, m, b, c, t10, lo, hi);
+  t12 = quadricStep(q, m, b, c, t11, lo, hi);
+  t = steps >= 12 ? t12 : steps >= 11 ? t11 : steps >= 10 ? t10 : steps >= 9 ? t9 : steps >= 8 ? t8
+    : steps >= 7 ? t7 : steps >= 6 ? t6 : steps >= 5 ? t5 : steps >= 4 ? t4 : steps >= 3 ? t3 : steps >= 2 ? t2 : t1;
+  return quadricFinish(q, m, b, c, t);
+}
+
+// Where q lies on an axis of symmetry the nearest points are not unique (a ring about a paraboloid's axis, a pair
+// across an ellipse's long axis inside its evolute) and the multiplier is at the end of its interval, t = -1/mk, which
+// Newton's steps cannot reach. There the coordinates along every axis whose entry is mk are free, of the length the
+// quadric's equation leaves them, along q's own; the others are x(t). That point lies on the quadric, so its distance
+// is an upper bound, and in this case the distance. A zero entry, or a point the equation cannot place, gives none.
+quadricPole(q, m, b, c, mk) {
+  // 1 for a nonzero entry; for a zero one, t = 0 and a divisor of 1 keep every division finite, and `missing` rules
+  // the candidate out.
+  live = quadricPositive(abs(mk) - 1e-30);
+  divisor = mk + (1 - live);
+  ts = live * (-1 / divisor);
+  tolerance = 1e-6 * abs(mk);
+  same = [1, 1, 1] - [quadricPositive(abs(m.x - mk) - tolerance), quadricPositive(abs(m.y - mk) - tolerance), quadricPositive(abs(m.z - mk) - tolerance)];
+  other = [1, 1, 1] - same;
+  x = (q - b * ts) / ([1, 1, 1] + m * ts + same) * other;
+  free2 = neg(dot(m * x, x) + 2 * dot(b, x) + c) / divisor;
+  rest = (q - x) * other;
+  along = length(q * same) - sqrt(max(free2, 0));
+  missing = (1 - live) * 1e20 + quadricPositive(neg(free2)) * 1e20;
+  return sqrt(dot(rest, rest) + along * along) + missing;
+}
+
+/// Ellipse in the XY plane, centered at `center` (2D point), with semi-axes `radii` (2D) along x and y. Exact signed
+/// distance: negative inside, positive outside.
+ellipseXY(center, radii) {
+  d = p.xy - center;
+  return quadricDistance([d.x, d.y, 0], [1 / (radii.x * radii.x), 1 / (radii.y * radii.y), 0], [0, 0, 0], -1);
+}
+
+/// Parabola in the XY plane, y = x² / (4·focalLength) about its vertex `vertex` (2D point), opening toward +y. Exact
+/// signed distance: negative on its concave side, toward the focus.
+parabolaXY(vertex, focalLength) {
+  d = p.xy - vertex;
+  return quadricDistance([d.x, d.y, 0], [1 / (4 * focalLength), 0, 0], [0, -0.5, 0], 0);
+}
+
+/// Hyperbola in the XY plane, x²/a² - y²/b² = 1 about `center` (2D point), `semiAxes` = [a, b], its two branches
+/// opening toward ±x. Exact signed distance: negative inside either branch, on the side of its focus.
+hyperbolaXY(center, semiAxes) {
+  d = p.xy - center;
+  return neg(quadricDistance([d.x, d.y, 0], [1 / (semiAxes.x * semiAxes.x), -1 / (semiAxes.y * semiAxes.y), 0], [0, 0, 0], -1));
+}
+
+/// Ellipsoid centered at `center` with semi-axes `radii` (3D) along x, y and z. Exact signed distance: negative
+/// inside.
+ellipsoid(center, radii) {
+  return quadricDistance(p - center, [1, 1, 1] / (radii * radii), [0, 0, 0], -1);
+}
+
+/// Paraboloid of revolution, z = (x² + y²) / (4·focalLength) about its vertex `vertex`, opening toward +z. Exact
+/// signed distance: negative inside, toward the focus.
+paraboloid(vertex, focalLength) {
+  return quadricDistance(p - vertex, [1, 1, 0] / (4 * focalLength), [0, 0, -0.5], 0);
+}

@@ -314,7 +314,7 @@ func (l *linker) linkFile(fileScope *scope.PkgFileScope) error {
 				}
 			}
 		}
-		for _, op := range assign.Range.OwnOperands() {
+		for _, op := range assign.Range.Operands() {
 			if _, err := program.VisitOperand(op, visitor); err != nil {
 				return err
 			}
@@ -387,7 +387,7 @@ func (l *linker) linkFn(fnScope *scope.FnScope) error {
 				}
 			}
 		}
-		for _, op := range assign.Range.OwnOperands() {
+		for _, op := range assign.Range.Operands() {
 			if _, err := program.VisitOperand(op, visitor); err != nil {
 				return err
 			}

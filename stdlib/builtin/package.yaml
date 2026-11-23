@@ -8,3 +8,4 @@ sources:
   - 3d.gsl
   - quad_bezier_curves.gsl
   - sweep.gsl
+  - conics.gsl

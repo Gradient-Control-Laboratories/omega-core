@@ -318,7 +318,7 @@ func (in *inliner) transformPackage(pkg *program.Package, pkgScope *scope.PkgSco
 					}
 				}
 			}
-			for _, op := range assign.Range.OwnOperands() {
+			for _, op := range assign.Range.Operands() {
 				if err := in.transformOperand(op, fileScope, file, currentPkgPath); err != nil {
 					return err
 				}
@@ -448,7 +448,7 @@ func (in *inliner) transformFunction(fn *program.Function, fileScope *scope.PkgF
 				}
 			}
 		}
-		for _, op := range assign.Range.OwnOperands() {
+		for _, op := range assign.Range.Operands() {
 			if err := in.transformOperand(op, fileScope, targetFile, currentPkgPath); err != nil {
 				return err
 			}
