@@ -27,7 +27,7 @@ type SliderInfo struct {
 
 // Extract walks the top-level declarations and returns one
 // SliderInfo per variable that satisfies all of:
-//   - has a range annotation (explicit @range or synthesized from .min/.max)
+//   - has an @range annotation
 //   - is a simple assignment to a single name
 //   - the assignment expression is a plain numeric literal whose source
 //     span we can locate exactly (so the UI can rewrite the literal in
@@ -83,7 +83,7 @@ func topLevel(pkg *program.Package) ([]*program.Assignment, []*program.FnType) {
 
 func sliderFromAssignment(source string, a *program.Assignment,
 	assignments []*program.Assignment, fnTypes []*program.FnType) (SliderInfo, bool) {
-	rng := a.LiveRange()
+	rng := a.Range
 	if len(a.Variables) != 1 || rng == nil || a.Expression == nil {
 		return SliderInfo{}, false
 	}

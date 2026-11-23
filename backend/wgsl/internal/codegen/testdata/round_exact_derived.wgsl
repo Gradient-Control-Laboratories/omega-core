@@ -1,14 +1,14 @@
 fn gsl_remap(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_3 = -(dot(p - vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 0.0, 0.0)) / (length(p - vec3<f32>(0.0, 0.0, 0.0)) + 1.0 - select(0.0, 1.0, (length(p - vec3<f32>(0.0, 0.0, 0.0)) > 0.0)))) + 0.0;
-  let gsl_tmp_4 = -(dot(p - vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(0.0, 1.0, 0.0)) / (length(p - vec3<f32>(0.0, 0.0, 0.0)) + 1.0 - select(0.0, 1.0, (length(p - vec3<f32>(0.0, 0.0, 0.0)) > 0.0)))) + 0.0;
-  let gsl_tmp_5 = -(dot(p - vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(0.0, 0.0, 1.0)) / (length(p - vec3<f32>(0.0, 0.0, 0.0)) + 1.0 - select(0.0, 1.0, (length(p - vec3<f32>(0.0, 0.0, 0.0)) > 0.0)))) + 0.0;
+  let gsl_tmp_3 = -dot(clamp((p - vec3<f32>(0.0, 0.0, 0.0)) / max(length(p - vec3<f32>(0.0, 0.0, 0.0)), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(1.0, 0.0, 0.0)) + 0.0;
+  let gsl_tmp_4 = -dot(clamp((p - vec3<f32>(0.0, 0.0, 0.0)) / max(length(p - vec3<f32>(0.0, 0.0, 0.0)), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(0.0, 1.0, 0.0)) + 0.0;
+  let gsl_tmp_5 = -dot(clamp((p - vec3<f32>(0.0, 0.0, 0.0)) / max(length(p - vec3<f32>(0.0, 0.0, 0.0)), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(0.0, 0.0, 1.0)) + 0.0;
   return vec3<f32>(gsl_tmp_3, gsl_tmp_4, gsl_tmp_5);
 }
 
 fn gsl_remap_2(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_6 = -(dot(p - vec3<f32>(1.2, 0.0, 0.0), vec3<f32>(1.0, 0.0, 0.0)) / (length(p - vec3<f32>(1.2, 0.0, 0.0)) + 1.0 - select(0.0, 1.0, (length(p - vec3<f32>(1.2, 0.0, 0.0)) > 0.0)))) + 0.0;
-  let gsl_tmp_7 = -(dot(p - vec3<f32>(1.2, 0.0, 0.0), vec3<f32>(0.0, 1.0, 0.0)) / (length(p - vec3<f32>(1.2, 0.0, 0.0)) + 1.0 - select(0.0, 1.0, (length(p - vec3<f32>(1.2, 0.0, 0.0)) > 0.0)))) + 0.0;
-  let gsl_tmp_8 = -(dot(p - vec3<f32>(1.2, 0.0, 0.0), vec3<f32>(0.0, 0.0, 1.0)) / (length(p - vec3<f32>(1.2, 0.0, 0.0)) + 1.0 - select(0.0, 1.0, (length(p - vec3<f32>(1.2, 0.0, 0.0)) > 0.0)))) + 0.0;
+  let gsl_tmp_6 = -dot(clamp((p - vec3<f32>(1.2, 0.0, 0.0)) / max(length(p - vec3<f32>(1.2, 0.0, 0.0)), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(1.0, 0.0, 0.0)) + 0.0;
+  let gsl_tmp_7 = -dot(clamp((p - vec3<f32>(1.2, 0.0, 0.0)) / max(length(p - vec3<f32>(1.2, 0.0, 0.0)), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(0.0, 1.0, 0.0)) + 0.0;
+  let gsl_tmp_8 = -dot(clamp((p - vec3<f32>(1.2, 0.0, 0.0)) / max(length(p - vec3<f32>(1.2, 0.0, 0.0)), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(0.0, 0.0, 1.0)) + 0.0;
   return vec3<f32>(gsl_tmp_6, gsl_tmp_7, gsl_tmp_8);
 }
 
@@ -62,9 +62,9 @@ fn gsl_remap_5(p: vec3<f32>) -> vec3<f32> {
 }
 
 fn gsl_remap_6(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_22 = dot(p - vec3<f32>(0.8, 0.0, 0.0), vec3<f32>(1.0, 0.0, 0.0)) / (length(p - vec3<f32>(0.8, 0.0, 0.0)) + 1.0 - select(0.0, 1.0, (length(p - vec3<f32>(0.8, 0.0, 0.0)) > 0.0))) + 0.0;
-  let gsl_tmp_23 = dot(p - vec3<f32>(0.8, 0.0, 0.0), vec3<f32>(0.0, 1.0, 0.0)) / (length(p - vec3<f32>(0.8, 0.0, 0.0)) + 1.0 - select(0.0, 1.0, (length(p - vec3<f32>(0.8, 0.0, 0.0)) > 0.0))) + 0.0;
-  let gsl_tmp_24 = dot(p - vec3<f32>(0.8, 0.0, 0.0), vec3<f32>(0.0, 0.0, 1.0)) / (length(p - vec3<f32>(0.8, 0.0, 0.0)) + 1.0 - select(0.0, 1.0, (length(p - vec3<f32>(0.8, 0.0, 0.0)) > 0.0))) + 0.0;
+  let gsl_tmp_22 = dot(clamp((p - vec3<f32>(0.8, 0.0, 0.0)) / max(length(p - vec3<f32>(0.8, 0.0, 0.0)), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(1.0, 0.0, 0.0)) + 0.0;
+  let gsl_tmp_23 = dot(clamp((p - vec3<f32>(0.8, 0.0, 0.0)) / max(length(p - vec3<f32>(0.8, 0.0, 0.0)), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(0.0, 1.0, 0.0)) + 0.0;
+  let gsl_tmp_24 = dot(clamp((p - vec3<f32>(0.8, 0.0, 0.0)) / max(length(p - vec3<f32>(0.8, 0.0, 0.0)), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(0.0, 0.0, 1.0)) + 0.0;
   return vec3<f32>(gsl_tmp_22, gsl_tmp_23, gsl_tmp_24);
 }
 

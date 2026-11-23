@@ -82,7 +82,7 @@ func checkPackageCycles(pkg *program.Package) error {
 					g.edges[propNode] = append(g.edges[propNode], propRefs...)
 
 					// Only .box crops the variable definition itself (cropToBox).
-					// Metadata properties (.color, .material, .min, .max, .period)
+					// Metadata properties (.color, .material, ...)
 					// do not modify the variable's value or geometry.
 					if p.Name == "box" {
 						g.edges[v.Name] = append(g.edges[v.Name], propNode)
