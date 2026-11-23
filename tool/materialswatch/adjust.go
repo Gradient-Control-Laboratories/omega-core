@@ -335,7 +335,7 @@ func paramKind(p *program.Parameter) string {
 	if p.Kind != "" {
 		return p.Kind
 	}
-	if p.Range != nil && !p.Range.IsSynthetic() {
+	if p.Range != nil {
 		return "range"
 	}
 	return ""

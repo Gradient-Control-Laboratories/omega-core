@@ -533,7 +533,10 @@ func TestScope_Advanced(t *testing.T) {
 	pkgRef.SetAgentScope(dummyAgent)
 }
 
-func TestScope_PropertySynthesis(t *testing.T) {
+// The retired .min/.max/.period properties are still accepted, so `gsl fix -range`
+// can read a document that uses them, but they no longer make a range: only an
+// @range does, and a property neither creates one nor replaces an explicit one.
+func TestScope_SliderPropertiesMakeNoRange(t *testing.T) {
 	pkg := &program.Package{
 		Files: []*program.PackageFile{{}},
 	}
@@ -547,57 +550,23 @@ func TestScope_PropertySynthesis(t *testing.T) {
 	loc := &program.Location{Line: 5, Column: 10}
 	exprOp := program.NewValue(5.0, loc, loc)
 
-	// Variable "r" with min, max, period
 	err = fileScope.AddAssignment([]string{"r"}, exprOp, loc, loc, nil)
 	if err != nil {
 		t.Fatalf("AddAssignment failed: %v", err)
 	}
-
-	minOp := program.NewValue(1.0, loc, loc)
-	maxOp := program.NewValue(10.0, loc, loc)
-	periodOp := program.NewValue(2.0, loc, loc)
-
-	// Add min
-	err = fileScope.AddPropertyAssignment("r", "min", minOp, loc, loc)
-	if err != nil {
-		t.Fatalf("AddPropertyAssignment min failed: %v", err)
+	for _, name := range []string{"min", "max", "period"} {
+		if err := fileScope.AddPropertyAssignment("r", name, program.NewValue(2.0, loc, loc), loc, loc); err != nil {
+			t.Fatalf("AddPropertyAssignment %s failed: %v", name, err)
+		}
 	}
 	assign := fileScope.File.Assignments[0]
 	if assign.Range != nil {
-		t.Errorf("expected Range to be nil when only min is present")
+		t.Errorf("expected no Range from .min, .max and .period, got %+v", assign.Range)
+	}
+	if got := len(assign.Variables[0].Properties); got != 3 {
+		t.Errorf("expected the 3 properties to be kept for the fixer, got %d", got)
 	}
 
-	// Add max -> synthesis should trigger
-	err = fileScope.AddPropertyAssignment("r", "max", maxOp, loc, loc)
-	if err != nil {
-		t.Fatalf("AddPropertyAssignment max failed: %v", err)
-	}
-	if assign.Range == nil {
-		t.Fatalf("expected Range to be synthesized when both min and max are present")
-	}
-	if !assign.Range.IsSynthetic() {
-		t.Errorf("expected synthesized range to report IsSynthetic() == true")
-	}
-	if minVal, _ := assign.Range.MinConst(); minVal != 1.0 {
-		t.Errorf("expected MinConst 1.0, got %v", minVal)
-	}
-	if maxVal, _ := assign.Range.MaxConst(); maxVal != 10.0 {
-		t.Errorf("expected MaxConst 10.0, got %v", maxVal)
-	}
-	if _, ok := assign.Range.PeriodConst(); ok {
-		t.Errorf("expected PeriodConst to be absent before period property is added")
-	}
-
-	// Add period -> updates synthesized Range
-	err = fileScope.AddPropertyAssignment("r", "period", periodOp, loc, loc)
-	if err != nil {
-		t.Fatalf("AddPropertyAssignment period failed: %v", err)
-	}
-	if pVal, ok := assign.Range.PeriodConst(); !ok || pVal != 2.0 {
-		t.Errorf("expected PeriodConst 2.0, got (%v, %v)", pVal, ok)
-	}
-
-	// Explicit Range should NOT be overwritten by property synthesis
 	explicitRange := &program.Range{
 		Start: &program.Location{Line: 1, Column: 1},
 		End:   &program.Location{Line: 1, Column: 20},
@@ -609,12 +578,8 @@ func TestScope_PropertySynthesis(t *testing.T) {
 		t.Fatalf("AddAssignment with range failed: %v", err)
 	}
 	explicitAssign := fileScope.File.Assignments[1]
-	if explicitAssign.Range.IsSynthetic() {
-		t.Errorf("expected explicit range to NOT be synthetic")
-	}
-
-	_ = fileScope.AddPropertyAssignment("explicitVar", "min", minOp, loc, loc)
-	_ = fileScope.AddPropertyAssignment("explicitVar", "max", maxOp, loc, loc)
+	_ = fileScope.AddPropertyAssignment("explicitVar", "min", program.NewValue(1.0, loc, loc), loc, loc)
+	_ = fileScope.AddPropertyAssignment("explicitVar", "max", program.NewValue(10.0, loc, loc), loc, loc)
 	if explicitAssign.Range != explicitRange {
 		t.Errorf("expected explicit RangeAnnotation to not be overwritten by property assignments")
 	}

@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Breaking
+
+- **Removed `sweepLoft` and `bezierTubeDir` from `builtin`**: `sweepLoft`, `sweepLoftScale`,
+  `sweepLoftScaleSmooth`, `sweepLoftScaleSmoothSeparateCaps` and `bezierTubeDir` were removed from
+  `builtin`. They lofted two sections along a 3D quadratic Bezier, but mixed the sections' distances
+  by the curve's parameter and scaled by it, so the field was not a distance bound, and they carried
+  no frame, box or material. Existing documents calling them will fail to compile and can keep a
+  copy in their own library.
+- **Removed `.min`, `.max` and `.period` slider properties (replaced by `@range`)**: A document that
+  sets `.min`, `.max` or `.period` no longer compiles: the error is at its first such statement and
+  names `@range(min, max[, period])` and `gsl fix -range`, which rewrites the document. The parser
+  still reads them so the fixer can. The language description served by `gsl skill` and the viewer's
+  Help panel teaches `@range` and notes that the properties were removed.
+- **Non-finite constants are compile errors**: A constant that folds to infinity or NaN (such as
+  division or `mod` by zero) is now a compile error naming it, instead of emitting `+Inf.0` or
+  `NaN.0` into WGSL.
+- **`gears.gearProfile` tip chamfer depth**: `gears.gearProfile` now chamfers its tooth tips with
+  `intersectChamferNormalized` (given the flank's and tip circle's normals at the edge) in place of
+  `intersectChamfer`. The tip chamfer is now `kSmall` deep, measured from the edge to the bevel,
+  about 1.7 to 1.8 times as deep as before at these obtuse edges (116 to 129 degrees through the
+  material); the body, standoff and bore chamfers are unchanged. Gear and bevel-gear WGSL grows by
+  582 bytes.
+
 ### Added
 
 - Exact distances to conics and quadrics in builtin: `ellipseXY(center, radii)`, `parabolaXY(vertex, focalLength)`,
@@ -88,14 +111,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the `.min`/`.max` lines, reads a variable's limits from its `@range` (or from `.min`/`.max` in an older document),
   and prunes either shape. A document already on `@range` used to have its limits read as the catalog's defaults the
   next time the panel adjusted it.
-- The fast chamfers' parameter is named `offset`, not `setback`, in builtin's `intersectChamfer`,
-  `unionChamfer`, `differenceChamfer`, `intersectChamferEdges`, `intersectChamferVertices`, their union
-  counterparts, and the `ChamferRound` and `ChamferBlend` families (`[edgeOffset, vertexOffset]` for the
-  list forms). It is added to the two fields before dividing by sqrt2, so it is a setback along each face
-  only at a square edge; `intersectChamferSetbacks` and `chamferDepthFromSetback` take true setbacks.
-  Arguments are positional, so callers are unchanged.
-- The viewer reaches its server through one module, `examples/viewer/host.js`; `host-static.js` answers the same
-  calls from files beside the page, and takes its place in a page `gsl export` writes.
 - `profileXY` fills its three distance pools in one pass instead of three, with the same values: 2.6 to 11 times
   faster on the GPU across the profile examples.
 - A profile's box is exact: the union of its edges' own boxes, an arc's extremes where they lie on it and a
@@ -103,34 +118,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   corners, which holds every fillet) and `profileEdgesXY`; it was the points' box grown by the most an edge can
   bulge, 28 mm loose a side on an L with arcs. `sweepOpen` and `sweepOpenEdges` grow their chain's exact box.
 
-### Deprecated
-
-- The `.min`, `.max` and `.period` slider properties, in favor of `@range(min, max[, period])`. They still compile,
-  and the compiler warns about each variable that sets its slider with them, once, on the first of its property
-  statements, pointing at `@range` and `gsl fix -range`, which rewrites them. The warning is in the compile
-  response's diagnostics, with the `// Scene Size:` one. The language description that `gsl skill` and the viewer's
-  Help panel serve teaches `@range`, and mentions the properties only as deprecated.
-
-### Removed
-
-- `sweepLoft`, `sweepLoftScale`, `sweepLoftScaleSmooth`, `sweepLoftScaleSmoothSeparateCaps` and
-  `bezierTubeDir` from builtin. They lofted two sections along a 3D quadratic Bezier, but mixed the sections'
-  distances by the curve's parameter and scaled by it, so the field was not a distance bound, and they carried no
-  frame, box or material. A document that needs them can keep a copy in its own library.
-- `sweepLoft`, `sweepLoftScale`, `sweepLoftScaleSmooth`, `sweepLoftScaleSmoothSeparateCaps` and
-  `bezierTubeDir` from builtin. They lofted two sections along a 3D quadratic Bezier, but mixed the sections'
-  distances by the curve's parameter and scaled by it, so the field was not a distance bound, and they carried no
-  frame, box or material. A document that needs them can keep a copy in its own library.
-
 ### Fixed
 
-- `gears.gearProfile` chamfers its tooth tips with `intersectChamferNormalized`, given the flank's and the
-  tip circle's normals at the edge, in place of `intersectChamfer`. The flank meets the tip circle at an
-  obtuse edge, where `intersectChamfer`'s bevel, scaled for a right angle, has a gradient above 1; the
-  normalized bevel has unit gradient there. The tip chamfer is now `kSmall` deep, measured from the edge to
-  the bevel, about 1.7 to 1.8 times as deep as before at these edges (116 to 129 degrees through the
-  material); the body, standoff and bore chamfers are unchanged. Gear and bevel-gear WGSL grows by
-  582 bytes.
 - A box declared in a function from a `reduce` whose step indexes a list by its `index`, such as
   `points[mod(index + 1, count)]`, now holds: read with `.box` it failed to link ("undefined identifier: index"),
   and in builtin the part it bounds lost its box without a word.
@@ -158,8 +147,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   selects, and is pruned to one branch only when every component picks it.
 - A `reduce` whose function takes the index, `(accumulator, element, index)`, now folds to a constant; it was
   left to run per point, so a box written with one did not fold to numbers.
-- A constant that folds to infinity or NaN, a division or a mod by zero, is a compile error naming it, instead of
-  `+Inf.0` or `NaN.0` in a WGSL shader the browser refuses.
 - A bound of an explicit `@range` that reads another top-level variable works: `@range(abs(a - b) - offset, a + b - offset)`
   lost its slider, and its `.period` animation, whenever `offset` was a plain constant. The assembler's passes (link,
   closure, inline, constspec, types and dead-code removal) walked a variable's `.min`/`.max`/`.period` expressions but
@@ -173,30 +160,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   until a pass folds a property's expression to a new one; the range kept the old tree, which read `hi`, and `hi` was
   removed as dead. Slider extraction now reads such a range's bounds from the properties as the passes left them
   (`Assignment.LiveRange`).
-- `gears.gearProfile` chamfers its tooth tips with `intersectChamferNormalized`, given the flank's and the
-  tip circle's normals at the edge, in place of `intersectChamfer`. The flank meets the tip circle at an
-  obtuse edge, where `intersectChamfer`'s bevel, scaled for a right angle, has a gradient above 1; the
-  normalized bevel has unit gradient there. The tip chamfer is now `kSmall` deep, measured from the edge to
-  the bevel, about 1.7 to 1.8 times as deep as before at these edges (116 to 129 degrees through the
-  material); the body, standoff and bore chamfers are unchanged. Gear and bevel-gear WGSL grows by
-  582 bytes.
-- A three-way select on a constant vector condition folded to its positive branch whatever the condition's signs:
-  `[-1, -2] ? a : b : c` compiled as `a`, where the shader picks `c`. It now folds per component, as the shader
-  selects, and is pruned to one branch only when every component picks it.
-- A `reduce` whose function takes the index, `(accumulator, element, index)`, now folds to a constant; it was
-  left to run per point, so a box written with one did not fold to numbers.
-- A constant that folds to infinity or NaN, a division or a mod by zero, is a compile error naming it, instead of
-  `+Inf.0` or `NaN.0` in a WGSL shader the browser refuses.
-- A one-element list indexed at run time, such as `curvatures[0]` of `[0.1]` read in a reduce, failed on the CPU
-  paths (`gsl eval`, tape and meshing) with "target must be a collection, got num": the fidget backend builds the
-  list as one value. Index 0 now reads it there as WGSL already did; past 0 is an error.
-- A box declared in a function from a `reduce` whose step indexes a list by its `index`, such as
-  `points[mod(index + 1, count)]`, now holds: read with `.box` it failed to link ("undefined identifier: index"),
-  and in builtin the part it bounds lost its box without a word.
-- A box declared in a function written in the document may read locals assigned after the shape it bounds:
-  the crop that applies it was written on the shape's own line, so such a local was read before its assignment
-  ("undefined identifier"). A cropped body is now put in an order its reads allow; one that compiled before is
-  unchanged, and every reader of the shape still reads it cropped.
 - `map.bendXZ(v, curvature)` bends space in the XZ plane for `remap`: the plane x = 0 becomes an arc of the
   given curvature, 1 / radius, with lengths along it kept, for a bow, a camber or a warp, as in
   `remap(plate, map.bendXZ(p - origin, 1 / 400) + origin)`. A curvature of 0 is no bend.

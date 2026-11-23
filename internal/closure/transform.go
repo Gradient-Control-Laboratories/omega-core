@@ -888,7 +888,7 @@ func (t *transformer) rewriteProperties(file *program.PackageFile, fn *program.F
 			}
 		}
 	}
-	for _, op := range assign.Range.OwnOperands() {
+	for _, op := range assign.Range.Operands() {
 		if err := t.rewriteOperand(file, fn, op, env); err != nil {
 			return err
 		}

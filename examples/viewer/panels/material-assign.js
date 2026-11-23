@@ -445,17 +445,15 @@ function liftedNames(value, body) {
 }
 
 // removeUnreadDeclarations drops the top-level declarations of `names` that
-// nothing reads any more, with their .min and .max lines (older documents set
-// a slider's limits that way), until none is left
-// to drop: a direction's declaration reads its anchor's, so the anchor goes
-// on the pass after the direction.
+// nothing reads any more, until none is left to drop: a direction's declaration
+// reads its anchor's, so the anchor goes on the pass after the direction.
 function removeUnreadDeclarations(source, names) {
     let lines = source.split("\n");
     let pending = new Set(names);
     for (let changed = true; changed && pending.size;) {
         changed = false;
         for (const name of [...pending]) {
-            const own = (line) => declaresOrSets(line, name);
+            const own = (line) => declares(line, name);
             const readElsewhere = lines.some((line) => !own(line) && new RegExp(`\\b${escapeName(name)}\\b`).test(codeOf(line)));
             if (readElsewhere) continue;
             lines = lines.filter((line) => !own(line));
@@ -466,12 +464,10 @@ function removeUnreadDeclarations(source, names) {
     return lines.join("\n");
 }
 
-// declaresOrSets: the line is `name = …`, with or without an annotation in
-// front (`@range(0, 1) name = …`), or the older `name.min = …` / `name.max = …`.
-function declaresOrSets(line, name) {
-    const n = escapeName(name);
-    return new RegExp(`^(@\\w+(\\([^)]*\\))?\\s+)?${n}\\s*=(?!=)`).test(line) ||
-        new RegExp(`^\\s*${n}\\.(min|max)\\s*=`).test(line);
+// declares: the line is `name = …`, with or without an annotation in front
+// (`@range(0, 1) name = …`).
+function declares(line, name) {
+    return new RegExp(`^(@\\w+(\\([^)]*\\))?\\s+)?${escapeName(name)}\\s*=(?!=)`).test(line);
 }
 
 // declarationRE matches the top-level declaration of `name`, with or without
@@ -968,14 +964,13 @@ function readParameter(lines, p, arg) {
     const value = decl ? parse(decl[2].trim()) : null;
     if (value === null) return null;
     if (p.kind === "color") return { value, variable: arg };
-    // The limits are the declaration's @range, or in an older document its
-    // .min and .max lines; a bound the document does not give as a number is
-    // the catalog's.
+    // The limits are the declaration's @range; a bound the document does not
+    // give as a number is the catalog's.
     const limits = rangeLimits(decl[1] || "");
     return {
         value, variable: arg,
-        min: limits.min ?? numberProperty(lines, arg, "min") ?? p.min,
-        max: limits.max ?? numberProperty(lines, arg, "max") ?? p.max,
+        min: limits.min ?? p.min,
+        max: limits.max ?? p.max,
     };
 }
 
@@ -988,13 +983,6 @@ function rangeLimits(annotation) {
     const m = annotation.match(/^@range\(\s*([^,)]*)\s*,\s*([^,)]*?)\s*(?:,[^)]*)?\)/);
     const number = (text) => (text !== undefined && NUMBER_RE.test(text.trim()) ? Number(text) : null);
     return { min: number(m?.[1]), max: number(m?.[2]) };
-}
-
-// numberProperty is the number a line `name.property = …;` sets, or null.
-function numberProperty(lines, name, property) {
-    const re = new RegExp(`^\\s*${escapeName(name)}\\.${property}\\s*=\\s*([^;]*);`);
-    const text = lines.map((line) => line.match(re)).find(Boolean)?.[1].trim();
-    return text !== undefined && NUMBER_RE.test(text) ? Number(text) : null;
 }
 
 // valueText writes a parameter's value as GSL: a number, or a color.

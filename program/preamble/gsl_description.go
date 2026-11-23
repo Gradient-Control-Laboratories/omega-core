@@ -118,10 +118,9 @@ the user can grab the slider manually at any time. For example:
   @range(0.5, 10.0, 4.0) radius = 5.0;  // animate radius over 4 seconds
   return remap(sphere(radius), p);
   ` + "```" + `
-Older sources write the same limits as ` + "`radius.min = 0.5;`" + `,
-` + "`radius.max = 10.0;`" + ` and ` + "`radius.period = 4.0;`" + ` below the variable.
-Those properties are deprecated: write ` + "`@range`" + `, and ` + "`gsl fix -range`" + `
-rewrites old sources.
+The ` + "`.min`, `.max` and `.period`" + ` properties older sources used for these limits
+were removed: a source that still sets one does not compile, and
+` + "`gsl fix -range`" + ` rewrites it to ` + "`@range`" + `.
 
 * **Control annotations:**
 A top-level variable assigned a literal can instead carry one annotation
