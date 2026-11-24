@@ -329,6 +329,29 @@ pub const EDGE_CORNERS: [(usize, usize); 12] = [
     (3, 7), // edge 11
 ];
 
+/// `EDGE_CORNERS` with every edge walked up its axis, from the corner nearer the cell's origin to the farther.
+///
+/// Edges 2, 3, 6 and 7 run down their axis in `EDGE_CORNERS`, so the cell on the other side of one of them reads
+/// the same grid edge from its far end. The crossing `t = -v0 / (v1 - v0)` then rounds differently in the two
+/// cells, and their copies of the one vertex differ in the last bit: the mesh has unmatched edges wherever such
+/// a pair meet. Reading every edge up its axis makes each crossing a function of the grid edge alone.
+///
+/// `EDGE_CORNERS` itself stays as it is: the dual contouring mesher reads it too.
+const UP_EDGE_CORNERS: [(usize, usize); 12] = {
+    let mut out = EDGE_CORNERS;
+    let mut e = 0;
+    while e < 12 {
+        let (a, b) = EDGE_CORNERS[e];
+        let (ax, ay, az) = CORNER_OFFSETS[a];
+        let (bx, by, bz) = CORNER_OFFSETS[b];
+        if ax + ay + az > bx + by + bz {
+            out[e] = (b, a);
+        }
+        e += 1;
+    }
+    out
+};
+
 /// Process a single layer of cells between two Z-slices,
 /// appending triangles to the output buffer.
 ///
@@ -379,7 +402,7 @@ fn process_slice_pair(
             let mut edge_verts = [[0.0f32; 3]; 12];
             for e in 0..12 {
                 if edge_bits & (1 << e) != 0 {
-                    let (c0, c1) = EDGE_CORNERS[e];
+                    let (c0, c1) = UP_EDGE_CORNERS[e];
                     let v0 = corner_vals[c0];
                     let v1 = corner_vals[c1];
 
@@ -646,5 +669,208 @@ mod tests {
         let exact = 4.0 / 3.0 * std::f64::consts::PI * (1.0 - 0.125);
         assert!((vol - exact).abs() < 0.03 * exact, "signed volume {vol}, want about {exact}");
         assert_eq!(agree, count);
+    }
+}
+
+#[cfg(test)]
+mod watertight_tests {
+    use super::*;
+    use std::collections::{BTreeMap, BTreeSet, HashMap};
+
+    /// The cell's six faces, each as its four corners in cyclic order.
+    const FACES: [[usize; 4]; 6] = [[0, 3, 2, 1], [4, 5, 6, 7], [0, 1, 5, 4], [3, 7, 6, 2], [0, 4, 7, 3], [1, 2, 6, 5]];
+
+    /// The cell edge joining corner `a` to corner `b`, whichever way round `EDGE_CORNERS` lists it.
+    fn edge_between(a: usize, b: usize) -> usize {
+        (0..12)
+            .find(|&e| {
+                let (c0, c1) = EDGE_CORNERS[e];
+                (c0 == a && c1 == b) || (c0 == b && c1 == a)
+            })
+            .unwrap()
+    }
+
+    /// Whether a face's corners alternate in and out around it, in the cube index's bits.
+    fn is_ambiguous(index: usize, face: &[usize; 4]) -> bool {
+        let s = |k: usize| (index >> face[k]) & 1;
+        s(0) == s(2) && s(1) == s(3) && s(0) != s(1)
+    }
+
+    /// A repeatable stream of numbers in [-1, 1) (xorshift64).
+    struct Noise(u64);
+
+    impl Noise {
+        fn next(&mut self) -> f32 {
+            self.0 ^= self.0 << 13;
+            self.0 ^= self.0 >> 7;
+            self.0 ^= self.0 << 17;
+            ((self.0 >> 40) as f32 / (1u64 << 24) as f32) * 2.0 - 1.0
+        }
+    }
+
+    /// The triangles of the n^3 grid `values` (indexed [iz * n * n + iy * n + ix]) over [0, n-1]^3 at unit spacing,
+    /// fed through the streaming mesher `buffer` slices at a time and `batch` slices per evaluation.
+    fn march_grid(values: &[f32], n: usize, buffer: usize, batch: usize) -> Vec<f32> {
+        chunked_marching_cubes(
+            n, 0.0, 0.0, 0.0, 1.0, buffer, batch,
+            |iz0, count| values[iz0 * n * n..(iz0 + count) * n * n].to_vec(),
+            |_, _| {},
+        )
+    }
+
+    /// The cells of the grid that have a face whose corners alternate in and out.
+    fn ambiguous_cells(values: &[f32], n: usize) -> usize {
+        let mut count = 0;
+        for iz in 0..n - 1 {
+            for iy in 0..n - 1 {
+                for ix in 0..n - 1 {
+                    let mut index = 0;
+                    for (i, (dx, dy, dz)) in CORNER_OFFSETS.iter().enumerate() {
+                        if values[(iz + dz) * n * n + (iy + dy) * n + ix + dx] < 0.0 {
+                            index |= 1 << i;
+                        }
+                    }
+                    count += FACES.iter().any(|face| is_ambiguous(index, face)) as usize;
+                }
+            }
+        }
+        count
+    }
+
+    /// Asserts every directed edge of the triangles occurs once and its reverse once, matching vertices by their
+    /// bits, and returns the signed volume the triangles enclose.
+    fn assert_watertight(tris: &[f32], what: &str) -> f64 {
+        let bits = |v: &[f32]| [v[0].to_bits(), v[1].to_bits(), v[2].to_bits()];
+        let mut edges: HashMap<([u32; 3], [u32; 3]), usize> = HashMap::new();
+        let mut volume = 0.0f64;
+        for t in tris.chunks_exact(12) {
+            let v = [bits(&t[3..6]), bits(&t[6..9]), bits(&t[9..12])];
+            for k in 0..3 {
+                *edges.entry((v[k], v[(k + 1) % 3])).or_insert(0) += 1;
+            }
+            let (a, b, c) = ([t[3] as f64, t[4] as f64, t[5] as f64], [t[6] as f64, t[7] as f64, t[8] as f64],
+                [t[9] as f64, t[10] as f64, t[11] as f64]);
+            volume += (a[0] * (b[1] * c[2] - b[2] * c[1]) - a[1] * (b[0] * c[2] - b[2] * c[0])
+                + a[2] * (b[0] * c[1] - b[1] * c[0])) / 6.0;
+        }
+        let unmatched = edges.iter().filter(|(&(a, b), &count)| count != 1 || edges.get(&(b, a)) != Some(&1)).count();
+        assert_eq!(unmatched, 0, "{what}: {unmatched} of {} directed edges lack a single opposite partner", edges.len());
+        volume
+    }
+
+    // Every edge is read from its near end to its far end, so the two cells that share a grid edge compute its
+    // crossing from the same two values in the same order.
+    #[test]
+    fn every_edge_is_read_up_its_axis() {
+        for e in 0..12 {
+            let (c0, c1) = UP_EDGE_CORNERS[e];
+            let (a, b) = EDGE_CORNERS[e];
+            assert!((c0, c1) == (a, b) || (c0, c1) == (b, a), "edge {e} joins the same corners");
+            let (x0, y0, z0) = CORNER_OFFSETS[c0];
+            let (x1, y1, z1) = CORNER_OFFSETS[c1];
+            assert!(x0 + y0 + z0 < x1 + y1 + z1, "edge {e} runs up its axis");
+        }
+    }
+
+    // What the surface's closure rests on, besides shared vertices: the table joins an ambiguous face's crossings
+    // the same way in every cell, keeping the inside corners apart, so the two cells that share the face agree. A
+    // table that sometimes joined them would need each face decided from its four values alone.
+    #[test]
+    fn the_table_keeps_every_ambiguous_face_apart() {
+        let mut seen: BTreeMap<(usize, usize), BTreeSet<&str>> = BTreeMap::new();
+        for index in 0..256usize {
+            // The outline of the table's triangles, emitted (e0, e2, e1): an edge a neighbouring triangle runs
+            // back cancels.
+            let mut outline: BTreeSet<(usize, usize)> = BTreeSet::new();
+            let row = &TRI_TABLE[index];
+            let mut t = 0;
+            while t < 15 && row[t] >= 0 {
+                let tri = [row[t] as usize, row[t + 2] as usize, row[t + 1] as usize];
+                for k in 0..3 {
+                    let (a, b) = (tri[k], tri[(k + 1) % 3]);
+                    if !outline.remove(&(b, a)) {
+                        outline.insert((a, b));
+                    }
+                }
+                t += 3;
+            }
+            for (f, face) in FACES.iter().enumerate() {
+                if !is_ambiguous(index, face) {
+                    continue;
+                }
+                let edges: [usize; 4] = std::array::from_fn(|k| edge_between(face[k], face[(k + 1) % 4]));
+                // Face corner k sits between edges k - 1 and k, and is cut off by a segment joining them.
+                let cut_off = |k: usize| {
+                    let (a, b) = (edges[(k + 3) % 4], edges[k]);
+                    outline.contains(&(a, b)) || outline.contains(&(b, a))
+                };
+                let inside: Vec<usize> = (0..4).filter(|&k| (index >> face[k]) & 1 == 1).collect();
+                let outside: Vec<usize> = (0..4).filter(|&k| (index >> face[k]) & 1 == 0).collect();
+                let way = match (inside.iter().all(|&k| cut_off(k)), outside.iter().all(|&k| cut_off(k))) {
+                    (true, false) => "apart",
+                    (false, true) => "joined",
+                    _ => "neither",
+                };
+                seen.entry((f, inside[0] % 2)).or_default().insert(way);
+            }
+        }
+        assert_eq!(seen.len(), 12, "all six faces occur, each with either diagonal inside");
+        for (key, ways) in &seen {
+            assert_eq!(ways, &BTreeSet::from(["apart"]), "face {} with its diagonal {} inside", key.0, key.1);
+        }
+    }
+
+    // Noise has every kind of face in every arrangement. With the grid's border held outside the solid, its surface
+    // is closed, so each of the mesh's edges must be shared by exactly two triangles, one running each way,
+    // however the stream is chunked.
+    #[test]
+    fn a_noise_field_marches_into_a_closed_surface() {
+        let mut noise = Noise(0xD1B5_4A32_D192_ED03);
+        let mut ambiguous = 0;
+        for trial in 0..300 {
+            let n = 5 + trial % 6;
+            let mut values = vec![0.0f32; n * n * n];
+            for iz in 0..n {
+                for iy in 0..n {
+                    for ix in 0..n {
+                        let border = [ix, iy, iz].iter().any(|&i| i == 0 || i == n - 1);
+                        values[iz * n * n + iy * n + ix] = if border { 1.0 + noise.next().abs() } else { noise.next() };
+                    }
+                }
+            }
+            ambiguous += ambiguous_cells(&values, n);
+            for (buffer, batch) in [(n, n), (3, 2), (2, 1)] {
+                let tris = march_grid(&values, n, buffer, batch);
+                let volume = assert_watertight(&tris, &format!("trial {trial}, n {n}, buffer {buffer}, batch {batch}"));
+                assert!(volume >= 0.0, "trial {trial}: signed volume {volume} is inside out");
+            }
+        }
+        assert!(ambiguous > 1000, "the noise reaches ambiguous faces: {ambiguous} cells");
+    }
+
+    // Smooth solids at the depths people mesh: a sphere and a hollow ball, their centres off the grid so no
+    // vertex lands exactly on a grid point.
+    #[test]
+    fn smooth_solids_march_into_closed_surfaces() {
+        let n = 65;
+        let c = 0.5 * (n - 1) as f32 + 0.0137;
+        let radius = |x: usize, y: usize, z: usize| {
+            ((x as f32 - c).powi(2) + (y as f32 - c + 0.31).powi(2) + (z as f32 - c - 0.17).powi(2)).sqrt()
+        };
+        for (name, outer, inner) in [("sphere", 28.0f32, 0.0f32), ("hollow ball", 28.0, 16.0)] {
+            let mut values = vec![0.0f32; n * n * n];
+            for iz in 0..n {
+                for iy in 0..n {
+                    for ix in 0..n {
+                        let r = radius(ix, iy, iz);
+                        values[iz * n * n + iy * n + ix] = (r - outer).max(inner - r);
+                    }
+                }
+            }
+            let tris = march_grid(&values, n, n, n);
+            let volume = assert_watertight(&tris, name);
+            let want = 4.0 / 3.0 * std::f64::consts::PI * ((outer as f64).powi(3) - (inner as f64).powi(3));
+            assert!((volume - want).abs() < 0.01 * want, "{name}: volume {volume}, want about {want}");
+        }
     }
 }

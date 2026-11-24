@@ -198,6 +198,12 @@ from `1.0.0` onward).
 - Keyed `.github/workflows/check.yml` and `.github/workflows/wheels.yml` concurrency groups on
   `github.event.pull_request.number || github.ref` so `pull_request` `closed` events no longer
   collide with and cancel `push` runs on `main`.
+- `--algo marching-cubes` meshes are watertight. Each cell worked out the crossing on each of its edges, and
+  four of a cell's twelve edges run down their axis, so the cell across such an edge read it from the far end and
+  rounded `t = -v0 / (v1 - v0)` differently in float32: the two cells' copies of one vertex differed in the last
+  bit, and the mesh was open along the edge (at depth 9, 2,528 unmatched edges on a sphere, 3,128 on a box with
+  every edge filleted). Every edge is now read up its axis, so a crossing depends on the grid edge alone. Triangle
+  counts, area and volume are unchanged, and `mdc` output is byte-identical.
 - Inlining was quadratic in a program's size: before inlining a local it counted every later use of it, over
   bodies whose calls were already inlined, where it needs only to know whether there are two. It now stops at
   the second. The eight-field exact round of fillet/octahedron-all-edges compiles in 8.9 s, from 35.9 s; the
