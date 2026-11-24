@@ -128,13 +128,8 @@ fn gears_gearProfile(p: vec3<f32>, numTeeth: f32, moduleVal: f32, pressureAngle:
   let gsl_featureSize_2 = 3.1415927 * moduleVal / 2.0;
   let gsl_featureWeight_2 = gsl_featureWeight(gsl_featureSize_2);
   var gsl_feature_2 = 100000.0;
-<<<<<<< HEAD
-  if (gsl_featureWeight > 0.0) {
-    gsl_feature_2 = -profile + (1.0 - gsl_featureWeight) * 0.5 * gsl_featureSize;
-=======
   if (gsl_featureWeight_2 > 0.0) {
-    gsl_feature_2 = max(-profile, pRho - addendumRadius) + (1.0 - gsl_featureWeight_2) * 0.5 * gsl_featureSize_2;
->>>>>>> origin/blake/shaft-prune
+    gsl_feature_2 = -profile + (1.0 - gsl_featureWeight_2) * 0.5 * gsl_featureSize_2;
   }
   let gaps = gsl_feature_2;
   return max(min(pitchDisc, tips), -gaps);
