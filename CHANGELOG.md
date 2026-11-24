@@ -181,6 +181,9 @@ from `1.0.0` onward).
 
 ### Fixed
 
+- Keyed `.github/workflows/check.yml` and `.github/workflows/wheels.yml` concurrency groups on
+  `github.event.pull_request.number || github.ref` so `pull_request` `closed` events no longer
+  collide with and cancel `push` runs on `main`.
 - Inlining was quadratic in a program's size: before inlining a local it counted every later use of it, over
   bodies whose calls were already inlined, where it needs only to know whether there are two. It now stops at
   the second. The eight-field exact round of fillet/octahedron-all-edges compiles in 8.9 s, from 35.9 s; the
