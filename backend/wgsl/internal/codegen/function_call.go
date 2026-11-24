@@ -27,6 +27,13 @@ func (d *Delegate) BuildFuncCall(
 			op = &program.Operand{Start: op.Start, End: op.End, Type: info.ReturnType(), T: op.T}
 		}
 	}
+	if isPruneBelow(info, len(expressions)) {
+		args := make([]wgsl.Expression, len(expressions))
+		for i, e := range expressions {
+			args[i] = e.(wgsl.Expression)
+		}
+		return d.pruneGuard(op, args, info.WGSLReturnType()), nil
+	}
 	return d.buildFuncCall(
 		op, info.WgslName(),
 		info.GlobalRefs(), expressions, info.WGSLReturnType())
@@ -81,13 +88,6 @@ func (d *Delegate) buildFuncCall(
 			args[i] = e.(wgsl.Expression)
 		}
 		return d.detailGuard(fnCallOp, args, returnType), nil
-	}
-	if pruneBelows(wgslName, len(expressions)) {
-		args := make([]wgsl.Expression, len(expressions))
-		for i, e := range expressions {
-			args[i] = e.(wgsl.Expression)
-		}
-		return d.pruneGuard(fnCallOp, args, returnType), nil
 	}
 
 	args := make([]wgsl.Expression, 0, len(expressions))

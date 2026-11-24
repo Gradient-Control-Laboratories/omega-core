@@ -7,6 +7,7 @@ import (
 
 // FnInfo implements the [build.FnInfo] interface.
 type FnInfo struct {
+	pkgName    string
 	name       string
 	wgslName   string
 	paramNames []string
@@ -51,6 +52,14 @@ func buildWgslSignature(wgslName string, args []build.Expression) (string, []Typ
 		}
 	}
 	return wgslName, paramTypes, progParamTypes
+}
+
+func (f *FnInfo) PkgName() string {
+	return f.pkgName
+}
+
+func (f *FnInfo) SetPkgName(pkgName string) {
+	f.pkgName = pkgName
 }
 
 func (f *FnInfo) Name() string {

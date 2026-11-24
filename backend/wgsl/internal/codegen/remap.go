@@ -123,7 +123,7 @@ func (d *Delegate) Remap(remapOp *program.Operand, targetOp *program.Operand, ex
 			}
 
 			var actualFnName string
-			mergedRefs, actualFnName, err = d.buildFunc(fnName, fnName, refs, nil, nil, returnType, []build.Expression{returnExpr})
+			mergedRefs, actualFnName, err = d.buildFunc(nil, fnName, fnName, refs, nil, nil, returnType, []build.Expression{returnExpr})
 			if err == nil {
 				fnName = actualFnName
 			}
