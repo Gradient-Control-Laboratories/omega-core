@@ -396,10 +396,58 @@ func (l *layers) increment(name string) *program.Operand {
 	if err != nil || inherited == nil {
 		return onSurface(own)
 	}
+	inh := flattenRemaps(inherited)
+	if chain := l.baseChain(name); chain != "" && at != nil {
+		// A coat over a shape cut through a chain of coats lies on the
+		// chain's surface in places and on the cut in others. Its build
+		// stands on both; the relief it levels is the chain's, so it rides
+		// only where the chain's surface is the one beneath, onChain 1, and
+		// a cut face, which its cutter left without that relief, takes the
+		// build alone.
+		own := program.CloneOperand(l.mats[name])
+		builds := l.readAt(at, sub(build(own), build(program.CloneOperand(inh))))
+		reliefs := l.readAt(at, sub(sub(height(program.CloneOperand(own)), build(program.CloneOperand(own))),
+			sub(height(program.CloneOperand(inh)), build(program.CloneOperand(inh)))))
+		return add(builds, mul(l.onChain(name, chain), reliefs))
+	}
 	// One remap of the difference, not two of the heights: the coat's
 	// material is usually built from the one beneath, so one evaluation at
 	// the surface point serves both.
-	return onSurface(sub(own, height(flattenRemaps(inherited))))
+	return onSurface(sub(own, height(inh)))
+}
+
+// build is a material record's build, its volume row's fourth component.
+func build(m *program.Operand) *program.Operand {
+	return nary(program.Operation_INDEX, nary(program.Operation_INDEX, m, num(2)), num(3))
+}
+
+// baseChain is, for a coat laid over a shape that is not itself a coat but
+// holds exactly one chain of coats (paint over a cut), the name of that
+// chain inside it; "" otherwise.
+func (l *layers) baseChain(name string) string {
+	beneath := aliasOf(l.decls[name])
+	if beneath == "" || l.displacing[beneath] || !l.contains(beneath) {
+		return ""
+	}
+	body, ok := l.decls[beneath]
+	if !ok {
+		return ""
+	}
+	return l.soleChain(body)
+}
+
+// onChainRamp is how far (mm) the surface beneath a coat may stand off its
+// chain's before the coat stops taking the chain's relief: the width of the
+// blend at a cut's rim.
+const onChainRamp = 0.05
+
+// onChain is 1 where the surface beneath a coat is its base chain's, and 0
+// where something else, a cut, lies beyond it: the shape beneath a coat is at
+// least as far out as the chain (a cut only takes away), and equal where the
+// chain's surface is the one showing.
+func (l *layers) onChain(name, chain string) *program.Operand {
+	gap := sub(ref(layerUnderPrefix+name), ref(layerDispPrefix+chain))
+	return call("clamp", sub(num(1), div(gap, num(onChainRamp))), num(0), num(1))
 }
 
 // surface is a reference to the closest point, from p, of the undisplaced
