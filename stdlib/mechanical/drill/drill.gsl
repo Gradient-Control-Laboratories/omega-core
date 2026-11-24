@@ -95,7 +95,19 @@ hole(features, zTop) {
   // part's own face bounds them, which is what gears already does for its
   // bore and what makes an omitted depth mean THRU. Only the cones are
   // bounded, since those would otherwise widen without limit.
-  return reduce((acc, f) { return min(acc, f(mouth)); }, features, nothing);
+  //
+  // The void is a feature (builtin pruneBelow): too small to see, the hole
+  // closes. Its size is the diameter of the largest ball inside it on its
+  // axis just under the mouth, twice the void's own depth there: a plain
+  // hole's diameter, near a counterbore's, about 0.7 of a 90-degree
+  // countersink's. A box cannot say it here, since a library function cannot
+  // read a box; the field can. Sized by a slider, the probe is evaluated with
+  // the hole.
+  stack = reduce((acc, f) { return min(acc, f(mouth)); }, features, nothing);
+  mouthDepth = remap(stack, [0.0, 0.0, mouth - 0.01]);
+  cutAway = stack;
+  cutAway.featureSize = -2.0 * mouthDepth;
+  return cutAway;
 }
 
 /// The same stack with its mouth at z = 0.

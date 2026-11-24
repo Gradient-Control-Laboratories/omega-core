@@ -501,6 +501,15 @@ func (v *foldVisitor) VisitExpression(op *program.Operand, expr *program.Express
 			hasNonConstChild = true
 		}
 	}
+	// A remap to a constant point is the field at that point: a constant
+	// whenever the field reads nothing else that is not one, though it reads p.
+	if expr.Operation == program.Operation_REMAP && len(expr.Operands) == 2 && len(expr.Operands[1].ConstValues) == 3 &&
+		(v.checker == nil || !v.checker.IsParameter(op)) {
+		if val, err := v.evalConst(op); err == nil {
+			v.setConst(op, val)
+			return nil, nil
+		}
+	}
 	if hasNonConstChild {
 		v.setConst(op, nil)
 		return nil, nil

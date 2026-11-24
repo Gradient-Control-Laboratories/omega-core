@@ -14,6 +14,9 @@ var validAssignablePropNames = map[string]bool{
 	"simple":     true,
 	"detail":     true,
 	"detailSize": true,
+	// The size of a geometric feature (a hole, a gear's teeth) the viewer
+	// prunes when it is too small to see (property/feature.go).
+	"featureSize": true,
 	// A shape's own surface frame: u and v are coordinates on it, authored by
 	// the primitives, so a material can read where it sits on the surface
 	// rather than being handed a frame that has to be kept in step by hand.

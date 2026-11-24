@@ -169,7 +169,7 @@ func (p *PkgFileScope) SetParamKind(index int, kind, anchor string) {
 // min, max and period are the retired slider properties. They still parse, so
 // `gsl fix -range` can read a document that uses them; the assembler rejects them
 // (propval.Validate), pointing at @range.
-var validAssignablePropNames = []string{"min", "max", "period", "color", "material", "box", "simple", "detail", "detailSize", "u", "v"}
+var validAssignablePropNames = []string{"min", "max", "period", "color", "material", "box", "simple", "detail", "detailSize", "featureSize", "u", "v"}
 
 // invalidPropertyError is the error for a property name outside
 // validAssignablePropNames, listing the valid names so the message tracks the
