@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/source"
 )
 
 func TestLocalManagerLoadsLocalSourcesAndAssets(t *testing.T) {

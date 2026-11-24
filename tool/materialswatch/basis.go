@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"math"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/eval"
 )
 
 // The finishes' recolouring basis. A finish has no colour, so the Bodies panel

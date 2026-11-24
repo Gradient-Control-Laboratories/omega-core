@@ -7,8 +7,8 @@ import (
 	"math"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/source"
-	"gradientcontrol.com/omega/core/program/noise"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/noise"
 )
 
 // TestNoiseHash3LiteralComponent evaluates noiseHash3 with a constant cell

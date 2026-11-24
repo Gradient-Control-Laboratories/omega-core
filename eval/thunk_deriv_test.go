@@ -5,8 +5,8 @@ package eval
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // TestThunkDerivative differentiates through a higher-order combiner end to
@@ -25,9 +25,9 @@ func TestThunkDerivative(t *testing.T) {
 n1 = [0, 0, 1];
 n2 = normalize([1, 0, 1]);
 u = unionRoundExact(
-  () { return p.z - 1; },
-  () { return dot(p, n2) - 1; },
-  n1, n2);
+  p.z - 1,
+  dot(p, n2) - 1,
+  0, n1, n2);
 return u, u.dp.x, u.dp.y, u.dp.z;
 `
 	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(srcMgr))

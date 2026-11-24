@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/backend/wgsl"
-	"gradientcontrol.com/omega/core/program/noise"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/noise"
 )
 
 // The profile examples' WGSL, compiled as the viewer compiles it and run once

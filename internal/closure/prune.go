@@ -1,7 +1,7 @@
 package closure
 
 import (
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func (t *transformer) pruneHigherOrderTemplates(files []*program.PackageFile) {

@@ -3,7 +3,7 @@ package inline_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // A function that remaps a field it was handed has to be inlined when the

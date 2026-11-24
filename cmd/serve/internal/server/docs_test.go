@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"gradientcontrol.com/omega/core/program/preamble"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/preamble"
 )
 
 // TestHelpDocsAreGenerated: the Help panel's two documents come from the

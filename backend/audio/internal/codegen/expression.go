@@ -1,8 +1,8 @@
 package codegen
 
 import (
-	"gradientcontrol.com/omega/core/internal/build"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/build"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // jsExpression implements build.Expression and stores generated JavaScript code

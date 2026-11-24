@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // TestDriverOnePunch checks the fact the whole cross tip rests on: a recess

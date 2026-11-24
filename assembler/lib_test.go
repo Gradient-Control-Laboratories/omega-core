@@ -7,13 +7,13 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler/meshplan"
-	"gradientcontrol.com/omega/core/assembler/topofold"
-	"gradientcontrol.com/omega/core/assembler/variation"
-	"gradientcontrol.com/omega/core/assembler/warpfold"
-	"gradientcontrol.com/omega/core/internal/source"
-	src_test "gradientcontrol.com/omega/core/internal/srctest"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/meshplan"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/topofold"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/variation"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/warpfold"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	src_test "github.com/Gradient-Control-Laboratories/omega-core/internal/srctest"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func TestAssembleSingle(t *testing.T) {

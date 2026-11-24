@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // rackDoc exercises the rack additions to the gears library: the basic-rack

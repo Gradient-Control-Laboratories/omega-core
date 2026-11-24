@@ -253,7 +253,7 @@ func (f *Function) PrettyPrint(indent int) string {
 
 func (a *Assignment) PrettyPrint(indent int) string {
 	result := strings.Builder{}
-	if a.Range != nil && !a.Range.IsSynthetic() {
+	if a.Range != nil {
 		minStr := a.Range.Min.PrettyPrint(indent)
 		maxStr := a.Range.Max.PrettyPrint(indent)
 		if a.Range.Period != nil {

@@ -3,7 +3,7 @@ package meshplan
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // SliceProgram translates a GSL whole-program AST into a MeshExportPlan

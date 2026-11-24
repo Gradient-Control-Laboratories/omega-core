@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/compile"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/compile"
 )
 
 // The viewer reads the duration off the compile response, so it must survive

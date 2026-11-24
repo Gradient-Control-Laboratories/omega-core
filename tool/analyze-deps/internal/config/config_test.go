@@ -3,7 +3,7 @@ package config_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/tool/analyze-deps/internal/config"
+	"github.com/Gradient-Control-Laboratories/omega-core/tool/analyze-deps/internal/config"
 )
 
 func TestParseFlags_Defaults(t *testing.T) {

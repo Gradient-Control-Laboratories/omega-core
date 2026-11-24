@@ -27,14 +27,14 @@ echo ""
 echo "building ${ROOT_DIR}/program/program.proto"
 protoc \
   --go_out="${ROOT_DIR}" \
-  --go_opt=module=gradientcontrol.com/omega/core \
+  --go_opt=module=github.com/Gradient-Control-Laboratories/omega-core \
   -I "${ROOT_DIR}/program" \
   "${ROOT_DIR}/program/program.proto"
 
 echo "building ${ROOT_DIR}/backend/tape/tape.proto"
 protoc \
   --go_out="${ROOT_DIR}" \
-  --go_opt=module=gradientcontrol.com/omega/core \
+  --go_opt=module=github.com/Gradient-Control-Laboratories/omega-core \
   -I "${ROOT_DIR}/backend/tape" \
   "${ROOT_DIR}/backend/tape/tape.proto"
 

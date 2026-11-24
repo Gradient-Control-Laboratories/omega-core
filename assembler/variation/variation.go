@@ -3,9 +3,9 @@
 package variation
 
 import (
-	"gradientcontrol.com/omega/core/internal/assembler/deadcode"
-	"gradientcontrol.com/omega/core/program"
-	"gradientcontrol.com/omega/core/program/textures"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/deadcode"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/textures"
 )
 
 // Program builds the self-contained program that evaluates the given returns

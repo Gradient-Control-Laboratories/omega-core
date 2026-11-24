@@ -1520,7 +1520,7 @@ const file_tape_proto_rawDesc = "" +
 	"\x03MOD\x10\b\x12\a\n" +
 	"\x03AND\x10\t\x12\x06\n" +
 	"\x02OR\x10\n" +
-	"B-Z+gradientcontrol.com/omega/core/backend/tapeb\x06proto3"
+	"BBZ@github.com/Gradient-Control-Laboratories/omega-core/backend/tapeb\x06proto3"
 
 var (
 	file_tape_proto_rawDescOnce sync.Once

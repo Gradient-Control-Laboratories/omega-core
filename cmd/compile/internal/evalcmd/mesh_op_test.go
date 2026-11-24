@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
 )
 
 // mesh writes the part, with defs applied, as a .glb at out, and answers with the box it meshed over and what each

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"gradientcontrol.com/omega/core/tool/run-go-tests/internal/runner"
+	"github.com/Gradient-Control-Laboratories/omega-core/tool/run-go-tests/internal/runner"
 )
 
 // HistoryRecord represents one passing test run stored in test-local.jsonl.

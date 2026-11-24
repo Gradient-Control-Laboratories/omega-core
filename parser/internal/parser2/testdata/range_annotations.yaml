@@ -23,13 +23,6 @@ Expected:
             - name: speed
         - expression:
             value: 2
-          range:
-            max:
-              value: 10
-            min:
-              value: 1
-            period:
-              value: 2
           variables:
             - name: width
               properties:

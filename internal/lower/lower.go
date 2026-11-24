@@ -3,8 +3,8 @@ package lower
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/internal"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // LoopFoldThreshold is the fewest constants a reduce folds for Options'

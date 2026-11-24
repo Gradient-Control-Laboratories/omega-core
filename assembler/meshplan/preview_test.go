@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	parser "gradientcontrol.com/omega/core/parser"
-	"gradientcontrol.com/omega/core/program"
+	parser "github.com/Gradient-Control-Laboratories/omega-core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func TestPreviewBodiesMapsReturnsToSlotsAndMeshes(t *testing.T) {

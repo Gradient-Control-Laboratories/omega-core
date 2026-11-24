@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"gradientcontrol.com/omega/core/cmd/fix/internal/fix"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/fix/internal/fix"
 )
 
 // Mode represents the execution mode determined by CLI arguments.

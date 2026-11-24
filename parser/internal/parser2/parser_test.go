@@ -9,14 +9,14 @@ import (
 	"strings"
 	"testing"
 
+	src_test "github.com/Gradient-Control-Laboratories/omega-core/internal/srctest"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	lib "github.com/Gradient-Control-Laboratories/omega-core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/parser/internal/parser2"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	yaml "gopkg.in/yaml.v3"
-	src_test "gradientcontrol.com/omega/core/internal/srctest"
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	lib "gradientcontrol.com/omega/core/parser"
-	"gradientcontrol.com/omega/core/parser/internal/parser2"
-	"gradientcontrol.com/omega/core/program"
 )
 
 type testCase struct {

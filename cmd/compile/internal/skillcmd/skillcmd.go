@@ -9,8 +9,8 @@ import (
 	"io"
 	"strings"
 
-	"gradientcontrol.com/omega/core/internal/version"
-	"gradientcontrol.com/omega/core/program/preamble"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/version"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/preamble"
 )
 
 const usage = `Usage of compile skill (gsl skill):

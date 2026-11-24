@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"gradientcontrol.com/omega/core/backend/wgsl/internal/accel"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl/internal/accel"
 )
 
 func TestWGSLOps_NoDrift(t *testing.T) {

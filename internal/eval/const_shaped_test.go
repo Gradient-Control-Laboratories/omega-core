@@ -3,7 +3,7 @@ package eval
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // matOp builds a list-of-vectors literal [[..],[..],..] as the parser lowers

@@ -2,7 +2,7 @@ package build
 
 import (
 	"fmt"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 	"strings"
 )
 

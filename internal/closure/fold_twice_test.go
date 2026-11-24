@@ -3,7 +3,7 @@ package closure_test
 import (
 	"testing"
 
-	internalsource "gradientcontrol.com/omega/core/internal/source"
+	internalsource "github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // Two folds in one function over the same list, asking its elements different

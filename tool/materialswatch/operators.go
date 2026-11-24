@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"path"
 
-	"gradientcontrol.com/omega/core/program"
-	gsllibs "gradientcontrol.com/omega/core/stdlib"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	gsllibs "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
 )
 
 // Operator is one @surface preset: the overload of a surface operator that

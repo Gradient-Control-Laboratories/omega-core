@@ -42,7 +42,6 @@ export function initSliderPanel(options = {}) {
 
 //
 // One row per top-level variable assigned a literal under an `@range`.
-// (The deprecated `.min` and `.max` properties declare the same sliders.)
 // Dragging a slider rewrites the literal in
 // the editor (replaceSourceSpan tags it as a "scrub" userEvent), which
 // triggers the normal debounced recompile path. The next compile
@@ -109,7 +108,7 @@ function sliderStep() {
 }
 
 // Per-row animation state for sliders with a period, the third `@range`
-// argument (or the deprecated `.period` property). Keyed
+// argument. Keyed
 // by variableName. `paused` is per-row (the play/pause button); `last`
 // is the most recent quantised value we wrote so the tick can skip the
 // uniform write when nothing changed — which keeps the rAF loop cheap

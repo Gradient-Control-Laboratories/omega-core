@@ -1,7 +1,7 @@
 package parser2
 
 import (
-	"gradientcontrol.com/omega/core/internal/scope"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
 )
 
 func buildPkgFile(pkgFileScope scope.BuilderScope, topLevel *TopLevel) error {

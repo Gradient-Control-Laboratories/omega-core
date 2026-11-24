@@ -5,7 +5,7 @@ package eval
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // A reduce over a list of functions can take the element before this one as a

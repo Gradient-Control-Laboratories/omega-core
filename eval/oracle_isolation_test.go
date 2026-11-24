@@ -11,7 +11,7 @@ import (
 	"sync"
 	"testing"
 
-	"gradientcontrol.com/omega/core/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/eval"
 )
 
 func oracleCube(x float32) string {

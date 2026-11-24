@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"strings"
 
-	"gradientcontrol.com/omega/core/cmd/serve/internal/staticpage"
-	"gradientcontrol.com/omega/core/internal/compile"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/serve/internal/staticpage"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/compile"
 )
 
 // exportNoteHeader carries what the page should tell the user about an export that succeeded.

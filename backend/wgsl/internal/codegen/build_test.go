@@ -6,13 +6,13 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/backend/wgsl"
-	"gradientcontrol.com/omega/core/backend/wgsl/internal/wgsltest"
-	"gradientcontrol.com/omega/core/internal/source"
-	src_test "gradientcontrol.com/omega/core/internal/srctest"
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl/internal/wgsltest"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	src_test "github.com/Gradient-Control-Laboratories/omega-core/internal/srctest"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 var mockMgr = source.NewLocalManager("testpkg", "../../../../stdlib")

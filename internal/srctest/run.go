@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // Find all files matching [glob] in the current directory.

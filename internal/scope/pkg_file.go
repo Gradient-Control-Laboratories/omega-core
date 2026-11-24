@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // PkgFileScope represents the scope of a single file in a GSL package.
@@ -166,7 +166,14 @@ func (p *PkgFileScope) SetParamKind(index int, kind, anchor string) {
 	panic("SetParamKind cannot be called on PkgFileScope")
 }
 
+<<<<<<< HEAD
 var validAssignablePropNames = []string{"min", "max", "period", "color", "material", "box", "simple", "detail", "detailSize", "featureSize", "u", "v"}
+=======
+// min, max and period are the retired slider properties. They still parse, so
+// `gsl fix -range` can read a document that uses them; the assembler rejects them
+// (propval.Validate), pointing at @range.
+var validAssignablePropNames = []string{"min", "max", "period", "color", "material", "box", "simple", "detail", "detailSize", "u", "v"}
+>>>>>>> origin/main
 
 // invalidPropertyError is the error for a property name outside
 // validAssignablePropNames, listing the valid names so the message tracks the
@@ -203,9 +210,6 @@ func (p *PkgFileScope) AddPropertyAssignment(varName, propName string, expr *pro
 	}
 
 	variable.Var.AddPropertyAssignment(propName, expr, start, end)
-	if propName == "min" || propName == "max" || propName == "period" {
-		synthesizeRangeAnnotation(variable)
-	}
 	return nil
 }
 
@@ -223,47 +227,6 @@ func (p *PkgFileScope) AddAnnotation(kind, symbol string, start, end *program.Lo
 		Start: start, End: end,
 	})
 	return nil
-}
-
-func synthesizeRangeAnnotation(variable *Var) {
-	assign := variable.Parent.Assign
-	if assign.Range != nil && !assign.Range.IsSynthetic() {
-		return
-	}
-
-	var minProp, maxProp, periodProp *program.Property
-	for _, prop := range variable.Var.Properties {
-		switch prop.Name {
-		case "min":
-			minProp = prop
-		case "max":
-			maxProp = prop
-		case "period":
-			periodProp = prop
-		}
-	}
-
-	if minProp == nil || maxProp == nil {
-		return
-	}
-
-	loc := assign.Start
-	if assign.Expression != nil && assign.Expression.Start != nil {
-		loc = assign.Expression.Start
-	}
-
-	var periodOp *program.Operand
-	if periodProp != nil {
-		periodOp = periodProp.Expression
-	}
-
-	assign.Range = &program.Range{
-		Start:  loc,
-		End:    loc,
-		Min:    minProp.Expression,
-		Max:    maxProp.Expression,
-		Period: periodOp,
-	}
 }
 
 func (p *PkgFileScope) AddImport(imp *program.Import) error {

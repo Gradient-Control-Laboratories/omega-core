@@ -1,7 +1,7 @@
 package build
 
 import (
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 type calcConstComparisonFunc func(v0, v1 float64) float64

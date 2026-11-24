@@ -9,7 +9,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --shard)
       if [ $# -lt 2 ]; then
-        echo "Error: --shard requires a value (all, lint, eval-core, eval-heavy, other-heavy, other)" >&2
+        echo "Error: --shard requires a value (all, lint, eval-0, eval-1, eval-2, eval-sub, eval-heavy, other-gpu, other-swatch, other)" >&2
         exit 1
       fi
       SHARD="$2"
@@ -45,6 +45,18 @@ run_lint() {
   echo "  ✓ go vet passed."
 }
 
+run_eval_shard() {
+  local shard_idx="$1"
+  local num_shards="$2"
+  local pattern
+  pattern=$(cd "${ROOT_DIR}" && go test -list '^Test' ./eval | grep '^Test' | sort | awk -v idx="${shard_idx}" -v n="${num_shards}" '(NR - 1) % n == idx' | paste -sd '|' -)
+  if [ -z "${pattern}" ]; then
+    echo "No tests matched eval shard ${shard_idx}/${num_shards}" >&2
+    exit 1
+  fi
+  (cd "${ROOT_DIR}" && go test -timeout 20m -run "^(${pattern})$" ./eval)
+}
+
 run_tests() {
   "${SCRIPT_DIR}/build-stdlib.sh"
   echo "==> Running tests (${SHARD})..."
@@ -52,17 +64,29 @@ run_tests() {
     all)
       (cd "${ROOT_DIR}" && go test -timeout 20m ./...)
       ;;
-    eval-core)
-      (cd "${ROOT_DIR}" && go test -timeout 20m ./eval ./eval/joints ./eval/internal/libflattest ./eval/internal/environment)
+    eval-0)
+      run_eval_shard 0 3
+      ;;
+    eval-1)
+      run_eval_shard 1 3
+      ;;
+    eval-2)
+      run_eval_shard 2 3
+      ;;
+    eval-sub)
+      (cd "${ROOT_DIR}" && go test -timeout 20m ./eval/joints ./eval/internal/libflattest ./eval/internal/environment)
       ;;
     eval-heavy)
       (cd "${ROOT_DIR}" && go test -timeout 20m ./eval/internal/libboxtest ./eval/internal/boxsweep/...)
       ;;
-    other-heavy)
-      (cd "${ROOT_DIR}" && go test -timeout 20m ./internal/fidget/internal/gpuparity ./tool/materialswatch)
+    other-gpu)
+      (cd "${ROOT_DIR}" && go test -timeout 20m ./internal/fidget/internal/gpuparity)
+      ;;
+    other-swatch)
+      (cd "${ROOT_DIR}" && go test -timeout 20m ./tool/materialswatch)
       ;;
     other)
-      (cd "${ROOT_DIR}" && go test -timeout 20m $(go list ./... | grep -v -E '^gradientcontrol\.com/omega/core/(eval|internal/fidget/internal/gpuparity|tool/materialswatch)'))
+      (cd "${ROOT_DIR}" && go test -timeout 20m $(go list ./... | grep -v -E '^github\.com/Gradient-Control-Laboratories/omega-core/(eval|internal/fidget/internal/gpuparity|tool/materialswatch)'))
       ;;
     *)
       echo "Unknown shard: ${SHARD}" >&2
@@ -83,7 +107,7 @@ case "${SHARD}" in
   lint)
     run_lint
     ;;
-  eval-core|eval-heavy|other-heavy|other)
+  eval-0|eval-1|eval-2|eval-sub|eval-heavy|other-gpu|other-swatch|other)
     run_tests
     ;;
   *)

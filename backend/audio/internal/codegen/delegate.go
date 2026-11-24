@@ -3,7 +3,7 @@ package codegen
 import (
 	"strings"
 
-	"gradientcontrol.com/omega/core/internal/build"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/build"
 )
 
 // Delegate implements build.Delegate

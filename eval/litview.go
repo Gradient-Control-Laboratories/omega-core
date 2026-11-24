@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"math"
 
-	"gradientcontrol.com/omega/core/internal/fidget"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // RenderLitLinear is RenderLit returning the image before display encoding,

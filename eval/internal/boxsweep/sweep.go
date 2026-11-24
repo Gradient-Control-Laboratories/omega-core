@@ -19,8 +19,8 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/eval"
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // unboundedAxis is what an axis .box cannot bound reads as: builtin's nothing.

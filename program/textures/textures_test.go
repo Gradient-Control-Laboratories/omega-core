@@ -3,9 +3,9 @@ package textures_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/program"
-	"gradientcontrol.com/omega/core/program/textures"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/textures"
 )
 
 func fnCall(name string, args ...*program.Operand) *program.Operand {

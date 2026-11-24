@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"gradientcontrol.com/omega/core/cmd/fix/internal/cli"
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/fix/internal/cli"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
 )
 
 func TestCLI_ModesAndDiff(t *testing.T) {

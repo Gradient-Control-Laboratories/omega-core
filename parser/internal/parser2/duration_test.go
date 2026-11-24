@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/parser/internal/parser2"
+	"github.com/Gradient-Control-Laboratories/omega-core/parser/internal/parser2"
 )
 
 func TestParseDuration(t *testing.T) {

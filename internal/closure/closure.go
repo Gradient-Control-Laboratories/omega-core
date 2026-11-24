@@ -3,7 +3,7 @@ package closure
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // Transform rewrites higher-order functions, closures, and partial applications

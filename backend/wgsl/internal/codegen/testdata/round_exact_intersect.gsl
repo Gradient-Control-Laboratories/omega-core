@@ -8,13 +8,13 @@ n1 = normalize(p);
 n2 = normalize(p - [1.2, 0, 0]);
 
 lens = intersectRoundExact(
-  () { return sphere([0, 0, 0], 1); },
-  () { return sphere([1.2, 0, 0], 1); },
-  n1, n2);
+  sphere([0, 0, 0], 1),
+  sphere([1.2, 0, 0], 1),
+  0, n1, n2);
 
 blob = intersectRoundExact(
-  () { return boxCentered([0, 0, 0], [1.6, 1.6, 1.6]); },
-  () { return sphere([0.8, 0, 0], 1); },
-  n1, n2);
+  boxCentered([0, 0, 0], [1.6, 1.6, 1.6]),
+  sphere([0.8, 0, 0], 1),
+  0, n1, n2);
 
 return unionSharp([lens, remap(blob, p - [4, 0, 0])]);

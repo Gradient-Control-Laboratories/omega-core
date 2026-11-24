@@ -3,7 +3,7 @@ package assembler
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // A call with constant arguments whose body reads a slider is not a

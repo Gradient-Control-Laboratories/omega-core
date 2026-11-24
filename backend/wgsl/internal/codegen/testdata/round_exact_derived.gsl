@@ -5,16 +5,18 @@
 
 import . "builtin";
 
-// Two spheres: the derived normals are the analytic ones, so this must agree
-// with the four-argument form passed normalize(p - center).
+// Two spheres: the iterated form derives its normals from the fields at the
+// seam point, inside the library function.
 lens = unionRoundExact(
-  () { return sphere([0, 0, 0], 1); },
-  () { return sphere([1.2, 0, 0], 1); });
+  sphere([0, 0, 0], 1),
+  sphere([1.2, 0, 0], 1),
+  0);
 
 // The dual, over a different pair of fields: a second specialization of the
 // same library function, which must not collapse onto the first.
 notch = intersectRoundExact(
-  () { return boxCentered([0, 0, 0], [1.6, 1.6, 1.6]); },
-  () { return sphere([0.8, 0, 0], 1); });
+  boxCentered([0, 0, 0], [1.6, 1.6, 1.6]),
+  sphere([0.8, 0, 0], 1),
+  0);
 
 return unionSharp([lens, remap(notch, p - [4, 0, 0])]);

@@ -4,33 +4,33 @@ import (
 	"fmt"
 	"strings"
 
-	"gradientcontrol.com/omega/core/assembler/meshplan"
-	"gradientcontrol.com/omega/core/assembler/meshslots"
-	"gradientcontrol.com/omega/core/assembler/slider"
-	"gradientcontrol.com/omega/core/assembler/source"
-	"gradientcontrol.com/omega/core/assembler/topofold"
-	"gradientcontrol.com/omega/core/assembler/ui"
-	"gradientcontrol.com/omega/core/assembler/warpfold"
-	"gradientcontrol.com/omega/core/internal/assembler/annotation"
-	"gradientcontrol.com/omega/core/internal/assembler/constspec"
-	"gradientcontrol.com/omega/core/internal/assembler/deadcode"
-	"gradientcontrol.com/omega/core/internal/assembler/inline"
-	"gradientcontrol.com/omega/core/internal/assembler/property"
-	"gradientcontrol.com/omega/core/internal/assembler/propval"
-	internaltopofold "gradientcontrol.com/omega/core/internal/assembler/topofold"
-	"gradientcontrol.com/omega/core/internal/assembler/unroll"
-	internalwarpfold "gradientcontrol.com/omega/core/internal/assembler/warpfold"
-	"gradientcontrol.com/omega/core/internal/closure"
-	"gradientcontrol.com/omega/core/internal/collect"
-	"gradientcontrol.com/omega/core/internal/eval"
-	"gradientcontrol.com/omega/core/internal/link"
-	"gradientcontrol.com/omega/core/internal/lower"
-	"gradientcontrol.com/omega/core/internal/meshfold"
-	internalsource "gradientcontrol.com/omega/core/internal/source"
-	"gradientcontrol.com/omega/core/internal/types"
-	"gradientcontrol.com/omega/core/parser"
-	"gradientcontrol.com/omega/core/program"
-	"gradientcontrol.com/omega/core/program/textures"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/meshplan"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/meshslots"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/slider"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/topofold"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/ui"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/warpfold"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/annotation"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/constspec"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/deadcode"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/inline"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/property"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/propval"
+	internaltopofold "github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/topofold"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/unroll"
+	internalwarpfold "github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/warpfold"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/closure"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/collect"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/link"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/lower"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/meshfold"
+	internalsource "github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/types"
+	"github.com/Gradient-Control-Laboratories/omega-core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/textures"
 )
 
 // ParsePackageFunc parses all source files in a package into a *parser.Result.
@@ -537,11 +537,19 @@ func optimizeProgram(prog *program.Program, o *options, srcMgr source.Manager) (
 			return nil, err
 		}
 
-		// 6. Dead code elimination: prune unused declarations between rounds
+		// 6. Dead code elimination: prune unused declarations between rounds.
+		// What it removes can leave a fold to make (a constant the removed code
+		// kept from folding), so it counts toward the fixed point: stopping here
+		// left such a fold undone, and made a program's output depend on what
+		// else the libraries hold, which can add rounds of their own.
 		if o.enableDeadcodeRemoval {
+			before := deadcode.Declarations(prog)
 			prog, err = deadcode.Remove(prog)
 			if err != nil {
 				return nil, err
+			}
+			if deadcode.Declarations(prog) != before {
+				modifiedAny = true
 			}
 		}
 
