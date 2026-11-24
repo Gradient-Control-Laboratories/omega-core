@@ -96,7 +96,7 @@ quadXY(corner0, corner1, corner2, corner3) {
 /// half-angle and `radius` the arc radius. Returns the distance to the arc
 /// curve; subtract a half-width to give it a stroke.
 //
-// Based on Inigo Quilez formulation.
+// Based on Inigo Quilez's sdArc (https://iquilezles.org/articles/distfunctions2d/).
 arcXY(halfAngleSinCos, radius) {
   pxAbs = abs(p.x);
   py = p.y;
@@ -112,7 +112,7 @@ arcXY(halfAngleSinCos, radius) {
 /// Arc (as in arcXY) extended along the tangents at its endpoints.
 /// `halfAngleSinCos` is [sin, cos] of the half-angle and `radius` the radius.
 //
-// Based on Inigo Quilez formulation.
+// Based on Inigo Quilez's sdArc (https://iquilezles.org/articles/distfunctions2d/).
 arcExtendedXY(halfAngleSinCos, radius) {
   pxAbs = abs(p.x);
   py = p.y;
