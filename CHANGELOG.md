@@ -124,6 +124,11 @@ from `1.0.0` onward).
 
 ### Changed
 
+- `mechanical/shaft` segments evaluate their 2D section (gear profile, spline, thread, bevel teeth,
+  taper, etc.) once and return all four capped/extended distances together as a `vec4` instead of
+  being invoked four times per segment in `shaft.body` and `shaft.envelope`. This eliminates 4×
+  section duplication at the source: `shaft_pinion` WGSL shrinks from 87 KB to 35 KB (−60%) and
+  `shaft_hobbed` from 51 KB to 20 KB (−60%) with identical fields.
 - `gears.gearProfile` now chamfers its tooth tips with `intersectChamferNormalized` (given the flank's
   and tip circle's normals at the edge) in place of `intersectChamfer`. The tip chamfer is now `kSmall`
   deep, measured from the edge to the bevel, about 1.7 to 1.8 times as deep as before at these obtuse

@@ -132,16 +132,17 @@ body(segments) {
   // this segment.
   shaftSoFar = reduce((acc, seg, i, prev) {
     openRuns = acc.y;
-    filletR = prev(0.0, 0.0, 6.0);
-    chamferC = prev(0.0, 0.0, 7.0);
-    here = filletR < 50000.0 ? unionRound(acc.x, seg(0.0, 0.0, 0.0), filletR)
-                             : (chamferC < 50000.0 ? unionChamfer(acc.x, seg(0.0, 0.0, 0.0), chamferC) : seg(0.0, 0.0, 0.0));
-    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, seg(100000.0, 0.0, 0.0))),
-            i < 0.5 ? seg(0.0, 100000.0, 0.0) : min(max(openRuns, seg(100000.0, 100000.0, 0.0)), seg(0.0, 100000.0, 0.0))];
+    filletR = i < 0.5 ? nothing : prev(0.0, 0.0, 6.0).x;
+    chamferC = i < 0.5 ? nothing : prev(0.0, 0.0, 7.0).x;
+    q = seg(0.0, 0.0, 0.0);
+    here = filletR < 50000.0 ? unionRound(acc.x, q.x, filletR)
+                             : (chamferC < 50000.0 ? unionChamfer(acc.x, q.x, chamferC) : q.x);
+    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, q.y)),
+            i < 0.5 ? q.z : min(max(openRuns, q.w), q.z)];
   }, segments, [100000.0, 100000.0]);
   // The runouts, cut after the fold: where a cutter runs out past a segment's
   // end, its gaps run on into the neighbour.
-  cuts = reduce((c, seg) { return min(c, seg(0.0, 0.0, 3.0)); }, segments, 100000.0);
+  cuts = reduce((c, seg) { return min(c, seg(0.0, 0.0, 3.0).x); }, segments, 100000.0);
   // The box: from the lowest end face to the highest, and out to the farthest
   // any segment reaches from the axis (seg(0, 0, 5)). A segment whose material
   // stands past its own planes, a bevel's toe teeth past its toe face, says how
@@ -151,26 +152,27 @@ body(segments) {
   // test against 50000 folds and the box is the end faces, with nothing added
   // to the shader of a shaft whose faces move with a slider. A caller's own
   // .box replaces it.
-  bottomFace = reduce((low, seg) { return min(low, seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
-  topFace = reduce((high, seg) { return max(high, seg(0.0, 0.0, 2.0)); }, segments, -100000.0);
-  reach = reduce((r, seg) { return max(r, seg(0.0, 0.0, 5.0)); }, segments, 0.0);
-  extentLow = reduce((n, seg) { return min(n, seg(0.0, 0.0, 8.0)); }, segments, 100000.0);
-  extentHigh = reduce((n, seg) { return min(n, seg(0.0, 0.0, 9.0)); }, segments, 100000.0);
-  boxLow = reduce((below, seg) { return min(below, seg(0.0, 0.0, 8.0) < 50000.0 ? seg(0.0, 0.0, 8.0) : seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
-  boxHigh = reduce((above, seg) { return max(above, seg(0.0, 0.0, 9.0) < 50000.0 ? neg(seg(0.0, 0.0, 9.0)) : seg(0.0, 0.0, 2.0)); }, segments, -100000.0);
+  bottomFace = reduce((low, seg) { return min(low, seg(0.0, 0.0, 1.0).x); }, segments, 100000.0);
+  topFace = reduce((high, seg) { return max(high, seg(0.0, 0.0, 2.0).x); }, segments, -100000.0);
+  reach = reduce((r, seg) { return max(r, seg(0.0, 0.0, 5.0).x); }, segments, 0.0);
+  extentLow = reduce((n, seg) { return min(n, seg(0.0, 0.0, 8.0).x); }, segments, 100000.0);
+  extentHigh = reduce((n, seg) { return min(n, seg(0.0, 0.0, 9.0).x); }, segments, 100000.0);
+  boxLow = reduce((below, seg) { return min(below, seg(0.0, 0.0, 8.0).x < 50000.0 ? seg(0.0, 0.0, 8.0).x : seg(0.0, 0.0, 1.0).x); }, segments, 100000.0);
+  boxHigh = reduce((above, seg) { return max(above, seg(0.0, 0.0, 9.0).x < 50000.0 ? neg(seg(0.0, 0.0, 9.0).x) : seg(0.0, 0.0, 2.0).x); }, segments, -100000.0);
   // The stand-in: the envelope, when any segment has detail to give up
   // (seg(0, 0, 12): a gear, spline, thread, knurl or bevel), and nothing
   // otherwise, which the viewer takes for no stand-in, so a plain shaft is
   // drawn as itself and costs no switch.
-  detailed = reduce((d, seg) { return min(d, seg(0.0, 0.0, 12.0)); }, segments, 100000.0);
+  detailed = reduce((d, seg) { return min(d, seg(0.0, 0.0, 12.0).x); }, segments, 100000.0);
   envelopeSoFar = reduce((acc, seg, i, prev) {
     openRuns = acc.y;
-    filletR = prev(0.0, 0.0, 6.0);
-    chamferC = prev(0.0, 0.0, 7.0);
-    here = filletR < 50000.0 ? unionRound(acc.x, seg(0.0, 0.0, 4.0), filletR)
-                             : (chamferC < 50000.0 ? unionChamfer(acc.x, seg(0.0, 0.0, 4.0), chamferC) : seg(0.0, 0.0, 4.0));
-    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, seg(100000.0, 0.0, 4.0))),
-            i < 0.5 ? seg(0.0, 100000.0, 4.0) : min(max(openRuns, seg(100000.0, 100000.0, 4.0)), seg(0.0, 100000.0, 4.0))];
+    filletR = i < 0.5 ? nothing : prev(0.0, 0.0, 6.0).x;
+    chamferC = i < 0.5 ? nothing : prev(0.0, 0.0, 7.0).x;
+    q = seg(0.0, 0.0, 4.0);
+    here = filletR < 50000.0 ? unionRound(acc.x, q.x, filletR)
+                             : (chamferC < 50000.0 ? unionChamfer(acc.x, q.x, chamferC) : q.x);
+    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, q.y)),
+            i < 0.5 ? q.z : min(max(openRuns, q.w), q.z)];
   }, segments, [100000.0, 100000.0]);
   solid = max(shaftSoFar.x, -cuts);
   solid.box = [[neg(reach), neg(reach), extentLow < 50000.0 ? boxLow : bottomFace],
@@ -192,41 +194,43 @@ body(segments, bottomHole, topHole) {
   // for the same reason: it cannot call that one by name.
   shaftSoFar = reduce((acc, seg, i, prev) {
     openRuns = acc.y;
-    filletR = prev(0.0, 0.0, 6.0);
-    chamferC = prev(0.0, 0.0, 7.0);
-    here = filletR < 50000.0 ? unionRound(acc.x, seg(0.0, 0.0, 0.0), filletR)
-                             : (chamferC < 50000.0 ? unionChamfer(acc.x, seg(0.0, 0.0, 0.0), chamferC) : seg(0.0, 0.0, 0.0));
-    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, seg(100000.0, 0.0, 0.0))),
-            i < 0.5 ? seg(0.0, 100000.0, 0.0) : min(max(openRuns, seg(100000.0, 100000.0, 0.0)), seg(0.0, 100000.0, 0.0))];
+    filletR = i < 0.5 ? nothing : prev(0.0, 0.0, 6.0).x;
+    chamferC = i < 0.5 ? nothing : prev(0.0, 0.0, 7.0).x;
+    q = seg(0.0, 0.0, 0.0);
+    here = filletR < 50000.0 ? unionRound(acc.x, q.x, filletR)
+                             : (chamferC < 50000.0 ? unionChamfer(acc.x, q.x, chamferC) : q.x);
+    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, q.y)),
+            i < 0.5 ? q.z : min(max(openRuns, q.w), q.z)];
   }, segments, [100000.0, 100000.0]);
-  cuts = reduce((c, seg) { return min(c, seg(0.0, 0.0, 3.0)); }, segments, 100000.0);
+  cuts = reduce((c, seg) { return min(c, seg(0.0, 0.0, 3.0).x); }, segments, 100000.0);
   // The end faces, asked of the segments: the lowest starting plane and the
   // highest ending one.
-  bottomFace = reduce((low, seg) { return min(low, seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
-  topFace = reduce((high, seg) { return max(high, seg(0.0, 0.0, 2.0)); }, segments, -100000.0);
+  bottomFace = reduce((low, seg) { return min(low, seg(0.0, 0.0, 1.0).x); }, segments, 100000.0);
+  topFace = reduce((high, seg) { return max(high, seg(0.0, 0.0, 2.0).x); }, segments, -100000.0);
   // The voids run on past their faces, as every drill void does, so no surface
   // of either lies in the face it opens onto.
   topVoid = drill.hole(topHole, topFace);
   bottomVoid = remap(drill.hole(bottomHole, 0.0), [p.x, -p.y, bottomFace - p.z]);
   // The box, as body(segments) gives it: the holes only take material away.
-  reach = reduce((r, seg) { return max(r, seg(0.0, 0.0, 5.0)); }, segments, 0.0);
-  extentLow = reduce((n, seg) { return min(n, seg(0.0, 0.0, 8.0)); }, segments, 100000.0);
-  extentHigh = reduce((n, seg) { return min(n, seg(0.0, 0.0, 9.0)); }, segments, 100000.0);
-  boxLow = reduce((below, seg) { return min(below, seg(0.0, 0.0, 8.0) < 50000.0 ? seg(0.0, 0.0, 8.0) : seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
-  boxHigh = reduce((above, seg) { return max(above, seg(0.0, 0.0, 9.0) < 50000.0 ? neg(seg(0.0, 0.0, 9.0)) : seg(0.0, 0.0, 2.0)); }, segments, -100000.0);
+  reach = reduce((r, seg) { return max(r, seg(0.0, 0.0, 5.0).x); }, segments, 0.0);
+  extentLow = reduce((n, seg) { return min(n, seg(0.0, 0.0, 8.0).x); }, segments, 100000.0);
+  extentHigh = reduce((n, seg) { return min(n, seg(0.0, 0.0, 9.0).x); }, segments, 100000.0);
+  boxLow = reduce((below, seg) { return min(below, seg(0.0, 0.0, 8.0).x < 50000.0 ? seg(0.0, 0.0, 8.0).x : seg(0.0, 0.0, 1.0).x); }, segments, 100000.0);
+  boxHigh = reduce((above, seg) { return max(above, seg(0.0, 0.0, 9.0).x < 50000.0 ? neg(seg(0.0, 0.0, 9.0).x) : seg(0.0, 0.0, 2.0).x); }, segments, -100000.0);
   // The stand-in: the envelope, when any segment has detail to give up
   // (seg(0, 0, 12): a gear, spline, thread, knurl or bevel), and nothing
   // otherwise, which the viewer takes for no stand-in, so a plain shaft is
   // drawn as itself and costs no switch.
-  detailed = reduce((d, seg) { return min(d, seg(0.0, 0.0, 12.0)); }, segments, 100000.0);
+  detailed = reduce((d, seg) { return min(d, seg(0.0, 0.0, 12.0).x); }, segments, 100000.0);
   envelopeSoFar = reduce((acc, seg, i, prev) {
     openRuns = acc.y;
-    filletR = prev(0.0, 0.0, 6.0);
-    chamferC = prev(0.0, 0.0, 7.0);
-    here = filletR < 50000.0 ? unionRound(acc.x, seg(0.0, 0.0, 4.0), filletR)
-                             : (chamferC < 50000.0 ? unionChamfer(acc.x, seg(0.0, 0.0, 4.0), chamferC) : seg(0.0, 0.0, 4.0));
-    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, seg(100000.0, 0.0, 4.0))),
-            i < 0.5 ? seg(0.0, 100000.0, 4.0) : min(max(openRuns, seg(100000.0, 100000.0, 4.0)), seg(0.0, 100000.0, 4.0))];
+    filletR = i < 0.5 ? nothing : prev(0.0, 0.0, 6.0).x;
+    chamferC = i < 0.5 ? nothing : prev(0.0, 0.0, 7.0).x;
+    q = seg(0.0, 0.0, 4.0);
+    here = filletR < 50000.0 ? unionRound(acc.x, q.x, filletR)
+                             : (chamferC < 50000.0 ? unionChamfer(acc.x, q.x, chamferC) : q.x);
+    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, q.y)),
+            i < 0.5 ? q.z : min(max(openRuns, q.w), q.z)];
   }, segments, [100000.0, 100000.0]);
   solid = max(shaftSoFar.x, -cuts, -topVoid, -bottomVoid);
   solid.box = [[neg(reach), neg(reach), extentLow < 50000.0 ? boxLow : bottomFace],
@@ -248,20 +252,21 @@ envelope(segments) {
   // segment for its envelope (want 4) in place of its field.
   shaftSoFar = reduce((acc, seg, i, prev) {
     openRuns = acc.y;
-    filletR = prev(0.0, 0.0, 6.0);
-    chamferC = prev(0.0, 0.0, 7.0);
-    here = filletR < 50000.0 ? unionRound(acc.x, seg(0.0, 0.0, 4.0), filletR)
-                             : (chamferC < 50000.0 ? unionChamfer(acc.x, seg(0.0, 0.0, 4.0), chamferC) : seg(0.0, 0.0, 4.0));
-    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, seg(100000.0, 0.0, 4.0))),
-            i < 0.5 ? seg(0.0, 100000.0, 4.0) : min(max(openRuns, seg(100000.0, 100000.0, 4.0)), seg(0.0, 100000.0, 4.0))];
+    filletR = i < 0.5 ? nothing : prev(0.0, 0.0, 6.0).x;
+    chamferC = i < 0.5 ? nothing : prev(0.0, 0.0, 7.0).x;
+    q = seg(0.0, 0.0, 4.0);
+    here = filletR < 50000.0 ? unionRound(acc.x, q.x, filletR)
+                             : (chamferC < 50000.0 ? unionChamfer(acc.x, q.x, chamferC) : q.x);
+    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, q.y)),
+            i < 0.5 ? q.z : min(max(openRuns, q.w), q.z)];
   }, segments, [100000.0, 100000.0]);
-  bottomFace = reduce((low, seg) { return min(low, seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
-  topFace = reduce((high, seg) { return max(high, seg(0.0, 0.0, 2.0)); }, segments, -100000.0);
-  reach = reduce((r, seg) { return max(r, seg(0.0, 0.0, 5.0)); }, segments, 0.0);
-  extentLow = reduce((n, seg) { return min(n, seg(0.0, 0.0, 8.0)); }, segments, 100000.0);
-  extentHigh = reduce((n, seg) { return min(n, seg(0.0, 0.0, 9.0)); }, segments, 100000.0);
-  boxLow = reduce((below, seg) { return min(below, seg(0.0, 0.0, 8.0) < 50000.0 ? seg(0.0, 0.0, 8.0) : seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
-  boxHigh = reduce((above, seg) { return max(above, seg(0.0, 0.0, 9.0) < 50000.0 ? neg(seg(0.0, 0.0, 9.0)) : seg(0.0, 0.0, 2.0)); }, segments, -100000.0);
+  bottomFace = reduce((low, seg) { return min(low, seg(0.0, 0.0, 1.0).x); }, segments, 100000.0);
+  topFace = reduce((high, seg) { return max(high, seg(0.0, 0.0, 2.0).x); }, segments, -100000.0);
+  reach = reduce((r, seg) { return max(r, seg(0.0, 0.0, 5.0).x); }, segments, 0.0);
+  extentLow = reduce((n, seg) { return min(n, seg(0.0, 0.0, 8.0).x); }, segments, 100000.0);
+  extentHigh = reduce((n, seg) { return min(n, seg(0.0, 0.0, 9.0).x); }, segments, 100000.0);
+  boxLow = reduce((below, seg) { return min(below, seg(0.0, 0.0, 8.0).x < 50000.0 ? seg(0.0, 0.0, 8.0).x : seg(0.0, 0.0, 1.0).x); }, segments, 100000.0);
+  boxHigh = reduce((above, seg) { return max(above, seg(0.0, 0.0, 9.0).x < 50000.0 ? neg(seg(0.0, 0.0, 9.0).x) : seg(0.0, 0.0, 2.0).x); }, segments, -100000.0);
   solid = shaftSoFar.x;
   solid.box = [[neg(reach), neg(reach), extentLow < 50000.0 ? boxLow : bottomFace],
                [reach, reach, extentHigh < 50000.0 ? boxHigh : topFace]];
@@ -273,22 +278,23 @@ envelope(segments) {
 envelope(segments, bottomHole, topHole) {
   shaftSoFar = reduce((acc, seg, i, prev) {
     openRuns = acc.y;
-    filletR = prev(0.0, 0.0, 6.0);
-    chamferC = prev(0.0, 0.0, 7.0);
-    here = filletR < 50000.0 ? unionRound(acc.x, seg(0.0, 0.0, 4.0), filletR)
-                             : (chamferC < 50000.0 ? unionChamfer(acc.x, seg(0.0, 0.0, 4.0), chamferC) : seg(0.0, 0.0, 4.0));
-    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, seg(100000.0, 0.0, 4.0))),
-            i < 0.5 ? seg(0.0, 100000.0, 4.0) : min(max(openRuns, seg(100000.0, 100000.0, 4.0)), seg(0.0, 100000.0, 4.0))];
+    filletR = i < 0.5 ? nothing : prev(0.0, 0.0, 6.0).x;
+    chamferC = i < 0.5 ? nothing : prev(0.0, 0.0, 7.0).x;
+    q = seg(0.0, 0.0, 4.0);
+    here = filletR < 50000.0 ? unionRound(acc.x, q.x, filletR)
+                             : (chamferC < 50000.0 ? unionChamfer(acc.x, q.x, chamferC) : q.x);
+    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, q.y)),
+            i < 0.5 ? q.z : min(max(openRuns, q.w), q.z)];
   }, segments, [100000.0, 100000.0]);
-  bottomFace = reduce((low, seg) { return min(low, seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
-  topFace = reduce((high, seg) { return max(high, seg(0.0, 0.0, 2.0)); }, segments, -100000.0);
+  bottomFace = reduce((low, seg) { return min(low, seg(0.0, 0.0, 1.0).x); }, segments, 100000.0);
+  topFace = reduce((high, seg) { return max(high, seg(0.0, 0.0, 2.0).x); }, segments, -100000.0);
   topVoid = drill.hole(topHole, topFace);
   bottomVoid = remap(drill.hole(bottomHole, 0.0), [p.x, -p.y, bottomFace - p.z]);
-  reach = reduce((r, seg) { return max(r, seg(0.0, 0.0, 5.0)); }, segments, 0.0);
-  extentLow = reduce((n, seg) { return min(n, seg(0.0, 0.0, 8.0)); }, segments, 100000.0);
-  extentHigh = reduce((n, seg) { return min(n, seg(0.0, 0.0, 9.0)); }, segments, 100000.0);
-  boxLow = reduce((below, seg) { return min(below, seg(0.0, 0.0, 8.0) < 50000.0 ? seg(0.0, 0.0, 8.0) : seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
-  boxHigh = reduce((above, seg) { return max(above, seg(0.0, 0.0, 9.0) < 50000.0 ? neg(seg(0.0, 0.0, 9.0)) : seg(0.0, 0.0, 2.0)); }, segments, -100000.0);
+  reach = reduce((r, seg) { return max(r, seg(0.0, 0.0, 5.0).x); }, segments, 0.0);
+  extentLow = reduce((n, seg) { return min(n, seg(0.0, 0.0, 8.0).x); }, segments, 100000.0);
+  extentHigh = reduce((n, seg) { return min(n, seg(0.0, 0.0, 9.0).x); }, segments, 100000.0);
+  boxLow = reduce((below, seg) { return min(below, seg(0.0, 0.0, 8.0).x < 50000.0 ? seg(0.0, 0.0, 8.0).x : seg(0.0, 0.0, 1.0).x); }, segments, 100000.0);
+  boxHigh = reduce((above, seg) { return max(above, seg(0.0, 0.0, 9.0).x < 50000.0 ? neg(seg(0.0, 0.0, 9.0).x) : seg(0.0, 0.0, 2.0).x); }, segments, -100000.0);
   solid = max(shaftSoFar.x, -topVoid, -bottomVoid);
   solid.box = [[neg(reach), neg(reach), extentLow < 50000.0 ? boxLow : bottomFace],
                [reach, reach, extentHigh < 50000.0 ? boxHigh : topFace]];
@@ -307,7 +313,7 @@ relief(segments) {
   // Cloned into the caller's file as body is. Each segment answers its height
   // to want 10; one with no relief answers nothing, and min with the seed
   // folds it away.
-  return reduce((h, seg) { return min(h, seg(0.0, 0.0, 10.0)); }, segments, 0.0);
+  return reduce((h, seg) { return min(h, seg(0.0, 0.0, 10.0).x); }, segments, 0.0);
 }
 
 /// The relief as paint on `baseColor`: darker toward the root as deep as the
@@ -318,7 +324,7 @@ relief(segments) {
 ///   knob.color = shaft.paint(steelColor, segments);
 paint(baseColor, segments) {
   // Each segment answers minus the fraction of its depth here to want 11.
-  depth = clamp(neg(reduce((d, seg) { return min(d, seg(0.0, 0.0, 11.0)); }, segments, 0.0)), 0.0, 1.0);
+  depth = clamp(neg(reduce((d, seg) { return min(d, seg(0.0, 0.0, 11.0).x); }, segments, 0.0)), 0.0, 1.0);
   painted = color.mixOklab(baseColor, baseColor * 0.35, depth * (1.0 - displacementDrawn()));
   painted.simple = baseColor;
   return painted;
@@ -340,31 +346,33 @@ body(segments, finish) {
   // fold, its box, then the relief and the envelope, which are folds too.
   shaftSoFar = reduce((acc, seg, i, prev) {
     openRuns = acc.y;
-    filletR = prev(0.0, 0.0, 6.0);
-    chamferC = prev(0.0, 0.0, 7.0);
-    here = filletR < 50000.0 ? unionRound(acc.x, seg(0.0, 0.0, 0.0), filletR)
-                             : (chamferC < 50000.0 ? unionChamfer(acc.x, seg(0.0, 0.0, 0.0), chamferC) : seg(0.0, 0.0, 0.0));
-    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, seg(100000.0, 0.0, 0.0))),
-            i < 0.5 ? seg(0.0, 100000.0, 0.0) : min(max(openRuns, seg(100000.0, 100000.0, 0.0)), seg(0.0, 100000.0, 0.0))];
+    filletR = i < 0.5 ? nothing : prev(0.0, 0.0, 6.0).x;
+    chamferC = i < 0.5 ? nothing : prev(0.0, 0.0, 7.0).x;
+    q = seg(0.0, 0.0, 0.0);
+    here = filletR < 50000.0 ? unionRound(acc.x, q.x, filletR)
+                             : (chamferC < 50000.0 ? unionChamfer(acc.x, q.x, chamferC) : q.x);
+    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, q.y)),
+            i < 0.5 ? q.z : min(max(openRuns, q.w), q.z)];
   }, segments, [100000.0, 100000.0]);
-  cuts = reduce((c, seg) { return min(c, seg(0.0, 0.0, 3.0)); }, segments, 100000.0);
-  bottomFace = reduce((low, seg) { return min(low, seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
-  topFace = reduce((high, seg) { return max(high, seg(0.0, 0.0, 2.0)); }, segments, -100000.0);
-  reach = reduce((r, seg) { return max(r, seg(0.0, 0.0, 5.0)); }, segments, 0.0);
-  extentLow = reduce((n, seg) { return min(n, seg(0.0, 0.0, 8.0)); }, segments, 100000.0);
-  extentHigh = reduce((n, seg) { return min(n, seg(0.0, 0.0, 9.0)); }, segments, 100000.0);
-  boxLow = reduce((below, seg) { return min(below, seg(0.0, 0.0, 8.0) < 50000.0 ? seg(0.0, 0.0, 8.0) : seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
-  boxHigh = reduce((above, seg) { return max(above, seg(0.0, 0.0, 9.0) < 50000.0 ? neg(seg(0.0, 0.0, 9.0)) : seg(0.0, 0.0, 2.0)); }, segments, -100000.0);
-  relief = reduce((h, seg) { return min(h, seg(0.0, 0.0, 10.0)); }, segments, 0.0);
-  depth = clamp(neg(reduce((d, seg) { return min(d, seg(0.0, 0.0, 11.0)); }, segments, 0.0)), 0.0, 1.0);
+  cuts = reduce((c, seg) { return min(c, seg(0.0, 0.0, 3.0).x); }, segments, 100000.0);
+  bottomFace = reduce((low, seg) { return min(low, seg(0.0, 0.0, 1.0).x); }, segments, 100000.0);
+  topFace = reduce((high, seg) { return max(high, seg(0.0, 0.0, 2.0).x); }, segments, -100000.0);
+  reach = reduce((r, seg) { return max(r, seg(0.0, 0.0, 5.0).x); }, segments, 0.0);
+  extentLow = reduce((n, seg) { return min(n, seg(0.0, 0.0, 8.0).x); }, segments, 100000.0);
+  extentHigh = reduce((n, seg) { return min(n, seg(0.0, 0.0, 9.0).x); }, segments, 100000.0);
+  boxLow = reduce((below, seg) { return min(below, seg(0.0, 0.0, 8.0).x < 50000.0 ? seg(0.0, 0.0, 8.0).x : seg(0.0, 0.0, 1.0).x); }, segments, 100000.0);
+  boxHigh = reduce((above, seg) { return max(above, seg(0.0, 0.0, 9.0).x < 50000.0 ? neg(seg(0.0, 0.0, 9.0).x) : seg(0.0, 0.0, 2.0).x); }, segments, -100000.0);
+  relief = reduce((h, seg) { return min(h, seg(0.0, 0.0, 10.0).x); }, segments, 0.0);
+  depth = clamp(neg(reduce((d, seg) { return min(d, seg(0.0, 0.0, 11.0).x); }, segments, 0.0)), 0.0, 1.0);
   envelopeSoFar = reduce((acc, seg, i, prev) {
     openRuns = acc.y;
-    filletR = prev(0.0, 0.0, 6.0);
-    chamferC = prev(0.0, 0.0, 7.0);
-    here = filletR < 50000.0 ? unionRound(acc.x, seg(0.0, 0.0, 4.0), filletR)
-                             : (chamferC < 50000.0 ? unionChamfer(acc.x, seg(0.0, 0.0, 4.0), chamferC) : seg(0.0, 0.0, 4.0));
-    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, seg(100000.0, 0.0, 4.0))),
-            i < 0.5 ? seg(0.0, 100000.0, 4.0) : min(max(openRuns, seg(100000.0, 100000.0, 4.0)), seg(0.0, 100000.0, 4.0))];
+    filletR = i < 0.5 ? nothing : prev(0.0, 0.0, 6.0).x;
+    chamferC = i < 0.5 ? nothing : prev(0.0, 0.0, 7.0).x;
+    q = seg(0.0, 0.0, 4.0);
+    here = filletR < 50000.0 ? unionRound(acc.x, q.x, filletR)
+                             : (chamferC < 50000.0 ? unionChamfer(acc.x, q.x, chamferC) : q.x);
+    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, q.y)),
+            i < 0.5 ? q.z : min(max(openRuns, q.w), q.z)];
   }, segments, [100000.0, 100000.0]);
   steelMat, steelColor = metal.steel();
   tint = color.mixOklab(steelColor, steelColor * 0.35, depth * (1.0 - displacementDrawn()));
@@ -389,33 +397,35 @@ body(segments, finish) {
 body(segments, bottomHole, topHole, finish) {
   shaftSoFar = reduce((acc, seg, i, prev) {
     openRuns = acc.y;
-    filletR = prev(0.0, 0.0, 6.0);
-    chamferC = prev(0.0, 0.0, 7.0);
-    here = filletR < 50000.0 ? unionRound(acc.x, seg(0.0, 0.0, 0.0), filletR)
-                             : (chamferC < 50000.0 ? unionChamfer(acc.x, seg(0.0, 0.0, 0.0), chamferC) : seg(0.0, 0.0, 0.0));
-    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, seg(100000.0, 0.0, 0.0))),
-            i < 0.5 ? seg(0.0, 100000.0, 0.0) : min(max(openRuns, seg(100000.0, 100000.0, 0.0)), seg(0.0, 100000.0, 0.0))];
+    filletR = i < 0.5 ? nothing : prev(0.0, 0.0, 6.0).x;
+    chamferC = i < 0.5 ? nothing : prev(0.0, 0.0, 7.0).x;
+    q = seg(0.0, 0.0, 0.0);
+    here = filletR < 50000.0 ? unionRound(acc.x, q.x, filletR)
+                             : (chamferC < 50000.0 ? unionChamfer(acc.x, q.x, chamferC) : q.x);
+    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, q.y)),
+            i < 0.5 ? q.z : min(max(openRuns, q.w), q.z)];
   }, segments, [100000.0, 100000.0]);
-  cuts = reduce((c, seg) { return min(c, seg(0.0, 0.0, 3.0)); }, segments, 100000.0);
-  bottomFace = reduce((low, seg) { return min(low, seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
-  topFace = reduce((high, seg) { return max(high, seg(0.0, 0.0, 2.0)); }, segments, -100000.0);
+  cuts = reduce((c, seg) { return min(c, seg(0.0, 0.0, 3.0).x); }, segments, 100000.0);
+  bottomFace = reduce((low, seg) { return min(low, seg(0.0, 0.0, 1.0).x); }, segments, 100000.0);
+  topFace = reduce((high, seg) { return max(high, seg(0.0, 0.0, 2.0).x); }, segments, -100000.0);
   topVoid = drill.hole(topHole, topFace);
   bottomVoid = remap(drill.hole(bottomHole, 0.0), [p.x, -p.y, bottomFace - p.z]);
-  reach = reduce((r, seg) { return max(r, seg(0.0, 0.0, 5.0)); }, segments, 0.0);
-  extentLow = reduce((n, seg) { return min(n, seg(0.0, 0.0, 8.0)); }, segments, 100000.0);
-  extentHigh = reduce((n, seg) { return min(n, seg(0.0, 0.0, 9.0)); }, segments, 100000.0);
-  boxLow = reduce((below, seg) { return min(below, seg(0.0, 0.0, 8.0) < 50000.0 ? seg(0.0, 0.0, 8.0) : seg(0.0, 0.0, 1.0)); }, segments, 100000.0);
-  boxHigh = reduce((above, seg) { return max(above, seg(0.0, 0.0, 9.0) < 50000.0 ? neg(seg(0.0, 0.0, 9.0)) : seg(0.0, 0.0, 2.0)); }, segments, -100000.0);
-  relief = reduce((h, seg) { return min(h, seg(0.0, 0.0, 10.0)); }, segments, 0.0);
-  depth = clamp(neg(reduce((d, seg) { return min(d, seg(0.0, 0.0, 11.0)); }, segments, 0.0)), 0.0, 1.0);
+  reach = reduce((r, seg) { return max(r, seg(0.0, 0.0, 5.0).x); }, segments, 0.0);
+  extentLow = reduce((n, seg) { return min(n, seg(0.0, 0.0, 8.0).x); }, segments, 100000.0);
+  extentHigh = reduce((n, seg) { return min(n, seg(0.0, 0.0, 9.0).x); }, segments, 100000.0);
+  boxLow = reduce((below, seg) { return min(below, seg(0.0, 0.0, 8.0).x < 50000.0 ? seg(0.0, 0.0, 8.0).x : seg(0.0, 0.0, 1.0).x); }, segments, 100000.0);
+  boxHigh = reduce((above, seg) { return max(above, seg(0.0, 0.0, 9.0).x < 50000.0 ? neg(seg(0.0, 0.0, 9.0).x) : seg(0.0, 0.0, 2.0).x); }, segments, -100000.0);
+  relief = reduce((h, seg) { return min(h, seg(0.0, 0.0, 10.0).x); }, segments, 0.0);
+  depth = clamp(neg(reduce((d, seg) { return min(d, seg(0.0, 0.0, 11.0).x); }, segments, 0.0)), 0.0, 1.0);
   envelopeSoFar = reduce((acc, seg, i, prev) {
     openRuns = acc.y;
-    filletR = prev(0.0, 0.0, 6.0);
-    chamferC = prev(0.0, 0.0, 7.0);
-    here = filletR < 50000.0 ? unionRound(acc.x, seg(0.0, 0.0, 4.0), filletR)
-                             : (chamferC < 50000.0 ? unionChamfer(acc.x, seg(0.0, 0.0, 4.0), chamferC) : seg(0.0, 0.0, 4.0));
-    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, seg(100000.0, 0.0, 4.0))),
-            i < 0.5 ? seg(0.0, 100000.0, 4.0) : min(max(openRuns, seg(100000.0, 100000.0, 4.0)), seg(0.0, 100000.0, 4.0))];
+    filletR = i < 0.5 ? nothing : prev(0.0, 0.0, 6.0).x;
+    chamferC = i < 0.5 ? nothing : prev(0.0, 0.0, 7.0).x;
+    q = seg(0.0, 0.0, 4.0);
+    here = filletR < 50000.0 ? unionRound(acc.x, q.x, filletR)
+                             : (chamferC < 50000.0 ? unionChamfer(acc.x, q.x, chamferC) : q.x);
+    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, q.y)),
+            i < 0.5 ? q.z : min(max(openRuns, q.w), q.z)];
   }, segments, [100000.0, 100000.0]);
   steelMat, steelColor = metal.steel();
   tint = color.mixOklab(steelColor, steelColor * 0.35, depth * (1.0 - displacementDrawn()));
@@ -444,12 +454,9 @@ body(segments, bottomHole, topHole, finish) {
 /// neighbours.
 diameter(dia, from, to) {
   seg(eDown, eUp, want) {
-    radial = length(p.xy) - dia / 2.0;
-    axial = max((from - eDown) - p.z, p.z - (to + eUp));
-    field = sqrt(max(radial, 0.0) * max(radial, 0.0) + max(axial, 0.0) * max(axial, 0.0)) + min(max(radial, axial), 0.0);
-    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
-         : (want > 4.5 ? (want > 5.5 ? nothing : dia / 2.0)
-                      : (want > 2.5 && want < 3.5 ? nothing : segmentAnswer(want > 3.5 ? 0.0 : want, field, from, to)));
+    return want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : dia / 2.0)
+                      : (want > 2.5 && want < 3.5 ? q1(nothing) : prismQuad(length(p.xy) - dia / 2.0, from, to)));
   }
   return seg;
 }
@@ -459,10 +466,9 @@ diameter(dia, from, to) {
 /// diameters, a chamfer at a shaft's end.
 taper(diaFrom, diaTo, from, to) {
   seg(eDown, eUp, want) {
-    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
-         : (want > 4.5 ? (want > 5.5 ? nothing : max(diaFrom, diaTo) / 2.0)
-                      : (want > 2.5 && want < 3.5 ? nothing
-                                                  : segmentAnswer(want > 3.5 ? 0.0 : want, turnedTaper(diaFrom / 2.0, diaTo / 2.0, from, to, from - eDown, to + eUp), from, to)));
+    return want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : max(diaFrom, diaTo) / 2.0)
+                      : (want > 2.5 && want < 3.5 ? q1(nothing) : taperQuad(diaFrom / 2.0, diaTo / 2.0, from, to)));
   }
   return seg;
 }
@@ -472,9 +478,9 @@ taper(diaFrom, diaTo, from, to) {
 /// wherever the section is: the segment is the section's prism, square-ended.
 section(field, from, to) {
   seg(eDown, eUp, want) {
-    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
-         : (want > 4.5 ? (want > 5.5 ? nothing : sectionReach(field))
-                      : prismSegment(field, from, to, eDown, eUp, want > 3.5 ? 0.0 : want));
+    return want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : sectionReach(field))
+                      : (want > 2.5 && want < 3.5 ? q1(nothing) : prismQuad(field, from, to)));
   }
   return seg;
 }
@@ -487,10 +493,10 @@ section(field, from, to) {
 ///   shaft.eccentric(28.0, 40.0, 0.0, 45.0, 75.0)
 eccentric(dia, offset, angle, from, to) {
   seg(eDown, eUp, want) {
-    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
-         : (want > 4.5 ? (want > 5.5 ? nothing : abs(offset) + dia / 2.0)
-                      : prismSegment(length([p.x - offset * cos(angle), p.y - offset * sin(angle)]) - dia / 2.0,
-                                     from, to, eDown, eUp, want > 3.5 ? 0.0 : want));
+    return want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : abs(offset) + dia / 2.0)
+                      : (want > 2.5 && want < 3.5 ? q1(nothing)
+                                                  : prismQuad(length([p.x - offset * cos(angle), p.y - offset * sin(angle)]) - dia / 2.0, from, to)));
   }
   return seg;
 }
@@ -504,9 +510,9 @@ eccentric(dia, offset, angle, from, to) {
 ///   shaft.web(25.0, 18.0, 40.0, 0.0, 30.0, 45.0)
 web(mainR, pinR, offset, angle, from, to) {
   seg(eDown, eUp, want) {
-    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
-         : (want > 4.5 ? (want > 5.5 ? nothing : max(mainR, abs(offset) + pinR))
-                      : prismSegment(webSection(mainR, pinR, offset, angle), from, to, eDown, eUp, want > 3.5 ? 0.0 : want));
+    return want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : max(mainR, abs(offset) + pinR))
+                      : (want > 2.5 && want < 3.5 ? q1(nothing) : prismQuad(webSection(mainR, pinR, offset, angle), from, to)));
   }
   return seg;
 }
@@ -515,9 +521,9 @@ web(mainR, pinR, offset, angle, from, to) {
 /// drill.hexSocket's do. Exact.
 hex(acrossFlats, from, to) {
   seg(eDown, eUp, want) {
-    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
-         : (want > 4.5 ? (want > 5.5 ? nothing : acrossFlats / 1.7320508075688772)
-                      : prismSegment(hexSection(acrossFlats), from, to, eDown, eUp, want > 3.5 ? 0.0 : want));
+    return want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : acrossFlats / 1.7320508075688772)
+                      : (want > 2.5 && want < 3.5 ? q1(nothing) : prismQuad(hexSection(acrossFlats), from, to)));
   }
   return seg;
 }
@@ -527,9 +533,9 @@ hex(acrossFlats, from, to) {
 /// bore is. Exact.
 dFlat(dia, acrossFlat, from, to) {
   seg(eDown, eUp, want) {
-    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
-         : (want > 4.5 ? (want > 5.5 ? nothing : dia / 2.0)
-                      : prismSegment(dFlatSection(dia, acrossFlat), from, to, eDown, eUp, want > 3.5 ? 0.0 : want));
+    return want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : dia / 2.0)
+                      : (want > 2.5 && want < 3.5 ? q1(nothing) : prismQuad(dFlatSection(dia, acrossFlat), from, to)));
   }
   return seg;
 }
@@ -538,9 +544,9 @@ dFlat(dia, acrossFlat, from, to) {
 /// -x, `acrossFlats` apart, as drill.doubleD's bore is. Exact.
 doubleD(dia, acrossFlats, from, to) {
   seg(eDown, eUp, want) {
-    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
-         : (want > 4.5 ? (want > 5.5 ? nothing : dia / 2.0)
-                      : prismSegment(doubleDSection(dia, acrossFlats), from, to, eDown, eUp, want > 3.5 ? 0.0 : want));
+    return want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : dia / 2.0)
+                      : (want > 2.5 && want < 3.5 ? q1(nothing) : prismQuad(doubleDSection(dia, acrossFlats), from, to)));
   }
   return seg;
 }
@@ -551,10 +557,10 @@ doubleD(dia, acrossFlats, from, to) {
 /// drill.spline(count, major, width) over a bore at `minor`. Exact outside.
 spline(count, minor, major, width, from, to) {
   seg(eDown, eUp, want) {
-    return want > 11.5 && want < 12.5 ? 0.0 : want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
-         : (want > 4.5 ? (want > 5.5 ? nothing : major / 2.0)
-                      : (want > 3.5 ? prismSegment(length(p.xy) - major / 2.0, from, to, eDown, eUp, 0.0)
-                                    : (want > 2.5 ? nothing : prismSegment(splineSection(count, minor, major, width), from, to, eDown, eUp, want))));
+    return want > 11.5 && want < 12.5 ? q1(0.0) : want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : major / 2.0)
+                      : (want > 3.5 ? prismQuad(length(p.xy) - major / 2.0, from, to)
+                                    : (want > 2.5 ? q1(nothing) : prismQuad(splineSection(count, minor, major, width), from, to))));
   }
   return seg;
 }
@@ -564,10 +570,10 @@ spline(count, minor, major, width, from, to) {
 /// shaft.chamferEnd(size).
 spline(count, minor, major, width, from, to, bottomEnd, topEnd) {
   seg(eDown, eUp, want) {
-    return want > 11.5 && want < 12.5 ? 0.0 : want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
-         : (want > 4.5 ? (want > 5.5 ? nothing : major / 2.0)
-         : (want > 3.5 ? prismSegment(length(p.xy) - major / 2.0, from, to, eDown, eUp, 0.0) : (want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(topEnd.x > 0.5 && topEnd.x < 1.5) ? nothing : machinedSegment(splineSection(count, minor, major, width), major / 2.0, minor / 2.0,
-                           from, to, eDown, eUp, want, bottomEnd, topEnd))));
+    return want > 11.5 && want < 12.5 ? q1(0.0) : want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : major / 2.0)
+         : (want > 3.5 ? prismQuad(length(p.xy) - major / 2.0, from, to) : (want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(topEnd.x > 0.5 && topEnd.x < 1.5) ? q1(nothing) : machinedSegment(splineSection(count, minor, major, width), major / 2.0, minor / 2.0,
+                           from, to, want, bottomEnd, topEnd))));
   }
   return seg;
 }
@@ -582,10 +588,10 @@ spline(count, minor, major, width, from, to, bottomEnd, topEnd) {
 /// distance.
 gear(numTeeth, moduleVal, pressureAngle, helixAngle, from, to) {
   seg(eDown, eUp, want) {
-    return want > 11.5 && want < 12.5 ? 0.0 : want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
-         : (want > 4.5 ? (want > 5.5 ? nothing : numTeeth * moduleVal / 2.0 + moduleVal)
-                      : (want > 3.5 ? prismSegment(length(p.xy) - (numTeeth * moduleVal / 2.0 + moduleVal), from, to, eDown, eUp, 0.0)
-                                    : (want > 2.5 ? nothing : prismSegment(gearSection(numTeeth, moduleVal, pressureAngle, helixAngle, from), from, to, eDown, eUp, want))));
+    return want > 11.5 && want < 12.5 ? q1(0.0) : want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : numTeeth * moduleVal / 2.0 + moduleVal)
+                      : (want > 3.5 ? prismQuad(length(p.xy) - (numTeeth * moduleVal / 2.0 + moduleVal), from, to)
+                                    : (want > 2.5 ? q1(nothing) : prismQuad(gearSection(numTeeth, moduleVal, pressureAngle, helixAngle, from), from, to))));
   }
   return seg;
 }
@@ -597,11 +603,11 @@ gear(numTeeth, moduleVal, pressureAngle, helixAngle, from, to) {
 ///   shaft.gear(20.0, 2.0, radians(20.0), 0.0, 20.0, 50.0, shaft.planeEnd(), shaft.runout(80.0))
 gear(numTeeth, moduleVal, pressureAngle, helixAngle, from, to, bottomEnd, topEnd) {
   seg(eDown, eUp, want) {
-    return want > 11.5 && want < 12.5 ? 0.0 : want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
-         : (want > 4.5 ? (want > 5.5 ? nothing : numTeeth * moduleVal / 2.0 + moduleVal)
-         : (want > 3.5 ? prismSegment(length(p.xy) - (numTeeth * moduleVal / 2.0 + moduleVal), from, to, eDown, eUp, 0.0) : (want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(topEnd.x > 0.5 && topEnd.x < 1.5) ? nothing : machinedSegment(gearSection(numTeeth, moduleVal, pressureAngle, helixAngle, from),
+    return want > 11.5 && want < 12.5 ? q1(0.0) : want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : numTeeth * moduleVal / 2.0 + moduleVal)
+         : (want > 3.5 ? prismQuad(length(p.xy) - (numTeeth * moduleVal / 2.0 + moduleVal), from, to) : (want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(topEnd.x > 0.5 && topEnd.x < 1.5) ? q1(nothing) : machinedSegment(gearSection(numTeeth, moduleVal, pressureAngle, helixAngle, from),
                            numTeeth * moduleVal / 2.0 + moduleVal, numTeeth * moduleVal / 2.0 - 1.25 * moduleVal,
-                           from, to, eDown, eUp, want, bottomEnd, topEnd))));
+                           from, to, want, bottomEnd, topEnd))));
   }
   return seg;
 }
@@ -615,11 +621,11 @@ gear(numTeeth, moduleVal, pressureAngle, helixAngle, from, to, bottomEnd, topEnd
 ///   shaft.gear(20.0, 2.0, radians(20.0), 0.0, 0.0, 20.0, shaft.planeEnd(), shaft.planeEnd(), 0.1)
 gear(numTeeth, moduleVal, pressureAngle, helixAngle, from, to, bottomEnd, topEnd, backlash) {
   seg(eDown, eUp, want) {
-    return want > 11.5 && want < 12.5 ? 0.0 : want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
-         : (want > 4.5 ? (want > 5.5 ? nothing : numTeeth * moduleVal / 2.0 + moduleVal)
-         : (want > 3.5 ? prismSegment(length(p.xy) - (numTeeth * moduleVal / 2.0 + moduleVal), from, to, eDown, eUp, 0.0) : (want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(topEnd.x > 0.5 && topEnd.x < 1.5) ? nothing : machinedSegment(gearSection(numTeeth, moduleVal, pressureAngle, helixAngle, from, backlash),
+    return want > 11.5 && want < 12.5 ? q1(0.0) : want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : numTeeth * moduleVal / 2.0 + moduleVal)
+         : (want > 3.5 ? prismQuad(length(p.xy) - (numTeeth * moduleVal / 2.0 + moduleVal), from, to) : (want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(topEnd.x > 0.5 && topEnd.x < 1.5) ? q1(nothing) : machinedSegment(gearSection(numTeeth, moduleVal, pressureAngle, helixAngle, from, backlash),
                            numTeeth * moduleVal / 2.0 + moduleVal, numTeeth * moduleVal / 2.0 - 1.25 * moduleVal,
-                           from, to, eDown, eUp, want, bottomEnd, topEnd))));
+                           from, to, want, bottomEnd, topEnd))));
   }
   return seg;
 }
@@ -655,12 +661,12 @@ bevel(numTeeth, mateTeeth, moduleVal, pressureAngle, shaftAngle, spiralAngle, fa
   // helper that tells 4 from 0 itself leaves the shaft's box unbounded (the
   // box analysis loses the closure's answers to every question then).
   seg(eDown, eUp, want) {
-    return want > 11.5 && want < 12.5 ? 0.0 : want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
-         : (want > 4.5 ? (want > 9.5 || (want > 5.5 && want < 7.5) ? nothing : bevelBoxAnswer(numTeeth, mateTeeth, moduleVal, shaftAngle, faceWidth, apex, from, to, want))
-                      : (want > 2.5 && want < 3.5 ? nothing
+    return want > 11.5 && want < 12.5 ? q1(0.0) : want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 9.5 || (want > 5.5 && want < 7.5) ? nothing : bevelBoxAnswer(numTeeth, mateTeeth, moduleVal, shaftAngle, faceWidth, apex, from, to, want))
+                      : (want > 2.5 && want < 3.5 ? q1(nothing)
                                                   : bevelSegment(bevelTeethField(numTeeth, mateTeeth, moduleVal, pressureAngle, shaftAngle, spiralAngle, backlash, apex, to),
-                                                                 numTeeth, mateTeeth, moduleVal, shaftAngle, faceWidth, apex, from, to, eDown, eUp,
-                                                                 want > 3.5 ? 0.0 : want, want > 3.5 ? 1.0 : 0.0)));
+                                                                 numTeeth, mateTeeth, moduleVal, shaftAngle, faceWidth, apex, from, to,
+                                                                 want > 3.5 ? 1.0 : 0.0)));
   }
   return seg;
 }
@@ -673,10 +679,10 @@ bevel(numTeeth, mateTeeth, moduleVal, pressureAngle, shaftAngle, spiralAngle, fa
 ///   shaft.thread(6.0, 1.0, 0.0, 20.0)
 thread(major, pitchVal, from, to) {
   seg(eDown, eUp, want) {
-    return want > 11.5 && want < 12.5 ? 0.0 : want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
-         : (want > 4.5 ? (want > 5.5 ? nothing : major / 2.0)
-                      : (want > 3.5 ? prismSegment(length(p.xy) - major / 2.0, from, to, eDown, eUp, 0.0)
-                                    : (want > 2.5 ? nothing : prismSegment(isoThread.male(major, pitchVal), from, to, eDown, eUp, want))));
+    return want > 11.5 && want < 12.5 ? q1(0.0) : want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : major / 2.0)
+                      : (want > 3.5 ? prismQuad(length(p.xy) - major / 2.0, from, to)
+                                    : (want > 2.5 ? q1(nothing) : prismQuad(isoThread.male(major, pitchVal), from, to))));
   }
   return seg;
 }
@@ -689,11 +695,11 @@ thread(major, pitchVal, from, to) {
 ///   shaft.thread(6.0, 1.0, 0.0, 20.0, shaft.chamferEnd(0.6), shaft.threadRunout(2.5))
 thread(major, pitchVal, from, to, bottomEnd, topEnd) {
   seg(eDown, eUp, want) {
-    return want > 11.5 && want < 12.5 ? 0.0 : want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
-         : (want > 4.5 ? (want > 5.5 ? nothing : major / 2.0)
-         : (want > 3.5 ? prismSegment(length(p.xy) - major / 2.0, from, to, eDown, eUp, 0.0) : (want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(bottomEnd.x > 2.5 && bottomEnd.x < 3.5)
+    return want > 11.5 && want < 12.5 ? q1(0.0) : want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : major / 2.0)
+         : (want > 3.5 ? prismQuad(length(p.xy) - major / 2.0, from, to) : (want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(bottomEnd.x > 2.5 && bottomEnd.x < 3.5)
                                      && !(topEnd.x > 0.5 && topEnd.x < 1.5) && !(topEnd.x > 2.5 && topEnd.x < 3.5)
-           ? nothing : threadedSegment(major, pitchVal, from, to, eDown, eUp, want, bottomEnd, topEnd))));
+           ? q1(nothing) : threadedSegment(major, pitchVal, from, to, want, bottomEnd, topEnd))));
   }
   return seg;
 }
@@ -718,15 +724,12 @@ thread(major, pitchVal, from, to, bottomEnd, topEnd) {
 ///   shaft.knurl(20.0, 1.0, shaft.knurlDiamond, 0.0, 15.0)
 knurl(dia, pitchVal, pattern, from, to) {
   seg(eDown, eUp, want) {
-    radial = length(p.xy) - dia / 2.0;
-    axial = max((from - eDown) - p.z, p.z - (to + eUp));
-    field = sqrt(max(radial, 0.0) * max(radial, 0.0) + max(axial, 0.0) * max(axial, 0.0)) + min(max(radial, axial), 0.0);
-    return want > 11.5 && want < 12.5 ? 0.0 : want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
-         : (want > 9.5 ? (want > 11.5 ? nothing
+    return want > 11.5 && want < 12.5 ? q1(0.0) : want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 9.5 ? q1(want > 11.5 ? nothing
                                       : (want > 10.5 ? knurlHeight(dia, pitchVal, pattern, from, to) / (pitchVal / 2.0)
                                                      : knurlHeight(dia, pitchVal, pattern, from, to)))
-         : (want > 4.5 ? (want > 5.5 ? nothing : dia / 2.0)
-                      : (want > 2.5 && want < 3.5 ? nothing : segmentAnswer(want > 3.5 ? 0.0 : want, field, from, to))));
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : dia / 2.0)
+                      : (want > 2.5 && want < 3.5 ? q1(nothing) : prismQuad(length(p.xy) - dia / 2.0, from, to))));
   }
   return seg;
 }
@@ -768,7 +771,7 @@ knurlAnnular = 6.0;
 /// than either segment is long.
 fillet(radius) {
   joint(eDown, eUp, want) {
-    return want > 6.5 ? nothing : (want > 5.5 ? radius : jointAnswer(eDown, eUp, want));
+    return want > 6.5 ? q1(nothing) : (want > 5.5 ? q1(radius) : jointAnswer(eDown, eUp, want));
   }
   return joint;
 }
@@ -779,7 +782,7 @@ fillet(radius) {
 /// it is the exact line.
 chamfer(size) {
   joint(eDown, eUp, want) {
-    return want > 7.5 ? nothing : (want > 6.5 ? size : (want > 5.5 ? nothing : jointAnswer(eDown, eUp, want)));
+    return want > 7.5 ? q1(nothing) : (want > 6.5 ? q1(size) : (want > 5.5 ? q1(nothing) : jointAnswer(eDown, eUp, want)));
   }
   return joint;
 }
@@ -815,7 +818,7 @@ crossVoid(features, dia, z, angle) {
 // a list of functions it captured is not one the fold can see.
 crossHole(void) {
   hole(eDown, eUp, want) {
-    return want > 5.5 ? nothing : (want > 2.5 && want < 3.5 ? void : jointAnswer(eDown, eUp, want));
+    return want > 5.5 ? q1(nothing) : (want > 2.5 && want < 3.5 ? q1(void) : jointAnswer(eDown, eUp, want));
   }
   return hole;
 }
@@ -879,13 +882,29 @@ undercut(form) {
 // Internal Geometry
 // =========================================================
 
-// A 2D section's prism from z = from to z = to, its ends moved out by the
-// extension lengths, answering as segmentAnswer says. The prism of an exact
-// section is exact, inside and out.
-prismSegment(sectionField, from, to, eDown, eUp, want) {
-  axial = max((from - eDown) - p.z, p.z - (to + eUp));
-  field = sqrt(max(sectionField, 0.0) * max(sectionField, 0.0) + max(axial, 0.0) * max(axial, 0.0)) + min(max(sectionField, axial), 0.0);
-  return want > 2.5 ? nothing : segmentAnswer(want, field, from, to);
+// Packs a scalar segment query answer into a vec4 so every segment closure
+// has a uniform vec4 return type across field and metadata modes.
+q1(v) {
+  return [v, 0.0, 0.0, 0.0];
+}
+
+// A 2D section's prism from z = from to z = to, evaluated once for all four
+// extension combinations [capped, extended below, extended above, extended both].
+// The prism of an exact section is exact, inside and out.
+prismBox(sectionField, axial) {
+  return sqrt(max(sectionField, 0.0) * max(sectionField, 0.0) + max(axial, 0.0) * max(axial, 0.0)) + min(max(sectionField, axial), 0.0);
+}
+
+prismQuad(sectionField, from, to) {
+  s = sectionField;
+  dDown = from - p.z;
+  dUp = p.z - to;
+  dDownExt = (from - 100000.0) - p.z;
+  dUpExt = p.z - (to + 100000.0);
+  return [prismBox(s, max(dDown, dUp)),
+          prismBox(s, max(dDownExt, dUp)),
+          prismBox(s, max(dDown, dUpExt)),
+          prismBox(s, max(dDownExt, dUpExt))];
 }
 
 // The web's section. The hull of two discs is the union of the discs between
@@ -1025,22 +1044,41 @@ gearSection(numTeeth, moduleVal, pressureAngle, helixAngle, from, backlash) {
 // cone still binds, well inside any neighbour's span; past the toe the root
 // cone narrows toward the apex. Asked for its envelope (want 4) it is the
 // blank, the tip cone between the same ends, which the teeth lie within.
-bevelSegment(teeth, numTeeth, mateTeeth, moduleVal, shaftAngle, faceWidth, apex, from, to, eDown, eUp, want, envelope) {
+bevelEnds(outerCone, innerCone, elementDist, lz, toeFace, heelFace) {
+  heelCap = max(elementDist - outerCone, lz - heelFace);
+  toeCap = min(innerCone - elementDist, toeFace - lz);
+  return max(heelCap, toeCap);
+}
+
+bevelCap(teeth, tipCone, ends, moduleVal, envelope) {
+  return envelope > 0.5 ? max(tipCone, ends) : intersectChamfer(teeth, ends, 0.05 * moduleVal);
+}
+
+bevelSegment(teeth, numTeeth, mateTeeth, moduleVal, shaftAngle, faceWidth, apex, from, to, envelope) {
+  t = teeth;
   pitchAngle = atan(sin(shaftAngle), mateTeeth / numTeeth + cos(shaftAngle));
   sinD = sin(pitchAngle);
   cosD = cos(pitchAngle);
   outerCone = numTeeth * moduleVal / (2.0 * sinD);
   innerCone = outerCone - faceWidth;
   lz = (apex > to ? neg(1.0) : 1.0) * (p.z - apex);
-  toeFace = min(abs(from - apex), abs(to - apex)) - (apex > to ? eUp : eDown);
-  heelFace = max(abs(from - apex), abs(to - apex)) + (apex > to ? eDown : eUp);
+  baseToe = min(abs(from - apex), abs(to - apex));
+  baseHeel = max(abs(from - apex), abs(to - apex));
+  extDownToe = apex > to ? 0.0 : 100000.0;
+  extDownHeel = apex > to ? 100000.0 : 0.0;
+  extUpToe = apex > to ? 100000.0 : 0.0;
+  extUpHeel = apex > to ? 0.0 : 100000.0;
   elementDist = length(p.xy) * sinD + lz * cosD;
-  heelCap = max(elementDist - outerCone, lz - heelFace);
-  toeCap = min(innerCone - elementDist, toeFace - lz);
-  ends = max(heelCap, toeCap);
   tipAngle = pitchAngle + moduleVal / outerCone;
   tipCone = length([p.x, p.y, lz]) * sin(clamp(atan(length(p.xy), lz) - tipAngle, neg(pi) / 2.0, pi / 2.0));
-  return want > 2.5 ? nothing : segmentAnswer(want, envelope > 0.5 ? max(tipCone, ends) : intersectChamfer(teeth, ends, 0.05 * moduleVal), from, to);
+  ends00 = bevelEnds(outerCone, innerCone, elementDist, lz, baseToe, baseHeel);
+  ends10 = bevelEnds(outerCone, innerCone, elementDist, lz, baseToe - extDownToe, baseHeel + extDownHeel);
+  ends01 = bevelEnds(outerCone, innerCone, elementDist, lz, baseToe - extUpToe, baseHeel + extUpHeel);
+  ends11 = bevelEnds(outerCone, innerCone, elementDist, lz, baseToe - 100000.0, baseHeel + 100000.0);
+  return [bevelCap(t, tipCone, ends00, moduleVal, envelope),
+          bevelCap(t, tipCone, ends10, moduleVal, envelope),
+          bevelCap(t, tipCone, ends01, moduleVal, envelope),
+          bevelCap(t, tipCone, ends11, moduleVal, envelope)];
 }
 
 // What a bevel answers for the box. With the pitch angle d, the outer cone
@@ -1076,20 +1114,23 @@ bevelTeethField(numTeeth, mateTeeth, moduleVal, pressureAngle, shaftAngle, spira
 // the neighbour, which body cuts after the fold. An end is [kind, size]: 0 a
 // plane, 1 a runout (size the cutter's radius), 2 a chamfer. The ternaries
 // choose only between constants.
-machinedSegment(sectionField, blankR, rootR, from, to, eDown, eUp, want, bottomEnd, topEnd) {
+machinedSegment(sectionField, blankR, rootR, from, to, want, bottomEnd, topEnd) {
+  s = sectionField;
   r = length(p.xy);
   radial = r - blankR;
-  axial = max((from - eDown) - p.z, p.z - (to + eUp));
   chamferBottom = min((radial + (from - p.z) + bottomEnd.y) / sqrt2, bottomEnd.x > 1.5 ? nothing : neg(nothing));
   chamferTop = min((radial + (p.z - to) + topEnd.y) / sqrt2, topEnd.x > 1.5 ? nothing : neg(nothing));
-  prism = sqrt(max(sectionField, 0.0) * max(sectionField, 0.0) + max(axial, 0.0) * max(axial, 0.0)) + min(max(sectionField, axial), 0.0);
-  ownField = max(prism, chamferBottom, chamferTop);
+  q = prismQuad(s, from, to);
+  ownQuad = [max(q.x, chamferBottom, chamferTop),
+             max(q.y, chamferBottom, chamferTop),
+             max(q.z, chamferBottom, chamferTop),
+             max(q.w, chamferBottom, chamferTop)];
   runoutBottom = bottomEnd.x > 0.5 && bottomEnd.x < 1.5;
   runoutTop = topEnd.x > 0.5 && topEnd.x < 1.5;
   reachBottom = max(length([r - (rootR + bottomEnd.y), p.z - from]) - bottomEnd.y, runoutBottom ? neg(nothing) : nothing);
   reachTop = max(length([r - (rootR + topEnd.y), p.z - to]) - topEnd.y, runoutTop ? neg(nothing) : nothing);
-  cut = max(neg(sectionField), min(reachBottom, reachTop));
-  return want > 2.5 ? (runoutBottom || runoutTop ? cut : nothing) : segmentAnswer(want, ownField, from, to);
+  cut = max(neg(s), min(reachBottom, reachTop));
+  return want > 2.5 ? q1(runoutBottom || runoutTop ? cut : nothing) : ownQuad;
 }
 
 // A thread whose ends are named: machinedSegment of thread.male between the
@@ -1100,11 +1141,11 @@ machinedSegment(sectionField, blankR, rootR, from, to, eDown, eUp, want, bottomE
 // plane) to (major, the plane + length), and inside the major diameter. An
 // end is [kind, size], kind 3 a thread runout; the ternaries choose only
 // between constants.
-threadedSegment(major, pitchVal, from, to, eDown, eUp, want, bottomEnd, topEnd) {
+threadedSegment(major, pitchVal, from, to, want, bottomEnd, topEnd) {
   section = isoThread.male(major, pitchVal);
   majorR = major / 2.0;
   rootR = isoThread.minorDia(major, pitchVal) / 2.0;
-  machined = machinedSegment(section, majorR, rootR, from, to, eDown, eUp, want,
+  machined = machinedSegment(section, majorR, rootR, from, to, want,
                              [bottomEnd.x > 2.5 ? 0.0 : bottomEnd.x, bottomEnd.y],
                              [topEnd.x > 2.5 ? 0.0 : topEnd.x, topEnd.y]);
   r = length(p.xy);
@@ -1120,10 +1161,17 @@ threadedSegment(major, pitchVal, from, to, eDown, eUp, want, bottomEnd, topEnd) 
   // lies inside between them.
   flank = max(topEnd.x > 3.5 ? undercutFlank(major, pitchVal, topEnd.y, to, -1.0) : neg(nothing),
               bottomEnd.x > 3.5 ? undercutFlank(major, pitchVal, bottomEnd.y, from, 1.0) : neg(nothing));
-  groove = min(topEnd.x > 3.5 ? undercutGroove(major, pitchVal, topEnd.y, to, -1.0, eUp) : nothing,
-               bottomEnd.x > 3.5 ? undercutGroove(major, pitchVal, bottomEnd.y, from, 1.0, eDown) : nothing);
-  return want > 2.5 ? min(machined, runoutCut)
-                    : (topEnd.x > 3.5 || bottomEnd.x > 3.5 ? min(max(machined, flank), groove) : machined);
+  gTop0 = topEnd.x > 3.5 ? undercutGroove(major, pitchVal, topEnd.y, to, -1.0, 0.0) : nothing;
+  gTopE = topEnd.x > 3.5 ? undercutGroove(major, pitchVal, topEnd.y, to, -1.0, 100000.0) : nothing;
+  gBot0 = bottomEnd.x > 3.5 ? undercutGroove(major, pitchVal, bottomEnd.y, from, 1.0, 0.0) : nothing;
+  gBotE = bottomEnd.x > 3.5 ? undercutGroove(major, pitchVal, bottomEnd.y, from, 1.0, 100000.0) : nothing;
+  return want > 2.5 ? q1(min(machined.x, runoutCut))
+                    : (topEnd.x > 3.5 || bottomEnd.x > 3.5
+                       ? [min(max(machined.x, flank), min(gTop0, gBot0)),
+                          min(max(machined.y, flank), min(gTop0, gBotE)),
+                          min(max(machined.z, flank), min(gTopE, gBot0)),
+                          min(max(machined.w, flank), min(gTopE, gBotE))]
+                       : machined);
 }
 
 // A DIN 76 thread undercut's flank, as a half-space positive outside it: the
@@ -1171,12 +1219,12 @@ undercutGroove(major, pitchVal, form, plane, inward, ext) {
 // body does, and its reach (want 5) is none: a blend stays inside the larger of
 // the segments it joins.
 jointAnswer(eDown, eUp, want) {
-  return want > 4.5 ? 0.0
-       : (want > 3.5 ? (eDown > 1.0 && eUp > 1.0 ? neg(nothing) : nothing)
-       : (want > 2.5 ? nothing
-       : (want > 1.5 ? neg(nothing)
-       : (want > 0.5 ? nothing
-                     : (eDown > 1.0 && eUp > 1.0 ? neg(nothing) : nothing)))));
+  return want > 4.5 ? q1(0.0)
+       : (want > 3.5 ? [nothing, nothing, nothing, neg(nothing)]
+       : (want > 2.5 ? q1(nothing)
+       : (want > 1.5 ? q1(neg(nothing))
+       : (want > 0.5 ? q1(nothing)
+                     : [nothing, nothing, nothing, neg(nothing)]))));
 }
 
 // A section segment's reach from the axis: unbounded. Its field is the
@@ -1226,15 +1274,22 @@ segmentDistance2(q, a, b) {
 // applied by a select between the magnitude and its negation, as profileXY's
 // is: over a surface cell the condition is undecided and the bound widens to
 // the magnitude's range, which is the cell's size there.
-turnedTaper(r0, r1, from, to, low, high) {
-  q = [length(p.xy), p.z];
+turnedTaperWith(q, slope, radiusHere, r0, r1, from, to, low, high) {
   bottomCap = length([max(q.x - r0, 0.0), p.z - low]);
   sideBelow = length([q.x - r0, max(low - p.z, p.z - from, 0.0)]);
-  slope = segmentDistance2(q, [r0, from], [r1, to]);
   sideAbove = length([q.x - r1, max(to - p.z, p.z - high, 0.0)]);
   topCap = length([max(q.x - r1, 0.0), p.z - high]);
   nearest = min(bottomCap, sideBelow, slope, sideAbove, topCap);
-  radiusHere = r0 + (r1 - r0) * clamp((p.z - from) / (to - from), 0.0, 1.0);
   containment = max(low - p.z, p.z - high, q.x - radiusHere);
   return containment > 0.0 ? nearest : neg(nearest);
+}
+
+taperQuad(r0, r1, from, to) {
+  q = [length(p.xy), p.z];
+  slope = segmentDistance2(q, [r0, from], [r1, to]);
+  radiusHere = r0 + (r1 - r0) * clamp((p.z - from) / (to - from), 0.0, 1.0);
+  return [turnedTaperWith(q, slope, radiusHere, r0, r1, from, to, from, to),
+          turnedTaperWith(q, slope, radiusHere, r0, r1, from, to, from - 100000.0, to),
+          turnedTaperWith(q, slope, radiusHere, r0, r1, from, to, from, to + 100000.0),
+          turnedTaperWith(q, slope, radiusHere, r0, r1, from, to, from - 100000.0, to + 100000.0)];
 }

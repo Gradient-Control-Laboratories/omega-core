@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"os"
 	"strings"
 	"testing"
 
@@ -56,9 +57,11 @@ func TestShaftFixes_UnguardedSegmentKeepsTheBox(t *testing.T) {
 	doc := `
 rod(dia, from, to) {
   seg(eDown, eUp, want) {
-    return want > 0.5 && want < 2.5 ? (want < 1.5 ? from : to)
-         : (want > 4.5 ? (want > 5.5 ? nothing : dia / 2.0)
-                      : (want > 2.5 && want < 3.5 ? nothing : rodField(dia, from - eDown, to + eUp)));
+    return want > 0.5 && want < 2.5 ? [want < 1.5 ? from : to, 0.0, 0.0, 0.0]
+         : (want > 4.5 ? [want > 5.5 ? nothing : dia / 2.0, 0.0, 0.0, 0.0]
+                      : (want > 2.5 && want < 3.5 ? [nothing, 0.0, 0.0, 0.0]
+                                                  : [rodField(dia, from, to), rodField(dia, from - 100000.0, to),
+                                                     rodField(dia, from, to + 100000.0), rodField(dia, from - 100000.0, to + 100000.0)]));
   }
   return seg;
 }
@@ -189,5 +192,30 @@ return min(block, rod);
 	t.Logf("framed at %v, radius %.1f; the rod's end is %.1f from the centre", center, radius, far)
 	if far > radius {
 		t.Errorf("the rod's far end lies %.1f from the framed centre, outside its radius %.1f", far, radius)
+	}
+}
+
+// Each shaft segment evaluates its 2D section once and returns all four
+// capped/extended distances as a vec4, preventing 4x WGSL duplication.
+func TestShaftFixes_SegmentSectionEvaluatedOnce(t *testing.T) {
+	cases := []struct {
+		name     string
+		maxBytes int
+	}{
+		{"shaft_pinion", 45000}, // was 87,263 B before vec4 segment return
+		{"shaft_hobbed", 30000}, // was 50,963 B before vec4 segment return
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			src, err := os.ReadFile("../examples/" + tc.name + ".gsl")
+			if err != nil {
+				t.Fatal(err)
+			}
+			code := fixesShader(t, string(src))
+			t.Logf("%s WGSL size: %d bytes", tc.name, len(code))
+			if len(code) > tc.maxBytes {
+				t.Errorf("%s WGSL is %d bytes, want <= %d", tc.name, len(code), tc.maxBytes)
+			}
+		})
 	}
 }
