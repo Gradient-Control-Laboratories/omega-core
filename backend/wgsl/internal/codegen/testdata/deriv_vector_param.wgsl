@@ -1,6 +1,7 @@
 fn shell__d(q: vec3<f32>, q__dp0: vec3<f32>, q__dp1: vec3<f32>, q__dp2: vec3<f32>) -> f32 {
   let d = length(q) - 1.0;
-  return abs(d) / max(length(vec3<f32>(dot(clamp(q / max(length(q), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), q__dp0), dot(clamp(q / max(length(q), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), q__dp1), dot(clamp(q / max(length(q), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), q__dp2))), 0.5);
+  let gsl_cse_1 = clamp(q / max(length(q), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0));
+  return abs(d) / max(length(vec3<f32>(dot(gsl_cse_1, q__dp0), dot(gsl_cse_1, q__dp1), dot(gsl_cse_1, q__dp2))), 0.5);
 }
 
 fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {

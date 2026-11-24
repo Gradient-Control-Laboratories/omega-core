@@ -13,7 +13,8 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
   }
   let f = gsl_part;
   let vel = -(cos(time) * 1.0);
-  let gradMag = length(vec3<f32>(dot(clamp(p / max(length(p), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(1.0, 0.0, 0.0)) - cos(time) * 0.0, dot(clamp(p / max(length(p), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(0.0, 1.0, 0.0)) - cos(time) * 0.0, dot(clamp(p / max(length(p), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(0.0, 0.0, 1.0)) - cos(time) * 0.0));
+  let gsl_cse_1 = clamp(p / max(length(p), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0));
+  let gradMag = length(vec3<f32>(dot(gsl_cse_1, vec3<f32>(1.0, 0.0, 0.0)) - cos(time) * 0.0, dot(gsl_cse_1, vec3<f32>(0.0, 1.0, 0.0)) - cos(time) * 0.0, dot(gsl_cse_1, vec3<f32>(0.0, 0.0, 1.0)) - cos(time) * 0.0));
   let gsl_s1 = gsl_shape(f, 1u);
   let gsl_s2 = gsl_shape(vel, 2u);
   let gsl_s3 = gsl_shape(gradMag, 3u);
