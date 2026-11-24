@@ -193,7 +193,8 @@ cylinderZ(center, radius) {
 /// distance from the axis on a cap, in mm — so across the rim .u runs on and
 /// .v turns from along the axis to across it.
 //
-// Adapted from Inigo Quilez's capped cylinder; the locals keep his names.
+// Adapted from Inigo Quilez's sdCappedCylinder, the one between two points
+// (https://iquilezles.org/articles/distfunctions/); the locals keep his names.
 cylinderCapped(pointA, pointB, radius, blend) {
   ba = pointB - pointA;
   pa = p - pointA;
@@ -239,7 +240,8 @@ cappedCylinderV(pointA, pointB, radius) {
 /// Subtract a radius to get a capsule (same as cylinderRounded). The building
 /// block for beam and foam lattices.
 //
-// Based on Inigo Quilez formulation.
+// Based on Inigo Quilez's sdCapsule at radius 0
+// (https://iquilezles.org/articles/distfunctions/).
 lineSegment(pointA, pointB) {
   pa = p - pointA;
   ba = pointB - pointA;
@@ -250,7 +252,7 @@ lineSegment(pointA, pointB) {
 /// Capsule between pointA and pointB: cylinder with hemispherical caps of
 /// the given radius.
 //
-// Based on Inigo Quilez formulation.
+// Based on Inigo Quilez's sdCapsule (https://iquilezles.org/articles/distfunctions/).
 cylinderRounded(pointA, pointB, radius) {
   pa = p - pointA;
   ba = pointB - pointA;
@@ -297,7 +299,8 @@ cone(origin, direction, angle) {
 
 /// Capped cone between pointA (radius radiusA) and pointB (radius radiusB).
 //
-// Based on Inigo Quilez formulation.
+// Based on Inigo Quilez's sdCappedCone, the one between two points
+// (https://iquilezles.org/articles/distfunctions/).
 coneCapped(pointA, pointB, radiusA, radiusB) {
   rba = radiusB - radiusA;
   baba = dot(pointB - pointA, pointB - pointA);
@@ -318,7 +321,8 @@ coneCapped(pointA, pointB, radiusA, radiusB) {
 /// Rounded cone: sphere at pointA (radius radiusA), sphere at pointB (radius radiusB),
 /// blended with a tangent cone — like a tapered capsule.
 //
-// Based on Inigo Quilez formulation.
+// Based on Inigo Quilez's sdRoundCone, the one between two points
+// (https://iquilezles.org/articles/distfunctions/).
 coneRounded(pointA, pointB, radiusA, radiusB) {
   ba = pointB - pointA;
   l2 = dot(ba, ba);
