@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"gradientcontrol.com/omega/core/internal/eval"
-	"gradientcontrol.com/omega/core/internal/scope"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // Transform runs a function inlining pass over the entire program AST.
@@ -318,7 +318,7 @@ func (in *inliner) transformPackage(pkg *program.Package, pkgScope *scope.PkgSco
 					}
 				}
 			}
-			for _, op := range assign.Range.OwnOperands() {
+			for _, op := range assign.Range.Operands() {
 				if err := in.transformOperand(op, fileScope, file, currentPkgPath); err != nil {
 					return err
 				}
@@ -448,7 +448,7 @@ func (in *inliner) transformFunction(fn *program.Function, fileScope *scope.PkgF
 				}
 			}
 		}
-		for _, op := range assign.Range.OwnOperands() {
+		for _, op := range assign.Range.Operands() {
 			if err := in.transformOperand(op, fileScope, targetFile, currentPkgPath); err != nil {
 				return err
 			}

@@ -15,10 +15,10 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/eval"
-	"gradientcontrol.com/omega/core/internal/fidget/convert"
-	"gradientcontrol.com/omega/core/program/noise"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget/convert"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/noise"
 )
 
 // The image both renderers draw: small, since the CPU side evaluates every

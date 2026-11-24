@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/backend/wgsl"
-	"gradientcontrol.com/omega/core/backend/wgsl/internal/wgsltest"
-	src_test "gradientcontrol.com/omega/core/internal/srctest"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl/internal/wgsltest"
+	src_test "github.com/Gradient-Control-Laboratories/omega-core/internal/srctest"
 )
 
 func TestBuildExamples(t *testing.T) {

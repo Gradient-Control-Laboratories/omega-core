@@ -217,8 +217,8 @@ import (
 	"sync"
 	"unsafe"
 
-	"gradientcontrol.com/omega/core/program/noise"
-	"gradientcontrol.com/omega/core/program/noise/spinodoid"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/noise"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/noise/spinodoid"
 )
 
 var mu sync.Mutex

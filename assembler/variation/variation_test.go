@@ -3,10 +3,10 @@ package variation_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler/meshplan"
-	"gradientcontrol.com/omega/core/assembler/variation"
-	parser "gradientcontrol.com/omega/core/parser"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/meshplan"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/variation"
+	parser "github.com/Gradient-Control-Laboratories/omega-core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func TestVariationProgram(t *testing.T) {

@@ -26,7 +26,7 @@ type ImportEdge struct {
 // PackageNode represents a Go package in the module.
 type PackageNode struct {
 	ImportPath     string // Relative to module root, e.g. "internal/lower"
-	FullImport     string // Full module path, e.g. "gradientcontrol.com/omega/core/internal/lower"
+	FullImport     string // Full module path, e.g. "github.com/Gradient-Control-Laboratories/omega-core/internal/lower"
 	Dir            string // Relative filesystem directory
 	Name           string // Go package clause name
 	KeepHereReason string // Reason from "// Keep <pkg> here because <reason>" comment, if any

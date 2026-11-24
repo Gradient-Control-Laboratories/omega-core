@@ -1,8 +1,8 @@
 package convert
 
 import (
-	"gradientcontrol.com/omega/core/internal/build"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/build"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func VarInfoFor(scope *build.Scope, name string, expr build.Expression) build.VarInfo {

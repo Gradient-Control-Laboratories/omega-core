@@ -3,8 +3,8 @@ package codegen_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/backend/wgsl"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl"
 )
 
 // TestPartsReported checks the render result lists each guarded part by its

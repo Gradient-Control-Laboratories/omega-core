@@ -13,12 +13,12 @@ import (
 	"strconv"
 	"strings"
 
-	"gradientcontrol.com/omega/core/assembler/slider"
-	"gradientcontrol.com/omega/core/backend/wgsl"
-	"gradientcontrol.com/omega/core/internal/fidget"
-	"gradientcontrol.com/omega/core/internal/meshimport"
-	"gradientcontrol.com/omega/core/program/float16"
-	"gradientcontrol.com/omega/core/program/noise"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/slider"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/meshimport"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/float16"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/noise"
 )
 
 // The languages Shader answers in.

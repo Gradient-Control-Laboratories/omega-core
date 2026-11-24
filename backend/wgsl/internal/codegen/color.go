@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"gradientcontrol.com/omega/core/internal/build"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/build"
 )
 
 // colorFieldFn is the name of the generated per-return color function.

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/eval"
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // Shaft Modeling, Phase 19: a pruned feature, run on the GPU. The viewer's

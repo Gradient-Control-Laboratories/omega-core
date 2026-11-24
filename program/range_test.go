@@ -3,31 +3,9 @@ package program_test
 import (
 	"testing"
 
-	parser "gradientcontrol.com/omega/core/parser"
-	"gradientcontrol.com/omega/core/program"
+	parser "github.com/Gradient-Control-Laboratories/omega-core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
-
-func TestRangeAnnotation_IsSynthetic(t *testing.T) {
-	loc1 := program.NewLoc(2, 5, 10)
-	loc2 := program.NewLoc(2, 5, 10)
-	loc3 := program.NewLoc(2, 10, 15)
-
-	synthetic := &program.Range{
-		Start: loc1,
-		End:   loc2,
-	}
-	if !synthetic.IsSynthetic() {
-		t.Errorf("expected synthetic.IsSynthetic() to be true")
-	}
-
-	explicit := &program.Range{
-		Start: loc1,
-		End:   loc3,
-	}
-	if explicit.IsSynthetic() {
-		t.Errorf("expected explicit.IsSynthetic() to be false")
-	}
-}
 
 func TestRangeAnnotation_ConstAccessors(t *testing.T) {
 	minOp := program.NewValue(1.5, nil, nil)

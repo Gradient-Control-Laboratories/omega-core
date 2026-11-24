@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"gradientcontrol.com/omega/core/tool/run-go-tests/internal/config"
-	"gradientcontrol.com/omega/core/tool/run-go-tests/internal/runner"
-	"gradientcontrol.com/omega/core/tool/run-go-tests/internal/summary"
+	"github.com/Gradient-Control-Laboratories/omega-core/tool/run-go-tests/internal/config"
+	"github.com/Gradient-Control-Laboratories/omega-core/tool/run-go-tests/internal/runner"
+	"github.com/Gradient-Control-Laboratories/omega-core/tool/run-go-tests/internal/summary"
 )
 
 func main() {

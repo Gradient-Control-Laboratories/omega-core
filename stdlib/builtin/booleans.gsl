@@ -654,49 +654,584 @@ remapEdges(fields, profile) {
   }, fields));
 }
 
-/// Exact rounded union of two fields (nullary field1/field2) that uses their
-/// surface normals normal1, normal2 to scale the blend, staying accurate where the
-/// two gradients differ. The zero set is the sharp union; the field is its
-/// exact SDF, so offsetting the result by r rounds the seam with radius r.
-unionRoundExact(field1, field2, normal1, normal2) {
-  d1 = field1();
-  d2 = field2();
+/// Exact rounded union of two fields with fillet `radius`, in one step from the
+/// faces' tangent planes at p, whose normals are handed in as normal1, normal2: the fields are grown by the radius, their
+/// union's distance is taken near the seam from those planes, and it is shrunk
+/// back by the radius. Exact where the faces are flat, at any angle between
+/// them; on curved faces use the forms that take a step count. At radius 0 the
+/// zero set is the sharp union and the field is its exact distance.
+unionRoundExact(field1, field2, radius, normal1, normal2) {
+  d1 = field1 - radius;
+  d2 = field2 - radius;
   sumScale = length(normal1 + normal2);
   diffScale = length(normal1 - normal2);
   sum = (d1 + d2) / sumScale;
   diff = (d1 - d2) / diffScale;
   sharp = min(d1, d2);
-  field1OnSurface2 = remap(field1(), p - d2 * normal2);
-  field2OnSurface1 = remap(field2(), p - d1 * normal1);
+  field1OnSurface2 = remap(field1, p - d2 * normal2) - radius;
+  field2OnSurface1 = remap(field2, p - d1 * normal1) - radius;
 
-  return max(field1OnSurface2, field2OnSurface1) > 0 ? sharp : -length([sum, diff]);
+  return (max(field1OnSurface2, field2OnSurface1) > 0 ? sharp : -length([sum, diff])) + radius;
 }
 
-/// Exact rounded union of two fields (nullary field1/field2), taking each field's
-/// surface normal from its own gradient instead of being handed them. Use the
-/// four-argument form when a normal is known analytically, or when the same
-/// gradient is already computed elsewhere.
-unionRoundExact(field1, field2) {
-  return unionRoundExact(field1, field2, field1().dp, field2().dp);
-}
-
-/// Exact rounded intersection of two fields (nullary field1/field2) that uses
-/// their surface normals normal1, normal2 to scale the blend. The De Morgan dual of
-/// unionRoundExact: negating a field flips its gradient, so the normals are
-/// negated alongside it.
-intersectRoundExact(field1, field2, normal1, normal2) {
+/// Exact rounded intersection of two fields with fillet `radius`, in one step
+/// from the faces' tangent planes, whose normals are handed in as normal1,
+/// normal2: the De Morgan dual of the five-argument
+/// unionRoundExact, which negates the normals along with the fields.
+intersectRoundExact(field1, field2, radius, normal1, normal2) {
   return neg(unionRoundExact(
-    () { return neg(field1()); },
-    () { return neg(field2()); },
-    neg(normal1), neg(normal2)));
+    neg(field1),
+    neg(field2),
+    radius, neg(normal1), neg(normal2)));
 }
 
-/// Exact rounded intersection of two fields (nullary field1/field2), taking each
-/// field's surface normal from its own gradient instead of being handed them.
-/// The gradients are of field1 and field2 themselves; the four-argument form
-/// negates them along with the fields.
-intersectRoundExact(field1, field2) {
-  return intersectRoundExact(field1, field2, field1().dp, field2().dp);
+/// The least-norm Newton step toward the edge {field1 = 0, field2 = 0} from
+/// the fields' values v1, v2 and gradients n1, n2 at c: c - Jᵀ(JJᵀ)⁻¹[v1, v2],
+/// J the gradients as rows. Where the faces are parallel there is no edge, and
+/// the guard on the determinant keeps the step finite.
+edgeProjectFrom(v1, v2, n1, n2, c) {
+  a = dot(n1, n1);
+  b = dot(n1, n2);
+  d = dot(n2, n2);
+  det = max(a * d - b * b, 0.000001);
+  step = ((d * v1 - b * v2) * n1 + (a * v2 - b * v1) * n2) / det;
+  // A trust region: no component of the step longer than four times the
+  // fields' values at c, so a far point or near-parallel faces cannot throw c
+  // out of range. It is a clamp, not a rescaling, so that an interval bound
+  // over a cell stays as finite as the fields' own.
+  reach = 4 * (abs(v1) + abs(v2)) + 0.001;
+  return c - clamp(step, neg(reach), reach);
+}
+
+/// A slide from q along the edge's tangent, the cross product of the fields'
+/// gradients n1, n2, to the foot of p on that line.
+edgeSlideFrom(q, n1, n2) {
+  t = cross(n1, n2);
+  // No component of the slide is longer than |p - q|; clamped to that, for
+  // the same finite bounds as the step's.
+  slide = dot(p - q, t) / max(dot(t, t), 0.000001) * t;
+  span = length(p - q);
+  return q + clamp(slide, neg(span), span);
+}
+
+/// Whether p is nearest the edge at the point c the steps reached, and the
+/// distance if so: e = p - c, n1, n2 the gradients at c, sharp the sharp
+/// intersection at p, residual the larger of the fields' magnitudes at c.
+/// p is nearest the edge where e = w1 n1 + w2 n2 with both weights positive;
+/// the field is then |e|, and elsewhere sharp.
+edgeVerdict(e, n1, n2, sharp, residual) {
+  a = dot(n1, n1);
+  b = dot(n1, n2);
+  d = dot(n2, n2);
+  det = max(a * d - b * b, 0.000001);
+  x1 = dot(e, n1);
+  x2 = dot(e, n2);
+  w1 = (d * x1 - b * x2) / det;
+  w2 = (a * x2 - b * x1) / det;
+  // Only outside the intersection can p be nearest its edge; there the
+  // distance to it is at least either field's, and at most sharp / sin(φ/2),
+  // φ the angle between the faces, |normal1 + normal2| / 2 = sin(φ/2): from a
+  // point far from the edge the steps can reach another point of it where the
+  // distance along it is stationary (the far side of a circular edge), whose
+  // normals also hold p - c, and this bound, with room for curvature, rejects it.
+  plausible = length(e) * length(n1 + n2) / 2 <= 1.5 * sharp + 0.001;
+  // And c must lie on both faces, which must make an edge: where they are
+  // parallel, or within about 0.6 degrees of it, there is none, the steps stop
+  // wherever the trust region does, and c is no point of it.
+  solved = residual <= 0.1 * length(e) + 0.001;
+  edged = a * d - b * b >= 0.0001 * a * d;
+  return min(w1, w2, sharp) > 0 && plausible && solved && edged ? max(length(e), sharp) : sharp;
+}
+
+/// The point nearest c on both fields' tangent planes at c: one Newton step
+/// from c toward the edge {field1 = 0, field2 = 0}, edgeProjectFrom with the
+/// fields' values and gradients at c.
+edgeProject(field1, field2, c) {
+  return edgeProjectFrom(
+    remap(field1, c), remap(field2, c), remap(field1.dp, c), remap(field2.dp, c), c);
+}
+
+/// One Newton step from c toward the point of the edge {field1 = 0, field2 =
+/// 0} nearest p: edgeProject's step, then a slide along the edge's tangent at
+/// c, the cross product of the fields' gradients there, to the foot of p.
+edgeNewtonStep(field1, field2, c) {
+  n1 = remap(field1.dp, c);
+  n2 = remap(field2.dp, c);
+  return edgeSlideFrom(
+    edgeProjectFrom(remap(field1, c), remap(field2, c), n1, n2, c), n1, n2);
+}
+
+/// Exact distance to the sharp intersection of two fields  whose faces may be curved: outside the intersection and
+/// nearest its edge, the distance to the point c of the edge {field1 = 0,
+/// field2 = 0} nearest p, found by `iterations` Newton steps from p (1 to 8).
+/// Each step moves to the nearest point of both fields' tangent planes, then
+/// slides along the edge to the foot of p; the last step only projects. Near
+/// the edge, one step gives the five-argument exact rounds' distance, off by 7%
+/// of a round's radius on a sphere and a plane; three give 1e-6 mm where the
+/// edge is a circle, and five where it is not. Where p - c lies between the two
+/// faces' normals at c, p is nearest the edge and the field is |p - c|;
+/// elsewhere it is the sharp intersection, exact where the fields are. That
+/// test is only as good as c, so use three steps or more. Pass `iterations` as
+/// a constant: the steps it does not take are dropped at compile time. Each
+/// step evaluates both fields and their gradients at a new point, so the field
+/// costs about iterations + 1 times the sharp one. The exact rounds that take a
+/// step count are built on it.
+edgeDistance(field1, field2, iterations) {
+  // Start a hair off p: where every point of the edge is equally near (on the
+  // axis of a circular edge), a gradient at p may be undefined and no step
+  // would pick a direction; from beside p the steps reach one of those points.
+  s0 = p + [0.0001, 0.00007, 0.00003];
+  s1 = edgeNewtonStep(field1, field2, s0);
+  s2 = edgeNewtonStep(field1, field2, s1);
+  s3 = edgeNewtonStep(field1, field2, s2);
+  s4 = edgeNewtonStep(field1, field2, s3);
+  s5 = edgeNewtonStep(field1, field2, s4);
+  s6 = edgeNewtonStep(field1, field2, s5);
+  s7 = edgeNewtonStep(field1, field2, s6);
+  c = iterations >= 8 ? edgeProject(field1, field2, s7)
+    : iterations >= 7 ? edgeProject(field1, field2, s6)
+    : iterations >= 6 ? edgeProject(field1, field2, s5)
+    : iterations >= 5 ? edgeProject(field1, field2, s4)
+    : iterations >= 4 ? edgeProject(field1, field2, s3)
+    : iterations >= 3 ? edgeProject(field1, field2, s2)
+    : iterations >= 2 ? edgeProject(field1, field2, s1)
+    : edgeProject(field1, field2, s0);
+  return edgeVerdict(
+    p - c,
+    remap(field1.dp, c),
+    remap(field2.dp, c),
+    max(field1, field2),
+    max(abs(remap(field1, c)), abs(remap(field2, c))));
+}
+
+/// The Newton step toward the corner {field1 = 0, field2 = 0, field3 = 0}
+/// from the fields' values and gradients at c: c - J⁻¹[v1, v2, v3], J the
+/// gradients as rows, whose inverse's columns are the gradients' pairwise cross
+/// products over the determinant. Where the gradients are coplanar there is no
+/// corner, and the guard on the determinant and the trust region keep the step
+/// finite.
+cornerStepFrom(v1, v2, v3, n1, n2, n3, c) {
+  c23 = cross(n2, n3);
+  c31 = cross(n3, n1);
+  c12 = cross(n1, n2);
+  det = dot(n1, c23);
+  guarded = (det >= 0 ? 1 : -1) * max(abs(det), 0.000001);
+  step = (v1 * c23 + v2 * c31 + v3 * c12) / guarded;
+  reach = 4 * (abs(v1) + abs(v2) + abs(v3)) + 0.001;
+  return c - clamp(step, neg(reach), reach);
+}
+
+/// Whether p is nearest the corner at the point c the steps reached, and the
+/// distance if so: p is nearest it where e = p - c = w1 n1 + w2 n2 + w3 n3
+/// with every weight positive, w = J⁻ᵀe; the field is then |e|, and elsewhere
+/// sharp.
+cornerVerdict(e, n1, n2, n3, sharp, residual) {
+  c23 = cross(n2, n3);
+  c31 = cross(n3, n1);
+  c12 = cross(n1, n2);
+  det = dot(n1, c23);
+  guarded = (det >= 0 ? 1 : -1) * max(abs(det), 0.000001);
+  w1 = dot(e, c23) / guarded;
+  w2 = dot(e, c31) / guarded;
+  w3 = dot(e, c12) / guarded;
+  // And c must lie on all three faces, which must make a corner: where their
+  // normals are coplanar or nearly, as at three faces of a prism, there is
+  // none, the steps stop wherever the trust region does, and c is no point of it.
+  solved = residual <= 0.1 * length(e) + 0.001;
+  cornered = abs(det) >= 0.001 * length(n1) * length(n2) * length(n3);
+  return min(w1, w2, w3, sharp) > 0 && solved && cornered ? max(length(e), sharp) : sharp;
+}
+
+/// One Newton step from c toward the corner {field1 = 0, field2 = 0, field3 =
+/// 0}: cornerStepFrom with the fields' values and gradients at c.
+cornerNewtonStep(field1, field2, field3, c) {
+  return cornerStepFrom(
+    remap(field1, c), remap(field2, c), remap(field3, c),
+    remap(field1.dp, c), remap(field2.dp, c), remap(field3.dp, c), c);
+}
+
+/// Exact distance to the sharp intersection of three fields, outside it and
+/// nearest its corner {field1 = 0, field2 = 0, field3 = 0}: the distance to
+/// the corner c, found by `iterations` Newton steps from p (1 to 8), where p - c
+/// lies in the cone of the three faces' normals at c and the fields all vanish
+/// at c. Elsewhere it is the sharp intersection, which is no more than the
+/// distance; intersectDistance takes the larger of it and the three edges'
+/// distances. Pass `iterations` as a constant. Where the faces are planes one
+/// step is exact.
+cornerDistance(field1, field2, field3, iterations) {
+  s0 = p + [0.0001, 0.00007, 0.00003];
+  s1 = cornerNewtonStep(field1, field2, field3, s0);
+  s2 = cornerNewtonStep(field1, field2, field3, s1);
+  s3 = cornerNewtonStep(field1, field2, field3, s2);
+  s4 = cornerNewtonStep(field1, field2, field3, s3);
+  s5 = cornerNewtonStep(field1, field2, field3, s4);
+  s6 = cornerNewtonStep(field1, field2, field3, s5);
+  s7 = cornerNewtonStep(field1, field2, field3, s6);
+  s8 = cornerNewtonStep(field1, field2, field3, s7);
+  c = iterations >= 8 ? s8
+    : iterations >= 7 ? s7
+    : iterations >= 6 ? s6
+    : iterations >= 5 ? s5
+    : iterations >= 4 ? s4
+    : iterations >= 3 ? s3
+    : iterations >= 2 ? s2
+    : s1;
+  return cornerVerdict(
+    p - c,
+    remap(field1.dp, c),
+    remap(field2.dp, c),
+    remap(field3.dp, c),
+    max(field1, field2, field3),
+    max(abs(remap(field1, c)), abs(remap(field2, c)), abs(remap(field3, c))));
+}
+
+/// Exact distance to the sharp intersection of three fields whose faces may
+/// be curved: the largest of the three edges' edgeDistance and the corner's
+/// cornerDistance. Each is the distance to a set holding the intersection, so
+/// none is more than the distance; and where the intersection is convex the
+/// point of it nearest p touches at most three faces, so one of them is the
+/// distance itself. Where it is not convex this holds near its edges and
+/// corner, as for two fields. Pass `iterations` as a constant.
+intersectDistance(field1, field2, field3, iterations) {
+  return max(
+    edgeDistance(field1, field2, iterations),
+    edgeDistance(field1, field3, iterations),
+    edgeDistance(field2, field3, iterations),
+    cornerDistance(field1, field2, field3, iterations));
+}
+
+/// Exact distance to the sharp intersection of a list of fields, each first
+/// taken as sign * field + offset: the largest of every pair's edgeDistance and
+/// every three's cornerDistance, as the three-field intersectDistance. The sign
+/// and offset are applied inside the folds, so the folds are over the list
+/// passed in, whose elements the compiler binds and differentiates. N fields
+/// cost N(N-1)/2 edges and N(N-1)(N-2)/6 corners, each `iterations` steps.
+/// Pass `iterations` as a constant.
+offsetIntersectDistance(fields, sign, offset, iterations) {
+  // A pair or three not taken returns its first field, also no more than the
+  // distance, so the max needs no identity.
+  edges = intersectSharp(map((fieldI, i) {
+    return intersectSharp(map((fieldJ, j) {
+      return j > i
+        ? edgeDistance(sign * fieldI + offset, sign * fieldJ + offset, iterations)
+        : sign * fieldI + offset;
+    }, fields));
+  }, fields));
+  corners = intersectSharp(map((fieldI, i) {
+    return intersectSharp(map((fieldJ, j) {
+      return intersectSharp(map((fieldK, k) {
+        return k > j && j > i
+          ? cornerDistance(sign * fieldI + offset, sign * fieldJ + offset, sign * fieldK + offset, iterations)
+          : sign * fieldI + offset;
+      }, fields));
+    }, fields));
+  }, fields));
+  return max(edges, corners);
+}
+
+/// Exact distance to the sharp intersection of a list of fields whose faces
+/// may be curved: offsetIntersectDistance(fields, 1, 0, iterations). Where the
+/// intersection is convex the point of it nearest p touches at most three
+/// faces, so the largest of the pairs' and threes' distances is the distance.
+intersectDistance(fields, iterations) {
+  return offsetIntersectDistance(fields, 1, 0, iterations);
+}
+
+/// Exact rounded intersection of two fields with fillet
+/// `radius`, for faces that may be curved: the fields are shrunk by the radius,
+/// the exact distance to their intersection is found by `steps` Newton
+/// steps (edgeDistance), and it is grown back by the radius, so the fillet is
+/// the surface a ball of that radius sweeps rolling along the edge. Pass the
+/// step count as a constant; three are exact to 1e-6 mm where the edge is a
+/// circle, five on a saddle. At radius 0 the field is the sharp intersection's
+/// exact distance.
+intersectRoundExactSteps(field1, field2, radius, steps) {
+  return edgeDistance(
+    field1 + radius,
+    field2 + radius,
+    steps) - radius;
+}
+
+/// Exact rounded intersection of three fields with fillet `radius`: each edge
+/// is rounded as by the two-field form, and where the three meet the ball that
+/// touches all three closes the corner with a patch of its sphere. The fields
+/// are shrunk by the radius, the exact distance to their intersection is found
+/// (intersectDistance, `steps` Newton steps for each edge and the corner), and
+/// it is grown back by the radius.
+intersectRoundExactSteps(field1, field2, field3, radius, steps) {
+  return intersectDistance(
+    field1 + radius,
+    field2 + radius,
+    field3 + radius,
+    steps) - radius;
+}
+
+/// Exact rounded intersection of a list of fields with fillet `radius`: the
+/// union of every ball of that radius inside the sharp intersection. The
+/// fields are shrunk by the radius, the exact distance to their intersection is
+/// found by the list intersectDistance, and it is grown back by the radius.
+/// Exact where the intersection is convex, at any number of faces to a corner,
+/// including a corner no ball touches on every face, which splits.
+intersectRoundExactSteps(fields, radius, steps) {
+  return offsetIntersectDistance(fields, 1, radius, steps) - radius;
+}
+
+/// Partial application of intersectRoundExactSteps: binds the fillet radius
+/// and step count and returns the intersection operator over a list of
+/// fields of any length, ready to hand to a primitive that takes its own blend.
+intersectRoundExactSteps(radius, steps) {
+  return (fields) { return intersectRoundExactSteps(fields, radius, steps); };
+}
+
+/// intersectRoundExactSteps(field1, field2, radius, 4).
+intersectRoundExact(field1, field2, radius) {
+  return intersectRoundExactSteps(field1, field2, radius, 4);
+}
+
+/// intersectRoundExactSteps(field1, field2, field3, radius, 4).
+intersectRoundExact(field1, field2, field3, radius) {
+  return intersectRoundExactSteps(field1, field2, field3, radius, 4);
+}
+
+/// intersectRoundExactSteps(fields, radius, 4).
+intersectRoundExact(fields, radius) {
+  return intersectRoundExactSteps(fields, radius, 4);
+}
+
+/// Partial application of intersectRoundExact: binds the fillet radius and
+/// returns the intersection operator over a list of fields of any length,
+/// ready to hand to a primitive that takes its own blend: extrude blends its
+/// profile and its slab, box and boxCentered their three slabs.
+intersectRoundExact(radius) {
+  return (fields) { return intersectRoundExact(fields, radius); };
+}
+
+/// Exact rounded union of two fields with fillet `radius`, for faces that may
+/// be curved: the De Morgan dual of intersectRoundExactSteps, so the fillet is
+/// the surface a ball of that radius sweeps rolling along the seam, touching
+/// both solids from outside.
+unionRoundExactSteps(field1, field2, radius, steps) {
+  return neg(intersectRoundExactSteps(neg(field1), neg(field2), radius, steps));
+}
+
+/// Exact rounded union of three fields: the De Morgan dual of the three-field
+/// intersectRoundExactSteps.
+unionRoundExactSteps(field1, field2, field3, radius, steps) {
+  return neg(intersectRoundExactSteps(neg(field1), neg(field2), neg(field3), radius, steps));
+}
+
+/// Exact rounded union of a list of fields: the De Morgan dual of the list
+/// intersectRoundExactSteps. Its fillets are concave, so it is exact near each
+/// seam and corner, as the two-field form is.
+unionRoundExactSteps(fields, radius, steps) {
+  return neg(offsetIntersectDistance(fields, -1, radius, steps) - radius);
+}
+
+/// Partial application of unionRoundExactSteps over a list of fields of any
+/// length.
+unionRoundExactSteps(radius, steps) {
+  return (fields) { return unionRoundExactSteps(fields, radius, steps); };
+}
+
+/// unionRoundExactSteps(field1, field2, radius, 4).
+unionRoundExact(field1, field2, radius) {
+  return unionRoundExactSteps(field1, field2, radius, 4);
+}
+
+/// unionRoundExactSteps(field1, field2, field3, radius, 4).
+unionRoundExact(field1, field2, field3, radius) {
+  return unionRoundExactSteps(field1, field2, field3, radius, 4);
+}
+
+/// unionRoundExactSteps(fields, radius, 4).
+unionRoundExact(fields, radius) {
+  return unionRoundExactSteps(fields, radius, 4);
+}
+
+/// Partial application of unionRoundExact: binds the fillet radius and returns
+/// the union operator over a list of fields of any length.
+unionRoundExact(radius) {
+  return (fields) { return unionRoundExact(fields, radius); };
+}
+
+// Chamfers whose faces may be curved: the Steps tier of the chamfer family, after
+// intersectChamfer (offset, no normals) and intersectChamferNormalized and
+// intersectChamferSetbacks (exact where both faces are straight in section). For
+// each point p, `steps` Newton steps (edgeNewtonStep) find the point c of the edge
+// {field1 = 0, field2 = 0} nearest p and the faces' normals there. In the plane
+// normal to the edge at c a flat chamfer is a straight line, through the point of
+// face 1 at the first distance from c and the point of face 2 at the second (each a
+// straight-line distance in that plane, found by Newton steps on the face), and the
+// field is the distance to that line. Swept along the edge, the line is the ruled
+// surface a boundary-representation chamfer makes, flat on a ball as on a plane.
+
+// A unit vector along v, finite where v vanishes: far from the edge the frame
+// means nothing and its normals may be parallel.
+chamferUnit(v) {
+  return v / max(length(v), 0.000001);
+}
+
+// a / b, finite where b vanishes: a Newton step there does nothing useful.
+chamferRatio(a, b) {
+  return a * b / max(b * b, 0.000000000001);
+}
+
+// The point of the edge {field1 = 0, field2 = 0} nearest p: `iterations` (1 to 8)
+// of edgeDistance's Newton steps, started a hair off `seed`, the last only
+// projecting. Pass `iterations` as a constant.
+chamferEdgePoint(field1, field2, iterations, seed) {
+  s0 = seed + [0.0001, 0.00007, 0.00003];
+  s1 = edgeNewtonStep(field1, field2, s0);
+  s2 = edgeNewtonStep(field1, field2, s1);
+  s3 = edgeNewtonStep(field1, field2, s2);
+  s4 = edgeNewtonStep(field1, field2, s3);
+  s5 = edgeNewtonStep(field1, field2, s4);
+  s6 = edgeNewtonStep(field1, field2, s5);
+  s7 = edgeNewtonStep(field1, field2, s6);
+  return iterations >= 8 ? edgeProject(field1, field2, s7)
+    : iterations >= 7 ? edgeProject(field1, field2, s6)
+    : iterations >= 6 ? edgeProject(field1, field2, s5)
+    : iterations >= 5 ? edgeProject(field1, field2, s4)
+    : iterations >= 4 ? edgeProject(field1, field2, s3)
+    : iterations >= 3 ? edgeProject(field1, field2, s2)
+    : iterations >= 2 ? edgeProject(field1, field2, s1)
+    : edgeProject(field1, field2, s0);
+}
+
+// The point of `face` at the straight-line distance d from the edge point c, in
+// the plane of `along` (the face's direction away from the edge) and `bend`:
+// three Newton steps on the angle t from along, each kept within 1.5 radians, so
+// that the face may curve either way.
+chamferChordPoint(face, c, along, bend, d) {
+  q0 = c + along * d;
+  t1 = clamp(neg(chamferRatio(remap(face, q0), dot(remap(face.dp, q0), bend * d))), -1, 1);
+  q1 = c + (along * cos(t1) + bend * sin(t1)) * d;
+  t2 = clamp(t1 - chamferRatio(remap(face, q1), dot(remap(face.dp, q1), (bend * cos(t1) - along * sin(t1)) * d)), -1.5, 1.5);
+  q2 = c + (along * cos(t2) + bend * sin(t2)) * d;
+  t3 = clamp(t2 - chamferRatio(remap(face, q2), dot(remap(face.dp, q2), (bend * cos(t2) - along * sin(t2)) * d)), -1.5, 1.5);
+  return c + (along * cos(t3) + bend * sin(t3)) * d;
+}
+
+// Where the line from `start` along the unit `along` meets `face`: three Newton
+// steps on the distance from s0, each kept between 0 and 4·s0.
+chamferLinePoint(face, start, along, s0) {
+  q0 = start + along * s0;
+  s1 = clamp(s0 - chamferRatio(remap(face, q0), dot(remap(face.dp, q0), along)), 0, 4 * s0);
+  q1 = start + along * s1;
+  s2 = clamp(s1 - chamferRatio(remap(face, q1), dot(remap(face.dp, q1), along)), 0, 4 * s0);
+  q2 = start + along * s2;
+  s3 = clamp(s2 - chamferRatio(remap(face, q2), dot(remap(face.dp, q2), along)), 0, 4 * s0);
+  return start + along * s3;
+}
+
+// What the chamfer cuts from the sharp intersection, positive where it cuts: the
+// side of the line through `start` and `end` (in the edge's normal plane at c) that
+// holds c, kept to the chamfer's own reach of c and to face 1's side of its tangent
+// plane at c (but for face 1's own bend at the start and a quarter of the setback),
+// and nothing where the steps missed the edge (c on neither face, as exact round
+// requires) or the frame degenerates.
+chamferCut(field1, field2, c, n1, start, end) {
+  along = chamferUnit(end - start);
+  e = c - start;
+  m = chamferUnit(e - along * dot(e, along));
+  side = dot(p - start, m) - (1 - length(m)) * 1000;
+  missed = 1000 * max(max(abs(remap(field1, c)), abs(remap(field2, c))) - 0.001, 0);
+  reach = max(length(start - c), length(end - c)) * 1.05 - missed - length(p - c);
+  face1Side = abs(dot(start - c, n1)) + length(start - c) / 4 - dot(p - c, n1);
+  return min(side, reach, face1Side);
+}
+
+/// Chamfered intersection of two fields whose faces may be curved, by two
+/// setbacks: the chamfer meets face 1 `setback1` from the edge and face 2
+/// `setback2` from it, each a straight-line distance in the plane normal to the
+/// edge, and is flat. `steps` (1 to 8, a constant) Newton steps find the nearest
+/// point of the edge, as for intersectRoundExactSteps; four or five suffice where
+/// the edge is a circle. `seed` is where the steps start: p, or a point that
+/// selects one edge where the faces meet in several. Exact to the steps'
+/// tolerance on a revolved part; elsewhere the field is the distance within the
+/// edge's normal plane. Each step evaluates both fields and their gradients, so it
+/// costs several times intersectChamferSetbacks, which is exact where both faces
+/// are straight in section.
+intersectChamferSetbacksSteps(field1, field2, setback1, setback2, steps, seed) {
+  c = chamferEdgePoint(field1, field2, steps, seed);
+  n1 = chamferUnit(remap(field1.dp, c));
+  n2 = chamferUnit(remap(field2.dp, c));
+  start = chamferChordPoint(field1, c, chamferUnit(n1 * dot(n1, n2) - n2), neg(n1), setback1);
+  end = chamferChordPoint(field2, c, chamferUnit(n2 * dot(n1, n2) - n1), neg(n2), setback2);
+  return max(field1, field2, chamferCut(field1, field2, c, n1, start, end));
+}
+
+/// intersectChamferSetbacksSteps with the steps started from p.
+intersectChamferSetbacksSteps(field1, field2, setback1, setback2, steps) {
+  return intersectChamferSetbacksSteps(field1, field2, setback1, setback2, steps, p);
+}
+
+/// Union counterpart of intersectChamferSetbacksSteps, by De Morgan: the chamfer
+/// fills the groove, meeting solid 1's face `setback1` from the seam and solid
+/// 2's `setback2` from it.
+unionChamferSetbacksSteps(field1, field2, setback1, setback2, steps, seed) {
+  return neg(intersectChamferSetbacksSteps(neg(field1), neg(field2), setback1, setback2, steps, seed));
+}
+
+/// unionChamferSetbacksSteps with the steps started from p.
+unionChamferSetbacksSteps(field1, field2, setback1, setback2, steps) {
+  return unionChamferSetbacksSteps(field1, field2, setback1, setback2, steps, p);
+}
+
+/// Difference counterpart of intersectChamferSetbacksSteps: target minus tool,
+/// `targetSetback` along the target's face and `toolSetback` along the cut's.
+differenceChamferSetbacksSteps(target, tool, targetSetback, toolSetback, steps, seed) {
+  return intersectChamferSetbacksSteps(target, neg(tool), targetSetback, toolSetback, steps, seed);
+}
+
+/// differenceChamferSetbacksSteps with the steps started from p.
+differenceChamferSetbacksSteps(target, tool, targetSetback, toolSetback, steps) {
+  return differenceChamferSetbacksSteps(target, tool, targetSetback, toolSetback, steps, p);
+}
+
+/// Chamfered intersection of two fields whose faces may be curved, by a distance
+/// and an angle: the chamfer starts on face 1 `distance` from the edge (a
+/// straight-line distance in the plane normal to the edge) and runs flat at
+/// `angle` to face 1, measured from the direction back toward the edge and
+/// turned into the solid, until it meets face 2. `steps` and `seed` as for
+/// intersectChamferSetbacksSteps.
+intersectChamferAngleSteps(field1, field2, distance, angle, steps, seed) {
+  c = chamferEdgePoint(field1, field2, steps, seed);
+  n1 = chamferUnit(remap(field1.dp, c));
+  n2 = chamferUnit(remap(field2.dp, c));
+  start = chamferChordPoint(field1, c, chamferUnit(n1 * dot(n1, n2) - n2), neg(n1), distance);
+  back = chamferUnit(c - start);
+  into = chamferUnit(neg(n1) - back * dot(neg(n1), back));
+  end = chamferLinePoint(field2, start, back * cos(angle) + into * sin(angle), distance);
+  return max(field1, field2, chamferCut(field1, field2, c, n1, start, end));
+}
+
+/// intersectChamferAngleSteps with the steps started from p.
+intersectChamferAngleSteps(field1, field2, distance, angle, steps) {
+  return intersectChamferAngleSteps(field1, field2, distance, angle, steps, p);
+}
+
+/// Union counterpart of intersectChamferAngleSteps, by De Morgan: the chamfer
+/// starts on solid 1's face `distance` from the seam and fills the groove at
+/// `angle` to that face, turned away from solid 1.
+unionChamferAngleSteps(field1, field2, distance, angle, steps, seed) {
+  return neg(intersectChamferAngleSteps(neg(field1), neg(field2), distance, angle, steps, seed));
+}
+
+/// unionChamferAngleSteps with the steps started from p.
+unionChamferAngleSteps(field1, field2, distance, angle, steps) {
+  return unionChamferAngleSteps(field1, field2, distance, angle, steps, p);
+}
+
+/// Difference counterpart of intersectChamferAngleSteps: target minus tool, the
+/// chamfer starting on the target's face.
+differenceChamferAngleSteps(target, tool, distance, angle, steps, seed) {
+  return intersectChamferAngleSteps(target, neg(tool), distance, angle, steps, seed);
+}
+
+/// differenceChamferAngleSteps with the steps started from p.
+differenceChamferAngleSteps(target, tool, distance, angle, steps) {
+  return differenceChamferAngleSteps(target, tool, distance, angle, steps, p);
 }
 
 /// Rvachev R0 intersection of a list of SDFs, gated to a transition band of

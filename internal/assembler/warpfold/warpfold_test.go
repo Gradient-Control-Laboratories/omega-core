@@ -3,8 +3,8 @@ package warpfold
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler/warpfold"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/warpfold"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 type mockWarpResolver struct {

@@ -28,7 +28,7 @@ import (
 const HashSize = sha256.Size
 
 // StdLibRegistry is the process-wide embedded standard library registry,
-// initialized by gradientcontrol.com/omega/core/stdlib at init time without
+// initialized by github.com/Gradient-Control-Laboratories/omega-core/stdlib at init time without
 // performing any eager file reads or hashing.
 var StdLibRegistry *Registry
 

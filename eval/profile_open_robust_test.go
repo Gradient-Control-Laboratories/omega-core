@@ -8,7 +8,7 @@ import (
 	"math"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // Open profiles on chains beyond openCases and edgeChainCases: single edges,

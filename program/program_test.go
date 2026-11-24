@@ -5,8 +5,8 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/internal/test/assert"
 )
 
 func TestOperationIsBool(t *testing.T) {

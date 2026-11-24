@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/program"
 )
 
 func (t *transformer) transformFile(file *program.PackageFile) error {
@@ -888,7 +888,7 @@ func (t *transformer) rewriteProperties(file *program.PackageFile, fn *program.F
 			}
 		}
 	}
-	for _, op := range assign.Range.OwnOperands() {
+	for _, op := range assign.Range.Operands() {
 		if err := t.rewriteOperand(file, fn, op, env); err != nil {
 			return err
 		}

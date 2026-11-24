@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/assembler/annotation"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/annotation"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // findAnnotation returns the recorded annotation for symbol anywhere in the

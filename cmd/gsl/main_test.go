@@ -5,9 +5,9 @@ import (
 	"context"
 	"testing"
 
-	"gradientcontrol.com/omega/core/cmd/gsl/internal/cli"
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/gsl/internal/cli"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
 )
 
 func TestMainRun_Help(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // The can of examples/can.gsl: a cylinder of radius r whose height follows

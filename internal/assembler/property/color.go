@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // colorProperty is the declaration-property name that authors a shape's RGB

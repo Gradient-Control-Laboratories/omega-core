@@ -7,7 +7,7 @@ import (
 	participle "github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // defaultCaptionFade is the fade, in seconds, a caption gets when it names

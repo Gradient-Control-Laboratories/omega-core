@@ -3,9 +3,9 @@ package collect
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/assembler/source"
-	"gradientcontrol.com/omega/core/parser"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // Program collects all packages starting from the primary package

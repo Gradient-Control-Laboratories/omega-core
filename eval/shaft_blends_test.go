@@ -8,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // Shaft Modeling, Phase 6: joint blends. A joint names its blend by an entry

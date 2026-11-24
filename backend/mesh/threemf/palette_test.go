@@ -3,7 +3,7 @@ package threemf
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
 )
 
 // The colors examples/viewer/panels/body-palette.js gives bodies 1-7 and 12

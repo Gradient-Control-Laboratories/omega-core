@@ -891,7 +891,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_29_20: f
     let knots = select(0.0, spacing, knotty > 0.5);
     let gsl_tmp_1 = p - vec3<f32>(select(650.0, -650.0, knotty > 0.5), (pair - 2.5) * 160.0, 10.0);
     let gsl_tmp_3 = floor(p.y / 160.0 + 3.0);
-    let gsl_tmp_4 = sign(gsl_tmp_1) * (vec3<f32>(1.0, 0.0, 0.0) - vec3<f32>(select(0.0, -0.0, knotty > 0.5), select(select(0.0, 0.0, gsl_tmp_3 > 5.0), 0.0, gsl_tmp_3 < 0.0) * 160.0, 0.0));
+    let gsl_tmp_4 = sign(gsl_tmp_1) * (vec3<f32>(1.0, 0.0, 0.0) - vec3<f32>(select(0.0, -0.0, knotty > 0.5), select(select(0.0, 0.0, clamp(gsl_tmp_3, 0.0, 5.0) < gsl_tmp_3), 0.0, clamp(gsl_tmp_3, 0.0, 5.0) > gsl_tmp_3) * 160.0, 0.0));
     let gsl_tmp_2 = abs(gsl_tmp_1) - vec3<f32>(600.0, 70.0, 10.0);
     let gsl_tmp_6 = select(0.0, gsl_tmp_4.x, gsl_tmp_2.x + 1.0 > 0.0);
     let gsl_tmp_7 = select(0.0, gsl_tmp_4.y, gsl_tmp_2.y + 1.0 > 0.0);
@@ -899,7 +899,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_29_20: f
     let gsl_tmp_5 = 0.0 + max(gsl_tmp_2.x + 1.0, 0.0) * max(gsl_tmp_2.x + 1.0, 0.0) + max(gsl_tmp_2.y + 1.0, 0.0) * max(gsl_tmp_2.y + 1.0, 0.0) + max(gsl_tmp_2.z + 1.0, 0.0) * max(gsl_tmp_2.z + 1.0, 0.0);
     let gsl_tmp_9 = p - vec3<f32>(select(650.0, -650.0, knotty > 0.5), (pair - 2.5) * 160.0, 10.0);
     let gsl_tmp_11 = floor(p.y / 160.0 + 3.0);
-    let gsl_tmp_12 = sign(gsl_tmp_9) * (vec3<f32>(0.0, 1.0, 0.0) - vec3<f32>(select(0.0, -0.0, knotty > 0.5), select(select(0.0, 0.0, gsl_tmp_11 > 5.0), 0.0, gsl_tmp_11 < 0.0) * 160.0, 0.0));
+    let gsl_tmp_12 = sign(gsl_tmp_9) * (vec3<f32>(0.0, 1.0, 0.0) - vec3<f32>(select(0.0, -0.0, knotty > 0.5), select(select(0.0, 0.0, clamp(gsl_tmp_11, 0.0, 5.0) < gsl_tmp_11), 0.0, clamp(gsl_tmp_11, 0.0, 5.0) > gsl_tmp_11) * 160.0, 0.0));
     let gsl_tmp_10 = abs(gsl_tmp_9) - vec3<f32>(600.0, 70.0, 10.0);
     let gsl_tmp_14 = select(0.0, gsl_tmp_12.x, gsl_tmp_10.x + 1.0 > 0.0);
     let gsl_tmp_15 = select(0.0, gsl_tmp_12.y, gsl_tmp_10.y + 1.0 > 0.0);
@@ -907,7 +907,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_29_20: f
     let gsl_tmp_13 = 0.0 + max(gsl_tmp_10.x + 1.0, 0.0) * max(gsl_tmp_10.x + 1.0, 0.0) + max(gsl_tmp_10.y + 1.0, 0.0) * max(gsl_tmp_10.y + 1.0, 0.0) + max(gsl_tmp_10.z + 1.0, 0.0) * max(gsl_tmp_10.z + 1.0, 0.0);
     let gsl_tmp_17 = p - vec3<f32>(select(650.0, -650.0, knotty > 0.5), (pair - 2.5) * 160.0, 10.0);
     let gsl_tmp_19 = floor(p.y / 160.0 + 3.0);
-    let gsl_tmp_20 = sign(gsl_tmp_17) * (vec3<f32>(0.0, 0.0, 1.0) - vec3<f32>(select(0.0, -0.0, knotty > 0.5), select(select(0.0, 0.0, gsl_tmp_19 > 5.0), 0.0, gsl_tmp_19 < 0.0) * 160.0, 0.0));
+    let gsl_tmp_20 = sign(gsl_tmp_17) * (vec3<f32>(0.0, 0.0, 1.0) - vec3<f32>(select(0.0, -0.0, knotty > 0.5), select(select(0.0, 0.0, clamp(gsl_tmp_19, 0.0, 5.0) < gsl_tmp_19), 0.0, clamp(gsl_tmp_19, 0.0, 5.0) > gsl_tmp_19) * 160.0, 0.0));
     let gsl_tmp_18 = abs(gsl_tmp_17) - vec3<f32>(600.0, 70.0, 10.0);
     let gsl_tmp_22 = select(0.0, gsl_tmp_20.x, gsl_tmp_18.x + 1.0 > 0.0);
     let gsl_tmp_23 = select(0.0, gsl_tmp_20.y, gsl_tmp_18.y + 1.0 > 0.0);
@@ -939,7 +939,7 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_29
     let knots = select(0.0, spacing, knotty > 0.5);
     let gsl_tmp_1 = p - vec3<f32>(select(650.0, -650.0, knotty > 0.5), (pair - 2.5) * 160.0, 10.0);
     let gsl_tmp_3 = floor(p.y / 160.0 + 3.0);
-    let gsl_tmp_4 = sign(gsl_tmp_1) * (vec3<f32>(1.0, 0.0, 0.0) - vec3<f32>(select(0.0, -0.0, knotty > 0.5), select(select(0.0, 0.0, gsl_tmp_3 > 5.0), 0.0, gsl_tmp_3 < 0.0) * 160.0, 0.0));
+    let gsl_tmp_4 = sign(gsl_tmp_1) * (vec3<f32>(1.0, 0.0, 0.0) - vec3<f32>(select(0.0, -0.0, knotty > 0.5), select(select(0.0, 0.0, clamp(gsl_tmp_3, 0.0, 5.0) < gsl_tmp_3), 0.0, clamp(gsl_tmp_3, 0.0, 5.0) > gsl_tmp_3) * 160.0, 0.0));
     let gsl_tmp_2 = abs(gsl_tmp_1) - vec3<f32>(600.0, 70.0, 10.0);
     let gsl_tmp_6 = select(0.0, gsl_tmp_4.x, gsl_tmp_2.x + 1.0 > 0.0);
     let gsl_tmp_7 = select(0.0, gsl_tmp_4.y, gsl_tmp_2.y + 1.0 > 0.0);
@@ -947,7 +947,7 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_29
     let gsl_tmp_5 = 0.0 + max(gsl_tmp_2.x + 1.0, 0.0) * max(gsl_tmp_2.x + 1.0, 0.0) + max(gsl_tmp_2.y + 1.0, 0.0) * max(gsl_tmp_2.y + 1.0, 0.0) + max(gsl_tmp_2.z + 1.0, 0.0) * max(gsl_tmp_2.z + 1.0, 0.0);
     let gsl_tmp_9 = p - vec3<f32>(select(650.0, -650.0, knotty > 0.5), (pair - 2.5) * 160.0, 10.0);
     let gsl_tmp_11 = floor(p.y / 160.0 + 3.0);
-    let gsl_tmp_12 = sign(gsl_tmp_9) * (vec3<f32>(0.0, 1.0, 0.0) - vec3<f32>(select(0.0, -0.0, knotty > 0.5), select(select(0.0, 0.0, gsl_tmp_11 > 5.0), 0.0, gsl_tmp_11 < 0.0) * 160.0, 0.0));
+    let gsl_tmp_12 = sign(gsl_tmp_9) * (vec3<f32>(0.0, 1.0, 0.0) - vec3<f32>(select(0.0, -0.0, knotty > 0.5), select(select(0.0, 0.0, clamp(gsl_tmp_11, 0.0, 5.0) < gsl_tmp_11), 0.0, clamp(gsl_tmp_11, 0.0, 5.0) > gsl_tmp_11) * 160.0, 0.0));
     let gsl_tmp_10 = abs(gsl_tmp_9) - vec3<f32>(600.0, 70.0, 10.0);
     let gsl_tmp_14 = select(0.0, gsl_tmp_12.x, gsl_tmp_10.x + 1.0 > 0.0);
     let gsl_tmp_15 = select(0.0, gsl_tmp_12.y, gsl_tmp_10.y + 1.0 > 0.0);
@@ -955,7 +955,7 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_29
     let gsl_tmp_13 = 0.0 + max(gsl_tmp_10.x + 1.0, 0.0) * max(gsl_tmp_10.x + 1.0, 0.0) + max(gsl_tmp_10.y + 1.0, 0.0) * max(gsl_tmp_10.y + 1.0, 0.0) + max(gsl_tmp_10.z + 1.0, 0.0) * max(gsl_tmp_10.z + 1.0, 0.0);
     let gsl_tmp_17 = p - vec3<f32>(select(650.0, -650.0, knotty > 0.5), (pair - 2.5) * 160.0, 10.0);
     let gsl_tmp_19 = floor(p.y / 160.0 + 3.0);
-    let gsl_tmp_20 = sign(gsl_tmp_17) * (vec3<f32>(0.0, 0.0, 1.0) - vec3<f32>(select(0.0, -0.0, knotty > 0.5), select(select(0.0, 0.0, gsl_tmp_19 > 5.0), 0.0, gsl_tmp_19 < 0.0) * 160.0, 0.0));
+    let gsl_tmp_20 = sign(gsl_tmp_17) * (vec3<f32>(0.0, 0.0, 1.0) - vec3<f32>(select(0.0, -0.0, knotty > 0.5), select(select(0.0, 0.0, clamp(gsl_tmp_19, 0.0, 5.0) < gsl_tmp_19), 0.0, clamp(gsl_tmp_19, 0.0, 5.0) > gsl_tmp_19) * 160.0, 0.0));
     let gsl_tmp_18 = abs(gsl_tmp_17) - vec3<f32>(600.0, 70.0, 10.0);
     let gsl_tmp_22 = select(0.0, gsl_tmp_20.x, gsl_tmp_18.x + 1.0 > 0.0);
     let gsl_tmp_23 = select(0.0, gsl_tmp_20.y, gsl_tmp_18.y + 1.0 > 0.0);

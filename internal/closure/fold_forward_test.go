@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	internalsource "gradientcontrol.com/omega/core/internal/source"
-	"gradientcontrol.com/omega/core/program"
+	internalsource "github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // A list of functions FORWARDED: a function that does not fold its parameter

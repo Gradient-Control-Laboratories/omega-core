@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/eval"
 )
 
 // The operators' thumbnails: each operator drawn over one stand-in surface, so

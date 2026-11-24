@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/eval"
-	"gradientcontrol.com/omega/core/eval/joints"
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/eval/joints"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // prover proves joint claims with eval, as the gsl CLI does.

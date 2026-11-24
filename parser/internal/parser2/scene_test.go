@@ -3,7 +3,7 @@ package parser2_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/parser/internal/parser2"
+	"github.com/Gradient-Control-Laboratories/omega-core/parser/internal/parser2"
 )
 
 func TestParseSceneDirective(t *testing.T) {

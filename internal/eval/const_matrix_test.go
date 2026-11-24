@@ -4,8 +4,8 @@ import (
 	"math"
 	"testing"
 
-	_ "gradientcontrol.com/omega/core/parser"
-	"gradientcontrol.com/omega/core/program"
+	_ "github.com/Gradient-Control-Laboratories/omega-core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func qfc(prefix, name string, args ...*program.Operand) *program.Operand {

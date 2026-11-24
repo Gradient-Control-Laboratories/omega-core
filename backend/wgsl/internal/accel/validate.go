@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	parser "gradientcontrol.com/omega/core/parser"
+	parser "github.com/Gradient-Control-Laboratories/omega-core/parser"
 )
 
 // SiblingGSLPath returns the path to the companion .gsl file for a given sidecar YAML file.

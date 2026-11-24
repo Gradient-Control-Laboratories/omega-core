@@ -7,8 +7,8 @@ import (
 	"sort"
 	"sync"
 
-	"gradientcontrol.com/omega/core/eval"
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // The colours a material paints, for the Bodies panel's colour chip: a body

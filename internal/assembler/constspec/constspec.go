@@ -29,8 +29,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/program"
 )
 
 // Transform specializes every call in prog that passes a scalar constant for a
@@ -132,7 +132,7 @@ func (s *specializer) rewritePackage(pkg *program.Package, pkgPath string) {
 						s.operand(prop.Expression, pkgPath)
 					}
 				}
-				for _, op := range a.Range.OwnOperands() {
+				for _, op := range a.Range.Operands() {
 					s.operand(op, pkgPath)
 				}
 			}

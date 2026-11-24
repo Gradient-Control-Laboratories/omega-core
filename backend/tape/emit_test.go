@@ -3,8 +3,8 @@ package tape_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/backend/tape"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/tape"
 )
 
 func TestCompile_Sphere(t *testing.T) {

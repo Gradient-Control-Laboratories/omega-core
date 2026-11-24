@@ -8,10 +8,10 @@ import (
 	"io"
 	"strings"
 
-	"gradientcontrol.com/omega/core/assembler/variation"
-	"gradientcontrol.com/omega/core/backend/mesh/glb"
-	"gradientcontrol.com/omega/core/backend/mesh/threemf"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/variation"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/mesh/glb"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/mesh/threemf"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // WithBodies limits MeshBodies to the given 1-based top-level returns, as the

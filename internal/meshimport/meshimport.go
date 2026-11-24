@@ -21,10 +21,10 @@ import (
 	"strings"
 	"sync"
 
-	"gradientcontrol.com/omega/core/assembler/meshslots"
-	"gradientcontrol.com/omega/core/internal/fidget"
-	"gradientcontrol.com/omega/core/program"
-	"gradientcontrol.com/omega/core/program/meshasset"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/meshslots"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/meshasset"
 )
 
 // Finder returns the bytes of filename as the package at pkgPath imports it.

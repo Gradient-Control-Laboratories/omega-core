@@ -3,7 +3,7 @@ package property
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // secondInf is the sentinel "no second-closest surface" distance: large and

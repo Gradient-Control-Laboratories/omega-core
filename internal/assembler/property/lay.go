@@ -1,6 +1,6 @@
 package property
 
-import "gradientcontrol.com/omega/core/program"
+import "github.com/Gradient-Control-Laboratories/omega-core/program"
 
 // materialLayRow is the material record's row for a lay: the direction grooves
 // too fine to see run in, and the anisotropy they give the highlight.

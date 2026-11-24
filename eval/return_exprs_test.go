@@ -3,8 +3,8 @@ package eval_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/eval"
-	"gradientcontrol.com/omega/core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
 )
 
 // A return's expressions are its own text, whatever leads the statement: a comment above it, the @scene directive

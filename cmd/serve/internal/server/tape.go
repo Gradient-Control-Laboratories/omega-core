@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"gradientcontrol.com/omega/core/cmd/serve/internal/compiler"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/serve/internal/compiler"
 )
 
 // handleTape is POST /api/tape: the viewer's Fidget draw device asks for its document as an evaluation tape (a

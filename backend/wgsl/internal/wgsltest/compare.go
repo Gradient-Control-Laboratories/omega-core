@@ -10,7 +10,7 @@ import (
 	"testing"
 	"unicode"
 
-	"gradientcontrol.com/omega/core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
 )
 
 // AssertWGSLEqual verifies that actualWGSL matches the golden file at goldenPath.

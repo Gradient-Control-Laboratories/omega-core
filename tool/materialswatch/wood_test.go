@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"testing"
 
-	gsllibs "gradientcontrol.com/omega/core/stdlib"
+	gsllibs "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
 )
 
 // Every wood species, declared as species(axisOrigin, axisDir) at its default

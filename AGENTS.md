@@ -46,7 +46,7 @@ If the user approves the installation or update of any Go package:
 
 # Separation of Concerns
 
-`omega-core` (`module gradientcontrol.com/omega/core`) is the standalone GSL compiler, standard
+`omega-core` (`module github.com/Gradient-Control-Laboratories/omega-core`) is the standalone GSL compiler, standard
 library, spatial/interval evaluation, and code generation SDK:
 - Must remain completely decoupled from `stirigma`, gRPC/dispatcher buses, cloud SDKs, and `omega`
   application services.

@@ -3,7 +3,7 @@ package annotation_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/parser/internal/annotation"
+	"github.com/Gradient-Control-Laboratories/omega-core/parser/internal/annotation"
 )
 
 func TestSupportedAnnotations(t *testing.T) {

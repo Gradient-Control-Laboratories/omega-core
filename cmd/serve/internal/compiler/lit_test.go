@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/cmd/serve/internal/compiler"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/serve/internal/compiler"
 )
 
 // litCamera looks along +Y at the origin from 50 units away, with the lens the tests' frames share.

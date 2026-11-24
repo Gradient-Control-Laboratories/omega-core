@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"gradientcontrol.com/omega/core/tool/run-go-tests/internal/runner"
+	"github.com/Gradient-Control-Laboratories/omega-core/tool/run-go-tests/internal/runner"
 )
 
 func TestHistoryRoundTripAndSummaryFormatting(t *testing.T) {

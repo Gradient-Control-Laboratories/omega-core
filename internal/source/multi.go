@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"gradientcontrol.com/omega/core/assembler/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/source"
 )
 
 // MultiSourceManager delegates package source and asset lookups across an ordered list of Managers.

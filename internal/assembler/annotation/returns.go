@@ -3,7 +3,7 @@ package annotation
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // ValidateReturns holds an annotated zero-argument function to the pair it

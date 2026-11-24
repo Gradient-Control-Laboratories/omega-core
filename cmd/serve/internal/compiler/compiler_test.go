@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"gradientcontrol.com/omega/core/cmd/serve/internal/compiler"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/serve/internal/compiler"
 )
 
 func TestMesh_BinarySTLAndProgress(t *testing.T) {

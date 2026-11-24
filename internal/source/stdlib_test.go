@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/source"
 )
 
 func TestStdLibManagerSources(t *testing.T) {

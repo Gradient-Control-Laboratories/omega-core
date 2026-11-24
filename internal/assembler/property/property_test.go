@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/assembler/property"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/property"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // mockValue wraps a string representation for testing the abstract engine.

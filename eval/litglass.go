@@ -37,8 +37,8 @@ import (
 	"fmt"
 	"math"
 
-	"gradientcontrol.com/omega/core/internal/fidget"
-	"gradientcontrol.com/omega/core/internal/fidget/convert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget/convert"
 )
 
 // The glass knobs, from SHADING_DEFAULTS in common/web/gsl-shading.js

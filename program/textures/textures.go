@@ -3,7 +3,7 @@ package textures
 import (
 	"sort"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // Extract scans all reachable statements and expressions across prog (Primary and

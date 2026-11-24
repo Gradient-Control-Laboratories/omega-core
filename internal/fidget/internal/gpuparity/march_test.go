@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/eval"
 )
 
 // The eye every ray of the march test leaves from, and the pixel scale it

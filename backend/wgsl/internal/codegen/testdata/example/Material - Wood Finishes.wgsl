@@ -881,7 +881,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_29_20: f
     let look = vec3<f32>(0.0, age, weather);
     let gsl_tmp_17 = floor(p.x / 60.0 + 6.5);
     let gsl_tmp_18 = floor((140.0 - p.y) / 70.0);
-    let gsl_tmp_19 = vec2<f32>(select(select(0.0, 0.0, gsl_tmp_17 > 12.0), 0.0, gsl_tmp_17 < 0.0) * 60.0, -select(select(0.0, 0.0, gsl_tmp_18 > 3.0), 0.0, gsl_tmp_18 < 0.0) * 70.0);
+    let gsl_tmp_19 = vec2<f32>(select(select(0.0, 0.0, clamp(gsl_tmp_17, 0.0, 12.0) < gsl_tmp_17), 0.0, clamp(gsl_tmp_17, 0.0, 12.0) > gsl_tmp_17) * 60.0, -select(select(0.0, 0.0, clamp(gsl_tmp_18, 0.0, 3.0) < gsl_tmp_18), 0.0, clamp(gsl_tmp_18, 0.0, 3.0) > gsl_tmp_18) * 70.0);
     let gsl_tmp_10 = centre.x - 20.0 - p.x;
     let gsl_tmp_11 = centre.y - 20.0 - p.y;
     let gsl_tmp_23 = select(-0.0, select(gsl_tmp_19.y - 0.0, gsl_tmp_19.x - 1.0, gsl_tmp_10 > gsl_tmp_11), max(gsl_tmp_10, gsl_tmp_11) > -p.z);
@@ -900,7 +900,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_29_20: f
     let gsl_tmp_7 = max(max(gsl_tmp_5, gsl_tmp_6), p.z - 40.0);
     let gsl_tmp_36 = floor(p.x / 60.0 + 6.5);
     let gsl_tmp_37 = floor((140.0 - p.y) / 70.0);
-    let gsl_tmp_38 = vec2<f32>(select(select(0.0, 0.0, gsl_tmp_36 > 12.0), 0.0, gsl_tmp_36 < 0.0) * 60.0, -select(select(0.0, 0.0, gsl_tmp_37 > 3.0), 0.0, gsl_tmp_37 < 0.0) * 70.0);
+    let gsl_tmp_38 = vec2<f32>(select(select(0.0, 0.0, clamp(gsl_tmp_36, 0.0, 12.0) < gsl_tmp_36), 0.0, clamp(gsl_tmp_36, 0.0, 12.0) > gsl_tmp_36) * 60.0, -select(select(0.0, 0.0, clamp(gsl_tmp_37, 0.0, 3.0) < gsl_tmp_37), 0.0, clamp(gsl_tmp_37, 0.0, 3.0) > gsl_tmp_37) * 70.0);
     let gsl_tmp_29 = centre.x - 20.0 - p.x;
     let gsl_tmp_30 = centre.y - 20.0 - p.y;
     let gsl_tmp_42 = select(-0.0, select(gsl_tmp_38.y - 1.0, gsl_tmp_38.x - 0.0, gsl_tmp_29 > gsl_tmp_30), max(gsl_tmp_29, gsl_tmp_30) > -p.z);
@@ -919,7 +919,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_29_20: f
     let gsl_tmp_26 = max(max(gsl_tmp_24, gsl_tmp_25), p.z - 40.0);
     let gsl_tmp_55 = floor(p.x / 60.0 + 6.5);
     let gsl_tmp_56 = floor((140.0 - p.y) / 70.0);
-    let gsl_tmp_57 = vec2<f32>(select(select(0.0, 0.0, gsl_tmp_55 > 12.0), 0.0, gsl_tmp_55 < 0.0) * 60.0, -select(select(0.0, 0.0, gsl_tmp_56 > 3.0), 0.0, gsl_tmp_56 < 0.0) * 70.0);
+    let gsl_tmp_57 = vec2<f32>(select(select(0.0, 0.0, clamp(gsl_tmp_55, 0.0, 12.0) < gsl_tmp_55), 0.0, clamp(gsl_tmp_55, 0.0, 12.0) > gsl_tmp_55) * 60.0, -select(select(0.0, 0.0, clamp(gsl_tmp_56, 0.0, 3.0) < gsl_tmp_56), 0.0, clamp(gsl_tmp_56, 0.0, 3.0) > gsl_tmp_56) * 70.0);
     let gsl_tmp_48 = centre.x - 20.0 - p.x;
     let gsl_tmp_49 = centre.y - 20.0 - p.y;
     let gsl_tmp_61 = select(-1.0, select(gsl_tmp_57.y - 0.0, gsl_tmp_57.x - 0.0, gsl_tmp_48 > gsl_tmp_49), max(gsl_tmp_48, gsl_tmp_49) > -p.z);
@@ -960,7 +960,7 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_29
     let look = vec3<f32>(0.0, age, weather);
     let gsl_tmp_17 = floor(p.x / 60.0 + 6.5);
     let gsl_tmp_18 = floor((140.0 - p.y) / 70.0);
-    let gsl_tmp_19 = vec2<f32>(select(select(0.0, 0.0, gsl_tmp_17 > 12.0), 0.0, gsl_tmp_17 < 0.0) * 60.0, -select(select(0.0, 0.0, gsl_tmp_18 > 3.0), 0.0, gsl_tmp_18 < 0.0) * 70.0);
+    let gsl_tmp_19 = vec2<f32>(select(select(0.0, 0.0, clamp(gsl_tmp_17, 0.0, 12.0) < gsl_tmp_17), 0.0, clamp(gsl_tmp_17, 0.0, 12.0) > gsl_tmp_17) * 60.0, -select(select(0.0, 0.0, clamp(gsl_tmp_18, 0.0, 3.0) < gsl_tmp_18), 0.0, clamp(gsl_tmp_18, 0.0, 3.0) > gsl_tmp_18) * 70.0);
     let gsl_tmp_10 = centre.x - 20.0 - p.x;
     let gsl_tmp_11 = centre.y - 20.0 - p.y;
     let gsl_tmp_23 = select(-0.0, select(gsl_tmp_19.y - 0.0, gsl_tmp_19.x - 1.0, gsl_tmp_10 > gsl_tmp_11), max(gsl_tmp_10, gsl_tmp_11) > -p.z);
@@ -979,7 +979,7 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_29
     let gsl_tmp_7 = max(max(gsl_tmp_5, gsl_tmp_6), p.z - 40.0);
     let gsl_tmp_36 = floor(p.x / 60.0 + 6.5);
     let gsl_tmp_37 = floor((140.0 - p.y) / 70.0);
-    let gsl_tmp_38 = vec2<f32>(select(select(0.0, 0.0, gsl_tmp_36 > 12.0), 0.0, gsl_tmp_36 < 0.0) * 60.0, -select(select(0.0, 0.0, gsl_tmp_37 > 3.0), 0.0, gsl_tmp_37 < 0.0) * 70.0);
+    let gsl_tmp_38 = vec2<f32>(select(select(0.0, 0.0, clamp(gsl_tmp_36, 0.0, 12.0) < gsl_tmp_36), 0.0, clamp(gsl_tmp_36, 0.0, 12.0) > gsl_tmp_36) * 60.0, -select(select(0.0, 0.0, clamp(gsl_tmp_37, 0.0, 3.0) < gsl_tmp_37), 0.0, clamp(gsl_tmp_37, 0.0, 3.0) > gsl_tmp_37) * 70.0);
     let gsl_tmp_29 = centre.x - 20.0 - p.x;
     let gsl_tmp_30 = centre.y - 20.0 - p.y;
     let gsl_tmp_42 = select(-0.0, select(gsl_tmp_38.y - 1.0, gsl_tmp_38.x - 0.0, gsl_tmp_29 > gsl_tmp_30), max(gsl_tmp_29, gsl_tmp_30) > -p.z);
@@ -998,7 +998,7 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_29
     let gsl_tmp_26 = max(max(gsl_tmp_24, gsl_tmp_25), p.z - 40.0);
     let gsl_tmp_55 = floor(p.x / 60.0 + 6.5);
     let gsl_tmp_56 = floor((140.0 - p.y) / 70.0);
-    let gsl_tmp_57 = vec2<f32>(select(select(0.0, 0.0, gsl_tmp_55 > 12.0), 0.0, gsl_tmp_55 < 0.0) * 60.0, -select(select(0.0, 0.0, gsl_tmp_56 > 3.0), 0.0, gsl_tmp_56 < 0.0) * 70.0);
+    let gsl_tmp_57 = vec2<f32>(select(select(0.0, 0.0, clamp(gsl_tmp_55, 0.0, 12.0) < gsl_tmp_55), 0.0, clamp(gsl_tmp_55, 0.0, 12.0) > gsl_tmp_55) * 60.0, -select(select(0.0, 0.0, clamp(gsl_tmp_56, 0.0, 3.0) < gsl_tmp_56), 0.0, clamp(gsl_tmp_56, 0.0, 3.0) > gsl_tmp_56) * 70.0);
     let gsl_tmp_48 = centre.x - 20.0 - p.x;
     let gsl_tmp_49 = centre.y - 20.0 - p.y;
     let gsl_tmp_61 = select(-1.0, select(gsl_tmp_57.y - 0.0, gsl_tmp_57.x - 0.0, gsl_tmp_48 > gsl_tmp_49), max(gsl_tmp_48, gsl_tmp_49) > -p.z);

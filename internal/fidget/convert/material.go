@@ -1,8 +1,8 @@
 package convert
 
 import (
-	"gradientcontrol.com/omega/core/internal/build"
-	"gradientcontrol.com/omega/core/internal/fidget"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/build"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget"
 )
 
 // Ensure the color wrapper also satisfies the material hook. It rides on the

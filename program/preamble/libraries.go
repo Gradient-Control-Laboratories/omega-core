@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	gsllibs "gradientcontrol.com/omega/core/stdlib"
+	gsllibs "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
 )
 
 // LibrariesDescriptiveText scans every embedded GSL library, extracts each

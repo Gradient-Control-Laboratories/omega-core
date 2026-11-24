@@ -6,7 +6,7 @@ import (
 	"math"
 	"testing"
 
-	"gradientcontrol.com/omega/core/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/eval"
 )
 
 func TestEvalSplineMatrixArgument(t *testing.T) {

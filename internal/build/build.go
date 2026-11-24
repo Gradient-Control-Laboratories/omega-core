@@ -3,10 +3,10 @@ package build
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/internal/eval"
-	"gradientcontrol.com/omega/core/internal/scope"
-	"gradientcontrol.com/omega/core/internal/types"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/types"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 	errlog "log"
 )
 

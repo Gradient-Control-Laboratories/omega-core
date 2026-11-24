@@ -3,7 +3,7 @@ package inline_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func isCallTo(name string) func(*program.Operand) bool {

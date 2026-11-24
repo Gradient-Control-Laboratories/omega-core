@@ -3,7 +3,7 @@ package build
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func (b *Builder) visitNot(op *program.Operand, mExpr *program.Expression, expressions []Expression, operands []*program.Operand) (Expression, error) {

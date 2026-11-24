@@ -5,12 +5,12 @@ import (
 	"math"
 	"slices"
 
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
+	"github.com/Gradient-Control-Laboratories/omega-core/parser/internal/annotation"
+	"github.com/Gradient-Control-Laboratories/omega-core/parser/internal/identifier2"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
-	"gradientcontrol.com/omega/core/internal/scope"
-	"gradientcontrol.com/omega/core/parser/internal/annotation"
-	"gradientcontrol.com/omega/core/parser/internal/identifier2"
-	"gradientcontrol.com/omega/core/program"
 )
 
 func buildFunction(parentScope scope.BuilderScope, decl *NamedFunction) error {

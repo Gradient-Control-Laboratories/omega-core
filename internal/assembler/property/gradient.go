@@ -3,7 +3,7 @@ package property
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // GradientNote reports a return whose spatial gradient could not be lowered:
