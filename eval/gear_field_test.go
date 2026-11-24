@@ -7,7 +7,7 @@ import (
 	"math"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // Shaft Modeling, Phase 20: the gear's drawn field is its profile's. Phase 19
