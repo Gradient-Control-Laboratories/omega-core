@@ -2137,8 +2137,16 @@ type PackageFile struct {
 	// analytic gradients; a nil entry is a return the derivative could not go
 	// through.
 	GradientReturns []*Operand `protobuf:"bytes,13,rep,name=gradientReturns,proto3" json:"gradientReturns,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// Lowered displaced distance of each return, parallel to returns on the
+	// primary package's last file: the field a renderer marches when a shape
+	// inside the return sets a material with a height, each such shape moved
+	// by its own height before the booleans that use it. A nil entry is a
+	// return with no such shape, which the renderer moves by its material's
+	// height as a whole, as before. Render only: meshing and export keep the
+	// returns.
+	DisplacedReturns []*Operand `protobuf:"bytes,14,rep,name=displacedReturns,proto3" json:"displacedReturns,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *PackageFile) Reset() {
@@ -2258,6 +2266,13 @@ func (x *PackageFile) GetAnnotations() []*Annotation {
 func (x *PackageFile) GetGradientReturns() []*Operand {
 	if x != nil {
 		return x.GradientReturns
+	}
+	return nil
+}
+
+func (x *PackageFile) GetDisplacedReturns() []*Operand {
+	if x != nil {
+		return x.DisplacedReturns
 	}
 	return nil
 }
@@ -2747,7 +2762,7 @@ const file_program_proto_rawDesc = "" +
 	"\x05files\x18\x04 \x03(\v2\x14.program.PackageFileR\x05files\x12$\n" +
 	"\x05scene\x18\x05 \x01(\v2\x0e.program.SceneR\x05scene\x12,\n" +
 	"\bcaptions\x18\x06 \x03(\v2\x10.program.CaptionR\bcaptions\x12-\n" +
-	"\bduration\x18\a \x01(\v2\x11.program.DurationR\bduration\"\xfc\x04\n" +
+	"\bduration\x18\a \x01(\v2\x11.program.DurationR\bduration\"\xba\x05\n" +
 	"\vPackageFile\x12\x12\n" +
 	"\x04path\x18\x01 \x01(\tR\x04path\x12\x16\n" +
 	"\x06source\x18\x02 \x01(\tR\x06source\x12)\n" +
@@ -2762,7 +2777,8 @@ const file_program_proto_rawDesc = "" +
 	" \x03(\v2\x10.program.OperandR\fcolorReturns\x12:\n" +
 	"\x0fmaterialReturns\x18\v \x03(\v2\x10.program.OperandR\x0fmaterialReturns\x125\n" +
 	"\vannotations\x18\f \x03(\v2\x13.program.AnnotationR\vannotations\x12:\n" +
-	"\x0fgradientReturns\x18\r \x03(\v2\x10.program.OperandR\x0fgradientReturns\"\xb7\x01\n" +
+	"\x0fgradientReturns\x18\r \x03(\v2\x10.program.OperandR\x0fgradientReturns\x12<\n" +
+	"\x10displacedReturns\x18\x0e \x03(\v2\x10.program.OperandR\x10displacedReturns\"\xb7\x01\n" +
 	"\vMeshSdfSlot\x12\x12\n" +
 	"\x04slot\x18\x01 \x01(\x05R\x04slot\x12\x1e\n" +
 	"\n" +
@@ -2973,19 +2989,20 @@ var file_program_proto_depIdxs = []int32{
 	3,  // 64: program.PackageFile.materialReturns:type_name -> program.Operand
 	13, // 65: program.PackageFile.annotations:type_name -> program.Annotation
 	3,  // 66: program.PackageFile.gradientReturns:type_name -> program.Operand
-	1,  // 67: program.MeshSdfSlot.kind:type_name -> program.MeshSdfKind
-	25, // 68: program.Program.primary:type_name -> program.Package
-	25, // 69: program.Program.dependencies:type_name -> program.Package
-	27, // 70: program.Program.meshSdfSlots:type_name -> program.MeshSdfSlot
-	28, // 71: program.Program.globalTextures:type_name -> program.GlobalTextures
-	2,  // 72: program.Type.kind:type_name -> program.TypeKind
-	30, // 73: program.Type.elemType:type_name -> program.Type
-	3,  // 74: program.Type.constValue:type_name -> program.Operand
-	75, // [75:75] is the sub-list for method output_type
-	75, // [75:75] is the sub-list for method input_type
-	75, // [75:75] is the sub-list for extension type_name
-	75, // [75:75] is the sub-list for extension extendee
-	0,  // [0:75] is the sub-list for field type_name
+	3,  // 67: program.PackageFile.displacedReturns:type_name -> program.Operand
+	1,  // 68: program.MeshSdfSlot.kind:type_name -> program.MeshSdfKind
+	25, // 69: program.Program.primary:type_name -> program.Package
+	25, // 70: program.Program.dependencies:type_name -> program.Package
+	27, // 71: program.Program.meshSdfSlots:type_name -> program.MeshSdfSlot
+	28, // 72: program.Program.globalTextures:type_name -> program.GlobalTextures
+	2,  // 73: program.Type.kind:type_name -> program.TypeKind
+	30, // 74: program.Type.elemType:type_name -> program.Type
+	3,  // 75: program.Type.constValue:type_name -> program.Operand
+	76, // [76:76] is the sub-list for method output_type
+	76, // [76:76] is the sub-list for method input_type
+	76, // [76:76] is the sub-list for extension type_name
+	76, // [76:76] is the sub-list for extension extendee
+	0,  // [0:76] is the sub-list for field type_name
 }
 
 func init() { file_program_proto_init() }

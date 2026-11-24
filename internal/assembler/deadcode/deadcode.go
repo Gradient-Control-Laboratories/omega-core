@@ -150,6 +150,7 @@ func removeFile(fileScope *scope.PkgFileScope, returnExprs []*program.Operand, o
 		roots = append(roots, fileScope.File.ColorReturns...)
 		roots = append(roots, fileScope.File.MaterialReturns...)
 		roots = append(roots, fileScope.File.GradientReturns...)
+		roots = append(roots, fileScope.File.DisplacedReturns...)
 		outOfScope, err = linker.ResolveExpr(roots...)
 	} else {
 		outOfScope, err = linker.ResolveNamed(outOfScope...)
@@ -184,18 +185,19 @@ func removeFile(fileScope *scope.PkgFileScope, returnExprs []*program.Operand, o
 	newFnTypes = removeEmptyFnTypes(newFnTypes)
 
 	newFile := &program.PackageFile{
-		Path:            fileScope.File.Path,
-		Source:          fileScope.File.Source,
-		Imports:         fileScope.File.Imports,
-		Assignments:     linker.ResolvedAssignments(),
-		FnTypes:         newFnTypes,
-		Returns:         returnExprs,
-		MeshImports:     fileScope.File.MeshImports,
-		StepImports:     fileScope.File.StepImports,
-		WarpImports:     fileScope.File.WarpImports,
-		ColorReturns:    fileScope.File.ColorReturns,
-		MaterialReturns: fileScope.File.MaterialReturns,
-		GradientReturns: fileScope.File.GradientReturns,
+		Path:             fileScope.File.Path,
+		Source:           fileScope.File.Source,
+		Imports:          fileScope.File.Imports,
+		Assignments:      linker.ResolvedAssignments(),
+		FnTypes:          newFnTypes,
+		Returns:          returnExprs,
+		MeshImports:      fileScope.File.MeshImports,
+		StepImports:      fileScope.File.StepImports,
+		WarpImports:      fileScope.File.WarpImports,
+		ColorReturns:     fileScope.File.ColorReturns,
+		MaterialReturns:  fileScope.File.MaterialReturns,
+		GradientReturns:  fileScope.File.GradientReturns,
+		DisplacedReturns: fileScope.File.DisplacedReturns,
 		// Annotations describe the source, not the reachable code, so they
 		// survive deadcoding: a material browser wants every library material,
 		// not only the ones the document being assembled happens to use.

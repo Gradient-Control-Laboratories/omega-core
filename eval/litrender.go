@@ -832,7 +832,14 @@ type litPixelSize struct {
 // references p, a cost shortcut that also drops a constant non-zero height
 // (material.withDisplacement(m, 0.5) inflates nothing there); here the only
 // skip is a height known to be the constant zero, which is every preset.
+//
+// A shape whose material comes from a shape inside it, displaced before the
+// booleans that use it (convert.ColorShape.InTree), is marched on that field
+// instead: its heights are already in it, layer by layer.
 func litDisplaced(s convert.ColorShape) fidget.TreeIndex {
+	if s.HasInTree {
+		return s.InTree
+	}
 	if !s.HasMaterial || !s.Displaced {
 		return s.Tree
 	}

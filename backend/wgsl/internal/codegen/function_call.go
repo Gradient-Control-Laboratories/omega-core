@@ -341,6 +341,17 @@ func (d *Delegate) BuildBuiltinCall(
 		return wgsl.NewOpaqueExpr(op, wgsl.TypeF32, build.PrecedenceHighest, "gsl_dispDrawn", "gsl_dispDrawn"), nil
 	}
 
+	// displacementScale() -> f32: the scale the march is moving surfaces by, a
+	// private var the codegen declares 0 (dispScaleDeclWGSL) and
+	// gsl_sdShapeDisplaced sets before evaluating the displaced returns. It
+	// keeps that value through the shading that follows the march, so a
+	// layer's colour switch sees the scale its surface was drawn with; meshing,
+	// bounds and probes never set it.
+	if builtin.Name == program.DisplacementScale {
+		d.dispScaleUsed = true
+		return wgsl.NewOpaqueExpr(op, wgsl.TypeF32, build.PrecedenceHighest, dispScaleVar, dispScaleVar), nil
+	}
+
 	// The worley* builtins: the 27-neighbour scan, emitted as a helper with a
 	// real WGSL `for` loop. The GSL build layer unrolls reduce at compile time,
 	// so written as a library fold this became 27 inlined copies at every call

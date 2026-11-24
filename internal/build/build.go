@@ -176,6 +176,30 @@ func (b *Builder) build(prog *program.Program, progScope *scope.ProgScope) error
 		CheckScope(b, lastFileScope)
 	}
 
+	// Hand the displaced distances to delegates that march displaced surfaces,
+	// before the material returns: a return displaced inside its booleans is
+	// not also moved by its material's height.
+	if db, ok := b.delegate.(DisplacedReturnsBuilder); ok {
+		displacedOps := prog.DisplacedReturns()
+		if len(displacedOps) > 0 {
+			displacedExprs := make([]Expression, len(displacedOps))
+			for i, op := range displacedOps {
+				if op != nil {
+					expr, err := program.VisitOperand(op, b)
+					if err != nil {
+						return ErrLoc(lastFileScope, op.Start, err)
+					}
+					displacedExprs[i] = expr
+				}
+				CheckScope(b, lastFileScope)
+			}
+			if err := db.BuildPackageDisplacedReturns(displacedExprs); err != nil {
+				return err
+			}
+			CheckScope(b, lastFileScope)
+		}
+	}
+
 	// Hand pre-lowered color returns to delegates that render color.
 	// Optional: delegates that don't implement ColorReturnsBuilder render no color.
 	// Done before BuildPackageReturns so the delegate can weave the color function

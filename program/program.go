@@ -304,6 +304,17 @@ func (p *Program) GradientReturns() []*Operand {
 	return p.Primary.Files[len(p.Primary.Files)-1].GradientReturns
 }
 
+// DisplacedReturns returns the lowered displaced distance of each return: the
+// field a renderer marches when a shape inside the return sets a material with
+// a height. A nil entry, or a nil slice, is a return the renderer moves by its
+// material's height as a whole.
+func (p *Program) DisplacedReturns() []*Operand {
+	if len(p.Primary.Files) == 0 {
+		return nil
+	}
+	return p.Primary.Files[len(p.Primary.Files)-1].DisplacedReturns
+}
+
 // ModuleFunction finds a package-local function declaration with the given
 // name and parameter count.
 func ModuleFunction(pkg *Package, name string, paramCount int) *Function {

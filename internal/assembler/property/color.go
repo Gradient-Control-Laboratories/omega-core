@@ -134,10 +134,17 @@ func MaterialFields(pkg *program.Package, getImport program.GetImportFunc) ([]*p
 }
 
 func propertyFields(pkg *program.Package, getImport program.GetImportFunc, spec fieldSpec) ([]*program.Operand, error) {
+	return layeredPropertyFields(pkg, getImport, spec, nil)
+}
+
+// layeredPropertyFields is propertyFields with each layered shape's value
+// switching by layer (layers.go); lay nil switches nothing.
+func layeredPropertyFields(pkg *program.Package, getImport program.GetImportFunc, spec fieldSpec, lay *layers) ([]*program.Operand, error) {
 	if pkg == nil || !packageHasProperty(pkg, spec.name) {
 		return nil, nil
 	}
 	r := newResolver(pkg, getImport, spec)
+	r.layers = lay
 	if len(pkg.Files) == 0 {
 		return nil, nil
 	}
@@ -349,6 +356,9 @@ type resolver struct {
 	// constantRows are rows every unit has the same constant in, which blend
 	// takes as they are: a material's lay where the program gives none a lay.
 	constantRows map[int]*program.Operand
+	// layers, when set, switches each layered shape's value to the one it
+	// inherits inside the solid beneath its layer (layers.go).
+	layers *layers
 }
 
 // hasField reports whether a declaration carries the property — it has an
@@ -410,6 +420,22 @@ func (r *resolver) resolveField(name string) (*program.Operand, error) {
 			var err error
 			if c, err = r.simplifiedField(c, stand); err != nil {
 				return nil, err
+			}
+		}
+		if w := r.layers.beneath(name); w != nil {
+			// Inside the solid beneath its layer, a layered shape shows what
+			// it was laid over.
+			r.fieldMemo[name] = nil // tentative (breaks cycles)
+			body := r.decls[name]
+			if stand != nil {
+				body = stand.Arguments[0]
+			}
+			inherited, err := r.fieldOf(body)
+			if err != nil {
+				return nil, err
+			}
+			if inherited != nil {
+				c = switchField(r.spec, w, c, inherited)
 			}
 		}
 		r.fieldMemo[name] = c

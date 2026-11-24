@@ -412,6 +412,21 @@ fn material_filmKeeps(wavelength: f32, build: f32, noiseTex: texture_3d<f32>) ->
   return 1.0 - exp(-x * x);
 }
 
+fn material_relief(m: mat4x4<f32>, noiseTex: texture_3d<f32>) -> f32 {
+  let volume = m[2];
+  return volume.z - volume.w;
+}
+
+fn material_build(m: mat4x4<f32>, noiseTex: texture_3d<f32>) -> f32 {
+  let volume = m[2];
+  return volume.w;
+}
+
+fn material_withBuild(m: mat4x4<f32>, thickness: f32, noiseTex: texture_3d<f32>) -> mat4x4<f32> {
+  let volume = m[2];
+  return material_withDisplacement(mat4x4<f32>(m[0], m[1], vec4<f32>(volume.x, volume.y, volume.z, thickness), m[3]), volume.z - volume.w + thickness, noiseTex);
+}
+
 fn material_lay(m: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
   let grooves = m[3];
   return grooves.xyz;
@@ -664,9 +679,11 @@ fn coating_levelled(coat: mat4x4<f32>, baseMaterial: mat4x4<f32>, build: f32, un
   let baseRough = material_roughness(baseMaterial, noiseTex);
   let baseAlpha = baseRough * baseRough;
   let alpha = sqrt(coatAlpha * coatAlpha + keeps * keeps * baseAlpha * baseAlpha);
-  let lobe = material_withRoughness(coat, sqrt(alpha), noiseTex);
-  let relief = material_displacement(coat, noiseTex) + material_displacement(baseMaterial, noiseTex) * keeps;
-  return material_withDisplacement(material_withLay(lobe, material_lay(baseMaterial, noiseTex), material_anisotropy(baseMaterial, noiseTex) * keeps, noiseTex), relief, noiseTex);
+  let lobe = material_withRoughness(material_withBuild(coat, 0.0, noiseTex), sqrt(alpha), noiseTex);
+  let relief = material_relief(coat, noiseTex) + material_relief(baseMaterial, noiseTex) * keeps;
+  let surface = material_withDisplacement(material_withLay(lobe, material_lay(baseMaterial, noiseTex), material_anisotropy(baseMaterial, noiseTex) * keeps, noiseTex), relief, noiseTex);
+  let stacked = material_build(baseMaterial, noiseTex) + material_build(coat, noiseTex) + build;
+  return material_withBuild(surface, stacked, noiseTex);
 }
 
 fn coating_clearCoat(baseMaterial: mat4x4<f32>, baseColor: vec3<f32>, tint: vec3<f32>, glossUnits: f32, build: f32, underSize: f32, noiseTex: texture_3d<f32>) -> gsl_struct {

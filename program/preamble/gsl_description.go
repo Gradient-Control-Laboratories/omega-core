@@ -171,13 +171,20 @@ color: ` + "`name.material = material.chrome;`" + ` — a record from the
 (` + "`material.glowing(rgb, strength)`" + `); transmission, with the absorption distance
 in mm over which the shape's color comes through
 (` + "`material.translucent(m, transmission, absorptionDistance)`" + `); a displacement
-height in mm, drawn by the renderer only (` + "`material.withDisplacement(m, height)`" + `);
+height in mm, drawn by the renderer only (` + "`material.withDisplacement(m, height)`" + `),
+part of which may be film standing on the surface beneath (` + "`material.withBuild(m, thickness)`" + `);
 and a lay, grooves too fine to see that stretch the highlight along a direction,
 as on brushed or turned metal (` + "`material.withLay(m, direction, anisotropy)`" + `).
 Each ` + "`with…`" + ` modifier returns a copy of ` + "`m`" + ` with one part replaced, and
 ` + "`material.blend(a, b, t)`" + ` mixes two records, ` + "`t`" + ` a field, so one field can drive
 every part at once. Build and read records with these functions rather than
 indexing their rows.
+A height moves the shape that sets it, before the booleans that use it: a
+shape that sets a material over the material it inherits is drawn moved by
+the difference, so coats stack as layers. Lay each coat as a new name over the
+last (` + "`coat1 = part; coat1.material = coating.levelled(paint, partMat, 0.2, 1.0);`" + `),
+and a cut taken after it stays flat and shows each coat as a band over what it
+covers; paint laid over the cut covers it again.
 A shape may set color, material, both, or neither; each is a field of
 ` + "`p`" + `, blended and inherited across combinations exactly like color,
 and a shape that sets neither renders with ` + "`material.standard`" + `.

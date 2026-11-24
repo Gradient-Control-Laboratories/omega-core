@@ -175,8 +175,11 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
   const displaceActive = hasMaterialField;
   // The codegen's per-return displaced composite (gsl-displace.js).
   const perReturn = wgslCode.includes("fn gsl_sdShapeDisplaced(");
+  // The var displacementScale() reads, when the program reads it (layered
+  // coats switching by layer); see backend/wgsl/internal/codegen/displace.go.
+  const scaleVar = wgslCode.includes("var<private> gsl_dispScaleK");
   const gsl_displaceSample = displaceActive
-    ? wgslFn(injectExtraArgs(displaceSampleWGSL({ extraParamsWGSL, materialAtIdx, parts, perReturn })),
+    ? wgslFn(injectExtraArgs(displaceSampleWGSL({ extraParamsWGSL, materialAtIdx, parts, perReturn, scaleVar })),
              [gsl_shape, gsl_material, gsl_displaceState, ...partDetailDeps, ...(perReturn ? [sdShape] : [])])
     : null;
   const gsl_sdDisplaced = displaceActive

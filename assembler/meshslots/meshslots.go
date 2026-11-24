@@ -140,6 +140,9 @@ func (w *walker) walkPackage(pkg *program.Package, pkgPath string) {
 		for _, r := range file.GradientReturns {
 			w.walkOperand(r, pkgPath)
 		}
+		for _, r := range file.DisplacedReturns {
+			w.walkOperand(r, pkgPath)
+		}
 	}
 	if w.getImport == nil {
 		return
