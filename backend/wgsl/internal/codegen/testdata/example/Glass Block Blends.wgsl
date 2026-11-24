@@ -124,8 +124,8 @@ fn noise_gradientLattice(q: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
 fn gsl_pin_remap(p: vec3<f32>, x: f32, noiseTex: texture_3d<f32>) -> f32 {
   let gsl_tmp_1 = length(p.xy);
   let gsl_tmp_3 = 6.2831855 * p.z / 0.25;
-  let gsl_tmp_2 = max(gsl_tmp_1, 0.2);
-  return max(max(max(gsl_tmp_1 - 0.6, -max(0.46468353 - gsl_tmp_1, ((1.0 - acos(clamp(cos(gsl_tmp_3) * p.x / gsl_tmp_2 + sin(gsl_tmp_3) * p.y / gsl_tmp_2, -1.0, 1.0)) / 3.1415927) * 0.125 - 0.03125 - (gsl_tmp_1 - 0.46468353) * 0.57735026) * 0.8604493)), abs(p.z) - 2.5), (gsl_tmp_1 - 0.6 + abs(p.z) - 2.5 + 0.15) * 0.7071);
+  let gsl_tmp_2 = max(length(p.xy), 0.2);
+  return max(max(max(length(p.xy) - 0.6, -max(0.46468353 - gsl_tmp_1, ((1.0 - acos(clamp(cos(gsl_tmp_3) * p.x / gsl_tmp_2 + sin(gsl_tmp_3) * p.y / gsl_tmp_2, -1.0, 1.0)) / 3.1415927) * 0.125 - 0.03125 - (gsl_tmp_1 - 0.46468353) * 0.57735026) * 0.8604493)), abs(p.z) - 2.5), (length(p.xy) - 0.6 + abs(p.z) - 2.5 + 0.15) * 0.7071);
 }
 
 fn pin(p: vec3<f32>, x: f32, noiseTex: texture_3d<f32>) -> f32 {

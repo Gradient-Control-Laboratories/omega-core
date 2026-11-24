@@ -7,8 +7,7 @@ fn noise_driftingCellXY(base: vec3<f32>, i: f32, noiseTex: texture_3d<f32>) -> v
 }
 
 fn noise_driftingHashXY(cell: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
-  let gsl_cse_1 = vec3<f32>(cell.x + 211.0, cell.y + 5.0, -97.0);
-  return fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_1)) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_1 / 64.0)) & vec3<i32>(63), 0).rgb);
+  return fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(cell.x + 211.0, cell.y + 5.0, -97.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(cell.x + 211.0, cell.y + 5.0, -97.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
 }
 
 fn noise_driftingLife(time: f32, h: vec3<f32>, life: f32, noiseTex: texture_3d<f32>) -> f32 {

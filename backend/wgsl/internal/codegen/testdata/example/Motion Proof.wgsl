@@ -1,9 +1,8 @@
 fn sdShape(p: vec3<f32>, time: f32, gsl_param_18_27: f32) -> gsl_shape {
   gsl_partNear = vec3<f32>(1e10, 1e10, 1e10);
   let crankR = gsl_param_18_27;
-  let gsl_cse_1 = max(crankR + 0.4, 0.0);
-  let gsl_partLo = vec3<f32>(0.0 - gsl_cse_1, 0.0 - gsl_cse_1, -0.45);
-  let gsl_partHi = vec3<f32>(0.0 + gsl_cse_1, 0.0 + gsl_cse_1, 0.45);
+  let gsl_partLo = vec3<f32>(0.0 - max(crankR + 0.4, 0.0), 0.0 - max(crankR + 0.4, 0.0), -0.45);
+  let gsl_partHi = vec3<f32>(0.0 + max(crankR + 0.4, 0.0), 0.0 + max(crankR + 0.4, 0.0), 0.45);
   let gsl_partBox = gsl_boxDistance(p, gsl_partLo, gsl_partHi);
   var gsl_part = gsl_partBox;
   if (gsl_vanishView.w <= 0.0 || gsl_partBox <= gsl_vanishView.w) {

@@ -572,13 +572,12 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32) -> array<f32, 8> {
   var gsl_part = gsl_partBox;
   let vector_dirZ = vec3<f32>(0.0, 0.0, 1.0);
   let vector_zero = vec3<f32>(0.0, 0.0, 0.0);
-  let gsl_cse_1 = dot(p - vector_zero, vector_dirZ);
-  let coverBlank = max(builtin_gcl_closure_boxCentered(p, vec3<f32>(40.0, 0.0, 3.0) * 0.5, abs(vec3<f32>(36.0, 36.0, 3.0))), -gsl_cse_1);
-  let lidBlank = max(builtin_gcl_closure_boxCentered(p, vec3<f32>(-40.0, 0.0, 14.0) * 0.5, abs(vec3<f32>(36.0, 36.0, 14.0))), -gsl_cse_1);
+  let coverBlank = max(builtin_gcl_closure_boxCentered(p, vec3<f32>(40.0, 0.0, 3.0) * 0.5, abs(vec3<f32>(36.0, 36.0, 3.0))), -dot(p - vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(0.0, 0.0, 1.0)));
+  let lidBlank = max(builtin_gcl_closure_boxCentered(p, vec3<f32>(-40.0, 0.0, 14.0) * 0.5, abs(vec3<f32>(36.0, 36.0, 14.0))), -dot(p - vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(0.0, 0.0, 1.0)));
   let gsl_tmp_5 = p - vec3<f32>(0.0, 0.0, -4.0);
   let gsl_tmp_6 = abs(dot(gsl_tmp_5, vec3<f32>(0.0, 1.0, 0.0)));
-  let gsl_tmp_7 = abs(dot(gsl_tmp_5, vector_dirZ));
-  let baseBlank = max(max(builtin_gcl_closure_boxCentered(p, vec3<f32>(0.0, 0.0, -25.0) * 0.5, abs(vec3<f32>(80.0, 40.0, 25.0))), gsl_cse_1), -max(gsl_tmp_6 - 5.3, gsl_tmp_7 - 3.3));
+  let gsl_tmp_7 = abs(dot(gsl_tmp_5, vec3<f32>(0.0, 0.0, 1.0)));
+  let baseBlank = max(max(builtin_gcl_closure_boxCentered(p, vec3<f32>(0.0, 0.0, -25.0) * 0.5, abs(vec3<f32>(80.0, 40.0, 25.0))), dot(p - vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(0.0, 0.0, 1.0))), -max(gsl_tmp_6 - 5.3, gsl_tmp_7 - 3.3));
   let gsl_result = joint_insert__spec1(p, vector_zero, vector_dirZ, mat2x4<f32>(vec4<f32>(-20.0, 12.0, 7.5, 6.0), vec4<f32>(-0.0, -0.0, -1.0, 2.0)), lidBlank, baseBlank, 7.5);
   let lid1 = gsl_result.v_2;
   let base1 = gsl_result.v_3;
@@ -624,10 +623,13 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32) -> array<f32, 8> {
   let gsl_partHi_4 = vec3<f32>(55.0, 8.0, 2.0);
   let gsl_partBox_4 = gsl_boxDistance(p, gsl_partLo_4, gsl_partHi_4);
   var gsl_part_4 = gsl_partBox_4;
+  let gsl_tmp_12 = p - vec3<f32>(0.0, 0.0, -4.0);
+  let gsl_tmp_13 = abs(dot(gsl_tmp_12, vec3<f32>(0.0, 1.0, 0.0)));
+  let gsl_tmp_14 = abs(dot(gsl_tmp_12, vec3<f32>(0.0, 0.0, 1.0)));
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_4 <= gsl_vanishView.w) {
     let gsl_partVanish_4 = gsl_vanish(gsl_partLo_4, gsl_partHi_4);
     gsl_part_4 = 1e10;
-    if (gsl_partVanish_4.x > 0.0) { gsl_part_4 = max(builtin_gcl_closure_boxCentered(p, vec3<f32>(80.0, 0.0, -8.0) * 0.5, abs(vec3<f32>(30.0, 16.0, 12.0))), max(gsl_tmp_6 - 5.0, gsl_tmp_7 - 3.0)) + gsl_partVanish_4.y; }
+    if (gsl_partVanish_4.x > 0.0) { gsl_part_4 = max(builtin_gcl_closure_boxCentered(p, vec3<f32>(80.0, 0.0, -8.0) * 0.5, abs(vec3<f32>(30.0, 16.0, 12.0))), max(gsl_tmp_13 - 5.0, gsl_tmp_14 - 3.0)) + gsl_partVanish_4.y; }
     if (abs(gsl_part_4) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_4), gsl_partVanish_4.zw); }
   }
   let slider = gsl_part_4;

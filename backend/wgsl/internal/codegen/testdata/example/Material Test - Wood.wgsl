@@ -103,8 +103,7 @@ fn noise_gradientLattice(q: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
 }
 
 fn wood_ringBoundary(k: f32, seed: f32, noiseTex: texture_3d<f32>) -> f32 {
-  let gsl_cse_1 = vec3<f32>(k, k + seed, 2.0 * k + 17.0);
-  return k + (fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_1)) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_1 / 64.0)) & vec3<i32>(63), 0).rgb).x - 0.5) * 0.5;
+  return k + (fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(k, k + seed, 2.0 * k + 17.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(k, k + seed, 2.0 * k + 17.0)) / 64.0)) & vec3<i32>(63), 0).rgb).x - 0.5) * 0.5;
 }
 
 fn wood_poreZoneShare(poreZone: f32, ringWidth: f32, noiseTex: texture_3d<f32>) -> f32 {
@@ -125,36 +124,27 @@ fn wood_poreDistanceAt(local: vec3<f32>, progress: f32, poreSize: f32, ringPoros
   let poreQ = local.xy / poreCellSize;
   let poreBase = floor(poreQ - 0.5);
   let gsl_tmp_87 = poreBase + vec2<f32>(0.0, 0.0);
-  let gsl_cse_2 = vec3<f32>(gsl_tmp_87.x, gsl_tmp_87.y, gsl_tmp_87.x - gsl_tmp_87.y + 6007.0);
-  let gsl_cse_9 = local.z / (poreCellSize * 8.0);
-  let gsl_tmp_88 = gsl_cse_9 + fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_2)) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_2 / 64.0)) & vec3<i32>(63), 0).rgb).y;
+  let gsl_tmp_88 = local.z / (poreCellSize * 8.0) + fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_87.x, gsl_tmp_87.y, gsl_tmp_87.x - gsl_tmp_87.y + 6007.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_87.x, gsl_tmp_87.y, gsl_tmp_87.x - gsl_tmp_87.y + 6007.0)) / 64.0)) & vec3<i32>(63), 0).rgb).y;
   let gsl_tmp_89 = floor(gsl_tmp_88);
-  let gsl_cse_6 = vec3<f32>(gsl_tmp_87.x, gsl_tmp_87.y, gsl_tmp_89);
-  let gsl_tmp_90 = fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_6)) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_6 / 64.0)) & vec3<i32>(63), 0).rgb);
+  let gsl_tmp_90 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_87.x, gsl_tmp_87.y, gsl_tmp_89))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_87.x, gsl_tmp_87.y, gsl_tmp_89)) / 64.0)) & vec3<i32>(63), 0).rgb);
   let sizeShare = wood_poreSizeShare(progress, ringPorosity, poreZone, noiseTex);
   let size = sizeShare.x;
   let poreShare = sizeShare.y;
   let gsl_tmp_91 = select(10.0, min(10.0, length(vec2<f32>(length(poreQ - (gsl_tmp_87 + gsl_tmp_90.xy)), max(abs(gsl_tmp_88 - gsl_tmp_89 - 0.5) - 0.2 - 0.25 * gsl_tmp_90.x, 0.0) * 8.0)) / size), gsl_tmp_90.z < poreShare);
   let gsl_tmp_92 = poreBase + vec2<f32>(1.0, 0.0);
-  let gsl_cse_3 = vec3<f32>(gsl_tmp_92.x, gsl_tmp_92.y, gsl_tmp_92.x - gsl_tmp_92.y + 6007.0);
-  let gsl_tmp_93 = gsl_cse_9 + fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_3)) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_3 / 64.0)) & vec3<i32>(63), 0).rgb).y;
+  let gsl_tmp_93 = local.z / (poreCellSize * 8.0) + fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_92.x, gsl_tmp_92.y, gsl_tmp_92.x - gsl_tmp_92.y + 6007.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_92.x, gsl_tmp_92.y, gsl_tmp_92.x - gsl_tmp_92.y + 6007.0)) / 64.0)) & vec3<i32>(63), 0).rgb).y;
   let gsl_tmp_94 = floor(gsl_tmp_93);
-  let gsl_cse_7 = vec3<f32>(gsl_tmp_92.x, gsl_tmp_92.y, gsl_tmp_94);
-  let gsl_tmp_95 = fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_7)) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_7 / 64.0)) & vec3<i32>(63), 0).rgb);
+  let gsl_tmp_95 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_92.x, gsl_tmp_92.y, gsl_tmp_94))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_92.x, gsl_tmp_92.y, gsl_tmp_94)) / 64.0)) & vec3<i32>(63), 0).rgb);
   let gsl_tmp_96 = select(gsl_tmp_91, min(gsl_tmp_91, length(vec2<f32>(length(poreQ - (gsl_tmp_92 + gsl_tmp_95.xy)), max(abs(gsl_tmp_93 - gsl_tmp_94 - 0.5) - 0.2 - 0.25 * gsl_tmp_95.x, 0.0) * 8.0)) / size), gsl_tmp_95.z < poreShare);
   let gsl_tmp_97 = poreBase + vec2<f32>(0.0, 1.0);
-  let gsl_cse_4 = vec3<f32>(gsl_tmp_97.x, gsl_tmp_97.y, gsl_tmp_97.x - gsl_tmp_97.y + 6007.0);
-  let gsl_tmp_98 = gsl_cse_9 + fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_4)) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_4 / 64.0)) & vec3<i32>(63), 0).rgb).y;
+  let gsl_tmp_98 = local.z / (poreCellSize * 8.0) + fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_97.x, gsl_tmp_97.y, gsl_tmp_97.x - gsl_tmp_97.y + 6007.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_97.x, gsl_tmp_97.y, gsl_tmp_97.x - gsl_tmp_97.y + 6007.0)) / 64.0)) & vec3<i32>(63), 0).rgb).y;
   let gsl_tmp_99 = floor(gsl_tmp_98);
-  let gsl_cse_8 = vec3<f32>(gsl_tmp_97.x, gsl_tmp_97.y, gsl_tmp_99);
-  let gsl_tmp_100 = fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_8)) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_8 / 64.0)) & vec3<i32>(63), 0).rgb);
+  let gsl_tmp_100 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_97.x, gsl_tmp_97.y, gsl_tmp_99))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_97.x, gsl_tmp_97.y, gsl_tmp_99)) / 64.0)) & vec3<i32>(63), 0).rgb);
   let gsl_tmp_101 = select(gsl_tmp_96, min(gsl_tmp_96, length(vec2<f32>(length(poreQ - (gsl_tmp_97 + gsl_tmp_100.xy)), max(abs(gsl_tmp_98 - gsl_tmp_99 - 0.5) - 0.2 - 0.25 * gsl_tmp_100.x, 0.0) * 8.0)) / size), gsl_tmp_100.z < poreShare);
   let gsl_tmp_102 = poreBase + vec2<f32>(1.0, 1.0);
-  let gsl_cse_1 = vec3<f32>(gsl_tmp_102.x, gsl_tmp_102.y, gsl_tmp_102.x - gsl_tmp_102.y + 6007.0);
-  let gsl_tmp_103 = gsl_cse_9 + fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_1)) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_1 / 64.0)) & vec3<i32>(63), 0).rgb).y;
+  let gsl_tmp_103 = local.z / (poreCellSize * 8.0) + fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_102.x, gsl_tmp_102.y, gsl_tmp_102.x - gsl_tmp_102.y + 6007.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_102.x, gsl_tmp_102.y, gsl_tmp_102.x - gsl_tmp_102.y + 6007.0)) / 64.0)) & vec3<i32>(63), 0).rgb).y;
   let gsl_tmp_104 = floor(gsl_tmp_103);
-  let gsl_cse_5 = vec3<f32>(gsl_tmp_102.x, gsl_tmp_102.y, gsl_tmp_104);
-  let gsl_tmp_105 = fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_5)) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_5 / 64.0)) & vec3<i32>(63), 0).rgb);
+  let gsl_tmp_105 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_102.x, gsl_tmp_102.y, gsl_tmp_104))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_102.x, gsl_tmp_102.y, gsl_tmp_104)) / 64.0)) & vec3<i32>(63), 0).rgb);
   let nearestPore = select(gsl_tmp_101, min(gsl_tmp_101, length(vec2<f32>(length(poreQ - (gsl_tmp_102 + gsl_tmp_105.xy)), max(abs(gsl_tmp_103 - gsl_tmp_104 - 0.5) - 0.2 - 0.25 * gsl_tmp_105.x, 0.0) * 8.0)) / size), gsl_tmp_105.z < poreShare);
   return vec2<f32>(nearestPore, size);
 }
@@ -171,18 +161,15 @@ fn wood_woodFinish(rough: f32, noiseTex: texture_3d<f32>) -> mat4x4<f32> {
 }
 
 fn wood_fibreShade(column: vec2<f32>, z: f32, noiseTex: texture_3d<f32>) -> f32 {
-  let gsl_cse_1 = vec3<f32>(column.x, column.y, column.x - column.y + 7919.0);
-  let run = z / 8.0 + fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_1)) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_1 / 64.0)) & vec3<i32>(63), 0).rgb).y;
+  let run = z / 8.0 + fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(column.x, column.y, column.x - column.y + 7919.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(column.x, column.y, column.x - column.y + 7919.0)) / 64.0)) & vec3<i32>(63), 0).rgb).y;
   let index = floor(run);
   let here = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(column.x, column.y, index))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(column.x, column.y, index)) / 64.0)) & vec3<i32>(63), 0).rgb).x;
-  let gsl_cse_2 = vec3<f32>(column.x, column.y, index + 1.0);
-  let next = fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_2)) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_2 / 64.0)) & vec3<i32>(63), 0).rgb).x;
+  let next = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(column.x, column.y, index + 1.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(column.x, column.y, index + 1.0)) / 64.0)) & vec3<i32>(63), 0).rgb).x;
   return here + (next - here) * texture_mask(run - index, 0.925, 0.075, noiseTex);
 }
 
 fn wood_fibreFile(file: f32, radius: f32, z: f32, noiseTex: texture_3d<f32>) -> f32 {
-  let gsl_cse_1 = vec3<f32>(file, file + 3.0, 2.0 * file + 7919.0);
-  let q = radius / 0.45 + fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_1)) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_1 / 64.0)) & vec3<i32>(63), 0).rgb).x - 0.5;
+  let q = radius / 0.45 + fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(file, file + 3.0, 2.0 * file + 7919.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(file, file + 3.0, 2.0 * file + 7919.0)) / 64.0)) & vec3<i32>(63), 0).rgb).x - 0.5;
   let cell = floor(q);
   let here = wood_fibreShade(vec2<f32>(file, cell), z, noiseTex);
   let t = q - cell;

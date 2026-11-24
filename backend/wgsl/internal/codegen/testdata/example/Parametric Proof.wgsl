@@ -17,14 +17,12 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_13_28: f32, gsl_param_14_28: f32) 
   let block = gsl_part;
   let pistonR = gsl_param_13_28;
   let stroke = gsl_param_14_28;
-  let gsl_cse_1 = 0.0 - max(pistonR, 0.0);
-  let gsl_partLo_2 = vec3<f32>(min(gsl_cse_1, -2.5), min(gsl_cse_1, -2.5), min(-(-4.0 - stroke) / -1.0, -(3.0 - stroke) / -1.0));
-  let gsl_cse_2 = 0.0 + max(pistonR, 0.0);
-  let gsl_partHi_2 = vec3<f32>(max(gsl_cse_2, 2.5), max(gsl_cse_2, 2.5), max(-(-0.0 - (4.0 - stroke)), 22.0));
+  let gsl_partLo_2 = vec3<f32>(min(0.0 - max(pistonR, 0.0), -2.5), min(0.0 - max(pistonR, 0.0), -2.5), min(-(-4.0 - stroke) / -1.0, -(3.0 - stroke) / -1.0));
+  let gsl_partHi_2 = vec3<f32>(max(0.0 + max(pistonR, 0.0), 2.5), max(0.0 + max(pistonR, 0.0), 2.5), max(-(-0.0 - (4.0 - stroke)), 22.0));
   let gsl_partBox_2 = gsl_boxDistance(p, gsl_partLo_2, gsl_partHi_2);
   var gsl_part_2 = gsl_partBox_2;
-  let gsl_partLo_3 = vec3<f32>(gsl_cse_1, gsl_cse_1, -(-4.0 - stroke) / -1.0);
-  let gsl_partHi_3 = vec3<f32>(gsl_cse_2, gsl_cse_2, -(-0.0 - (4.0 - stroke)));
+  let gsl_partLo_3 = vec3<f32>(0.0 - max(pistonR, 0.0), 0.0 - max(pistonR, 0.0), -(-4.0 - stroke) / -1.0);
+  let gsl_partHi_3 = vec3<f32>(0.0 + max(pistonR, 0.0), 0.0 + max(pistonR, 0.0), -(-0.0 - (4.0 - stroke)));
   let gsl_partBox_3 = gsl_boxDistance(p, gsl_partLo_3, gsl_partHi_3);
   var gsl_part_3 = gsl_partBox_3;
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_3 <= gsl_vanishView.w) {
