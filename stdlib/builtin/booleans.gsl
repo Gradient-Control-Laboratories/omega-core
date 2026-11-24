@@ -75,6 +75,9 @@ nested(fields) {
 /// becomes a smooth arc of about that radius. At radius 0 the surface is
 /// intersectSharp's, but the field is not: outside a convex corner it
 /// measures the Euclidean distance to the corner instead of the max.
+//
+// From hg_sdf's fOpIntersectionRound (Mercury Demogroup, https://mercury.sexy/hg_sdf/): the quarter-circle
+// join of two fields. The three-field and N-field forms below extend it to more fields.
 intersectRound(d1, d2, radius) {
   inset1 = max(d1 + radius, 0);
   inset2 = max(d2 + radius, 0);
@@ -122,6 +125,8 @@ intersectRound(radius) {
 
 /// Round CSG union with fillet `radius`. The union seam becomes a smooth
 /// arc of about that radius.
+//
+// The same as hg_sdf's fOpUnionRound (https://mercury.sexy/hg_sdf/).
 unionRound(d1, d2, radius) {
   return neg(intersectRound(neg(d1), neg(d2), radius));
 }
@@ -147,6 +152,8 @@ unionRound(radius) {
 
 /// Round CSG difference: target minus tool with a fillet of `radius`
 /// where the tool carves into the target.
+//
+// The same as hg_sdf's fOpDifferenceRound (https://mercury.sexy/hg_sdf/).
 differenceRound(target, tool, radius) {
   return intersectRound(target, neg(tool), radius);
 }
@@ -222,7 +229,8 @@ differenceLp(target, tool, width, exponent) {
 /// maximum whose softness is set by `width`. A larger width blends more; a small one
 /// approaches the sharp intersection.
 //
-// After Inigo Quilez.
+// After Inigo Quilez's exponential smooth minimum (https://iquilezles.org/articles/smin/), taken as a smooth
+// maximum, in base e, over any number of fields.
 intersectExponential(fields, width) {
   scale = width / e;
   // Shift by the peak (log-sum-exp trick): algebraically identical, but the
@@ -252,6 +260,8 @@ intersectExponential(width) {
 
 /// Exponential (log-sum-exp) blend union of a list of SDFs (De Morgan dual of
 /// intersectExponential) — a smooth minimum. A larger width blends more.
+//
+// Inigo Quilez's exponential smooth minimum (https://iquilezles.org/articles/smin/).
 unionExponential(fields, width) {
   negated = map((field) {
     return neg(field);
@@ -338,6 +348,9 @@ unionChamferVertices(fields, offset) {
 /// depth, a setback along each face or its width at an edge of any angle, use
 /// intersectChamferNormalized (with chamferDepthFromSetback or
 /// chamferDepthFromWidth) or intersectChamferSetbacks.
+//
+// The same bevel as hg_sdf's fOpIntersectionChamfer (https://mercury.sexy/hg_sdf/). The three-field and
+// N-field forms below add the vertex plane.
 intersectChamfer(d1, d2, offset) {
   face = max(d1, d2);
   edge = (d1 + d2 + offset) / sqrt2;
@@ -372,6 +385,8 @@ intersectChamfer(offset) {
 }
 
 /// Chamfered CSG union with the bevel at `offset`, as for intersectChamfer.
+//
+// The same as hg_sdf's fOpUnionChamfer (https://mercury.sexy/hg_sdf/).
 unionChamfer(d1, d2, offset) {
   return neg(intersectChamfer(neg(d1), neg(d2), offset));
 }
@@ -397,6 +412,8 @@ unionChamfer(offset) {
 }
 
 /// Chamfered CSG difference: target minus tool with a chamfered cut.
+//
+// The same as hg_sdf's fOpDifferenceChamfer (https://mercury.sexy/hg_sdf/).
 differenceChamfer(target, tool, offset) {
   return intersectChamfer(target, neg(tool), offset);
 }
@@ -1241,6 +1258,11 @@ differenceChamferAngleSteps(target, tool, distance, angle, steps) {
 /// intersection's, so band shapes the field, not the surface; with three or more
 /// the n-ary form is not associative and the boundary shifts near
 /// multi-input corners.
+//
+// R0 is one of Rvachev's R-functions, which Vadim Shapiro surveys in "Semi-analytic geometry with R-functions",
+// Acta Numerica 16 (2007), 239-303, https://doi.org/10.1017/S096249290631001X. R-functions take positive values
+// inside a solid; these fields are negative inside, so the signs here are the mirror of the paper's. The band
+// gating over R0 is this library's.
 intersectRvachev(fields, band) {
   sharp = intersectSharp(fields);
   sum = reduce(0, (runningSum, field) { return runningSum + field; }, fields);
