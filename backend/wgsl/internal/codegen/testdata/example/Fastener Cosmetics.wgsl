@@ -246,9 +246,23 @@ fn gsl_remap_27(p: vec3<f32>) -> f32 {
 }
 
 fn gsl_remap_28(p: vec3<f32>) -> f32 {
-  let gsl_tmp_276 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_275 = max(length(p.xy), 0.2);
-  let gslCarry75 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max((length(p.xy) - (2.5 - 0.21650636 * (1.0 - (cos(gsl_tmp_276) * p.x / gsl_tmp_275 + sin(gsl_tmp_276) * p.y / gsl_tmp_275)))) * 0.7, -16.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 16.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
+  let gsl_featureSize = 0.4;
+  let gsl_featureWeight = gsl_featureWeight(gsl_featureSize);
+  var gsl_feature = 100000.0;
+  if (gsl_featureWeight > 0.0) {
+    let gsl_tmp_276 = 6.2831855 * p.z / 0.8;
+    let gsl_tmp_275 = max(length(p.xy), 0.2);
+    gsl_feature = (length(p.xy) - (2.5 - 0.21650636 * (1.0 - (cos(gsl_tmp_276) * p.x / gsl_tmp_275 + sin(gsl_tmp_276) * p.y / gsl_tmp_275)))) * 0.7 + (1.0 - gsl_featureWeight) * 0.5 * gsl_featureSize;
+  }
+  let gsl_featureSize_2 = 0.4;
+  let gsl_featureWeight_2 = gsl_featureWeight(gsl_featureSize_2);
+  var gsl_feature_2 = 100000.0;
+  if (gsl_featureWeight_2 > 0.0) {
+    let gsl_tmp_278 = 6.2831855 * p.z / 0.8;
+    let gsl_tmp_277 = max(length(p.xy), 0.2);
+    gsl_feature_2 = -((length(p.xy) - (2.5 - 0.21650636 * (1.0 - (cos(gsl_tmp_278) * p.x / gsl_tmp_277 + sin(gsl_tmp_278) * p.y / gsl_tmp_277)))) * 0.7) + (1.0 - gsl_featureWeight_2) * 0.5 * gsl_featureSize_2;
+  }
+  let gslCarry75 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(max(min(length(p.xy) - 2.2402, gsl_feature), -gsl_feature_2), -16.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 16.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
   return gslCarry75;
 }
 
@@ -258,9 +272,23 @@ fn gsl_remap_29(p: vec3<f32>) -> f32 {
 }
 
 fn gsl_remap_30(p: vec3<f32>) -> f32 {
-  let gsl_tmp_292 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_291 = max(length(p.xy), 0.2);
-  let gslCarry79 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max((length(p.xy) - (2.5 - 0.21650636 * (1.0 - (cos(gsl_tmp_292) * p.x / gsl_tmp_291 + sin(gsl_tmp_292) * p.y / gsl_tmp_291)))) * 0.7, -16.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 16.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
+  let gsl_featureSize_3 = 0.4;
+  let gsl_featureWeight_3 = gsl_featureWeight(gsl_featureSize_3);
+  var gsl_feature_3 = 100000.0;
+  if (gsl_featureWeight_3 > 0.0) {
+    let gsl_tmp_294 = 6.2831855 * p.z / 0.8;
+    let gsl_tmp_293 = max(length(p.xy), 0.2);
+    gsl_feature_3 = (length(p.xy) - (2.5 - 0.21650636 * (1.0 - (cos(gsl_tmp_294) * p.x / gsl_tmp_293 + sin(gsl_tmp_294) * p.y / gsl_tmp_293)))) * 0.7 + (1.0 - gsl_featureWeight_3) * 0.5 * gsl_featureSize_3;
+  }
+  let gsl_featureSize_4 = 0.4;
+  let gsl_featureWeight_4 = gsl_featureWeight(gsl_featureSize_4);
+  var gsl_feature_4 = 100000.0;
+  if (gsl_featureWeight_4 > 0.0) {
+    let gsl_tmp_296 = 6.2831855 * p.z / 0.8;
+    let gsl_tmp_295 = max(length(p.xy), 0.2);
+    gsl_feature_4 = -((length(p.xy) - (2.5 - 0.21650636 * (1.0 - (cos(gsl_tmp_296) * p.x / gsl_tmp_295 + sin(gsl_tmp_296) * p.y / gsl_tmp_295)))) * 0.7) + (1.0 - gsl_featureWeight_4) * 0.5 * gsl_featureSize_4;
+  }
+  let gslCarry79 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(max(min(length(p.xy) - 2.2402, gsl_feature_3), -gsl_feature_4), -16.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 16.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
   return gslCarry79;
 }
 
@@ -270,9 +298,23 @@ fn gsl_remap_31(p: vec3<f32>) -> f32 {
 }
 
 fn gsl_remap_32(p: vec3<f32>) -> f32 {
-  let gsl_tmp_312 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_311 = max(length(p.xy), 0.2);
-  let gslCarry83 = max(fastener_nut(p, 5.0), -((length(p.xy) - (2.5 - 0.21650636 * (1.0 - (cos(gsl_tmp_312) * p.x / gsl_tmp_311 + sin(gsl_tmp_312) * p.y / gsl_tmp_311)))) * 0.7));
+  let gsl_featureSize_5 = 0.4;
+  let gsl_featureWeight_5 = gsl_featureWeight(gsl_featureSize_5);
+  var gsl_feature_5 = 100000.0;
+  if (gsl_featureWeight_5 > 0.0) {
+    let gsl_tmp_316 = 6.2831855 * p.z / 0.8;
+    let gsl_tmp_315 = max(length(p.xy), 0.2);
+    gsl_feature_5 = (length(p.xy) - (2.5 - 0.21650636 * (1.0 - (cos(gsl_tmp_316) * p.x / gsl_tmp_315 + sin(gsl_tmp_316) * p.y / gsl_tmp_315)))) * 0.7 + (1.0 - gsl_featureWeight_5) * 0.5 * gsl_featureSize_5;
+  }
+  let gsl_featureSize_6 = 0.4;
+  let gsl_featureWeight_6 = gsl_featureWeight(gsl_featureSize_6);
+  var gsl_feature_6 = 100000.0;
+  if (gsl_featureWeight_6 > 0.0) {
+    let gsl_tmp_318 = 6.2831855 * p.z / 0.8;
+    let gsl_tmp_317 = max(length(p.xy), 0.2);
+    gsl_feature_6 = -((length(p.xy) - (2.5 - 0.21650636 * (1.0 - (cos(gsl_tmp_318) * p.x / gsl_tmp_317 + sin(gsl_tmp_318) * p.y / gsl_tmp_317)))) * 0.7) + (1.0 - gsl_featureWeight_6) * 0.5 * gsl_featureSize_6;
+  }
+  let gslCarry83 = max(fastener_nut(p, 5.0), -max(min(length(p.xy) - 2.2402, gsl_feature_5), -gsl_feature_6));
   return gslCarry83;
 }
 
@@ -282,9 +324,23 @@ fn gsl_remap_33(p: vec3<f32>) -> f32 {
 }
 
 fn gsl_remap_34(p: vec3<f32>) -> f32 {
-  let gsl_tmp_328 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_327 = max(length(p.xy), 0.2);
-  let gslCarry87 = max(fastener_nut(p, 5.0), -((length(p.xy) - (2.5 - 0.21650636 * (1.0 - (cos(gsl_tmp_328) * p.x / gsl_tmp_327 + sin(gsl_tmp_328) * p.y / gsl_tmp_327)))) * 0.7));
+  let gsl_featureSize_7 = 0.4;
+  let gsl_featureWeight_7 = gsl_featureWeight(gsl_featureSize_7);
+  var gsl_feature_7 = 100000.0;
+  if (gsl_featureWeight_7 > 0.0) {
+    let gsl_tmp_334 = 6.2831855 * p.z / 0.8;
+    let gsl_tmp_333 = max(length(p.xy), 0.2);
+    gsl_feature_7 = (length(p.xy) - (2.5 - 0.21650636 * (1.0 - (cos(gsl_tmp_334) * p.x / gsl_tmp_333 + sin(gsl_tmp_334) * p.y / gsl_tmp_333)))) * 0.7 + (1.0 - gsl_featureWeight_7) * 0.5 * gsl_featureSize_7;
+  }
+  let gsl_featureSize_8 = 0.4;
+  let gsl_featureWeight_8 = gsl_featureWeight(gsl_featureSize_8);
+  var gsl_feature_8 = 100000.0;
+  if (gsl_featureWeight_8 > 0.0) {
+    let gsl_tmp_336 = 6.2831855 * p.z / 0.8;
+    let gsl_tmp_335 = max(length(p.xy), 0.2);
+    gsl_feature_8 = -((length(p.xy) - (2.5 - 0.21650636 * (1.0 - (cos(gsl_tmp_336) * p.x / gsl_tmp_335 + sin(gsl_tmp_336) * p.y / gsl_tmp_335)))) * 0.7) + (1.0 - gsl_featureWeight_8) * 0.5 * gsl_featureSize_8;
+  }
+  let gslCarry87 = max(fastener_nut(p, 5.0), -max(min(length(p.xy) - 2.2402, gsl_feature_7), -gsl_feature_8));
   return gslCarry87;
 }
 
@@ -294,10 +350,25 @@ fn gsl_remap_35(p: vec3<f32>) -> f32 {
 }
 
 fn gsl_remap_36(p: vec3<f32>) -> f32 {
-  let gsl_tmp_339 = length(p.xy);
-  let gsl_tmp_341 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_340 = max(length(p.xy), 0.2);
-  let gslCarry91 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(max(length(p.xy) - 2.5, -max(2.0669873 - gsl_tmp_339, ((1.0 - acos(clamp(cos(gsl_tmp_341) * p.x / gsl_tmp_340 + sin(gsl_tmp_341) * p.y / gsl_tmp_340, -1.0, 1.0)) / 3.1415927) * 0.4 - 0.1 - (gsl_tmp_339 - 2.0669873) * 0.57735026) * 0.86383384)), -16.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 16.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
+  let gsl_featureSize_9 = 0.4;
+  let gsl_featureWeight_9 = gsl_featureWeight(gsl_featureSize_9);
+  var gsl_feature_9 = 100000.0;
+  if (gsl_featureWeight_9 > 0.0) {
+    let gsl_tmp_347 = length(p.xy);
+    let gsl_tmp_349 = 6.2831855 * p.z / 0.8;
+    let gsl_tmp_348 = max(length(p.xy), 0.2);
+    gsl_feature_9 = max(length(p.xy) - 2.5, -max(2.0669873 - gsl_tmp_347, ((1.0 - acos(clamp(cos(gsl_tmp_349) * p.x / gsl_tmp_348 + sin(gsl_tmp_349) * p.y / gsl_tmp_348, -1.0, 1.0)) / 3.1415927) * 0.4 - 0.1 - (gsl_tmp_347 - 2.0669873) * 0.57735026) * 0.86383384)) + (1.0 - gsl_featureWeight_9) * 0.5 * gsl_featureSize_9;
+  }
+  let gsl_featureSize_10 = 0.4;
+  let gsl_featureWeight_10 = gsl_featureWeight(gsl_featureSize_10);
+  var gsl_feature_10 = 100000.0;
+  if (gsl_featureWeight_10 > 0.0) {
+    let gsl_tmp_350 = length(p.xy);
+    let gsl_tmp_352 = 6.2831855 * p.z / 0.8;
+    let gsl_tmp_351 = max(length(p.xy), 0.2);
+    gsl_feature_10 = -max(length(p.xy) - 2.5, -max(2.0669873 - gsl_tmp_350, ((1.0 - acos(clamp(cos(gsl_tmp_352) * p.x / gsl_tmp_351 + sin(gsl_tmp_352) * p.y / gsl_tmp_351, -1.0, 1.0)) / 3.1415927) * 0.4 - 0.1 - (gsl_tmp_350 - 2.0669873) * 0.57735026) * 0.86383384)) + (1.0 - gsl_featureWeight_10) * 0.5 * gsl_featureSize_10;
+  }
+  let gslCarry91 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(max(min(length(p.xy) - 2.2402, gsl_feature_9), -gsl_feature_10), -16.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 16.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
   return gslCarry91;
 }
 
@@ -307,10 +378,25 @@ fn gsl_remap_37(p: vec3<f32>) -> f32 {
 }
 
 fn gsl_remap_38(p: vec3<f32>) -> f32 {
-  let gsl_tmp_356 = length(p.xy);
-  let gsl_tmp_358 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_357 = max(length(p.xy), 0.2);
-  let gslCarry95 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(max(length(p.xy) - 2.5, -max(2.0669873 - gsl_tmp_356, ((1.0 - acos(clamp(cos(gsl_tmp_358) * p.x / gsl_tmp_357 + sin(gsl_tmp_358) * p.y / gsl_tmp_357, -1.0, 1.0)) / 3.1415927) * 0.4 - 0.1 - (gsl_tmp_356 - 2.0669873) * 0.57735026) * 0.86383384)), -16.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 16.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
+  let gsl_featureSize_11 = 0.4;
+  let gsl_featureWeight_11 = gsl_featureWeight(gsl_featureSize_11);
+  var gsl_feature_11 = 100000.0;
+  if (gsl_featureWeight_11 > 0.0) {
+    let gsl_tmp_367 = length(p.xy);
+    let gsl_tmp_369 = 6.2831855 * p.z / 0.8;
+    let gsl_tmp_368 = max(length(p.xy), 0.2);
+    gsl_feature_11 = max(length(p.xy) - 2.5, -max(2.0669873 - gsl_tmp_367, ((1.0 - acos(clamp(cos(gsl_tmp_369) * p.x / gsl_tmp_368 + sin(gsl_tmp_369) * p.y / gsl_tmp_368, -1.0, 1.0)) / 3.1415927) * 0.4 - 0.1 - (gsl_tmp_367 - 2.0669873) * 0.57735026) * 0.86383384)) + (1.0 - gsl_featureWeight_11) * 0.5 * gsl_featureSize_11;
+  }
+  let gsl_featureSize_12 = 0.4;
+  let gsl_featureWeight_12 = gsl_featureWeight(gsl_featureSize_12);
+  var gsl_feature_12 = 100000.0;
+  if (gsl_featureWeight_12 > 0.0) {
+    let gsl_tmp_370 = length(p.xy);
+    let gsl_tmp_372 = 6.2831855 * p.z / 0.8;
+    let gsl_tmp_371 = max(length(p.xy), 0.2);
+    gsl_feature_12 = -max(length(p.xy) - 2.5, -max(2.0669873 - gsl_tmp_370, ((1.0 - acos(clamp(cos(gsl_tmp_372) * p.x / gsl_tmp_371 + sin(gsl_tmp_372) * p.y / gsl_tmp_371, -1.0, 1.0)) / 3.1415927) * 0.4 - 0.1 - (gsl_tmp_370 - 2.0669873) * 0.57735026) * 0.86383384)) + (1.0 - gsl_featureWeight_12) * 0.5 * gsl_featureSize_12;
+  }
+  let gslCarry95 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(max(min(length(p.xy) - 2.2402, gsl_feature_11), -gsl_feature_12), -16.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 16.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
   return gslCarry95;
 }
 
@@ -320,10 +406,25 @@ fn gsl_remap_39(p: vec3<f32>) -> f32 {
 }
 
 fn gsl_remap_40(p: vec3<f32>) -> f32 {
-  let gsl_tmp_377 = length(p.xy);
-  let gsl_tmp_379 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_378 = max(length(p.xy), 0.2);
-  let gslCarry99 = max(fastener_nut(p, 5.0), -max(length(p.xy) - 2.5, -max(2.0669873 - gsl_tmp_377, ((1.0 - acos(clamp(cos(gsl_tmp_379) * p.x / gsl_tmp_378 + sin(gsl_tmp_379) * p.y / gsl_tmp_378, -1.0, 1.0)) / 3.1415927) * 0.4 - 0.1 - (gsl_tmp_377 - 2.0669873) * 0.57735026) * 0.86383384)));
+  let gsl_featureSize_13 = 0.4;
+  let gsl_featureWeight_13 = gsl_featureWeight(gsl_featureSize_13);
+  var gsl_feature_13 = 100000.0;
+  if (gsl_featureWeight_13 > 0.0) {
+    let gsl_tmp_391 = length(p.xy);
+    let gsl_tmp_393 = 6.2831855 * p.z / 0.8;
+    let gsl_tmp_392 = max(length(p.xy), 0.2);
+    gsl_feature_13 = max(length(p.xy) - 2.5, -max(2.0669873 - gsl_tmp_391, ((1.0 - acos(clamp(cos(gsl_tmp_393) * p.x / gsl_tmp_392 + sin(gsl_tmp_393) * p.y / gsl_tmp_392, -1.0, 1.0)) / 3.1415927) * 0.4 - 0.1 - (gsl_tmp_391 - 2.0669873) * 0.57735026) * 0.86383384)) + (1.0 - gsl_featureWeight_13) * 0.5 * gsl_featureSize_13;
+  }
+  let gsl_featureSize_14 = 0.4;
+  let gsl_featureWeight_14 = gsl_featureWeight(gsl_featureSize_14);
+  var gsl_feature_14 = 100000.0;
+  if (gsl_featureWeight_14 > 0.0) {
+    let gsl_tmp_394 = length(p.xy);
+    let gsl_tmp_396 = 6.2831855 * p.z / 0.8;
+    let gsl_tmp_395 = max(length(p.xy), 0.2);
+    gsl_feature_14 = -max(length(p.xy) - 2.5, -max(2.0669873 - gsl_tmp_394, ((1.0 - acos(clamp(cos(gsl_tmp_396) * p.x / gsl_tmp_395 + sin(gsl_tmp_396) * p.y / gsl_tmp_395, -1.0, 1.0)) / 3.1415927) * 0.4 - 0.1 - (gsl_tmp_394 - 2.0669873) * 0.57735026) * 0.86383384)) + (1.0 - gsl_featureWeight_14) * 0.5 * gsl_featureSize_14;
+  }
+  let gslCarry99 = max(fastener_nut(p, 5.0), -max(min(length(p.xy) - 2.2402, gsl_feature_13), -gsl_feature_14));
   return gslCarry99;
 }
 
@@ -333,10 +434,25 @@ fn gsl_remap_41(p: vec3<f32>) -> f32 {
 }
 
 fn gsl_remap_42(p: vec3<f32>) -> f32 {
-  let gsl_tmp_394 = length(p.xy);
-  let gsl_tmp_396 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_395 = max(length(p.xy), 0.2);
-  let gslCarry103 = max(fastener_nut(p, 5.0), -max(length(p.xy) - 2.5, -max(2.0669873 - gsl_tmp_394, ((1.0 - acos(clamp(cos(gsl_tmp_396) * p.x / gsl_tmp_395 + sin(gsl_tmp_396) * p.y / gsl_tmp_395, -1.0, 1.0)) / 3.1415927) * 0.4 - 0.1 - (gsl_tmp_394 - 2.0669873) * 0.57735026) * 0.86383384)));
+  let gsl_featureSize_15 = 0.4;
+  let gsl_featureWeight_15 = gsl_featureWeight(gsl_featureSize_15);
+  var gsl_feature_15 = 100000.0;
+  if (gsl_featureWeight_15 > 0.0) {
+    let gsl_tmp_411 = length(p.xy);
+    let gsl_tmp_413 = 6.2831855 * p.z / 0.8;
+    let gsl_tmp_412 = max(length(p.xy), 0.2);
+    gsl_feature_15 = max(length(p.xy) - 2.5, -max(2.0669873 - gsl_tmp_411, ((1.0 - acos(clamp(cos(gsl_tmp_413) * p.x / gsl_tmp_412 + sin(gsl_tmp_413) * p.y / gsl_tmp_412, -1.0, 1.0)) / 3.1415927) * 0.4 - 0.1 - (gsl_tmp_411 - 2.0669873) * 0.57735026) * 0.86383384)) + (1.0 - gsl_featureWeight_15) * 0.5 * gsl_featureSize_15;
+  }
+  let gsl_featureSize_16 = 0.4;
+  let gsl_featureWeight_16 = gsl_featureWeight(gsl_featureSize_16);
+  var gsl_feature_16 = 100000.0;
+  if (gsl_featureWeight_16 > 0.0) {
+    let gsl_tmp_414 = length(p.xy);
+    let gsl_tmp_416 = 6.2831855 * p.z / 0.8;
+    let gsl_tmp_415 = max(length(p.xy), 0.2);
+    gsl_feature_16 = -max(length(p.xy) - 2.5, -max(2.0669873 - gsl_tmp_414, ((1.0 - acos(clamp(cos(gsl_tmp_416) * p.x / gsl_tmp_415 + sin(gsl_tmp_416) * p.y / gsl_tmp_415, -1.0, 1.0)) / 3.1415927) * 0.4 - 0.1 - (gsl_tmp_414 - 2.0669873) * 0.57735026) * 0.86383384)) + (1.0 - gsl_featureWeight_16) * 0.5 * gsl_featureSize_16;
+  }
+  let gslCarry103 = max(fastener_nut(p, 5.0), -max(min(length(p.xy) - 2.2402, gsl_feature_15), -gsl_feature_16));
   return gslCarry103;
 }
 
@@ -497,51 +613,51 @@ fn gsl_remap_65(p: vec3<f32>) -> vec3<f32> {
 }
 
 fn gsl_remap_66(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_284 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_283 = max(length(p.xy), 0.2);
-  let gslCarry78 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(0.21650636 * (1.0 - clamp(cos(gsl_tmp_284) * p.x / gsl_tmp_283 + sin(gsl_tmp_284) * p.y / gsl_tmp_283, -1.0, 1.0)), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
+  let gsl_tmp_286 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_285 = max(length(p.xy), 0.2);
+  let gslCarry78 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(0.21650636 * (1.0 - clamp(cos(gsl_tmp_286) * p.x / gsl_tmp_285 + sin(gsl_tmp_286) * p.y / gsl_tmp_285, -1.0, 1.0)), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
   return gslCarry78;
 }
 
 fn gsl_remap_67(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_302 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_301 = max(length(p.xy), 0.2);
-  let gslCarry82 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - 0.21650636 * (1.0 - clamp(cos(gsl_tmp_302) * p.x / gsl_tmp_301 + sin(gsl_tmp_302) * p.y / gsl_tmp_301, -1.0, 1.0)), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
+  let gsl_tmp_306 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_305 = max(length(p.xy), 0.2);
+  let gslCarry82 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - 0.21650636 * (1.0 - clamp(cos(gsl_tmp_306) * p.x / gsl_tmp_305 + sin(gsl_tmp_306) * p.y / gsl_tmp_305, -1.0, 1.0)), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
   return gslCarry82;
 }
 
 fn gsl_remap_68(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_318 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_317 = max(length(p.xy), 0.2);
-  let gslCarry86 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - 0.21650636 * (1.0 - clamp(cos(gsl_tmp_318) * p.x / gsl_tmp_317 + sin(gsl_tmp_318) * p.y / gsl_tmp_317, -1.0, 1.0)), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
+  let gsl_tmp_324 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_323 = max(length(p.xy), 0.2);
+  let gslCarry86 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - 0.21650636 * (1.0 - clamp(cos(gsl_tmp_324) * p.x / gsl_tmp_323 + sin(gsl_tmp_324) * p.y / gsl_tmp_323, -1.0, 1.0)), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
   return gslCarry86;
 }
 
 fn gsl_remap_69(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_332 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_331 = max(length(p.xy), 0.2);
-  let gslCarry90 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_332) * p.x / gsl_tmp_331 + sin(gsl_tmp_332) * p.y / gsl_tmp_331, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
+  let gsl_tmp_340 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_339 = max(length(p.xy), 0.2);
+  let gslCarry90 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_340) * p.x / gsl_tmp_339 + sin(gsl_tmp_340) * p.y / gsl_tmp_339, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
   return gslCarry90;
 }
 
 fn gsl_remap_70(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_349 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_348 = max(length(p.xy), 0.2);
-  let gslCarry94 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_349) * p.x / gsl_tmp_348 + sin(gsl_tmp_349) * p.y / gsl_tmp_348, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
+  let gsl_tmp_360 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_359 = max(length(p.xy), 0.2);
+  let gslCarry94 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_360) * p.x / gsl_tmp_359 + sin(gsl_tmp_360) * p.y / gsl_tmp_359, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
   return gslCarry94;
 }
 
 fn gsl_remap_71(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_368 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_367 = max(length(p.xy), 0.2);
-  let gslCarry98 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_368) * p.x / gsl_tmp_367 + sin(gsl_tmp_368) * p.y / gsl_tmp_367, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
+  let gsl_tmp_382 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_381 = max(length(p.xy), 0.2);
+  let gslCarry98 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_382) * p.x / gsl_tmp_381 + sin(gsl_tmp_382) * p.y / gsl_tmp_381, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
   return gslCarry98;
 }
 
 fn gsl_remap_72(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_385 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_384 = max(length(p.xy), 0.2);
-  let gslCarry102 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_385) * p.x / gsl_tmp_384 + sin(gsl_tmp_385) * p.y / gsl_tmp_384, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
+  let gsl_tmp_402 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_401 = max(length(p.xy), 0.2);
+  let gslCarry102 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_402) * p.x / gsl_tmp_401 + sin(gsl_tmp_402) * p.y / gsl_tmp_401, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
   return gslCarry102;
 }
 
@@ -735,6 +851,7 @@ fn fastener_screw(head: f32, shank: f32, drive: f32) -> f32 {
 }
 
 fn gsl_shapeParts(p: vec3<f32>, time: f32) -> array<f32, 24> {
+  gsl_featurePixel = select(0.0, gsl_vanishEye.w * mix(max(length(gsl_vanishEye.xyz - p), 1.0), 1.0, gsl_vanishView.x), gsl_vanishEye.w > 0.0);
   gsl_partNear = vec3<f32>(1e10, 1e10, 1e10);
   let gsl_partLo = vec3<f32>(-34.26, -20.26, -0.01);
   let gsl_partHi = vec3<f32>(-25.74, -11.74, 21.01);
@@ -1518,6 +1635,13 @@ fn gsl_vanish(lo: vec3<f32>, hi: vec3<f32>) -> vec4<f32> {
 
 fn gsl_boxDistance(q: vec3<f32>, lo: vec3<f32>, hi: vec3<f32>) -> f32 {
   return length(max(max(lo - q, q - hi), vec3<f32>(0.0)));
+}
+
+var<private> gsl_featurePixel: f32 = 0.0;
+
+fn gsl_featureWeight(size: f32) -> f32 {
+  if (gsl_featurePixel <= 0.0) { return 1.0; }
+  return smoothstep(gsl_vanishView.y, max(gsl_vanishView.z, gsl_vanishView.y + 1e-3), size / gsl_featurePixel);
 }
 
 var<private> gsl_simpleRung: f32;

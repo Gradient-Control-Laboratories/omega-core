@@ -185,7 +185,10 @@ oldProfile(numTeeth, moduleVal, pressureAngle, rotOffset, dedendumClearance, kSm
   rpy = pRho * sin(pAngleCentered);
   repeatedTooth = remap(singleTooth(), [rpx, rpy, p.z]);
   addClip = remap(circleXY([0, 0], addendumRadius), [opx, opy, p.z]);
-  toothProfile = intersectChamfer(repeatedTooth, addClip, kSmall);
+  tipRoll = sqrt(addendumRadius * addendumRadius - baseRadius * baseRadius) / baseRadius;
+  tipCorner = [cos(tipRoll) + tipRoll * sin(tipRoll), sin(tipRoll) - tipRoll * cos(tipRoll)];
+  toothProfile = intersectChamferNormalized(repeatedTooth, addClip, kSmall,
+                                            [sin(tipRoll), neg(cos(tipRoll))], tipCorner / length(tipCorner));
   dedBody = remap(circleXY([0, 0], dedendumRadius), [opx, opy, p.z]);
   return unionRound(toothProfile, dedBody, roundK);
 }

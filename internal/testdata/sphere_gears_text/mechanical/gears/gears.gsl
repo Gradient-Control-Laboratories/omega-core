@@ -47,9 +47,9 @@ gearProfile(numTeeth, moduleVal, pressureAngle, rotOffset, dedendumClearance, kS
    dedBody = remap(circleXY(collect(0, 0), dedendumRadius), collect(opx, opy, access(p, z)))
    profile = unionRound(toothProfile, dedBody, roundK)
    pitchDisc = remap(circleXY(collect(0, 0), pitchRadius), collect(opx, opy, access(p, z)))
-   tips = max(profile, (dedendumRadius - pRho))
+   tips = profile
    tips.featureSize = ((pi * moduleVal) / 2)
-   gaps = max(neg(profile), (pRho - addendumRadius))
+   gaps = neg(profile)
    gaps.featureSize = ((pi * moduleVal) / 2)
 
    rotInv() {

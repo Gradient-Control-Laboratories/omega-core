@@ -127,13 +127,16 @@ gearProfile(numTeeth, moduleVal, pressureAngle, rotOffset, dedendumClearance, kS
   // The same solid as the pitch disc with the tips added and the gaps taken
   // away, so that the teeth, a feature a tooth thickness across, give way to
   // the pitch circle when they are too small to see (builtin pruneBelow): the
-  // circle that rolls on its mate's. The tips run down to the root and the
-  // gaps out to the tip circle, overlapping the disc across the pitch circle,
-  // so no surface lies inside the solid there.
+  // circle that rolls on its mate's. The tips are the whole profile and the
+  // gaps the whole space outside it, unbounded: the disc takes in everything
+  // of them inside the pitch circle, so pruned the gear still leaves exactly
+  // the disc, and drawn the field is the profile's, max(min(disc, f), f) = f.
+  // Bounding them to bands about the pitch circle left the field measuring to
+  // the pitch and tip circles in each gap, short of the flanks.
   pitchDisc = remap(circleXY([0, 0], pitchRadius), [opx, opy, p.z]);
-  tips = max(profile, dedendumRadius - pRho);
+  tips = profile;
   tips.featureSize = pi * moduleVal / 2.0;
-  gaps = max(neg(profile), pRho - addendumRadius);
+  gaps = neg(profile);
   gaps.featureSize = pi * moduleVal / 2.0;
   return max(min(pitchDisc, tips), neg(gaps));
 }

@@ -46,8 +46,12 @@ from `1.0.0` onward).
   against the pixel at the point, from the camera, so it holds inside any rigid placement, and the feature
   fades across the Detail slider's band, as a part does, and is not evaluated once gone. A size of 0 takes
   the smallest extent of the value's box. A feature may stand only in a union or as what a difference takes
-  away (`pruneBelow(field, size)` in `builtin`); `gears.gearProfile` and `drill.hole` mark theirs, so gears
-  give way to their pitch cylinder and holes close as they shrink.
+  away (`pruneBelow(field, size)` in `builtin`). Gear teeth (`gears.gearProfile`, so every gear and
+  `shaft.gear`) give way to the pitch cylinder; threads (`thread.male`, `female`, `maleSin`, `femaleSin`, so
+  `shaft.thread`, the threaded fastener shanks and nuts, and `drill.tapThreaded`) give way to the cylinder at
+  their pitch diameter, crests and roots each half a pitch; and `drill.hole` voids close, sized by their own
+  field at the mouth. Drawn, a gear's and a thread's field is its profile's, as before. CPU evaluation,
+  meshing and export are unchanged.
 - `gsl fix -stdlib`: migrates removed 2-argument and 4-argument thunk calls to `unionRoundExact` and
   `intersectRoundExact` into field-value calls with `radius = 0`, and prints manual migration
   suggestions for calls to removed `builtin` functions (`sweepLoft`, `sweepLoftScale`,

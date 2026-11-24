@@ -7,7 +7,9 @@
 // and the viewer measures it against the pixel at the point it is looking
 // at: once it is too small to see, it gives way. The gear's teeth leave its
 // pitch cylinder, the circle that rolls on its mate's; the plate's 1.5 mm
-// holes close and the plate reads solid. Neither is evaluated once gone.
+// holes close and the plate reads solid; the stud's thread, crests and roots
+// half a pitch across, leaves the cylinder at its pitch diameter. None is
+// evaluated once gone.
 //
 // The band is the Detail slider's, as for parts: raise the slider and zoom
 // out. Lengths are in mm.
@@ -22,6 +24,11 @@ perforated = max(box([-60.0, -60.0, -3.0], [60.0, 60.0, 3.0]),
                  neg(remap(drill.hole(drill.thru(1.5), 3.0), map.patternRectangularXY([6.0, 6.0]))));
 perforated.color = [0.42, 0.50, 0.62];
 
+// An M10 x 1.5 stud 60 long, chamfered at both ends: its crests and roots are
+// 0.75 mm, half the plate's holes, so the thread goes first.
+stud = shaft.body([shaft.thread(10.0, 1.5, -30.0, 30.0, shaft.chamferEnd(1.0), shaft.chamferEnd(1.0))]);
+stud.color = [0.70, 0.62, 0.45];
+
 laidGear = transform.translate(bigGear, [-90.0, 0.0, 0.0]);
 laidPlate = transform.translate(perforated, [90.0, 0.0, 0.0]);
-return laidGear, laidPlate;
+return laidGear, laidPlate, stud;

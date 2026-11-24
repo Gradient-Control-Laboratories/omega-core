@@ -297,25 +297,61 @@ groove(major, pitchVal) {
   return max(minorR - rad, flank * 0.8660254 * flankScale(major, pitchVal));
 }
 
-// basicForm: the ISO 68-1 basic profile as a field, negative inside the
-// external thread's metal, which is the same region as an internal thread's
-// void. Unbounded along z.
-//
-// A boolean, start to finish: the cylinder at the major diameter, less the
-// groove. Nothing here is a magnitude multiplied by a sign.
-basicForm(major, pitchVal) {
+// isoForm: the ISO 68-1 profile whole, the cylinder at the major diameter
+// less the groove. A boolean, start to finish: nothing here is a magnitude
+// multiplied by a sign.
+isoForm(major, pitchVal) {
   return max(length(p.xy) - major / 2.0, neg(groove(major, pitchVal)));
 }
 
-// sinForm: the same envelope as a sinusoid instead of a truncated V. One
-// function for both hands, so a sinusoidal screw meshes with a sinusoidal
-// tapped hole rather than clashing with it half a pitch out of step.
-sinForm(major, pitchVal) {
+// sinusoid: the sinusoidal envelope whole.
+sinusoid(major, pitchVal) {
   radial = max(length(p.xy), 0.2);
   ang = 2.0 * pi * p.z / max(pitchVal, 0.01);
   along = cos(ang) * (p.x / radial) + sin(ang) * (p.y / radial);
   radiusAt = major / 2.0 - formDepth(pitchVal) * 0.5 * (1.0 - along);
   return (length(p.xy) - radiusAt) * 0.7;
+}
+
+// basicForm: the ISO 68-1 basic profile as a field, negative inside the
+// external thread's metal, which is the same region as an internal thread's
+// void. Unbounded along z.
+//
+// Written as the cylinder at the pitch diameter, with the crests added and
+// the roots taken away, the way gears.gearProfile writes a gear: the same
+// solid as isoForm, but the crests and the roots are each a feature, a tooth
+// thick at the pitch line (P / 2, as a gear's is pi m / 2), so the viewer
+// prunes them once they are smaller than a pixel and the thread reads as its
+// pitch cylinder, a screw and the hole tapped for it alike.
+//
+// The crests are the whole form, and the roots the whole space outside it,
+// unbounded: the cylinder takes in everything of them inside the pitch
+// diameter, so pruned the thread still leaves exactly the cylinder, and drawn
+// the field is the form itself, max(min(cylinder, form), form) = form, still
+// the distance the Profile notes promise, with no sheet anywhere. Bounding them
+// to the band either side of the pitch diameter would leave the cylinder's
+// distance standing in the groove, short of the flank's. Each calls the whole
+// form itself, so a pruned one evaluates nothing.
+basicForm(major, pitchVal) {
+  cylinder = length(p.xy) - pitchDia(major, pitchVal) / 2.0;
+  crests = isoForm(major, pitchVal);
+  crests.featureSize = pitchVal / 2.0;
+  roots = neg(isoForm(major, pitchVal));
+  roots.featureSize = pitchVal / 2.0;
+  return max(min(cylinder, crests), neg(roots));
+}
+
+// sinForm: the same envelope as a sinusoid instead of a truncated V. One
+// function for both hands, so a sinusoidal screw meshes with a sinusoidal
+// tapped hole rather than clashing with it half a pitch out of step. Split at
+// the pitch diameter as basicForm is, so both prune to the same cylinder.
+sinForm(major, pitchVal) {
+  cylinder = length(p.xy) - pitchDia(major, pitchVal) / 2.0;
+  crests = sinusoid(major, pitchVal);
+  crests.featureSize = pitchVal / 2.0;
+  roots = neg(sinusoid(major, pitchVal));
+  roots.featureSize = pitchVal / 2.0;
+  return max(min(cylinder, crests), neg(roots));
 }
 
 // =========================================================
