@@ -113,11 +113,12 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
   let gsl_partHi_4 = vec3<f32>(14.0, 50.0, 14.0);
   let gsl_partBox_4 = gsl_boxDistance(p, gsl_partLo_4, gsl_partHi_4);
   var gsl_part_4 = gsl_partBox_4;
-  let gsl_tmp_3 = cos(gsl_tmp_1 * 2.0);
+  let gsl_tmp_2 = p * vec3<f32>(0.28559932, 0.28559932, 0.28559932);
+  let gsl_tmp_3 = cos(gsl_tmp_2 * 2.0);
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_4 <= gsl_vanishView.w) {
     let gsl_partVanish_4 = gsl_vanish(gsl_partLo_4, gsl_partHi_4);
     gsl_part_4 = 1e10;
-    if (gsl_partVanish_4.x > 0.0) { gsl_part_4 = specimen(p, (tpms_sum3(vec3<f32>(1.0, 1.0, 1.0) * sin(vec3<f32>(gsl_tmp_1.z, gsl_tmp_1.x, gsl_tmp_1.y)) * cos(vec3<f32>(gsl_tmp_1.y, gsl_tmp_1.z, gsl_tmp_1.x)) * (sin(gsl_tmp_1 * 2.0) * 1.0 + 0.0)) - 1.0 * tpms_sum3(gsl_tmp_3 * vec3<f32>(gsl_tmp_3.y, gsl_tmp_3.z, gsl_tmp_3.x))) * 66.0 / 72.0, 0.0, 36.0) + gsl_partVanish_4.y; }
+    if (gsl_partVanish_4.x > 0.0) { gsl_part_4 = specimen(p, (tpms_sum3(vec3<f32>(1.0, 1.0, 1.0) * sin(vec3<f32>(gsl_tmp_2.z, gsl_tmp_2.x, gsl_tmp_2.y)) * cos(vec3<f32>(gsl_tmp_2.y, gsl_tmp_2.z, gsl_tmp_2.x)) * (sin(gsl_tmp_2 * 2.0) * 1.0 + 0.0)) - 1.0 * tpms_sum3(gsl_tmp_3 * vec3<f32>(gsl_tmp_3.y, gsl_tmp_3.z, gsl_tmp_3.x))) * 66.0 / 72.0, 0.0, 36.0) + gsl_partVanish_4.y; }
     if (abs(gsl_part_4) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_4), gsl_partVanish_4.zw); }
   }
   let lid = gsl_part_4;
@@ -125,7 +126,7 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
   let gsl_partHi_5 = vec3<f32>(48.0, 50.0, 14.0);
   let gsl_partBox_5 = gsl_boxDistance(p, gsl_partLo_5, gsl_partHi_5);
   var gsl_part_5 = gsl_partBox_5;
-  let gsl_tmp_4 = cos(gsl_tmp_1) * vec3<f32>(1.0, 1.0, 1.0);
+  let gsl_tmp_4 = cos(p * vec3<f32>(0.28559932, 0.28559932, 0.28559932)) * vec3<f32>(1.0, 1.0, 1.0);
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_5 <= gsl_vanishView.w) {
     let gsl_partVanish_5 = gsl_vanish(gsl_partLo_5, gsl_partHi_5);
     gsl_part_5 = 1e10;
@@ -137,10 +138,11 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
   let gsl_partHi_6 = vec3<f32>(82.0, 50.0, 14.0);
   let gsl_partBox_6 = gsl_boxDistance(p, gsl_partLo_6, gsl_partHi_6);
   var gsl_part_6 = gsl_partBox_6;
+  let gsl_tmp_5 = p * vec3<f32>(0.28559932, 0.28559932, 0.28559932);
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_6 <= gsl_vanishView.w) {
     let gsl_partVanish_6 = gsl_vanish(gsl_partLo_6, gsl_partHi_6);
     gsl_part_6 = 1e10;
-    if (gsl_partVanish_6.x > 0.0) { gsl_part_6 = specimen(p, (2.0 * tpms_sum3(vec3<f32>(1.0, 1.0, 1.0) * cos(gsl_tmp_1) * cos(vec3<f32>(gsl_tmp_1.y, gsl_tmp_1.z, gsl_tmp_1.x))) - tpms_sum3(gsl_tmp_3)) * 66.0 / 48.0, 68.0, 36.0) + gsl_partVanish_6.y; }
+    if (gsl_partVanish_6.x > 0.0) { gsl_part_6 = specimen(p, (2.0 * tpms_sum3(vec3<f32>(1.0, 1.0, 1.0) * cos(gsl_tmp_5) * cos(vec3<f32>(gsl_tmp_5.y, gsl_tmp_5.z, gsl_tmp_5.x))) - tpms_sum3(cos(gsl_tmp_5 * 2.0))) * 66.0 / 48.0, 68.0, 36.0) + gsl_partVanish_6.y; }
     if (abs(gsl_part_6) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_6), gsl_partVanish_6.zw); }
   }
   let wp = gsl_part_6;
@@ -148,11 +150,13 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
   let gsl_partHi_7 = vec3<f32>(116.0, 50.0, 14.0);
   let gsl_partBox_7 = gsl_boxDistance(p, gsl_partLo_7, gsl_partHi_7);
   var gsl_part_7 = gsl_partBox_7;
-  let gsl_tmp_7 = sin(gsl_tmp_1 * 2.0);
+  let gsl_tmp_6 = p * vec3<f32>(0.28559932, 0.28559932, 0.28559932);
+  let gsl_tmp_7 = sin(gsl_tmp_6 * 2.0);
+  let gsl_tmp_8 = cos(gsl_tmp_6 * 2.0);
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_7 <= gsl_vanishView.w) {
     let gsl_partVanish_7 = gsl_vanish(gsl_partLo_7, gsl_partHi_7);
     gsl_part_7 = 1e10;
-    if (gsl_partVanish_7.x > 0.0) { gsl_part_7 = specimen(p, (-1.0 * tpms_sum3(gsl_tmp_7 * cos(vec3<f32>(gsl_tmp_1.y, gsl_tmp_1.z, gsl_tmp_1.x)) * sin(vec3<f32>(gsl_tmp_1.z, gsl_tmp_1.x, gsl_tmp_1.y))) + 0.5 * tpms_sum3(gsl_tmp_7 * gsl_tmp_3) + 0.25 * tpms_sum3(gsl_tmp_3)) * 66.0 / 36.0, 102.0, 36.0) + gsl_partVanish_7.y; }
+    if (gsl_partVanish_7.x > 0.0) { gsl_part_7 = specimen(p, (-1.0 * tpms_sum3(gsl_tmp_7 * cos(vec3<f32>(gsl_tmp_6.y, gsl_tmp_6.z, gsl_tmp_6.x)) * sin(vec3<f32>(gsl_tmp_6.z, gsl_tmp_6.x, gsl_tmp_6.y))) + 0.5 * tpms_sum3(gsl_tmp_7 * gsl_tmp_8) + 0.25 * tpms_sum3(gsl_tmp_8)) * 66.0 / 36.0, 102.0, 36.0) + gsl_partVanish_7.y; }
     if (abs(gsl_part_7) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_7), gsl_partVanish_7.zw); }
   }
   let spl = gsl_part_7;

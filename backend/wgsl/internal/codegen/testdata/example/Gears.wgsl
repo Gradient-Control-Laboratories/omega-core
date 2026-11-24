@@ -97,8 +97,7 @@ fn gears_gearProfile(p: vec3<f32>, numTeeth: f32, moduleVal: f32, pressureAngle:
   let opx = p.x * cosO + p.y * sinO;
   let opy = -p.x * sinO + p.y * cosO;
   let pitchRadius = numTeeth / 2.0 * moduleVal;
-  let gsl_cse_1 = vec3<f32>(opx, opy, p.z);
-  let pitchDisc = builtin_circleXY(gsl_cse_1, vec2<f32>(0.0, 0.0), pitchRadius);
+  let pitchDisc = builtin_circleXY(vec3<f32>(opx, opy, p.z), vec2<f32>(0.0, 0.0), pitchRadius);
   let gsl_featureSize = 3.1415927 * moduleVal / 2.0;
   let gsl_featureWeight = gsl_featureWeight(gsl_featureSize);
   let pRho = length(vec2<f32>(opx, opy));
@@ -112,13 +111,13 @@ fn gears_gearProfile(p: vec3<f32>, numTeeth: f32, moduleVal: f32, pressureAngle:
   let rpy = pRho * sin(pAngleCentered);
   let repeatedTooth = gsl_gears_gearProfile_remap_2(vec3<f32>(rpx, rpy, p.z), dedendumClearance, kSmall, moduleVal, numTeeth, pressureAngle, rotOffset);
   let addendumRadius = pitchRadius + moduleVal;
-  let addClip = builtin_circleXY(gsl_cse_1, vec2<f32>(0.0, 0.0), addendumRadius);
+  let addClip = builtin_circleXY(vec3<f32>(opx, opy, p.z), vec2<f32>(0.0, 0.0), addendumRadius);
   let baseRadius = pitchRadius * cos(pressureAngle);
   let tipRoll = sqrt(addendumRadius * addendumRadius - baseRadius * baseRadius) / baseRadius;
   let tipCorner = vec2<f32>(cos(tipRoll) + tipRoll * sin(tipRoll), sin(tipRoll) - tipRoll * cos(tipRoll));
   let toothProfile = builtin_intersectChamferNormalized(repeatedTooth, addClip, kSmall, vec2<f32>(sin(tipRoll), -cos(tipRoll)), tipCorner / length(tipCorner));
   let dedendumRadius = pitchRadius - (1.0 + dedendumClearance) * moduleVal;
-  let dedBody = builtin_circleXY(gsl_cse_1, vec2<f32>(0.0, 0.0), dedendumRadius);
+  let dedBody = builtin_circleXY(vec3<f32>(opx, opy, p.z), vec2<f32>(0.0, 0.0), dedendumRadius);
   let roundK = dedendumClearance * moduleVal;
   let profile = builtin_unionRound(toothProfile, dedBody, roundK);
   var gsl_feature = 100000.0;
@@ -126,9 +125,16 @@ fn gears_gearProfile(p: vec3<f32>, numTeeth: f32, moduleVal: f32, pressureAngle:
     gsl_feature = profile + (1.0 - gsl_featureWeight) * 0.5 * gsl_featureSize;
   }
   let tips = gsl_feature;
+  let gsl_featureSize_2 = 3.1415927 * moduleVal / 2.0;
+  let gsl_featureWeight_2 = gsl_featureWeight(gsl_featureSize_2);
   var gsl_feature_2 = 100000.0;
+<<<<<<< HEAD
   if (gsl_featureWeight > 0.0) {
     gsl_feature_2 = -profile + (1.0 - gsl_featureWeight) * 0.5 * gsl_featureSize;
+=======
+  if (gsl_featureWeight_2 > 0.0) {
+    gsl_feature_2 = max(-profile, pRho - addendumRadius) + (1.0 - gsl_featureWeight_2) * 0.5 * gsl_featureSize_2;
+>>>>>>> origin/blake/shaft-prune
   }
   let gaps = gsl_feature_2;
   return max(min(pitchDisc, tips), -gaps);
@@ -177,10 +183,8 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_6_28: f32, gsl_param_7_28: f32, gs
   let numTeeth1 = gsl_param_6_28;
   let moduleVal = gsl_param_8_30;
   let gslBox = max((numTeeth1 / 2.0 + 1.0) * moduleVal, 1.6);
-  let gsl_cse_2 = numTeeth1 / 2.0 * moduleVal;
-  let gsl_cse_1 = -gsl_cse_2 - gslBox;
-  let gsl_partLo = vec3<f32>(min(gsl_cse_1, gslBox - gsl_cse_2) - 0.01, min(-gslBox, gslBox) - 0.01, -1.76);
-  let gsl_partHi = vec3<f32>(max(gsl_cse_1, gslBox - gsl_cse_2) + 0.01, max(-gslBox, gslBox) + 0.01, 2.51);
+  let gsl_partLo = vec3<f32>(min(-(numTeeth1 / 2.0 * moduleVal) - gslBox, gslBox - numTeeth1 / 2.0 * moduleVal) - 0.01, min(-gslBox, gslBox) - 0.01, -1.76);
+  let gsl_partHi = vec3<f32>(max(-(numTeeth1 / 2.0 * moduleVal) - gslBox, gslBox - numTeeth1 / 2.0 * moduleVal) + 0.01, max(-gslBox, gslBox) + 0.01, 2.51);
   let gsl_partBox = gsl_boxDistance(p, gsl_partLo, gsl_partHi);
   var gsl_part = gsl_partBox;
   let vector_zero = vec3<f32>(0.0, 0.0, 0.0);
@@ -199,9 +203,8 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_6_28: f32, gsl_param_7_28: f32, gs
   }
   let g1 = gsl_part;
   let gslBox_3 = max((numTeeth2 / 2.0 + 1.0) * moduleVal, 2.1);
-  let gsl_cse_3 = numTeeth2 / 2.0 * moduleVal;
-  let gsl_partLo_2 = vec3<f32>(min(gsl_cse_3 - gslBox_3, gsl_cse_3 + gslBox_3) - 0.01, min(-gslBox_3, gslBox_3) - 0.01, -1.76);
-  let gsl_partHi_2 = vec3<f32>(max(gsl_cse_3 - gslBox_3, gsl_cse_3 + gslBox_3) + 0.01, max(-gslBox_3, gslBox_3) + 0.01, 2.51);
+  let gsl_partLo_2 = vec3<f32>(min(numTeeth2 / 2.0 * moduleVal - gslBox_3, numTeeth2 / 2.0 * moduleVal + gslBox_3) - 0.01, min(-gslBox_3, gslBox_3) - 0.01, -1.76);
+  let gsl_partHi_2 = vec3<f32>(max(numTeeth2 / 2.0 * moduleVal - gslBox_3, numTeeth2 / 2.0 * moduleVal + gslBox_3) + 0.01, max(-gslBox_3, gslBox_3) + 0.01, 2.51);
   let gsl_partBox_2 = gsl_boxDistance(p, gsl_partLo_2, gsl_partHi_2);
   var gsl_part_2 = gsl_partBox_2;
   let gsl_part_g2 = gsl_result.v_2;

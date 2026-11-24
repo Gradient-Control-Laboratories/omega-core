@@ -161,8 +161,7 @@ fn builtin_unionSharp(fields: vec3<f32>) -> f32 {
 }
 
 fn gsl_remap_19(p: vec3<f32>, vector_dirX: vec3<f32>, vector_dirZ: vec3<f32>) -> f32 {
-  let gsl_cse_1 = vec3<f32>(length(p + vector_dirX) - 2.0, length(p - vector_dirX) - 2.0, length(p - vec3<f32>(0.0, 0.0, 1.7320508)) - 2.0);
-  return max(builtin_intersectSharp(gsl_cse_1), -gcl_closure_remapEdges(p, gsl_cse_1));
+  return max(builtin_intersectSharp(vec3<f32>(length(p + vector_dirX) - 2.0, length(p - vector_dirX) - 2.0, length(p - vec3<f32>(0.0, 0.0, 1.7320508)) - 2.0)), -gcl_closure_remapEdges(p, vec3<f32>(length(p + vector_dirX) - 2.0, length(p - vector_dirX) - 2.0, length(p - vec3<f32>(0.0, 0.0, 1.7320508)) - 2.0)));
 }
 
 fn gsl_remap_20(p: vec3<f32>, vector_dirX: vec3<f32>, vector_dirZ: vec3<f32>) -> f32 {
@@ -170,12 +169,11 @@ fn gsl_remap_20(p: vec3<f32>, vector_dirX: vec3<f32>, vector_dirZ: vec3<f32>) ->
   let gsl_tmp_56 = length(p - vector_dirX) - 2.0;
   let gsl_tmp_57 = length(p - vec3<f32>(0.0, 0.0, 1.7320508)) - 2.0;
   let gsl_tmp_25 = builtin_intersectSharp(vec3<f32>(gsl_tmp_55, -gsl_tmp_56, -gsl_tmp_57));
-  return min(gsl_tmp_25, max(gcl_closure_remapEdges_3(p, vec3<f32>(gsl_tmp_55, gsl_tmp_56, gsl_tmp_57)), gsl_tmp_25 - 0.5));
+  return min(gsl_tmp_25, max(gcl_closure_remapEdges_3(p, vec3<f32>(length(p + vector_dirX) - 2.0, length(p - vector_dirX) - 2.0, length(p - vec3<f32>(0.0, 0.0, 1.7320508)) - 2.0)), gsl_tmp_25 - 0.5));
 }
 
 fn gsl_remap_21(p: vec3<f32>, vector_dirX: vec3<f32>, vector_dirZ: vec3<f32>) -> f32 {
-  let gsl_cse_1 = vec3<f32>(length(p + vector_dirX) - 2.0, length(p - vector_dirX) - 2.0, length(p - vec3<f32>(0.0, 0.0, 1.7320508)) - 2.0);
-  return max(builtin_intersectSharp(gsl_cse_1), -gcl_closure_remapEdges_4(p, gsl_cse_1));
+  return max(builtin_intersectSharp(vec3<f32>(length(p + vector_dirX) - 2.0, length(p - vector_dirX) - 2.0, length(p - vec3<f32>(0.0, 0.0, 1.7320508)) - 2.0)), -gcl_closure_remapEdges_4(p, vec3<f32>(length(p + vector_dirX) - 2.0, length(p - vector_dirX) - 2.0, length(p - vec3<f32>(0.0, 0.0, 1.7320508)) - 2.0)));
 }
 
 fn gsl_remap_22(p: vec3<f32>, vector_dirX: vec3<f32>, vector_dirZ: vec3<f32>) -> f32 {
@@ -183,12 +181,11 @@ fn gsl_remap_22(p: vec3<f32>, vector_dirX: vec3<f32>, vector_dirZ: vec3<f32>) ->
   let gsl_tmp_59 = length(p - vector_dirX) - 2.0;
   let gsl_tmp_60 = length(p - vec3<f32>(0.0, 0.0, 1.7320508)) - 2.0;
   let gsl_tmp_26 = builtin_intersectSharp(vec3<f32>(gsl_tmp_58, -gsl_tmp_59, -gsl_tmp_60));
-  return min(gsl_tmp_26, max(gcl_closure_remapEdges_6(p, vec3<f32>(gsl_tmp_58, gsl_tmp_59, gsl_tmp_60)), gsl_tmp_26 - 0.5));
+  return min(gsl_tmp_26, max(gcl_closure_remapEdges_6(p, vec3<f32>(length(p + vector_dirX) - 2.0, length(p - vector_dirX) - 2.0, length(p - vec3<f32>(0.0, 0.0, 1.7320508)) - 2.0)), gsl_tmp_26 - 0.5));
 }
 
 fn gsl_remap_23(p: vec3<f32>, vector_dirX: vec3<f32>, vector_dirZ: vec3<f32>) -> f32 {
-  let gsl_cse_1 = vec3<f32>(length(p + vector_dirX) - 2.0, length(p - vector_dirX) - 2.0, length(p - vec3<f32>(0.0, 0.0, 1.7320508)) - 2.0);
-  return max(builtin_intersectSharp(gsl_cse_1), -gcl_closure_remapEdges_7(p, gsl_cse_1));
+  return max(builtin_intersectSharp(vec3<f32>(length(p + vector_dirX) - 2.0, length(p - vector_dirX) - 2.0, length(p - vec3<f32>(0.0, 0.0, 1.7320508)) - 2.0)), -gcl_closure_remapEdges_7(p, vec3<f32>(length(p + vector_dirX) - 2.0, length(p - vector_dirX) - 2.0, length(p - vec3<f32>(0.0, 0.0, 1.7320508)) - 2.0)));
 }
 
 fn gsl_remap_24(p: vec3<f32>, vector_dirX: vec3<f32>, vector_dirZ: vec3<f32>) -> f32 {
@@ -196,7 +193,7 @@ fn gsl_remap_24(p: vec3<f32>, vector_dirX: vec3<f32>, vector_dirZ: vec3<f32>) ->
   let gsl_tmp_62 = length(p - vector_dirX) - 2.0;
   let gsl_tmp_63 = length(p - vec3<f32>(0.0, 0.0, 1.7320508)) - 2.0;
   let gsl_tmp_27 = builtin_intersectSharp(vec3<f32>(gsl_tmp_61, -gsl_tmp_62, -gsl_tmp_63));
-  return min(gsl_tmp_27, max(gcl_closure_remapEdges_9(p, vec3<f32>(gsl_tmp_61, gsl_tmp_62, gsl_tmp_63)), gsl_tmp_27 - 0.5));
+  return min(gsl_tmp_27, max(gcl_closure_remapEdges_9(p, vec3<f32>(length(p + vector_dirX) - 2.0, length(p - vector_dirX) - 2.0, length(p - vec3<f32>(0.0, 0.0, 1.7320508)) - 2.0)), gsl_tmp_27 - 0.5));
 }
 
 fn gsl_remap_25(p: vec3<f32>, vector_dirX: vec3<f32>, vector_dirZ: vec3<f32>) -> f32 {
@@ -240,20 +237,17 @@ fn gsl_remap_32(p: vec3<f32>, vector_dirX: vec3<f32>, vector_dirZ: vec3<f32>) ->
 }
 
 fn gsl_remap_33(p: vec3<f32>, vector_dirX: vec3<f32>, vector_dirZ: vec3<f32>) -> f32 {
-  let gsl_cse_1 = vec3<f32>(length(p + vector_dirX) - 2.0, length(p - vector_dirX) - 2.0, length(p - vec3<f32>(0.0, 0.0, 1.7320508)) - 2.0);
-  let edgesCircle = min(min(gsl_remap_19(p - vec3<f32>(0.0, 0.0, 7.5), vector_dirX, vector_dirZ), min(builtin_unionSharp(gsl_cse_1), gcl_closure_remapEdges_2(p, gsl_cse_1))), gsl_remap_20(p + vec3<f32>(0.0, 0.0, 7.5), vector_dirX, vector_dirZ));
+  let edgesCircle = min(min(gsl_remap_19(p - vec3<f32>(0.0, 0.0, 7.5), vector_dirX, vector_dirZ), min(builtin_unionSharp(vec3<f32>(length(p + vector_dirX) - 2.0, length(p - vector_dirX) - 2.0, length(p - vec3<f32>(0.0, 0.0, 1.7320508)) - 2.0)), gcl_closure_remapEdges_2(p, vec3<f32>(length(p + vector_dirX) - 2.0, length(p - vector_dirX) - 2.0, length(p - vec3<f32>(0.0, 0.0, 1.7320508)) - 2.0)))), gsl_remap_20(p + vec3<f32>(0.0, 0.0, 7.5), vector_dirX, vector_dirZ));
   return edgesCircle;
 }
 
 fn gsl_remap_34(p: vec3<f32>, vector_dirX: vec3<f32>, vector_dirZ: vec3<f32>) -> f32 {
-  let gsl_cse_1 = vec3<f32>(length(p + vector_dirX) - 2.0, length(p - vector_dirX) - 2.0, length(p - vec3<f32>(0.0, 0.0, 1.7320508)) - 2.0);
-  let edgesDiamond = min(min(gsl_remap_21(p - vec3<f32>(0.0, 0.0, 7.5), vector_dirX, vector_dirZ), min(builtin_unionSharp(gsl_cse_1), gcl_closure_remapEdges_5(p, gsl_cse_1))), gsl_remap_22(p + vec3<f32>(0.0, 0.0, 7.5), vector_dirX, vector_dirZ));
+  let edgesDiamond = min(min(gsl_remap_21(p - vec3<f32>(0.0, 0.0, 7.5), vector_dirX, vector_dirZ), min(builtin_unionSharp(vec3<f32>(length(p + vector_dirX) - 2.0, length(p - vector_dirX) - 2.0, length(p - vec3<f32>(0.0, 0.0, 1.7320508)) - 2.0)), gcl_closure_remapEdges_5(p, vec3<f32>(length(p + vector_dirX) - 2.0, length(p - vector_dirX) - 2.0, length(p - vec3<f32>(0.0, 0.0, 1.7320508)) - 2.0)))), gsl_remap_22(p + vec3<f32>(0.0, 0.0, 7.5), vector_dirX, vector_dirZ));
   return edgesDiamond;
 }
 
 fn gsl_remap_35(p: vec3<f32>, vector_dirX: vec3<f32>, vector_dirZ: vec3<f32>) -> f32 {
-  let gsl_cse_1 = vec3<f32>(length(p + vector_dirX) - 2.0, length(p - vector_dirX) - 2.0, length(p - vec3<f32>(0.0, 0.0, 1.7320508)) - 2.0);
-  let edgesSquare = min(min(gsl_remap_23(p - vec3<f32>(0.0, 0.0, 7.5), vector_dirX, vector_dirZ), min(builtin_unionSharp(gsl_cse_1), gcl_closure_remapEdges_8(p, gsl_cse_1))), gsl_remap_24(p + vec3<f32>(0.0, 0.0, 7.5), vector_dirX, vector_dirZ));
+  let edgesSquare = min(min(gsl_remap_23(p - vec3<f32>(0.0, 0.0, 7.5), vector_dirX, vector_dirZ), min(builtin_unionSharp(vec3<f32>(length(p + vector_dirX) - 2.0, length(p - vector_dirX) - 2.0, length(p - vec3<f32>(0.0, 0.0, 1.7320508)) - 2.0)), gcl_closure_remapEdges_8(p, vec3<f32>(length(p + vector_dirX) - 2.0, length(p - vector_dirX) - 2.0, length(p - vec3<f32>(0.0, 0.0, 1.7320508)) - 2.0)))), gsl_remap_24(p + vec3<f32>(0.0, 0.0, 7.5), vector_dirX, vector_dirZ));
   return edgesSquare;
 }
 

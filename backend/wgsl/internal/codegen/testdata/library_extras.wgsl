@@ -121,13 +121,11 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
     if (abs(gsl_part_3) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_3), gsl_partVanish_3.zw); }
   }
   let hollowBias = gsl_part_3;
-  let gsl_cse_2 = builtin_gcl_closure_boxCentered(p, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(12.0, 12.0, 12.0));
-  let cay = builtin_twoBodyField(length(p) - 8.0, gsl_cse_2);
-  let pol = builtin_mixAngle(length(p) - 8.0, gsl_cse_2, 0.6);
-  let gsl_cse_1 = vec2<f32>(length(p) - 8.0, gsl_cse_2);
-  let rv = builtin_intersectRvachev(gsl_cse_1, 1.0);
-  let ru = builtin_unionRvachev(gsl_cse_1, 1.0);
-  let rd = builtin_differenceRvachev(length(p) - 8.0, gsl_cse_2, 1.0);
+  let cay = builtin_twoBodyField(length(p) - 8.0, builtin_gcl_closure_boxCentered(p, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(12.0, 12.0, 12.0)));
+  let pol = builtin_mixAngle(length(p) - 8.0, builtin_gcl_closure_boxCentered(p, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(12.0, 12.0, 12.0)), 0.6);
+  let rv = builtin_intersectRvachev(vec2<f32>(length(p) - 8.0, builtin_gcl_closure_boxCentered(p, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(12.0, 12.0, 12.0))), 1.0);
+  let ru = builtin_unionRvachev(vec2<f32>(length(p) - 8.0, builtin_gcl_closure_boxCentered(p, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(12.0, 12.0, 12.0))), 1.0);
+  let rd = builtin_differenceRvachev(length(p) - 8.0, builtin_gcl_closure_boxCentered(p, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(12.0, 12.0, 12.0)), 1.0);
   let spun = gsl_remap(map_rotateAxis(p, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 0.0), 0.5));
   let cyl = builtin_gcl_closure_boxCentered(vec3<f32>(length(p.xy), atan2(p.y, p.x) * 40.0 / 6.2831855, p.z), vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(3.0, 3.0, 3.0));
   let gsl_s1 = gsl_shape(min(min(min(t, seg), min(hollow, hollowBias)), min(min(cay, pol), min(min(rv, ru), min(rd, min(spun, cyl))))), 1u);

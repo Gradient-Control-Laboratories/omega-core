@@ -84,14 +84,9 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_4_28: f32, gsl_param_5_27: f32, gs
   let upperArm = arm(p, slideCenter.x, slideCenter.y, intPt.x, intPt.y, 0.7, 0.8);
   let couplerArmSlider = coupler(p, -3.3, -1.7, slideCenter.y, 1.6, 1.4);
   let couplerArmBase = coupler(p, -3.3, -1.7, -4.0, 1.6, 1.4);
-  let gsl_cse_5 = p.xy - vec2<f32>(-1.7, -4.0);
-  let cylBase = length(gsl_cse_5) - r1;
-  let gsl_cse_4 = p.xy - slideCenter - vec2<f32>(0.0, p.z);
-  let gsl_cse_3 = length(gsl_cse_4);
-  let cylSlide = gsl_cse_3 - r2;
-  let gsl_cse_1 = clamp(gsl_cse_4 / max(gsl_cse_3, 0.00000000000000000001), vec2<f32>(-1.0), vec2<f32>(1.0));
-  let gsl_cse_2 = clamp(gsl_cse_5 / max(length(gsl_cse_5), 0.00000000000000000001), vec2<f32>(-1.0), vec2<f32>(1.0));
-  let gsl_result = normalizeCurve__d(cylBase, cylSlide, dot(gsl_cse_2, vec2<f32>(1.0, 0.0)), dot(gsl_cse_2, vec2<f32>(0.0, 1.0)), dot(gsl_cse_2, vec2<f32>(0.0, 0.0)), dot(gsl_cse_1, vec2<f32>(1.0, 0.0)), dot(gsl_cse_1, vec2<f32>(0.0, 1.0)), dot(gsl_cse_1, vec2<f32>(0.0, -1.0)));
+  let cylBase = length(p.xy - vec2<f32>(-1.7, -4.0)) - r1;
+  let cylSlide = length(p.xy - slideCenter - vec2<f32>(0.0, p.z)) - r2;
+  let gsl_result = normalizeCurve__d(cylBase, cylSlide, dot(clamp((p.xy - vec2<f32>(-1.7, -4.0)) / max(length(p.xy - vec2<f32>(-1.7, -4.0)), 0.00000000000000000001), vec2<f32>(-1.0), vec2<f32>(1.0)), vec2<f32>(1.0, 0.0)), dot(clamp((p.xy - vec2<f32>(-1.7, -4.0)) / max(length(p.xy - vec2<f32>(-1.7, -4.0)), 0.00000000000000000001), vec2<f32>(-1.0), vec2<f32>(1.0)), vec2<f32>(0.0, 1.0)), dot(clamp((p.xy - vec2<f32>(-1.7, -4.0)) / max(length(p.xy - vec2<f32>(-1.7, -4.0)), 0.00000000000000000001), vec2<f32>(-1.0), vec2<f32>(1.0)), vec2<f32>(0.0, 0.0)), dot(clamp((p.xy - slideCenter - vec2<f32>(0.0, p.z)) / max(length(p.xy - slideCenter - vec2<f32>(0.0, p.z)), 0.00000000000000000001), vec2<f32>(-1.0), vec2<f32>(1.0)), vec2<f32>(1.0, 0.0)), dot(clamp((p.xy - slideCenter - vec2<f32>(0.0, p.z)) / max(length(p.xy - slideCenter - vec2<f32>(0.0, p.z)), 0.00000000000000000001), vec2<f32>(-1.0), vec2<f32>(1.0)), vec2<f32>(0.0, 1.0)), dot(clamp((p.xy - slideCenter - vec2<f32>(0.0, p.z)) / max(length(p.xy - slideCenter - vec2<f32>(0.0, p.z)), 0.00000000000000000001), vec2<f32>(-1.0), vec2<f32>(1.0)), vec2<f32>(0.0, -1.0)));
   let dist = gsl_result.v_1;
   let cylpath = dist - 0.02;
   let gsl_s1 = gsl_shape(shaft, 1u);

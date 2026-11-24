@@ -19,10 +19,9 @@ fn smin(a: f32, b: f32, k: f32, sdfTex0: texture_3d<f32>, sdfSmp0: sampler, sdfB
 }
 
 fn sdShape(p: vec3<f32>, time: f32, sdfTex0: texture_3d<f32>, sdfSmp0: sampler, sdfBMin0: vec3<f32>, sdfBSize0: vec3<f32>) -> gsl_shape {
-  let gsl_cse_1 = cylinder(p, 1.1, 8.0, sdfTex0, sdfSmp0, sdfBMin0, sdfBSize0);
-  let tree = min(gsl_remap(vec3<f32>(p.x - 1.0, p.y, p.z), sdfTex0, sdfSmp0, sdfBMin0, sdfBSize0), gsl_cse_1);
+  let tree = min(gsl_remap(vec3<f32>(p.x - 1.0, p.y, p.z), sdfTex0, sdfSmp0, sdfBMin0, sdfBSize0), cylinder(p, 1.1, 8.0, sdfTex0, sdfSmp0, sdfBMin0, sdfBSize0));
   let innerShell = tree + 0.01;
   let inner = smin(innerShell, innerShell, 0.02, sdfTex0, sdfSmp0, sdfBMin0, sdfBSize0);
-  let gsl_s1 = gsl_shape(max(min(1e30, gsl_cse_1), -inner), 1u);
+  let gsl_s1 = gsl_shape(max(min(1e30, cylinder(p, 1.1, 8.0, sdfTex0, sdfSmp0, sdfBMin0, sdfBSize0)), -inner), 1u);
   return gsl_s1;
 }

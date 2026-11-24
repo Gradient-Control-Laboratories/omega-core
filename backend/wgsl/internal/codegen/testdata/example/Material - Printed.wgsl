@@ -56,10 +56,9 @@ fn builtin_sphere(p: vec3<f32>, radius: f32, noiseTex: texture_3d<f32>) -> f32 {
 
 fn noise_cellularF1F2CellLattice(q: vec3<f32>, noiseTex: texture_3d<f32>) -> gsl_struct {
   var gsl_result : gsl_struct;
-  let gsl_cse_1 = gsl_cellularScan(q, 1, noiseTex);
-  gsl_result.v_1 = gsl_cse_1.f1;
-  gsl_result.v_2 = gsl_cse_1.f2;
-  gsl_result.v_3 = gsl_cse_1.nearCell;
+  gsl_result.v_1 = gsl_cellularScan(q, 1, noiseTex).f1;
+  gsl_result.v_2 = gsl_cellularScan(q, 1, noiseTex).f2;
+  gsl_result.v_3 = gsl_cellularScan(q, 1, noiseTex).nearCell;
   return gsl_result;
 }
 

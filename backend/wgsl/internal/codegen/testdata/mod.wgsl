@@ -17,11 +17,11 @@ fn gsl_floored_vec4(a: vec4<f32>, n: vec4<f32>) -> vec4<f32> {
 fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
   let b1 = p.x;
   let c1 = gsl_floored(3.0, b1);
-  let b2 = vec2<f32>(5.0, b1);
+  let b2 = vec2<f32>(5.0, p.x);
   let c2 = gsl_floored_vec2(vec2<f32>(2.0, 3.0), b2);
-  let b3 = vec3<f32>(5.0, 6.0, b1);
+  let b3 = vec3<f32>(5.0, 6.0, p.x);
   let c3 = gsl_floored_vec3(vec3<f32>(2.0, 3.0, 4.0), b3);
-  let b4 = vec4<f32>(6.0, 7.0, 8.0, b1);
+  let b4 = vec4<f32>(6.0, 7.0, 8.0, p.x);
   let c4 = gsl_floored_vec4(vec4<f32>(2.0, 3.0, 4.0, 5.0), b4);
   let gsl_s1 = gsl_shape(c1, 1u);
   let gsl_s2 = gsl_shape(-1.0, 2u);

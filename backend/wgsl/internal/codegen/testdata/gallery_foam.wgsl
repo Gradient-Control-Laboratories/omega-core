@@ -162,7 +162,7 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_4 <= gsl_vanishView.w) {
     let gsl_partVanish_4 = gsl_vanish(gsl_partLo_4, gsl_partHi_4);
     gsl_part_4 = 1e10;
-    if (gsl_partVanish_4.x > 0.0) { gsl_part_4 = specimen(p, gsl_remap_2(abs(gsl_tmp_1)), 51.0) + gsl_partVanish_4.y; }
+    if (gsl_partVanish_4.x > 0.0) { gsl_part_4 = specimen(p, gsl_remap_2(abs(map_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0)))), 51.0) + gsl_partVanish_4.y; }
     if (abs(gsl_part_4) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_4), gsl_partVanish_4.zw); }
   }
   let fcc = gsl_part_4;

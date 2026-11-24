@@ -122,6 +122,7 @@ fn noise_gradientLattice(q: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
 }
 
 fn gsl_pin_remap(p: vec3<f32>, x: f32, noiseTex: texture_3d<f32>) -> f32 {
+<<<<<<< HEAD
   let gsl_featureSize = 0.125;
   let gsl_featureWeight = gsl_featureWeight(gsl_featureSize);
   var gsl_feature = 100000.0;
@@ -140,6 +141,12 @@ fn gsl_pin_remap(p: vec3<f32>, x: f32, noiseTex: texture_3d<f32>) -> f32 {
     gsl_feature_2 = -max(gsl_tmp_4 - 0.6, -max(0.46468353 - gsl_tmp_4, ((1.0 - acos(clamp(cos(gsl_tmp_6) * p.x / gsl_tmp_5 + sin(gsl_tmp_6) * p.y / gsl_tmp_5, -1.0, 1.0)) / 3.1415927) * 0.125 - 0.03125 - (gsl_tmp_4 - 0.46468353) * 0.57735026) * 0.8604493)) + (1.0 - gsl_featureWeight) * 0.5 * gsl_featureSize_2;
   }
   return max(max(max(min(length(p.xy) - 0.5188125, gsl_feature), -gsl_feature_2), abs(p.z) - 2.5), (length(p.xy) - 0.6 + abs(p.z) - 2.5 + 0.15) * 0.7071);
+=======
+  let gsl_tmp_1 = length(p.xy);
+  let gsl_tmp_3 = 6.2831855 * p.z / 0.25;
+  let gsl_tmp_2 = max(length(p.xy), 0.2);
+  return max(max(max(length(p.xy) - 0.6, -max(0.46468353 - gsl_tmp_1, ((1.0 - acos(clamp(cos(gsl_tmp_3) * p.x / gsl_tmp_2 + sin(gsl_tmp_3) * p.y / gsl_tmp_2, -1.0, 1.0)) / 3.1415927) * 0.125 - 0.03125 - (gsl_tmp_1 - 0.46468353) * 0.57735026) * 0.8604493)), abs(p.z) - 2.5), (length(p.xy) - 0.6 + abs(p.z) - 2.5 + 0.15) * 0.7071);
+>>>>>>> origin/blake/shaft-prune
 }
 
 fn pin(p: vec3<f32>, x: f32, noiseTex: texture_3d<f32>) -> f32 {

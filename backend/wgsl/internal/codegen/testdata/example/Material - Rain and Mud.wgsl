@@ -113,12 +113,10 @@ fn animated_rainRing(r: f32, age: f32, dropSize: f32, noiseTex: texture_3d<f32>)
 
 fn animated_rain_gsl_anon(p: vec3<f32>, base: vec3<f32>, time: f32, period: f32, cellSize: f32, dropSize: f32, acc: f32, i: f32, noiseTex: texture_3d<f32>) -> f32 {
   let cell = base + vec3<f32>(gsl_floored(i, 5.0) - 2.0, floor(i / 5.0) - 2.0, 0.0);
-  let gsl_cse_2 = vec3<f32>(cell.x + 71.0, cell.y + 13.0, 0.0);
-  let h = fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_2)) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_2 / 64.0)) & vec3<i32>(63), 0).rgb);
+  let h = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(cell.x + 71.0, cell.y + 13.0, 0.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(cell.x + 71.0, cell.y + 13.0, 0.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
   let cycles = time / period + h.x;
   let drop = floor(cycles);
-  let gsl_cse_1 = vec3<f32>(cell.x + 0.37 * drop + 5.0, cell.y + 0.11 * drop + 29.0, cell.y + 17.0);
-  let spot = fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_1)) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_1 / 64.0)) & vec3<i32>(63), 0).rgb);
+  let spot = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(cell.x + 0.37 * drop + 5.0, cell.y + 0.11 * drop + 29.0, cell.y + 17.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(cell.x + 0.37 * drop + 5.0, cell.y + 0.11 * drop + 29.0, cell.y + 17.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
   let x = p.x - (cell.x + spot.x) * cellSize;
   let y = p.y - (cell.y + spot.y) * cellSize;
   let r = sqrt(x * x + y * y);
@@ -168,8 +166,7 @@ fn animated_mudBubble(r: f32, phase: f32, cycle: f32, size: f32, thinness: f32, 
 
 fn animated_mudPot_gsl_anon(p: vec3<f32>, base: vec3<f32>, cellSize: f32, period: f32, time: f32, bubbleSize: f32, thinness: f32, acc: vec2<f32>, i: f32, noiseTex: texture_3d<f32>) -> vec2<f32> {
   let cell = base + vec3<f32>(gsl_floored(i, 3.0) - 1.0, floor(i / 3.0) - 1.0, 0.0);
-  let gsl_cse_1 = vec3<f32>(cell.x + 3.0, cell.y + 97.0, 0.0);
-  let h = fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_1)) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor(gsl_cse_1 / 64.0)) & vec3<i32>(63), 0).rgb);
+  let h = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(cell.x + 3.0, cell.y + 97.0, 0.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(cell.x + 3.0, cell.y + 97.0, 0.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
   let x = p.x - (cell.x + 0.33 + 0.33 * h.x) * cellSize;
   let y = p.y - (cell.y + 0.33 + 0.33 * h.y) * cellSize;
   let r = sqrt(x * x + y * y);
@@ -211,9 +208,8 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32, gsl_param_10_26: f32, gsl_param_14_25
   let rainfall = gsl_param_10_26;
   let gsl_result = animated_rain(p, time, rainfall, 2.0, noiseTex);
   let rainHeight = gsl_result.v_3;
-  let gsl_cse_1 = max(rainHeight, 0.0);
-  let gsl_partLo = vec3<f32>(-28.0 - gsl_cse_1, -12.0 - gsl_cse_1, -4.0 - gsl_cse_1);
-  let gsl_partHi = vec3<f32>(-4.0 + gsl_cse_1, 12.0 + gsl_cse_1, 4.0 + gsl_cse_1);
+  let gsl_partLo = vec3<f32>(-28.0 - max(rainHeight, 0.0), -12.0 - max(rainHeight, 0.0), -4.0 - max(rainHeight, 0.0));
+  let gsl_partHi = vec3<f32>(-4.0 + max(rainHeight, 0.0), 12.0 + max(rainHeight, 0.0), 4.0 + max(rainHeight, 0.0));
   let gsl_partBox = gsl_boxDistance(p, gsl_partLo, gsl_partHi);
   var gsl_part = gsl_partBox;
   if (gsl_vanishView.w <= 0.0 || gsl_partBox <= gsl_vanishView.w) {
@@ -226,9 +222,8 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32, gsl_param_10_26: f32, gsl_param_14_25
   let thinness = gsl_param_14_25;
   let gsl_result_2 = animated_mudPot(p, time, 6.0, 2.0, thinness, noiseTex);
   let mudHeight = gsl_result_2.v_3;
-  let gsl_cse_2 = max(mudHeight, 0.0);
-  let gsl_partLo_2 = vec3<f32>(4.0 - gsl_cse_2, -12.0 - gsl_cse_2, -4.0 - gsl_cse_2);
-  let gsl_partHi_2 = vec3<f32>(28.0 + gsl_cse_2, 12.0 + gsl_cse_2, 4.0 + gsl_cse_2);
+  let gsl_partLo_2 = vec3<f32>(4.0 - max(mudHeight, 0.0), -12.0 - max(mudHeight, 0.0), -4.0 - max(mudHeight, 0.0));
+  let gsl_partHi_2 = vec3<f32>(28.0 + max(mudHeight, 0.0), 12.0 + max(mudHeight, 0.0), 4.0 + max(mudHeight, 0.0));
   let gsl_partBox_2 = gsl_boxDistance(p, gsl_partLo_2, gsl_partHi_2);
   var gsl_part_2 = gsl_partBox_2;
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_2 <= gsl_vanishView.w) {

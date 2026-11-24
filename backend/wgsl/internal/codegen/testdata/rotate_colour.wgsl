@@ -82,10 +82,7 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_4 <= gsl_vanishView.w) {
     let gsl_partVanish_4 = gsl_vanish(gsl_partLo_4, gsl_partHi_4);
     gsl_part_4 = 1e10;
-    if (gsl_partVanish_4.x > 0.0) {
-      let gsl_cse_1 = p - vec3<f32>(120.0, 0.0, 0.0);
-      gsl_part_4 = gsl_remap_4(vec3<f32>(120.0, 0.0, 0.0) + gsl_cse_1 * 0.87758255 - cross(vec3<f32>(0.70710677, 0.70710677, 0.0), gsl_cse_1) * 0.47942555 + vec3<f32>(0.70710677, 0.70710677, 0.0) * dot(vec3<f32>(0.70710677, 0.70710677, 0.0), gsl_cse_1) * 0.122417435) + gsl_partVanish_4.y;
-    }
+    if (gsl_partVanish_4.x > 0.0) { gsl_part_4 = gsl_remap_4(vec3<f32>(120.0, 0.0, 0.0) + (p - vec3<f32>(120.0, 0.0, 0.0)) * 0.87758255 - cross(vec3<f32>(0.70710677, 0.70710677, 0.0), p - vec3<f32>(120.0, 0.0, 0.0)) * 0.47942555 + vec3<f32>(0.70710677, 0.70710677, 0.0) * dot(vec3<f32>(0.70710677, 0.70710677, 0.0), p - vec3<f32>(120.0, 0.0, 0.0)) * 0.122417435) + gsl_partVanish_4.y; }
     if (abs(gsl_part_4) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_4), gsl_partVanish_4.zw); }
   }
   let d = gsl_part_4;

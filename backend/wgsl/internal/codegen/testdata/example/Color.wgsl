@@ -5,8 +5,7 @@ fn gsl_floored(a: f32, n: f32) -> f32 {
 fn gsl_remap(p: vec3<f32>, gsl_param_4_27: f32, gsl_param_5_24: f32, time: f32, noiseTex: texture_3d<f32>) -> f32 {
   let ball = length(p) - 5.0;
   let gsl_tmp_1 = p / 1.0;
-  let gsl_cse_1 = gsl_cellularScan(gsl_tmp_1, 1, noiseTex);
-  let cellular = (gsl_cse_1.f2 - gsl_cse_1.f1) * 1.0;
+  let cellular = (gsl_cellularScan(gsl_tmp_1, 1, noiseTex).f2 - gsl_cellularScan(gsl_tmp_1, 1, noiseTex).f1) * 1.0;
   let ballSpike = ball + cellular * 0.2;
   return ballSpike;
 }
@@ -33,8 +32,7 @@ fn builtin_unionRound(fields: vec2<f32>, radius: f32, noiseTex: texture_3d<f32>)
 
 fn gsl_remap_3(p: vec3<f32>, gsl_param_4_27: f32, gsl_param_5_24: f32, time: f32, vector_dirZ: vec3<f32>, color_viridisData: array<vec3<f32>, 11>, noiseTex: texture_3d<f32>) -> vec3<f32> {
   let gsl_tmp_1 = p / 1.0;
-  let gsl_cse_1 = gsl_cellularScan(gsl_tmp_1, 1, noiseTex);
-  let cellular = (gsl_cse_1.f2 - gsl_cse_1.f1) * 1.0;
+  let cellular = (gsl_cellularScan(gsl_tmp_1, 1, noiseTex).f2 - gsl_cellularScan(gsl_tmp_1, 1, noiseTex).f1) * 1.0;
   return color_sampleMap(color_viridisData, cellular * 1.2, noiseTex);
 }
 
@@ -59,8 +57,7 @@ fn gsl_remap_6(p: vec3<f32>, gsl_param_4_27: f32, gsl_param_5_24: f32, time: f32
 
 fn gsl_remap_7(p: vec3<f32>, gsl_param_4_27: f32, gsl_param_5_24: f32, time: f32, vector_dirZ: vec3<f32>, color_viridisData: array<vec3<f32>, 11>, color_gray: vec3<f32>, color_lightGray: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
   let gsl_tmp_1 = p / 1.0;
-  let gsl_cse_1 = gsl_cellularScan(gsl_tmp_1, 1, noiseTex);
-  let cellular = (gsl_cse_1.f2 - gsl_cse_1.f1) * 1.0;
+  let cellular = (gsl_cellularScan(gsl_tmp_1, 1, noiseTex).f2 - gsl_cellularScan(gsl_tmp_1, 1, noiseTex).f1) * 1.0;
   return color_sampleMap(color_viridisData, cellular * 1.2, noiseTex);
 }
 
