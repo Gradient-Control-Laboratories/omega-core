@@ -109,11 +109,11 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32) -> vec4<f32> {
     if (gsl_simpleDetail > 0.0) {
       let color_white = vec3<f32>(1.0, 1.0, 1.0);
       let color_black = vec3<f32>(0.0, 0.0, 0.0);
-      let gsl_tmp_5 = texture_squareWave(p.x, 20.0);
-      let gsl_tmp_6 = texture_squareWave(p.y, 20.0);
-      let gsl_tmp_8 = gsl_tmp_5 + gsl_tmp_6 - 2.0 * gsl_tmp_5 * gsl_tmp_6;
-      let gsl_tmp_7 = texture_squareWave(p.z, 20.0);
-      gsl_simpleValue = mix(gsl_simpleValue, color_mixOklab(color_white, color_black, gsl_tmp_8 + gsl_tmp_7 - 2.0 * gsl_tmp_8 * gsl_tmp_7), gsl_simpleDetail);
+      let gsl_tmp_8 = texture_squareWave(p.x, 20.0);
+      let gsl_tmp_9 = texture_squareWave(p.y, 20.0);
+      let gsl_tmp_11 = gsl_tmp_8 + gsl_tmp_9 - 2.0 * gsl_tmp_8 * gsl_tmp_9;
+      let gsl_tmp_10 = texture_squareWave(p.z, 20.0);
+      gsl_simpleValue = mix(gsl_simpleValue, color_mixOklab(color_white, color_black, gsl_tmp_11 + gsl_tmp_10 - 2.0 * gsl_tmp_11 * gsl_tmp_10), gsl_simpleDetail);
     }
     return vec4<f32>(gsl_simpleValue, 1.0);
   }

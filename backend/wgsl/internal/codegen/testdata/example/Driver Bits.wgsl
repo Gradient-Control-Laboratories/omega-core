@@ -185,12 +185,12 @@ fn gsl_remap_36(p: vec3<f32>) -> f32 {
 }
 
 fn gsl_remap_37(p: vec3<f32>) -> f32 {
-  let gsl_tmp_63 = length(p.xy);
-  let gsl_tmp_64 = abs(p.x);
-  let gsl_tmp_65 = abs(p.y);
-  let gsl_tmp_66 = abs(gsl_tmp_64 - gsl_tmp_65) * 0.70710677;
-  let gsl_tmp_67 = ((gsl_tmp_64 + gsl_tmp_65) * 0.70710677 - 0.735) * 0.99496853 - (p.z - 0.38236797) * 0.10018806;
-  return max(min(max(max(length(p.xy) - 4.0, -p.z), length(vec3<f32>(p.x, p.y, p.z - -3.4)) - 6.5), max(max(max(length(p.xy) - 2.0, -10.0 - p.z), p.z - 1.55), (length(p.xy) - 2.0 + -p.z - 10.0 + 0.6) * 0.7071)), -max(max(gsl_tmp_63 * 0.89493436 + (2.7163715 - p.z) * 0.4461978 - 1.9688556, (-0.008438476 - p.z) * 0.88294756 + gsl_tmp_63 * 0.46947157), -max(gsl_tmp_66 * 0.34202015 - gsl_tmp_67 * 0.9396926, (gsl_tmp_66 - 0.4075) * 0.6946584 - (gsl_tmp_67 - 0.14831787) * 0.7193398)));
+  let gsl_tmp_65 = length(p.xy);
+  let gsl_tmp_155 = abs(p.x);
+  let gsl_tmp_156 = abs(p.y);
+  let gsl_tmp_157 = abs(gsl_tmp_155 - gsl_tmp_156) * 0.70710677;
+  let gsl_tmp_158 = ((gsl_tmp_155 + gsl_tmp_156) * 0.70710677 - 0.735) * 0.99496853 - (p.z - 0.38236797) * 0.10018806;
+  return max(min(max(max(length(p.xy) - 4.0, -p.z), length(vec3<f32>(p.x, p.y, p.z - -3.4)) - 6.5), max(max(max(length(p.xy) - 2.0, -10.0 - p.z), p.z - 1.55), (length(p.xy) - 2.0 + -p.z - 10.0 + 0.6) * 0.7071)), -max(max(gsl_tmp_65 * 0.89493436 + (2.7163715 - p.z) * 0.4461978 - 1.9688556, (-0.008438476 - p.z) * 0.88294756 + gsl_tmp_65 * 0.46947157), -max(gsl_tmp_157 * 0.34202015 - gsl_tmp_158 * 0.9396926, (gsl_tmp_157 - 0.4075) * 0.6946584 - (gsl_tmp_158 - 0.14831787) * 0.7193398)));
 }
 
 fn gsl_remap_38(p: vec3<f32>) -> f32 {
@@ -198,11 +198,11 @@ fn gsl_remap_38(p: vec3<f32>) -> f32 {
 }
 
 fn gsl_remap_39(p: vec3<f32>) -> f32 {
-  let gsl_tmp_118 = length(p.xy);
-  let gsl_tmp_119 = abs(p.x);
-  let gsl_tmp_121 = (0.915 + (p.z - 0.7685499) * 0.10069471) * 0.70710677;
-  let gsl_tmp_120 = abs(p.y);
-  return max(min(max(max(length(p.xy) - 4.0, -p.z), length(vec3<f32>(p.x, p.y, p.z - -3.4)) - 6.5), max(max(max(length(p.xy) - 2.0, -10.0 - p.z), p.z - 1.55), (length(p.xy) - 2.0 + -p.z - 10.0 + 0.6) * 0.7071)), -min(max(max(gsl_tmp_118 * 0.89493436 + (2.7341259 - p.z) * 0.4461978 - 1.9241089, (0.1464499 - p.z) * 0.88294756 + gsl_tmp_118 * 0.46947157), min(min(abs(p.y) - 0.515, abs(p.x) - 0.515), max((gsl_tmp_119 - gsl_tmp_121) * 0.99939084 + (gsl_tmp_120 - gsl_tmp_121) * 0.0348995, (gsl_tmp_120 - gsl_tmp_121) * 0.99939084 + (gsl_tmp_119 - gsl_tmp_121) * 0.0348995) / 1.002708)), (abs(abs(p.x) - abs(p.y)) * 0.70710677 * 0.8660254 - (p.z - (2.5841258 + ((abs(p.x) + abs(p.y)) * 0.70710677 - 1.1129231) * 0.1446373)) * 0.5) / 1.0026116));
+  let gsl_tmp_116 = length(p.xy);
+  let gsl_tmp_161 = abs(p.x);
+  let gsl_tmp_163 = (0.915 + (p.z - 0.7685499) * 0.10069471) * 0.70710677;
+  let gsl_tmp_162 = abs(p.y);
+  return max(min(max(max(length(p.xy) - 4.0, -p.z), length(vec3<f32>(p.x, p.y, p.z - -3.4)) - 6.5), max(max(max(length(p.xy) - 2.0, -10.0 - p.z), p.z - 1.55), (length(p.xy) - 2.0 + -p.z - 10.0 + 0.6) * 0.7071)), -min(max(max(gsl_tmp_116 * 0.89493436 + (2.7341259 - p.z) * 0.4461978 - 1.9241089, (0.1464499 - p.z) * 0.88294756 + gsl_tmp_116 * 0.46947157), min(min(abs(p.y) - 0.515, abs(p.x) - 0.515), max((gsl_tmp_161 - gsl_tmp_163) * 0.99939084 + (gsl_tmp_162 - gsl_tmp_163) * 0.0348995, (gsl_tmp_162 - gsl_tmp_163) * 0.99939084 + (gsl_tmp_161 - gsl_tmp_163) * 0.0348995) / 1.002708)), (abs(abs(p.x) - abs(p.y)) * 0.70710677 * 0.8660254 - (p.z - (2.5841258 + ((abs(p.x) + abs(p.y)) * 0.70710677 - 1.1129231) * 0.1446373)) * 0.5) / 1.0026116));
 }
 
 fn gsl_remap_40(p: vec3<f32>) -> f32 {
