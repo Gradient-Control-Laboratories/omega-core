@@ -2,7 +2,6 @@ package codegen
 
 import (
 	"fmt"
-	"regexp"
 
 	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl/internal/ir"
 	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl/internal/wgsl"
@@ -29,13 +28,9 @@ import (
 // With no camera set (fidget's parity harness, an export, a host with every
 // rung at zero) the pixel is 0 and every feature is whole.
 
-// pruneBelowNameRE matches builtin's pruneBelow and the copies codegen
-// specializes from it.
-var pruneBelowNameRE = regexp.MustCompile(`^builtin_pruneBelow(_\d+)?$`)
-
-// pruneBelows reports whether a function is builtin's pruneBelow(field, size).
-func pruneBelows(wgslName string, argCount int) bool {
-	return pruneBelowNameRE.MatchString(wgslName) && argCount == 2
+// isPruneBelow reports whether fnInfo is builtin's pruneBelow(field, size).
+func isPruneBelow(fnInfo *wgsl.FnInfo, argCount int) bool {
+	return fnInfo != nil && fnInfo.PkgName() == "builtin" && fnInfo.Name() == "pruneBelow" && argCount == 2
 }
 
 // featureWGSL declares the pixel sdShape measures and the weight a feature
