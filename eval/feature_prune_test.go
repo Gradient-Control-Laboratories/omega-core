@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // Shaft Modeling, Phase 19: feature pruning. A small feature gives way when it

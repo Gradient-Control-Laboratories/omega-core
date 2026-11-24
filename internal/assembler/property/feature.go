@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/program"
 )
 
 // Geometric features: name.featureSize = size marks a value as a feature the

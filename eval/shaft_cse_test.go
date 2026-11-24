@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/backend/wgsl"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl"
 )
 
 // Shaft Modeling, Phase 18: the WGSL a shaft compiles to computes each
