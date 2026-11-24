@@ -47,7 +47,7 @@ func lowerFeatures(pkg *program.Package) error {
 				if fn == nil {
 					continue
 				}
-				if err := lowerFeatureScope(fn.Assignments, fn.Returns); err != nil {
+				if err := lowerFeatureScope(fn.Assignments, fn.Returns, true); err != nil {
 					return err
 				}
 				for _, nested := range fn.FnTypes {
@@ -63,7 +63,7 @@ func lowerFeatures(pkg *program.Package) error {
 		if file == nil {
 			continue
 		}
-		if err := lowerFeatureScope(file.Assignments, file.Returns); err != nil {
+		if err := lowerFeatureScope(file.Assignments, file.Returns, false); err != nil {
 			return err
 		}
 		for _, ft := range file.FnTypes {
@@ -78,7 +78,7 @@ func lowerFeatures(pkg *program.Package) error {
 // lowerFeatureScope rewrites each assignment of one scope that sets
 // name.featureSize to pruneBelow(value, size), and checks every read of the
 // featured names in the scope.
-func lowerFeatureScope(assigns []*program.Assignment, returns []*program.Operand) error {
+func lowerFeatureScope(assigns []*program.Assignment, returns []*program.Operand, inFnType bool) error {
 	featured := make(map[string]bool)
 	for _, a := range assigns {
 		if a == nil {
@@ -86,6 +86,26 @@ func lowerFeatureScope(assigns []*program.Assignment, returns []*program.Operand
 		}
 		for _, v := range a.Variables {
 			if v == nil {
+				continue
+			}
+			// With a stand-in, the size is the one the value switches to it
+			// at, anywhere it stands, and not a feature to prune (MarkParts).
+			// Inside a function body without .box/.color/.material (which
+			// CarryReturnProperties would carry out), lower a non-zero
+			// .featureSize + .simple directly to builtin.simplified here so
+			// library helpers (thread.basicForm, gears.gearProfile) work
+			// across packages.
+			if hasProp(v, simplePropName) {
+				if inFnType && !hasProp(v, boxPropName) && !hasProp(v, colorProperty) && !hasProp(v, materialProperty) {
+					if size := standInSize(v); size != nil {
+						if len(a.Variables) != 1 {
+							return fmt.Errorf("%s.simple: a stand-in can only be declared on a single-name assignment", v.Name)
+						}
+						proxy := takeProp(v, simplePropName)
+						lo, hi := corners(nil)
+						a.Expression = call(simplifiedName, a.Expression, standInProxy(proxy), lo, hi, standInProxy(size))
+					}
+				}
 				continue
 			}
 			var size *program.Operand

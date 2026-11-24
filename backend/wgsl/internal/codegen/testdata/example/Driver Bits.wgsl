@@ -463,6 +463,7 @@ fn driver_screwdriverHandle(p: vec3<f32>, zBase: f32, dia: f32, len: f32) -> f32
 }
 
 fn gsl_shapeParts(p: vec3<f32>, time: f32) -> array<f32, 32> {
+  gsl_featurePixel = select(0.0, gsl_vanishEye.w * mix(max(length(gsl_vanishEye.xyz - p), 1.0), 1.0, gsl_vanishView.x), gsl_vanishEye.w > 0.0);
   gsl_partNear = vec3<f32>(1e10, 1e10, 1e10);
   let gsl_partLo = vec3<f32>(-43.177418, -73.65885, -0.01);
   let gsl_partHi = vec3<f32>(-36.822582, -66.34115, 25.01);
@@ -992,12 +993,24 @@ fn gsl_boxDistance(q: vec3<f32>, lo: vec3<f32>, hi: vec3<f32>) -> f32 {
   return length(max(max(lo - q, q - hi), vec3<f32>(0.0)));
 }
 
+var<private> gsl_featurePixel: f32 = 0.0;
+
+fn gsl_featureWeight(size: f32) -> f32 {
+  if (gsl_featurePixel <= 0.0) { return 1.0; }
+  return smoothstep(gsl_vanishView.y, max(gsl_vanishView.z, gsl_vanishView.y + 1e-3), size / gsl_featurePixel);
+}
+
 var<private> gsl_simpleRung: f32;
 
 fn gsl_simple(lo: vec3<f32>, hi: vec3<f32>) -> f32 {
-  if (gsl_vanishEye.w <= 0.0 || gsl_simpleRung <= 0.0) { return 1.0; }
-  let px = gsl_vanish(lo, hi).z;
-  return smoothstep(0.5 * gsl_simpleRung, gsl_simpleRung, px);
+  if (gsl_featurePixel <= 0.0 || gsl_simpleRung <= 0.0) { return 1.0; }
+  let size = hi - lo;
+  return smoothstep(0.5 * gsl_simpleRung, gsl_simpleRung, min(size.x, min(size.y, size.z)) / gsl_featurePixel);
+}
+
+fn gsl_simpleSized(size: f32) -> f32 {
+  if (gsl_featurePixel <= 0.0 || gsl_simpleRung <= 0.0) { return 1.0; }
+  return smoothstep(0.5 * gsl_simpleRung, gsl_simpleRung, size / gsl_featurePixel);
 }
 
 fn gsl_boxSdf(q: vec3<f32>, lo: vec3<f32>, hi: vec3<f32>) -> f32 {

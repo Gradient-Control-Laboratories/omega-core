@@ -61,17 +61,25 @@ return min(bolt, plate);
 	}
 }
 
-// TestSimpleNotAPart rejects a stand-in on a value that is not a part: one a
-// remap reads, here.
+// TestSimpleNotAPart gives a stand-in to a value that is not a part, one a
+// remap reads here (Shaft Modeling, Phase 22): its switch is written where
+// the value is, sized by its box.
 func TestSimpleNotAPart(t *testing.T) {
 	const src = `
 bolt = sphere(2);
 bolt.simple = sphere(1);
 return remap(bolt, p - [1, 0, 0]);
 `
-	_, err := assembler.Assemble([]string{src}, assembler.SourceManager(mockMgr))
-	if err == nil || !strings.Contains(err.Error(), "bolt.simple: bolt is not a part") {
-		t.Fatalf("got %v, want bolt.simple: bolt is not a part", err)
+	res, err := assembler.Assemble([]string{src}, assembler.SourceManager(mockMgr))
+	if err != nil {
+		t.Fatalf("assemble: %v", err)
+	}
+	out, err := renderHelper(src, res.Program)
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+	if !strings.Contains(out.WGSL, "gsl_simple(") {
+		t.Errorf("the stand-in on a remapped value has no switch")
 	}
 }
 

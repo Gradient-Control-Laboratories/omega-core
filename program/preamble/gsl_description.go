@@ -223,14 +223,18 @@ would — and read it back with ` + "`name.box`" + ` (see Bounding box below).
   ` + "```" + `
 
 * **Stand-in (` + "`name.simple`" + `):**
-What a value draws as when its part is small on screen; the viewer blends
-to it across the octave below the Detail slider's rung for it. Every value's
-is itself until one is declared, as with ` + "`.box`" + `. On a part,
+What a value draws as when it is small on screen; the viewer blends to it
+across the octave below the Detail slider's rung for it. Every value's is
+itself until one is declared, as with ` + "`.box`" + `. On a shape,
 ` + "`name.simple = proxy;`" + ` is a simpler shape drawn in its place below the
-Simple rung, cropped to the part's box, with the proxy's own colour and
-material, or the part's where the proxy has none. Only a part can have a
-shape stand-in: a named value of the document that only a min or a return
-reads, and whose box is bounded. On a colour or material,
+Simple rung, cropped to the value's box where that is bounded, with the
+proxy's own colour and material, or the value's where the proxy has none.
+Any named shape can have one, wherever it is read, a remap or an
+intersection included, and it is measured at the point drawn, so a long part
+simplifies its far end first. It switches at the value's
+` + "`.featureSize`" + ` (mm) where declared, else at its box's smallest extent,
+and without either it never switches; a library part placed through a remap
+keeps the size its function declared with it. On a colour or material,
 ` + "`name.simple = flat;`" + ` is the flat look the value fades to below the
 Textures rung, and it is not evaluated past it; library textures declare
 theirs, so a checkerboard reads as its even mix. Export, meshing and every
@@ -243,6 +247,23 @@ less than what it stands in for.
   knobProxy.color = [0.8, 0.5, 0.2];
   knob.simple = knobProxy;
   return knob;
+  ` + "```" + `
+
+* **Feature (` + "`name.featureSize`" + `):**
+The value's size in mm. On its own it marks a small feature, a hole or a
+gear's teeth, that the viewer drops once it is too small to see at the point
+drawn, even when its part is large: it fades across the Detail slider's
+Vanish band and is then nothing, so it may stand only in a union or as what a
+difference takes away, where nothing leaves the rest unchanged (a bump goes,
+a hole closes); anywhere else is an error. 0 asks for its box's smallest
+extent. With ` + "`.simple`" + ` it is instead the size the value switches to
+its stand-in at, and the value may stand anywhere. Export, meshing and
+every measurement use the value itself.
+  ` + "```gsl" + `
+  hole = length(p.xy) - 0.75;
+  hole.featureSize = 1.5;
+  plate = max(box([-20, -20, -3], [20, 20, 3]), neg(hole));
+  return plate;
   ` + "```" + `
 
 * **Properties carried out of a function:** a function that builds a shape, sets ` + "`.color`" + `, ` + "`.material`" + ` or ` + "`.simple`" + ` on it and returns it hands those properties to the shape the caller gets, so the caller need not set them again. A property the caller sets on its own name wins.

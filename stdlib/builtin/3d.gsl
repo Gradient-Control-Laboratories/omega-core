@@ -492,6 +492,13 @@ simplified(shape, proxy, low, high) {
   return shape;
 }
 
+// Internal: a stand-in switched at a declared size, name.featureSize, rather
+// than at its box's smallest extent; [low, high] crops the stand-in, and is
+// everywhere when the value's box is not bounded (property.MarkParts).
+simplified(shape, proxy, low, high, size) {
+  return shape;
+}
+
 // Internal: a stand-in carried out of the function that declared it, name.simple
 // = carriedSimple(proxy) (property.CarryReturnProperties). MarkParts makes it a
 // part's stand-in when the name is a part and drops it otherwise, so nothing

@@ -62,7 +62,15 @@ fn drill_prismVoid(p: vec3<f32>, zTop: f32, section: f32, depth: f32, noiseTex: 
 }
 
 fn gsl_remap_7(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
-  let m5 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 12.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5, noiseTex), noiseTex);
+  let gsl_simpleWeight = gsl_simpleSized(8.5);
+  var gsl_simplePart = 1e10;
+  if (gsl_simpleWeight > 0.0) {
+    gsl_simplePart = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 12.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight < 1.0) {
+    gsl_simplePart = mix(max(min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5)), gsl_boxSdf(p, vec3<f32>(-4.26, -4.26, -12.01), vec3<f32>(4.26, 4.26, 5.01))), gsl_simplePart, gsl_simpleWeight);
+  }
+  let m5 = gsl_simplePart;
   return m5;
 }
 
@@ -71,29 +79,584 @@ fn gsl_remap_8(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_par
 }
 
 fn gsl_remap_9(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
-  return gsl_remap_7(vec3<f32>(p.x * 0.00000000000000006123234 - p.z * 1.0, p.y, p.z * 0.00000000000000006123234 + p.x * 1.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex);
+  let gsl_simpleWeight_2 = gsl_simpleSized(8.5);
+  var gsl_simplePart_2 = 1e10;
+  if (gsl_simpleWeight_2 > 0.0) {
+    gsl_simplePart_2 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 12.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_2 < 1.0) {
+    gsl_simplePart_2 = mix(max(min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5)), gsl_boxSdf(p, vec3<f32>(-4.26, -4.26, -12.01), vec3<f32>(4.26, 4.26, 5.01))), gsl_simplePart_2, gsl_simpleWeight_2);
+  }
+  let m5 = gsl_simplePart_2;
+  return m5;
 }
 
 fn gsl_remap_10(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
-  return gsl_remap_7(vec3<f32>(p.x, p.y * 0.00000000000000006123234 + p.z * 1.0, -p.y * 1.0 + p.z * 0.00000000000000006123234), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex);
+  return gsl_remap_9(vec3<f32>(p.x * 0.00000000000000006123234 - p.z * -1.0, p.y, p.z * 0.00000000000000006123234 + p.x * -1.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex);
 }
 
 fn gsl_remap_11(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
-  return gsl_remap_7(vec3<f32>(p.x, p.y * 0.00000000000000006123234 + p.z * -1.0, -p.y * -1.0 + p.z * 0.00000000000000006123234), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex);
+  let gsl_simpleWeight_3 = gsl_simpleSized(8.5);
+  var gsl_simplePart_3 = 1e10;
+  if (gsl_simpleWeight_3 > 0.0) {
+    gsl_simplePart_3 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 12.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_3 < 1.0) {
+    gsl_simplePart_3 = mix(max(min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5)), gsl_boxSdf(p, vec3<f32>(-4.26, -4.26, -12.01), vec3<f32>(4.26, 4.26, 5.01))), gsl_simplePart_3, gsl_simpleWeight_3);
+  }
+  let m5 = gsl_simplePart_3;
+  return m5;
 }
 
 fn gsl_remap_12(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
-  let m3 = fastener_screw(max(length(vec3<f32>(p.x, p.y, p.z - -1.6363636)) - 3.2863636, -p.z), max(max(max(length(p.xy) - 1.5, -8.0 - p.z), p.z - 0.825), (length(p.xy) - 1.5 + -p.z - 8.0 + 0.45) * 0.7071), drill_prismVoid(p, 1.65, max(max(abs(p.x) - 1.0, abs(0.5 * p.x + 0.8660254 * p.y) - 1.0), abs(0.5 * p.x - 0.8660254 * p.y) - 1.0), 1.04, noiseTex), noiseTex);
-  return m3;
+  return gsl_remap_11(vec3<f32>(p.x * 0.00000000000000006123234 - p.z * 1.0, p.y, p.z * 0.00000000000000006123234 + p.x * 1.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex);
 }
 
 fn gsl_remap_13(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
-  let m5long = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -30.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 30.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5, noiseTex), noiseTex);
-  return m5long;
+  let gsl_simpleWeight_4 = gsl_simpleSized(8.5);
+  var gsl_simplePart_4 = 1e10;
+  if (gsl_simpleWeight_4 > 0.0) {
+    gsl_simplePart_4 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 12.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_4 < 1.0) {
+    gsl_simplePart_4 = mix(max(min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5)), gsl_boxSdf(p, vec3<f32>(-4.26, -4.26, -12.01), vec3<f32>(4.26, 4.26, 5.01))), gsl_simplePart_4, gsl_simpleWeight_4);
+  }
+  let m5 = gsl_simplePart_4;
+  return m5;
 }
 
 fn gsl_remap_14(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
-  return gsl_remap_12(vec3<f32>(p.x, p.y * 0.00000000000000006123234 + p.z * 1.0, -p.y * 1.0 + p.z * 0.00000000000000006123234), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex);
+  return gsl_remap_13(vec3<f32>(p.x * 0.00000000000000006123234 - p.z * 1.0, p.y, p.z * 0.00000000000000006123234 + p.x * 1.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex);
+}
+
+fn gsl_remap_15(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_5 = gsl_simpleSized(8.5);
+  var gsl_simplePart_5 = 1e10;
+  if (gsl_simpleWeight_5 > 0.0) {
+    gsl_simplePart_5 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 12.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_5 < 1.0) {
+    gsl_simplePart_5 = mix(max(min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5)), gsl_boxSdf(p, vec3<f32>(-4.26, -4.26, -12.01), vec3<f32>(4.26, 4.26, 5.01))), gsl_simplePart_5, gsl_simpleWeight_5);
+  }
+  let m5 = gsl_simplePart_5;
+  return m5;
+}
+
+fn gsl_remap_16(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return gsl_remap_15(vec3<f32>(p.x, p.y * 0.00000000000000006123234 + p.z * 1.0, -p.y * 1.0 + p.z * 0.00000000000000006123234), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex);
+}
+
+fn gsl_remap_17(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_6 = gsl_simpleSized(8.5);
+  var gsl_simplePart_6 = 1e10;
+  if (gsl_simpleWeight_6 > 0.0) {
+    gsl_simplePart_6 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 12.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_6 < 1.0) {
+    gsl_simplePart_6 = mix(max(min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5)), gsl_boxSdf(p, vec3<f32>(-4.26, -4.26, -12.01), vec3<f32>(4.26, 4.26, 5.01))), gsl_simplePart_6, gsl_simpleWeight_6);
+  }
+  let m5 = gsl_simplePart_6;
+  return m5;
+}
+
+fn gsl_remap_18(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return gsl_remap_17(vec3<f32>(p.x, p.y * 0.00000000000000006123234 + p.z * 1.0, -p.y * 1.0 + p.z * 0.00000000000000006123234), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex);
+}
+
+fn gsl_remap_19(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_7 = gsl_simpleSized(8.5);
+  var gsl_simplePart_7 = 1e10;
+  if (gsl_simpleWeight_7 > 0.0) {
+    gsl_simplePart_7 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 12.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_7 < 1.0) {
+    gsl_simplePart_7 = mix(max(min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5)), gsl_boxSdf(p, vec3<f32>(-4.26, -4.26, -12.01), vec3<f32>(4.26, 4.26, 5.01))), gsl_simplePart_7, gsl_simpleWeight_7);
+  }
+  let m5 = gsl_simplePart_7;
+  return m5;
+}
+
+fn gsl_remap_20(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return gsl_remap_19(vec3<f32>(p.x, p.y * 0.00000000000000006123234 + p.z * -1.0, -p.y * -1.0 + p.z * 0.00000000000000006123234), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex);
+}
+
+fn gsl_remap_21(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_8 = gsl_simpleSized(8.5);
+  var gsl_simplePart_8 = 1e10;
+  if (gsl_simpleWeight_8 > 0.0) {
+    gsl_simplePart_8 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 12.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_8 < 1.0) {
+    gsl_simplePart_8 = mix(max(min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5)), gsl_boxSdf(p, vec3<f32>(-4.26, -4.26, -12.01), vec3<f32>(4.26, 4.26, 5.01))), gsl_simplePart_8, gsl_simpleWeight_8);
+  }
+  let m5 = gsl_simplePart_8;
+  return m5;
+}
+
+fn gsl_remap_22(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return gsl_remap_21(vec3<f32>(p.x, p.y * 0.00000000000000006123234 + p.z * -1.0, -p.y * -1.0 + p.z * 0.00000000000000006123234), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex);
+}
+
+fn gsl_remap_23(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_9 = gsl_simpleSized(8.5);
+  var gsl_simplePart_9 = 1e10;
+  if (gsl_simpleWeight_9 > 0.0) {
+    gsl_simplePart_9 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 12.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_9 < 1.0) {
+    gsl_simplePart_9 = mix(max(min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5)), gsl_boxSdf(p, vec3<f32>(-4.26, -4.26, -12.01), vec3<f32>(4.26, 4.26, 5.01))), gsl_simplePart_9, gsl_simpleWeight_9);
+  }
+  let m5 = gsl_simplePart_9;
+  return m5;
+}
+
+fn gsl_remap_24(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return gsl_remap_23(vec3<f32>(p.x * 0.00000000000000006123234 - p.z * -1.0, p.y, p.z * 0.00000000000000006123234 + p.x * -1.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex);
+}
+
+fn gsl_remap_25(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_10 = gsl_simpleSized(8.5);
+  var gsl_simplePart_10 = 1e10;
+  if (gsl_simpleWeight_10 > 0.0) {
+    gsl_simplePart_10 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 12.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_10 < 1.0) {
+    gsl_simplePart_10 = mix(max(min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5)), gsl_boxSdf(p, vec3<f32>(-4.26, -4.26, -12.01), vec3<f32>(4.26, 4.26, 5.01))), gsl_simplePart_10, gsl_simpleWeight_10);
+  }
+  let m5 = gsl_simplePart_10;
+  return m5;
+}
+
+fn gsl_remap_26(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return gsl_remap_25(vec3<f32>(p.x * 0.00000000000000006123234 - p.z * -1.0, p.y, p.z * 0.00000000000000006123234 + p.x * -1.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex);
+}
+
+fn gsl_remap_27(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_11 = gsl_simpleSized(8.5);
+  var gsl_simplePart_11 = 1e10;
+  if (gsl_simpleWeight_11 > 0.0) {
+    gsl_simplePart_11 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 12.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_11 < 1.0) {
+    gsl_simplePart_11 = mix(max(min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5)), gsl_boxSdf(p, vec3<f32>(-4.26, -4.26, -12.01), vec3<f32>(4.26, 4.26, 5.01))), gsl_simplePart_11, gsl_simpleWeight_11);
+  }
+  let m5 = gsl_simplePart_11;
+  return m5;
+}
+
+fn gsl_remap_28(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return gsl_remap_27(vec3<f32>(p.x * 0.00000000000000006123234 - p.z * 1.0, p.y, p.z * 0.00000000000000006123234 + p.x * 1.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex);
+}
+
+fn gsl_remap_29(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_12 = gsl_simpleSized(8.5);
+  var gsl_simplePart_12 = 1e10;
+  if (gsl_simpleWeight_12 > 0.0) {
+    gsl_simplePart_12 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 12.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_12 < 1.0) {
+    gsl_simplePart_12 = mix(max(min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5)), gsl_boxSdf(p, vec3<f32>(-4.26, -4.26, -12.01), vec3<f32>(4.26, 4.26, 5.01))), gsl_simplePart_12, gsl_simpleWeight_12);
+  }
+  let m5 = gsl_simplePart_12;
+  return m5;
+}
+
+fn gsl_remap_30(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return gsl_remap_29(vec3<f32>(p.x * 0.00000000000000006123234 - p.z * 1.0, p.y, p.z * 0.00000000000000006123234 + p.x * 1.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex);
+}
+
+fn gsl_remap_31(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_13 = gsl_simpleSized(8.5);
+  var gsl_simplePart_13 = 1e10;
+  if (gsl_simpleWeight_13 > 0.0) {
+    gsl_simplePart_13 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 12.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_13 < 1.0) {
+    gsl_simplePart_13 = mix(max(min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5)), gsl_boxSdf(p, vec3<f32>(-4.26, -4.26, -12.01), vec3<f32>(4.26, 4.26, 5.01))), gsl_simplePart_13, gsl_simpleWeight_13);
+  }
+  let m5 = gsl_simplePart_13;
+  return m5;
+}
+
+fn gsl_remap_32(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return gsl_remap_31(vec3<f32>(p.x, p.y * 0.00000000000000006123234 + p.z * 1.0, -p.y * 1.0 + p.z * 0.00000000000000006123234), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex);
+}
+
+fn gsl_remap_33(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_14 = gsl_simpleSized(8.5);
+  var gsl_simplePart_14 = 1e10;
+  if (gsl_simpleWeight_14 > 0.0) {
+    gsl_simplePart_14 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 12.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_14 < 1.0) {
+    gsl_simplePart_14 = mix(max(min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5)), gsl_boxSdf(p, vec3<f32>(-4.26, -4.26, -12.01), vec3<f32>(4.26, 4.26, 5.01))), gsl_simplePart_14, gsl_simpleWeight_14);
+  }
+  let m5 = gsl_simplePart_14;
+  return m5;
+}
+
+fn gsl_remap_34(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return gsl_remap_33(vec3<f32>(p.x, p.y * 0.00000000000000006123234 + p.z * 1.0, -p.y * 1.0 + p.z * 0.00000000000000006123234), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex);
+}
+
+fn gsl_remap_35(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_15 = gsl_simpleSized(8.5);
+  var gsl_simplePart_15 = 1e10;
+  if (gsl_simpleWeight_15 > 0.0) {
+    gsl_simplePart_15 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 12.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_15 < 1.0) {
+    gsl_simplePart_15 = mix(max(min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5)), gsl_boxSdf(p, vec3<f32>(-4.26, -4.26, -12.01), vec3<f32>(4.26, 4.26, 5.01))), gsl_simplePart_15, gsl_simpleWeight_15);
+  }
+  let m5 = gsl_simplePart_15;
+  return m5;
+}
+
+fn gsl_remap_36(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return gsl_remap_35(vec3<f32>(p.x, p.y * 0.00000000000000006123234 + p.z * -1.0, -p.y * -1.0 + p.z * 0.00000000000000006123234), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex);
+}
+
+fn gsl_remap_37(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_16 = gsl_simpleSized(8.5);
+  var gsl_simplePart_16 = 1e10;
+  if (gsl_simpleWeight_16 > 0.0) {
+    gsl_simplePart_16 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 12.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_16 < 1.0) {
+    gsl_simplePart_16 = mix(max(min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5)), gsl_boxSdf(p, vec3<f32>(-4.26, -4.26, -12.01), vec3<f32>(4.26, 4.26, 5.01))), gsl_simplePart_16, gsl_simpleWeight_16);
+  }
+  let m5 = gsl_simplePart_16;
+  return m5;
+}
+
+fn gsl_remap_38(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return gsl_remap_37(vec3<f32>(p.x, p.y * 0.00000000000000006123234 + p.z * -1.0, -p.y * -1.0 + p.z * 0.00000000000000006123234), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex);
+}
+
+fn gsl_remap_39(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_17 = gsl_simpleSized(8.5);
+  var gsl_simplePart_17 = 1e10;
+  if (gsl_simpleWeight_17 > 0.0) {
+    gsl_simplePart_17 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 12.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_17 < 1.0) {
+    gsl_simplePart_17 = mix(max(min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5)), gsl_boxSdf(p, vec3<f32>(-4.26, -4.26, -12.01), vec3<f32>(4.26, 4.26, 5.01))), gsl_simplePart_17, gsl_simpleWeight_17);
+  }
+  let m5 = gsl_simplePart_17;
+  return m5;
+}
+
+fn gsl_remap_40(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return gsl_remap_39(vec3<f32>(p.x * 0.00000000000000006123234 - p.z * -1.0, p.y, p.z * 0.00000000000000006123234 + p.x * -1.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex);
+}
+
+fn gsl_remap_41(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_18 = gsl_simpleSized(8.5);
+  var gsl_simplePart_18 = 1e10;
+  if (gsl_simpleWeight_18 > 0.0) {
+    gsl_simplePart_18 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 12.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_18 < 1.0) {
+    gsl_simplePart_18 = mix(max(min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5)), gsl_boxSdf(p, vec3<f32>(-4.26, -4.26, -12.01), vec3<f32>(4.26, 4.26, 5.01))), gsl_simplePart_18, gsl_simpleWeight_18);
+  }
+  let m5 = gsl_simplePart_18;
+  return m5;
+}
+
+fn gsl_remap_42(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return gsl_remap_41(vec3<f32>(p.x * 0.00000000000000006123234 - p.z * -1.0, p.y, p.z * 0.00000000000000006123234 + p.x * -1.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex);
+}
+
+fn gsl_remap_43(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_19 = gsl_simpleSized(8.5);
+  var gsl_simplePart_19 = 1e10;
+  if (gsl_simpleWeight_19 > 0.0) {
+    gsl_simplePart_19 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 12.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_19 < 1.0) {
+    gsl_simplePart_19 = mix(max(min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5)), gsl_boxSdf(p, vec3<f32>(-4.26, -4.26, -12.01), vec3<f32>(4.26, 4.26, 5.01))), gsl_simplePart_19, gsl_simpleWeight_19);
+  }
+  let m5 = gsl_simplePart_19;
+  return m5;
+}
+
+fn gsl_remap_44(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return gsl_remap_43(vec3<f32>(p.x * 0.00000000000000006123234 - p.z * 1.0, p.y, p.z * 0.00000000000000006123234 + p.x * 1.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex);
+}
+
+fn gsl_remap_45(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_20 = gsl_simpleSized(8.5);
+  var gsl_simplePart_20 = 1e10;
+  if (gsl_simpleWeight_20 > 0.0) {
+    gsl_simplePart_20 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 12.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_20 < 1.0) {
+    gsl_simplePart_20 = mix(max(min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5)), gsl_boxSdf(p, vec3<f32>(-4.26, -4.26, -12.01), vec3<f32>(4.26, 4.26, 5.01))), gsl_simplePart_20, gsl_simpleWeight_20);
+  }
+  let m5 = gsl_simplePart_20;
+  return m5;
+}
+
+fn gsl_remap_46(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return gsl_remap_45(vec3<f32>(p.x * 0.00000000000000006123234 - p.z * 1.0, p.y, p.z * 0.00000000000000006123234 + p.x * 1.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex);
+}
+
+fn gsl_remap_47(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_21 = gsl_simpleSized(8.5);
+  var gsl_simplePart_21 = 1e10;
+  if (gsl_simpleWeight_21 > 0.0) {
+    gsl_simplePart_21 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 12.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_21 < 1.0) {
+    gsl_simplePart_21 = mix(max(min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5)), gsl_boxSdf(p, vec3<f32>(-4.26, -4.26, -12.01), vec3<f32>(4.26, 4.26, 5.01))), gsl_simplePart_21, gsl_simpleWeight_21);
+  }
+  let m5 = gsl_simplePart_21;
+  return m5;
+}
+
+fn gsl_remap_48(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return gsl_remap_47(vec3<f32>(p.x, p.y * 0.00000000000000006123234 + p.z * 1.0, -p.y * 1.0 + p.z * 0.00000000000000006123234), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex);
+}
+
+fn gsl_remap_49(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_22 = gsl_simpleSized(8.5);
+  var gsl_simplePart_22 = 1e10;
+  if (gsl_simpleWeight_22 > 0.0) {
+    gsl_simplePart_22 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 12.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_22 < 1.0) {
+    gsl_simplePart_22 = mix(max(min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5)), gsl_boxSdf(p, vec3<f32>(-4.26, -4.26, -12.01), vec3<f32>(4.26, 4.26, 5.01))), gsl_simplePart_22, gsl_simpleWeight_22);
+  }
+  let m5 = gsl_simplePart_22;
+  return m5;
+}
+
+fn gsl_remap_50(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return gsl_remap_49(vec3<f32>(p.x, p.y * 0.00000000000000006123234 + p.z * 1.0, -p.y * 1.0 + p.z * 0.00000000000000006123234), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex);
+}
+
+fn gsl_remap_51(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_23 = gsl_simpleSized(8.5);
+  var gsl_simplePart_23 = 1e10;
+  if (gsl_simpleWeight_23 > 0.0) {
+    gsl_simplePart_23 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 12.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_23 < 1.0) {
+    gsl_simplePart_23 = mix(max(min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5)), gsl_boxSdf(p, vec3<f32>(-4.26, -4.26, -12.01), vec3<f32>(4.26, 4.26, 5.01))), gsl_simplePart_23, gsl_simpleWeight_23);
+  }
+  let m5 = gsl_simplePart_23;
+  return m5;
+}
+
+fn gsl_remap_52(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return gsl_remap_51(vec3<f32>(p.x, p.y * 0.00000000000000006123234 + p.z * -1.0, -p.y * -1.0 + p.z * 0.00000000000000006123234), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex);
+}
+
+fn gsl_remap_53(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_24 = gsl_simpleSized(8.5);
+  var gsl_simplePart_24 = 1e10;
+  if (gsl_simpleWeight_24 > 0.0) {
+    gsl_simplePart_24 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 12.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_24 < 1.0) {
+    gsl_simplePart_24 = mix(max(min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -12.0 - p.z), p.z - 2.5)), gsl_boxSdf(p, vec3<f32>(-4.26, -4.26, -12.01), vec3<f32>(4.26, 4.26, 5.01))), gsl_simplePart_24, gsl_simpleWeight_24);
+  }
+  let m5 = gsl_simplePart_24;
+  return m5;
+}
+
+fn gsl_remap_54(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return gsl_remap_53(vec3<f32>(p.x, p.y * 0.00000000000000006123234 + p.z * -1.0, -p.y * -1.0 + p.z * 0.00000000000000006123234), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex);
+}
+
+fn gsl_remap_55(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_25 = gsl_simpleSized(5.7);
+  var gsl_simplePart_25 = 1e10;
+  if (gsl_simpleWeight_25 > 0.0) {
+    gsl_simplePart_25 = fastener_screw(max(length(vec3<f32>(p.x, p.y, p.z - -1.6363636)) - 3.2863636, -p.z), max(max(max(length(p.xy) - 1.5, -8.0 - p.z), p.z - 0.825), (length(p.xy) - 1.5 + -p.z - 8.0 + 0.45) * 0.7071), drill_prismVoid(p, 1.65, max(max(abs(p.x) - 1.0, abs(0.5 * p.x + 0.8660254 * p.y) - 1.0), abs(0.5 * p.x - 0.8660254 * p.y) - 1.0), 1.04, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_25 < 1.0) {
+    gsl_simplePart_25 = mix(max(min(max(length(vec3<f32>(p.x, p.y, p.z - -1.6363636)) - 3.2863636, -p.z), max(max(length(p.xy) - 1.5, -8.0 - p.z), p.z - 0.825)), gsl_boxSdf(p, vec3<f32>(-2.86, -2.86, -8.01), vec3<f32>(2.86, 2.86, 1.66))), gsl_simplePart_25, gsl_simpleWeight_25);
+  }
+  let m3 = gsl_simplePart_25;
+  return m3;
+}
+
+fn gsl_remap_56(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_26 = gsl_simpleSized(5.7);
+  var gsl_simplePart_26 = 1e10;
+  if (gsl_simpleWeight_26 > 0.0) {
+    gsl_simplePart_26 = fastener_screw(max(length(vec3<f32>(p.x, p.y, p.z - -1.6363636)) - 3.2863636, -p.z), max(max(max(length(p.xy) - 1.5, -8.0 - p.z), p.z - 0.825), (length(p.xy) - 1.5 + -p.z - 8.0 + 0.45) * 0.7071), drill_prismVoid(p, 1.65, max(max(abs(p.x) - 1.0, abs(0.5 * p.x + 0.8660254 * p.y) - 1.0), abs(0.5 * p.x - 0.8660254 * p.y) - 1.0), 1.04, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_26 < 1.0) {
+    gsl_simplePart_26 = mix(max(min(max(length(vec3<f32>(p.x, p.y, p.z - -1.6363636)) - 3.2863636, -p.z), max(max(length(p.xy) - 1.5, -8.0 - p.z), p.z - 0.825)), gsl_boxSdf(p, vec3<f32>(-2.86, -2.86, -8.01), vec3<f32>(2.86, 2.86, 1.66))), gsl_simplePart_26, gsl_simpleWeight_26);
+  }
+  let m3 = gsl_simplePart_26;
+  return m3;
+}
+
+fn gsl_remap_57(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_27 = gsl_simpleSized(5.7);
+  var gsl_simplePart_27 = 1e10;
+  if (gsl_simpleWeight_27 > 0.0) {
+    gsl_simplePart_27 = fastener_screw(max(length(vec3<f32>(p.x, p.y, p.z - -1.6363636)) - 3.2863636, -p.z), max(max(max(length(p.xy) - 1.5, -8.0 - p.z), p.z - 0.825), (length(p.xy) - 1.5 + -p.z - 8.0 + 0.45) * 0.7071), drill_prismVoid(p, 1.65, max(max(abs(p.x) - 1.0, abs(0.5 * p.x + 0.8660254 * p.y) - 1.0), abs(0.5 * p.x - 0.8660254 * p.y) - 1.0), 1.04, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_27 < 1.0) {
+    gsl_simplePart_27 = mix(max(min(max(length(vec3<f32>(p.x, p.y, p.z - -1.6363636)) - 3.2863636, -p.z), max(max(length(p.xy) - 1.5, -8.0 - p.z), p.z - 0.825)), gsl_boxSdf(p, vec3<f32>(-2.86, -2.86, -8.01), vec3<f32>(2.86, 2.86, 1.66))), gsl_simplePart_27, gsl_simpleWeight_27);
+  }
+  let m3 = gsl_simplePart_27;
+  return m3;
+}
+
+fn gsl_remap_58(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_28 = gsl_simpleSized(5.7);
+  var gsl_simplePart_28 = 1e10;
+  if (gsl_simpleWeight_28 > 0.0) {
+    gsl_simplePart_28 = fastener_screw(max(length(vec3<f32>(p.x, p.y, p.z - -1.6363636)) - 3.2863636, -p.z), max(max(max(length(p.xy) - 1.5, -8.0 - p.z), p.z - 0.825), (length(p.xy) - 1.5 + -p.z - 8.0 + 0.45) * 0.7071), drill_prismVoid(p, 1.65, max(max(abs(p.x) - 1.0, abs(0.5 * p.x + 0.8660254 * p.y) - 1.0), abs(0.5 * p.x - 0.8660254 * p.y) - 1.0), 1.04, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_28 < 1.0) {
+    gsl_simplePart_28 = mix(max(min(max(length(vec3<f32>(p.x, p.y, p.z - -1.6363636)) - 3.2863636, -p.z), max(max(length(p.xy) - 1.5, -8.0 - p.z), p.z - 0.825)), gsl_boxSdf(p, vec3<f32>(-2.86, -2.86, -8.01), vec3<f32>(2.86, 2.86, 1.66))), gsl_simplePart_28, gsl_simpleWeight_28);
+  }
+  let m3 = gsl_simplePart_28;
+  return m3;
+}
+
+fn gsl_remap_59(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_29 = gsl_simpleSized(5.7);
+  var gsl_simplePart_29 = 1e10;
+  if (gsl_simpleWeight_29 > 0.0) {
+    gsl_simplePart_29 = fastener_screw(max(length(vec3<f32>(p.x, p.y, p.z - -1.6363636)) - 3.2863636, -p.z), max(max(max(length(p.xy) - 1.5, -8.0 - p.z), p.z - 0.825), (length(p.xy) - 1.5 + -p.z - 8.0 + 0.45) * 0.7071), drill_prismVoid(p, 1.65, max(max(abs(p.x) - 1.0, abs(0.5 * p.x + 0.8660254 * p.y) - 1.0), abs(0.5 * p.x - 0.8660254 * p.y) - 1.0), 1.04, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_29 < 1.0) {
+    gsl_simplePart_29 = mix(max(min(max(length(vec3<f32>(p.x, p.y, p.z - -1.6363636)) - 3.2863636, -p.z), max(max(length(p.xy) - 1.5, -8.0 - p.z), p.z - 0.825)), gsl_boxSdf(p, vec3<f32>(-2.86, -2.86, -8.01), vec3<f32>(2.86, 2.86, 1.66))), gsl_simplePart_29, gsl_simpleWeight_29);
+  }
+  let m3 = gsl_simplePart_29;
+  return m3;
+}
+
+fn gsl_remap_60(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_30 = gsl_simpleSized(5.7);
+  var gsl_simplePart_30 = 1e10;
+  if (gsl_simpleWeight_30 > 0.0) {
+    gsl_simplePart_30 = fastener_screw(max(length(vec3<f32>(p.x, p.y, p.z - -1.6363636)) - 3.2863636, -p.z), max(max(max(length(p.xy) - 1.5, -8.0 - p.z), p.z - 0.825), (length(p.xy) - 1.5 + -p.z - 8.0 + 0.45) * 0.7071), drill_prismVoid(p, 1.65, max(max(abs(p.x) - 1.0, abs(0.5 * p.x + 0.8660254 * p.y) - 1.0), abs(0.5 * p.x - 0.8660254 * p.y) - 1.0), 1.04, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_30 < 1.0) {
+    gsl_simplePart_30 = mix(max(min(max(length(vec3<f32>(p.x, p.y, p.z - -1.6363636)) - 3.2863636, -p.z), max(max(length(p.xy) - 1.5, -8.0 - p.z), p.z - 0.825)), gsl_boxSdf(p, vec3<f32>(-2.86, -2.86, -8.01), vec3<f32>(2.86, 2.86, 1.66))), gsl_simplePart_30, gsl_simpleWeight_30);
+  }
+  let m3 = gsl_simplePart_30;
+  return m3;
+}
+
+fn gsl_remap_61(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_31 = gsl_simpleSized(5.7);
+  var gsl_simplePart_31 = 1e10;
+  if (gsl_simpleWeight_31 > 0.0) {
+    gsl_simplePart_31 = fastener_screw(max(length(vec3<f32>(p.x, p.y, p.z - -1.6363636)) - 3.2863636, -p.z), max(max(max(length(p.xy) - 1.5, -8.0 - p.z), p.z - 0.825), (length(p.xy) - 1.5 + -p.z - 8.0 + 0.45) * 0.7071), drill_prismVoid(p, 1.65, max(max(abs(p.x) - 1.0, abs(0.5 * p.x + 0.8660254 * p.y) - 1.0), abs(0.5 * p.x - 0.8660254 * p.y) - 1.0), 1.04, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_31 < 1.0) {
+    gsl_simplePart_31 = mix(max(min(max(length(vec3<f32>(p.x, p.y, p.z - -1.6363636)) - 3.2863636, -p.z), max(max(length(p.xy) - 1.5, -8.0 - p.z), p.z - 0.825)), gsl_boxSdf(p, vec3<f32>(-2.86, -2.86, -8.01), vec3<f32>(2.86, 2.86, 1.66))), gsl_simplePart_31, gsl_simpleWeight_31);
+  }
+  let m3 = gsl_simplePart_31;
+  return m3;
+}
+
+fn gsl_remap_62(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_32 = gsl_simpleSized(5.7);
+  var gsl_simplePart_32 = 1e10;
+  if (gsl_simpleWeight_32 > 0.0) {
+    gsl_simplePart_32 = fastener_screw(max(length(vec3<f32>(p.x, p.y, p.z - -1.6363636)) - 3.2863636, -p.z), max(max(max(length(p.xy) - 1.5, -8.0 - p.z), p.z - 0.825), (length(p.xy) - 1.5 + -p.z - 8.0 + 0.45) * 0.7071), drill_prismVoid(p, 1.65, max(max(abs(p.x) - 1.0, abs(0.5 * p.x + 0.8660254 * p.y) - 1.0), abs(0.5 * p.x - 0.8660254 * p.y) - 1.0), 1.04, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_32 < 1.0) {
+    gsl_simplePart_32 = mix(max(min(max(length(vec3<f32>(p.x, p.y, p.z - -1.6363636)) - 3.2863636, -p.z), max(max(length(p.xy) - 1.5, -8.0 - p.z), p.z - 0.825)), gsl_boxSdf(p, vec3<f32>(-2.86, -2.86, -8.01), vec3<f32>(2.86, 2.86, 1.66))), gsl_simplePart_32, gsl_simpleWeight_32);
+  }
+  let m3 = gsl_simplePart_32;
+  return m3;
+}
+
+fn gsl_remap_63(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_33 = gsl_simpleSized(8.5);
+  var gsl_simplePart_33 = 1e10;
+  if (gsl_simpleWeight_33 > 0.0) {
+    gsl_simplePart_33 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -30.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 30.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_33 < 1.0) {
+    gsl_simplePart_33 = mix(max(min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -30.0 - p.z), p.z - 2.5)), gsl_boxSdf(p, vec3<f32>(-4.26, -4.26, -30.01), vec3<f32>(4.26, 4.26, 5.01))), gsl_simplePart_33, gsl_simpleWeight_33);
+  }
+  let m5long = gsl_simplePart_33;
+  return m5long;
+}
+
+fn gsl_remap_64(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_34 = gsl_simpleSized(8.5);
+  var gsl_simplePart_34 = 1e10;
+  if (gsl_simpleWeight_34 > 0.0) {
+    gsl_simplePart_34 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -30.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 30.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_34 < 1.0) {
+    gsl_simplePart_34 = mix(max(min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -30.0 - p.z), p.z - 2.5)), gsl_boxSdf(p, vec3<f32>(-4.26, -4.26, -30.01), vec3<f32>(4.26, 4.26, 5.01))), gsl_simplePart_34, gsl_simpleWeight_34);
+  }
+  let m5long = gsl_simplePart_34;
+  return m5long;
+}
+
+fn gsl_remap_65(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_35 = gsl_simpleSized(8.5);
+  var gsl_simplePart_35 = 1e10;
+  if (gsl_simpleWeight_35 > 0.0) {
+    gsl_simplePart_35 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -30.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 30.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_35 < 1.0) {
+    gsl_simplePart_35 = mix(max(min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -30.0 - p.z), p.z - 2.5)), gsl_boxSdf(p, vec3<f32>(-4.26, -4.26, -30.01), vec3<f32>(4.26, 4.26, 5.01))), gsl_simplePart_35, gsl_simpleWeight_35);
+  }
+  let m5long = gsl_simplePart_35;
+  return m5long;
+}
+
+fn gsl_remap_66(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_36 = gsl_simpleSized(8.5);
+  var gsl_simplePart_36 = 1e10;
+  if (gsl_simpleWeight_36 > 0.0) {
+    gsl_simplePart_36 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -30.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 30.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_36 < 1.0) {
+    gsl_simplePart_36 = mix(max(min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -30.0 - p.z), p.z - 2.5)), gsl_boxSdf(p, vec3<f32>(-4.26, -4.26, -30.01), vec3<f32>(4.26, 4.26, 5.01))), gsl_simplePart_36, gsl_simpleWeight_36);
+  }
+  let m5long = gsl_simplePart_36;
+  return m5long;
+}
+
+fn gsl_remap_67(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_37 = gsl_simpleSized(5.7);
+  var gsl_simplePart_37 = 1e10;
+  if (gsl_simpleWeight_37 > 0.0) {
+    gsl_simplePart_37 = fastener_screw(max(length(vec3<f32>(p.x, p.y, p.z - -1.6363636)) - 3.2863636, -p.z), max(max(max(length(p.xy) - 1.5, -8.0 - p.z), p.z - 0.825), (length(p.xy) - 1.5 + -p.z - 8.0 + 0.45) * 0.7071), drill_prismVoid(p, 1.65, max(max(abs(p.x) - 1.0, abs(0.5 * p.x + 0.8660254 * p.y) - 1.0), abs(0.5 * p.x - 0.8660254 * p.y) - 1.0), 1.04, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_37 < 1.0) {
+    gsl_simplePart_37 = mix(max(min(max(length(vec3<f32>(p.x, p.y, p.z - -1.6363636)) - 3.2863636, -p.z), max(max(length(p.xy) - 1.5, -8.0 - p.z), p.z - 0.825)), gsl_boxSdf(p, vec3<f32>(-2.86, -2.86, -8.01), vec3<f32>(2.86, 2.86, 1.66))), gsl_simplePart_37, gsl_simpleWeight_37);
+  }
+  let m3 = gsl_simplePart_37;
+  return m3;
+}
+
+fn gsl_remap_68(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return gsl_remap_67(vec3<f32>(p.x, p.y * 0.00000000000000006123234 + p.z * 1.0, -p.y * 1.0 + p.z * 0.00000000000000006123234), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex);
+}
+
+fn gsl_remap_69(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let gsl_simpleWeight_38 = gsl_simpleSized(5.7);
+  var gsl_simplePart_38 = 1e10;
+  if (gsl_simpleWeight_38 > 0.0) {
+    gsl_simplePart_38 = fastener_screw(max(length(vec3<f32>(p.x, p.y, p.z - -1.6363636)) - 3.2863636, -p.z), max(max(max(length(p.xy) - 1.5, -8.0 - p.z), p.z - 0.825), (length(p.xy) - 1.5 + -p.z - 8.0 + 0.45) * 0.7071), drill_prismVoid(p, 1.65, max(max(abs(p.x) - 1.0, abs(0.5 * p.x + 0.8660254 * p.y) - 1.0), abs(0.5 * p.x - 0.8660254 * p.y) - 1.0), 1.04, noiseTex), noiseTex);
+  }
+  if (gsl_simpleWeight_38 < 1.0) {
+    gsl_simplePart_38 = mix(max(min(max(length(vec3<f32>(p.x, p.y, p.z - -1.6363636)) - 3.2863636, -p.z), max(max(length(p.xy) - 1.5, -8.0 - p.z), p.z - 0.825)), gsl_boxSdf(p, vec3<f32>(-2.86, -2.86, -8.01), vec3<f32>(2.86, 2.86, 1.66))), gsl_simplePart_38, gsl_simpleWeight_38);
+  }
+  let m3 = gsl_simplePart_38;
+  return m3;
+}
+
+fn gsl_remap_70(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return gsl_remap_69(vec3<f32>(p.x, p.y * 0.00000000000000006123234 + p.z * 1.0, -p.y * 1.0 + p.z * 0.00000000000000006123234), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex);
 }
 
 fn ease_cubic(t: f32, noiseTex: texture_3d<f32>) -> f32 {
@@ -269,6 +832,7 @@ fn leadNut(p: vec3<f32>, bz: f32, sx: f32, sy: f32, noiseTex: texture_3d<f32>) -
 }
 
 fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
+  gsl_featurePixel = select(0.0, gsl_vanishEye.w * mix(max(length(gsl_vanishEye.xyz - p), 1.0), 1.0, gsl_vanishView.x), gsl_vanishEye.w > 0.0);
   gsl_partNear = vec3<f32>(1e10, 1e10, 1e10);
   let carriageX = gsl_param_50_35;
   let gx = carriageX;
@@ -1494,7 +2058,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_111 <= gsl_vanishView.w) {
     let gsl_partVanish_111 = gsl_vanish(gsl_partLo_111, gsl_partHi_111);
     gsl_part_111 = 1e10;
-    if (gsl_partVanish_111.x > 0.0) { gsl_part_111 = gsl_remap_8(p - vec3<f32>(-230.0, 220.0, -290.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_111.y; }
+    if (gsl_partVanish_111.x > 0.0) { gsl_part_111 = gsl_remap_10(p - vec3<f32>(-230.0, 220.0, -290.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_111.y; }
     if (abs(gsl_part_111) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_111), gsl_partVanish_111.zw); }
   }
   let floorJ2 = gsl_part_111;
@@ -1505,7 +2069,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_112 <= gsl_vanishView.w) {
     let gsl_partVanish_112 = gsl_vanish(gsl_partLo_112, gsl_partHi_112);
     gsl_part_112 = 1e10;
-    if (gsl_partVanish_112.x > 0.0) { gsl_part_112 = gsl_remap_9(p - vec3<f32>(230.0, -220.0, -290.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_112.y; }
+    if (gsl_partVanish_112.x > 0.0) { gsl_part_112 = gsl_remap_12(p - vec3<f32>(230.0, -220.0, -290.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_112.y; }
     if (abs(gsl_part_112) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_112), gsl_partVanish_112.zw); }
   }
   let floorJ3 = gsl_part_112;
@@ -1516,7 +2080,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_113 <= gsl_vanishView.w) {
     let gsl_partVanish_113 = gsl_vanish(gsl_partLo_113, gsl_partHi_113);
     gsl_part_113 = 1e10;
-    if (gsl_partVanish_113.x > 0.0) { gsl_part_113 = gsl_remap_9(p - vec3<f32>(230.0, 220.0, -290.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_113.y; }
+    if (gsl_partVanish_113.x > 0.0) { gsl_part_113 = gsl_remap_14(p - vec3<f32>(230.0, 220.0, -290.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_113.y; }
     if (abs(gsl_part_113) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_113), gsl_partVanish_113.zw); }
   }
   let floorJ4 = gsl_part_113;
@@ -1527,7 +2091,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_114 <= gsl_vanishView.w) {
     let gsl_partVanish_114 = gsl_vanish(gsl_partLo_114, gsl_partHi_114);
     gsl_part_114 = 1e10;
-    if (gsl_partVanish_114.x > 0.0) { gsl_part_114 = gsl_remap_10(p - vec3<f32>(-220.0, -230.0, -290.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_114.y; }
+    if (gsl_partVanish_114.x > 0.0) { gsl_part_114 = gsl_remap_16(p - vec3<f32>(-220.0, -230.0, -290.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_114.y; }
     if (abs(gsl_part_114) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_114), gsl_partVanish_114.zw); }
   }
   let floorJ5 = gsl_part_114;
@@ -1538,7 +2102,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_115 <= gsl_vanishView.w) {
     let gsl_partVanish_115 = gsl_vanish(gsl_partLo_115, gsl_partHi_115);
     gsl_part_115 = 1e10;
-    if (gsl_partVanish_115.x > 0.0) { gsl_part_115 = gsl_remap_10(p - vec3<f32>(220.0, -230.0, -290.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_115.y; }
+    if (gsl_partVanish_115.x > 0.0) { gsl_part_115 = gsl_remap_18(p - vec3<f32>(220.0, -230.0, -290.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_115.y; }
     if (abs(gsl_part_115) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_115), gsl_partVanish_115.zw); }
   }
   let floorJ6 = gsl_part_115;
@@ -1549,7 +2113,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_116 <= gsl_vanishView.w) {
     let gsl_partVanish_116 = gsl_vanish(gsl_partLo_116, gsl_partHi_116);
     gsl_part_116 = 1e10;
-    if (gsl_partVanish_116.x > 0.0) { gsl_part_116 = gsl_remap_11(p - vec3<f32>(-220.0, 230.0, -290.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_116.y; }
+    if (gsl_partVanish_116.x > 0.0) { gsl_part_116 = gsl_remap_20(p - vec3<f32>(-220.0, 230.0, -290.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_116.y; }
     if (abs(gsl_part_116) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_116), gsl_partVanish_116.zw); }
   }
   let floorJ7 = gsl_part_116;
@@ -1560,7 +2124,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_117 <= gsl_vanishView.w) {
     let gsl_partVanish_117 = gsl_vanish(gsl_partLo_117, gsl_partHi_117);
     gsl_part_117 = 1e10;
-    if (gsl_partVanish_117.x > 0.0) { gsl_part_117 = gsl_remap_11(p - vec3<f32>(220.0, 230.0, -290.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_117.y; }
+    if (gsl_partVanish_117.x > 0.0) { gsl_part_117 = gsl_remap_22(p - vec3<f32>(220.0, 230.0, -290.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_117.y; }
     if (abs(gsl_part_117) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_117), gsl_partVanish_117.zw); }
   }
   let floorJ8 = gsl_part_117;
@@ -1571,7 +2135,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_118 <= gsl_vanishView.w) {
     let gsl_partVanish_118 = gsl_vanish(gsl_partLo_118, gsl_partHi_118);
     gsl_part_118 = 1e10;
-    if (gsl_partVanish_118.x > 0.0) { gsl_part_118 = gsl_remap_8(p - vec3<f32>(-230.0, -220.0, -210.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_118.y; }
+    if (gsl_partVanish_118.x > 0.0) { gsl_part_118 = gsl_remap_24(p - vec3<f32>(-230.0, -220.0, -210.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_118.y; }
     if (abs(gsl_part_118) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_118), gsl_partVanish_118.zw); }
   }
   let deckJ1 = gsl_part_118;
@@ -1582,7 +2146,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_119 <= gsl_vanishView.w) {
     let gsl_partVanish_119 = gsl_vanish(gsl_partLo_119, gsl_partHi_119);
     gsl_part_119 = 1e10;
-    if (gsl_partVanish_119.x > 0.0) { gsl_part_119 = gsl_remap_8(p - vec3<f32>(-230.0, 220.0, -210.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_119.y; }
+    if (gsl_partVanish_119.x > 0.0) { gsl_part_119 = gsl_remap_26(p - vec3<f32>(-230.0, 220.0, -210.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_119.y; }
     if (abs(gsl_part_119) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_119), gsl_partVanish_119.zw); }
   }
   let deckJ2 = gsl_part_119;
@@ -1593,7 +2157,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_120 <= gsl_vanishView.w) {
     let gsl_partVanish_120 = gsl_vanish(gsl_partLo_120, gsl_partHi_120);
     gsl_part_120 = 1e10;
-    if (gsl_partVanish_120.x > 0.0) { gsl_part_120 = gsl_remap_9(p - vec3<f32>(230.0, -220.0, -210.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_120.y; }
+    if (gsl_partVanish_120.x > 0.0) { gsl_part_120 = gsl_remap_28(p - vec3<f32>(230.0, -220.0, -210.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_120.y; }
     if (abs(gsl_part_120) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_120), gsl_partVanish_120.zw); }
   }
   let deckJ3 = gsl_part_120;
@@ -1604,7 +2168,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_121 <= gsl_vanishView.w) {
     let gsl_partVanish_121 = gsl_vanish(gsl_partLo_121, gsl_partHi_121);
     gsl_part_121 = 1e10;
-    if (gsl_partVanish_121.x > 0.0) { gsl_part_121 = gsl_remap_9(p - vec3<f32>(230.0, 220.0, -210.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_121.y; }
+    if (gsl_partVanish_121.x > 0.0) { gsl_part_121 = gsl_remap_30(p - vec3<f32>(230.0, 220.0, -210.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_121.y; }
     if (abs(gsl_part_121) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_121), gsl_partVanish_121.zw); }
   }
   let deckJ4 = gsl_part_121;
@@ -1615,7 +2179,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_122 <= gsl_vanishView.w) {
     let gsl_partVanish_122 = gsl_vanish(gsl_partLo_122, gsl_partHi_122);
     gsl_part_122 = 1e10;
-    if (gsl_partVanish_122.x > 0.0) { gsl_part_122 = gsl_remap_10(p - vec3<f32>(-220.0, -230.0, -210.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_122.y; }
+    if (gsl_partVanish_122.x > 0.0) { gsl_part_122 = gsl_remap_32(p - vec3<f32>(-220.0, -230.0, -210.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_122.y; }
     if (abs(gsl_part_122) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_122), gsl_partVanish_122.zw); }
   }
   let deckJ5 = gsl_part_122;
@@ -1626,7 +2190,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_123 <= gsl_vanishView.w) {
     let gsl_partVanish_123 = gsl_vanish(gsl_partLo_123, gsl_partHi_123);
     gsl_part_123 = 1e10;
-    if (gsl_partVanish_123.x > 0.0) { gsl_part_123 = gsl_remap_10(p - vec3<f32>(220.0, -230.0, -210.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_123.y; }
+    if (gsl_partVanish_123.x > 0.0) { gsl_part_123 = gsl_remap_34(p - vec3<f32>(220.0, -230.0, -210.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_123.y; }
     if (abs(gsl_part_123) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_123), gsl_partVanish_123.zw); }
   }
   let deckJ6 = gsl_part_123;
@@ -1637,7 +2201,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_124 <= gsl_vanishView.w) {
     let gsl_partVanish_124 = gsl_vanish(gsl_partLo_124, gsl_partHi_124);
     gsl_part_124 = 1e10;
-    if (gsl_partVanish_124.x > 0.0) { gsl_part_124 = gsl_remap_11(p - vec3<f32>(-220.0, 230.0, -210.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_124.y; }
+    if (gsl_partVanish_124.x > 0.0) { gsl_part_124 = gsl_remap_36(p - vec3<f32>(-220.0, 230.0, -210.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_124.y; }
     if (abs(gsl_part_124) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_124), gsl_partVanish_124.zw); }
   }
   let deckJ7 = gsl_part_124;
@@ -1648,7 +2212,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_125 <= gsl_vanishView.w) {
     let gsl_partVanish_125 = gsl_vanish(gsl_partLo_125, gsl_partHi_125);
     gsl_part_125 = 1e10;
-    if (gsl_partVanish_125.x > 0.0) { gsl_part_125 = gsl_remap_11(p - vec3<f32>(220.0, 230.0, -210.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_125.y; }
+    if (gsl_partVanish_125.x > 0.0) { gsl_part_125 = gsl_remap_38(p - vec3<f32>(220.0, 230.0, -210.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_125.y; }
     if (abs(gsl_part_125) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_125), gsl_partVanish_125.zw); }
   }
   let deckJ8 = gsl_part_125;
@@ -1659,7 +2223,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_126 <= gsl_vanishView.w) {
     let gsl_partVanish_126 = gsl_vanish(gsl_partLo_126, gsl_partHi_126);
     gsl_part_126 = 1e10;
-    if (gsl_partVanish_126.x > 0.0) { gsl_part_126 = gsl_remap_8(p - vec3<f32>(-230.0, -220.0, 190.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_126.y; }
+    if (gsl_partVanish_126.x > 0.0) { gsl_part_126 = gsl_remap_40(p - vec3<f32>(-230.0, -220.0, 190.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_126.y; }
     if (abs(gsl_part_126) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_126), gsl_partVanish_126.zw); }
   }
   let topJ1 = gsl_part_126;
@@ -1670,7 +2234,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_127 <= gsl_vanishView.w) {
     let gsl_partVanish_127 = gsl_vanish(gsl_partLo_127, gsl_partHi_127);
     gsl_part_127 = 1e10;
-    if (gsl_partVanish_127.x > 0.0) { gsl_part_127 = gsl_remap_8(p - vec3<f32>(-230.0, 220.0, 190.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_127.y; }
+    if (gsl_partVanish_127.x > 0.0) { gsl_part_127 = gsl_remap_42(p - vec3<f32>(-230.0, 220.0, 190.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_127.y; }
     if (abs(gsl_part_127) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_127), gsl_partVanish_127.zw); }
   }
   let topJ2 = gsl_part_127;
@@ -1681,7 +2245,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_128 <= gsl_vanishView.w) {
     let gsl_partVanish_128 = gsl_vanish(gsl_partLo_128, gsl_partHi_128);
     gsl_part_128 = 1e10;
-    if (gsl_partVanish_128.x > 0.0) { gsl_part_128 = gsl_remap_9(p - vec3<f32>(230.0, -220.0, 190.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_128.y; }
+    if (gsl_partVanish_128.x > 0.0) { gsl_part_128 = gsl_remap_44(p - vec3<f32>(230.0, -220.0, 190.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_128.y; }
     if (abs(gsl_part_128) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_128), gsl_partVanish_128.zw); }
   }
   let topJ3 = gsl_part_128;
@@ -1692,7 +2256,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_129 <= gsl_vanishView.w) {
     let gsl_partVanish_129 = gsl_vanish(gsl_partLo_129, gsl_partHi_129);
     gsl_part_129 = 1e10;
-    if (gsl_partVanish_129.x > 0.0) { gsl_part_129 = gsl_remap_9(p - vec3<f32>(230.0, 220.0, 190.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_129.y; }
+    if (gsl_partVanish_129.x > 0.0) { gsl_part_129 = gsl_remap_46(p - vec3<f32>(230.0, 220.0, 190.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_129.y; }
     if (abs(gsl_part_129) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_129), gsl_partVanish_129.zw); }
   }
   let topJ4 = gsl_part_129;
@@ -1703,7 +2267,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_130 <= gsl_vanishView.w) {
     let gsl_partVanish_130 = gsl_vanish(gsl_partLo_130, gsl_partHi_130);
     gsl_part_130 = 1e10;
-    if (gsl_partVanish_130.x > 0.0) { gsl_part_130 = gsl_remap_10(p - vec3<f32>(-220.0, -230.0, 190.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_130.y; }
+    if (gsl_partVanish_130.x > 0.0) { gsl_part_130 = gsl_remap_48(p - vec3<f32>(-220.0, -230.0, 190.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_130.y; }
     if (abs(gsl_part_130) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_130), gsl_partVanish_130.zw); }
   }
   let topJ5 = gsl_part_130;
@@ -1714,7 +2278,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_131 <= gsl_vanishView.w) {
     let gsl_partVanish_131 = gsl_vanish(gsl_partLo_131, gsl_partHi_131);
     gsl_part_131 = 1e10;
-    if (gsl_partVanish_131.x > 0.0) { gsl_part_131 = gsl_remap_10(p - vec3<f32>(220.0, -230.0, 190.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_131.y; }
+    if (gsl_partVanish_131.x > 0.0) { gsl_part_131 = gsl_remap_50(p - vec3<f32>(220.0, -230.0, 190.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_131.y; }
     if (abs(gsl_part_131) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_131), gsl_partVanish_131.zw); }
   }
   let topJ6 = gsl_part_131;
@@ -1725,7 +2289,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_132 <= gsl_vanishView.w) {
     let gsl_partVanish_132 = gsl_vanish(gsl_partLo_132, gsl_partHi_132);
     gsl_part_132 = 1e10;
-    if (gsl_partVanish_132.x > 0.0) { gsl_part_132 = gsl_remap_11(p - vec3<f32>(-220.0, 230.0, 190.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_132.y; }
+    if (gsl_partVanish_132.x > 0.0) { gsl_part_132 = gsl_remap_52(p - vec3<f32>(-220.0, 230.0, 190.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_132.y; }
     if (abs(gsl_part_132) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_132), gsl_partVanish_132.zw); }
   }
   let topJ7 = gsl_part_132;
@@ -1736,7 +2300,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_133 <= gsl_vanishView.w) {
     let gsl_partVanish_133 = gsl_vanish(gsl_partLo_133, gsl_partHi_133);
     gsl_part_133 = 1e10;
-    if (gsl_partVanish_133.x > 0.0) { gsl_part_133 = gsl_remap_11(p - vec3<f32>(220.0, 230.0, 190.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_133.y; }
+    if (gsl_partVanish_133.x > 0.0) { gsl_part_133 = gsl_remap_54(p - vec3<f32>(220.0, 230.0, 190.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_133.y; }
     if (abs(gsl_part_133) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_133), gsl_partVanish_133.zw); }
   }
   let topJ8 = gsl_part_133;
@@ -1758,7 +2322,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_135 <= gsl_vanishView.w) {
     let gsl_partVanish_135 = gsl_vanish(gsl_partLo_135, gsl_partHi_135);
     gsl_part_135 = 1e10;
-    if (gsl_partVanish_135.x > 0.0) { gsl_part_135 = gsl_remap_12(p - vec3<f32>(-220.0, 180.0, 260.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_135.y; }
+    if (gsl_partVanish_135.x > 0.0) { gsl_part_135 = gsl_remap_55(p - vec3<f32>(-220.0, 180.0, 260.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_135.y; }
     if (abs(gsl_part_135) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_135), gsl_partVanish_135.zw); }
   }
   let plateA1 = gsl_part_135;
@@ -1769,7 +2333,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_136 <= gsl_vanishView.w) {
     let gsl_partVanish_136 = gsl_vanish(gsl_partLo_136, gsl_partHi_136);
     gsl_part_136 = 1e10;
-    if (gsl_partVanish_136.x > 0.0) { gsl_part_136 = gsl_remap_12(p - vec3<f32>(-180.0, 180.0, 260.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_136.y; }
+    if (gsl_partVanish_136.x > 0.0) { gsl_part_136 = gsl_remap_56(p - vec3<f32>(-180.0, 180.0, 260.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_136.y; }
     if (abs(gsl_part_136) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_136), gsl_partVanish_136.zw); }
   }
   let plateA2 = gsl_part_136;
@@ -1780,7 +2344,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_137 <= gsl_vanishView.w) {
     let gsl_partVanish_137 = gsl_vanish(gsl_partLo_137, gsl_partHi_137);
     gsl_part_137 = 1e10;
-    if (gsl_partVanish_137.x > 0.0) { gsl_part_137 = gsl_remap_12(p - vec3<f32>(-220.0, 220.0, 260.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_137.y; }
+    if (gsl_partVanish_137.x > 0.0) { gsl_part_137 = gsl_remap_57(p - vec3<f32>(-220.0, 220.0, 260.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_137.y; }
     if (abs(gsl_part_137) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_137), gsl_partVanish_137.zw); }
   }
   let plateA3 = gsl_part_137;
@@ -1791,7 +2355,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_138 <= gsl_vanishView.w) {
     let gsl_partVanish_138 = gsl_vanish(gsl_partLo_138, gsl_partHi_138);
     gsl_part_138 = 1e10;
-    if (gsl_partVanish_138.x > 0.0) { gsl_part_138 = gsl_remap_12(p - vec3<f32>(-180.0, 220.0, 260.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_138.y; }
+    if (gsl_partVanish_138.x > 0.0) { gsl_part_138 = gsl_remap_58(p - vec3<f32>(-180.0, 220.0, 260.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_138.y; }
     if (abs(gsl_part_138) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_138), gsl_partVanish_138.zw); }
   }
   let plateA4 = gsl_part_138;
@@ -1802,7 +2366,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_139 <= gsl_vanishView.w) {
     let gsl_partVanish_139 = gsl_vanish(gsl_partLo_139, gsl_partHi_139);
     gsl_part_139 = 1e10;
-    if (gsl_partVanish_139.x > 0.0) { gsl_part_139 = gsl_remap_12(p - vec3<f32>(180.0, 180.0, 260.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_139.y; }
+    if (gsl_partVanish_139.x > 0.0) { gsl_part_139 = gsl_remap_59(p - vec3<f32>(180.0, 180.0, 260.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_139.y; }
     if (abs(gsl_part_139) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_139), gsl_partVanish_139.zw); }
   }
   let plateB1 = gsl_part_139;
@@ -1813,7 +2377,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_140 <= gsl_vanishView.w) {
     let gsl_partVanish_140 = gsl_vanish(gsl_partLo_140, gsl_partHi_140);
     gsl_part_140 = 1e10;
-    if (gsl_partVanish_140.x > 0.0) { gsl_part_140 = gsl_remap_12(p - vec3<f32>(220.0, 180.0, 260.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_140.y; }
+    if (gsl_partVanish_140.x > 0.0) { gsl_part_140 = gsl_remap_60(p - vec3<f32>(220.0, 180.0, 260.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_140.y; }
     if (abs(gsl_part_140) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_140), gsl_partVanish_140.zw); }
   }
   let plateB2 = gsl_part_140;
@@ -1824,7 +2388,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_141 <= gsl_vanishView.w) {
     let gsl_partVanish_141 = gsl_vanish(gsl_partLo_141, gsl_partHi_141);
     gsl_part_141 = 1e10;
-    if (gsl_partVanish_141.x > 0.0) { gsl_part_141 = gsl_remap_12(p - vec3<f32>(180.0, 220.0, 260.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_141.y; }
+    if (gsl_partVanish_141.x > 0.0) { gsl_part_141 = gsl_remap_61(p - vec3<f32>(180.0, 220.0, 260.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_141.y; }
     if (abs(gsl_part_141) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_141), gsl_partVanish_141.zw); }
   }
   let plateB3 = gsl_part_141;
@@ -1835,7 +2399,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_142 <= gsl_vanishView.w) {
     let gsl_partVanish_142 = gsl_vanish(gsl_partLo_142, gsl_partHi_142);
     gsl_part_142 = 1e10;
-    if (gsl_partVanish_142.x > 0.0) { gsl_part_142 = gsl_remap_12(p - vec3<f32>(220.0, 220.0, 260.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_142.y; }
+    if (gsl_partVanish_142.x > 0.0) { gsl_part_142 = gsl_remap_62(p - vec3<f32>(220.0, 220.0, 260.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_142.y; }
     if (abs(gsl_part_142) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_142), gsl_partVanish_142.zw); }
   }
   let plateB4 = gsl_part_142;
@@ -1853,7 +2417,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_143 <= gsl_vanishView.w) {
     let gsl_partVanish_143 = gsl_vanish(gsl_partLo_143, gsl_partHi_143);
     gsl_part_143 = 1e10;
-    if (gsl_partVanish_143.x > 0.0) { gsl_part_143 = gsl_remap_13(p - vec3<f32>(-200.0, -200.0, 262.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_143.y; }
+    if (gsl_partVanish_143.x > 0.0) { gsl_part_143 = gsl_remap_63(p - vec3<f32>(-200.0, -200.0, 262.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_143.y; }
     if (abs(gsl_part_143) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_143), gsl_partVanish_143.zw); }
   }
   let idlerBoltL = gsl_part_143;
@@ -1864,7 +2428,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_144 <= gsl_vanishView.w) {
     let gsl_partVanish_144 = gsl_vanish(gsl_partLo_144, gsl_partHi_144);
     gsl_part_144 = 1e10;
-    if (gsl_partVanish_144.x > 0.0) { gsl_part_144 = gsl_remap_13(p - vec3<f32>(200.0, -200.0, 262.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_144.y; }
+    if (gsl_partVanish_144.x > 0.0) { gsl_part_144 = gsl_remap_64(p - vec3<f32>(200.0, -200.0, 262.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_144.y; }
     if (abs(gsl_part_144) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_144), gsl_partVanish_144.zw); }
   }
   let idlerBoltR = gsl_part_144;
@@ -1875,7 +2439,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_145 <= gsl_vanishView.w) {
     let gsl_partVanish_145 = gsl_vanish(gsl_partLo_145, gsl_partHi_145);
     gsl_part_145 = 1e10;
-    if (gsl_partVanish_145.x > 0.0) { gsl_part_145 = gsl_remap_13(p - vec3<f32>(-200.0, gy, 260.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_145.y; }
+    if (gsl_partVanish_145.x > 0.0) { gsl_part_145 = gsl_remap_65(p - vec3<f32>(-200.0, gy, 260.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_145.y; }
     if (abs(gsl_part_145) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_145), gsl_partVanish_145.zw); }
   }
   let jointBoltL = gsl_part_145;
@@ -1886,7 +2450,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_146 <= gsl_vanishView.w) {
     let gsl_partVanish_146 = gsl_vanish(gsl_partLo_146, gsl_partHi_146);
     gsl_part_146 = 1e10;
-    if (gsl_partVanish_146.x > 0.0) { gsl_part_146 = gsl_remap_13(p - vec3<f32>(200.0, gy, 260.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_146.y; }
+    if (gsl_partVanish_146.x > 0.0) { gsl_part_146 = gsl_remap_66(p - vec3<f32>(200.0, gy, 260.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_146.y; }
     if (abs(gsl_part_146) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_146), gsl_partVanish_146.zw); }
   }
   let jointBoltR = gsl_part_146;
@@ -1897,7 +2461,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_147 <= gsl_vanishView.w) {
     let gsl_partVanish_147 = gsl_vanish(gsl_partLo_147, gsl_partHi_147);
     gsl_part_147 = 1e10;
-    if (gsl_partVanish_147.x > 0.0) { gsl_part_147 = gsl_remap_14(p - vec3<f32>(gx - 20.0, gy - 75.0, 244.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_147.y; }
+    if (gsl_partVanish_147.x > 0.0) { gsl_part_147 = gsl_remap_68(p - vec3<f32>(gx - 20.0, gy - 75.0, 244.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_147.y; }
     if (abs(gsl_part_147) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_147), gsl_partVanish_147.zw); }
   }
   let coverScrewL = gsl_part_147;
@@ -1908,7 +2472,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_48_34: f32, gsl_param_49_33: f32, 
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_148 <= gsl_vanishView.w) {
     let gsl_partVanish_148 = gsl_vanish(gsl_partLo_148, gsl_partHi_148);
     gsl_part_148 = 1e10;
-    if (gsl_partVanish_148.x > 0.0) { gsl_part_148 = gsl_remap_14(p - vec3<f32>(gx + 20.0, gy - 75.0, 244.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_148.y; }
+    if (gsl_partVanish_148.x > 0.0) { gsl_part_148 = gsl_remap_70(p - vec3<f32>(gx + 20.0, gy - 75.0, 244.0), gsl_param_48_34, gsl_param_49_33, gsl_param_50_35, noiseTex) + gsl_partVanish_148.y; }
     if (abs(gsl_part_148) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_148), gsl_partVanish_148.zw); }
   }
   let coverScrewR = gsl_part_148;
@@ -2301,6 +2865,31 @@ fn gsl_vanish(lo: vec3<f32>, hi: vec3<f32>) -> vec4<f32> {
 
 fn gsl_boxDistance(q: vec3<f32>, lo: vec3<f32>, hi: vec3<f32>) -> f32 {
   return length(max(max(lo - q, q - hi), vec3<f32>(0.0)));
+}
+
+var<private> gsl_featurePixel: f32 = 0.0;
+
+fn gsl_featureWeight(size: f32) -> f32 {
+  if (gsl_featurePixel <= 0.0) { return 1.0; }
+  return smoothstep(gsl_vanishView.y, max(gsl_vanishView.z, gsl_vanishView.y + 1e-3), size / gsl_featurePixel);
+}
+
+var<private> gsl_simpleRung: f32;
+
+fn gsl_simple(lo: vec3<f32>, hi: vec3<f32>) -> f32 {
+  if (gsl_featurePixel <= 0.0 || gsl_simpleRung <= 0.0) { return 1.0; }
+  let size = hi - lo;
+  return smoothstep(0.5 * gsl_simpleRung, gsl_simpleRung, min(size.x, min(size.y, size.z)) / gsl_featurePixel);
+}
+
+fn gsl_simpleSized(size: f32) -> f32 {
+  if (gsl_featurePixel <= 0.0 || gsl_simpleRung <= 0.0) { return 1.0; }
+  return smoothstep(0.5 * gsl_simpleRung, gsl_simpleRung, size / gsl_featurePixel);
+}
+
+fn gsl_boxSdf(q: vec3<f32>, lo: vec3<f32>, hi: vec3<f32>) -> f32 {
+  let d = abs(q - 0.5 * (lo + hi)) - 0.5 * (hi - lo);
+  return length(max(d, vec3<f32>(0.0))) + min(max(d.x, max(d.y, d.z)), 0.0);
 }
 
 const gsl_foldK = array<vec3<f32>, 8>(vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 0.0, 0.0), vec3<f32>(0.0, 1.0, 0.0), vec3<f32>(1.0, 1.0, 0.0), vec3<f32>(0.0, 0.0, 1.0), vec3<f32>(1.0, 0.0, 1.0), vec3<f32>(0.0, 1.0, 1.0), vec3<f32>(1.0, 1.0, 1.0));
