@@ -21,15 +21,15 @@ fn gsl_remap_2(p: vec3<f32>) -> f32 {
 }
 
 fn gsl_remap_3(p: vec3<f32>) -> f32 {
-  let gsl_simpleWeight_2 = gsl_simpleSized(10.0);
-  var gsl_simplePart_2 = 1e10;
-  if (gsl_simpleWeight_2 > 0.0) {
-    gsl_simplePart_2 = fastener_screw(max(max(max(length(p.xy) - 5.0, -p.z), p.z - 6.0), (length(p.xy) - 5.0 + p.z - 6.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 3.0, -16.0 - p.z), p.z - 3.0), (length(p.xy) - 3.0 + -p.z - 16.0 + 0.9) * 0.7071), drill_prismVoid(p, 6.0, max(max(abs(p.x) - 2.5, abs(0.5 * p.x + 0.8660254 * p.y) - 2.5), abs(0.5 * p.x - 0.8660254 * p.y) - 2.5), 3.0));
+  let gsl_simpleWeight = gsl_simpleSized(10.0);
+  var gsl_simplePart = 1e10;
+  if (gsl_simpleWeight > 0.0) {
+    gsl_simplePart = fastener_screw(max(max(max(length(p.xy) - 5.0, -p.z), p.z - 6.0), (length(p.xy) - 5.0 + p.z - 6.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 3.0, -16.0 - p.z), p.z - 3.0), (length(p.xy) - 3.0 + -p.z - 16.0 + 0.9) * 0.7071), drill_prismVoid(p, 6.0, max(max(abs(p.x) - 2.5, abs(0.5 * p.x + 0.8660254 * p.y) - 2.5), abs(0.5 * p.x - 0.8660254 * p.y) - 2.5), 3.0));
   }
-  if (gsl_simpleWeight_2 < 1.0) {
-    gsl_simplePart_2 = mix(max(min(max(max(length(p.xy) - 5.0, -p.z), p.z - 6.0), max(max(length(p.xy) - 3.0, -16.0 - p.z), p.z - 3.0)), gsl_boxSdf(p, vec3<f32>(-5.01, -5.01, -16.01), vec3<f32>(5.01, 5.01, 6.01))), gsl_simplePart_2, gsl_simpleWeight_2);
+  if (gsl_simpleWeight < 1.0) {
+    gsl_simplePart = mix(max(min(max(max(length(p.xy) - 5.0, -p.z), p.z - 6.0), max(max(length(p.xy) - 3.0, -16.0 - p.z), p.z - 3.0)), gsl_boxSdf(p, vec3<f32>(-5.01, -5.01, -16.01), vec3<f32>(5.01, 5.01, 6.01))), gsl_simplePart, gsl_simpleWeight);
   }
-  let stub = gsl_simplePart_2;
+  let stub = gsl_simplePart;
   return stub;
 }
 
@@ -118,31 +118,31 @@ fn gsl_remap_4(p: vec3<f32>) -> vec3<f32> {
 }
 
 fn gsl_remap_5(p: vec3<f32>) -> vec3<f32> {
-  var gsl_simpleValue_2 = vec3<f32>(0.9621, 0.9654, 0.9658);
+  var gsl_simpleValue = vec3<f32>(0.9621, 0.9654, 0.9658);
   if (gsl_simpleDetail > 0.0) {
     let gsl_tmp_22 = 6.2831855 * p.z / 1.0;
     let gsl_tmp_21 = max(length(p.xy), 0.2);
-    gsl_simpleValue_2 = mix(gsl_simpleValue_2, color_mixOklab(vec3<f32>(0.9621, 0.9654, 0.9658), vec3<f32>(0.336735, 0.33789, 0.33803), clamp(-(-min(max(0.5412659 - clamp((acos(clamp(cos(gsl_tmp_22) * p.x / gsl_tmp_21 + sin(gsl_tmp_22) * p.y / gsl_tmp_21, -1.0, 1.0)) / 3.1415927 * 0.5 - 0.0625) * 1.7320508, 0.0, 0.5412659), 0.0), max(0.0, 0.5 * min(min(8.0 - p.z, p.z - 0.0), 4.082532 - length(p.xy))))) / 0.5412659, 0.0, 1.0) * (1.0 - gsl_dispDrawn)), gsl_simpleDetail);
+    gsl_simpleValue = mix(gsl_simpleValue, color_mixOklab(vec3<f32>(0.9621, 0.9654, 0.9658), vec3<f32>(0.336735, 0.33789, 0.33803), clamp(-(-min(max(0.5412659 - clamp((acos(clamp(cos(gsl_tmp_22) * p.x / gsl_tmp_21 + sin(gsl_tmp_22) * p.y / gsl_tmp_21, -1.0, 1.0)) / 3.1415927 * 0.5 - 0.0625) * 1.7320508, 0.0, 0.5412659), 0.0), max(0.0, 0.5 * min(min(8.0 - p.z, p.z - 0.0), 4.082532 - length(p.xy))))) / 0.5412659, 0.0, 1.0) * (1.0 - gsl_dispDrawn)), gsl_simpleDetail);
   }
-  return gsl_simpleValue_2;
+  return gsl_simpleValue;
 }
 
 fn gsl_remap_6(p: vec3<f32>) -> vec3<f32> {
-  var gsl_simpleValue_3 = vec3<f32>(0.9621, 0.9654, 0.9658);
+  var gsl_simpleValue = vec3<f32>(0.9621, 0.9654, 0.9658);
   if (gsl_simpleDetail > 0.0) {
     let gsl_tmp_24 = 6.2831855 * p.z / 1.0;
     let gsl_tmp_23 = max(length(p.xy), 0.2);
-    gsl_simpleValue_3 = mix(gsl_simpleValue_3, color_mixOklab(vec3<f32>(0.9621, 0.9654, 0.9658), vec3<f32>(0.336735, 0.33789, 0.33803), clamp(-(-min(max(0.5412659 - clamp((acos(clamp(cos(gsl_tmp_24) * p.x / gsl_tmp_23 + sin(gsl_tmp_24) * p.y / gsl_tmp_23, -1.0, 1.0)) / 3.1415927 * 0.5 - 0.0625) * 1.7320508, 0.0, 0.5412659), 0.0), max(0.0, 0.5 * min(min(8.0 - p.z, p.z - 0.0), 4.082532 - length(p.xy))))) / 0.5412659, 0.0, 1.0) * (1.0 - gsl_dispDrawn)), gsl_simpleDetail);
+    gsl_simpleValue = mix(gsl_simpleValue, color_mixOklab(vec3<f32>(0.9621, 0.9654, 0.9658), vec3<f32>(0.336735, 0.33789, 0.33803), clamp(-(-min(max(0.5412659 - clamp((acos(clamp(cos(gsl_tmp_24) * p.x / gsl_tmp_23 + sin(gsl_tmp_24) * p.y / gsl_tmp_23, -1.0, 1.0)) / 3.1415927 * 0.5 - 0.0625) * 1.7320508, 0.0, 0.5412659), 0.0), max(0.0, 0.5 * min(min(8.0 - p.z, p.z - 0.0), 4.082532 - length(p.xy))))) / 0.5412659, 0.0, 1.0) * (1.0 - gsl_dispDrawn)), gsl_simpleDetail);
   }
-  return gsl_simpleValue_3;
+  return gsl_simpleValue;
 }
 
 fn gsl_remap_7(p: vec3<f32>) -> vec3<f32> {
-  var gsl_simpleValue_4 = vec3<f32>(0.77, 0.78, 0.78);
+  var gsl_simpleValue = vec3<f32>(0.77, 0.78, 0.78);
   if (gsl_simpleDetail > 0.0) {
-    gsl_simpleValue_4 = mix(gsl_simpleValue_4, color_mixOklab(vec3<f32>(0.77, 0.78, 0.78), vec3<f32>(0.2695, 0.273, 0.273), clamp(-thread_maleRelief(p, 6.0, 1.0, 0.0, -16.0) / 0.5412659, 0.0, 1.0) * (1.0 - gsl_dispDrawn)), gsl_simpleDetail);
+    gsl_simpleValue = mix(gsl_simpleValue, color_mixOklab(vec3<f32>(0.77, 0.78, 0.78), vec3<f32>(0.2695, 0.273, 0.273), clamp(-thread_maleRelief(p, 6.0, 1.0, 0.0, -16.0) / 0.5412659, 0.0, 1.0) * (1.0 - gsl_dispDrawn)), gsl_simpleDetail);
   }
-  return gsl_simpleValue_4;
+  return gsl_simpleValue;
 }
 
 fn gsl_remap_8(p: vec3<f32>) -> vec4<f32> {

@@ -54,16 +54,16 @@ fn gsl_remap(p: vec3<f32>, material_polishedMetal: mat4x4<f32>, color_white: vec
 }
 
 fn gsl_remap_2(p: vec3<f32>, material_polishedMetal: mat4x4<f32>, color_white: vec3<f32>, time: f32, color_black: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
-  var gsl_simpleValue_2 = vec3<f32>(0.6604224, 0.6490635, 0.6588749);
+  var gsl_simpleValue = vec3<f32>(0.6604224, 0.6490635, 0.6588749);
   if (gsl_simpleDetail > 0.0) {
-    gsl_simpleValue_2 = mix(gsl_simpleValue_2, color_cyclicRainbow(fract(p.z / 10.0 - time / 5.0), noiseTex), gsl_simpleDetail);
+    gsl_simpleValue = mix(gsl_simpleValue, color_cyclicRainbow(fract(p.z / 10.0 - time / 5.0), noiseTex), gsl_simpleDetail);
   }
-  let rainbow = gsl_simpleValue_2;
-  var gsl_simpleValue_3 = color_mixOklab(rainbow, color_white, 0.26871103, noiseTex);
+  let rainbow = gsl_simpleValue;
+  var gsl_simpleValue_2 = color_mixOklab(rainbow, color_white, 0.26871103, noiseTex);
   if (gsl_simpleDetail > 0.0) {
-    gsl_simpleValue_3 = mix(gsl_simpleValue_3, gsl_remap(vec3<f32>(dot(p, vec3<f32>(1.0, 0.0, 0.0)), dot(p, vec3<f32>(0.0, 1.0, 0.0)), dot(p, vec3<f32>(0.0, 0.0, 1.0))), material_polishedMetal, color_white, time, color_black, noiseTex), gsl_simpleDetail);
+    gsl_simpleValue_2 = mix(gsl_simpleValue_2, gsl_remap(vec3<f32>(dot(p, vec3<f32>(1.0, 0.0, 0.0)), dot(p, vec3<f32>(0.0, 1.0, 0.0)), dot(p, vec3<f32>(0.0, 0.0, 1.0))), material_polishedMetal, color_white, time, color_black, noiseTex), gsl_simpleDetail);
   }
-  return gsl_simpleValue_3;
+  return gsl_simpleValue_2;
 }
 
 fn color_srgbToLinearChannel(s: f32, noiseTex: texture_3d<f32>) -> f32 {

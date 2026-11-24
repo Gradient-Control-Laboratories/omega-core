@@ -30,47 +30,47 @@ fn gsl_remap(p: vec3<f32>, gsl_param_18_29: f32, vector_dirZ: vec3<f32>, vector_
 }
 
 fn gsl_remap_2(p: vec3<f32>, gsl_param_18_29: f32, vector_dirZ: vec3<f32>, vector_zero: vec3<f32>) -> f32 {
-  let gsl_featureSize_2 = 12.006673;
-  let gsl_featureWeight_2 = gsl_featureWeight(gsl_featureSize_2);
-  var gsl_feature_2 = 100000.0;
-  if (gsl_featureWeight_2 > 0.0) {
+  let gsl_featureSize = 12.006673;
+  let gsl_featureWeight = gsl_featureWeight(gsl_featureSize);
+  var gsl_feature = 100000.0;
+  if (gsl_featureWeight > 0.0) {
     let holeDia = gsl_param_18_29;
-    gsl_feature_2 = min(min(100000.0, max(builtin_cone(p, vec3<f32>(0.0, 0.0, -8.5), vector_dirZ, 0.7853982), builtin_axis(p, vector_zero, vector_dirZ) - 8.5)), builtin_cylinderZ(p, vector_dirZ, vector_zero, holeDia / 2.0)) + (1.0 - gsl_featureWeight_2) * 0.5 * gsl_featureSize_2;
+    gsl_feature = min(min(100000.0, max(builtin_cone(p, vec3<f32>(0.0, 0.0, -8.5), vector_dirZ, 0.7853982), builtin_axis(p, vector_zero, vector_dirZ) - 8.5)), builtin_cylinderZ(p, vector_dirZ, vector_zero, holeDia / 2.0)) + (1.0 - gsl_featureWeight) * 0.5 * gsl_featureSize;
   }
-  return max(builtin_gcl_closure_boxCentered(p, vec3<f32>(0.0, 0.0, -7.0), vec3<f32>(24.0, 24.0, 14.0)), -gsl_feature_2);
+  return max(builtin_gcl_closure_boxCentered(p, vec3<f32>(0.0, 0.0, -7.0), vec3<f32>(24.0, 24.0, 14.0)), -gsl_feature);
 }
 
 fn gsl_remap_3(p: vec3<f32>, gsl_param_18_29: f32, vector_dirZ: vec3<f32>, vector_zero: vec3<f32>) -> f32 {
-  let gsl_featureSize_3 = 7.3397684;
-  let gsl_featureWeight_3 = gsl_featureWeight(gsl_featureSize_3);
-  var gsl_feature_3 = 100000.0;
-  if (gsl_featureWeight_3 > 0.0) {
+  let gsl_featureSize = 7.3397684;
+  let gsl_featureWeight = gsl_featureWeight(gsl_featureSize);
+  var gsl_feature = 100000.0;
+  if (gsl_featureWeight > 0.0) {
     let gsl_tmp_32 = min(min(min(100000.0, max(builtin_cone(p, vec3<f32>(0.0, 0.0, -5.2), vector_dirZ, 0.7853982), builtin_axis(p, vector_zero, vector_dirZ) - 5.2)), max(builtin_axis(p, vector_zero, vector_dirZ) - 3.3234177, -10.0 - p.z)), max(builtin_axis(p, vector_zero, vector_dirZ) - 3.4, builtin_cone(p, vec3<f32>(0.0, 0.0, -14.042926), vector_dirZ, 1.0297443)));
-    gsl_feature_3 = gsl_tmp_32 + (1.0 - gsl_featureWeight_3) * 0.5 * gsl_featureSize_3;
+    gsl_feature = gsl_tmp_32 + (1.0 - gsl_featureWeight) * 0.5 * gsl_featureSize;
   }
-  let tappedTile = max(builtin_gcl_closure_boxCentered(p, vec3<f32>(0.0, 0.0, -7.0), vec3<f32>(24.0, 24.0, 14.0)), -gsl_feature_3);
+  let tappedTile = max(builtin_gcl_closure_boxCentered(p, vec3<f32>(0.0, 0.0, -7.0), vec3<f32>(24.0, 24.0, 14.0)), -gsl_feature);
   return tappedTile;
 }
 
 fn gsl_remap_4(p: vec3<f32>, gsl_param_18_29: f32, vector_dirZ: vec3<f32>, vector_zero: vec3<f32>) -> f32 {
-  let gsl_featureSize_4 = 11.98;
-  let gsl_featureWeight_4 = gsl_featureWeight(gsl_featureSize_4);
-  var gsl_feature_4 = 100000.0;
-  if (gsl_featureWeight_4 > 0.0) {
+  let gsl_featureSize = 11.98;
+  let gsl_featureWeight = gsl_featureWeight(gsl_featureSize);
+  var gsl_feature = 100000.0;
+  if (gsl_featureWeight > 0.0) {
     let holeDia = gsl_param_18_29;
-    gsl_feature_4 = min(min(min(100000.0, max(builtin_cone(p, vec3<f32>(0.0, 0.0, -7.5), vector_dirZ, 0.7853982), builtin_axis(p, vector_zero, vector_dirZ) - 7.5)), drill_prismVoid(p, 0.0, max(max(abs(p.x) - 6.0, abs(0.5 * p.x + 0.8660254 * p.y) - 6.0), abs(0.5 * p.x - 0.8660254 * p.y) - 6.0), 6.0)), builtin_cylinderZ(p, vector_dirZ, vector_zero, holeDia / 2.0)) + (1.0 - gsl_featureWeight_4) * 0.5 * gsl_featureSize_4;
+    gsl_feature = min(min(min(100000.0, max(builtin_cone(p, vec3<f32>(0.0, 0.0, -7.5), vector_dirZ, 0.7853982), builtin_axis(p, vector_zero, vector_dirZ) - 7.5)), drill_prismVoid(p, 0.0, max(max(abs(p.x) - 6.0, abs(0.5 * p.x + 0.8660254 * p.y) - 6.0), abs(0.5 * p.x - 0.8660254 * p.y) - 6.0), 6.0)), builtin_cylinderZ(p, vector_dirZ, vector_zero, holeDia / 2.0)) + (1.0 - gsl_featureWeight) * 0.5 * gsl_featureSize;
   }
-  return max(builtin_gcl_closure_boxCentered(p, vec3<f32>(0.0, 0.0, -7.0), vec3<f32>(24.0, 24.0, 14.0)), -gsl_feature_4);
+  return max(builtin_gcl_closure_boxCentered(p, vec3<f32>(0.0, 0.0, -7.0), vec3<f32>(24.0, 24.0, 14.0)), -gsl_feature);
 }
 
 fn gsl_remap_5(p: vec3<f32>, gsl_param_18_29: f32, vector_dirZ: vec3<f32>, vector_zero: vec3<f32>) -> f32 {
-  let gsl_featureSize_5 = 10.59246;
-  let gsl_featureWeight_5 = gsl_featureWeight(gsl_featureSize_5);
-  var gsl_feature_5 = 100000.0;
-  if (gsl_featureWeight_5 > 0.0) {
-    gsl_feature_5 = min(min(100000.0, max(builtin_cone(p, vec3<f32>(0.0, 0.0, -7.5), vector_dirZ, 0.7853982), builtin_axis(p, vector_zero, vector_dirZ) - 7.5)), max(builtin_axis(p, vector_zero, vector_dirZ) - 6.0, p.x - 3.6)) + (1.0 - gsl_featureWeight_5) * 0.5 * gsl_featureSize_5;
+  let gsl_featureSize = 10.59246;
+  let gsl_featureWeight = gsl_featureWeight(gsl_featureSize);
+  var gsl_feature = 100000.0;
+  if (gsl_featureWeight > 0.0) {
+    gsl_feature = min(min(100000.0, max(builtin_cone(p, vec3<f32>(0.0, 0.0, -7.5), vector_dirZ, 0.7853982), builtin_axis(p, vector_zero, vector_dirZ) - 7.5)), max(builtin_axis(p, vector_zero, vector_dirZ) - 6.0, p.x - 3.6)) + (1.0 - gsl_featureWeight) * 0.5 * gsl_featureSize;
   }
-  return max(builtin_gcl_closure_boxCentered(p, vec3<f32>(0.0, 0.0, -7.0), vec3<f32>(24.0, 24.0, 14.0)), -gsl_feature_5);
+  return max(builtin_gcl_closure_boxCentered(p, vec3<f32>(0.0, 0.0, -7.0), vec3<f32>(24.0, 24.0, 14.0)), -gsl_feature);
 }
 
 fn map_patternPolarXY(p: vec3<f32>, count: f32) -> vec3<f32> {
@@ -88,36 +88,36 @@ fn gsl_remap_6(p: vec3<f32>, gsl_param_18_29: f32, vector_dirZ: vec3<f32>, vecto
 }
 
 fn gsl_remap_7(p: vec3<f32>, gsl_param_18_29: f32, vector_dirZ: vec3<f32>, vector_zero: vec3<f32>) -> f32 {
-  let gsl_featureSize_6 = 9.178246;
-  let gsl_featureWeight_6 = gsl_featureWeight(gsl_featureSize_6);
-  var gsl_feature_6 = 100000.0;
-  if (gsl_featureWeight_6 > 0.0) {
+  let gsl_featureSize = 9.178246;
+  let gsl_featureWeight = gsl_featureWeight(gsl_featureSize);
+  var gsl_feature = 100000.0;
+  if (gsl_featureWeight > 0.0) {
     let holeDia = gsl_param_18_29;
-    gsl_feature_6 = min(min(min(100000.0, max(builtin_cone(p, vec3<f32>(0.0, 0.0, 0.0 - (holeDia + 3.0 + 1.0) / 2.0 / 1.0), vector_dirZ, 0.7853982), builtin_cylinderZ(p, vector_dirZ, vector_zero, (holeDia + 3.0 + 1.0) / 2.0))), builtin_cylinderZ(p, vector_dirZ, vector_zero, holeDia / 2.0)), gsl_remap_6(map_patternPolarXY(p, 6.0), gsl_param_18_29, vector_dirZ, vector_zero)) + (1.0 - gsl_featureWeight_6) * 0.5 * gsl_featureSize_6;
+    gsl_feature = min(min(min(100000.0, max(builtin_cone(p, vec3<f32>(0.0, 0.0, 0.0 - (holeDia + 3.0 + 1.0) / 2.0 / 1.0), vector_dirZ, 0.7853982), builtin_cylinderZ(p, vector_dirZ, vector_zero, (holeDia + 3.0 + 1.0) / 2.0))), builtin_cylinderZ(p, vector_dirZ, vector_zero, holeDia / 2.0)), gsl_remap_6(map_patternPolarXY(p, 6.0), gsl_param_18_29, vector_dirZ, vector_zero)) + (1.0 - gsl_featureWeight) * 0.5 * gsl_featureSize;
   }
-  return max(builtin_gcl_closure_boxCentered(p, vec3<f32>(0.0, 0.0, -7.0), vec3<f32>(24.0, 24.0, 14.0)), -gsl_feature_6);
+  return max(builtin_gcl_closure_boxCentered(p, vec3<f32>(0.0, 0.0, -7.0), vec3<f32>(24.0, 24.0, 14.0)), -gsl_feature);
 }
 
 fn gsl_remap_8(p: vec3<f32>, gsl_param_18_29: f32, vector_dirZ: vec3<f32>, vector_zero: vec3<f32>) -> f32 {
-  let gsl_featureSize_7 = 9.178246;
-  let gsl_featureWeight_7 = gsl_featureWeight(gsl_featureSize_7);
-  var gsl_feature_7 = 100000.0;
-  if (gsl_featureWeight_7 > 0.0) {
+  let gsl_featureSize = 9.178246;
+  let gsl_featureWeight = gsl_featureWeight(gsl_featureSize);
+  var gsl_feature = 100000.0;
+  if (gsl_featureWeight > 0.0) {
     let holeDia = gsl_param_18_29;
-    gsl_feature_7 = min(min(min(100000.0, max(builtin_cone(p, vec3<f32>(0.0, 0.0, 0.0 - (holeDia + 3.0 + 1.0) / 2.0 / 1.0), vector_dirZ, 0.7853982), builtin_cylinderZ(p, vector_dirZ, vector_zero, (holeDia + 3.0 + 1.0) / 2.0))), builtin_cylinderZ(p, vector_dirZ, vector_zero, holeDia / 2.0)), max(max(abs(p.y) - 1.8, length(p.xy) - (holeDia / 2.0 + 1.8)), -p.x)) + (1.0 - gsl_featureWeight_7) * 0.5 * gsl_featureSize_7;
+    gsl_feature = min(min(min(100000.0, max(builtin_cone(p, vec3<f32>(0.0, 0.0, 0.0 - (holeDia + 3.0 + 1.0) / 2.0 / 1.0), vector_dirZ, 0.7853982), builtin_cylinderZ(p, vector_dirZ, vector_zero, (holeDia + 3.0 + 1.0) / 2.0))), builtin_cylinderZ(p, vector_dirZ, vector_zero, holeDia / 2.0)), max(max(abs(p.y) - 1.8, length(p.xy) - (holeDia / 2.0 + 1.8)), -p.x)) + (1.0 - gsl_featureWeight) * 0.5 * gsl_featureSize;
   }
-  return max(builtin_gcl_closure_boxCentered(p, vec3<f32>(0.0, 0.0, -7.0), vec3<f32>(24.0, 24.0, 14.0)), -gsl_feature_7);
+  return max(builtin_gcl_closure_boxCentered(p, vec3<f32>(0.0, 0.0, -7.0), vec3<f32>(24.0, 24.0, 14.0)), -gsl_feature);
 }
 
 fn gsl_remap_9(p: vec3<f32>, gsl_param_18_29: f32, vector_dirZ: vec3<f32>, vector_zero: vec3<f32>) -> f32 {
-  let gsl_featureSize_8 = 9.0;
-  let gsl_featureWeight_8 = gsl_featureWeight(gsl_featureSize_8);
-  var gsl_feature_8 = 100000.0;
-  if (gsl_featureWeight_8 > 0.0) {
+  let gsl_featureSize = 9.0;
+  let gsl_featureWeight = gsl_featureWeight(gsl_featureSize);
+  var gsl_feature = 100000.0;
+  if (gsl_featureWeight > 0.0) {
     let holeDia = gsl_param_18_29;
-    gsl_feature_8 = min(min(100000.0, drill_chamferSection(p, 0.0, length(vec2<f32>(max(abs(p.x * 1.0 + p.y * 0.0) - 5.0, 0.0), -p.x * 0.0 + p.y * 1.0)) - holeDia / 2.0, 0.4)), length(vec2<f32>(max(abs(p.x * 1.0 + p.y * 0.0) - 5.0, 0.0), -p.x * 0.0 + p.y * 1.0)) - holeDia / 2.0) + (1.0 - gsl_featureWeight_8) * 0.5 * gsl_featureSize_8;
+    gsl_feature = min(min(100000.0, drill_chamferSection(p, 0.0, length(vec2<f32>(max(abs(p.x * 1.0 + p.y * 0.0) - 5.0, 0.0), -p.x * 0.0 + p.y * 1.0)) - holeDia / 2.0, 0.4)), length(vec2<f32>(max(abs(p.x * 1.0 + p.y * 0.0) - 5.0, 0.0), -p.x * 0.0 + p.y * 1.0)) - holeDia / 2.0) + (1.0 - gsl_featureWeight) * 0.5 * gsl_featureSize;
   }
-  return max(builtin_gcl_closure_boxCentered(p, vec3<f32>(0.0, 0.0, -7.0), vec3<f32>(24.0, 24.0, 14.0)), -gsl_feature_8);
+  return max(builtin_gcl_closure_boxCentered(p, vec3<f32>(0.0, 0.0, -7.0), vec3<f32>(24.0, 24.0, 14.0)), -gsl_feature);
 }
 
 fn color_srgbToLinearChannel(s: f32) -> f32 {

@@ -100,6 +100,7 @@ func (d *Delegate) Remap(remapOp *program.Operand, targetOp *program.Operand, ex
 		// no-op (prevScope is already the primary agent scope).
 		prevScope := d.currentScope()
 		tempScope := prevScope.copy(fnName)
+		tempScope.isFunctionScope = true
 		tempScope.bScope = d.primaryBScope
 		if prevScope.bScope.IsFileScope() {
 			tempScope.parent = d.rootScope()
