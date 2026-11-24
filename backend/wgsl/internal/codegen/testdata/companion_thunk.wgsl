@@ -24,26 +24,12 @@ fn unionRoundExactAuto__d(p: vec3<f32>, sdf1: f32, sdf2: f32, sdf1__dp0: f32, sd
 }
 
 fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
-<<<<<<< HEAD
-  let gsl_cse_6 = p - vec3<f32>(-0.5, 0.0, 0.0);
-  let gsl_cse_1 = length(gsl_cse_6) + 1.0 - select(0.0, 1.0, (length(gsl_cse_6) > 0.0));
-  let gsl_cse_7 = p - vec3<f32>(0.5, 0.0, 0.0);
-  let gsl_cse_2 = length(gsl_cse_7) + 1.0 - select(0.0, 1.0, (length(gsl_cse_7) > 0.0));
-  let blended = gcl_closure_unionRoundExact(p, vec3<f32>(dot(gsl_cse_6, vec3<f32>(1.0, 0.0, 0.0)) / gsl_cse_1, dot(gsl_cse_6, vec3<f32>(0.0, 1.0, 0.0)) / gsl_cse_1, dot(gsl_cse_6, vec3<f32>(0.0, 0.0, 1.0)) / gsl_cse_1), vec3<f32>(dot(gsl_cse_7, vec3<f32>(1.0, 0.0, 0.0)) / gsl_cse_2, dot(gsl_cse_7, vec3<f32>(0.0, 1.0, 0.0)) / gsl_cse_2, dot(gsl_cse_7, vec3<f32>(0.0, 0.0, 1.0)) / gsl_cse_2));
-  let gsl_cse_5 = length(p) + 1.0 - select(0.0, 1.0, (length(p) > 0.0));
-  let sphereNormal = vec3<f32>(dot(p, vec3<f32>(1.0, 0.0, 0.0)) / gsl_cse_5, dot(p, vec3<f32>(0.0, 1.0, 0.0)) / gsl_cse_5, dot(p, vec3<f32>(0.0, 0.0, 1.0)) / gsl_cse_5);
-  let gsl_tmp_1 = vec2<f32>(length(p.xy) - 2.0, p.z);
-  let gsl_cse_3 = length(gsl_tmp_1) + 1.0 - select(0.0, 1.0, (length(gsl_tmp_1) > 0.0));
-  let gsl_cse_4 = length(p.xy) + 1.0 - select(0.0, 1.0, (length(p.xy) > 0.0));
-  let torusNormal = vec3<f32>(dot(gsl_tmp_1, vec2<f32>(dot(p.xy, vec2<f32>(1.0, 0.0)) / gsl_cse_4, 0.0)) / gsl_cse_3, dot(gsl_tmp_1, vec2<f32>(dot(p.xy, vec2<f32>(0.0, 1.0)) / gsl_cse_4, 0.0)) / gsl_cse_3, dot(gsl_tmp_1, vec2<f32>(dot(p.xy, vec2<f32>(0.0, 0.0)) / gsl_cse_4, 1.0)) / gsl_cse_3);
-=======
   let blended = unionRoundExactAuto__d(p, length(p - vec3<f32>(-0.5, 0.0, 0.0)) - 1.0, length(p - vec3<f32>(0.5, 0.0, 0.0)) - 1.0, dot(clamp((p - vec3<f32>(-0.5, 0.0, 0.0)) / max(length(p - vec3<f32>(-0.5, 0.0, 0.0)), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(1.0, 0.0, 0.0)), dot(clamp((p - vec3<f32>(-0.5, 0.0, 0.0)) / max(length(p - vec3<f32>(-0.5, 0.0, 0.0)), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(0.0, 1.0, 0.0)), dot(clamp((p - vec3<f32>(-0.5, 0.0, 0.0)) / max(length(p - vec3<f32>(-0.5, 0.0, 0.0)), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(0.0, 0.0, 1.0)), dot(clamp((p - vec3<f32>(0.5, 0.0, 0.0)) / max(length(p - vec3<f32>(0.5, 0.0, 0.0)), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(1.0, 0.0, 0.0)), dot(clamp((p - vec3<f32>(0.5, 0.0, 0.0)) / max(length(p - vec3<f32>(0.5, 0.0, 0.0)), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(0.0, 1.0, 0.0)), dot(clamp((p - vec3<f32>(0.5, 0.0, 0.0)) / max(length(p - vec3<f32>(0.5, 0.0, 0.0)), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(0.0, 0.0, 1.0)));
   let sphereNormal = vec3<f32>(dot(clamp(p / max(length(p), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(1.0, 0.0, 0.0)), dot(clamp(p / max(length(p), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(0.0, 1.0, 0.0)), dot(clamp(p / max(length(p), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(0.0, 0.0, 1.0)));
   let gsl_tmp_1 = vec2<f32>(length(p.xy) - 2.0, p.z);
   let gsl_tmp_2 = vec2<f32>(length(p.xy) - 2.0, p.z);
   let gsl_tmp_3 = vec2<f32>(length(p.xy) - 2.0, p.z);
   let torusNormal = vec3<f32>(dot(clamp(gsl_tmp_1 / max(length(gsl_tmp_1), 0.00000000000000000001), vec2<f32>(-1.0), vec2<f32>(1.0)), vec2<f32>(dot(clamp(p.xy / max(length(p.xy), 0.00000000000000000001), vec2<f32>(-1.0), vec2<f32>(1.0)), vec2<f32>(1.0, 0.0)), 0.0)), dot(clamp(gsl_tmp_2 / max(length(gsl_tmp_2), 0.00000000000000000001), vec2<f32>(-1.0), vec2<f32>(1.0)), vec2<f32>(dot(clamp(p.xy / max(length(p.xy), 0.00000000000000000001), vec2<f32>(-1.0), vec2<f32>(1.0)), vec2<f32>(0.0, 1.0)), 0.0)), dot(clamp(gsl_tmp_3 / max(length(gsl_tmp_3), 0.00000000000000000001), vec2<f32>(-1.0), vec2<f32>(1.0)), vec2<f32>(dot(clamp(p.xy / max(length(p.xy), 0.00000000000000000001), vec2<f32>(-1.0), vec2<f32>(1.0)), vec2<f32>(0.0, 0.0)), 1.0)));
->>>>>>> origin/main
   let gsl_s1 = gsl_shape(blended + 0.0 * (sphereNormal.x + torusNormal.z), 1u);
   return gsl_s1;
 }
