@@ -41,6 +41,11 @@ from `1.0.0` onward).
 
 ### Added
 
+- Shared consumer-reusable native library provisioning (`tool/ensure-native-libs.sh` and reusable
+  GitHub Actions workflow `.github/workflows/build-native-libs.yml`): detects host OS/arch,
+  downloads and SHA256-verifies prebuilt `librender` and `libmanifold_glue` release tarballs when
+  available, and falls back to `tool/build-fidget.sh --no-prompt` when offline, uncached, pinned
+  to an untagged commit, or invoked with `--force-build`.
 - Stand-ins anywhere: `name.simple = proxy` now works on any named shape anywhere in an expression
   (including intersections and remaps), not only top-level parts, and measures switch size at the
   point drawn (`gsl_featurePixel`) rather than at the eye's distance to the part's box. When paired
