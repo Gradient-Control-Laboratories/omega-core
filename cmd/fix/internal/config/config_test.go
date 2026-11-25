@@ -61,11 +61,13 @@ func TestParseFlags_TriStateFixerSelection(t *testing.T) {
 	// Explicit -scene=false leaves remaining fixers enabled
 	cfgSceneOff, err := config.ParseFlags([]string{"-scene=false", "a.gsl"})
 	require.NoError(t, err)
-	require.Equal(t, 1, len(cfgSceneOff.ActiveFixers))
-	assert.Equal(t, "omegaimport", cfgSceneOff.ActiveFixers[0].Name)
+	require.Equal(t, 3, len(cfgSceneOff.ActiveFixers))
+	assert.Equal(t, "range", cfgSceneOff.ActiveFixers[0].Name)
+	assert.Equal(t, "stdlib", cfgSceneOff.ActiveFixers[1].Name)
+	assert.Equal(t, "omegaimport", cfgSceneOff.ActiveFixers[2].Name)
 
 	// Disabling all fixers leaves ActiveFixers empty
-	cfgAllOff, err := config.ParseFlags([]string{"-scene=false", "-omegaimport=false", "a.gsl"})
+	cfgAllOff, err := config.ParseFlags([]string{"-scene=false", "-range=false", "-stdlib=false", "-omegaimport=false", "a.gsl"})
 	require.NoError(t, err)
 	assert.Equal(t, 0, len(cfgAllOff.ActiveFixers))
 }
