@@ -269,9 +269,10 @@ func (d *Delegate) BuildPackageReturns(_ []*program.Operand, expressions []build
 	}
 	d.currentScope().block = ir.NewBlock()
 
-	// A feature reads the pixel at the world point, measured first (prune.go);
-	// with no part to reset it, the part detail the shading reads starts clear.
-	if d.featureUsed {
+	// A feature, and a stand-in's switch, read the pixel at the world point,
+	// measured first (prune.go, simple.go); with no part to reset it, the part
+	// detail the shading reads starts clear.
+	if d.featureUsed || d.simpleUsed {
 		if !d.vanishUsed {
 			sdShapeBlock.Insert(0, ir.NewAssignStmt("gsl_partNear", "vec3<f32>(1e10, 1e10, 1e10)", nil))
 		}
@@ -342,10 +343,10 @@ func (d *Delegate) BuildPackageReturns(_ []*program.Operand, expressions []build
 	if d.spinodoidGradEmitted {
 		d.module.AddRuntimeSnippet(spinodoidGradWGSL)
 	}
-	if d.vanishUsed || d.featureUsed {
+	if d.vanishUsed || d.featureUsed || d.simpleUsed {
 		d.module.AddRuntimeSnippet(vanishWGSL)
 	}
-	if d.featureUsed {
+	if d.featureUsed || d.simpleUsed {
 		d.module.AddRuntimeSnippet(featureWGSL)
 	}
 	if d.simpleUsed {

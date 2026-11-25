@@ -41,14 +41,10 @@ import (
 // becomes its stand-in across the octave below it. A host that does not set
 // it, and a rung of 0, keep every part whole.
 
-// simplifiedNameRE matches builtin's simplified and the copies codegen
-// specializes from it for other argument types: a colour's, a material's.
-var simplifiedNameRE = regexp.MustCompile(`^builtin_simplified(_\d+)?$`)
-
-// simplifies reports whether a function is builtin's simplified(shape, proxy,
-// lo, hi).
-func simplifies(wgslName string, argCount int) bool {
-	return simplifiedNameRE.MatchString(wgslName) && argCount == 4
+// isSimplified reports whether fnInfo is builtin's simplified(shape, proxy,
+// lo, hi[, size]).
+func isSimplified(fnInfo *wgsl.FnInfo, argCount int) bool {
+	return fnInfo != nil && fnInfo.PkgName() == "builtin" && fnInfo.Name() == "simplified" && (argCount == 4 || argCount == 5)
 }
 
 // simpleCall is a call to simplified: a distance's switch, or a field's blend
@@ -66,15 +62,16 @@ type simpleSwitch struct {
 	part, weight         string
 	shape, proxy, lo, hi string
 	p                    string
+	weightInit           string
 	readsShape           []string
 	readsProxy           []string
 	readsLo              []string
 	readsHi              []string
+	readsWeight          []string
 }
 
 func (s *simpleSwitch) emitTo(b *ir.Block) {
-	weightInit := fmt.Sprintf("gsl_simple(%s, %s)", s.lo, s.hi)
-	b.Add(ir.NewLetStmt(s.weight, "", weightInit, append(append([]string{}, s.readsLo...), s.readsHi...)))
+	b.Add(ir.NewLetStmt(s.weight, "", s.weightInit, s.readsWeight))
 	b.Add(ir.NewVarStmt(s.part, "", vanishedWGSL, nil))
 
 	guard1Body := ir.NewBlock()
@@ -99,15 +96,17 @@ type SimpleGuardExpr struct {
 	proxy wgsl.Expression
 	lo    wgsl.Expression
 	hi    wgsl.Expression
+	size  wgsl.Expression // a declared size, name.featureSize, or nil for the box's
 }
 
-func NewSimpleGuardExpr(op *program.Operand, d *Delegate, shape, proxy, lo, hi wgsl.Expression, returnType wgsl.TypeInfo) *SimpleGuardExpr {
+func NewSimpleGuardExpr(op *program.Operand, d *Delegate, shape, proxy, lo, hi, size wgsl.Expression, returnType wgsl.TypeInfo) *SimpleGuardExpr {
 	s := &SimpleGuardExpr{
 		d:     d,
 		shape: shape,
 		proxy: proxy,
 		lo:    lo,
 		hi:    hi,
+		size:  size,
 	}
 	s.Expression = wgsl.NewExpr(op, returnType, build.PrecedenceHighest)
 	s.Expression.SetOuter(s)
@@ -131,6 +130,7 @@ func (s *SimpleGuardExpr) Codegen(ctx wgsl.CodegenContext) string {
 		readsLo:    s.lo.Reads(),
 		readsHi:    s.hi.Reads(),
 	}
+	sw.weightInit, sw.readsWeight = simpleWeight(ctx, sw.lo, sw.hi, s.size, s.lo, s.hi)
 	if deferred {
 		d.pendingSimple = sw
 		return sw.part
@@ -144,15 +144,28 @@ func (s *SimpleGuardExpr) Codegen(ctx wgsl.CodegenContext) string {
 // handed to the guard, in pendingSimple, to write inside its own branch.
 func (d *Delegate) simpleGuard(op *program.Operand, args []wgsl.Expression, returnType wgsl.TypeInfo) build.Expression {
 	shape, proxy, lo, hi := args[0], args[1], args[2], args[3]
+	var size wgsl.Expression
+	if len(args) == 5 {
+		size = args[4]
+	}
 	// A stand-in of nothing is none: the part is drawn as itself at every
 	// size. A library part whose stand-in depends on what it is made of says
 	// so this way (shaft.body: its envelope when it has detail, nothing when it
 	// has not), so a part with nothing simpler to show costs no switch.
-	if noStandIn(proxy) || (op.GetFnCall() != nil && len(op.GetFnCall().Arguments) == 4 && nothingOperand(op.GetFnCall().Arguments[1])) {
+	if noStandIn(proxy) || (op.GetFnCall() != nil && len(op.GetFnCall().Arguments) >= 4 && nothingOperand(op.GetFnCall().Arguments[1])) {
 		return shape
 	}
 	d.simpleUsed = true
-	return NewSimpleGuardExpr(op, d, shape, proxy, lo, hi, returnType)
+	return NewSimpleGuardExpr(op, d, shape, proxy, lo, hi, size, returnType)
+}
+
+// simpleWeight is a switch's weight and what it reads: gsl_simpleSized of a
+// declared size, or gsl_simple of the box.
+func simpleWeight(ctx wgsl.CodegenContext, loSrc, hiSrc string, size, lo, hi wgsl.Expression) (string, []string) {
+	if size != nil {
+		return fmt.Sprintf("gsl_simpleSized(%s)", size.Codegen(ctx)), size.Reads()
+	}
+	return fmt.Sprintf("gsl_simple(%s, %s)", loSrc, hiSrc), append(append([]string{}, lo.Reads()...), hi.Reads()...)
 }
 
 // noStandIn reports whether a part's stand-in is the constant nothing (1e5,
@@ -204,17 +217,19 @@ type SimpleFieldGuardExpr struct {
 	proxy    wgsl.Expression
 	lo       wgsl.Expression
 	hi       wgsl.Expression
+	size     wgsl.Expression
 	rows     int
 	typeName string
 }
 
-func NewSimpleFieldGuardExpr(op *program.Operand, d *Delegate, field, proxy, lo, hi wgsl.Expression, returnType wgsl.TypeInfo, rows int, typeName string) *SimpleFieldGuardExpr {
+func NewSimpleFieldGuardExpr(op *program.Operand, d *Delegate, field, proxy, lo, hi, size wgsl.Expression, returnType wgsl.TypeInfo, rows int, typeName string) *SimpleFieldGuardExpr {
 	e := &SimpleFieldGuardExpr{
 		d:        d,
 		field:    field,
 		proxy:    proxy,
 		lo:       lo,
 		hi:       hi,
+		size:     size,
 		rows:     rows,
 		typeName: typeName,
 	}
@@ -232,8 +247,8 @@ func (e *SimpleFieldGuardExpr) Codegen(ctx wgsl.CodegenContext) string {
 	fieldSrc := e.field.Codegen(ctx)
 
 	block := d.currentScope().Block()
-	weightInit := fmt.Sprintf("gsl_simple(%s, %s)", loSrc, hiSrc)
-	block.Add(ir.NewLetStmt(weight, "", weightInit, append(append([]string{}, e.lo.Reads()...), e.hi.Reads()...)))
+	weightInit, weightReads := simpleWeight(ctx, loSrc, hiSrc, e.size, e.lo, e.hi)
+	block.Add(ir.NewLetStmt(weight, "", weightInit, weightReads))
 	block.Add(ir.NewVarStmt(value, "", proxySrc, e.proxy.Reads()))
 	guardBody := ir.NewBlock()
 
@@ -259,12 +274,16 @@ func (e *SimpleFieldGuardExpr) Codegen(ctx wgsl.CodegenContext) string {
 // A type it cannot blend keeps the part's field.
 func (d *Delegate) simpleFieldGuard(op *program.Operand, args []wgsl.Expression, returnType wgsl.TypeInfo) build.Expression {
 	field, proxy, lo, hi := args[0], args[1], args[2], args[3]
+	var size wgsl.Expression
+	if len(args) == 5 {
+		size = args[4]
+	}
 	rows, ok := blendRows(returnType)
 	if !ok {
 		return field
 	}
 	d.simpleUsed = true
-	return NewSimpleFieldGuardExpr(op, d, field, proxy, lo, hi, returnType, rows, returnType.Name)
+	return NewSimpleFieldGuardExpr(op, d, field, proxy, lo, hi, size, returnType, rows, returnType.Name)
 }
 
 // Fine detail, name.detail = fine of features name.detailSize = size mm
@@ -388,15 +407,26 @@ func blendRows(t wgsl.TypeInfo) (rows int, ok bool) {
 	return 0, t.IsScalarOrVector()
 }
 
-// simpleWGSL declares the rung the switches read, gsl_simple, their weight,
-// and gsl_boxSdf, the signed distance to a box they crop a stand-in by. It
-// reads gsl_vanish's camera, which every part declares (vanishWGSL).
+// simpleWGSL declares the rung the switches read, their weight, and
+// gsl_boxSdf, the signed distance to a box they crop a stand-in by. The weight
+// is measured at the point, as a feature's is (prune.go): the size against
+// gsl_featurePixel, which sdShape sets on entry from the world position and
+// the camera, so a long part simplifies its far end first and a stand-in read
+// through a rigid placement is measured where it is drawn. gsl_simple sizes a
+// stand-in by its box's smallest extent, gsl_simpleSized by a declared size,
+// name.featureSize. A host without the camera (pixel 0) or with the rung at 0
+// keeps every value whole.
 const simpleWGSL = `var<private> gsl_simpleRung: f32;
 
 fn gsl_simple(lo: vec3<f32>, hi: vec3<f32>) -> f32 {
-  if (gsl_vanishEye.w <= 0.0 || gsl_simpleRung <= 0.0) { return 1.0; }
-  let px = gsl_vanish(lo, hi).z;
-  return smoothstep(0.5 * gsl_simpleRung, gsl_simpleRung, px);
+  if (gsl_featurePixel <= 0.0 || gsl_simpleRung <= 0.0) { return 1.0; }
+  let size = hi - lo;
+  return smoothstep(0.5 * gsl_simpleRung, gsl_simpleRung, min(size.x, min(size.y, size.z)) / gsl_featurePixel);
+}
+
+fn gsl_simpleSized(size: f32) -> f32 {
+  if (gsl_featurePixel <= 0.0 || gsl_simpleRung <= 0.0) { return 1.0; }
+  return smoothstep(0.5 * gsl_simpleRung, gsl_simpleRung, size / gsl_featurePixel);
 }
 
 fn gsl_boxSdf(q: vec3<f32>, lo: vec3<f32>, hi: vec3<f32>) -> f32 {

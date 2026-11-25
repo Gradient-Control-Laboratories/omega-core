@@ -117,7 +117,7 @@ import (
 // carriedProperties are the properties a function's returned local can carry.
 // The frame coordinates u and v are carried only in a program that reads one:
 // in any other, eraseFrames has taken them off every function first.
-var carriedProperties = []string{"color", "material", uProperty, vProperty, simplePropName}
+var carriedProperties = []string{"color", "material", uProperty, vProperty, simplePropName, featureSizePropName}
 
 // shapeProperties are the properties only a shape takes, which tell a shape's
 // stand-in from a value's (see A PART'S STAND-IN above).
@@ -601,7 +601,8 @@ func addCompanions(pkg *program.Package, pkgPath string, slotsOf map[*program.Fu
 }
 
 // dropReturnedSimple takes the stand-in off the local fn returns at place i,
-// when the local sets one itself.
+// when the local sets one itself, and the size it switches at with it, so
+// the function does not prune the local by it.
 func dropReturnedSimple(fn *program.Function, i int) {
 	a, place := returnedLocal(fn, fn.Returns[i])
 	if a == nil {
@@ -610,7 +611,7 @@ func dropReturnedSimple(fn *program.Function, i int) {
 	v := a.Variables[place]
 	kept := v.Properties[:0]
 	for _, p := range v.Properties {
-		if p != nil && p.Name == simplePropName {
+		if p != nil && (p.Name == simplePropName || p.Name == featureSizePropName) {
 			continue
 		}
 		kept = append(kept, p)
@@ -715,6 +716,23 @@ func returnedProperties(fn *program.Function, ret *program.Operand, pkgPath stri
 	// What a carrier's part carries makes it a shape: a colour carries nothing.
 	if !shape {
 		delete(out, simplePropName)
+		delete(out, featureSizePropName)
+	}
+	// A stand-in switches at the size of the part it stands in for, the
+	// smallest extent of the box the local declares, so a part placed through
+	// a remap, which keeps no box, still has one (MarkParts).
+	if _, ok := out[simplePropName]; ok {
+		if _, sized := out[featureSizePropName]; !sized {
+			for _, p := range last.Variables[place].Properties {
+				if p != nil && p.Name == "box" {
+					out[featureSizePropName] = call(featureExtentName, program.CloneOperand(p.Expression))
+				}
+			}
+		}
+	} else {
+		// Without a stand-in a feature's size is its own to prune by, in the
+		// function (drill.hole's void), and is not carried.
+		delete(out, featureSizePropName)
 	}
 	return nonEmpty(out)
 }
@@ -882,7 +900,12 @@ func carryCalls(pkg *program.Package, carriers map[carrierKey]carrier, frames bu
 								standIn(a, v, own, companionCall(fc.FnCall, prop, i, c.multi))
 								continue
 							}
-							v.Properties = append(v.Properties, carried(a, fc.FnCall, prop, i, c.multi))
+							cp := carried(a, fc.FnCall, prop, i, c.multi)
+							if prop == featureSizePropName {
+								// Marked as carried: a part keeps its own box (MarkParts).
+								cp.Expression = call(carriedSimpleName, cp.Expression)
+							}
+							v.Properties = append(v.Properties, cp)
 						}
 					}
 					out = append(out, a)
@@ -894,6 +917,23 @@ func carryCalls(pkg *program.Package, carriers map[carrierKey]carrier, frames bu
 			if len(a.Variables) == 1 && a.Variables[0] != nil && !hasProperty(a.Variables[0], simplePropName) {
 				if stand, ok := withStandIns(a.Expression, carriers); ok {
 					standIn(a, a.Variables[0], propertyNames(a.Variables[0]), stand)
+					// The size it switches at is the smallest its calls carry,
+					// declared beside it unless the document set one.
+					if !hasProperty(a.Variables[0], featureSizePropName) {
+						var sizes []*program.Operand
+						for _, fc := range sizedCalls(a.Expression, carriers) {
+							sizes = append(sizes, carried(a, fc, featureSizePropName, 0, false).Expression)
+						}
+						if len(sizes) > 0 {
+							size := sizes[0]
+							if len(sizes) > 1 {
+								size = nary(program.Operation_MIN, sizes...)
+							}
+							a.Variables[0].Properties = append(a.Variables[0].Properties, &program.Property{
+								Start: a.Start, End: a.End, Name: featureSizePropName, Expression: call(carriedSimpleName, size),
+							})
+						}
+					}
 				}
 			}
 			a.Expression = hoistCalls(a.Expression, carriers, hoist(a, nil))
@@ -1005,7 +1045,7 @@ func carriedBy(fc *program.FnCall, carriers map[carrierKey]carrier) []string {
 	}
 	var props []string
 	for _, p := range c.slots[0] {
-		if p != simplePropName {
+		if p != simplePropName && p != featureSizePropName {
 			props = append(props, p)
 		}
 	}
@@ -1251,4 +1291,38 @@ func (sw *sweepFrame) openProfile(fc *program.FnCall) string {
 		}
 	}
 	return ""
+}
+
+// sizedCalls are the single-return calls beneath op that carry a stand-in's
+// size, outermost first: the parts a placed declaration's stand-in stands in
+// for.
+func sizedCalls(op *program.Operand, carriers map[carrierKey]carrier) []*program.FnCall {
+	var out []*program.FnCall
+	var visit func(op *program.Operand)
+	visit = func(op *program.Operand) {
+		if op == nil {
+			return
+		}
+		switch t := op.T.(type) {
+		case *program.Operand_Expression:
+			if t.Expression != nil {
+				for _, o := range t.Expression.Operands {
+					visit(o)
+				}
+			}
+		case *program.Operand_FnCall:
+			fc := t.FnCall
+			if c, ok := carrierOf(fc, carriers); ok && !c.multi && hasSlot(c.slots[0], featureSizePropName) {
+				out = append(out, fc)
+				return
+			}
+			if fc != nil {
+				for _, a := range fc.Arguments {
+					visit(a)
+				}
+			}
+		}
+	}
+	visit(op)
+	return out
 }

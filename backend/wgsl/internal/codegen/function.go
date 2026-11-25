@@ -308,7 +308,10 @@ func (d *Delegate) buildFunc(
 	}
 	// Nor are simplified and simpleValue: every call is its switch
 	// (simple.go). Their parameters may include module state after their own.
-	if simplifiedNameRE.MatchString(wgslName) || simpleValueNameRE.MatchString(wgslName) || detailValueNameRE.MatchString(wgslName) || isPruneBelow(fnInfo, len(paramNames)) {
+	if isSimplified(fnInfo, len(paramNames)) ||
+		simpleValueNameRE.MatchString(wgslName) ||
+		detailValueNameRE.MatchString(wgslName) ||
+		isPruneBelow(fnInfo, len(paramNames)) {
 		return finalGlobalRefs, wgslName, nil
 	}
 

@@ -13,7 +13,15 @@ fn drill_prismVoid(p: vec3<f32>, zTop: f32, section: f32, depth: f32) -> f32 {
 }
 
 fn gsl_remap(p: vec3<f32>, gsl_param_33_28: f32, gsl_param_34_32: f32) -> f32 {
-  let m5 = fastener_screw(max(length(vec3<f32>(p.x, p.y, p.z - -2.7272727)) - 5.4772725, -p.z), max(max(max(length(p.xy) - 2.5, -10.0 - p.z), p.z - 1.375), (length(p.xy) - 2.5 + -p.z - 10.0 + 0.75) * 0.7071), drill_prismVoid(p, 2.75, max(max(abs(p.x) - 1.5, abs(0.5 * p.x + 0.8660254 * p.y) - 1.5), abs(0.5 * p.x - 0.8660254 * p.y) - 1.5), 1.56));
+  let gsl_simpleWeight = gsl_simpleSized(9.5);
+  var gsl_simplePart = 1e10;
+  if (gsl_simpleWeight > 0.0) {
+    gsl_simplePart = fastener_screw(max(length(vec3<f32>(p.x, p.y, p.z - -2.7272727)) - 5.4772725, -p.z), max(max(max(length(p.xy) - 2.5, -10.0 - p.z), p.z - 1.375), (length(p.xy) - 2.5 + -p.z - 10.0 + 0.75) * 0.7071), drill_prismVoid(p, 2.75, max(max(abs(p.x) - 1.5, abs(0.5 * p.x + 0.8660254 * p.y) - 1.5), abs(0.5 * p.x - 0.8660254 * p.y) - 1.5), 1.56));
+  }
+  if (gsl_simpleWeight < 1.0) {
+    gsl_simplePart = mix(max(min(max(length(vec3<f32>(p.x, p.y, p.z - -2.7272727)) - 5.4772725, -p.z), max(max(length(p.xy) - 2.5, -10.0 - p.z), p.z - 1.375)), gsl_boxSdf(p, vec3<f32>(-4.76, -4.76, -10.01), vec3<f32>(4.76, 4.76, 2.76))), gsl_simplePart, gsl_simpleWeight);
+  }
+  let m5 = gsl_simplePart;
   return m5;
 }
 
@@ -30,7 +38,15 @@ fn gsl_remap_4(p: vec3<f32>, gsl_param_33_28: f32, gsl_param_34_32: f32) -> f32 
 }
 
 fn gsl_remap_5(p: vec3<f32>, gsl_param_33_28: f32, gsl_param_34_32: f32) -> f32 {
-  let m5long = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -30.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 30.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
+  let gsl_simpleWeight = gsl_simpleSized(8.5);
+  var gsl_simplePart = 1e10;
+  if (gsl_simpleWeight > 0.0) {
+    gsl_simplePart = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -30.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 30.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
+  }
+  if (gsl_simpleWeight < 1.0) {
+    gsl_simplePart = mix(max(min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -30.0 - p.z), p.z - 2.5)), gsl_boxSdf(p, vec3<f32>(-4.26, -4.26, -30.01), vec3<f32>(4.26, 4.26, 5.01))), gsl_simplePart, gsl_simpleWeight);
+  }
+  let m5long = gsl_simplePart;
   return m5long;
 }
 
@@ -137,6 +153,7 @@ fn beam2040(a: f32, b: f32, t: f32, span: f32) -> f32 {
 }
 
 fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_28: f32, gsl_param_34_32: f32) -> gsl_shape {
+  gsl_featurePixel = select(0.0, gsl_vanishEye.w * mix(max(length(gsl_vanishEye.xyz - p), 1.0), 1.0, gsl_vanishView.x), gsl_vanishEye.w > 0.0);
   gsl_partNear = vec3<f32>(1e10, 1e10, 1e10);
   let lift = gsl_param_33_28;
   let gz = -200.0 + lift;
@@ -930,4 +947,29 @@ fn gsl_vanish(lo: vec3<f32>, hi: vec3<f32>) -> vec4<f32> {
 
 fn gsl_boxDistance(q: vec3<f32>, lo: vec3<f32>, hi: vec3<f32>) -> f32 {
   return length(max(max(lo - q, q - hi), vec3<f32>(0.0)));
+}
+
+var<private> gsl_featurePixel: f32 = 0.0;
+
+fn gsl_featureWeight(size: f32) -> f32 {
+  if (gsl_featurePixel <= 0.0) { return 1.0; }
+  return smoothstep(gsl_vanishView.y, max(gsl_vanishView.z, gsl_vanishView.y + 1e-3), size / gsl_featurePixel);
+}
+
+var<private> gsl_simpleRung: f32;
+
+fn gsl_simple(lo: vec3<f32>, hi: vec3<f32>) -> f32 {
+  if (gsl_featurePixel <= 0.0 || gsl_simpleRung <= 0.0) { return 1.0; }
+  let size = hi - lo;
+  return smoothstep(0.5 * gsl_simpleRung, gsl_simpleRung, min(size.x, min(size.y, size.z)) / gsl_featurePixel);
+}
+
+fn gsl_simpleSized(size: f32) -> f32 {
+  if (gsl_featurePixel <= 0.0 || gsl_simpleRung <= 0.0) { return 1.0; }
+  return smoothstep(0.5 * gsl_simpleRung, gsl_simpleRung, size / gsl_featurePixel);
+}
+
+fn gsl_boxSdf(q: vec3<f32>, lo: vec3<f32>, hi: vec3<f32>) -> f32 {
+  let d = abs(q - 0.5 * (lo + hi)) - 0.5 * (hi - lo);
+  return length(max(d, vec3<f32>(0.0))) + min(max(d.x, max(d.y, d.z)), 0.0);
 }

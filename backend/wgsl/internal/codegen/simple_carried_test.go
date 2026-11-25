@@ -79,14 +79,15 @@ return q;`)
 	}
 }
 
-// A value read through a remap is not a part, so it has no stand-in to show,
-// and one the document did not write is no error.
-func TestSimpleCarriedDroppedOffNonPart(t *testing.T) {
+// A value read through a remap is not a part, and keeps its carried stand-in
+// all the same (Shaft Modeling, Phase 22), placed as the value is and sized by
+// the box the function declares.
+func TestSimpleCarriedThroughRemap(t *testing.T) {
 	wgsl := renderCarried(t, carriedWidget+`
 q = remap(widget(1.0), p - [3, 0, 0]);
 return q;`)
-	if strings.Contains(wgsl, "gsl_simple(") {
-		t.Errorf("a stand-in was drawn for a value that is not a part")
+	if !strings.Contains(wgsl, "gsl_simpleSized(") {
+		t.Errorf("the stand-in carried through a remap was not drawn")
 	}
 }
 
