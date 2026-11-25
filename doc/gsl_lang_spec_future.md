@@ -443,6 +443,8 @@ Annotations are organized into five categories based on their role:
 | Category      | Annotation                                        | Valid Targets                                   |
 | :------------ | :------------------------------------------------ | :---------------------------------------------- |
 | Presentation  | `@scene(size[, grid])`                            | Package directive (top of first file)           |
+| Presentation  | `@duration(seconds)`                              | Package directive (top of first file)           |
+| Presentation  | `@caption("text", start, end[, fade])`            | Top-level directive (any file in package)       |
 | Scalar        | `@range(min, max[, increment=inc][, period=sec])` | Variable assignments, inline scalar expressions |
 | Scalar        | `@values(v1, v2, ...)`                            | Variable assignments, inline scalar expressions |
 | UI Suggestion | `@point`                                          | Variable assignments, inline expressions        |
@@ -480,6 +482,17 @@ The `@scene` annotation configures the document viewport size and grid density:
   Arguments must be strictly positive (`size > 0`, `grid > 0`).
 * **Default Grid**: If `grid` is omitted, it defaults to `size / 10.0`.
 * **Syntax**: Must not end with a semicolon.
+
+##### Duration Annotation (`@duration`)
+
+Sets the document's animation loop length in seconds (`@duration(12)`). Positioned at the top of
+the first file alongside `@scene` (no trailing semicolon) and takes one positive numeric literal.
+
+##### Caption Annotation (`@caption`)
+
+Displays a caption line at the bottom of the viewer while the animation clock is in
+`[startTime, endTime]` (`@caption("Drill the bore", 4, 9, 1)`). Top-level only (no trailing
+semicolon); takes a string literal, `startTime`, `endTime`, and optional `fade` seconds.
 
 #### 2. Scalar Annotations
 
@@ -861,6 +874,13 @@ Variables representing 3D geometry can be configured with metadata properties:
   `shape.box` may also be evaluated in expressions to query bounding box extents.
 - **`name.color`**: RGB color components `[r, g, b]` normalized to `[0.0, 1.0]`.
 - **`name.material`**: Material parameter collection.
+- **`name.u` / `name.v`**: Intrinsic surface coordinates carried through shapes and sweeps.
+- **`name.simple`**: Simplified stand-in proxy field substituted when a part or feature is far from
+  the camera (works on any named shape anywhere in an expression).
+- **`name.detail` / `name.detailSize`**: Fine surface detail layer and pixel-size threshold.
+- **`name.featureSize`**: Geometric feature size (mm) below which the viewer prunes the feature
+  (`pruneBelow(field, size)` in `builtin`; a size of `0` uses the smallest extent of the value's
+  box).
 
 #### Property Lifecycle and Lifecycle Constraints
 Properties are declaration metadata and cannot be read in general expressions (except `.box`).
@@ -889,7 +909,8 @@ import gStep "gear.step";
 It is convention although not required that asset imports appear after package imports.
 
 **Restrictions**:
-- Suffixes are restricted (`.stl` for mesh imports; `.step`, `.stp`,  or `.hodge` for STEP imports).
+- Suffixes are restricted (`.stl` for mesh imports; `.step`, `.stp`, or `.hodge` for STEP imports;
+  `.warp` for displacement/warp field imports).
 - Paths must be simple filenames located in the same directory the GSL file.
 
 #### Scope Semantics, Shadowing & Import Collisions
