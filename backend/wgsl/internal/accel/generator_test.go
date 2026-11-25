@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/backend/wgsl/internal/accel"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl/internal/accel"
 )
 
 func TestGenerateOps_Valid(t *testing.T) {

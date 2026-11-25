@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	lib "gradientcontrol.com/omega/core/parser"
-	"gradientcontrol.com/omega/core/program"
+	lib "github.com/Gradient-Control-Laboratories/omega-core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // derivOf unpacks a DERIV operand into its target and the name of the variable

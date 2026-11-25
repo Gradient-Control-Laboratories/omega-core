@@ -8,11 +8,11 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/cmd/compile/internal/cli"
-	"gradientcontrol.com/omega/core/internal/compile"
-	"gradientcontrol.com/omega/core/internal/meshimport"
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/compile/internal/cli"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/compile"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/meshimport"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
 )
 
 const fieldSlab = "@scene(40)\n@range(0.5, 8) wall = 2.0;\n\nslab = boxCentered([0, 0, 0], [20, 20, wall]);\nreturn slab;\n"
@@ -26,7 +26,8 @@ func fieldOf(t *testing.T, data []byte) map[string]any {
 }
 
 // -t field writes <source>.field.json: the WGSL and what a viewer draws it with, byte for byte the bundle
-// compile.Process (gsl serve's /api/compile) makes for the same document, and no companion metadata.
+// compile.Process (gsl serve's /api/compile) makes for the same document, named by its file name alone (never its
+// path), and no companion metadata.
 func TestRun_Field_IsTheViewersBundle(t *testing.T) {
 	dir := t.TempDir()
 	source := filepath.Join(dir, "slab.gsl")
@@ -40,12 +41,14 @@ func TestRun_Field_IsTheViewersBundle(t *testing.T) {
 	assert.True(t, os.IsNotExist(metaErr), "no companion metadata beside the bundle")
 
 	want, err := json.Marshal(compile.Process(compile.Request{
-		ID: source, Source: fieldSlab, Meshes: meshimport.Dirs(dir),
+		ID: "slab.gsl", Source: fieldSlab, Meshes: meshimport.Dirs(dir),
 	}, []string{dir}, nil))
 	require.NoError(t, err)
 	assert.Equal(t, string(want)+"\n", string(data))
 
 	bundle := fieldOf(t, data)
+	assert.Equal(t, "slab.gsl", bundle["id"])
+	assert.False(t, strings.Contains(string(data), dir), "the bundle names no folder")
 	assert.True(t, strings.Contains(bundle["wgsl"].(string), "fn sdShape"), "the bundle carries the shader")
 	assert.Equal(t, []any{"slab"}, bundle["shapeNames"])
 	sliders := bundle["sliders"].([]any)
@@ -113,4 +116,30 @@ func TestRun_Field_Refusals(t *testing.T) {
 	err = cli.Run([]string{"-t", "field", "-m", filepath.Join(dir, "meta.json"), a}, nil, &stdout, &stderr)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no companion metadata")
+}
+
+// A document with compiler warnings still compiles its shader into the field bundle and exits 0.
+func TestRun_Field_WarningsGoInTheBundleWithoutFailing(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "warn.gsl")
+	src := "@scene(40)\nmin(radius, fallback) {\n    return radius;\n}\nreturn sphere(min(5.0, 2.0));\n"
+	require.NoError(t, os.WriteFile(source, []byte(src), 0644))
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, cli.Run([]string{"-t", "field", source}, nil, &stdout, &stderr), stderr.String())
+
+	data, err := os.ReadFile(filepath.Join(dir, "warn.field.json"))
+	require.NoError(t, err)
+	bundle := fieldOf(t, data)
+	assert.True(t, strings.Contains(bundle["wgsl"].(string), "fn sdShape"), "warnings do not block shader generation")
+	_, hasErrors := bundle["errors"]
+	assert.False(t, hasErrors, "warnings do not populate errors")
+	warnings, ok := bundle["warnings"].([]any)
+	require.True(t, ok, "the bundle carries warnings")
+	require.Equal(t, 1, len(warnings))
+	first := warnings[0].(map[string]any)
+	assert.Equal(t, 2.0, first["lineNum"])
+	assert.Equal(t, 5.0, first["column"])
+	assert.Equal(t, float64(len("radius")), first["length"])
+	assert.Equal(t, "min(radius, fallback) {", first["line"])
+	assert.Contains(t, first["message"].(string), "shadows implicitly imported builtin function")
 }

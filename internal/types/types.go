@@ -3,7 +3,7 @@ package types
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 type PackageAnalyzer struct {
@@ -210,6 +210,11 @@ func analyzePackage(pkg *program.Package, path string, prog *program.Program, pk
 					}
 				}
 			}
+			for _, op := range assign.Range.Operands() {
+				if _, err := inferOperandType(op, pa.env, file, pa); err != nil {
+					return nil, err
+				}
+			}
 		}
 	}
 
@@ -228,6 +233,21 @@ func analyzePackage(pkg *program.Package, path string, prog *program.Program, pk
 			}
 		}
 		for _, ret := range file.MaterialReturns {
+			_, err := inferOperandType(ret, pa.env, file, pa)
+			if err != nil {
+				return nil, err
+			}
+		}
+		for _, ret := range file.GradientReturns {
+			_, err := inferOperandType(ret, pa.env, file, pa)
+			if err != nil {
+				return nil, err
+			}
+		}
+		for _, ret := range file.DisplacedReturns {
+			if ret == nil {
+				continue
+			}
 			_, err := inferOperandType(ret, pa.env, file, pa)
 			if err != nil {
 				return nil, err

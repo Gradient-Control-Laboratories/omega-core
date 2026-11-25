@@ -12,7 +12,7 @@
 package meshslots
 
 import (
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // Import describes a compiler-assigned slot for an imported STEP or mesh asset.
@@ -135,6 +135,12 @@ func (w *walker) walkPackage(pkg *program.Package, pkgPath string) {
 			w.walkOperand(r, pkgPath)
 		}
 		for _, r := range file.MaterialReturns {
+			w.walkOperand(r, pkgPath)
+		}
+		for _, r := range file.GradientReturns {
+			w.walkOperand(r, pkgPath)
+		}
+		for _, r := range file.DisplacedReturns {
 			w.walkOperand(r, pkgPath)
 		}
 	}

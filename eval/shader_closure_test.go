@@ -5,9 +5,9 @@ package eval_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/eval"
-	"gradientcontrol.com/omega/core/internal/source"
-	"gradientcontrol.com/omega/core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
 )
 
 // A slider read by a field that a closure's remap re-derives: unionRoundExact
@@ -17,7 +17,7 @@ const closureSliderDoc = `@scene(40)
 @range(1, 5) r = 2.0;
 a = sphere(8);
 b = boxCentered([6, 0, 0], [8, 8, 8]);
-blob = unionRoundExact(() { return a - r; }, () { return b - r; }) + r;
+blob = unionRoundExact(a, b, r, a.dp, b.dp);
 return blob;
 `
 

@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"math"
 
-	"gradientcontrol.com/omega/core/assembler/warpfold"
-	"gradientcontrol.com/omega/core/internal/eval"
-	"gradientcontrol.com/omega/core/internal/meshfold"
-	"gradientcontrol.com/omega/core/assembler/meshslots"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/meshslots"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/warpfold"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/meshfold"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // GraphPackages returns every package in the import graph rooted at root (with optional byte
@@ -113,6 +113,12 @@ func HasWarpCall(pkg *program.Package) bool {
 			walkOp(r)
 		}
 		for _, r := range file.MaterialReturns {
+			walkOp(r)
+		}
+		for _, r := range file.GradientReturns {
+			walkOp(r)
+		}
+		for _, r := range file.DisplacedReturns {
 			walkOp(r)
 		}
 	}
@@ -241,6 +247,12 @@ func AssignWarpSlots(pkgs []WarpGraphPkg, primaryPkgName string) *WarpSlots {
 				walkOperand(r, gp)
 			}
 			for _, r := range file.MaterialReturns {
+				walkOperand(r, gp)
+			}
+			for _, r := range file.GradientReturns {
+				walkOperand(r, gp)
+			}
+			for _, r := range file.DisplacedReturns {
 				walkOperand(r, gp)
 			}
 		}
@@ -390,6 +402,20 @@ func (f *warpFolder) foldPackage() error {
 				return err
 			}
 			file.MaterialReturns[i] = out
+		}
+		for i, ret := range file.GradientReturns {
+			out, err := f.foldOperand(ret)
+			if err != nil {
+				return err
+			}
+			file.GradientReturns[i] = out
+		}
+		for i, ret := range file.DisplacedReturns {
+			out, err := f.foldOperand(ret)
+			if err != nil {
+				return err
+			}
+			file.DisplacedReturns[i] = out
 		}
 	}
 	return nil
@@ -582,6 +608,12 @@ func foldWarpFieldPackage(pkg *program.Package) {
 		}
 		for i, ret := range file.MaterialReturns {
 			file.MaterialReturns[i] = foldWarpFieldOperand(ret)
+		}
+		for i, ret := range file.GradientReturns {
+			file.GradientReturns[i] = foldWarpFieldOperand(ret)
+		}
+		for i, ret := range file.DisplacedReturns {
+			file.DisplacedReturns[i] = foldWarpFieldOperand(ret)
 		}
 	}
 }

@@ -78,13 +78,22 @@ export const GSL_DISPLACE_STATE_WGSL = `var<private> gsl_dispScale: f32 = 1.0;`;
 // to fill in, like every other module here. The call to gsl_sdShapeDisplaced
 // is written in full: its displacement scale sits before the suffix, where
 // injectExtraArgs would not put it.
-export function displaceSampleWGSL({ materialAtIdx, extraParamsWGSL, parts = false, perReturn = false }) {
+export function displaceSampleWGSL({ materialAtIdx, extraParamsWGSL, parts = false, perReturn = false, scaleVar = false }) {
   if (perReturn) {
+    // Every height in gsl_sdShapeDisplaced is scaled by its third argument,
+    // so a part whose relief has faded out (w 0) is its undisplaced sample
+    // exactly, and skips the materials the displaced field evaluates. It
+    // still sets the scale displacementScale() reads (scaleVar), as the call
+    // would have, so the shading after it sees a part drawn undisplaced and
+    // shows its top coat, not a scale left over from another part.
     const partScale = parts ? " * gsl_partDetail(gsl_detail.x, sd.distance, 1e-3)" : "";
+    const zeroScale = scaleVar ? " gsl_dispScaleK = 0.0;" : "";
     return `
 fn gsl_displaceSample(p: vec3<f32>, sd: gsl_shape, time: f32${extraParamsWGSL}) -> gsl_shape {
     if (gsl_dispScale == 0.0) { return sd; }
-    return gsl_sdShapeDisplaced(p, time, gsl_dispScale${partScale}${argsFromParams(extraParamsWGSL)});
+    let w = gsl_dispScale${partScale};
+    if (w == 0.0) {${zeroScale} return sd; }
+    return gsl_sdShapeDisplaced(p, time, w${argsFromParams(extraParamsWGSL)});
 }
 `;
   }

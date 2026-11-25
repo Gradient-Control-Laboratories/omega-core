@@ -206,11 +206,11 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_
     if (gsl_simpleDetail > 0.0) {
       let color_white = vec3<f32>(1.0, 1.0, 1.0);
       let color_black = vec3<f32>(0.0, 0.0, 0.0);
-      let gsl_tmp_10 = texture_squareWave(p.x, 20.0, noiseTex);
-      let gsl_tmp_11 = texture_squareWave(p.y, 20.0, noiseTex);
-      let gsl_tmp_13 = gsl_tmp_10 + gsl_tmp_11 - 2.0 * gsl_tmp_10 * gsl_tmp_11;
-      let gsl_tmp_12 = texture_squareWave(p.z, 20.0, noiseTex);
-      gsl_simpleValue_2 = mix(gsl_simpleValue_2, color_mixOklab(color_white, color_black, gsl_tmp_13 + gsl_tmp_12 - 2.0 * gsl_tmp_13 * gsl_tmp_12, noiseTex), gsl_simpleDetail);
+      let gsl_tmp_20 = texture_squareWave(p.x, 20.0, noiseTex);
+      let gsl_tmp_21 = texture_squareWave(p.y, 20.0, noiseTex);
+      let gsl_tmp_23 = gsl_tmp_20 + gsl_tmp_21 - 2.0 * gsl_tmp_20 * gsl_tmp_21;
+      let gsl_tmp_22 = texture_squareWave(p.z, 20.0, noiseTex);
+      gsl_simpleValue_2 = mix(gsl_simpleValue_2, color_mixOklab(color_white, color_black, gsl_tmp_23 + gsl_tmp_22 - 2.0 * gsl_tmp_23 * gsl_tmp_22, noiseTex), gsl_simpleDetail);
     }
     return vec4<f32>(gsl_simpleValue_2, 1.0);
   }

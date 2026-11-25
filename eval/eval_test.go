@@ -7,17 +7,15 @@ import (
 	"math"
 	"testing"
 
-	"gradientcontrol.com/omega/core/eval"
-	"gradientcontrol.com/omega/core/eval/joints"
+	"github.com/Gradient-Control-Laboratories/omega-core/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/eval/joints"
 )
 
 func TestEvalAPI(t *testing.T) {
 	e := eval.New(nil, nil)
 	ctx := context.Background()
 	code := `
-rad = 5.0;
-rad.min = 1.0;
-rad.max = 10.0;
+@range(1.0, 10.0) rad = 5.0;
 s = sphere(rad);
 return s;
 `

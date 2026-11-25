@@ -11,9 +11,9 @@ import (
 	"strings"
 	"sync"
 
-	"gradientcontrol.com/omega/core/assembler/meshplan"
-	"gradientcontrol.com/omega/core/internal/meshimport"
-	"gradientcontrol.com/omega/core/program/meshasset"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/meshplan"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/meshimport"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/meshasset"
 )
 
 // maxUploadBytes bounds one uploaded STL.

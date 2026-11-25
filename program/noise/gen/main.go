@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"os"
 
-	"gradientcontrol.com/omega/core/program/noise"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/noise"
 )
 
 func main() {

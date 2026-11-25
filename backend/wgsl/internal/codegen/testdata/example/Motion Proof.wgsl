@@ -1,6 +1,6 @@
-fn sdShape(p: vec3<f32>, time: f32, gsl_param_18_10: f32) -> gsl_shape {
+fn sdShape(p: vec3<f32>, time: f32, gsl_param_18_27: f32) -> gsl_shape {
   gsl_partNear = vec3<f32>(1e10, 1e10, 1e10);
-  let crankR = gsl_param_18_10;
+  let crankR = gsl_param_18_27;
   let gsl_partLo = vec3<f32>(0.0 - max(crankR + 0.4, 0.0), 0.0 - max(crankR + 0.4, 0.0), -0.45);
   let gsl_partHi = vec3<f32>(0.0 + max(crankR + 0.4, 0.0), 0.0 + max(crankR + 0.4, 0.0), 0.45);
   let gsl_partBox = gsl_boxDistance(p, gsl_partLo, gsl_partHi);
@@ -53,7 +53,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_18_10: f32) -> gsl_shape {
   return gsl_min(gsl_min(gsl_min(gsl_min(gsl_s1, gsl_s2), gsl_s3), gsl_s4), gsl_s5);
 }
 
-fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_18_10: f32) -> vec4<f32> {
+fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_18_27: f32) -> vec4<f32> {
   if (gsl_colorIdx == 1u) { return vec4<f32>(vec3<f32>(0.78, 0.62, 0.35), 1.0); }
   if (gsl_colorIdx == 2u) { return vec4<f32>(vec3<f32>(0.85, 0.72, 0.42), 1.0); }
   if (gsl_colorIdx == 3u) { return vec4<f32>(vec3<f32>(0.72, 0.72, 0.76), 1.0); }

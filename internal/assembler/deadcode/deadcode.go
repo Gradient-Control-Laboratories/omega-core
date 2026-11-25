@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"gradientcontrol.com/omega/core/internal/scope"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // Remove takes a linked program and removes all dead code,
@@ -136,6 +136,8 @@ func removePkg(pkgScope *scope.PkgScope, returnExpr []*program.Operand, outOfSco
 		Path:         pkgScope.Package.Path,
 		Files:        files,
 		Scene:        program.CloneScene(pkgScope.Package.Scene),
+		Captions:     program.CloneCaptions(pkgScope.Package.Captions),
+		Duration:     program.CloneDuration(pkgScope.Package.Duration),
 	}, outOfScope, nil
 }
 
@@ -147,6 +149,8 @@ func removeFile(fileScope *scope.PkgFileScope, returnExprs []*program.Operand, o
 		roots := append([]*program.Operand{}, returnExprs...)
 		roots = append(roots, fileScope.File.ColorReturns...)
 		roots = append(roots, fileScope.File.MaterialReturns...)
+		roots = append(roots, fileScope.File.GradientReturns...)
+		roots = append(roots, fileScope.File.DisplacedReturns...)
 		outOfScope, err = linker.ResolveExpr(roots...)
 	} else {
 		outOfScope, err = linker.ResolveNamed(outOfScope...)
@@ -181,17 +185,19 @@ func removeFile(fileScope *scope.PkgFileScope, returnExprs []*program.Operand, o
 	newFnTypes = removeEmptyFnTypes(newFnTypes)
 
 	newFile := &program.PackageFile{
-		Path:            fileScope.File.Path,
-		Source:          fileScope.File.Source,
-		Imports:         fileScope.File.Imports,
-		Assignments:     linker.ResolvedAssignments(),
-		FnTypes:         newFnTypes,
-		Returns:         returnExprs,
-		MeshImports:     fileScope.File.MeshImports,
-		StepImports:     fileScope.File.StepImports,
-		WarpImports:     fileScope.File.WarpImports,
-		ColorReturns:    fileScope.File.ColorReturns,
-		MaterialReturns: fileScope.File.MaterialReturns,
+		Path:             fileScope.File.Path,
+		Source:           fileScope.File.Source,
+		Imports:          fileScope.File.Imports,
+		Assignments:      linker.ResolvedAssignments(),
+		FnTypes:          newFnTypes,
+		Returns:          returnExprs,
+		MeshImports:      fileScope.File.MeshImports,
+		StepImports:      fileScope.File.StepImports,
+		WarpImports:      fileScope.File.WarpImports,
+		ColorReturns:     fileScope.File.ColorReturns,
+		MaterialReturns:  fileScope.File.MaterialReturns,
+		GradientReturns:  fileScope.File.GradientReturns,
+		DisplacedReturns: fileScope.File.DisplacedReturns,
 		// Annotations describe the source, not the reachable code, so they
 		// survive deadcoding: a material browser wants every library material,
 		// not only the ones the document being assembled happens to use.
@@ -396,6 +402,7 @@ func (v *RemoveVisitor) ResolveNamed(elems ...scope.NamedElem) ([]scope.NamedEle
 							todo = append(todo, prop.Expression)
 						}
 					}
+					todo = append(todo, assign.Range.Operands()...)
 				}
 				continue
 			case *scope.Param:
@@ -497,6 +504,7 @@ func (v *RemoveVisitor) VisitReference(op *program.Operand, ref *program.Referen
 						v.todo = append(v.todo, prop.Expression)
 					}
 				}
+				v.todo = append(v.todo, assign.Range.Operands()...)
 			} else {
 				v.refCounts[varName]++
 			}
@@ -685,4 +693,36 @@ type fnResult struct {
 	fn         *program.Function
 	outOfScope []scope.NamedElem
 	err        error
+}
+
+// Declarations counts the assignments and functions in prog, nested ones included: what Remove can remove. Remove
+// only removes, so a smaller count after it means it removed something.
+func Declarations(prog *program.Program) int {
+	if prog == nil {
+		return 0
+	}
+	n := 0
+	for _, pkg := range append([]*program.Package{prog.Primary}, prog.Dependencies...) {
+		if pkg == nil {
+			continue
+		}
+		for _, file := range pkg.Files {
+			if file != nil {
+				n += len(file.Assignments) + fnTypeDeclarations(file.FnTypes)
+			}
+		}
+	}
+	return n
+}
+
+func fnTypeDeclarations(fnTypes []*program.FnType) int {
+	n := 0
+	for _, ft := range fnTypes {
+		for _, group := range ft.GetGroups() {
+			for _, fn := range group.GetFunctions() {
+				n += 1 + len(fn.GetAssignments()) + fnTypeDeclarations(fn.GetFnTypes())
+			}
+		}
+	}
+	return n
 }

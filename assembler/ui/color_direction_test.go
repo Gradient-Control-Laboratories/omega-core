@@ -3,8 +3,8 @@ package ui_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler/ui"
-	"gradientcontrol.com/omega/core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/ui"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
 )
 
 // uiColor and uiDirection are vec3 controls like uiPoint, three editable

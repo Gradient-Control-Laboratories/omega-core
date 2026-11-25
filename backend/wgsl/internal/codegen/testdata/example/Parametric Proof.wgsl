@@ -2,7 +2,7 @@ fn cylZ(p: vec3<f32>, r: f32, z0: f32, z1: f32) -> f32 {
   return max(max(length(p.xy) - r, z0 - p.z), p.z - z1);
 }
 
-fn sdShape(p: vec3<f32>, time: f32, gsl_param_13_11: f32, gsl_param_16_10: f32) -> gsl_shape {
+fn sdShape(p: vec3<f32>, time: f32, gsl_param_13_28: f32, gsl_param_14_28: f32) -> gsl_shape {
   gsl_partNear = vec3<f32>(1e10, 1e10, 1e10);
   let gsl_partLo = vec3<f32>(-12.0, -12.0, -18.0);
   let gsl_partHi = vec3<f32>(12.0, 12.0, 6.0);
@@ -15,8 +15,8 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_13_11: f32, gsl_param_16_10: f32) 
     if (abs(gsl_part) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part), gsl_partVanish.zw); }
   }
   let block = gsl_part;
-  let pistonR = gsl_param_13_11;
-  let stroke = gsl_param_16_10;
+  let pistonR = gsl_param_13_28;
+  let stroke = gsl_param_14_28;
   let gsl_partLo_2 = vec3<f32>(min(0.0 - max(pistonR, 0.0), -2.5), min(0.0 - max(pistonR, 0.0), -2.5), min(-(-4.0 - stroke) / -1.0, -(3.0 - stroke) / -1.0));
   let gsl_partHi_2 = vec3<f32>(max(0.0 + max(pistonR, 0.0), 2.5), max(0.0 + max(pistonR, 0.0), 2.5), max(-(-0.0 - (4.0 - stroke)), 22.0));
   let gsl_partBox_2 = gsl_boxDistance(p, gsl_partLo_2, gsl_partHi_2);
@@ -55,7 +55,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_13_11: f32, gsl_param_16_10: f32) 
   return gsl_min(gsl_s1, gsl_s2);
 }
 
-fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_13_11: f32, gsl_param_16_10: f32) -> vec4<f32> {
+fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_13_28: f32, gsl_param_14_28: f32) -> vec4<f32> {
   if (gsl_colorIdx == 1u) { return vec4<f32>(vec3<f32>(0.42, 0.48, 0.58), 1.0); }
   if (gsl_colorIdx == 2u) { return vec4<f32>(vec3<f32>(0.78, 0.62, 0.35), 1.0); }
   return vec4<f32>(0.0, 0.0, 0.0, 0.0);

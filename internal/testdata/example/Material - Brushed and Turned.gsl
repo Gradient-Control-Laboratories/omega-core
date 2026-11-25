@@ -9,9 +9,7 @@
 
 stainlessMat, stainlessColor = metal.stainless();
 
-anisotropy = 0.8;
-anisotropy.min = 0;
-anisotropy.max = 1;
+@range(0, 1) anisotropy = 0.8;
 
 // A plate brushed along x.
 plate = box([-35, -10, -2], [-5, 10, 2]);

@@ -616,9 +616,13 @@ fn wood_sandedHeight(scratches: f32, grit: f32, noiseTex: texture_3d<f32>) -> f3
   return -0.12 * d * groove * groove * texture_fadeDetail(d, noiseTex);
 }
 
+fn wood_sawnPitch(noisiness: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return 2.0 + 2.0 * noisiness;
+}
+
 fn wood_sawnHeight(s: f32, noisiness: f32, wander: f32, washboard: f32, fibres: f32, noiseTex: texture_3d<f32>) -> f32 {
   let depth = 0.18 + 0.62 * noisiness;
-  let pitch = 2.0 + 2.0 * noisiness;
+  let pitch = wood_sawnPitch(noisiness, noiseTex);
   let q = s / pitch + 2.0 * noisiness * wander;
   let k = floor(q);
   let uneven = 1.0 + (fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(k, k + 29.0, 2.0 * k + 3.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(k, k + 29.0, 2.0 * k + 3.0)) / 64.0)) & vec3<i32>(63), 0).rgb).x - 0.5) * (0.4 + 1.2 * noisiness);
@@ -674,7 +678,7 @@ fn wood_prepHeight(p: vec3<f32>, prep: mat3x4<f32>, normal: vec3<f32>, local: ve
   let secondAt = select(crackAlong.xyz, p / 30.0, kind < 4.5);
   let second = noise_gradientLattice(secondAt, noiseTex);
   let third = noise_gradientLattice(p / 40.0 + 13.0, noiseTex);
-  let sawing = select(0.0, select(0.0, wood_sawnHeight(s, amount, second, third, first, noiseTex) * material_filmKeeps(1.0 + 3.0 * amount, build, noiseTex), kind < 2.5), kind > 1.5);
+  let sawing = select(0.0, select(0.0, wood_sawnHeight(s, amount, second, third, first, noiseTex) * material_filmKeeps(wood_sawnPitch(amount, noiseTex), build, noiseTex), kind < 2.5), kind > 1.5);
   let blade = prep[2];
   let rise = blade.xyz - along * dot(blade.xyz, along);
   let aboveCentre = blade.w + dot(p, rise / max(length(rise), 0.000001));
@@ -710,9 +714,9 @@ fn wood_prepSlopes(prep: mat3x4<f32>, normal: vec3<f32>, grainIn: f32, ringWidth
   let ripKeeps = material_filmKeeps(1.2, build, noiseTex) * inSurface;
   let ripping = 6.85 * amount * amount * ripKeeps * ripKeeps * wood_hiddenShare(1.2, standIn, noiseTex);
   let depth = 0.18 + 0.62 * amount;
-  let pitch = 2.0 + 2.0 * amount;
+  let pitch = wood_sawnPitch(amount, noiseTex);
   let spread = 0.4 + 1.2 * amount;
-  let sawKeeps = material_filmKeeps(1.0 + 3.0 * amount, build, noiseTex) * inSurface;
+  let sawKeeps = material_filmKeeps(pitch, build, noiseTex) * inSurface;
   let steep = 2.0 * depth * (1.2 + 0.6 * amount) / pitch;
   let sawScale = sawKeeps * sawKeeps / (1.0 + steep * steep);
   let marks = 8.0 * depth / pitch * depth / pitch * (1.0 + spread * spread / 12.0) * sawScale * wood_hiddenShare(pitch, standIn, noiseTex);
@@ -824,7 +828,7 @@ fn wood_speciesMaterial(p: vec3<f32>, number: f32, axisOrigin: vec3<f32>, axisDi
   return surfaceMat;
 }
 
-fn sdShape(p: vec3<f32>, time: f32, gsl_param_29_7: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
+fn sdShape(p: vec3<f32>, time: f32, gsl_param_29_20: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
   gsl_partNear = vec3<f32>(1e10, 1e10, 1e10);
   let gsl_partLo = vec3<f32>(-1250.01, -470.01, -0.01);
   let gsl_partHi = vec3<f32>(1250.01, 470.01, 20.01);
@@ -841,7 +845,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_29_7: f32, noiseTex: texture_3d<f3
   return gsl_s1;
 }
 
-fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_29_7: f32, noiseTex: texture_3d<f32>) -> vec4<f32> {
+fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_29_20: f32, noiseTex: texture_3d<f32>) -> vec4<f32> {
   if (gsl_colorIdx == 1u) {
     let material_bulk_wood_walnutNumber = 4.0;
     let material_bulk_wood_cherryNumber = 5.0;
@@ -854,13 +858,13 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_29_7: f3
     let knotty = select(0.0, 1.0, p.x < 0.0);
     let index = 2.0 * pair + knotty;
     let stem = vec3<f32>(select(650.0, -650.0, knotty > 0.5) - 600.0 - gsl_floored(911.0 * index, 2100.0), (pair - 2.5) * 160.0, -80.0);
-    let age = gsl_param_29_7;
+    let age = gsl_param_29_20;
     let look = vec3<f32>(0.0, age, 0.0);
     let spacing = select(select(700.0, 850.0, pair < 4.5), -1.0, pair < 3.5);
     let knots = select(0.0, spacing, knotty > 0.5);
     let gsl_tmp_1 = p - vec3<f32>(select(650.0, -650.0, knotty > 0.5), (pair - 2.5) * 160.0, 10.0);
     let gsl_tmp_3 = floor(p.y / 160.0 + 3.0);
-    let gsl_tmp_4 = sign(gsl_tmp_1) * (vec3<f32>(1.0, 0.0, 0.0) - vec3<f32>(select(0.0, -0.0, knotty > 0.5), select(select(0.0, 0.0, gsl_tmp_3 > 5.0), 0.0, gsl_tmp_3 < 0.0) * 160.0, 0.0));
+    let gsl_tmp_4 = sign(gsl_tmp_1) * (vec3<f32>(1.0, 0.0, 0.0) - vec3<f32>(select(0.0, -0.0, knotty > 0.5), select(select(0.0, 0.0, clamp(gsl_tmp_3, 0.0, 5.0) < gsl_tmp_3), 0.0, clamp(gsl_tmp_3, 0.0, 5.0) > gsl_tmp_3) * 160.0, 0.0));
     let gsl_tmp_2 = abs(gsl_tmp_1) - vec3<f32>(600.0, 70.0, 10.0);
     let gsl_tmp_6 = select(0.0, gsl_tmp_4.x, gsl_tmp_2.x + 1.0 > 0.0);
     let gsl_tmp_7 = select(0.0, gsl_tmp_4.y, gsl_tmp_2.y + 1.0 > 0.0);
@@ -868,7 +872,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_29_7: f3
     let gsl_tmp_5 = 0.0 + max(gsl_tmp_2.x + 1.0, 0.0) * max(gsl_tmp_2.x + 1.0, 0.0) + max(gsl_tmp_2.y + 1.0, 0.0) * max(gsl_tmp_2.y + 1.0, 0.0) + max(gsl_tmp_2.z + 1.0, 0.0) * max(gsl_tmp_2.z + 1.0, 0.0);
     let gsl_tmp_9 = p - vec3<f32>(select(650.0, -650.0, knotty > 0.5), (pair - 2.5) * 160.0, 10.0);
     let gsl_tmp_11 = floor(p.y / 160.0 + 3.0);
-    let gsl_tmp_12 = sign(gsl_tmp_9) * (vec3<f32>(0.0, 1.0, 0.0) - vec3<f32>(select(0.0, -0.0, knotty > 0.5), select(select(0.0, 0.0, gsl_tmp_11 > 5.0), 0.0, gsl_tmp_11 < 0.0) * 160.0, 0.0));
+    let gsl_tmp_12 = sign(gsl_tmp_9) * (vec3<f32>(0.0, 1.0, 0.0) - vec3<f32>(select(0.0, -0.0, knotty > 0.5), select(select(0.0, 0.0, clamp(gsl_tmp_11, 0.0, 5.0) < gsl_tmp_11), 0.0, clamp(gsl_tmp_11, 0.0, 5.0) > gsl_tmp_11) * 160.0, 0.0));
     let gsl_tmp_10 = abs(gsl_tmp_9) - vec3<f32>(600.0, 70.0, 10.0);
     let gsl_tmp_14 = select(0.0, gsl_tmp_12.x, gsl_tmp_10.x + 1.0 > 0.0);
     let gsl_tmp_15 = select(0.0, gsl_tmp_12.y, gsl_tmp_10.y + 1.0 > 0.0);
@@ -876,7 +880,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_29_7: f3
     let gsl_tmp_13 = 0.0 + max(gsl_tmp_10.x + 1.0, 0.0) * max(gsl_tmp_10.x + 1.0, 0.0) + max(gsl_tmp_10.y + 1.0, 0.0) * max(gsl_tmp_10.y + 1.0, 0.0) + max(gsl_tmp_10.z + 1.0, 0.0) * max(gsl_tmp_10.z + 1.0, 0.0);
     let gsl_tmp_17 = p - vec3<f32>(select(650.0, -650.0, knotty > 0.5), (pair - 2.5) * 160.0, 10.0);
     let gsl_tmp_19 = floor(p.y / 160.0 + 3.0);
-    let gsl_tmp_20 = sign(gsl_tmp_17) * (vec3<f32>(0.0, 0.0, 1.0) - vec3<f32>(select(0.0, -0.0, knotty > 0.5), select(select(0.0, 0.0, gsl_tmp_19 > 5.0), 0.0, gsl_tmp_19 < 0.0) * 160.0, 0.0));
+    let gsl_tmp_20 = sign(gsl_tmp_17) * (vec3<f32>(0.0, 0.0, 1.0) - vec3<f32>(select(0.0, -0.0, knotty > 0.5), select(select(0.0, 0.0, clamp(gsl_tmp_19, 0.0, 5.0) < gsl_tmp_19), 0.0, clamp(gsl_tmp_19, 0.0, 5.0) > gsl_tmp_19) * 160.0, 0.0));
     let gsl_tmp_18 = abs(gsl_tmp_17) - vec3<f32>(600.0, 70.0, 10.0);
     let gsl_tmp_22 = select(0.0, gsl_tmp_20.x, gsl_tmp_18.x + 1.0 > 0.0);
     let gsl_tmp_23 = select(0.0, gsl_tmp_20.y, gsl_tmp_18.y + 1.0 > 0.0);
@@ -889,7 +893,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_29_7: f3
   }
   return vec4<f32>(0.0, 0.0, 0.0, 0.0);
 }
-fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_29_7: f32, noiseTex: texture_3d<f32>) -> gsl_material {
+fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_29_20: f32, noiseTex: texture_3d<f32>) -> gsl_material {
   if (gsl_materialIdx == 1u) {
     let material_bulk_wood_walnutNumber = 4.0;
     let material_bulk_wood_cherryNumber = 5.0;
@@ -902,13 +906,13 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_29
     let knotty = select(0.0, 1.0, p.x < 0.0);
     let index = 2.0 * pair + knotty;
     let stem = vec3<f32>(select(650.0, -650.0, knotty > 0.5) - 600.0 - gsl_floored(911.0 * index, 2100.0), (pair - 2.5) * 160.0, -80.0);
-    let age = gsl_param_29_7;
+    let age = gsl_param_29_20;
     let look = vec3<f32>(0.0, age, 0.0);
     let spacing = select(select(700.0, 850.0, pair < 4.5), -1.0, pair < 3.5);
     let knots = select(0.0, spacing, knotty > 0.5);
     let gsl_tmp_1 = p - vec3<f32>(select(650.0, -650.0, knotty > 0.5), (pair - 2.5) * 160.0, 10.0);
     let gsl_tmp_3 = floor(p.y / 160.0 + 3.0);
-    let gsl_tmp_4 = sign(gsl_tmp_1) * (vec3<f32>(1.0, 0.0, 0.0) - vec3<f32>(select(0.0, -0.0, knotty > 0.5), select(select(0.0, 0.0, gsl_tmp_3 > 5.0), 0.0, gsl_tmp_3 < 0.0) * 160.0, 0.0));
+    let gsl_tmp_4 = sign(gsl_tmp_1) * (vec3<f32>(1.0, 0.0, 0.0) - vec3<f32>(select(0.0, -0.0, knotty > 0.5), select(select(0.0, 0.0, clamp(gsl_tmp_3, 0.0, 5.0) < gsl_tmp_3), 0.0, clamp(gsl_tmp_3, 0.0, 5.0) > gsl_tmp_3) * 160.0, 0.0));
     let gsl_tmp_2 = abs(gsl_tmp_1) - vec3<f32>(600.0, 70.0, 10.0);
     let gsl_tmp_6 = select(0.0, gsl_tmp_4.x, gsl_tmp_2.x + 1.0 > 0.0);
     let gsl_tmp_7 = select(0.0, gsl_tmp_4.y, gsl_tmp_2.y + 1.0 > 0.0);
@@ -916,7 +920,7 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_29
     let gsl_tmp_5 = 0.0 + max(gsl_tmp_2.x + 1.0, 0.0) * max(gsl_tmp_2.x + 1.0, 0.0) + max(gsl_tmp_2.y + 1.0, 0.0) * max(gsl_tmp_2.y + 1.0, 0.0) + max(gsl_tmp_2.z + 1.0, 0.0) * max(gsl_tmp_2.z + 1.0, 0.0);
     let gsl_tmp_9 = p - vec3<f32>(select(650.0, -650.0, knotty > 0.5), (pair - 2.5) * 160.0, 10.0);
     let gsl_tmp_11 = floor(p.y / 160.0 + 3.0);
-    let gsl_tmp_12 = sign(gsl_tmp_9) * (vec3<f32>(0.0, 1.0, 0.0) - vec3<f32>(select(0.0, -0.0, knotty > 0.5), select(select(0.0, 0.0, gsl_tmp_11 > 5.0), 0.0, gsl_tmp_11 < 0.0) * 160.0, 0.0));
+    let gsl_tmp_12 = sign(gsl_tmp_9) * (vec3<f32>(0.0, 1.0, 0.0) - vec3<f32>(select(0.0, -0.0, knotty > 0.5), select(select(0.0, 0.0, clamp(gsl_tmp_11, 0.0, 5.0) < gsl_tmp_11), 0.0, clamp(gsl_tmp_11, 0.0, 5.0) > gsl_tmp_11) * 160.0, 0.0));
     let gsl_tmp_10 = abs(gsl_tmp_9) - vec3<f32>(600.0, 70.0, 10.0);
     let gsl_tmp_14 = select(0.0, gsl_tmp_12.x, gsl_tmp_10.x + 1.0 > 0.0);
     let gsl_tmp_15 = select(0.0, gsl_tmp_12.y, gsl_tmp_10.y + 1.0 > 0.0);
@@ -924,7 +928,7 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_29
     let gsl_tmp_13 = 0.0 + max(gsl_tmp_10.x + 1.0, 0.0) * max(gsl_tmp_10.x + 1.0, 0.0) + max(gsl_tmp_10.y + 1.0, 0.0) * max(gsl_tmp_10.y + 1.0, 0.0) + max(gsl_tmp_10.z + 1.0, 0.0) * max(gsl_tmp_10.z + 1.0, 0.0);
     let gsl_tmp_17 = p - vec3<f32>(select(650.0, -650.0, knotty > 0.5), (pair - 2.5) * 160.0, 10.0);
     let gsl_tmp_19 = floor(p.y / 160.0 + 3.0);
-    let gsl_tmp_20 = sign(gsl_tmp_17) * (vec3<f32>(0.0, 0.0, 1.0) - vec3<f32>(select(0.0, -0.0, knotty > 0.5), select(select(0.0, 0.0, gsl_tmp_19 > 5.0), 0.0, gsl_tmp_19 < 0.0) * 160.0, 0.0));
+    let gsl_tmp_20 = sign(gsl_tmp_17) * (vec3<f32>(0.0, 0.0, 1.0) - vec3<f32>(select(0.0, -0.0, knotty > 0.5), select(select(0.0, 0.0, clamp(gsl_tmp_19, 0.0, 5.0) < gsl_tmp_19), 0.0, clamp(gsl_tmp_19, 0.0, 5.0) > gsl_tmp_19) * 160.0, 0.0));
     let gsl_tmp_18 = abs(gsl_tmp_17) - vec3<f32>(600.0, 70.0, 10.0);
     let gsl_tmp_22 = select(0.0, gsl_tmp_20.x, gsl_tmp_18.x + 1.0 > 0.0);
     let gsl_tmp_23 = select(0.0, gsl_tmp_20.y, gsl_tmp_18.y + 1.0 > 0.0);

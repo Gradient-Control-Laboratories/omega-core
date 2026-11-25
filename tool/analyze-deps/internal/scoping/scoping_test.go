@@ -3,14 +3,14 @@ package scoping_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/tool/analyze-deps/internal/graph"
-	"gradientcontrol.com/omega/core/tool/analyze-deps/internal/scoping"
+	"github.com/Gradient-Control-Laboratories/omega-core/tool/analyze-deps/internal/graph"
+	"github.com/Gradient-Control-Laboratories/omega-core/tool/analyze-deps/internal/scoping"
 )
 
 func TestAnalyzePackage_CanNarrow(t *testing.T) {
 	// A package internal/foo imported ONLY by packages in assembler
 	g := &graph.Graph{
-		ModulePrefix: "gradientcontrol.com/omega/core",
+		ModulePrefix: "github.com/Gradient-Control-Laboratories/omega-core",
 		Packages: map[string]*graph.PackageNode{
 			"internal/foo": {
 				ImportPath: "internal/foo",
@@ -43,7 +43,7 @@ func TestAnalyzePackage_CanNarrow(t *testing.T) {
 func TestAnalyzePackage_BlockedByMultipleSubsystems(t *testing.T) {
 	// A package internal/bar imported by BOTH assembler and backend/mesh
 	g := &graph.Graph{
-		ModulePrefix: "gradientcontrol.com/omega/core",
+		ModulePrefix: "github.com/Gradient-Control-Laboratories/omega-core",
 		Packages: map[string]*graph.PackageNode{
 			"internal/bar": {
 				ImportPath: "internal/bar",
@@ -71,7 +71,7 @@ func TestAnalyzePackage_BlockedByMultipleSubsystems(t *testing.T) {
 
 func TestAuditAll_SkipsNestedInternalAndRecognizesEvalSubsystem(t *testing.T) {
 	g := &graph.Graph{
-		ModulePrefix: "gradientcontrol.com/omega/core",
+		ModulePrefix: "github.com/Gradient-Control-Laboratories/omega-core",
 		Packages: map[string]*graph.PackageNode{
 			"internal/fidget/internal/gpuparity": {
 				ImportPath: "internal/fidget/internal/gpuparity",
@@ -115,7 +115,7 @@ func TestSubsystemForScoping(t *testing.T) {
 
 func TestAnalyzePackage_KeepHereDirectivePinsPackage(t *testing.T) {
 	g := &graph.Graph{
-		ModulePrefix: "gradientcontrol.com/omega/core",
+		ModulePrefix: "github.com/Gradient-Control-Laboratories/omega-core",
 		Packages: map[string]*graph.PackageNode{
 			"internal/version": {
 				ImportPath:     "internal/version",

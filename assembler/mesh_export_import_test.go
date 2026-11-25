@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
 )
 
 // TestExtractMeshDeclsImportedConst guards the import-aware constant folding
@@ -253,4 +253,3 @@ return meshDifference([
 		}
 	}
 }
-

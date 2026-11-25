@@ -1,7 +1,7 @@
 // Package compile compiles a GSL document into the field bundle a viewer
 // draws: the WGSL shader and what goes with it (shapes, parts, sliders, UI
-// controls, the @scene, placed meshes, imported meshes' preview grids, audio),
-// or the document's errors, each with its line and column.
+// controls, the @scene, placed meshes, imported meshes' preview grids, audio,
+// warnings), or the document's errors, each with its line and column.
 //
 // It is the one implementation behind gsl serve's POST /api/compile
 // (cmd/serve/internal/server) and gsl compile -t field, so a viewer that reads
@@ -14,16 +14,16 @@ import (
 	"strings"
 	"sync"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/assembler/meshplan"
-	"gradientcontrol.com/omega/core/assembler/slider"
-	"gradientcontrol.com/omega/core/assembler/ui"
-	"gradientcontrol.com/omega/core/assembler/variation"
-	"gradientcontrol.com/omega/core/backend/audio"
-	"gradientcontrol.com/omega/core/backend/wgsl"
-	"gradientcontrol.com/omega/core/internal/build"
-	"gradientcontrol.com/omega/core/internal/meshimport"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/meshplan"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/slider"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/ui"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/variation"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/audio"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/build"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/meshimport"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // ProgressFunc reports compilation or meshing progress milestones.
@@ -37,6 +37,17 @@ type Request struct {
 	// Meshes finds the STL files the source's importMesh declarations name;
 	// nil when the server has none to offer.
 	Meshes meshimport.Finder `json:"-"`
+	// AnalyticNormals asks for each return's analytic gradient to be emitted
+	// as gsl_gradField, for the Render panel's Analytic normals.
+	AnalyticNormals bool `json:"analyticNormals,omitempty"`
+}
+
+// GradientNote is a return whose analytic normal is not available, so the
+// viewer takes central differences for it. Return is 1-based, as shapeIndex is;
+// 0 means the whole program.
+type GradientNote struct {
+	Return int    `json:"return"`
+	Reason string `json:"reason"`
 }
 
 // Audio contains compiled Web Audio synthesis JavaScript and duration.
@@ -57,13 +68,20 @@ type Response struct {
 	Sliders        []slider.SliderInfo   `json:"sliders,omitempty"`
 	UIControls     []ui.Control          `json:"uiControls,omitempty"`
 	Scene          *program.Scene        `json:"scene,omitempty"`
+	Captions       []*program.Caption    `json:"captions,omitempty"`
+	Duration       *program.Duration     `json:"duration,omitempty"`
 	MeshDecls      any                   `json:"meshDecls,omitempty"`
 	Audio          *Audio                `json:"audio,omitempty"`
+	Warnings       []program.Error       `json:"warnings,omitempty"`
 	Errors         []program.Error       `json:"errors,omitempty"`
 
 	// MeshSdfBindings carries the preview grid the shader samples for each of
 	// MeshSdfSlots.
 	MeshSdfBindings []wgsl.MeshSdfBinding `json:"meshSdfBindings,omitempty"`
+
+	// GradientNotes lists the returns without an analytic normal, when the
+	// request asked for AnalyticNormals.
+	GradientNotes []GradientNote `json:"gradientNotes,omitempty"`
 }
 
 // Process executes the in-process GSL compilation pipeline (AST assembly, WGSL codegen, and audio JS codegen).
@@ -85,6 +103,9 @@ func Process(req Request, sourcePaths []string, progressFn ProgressFunc) *Respon
 	// The mesh plan lists the meshes the program places (mesh(i, placement)),
 	// which the viewer draws itself, as omega's canvas does.
 	asmOpts := append(AssemblerOptions(sourcePaths, progressFn), assembler.ExtractMeshPlan("leaf-"))
+	if req.AnalyticNormals {
+		asmOpts = append(asmOpts, assembler.WithAnalyticGradient())
+	}
 
 	asmRes, err := assembler.Assemble([]string{req.Source}, asmOpts...)
 	if err != nil {
@@ -95,17 +116,35 @@ func Process(req Request, sourcePaths []string, progressFn ProgressFunc) *Respon
 	resp.Sliders = asmRes.Sliders
 	resp.UIControls = asmRes.UIControls
 	resp.Scene = asmRes.Scene
+	resp.Captions = asmRes.Captions
+	resp.Duration = asmRes.Duration
+	resp.Warnings = collectWarnings(req.Source, asmRes.Program, asmRes.Diagnostics)
 
 	if len(asmRes.Program.Returns()) > 0 {
 		// With placed meshes, the shader draws only the program's SDF parts.
 		renderProg := asmRes.Program
+		previewed := false
 		if plan := asmRes.MeshPlan; plan != nil && plan.Root != nil {
 			if decls := plan.MeshDecls(); len(decls) > 0 {
 				resp.MeshDecls = decls
 			}
 			renderProg = meshplan.PreviewProgram(renderProg, plan, asmRes.SdfSubtrees)
+			previewed = renderProg != asmRes.Program
 		} else if len(asmRes.AudioReturns) > 0 {
 			renderProg = variation.PrunePrimary(renderProg)
+		}
+		if req.AnalyticNormals {
+			if previewed {
+				// The preview program's returns are the plan's SDF parts, not
+				// the returns the gradients were taken of, and it carries no
+				// lowered return fields, so the shader gets no gsl_gradField.
+				resp.GradientNotes = append(resp.GradientNotes, GradientNote{Return: 0,
+					Reason: "the program places meshes; its preview shader has no analytic gradient"})
+			} else {
+				for _, n := range asmRes.GradientNotes {
+					resp.GradientNotes = append(resp.GradientNotes, GradientNote{Return: n.Return + 1, Reason: n.Reason})
+				}
+			}
 		}
 
 		wgslOpts := []wgsl.Option{}
@@ -268,4 +307,64 @@ func collectErrors(src string, err error, out *[]program.Error) {
 		Length:  1,
 		Message: err.Error(),
 	})
+}
+
+// collectWarnings converts non-blocking warning diagnostics into structured
+// editor spans without allocating on clean compiles.
+// Invariant: prog and prog.Primary are non-nil from assembler.Assemble.
+func collectWarnings(src string, prog *program.Program, diags []program.Diagnostic) []program.Error {
+	if len(diags) == 0 {
+		return nil
+	}
+	primaryPath := prog.Primary.Path
+	var out []program.Error
+	for _, d := range diags {
+		if d.Severity != program.SeverityWarning {
+			continue
+		}
+		line := d.Line
+		if line == "" && d.LineNum > 0 {
+			diagSrc := src
+			if d.PackagePath != primaryPath {
+				diagSrc = dependencySource(prog, d.PackagePath, d.FilePath)
+			}
+			if diagSrc != "" {
+				line = build.LineFromSource(diagSrc, d.LineNum)
+			}
+		}
+		length := d.Length
+		if length <= 1 && line != "" && d.Column >= 1 {
+			length = tokenWidth(line, d.Column)
+		} else if length < 1 && d.LineNum > 0 {
+			length = 1
+		}
+		out = append(out, program.Error{
+			PackagePath: d.PackagePath,
+			FilePath:    d.FilePath,
+			Line:        line,
+			LineNum:     d.LineNum,
+			Column:      d.Column,
+			Length:      length,
+			Message:     d.Message,
+		})
+	}
+	return out
+}
+
+// Invariant: every collected dependency package has at least one parsed PackageFile.
+func dependencySource(prog *program.Program, pkgPath, filePath string) string {
+	for _, dep := range prog.Dependencies {
+		if dep.Path != pkgPath {
+			continue
+		}
+		if filePath != "" {
+			for _, f := range dep.Files {
+				if f.Path == filePath {
+					return f.Source
+				}
+			}
+		}
+		return dep.Files[0].Source
+	}
+	return ""
 }

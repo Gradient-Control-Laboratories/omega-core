@@ -4,14 +4,14 @@ import (
 	"math"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/backend/mesh"
-	"gradientcontrol.com/omega/core/internal/fidget"
-	"gradientcontrol.com/omega/core/internal/fidget/convert"
-	"gradientcontrol.com/omega/core/internal/meshfold"
-	"gradientcontrol.com/omega/core/program"
-	"gradientcontrol.com/omega/core/program/noise"
-	"gradientcontrol.com/omega/core/program/noise/spinodoid"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/mesh"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget/convert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/meshfold"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/noise"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/noise/spinodoid"
 )
 
 // This follows the imported, graded, powder-bed-material project pipeline.

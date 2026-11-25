@@ -3,7 +3,7 @@ package property
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // Repro for the property Engine's inability to call a thunk-valued parameter.

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // nodeCount is how many operand nodes an expression is written with — the

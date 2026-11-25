@@ -3,9 +3,9 @@ package config_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/cmd/fix/internal/config"
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/fix/internal/config"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
 )
 
 func TestParseFlags_NoArgs(t *testing.T) {
@@ -35,7 +35,7 @@ func TestParseFlags_FixerHelp(t *testing.T) {
 }
 
 func TestParseFlags_TargetsAndDiff(t *testing.T) {
-	cfg, err := config.ParseFlags([]string{"-diff", "a.gsl", "dir"})
+	cfg, err := config.ParseFlags([]string{"-range=false", "-stdlib=false", "-diff", "a.gsl", "dir"})
 	require.NoError(t, err)
 	assert.Equal(t, config.ModeRun, cfg.Mode)
 	assert.True(t, cfg.Diff)
@@ -52,8 +52,13 @@ func TestParseFlags_TriStateFixerSelection(t *testing.T) {
 	require.Equal(t, 1, len(cfg.ActiveFixers))
 	assert.Equal(t, "scene", cfg.ActiveFixers[0].Name)
 
+<<<<<<< HEAD
 	// Explicit -omegaimport=true enables only omegaimport
 	cfgOmega, err := config.ParseFlags([]string{"-omegaimport", "a.gsl"})
+=======
+	// Explicit -scene=false disables scene
+	cfgDisabled, err := config.ParseFlags([]string{"-scene=false", "-range=false", "-stdlib=false", "a.gsl"})
+>>>>>>> main
 	require.NoError(t, err)
 	require.Equal(t, 1, len(cfgOmega.ActiveFixers))
 	assert.Equal(t, "omegaimport", cfgOmega.ActiveFixers[0].Name)

@@ -7,10 +7,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	"gradientcontrol.com/omega/core/cmd/compile/internal/cli"
-	"gradientcontrol.com/omega/core/cmd/compile/internal/evalcmd"
-	"gradientcontrol.com/omega/core/cmd/compile/internal/skillcmd"
-	"gradientcontrol.com/omega/core/cmd/serve/viewer"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/compile/internal/cli"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/compile/internal/evalcmd"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/compile/internal/skillcmd"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/serve/viewer"
 )
 
 func main() {
@@ -32,6 +32,11 @@ func main() {
 		code := viewer.Run(ctx, os.Args[2:], os.Stdout, os.Stderr)
 		stop()
 		os.Exit(code)
+	}
+	// `compile export` (which `gsl export` runs) writes the viewer and the files' compiled fields as a folder
+	// that needs no server.
+	if len(os.Args) > 1 && os.Args[1] == "export" {
+		os.Exit(viewer.Export(os.Args[2:], os.Stdout, os.Stderr))
 	}
 	if err := cli.Run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr); err != nil {
 		fmt.Fprintf(os.Stderr, "compile: %v\n", err)

@@ -1,12 +1,12 @@
 package codegen
 
 import (
-	"gradientcontrol.com/omega/core/assembler/ui"
-	"gradientcontrol.com/omega/core/backend/wgsl/internal/ir"
-	"gradientcontrol.com/omega/core/backend/wgsl/internal/wgsl"
-	"gradientcontrol.com/omega/core/internal/build"
-	"gradientcontrol.com/omega/core/program"
-	"gradientcontrol.com/omega/core/program/edit"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/ui"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl/internal/ir"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl/internal/wgsl"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/build"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/edit"
 )
 
 type Delegate struct {
@@ -65,6 +65,10 @@ type Delegate struct {
 	// vanishUsed is true when a part is guarded by shrinkToVanish, so the camera
 	// it reads and gsl_vanish are declared after sdShape (vanish.go).
 	vanishUsed bool
+	// featureUsed is true when a feature is guarded by pruneBelow, so sdShape
+	// measures the pixel first and the camera and gsl_featureWeight are
+	// declared after it (prune.go).
+	featureUsed bool
 	// simpleUsed is true when a part switches to a stand-in, so gsl_simple and
 	// its rung are declared after sdShape (simple.go). deferSimple is set while
 	// a part's guard generates its shape, and pendingSimple then holds the
@@ -111,6 +115,9 @@ type Delegate struct {
 	// materialFieldSrc is the generated gsl_materialField function (empty when
 	// the program authors no material), woven in after colorFieldSrc.
 	materialFieldSrc string
+	// gradFieldSrc is the generated gsl_gradField function (empty unless
+	// assembly lowered analytic gradients), woven in after materialFieldSrc.
+	gradFieldSrc string
 	// heightsSrc is the generated gsl_heights function, every return's
 	// displacement height at once (empty when no return is displaced), and
 	// displacedMask marks the returns it carries a height for.
@@ -125,6 +132,18 @@ type Delegate struct {
 	// displacedFieldSrc is the generated gsl_sdShapeDisplaced, the composite of
 	// each return's own displaced distance; woven in after heightsSrc.
 	displacedFieldSrc string
+	// dispScaleUsed is true when the program reads displacementScale(), so its
+	// var is declared after sdShape (function_call.go).
+	dispScaleUsed bool
+	// inTreeMask marks the returns displaced inside their booleans
+	// (BuildPackageDisplacedReturns), and inTreeChildSrc, inTreeLets and
+	// inTreeSrcs are their distances as gsl_displacedParts writes them, built
+	// in one shared scope as gsl_heights is. A return it marks is not also
+	// moved by its material's height (buildHeights skips it).
+	inTreeMask     []bool
+	inTreeChildSrc string
+	inTreeLets     string
+	inTreeSrcs     []string
 }
 
 // Ensure that Delegate implements the build.Delegate interface.

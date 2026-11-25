@@ -3,8 +3,8 @@ package inline
 import (
 	"strings"
 
-	"gradientcontrol.com/omega/core/internal/scope"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // hardwareAccelPkgs registers packages whose operations are accelerated by
@@ -428,7 +428,35 @@ func (in *inliner) isConstRef(name string) bool {
 // nine times, so the texture ran once per read. Such a call is bound once
 // instead. p itself, read directly, is cheap to copy and still is.
 func (in *inliner) isCopyableConst(op *program.Operand, fileScope *scope.PkgFileScope) bool {
-	return in.isConstOperand(op) && !in.callsPOrTime(op, fileScope)
+	return operandNodesUpTo(op, 13) <= 12 && in.isConstOperand(op) && !in.callsPOrTime(op, fileScope)
+}
+
+// operandNodesUpTo counts AST operand nodes in op, stopping early once limit is
+// reached. Used by isCopyableConst so large multi-use expressions (such as
+// expanded profileXY arc chains) are hoisted to a temporary instead of being
+// duplicated across every use site.
+func operandNodesUpTo(op *program.Operand, limit int) int {
+	if op == nil || limit <= 0 {
+		return 0
+	}
+	n := 1
+	switch t := op.T.(type) {
+	case *program.Operand_Expression:
+		for _, child := range t.Expression.Operands {
+			n += operandNodesUpTo(child, limit-n)
+			if n >= limit {
+				return n
+			}
+		}
+	case *program.Operand_FnCall:
+		for _, arg := range t.FnCall.Arguments {
+			n += operandNodesUpTo(arg, limit-n)
+			if n >= limit {
+				return n
+			}
+		}
+	}
+	return n
 }
 
 func (in *inliner) isSimpleOperand(op *program.Operand) bool {
@@ -615,8 +643,15 @@ func (in *inliner) callsPOrTime(op *program.Operand, fileScope *scope.PkgFileSco
 			}
 		}
 		if !in.isNativeOrSpecial(fc) {
-			_, calleeFn, _ := in.findFunction(fc, fileScope, len(fc.Arguments))
-			if calleeFn != nil && in.hasPOrTime(calleeFn, fileScope) {
+			_, calleeFn, calleePkgPath := in.findFunction(fc, fileScope, len(fc.Arguments))
+			if calleeFn == nil {
+				return true
+			}
+			calleeScope := in.fileScopeOf(calleeFn, calleePkgPath)
+			if calleeScope == nil {
+				calleeScope = fileScope
+			}
+			if in.hasPOrTime(calleeFn, calleeScope) {
 				return true
 			}
 		}

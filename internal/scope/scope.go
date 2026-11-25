@@ -3,7 +3,7 @@ package scope
 import (
 	"strings"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // Scope defines the read-only query and traversal interface for a GSL program scope.

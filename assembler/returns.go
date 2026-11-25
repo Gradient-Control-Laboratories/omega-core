@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"sort"
 
-	"gradientcontrol.com/omega/core/assembler/meshplan"
-	"gradientcontrol.com/omega/core/assembler/source"
-	"gradientcontrol.com/omega/core/internal/build"
-	"gradientcontrol.com/omega/core/internal/link"
-	"gradientcontrol.com/omega/core/internal/scope"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/meshplan"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/build"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/link"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 type variantSlice struct {

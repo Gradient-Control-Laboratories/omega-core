@@ -3,8 +3,8 @@ package closure
 import (
 	"strings"
 
-	"gradientcontrol.com/omega/core/program"
-	gsllibs "gradientcontrol.com/omega/core/stdlib"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	gsllibs "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
 )
 
 // qualifyForeignBody readies a clone of a function from definerFile to live in

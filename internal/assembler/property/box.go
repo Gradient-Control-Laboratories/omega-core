@@ -4,7 +4,7 @@ import (
 	"math"
 	"strings"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // The bounding-box property (.box): an axis-aligned box containing a field's
@@ -143,9 +143,9 @@ type boxProp struct {
 	// a builtin primitive only when the package has not declared its own
 	// function of that name, since a user's box() owes nothing to builtin's.
 	own map[string]bool
-	// sliders names the declarations the viewer can move (those with .min,
-	// .max or .period). Their declared value is only where they start, so one
-	// used as a field is not the positive constant it reads as here.
+	// sliders names the declarations the viewer can move (those with @range).
+	// Their declared value is only where they start, so one used as a field is not
+	// the positive constant it reads as here.
 	sliders map[string]bool
 }
 
@@ -597,7 +597,28 @@ func (dd *boxDomain) Call(name string, args []Value) (Value, bool, error) {
 		return nil, false, nil
 	}
 	vs := boxVals(args)
-	if name == "revolve" && len(vs) == 3 {
+	// A partial revolve lies within the full turn, so the full turn's box
+	// holds it: sound, if loose for a small angle.
+	if name == "sweep" && len(vs) == 2 {
+		return swept(vs[0], vs[1]), true, nil
+	}
+	if name == "sweepOpen" && (len(vs) == 2 || len(vs) == 3) {
+		return sweptOpen(vs[0], vs[1:], "openProfileLowXY", "openProfileHighXY"), true, nil
+	}
+	if name == "profileXY" && len(vs) >= 2 && len(vs) <= 4 {
+		if v, ok := profileBox(vs[:2], "profileArcLowXY", "profileArcHighXY"); ok {
+			return v, true, nil
+		}
+	}
+	if name == "profileEdgesXY" && len(vs) == 2 {
+		if v, ok := profileBox(vs, "profileEdgesLowXY", "profileEdgesHighXY"); ok {
+			return v, true, nil
+		}
+	}
+	if name == "sweepOpenEdges" && len(vs) == 3 {
+		return sweptOpen(vs[0], vs[1:], "openProfileEdgesLowXY", "openProfileEdgesHighXY"), true, nil
+	}
+	if name == "revolve" && (len(vs) == 3 || len(vs) == 4) {
 		return revolved(vs[0], vs[1], vs[2]), true, nil
 	}
 	if v, ok := primitiveBox(name, vs); ok {
@@ -658,6 +679,99 @@ func revolved(profile, axisPoint, axisDirection boxVal) boxVal {
 	}
 	bx.lo[2], bx.hi[2] = negOp(out), out
 	return boxVal{box: bx, growth: profile.growth, limit: profile.limit}
+}
+
+// swept is the box of sweep(section, path) (sweep.gsl): the box of the path's
+// zero line in x and y (its surface box where the value has one), grown on
+// every side by the section's reach across the path, the greater of how far it
+// goes either way; and in z the section's own extent in y. The section is read
+// at the path's distance, so no point of the solid is farther across from the
+// path's line than the section reaches. A section or path without a bounded
+// box leaves the result unbounded.
+func swept(section, path boxVal) boxVal {
+	pb := path.surf
+	if pb == nil {
+		pb = path.box
+	}
+	if path.op != nil {
+		return boxVal{}
+	}
+	return sweptAround(section, pb)
+}
+
+// sweptOpen is the box of sweepOpen(section, points[, curvatures]) and
+// sweepOpenEdges(section, points, edges) (sweep.gsl): the chain's own box,
+// without its rays, from builtin's low and high helpers (openProfileLowXY and
+// openProfileHighXY, or their Edges forms) called on the same arguments, grown
+// as swept grows a closed path's. The caps stand square to the chain at its
+// ends, so no point of the solid is farther across from the chain itself
+// than the section reaches. A chain that depends on p, or a section without
+// a bounded box, leaves the result unbounded.
+func sweptOpen(section boxVal, chain []boxVal, lowName, highName string) boxVal {
+	ops, ok := opsOf(chain)
+	if !ok {
+		return boxVal{}
+	}
+	low, high := call(lowName, ops...), call(highName, ops...)
+	return sweptAround(section, &bbox{
+		lo: [3]*program.Operand{planar(low, 0), planar(low, 1)},
+		hi: [3]*program.Operand{planar(high, 0), planar(high, 1)},
+	})
+}
+
+// profileBox is the box of a profile of curves (2d.gsl): profileXY(points,
+// curvatures) and its corner forms, read from (points, curvatures), and
+// profileEdgesXY(points, edges). The exact box is the union of the edges'
+// boxes, and an edge's box needs its neighbour, a reduce reading its index. A
+// .box declared in the stdlib can hold one, but where the points follow a
+// slider it is inlined and unrolled into every corner (the arc L extruded,
+// 14.9 KB of WGSL by this rule, 262 KB to 1 MB declared), so the corners come
+// from builtin's helpers, lowName and highName, called on the same arguments,
+// which compile once as any function does. The box is the declared box such a
+// profile had: padded by boxPad, unbounded in z. A corner form's blends lie
+// within their corners' triangles, which its loop's box holds. Arguments that
+// depend on p leave the call to its body.
+func profileBox(args []boxVal, lowName, highName string) (boxVal, bool) {
+	ops, ok := opsOf(args)
+	if !ok {
+		return boxVal{}, false
+	}
+	// The low corner is never above the high one, so each side reads one
+	// corner, not the least and most of both as between does: each helper is
+	// called once an axis instead of twice, which matters where the box does
+	// not fold to numbers.
+	low, high := call(lowName, ops...), call(highName, ops...)
+	far, pad := ref(nothingName), ref(boxPadName)
+	bx := &bbox{}
+	for i := 0; i < 2; i++ {
+		bx.lo[i], bx.hi[i] = subOp(planar(low, i), pad), addOp(planar(high, i), pad)
+	}
+	bx.lo[2], bx.hi[2] = subOp(neg(far), pad), addOp(far, pad)
+	return boxVal{box: bx}, true
+}
+
+// sweptAround is a sweep's box about pb, its path's box in x and y: pb grown
+// by the section's reach across, and the section's extent in y as z.
+func sweptAround(section boxVal, pb *bbox) boxVal {
+	sb := section.box
+	if section.op != nil || sb == nil || pb == nil {
+		return boxVal{}
+	}
+	if sb.empty || pb.empty {
+		return boxVal{box: &bbox{empty: true}, growth: section.growth, limit: section.limit}
+	}
+	for _, o := range []*program.Operand{sb.lo[0], sb.hi[0], sb.lo[1], sb.hi[1], pb.lo[0], pb.hi[0], pb.lo[1], pb.hi[1]} {
+		if o == nil {
+			return boxVal{}
+		}
+	}
+	reach := maxOp(absOp(sb.lo[0]), absOp(sb.hi[0]))
+	bx := &bbox{}
+	for i := 0; i < 2; i++ {
+		bx.lo[i], bx.hi[i] = subOp(pb.lo[i], reach), addOp(pb.hi[i], reach)
+	}
+	bx.lo[2], bx.hi[2] = sb.lo[1], sb.hi[1]
+	return boxVal{box: bx, growth: section.growth, limit: section.limit}
 }
 
 // timesOp is mulOp that knows a literal zero: an axis along X or Y has one in
@@ -1613,6 +1727,12 @@ func foldOperation(operation program.Operation, vs []boxVal) (float64, bool) {
 		return two(func(a, b float64) float64 { return b2i(a == b) })
 	case program.Operation_NE:
 		return two(func(a, b float64) float64 { return b2i(a != b) })
+	case program.Operation_AND:
+		return two(func(a, b float64) float64 { return b2i(a > 0 && b > 0) })
+	case program.Operation_OR:
+		return two(func(a, b float64) float64 { return b2i(a > 0 || b > 0) })
+	case program.Operation_NOT:
+		return one(func(a float64) float64 { return b2i(!(a > 0)) })
 	}
 	return 0, false
 }
@@ -1797,4 +1917,15 @@ func absOp(a *program.Operand) *program.Operand {
 		return num(math.Abs(v))
 	}
 	return un(program.Operation_ABS, a)
+}
+
+// Primal is a p-independent value's operand, for an index the Engine evaluates
+// (see frame.indexOperand): a reduce step's index, or a local of an inlined
+// body, folds to the constant it is rather than reaching the output by name.
+func (dd *boxDomain) Primal(v Value) (*program.Operand, bool) {
+	b, ok := v.(boxVal)
+	if !ok || b.op == nil {
+		return nil, false
+	}
+	return b.op, true
 }

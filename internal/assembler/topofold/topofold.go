@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"math"
 
-	"gradientcontrol.com/omega/core/assembler/meshslots"
-	"gradientcontrol.com/omega/core/assembler/topofold"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/meshslots"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/topofold"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 var topoPointBuiltins = map[string]bool{
@@ -136,6 +136,12 @@ func hasTopoCall(pkg *program.Package) bool {
 		for _, r := range file.MaterialReturns {
 			walkOp(r)
 		}
+		for _, r := range file.GradientReturns {
+			walkOp(r)
+		}
+		for _, r := range file.DisplacedReturns {
+			walkOp(r)
+		}
 	}
 	return found
 }
@@ -198,6 +204,12 @@ func foldPackage(
 			return err
 		}
 		if err := folder.foldReturns(&file.MaterialReturns, consts); err != nil {
+			return err
+		}
+		if err := folder.foldReturns(&file.GradientReturns, consts); err != nil {
+			return err
+		}
+		if err := folder.foldReturns(&file.DisplacedReturns, consts); err != nil {
 			return err
 		}
 	}

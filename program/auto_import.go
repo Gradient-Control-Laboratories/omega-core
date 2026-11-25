@@ -3,7 +3,7 @@ package program
 import (
 	"sort"
 
-	gsllibs "gradientcontrol.com/omega/core/stdlib"
+	gsllibs "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
 )
 
 // UpdateImports prepares a GSL package by adding the implicit dot-import of "builtin"
@@ -183,6 +183,12 @@ func (c *importCollector) collectFromPackageFile(file *PackageFile) {
 		c.visit(op)
 	}
 	for _, op := range file.MaterialReturns {
+		c.visit(op)
+	}
+	for _, op := range file.GradientReturns {
+		c.visit(op)
+	}
+	for _, op := range file.DisplacedReturns {
 		c.visit(op)
 	}
 	for _, fnType := range file.FnTypes {

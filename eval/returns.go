@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"gradientcontrol.com/omega/core/assembler/slider"
-	"gradientcontrol.com/omega/core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/slider"
+	"github.com/Gradient-Control-Laboratories/omega-core/parser"
 )
 
 // SliderRanges parses the document and returns every declared slider's [min, max] range.
@@ -16,7 +16,7 @@ func SliderRanges(code string) (map[string][2]float64, error) {
 	}
 	sliders := slider.Extract(code, res.Package)
 	if len(sliders) == 0 {
-		return nil, fmt.Errorf("document declares no sliders (variables with .min and .max) to certify over")
+		return nil, fmt.Errorf("document declares no sliders (variables with @range) to certify over")
 	}
 	params := make(map[string][2]float64, len(sliders))
 	for _, s := range sliders {
@@ -55,6 +55,32 @@ func TopLevelReturnExprs(source string) []string {
 		return exprs
 	}
 	return nil
+}
+
+// DeclaredReturnBox is the text of the box the document declares on what it returns: when it returns one name, the
+// right-hand side of that name's last top-level `name.box = [lo, hi];`, as written. ok is false when the document
+// returns more than one value or an expression, or declares no box on the name it returns.
+func DeclaredReturnBox(source string) (rhs string, ok bool) {
+	returns := TopLevelReturnExprs(source)
+	if len(returns) != 1 || identifierEnd(returns[0], 0) != len(returns[0]) {
+		return "", false
+	}
+	prefix := returns[0] + ".box"
+	for _, s := range topLevelStatements(source) {
+		decl := strings.TrimSpace(s.text[s.keep:])
+		if !strings.HasPrefix(decl, prefix) {
+			continue
+		}
+		rest := strings.TrimSpace(decl[len(prefix):])
+		if !strings.HasPrefix(rest, "=") || strings.HasPrefix(rest, "==") {
+			continue
+		}
+		value := strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(rest[1:]), ";"))
+		if value != "" {
+			rhs, ok = value, true
+		}
+	}
+	return rhs, ok
 }
 
 // splitTopLevelCommas splits src on commas at bracket depth zero, treating
@@ -209,7 +235,7 @@ func topLevelStatements(source string) []gslStmt {
 // it is the `import` keyword, skipping leading whitespace, comments, the
 // `@scene(...)` directive (which ends without a `;`, so it leads the
 // statement after it) and the declaration's own annotations (`@range(5, 15)
-// r = 10.0;`). A statement that sets a property (`r.min = 5.0;`) declares
+// r = 10.0;`). A statement that sets a property (`a.color = [1, 0, 0];`) declares
 // nothing: its name is "". keep is where the declaration begins, its
 // annotations included: what precedes it (whitespace, comments, `@scene`)
 // stays when the declaration is replaced.

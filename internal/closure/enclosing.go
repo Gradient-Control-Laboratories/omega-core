@@ -3,7 +3,7 @@ package closure
 import (
 	"sort"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // cloneListArgs copies every list bound at a call, so the renaming below

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // chainDepth counts how many nested calls an operand is: a reduce over N

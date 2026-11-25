@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 
-	"gradientcontrol.com/omega/core/internal/build"
-	"gradientcontrol.com/omega/core/internal/fidget"
-	"gradientcontrol.com/omega/core/program"
-	"gradientcontrol.com/omega/core/program/noise/spinodoid"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/build"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/noise/spinodoid"
 )
 
 // colorDelegate is a Delegate that also collects per-return color fields. The
@@ -65,6 +65,12 @@ func (cd *colorDelegate) BuildPackageColorReturns(colorExpressions []build.Expre
 // record, the viewer's present = 0. The two are independent. Displaced marks a
 // material whose height (Material[2][2]) is not known to be the constant zero,
 // so a renderer can leave the distance tree alone for every other shape.
+//
+// InTree, when HasInTree, is the shape's distance displaced inside its
+// booleans: each shape in it that sets a material with a height moved by its
+// own layer before the booleans that use it (program.DisplacedReturns). A
+// renderer marches it in place of Tree minus the material's height. Built only
+// by ToColorShapesWithPixelSize.
 type ColorShape struct {
 	Tree        fidget.TreeIndex
 	Name        string
@@ -73,6 +79,8 @@ type ColorShape struct {
 	Material    [materialRows][materialRowSize]fidget.TreeIndex
 	HasMaterial bool
 	Displaced   bool
+	InTree      fidget.TreeIndex
+	HasInTree   bool
 }
 
 // ToColorShapes is ToTrees for renderers that also want color: it builds the
@@ -173,6 +181,10 @@ func toColorShapes(
 				shape.Material = d.materialReturns[r]
 				shape.HasMaterial = true
 				shape.Displaced = d.displacedReturn[r]
+			}
+			if r < len(d.hasInTreeReturn) && d.hasInTreeReturn[r] {
+				shape.InTree = d.inTreeReturns[r]
+				shape.HasInTree = true
 			}
 		}
 		shapes = append(shapes, shape)

@@ -386,97 +386,97 @@ fn wood_stemGrowthAt(p: vec3<f32>, axisOrigin: vec3<f32>, axisDir: vec3<f32>, ri
 }
 
 fn wood_whorlTime(local: vec3<f32>, whorl: f32, ringWidth: f32, spacing: f32, branchRate: f32, seed: f32, style: vec4<f32>, noiseTex: texture_3d<f32>) -> f32 {
-  let gsl_tmp_83 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(whorl, whorl + 0.0 + seed, 2.0 * whorl + 3.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(whorl, whorl + 0.0 + seed, 2.0 * whorl + 3.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
-  let gsl_tmp_88 = local - vec3<f32>(0.0, 0.0, (whorl + style.w * (gsl_tmp_83.y - 0.5)) * spacing);
-  let gsl_tmp_86 = (0.0 + 0.6 * gsl_tmp_83.x) * 6.2831855 / max(style.x, 1.0);
-  let gsl_tmp_87 = vec2<f32>(cos(gsl_tmp_86), sin(gsl_tmp_86));
-  let gsl_tmp_89 = max(dot(gsl_tmp_88.xy, gsl_tmp_87), 0.0);
-  let gsl_tmp_90 = length(gsl_tmp_88.xy - gsl_tmp_87 * gsl_tmp_89);
-  let gsl_tmp_84 = 1.0 + 0.6 * gsl_tmp_83.z * gsl_tmp_83.z;
-  let gsl_tmp_85 = style.z * (0.34 + 1.2 * (min(gsl_tmp_84, 1.0) - 0.45));
-  let gsl_tmp_91 = gsl_tmp_85 / (1.0 + gsl_tmp_89 / 60.0);
-  let gsl_tmp_92 = (gsl_tmp_88.z - gsl_tmp_85 * 60.0 * log(1.0 + gsl_tmp_89 / 60.0)) / sqrt(1.0 + gsl_tmp_91 * gsl_tmp_91);
-  let gsl_tmp_93 = sqrt(gsl_tmp_90 * gsl_tmp_90 + gsl_tmp_92 * gsl_tmp_92);
-  let gsl_tmp_94 = select(1000.0, min(1000.0, (gsl_tmp_93 + 4.0 * max(gsl_tmp_93 - 12.5 * gsl_tmp_84, 0.0)) / (ringWidth * branchRate)), 0.0 < style.x);
-  let gsl_tmp_95 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(whorl, whorl + 7.0 + seed, 2.0 * whorl + 3.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(whorl, whorl + 7.0 + seed, 2.0 * whorl + 3.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
-  let gsl_tmp_100 = local - vec3<f32>(0.0, 0.0, (whorl + style.w * (gsl_tmp_95.y - 0.5)) * spacing);
-  let gsl_tmp_98 = (1.0 + 0.6 * gsl_tmp_95.x) * 6.2831855 / max(style.x, 1.0);
-  let gsl_tmp_99 = vec2<f32>(cos(gsl_tmp_98), sin(gsl_tmp_98));
-  let gsl_tmp_101 = max(dot(gsl_tmp_100.xy, gsl_tmp_99), 0.0);
-  let gsl_tmp_102 = length(gsl_tmp_100.xy - gsl_tmp_99 * gsl_tmp_101);
-  let gsl_tmp_96 = 0.45 + 0.4 * gsl_tmp_95.z;
-  let gsl_tmp_97 = style.z * (0.34 + 1.2 * (min(gsl_tmp_96, 1.0) - 0.45));
-  let gsl_tmp_103 = gsl_tmp_97 / (1.0 + gsl_tmp_101 / 60.0);
-  let gsl_tmp_104 = (gsl_tmp_100.z - gsl_tmp_97 * 60.0 * log(1.0 + gsl_tmp_101 / 60.0)) / sqrt(1.0 + gsl_tmp_103 * gsl_tmp_103);
-  let gsl_tmp_105 = sqrt(gsl_tmp_102 * gsl_tmp_102 + gsl_tmp_104 * gsl_tmp_104);
-  let gsl_tmp_106 = select(gsl_tmp_94, min(gsl_tmp_94, (gsl_tmp_105 + 4.0 * max(gsl_tmp_105 - 12.5 * gsl_tmp_96, 0.0)) / (ringWidth * branchRate)), 1.0 < style.x);
-  let gsl_tmp_107 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(whorl, whorl + 14.0 + seed, 2.0 * whorl + 3.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(whorl, whorl + 14.0 + seed, 2.0 * whorl + 3.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
-  let gsl_tmp_112 = local - vec3<f32>(0.0, 0.0, (whorl + style.w * (gsl_tmp_107.y - 0.5)) * spacing);
-  let gsl_tmp_110 = (2.0 + 0.6 * gsl_tmp_107.x) * 6.2831855 / max(style.x, 1.0);
-  let gsl_tmp_111 = vec2<f32>(cos(gsl_tmp_110), sin(gsl_tmp_110));
-  let gsl_tmp_113 = max(dot(gsl_tmp_112.xy, gsl_tmp_111), 0.0);
-  let gsl_tmp_114 = length(gsl_tmp_112.xy - gsl_tmp_111 * gsl_tmp_113);
-  let gsl_tmp_108 = 0.45 + 0.4 * gsl_tmp_107.z;
-  let gsl_tmp_109 = style.z * (0.34 + 1.2 * (min(gsl_tmp_108, 1.0) - 0.45));
-  let gsl_tmp_115 = gsl_tmp_109 / (1.0 + gsl_tmp_113 / 60.0);
-  let gsl_tmp_116 = (gsl_tmp_112.z - gsl_tmp_109 * 60.0 * log(1.0 + gsl_tmp_113 / 60.0)) / sqrt(1.0 + gsl_tmp_115 * gsl_tmp_115);
-  let gsl_tmp_117 = sqrt(gsl_tmp_114 * gsl_tmp_114 + gsl_tmp_116 * gsl_tmp_116);
-  let gsl_tmp_118 = select(gsl_tmp_106, min(gsl_tmp_106, (gsl_tmp_117 + 4.0 * max(gsl_tmp_117 - 12.5 * gsl_tmp_108, 0.0)) / (ringWidth * branchRate)), 2.0 < style.x);
-  let gsl_tmp_119 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(whorl, whorl + 21.0 + seed, 2.0 * whorl + 3.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(whorl, whorl + 21.0 + seed, 2.0 * whorl + 3.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
-  let gsl_tmp_124 = local - vec3<f32>(0.0, 0.0, (whorl + style.w * (gsl_tmp_119.y - 0.5)) * spacing);
-  let gsl_tmp_122 = (3.0 + 0.6 * gsl_tmp_119.x) * 6.2831855 / max(style.x, 1.0);
-  let gsl_tmp_123 = vec2<f32>(cos(gsl_tmp_122), sin(gsl_tmp_122));
-  let gsl_tmp_125 = max(dot(gsl_tmp_124.xy, gsl_tmp_123), 0.0);
-  let gsl_tmp_126 = length(gsl_tmp_124.xy - gsl_tmp_123 * gsl_tmp_125);
-  let gsl_tmp_120 = 0.45 + 0.4 * gsl_tmp_119.z;
-  let gsl_tmp_121 = style.z * (0.34 + 1.2 * (min(gsl_tmp_120, 1.0) - 0.45));
-  let gsl_tmp_127 = gsl_tmp_121 / (1.0 + gsl_tmp_125 / 60.0);
-  let gsl_tmp_128 = (gsl_tmp_124.z - gsl_tmp_121 * 60.0 * log(1.0 + gsl_tmp_125 / 60.0)) / sqrt(1.0 + gsl_tmp_127 * gsl_tmp_127);
-  let gsl_tmp_129 = sqrt(gsl_tmp_126 * gsl_tmp_126 + gsl_tmp_128 * gsl_tmp_128);
-  let gsl_tmp_130 = select(gsl_tmp_118, min(gsl_tmp_118, (gsl_tmp_129 + 4.0 * max(gsl_tmp_129 - 12.5 * gsl_tmp_120, 0.0)) / (ringWidth * branchRate)), 3.0 < style.x);
-  let gsl_tmp_131 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(whorl, whorl + 28.0 + seed, 2.0 * whorl + 3.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(whorl, whorl + 28.0 + seed, 2.0 * whorl + 3.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
-  let gsl_tmp_136 = local - vec3<f32>(0.0, 0.0, (whorl + style.w * (gsl_tmp_131.y - 0.5)) * spacing);
-  let gsl_tmp_134 = (4.0 + 0.6 * gsl_tmp_131.x) * 6.2831855 / max(style.x, 1.0);
-  let gsl_tmp_135 = vec2<f32>(cos(gsl_tmp_134), sin(gsl_tmp_134));
-  let gsl_tmp_137 = max(dot(gsl_tmp_136.xy, gsl_tmp_135), 0.0);
-  let gsl_tmp_138 = length(gsl_tmp_136.xy - gsl_tmp_135 * gsl_tmp_137);
-  let gsl_tmp_132 = 0.45 + 0.4 * gsl_tmp_131.z;
-  let gsl_tmp_133 = style.z * (0.34 + 1.2 * (min(gsl_tmp_132, 1.0) - 0.45));
-  let gsl_tmp_139 = gsl_tmp_133 / (1.0 + gsl_tmp_137 / 60.0);
-  let gsl_tmp_140 = (gsl_tmp_136.z - gsl_tmp_133 * 60.0 * log(1.0 + gsl_tmp_137 / 60.0)) / sqrt(1.0 + gsl_tmp_139 * gsl_tmp_139);
-  let gsl_tmp_141 = sqrt(gsl_tmp_138 * gsl_tmp_138 + gsl_tmp_140 * gsl_tmp_140);
-  let gsl_tmp_142 = select(gsl_tmp_130, min(gsl_tmp_130, (gsl_tmp_141 + 4.0 * max(gsl_tmp_141 - 12.5 * gsl_tmp_132, 0.0)) / (ringWidth * branchRate)), 4.0 < style.x);
-  let gsl_tmp_143 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(whorl, whorl + 35.0 + seed, 2.0 * whorl + 3.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(whorl, whorl + 35.0 + seed, 2.0 * whorl + 3.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
-  let gsl_tmp_148 = local - vec3<f32>(0.0, 0.0, (whorl + style.w * (gsl_tmp_143.y - 0.5)) * spacing);
-  let gsl_tmp_146 = (5.0 + 0.6 * gsl_tmp_143.x) * 6.2831855 / max(style.x, 1.0);
-  let gsl_tmp_147 = vec2<f32>(cos(gsl_tmp_146), sin(gsl_tmp_146));
-  let gsl_tmp_149 = max(dot(gsl_tmp_148.xy, gsl_tmp_147), 0.0);
-  let gsl_tmp_150 = length(gsl_tmp_148.xy - gsl_tmp_147 * gsl_tmp_149);
-  let gsl_tmp_144 = 0.45 + 0.4 * gsl_tmp_143.z;
-  let gsl_tmp_145 = style.z * (0.34 + 1.2 * (min(gsl_tmp_144, 1.0) - 0.45));
-  let gsl_tmp_151 = gsl_tmp_145 / (1.0 + gsl_tmp_149 / 60.0);
-  let gsl_tmp_152 = (gsl_tmp_148.z - gsl_tmp_145 * 60.0 * log(1.0 + gsl_tmp_149 / 60.0)) / sqrt(1.0 + gsl_tmp_151 * gsl_tmp_151);
-  let gsl_tmp_153 = sqrt(gsl_tmp_150 * gsl_tmp_150 + gsl_tmp_152 * gsl_tmp_152);
-  return select(gsl_tmp_142, min(gsl_tmp_142, (gsl_tmp_153 + 4.0 * max(gsl_tmp_153 - 12.5 * gsl_tmp_144, 0.0)) / (ringWidth * branchRate)), 5.0 < style.x);
+  let gsl_tmp_91 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(whorl, whorl + 0.0 + seed, 2.0 * whorl + 3.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(whorl, whorl + 0.0 + seed, 2.0 * whorl + 3.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
+  let gsl_tmp_96 = local - vec3<f32>(0.0, 0.0, (whorl + style.w * (gsl_tmp_91.y - 0.5)) * spacing);
+  let gsl_tmp_94 = (0.0 + 0.6 * gsl_tmp_91.x) * 6.2831855 / max(style.x, 1.0);
+  let gsl_tmp_95 = vec2<f32>(cos(gsl_tmp_94), sin(gsl_tmp_94));
+  let gsl_tmp_97 = max(dot(gsl_tmp_96.xy, gsl_tmp_95), 0.0);
+  let gsl_tmp_98 = length(gsl_tmp_96.xy - gsl_tmp_95 * gsl_tmp_97);
+  let gsl_tmp_92 = 1.0 + 0.6 * gsl_tmp_91.z * gsl_tmp_91.z;
+  let gsl_tmp_93 = style.z * (0.34 + 1.2 * (min(gsl_tmp_92, 1.0) - 0.45));
+  let gsl_tmp_99 = gsl_tmp_93 / (1.0 + gsl_tmp_97 / 60.0);
+  let gsl_tmp_100 = (gsl_tmp_96.z - gsl_tmp_93 * 60.0 * log(1.0 + gsl_tmp_97 / 60.0)) / sqrt(1.0 + gsl_tmp_99 * gsl_tmp_99);
+  let gsl_tmp_101 = sqrt(gsl_tmp_98 * gsl_tmp_98 + gsl_tmp_100 * gsl_tmp_100);
+  let gsl_tmp_102 = select(1000.0, min(1000.0, (gsl_tmp_101 + 4.0 * max(gsl_tmp_101 - 12.5 * gsl_tmp_92, 0.0)) / (ringWidth * branchRate)), 0.0 < style.x);
+  let gsl_tmp_103 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(whorl, whorl + 7.0 + seed, 2.0 * whorl + 3.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(whorl, whorl + 7.0 + seed, 2.0 * whorl + 3.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
+  let gsl_tmp_108 = local - vec3<f32>(0.0, 0.0, (whorl + style.w * (gsl_tmp_103.y - 0.5)) * spacing);
+  let gsl_tmp_106 = (1.0 + 0.6 * gsl_tmp_103.x) * 6.2831855 / max(style.x, 1.0);
+  let gsl_tmp_107 = vec2<f32>(cos(gsl_tmp_106), sin(gsl_tmp_106));
+  let gsl_tmp_109 = max(dot(gsl_tmp_108.xy, gsl_tmp_107), 0.0);
+  let gsl_tmp_110 = length(gsl_tmp_108.xy - gsl_tmp_107 * gsl_tmp_109);
+  let gsl_tmp_104 = 0.45 + 0.4 * gsl_tmp_103.z;
+  let gsl_tmp_105 = style.z * (0.34 + 1.2 * (min(gsl_tmp_104, 1.0) - 0.45));
+  let gsl_tmp_111 = gsl_tmp_105 / (1.0 + gsl_tmp_109 / 60.0);
+  let gsl_tmp_112 = (gsl_tmp_108.z - gsl_tmp_105 * 60.0 * log(1.0 + gsl_tmp_109 / 60.0)) / sqrt(1.0 + gsl_tmp_111 * gsl_tmp_111);
+  let gsl_tmp_113 = sqrt(gsl_tmp_110 * gsl_tmp_110 + gsl_tmp_112 * gsl_tmp_112);
+  let gsl_tmp_114 = select(gsl_tmp_102, min(gsl_tmp_102, (gsl_tmp_113 + 4.0 * max(gsl_tmp_113 - 12.5 * gsl_tmp_104, 0.0)) / (ringWidth * branchRate)), 1.0 < style.x);
+  let gsl_tmp_115 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(whorl, whorl + 14.0 + seed, 2.0 * whorl + 3.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(whorl, whorl + 14.0 + seed, 2.0 * whorl + 3.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
+  let gsl_tmp_120 = local - vec3<f32>(0.0, 0.0, (whorl + style.w * (gsl_tmp_115.y - 0.5)) * spacing);
+  let gsl_tmp_118 = (2.0 + 0.6 * gsl_tmp_115.x) * 6.2831855 / max(style.x, 1.0);
+  let gsl_tmp_119 = vec2<f32>(cos(gsl_tmp_118), sin(gsl_tmp_118));
+  let gsl_tmp_121 = max(dot(gsl_tmp_120.xy, gsl_tmp_119), 0.0);
+  let gsl_tmp_122 = length(gsl_tmp_120.xy - gsl_tmp_119 * gsl_tmp_121);
+  let gsl_tmp_116 = 0.45 + 0.4 * gsl_tmp_115.z;
+  let gsl_tmp_117 = style.z * (0.34 + 1.2 * (min(gsl_tmp_116, 1.0) - 0.45));
+  let gsl_tmp_123 = gsl_tmp_117 / (1.0 + gsl_tmp_121 / 60.0);
+  let gsl_tmp_124 = (gsl_tmp_120.z - gsl_tmp_117 * 60.0 * log(1.0 + gsl_tmp_121 / 60.0)) / sqrt(1.0 + gsl_tmp_123 * gsl_tmp_123);
+  let gsl_tmp_125 = sqrt(gsl_tmp_122 * gsl_tmp_122 + gsl_tmp_124 * gsl_tmp_124);
+  let gsl_tmp_126 = select(gsl_tmp_114, min(gsl_tmp_114, (gsl_tmp_125 + 4.0 * max(gsl_tmp_125 - 12.5 * gsl_tmp_116, 0.0)) / (ringWidth * branchRate)), 2.0 < style.x);
+  let gsl_tmp_127 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(whorl, whorl + 21.0 + seed, 2.0 * whorl + 3.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(whorl, whorl + 21.0 + seed, 2.0 * whorl + 3.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
+  let gsl_tmp_132 = local - vec3<f32>(0.0, 0.0, (whorl + style.w * (gsl_tmp_127.y - 0.5)) * spacing);
+  let gsl_tmp_130 = (3.0 + 0.6 * gsl_tmp_127.x) * 6.2831855 / max(style.x, 1.0);
+  let gsl_tmp_131 = vec2<f32>(cos(gsl_tmp_130), sin(gsl_tmp_130));
+  let gsl_tmp_133 = max(dot(gsl_tmp_132.xy, gsl_tmp_131), 0.0);
+  let gsl_tmp_134 = length(gsl_tmp_132.xy - gsl_tmp_131 * gsl_tmp_133);
+  let gsl_tmp_128 = 0.45 + 0.4 * gsl_tmp_127.z;
+  let gsl_tmp_129 = style.z * (0.34 + 1.2 * (min(gsl_tmp_128, 1.0) - 0.45));
+  let gsl_tmp_135 = gsl_tmp_129 / (1.0 + gsl_tmp_133 / 60.0);
+  let gsl_tmp_136 = (gsl_tmp_132.z - gsl_tmp_129 * 60.0 * log(1.0 + gsl_tmp_133 / 60.0)) / sqrt(1.0 + gsl_tmp_135 * gsl_tmp_135);
+  let gsl_tmp_137 = sqrt(gsl_tmp_134 * gsl_tmp_134 + gsl_tmp_136 * gsl_tmp_136);
+  let gsl_tmp_138 = select(gsl_tmp_126, min(gsl_tmp_126, (gsl_tmp_137 + 4.0 * max(gsl_tmp_137 - 12.5 * gsl_tmp_128, 0.0)) / (ringWidth * branchRate)), 3.0 < style.x);
+  let gsl_tmp_139 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(whorl, whorl + 28.0 + seed, 2.0 * whorl + 3.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(whorl, whorl + 28.0 + seed, 2.0 * whorl + 3.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
+  let gsl_tmp_144 = local - vec3<f32>(0.0, 0.0, (whorl + style.w * (gsl_tmp_139.y - 0.5)) * spacing);
+  let gsl_tmp_142 = (4.0 + 0.6 * gsl_tmp_139.x) * 6.2831855 / max(style.x, 1.0);
+  let gsl_tmp_143 = vec2<f32>(cos(gsl_tmp_142), sin(gsl_tmp_142));
+  let gsl_tmp_145 = max(dot(gsl_tmp_144.xy, gsl_tmp_143), 0.0);
+  let gsl_tmp_146 = length(gsl_tmp_144.xy - gsl_tmp_143 * gsl_tmp_145);
+  let gsl_tmp_140 = 0.45 + 0.4 * gsl_tmp_139.z;
+  let gsl_tmp_141 = style.z * (0.34 + 1.2 * (min(gsl_tmp_140, 1.0) - 0.45));
+  let gsl_tmp_147 = gsl_tmp_141 / (1.0 + gsl_tmp_145 / 60.0);
+  let gsl_tmp_148 = (gsl_tmp_144.z - gsl_tmp_141 * 60.0 * log(1.0 + gsl_tmp_145 / 60.0)) / sqrt(1.0 + gsl_tmp_147 * gsl_tmp_147);
+  let gsl_tmp_149 = sqrt(gsl_tmp_146 * gsl_tmp_146 + gsl_tmp_148 * gsl_tmp_148);
+  let gsl_tmp_150 = select(gsl_tmp_138, min(gsl_tmp_138, (gsl_tmp_149 + 4.0 * max(gsl_tmp_149 - 12.5 * gsl_tmp_140, 0.0)) / (ringWidth * branchRate)), 4.0 < style.x);
+  let gsl_tmp_151 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(whorl, whorl + 35.0 + seed, 2.0 * whorl + 3.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(whorl, whorl + 35.0 + seed, 2.0 * whorl + 3.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
+  let gsl_tmp_156 = local - vec3<f32>(0.0, 0.0, (whorl + style.w * (gsl_tmp_151.y - 0.5)) * spacing);
+  let gsl_tmp_154 = (5.0 + 0.6 * gsl_tmp_151.x) * 6.2831855 / max(style.x, 1.0);
+  let gsl_tmp_155 = vec2<f32>(cos(gsl_tmp_154), sin(gsl_tmp_154));
+  let gsl_tmp_157 = max(dot(gsl_tmp_156.xy, gsl_tmp_155), 0.0);
+  let gsl_tmp_158 = length(gsl_tmp_156.xy - gsl_tmp_155 * gsl_tmp_157);
+  let gsl_tmp_152 = 0.45 + 0.4 * gsl_tmp_151.z;
+  let gsl_tmp_153 = style.z * (0.34 + 1.2 * (min(gsl_tmp_152, 1.0) - 0.45));
+  let gsl_tmp_159 = gsl_tmp_153 / (1.0 + gsl_tmp_157 / 60.0);
+  let gsl_tmp_160 = (gsl_tmp_156.z - gsl_tmp_153 * 60.0 * log(1.0 + gsl_tmp_157 / 60.0)) / sqrt(1.0 + gsl_tmp_159 * gsl_tmp_159);
+  let gsl_tmp_161 = sqrt(gsl_tmp_158 * gsl_tmp_158 + gsl_tmp_160 * gsl_tmp_160);
+  return select(gsl_tmp_150, min(gsl_tmp_150, (gsl_tmp_161 + 4.0 * max(gsl_tmp_161 - 12.5 * gsl_tmp_152, 0.0)) / (ringWidth * branchRate)), 5.0 < style.x);
 }
 
 fn wood_interTime(local: vec3<f32>, whorl: f32, ringWidth: f32, spacing: f32, branchRate: f32, seed: f32, count: f32, noiseTex: texture_3d<f32>) -> f32 {
-  let gsl_tmp_154 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(whorl, whorl + 101.0 + seed, 3.0 * whorl + 5.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(whorl, whorl + 101.0 + seed, 3.0 * whorl + 5.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
-  let gsl_tmp_156 = local - vec3<f32>(0.0, 0.0, (whorl + 0.2 + 0.6 * gsl_tmp_154.y) * spacing);
-  let gsl_tmp_155 = vec2<f32>(cos(6.2831855 * gsl_tmp_154.x), sin(6.2831855 * gsl_tmp_154.x));
-  let gsl_tmp_157 = max(dot(gsl_tmp_156.xy, gsl_tmp_155), 0.0);
-  let gsl_tmp_158 = length(gsl_tmp_156.xy - gsl_tmp_155 * gsl_tmp_157);
-  let gsl_tmp_159 = (gsl_tmp_156.z - 0.1 * gsl_tmp_157) / 1.005;
-  let gsl_tmp_160 = sqrt(gsl_tmp_158 * gsl_tmp_158 + gsl_tmp_159 * gsl_tmp_159);
-  let gsl_tmp_161 = select(1000.0, min(1000.0, (gsl_tmp_160 + 4.0 * max(gsl_tmp_160 - 3.5 - 2.0 * gsl_tmp_154.z, 0.0)) / (ringWidth * branchRate)), 0.0 < count);
-  let gsl_tmp_162 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(whorl, whorl + 114.0 + seed, 3.0 * whorl + 5.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(whorl, whorl + 114.0 + seed, 3.0 * whorl + 5.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
+  let gsl_tmp_162 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(whorl, whorl + 101.0 + seed, 3.0 * whorl + 5.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(whorl, whorl + 101.0 + seed, 3.0 * whorl + 5.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
   let gsl_tmp_164 = local - vec3<f32>(0.0, 0.0, (whorl + 0.2 + 0.6 * gsl_tmp_162.y) * spacing);
   let gsl_tmp_163 = vec2<f32>(cos(6.2831855 * gsl_tmp_162.x), sin(6.2831855 * gsl_tmp_162.x));
   let gsl_tmp_165 = max(dot(gsl_tmp_164.xy, gsl_tmp_163), 0.0);
   let gsl_tmp_166 = length(gsl_tmp_164.xy - gsl_tmp_163 * gsl_tmp_165);
   let gsl_tmp_167 = (gsl_tmp_164.z - 0.1 * gsl_tmp_165) / 1.005;
   let gsl_tmp_168 = sqrt(gsl_tmp_166 * gsl_tmp_166 + gsl_tmp_167 * gsl_tmp_167);
-  return select(gsl_tmp_161, min(gsl_tmp_161, (gsl_tmp_168 + 4.0 * max(gsl_tmp_168 - 3.5 - 2.0 * gsl_tmp_162.z, 0.0)) / (ringWidth * branchRate)), 1.0 < count);
+  let gsl_tmp_169 = select(1000.0, min(1000.0, (gsl_tmp_168 + 4.0 * max(gsl_tmp_168 - 3.5 - 2.0 * gsl_tmp_162.z, 0.0)) / (ringWidth * branchRate)), 0.0 < count);
+  let gsl_tmp_170 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(whorl, whorl + 114.0 + seed, 3.0 * whorl + 5.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(whorl, whorl + 114.0 + seed, 3.0 * whorl + 5.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
+  let gsl_tmp_172 = local - vec3<f32>(0.0, 0.0, (whorl + 0.2 + 0.6 * gsl_tmp_170.y) * spacing);
+  let gsl_tmp_171 = vec2<f32>(cos(6.2831855 * gsl_tmp_170.x), sin(6.2831855 * gsl_tmp_170.x));
+  let gsl_tmp_173 = max(dot(gsl_tmp_172.xy, gsl_tmp_171), 0.0);
+  let gsl_tmp_174 = length(gsl_tmp_172.xy - gsl_tmp_171 * gsl_tmp_173);
+  let gsl_tmp_175 = (gsl_tmp_172.z - 0.1 * gsl_tmp_173) / 1.005;
+  let gsl_tmp_176 = sqrt(gsl_tmp_174 * gsl_tmp_174 + gsl_tmp_175 * gsl_tmp_175);
+  return select(gsl_tmp_169, min(gsl_tmp_169, (gsl_tmp_176 + 4.0 * max(gsl_tmp_176 - 3.5 - 2.0 * gsl_tmp_170.z, 0.0)) / (ringWidth * branchRate)), 1.0 < count);
 }
 
 fn wood_knotTime(local: vec3<f32>, ringWidth: f32, spacing: f32, branchRate: f32, seed: f32, style: vec4<f32>, noiseTex: texture_3d<f32>) -> f32 {
@@ -552,29 +552,29 @@ fn wood_poreDistanceAt(local: vec3<f32>, progress: f32, poreSize: f32, ringPoros
   let poreCellSize = max(poreSize, 0.01);
   let poreQ = local.xy / poreCellSize;
   let poreBase = floor(poreQ - 0.5);
-  let gsl_tmp_169 = poreBase + vec2<f32>(0.0, 0.0);
-  let gsl_tmp_170 = local.z / (poreCellSize * 8.0) + fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_169.x, gsl_tmp_169.y, gsl_tmp_169.x - gsl_tmp_169.y + 6007.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_169.x, gsl_tmp_169.y, gsl_tmp_169.x - gsl_tmp_169.y + 6007.0)) / 64.0)) & vec3<i32>(63), 0).rgb).y;
-  let gsl_tmp_171 = floor(gsl_tmp_170);
-  let gsl_tmp_172 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_169.x, gsl_tmp_169.y, gsl_tmp_171))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_169.x, gsl_tmp_169.y, gsl_tmp_171)) / 64.0)) & vec3<i32>(63), 0).rgb);
+  let gsl_tmp_177 = poreBase + vec2<f32>(0.0, 0.0);
+  let gsl_tmp_178 = local.z / (poreCellSize * 8.0) + fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_177.x, gsl_tmp_177.y, gsl_tmp_177.x - gsl_tmp_177.y + 6007.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_177.x, gsl_tmp_177.y, gsl_tmp_177.x - gsl_tmp_177.y + 6007.0)) / 64.0)) & vec3<i32>(63), 0).rgb).y;
+  let gsl_tmp_179 = floor(gsl_tmp_178);
+  let gsl_tmp_180 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_177.x, gsl_tmp_177.y, gsl_tmp_179))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_177.x, gsl_tmp_177.y, gsl_tmp_179)) / 64.0)) & vec3<i32>(63), 0).rgb);
   let sizeShare = wood_poreSizeShare(progress, ringPorosity, poreZone, noiseTex);
   let size = sizeShare.x;
   let poreShare = sizeShare.y;
-  let gsl_tmp_173 = select(10.0, min(10.0, length(vec2<f32>(length(poreQ - (gsl_tmp_169 + gsl_tmp_172.xy)), max(abs(gsl_tmp_170 - gsl_tmp_171 - 0.5) - 0.2 - 0.25 * gsl_tmp_172.x, 0.0) * 8.0)) / size), gsl_tmp_172.z < poreShare);
-  let gsl_tmp_174 = poreBase + vec2<f32>(1.0, 0.0);
-  let gsl_tmp_175 = local.z / (poreCellSize * 8.0) + fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_174.x, gsl_tmp_174.y, gsl_tmp_174.x - gsl_tmp_174.y + 6007.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_174.x, gsl_tmp_174.y, gsl_tmp_174.x - gsl_tmp_174.y + 6007.0)) / 64.0)) & vec3<i32>(63), 0).rgb).y;
-  let gsl_tmp_176 = floor(gsl_tmp_175);
-  let gsl_tmp_177 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_174.x, gsl_tmp_174.y, gsl_tmp_176))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_174.x, gsl_tmp_174.y, gsl_tmp_176)) / 64.0)) & vec3<i32>(63), 0).rgb);
-  let gsl_tmp_178 = select(gsl_tmp_173, min(gsl_tmp_173, length(vec2<f32>(length(poreQ - (gsl_tmp_174 + gsl_tmp_177.xy)), max(abs(gsl_tmp_175 - gsl_tmp_176 - 0.5) - 0.2 - 0.25 * gsl_tmp_177.x, 0.0) * 8.0)) / size), gsl_tmp_177.z < poreShare);
-  let gsl_tmp_179 = poreBase + vec2<f32>(0.0, 1.0);
-  let gsl_tmp_180 = local.z / (poreCellSize * 8.0) + fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_179.x, gsl_tmp_179.y, gsl_tmp_179.x - gsl_tmp_179.y + 6007.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_179.x, gsl_tmp_179.y, gsl_tmp_179.x - gsl_tmp_179.y + 6007.0)) / 64.0)) & vec3<i32>(63), 0).rgb).y;
-  let gsl_tmp_181 = floor(gsl_tmp_180);
-  let gsl_tmp_182 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_179.x, gsl_tmp_179.y, gsl_tmp_181))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_179.x, gsl_tmp_179.y, gsl_tmp_181)) / 64.0)) & vec3<i32>(63), 0).rgb);
-  let gsl_tmp_183 = select(gsl_tmp_178, min(gsl_tmp_178, length(vec2<f32>(length(poreQ - (gsl_tmp_179 + gsl_tmp_182.xy)), max(abs(gsl_tmp_180 - gsl_tmp_181 - 0.5) - 0.2 - 0.25 * gsl_tmp_182.x, 0.0) * 8.0)) / size), gsl_tmp_182.z < poreShare);
-  let gsl_tmp_184 = poreBase + vec2<f32>(1.0, 1.0);
-  let gsl_tmp_185 = local.z / (poreCellSize * 8.0) + fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_184.x, gsl_tmp_184.y, gsl_tmp_184.x - gsl_tmp_184.y + 6007.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_184.x, gsl_tmp_184.y, gsl_tmp_184.x - gsl_tmp_184.y + 6007.0)) / 64.0)) & vec3<i32>(63), 0).rgb).y;
-  let gsl_tmp_186 = floor(gsl_tmp_185);
-  let gsl_tmp_187 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_184.x, gsl_tmp_184.y, gsl_tmp_186))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_184.x, gsl_tmp_184.y, gsl_tmp_186)) / 64.0)) & vec3<i32>(63), 0).rgb);
-  let nearestPore = select(gsl_tmp_183, min(gsl_tmp_183, length(vec2<f32>(length(poreQ - (gsl_tmp_184 + gsl_tmp_187.xy)), max(abs(gsl_tmp_185 - gsl_tmp_186 - 0.5) - 0.2 - 0.25 * gsl_tmp_187.x, 0.0) * 8.0)) / size), gsl_tmp_187.z < poreShare);
+  let gsl_tmp_181 = select(10.0, min(10.0, length(vec2<f32>(length(poreQ - (gsl_tmp_177 + gsl_tmp_180.xy)), max(abs(gsl_tmp_178 - gsl_tmp_179 - 0.5) - 0.2 - 0.25 * gsl_tmp_180.x, 0.0) * 8.0)) / size), gsl_tmp_180.z < poreShare);
+  let gsl_tmp_182 = poreBase + vec2<f32>(1.0, 0.0);
+  let gsl_tmp_183 = local.z / (poreCellSize * 8.0) + fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_182.x, gsl_tmp_182.y, gsl_tmp_182.x - gsl_tmp_182.y + 6007.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_182.x, gsl_tmp_182.y, gsl_tmp_182.x - gsl_tmp_182.y + 6007.0)) / 64.0)) & vec3<i32>(63), 0).rgb).y;
+  let gsl_tmp_184 = floor(gsl_tmp_183);
+  let gsl_tmp_185 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_182.x, gsl_tmp_182.y, gsl_tmp_184))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_182.x, gsl_tmp_182.y, gsl_tmp_184)) / 64.0)) & vec3<i32>(63), 0).rgb);
+  let gsl_tmp_186 = select(gsl_tmp_181, min(gsl_tmp_181, length(vec2<f32>(length(poreQ - (gsl_tmp_182 + gsl_tmp_185.xy)), max(abs(gsl_tmp_183 - gsl_tmp_184 - 0.5) - 0.2 - 0.25 * gsl_tmp_185.x, 0.0) * 8.0)) / size), gsl_tmp_185.z < poreShare);
+  let gsl_tmp_187 = poreBase + vec2<f32>(0.0, 1.0);
+  let gsl_tmp_188 = local.z / (poreCellSize * 8.0) + fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_187.x, gsl_tmp_187.y, gsl_tmp_187.x - gsl_tmp_187.y + 6007.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_187.x, gsl_tmp_187.y, gsl_tmp_187.x - gsl_tmp_187.y + 6007.0)) / 64.0)) & vec3<i32>(63), 0).rgb).y;
+  let gsl_tmp_189 = floor(gsl_tmp_188);
+  let gsl_tmp_190 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_187.x, gsl_tmp_187.y, gsl_tmp_189))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_187.x, gsl_tmp_187.y, gsl_tmp_189)) / 64.0)) & vec3<i32>(63), 0).rgb);
+  let gsl_tmp_191 = select(gsl_tmp_186, min(gsl_tmp_186, length(vec2<f32>(length(poreQ - (gsl_tmp_187 + gsl_tmp_190.xy)), max(abs(gsl_tmp_188 - gsl_tmp_189 - 0.5) - 0.2 - 0.25 * gsl_tmp_190.x, 0.0) * 8.0)) / size), gsl_tmp_190.z < poreShare);
+  let gsl_tmp_192 = poreBase + vec2<f32>(1.0, 1.0);
+  let gsl_tmp_193 = local.z / (poreCellSize * 8.0) + fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_192.x, gsl_tmp_192.y, gsl_tmp_192.x - gsl_tmp_192.y + 6007.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_192.x, gsl_tmp_192.y, gsl_tmp_192.x - gsl_tmp_192.y + 6007.0)) / 64.0)) & vec3<i32>(63), 0).rgb).y;
+  let gsl_tmp_194 = floor(gsl_tmp_193);
+  let gsl_tmp_195 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_192.x, gsl_tmp_192.y, gsl_tmp_194))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_192.x, gsl_tmp_192.y, gsl_tmp_194)) / 64.0)) & vec3<i32>(63), 0).rgb);
+  let nearestPore = select(gsl_tmp_191, min(gsl_tmp_191, length(vec2<f32>(length(poreQ - (gsl_tmp_192 + gsl_tmp_195.xy)), max(abs(gsl_tmp_193 - gsl_tmp_194 - 0.5) - 0.2 - 0.25 * gsl_tmp_195.x, 0.0) * 8.0)) / size), gsl_tmp_195.z < poreShare);
   return vec2<f32>(nearestPore, size);
 }
 
@@ -983,9 +983,13 @@ fn wood_sandedHeight(scratches: f32, grit: f32, noiseTex: texture_3d<f32>) -> f3
   return -0.12 * d * groove * groove * texture_fadeDetail(d, noiseTex);
 }
 
+fn wood_sawnPitch(noisiness: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return 2.0 + 2.0 * noisiness;
+}
+
 fn wood_sawnHeight(s: f32, noisiness: f32, wander: f32, washboard: f32, fibres: f32, noiseTex: texture_3d<f32>) -> f32 {
   let depth = 0.18 + 0.62 * noisiness;
-  let pitch = 2.0 + 2.0 * noisiness;
+  let pitch = wood_sawnPitch(noisiness, noiseTex);
   let q = s / pitch + 2.0 * noisiness * wander;
   let k = floor(q);
   let uneven = 1.0 + (fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(k, k + 29.0, 2.0 * k + 3.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(k, k + 29.0, 2.0 * k + 3.0)) / 64.0)) & vec3<i32>(63), 0).rgb).x - 0.5) * (0.4 + 1.2 * noisiness);
@@ -1041,7 +1045,7 @@ fn wood_prepHeight(p: vec3<f32>, prep: mat3x4<f32>, normal: vec3<f32>, local: ve
   let secondAt = select(crackAlong.xyz, p / 30.0, kind < 4.5);
   let second = noise_gradientLattice(secondAt, noiseTex);
   let third = noise_gradientLattice(p / 40.0 + 13.0, noiseTex);
-  let sawing = select(0.0, select(0.0, wood_sawnHeight(s, amount, second, third, first, noiseTex) * material_filmKeeps(1.0 + 3.0 * amount, build, noiseTex), kind < 2.5), kind > 1.5);
+  let sawing = select(0.0, select(0.0, wood_sawnHeight(s, amount, second, third, first, noiseTex) * material_filmKeeps(wood_sawnPitch(amount, noiseTex), build, noiseTex), kind < 2.5), kind > 1.5);
   let blade = prep[2];
   let rise = blade.xyz - along * dot(blade.xyz, along);
   let aboveCentre = blade.w + dot(p, rise / max(length(rise), 0.000001));
@@ -1077,9 +1081,9 @@ fn wood_prepSlopes(prep: mat3x4<f32>, normal: vec3<f32>, grainIn: f32, ringWidth
   let ripKeeps = material_filmKeeps(1.2, build, noiseTex) * inSurface;
   let ripping = 6.85 * amount * amount * ripKeeps * ripKeeps * wood_hiddenShare(1.2, standIn, noiseTex);
   let depth = 0.18 + 0.62 * amount;
-  let pitch = 2.0 + 2.0 * amount;
+  let pitch = wood_sawnPitch(amount, noiseTex);
   let spread = 0.4 + 1.2 * amount;
-  let sawKeeps = material_filmKeeps(1.0 + 3.0 * amount, build, noiseTex) * inSurface;
+  let sawKeeps = material_filmKeeps(pitch, build, noiseTex) * inSurface;
   let steep = 2.0 * depth * (1.2 + 0.6 * amount) / pitch;
   let sawScale = sawKeeps * sawKeeps / (1.0 + steep * steep);
   let marks = 8.0 * depth / pitch * depth / pitch * (1.0 + spread * spread / 12.0) * sawScale * wood_hiddenShare(pitch, standIn, noiseTex);
@@ -1234,7 +1238,7 @@ fn wood_speciesMaterial(p: vec3<f32>, number: f32, axisOrigin: vec3<f32>, axisDi
   return decayed;
 }
 
-fn sdShape(p: vec3<f32>, time: f32, gsl_param_35_12: f32, gsl_param_38_13: f32, gsl_param_41_7: f32, gsl_param_44_11: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
+fn sdShape(p: vec3<f32>, time: f32, gsl_param_35_25: f32, gsl_param_36_26: f32, gsl_param_37_20: f32, gsl_param_38_24: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
   gsl_partNear = vec3<f32>(1e10, 1e10, 1e10);
   let gsl_partLo = vec3<f32>(-975.0, -490.0, -150.0);
   let gsl_partHi = vec3<f32>(975.01, 490.0, 180.0);
@@ -1251,7 +1255,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_35_12: f32, gsl_param_38_13: f32, 
   return gsl_s1;
 }
 
-fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_35_12: f32, gsl_param_38_13: f32, gsl_param_41_7: f32, gsl_param_44_11: f32, noiseTex: texture_3d<f32>) -> vec4<f32> {
+fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_35_25: f32, gsl_param_36_26: f32, gsl_param_37_20: f32, gsl_param_38_24: f32, noiseTex: texture_3d<f32>) -> vec4<f32> {
   if (gsl_colorIdx == 1u) {
     let material_bulk_wood_pineNumber = 14.0;
     let material_bulk_wood_chestnutNumber = 15.0;
@@ -1268,12 +1272,12 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_35_12: f
     let inDisc = select(0.0, 1.0, p.x < pairX - 150.0);
     let stem = select(vec3<f32>(pairX - 125.0 - 317.0 * index, centreY, -100.0), vec3<f32>(pairX - 325.0, centreY, 0.0), inDisc > 0.5);
     let axis = select(vec3<f32>(1.0, 0.0, 0.0), vec3<f32>(0.0, 0.0, 1.0), inDisc > 0.5);
-    let age = gsl_param_41_7;
-    let weather = gsl_param_44_11;
+    let age = gsl_param_37_20;
+    let weather = gsl_param_38_24;
     let look = vec3<f32>(0.0, age, weather);
     let gsl_tmp_51 = p - vec3<f32>(pairX + 175.0, centreY, 10.0);
     let gsl_tmp_53 = floor(p.y / 340.0 + 1.5);
-    let gsl_tmp_54 = sign(gsl_tmp_51) * (vec3<f32>(1.0, 0.0, 0.0) - vec3<f32>(select(0.0, 0.0, column < 0.5), select(select(0.0, 0.0, gsl_tmp_53 > 2.0), 0.0, gsl_tmp_53 < 0.0) * 340.0, 0.0));
+    let gsl_tmp_54 = sign(gsl_tmp_51) * (vec3<f32>(1.0, 0.0, 0.0) - vec3<f32>(select(0.0, 0.0, column < 0.5), select(select(0.0, 0.0, clamp(gsl_tmp_53, 0.0, 2.0) < gsl_tmp_53), 0.0, clamp(gsl_tmp_53, 0.0, 2.0) > gsl_tmp_53) * 340.0, 0.0));
     let gsl_tmp_52 = abs(gsl_tmp_51) - vec3<f32>(300.0, 70.0, 10.0);
     let gsl_tmp_56 = select(0.0, gsl_tmp_54.x, gsl_tmp_52.x + 1.0 > 0.0);
     let gsl_tmp_57 = select(0.0, gsl_tmp_54.y, gsl_tmp_52.y + 1.0 > 0.0);
@@ -1281,7 +1285,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_35_12: f
     let gsl_tmp_55 = 0.0 + max(gsl_tmp_52.x + 1.0, 0.0) * max(gsl_tmp_52.x + 1.0, 0.0) + max(gsl_tmp_52.y + 1.0, 0.0) * max(gsl_tmp_52.y + 1.0, 0.0) + max(gsl_tmp_52.z + 1.0, 0.0) * max(gsl_tmp_52.z + 1.0, 0.0);
     let gsl_tmp_59 = p - vec3<f32>(pairX + 175.0, centreY, 10.0);
     let gsl_tmp_61 = floor(p.y / 340.0 + 1.5);
-    let gsl_tmp_62 = sign(gsl_tmp_59) * (vec3<f32>(0.0, 1.0, 0.0) - vec3<f32>(select(0.0, 0.0, column < 0.5), select(select(0.0, 0.0, gsl_tmp_61 > 2.0), 0.0, gsl_tmp_61 < 0.0) * 340.0, 0.0));
+    let gsl_tmp_62 = sign(gsl_tmp_59) * (vec3<f32>(0.0, 1.0, 0.0) - vec3<f32>(select(0.0, 0.0, column < 0.5), select(select(0.0, 0.0, clamp(gsl_tmp_61, 0.0, 2.0) < gsl_tmp_61), 0.0, clamp(gsl_tmp_61, 0.0, 2.0) > gsl_tmp_61) * 340.0, 0.0));
     let gsl_tmp_60 = abs(gsl_tmp_59) - vec3<f32>(300.0, 70.0, 10.0);
     let gsl_tmp_64 = select(0.0, gsl_tmp_62.x, gsl_tmp_60.x + 1.0 > 0.0);
     let gsl_tmp_65 = select(0.0, gsl_tmp_62.y, gsl_tmp_60.y + 1.0 > 0.0);
@@ -1289,7 +1293,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_35_12: f
     let gsl_tmp_63 = 0.0 + max(gsl_tmp_60.x + 1.0, 0.0) * max(gsl_tmp_60.x + 1.0, 0.0) + max(gsl_tmp_60.y + 1.0, 0.0) * max(gsl_tmp_60.y + 1.0, 0.0) + max(gsl_tmp_60.z + 1.0, 0.0) * max(gsl_tmp_60.z + 1.0, 0.0);
     let gsl_tmp_67 = p - vec3<f32>(pairX + 175.0, centreY, 10.0);
     let gsl_tmp_69 = floor(p.y / 340.0 + 1.5);
-    let gsl_tmp_70 = sign(gsl_tmp_67) * (vec3<f32>(0.0, 0.0, 1.0) - vec3<f32>(select(0.0, 0.0, column < 0.5), select(select(0.0, 0.0, gsl_tmp_69 > 2.0), 0.0, gsl_tmp_69 < 0.0) * 340.0, 0.0));
+    let gsl_tmp_70 = sign(gsl_tmp_67) * (vec3<f32>(0.0, 0.0, 1.0) - vec3<f32>(select(0.0, 0.0, column < 0.5), select(select(0.0, 0.0, clamp(gsl_tmp_69, 0.0, 2.0) < gsl_tmp_69), 0.0, clamp(gsl_tmp_69, 0.0, 2.0) > gsl_tmp_69) * 340.0, 0.0));
     let gsl_tmp_68 = abs(gsl_tmp_67) - vec3<f32>(300.0, 70.0, 10.0);
     let gsl_tmp_72 = select(0.0, gsl_tmp_70.x, gsl_tmp_68.x + 1.0 > 0.0);
     let gsl_tmp_73 = select(0.0, gsl_tmp_70.y, gsl_tmp_68.y + 1.0 > 0.0);
@@ -1299,14 +1303,14 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_35_12: f
     let gsl_tmp_4 = vec3<f32>(pairX - 325.0, centreY, 30.0) - vec3<f32>(pairX - 325.0, centreY, 0.0);
     let gsl_tmp_7 = dot(gsl_tmp_3, gsl_tmp_4) - dot(gsl_tmp_4, gsl_tmp_4) * 0.5;
     let gsl_tmp_9 = floor(p.y / 340.0 + 1.5);
-    let gsl_tmp_10 = select(select(0.0, 0.0, gsl_tmp_9 > 2.0), 0.0, gsl_tmp_9 < 0.0) * 340.0;
+    let gsl_tmp_10 = select(select(0.0, 0.0, clamp(gsl_tmp_9, 0.0, 2.0) < gsl_tmp_9), 0.0, clamp(gsl_tmp_9, 0.0, 2.0) > gsl_tmp_9) * 340.0;
     let gsl_tmp_11 = vec3<f32>(select(0.0, 0.0, column < 0.5), gsl_tmp_10, 0.0);
     let gsl_tmp_12 = vec3<f32>(select(0.0, 0.0, column < 0.5), gsl_tmp_10, 0.0) - gsl_tmp_11;
     let gsl_tmp_13 = dot(gsl_tmp_3, gsl_tmp_12) + dot(vec3<f32>(1.0, 0.0, 0.0) - gsl_tmp_11, gsl_tmp_4);
     let gsl_tmp_8 = abs(gsl_tmp_7) - dot(gsl_tmp_4, gsl_tmp_4) * 0.5;
     let gsl_tmp_15 = ((sign(gsl_tmp_7) * (gsl_tmp_13 - (dot(gsl_tmp_4, gsl_tmp_12) + dot(gsl_tmp_12, gsl_tmp_4)) * 0.5) - (dot(gsl_tmp_4, gsl_tmp_12) + dot(gsl_tmp_12, gsl_tmp_4)) * 0.5) * sqrt(dot(gsl_tmp_4, gsl_tmp_4)) - gsl_tmp_8 * (dot(gsl_tmp_4, gsl_tmp_12) + dot(gsl_tmp_12, gsl_tmp_4)) / (2.0 * (sqrt(dot(gsl_tmp_4, gsl_tmp_4)) + 1.0 - select(0.0, 1.0, (sqrt(dot(gsl_tmp_4, gsl_tmp_4)) > 0.0))))) / (sqrt(dot(gsl_tmp_4, gsl_tmp_4)) * sqrt(dot(gsl_tmp_4, gsl_tmp_4)));
     let gsl_tmp_5 = clamp(dot(gsl_tmp_3, gsl_tmp_4) / dot(gsl_tmp_4, gsl_tmp_4), 0.0, 1.0);
-    let gsl_tmp_14 = dot(gsl_tmp_3 - gsl_tmp_4 * gsl_tmp_5, vec3<f32>(1.0, 0.0, 0.0) - gsl_tmp_11 - (gsl_tmp_12 * gsl_tmp_5 + gsl_tmp_4 * select(select((gsl_tmp_13 * dot(gsl_tmp_4, gsl_tmp_4) - dot(gsl_tmp_3, gsl_tmp_4) * (dot(gsl_tmp_4, gsl_tmp_12) + dot(gsl_tmp_12, gsl_tmp_4))) / (dot(gsl_tmp_4, gsl_tmp_4) * dot(gsl_tmp_4, gsl_tmp_4)), 0.0, dot(gsl_tmp_3, gsl_tmp_4) / dot(gsl_tmp_4, gsl_tmp_4) > 1.0), 0.0, dot(gsl_tmp_3, gsl_tmp_4) / dot(gsl_tmp_4, gsl_tmp_4) < 0.0))) / (length(gsl_tmp_3 - gsl_tmp_4 * gsl_tmp_5) + 1.0 - select(0.0, 1.0, (length(gsl_tmp_3 - gsl_tmp_4 * gsl_tmp_5) > 0.0)));
+    let gsl_tmp_14 = dot(clamp((gsl_tmp_3 - gsl_tmp_4 * gsl_tmp_5) / max(length(gsl_tmp_3 - gsl_tmp_4 * gsl_tmp_5), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(1.0, 0.0, 0.0) - gsl_tmp_11 - (gsl_tmp_12 * gsl_tmp_5 + gsl_tmp_4 * select(select((gsl_tmp_13 * dot(gsl_tmp_4, gsl_tmp_4) - dot(gsl_tmp_3, gsl_tmp_4) * (dot(gsl_tmp_4, gsl_tmp_12) + dot(gsl_tmp_12, gsl_tmp_4))) / (dot(gsl_tmp_4, gsl_tmp_4) * dot(gsl_tmp_4, gsl_tmp_4)), 0.0, gsl_tmp_5 < dot(gsl_tmp_3, gsl_tmp_4) / dot(gsl_tmp_4, gsl_tmp_4)), 0.0, gsl_tmp_5 > dot(gsl_tmp_3, gsl_tmp_4) / dot(gsl_tmp_4, gsl_tmp_4))));
     let gsl_tmp_6 = length(gsl_tmp_3 - gsl_tmp_4 * gsl_tmp_5) - 150.0;
     let gsl_tmp_18 = select(0.0, gsl_tmp_14, gsl_tmp_6 + 0.0 > 0.0);
     let gsl_tmp_16 = gsl_tmp_8 / sqrt(dot(gsl_tmp_4, gsl_tmp_4)) + 0.0;
@@ -1315,14 +1319,14 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_35_12: f
     let gsl_tmp_20 = vec3<f32>(pairX - 325.0, centreY, 30.0) - vec3<f32>(pairX - 325.0, centreY, 0.0);
     let gsl_tmp_23 = dot(gsl_tmp_19, gsl_tmp_20) - dot(gsl_tmp_20, gsl_tmp_20) * 0.5;
     let gsl_tmp_25 = floor(p.y / 340.0 + 1.5);
-    let gsl_tmp_26 = select(select(0.0, 0.0, gsl_tmp_25 > 2.0), 0.0, gsl_tmp_25 < 0.0) * 340.0;
+    let gsl_tmp_26 = select(select(0.0, 0.0, clamp(gsl_tmp_25, 0.0, 2.0) < gsl_tmp_25), 0.0, clamp(gsl_tmp_25, 0.0, 2.0) > gsl_tmp_25) * 340.0;
     let gsl_tmp_27 = vec3<f32>(select(0.0, 0.0, column < 0.5), gsl_tmp_26, 0.0);
     let gsl_tmp_28 = vec3<f32>(select(0.0, 0.0, column < 0.5), gsl_tmp_26, 0.0) - gsl_tmp_27;
     let gsl_tmp_29 = dot(gsl_tmp_19, gsl_tmp_28) + dot(vec3<f32>(0.0, 1.0, 0.0) - gsl_tmp_27, gsl_tmp_20);
     let gsl_tmp_24 = abs(gsl_tmp_23) - dot(gsl_tmp_20, gsl_tmp_20) * 0.5;
     let gsl_tmp_31 = ((sign(gsl_tmp_23) * (gsl_tmp_29 - (dot(gsl_tmp_20, gsl_tmp_28) + dot(gsl_tmp_28, gsl_tmp_20)) * 0.5) - (dot(gsl_tmp_20, gsl_tmp_28) + dot(gsl_tmp_28, gsl_tmp_20)) * 0.5) * sqrt(dot(gsl_tmp_20, gsl_tmp_20)) - gsl_tmp_24 * (dot(gsl_tmp_20, gsl_tmp_28) + dot(gsl_tmp_28, gsl_tmp_20)) / (2.0 * (sqrt(dot(gsl_tmp_20, gsl_tmp_20)) + 1.0 - select(0.0, 1.0, (sqrt(dot(gsl_tmp_20, gsl_tmp_20)) > 0.0))))) / (sqrt(dot(gsl_tmp_20, gsl_tmp_20)) * sqrt(dot(gsl_tmp_20, gsl_tmp_20)));
     let gsl_tmp_21 = clamp(dot(gsl_tmp_19, gsl_tmp_20) / dot(gsl_tmp_20, gsl_tmp_20), 0.0, 1.0);
-    let gsl_tmp_30 = dot(gsl_tmp_19 - gsl_tmp_20 * gsl_tmp_21, vec3<f32>(0.0, 1.0, 0.0) - gsl_tmp_27 - (gsl_tmp_28 * gsl_tmp_21 + gsl_tmp_20 * select(select((gsl_tmp_29 * dot(gsl_tmp_20, gsl_tmp_20) - dot(gsl_tmp_19, gsl_tmp_20) * (dot(gsl_tmp_20, gsl_tmp_28) + dot(gsl_tmp_28, gsl_tmp_20))) / (dot(gsl_tmp_20, gsl_tmp_20) * dot(gsl_tmp_20, gsl_tmp_20)), 0.0, dot(gsl_tmp_19, gsl_tmp_20) / dot(gsl_tmp_20, gsl_tmp_20) > 1.0), 0.0, dot(gsl_tmp_19, gsl_tmp_20) / dot(gsl_tmp_20, gsl_tmp_20) < 0.0))) / (length(gsl_tmp_19 - gsl_tmp_20 * gsl_tmp_21) + 1.0 - select(0.0, 1.0, (length(gsl_tmp_19 - gsl_tmp_20 * gsl_tmp_21) > 0.0)));
+    let gsl_tmp_30 = dot(clamp((gsl_tmp_19 - gsl_tmp_20 * gsl_tmp_21) / max(length(gsl_tmp_19 - gsl_tmp_20 * gsl_tmp_21), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(0.0, 1.0, 0.0) - gsl_tmp_27 - (gsl_tmp_28 * gsl_tmp_21 + gsl_tmp_20 * select(select((gsl_tmp_29 * dot(gsl_tmp_20, gsl_tmp_20) - dot(gsl_tmp_19, gsl_tmp_20) * (dot(gsl_tmp_20, gsl_tmp_28) + dot(gsl_tmp_28, gsl_tmp_20))) / (dot(gsl_tmp_20, gsl_tmp_20) * dot(gsl_tmp_20, gsl_tmp_20)), 0.0, gsl_tmp_21 < dot(gsl_tmp_19, gsl_tmp_20) / dot(gsl_tmp_20, gsl_tmp_20)), 0.0, gsl_tmp_21 > dot(gsl_tmp_19, gsl_tmp_20) / dot(gsl_tmp_20, gsl_tmp_20))));
     let gsl_tmp_22 = length(gsl_tmp_19 - gsl_tmp_20 * gsl_tmp_21) - 150.0;
     let gsl_tmp_34 = select(0.0, gsl_tmp_30, gsl_tmp_22 + 0.0 > 0.0);
     let gsl_tmp_32 = gsl_tmp_24 / sqrt(dot(gsl_tmp_20, gsl_tmp_20)) + 0.0;
@@ -1331,14 +1335,14 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_35_12: f
     let gsl_tmp_36 = vec3<f32>(pairX - 325.0, centreY, 30.0) - vec3<f32>(pairX - 325.0, centreY, 0.0);
     let gsl_tmp_39 = dot(gsl_tmp_35, gsl_tmp_36) - dot(gsl_tmp_36, gsl_tmp_36) * 0.5;
     let gsl_tmp_41 = floor(p.y / 340.0 + 1.5);
-    let gsl_tmp_42 = select(select(0.0, 0.0, gsl_tmp_41 > 2.0), 0.0, gsl_tmp_41 < 0.0) * 340.0;
+    let gsl_tmp_42 = select(select(0.0, 0.0, clamp(gsl_tmp_41, 0.0, 2.0) < gsl_tmp_41), 0.0, clamp(gsl_tmp_41, 0.0, 2.0) > gsl_tmp_41) * 340.0;
     let gsl_tmp_43 = vec3<f32>(select(0.0, 0.0, column < 0.5), gsl_tmp_42, 0.0);
     let gsl_tmp_44 = vec3<f32>(select(0.0, 0.0, column < 0.5), gsl_tmp_42, 0.0) - gsl_tmp_43;
     let gsl_tmp_45 = dot(gsl_tmp_35, gsl_tmp_44) + dot(vec3<f32>(0.0, 0.0, 1.0) - gsl_tmp_43, gsl_tmp_36);
     let gsl_tmp_40 = abs(gsl_tmp_39) - dot(gsl_tmp_36, gsl_tmp_36) * 0.5;
     let gsl_tmp_47 = ((sign(gsl_tmp_39) * (gsl_tmp_45 - (dot(gsl_tmp_36, gsl_tmp_44) + dot(gsl_tmp_44, gsl_tmp_36)) * 0.5) - (dot(gsl_tmp_36, gsl_tmp_44) + dot(gsl_tmp_44, gsl_tmp_36)) * 0.5) * sqrt(dot(gsl_tmp_36, gsl_tmp_36)) - gsl_tmp_40 * (dot(gsl_tmp_36, gsl_tmp_44) + dot(gsl_tmp_44, gsl_tmp_36)) / (2.0 * (sqrt(dot(gsl_tmp_36, gsl_tmp_36)) + 1.0 - select(0.0, 1.0, (sqrt(dot(gsl_tmp_36, gsl_tmp_36)) > 0.0))))) / (sqrt(dot(gsl_tmp_36, gsl_tmp_36)) * sqrt(dot(gsl_tmp_36, gsl_tmp_36)));
     let gsl_tmp_37 = clamp(dot(gsl_tmp_35, gsl_tmp_36) / dot(gsl_tmp_36, gsl_tmp_36), 0.0, 1.0);
-    let gsl_tmp_46 = dot(gsl_tmp_35 - gsl_tmp_36 * gsl_tmp_37, vec3<f32>(0.0, 0.0, 1.0) - gsl_tmp_43 - (gsl_tmp_44 * gsl_tmp_37 + gsl_tmp_36 * select(select((gsl_tmp_45 * dot(gsl_tmp_36, gsl_tmp_36) - dot(gsl_tmp_35, gsl_tmp_36) * (dot(gsl_tmp_36, gsl_tmp_44) + dot(gsl_tmp_44, gsl_tmp_36))) / (dot(gsl_tmp_36, gsl_tmp_36) * dot(gsl_tmp_36, gsl_tmp_36)), 0.0, dot(gsl_tmp_35, gsl_tmp_36) / dot(gsl_tmp_36, gsl_tmp_36) > 1.0), 0.0, dot(gsl_tmp_35, gsl_tmp_36) / dot(gsl_tmp_36, gsl_tmp_36) < 0.0))) / (length(gsl_tmp_35 - gsl_tmp_36 * gsl_tmp_37) + 1.0 - select(0.0, 1.0, (length(gsl_tmp_35 - gsl_tmp_36 * gsl_tmp_37) > 0.0)));
+    let gsl_tmp_46 = dot(clamp((gsl_tmp_35 - gsl_tmp_36 * gsl_tmp_37) / max(length(gsl_tmp_35 - gsl_tmp_36 * gsl_tmp_37), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(0.0, 0.0, 1.0) - gsl_tmp_43 - (gsl_tmp_44 * gsl_tmp_37 + gsl_tmp_36 * select(select((gsl_tmp_45 * dot(gsl_tmp_36, gsl_tmp_36) - dot(gsl_tmp_35, gsl_tmp_36) * (dot(gsl_tmp_36, gsl_tmp_44) + dot(gsl_tmp_44, gsl_tmp_36))) / (dot(gsl_tmp_36, gsl_tmp_36) * dot(gsl_tmp_36, gsl_tmp_36)), 0.0, gsl_tmp_37 < dot(gsl_tmp_35, gsl_tmp_36) / dot(gsl_tmp_36, gsl_tmp_36)), 0.0, gsl_tmp_37 > dot(gsl_tmp_35, gsl_tmp_36) / dot(gsl_tmp_36, gsl_tmp_36))));
     let gsl_tmp_38 = length(gsl_tmp_35 - gsl_tmp_36 * gsl_tmp_37) - 150.0;
     let gsl_tmp_50 = select(0.0, gsl_tmp_46, gsl_tmp_38 + 0.0 > 0.0);
     let gsl_tmp_48 = gsl_tmp_40 / sqrt(dot(gsl_tmp_36, gsl_tmp_36)) + 0.0;
@@ -1346,15 +1350,15 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_35_12: f
     let normal = select(vec3<f32>(select(0.0, select(gsl_tmp_54.z, select(gsl_tmp_54.y, gsl_tmp_54.x, gsl_tmp_52.x > gsl_tmp_52.y), max(gsl_tmp_52.x, gsl_tmp_52.y) > gsl_tmp_52.z), max(max(gsl_tmp_52.x, gsl_tmp_52.y), gsl_tmp_52.z) < -1.0) + select(0.0, gsl_tmp_56 * max(gsl_tmp_52.x + 1.0, 0.0) + max(gsl_tmp_52.x + 1.0, 0.0) * gsl_tmp_56 + gsl_tmp_57 * max(gsl_tmp_52.y + 1.0, 0.0) + max(gsl_tmp_52.y + 1.0, 0.0) * gsl_tmp_57 + gsl_tmp_58 * max(gsl_tmp_52.z + 1.0, 0.0) + max(gsl_tmp_52.z + 1.0, 0.0) * gsl_tmp_58, gsl_tmp_55 > 0.000000000000000000000000000001) / (2.0 * (sqrt(max(gsl_tmp_55, 0.000000000000000000000000000001)) + 1.0 - select(0.0, 1.0, (sqrt(max(gsl_tmp_55, 0.000000000000000000000000000001)) > 0.0)))), select(0.0, select(gsl_tmp_62.z, select(gsl_tmp_62.y, gsl_tmp_62.x, gsl_tmp_60.x > gsl_tmp_60.y), max(gsl_tmp_60.x, gsl_tmp_60.y) > gsl_tmp_60.z), max(max(gsl_tmp_60.x, gsl_tmp_60.y), gsl_tmp_60.z) < -1.0) + select(0.0, gsl_tmp_64 * max(gsl_tmp_60.x + 1.0, 0.0) + max(gsl_tmp_60.x + 1.0, 0.0) * gsl_tmp_64 + gsl_tmp_65 * max(gsl_tmp_60.y + 1.0, 0.0) + max(gsl_tmp_60.y + 1.0, 0.0) * gsl_tmp_65 + gsl_tmp_66 * max(gsl_tmp_60.z + 1.0, 0.0) + max(gsl_tmp_60.z + 1.0, 0.0) * gsl_tmp_66, gsl_tmp_63 > 0.000000000000000000000000000001) / (2.0 * (sqrt(max(gsl_tmp_63, 0.000000000000000000000000000001)) + 1.0 - select(0.0, 1.0, (sqrt(max(gsl_tmp_63, 0.000000000000000000000000000001)) > 0.0)))), select(0.0, select(gsl_tmp_70.z, select(gsl_tmp_70.y, gsl_tmp_70.x, gsl_tmp_68.x > gsl_tmp_68.y), max(gsl_tmp_68.x, gsl_tmp_68.y) > gsl_tmp_68.z), max(max(gsl_tmp_68.x, gsl_tmp_68.y), gsl_tmp_68.z) < -1.0) + select(0.0, gsl_tmp_72 * max(gsl_tmp_68.x + 1.0, 0.0) + max(gsl_tmp_68.x + 1.0, 0.0) * gsl_tmp_72 + gsl_tmp_73 * max(gsl_tmp_68.y + 1.0, 0.0) + max(gsl_tmp_68.y + 1.0, 0.0) * gsl_tmp_73 + gsl_tmp_74 * max(gsl_tmp_68.z + 1.0, 0.0) + max(gsl_tmp_68.z + 1.0, 0.0) * gsl_tmp_74, gsl_tmp_71 > 0.000000000000000000000000000001) / (2.0 * (sqrt(max(gsl_tmp_71, 0.000000000000000000000000000001)) + 1.0 - select(0.0, 1.0, (sqrt(max(gsl_tmp_71, 0.000000000000000000000000000001)) > 0.0))))), vec3<f32>(select(0.0, select(gsl_tmp_15, gsl_tmp_14, gsl_tmp_6 > gsl_tmp_8 / sqrt(dot(gsl_tmp_4, gsl_tmp_4))), max(gsl_tmp_6, gsl_tmp_8 / sqrt(dot(gsl_tmp_4, gsl_tmp_4))) < 0.000000000000000000000000000001) + select(0.0, gsl_tmp_18 * max(gsl_tmp_6 + 0.0, 0.0) + max(gsl_tmp_6 + 0.0, 0.0) * gsl_tmp_18 + select(0.0, gsl_tmp_15, gsl_tmp_16 > 0.0) * max(gsl_tmp_16, 0.0) + max(gsl_tmp_16, 0.0) * select(0.0, gsl_tmp_15, gsl_tmp_16 > 0.0), gsl_tmp_17 > 0.000000000000000000000000000001) / (2.0 * (sqrt(max(gsl_tmp_17, 0.000000000000000000000000000001)) + 1.0 - select(0.0, 1.0, (sqrt(max(gsl_tmp_17, 0.000000000000000000000000000001)) > 0.0)))), select(0.0, select(gsl_tmp_31, gsl_tmp_30, gsl_tmp_22 > gsl_tmp_24 / sqrt(dot(gsl_tmp_20, gsl_tmp_20))), max(gsl_tmp_22, gsl_tmp_24 / sqrt(dot(gsl_tmp_20, gsl_tmp_20))) < 0.000000000000000000000000000001) + select(0.0, gsl_tmp_34 * max(gsl_tmp_22 + 0.0, 0.0) + max(gsl_tmp_22 + 0.0, 0.0) * gsl_tmp_34 + select(0.0, gsl_tmp_31, gsl_tmp_32 > 0.0) * max(gsl_tmp_32, 0.0) + max(gsl_tmp_32, 0.0) * select(0.0, gsl_tmp_31, gsl_tmp_32 > 0.0), gsl_tmp_33 > 0.000000000000000000000000000001) / (2.0 * (sqrt(max(gsl_tmp_33, 0.000000000000000000000000000001)) + 1.0 - select(0.0, 1.0, (sqrt(max(gsl_tmp_33, 0.000000000000000000000000000001)) > 0.0)))), select(0.0, select(gsl_tmp_47, gsl_tmp_46, gsl_tmp_38 > gsl_tmp_40 / sqrt(dot(gsl_tmp_36, gsl_tmp_36))), max(gsl_tmp_38, gsl_tmp_40 / sqrt(dot(gsl_tmp_36, gsl_tmp_36))) < 0.000000000000000000000000000001) + select(0.0, gsl_tmp_50 * max(gsl_tmp_38 + 0.0, 0.0) + max(gsl_tmp_38 + 0.0, 0.0) * gsl_tmp_50 + select(0.0, gsl_tmp_47, gsl_tmp_48 > 0.0) * max(gsl_tmp_48, 0.0) + max(gsl_tmp_48, 0.0) * select(0.0, gsl_tmp_47, gsl_tmp_48 > 0.0), gsl_tmp_49 > 0.000000000000000000000000000001) / (2.0 * (sqrt(max(gsl_tmp_49, 0.000000000000000000000000000001)) + 1.0 - select(0.0, 1.0, (sqrt(max(gsl_tmp_49, 0.000000000000000000000000000001)) > 0.0))))), inDisc > 0.5);
     let material_bulk_wood_noStain = mat2x4<f32>(vec4<f32>(1.0, 1.0, 1.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     let material_bulk_wood_linseedOil = mat2x4<f32>(vec4<f32>(1.0, 0.99812025, 0.9884352, 4.0), vec4<f32>(1.0, 0.005, 0.91, 0.5));
-    let spalting = gsl_param_35_12;
-    let wormholes = gsl_param_38_13;
+    let spalting = gsl_param_35_25;
+    let wormholes = gsl_param_36_26;
     let fungi = array<vec4<f32>, 5>(select(select(select(select(select(select(vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.106, 0.09, 0.078, 1.0), 0.0 == index), vec4<f32>(0.106, 0.09, 0.078, 1.0), 1.0 == index), vec4<f32>(0.106, 0.09, 0.078, 1.0), 2.0 == index), vec4<f32>(0.106, 0.09, 0.078, 1.0), 3.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 4.0 == index), vec4<f32>(0.106, 0.09, 0.078, 0.6), 5.0 == index), select(select(select(select(select(select(vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.91, 0.886, 0.831, 1.0), 0.0 == index), vec4<f32>(0.91, 0.886, 0.831, 1.0), 1.0 == index), vec4<f32>(0.91, 0.886, 0.831, 1.0), 2.0 == index), vec4<f32>(0.91, 0.886, 0.831, 1.0), 3.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 4.0 == index), vec4<f32>(0.929, 0.902, 0.847, 0.8), 5.0 == index), select(select(select(select(select(select(vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), 0.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 1.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 2.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 3.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 4.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 5.0 == index), select(select(select(select(select(select(vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.89, 0.69, 0.643, 1.0), 0.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 1.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 2.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 3.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 4.0 == index), vec4<f32>(0.604, 0.353, 0.384, 1.0), 5.0 == index), select(select(select(select(select(select(vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), 0.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 1.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 2.0 == index), vec4<f32>(0.49, 0.533, 0.576, 1.0), 3.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 4.0 == index), vec4<f32>(0.49, 0.533, 0.576, 1.0), 5.0 == index));
     let insects = mat3x4<f32>(select(select(select(select(select(select(vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.6, 0.67, 60.0, 0.0), 0.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 1.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 2.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 3.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 4.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 5.0 == index), select(select(select(select(select(select(vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.522, 0.478, 0.408, 1.0), 0.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 1.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 2.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 3.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 4.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 5.0 == index), select(select(select(select(select(select(vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), 0.0 == index), vec4<f32>(1.2, 0.3, 0.0, 1.0), 1.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 2.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 3.0 == index), vec4<f32>(2.4, 0.6, 1.0, 1.0), 4.0 == index), vec4<f32>(3.5, 0.15, 0.0, 1.5), 5.0 == index));
     return vec4<f32>(wood_speciesColor(p, number, stem, axis, look, 0.0, 150.0, normal, mat3x4<f32>(vec4<f32>(1.0, 180.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), material_bulk_wood_noStain, material_bulk_wood_linseedOil, spalting, wormholes, fungi, insects, noiseTex), 1.0);
   }
   return vec4<f32>(0.0, 0.0, 0.0, 0.0);
 }
-fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_35_12: f32, gsl_param_38_13: f32, gsl_param_41_7: f32, gsl_param_44_11: f32, noiseTex: texture_3d<f32>) -> gsl_material {
+fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_35_25: f32, gsl_param_36_26: f32, gsl_param_37_20: f32, gsl_param_38_24: f32, noiseTex: texture_3d<f32>) -> gsl_material {
   if (gsl_materialIdx == 1u) {
     let material_bulk_wood_pineNumber = 14.0;
     let material_bulk_wood_chestnutNumber = 15.0;
@@ -1371,12 +1375,12 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_35
     let inDisc = select(0.0, 1.0, p.x < pairX - 150.0);
     let stem = select(vec3<f32>(pairX - 125.0 - 317.0 * index, centreY, -100.0), vec3<f32>(pairX - 325.0, centreY, 0.0), inDisc > 0.5);
     let axis = select(vec3<f32>(1.0, 0.0, 0.0), vec3<f32>(0.0, 0.0, 1.0), inDisc > 0.5);
-    let age = gsl_param_41_7;
-    let weather = gsl_param_44_11;
+    let age = gsl_param_37_20;
+    let weather = gsl_param_38_24;
     let look = vec3<f32>(0.0, age, weather);
     let gsl_tmp_51 = p - vec3<f32>(pairX + 175.0, centreY, 10.0);
     let gsl_tmp_53 = floor(p.y / 340.0 + 1.5);
-    let gsl_tmp_54 = sign(gsl_tmp_51) * (vec3<f32>(1.0, 0.0, 0.0) - vec3<f32>(select(0.0, 0.0, column < 0.5), select(select(0.0, 0.0, gsl_tmp_53 > 2.0), 0.0, gsl_tmp_53 < 0.0) * 340.0, 0.0));
+    let gsl_tmp_54 = sign(gsl_tmp_51) * (vec3<f32>(1.0, 0.0, 0.0) - vec3<f32>(select(0.0, 0.0, column < 0.5), select(select(0.0, 0.0, clamp(gsl_tmp_53, 0.0, 2.0) < gsl_tmp_53), 0.0, clamp(gsl_tmp_53, 0.0, 2.0) > gsl_tmp_53) * 340.0, 0.0));
     let gsl_tmp_52 = abs(gsl_tmp_51) - vec3<f32>(300.0, 70.0, 10.0);
     let gsl_tmp_56 = select(0.0, gsl_tmp_54.x, gsl_tmp_52.x + 1.0 > 0.0);
     let gsl_tmp_57 = select(0.0, gsl_tmp_54.y, gsl_tmp_52.y + 1.0 > 0.0);
@@ -1384,7 +1388,7 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_35
     let gsl_tmp_55 = 0.0 + max(gsl_tmp_52.x + 1.0, 0.0) * max(gsl_tmp_52.x + 1.0, 0.0) + max(gsl_tmp_52.y + 1.0, 0.0) * max(gsl_tmp_52.y + 1.0, 0.0) + max(gsl_tmp_52.z + 1.0, 0.0) * max(gsl_tmp_52.z + 1.0, 0.0);
     let gsl_tmp_59 = p - vec3<f32>(pairX + 175.0, centreY, 10.0);
     let gsl_tmp_61 = floor(p.y / 340.0 + 1.5);
-    let gsl_tmp_62 = sign(gsl_tmp_59) * (vec3<f32>(0.0, 1.0, 0.0) - vec3<f32>(select(0.0, 0.0, column < 0.5), select(select(0.0, 0.0, gsl_tmp_61 > 2.0), 0.0, gsl_tmp_61 < 0.0) * 340.0, 0.0));
+    let gsl_tmp_62 = sign(gsl_tmp_59) * (vec3<f32>(0.0, 1.0, 0.0) - vec3<f32>(select(0.0, 0.0, column < 0.5), select(select(0.0, 0.0, clamp(gsl_tmp_61, 0.0, 2.0) < gsl_tmp_61), 0.0, clamp(gsl_tmp_61, 0.0, 2.0) > gsl_tmp_61) * 340.0, 0.0));
     let gsl_tmp_60 = abs(gsl_tmp_59) - vec3<f32>(300.0, 70.0, 10.0);
     let gsl_tmp_64 = select(0.0, gsl_tmp_62.x, gsl_tmp_60.x + 1.0 > 0.0);
     let gsl_tmp_65 = select(0.0, gsl_tmp_62.y, gsl_tmp_60.y + 1.0 > 0.0);
@@ -1392,7 +1396,7 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_35
     let gsl_tmp_63 = 0.0 + max(gsl_tmp_60.x + 1.0, 0.0) * max(gsl_tmp_60.x + 1.0, 0.0) + max(gsl_tmp_60.y + 1.0, 0.0) * max(gsl_tmp_60.y + 1.0, 0.0) + max(gsl_tmp_60.z + 1.0, 0.0) * max(gsl_tmp_60.z + 1.0, 0.0);
     let gsl_tmp_67 = p - vec3<f32>(pairX + 175.0, centreY, 10.0);
     let gsl_tmp_69 = floor(p.y / 340.0 + 1.5);
-    let gsl_tmp_70 = sign(gsl_tmp_67) * (vec3<f32>(0.0, 0.0, 1.0) - vec3<f32>(select(0.0, 0.0, column < 0.5), select(select(0.0, 0.0, gsl_tmp_69 > 2.0), 0.0, gsl_tmp_69 < 0.0) * 340.0, 0.0));
+    let gsl_tmp_70 = sign(gsl_tmp_67) * (vec3<f32>(0.0, 0.0, 1.0) - vec3<f32>(select(0.0, 0.0, column < 0.5), select(select(0.0, 0.0, clamp(gsl_tmp_69, 0.0, 2.0) < gsl_tmp_69), 0.0, clamp(gsl_tmp_69, 0.0, 2.0) > gsl_tmp_69) * 340.0, 0.0));
     let gsl_tmp_68 = abs(gsl_tmp_67) - vec3<f32>(300.0, 70.0, 10.0);
     let gsl_tmp_72 = select(0.0, gsl_tmp_70.x, gsl_tmp_68.x + 1.0 > 0.0);
     let gsl_tmp_73 = select(0.0, gsl_tmp_70.y, gsl_tmp_68.y + 1.0 > 0.0);
@@ -1402,14 +1406,14 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_35
     let gsl_tmp_4 = vec3<f32>(pairX - 325.0, centreY, 30.0) - vec3<f32>(pairX - 325.0, centreY, 0.0);
     let gsl_tmp_7 = dot(gsl_tmp_3, gsl_tmp_4) - dot(gsl_tmp_4, gsl_tmp_4) * 0.5;
     let gsl_tmp_9 = floor(p.y / 340.0 + 1.5);
-    let gsl_tmp_10 = select(select(0.0, 0.0, gsl_tmp_9 > 2.0), 0.0, gsl_tmp_9 < 0.0) * 340.0;
+    let gsl_tmp_10 = select(select(0.0, 0.0, clamp(gsl_tmp_9, 0.0, 2.0) < gsl_tmp_9), 0.0, clamp(gsl_tmp_9, 0.0, 2.0) > gsl_tmp_9) * 340.0;
     let gsl_tmp_11 = vec3<f32>(select(0.0, 0.0, column < 0.5), gsl_tmp_10, 0.0);
     let gsl_tmp_12 = vec3<f32>(select(0.0, 0.0, column < 0.5), gsl_tmp_10, 0.0) - gsl_tmp_11;
     let gsl_tmp_13 = dot(gsl_tmp_3, gsl_tmp_12) + dot(vec3<f32>(1.0, 0.0, 0.0) - gsl_tmp_11, gsl_tmp_4);
     let gsl_tmp_8 = abs(gsl_tmp_7) - dot(gsl_tmp_4, gsl_tmp_4) * 0.5;
     let gsl_tmp_15 = ((sign(gsl_tmp_7) * (gsl_tmp_13 - (dot(gsl_tmp_4, gsl_tmp_12) + dot(gsl_tmp_12, gsl_tmp_4)) * 0.5) - (dot(gsl_tmp_4, gsl_tmp_12) + dot(gsl_tmp_12, gsl_tmp_4)) * 0.5) * sqrt(dot(gsl_tmp_4, gsl_tmp_4)) - gsl_tmp_8 * (dot(gsl_tmp_4, gsl_tmp_12) + dot(gsl_tmp_12, gsl_tmp_4)) / (2.0 * (sqrt(dot(gsl_tmp_4, gsl_tmp_4)) + 1.0 - select(0.0, 1.0, (sqrt(dot(gsl_tmp_4, gsl_tmp_4)) > 0.0))))) / (sqrt(dot(gsl_tmp_4, gsl_tmp_4)) * sqrt(dot(gsl_tmp_4, gsl_tmp_4)));
     let gsl_tmp_5 = clamp(dot(gsl_tmp_3, gsl_tmp_4) / dot(gsl_tmp_4, gsl_tmp_4), 0.0, 1.0);
-    let gsl_tmp_14 = dot(gsl_tmp_3 - gsl_tmp_4 * gsl_tmp_5, vec3<f32>(1.0, 0.0, 0.0) - gsl_tmp_11 - (gsl_tmp_12 * gsl_tmp_5 + gsl_tmp_4 * select(select((gsl_tmp_13 * dot(gsl_tmp_4, gsl_tmp_4) - dot(gsl_tmp_3, gsl_tmp_4) * (dot(gsl_tmp_4, gsl_tmp_12) + dot(gsl_tmp_12, gsl_tmp_4))) / (dot(gsl_tmp_4, gsl_tmp_4) * dot(gsl_tmp_4, gsl_tmp_4)), 0.0, dot(gsl_tmp_3, gsl_tmp_4) / dot(gsl_tmp_4, gsl_tmp_4) > 1.0), 0.0, dot(gsl_tmp_3, gsl_tmp_4) / dot(gsl_tmp_4, gsl_tmp_4) < 0.0))) / (length(gsl_tmp_3 - gsl_tmp_4 * gsl_tmp_5) + 1.0 - select(0.0, 1.0, (length(gsl_tmp_3 - gsl_tmp_4 * gsl_tmp_5) > 0.0)));
+    let gsl_tmp_14 = dot(clamp((gsl_tmp_3 - gsl_tmp_4 * gsl_tmp_5) / max(length(gsl_tmp_3 - gsl_tmp_4 * gsl_tmp_5), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(1.0, 0.0, 0.0) - gsl_tmp_11 - (gsl_tmp_12 * gsl_tmp_5 + gsl_tmp_4 * select(select((gsl_tmp_13 * dot(gsl_tmp_4, gsl_tmp_4) - dot(gsl_tmp_3, gsl_tmp_4) * (dot(gsl_tmp_4, gsl_tmp_12) + dot(gsl_tmp_12, gsl_tmp_4))) / (dot(gsl_tmp_4, gsl_tmp_4) * dot(gsl_tmp_4, gsl_tmp_4)), 0.0, gsl_tmp_5 < dot(gsl_tmp_3, gsl_tmp_4) / dot(gsl_tmp_4, gsl_tmp_4)), 0.0, gsl_tmp_5 > dot(gsl_tmp_3, gsl_tmp_4) / dot(gsl_tmp_4, gsl_tmp_4))));
     let gsl_tmp_6 = length(gsl_tmp_3 - gsl_tmp_4 * gsl_tmp_5) - 150.0;
     let gsl_tmp_18 = select(0.0, gsl_tmp_14, gsl_tmp_6 + 0.0 > 0.0);
     let gsl_tmp_16 = gsl_tmp_8 / sqrt(dot(gsl_tmp_4, gsl_tmp_4)) + 0.0;
@@ -1418,14 +1422,14 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_35
     let gsl_tmp_20 = vec3<f32>(pairX - 325.0, centreY, 30.0) - vec3<f32>(pairX - 325.0, centreY, 0.0);
     let gsl_tmp_23 = dot(gsl_tmp_19, gsl_tmp_20) - dot(gsl_tmp_20, gsl_tmp_20) * 0.5;
     let gsl_tmp_25 = floor(p.y / 340.0 + 1.5);
-    let gsl_tmp_26 = select(select(0.0, 0.0, gsl_tmp_25 > 2.0), 0.0, gsl_tmp_25 < 0.0) * 340.0;
+    let gsl_tmp_26 = select(select(0.0, 0.0, clamp(gsl_tmp_25, 0.0, 2.0) < gsl_tmp_25), 0.0, clamp(gsl_tmp_25, 0.0, 2.0) > gsl_tmp_25) * 340.0;
     let gsl_tmp_27 = vec3<f32>(select(0.0, 0.0, column < 0.5), gsl_tmp_26, 0.0);
     let gsl_tmp_28 = vec3<f32>(select(0.0, 0.0, column < 0.5), gsl_tmp_26, 0.0) - gsl_tmp_27;
     let gsl_tmp_29 = dot(gsl_tmp_19, gsl_tmp_28) + dot(vec3<f32>(0.0, 1.0, 0.0) - gsl_tmp_27, gsl_tmp_20);
     let gsl_tmp_24 = abs(gsl_tmp_23) - dot(gsl_tmp_20, gsl_tmp_20) * 0.5;
     let gsl_tmp_31 = ((sign(gsl_tmp_23) * (gsl_tmp_29 - (dot(gsl_tmp_20, gsl_tmp_28) + dot(gsl_tmp_28, gsl_tmp_20)) * 0.5) - (dot(gsl_tmp_20, gsl_tmp_28) + dot(gsl_tmp_28, gsl_tmp_20)) * 0.5) * sqrt(dot(gsl_tmp_20, gsl_tmp_20)) - gsl_tmp_24 * (dot(gsl_tmp_20, gsl_tmp_28) + dot(gsl_tmp_28, gsl_tmp_20)) / (2.0 * (sqrt(dot(gsl_tmp_20, gsl_tmp_20)) + 1.0 - select(0.0, 1.0, (sqrt(dot(gsl_tmp_20, gsl_tmp_20)) > 0.0))))) / (sqrt(dot(gsl_tmp_20, gsl_tmp_20)) * sqrt(dot(gsl_tmp_20, gsl_tmp_20)));
     let gsl_tmp_21 = clamp(dot(gsl_tmp_19, gsl_tmp_20) / dot(gsl_tmp_20, gsl_tmp_20), 0.0, 1.0);
-    let gsl_tmp_30 = dot(gsl_tmp_19 - gsl_tmp_20 * gsl_tmp_21, vec3<f32>(0.0, 1.0, 0.0) - gsl_tmp_27 - (gsl_tmp_28 * gsl_tmp_21 + gsl_tmp_20 * select(select((gsl_tmp_29 * dot(gsl_tmp_20, gsl_tmp_20) - dot(gsl_tmp_19, gsl_tmp_20) * (dot(gsl_tmp_20, gsl_tmp_28) + dot(gsl_tmp_28, gsl_tmp_20))) / (dot(gsl_tmp_20, gsl_tmp_20) * dot(gsl_tmp_20, gsl_tmp_20)), 0.0, dot(gsl_tmp_19, gsl_tmp_20) / dot(gsl_tmp_20, gsl_tmp_20) > 1.0), 0.0, dot(gsl_tmp_19, gsl_tmp_20) / dot(gsl_tmp_20, gsl_tmp_20) < 0.0))) / (length(gsl_tmp_19 - gsl_tmp_20 * gsl_tmp_21) + 1.0 - select(0.0, 1.0, (length(gsl_tmp_19 - gsl_tmp_20 * gsl_tmp_21) > 0.0)));
+    let gsl_tmp_30 = dot(clamp((gsl_tmp_19 - gsl_tmp_20 * gsl_tmp_21) / max(length(gsl_tmp_19 - gsl_tmp_20 * gsl_tmp_21), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(0.0, 1.0, 0.0) - gsl_tmp_27 - (gsl_tmp_28 * gsl_tmp_21 + gsl_tmp_20 * select(select((gsl_tmp_29 * dot(gsl_tmp_20, gsl_tmp_20) - dot(gsl_tmp_19, gsl_tmp_20) * (dot(gsl_tmp_20, gsl_tmp_28) + dot(gsl_tmp_28, gsl_tmp_20))) / (dot(gsl_tmp_20, gsl_tmp_20) * dot(gsl_tmp_20, gsl_tmp_20)), 0.0, gsl_tmp_21 < dot(gsl_tmp_19, gsl_tmp_20) / dot(gsl_tmp_20, gsl_tmp_20)), 0.0, gsl_tmp_21 > dot(gsl_tmp_19, gsl_tmp_20) / dot(gsl_tmp_20, gsl_tmp_20))));
     let gsl_tmp_22 = length(gsl_tmp_19 - gsl_tmp_20 * gsl_tmp_21) - 150.0;
     let gsl_tmp_34 = select(0.0, gsl_tmp_30, gsl_tmp_22 + 0.0 > 0.0);
     let gsl_tmp_32 = gsl_tmp_24 / sqrt(dot(gsl_tmp_20, gsl_tmp_20)) + 0.0;
@@ -1434,22 +1438,22 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_35
     let gsl_tmp_36 = vec3<f32>(pairX - 325.0, centreY, 30.0) - vec3<f32>(pairX - 325.0, centreY, 0.0);
     let gsl_tmp_39 = dot(gsl_tmp_35, gsl_tmp_36) - dot(gsl_tmp_36, gsl_tmp_36) * 0.5;
     let gsl_tmp_41 = floor(p.y / 340.0 + 1.5);
-    let gsl_tmp_42 = select(select(0.0, 0.0, gsl_tmp_41 > 2.0), 0.0, gsl_tmp_41 < 0.0) * 340.0;
+    let gsl_tmp_42 = select(select(0.0, 0.0, clamp(gsl_tmp_41, 0.0, 2.0) < gsl_tmp_41), 0.0, clamp(gsl_tmp_41, 0.0, 2.0) > gsl_tmp_41) * 340.0;
     let gsl_tmp_43 = vec3<f32>(select(0.0, 0.0, column < 0.5), gsl_tmp_42, 0.0);
     let gsl_tmp_44 = vec3<f32>(select(0.0, 0.0, column < 0.5), gsl_tmp_42, 0.0) - gsl_tmp_43;
     let gsl_tmp_45 = dot(gsl_tmp_35, gsl_tmp_44) + dot(vec3<f32>(0.0, 0.0, 1.0) - gsl_tmp_43, gsl_tmp_36);
     let gsl_tmp_40 = abs(gsl_tmp_39) - dot(gsl_tmp_36, gsl_tmp_36) * 0.5;
     let gsl_tmp_47 = ((sign(gsl_tmp_39) * (gsl_tmp_45 - (dot(gsl_tmp_36, gsl_tmp_44) + dot(gsl_tmp_44, gsl_tmp_36)) * 0.5) - (dot(gsl_tmp_36, gsl_tmp_44) + dot(gsl_tmp_44, gsl_tmp_36)) * 0.5) * sqrt(dot(gsl_tmp_36, gsl_tmp_36)) - gsl_tmp_40 * (dot(gsl_tmp_36, gsl_tmp_44) + dot(gsl_tmp_44, gsl_tmp_36)) / (2.0 * (sqrt(dot(gsl_tmp_36, gsl_tmp_36)) + 1.0 - select(0.0, 1.0, (sqrt(dot(gsl_tmp_36, gsl_tmp_36)) > 0.0))))) / (sqrt(dot(gsl_tmp_36, gsl_tmp_36)) * sqrt(dot(gsl_tmp_36, gsl_tmp_36)));
     let gsl_tmp_37 = clamp(dot(gsl_tmp_35, gsl_tmp_36) / dot(gsl_tmp_36, gsl_tmp_36), 0.0, 1.0);
-    let gsl_tmp_46 = dot(gsl_tmp_35 - gsl_tmp_36 * gsl_tmp_37, vec3<f32>(0.0, 0.0, 1.0) - gsl_tmp_43 - (gsl_tmp_44 * gsl_tmp_37 + gsl_tmp_36 * select(select((gsl_tmp_45 * dot(gsl_tmp_36, gsl_tmp_36) - dot(gsl_tmp_35, gsl_tmp_36) * (dot(gsl_tmp_36, gsl_tmp_44) + dot(gsl_tmp_44, gsl_tmp_36))) / (dot(gsl_tmp_36, gsl_tmp_36) * dot(gsl_tmp_36, gsl_tmp_36)), 0.0, dot(gsl_tmp_35, gsl_tmp_36) / dot(gsl_tmp_36, gsl_tmp_36) > 1.0), 0.0, dot(gsl_tmp_35, gsl_tmp_36) / dot(gsl_tmp_36, gsl_tmp_36) < 0.0))) / (length(gsl_tmp_35 - gsl_tmp_36 * gsl_tmp_37) + 1.0 - select(0.0, 1.0, (length(gsl_tmp_35 - gsl_tmp_36 * gsl_tmp_37) > 0.0)));
+    let gsl_tmp_46 = dot(clamp((gsl_tmp_35 - gsl_tmp_36 * gsl_tmp_37) / max(length(gsl_tmp_35 - gsl_tmp_36 * gsl_tmp_37), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(0.0, 0.0, 1.0) - gsl_tmp_43 - (gsl_tmp_44 * gsl_tmp_37 + gsl_tmp_36 * select(select((gsl_tmp_45 * dot(gsl_tmp_36, gsl_tmp_36) - dot(gsl_tmp_35, gsl_tmp_36) * (dot(gsl_tmp_36, gsl_tmp_44) + dot(gsl_tmp_44, gsl_tmp_36))) / (dot(gsl_tmp_36, gsl_tmp_36) * dot(gsl_tmp_36, gsl_tmp_36)), 0.0, gsl_tmp_37 < dot(gsl_tmp_35, gsl_tmp_36) / dot(gsl_tmp_36, gsl_tmp_36)), 0.0, gsl_tmp_37 > dot(gsl_tmp_35, gsl_tmp_36) / dot(gsl_tmp_36, gsl_tmp_36))));
     let gsl_tmp_38 = length(gsl_tmp_35 - gsl_tmp_36 * gsl_tmp_37) - 150.0;
     let gsl_tmp_50 = select(0.0, gsl_tmp_46, gsl_tmp_38 + 0.0 > 0.0);
     let gsl_tmp_48 = gsl_tmp_40 / sqrt(dot(gsl_tmp_36, gsl_tmp_36)) + 0.0;
     let gsl_tmp_49 = 0.0 + max(gsl_tmp_38 + 0.0, 0.0) * max(gsl_tmp_38 + 0.0, 0.0) + max(gsl_tmp_48, 0.0) * max(gsl_tmp_48, 0.0);
     let normal = select(vec3<f32>(select(0.0, select(gsl_tmp_54.z, select(gsl_tmp_54.y, gsl_tmp_54.x, gsl_tmp_52.x > gsl_tmp_52.y), max(gsl_tmp_52.x, gsl_tmp_52.y) > gsl_tmp_52.z), max(max(gsl_tmp_52.x, gsl_tmp_52.y), gsl_tmp_52.z) < -1.0) + select(0.0, gsl_tmp_56 * max(gsl_tmp_52.x + 1.0, 0.0) + max(gsl_tmp_52.x + 1.0, 0.0) * gsl_tmp_56 + gsl_tmp_57 * max(gsl_tmp_52.y + 1.0, 0.0) + max(gsl_tmp_52.y + 1.0, 0.0) * gsl_tmp_57 + gsl_tmp_58 * max(gsl_tmp_52.z + 1.0, 0.0) + max(gsl_tmp_52.z + 1.0, 0.0) * gsl_tmp_58, gsl_tmp_55 > 0.000000000000000000000000000001) / (2.0 * (sqrt(max(gsl_tmp_55, 0.000000000000000000000000000001)) + 1.0 - select(0.0, 1.0, (sqrt(max(gsl_tmp_55, 0.000000000000000000000000000001)) > 0.0)))), select(0.0, select(gsl_tmp_62.z, select(gsl_tmp_62.y, gsl_tmp_62.x, gsl_tmp_60.x > gsl_tmp_60.y), max(gsl_tmp_60.x, gsl_tmp_60.y) > gsl_tmp_60.z), max(max(gsl_tmp_60.x, gsl_tmp_60.y), gsl_tmp_60.z) < -1.0) + select(0.0, gsl_tmp_64 * max(gsl_tmp_60.x + 1.0, 0.0) + max(gsl_tmp_60.x + 1.0, 0.0) * gsl_tmp_64 + gsl_tmp_65 * max(gsl_tmp_60.y + 1.0, 0.0) + max(gsl_tmp_60.y + 1.0, 0.0) * gsl_tmp_65 + gsl_tmp_66 * max(gsl_tmp_60.z + 1.0, 0.0) + max(gsl_tmp_60.z + 1.0, 0.0) * gsl_tmp_66, gsl_tmp_63 > 0.000000000000000000000000000001) / (2.0 * (sqrt(max(gsl_tmp_63, 0.000000000000000000000000000001)) + 1.0 - select(0.0, 1.0, (sqrt(max(gsl_tmp_63, 0.000000000000000000000000000001)) > 0.0)))), select(0.0, select(gsl_tmp_70.z, select(gsl_tmp_70.y, gsl_tmp_70.x, gsl_tmp_68.x > gsl_tmp_68.y), max(gsl_tmp_68.x, gsl_tmp_68.y) > gsl_tmp_68.z), max(max(gsl_tmp_68.x, gsl_tmp_68.y), gsl_tmp_68.z) < -1.0) + select(0.0, gsl_tmp_72 * max(gsl_tmp_68.x + 1.0, 0.0) + max(gsl_tmp_68.x + 1.0, 0.0) * gsl_tmp_72 + gsl_tmp_73 * max(gsl_tmp_68.y + 1.0, 0.0) + max(gsl_tmp_68.y + 1.0, 0.0) * gsl_tmp_73 + gsl_tmp_74 * max(gsl_tmp_68.z + 1.0, 0.0) + max(gsl_tmp_68.z + 1.0, 0.0) * gsl_tmp_74, gsl_tmp_71 > 0.000000000000000000000000000001) / (2.0 * (sqrt(max(gsl_tmp_71, 0.000000000000000000000000000001)) + 1.0 - select(0.0, 1.0, (sqrt(max(gsl_tmp_71, 0.000000000000000000000000000001)) > 0.0))))), vec3<f32>(select(0.0, select(gsl_tmp_15, gsl_tmp_14, gsl_tmp_6 > gsl_tmp_8 / sqrt(dot(gsl_tmp_4, gsl_tmp_4))), max(gsl_tmp_6, gsl_tmp_8 / sqrt(dot(gsl_tmp_4, gsl_tmp_4))) < 0.000000000000000000000000000001) + select(0.0, gsl_tmp_18 * max(gsl_tmp_6 + 0.0, 0.0) + max(gsl_tmp_6 + 0.0, 0.0) * gsl_tmp_18 + select(0.0, gsl_tmp_15, gsl_tmp_16 > 0.0) * max(gsl_tmp_16, 0.0) + max(gsl_tmp_16, 0.0) * select(0.0, gsl_tmp_15, gsl_tmp_16 > 0.0), gsl_tmp_17 > 0.000000000000000000000000000001) / (2.0 * (sqrt(max(gsl_tmp_17, 0.000000000000000000000000000001)) + 1.0 - select(0.0, 1.0, (sqrt(max(gsl_tmp_17, 0.000000000000000000000000000001)) > 0.0)))), select(0.0, select(gsl_tmp_31, gsl_tmp_30, gsl_tmp_22 > gsl_tmp_24 / sqrt(dot(gsl_tmp_20, gsl_tmp_20))), max(gsl_tmp_22, gsl_tmp_24 / sqrt(dot(gsl_tmp_20, gsl_tmp_20))) < 0.000000000000000000000000000001) + select(0.0, gsl_tmp_34 * max(gsl_tmp_22 + 0.0, 0.0) + max(gsl_tmp_22 + 0.0, 0.0) * gsl_tmp_34 + select(0.0, gsl_tmp_31, gsl_tmp_32 > 0.0) * max(gsl_tmp_32, 0.0) + max(gsl_tmp_32, 0.0) * select(0.0, gsl_tmp_31, gsl_tmp_32 > 0.0), gsl_tmp_33 > 0.000000000000000000000000000001) / (2.0 * (sqrt(max(gsl_tmp_33, 0.000000000000000000000000000001)) + 1.0 - select(0.0, 1.0, (sqrt(max(gsl_tmp_33, 0.000000000000000000000000000001)) > 0.0)))), select(0.0, select(gsl_tmp_47, gsl_tmp_46, gsl_tmp_38 > gsl_tmp_40 / sqrt(dot(gsl_tmp_36, gsl_tmp_36))), max(gsl_tmp_38, gsl_tmp_40 / sqrt(dot(gsl_tmp_36, gsl_tmp_36))) < 0.000000000000000000000000000001) + select(0.0, gsl_tmp_50 * max(gsl_tmp_38 + 0.0, 0.0) + max(gsl_tmp_38 + 0.0, 0.0) * gsl_tmp_50 + select(0.0, gsl_tmp_47, gsl_tmp_48 > 0.0) * max(gsl_tmp_48, 0.0) + max(gsl_tmp_48, 0.0) * select(0.0, gsl_tmp_47, gsl_tmp_48 > 0.0), gsl_tmp_49 > 0.000000000000000000000000000001) / (2.0 * (sqrt(max(gsl_tmp_49, 0.000000000000000000000000000001)) + 1.0 - select(0.0, 1.0, (sqrt(max(gsl_tmp_49, 0.000000000000000000000000000001)) > 0.0))))), inDisc > 0.5);
     let material_bulk_wood_linseedOil = mat2x4<f32>(vec4<f32>(1.0, 0.99812025, 0.9884352, 4.0), vec4<f32>(1.0, 0.005, 0.91, 0.5));
-    let spalting = gsl_param_35_12;
-    let wormholes = gsl_param_38_13;
+    let spalting = gsl_param_35_25;
+    let wormholes = gsl_param_36_26;
     let fungi = array<vec4<f32>, 5>(select(select(select(select(select(select(vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.106, 0.09, 0.078, 1.0), 0.0 == index), vec4<f32>(0.106, 0.09, 0.078, 1.0), 1.0 == index), vec4<f32>(0.106, 0.09, 0.078, 1.0), 2.0 == index), vec4<f32>(0.106, 0.09, 0.078, 1.0), 3.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 4.0 == index), vec4<f32>(0.106, 0.09, 0.078, 0.6), 5.0 == index), select(select(select(select(select(select(vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.91, 0.886, 0.831, 1.0), 0.0 == index), vec4<f32>(0.91, 0.886, 0.831, 1.0), 1.0 == index), vec4<f32>(0.91, 0.886, 0.831, 1.0), 2.0 == index), vec4<f32>(0.91, 0.886, 0.831, 1.0), 3.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 4.0 == index), vec4<f32>(0.929, 0.902, 0.847, 0.8), 5.0 == index), select(select(select(select(select(select(vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), 0.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 1.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 2.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 3.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 4.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 5.0 == index), select(select(select(select(select(select(vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.89, 0.69, 0.643, 1.0), 0.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 1.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 2.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 3.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 4.0 == index), vec4<f32>(0.604, 0.353, 0.384, 1.0), 5.0 == index), select(select(select(select(select(select(vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), 0.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 1.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 2.0 == index), vec4<f32>(0.49, 0.533, 0.576, 1.0), 3.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 4.0 == index), vec4<f32>(0.49, 0.533, 0.576, 1.0), 5.0 == index));
     let insects = mat3x4<f32>(select(select(select(select(select(select(vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.6, 0.67, 60.0, 0.0), 0.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 1.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 2.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 3.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 4.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 5.0 == index), select(select(select(select(select(select(vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.522, 0.478, 0.408, 1.0), 0.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 1.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 2.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 3.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 4.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 5.0 == index), select(select(select(select(select(select(vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), 0.0 == index), vec4<f32>(1.2, 0.3, 0.0, 1.0), 1.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 2.0 == index), vec4<f32>(0.0, 0.0, 0.0, 0.0), 3.0 == index), vec4<f32>(2.4, 0.6, 1.0, 1.0), 4.0 == index), vec4<f32>(3.5, 0.15, 0.0, 1.5), 5.0 == index));
     let gsl_m = wood_speciesMaterial(p, number, stem, axis, look, 0.0, 150.0, normal, mat3x4<f32>(vec4<f32>(1.0, 180.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), material_bulk_wood_linseedOil, spalting, wormholes, fungi, insects, noiseTex); return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);

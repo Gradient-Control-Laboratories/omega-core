@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
 )
 
 // The exact box field with round dimensions, unshelled. Dual contouring finds its faces' crossings exactly on

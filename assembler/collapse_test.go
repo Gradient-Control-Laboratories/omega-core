@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // An assembled program carries every scalar constant as a literal. A catalog

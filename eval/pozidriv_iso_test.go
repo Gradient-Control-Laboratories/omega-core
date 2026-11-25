@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // TestPozidrivGaugeSeatsWithinPenetration seats ISO 4757's type Z gauge

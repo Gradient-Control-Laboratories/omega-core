@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/eval/joints"
+	"github.com/Gradient-Control-Laboratories/omega-core/eval/joints"
 )
 
 // countersunkDoc is a 3 mm cover screwed flush to a plate with one ISO 10642

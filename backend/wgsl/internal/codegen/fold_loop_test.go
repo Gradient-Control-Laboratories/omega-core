@@ -3,9 +3,9 @@ package codegen_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/backend/wgsl"
-	"gradientcontrol.com/omega/core/assembler"
-	src_test "gradientcontrol.com/omega/core/internal/srctest"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl"
+	src_test "github.com/Gradient-Control-Laboratories/omega-core/internal/srctest"
 )
 
 // TestFoldLoop builds testdata/fold_loop as the viewer's compile assembles,

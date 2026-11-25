@@ -1,0 +1,25 @@
+@scene(180)
+
+// Knurls, one of each pattern, left to right: straight, left-hand, right-hand,
+// diamond with its points raised, diamond with them sunk, and annular rings.
+// Each is a shaft whose middle is shaft.knurl, 20 mm across with ISO 13444
+// teeth 1 mm apart, between two plain journals, finished in steel.
+//
+// A knurl is a finish, as a fastener's thread is. The geometry is the blank,
+// a plain diameter, which the mesher, export and every proof see; the teeth
+// are a displacement height the renderer alone draws. Zoom out, or drag the
+// Render panel's Detail slider, and each shaft gives its detail up in turn:
+// the teeth become paint, darker toward their roots, and then the plain
+// blank stands in for the whole shaft. The teeth run out over about a pitch
+// at each end of the knurl, the way a rolled knurl does. Lengths are in mm.
+
+steelMat, steelColor = metal.steel();
+
+straight = transform.translate(shaft.body([shaft.diameter(12.0, 0.0, 6.0), shaft.knurl(20.0, 1.0, shaft.knurlStraight, 6.0, 30.0), shaft.diameter(12.0, 30.0, 36.0)], steelMat), [-75.0, 0.0, -18.0]);
+leftHand = transform.translate(shaft.body([shaft.diameter(12.0, 0.0, 6.0), shaft.knurl(20.0, 1.0, shaft.knurlLeft, 6.0, 30.0), shaft.diameter(12.0, 30.0, 36.0)], steelMat), [-45.0, 0.0, -18.0]);
+rightHand = transform.translate(shaft.body([shaft.diameter(12.0, 0.0, 6.0), shaft.knurl(20.0, 1.0, shaft.knurlRight, 6.0, 30.0), shaft.diameter(12.0, 30.0, 36.0)], steelMat), [-15.0, 0.0, -18.0]);
+diamond = transform.translate(shaft.body([shaft.diameter(12.0, 0.0, 6.0), shaft.knurl(20.0, 1.0, shaft.knurlDiamond, 6.0, 30.0), shaft.diameter(12.0, 30.0, 36.0)], steelMat), [15.0, 0.0, -18.0]);
+diamondSunk = transform.translate(shaft.body([shaft.diameter(12.0, 0.0, 6.0), shaft.knurl(20.0, 1.0, shaft.knurlDiamondSunk, 6.0, 30.0), shaft.diameter(12.0, 30.0, 36.0)], steelMat), [45.0, 0.0, -18.0]);
+annular = transform.translate(shaft.body([shaft.diameter(12.0, 0.0, 6.0), shaft.knurl(20.0, 1.0, shaft.knurlAnnular, 6.0, 30.0), shaft.diameter(12.0, 30.0, 36.0)], steelMat), [75.0, 0.0, -18.0]);
+
+return straight, leftHand, rightHand, diamond, diamondSunk, annular;

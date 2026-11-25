@@ -36,34 +36,34 @@ fn gsl_remap(p: vec3<f32>, material_polishedMetal: mat4x4<f32>, color_white: vec
     gsl_simpleValue = mix(gsl_simpleValue, color_cyclicRainbow(fract(p.z / 10.0 - time / 5.0), noiseTex), gsl_simpleDetail);
   }
   let rainbow = gsl_simpleValue;
-  let gsl_tmp_61 = color_rgb2oklab(rainbow, noiseTex);
-  let gsl_tmp_57 = map_repeatCentered(p.xy - vec2<f32>(5.196152, 15.0), vec2<f32>(10.392304, 18.0), noiseTex);
-  let gsl_tmp_56 = map_repeatCentered(p.xy - vec2<f32>(5.196152, 9.0), vec2<f32>(10.392304, 18.0), noiseTex);
-  let gsl_tmp_59 = select(gsl_tmp_57, gsl_tmp_56, dot(gsl_tmp_56, gsl_tmp_56) < dot(gsl_tmp_57, gsl_tmp_57));
-  let gsl_tmp_55 = map_repeatCentered(p.xy - vec2<f32>(0.0, 6.0), vec2<f32>(10.392304, 18.0), noiseTex);
-  let gsl_tmp_54 = map_repeatCentered(p.xy, vec2<f32>(10.392304, 18.0), noiseTex);
-  let gsl_tmp_58 = select(gsl_tmp_55, gsl_tmp_54, dot(gsl_tmp_54, gsl_tmp_54) < dot(gsl_tmp_55, gsl_tmp_55));
-  let gsl_tmp_60 = select(gsl_tmp_59, gsl_tmp_58, dot(gsl_tmp_58, gsl_tmp_58) < dot(gsl_tmp_59, gsl_tmp_59));
-  let gsl_tmp_62 = gsl_tmp_61 + (vec3<f32>(1.0, 0.00000000008095291, 0.000000037273907) - gsl_tmp_61) * texture_fadeTo(texture_coverageDisc(length(vec3<f32>(gsl_tmp_60.x, gsl_tmp_60.y, p.z).xy), 2.0, noiseTex), 0.26871103, 6.0, noiseTex);
-  let gsl_tmp_63 = gsl_tmp_62.x + 0.39633778 * gsl_tmp_62.y + 0.21580376 * gsl_tmp_62.z;
-  let gsl_tmp_64 = gsl_tmp_62.x - 0.105561346 * gsl_tmp_62.y - 0.06385417 * gsl_tmp_62.z;
-  let gsl_tmp_65 = gsl_tmp_62.x - 0.08948418 * gsl_tmp_62.y - 1.2914855 * gsl_tmp_62.z;
-  let gsl_tmp_66 = vec3<f32>(gsl_tmp_63 * gsl_tmp_63 * gsl_tmp_63, gsl_tmp_64 * gsl_tmp_64 * gsl_tmp_64, gsl_tmp_65 * gsl_tmp_65 * gsl_tmp_65);
-  let gsl_tmp_73 = vec3<f32>(dot(vec3<f32>(4.0767417, -3.3077116, 0.23096994), gsl_tmp_66), dot(vec3<f32>(-1.268438, 2.6097574, -0.34131938), gsl_tmp_66), dot(vec3<f32>(-0.0041960864, -0.7034186, 1.7076147), gsl_tmp_66));
-  return vec3<f32>(color_linearToSrgbChannel(gsl_tmp_73.x, noiseTex), color_linearToSrgbChannel(gsl_tmp_73.y, noiseTex), color_linearToSrgbChannel(gsl_tmp_73.z, noiseTex));
+  let gsl_tmp_74 = color_rgb2oklab(rainbow, noiseTex);
+  let gsl_tmp_70 = map_repeatCentered(p.xy - vec2<f32>(5.196152, 15.0), vec2<f32>(10.392304, 18.0), noiseTex);
+  let gsl_tmp_69 = map_repeatCentered(p.xy - vec2<f32>(5.196152, 9.0), vec2<f32>(10.392304, 18.0), noiseTex);
+  let gsl_tmp_72 = select(gsl_tmp_70, gsl_tmp_69, dot(gsl_tmp_69, gsl_tmp_69) < dot(gsl_tmp_70, gsl_tmp_70));
+  let gsl_tmp_68 = map_repeatCentered(p.xy - vec2<f32>(0.0, 6.0), vec2<f32>(10.392304, 18.0), noiseTex);
+  let gsl_tmp_67 = map_repeatCentered(p.xy, vec2<f32>(10.392304, 18.0), noiseTex);
+  let gsl_tmp_71 = select(gsl_tmp_68, gsl_tmp_67, dot(gsl_tmp_67, gsl_tmp_67) < dot(gsl_tmp_68, gsl_tmp_68));
+  let gsl_tmp_73 = select(gsl_tmp_72, gsl_tmp_71, dot(gsl_tmp_71, gsl_tmp_71) < dot(gsl_tmp_72, gsl_tmp_72));
+  let gsl_tmp_76 = gsl_tmp_74 + (vec3<f32>(1.0, 0.00000000008095291, 0.000000037273907) - gsl_tmp_74) * texture_fadeTo(texture_coverageDisc(length(vec3<f32>(gsl_tmp_73.x, gsl_tmp_73.y, p.z).xy), 2.0, noiseTex), 0.26871103, 6.0, noiseTex);
+  let gsl_tmp_77 = gsl_tmp_76.x + 0.39633778 * gsl_tmp_76.y + 0.21580376 * gsl_tmp_76.z;
+  let gsl_tmp_78 = gsl_tmp_76.x - 0.105561346 * gsl_tmp_76.y - 0.06385417 * gsl_tmp_76.z;
+  let gsl_tmp_79 = gsl_tmp_76.x - 0.08948418 * gsl_tmp_76.y - 1.2914855 * gsl_tmp_76.z;
+  let gsl_tmp_80 = vec3<f32>(gsl_tmp_77 * gsl_tmp_77 * gsl_tmp_77, gsl_tmp_78 * gsl_tmp_78 * gsl_tmp_78, gsl_tmp_79 * gsl_tmp_79 * gsl_tmp_79);
+  let gsl_tmp_89 = vec3<f32>(dot(vec3<f32>(4.0767417, -3.3077116, 0.23096994), gsl_tmp_80), dot(vec3<f32>(-1.268438, 2.6097574, -0.34131938), gsl_tmp_80), dot(vec3<f32>(-0.0041960864, -0.7034186, 1.7076147), gsl_tmp_80));
+  return vec3<f32>(color_linearToSrgbChannel(gsl_tmp_89.x, noiseTex), color_linearToSrgbChannel(gsl_tmp_89.y, noiseTex), color_linearToSrgbChannel(gsl_tmp_89.z, noiseTex));
 }
 
 fn gsl_remap_2(p: vec3<f32>, material_polishedMetal: mat4x4<f32>, color_white: vec3<f32>, time: f32, color_black: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
-  var gsl_simpleValue_2 = vec3<f32>(0.6604224, 0.6490635, 0.6588749);
+  var gsl_simpleValue = vec3<f32>(0.6604224, 0.6490635, 0.6588749);
   if (gsl_simpleDetail > 0.0) {
-    gsl_simpleValue_2 = mix(gsl_simpleValue_2, color_cyclicRainbow(fract(p.z / 10.0 - time / 5.0), noiseTex), gsl_simpleDetail);
+    gsl_simpleValue = mix(gsl_simpleValue, color_cyclicRainbow(fract(p.z / 10.0 - time / 5.0), noiseTex), gsl_simpleDetail);
   }
-  let rainbow = gsl_simpleValue_2;
-  var gsl_simpleValue_3 = color_mixOklab(rainbow, color_white, 0.26871103, noiseTex);
+  let rainbow = gsl_simpleValue;
+  var gsl_simpleValue_2 = color_mixOklab(rainbow, color_white, 0.26871103, noiseTex);
   if (gsl_simpleDetail > 0.0) {
-    gsl_simpleValue_3 = mix(gsl_simpleValue_3, gsl_remap(vec3<f32>(dot(p, vec3<f32>(1.0, 0.0, 0.0)), dot(p, vec3<f32>(0.0, 1.0, 0.0)), dot(p, vec3<f32>(0.0, 0.0, 1.0))), material_polishedMetal, color_white, time, color_black, noiseTex), gsl_simpleDetail);
+    gsl_simpleValue_2 = mix(gsl_simpleValue_2, gsl_remap(vec3<f32>(dot(p, vec3<f32>(1.0, 0.0, 0.0)), dot(p, vec3<f32>(0.0, 1.0, 0.0)), dot(p, vec3<f32>(0.0, 0.0, 1.0))), material_polishedMetal, color_white, time, color_black, noiseTex), gsl_simpleDetail);
   }
-  return gsl_simpleValue_3;
+  return gsl_simpleValue_2;
 }
 
 fn color_srgbToLinearChannel(s: f32, noiseTex: texture_3d<f32>) -> f32 {
@@ -207,9 +207,9 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_
 }
 fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, noiseTex: texture_3d<f32>) -> gsl_material {
   if (gsl_materialIdx == 1u) {
-    let material_polishedMetal = mat4x4<f32>(vec4<f32>(0.15, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
-    var gsl_simpleValue_4 = mat4x4<f32>(material_polishedMetal[0] + (vec4<f32>(0.08, 1.0, 1.5, 0.0) - material_polishedMetal[0]) * 0.06335398, vec4<f32>(1.0, 1.0, 1.0, 0.0012607756), material_polishedMetal[2] + (vec4<f32>(0.0, 0.0, 0.0, 0.0) - material_polishedMetal[2]) * 0.06335398, material_polishedMetal[3] + (vec4<f32>(0.0, 0.0, 0.0, 0.0) - material_polishedMetal[3]) * 0.06335398);
+    var gsl_simpleValue_4 = mat4x4<f32>(vec4<f32>(0.14556523, 1.0, 1.5, 0.0), vec4<f32>(1.0, 1.0, 1.0, 0.0012607756), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     if (gsl_simpleDetail > 0.0) {
+      let material_polishedMetal = mat4x4<f32>(vec4<f32>(0.15, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
       let gsl_tmp_1 = p / 1.0;
       let gsl_tmp_2 = playful_glitterFlakes(gsl_cellularScan(gsl_tmp_1, 1, noiseTex).f1 * 1.0, 1.0, 0.25, noiseTex);
       let color_white = vec3<f32>(1.0, 1.0, 1.0);

@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
 )
 
 // extractMatrixFromSource parses src, extracts its mesh decls against the
@@ -77,4 +77,3 @@ return mesh(0, matrix.inverse(placement));
 		}
 	}
 }
-

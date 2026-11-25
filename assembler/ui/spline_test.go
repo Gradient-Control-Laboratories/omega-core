@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/assembler/ui"
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/ui"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 func TestExtractLocalSpline(t *testing.T) {

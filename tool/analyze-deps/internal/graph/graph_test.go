@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"gradientcontrol.com/omega/core/tool/analyze-deps/internal/graph"
+	"github.com/Gradient-Control-Laboratories/omega-core/tool/analyze-deps/internal/graph"
 )
 
 func TestBuild_SimpleModule(t *testing.T) {
@@ -16,7 +16,7 @@ func TestBuild_SimpleModule(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 
 	// Create go.mod
-	goMod := "module gradientcontrol.com/omega/core\n\ngo 1.22\n"
+	goMod := "module github.com/Gradient-Control-Laboratories/omega-core\n\ngo 1.22\n"
 	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(goMod), 0644); err != nil {
 		t.Fatalf("failed to write go.mod: %v", err)
 	}
@@ -39,7 +39,7 @@ func Hello() string { return "hello" }
 		t.Fatalf("failed to create pkgb dir: %v", err)
 	}
 	fileB := `package pkgb
-import "gradientcontrol.com/omega/core/internal/pkga"
+import "github.com/Gradient-Control-Laboratories/omega-core/internal/pkga"
 func Use() string { return pkga.Hello() }
 `
 	if err := os.WriteFile(filepath.Join(pkgBDir, "b.go"), []byte(fileB), 0644); err != nil {
@@ -51,8 +51,8 @@ func Use() string { return pkga.Hello() }
 		t.Fatalf("graph.Build failed: %v", err)
 	}
 
-	if g.ModulePrefix != "gradientcontrol.com/omega/core" {
-		t.Errorf("expected module prefix gradientcontrol.com/omega/core, got %s", g.ModulePrefix)
+	if g.ModulePrefix != "github.com/Gradient-Control-Laboratories/omega-core" {
+		t.Errorf("expected module prefix github.com/Gradient-Control-Laboratories/omega-core, got %s", g.ModulePrefix)
 	}
 
 	nodeA := g.Packages["internal/pkga"]
@@ -80,7 +80,7 @@ func Use() string { return pkga.Hello() }
 
 func TestBuild_SkipsTargetDirectory(t *testing.T) {
 	tmpDir := t.TempDir()
-	goMod := "module gradientcontrol.com/omega/core\n\ngo 1.22\n"
+	goMod := "module github.com/Gradient-Control-Laboratories/omega-core\n\ngo 1.22\n"
 	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(goMod), 0644); err != nil {
 		t.Fatalf("failed to write go.mod: %v", err)
 	}
@@ -104,7 +104,7 @@ func TestBuild_SkipsTargetDirectory(t *testing.T) {
 
 func TestBuild_ExtractsKeepHereReasonAndExternalTestFlag(t *testing.T) {
 	tmpDir := t.TempDir()
-	goMod := "module gradientcontrol.com/omega/core\n\ngo 1.22\n"
+	goMod := "module github.com/Gradient-Control-Laboratories/omega-core\n\ngo 1.22\n"
 	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(goMod), 0644); err != nil {
 		t.Fatalf("failed to write go.mod: %v", err)
 	}
@@ -131,7 +131,7 @@ var Version = "0.1.1"
 		t.Fatalf("failed to create program dir: %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(progDir, "a_ext_test.go"), []byte(`package program_test
-import "gradientcontrol.com/omega/core/parser"
+import "github.com/Gradient-Control-Laboratories/omega-core/parser"
 var _ = parser.Result{}
 `), 0644); err != nil {
 		t.Fatalf("failed to write a_ext_test.go: %v", err)

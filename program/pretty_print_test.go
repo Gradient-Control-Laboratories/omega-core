@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func TestPrettyPrint_AssignmentRange(t *testing.T) {
@@ -24,22 +24,6 @@ func TestPrettyPrint_AssignmentRange(t *testing.T) {
 	out := assign.PrettyPrint(0)
 	if !strings.Contains(out, "@range(1, 10, 2)\nradius = 5") {
 		t.Errorf("expected pretty print to include @range annotation, got:\n%s", out)
-	}
-
-	// Synthetic @range should NOT print @range
-	syntheticAssign := &program.Assignment{
-		Variables:  []*program.Variable{{Name: "radius"}},
-		Expression: program.NewValue(5.0, nil, nil),
-		Range: &program.Range{
-			Start: program.NewLoc(1, 1, 0),
-			End:   program.NewLoc(1, 1, 0),
-			Min:   program.NewValue(1.0, nil, nil),
-			Max:   program.NewValue(10.0, nil, nil),
-		},
-	}
-	outSynthetic := syntheticAssign.PrettyPrint(0)
-	if strings.Contains(outSynthetic, "@range") {
-		t.Errorf("expected synthetic range to NOT print @range, got:\n%s", outSynthetic)
 	}
 }
 

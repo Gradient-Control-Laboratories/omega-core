@@ -6,16 +6,14 @@ import (
 	"context"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // paramBallDoc: a ball whose radius is a slider, near a fixed wall. At the
 // default radius there is comfortable clearance; at the slider maximum the
 // ball overlaps the wall.
 const paramBallDoc = `
-rad = 3.0;
-rad.min = 1.0;
-rad.max = 6.5;
+@range(1.0, 6.5) rad = 3.0;
 ball = length(p) - rad;
 wall = length(p - [8.0, 0.0, 0.0]) - 2.0;
 return ball;

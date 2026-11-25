@@ -3,7 +3,7 @@ package link
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // diagnosticSink collects compiler diagnostics with lazy deduplication map allocation.

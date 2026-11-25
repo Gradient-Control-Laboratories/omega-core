@@ -10,12 +10,8 @@
 // proves 0.3 of clearance for every configuration. Widen stroke.max to 14
 // and the same call returns a counterexample naming the failing ranges
 // (the piston bottoms out on the bore floor once stroke passes ~13).
-pistonR = 6.0;
-pistonR.min = 4.0;
-pistonR.max = 7.4;
-stroke = 6.0;
-stroke.min = 0.0;
-stroke.max = 11.0;
+@range(4.0, 7.4) pistonR = 6.0;
+@range(0.0, 11.0) stroke = 6.0;
 
 cylZ(r, z0, z1) {
   return max(length(p.xy) - r, z0 - p.z, p.z - z1);

@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"gradientcontrol.com/omega/core/eval"
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // A property of a deeply remapped field — the gradient, the second-nearest

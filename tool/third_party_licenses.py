@@ -121,7 +121,7 @@ def go(texts: Texts) -> None:
     for line in run("go", "list", "-deps", "-f", "{{with .Module}}{{.Path}}\t{{.Version}}\t{{.Dir}}{{end}}",
                     *PROGRAMS).splitlines():
         path, version, folder = line.split("\t")
-        if path != "gradientcontrol.com/omega/core":
+        if path != "github.com/Gradient-Control-Laboratories/omega-core":
             modules[path] = (version, Path(folder))
     for path, (version, folder) in sorted(modules.items()):
         files = licence_files(folder)

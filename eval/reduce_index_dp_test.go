@@ -7,7 +7,7 @@ import (
 	"math"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // Two discs drawn by a reduce whose step reads the point and its own index: the

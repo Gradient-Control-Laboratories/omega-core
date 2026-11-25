@@ -11,9 +11,9 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/cmd/compile/internal/evalcmd"
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/compile/internal/evalcmd"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
 )
 
 // ball is a sphere of radius r about the origin; r is a slider, the first name declared.

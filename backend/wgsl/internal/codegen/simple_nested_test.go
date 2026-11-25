@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
 )
 
 // TestSimpleNested builds a colour whose stand-in has a stand-in of its own:

@@ -15,9 +15,7 @@
 // tile is max(tile, -drill.hole(...)). A screw's hole from fastener is one of
 // these holes, sized by the screw instead of by a drawing.
 
-holeDia = 9.0;
-holeDia.min = 6.0;
-holeDia.max = 12.0;
+@range(6.0, 12.0) holeDia = 9.0;
 
 // COUNTERBORE: a socket head sits in the pocket, the undercut relieves its
 // corner, and the lower chamfer leads into the bore at the pocket floor --

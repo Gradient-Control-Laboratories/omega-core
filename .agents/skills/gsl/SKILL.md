@@ -22,7 +22,7 @@ Build the `omega-core` CLI tools once per session:
 ```
 
 For spatial evaluation, bounds, extrema, interval certification, and surface projection, use the
-`eval` package (`gradientcontrol.com/omega/core/eval`) or the `gsl` evaluation CLI if available.
+`eval` package (`github.com/Gradient-Control-Laboratories/omega-core/eval`) or the `gsl` evaluation CLI if available.
 
 ## The Contract for Changing Geometry
 

@@ -3,8 +3,8 @@ package build_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/internal/build"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/build"
 )
 
 func TestBuild_NestedConstantList(t *testing.T) {

@@ -463,10 +463,14 @@ galvanized(baseMaterial, @range(1, 10) spangleSize, @range(0, 1) age, build, und
 /// levelled(coat, baseMaterial, build, underSize): `coat` laid as a flowed
 /// film `build` mm thick over `baseMaterial`, whose relief is `underSize` mm
 /// across. What is left of the surface beneath survives in three ways at once,
-/// all governed by the one share: its displacement is cut by it, its lay's
+/// all governed by the one share: its relief is cut by it, its lay's
 /// anisotropy by it, and its lobe's variance by its square, variance going as
-/// amplitude squared. The coat's own metallic and index are kept, so a clear
-/// film passes them through and an opaque one replaces them.
+/// amplitude squared. The film stands `build` mm on whatever the base stands
+/// on (material.withBuild): the builds add and only the relief levels, so a
+/// coat laid over a coat keeps both thicknesses, and a shape that sets this
+/// over the material it inherits is drawn that much proud of it. The coat's
+/// own metallic and index are kept, so a clear film passes them through and
+/// an opaque one replaces them.
 levelled(coat, baseMaterial, build, underSize) {
   keeps = material.filmKeeps(underSize, build);
   coatRough = material.roughness(coat);
@@ -474,9 +478,11 @@ levelled(coat, baseMaterial, build, underSize) {
   coatAlpha = coatRough * coatRough;
   baseAlpha = baseRough * baseRough;
   alpha = sqrt(coatAlpha * coatAlpha + keeps * keeps * baseAlpha * baseAlpha);
-  relief = material.displacement(coat) + material.displacement(baseMaterial) * keeps;
-  lobe = material.withRoughness(coat, sqrt(alpha));
-  return material.withDisplacement(material.withLay(lobe, material.lay(baseMaterial), material.anisotropy(baseMaterial) * keeps), relief);
+  relief = material.relief(coat) + material.relief(baseMaterial) * keeps;
+  stacked = material.build(baseMaterial) + material.build(coat) + build;
+  lobe = material.withRoughness(material.withBuild(coat, 0), sqrt(alpha));
+  surface = material.withDisplacement(material.withLay(lobe, material.lay(baseMaterial), material.anisotropy(baseMaterial) * keeps), relief);
+  return material.withBuild(surface, stacked);
 }
 
 /// clearCoat(baseMaterial, baseColor, tint, glossUnits, build, underSize): a

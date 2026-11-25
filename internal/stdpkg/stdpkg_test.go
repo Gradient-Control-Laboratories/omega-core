@@ -4,8 +4,8 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"gradientcontrol.com/omega/core/internal/stdpkg"
-	_ "gradientcontrol.com/omega/core/stdlib"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/stdpkg"
+	_ "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
 )
 
 func TestSourcesHash_CollisionResistance(t *testing.T) {

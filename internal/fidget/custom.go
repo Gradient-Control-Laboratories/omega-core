@@ -3,7 +3,7 @@ package fidget
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func (s *Scope) fromCollect(expr *program.Expression) ([]TreeIndex, *ScopedFunc, error) {

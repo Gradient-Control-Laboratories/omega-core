@@ -3,7 +3,7 @@ package property
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // innerLibPkg is a library that ANOTHER library calls qualified: one function

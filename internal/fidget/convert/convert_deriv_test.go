@@ -3,11 +3,11 @@ package convert_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/internal/fidget"
-	"gradientcontrol.com/omega/core/internal/fidget/convert"
-	"gradientcontrol.com/omega/core/internal/source"
-	"gradientcontrol.com/omega/core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget/convert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
 )
 
 // TestConvertDerivatives confirms the .dtime / .dp derivative operators are

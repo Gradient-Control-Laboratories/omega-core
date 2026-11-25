@@ -3,8 +3,8 @@ package evalcmd_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
 )
 
 // An L-bracket whose wall, 6 thick and 40 tall, is thinner than a cell of bounds' default scan.

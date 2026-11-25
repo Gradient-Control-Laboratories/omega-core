@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // loopable reports whether a reduce whose callback is fnOp can be kept for a

@@ -101,30 +101,31 @@ No semicolon follows the directive.
 Supports multiple assignment: ` + "`x, y = someFunc();`" + `
 Top-level variables are evaluated in order: declare a name before any line that uses it. Functions may be called before their definition.
 
-* **Variable Properties (sliders):**
-A top-level variable assigned a single numeric literal can be annotated
-with ` + "`name.min` and `name.max`" + ` properties (constant expressions).
-The two properties together turn that variable into a live slider in
-the editor's Parameters panel: dragging the slider rewrites the literal
-in place and updates the running shader / audio without recompiling.
+* **Sliders (` + "`@range`" + `):**
+A top-level variable assigned a single numeric literal becomes a live slider
+in the editor's Parameters panel when it carries
+` + "`@range(min, max)`" + `, with constant expressions for the limits. They may
+read other top-level variables declared above, so one slider's limits can
+follow another's. Dragging the slider rewrites the literal in place and
+updates the running shader / audio without recompiling.
 The literal's decimal places set the slider's rounding step
 (` + "`radius = 5;`" + ` snaps to integers, ` + "`radius = 0.50;`" + ` snaps to 0.01).
-An optional ` + "`name.period`" + ` property (seconds, must be > 0) makes
-the host drive the slider as a sinusoid through ` + "`[min, max]`" + ` while
+An optional third argument, ` + "`@range(min, max, period)`" + ` (seconds, must be > 0),
+makes the host drive the slider as a sinusoid through ` + "`[min, max]`" + ` while
 the animation clock runs; each animated row gets a play/pause toggle so
 the user can grab the slider manually at any time. For example:
   ` + "```gsl" + `
-  radius = 5.0;
-  radius.min = 0.5;
-  radius.max = 10.0;
-  radius.period = 4.0;  // animate radius over 4 seconds
+  @range(0.5, 10.0, 4.0) radius = 5.0;  // animate radius over 4 seconds
   return remap(sphere(radius), p);
   ` + "```" + `
+The ` + "`.min`, `.max` and `.period`" + ` properties older sources used for these limits
+were removed: a source that still sets one does not compile, and
+` + "`gsl fix -range`" + ` rewrites it to ` + "`@range`" + `.
 
 * **Control annotations:**
 A top-level variable assigned a literal can instead carry one annotation
-naming the control it wants: ` + "`@range(min, max)`" + ` is the slider
-above in one line; ` + "`@point`" + ` on an ` + "`[x, y, z]`" + ` marks a
+naming the control it wants: ` + "`@range(min, max[, period])`" + ` is the slider
+above; ` + "`@point`" + ` on an ` + "`[x, y, z]`" + ` marks a
 point in the scene, ` + "`@direction`" + ` on an ` + "`[x, y, z]`" + ` a
 direction, drawn from the origin or from ` + "`@direction(anchor)`" + `'s
 point (a ` + "`@point`" + ` variable or a constant),
@@ -170,13 +171,20 @@ color: ` + "`name.material = material.chrome;`" + ` — a record from the
 (` + "`material.glowing(rgb, strength)`" + `); transmission, with the absorption distance
 in mm over which the shape's color comes through
 (` + "`material.translucent(m, transmission, absorptionDistance)`" + `); a displacement
-height in mm, drawn by the renderer only (` + "`material.withDisplacement(m, height)`" + `);
+height in mm, drawn by the renderer only (` + "`material.withDisplacement(m, height)`" + `),
+part of which may be film standing on the surface beneath (` + "`material.withBuild(m, thickness)`" + `);
 and a lay, grooves too fine to see that stretch the highlight along a direction,
 as on brushed or turned metal (` + "`material.withLay(m, direction, anisotropy)`" + `).
 Each ` + "`with…`" + ` modifier returns a copy of ` + "`m`" + ` with one part replaced, and
 ` + "`material.blend(a, b, t)`" + ` mixes two records, ` + "`t`" + ` a field, so one field can drive
 every part at once. Build and read records with these functions rather than
 indexing their rows.
+A height moves the shape that sets it, before the booleans that use it: a
+shape that sets a material over the material it inherits is drawn moved by
+the difference, so coats stack as layers. Lay each coat as a new name over the
+last (` + "`coat1 = part; coat1.material = coating.levelled(paint, partMat, 0.2, 1.0);`" + `),
+and a cut taken after it stays flat and shows each coat as a band over what it
+covers; paint laid over the cut covers it again.
 A shape may set color, material, both, or neither; each is a field of
 ` + "`p`" + `, blended and inherited across combinations exactly like color,
 and a shape that sets neither renders with ` + "`material.standard`" + `.
@@ -209,7 +217,9 @@ A declaration property that says where a shape is: ` + "`name.box = [lo, hi];`" 
 two vec3 corners. The declaration is cut to that box, grown by ` + "`boxPad`" + `, so
 a correct box changes nothing and a tight one crops. The viewer cuts the part
 open, so its inside shows through where the box crosses it; export caps it,
-so the exported part stays closed. Declare one where the box cannot be
+so the exported part stays closed. With no ` + "`--bbox`" + `, ` + "`gsl compile`" + ` meshes the
+returned value's box, when it is bounded, ahead of ` + "`@scene`" + `.
+Declare one where the box cannot be
 inferred — on a remapped
 shape, or inside a function in terms of its parameters, as a library part
 would — and read it back with ` + "`name.box`" + ` (see Bounding box below).
@@ -220,14 +230,18 @@ would — and read it back with ` + "`name.box`" + ` (see Bounding box below).
   ` + "```" + `
 
 * **Stand-in (` + "`name.simple`" + `):**
-What a value draws as when its part is small on screen; the viewer blends
-to it across the octave below the Detail slider's rung for it. Every value's
-is itself until one is declared, as with ` + "`.box`" + `. On a part,
+What a value draws as when it is small on screen; the viewer blends to it
+across the octave below the Detail slider's rung for it. Every value's is
+itself until one is declared, as with ` + "`.box`" + `. On a shape,
 ` + "`name.simple = proxy;`" + ` is a simpler shape drawn in its place below the
-Simple rung, cropped to the part's box, with the proxy's own colour and
-material, or the part's where the proxy has none. Only a part can have a
-shape stand-in: a named value of the document that only a min or a return
-reads, and whose box is bounded. On a colour or material,
+Simple rung, cropped to the value's box where that is bounded, with the
+proxy's own colour and material, or the value's where the proxy has none.
+Any named shape can have one, wherever it is read, a remap or an
+intersection included, and it is measured at the point drawn, so a long part
+simplifies its far end first. It switches at the value's
+` + "`.featureSize`" + ` (mm) where declared, else at its box's smallest extent,
+and without either it never switches; a library part placed through a remap
+keeps the size its function declared with it. On a colour or material,
 ` + "`name.simple = flat;`" + ` is the flat look the value fades to below the
 Textures rung, and it is not evaluated past it; library textures declare
 theirs, so a checkerboard reads as its even mix. Export, meshing and every
@@ -240,6 +254,23 @@ less than what it stands in for.
   knobProxy.color = [0.8, 0.5, 0.2];
   knob.simple = knobProxy;
   return knob;
+  ` + "```" + `
+
+* **Feature (` + "`name.featureSize`" + `):**
+The value's size in mm. On its own it marks a small feature, a hole or a
+gear's teeth, that the viewer drops once it is too small to see at the point
+drawn, even when its part is large: it fades across the Detail slider's
+Vanish band and is then nothing, so it may stand only in a union or as what a
+difference takes away, where nothing leaves the rest unchanged (a bump goes,
+a hole closes); anywhere else is an error. 0 asks for its box's smallest
+extent. With ` + "`.simple`" + ` it is instead the size the value switches to
+its stand-in at, and the value may stand anywhere. Export, meshing and
+every measurement use the value itself.
+  ` + "```gsl" + `
+  hole = length(p.xy) - 0.75;
+  hole.featureSize = 1.5;
+  plate = max(box([-20, -20, -3], [20, 20, 3]), neg(hole));
+  return plate;
   ` + "```" + `
 
 * **Properties carried out of a function:** a function that builds a shape, sets ` + "`.color`" + `, ` + "`.material`" + ` or ` + "`.simple`" + ` on it and returns it hands those properties to the shape the caller gets, so the caller need not set them again. A property the caller sets on its own name wins.
@@ -341,6 +372,9 @@ to each element and collects the results. A function that returns a vector
 produces a list of vectors, which can be indexed, mapped, or reduced.
 ` + "`reduce(initial, fn, collection)`" + ` folds ` + "`fn(accumulator, value)`" + `
 over the elements starting from the initial value; the accumulator may be a vector.
+The callback may also take the element's ` + "`index`" + `, and a fold over a list of
+functions a fourth parameter, ` + "`prev`" + `, the element before (the first is handed
+itself), which it can call with constant arguments.
 
 ### **Operators**
 
@@ -359,13 +393,14 @@ All of the math related to vectors in GSL is Hadamard or component-wise vector a
 Selects result based on whether value is positive, zero, or negative.  
 Use surrounding parentheses when nesting!
 
-* **Booleans (CSG):** combine shapes with ` + "`unionSharp`" + `, ` + "`intersectSharp`" + ` and ` + "`differenceSharp`" + `, each taking the shapes as arguments or as one list: ` + "`differenceSharp(plate, holes)`" + `. To blend the seam instead, change the name and add the blend's parameters as the last arguments: ` + "`unionRound(a, b, 2)`" + ` fillets it with radius 2, and ` + "`Lp`" + `, ` + "`Exponential`" + `, ` + "`Chamfer`" + `, ` + "`ChamferRound`" + ` and ` + "`Rvachev`" + ` do likewise (a radius, a width or a setback), each with a matching ` + "`difference`" + `.
-  * **A blend is a value.** Leave the shapes out and a blend returns the operator itself, which takes a list of shapes: ` + "`intersectRound(2)`" + `. Hand it to anything that wants a blend. ` + "`boxCentered(vector.zero, [20, 20, 20], intersectRound(2))`" + ` rounds every edge of the box, and ` + "`intersectChamferBlend(a, b, setback, blend)`" + ` takes another blend to combine its chamfer planes. Take one as a parameter of your own function and it works with any blend; call it through the parameter's name:
+* **Booleans (CSG):** combine shapes with ` + "`unionSharp`" + `, ` + "`intersectSharp`" + ` and ` + "`differenceSharp`" + `, each taking the shapes as arguments or as one list: ` + "`differenceSharp(plate, holes)`" + `. To blend the seam instead, change the name and add the blend's parameters as the last arguments: ` + "`unionRound(a, b, 2)`" + ` fillets it with radius 2, and ` + "`Lp`" + `, ` + "`Exponential`" + `, ` + "`Chamfer`" + `, ` + "`ChamferRound`" + ` and ` + "`Rvachev`" + ` do likewise (a radius, a width or an offset), each with a matching ` + "`difference`" + `.
+  * **A blend is a value.** Leave the shapes out and a blend returns the operator itself, which takes a list of shapes: ` + "`intersectRound(2)`" + `. Hand it to anything that wants a blend. ` + "`boxCentered(vector.zero, [20, 20, 20], intersectRound(2))`" + ` rounds every edge of the box, and ` + "`intersectChamferBlend(a, b, offset, blend)`" + ` takes another blend to combine its chamfer planes. Take one as a parameter of your own function and it works with any blend; call it through the parameter's name:
   ` + "```gsl" + `
   joined(blend) { return blend([sphere(vector.zero, 10), sphere([8, 0, 0], 10)]); }
   fused = joined(unionRound(2));
   ` + "```" + `
   * The sharp ones are ` + "`min`" + `, ` + "`max`" + ` and ` + "`max(a, -b)`" + ` underneath.
+  * **Chamfer by size.** ` + "`Chamfer`" + `'s offset is a setback along each face only at a square edge. To size a chamfer at an edge of any angle, give ` + "`intersectChamferNormalized(a, b, depth)`" + ` the depth, the distance from the edge to the bevel. To chamfer by a setback along each face or by the bevel's width, convert: ` + "`intersectChamferNormalized(a, b, chamferDepthFromWidth(3, na, nb), na, nb)`" + `, with ` + "`na`" + ` and ` + "`nb`" + ` the faces' unit normals at the edge (` + "`normalize(a.dp)`" + `), and ` + "`chamferDepthFromSetback`" + ` likewise. ` + "`intersectChamferSetbacks(a, b, 1, 2, na, nb)`" + ` sets back 1 along ` + "`a`" + `'s face and 2 along ` + "`b`" + `'s. Each has a ` + "`union`" + ` and a ` + "`difference`" + `.
 
 ### **Operator Precedence**
 

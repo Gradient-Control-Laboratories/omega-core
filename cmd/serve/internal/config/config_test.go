@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/cmd/serve/internal/config"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/serve/internal/config"
 )
 
 func TestParseFlags_Defaults(t *testing.T) {

@@ -6,11 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/assembler/source"
-	internalsource "gradientcontrol.com/omega/core/internal/source"
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/source"
+	internalsource "github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func newTestMockManager() source.Manager {

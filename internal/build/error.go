@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // Convert an error to a build error with source code context.

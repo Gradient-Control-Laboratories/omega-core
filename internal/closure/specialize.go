@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/program"
 )
 
 // specializeHigherOrderCall transforms call sites that pass functions or closures
@@ -68,7 +68,18 @@ func (t *transformer) specializeHigherOrderCall(file *program.PackageFile, enclo
 			hasFunctionArg = true
 			listArgs[paramName] = els
 			continue
-		} else if calleeFn != nil {
+		} else if t.paramFoldedDifferentiating(calleeFileOr(calleeFile, file), calleeFn, paramName, map[listParamKey]bool{}) {
+			// A list of fields the callee folds with a function that
+			// differentiates binds the same way: the property pass, which runs
+			// before folds over values are unrolled, needs each element as an
+			// argument it can see.
+			if els := t.foldElements(file, enclosingFn, arg); len(els) > 0 {
+				hasFunctionArg = true
+				listArgs[paramName] = els
+				continue
+			}
+		}
+		if calleeFn != nil {
 			scopeFile := calleeFile
 			if scopeFile == nil {
 				scopeFile = file
@@ -298,8 +309,11 @@ func (t *transformer) specializeHigherOrderCall(file *program.PackageFile, enclo
 		}
 	}
 
+	// The clone is the callee's body, so it starts from the callee's lexical
+	// environment, not the caller's, and adds the functions bound to its
+	// parameters.
 	paramEnv := make(map[string]*closureVal)
-	for k, v := range env {
+	for k, v := range t.lexicalEnv(calleeFile, calleeFt, env) {
 		paramEnv[k] = v
 	}
 	for paramName, cv := range argFnMap {

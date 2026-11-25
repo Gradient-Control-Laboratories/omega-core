@@ -6,10 +6,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
+	"github.com/Gradient-Control-Laboratories/omega-core/parser/internal/identifier2"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 	"github.com/alecthomas/participle/v2"
-	"gradientcontrol.com/omega/core/internal/scope"
-	"gradientcontrol.com/omega/core/parser/internal/identifier2"
-	"gradientcontrol.com/omega/core/program"
 )
 
 func buildImports(pkgFileScope scope.BuilderScope, source string, imports []*Import) ([]program.Diagnostic, error) {
@@ -189,7 +189,7 @@ func buildStepImports(pkgFileScope scope.BuilderScope, imports []*StepImport) er
 
 func buildWarpImports(pkgFileScope scope.BuilderScope, imports []*WarpImport) error {
 	for _, imp := range imports {
-		path, err := verifyAssetImportPath(imp.Path, "warp", ".warp", ".castsim")
+		path, err := verifyAssetImportPath(imp.Path, "warp", ".warp")
 		if err != nil {
 			return &participle.ParseError{Pos: imp.Pos, Msg: err.Error()}
 		}

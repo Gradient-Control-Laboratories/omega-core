@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/source"
 )
 
 type errManager struct {

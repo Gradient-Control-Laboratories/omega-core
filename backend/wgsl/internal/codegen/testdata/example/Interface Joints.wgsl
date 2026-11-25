@@ -233,9 +233,24 @@ fn drill_gcl_closure_thru(p: vec3<f32>, vector_zero: vec3<f32>, vector_dirZ: vec
   return builtin_cylinderZ(p, vector_dirZ, vector_zero, dia / 2.0);
 }
 
+fn gsl_fastener_gcl_closure_hole_2_remap(p: vec3<f32>, vector_zero: vec3<f32>, vector_dirZ: vec3<f32>, bored: f32, clear: f32, zTop: f32) -> f32 {
+  let mouth = zTop;
+  let stack = min(min(100000.0, drill_gcl_closure_bore(p, vector_zero, vector_dirZ, bored, 0.0, mouth)), drill_gcl_closure_thru(p, vector_zero, vector_dirZ, clear, mouth));
+  return stack;
+}
+
 fn fastener_gcl_closure_hole_2(p: vec3<f32>, vector_zero: vec3<f32>, vector_dirZ: vec3<f32>, bored: f32, clear: f32, zTop: f32) -> f32 {
   let mouth = zTop;
-  return min(min(100000.0, drill_gcl_closure_bore(p, vector_zero, vector_dirZ, bored, 0.0, mouth)), drill_gcl_closure_thru(p, vector_zero, vector_dirZ, clear, mouth));
+  let mouthDepth = gsl_fastener_gcl_closure_hole_2_remap(vec3<f32>(0.0, 0.0, mouth - 0.01), vector_zero, vector_dirZ, bored, clear, zTop);
+  let gsl_featureSize = -2.0 * mouthDepth;
+  let gsl_featureWeight = gsl_featureWeight(gsl_featureSize);
+  var gsl_feature = 100000.0;
+  if (gsl_featureWeight > 0.0) {
+    let stack = min(min(100000.0, drill_gcl_closure_bore(p, vector_zero, vector_dirZ, bored, 0.0, mouth)), drill_gcl_closure_thru(p, vector_zero, vector_dirZ, clear, mouth));
+    gsl_feature = stack + (1.0 - gsl_featureWeight) * 0.5 * gsl_featureSize;
+  }
+  let cutAway = gsl_feature;
+  return cutAway;
 }
 
 fn fastener_shcsHole(p: vec3<f32>, vector_zero: vec3<f32>, vector_dirZ: vec3<f32>, nominalDia: f32, fit: f32) -> f32 {
@@ -262,9 +277,24 @@ fn drill_gcl_closure_blind(p: vec3<f32>, vector_zero: vec3<f32>, vector_dirZ: ve
   return drill_drillVoid(p, vector_zero, vector_dirZ, zTop, dia, depth, 2.0594885);
 }
 
+fn gsl_fastener_gcl_closure_hole_3_remap(p: vec3<f32>, vector_zero: vec3<f32>, vector_dirZ: vec3<f32>, depth: f32, minor: f32, zTop: f32) -> f32 {
+  let mouth = zTop;
+  let stack = min(100000.0, drill_gcl_closure_blind(p, vector_zero, vector_dirZ, minor, depth, mouth));
+  return stack;
+}
+
 fn fastener_gcl_closure_hole_3(p: vec3<f32>, vector_zero: vec3<f32>, vector_dirZ: vec3<f32>, minor: f32, depth: f32, zTop: f32) -> f32 {
   let mouth = zTop;
-  return min(100000.0, drill_gcl_closure_blind(p, vector_zero, vector_dirZ, minor, depth, mouth));
+  let mouthDepth = gsl_fastener_gcl_closure_hole_3_remap(vec3<f32>(0.0, 0.0, mouth - 0.01), vector_zero, vector_dirZ, depth, minor, zTop);
+  let gsl_featureSize = -2.0 * mouthDepth;
+  let gsl_featureWeight = gsl_featureWeight(gsl_featureSize);
+  var gsl_feature = 100000.0;
+  if (gsl_featureWeight > 0.0) {
+    let stack = min(100000.0, drill_gcl_closure_blind(p, vector_zero, vector_dirZ, minor, depth, mouth));
+    gsl_feature = stack + (1.0 - gsl_featureWeight) * 0.5 * gsl_featureSize;
+  }
+  let cutAway = gsl_feature;
+  return cutAway;
 }
 
 fn fastener_tappedHole(p: vec3<f32>, vector_zero: vec3<f32>, vector_dirZ: vec3<f32>, nominalDia: f32, shankLength: f32) -> f32 {
@@ -326,9 +356,24 @@ fn drill_gcl_closure_countersink(p: vec3<f32>, vector_dirZ: vec3<f32>, vector_ze
   return drill_coneVoid(p, vector_dirZ, vector_zero, zTop, dia, included);
 }
 
+fn gsl_fastener_gcl_closure_hole_remap(p: vec3<f32>, vector_dirZ: vec3<f32>, vector_zero: vec3<f32>, clear: f32, rim: f32, zTop: f32) -> f32 {
+  let mouth = zTop;
+  let stack = min(min(100000.0, drill_gcl_closure_countersink(p, vector_dirZ, vector_zero, rim, 1.5707963, mouth)), drill_gcl_closure_thru(p, vector_zero, vector_dirZ, clear, mouth));
+  return stack;
+}
+
 fn fastener_gcl_closure_hole(p: vec3<f32>, vector_dirZ: vec3<f32>, vector_zero: vec3<f32>, rim: f32, clear: f32, zTop: f32) -> f32 {
   let mouth = zTop;
-  return min(min(100000.0, drill_gcl_closure_countersink(p, vector_dirZ, vector_zero, rim, 1.5707963, mouth)), drill_gcl_closure_thru(p, vector_zero, vector_dirZ, clear, mouth));
+  let mouthDepth = gsl_fastener_gcl_closure_hole_remap(vec3<f32>(0.0, 0.0, mouth - 0.01), vector_dirZ, vector_zero, clear, rim, zTop);
+  let gsl_featureSize = -2.0 * mouthDepth;
+  let gsl_featureWeight = gsl_featureWeight(gsl_featureSize);
+  var gsl_feature = 100000.0;
+  if (gsl_featureWeight > 0.0) {
+    let stack = min(min(100000.0, drill_gcl_closure_countersink(p, vector_dirZ, vector_zero, rim, 1.5707963, mouth)), drill_gcl_closure_thru(p, vector_zero, vector_dirZ, clear, mouth));
+    gsl_feature = stack + (1.0 - gsl_featureWeight) * 0.5 * gsl_featureSize;
+  }
+  let cutAway = gsl_feature;
+  return cutAway;
 }
 
 fn fastener_countersunkHole(p: vec3<f32>, vector_dirZ: vec3<f32>, vector_zero: vec3<f32>, nominalDia: f32, fit: f32) -> f32 {
@@ -519,6 +564,7 @@ fn joint_insert__spec2(p: vec3<f32>, vector_dirZ: vec3<f32>, vector_zero: vec3<f
 }
 
 fn gsl_shapeParts(p: vec3<f32>, time: f32) -> array<f32, 8> {
+  gsl_featurePixel = select(0.0, gsl_vanishEye.w * mix(max(length(gsl_vanishEye.xyz - p), 1.0), 1.0, gsl_vanishView.x), gsl_vanishEye.w > 0.0);
   gsl_partNear = vec3<f32>(1e10, 1e10, 1e10);
   let gsl_partLo = vec3<f32>(-40.0, -20.0, -25.0);
   let gsl_partHi = vec3<f32>(40.0, 20.0, 0.0);
@@ -794,6 +840,13 @@ fn gsl_vanish(lo: vec3<f32>, hi: vec3<f32>) -> vec4<f32> {
 
 fn gsl_boxDistance(q: vec3<f32>, lo: vec3<f32>, hi: vec3<f32>) -> f32 {
   return length(max(max(lo - q, q - hi), vec3<f32>(0.0)));
+}
+
+var<private> gsl_featurePixel: f32 = 0.0;
+
+fn gsl_featureWeight(size: f32) -> f32 {
+  if (gsl_featurePixel <= 0.0) { return 1.0; }
+  return smoothstep(gsl_vanishView.y, max(gsl_vanishView.z, gsl_vanishView.y + 1e-3), size / gsl_featurePixel);
 }
 
 var<private> gsl_simpleDetail: f32 = 1.0;

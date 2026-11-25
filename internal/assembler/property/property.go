@@ -18,7 +18,7 @@ package property
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // Value is a property's abstract value for a single operand. Each Domain casts
@@ -283,9 +283,27 @@ func (f *frame) evalOperand(op *program.Operand) (Value, error) {
 // function that called it. It is also what lets a remap re-derive a named field
 // under its own p, rather than take the value its parent already has.
 func (f *frame) lookup(name string) (Value, error) {
+	underRemap := false
 	for s := f; s != nil; s = s.parent {
 		if v, ok := s.vars[name]; ok {
+			// UNDER A REMAP, A PARAMETER THAT VARIES WITH p IS ITS ARGUMENT AGAIN.
+			// A call binds a parameter to its argument's value, evaluated in the
+			// caller's frame at the caller's p. A remap inside the function rebinds
+			// p, and a declaration read there re-derives under it (below); a
+			// parameter read there did not, so f(v) { return remap(v, q); } took v's
+			// derivative as if v had not moved, and .dp lost the chain rule through
+			// q while the value, which the backend evaluates, stayed right. So the
+			// argument's operand is evaluated again, in the caller's frame with p
+			// rebound to the remap's coordinate.
+			if underRemap {
+				if b, ok := s.argOps[name]; ok && b.frame != nil && b.frame.operandVariesWithP(b.op, map[string]bool{}) {
+					return f.reboundArgument(b)
+				}
+			}
 			return v, nil
+		}
+		if s.rebound {
+			underRemap = true
 		}
 		body, ok := s.decls[name]
 		mb, destructured := s.multiDecls[name]
@@ -560,10 +578,15 @@ func (f *frame) listElements(op *program.Operand) ([]Value, error) {
 // value.
 //
 // ok is false when the call is not ours to resolve — a builtin, an unknown or
-// multi-return function, or a call a Domain handles itself. eval and evalFnCall
-// consult the Domain BEFORE imports, and this preserves that precedence: the
-// colour gradient and the second-closest property intercept calls and still see
-// them exactly as they did.
+// multi-return function, or a call a Domain handles itself. evalCall consults
+// the Domain BEFORE inlining, and this preserves that precedence, asking the
+// Domain in the same order (ArgsCall, then Call) and leaving to it exactly the
+// calls it handles: the colour gradient and the second-closest property
+// intercept calls and still see them exactly as they did. A call the Domain
+// declines is listed here like any other. It once was not: any intercepting
+// Domain stopped the listing, so in the box domain a reduce over a list a
+// user function returned (profileXY's curvatures, made by map in another
+// function) was handed the whole list as one element.
 func (f *frame) callListElements(fc *program.FnCall) ([]Value, bool, error) {
 	if fc.Reference == nil || program.IsBuiltin(fc.Reference.Name) {
 		return nil, false, nil
@@ -578,8 +601,12 @@ func (f *frame) callListElements(fc *program.FnCall) ([]Value, bool, error) {
 			return nil, false, nil
 		}
 		scope = f.namespaceFrame(ns)
-	} else if _, intercepts := f.eng.dom.(CallDomain); intercepts {
-		return nil, false, nil
+	} else if ad, ok := f.eng.dom.(ArgsCallDomain); ok {
+		if _, handled, err := ad.ArgsCall(fc.Reference.Name, fc.Arguments, f.eval); err != nil {
+			return nil, false, err
+		} else if handled {
+			return nil, false, nil
+		}
 	}
 	fn := scope.resolveFunc(fc.Reference.Name, len(fc.Arguments))
 	if fn == nil || len(fn.Returns) != 1 {
@@ -588,6 +615,13 @@ func (f *frame) callListElements(fc *program.FnCall) ([]Value, bool, error) {
 	args, err := f.evalAll(fc.Arguments)
 	if err != nil {
 		return nil, false, err
+	}
+	if cd, ok := f.eng.dom.(CallDomain); ok && fc.Reference.Prefix == "" {
+		if _, handled, err := cd.Call(fc.Reference.Name, args); err != nil {
+			return nil, false, err
+		} else if handled {
+			return nil, false, nil
+		}
 	}
 	// A non-list return falls through to single-value eval inside listElements,
 	// which is what the old path did for it anyway.
@@ -794,6 +828,35 @@ func (f *frame) remapped(v Value) Value {
 	return v
 }
 
+// reboundArgument evaluates a parameter's argument operand in the frame that
+// bound it, with p (and x, y, z) rebound to the p a remap has given f: what the
+// argument is where the remap reads it.
+func (f *frame) reboundArgument(b argBinding) (Value, error) {
+	q, err := f.lookup(program.PVarName)
+	if err != nil {
+		return nil, err
+	}
+	caller := b.frame
+	at := &frame{
+		eng:    f.eng,
+		parent: caller,
+		vars: map[string]Value{
+			program.PVarName: q,
+			program.XVarName: f.eng.dom.Access(q, []*program.Operand{ref(program.XVarName)}),
+			program.YVarName: f.eng.dom.Access(q, []*program.Operand{ref(program.YVarName)}),
+			program.ZVarName: f.eng.dom.Access(q, []*program.Operand{ref(program.ZVarName)}),
+		},
+		decls:      caller.decls,
+		multiDecls: caller.multiDecls,
+		funcs:      caller.funcs,
+		argOps:     caller.argOps,
+		evaluating: map[string]bool{},
+		nameable:   caller.nameable,
+		rebound:    true,
+	}
+	return at.eval(b.op)
+}
+
 // remapFrame builds the child scope a remap evaluates its target in: p (and
 // x/y/z) rebound to the coordinate operand's value, everything else inherited.
 func (f *frame) remapFrame(expr *program.Expression) (*frame, error) {
@@ -856,8 +919,15 @@ func (f *frame) declVariesWithP(name string, seen map[string]bool) bool {
 	if body, ok := f.decls[name]; ok {
 		return f.operandVariesWithP(body, seen)
 	}
-	_, destructured := f.multiDecls[name]
-	return destructured
+	if _, destructured := f.multiDecls[name]; destructured {
+		return true
+	}
+	// A parameter varies with p as its argument does, read in the caller's frame
+	// (a fresh seen set: the caller's names are its own).
+	if b, ok := f.lookupArg(name); ok && b.frame != nil {
+		return b.frame.operandVariesWithP(b.op, map[string]bool{})
+	}
+	return false
 }
 
 func (f *frame) operandVariesWithP(op *program.Operand, seen map[string]bool) bool {

@@ -3,13 +3,13 @@ package rules_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/tool/analyze-deps/internal/graph"
-	"gradientcontrol.com/omega/core/tool/analyze-deps/internal/rules"
+	"github.com/Gradient-Control-Laboratories/omega-core/tool/analyze-deps/internal/graph"
+	"github.com/Gradient-Control-Laboratories/omega-core/tool/analyze-deps/internal/rules"
 )
 
 func TestCheckRules_LayerHierarchy(t *testing.T) {
 	g := &graph.Graph{
-		ModulePrefix: "gradientcontrol.com/omega/core",
+		ModulePrefix: "github.com/Gradient-Control-Laboratories/omega-core",
 		Packages: map[string]*graph.PackageNode{
 			"program": {
 				ImportPath: "program",
@@ -36,7 +36,7 @@ func TestCheckRules_LayerHierarchy(t *testing.T) {
 
 func TestCheckRules_BackendIsolation(t *testing.T) {
 	g := &graph.Graph{
-		ModulePrefix: "gradientcontrol.com/omega/core",
+		ModulePrefix: "github.com/Gradient-Control-Laboratories/omega-core",
 		Packages: map[string]*graph.PackageNode{
 			"backend/audio": {
 				ImportPath: "backend/audio",
@@ -63,7 +63,7 @@ func TestCheckRules_BackendIsolation(t *testing.T) {
 
 func TestCheckRules_PassSeparation(t *testing.T) {
 	g := &graph.Graph{
-		ModulePrefix: "gradientcontrol.com/omega/core",
+		ModulePrefix: "github.com/Gradient-Control-Laboratories/omega-core",
 		Packages: map[string]*graph.PackageNode{
 			"internal/lower": {
 				ImportPath: "internal/lower",
@@ -90,15 +90,15 @@ func TestCheckRules_PassSeparation(t *testing.T) {
 
 func TestCheckRules_FrameworkCreep(t *testing.T) {
 	g := &graph.Graph{
-		ModulePrefix: "gradientcontrol.com/omega/core",
+		ModulePrefix: "github.com/Gradient-Control-Laboratories/omega-core",
 		Packages: map[string]*graph.PackageNode{
 			"assembler": {
 				ImportPath: "assembler",
 				Imports: []graph.ImportEdge{
 					{
 						FromPkg:   "assembler",
-						ToPkg:     "gradientcontrol.com/stirigma/common/errlog",
-						RawImport: "gradientcontrol.com/stirigma/common/errlog",
+						ToPkg:     "github.com/Gradient-Control-Laboratories/stirigma/common/errlog",
+						RawImport: "github.com/Gradient-Control-Laboratories/stirigma/common/errlog",
 						FilePath:  "assembler/bad.go",
 						Line:      8,
 					},
@@ -118,7 +118,7 @@ func TestCheckRules_FrameworkCreep(t *testing.T) {
 
 func TestCheckRules_ProgramExternalTestAllowsParserOnly(t *testing.T) {
 	g := &graph.Graph{
-		ModulePrefix: "gradientcontrol.com/omega/core",
+		ModulePrefix: "github.com/Gradient-Control-Laboratories/omega-core",
 		Packages: map[string]*graph.PackageNode{
 			"program": {
 				ImportPath: "program",

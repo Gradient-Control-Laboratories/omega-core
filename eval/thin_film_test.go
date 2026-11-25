@@ -7,7 +7,7 @@ import (
 	"math"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // colorEval evaluates colour expressions, each a vec3, at one point, a

@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // TestInchRobertsonScrews checks ASME B18.6.3's square recessed machine screws

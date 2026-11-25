@@ -1,0 +1,58 @@
+@scene(220, 20)
+
+// Profiles revolved part of the way round. revolve(profile, axisPoint,
+// axisDirection, angle) turns a profile about a line in its own plane through
+// angle radians, from the sketch plane, with flat caps where it starts and
+// stops; a negative angle turns the other way. On the left, an L with a
+// fillet and a round, turned through sweepAngle about a line one bore radius
+// off its heel: a flanged sleeve cut open, coloured by a checkerboard in its
+// frame, u the angle round the axis and v the distance along the L's
+// outline. On the right, a plain rectangle turned the other way through
+// archAngle, an arch. The distance stays exact, caps included. Lengths are in
+// mm.
+
+// The L: arms, fillet and heel round, and the bore.
+@range(30, 50) armLength = 40.0;
+@range(8, 20) armWidth = 14.0;
+@range(1, 10) filletRadius = 6.0;
+@range(1, 8) heelRadius = 5.0;
+@range(2, 30) boreRadius = 10.0;
+
+// How far round each goes, in radians.
+@range(0.2, 6.2) sweepAngle = 4.0;
+@range(-3.1, -0.2) archAngle = -2.4;
+
+// The arch's section: its width across and its thickness, and the radius it
+// is turned at.
+@range(4, 20) archWidth = 10.0;
+@range(2, 10) archThickness = 4.0;
+@range(10, 40) archRadius = 24.0;
+
+// Checkerboard: squares to a turn of u, and their length along v.
+@range(6, 48) squaresRound = 24.0;
+@range(2, 12) checkerSize = 6.0;
+
+bracketProfile() {
+  return profileXY(
+    [[heelRadius, 0], [armLength, 0], [armLength, armWidth],
+     [armWidth + filletRadius, armWidth], [armWidth, armWidth + filletRadius],
+     [armWidth, armLength], [0, armLength], [0, heelRadius]],
+    [0, 0, 0, neg(1 / filletRadius), 0, 0, 0, 1 / heelRadius]);
+}
+
+// The rectangle, counterclockwise, archRadius out from the axis at x = 0.
+archProfile() {
+  return profileXY(
+    [[archRadius, neg(archWidth) / 2], [archRadius + archThickness, neg(archWidth) / 2],
+     [archRadius + archThickness, archWidth / 2], [archRadius, archWidth / 2]]);
+}
+
+sleeve = revolve(bracketProfile(), [neg(boreRadius), 0], [0, 1], sweepAngle);
+sleeve.color = sin(squaresRound / 2 * sleeve.u) * sin(pi * sleeve.v / checkerSize) > 0 ? color.gray : color.lightGray;
+
+arch = revolve(archProfile(), [0, 0], [0, 1], archAngle);
+
+left = remap(sleeve, p - [-50, 0, 0]);
+right = remap(arch, p - [60, 0, 0]);
+
+return left, right;

@@ -7,7 +7,7 @@ package shard6
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/eval/internal/boxsweep"
+	"github.com/Gradient-Control-Laboratories/omega-core/eval/internal/boxsweep"
 )
 
 func TestBoundingBoxSoundness(t *testing.T) {

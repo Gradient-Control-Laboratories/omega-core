@@ -6,10 +6,10 @@ import (
 	"context"
 	"testing"
 
-	"gradientcontrol.com/omega/core/eval"
-	"gradientcontrol.com/omega/core/internal/source"
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
 )
 
 // An L-bracket: a base 60 by 40 by 8 with a wall 6 thick standing 40 tall along one edge.

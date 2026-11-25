@@ -3,7 +3,7 @@ package build
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func (b *Builder) visitRemap(op *program.Operand, expr *program.Expression) (Expression, error) {

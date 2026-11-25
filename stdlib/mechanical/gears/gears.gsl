@@ -111,9 +111,26 @@ gearProfile(numTeeth, moduleVal, pressureAngle, rotOffset, dedendumClearance, kS
 
   repeatedTooth = remap(singleTooth(), [rpx, rpy, p.z]);
   addClip = remap(circleXY([0, 0], addendumRadius), [opx, opy, p.z]);
-  toothProfile = intersectChamfer(repeatedTooth, addClip, kSmall);
+  // The flank meets the tip circle at an obtuse edge, where intersectChamfer's
+  // bevel overstates the distance; the normalized one is the same surface. Its
+  // normals are the two faces' at that edge, in the flank's own frame: the
+  // involute's outward normal at the tip, [sin, -cos] of its roll, and the tip
+  // circle's, the corner's own direction. Only the angle between them counts,
+  // and it is the same at every tooth, so they are given rather than taken from
+  // the fields' gradients, which would differentiate the whole tooth.
+  tipRoll = sqrt(addendumRadius * addendumRadius - baseRadius * baseRadius) / baseRadius;
+  tipCorner = [cos(tipRoll) + tipRoll * sin(tipRoll), sin(tipRoll) - tipRoll * cos(tipRoll)];
+  toothProfile = intersectChamferNormalized(repeatedTooth, addClip, kSmall,
+                                            [sin(tipRoll), neg(cos(tipRoll))], tipCorner / length(tipCorner));
   dedBody = remap(circleXY([0, 0], dedendumRadius), [opx, opy, p.z]);
-  return unionRound(toothProfile, dedBody, roundK);
+  profile = unionRound(toothProfile, dedBody, roundK);
+  // Give way to the pitch circle when the teeth are too small to see (builtin
+  // simplified): the circle that rolls on its mate's. Drawn, the field is the
+  // profile's unchanged; when the teeth shrink below a tooth thickness,
+  // pi * moduleVal / 2.0, the viewer switches to the pitch disc.
+  profile.simple = remap(circleXY([0, 0], pitchRadius), [opx, opy, p.z]);
+  profile.featureSize = pi * moduleVal / 2.0;
+  return profile;
 }
 
 // gearReach: how far a spur gear reaches from its axis, its addendum circle,
@@ -288,6 +305,22 @@ gearPair(numTeeth1, numTeeth2, moduleVal, pressureAngle, thickness, helixAngle, 
 /// atan(numTeeth / mateTeeth).
 bevelPitchAngle(numTeeth, mateTeeth, shaftAngle) {
   return atan(sin(shaftAngle), mateTeeth / numTeeth + cos(shaftAngle));
+}
+
+/// The distance along the axis from a bevel gear's pitch apex to its crown,
+/// the outer tooth-tip corner where the tip cone meets the back cone: the
+/// drawing dimension a bevel gear's faces are placed from. The gear is
+/// `numTeeth` teeth against a mate of `mateTeeth` at `shaftAngle`, module
+/// `moduleVal` at the outer end, as bevelGear and bevelTooth build it. Its toe's
+/// tip corner lies at the same distance scaled by (outer cone distance - face
+/// width) / outer cone distance. A shade from the textbook R cos(delta) -
+/// m sin(delta), which takes the addendum angle as atan(m / R) where these
+/// teeth have m / R.
+bevelApexToCrown(numTeeth, mateTeeth, moduleVal, shaftAngle) {
+  pitchAngle = bevelPitchAngle(numTeeth, mateTeeth, shaftAngle);
+  outerCone = numTeeth * moduleVal / (2 * sin(pitchAngle));
+  addendumAngle = moduleVal / outerCone;
+  return outerCone * cos(pitchAngle + addendumAngle) / cos(addendumAngle);
 }
 
 /// The teeth of a bevel gear as an unbounded conical field: apex at the

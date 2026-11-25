@@ -175,8 +175,11 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
   const displaceActive = hasMaterialField;
   // The codegen's per-return displaced composite (gsl-displace.js).
   const perReturn = wgslCode.includes("fn gsl_sdShapeDisplaced(");
+  // The var displacementScale() reads, when the program reads it (layered
+  // coats switching by layer); see backend/wgsl/internal/codegen/displace.go.
+  const scaleVar = wgslCode.includes("var<private> gsl_dispScaleK");
   const gsl_displaceSample = displaceActive
-    ? wgslFn(injectExtraArgs(displaceSampleWGSL({ extraParamsWGSL, materialAtIdx, parts, perReturn })),
+    ? wgslFn(injectExtraArgs(displaceSampleWGSL({ extraParamsWGSL, materialAtIdx, parts, perReturn, scaleVar })),
              [gsl_shape, gsl_material, gsl_displaceState, ...partDetailDeps, ...(perReturn ? [sdShape] : [])])
     : null;
   const gsl_sdDisplaced = displaceActive
@@ -218,9 +221,25 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
   // compiles once per call written out (the march's taps below do the same).
   // Each tap lands on its own component, n.x = d(p + e x) - d(p - e x) and so
   // on, as the six calls written out computed it.
+  //
+  // Analytic normals (Render panel, Normals: Analytic): the server then emits
+  // `fn gsl_gradField(p, time, idx, …) -> vec4<f32>`, the spatial gradient of
+  // return idx's distance in xyz and w = 1, or w = 0 for a return it could not
+  // differentiate. Where w = 1 the normal is that gradient, exact at p rather
+  // than averaged over eps; elsewhere it falls through to the taps. Displaced
+  // relief is not in the gradient, so with displacement drawn
+  // (gsl_dispScale != 0) the taps are taken too.
+  const hasGradField = wgslCode.includes("fn gsl_gradField(");
+  const analyticNormalWGSL = hasGradField
+    ? `
+            ${displaceActive ? "if (gsl_dispScale == 0.0) {" : "{"}
+                let g = gsl_gradField(p, time, idx${extraArgsWGSL});
+                if (g.w > 0.5 && dot(g.xyz, g.xyz) > 0.0) { return normalize(g.xyz); }
+            }`
+    : "";
   const gsl_calcNormal = wgslFn(
     marchDisplaced(`
-        fn gsl_calcNormal( p : vec3<f32>, time: f32, eps: f32${extraParamsWGSL} ) -> vec3<f32> {
+        fn gsl_calcNormal( p : vec3<f32>, time: f32, eps: f32, idx: u32${extraParamsWGSL} ) -> vec3<f32> {${analyticNormalWGSL}
             let e = max(eps, 1e-6);
             var n = vec3<f32>(0.0);
             for (var k = 0u; k < 6u; k = k + 1u) {
@@ -564,7 +583,7 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
                 // dim to renderKnobs.z (25% unless Back faces is Full) — so a
                 // closed solid viewed from outside, where the normal already
                 // faces the camera, is bit-for-bit unchanged.
-                let rawNormal = gsl_calcNormal(hitPos, time, normalEps);
+                let rawNormal = gsl_calcNormal(hitPos, time, normalEps, hitSd.shapeIndex);
                 let facingAway = dot(rayDir, rawNormal) > 0.0;
                 let localNormal = select(rawNormal, -rawNormal, facingAway);
                 ${hasColorField
@@ -620,7 +639,7 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
                 // Backface: flip the outward normal to shade the interior surface at renderKnobs.z
                 gsl_pw = ${texturePw("gsl_pwScale * pixelScale * mix(max(backT, 1.0), 1.0, camOrtho)")};${setHitState}
                 let normalEps = max(baseGradEps, pixelScale * mix(max(backT, 1.0), 1.0, camOrtho) * 0.05);
-                let localNormal = -gsl_calcNormal(backHitPos, time, normalEps);
+                let localNormal = -gsl_calcNormal(backHitPos, time, normalEps, backHitSd.shapeIndex);
                 ${hasColorField
                   ? `${atScreenPw("gsl_cf", "let gsl_cf = gsl_colorField(backHitPos, time, backHitSd.shapeIndex);")}
                 let baseColor = select(gsl_shapeColor(backHitSd.shapeIndex, ${colorArgsWGSL.join(", ")}), gsl_cf.rgb, gsl_cf.a > 0.5);`

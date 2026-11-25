@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // The frame reads .u and .v refuse the two programs they cannot mean. Their

@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/assembler/meshplan"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/meshplan"
 )
 
 // TestSliceMultiReturnConstFold is the mesh-placement reproduction for PR #399:
@@ -68,4 +68,3 @@ func TestSliceMultiReturnConstFold(t *testing.T) {
 		}
 	}
 }
-

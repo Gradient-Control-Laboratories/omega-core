@@ -1,6 +1,6 @@
 package convert
 
-import "gradientcontrol.com/omega/core/internal/build"
+import "github.com/Gradient-Control-Laboratories/omega-core/internal/build"
 
 type Scope struct {
 	parent         *Scope
