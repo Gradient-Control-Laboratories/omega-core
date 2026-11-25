@@ -1633,7 +1633,6 @@ return vol + pt.x;
 	}
 }
 
-<<<<<<< HEAD
 func TestAssemble_TopoFoldWithUITransformDerivedMatrix(t *testing.T) {
 	pkgMgr := source.NewLocalManager("../stdlib")
 	src := `import . "omega";
@@ -1646,17 +1645,6 @@ branch() {
   return pt.x + pt.z + n.z;
 }
 return branch(), mesh(partId, partXfScaled);
-=======
-func TestAssemble_TopoFoldScaledUiTransform(t *testing.T) {
-	pkgMgr := source.NewLocalManager("../stdlib")
-	src := `import . "omega";
-partId = importStep "bracket.step";
-partXf = uiTransform([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [10, 20, 30, 1]]);
-partScale = 2.0;
-partXfScaled = [partXf[0] * partScale, partXf[1] * partScale, partXf[2] * partScale, partXf[3]];
-pt, n = facePointNormal(partId, 1, [0.0, 0.0], partXfScaled);
-return pt.x + n.z;
->>>>>>> main
 `
 	resolver := &mockTopoResolver{
 		mesh: &mockTopoMesh{
@@ -1667,7 +1655,6 @@ return pt.x + n.z;
 	}
 	res, err := Assemble([]string{src}, SourceManager(pkgMgr), GeometryResolver(resolver))
 	if err != nil {
-<<<<<<< HEAD
 		t.Fatalf("Assemble with UI-derived transform failed: %v", err)
 	}
 	// Local facePoint = [2.0+0.5, 3.0+0.25, 4.0] = [2.5, 3.25, 4.0]
@@ -1676,7 +1663,28 @@ return pt.x + n.z;
 	ret := res.Program.Primary.Files[0].Returns[0]
 	if ret.GetValue() != 29.0 {
 		t.Fatalf("expected folded branch() return 29.0, got %v", ret)
-=======
+	}
+}
+
+func TestAssemble_TopoFoldScaledUiTransform(t *testing.T) {
+	pkgMgr := source.NewLocalManager("../stdlib")
+	src := `import . "omega";
+partId = importStep "bracket.step";
+partXf = uiTransform([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [10, 20, 30, 1]]);
+partScale = 2.0;
+partXfScaled = [partXf[0] * partScale, partXf[1] * partScale, partXf[2] * partScale, partXf[3]];
+pt, n = facePointNormal(partId, 1, [0.0, 0.0], partXfScaled);
+return pt.x + n.z;
+`
+	resolver := &mockTopoResolver{
+		mesh: &mockTopoMesh{
+			volume: 450.0,
+			facePt: [3]float64{2.0, 3.0, 4.0},
+			normal: [3]float64{0.0, 0.0, 1.0},
+		},
+	}
+	res, err := Assemble([]string{src}, SourceManager(pkgMgr), GeometryResolver(resolver))
+	if err != nil {
 		t.Fatalf("Assemble with GeometryResolver failed: %v", err)
 	}
 	ret := res.Program.Primary.Files[0].Returns[0]
@@ -1769,6 +1777,5 @@ return pt.x;
 				t.Fatalf("got err=%v, want error containing %q", err, tc.want)
 			}
 		})
->>>>>>> main
 	}
 }

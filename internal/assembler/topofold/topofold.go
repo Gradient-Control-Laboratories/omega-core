@@ -746,10 +746,6 @@ func constValues(op *program.Operand, consts map[string][]float64) ([]float64, b
 	return nil, false
 }
 
-<<<<<<< HEAD
-func (f *topoFolder) resolveMeshSlot(name string, argOp *program.Operand, consts map[string][]float64, scope *evalScope) (int, error) {
-	vals, ok := scope.resolve(argOp, consts)
-=======
 func typeFlatSize(t *program.Type) int {
 	if t == nil || t.IsScalar() {
 		return 1
@@ -824,9 +820,8 @@ func binaryConstValues(op program.Operation, lhsOp, rhsOp *program.Operand, cons
 	return out, true
 }
 
-func (f *topoFolder) resolveMeshSlot(name string, argOp *program.Operand, consts map[string][]float64) (int, error) {
-	vals, ok := constValues(argOp, consts)
->>>>>>> main
+func (f *topoFolder) resolveMeshSlot(name string, argOp *program.Operand, consts map[string][]float64, scope *evalScope) (int, error) {
+	vals, ok := scope.resolve(argOp, consts)
 	if !ok {
 		return 0, f.errorAt(argOp.GetStart(), fmt.Sprintf("%s: the mesh id must be a constant", name))
 	}
