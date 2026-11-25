@@ -1,6 +1,7 @@
 package inline_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/inline"
@@ -30,7 +31,10 @@ func (c sliderChecker) IsParameter(op *program.Operand) bool {
 // parameters through the inline pass.
 func runPipelineWithSliders(src string, sliders sliderChecker) (*program.Program, error) {
 	srcMgr := &source.MockManager{}
-	prog, _, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	prog, diags, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	if len(diags) != 0 {
+		return nil, fmt.Errorf("unexpected diagnostics: %+v", diags)
+	}
 	if err != nil {
 		return nil, err
 	}

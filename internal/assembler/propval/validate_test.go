@@ -14,7 +14,10 @@ import (
 func parseAndValidate(t *testing.T, src string) error {
 	t.Helper()
 	srcMgr := source.NewLocalManager("../../../stdlib")
-	prog, _, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	prog, diags, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	if len(diags) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", diags)
+	}
 	if err != nil {
 		return err
 	}

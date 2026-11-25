@@ -32,8 +32,9 @@ a = 2.0;
 b = [1.0, 2.0, 3.0] + a;
 return b.zyx;
 `
-	prog, _, err := collect.Program([]string{src}, &source.MockManager{}, parserlib.ParsePackage)
+	prog, diags, err := collect.Program([]string{src}, &source.MockManager{}, parserlib.ParsePackage)
 	assert.NoError(t, err)
+	assert.Empty(t, diags)
 
 	_, err = eval.Fold(prog, nil)
 	assert.NoError(t, err)
@@ -56,8 +57,9 @@ lo = [2.0, 3.0, 4.0];
 hi = 6.0;
 return clamp(x, lo, hi);
 `
-	prog, _, err := collect.Program([]string{src}, &source.MockManager{}, parserlib.ParsePackage)
+	prog, diags, err := collect.Program([]string{src}, &source.MockManager{}, parserlib.ParsePackage)
 	assert.NoError(t, err)
+	assert.Empty(t, diags)
 
 	_, err = eval.Fold(prog, nil)
 	assert.NoError(t, err)
@@ -73,8 +75,9 @@ func TestFoldSelectConstantPruning_2WayTrue(t *testing.T) {
 cond = 1;
 return cond ? 42 : p.x;
 `
-	prog, _, err := collect.Program([]string{src}, &source.MockManager{}, parserlib.ParsePackage)
+	prog, diags, err := collect.Program([]string{src}, &source.MockManager{}, parserlib.ParsePackage)
 	assert.NoError(t, err)
+	assert.Empty(t, diags)
 
 	mod, err := eval.Fold(prog, nil)
 	assert.NoError(t, err)
@@ -95,8 +98,9 @@ func TestFoldSelectConstantPruning_2WayFalse(t *testing.T) {
 cond = 0;
 return cond ? p.x : 99;
 `
-	prog, _, err := collect.Program([]string{src}, &source.MockManager{}, parserlib.ParsePackage)
+	prog, diags, err := collect.Program([]string{src}, &source.MockManager{}, parserlib.ParsePackage)
 	assert.NoError(t, err)
+	assert.Empty(t, diags)
 
 	mod, err := eval.Fold(prog, nil)
 	assert.NoError(t, err)
@@ -117,8 +121,9 @@ func TestFoldSelectConstantPruning_3Way(t *testing.T) {
 	srcPos := `
 return select(10, 111, 222, 333);
 `
-	progPos, _, err := collect.Program([]string{srcPos}, &source.MockManager{}, parserlib.ParsePackage)
+	progPos, diags, err := collect.Program([]string{srcPos}, &source.MockManager{}, parserlib.ParsePackage)
 	assert.NoError(t, err)
+	assert.Empty(t, diags)
 	mod, err := eval.Fold(progPos, nil)
 	assert.NoError(t, err)
 	assert.True(t, mod)
@@ -128,8 +133,9 @@ return select(10, 111, 222, 333);
 	srcZero := `
 return select(0, 111, 222, 333);
 `
-	progZero, _, err := collect.Program([]string{srcZero}, &source.MockManager{}, parserlib.ParsePackage)
+	progZero, diags, err := collect.Program([]string{srcZero}, &source.MockManager{}, parserlib.ParsePackage)
 	assert.NoError(t, err)
+	assert.Empty(t, diags)
 	mod, err = eval.Fold(progZero, nil)
 	assert.NoError(t, err)
 	assert.True(t, mod)
@@ -139,8 +145,9 @@ return select(0, 111, 222, 333);
 	srcNeg := `
 return select(-5, 111, 222, 333);
 `
-	progNeg, _, err := collect.Program([]string{srcNeg}, &source.MockManager{}, parserlib.ParsePackage)
+	progNeg, diags, err := collect.Program([]string{srcNeg}, &source.MockManager{}, parserlib.ParsePackage)
 	assert.NoError(t, err)
+	assert.Empty(t, diags)
 	mod, err = eval.Fold(progNeg, nil)
 	assert.NoError(t, err)
 	assert.True(t, mod)
@@ -157,8 +164,9 @@ calc(x) {
 }
 return calc(10);
 `
-	prog, _, err := collect.Program([]string{src}, &source.MockManager{}, parserlib.ParsePackage)
+	prog, diags, err := collect.Program([]string{src}, &source.MockManager{}, parserlib.ParsePackage)
 	assert.NoError(t, err)
+	assert.Empty(t, diags)
 
 	mod, err := eval.Fold(prog, nil)
 	assert.NoError(t, err)
@@ -180,8 +188,9 @@ glyphA() {
 }
 return glyphA();
 `
-	progConst, _, err := collect.Program([]string{srcConst}, &source.MockManager{}, parserlib.ParsePackage)
+	progConst, diags, err := collect.Program([]string{srcConst}, &source.MockManager{}, parserlib.ParsePackage)
 	assert.NoError(t, err)
+	assert.Empty(t, diags)
 
 	mod, err := eval.Fold(progConst, nil)
 	assert.NoError(t, err)

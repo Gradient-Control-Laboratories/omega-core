@@ -1,6 +1,7 @@
 package closure_test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -15,7 +16,10 @@ import (
 
 func runPipeline(src string) (*program.Program, error) {
 	srcMgr := &internalsource.MockManager{}
-	prog, _, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	prog, diags, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	if len(diags) != 0 {
+		return nil, fmt.Errorf("unexpected diagnostics: %+v", diags)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -406,7 +410,10 @@ return stepped(3.0);
 }
 
 func runPipelineWithManager(src string, srcMgr source.Manager) (*program.Program, error) {
-	prog, _, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	prog, diags, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	if len(diags) != 0 {
+		return nil, fmt.Errorf("unexpected diagnostics: %+v", diags)
+	}
 	if err != nil {
 		return nil, err
 	}

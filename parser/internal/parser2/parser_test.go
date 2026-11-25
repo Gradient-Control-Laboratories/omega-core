@@ -57,7 +57,8 @@ func testParseOne(t *testing.T, srcFile string) {
 }
 
 func runTestParseOne(t *testing.T, srcFile string, src []byte) (*program.Package, error) {
-	pkg, _, err := parser2.Parse([]string{string(src)})
+	pkg, diags, err := parser2.Parse([]string{string(src)})
+	assert.Empty(t, diags)
 	if pkg == nil {
 		return pkg, fmt.Errorf("no package returned")
 	}
@@ -460,8 +461,9 @@ func TestMultiFileDeclarationCollisions(t *testing.T) {
 
 func TestParseEmptyAndBlankInputsGuaranteePackageFile(t *testing.T) {
 	t.Run("NilSources", func(t *testing.T) {
-		pkg, _, err := parser2.Parse(nil)
+		pkg, diags, err := parser2.Parse(nil)
 		assert.Error(t, err)
+		assert.Empty(t, diags)
 		if assert.NotNil(t, pkg) {
 			if assert.Equal(t, 1, len(pkg.Files)) {
 				assert.NotNil(t, pkg.Files[0])
@@ -470,8 +472,9 @@ func TestParseEmptyAndBlankInputsGuaranteePackageFile(t *testing.T) {
 	})
 
 	t.Run("EmptySourcesSlice", func(t *testing.T) {
-		pkg, _, err := parser2.Parse([]string{})
+		pkg, diags, err := parser2.Parse([]string{})
 		assert.Error(t, err)
+		assert.Empty(t, diags)
 		if assert.NotNil(t, pkg) {
 			if assert.Equal(t, 1, len(pkg.Files)) {
 				assert.NotNil(t, pkg.Files[0])
@@ -480,8 +483,9 @@ func TestParseEmptyAndBlankInputsGuaranteePackageFile(t *testing.T) {
 	})
 
 	t.Run("SingleBlankSource", func(t *testing.T) {
-		pkg, _, err := parser2.Parse([]string{""})
+		pkg, diags, err := parser2.Parse([]string{""})
 		assert.NoError(t, err)
+		assert.Empty(t, diags)
 		if assert.NotNil(t, pkg) {
 			if assert.Equal(t, 1, len(pkg.Files)) {
 				assert.NotNil(t, pkg.Files[0])
@@ -493,8 +497,9 @@ func TestParseEmptyAndBlankInputsGuaranteePackageFile(t *testing.T) {
 func TestParsePartialSceneHeaderOnLaterError(t *testing.T) {
 	t.Run("ValidSceneDirectiveFollowedBySyntaxError", func(t *testing.T) {
 		src := "@scene(20, 5)\nx = ;\n"
-		pkg, _, err := parser2.Parse([]string{src})
+		pkg, diags, err := parser2.Parse([]string{src})
 		assert.Error(t, err)
+		assert.Empty(t, diags)
 		if assert.NotNil(t, pkg.Scene) {
 			assert.Equal(t, 20.0, pkg.Scene.Size)
 			assert.Equal(t, 5.0, pkg.Scene.Grid)
@@ -508,8 +513,11 @@ func TestParsePartialSceneHeaderOnLaterError(t *testing.T) {
 
 	t.Run("LegacySceneCommentsFollowedBySyntaxError", func(t *testing.T) {
 		src := "// Scene Size: 40\n// Scene Grid: 4\nx = ;\n"
-		pkg, _, err := parser2.Parse([]string{src})
+		pkg, diags, err := parser2.Parse([]string{src})
 		assert.Error(t, err)
+		if assert.Len(t, diags, 1) {
+			assert.Equal(t, program.SeverityWarning, diags[0].Severity)
+		}
 		if assert.NotNil(t, pkg.Scene) {
 			assert.Equal(t, 40.0, pkg.Scene.Size)
 			assert.Equal(t, 10.0, pkg.Scene.Grid)
@@ -523,8 +531,9 @@ func TestParsePartialSceneHeaderOnLaterError(t *testing.T) {
 
 	t.Run("MalformedSceneDirectivePopulatesSource", func(t *testing.T) {
 		src := "@scene(0)\nreturn sphere(1);\n"
-		pkg, _, err := parser2.Parse([]string{src})
+		pkg, diags, err := parser2.Parse([]string{src})
 		assert.Error(t, err)
+		assert.Empty(t, diags)
 		if assert.Equal(t, 1, len(pkg.Files)) {
 			assert.Equal(t, src, pkg.Files[0].Source)
 		}
@@ -534,8 +543,11 @@ func TestParsePartialSceneHeaderOnLaterError(t *testing.T) {
 func TestParsePartialImportsAndAssetImportsOnError(t *testing.T) {
 	t.Run("ValidImportsFollowedBySyntaxErrorInImport", func(t *testing.T) {
 		src := "@scene(25)\nimport \"math\";\nimport . \"omega\";\nimport bad_unquoted;\nreturn 1;\n"
-		pkg, _, err := parser2.Parse([]string{src})
+		pkg, diags, err := parser2.Parse([]string{src})
 		assert.Error(t, err)
+		if assert.Len(t, diags, 1) {
+			assert.Equal(t, program.SeverityWarning, diags[0].Severity)
+		}
 		assert.NotNil(t, pkg.Scene)
 		if assert.Equal(t, 1, len(pkg.Files)) {
 			file := pkg.Files[0]
@@ -551,8 +563,9 @@ func TestParsePartialImportsAndAssetImportsOnError(t *testing.T) {
 
 	t.Run("ValidImportsFollowedBySemanticErrorInImport", func(t *testing.T) {
 		src := "import \"math\";\nimport \"invalid.gsl\";\nreturn 1;\n"
-		pkg, _, err := parser2.Parse([]string{src})
+		pkg, diags, err := parser2.Parse([]string{src})
 		assert.Error(t, err)
+		assert.Empty(t, diags)
 		if assert.Equal(t, 1, len(pkg.Files)) {
 			file := pkg.Files[0]
 			if assert.Equal(t, 1, len(file.Imports)) {
@@ -564,8 +577,9 @@ func TestParsePartialImportsAndAssetImportsOnError(t *testing.T) {
 
 	t.Run("ValidAssetImportsFollowedBySyntaxOrBuildError", func(t *testing.T) {
 		src := "import \"math\";\nimportStep 0 \"a.step\";\nimportMesh 1 \"b.stl\";\nimportWarp 2 \"c.warp\";\nimportStep 3 ;\n"
-		pkg, _, err := parser2.Parse([]string{src})
+		pkg, diags, err := parser2.Parse([]string{src})
 		assert.Error(t, err)
+		assert.Empty(t, diags)
 		if assert.Equal(t, 1, len(pkg.Files)) {
 			file := pkg.Files[0]
 			assert.Equal(t, 1, len(file.Imports))
@@ -583,8 +597,9 @@ func TestParsePartialImportsAndAssetImportsOnError(t *testing.T) {
 
 	t.Run("ValidAssetImportsFollowedByDuplicateSlotBuildError", func(t *testing.T) {
 		src := "importStep 0 \"a.step\";\nimportStep 0 \"dup.step\";\nreturn 1;\n"
-		pkg, _, err := parser2.Parse([]string{src})
+		pkg, diags, err := parser2.Parse([]string{src})
 		assert.Error(t, err)
+		assert.Empty(t, diags)
 		if assert.Equal(t, 1, len(pkg.Files)) {
 			file := pkg.Files[0]
 			if assert.Equal(t, 1, len(file.StepImports)) {
@@ -610,8 +625,9 @@ helper(a) {
 broken = ;
 return importId;
 `
-		pkg, _, err := parser2.Parse([]string{src})
+		pkg, diags, err := parser2.Parse([]string{src})
 		assert.Error(t, err)
+		assert.Empty(t, diags)
 		assert.NotNil(t, pkg.Scene)
 		if assert.Equal(t, 1, len(pkg.Files)) {
 			file := pkg.Files[0]
@@ -639,7 +655,8 @@ y = 2.0;
 x = 3.0;
 return x + y;
 `
-		pkg, _, err := parser2.Parse([]string{src})
+		pkg, diags, err := parser2.Parse([]string{src})
+		assert.Empty(t, diags)
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), `"x" is an existing variable`)
 		}
@@ -658,7 +675,8 @@ import "math";
 a = 10;
 return ;
 `
-		pkg, _, err := parser2.Parse([]string{src})
+		pkg, diags, err := parser2.Parse([]string{src})
+		assert.Empty(t, diags)
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "expected at least one return element")
 		}
@@ -673,8 +691,9 @@ return ;
 	t.Run("MultiFileErrorInSecondFilePreservesFirstAndPartialSecond", func(t *testing.T) {
 		src0 := "@scene(20)\nimport \"math\";\na = 1;\n"
 		src1 := "import \"vector\";\nb = 2;\nbroken = ;\nreturn a + b;\n"
-		pkg, _, err := parser2.Parse([]string{src0, src1})
+		pkg, diags, err := parser2.Parse([]string{src0, src1})
 		assert.Error(t, err)
+		assert.Empty(t, diags)
 		assert.NotNil(t, pkg.Scene)
 		if assert.Equal(t, 2, len(pkg.Files)) {
 			assert.Equal(t, 1, len(pkg.Files[0].Imports))
@@ -689,21 +708,24 @@ return ;
 
 func TestParseDiagnosticMessageRegressions(t *testing.T) {
 	t.Run("MissingSemicolonBeforeReturn", func(t *testing.T) {
-		_, _, err := parser2.Parse([]string{"a = 1\nreturn a;\n"})
+		_, diags, err := parser2.Parse([]string{"a = 1\nreturn a;\n"})
+		assert.Empty(t, diags)
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), `missing ";" before return`)
 		}
 	})
 
 	t.Run("ForgotSemicolonAtEndOfPreviousStatement", func(t *testing.T) {
-		_, _, err := parser2.Parse([]string{"a = 1\n}\n"})
+		_, diags, err := parser2.Parse([]string{"a = 1\n}\n"})
+		assert.Empty(t, diags)
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), `perhaps forgot ";" at the end of a previous statement?`)
 		}
 	})
 
 	t.Run("ExpectedAssignmentNamedFunctionOrReturn", func(t *testing.T) {
-		pkg, _, err := parser2.Parse([]string{"a = 1;\n123;\n"})
+		pkg, diags, err := parser2.Parse([]string{"a = 1;\n123;\n"})
+		assert.Empty(t, diags)
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "expected assignment, named function declaration, or return")
 		}
@@ -711,14 +733,16 @@ func TestParseDiagnosticMessageRegressions(t *testing.T) {
 	})
 
 	t.Run("ImportErrorHint", func(t *testing.T) {
-		_, _, err := parser2.Parse([]string{"import unquoted;\nreturn 1;\n"})
+		_, diags, err := parser2.Parse([]string{"import unquoted;\nreturn 1;\n"})
+		assert.Empty(t, diags)
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), `expected 'import <optional-prefix> "<path>";'`)
 		}
 	})
 
 	t.Run("NestedTernaryDecompositionHint", func(t *testing.T) {
-		_, _, err := parser2.Parse([]string{"return ?;\n"})
+		_, diags, err := parser2.Parse([]string{"return ?;\n"})
+		assert.Empty(t, diags)
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "nested ternaries cannot be inlined")
 		}

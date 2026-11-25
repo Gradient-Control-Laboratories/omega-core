@@ -30,7 +30,10 @@ func testRebuildOne(t *testing.T, srcFile string) {
 func runTestRebuildOne(t *testing.T, srcFile string, src []byte) (*program.Program, error) {
 	pkgMgr := source.NewLocalManager("../stdlib")
 
-	prog, _, err := collect.Program([]string{string(src)}, pkgMgr, parser.ParsePackage)
+	prog, diags, err := collect.Program([]string{string(src)}, pkgMgr, parser.ParsePackage)
+	if len(diags) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", diags)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -164,9 +167,12 @@ func TestReferencesInPlace(t *testing.T) {
 		return x + used();
 	`
 
-	prog, _, err := collect.Program([]string{src}, pkgMgr, parser.ParsePackage)
+	prog, diags, err := collect.Program([]string{src}, pkgMgr, parser.ParsePackage)
 	if err != nil {
 		t.Fatalf("failed to collect: %v", err)
+	}
+	if len(diags) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", diags)
 	}
 
 	// Run in-place reference resolution
@@ -230,7 +236,10 @@ func testReferencesOne(t *testing.T, srcFile string) {
 func runTestReferencesOn(t *testing.T, srcFile string, src []byte) (*program.Program, error) {
 	pkgMgr := source.NewLocalManager("../stdlib")
 
-	prog, _, err := collect.Program([]string{string(src)}, pkgMgr, parser.ParsePackage)
+	prog, diags, err := collect.Program([]string{string(src)}, pkgMgr, parser.ParsePackage)
+	if len(diags) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", diags)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -418,9 +427,12 @@ func TestLinkConstantEvaluation(t *testing.T) {
 		return 0.0;
 	`
 
-	prog, _, err := collect.Program([]string{src}, pkgMgr, parser.ParsePackage)
+	prog, diags, err := collect.Program([]string{src}, pkgMgr, parser.ParsePackage)
 	if err != nil {
 		t.Fatalf("failed to collect: %v", err)
+	}
+	if len(diags) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", diags)
 	}
 
 	prog.Primary.Path = "test"
@@ -503,9 +515,12 @@ func TestLinkConstantEvaluationWithImports(t *testing.T) {
 		return 0.0;
 	`
 
-	prog, _, err := collect.Program([]string{src}, pkgMgr, parser.ParsePackage)
+	prog, diags, err := collect.Program([]string{src}, pkgMgr, parser.ParsePackage)
 	if err != nil {
 		t.Fatalf("failed to collect: %v", err)
+	}
+	if len(diags) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", diags)
 	}
 
 	prog.Primary.Path = "test"
