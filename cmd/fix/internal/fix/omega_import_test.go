@@ -3,10 +3,10 @@ package fix_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/cmd/fix/internal/fix"
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/internal/test/require"
-	"gradientcontrol.com/omega/core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/fix/internal/fix"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/parser"
 )
 
 func TestOmegaImportFixer_Registry(t *testing.T) {
