@@ -56,8 +56,12 @@ Items bridging [gsl_lang_spec_current.md](gsl_lang_spec_current.md) to
   dynamic sliders for inline `@range` expressions; unify `assembler/slider` and `assembler/ui`.
 - **Discrete Option Annotations (`@values`, `M1`):** Support `@values(v1, v2, ..., vn)` on scalar
   declarations, parameters, and inline literals for discrete UI selection.
-- **Unified Asset Import Syntax (`L2`):** Replace numbered-slot and inline `importMesh` /
-  `importStep` / `importWarp` forms with `import <name> "<asset>";` and typed asset handles.
+- **Normalized Import Syntax (`L2`):** Unify all package and asset imports under top-level
+  `import`: extensionless paths import GSL packages (`.gsl` extensions and single-file `.gsl`
+  imports are prohibited), while asset imports (`import myMesh "something.stl";`) detect asset
+  type from the file extension (`.stl`, `.step`, `.stp`, `.hodge`, `.warp`) and bind a typed
+  handle for direct use in shapes. Deprecate and remove expression-based asset imports and all
+  specialized `importMesh` / `importStep` / `importWarp` forms.
 - **Phased Syntax Retirements:**
   - Retire `uiPoint`, `uiTransform`, and `uiSpline` in favor of `@point`, `@transform`, `@spline`
     (`M3`).
