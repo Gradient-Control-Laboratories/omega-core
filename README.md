@@ -40,6 +40,7 @@ for parsing, analyzing, refactoring, and compiling GSL models into WebGPU comput
 - **`parser/`**: Stateless GSL lexer, parser, and AST generator.
 - **`assembler/`**: Multi-package linker, type checker, inliner, constant evaluator, and optimizer.
 - **`program/`**: Canonical AST definitions, type systems, and visitor models.
+- **`eval/`**: Certified spatial and interval evaluator (`gsl eval`, `Evaluator` Go API, Python SDK).
 - **`backend/`**:
   - `wgsl/`: WGSL compute shader emitter for real-time GPU SDF raymarching.
   - `mesh/`: Unified 3D mesh generator coordinating dual-contouring (Fidget) and CSG (Manifold).
@@ -92,18 +93,36 @@ omega-core/
 │   ├── transform/
 │   └── vector/
 └── tool/                      # Developer build and automation scripts
+    ├── analyze-deps/          # Architectural dependency invariant checker
     ├── build-cli.sh           # Builds compiler CLI executables (gsl, compile, serve, fix) into bin/
     ├── build-fidget.sh        # Builds Fidget and Manifold Rust/C++ native and WASM artifacts
     ├── build-proto.sh         # Compiles program.proto and tape.proto into Go bindings
     ├── build-wgsl-accel-ops.sh # Regenerates WGSL hardware acceleration ops table and inliner registry
-    ├── check.sh               # Pre-commit quality gate (gofmt, go vet, tests)
+    ├── check.sh               # Pre-commit quality gate (gofmt, analyze-deps, go vet, tests)
     ├── clean.sh               # Cleans bin/ outputs, test cache, and scratch files
+    ├── ensure-native-libs.sh  # Downloads or builds librender & libmanifold_glue for the host OS/arch
     ├── test-go.sh             # Runs Go unit, integration, and golden test suites
     ├── test-rust.sh           # Runs Rust unit and doc test suites
     ├── test.sh                # Runs both Go and Rust test suites
     ├── update-goldens.sh      # Regenerates reference test goldens
     └── run-go-tests/          # Go test suite runner, timing history, and golden size reporter
 ```
+
+## Using `omega-core` as a Go SDK
+
+Add `omega-core` to a downstream Go module (`omega-release`, `dm_omega`, etc.) directly from GitHub:
+
+```bash
+go get github.com/Gradient-Control-Laboratories/omega-core
+go mod vendor   # optional: vendor omega-core into your consumer module
+```
+
+Pure-Go packages (`parser`, `assembler`, `program`, `stdlib`, `backend/wgsl`, `backend/audio`,
+`backend/tape`) compile with zero native dependencies. Consumers that link cgo-backed meshing
+(`backend/mesh`, `backend/mesh/manifold`) can provision `librender` and `libmanifold_glue` via
+`./tool/ensure-native-libs.sh` (or the reusable `.github/workflows/build-native-libs.yml` workflow
+in GitHub Actions) and pass their directory via `CGO_LDFLAGS` and `LD_LIBRARY_PATH` /
+`DYLD_LIBRARY_PATH`.
 
 ## Building the Toolchain
 
@@ -251,13 +270,13 @@ and what is planned in the [future language specification](doc/gsl_lang_spec_fut
   variable) operators, along with `.second`, `.box`, `.u`, and `.v` shape accessors.
 - **Declaration properties, `auto` bounds, and cycle detection**: Added `.box` (including
   `auto` analytical bounds inference), `.color`, `.material`, `.u`, `.v`, `.simple`, `.detail`, and
-  `.detailSize` properties alongside `.min`, `.max`, and `.period`, with function property
-  carry-out and transitive dependency cycle detection.
+  `.detailSize` properties, with function property carry-out and transitive dependency cycle
+  detection.
 - **Scene directive (`@scene`)**: Added the top-level `@scene(size [, grid])` package directive
   along with `gsl fix` migration from legacy `// Scene Size:` and `// Scene Grid:` header comments.
 - **Slider `@range` annotations**: Added `@range(min, max [, period])` on variable declarations
-  and inline expressions and `@range(min, max)` on function parameters, normalizing `.min`, `.max`,
-  and `.period` properties into AST range metadata.
+  and inline expressions and `@range(min, max)` on function parameters, and retired the legacy
+  `.min`, `.max`, and `.period` properties (`gsl fix -range`).
 - **Viewport, parameter, and catalog annotations**: Added `@point`, `@transform`, `@spline`,
   `@color`, and `@direction([anchor])` on assignments and inline expressions, parameter control
   annotations (`@point`, `@transform`, `@color`, `@direction`, `@frame`), and catalog preset

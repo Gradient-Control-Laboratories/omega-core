@@ -41,6 +41,9 @@ from `1.0.0` onward).
 
 ### Added
 
+- Migrated GSL compiler architecture, language specification/migration, golden verification, and
+  stdlib tolerance-table documentation from `omega-release/doc/` into `doc/`, and documented Go
+  SDK consumption (`go get` + `tool/ensure-native-libs.sh`) in `README.md`.
 - Shared consumer-reusable native library provisioning (`tool/ensure-native-libs.sh` and reusable
   GitHub Actions workflow `.github/workflows/build-native-libs.yml`): detects host OS/arch,
   downloads and SHA256-verifies prebuilt `librender` and `libmanifold_glue` release tarballs when
