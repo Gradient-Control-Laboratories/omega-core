@@ -313,6 +313,11 @@ func (s *evalScope) resolve(op *program.Operand, consts map[string][]float64) ([
 	if err != nil || len(vals) == 0 {
 		return nil, false
 	}
+	for _, v := range vals {
+		if math.IsNaN(v) || math.IsInf(v, 0) {
+			return nil, false
+		}
+	}
 	return vals, true
 }
 
