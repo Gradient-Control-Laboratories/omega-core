@@ -135,7 +135,9 @@ func Parse(sources []string) (*program.Package, []program.Diagnostic, error) {
 
 		pkg.Captions = append(pkg.Captions, takeCaptions(topLevel)...)
 
-		if berr := buildPkgFile(pkgFileScope, topLevel); berr != nil {
+		impDiags, berr := buildPkgFile(pkgFileScope, source, topLevel)
+		diags = append(diags, impDiags...)
+		if berr != nil {
 			p, err := recordFileError(pkg, pkgFile, source, berr)
 			return p, diags, err
 		}

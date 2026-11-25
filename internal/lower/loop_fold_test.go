@@ -18,9 +18,12 @@ import (
 func buildTestProgram(t *testing.T, src string, lowerStep func(prog *program.Program) error) *program.Program {
 	t.Helper()
 	srcMgr := &source.MockManager{}
-	prog, _, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	prog, diags, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if len(diags) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", diags)
 	}
 	for _, step := range []func() error{
 		func() error { return link.References(prog, srcMgr, parser.ParsePackage) },

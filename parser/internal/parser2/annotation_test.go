@@ -12,9 +12,12 @@ import (
 // test on any parse error.
 func parseFile(t *testing.T, src string) *program.PackageFile {
 	t.Helper()
-	pkg, _, err := parser2.Parse([]string{src})
+	pkg, diags, err := parser2.Parse([]string{src})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(diags) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", diags)
 	}
 	if pkg == nil || len(pkg.Files) != 1 {
 		t.Fatalf("expected one package file, got %+v", pkg)
@@ -26,9 +29,12 @@ func parseFile(t *testing.T, src string) *program.PackageFile {
 // message so the caller can check which rule rejected it.
 func parseErr(t *testing.T, src string) string {
 	t.Helper()
-	_, _, err := parser2.Parse([]string{src})
+	_, diags, err := parser2.Parse([]string{src})
 	if err == nil {
 		t.Fatalf("expected a parse error, got none")
+	}
+	if len(diags) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", diags)
 	}
 	return err.Error()
 }

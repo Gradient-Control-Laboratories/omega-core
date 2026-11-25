@@ -36,7 +36,8 @@ return x;
 
 func parseAndLink(t *testing.T, src string, mgr source.Manager) ([]program.Diagnostic, error) {
 	t.Helper()
-	prog, _, err := collect.Program([]string{src}, mgr, parser.ParsePackage)
+	prog, diags, err := collect.Program([]string{src}, mgr, parser.ParsePackage)
+	assert.Empty(t, diags)
 	if err != nil {
 		return nil, err
 	}
@@ -188,8 +189,9 @@ import . "pkgB";
 return pkgA.x + pkgB.x;
 `
 	mgr := newMockManager()
-	prog, _, err := collect.Program([]string{src}, mgr, parser.ParsePackage)
+	prog, diags, err := collect.Program([]string{src}, mgr, parser.ParsePackage)
 	assert.NoError(t, err)
+	assert.Empty(t, diags)
 
 	// Calling link.References succeeds with no error even when warnings are generated
 	err = link.References(prog, mgr, parser.ParsePackage)
@@ -233,9 +235,12 @@ x = 1.0;
 return x;
 `
 	mgr := newMockManager()
-	prog, _, err := collect.Program([]string{src}, mgr, parser.ParsePackage)
+	prog, diags, err := collect.Program([]string{src}, mgr, parser.ParsePackage)
 	if err != nil {
 		b.Fatal(err)
+	}
+	if len(diags) != 0 {
+		b.Fatalf("unexpected diagnostics: %v", diags)
 	}
 
 	b.ResetTimer()

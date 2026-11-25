@@ -23,8 +23,9 @@ func (c sliderChecker) IsParameter(op *program.Operand) bool {
 
 func analyzed(t *testing.T, src string) *program.Program {
 	t.Helper()
-	prog, _, err := collect.Program([]string{src}, &source.MockManager{}, parserlib.ParsePackage)
+	prog, diags, err := collect.Program([]string{src}, &source.MockManager{}, parserlib.ParsePackage)
 	assert.NoError(t, err)
+	assert.Empty(t, diags)
 	assert.NoError(t, types.Analyze(prog))
 	return prog
 }

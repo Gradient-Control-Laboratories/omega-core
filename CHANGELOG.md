@@ -45,6 +45,9 @@ from `1.0.0` onward).
   stdlib tolerance-table documentation from `omega-release/doc/` into `doc/`, synced
   `doc/gsl_lang_spec_future.md`, extracted `doc/roadmap.md` from `README.md`, and documented Go
   SDK consumption (`go get` + `tool/ensure-native-libs.sh`) in `README.md`.
+- Emitted a `program.SeverityWarning` diagnostic in `parser/internal/parser2` when unnecessary
+  `import . "omega"` statements are parsed, advising that `builtin` is implicitly imported, and
+  added the `omegaimport` fixer to `gsl fix` (`cmd/fix`) to remove them automatically.
 - Shared consumer-reusable native library provisioning (`tool/ensure-native-libs.sh` and reusable
   GitHub Actions workflow `.github/workflows/build-native-libs.yml`): detects host OS/arch,
   downloads and SHA256-verifies prebuilt `librender` and `libmanifold_glue` release tarballs when

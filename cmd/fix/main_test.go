@@ -25,6 +25,7 @@ func TestRun_HelpAndFixerHelp(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, stdout.String(), "Registered fixers:")
 	assert.Contains(t, stdout.String(), "scene")
+	assert.Contains(t, stdout.String(), "omegaimport")
 	assert.Contains(t, stdout.String(), "-diff")
 
 	stdout.Reset()
@@ -32,12 +33,18 @@ func TestRun_HelpAndFixerHelp(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, stdout.String(), "@scene")
 	assert.Contains(t, stdout.String(), "Before:")
+
+	stdout.Reset()
+	err = cli.Run([]string{"help", "omegaimport"}, &stdout)
+	require.NoError(t, err)
+	assert.Contains(t, stdout.String(), `import . "omega"`)
+	assert.Contains(t, stdout.String(), "Before:")
 }
 
 func TestRun_InPlaceFileAndIdempotency(t *testing.T) {
 	tmpDir := t.TempDir()
 	gslPath := filepath.Join(tmpDir, "model.gsl")
-	orig := "// Scene Size: 20\n// Scene Grid: 10\n\nreturn sphere(1);\n"
+	orig := "// Scene Size: 20\n// Scene Grid: 10\nimport . \"omega\";\n\nreturn sphere(1);\n"
 	require.NoError(t, os.WriteFile(gslPath, []byte(orig), 0644))
 
 	var stdout bytes.Buffer
