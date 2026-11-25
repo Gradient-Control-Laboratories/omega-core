@@ -235,16 +235,13 @@ x = 1.0;
 return x;
 `
 	mgr := newMockManager()
-<<<<<<< HEAD
 	prog, diags, err := collect.Program([]string{src}, mgr, parser.ParsePackage)
-	assert.NoError(t, err)
-	assert.Empty(t, diags)
-=======
-	prog, _, err := collect.Program([]string{src}, mgr, parser.ParsePackage)
 	if err != nil {
 		b.Fatal(err)
 	}
->>>>>>> main
+	if len(diags) != 0 {
+		b.Fatalf("unexpected diagnostics: %v", diags)
+	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
