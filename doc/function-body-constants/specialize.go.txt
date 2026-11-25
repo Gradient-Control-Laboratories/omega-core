@@ -1,0 +1,429 @@
+package inline
+
+import (
+	"fmt"
+	"hash/fnv"
+	"strings"
+
+	"google.golang.org/protobuf/proto"
+	"gradientcontrol.com/omega_common/program"
+	"gradientcontrol.com/omega_common/program/scope"
+)
+
+// SPECIALIZATION ON CONSTANT ARGUMENTS. A library function that takes a size
+// alongside a field — joint.bolted(lidBody, baseBody, seat, dir, 6.0, 7.5, fit)
+// — is not inlined once the program calls it twice (its body reads p), and it
+// is not folded (its field arguments are not constant). So it stays a runtime
+// function whose size is a parameter, and every catalog lookup inside it,
+// catalog.counterbore(nominalDia), is an unrolled table evaluated per pixel.
+// Fold cannot help: inside a function body a parameter is never constant.
+//
+// This pass gives the call a function of its own with the constant arguments
+// written in: a clone of the callee, hoisted into the caller's file, whose
+// constant parameters are replaced by the argument expressions and dropped,
+// called with the remaining arguments. The next fold round then turns the
+// lookups inside it into literals, and deadcode removes the general function
+// if nothing else calls it.
+//
+//	a, b, c = joint.bolted(lid, base, s, n, d, 7.5, fastener.fitMedium);
+//	becomes
+//	a, b, c = gsl_inlined_spec_joint_bolted_1a2b3c4d(lid, base);
+//
+// with s, n, d, 7.5 and fastener.fitMedium written into the clone's body.
+//
+// AN ARGUMENT IS WRITTEN IN AS AN EXPRESSION, NOT A VALUE. The assembler folds
+// with no parameter checker, so a slider's declaration reads as its default
+// here; baking that number in would freeze the slider. Substituting the
+// reference keeps it live. That is why an argument qualifies only when it is a
+// CLOSED constant (closedConst): literals, top-level and library names that do
+// not read p, and calls over those to functions that do not read p — never a
+// caller's parameter, and a caller's local only through the expression that
+// defines it.
+//
+// Clones are named by a hash of the callee and the constant arguments, so two
+// calls with the same constants share one. Only calls in the primary package
+// are specialized, and only into library functions; a clone's own calls are
+// specialized on a later round, since the clone is in the primary package.
+
+// specializeProgram specializes every qualifying call in the primary package.
+func (in *inliner) specializeProgram() error {
+	if in.prog.Primary == nil || in.progScope == nil || in.progScope.Primary == nil {
+		return nil
+	}
+	pkg := in.prog.Primary
+	for _, file := range pkg.Files {
+		var fileScope *scope.PkgFileScope
+		for _, fs := range in.progScope.Primary.Files {
+			if fs.File == file {
+				fileScope = fs
+				break
+			}
+		}
+		in.currentFileScope = fileScope
+		in.constRefMemo = make(map[string]bool)
+
+		visit := func(op *program.Operand, encl *program.Function) {
+			in.specializeIn(op, encl, fileScope, file, pkg.Path)
+		}
+		// Functions first, over a snapshot: clones appended here are visited on
+		// the next round.
+		fnTypes := append([]*program.FnType(nil), file.FnTypes...)
+		for _, ft := range fnTypes {
+			for _, g := range ft.Groups {
+				for _, fn := range g.Functions {
+					in.enclosingFns = []*program.Function{fn}
+					for _, a := range fn.Assignments {
+						visit(a.Expression, fn)
+						for _, v := range a.Variables {
+							for _, prop := range v.Properties {
+								visit(prop.Expression, fn)
+							}
+						}
+					}
+					for _, r := range fn.Returns {
+						visit(r, fn)
+					}
+					in.enclosingFns = nil
+				}
+			}
+		}
+		for _, a := range file.Assignments {
+			visit(a.Expression, nil)
+			for _, v := range a.Variables {
+				for _, prop := range v.Properties {
+					visit(prop.Expression, nil)
+				}
+			}
+		}
+		for _, r := range file.Returns {
+			visit(r, nil)
+		}
+	}
+	return nil
+}
+
+// specializeIn specializes the calls beneath op, innermost first. encl is the
+// function op is in, or nil at top level.
+func (in *inliner) specializeIn(op *program.Operand, encl *program.Function, fileScope *scope.PkgFileScope, file *program.PackageFile, pkgPath string) {
+	if op == nil {
+		return
+	}
+	switch t := op.T.(type) {
+	case *program.Operand_Expression:
+		for _, child := range t.Expression.Operands {
+			in.specializeIn(child, encl, fileScope, file, pkgPath)
+		}
+	case *program.Operand_FnCall:
+		for _, arg := range t.FnCall.Arguments {
+			in.specializeIn(arg, encl, fileScope, file, pkgPath)
+		}
+		in.specializeCall(op, t.FnCall, encl, fileScope, file, pkgPath)
+	}
+}
+
+// specializeCall replaces fc, when it qualifies, with a call to the callee
+// specialized on its closed constant arguments.
+func (in *inliner) specializeCall(op *program.Operand, fc *program.FnCall, encl *program.Function, fileScope *scope.PkgFileScope, file *program.PackageFile, pkgPath string) {
+	if fc.Reference == nil || in.isBuiltinOrSpecial(fc) {
+		return
+	}
+	fnDecl, fn, calleePkgPath := in.findFunction(fc, fileScope, len(fc.Arguments))
+	if fn == nil || fnDecl == nil || calleePkgPath == pkgPath || len(fn.FnTypes) > 0 ||
+		len(fn.Parameters) != len(fc.Arguments) {
+		return
+	}
+	consts := make([]*program.Operand, len(fc.Arguments))
+	nConst := 0
+	for i, arg := range fc.Arguments {
+		if arg.Type != nil && arg.Type.FnPath != "" {
+			continue // a function value: closure specialization's business
+		}
+		if c := in.closedConst(arg, encl, fileScope, 0); c != nil && in.paramFeedsCall(fn, fn.Parameters[i].Name) {
+			consts[i] = c
+			nConst++
+		}
+	}
+	if nConst == 0 {
+		return
+	}
+	if nConst == len(fc.Arguments) {
+		// All constant: fold takes a callee that does not read p, and the
+		// inliner one it inlines. Specialize only what both would leave.
+		if !in.hasPOrTime(fn, fileScope) {
+			return
+		}
+		if len(fn.Returns) == 1 && in.shouldInlineCall(fc, fn, calleePkgPath, pkgPath, fileScope) {
+			return
+		}
+		if len(fn.Returns) > 1 && in.shouldInlineMultiReturnCall(fc, fn, calleePkgPath, pkgPath, fileScope) {
+			return
+		}
+	}
+
+	var key strings.Builder
+	fmt.Fprintf(&key, "%s/%s/%d", calleePkgPath, fnDecl.Name, len(fc.Arguments))
+	for _, c := range consts {
+		s := "_"
+		if c != nil {
+			var ok bool
+			if s, ok = canonical(c); !ok {
+				return
+			}
+		}
+		key.WriteString("|" + s)
+	}
+	h := fnv.New32a()
+	h.Write([]byte(key.String()))
+	pkgParts := strings.Split(calleePkgPath, "/")
+	name := fmt.Sprintf("%sspec_%s_%s_%08x", program.InlinedFnPrefix, pkgParts[len(pkgParts)-1], fnDecl.Name, h.Sum32())
+
+	exists := false
+	for _, ft := range file.FnTypes {
+		if ft.Name == name {
+			exists = true
+			break
+		}
+	}
+	if !exists {
+		file.FnTypes = append(file.FnTypes, in.specializedClone(name, fn, consts, calleePkgPath, fileScope, file))
+	}
+
+	var kept []*program.Operand
+	for i, arg := range fc.Arguments {
+		if consts[i] == nil {
+			kept = append(kept, arg)
+		}
+	}
+	fc.Reference = &program.Reference{Name: name}
+	fc.Arguments = kept
+	op.ConstValues = nil
+	if op.Type != nil && op.Type.FnPath != "" {
+		op.Type.FnPath = name
+		op.Type.PkgPath = ""
+	}
+	in.modified = true
+}
+
+// specializedClone is fn, from package calleePkgPath, as a function of file
+// named name: each parameter with a constant written in and dropped, every
+// other name it reads requalified for file.
+func (in *inliner) specializedClone(name string, fn *program.Function, consts []*program.Operand, calleePkgPath string, fileScope *scope.PkgFileScope, file *program.PackageFile) *program.FnType {
+	calleePrefix := in.ensureImport(file, calleePkgPath, fileScope)
+	prefixMap := in.buildPrefixMap(calleePkgPath, file, fileScope, fn)
+	env := make(map[string]*program.Operand)
+	for _, a := range fn.Assignments {
+		for _, v := range a.Variables {
+			env[v.Name] = nil
+		}
+	}
+	clone := &program.Function{}
+	for i, prm := range fn.Parameters {
+		if consts[i] != nil {
+			env[prm.Name] = consts[i]
+			continue
+		}
+		env[prm.Name] = nil
+		clone.Parameters = append(clone.Parameters, proto.Clone(prm).(*program.Parameter))
+	}
+	for _, a := range fn.Assignments {
+		ca := proto.Clone(a).(*program.Assignment)
+		ca.Expression = in.substitute(a.Expression, env, calleePrefix, nil, prefixMap)
+		for vi, v := range a.Variables {
+			for pi, prop := range v.Properties {
+				ca.Variables[vi].Properties[pi].Expression = in.substitute(prop.Expression, env, calleePrefix, nil, prefixMap)
+			}
+		}
+		clone.Assignments = append(clone.Assignments, ca)
+	}
+	for _, r := range fn.Returns {
+		clone.Returns = append(clone.Returns, in.substitute(r, env, calleePrefix, nil, prefixMap))
+	}
+	return &program.FnType{
+		Name: name,
+		Groups: []*program.FnGroup{{
+			ParamCount: int32(len(clone.Parameters)),
+			Functions:  []*program.Function{clone},
+		}},
+	}
+}
+
+// closedConst is op as a closed constant expression — one that means the same
+// thing written anywhere in the caller's file — or nil. A reference to a local
+// of encl is followed to the expression that defines it; a parameter, p and
+// time are not constant; a call qualifies only if its callee does not read p.
+func (in *inliner) closedConst(op *program.Operand, encl *program.Function, fileScope *scope.PkgFileScope, depth int) *program.Operand {
+	if op == nil || depth > 16 {
+		return nil
+	}
+	switch t := op.T.(type) {
+	case *program.Operand_Value:
+		return program.CloneOperand(op)
+	case *program.Operand_Reference:
+		ref := t.Reference
+		if ref == nil {
+			return nil
+		}
+		if ref.Prefix != "" {
+			if len(op.ConstValues) > 0 {
+				return program.CloneOperand(op)
+			}
+			return nil
+		}
+		if ref.Name == program.PVarName || ref.Name == program.TimeVarName {
+			return nil
+		}
+		if encl != nil {
+			for _, prm := range encl.Parameters {
+				if prm.Name == ref.Name {
+					return nil
+				}
+			}
+			for _, a := range encl.Assignments {
+				for _, v := range a.Variables {
+					if v.Name == ref.Name {
+						if len(a.Variables) != 1 {
+							return nil
+						}
+						return in.closedConst(a.Expression, encl, fileScope, depth+1)
+					}
+				}
+			}
+		}
+		if in.isConstRef(ref.Name) && !in.operandUsesP(op, fileScope, map[*program.Function]bool{}, map[string]bool{}) {
+			return program.CloneOperand(op)
+		}
+		return nil
+	case *program.Operand_Expression:
+		if t.Expression.Operation == program.Operation_REMAP {
+			return nil
+		}
+		out := program.CloneOperand(op)
+		e := out.GetExpression()
+		for i, child := range t.Expression.Operands {
+			if t.Expression.Operation == program.Operation_ACCESS && i > 0 {
+				continue
+			}
+			c := in.closedConst(child, encl, fileScope, depth+1)
+			if c == nil {
+				return nil
+			}
+			e.Operands[i] = c
+		}
+		return out
+	case *program.Operand_FnCall:
+		fc := t.FnCall
+		if fc.Reference == nil || fc.Reference.Name == "remap" {
+			return nil
+		}
+		out := program.CloneOperand(op)
+		ofc := out.GetFnCall()
+		for i, arg := range fc.Arguments {
+			c := in.closedConst(arg, encl, fileScope, depth+1)
+			if c == nil {
+				return nil
+			}
+			ofc.Arguments[i] = c
+		}
+		if !in.isNativeOrSpecial(fc) {
+			_, callee, _ := in.findFunction(fc, fileScope, len(fc.Arguments))
+			if callee == nil || in.hasPOrTime(callee, fileScope) {
+				return nil
+			}
+		}
+		return out
+	}
+	return nil
+}
+
+// paramFeedsCall reports whether fn hands its parameter name, or a local
+// computed from it, to a call — where a constant can fold something.
+func (in *inliner) paramFeedsCall(fn *program.Function, name string) bool {
+	tainted := map[string]bool{name: true}
+	for _, a := range fn.Assignments {
+		if in.usesAny(a.Expression, tainted) {
+			for _, v := range a.Variables {
+				tainted[v.Name] = true
+			}
+		}
+	}
+	var feeds func(op *program.Operand) bool
+	feeds = func(op *program.Operand) bool {
+		if op == nil {
+			return false
+		}
+		switch t := op.T.(type) {
+		case *program.Operand_Expression:
+			for _, c := range t.Expression.Operands {
+				if feeds(c) {
+					return true
+				}
+			}
+		case *program.Operand_FnCall:
+			for _, arg := range t.FnCall.Arguments {
+				if in.usesAny(arg, tainted) || feeds(arg) {
+					return true
+				}
+			}
+		}
+		return false
+	}
+	for _, a := range fn.Assignments {
+		if feeds(a.Expression) {
+			return true
+		}
+		for _, v := range a.Variables {
+			for _, prop := range v.Properties {
+				if feeds(prop.Expression) {
+					return true
+				}
+			}
+		}
+	}
+	for _, r := range fn.Returns {
+		if feeds(r) {
+			return true
+		}
+	}
+	return false
+}
+
+// canonical writes a closed constant as text that is the same for the same
+// expression at any call site, for naming its specialization.
+func canonical(op *program.Operand) (string, bool) {
+	if op == nil {
+		return "", false
+	}
+	switch t := op.T.(type) {
+	case *program.Operand_Value:
+		return fmt.Sprintf("%g", t.Value), true
+	case *program.Operand_Reference:
+		if t.Reference == nil {
+			return "", false
+		}
+		return t.Reference.Prefix + "." + t.Reference.Name, true
+	case *program.Operand_Expression:
+		parts := make([]string, len(t.Expression.Operands))
+		for i, c := range t.Expression.Operands {
+			s, ok := canonical(c)
+			if !ok {
+				return "", false
+			}
+			parts[i] = s
+		}
+		return fmt.Sprintf("%s(%s)", t.Expression.Operation, strings.Join(parts, ",")), true
+	case *program.Operand_FnCall:
+		if t.FnCall.Reference == nil {
+			return "", false
+		}
+		parts := make([]string, len(t.FnCall.Arguments))
+		for i, c := range t.FnCall.Arguments {
+			s, ok := canonical(c)
+			if !ok {
+				return "", false
+			}
+			parts[i] = s
+		}
+		return fmt.Sprintf("%s.%s(%s)", t.FnCall.Reference.Prefix, t.FnCall.Reference.Name, strings.Join(parts, ",")), true
+	}
+	return "", false
+}

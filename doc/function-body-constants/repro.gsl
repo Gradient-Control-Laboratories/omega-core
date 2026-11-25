@@ -1,0 +1,7 @@
+f(x) {
+  k = catalog.pitch(6.0);
+  return length(p) - k - x;
+}
+a = f(sin(p.x));
+b = remap(f(cos(p.y)), p - [3.0, 0.0, 0.0]);
+return a, b;
