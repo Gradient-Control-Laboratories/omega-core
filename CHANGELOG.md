@@ -41,6 +41,13 @@ from `1.0.0` onward).
 
 ### Added
 
+- Stand-ins anywhere: `name.simple = proxy` now works on any named shape anywhere in an expression
+  (including intersections and remaps), not only top-level parts, and measures switch size at the
+  point drawn (`gsl_featurePixel`) rather than at the eye's distance to the part's box. When paired
+  with `name.featureSize = size`, the stand-in switches at `size` (using `builtin.simplified`'s
+  5-argument form) even on unbounded shapes or inside library helpers; `gears.gearProfile` and
+  `thread.basicForm`/`sinForm` use `.simple` + `.featureSize` so gear teeth and threads switch to
+  their pitch cylinder in a single pass.
 - Feature pruning: `name.featureSize = size` (mm) marks a value as a geometric feature that the viewer drops
   once it is too small to see, even when its part is large: a hole closes, a bump goes. The size is measured
   against the pixel at the point, from the camera, so it holds inside any rigid placement, and the feature

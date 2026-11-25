@@ -1,0 +1,31 @@
+@scene(500)
+
+// Stand-ins anywhere. A shape's stand-in, name.simple, is the simpler model
+// the viewer draws once the shape is small on screen, below the Detail
+// slider's Simple rung. It is measured at the point, as feature pruning is,
+// so a long part simplifies its far end first; and it may sit on any value,
+// so a screw placed through a remap keeps the stand-in its library gave it.
+// Raise the Simple rung and zoom out, or look along the bar.
+//
+// Its size is name.featureSize where declared, else the value's box. A
+// fastener carries the smallest extent of its declared box with its stand-in,
+// which is how a screw read through map.patternRectangularXY, whose box no
+// analysis can follow, still knows when to switch.
+
+// A field of M6 cap screws on a 25 mm grid, cropped to the plate: each screw
+// is placed by a remap, and each draws its socket near and its plain head and
+// shank far.
+plate = box([-100.0, -100.0, -12.0], [100.0, 100.0, 0.0]);
+plate.color = [0.40, 0.44, 0.50];
+screws = max(remap(fastener.shcs(6.0, 20.0), map.patternRectangularXY([25.0, 25.0])),
+             abs(p.x) - 95.0, abs(p.y) - 95.0);
+
+// A bar 400 mm long with a groove 2 wide and 1.5 deep across its top and
+// bottom every 20 mm; its stand-in is the plain bar. Seen along its length,
+// the near grooves stay and the far ones go.
+groove = max(abs(((p.x % 20.0) + 20.0) % 20.0 - 10.0) - 1.0, 8.5 - abs(p.z));
+bar = max(box([-200.0, 140.0, -10.0], [200.0, 160.0, 10.0]), neg(groove));
+bar.simple = box([-200.0, 140.0, -10.0], [200.0, 160.0, 10.0]);
+bar.color = [0.70, 0.62, 0.45];
+
+return plate, screws, bar;

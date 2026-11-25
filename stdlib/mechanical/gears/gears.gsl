@@ -124,21 +124,13 @@ gearProfile(numTeeth, moduleVal, pressureAngle, rotOffset, dedendumClearance, kS
                                             [sin(tipRoll), neg(cos(tipRoll))], tipCorner / length(tipCorner));
   dedBody = remap(circleXY([0, 0], dedendumRadius), [opx, opy, p.z]);
   profile = unionRound(toothProfile, dedBody, roundK);
-  // The same solid as the pitch disc with the tips added and the gaps taken
-  // away, so that the teeth, a feature a tooth thickness across, give way to
-  // the pitch circle when they are too small to see (builtin pruneBelow): the
-  // circle that rolls on its mate's. The tips are the whole profile and the
-  // gaps the whole space outside it, unbounded: the disc takes in everything
-  // of them inside the pitch circle, so pruned the gear still leaves exactly
-  // the disc, and drawn the field is the profile's, max(min(disc, f), f) = f.
-  // Bounding them to bands about the pitch circle left the field measuring to
-  // the pitch and tip circles in each gap, short of the flanks.
-  pitchDisc = remap(circleXY([0, 0], pitchRadius), [opx, opy, p.z]);
-  tips = profile;
-  tips.featureSize = pi * moduleVal / 2.0;
-  gaps = neg(profile);
-  gaps.featureSize = pi * moduleVal / 2.0;
-  return max(min(pitchDisc, tips), neg(gaps));
+  // Give way to the pitch circle when the teeth are too small to see (builtin
+  // simplified): the circle that rolls on its mate's. Drawn, the field is the
+  // profile's unchanged; when the teeth shrink below a tooth thickness,
+  // pi * moduleVal / 2.0, the viewer switches to the pitch disc.
+  profile.simple = remap(circleXY([0, 0], pitchRadius), [opx, opy, p.z]);
+  profile.featureSize = pi * moduleVal / 2.0;
+  return profile;
 }
 
 // gearReach: how far a spur gear reaches from its axis, its addendum circle,

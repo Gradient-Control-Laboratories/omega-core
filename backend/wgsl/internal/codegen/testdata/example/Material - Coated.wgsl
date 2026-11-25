@@ -1034,8 +1034,8 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_
   if (gsl_colorIdx == 11u) {
     var gsl_detailValue = 1.0;
     if (max(gsl_pw, gsl_detailPw) < 2.0) { let gsl_detailOuterPw = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
-      let gsl_tmp_3 = p / 4.0;
-      gsl_detailValue = texture_fadeTo(0.85 + 0.3 * fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cellularScan(gsl_tmp_3, 1, noiseTex).nearCell + vec3<f32>(41.0, 7.0, 13.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((gsl_cellularScan(gsl_tmp_3, 1, noiseTex).nearCell + vec3<f32>(41.0, 7.0, 13.0)) / 64.0)) & vec3<i32>(63), 0).rgb).x, 1.0, 4.0, noiseTex);
+      let gsl_tmp_6 = p / 4.0;
+      gsl_detailValue = texture_fadeTo(0.85 + 0.3 * fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cellularScan(gsl_tmp_6, 1, noiseTex).nearCell + vec3<f32>(41.0, 7.0, 13.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((gsl_cellularScan(gsl_tmp_6, 1, noiseTex).nearCell + vec3<f32>(41.0, 7.0, 13.0)) / 64.0)) & vec3<i32>(63), 0).rgb).x, 1.0, 4.0, noiseTex);
       gsl_pw = gsl_detailOuterPw;
     }
     var gsl_simpleValue = vec3<f32>(0.18, 0.32, 0.45);
@@ -1177,8 +1177,8 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, noiseTex: te
   if (gsl_materialIdx == 10u) {
     var gsl_detailValue_5 = 0.0;
     if (max(gsl_pw, gsl_detailPw) < 0.1) { let gsl_detailOuterPw_5 = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
-      let gsl_tmp_2 = clamp(1.0 - noise_cellularF1Lattice(p / 0.2, noiseTex) * 0.2 / 0.09, 0.0, 1.0);
-      gsl_detailValue_5 = gsl_tmp_2 * gsl_tmp_2 * 0.08 * (1.0 - texture_mask(gsl_pw, 0.075, 0.025, noiseTex));
+      let gsl_tmp_5 = clamp(1.0 - noise_cellularF1Lattice(p / 0.2, noiseTex) * 0.2 / 0.09, 0.0, 1.0);
+      gsl_detailValue_5 = gsl_tmp_5 * gsl_tmp_5 * 0.08 * (1.0 - texture_mask(gsl_pw, 0.075, 0.025, noiseTex));
       gsl_pw = gsl_detailOuterPw_5;
     }
     var gsl_simpleValue_6 = mat4x4<f32>(vec4<f32>(0.81903625, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
@@ -1192,9 +1192,9 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, noiseTex: te
   if (gsl_materialIdx == 11u) {
     var gsl_detailValue_6 = 0.0;
     if (max(gsl_pw, gsl_detailPw) < 2.0) { let gsl_detailOuterPw_6 = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
-      let gsl_tmp_3 = p / 4.0;
-      let gsl_tmp_4 = clamp(gsl_cellularScan(gsl_tmp_3, 1, noiseTex).f1 * 4.0 / 2.8, 0.0, 1.0);
-      gsl_detailValue_6 = (gsl_tmp_4 * gsl_tmp_4 - 0.578) * 0.24 * (1.0 - texture_mask(gsl_pw, 1.5, 0.5, noiseTex));
+      let gsl_tmp_6 = p / 4.0;
+      let gsl_tmp_7 = clamp(gsl_cellularScan(gsl_tmp_6, 1, noiseTex).f1 * 4.0 / 2.8, 0.0, 1.0);
+      gsl_detailValue_6 = (gsl_tmp_7 * gsl_tmp_7 - 0.578) * 0.24 * (1.0 - texture_mask(gsl_pw, 1.5, 0.5, noiseTex));
       gsl_pw = gsl_detailOuterPw_6;
     }
     var gsl_simpleValue_7 = mat4x4<f32>(vec4<f32>(0.38729835, 0.5, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
@@ -1391,9 +1391,9 @@ fn gsl_heights(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f32,
   }
   let wrinkleMat = gsl_simpleValue_11;
   var gsl_detailValue_10 = 0.0;
-  let gsl_tmp_2 = clamp(1.0 - noise_cellularF1Lattice(p / 0.2, noiseTex) * 0.2 / 0.09, 0.0, 1.0);
+  let gsl_tmp_5 = clamp(1.0 - noise_cellularF1Lattice(p / 0.2, noiseTex) * 0.2 / 0.09, 0.0, 1.0);
   if (max(gsl_pw, gsl_detailPw) < 0.1) { let gsl_detailOuterPw_10 = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
-    gsl_detailValue_10 = gsl_tmp_2 * gsl_tmp_2 * 0.08 * (1.0 - texture_mask(gsl_pw, 0.075, 0.025, noiseTex));
+    gsl_detailValue_10 = gsl_tmp_5 * gsl_tmp_5 * 0.08 * (1.0 - texture_mask(gsl_pw, 0.075, 0.025, noiseTex));
     gsl_pw = gsl_detailOuterPw_10;
   }
   var gsl_simpleValue_12 = mat4x4<f32>(vec4<f32>(0.81903625, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
@@ -1403,10 +1403,10 @@ fn gsl_heights(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f32,
   }
   let sandMat = gsl_simpleValue_12;
   var gsl_detailValue_11 = 0.0;
-  let gsl_tmp_3 = p / 4.0;
-  let gsl_tmp_4 = clamp(gsl_cellularScan(gsl_tmp_3, 1, noiseTex).f1 * 4.0 / 2.8, 0.0, 1.0);
+  let gsl_tmp_6 = p / 4.0;
+  let gsl_tmp_7 = clamp(gsl_cellularScan(gsl_tmp_6, 1, noiseTex).f1 * 4.0 / 2.8, 0.0, 1.0);
   if (max(gsl_pw, gsl_detailPw) < 2.0) { let gsl_detailOuterPw_11 = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
-    gsl_detailValue_11 = (gsl_tmp_4 * gsl_tmp_4 - 0.578) * 0.24 * (1.0 - texture_mask(gsl_pw, 1.5, 0.5, noiseTex));
+    gsl_detailValue_11 = (gsl_tmp_7 * gsl_tmp_7 - 0.578) * 0.24 * (1.0 - texture_mask(gsl_pw, 1.5, 0.5, noiseTex));
     gsl_pw = gsl_detailOuterPw_11;
   }
   var gsl_simpleValue_13 = mat4x4<f32>(vec4<f32>(0.38729835, 0.5, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
