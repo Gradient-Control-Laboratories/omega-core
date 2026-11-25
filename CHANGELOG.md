@@ -41,6 +41,10 @@ from `1.0.0` onward).
 
 ### Added
 
+- Migrated GSL compiler architecture, language specification/migration, golden verification, and
+  stdlib tolerance-table documentation from `omega-release/doc/` into `doc/`, synced
+  `doc/gsl_lang_spec_future.md`, extracted `doc/roadmap.md` from `README.md`, and documented Go
+  SDK consumption (`go get` + `tool/ensure-native-libs.sh`) in `README.md`.
 - Emitted a `program.SeverityWarning` diagnostic in `parser/internal/parser2` when unnecessary
   `import . "omega"` statements are parsed, advising that `builtin` is implicitly imported, and
   added the `omegaimport` fixer to `gsl fix` (`cmd/fix`) to remove them automatically.

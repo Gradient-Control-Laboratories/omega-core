@@ -24,7 +24,8 @@ This spec will continue to be updated as the compiler and tools are being develo
 ### What GSL provides
 - Supports basic arithmetic, component-wise list algebra, modulo, logic, and comparison operators.
 - Provides first-class named and anonymous functions, allowing closures and function passing.
-- Exposes mesh/CAD STEP slot-numbered and expression-based asset imports.
+- Provides a unified top-level `import` syntax for both GSL packages (extensionless) and external
+  assets (`.stl`, `.step`, `.stp`, `.hodge`, `.warp`), classified automatically by file extension.
 - Resolves variables and slider properties (@range) dynamically
     to drive real-time parameter tweaking.
 - Evaluates mathematical primitives and built-in algorithms (like spatial remapping and
@@ -118,13 +119,12 @@ GSL is parsed using the `participle/v2` framework.
 The grammar is defined by the following AST structures:
 
 ```ebnf
-TopLevel           = SceneDirective? Import* MeshImport* StepImport* WarpImport* Declaration*
+TopLevel           = SceneDirective? DurationDirective? CaptionDirective* Import* Declaration*
                      ( "return" Expression ( "," Expression )* ","? ";" )?
 SceneDirective     = "@scene" "(" Number ( "," Number )? ")"
+DurationDirective  = "@duration" "(" Number ")"
+CaptionDirective   = "@caption" "(" String "," Number "," Number ( "," Number )? ")"
 Import             = "import" ( Ident | "." )? String ";"
-MeshImport         = "importMesh" Int String ";"
-StepImport         = "importStep" Int String ";"
-WarpImport         = "importWarp" Int String ";"
 
 Declaration        = Annotation* ( NamedFunction | PropertyAssignment | Assignment )
 Annotation         = "@" Ident ( "(" ( Expression ( "," Expression )* ","? )? ")" )?
@@ -153,11 +153,10 @@ Term               = Factor ( ( "*" | "/" | "%" ) Factor )*
 Factor             = "!"? "-"? Value Modifier*
 Modifier           = "." Ident Arguments? | "[" Expression "]"
 
-Value              = ImportRef | Number | FunctionCall | QualifiedRef | Reference | AnonCall
+Value              = Number | FunctionCall | QualifiedRef | Reference | AnonCall
                    | SubExpression | Collection | String | AnnotatedExpr
 
 AnnotatedExpr      = Annotation Expression
-ImportRef          = ( "importStep" | "importMesh" | "importWarp" ) String
 Number             = Float | Int
 QualifiedRef       = Ident "." Ident
 FunctionCall       = ( Ident "." )? Ident "(" ( Expression ( "," Expression )* ","? )? ")"
@@ -215,7 +214,7 @@ String             = StringLiteral
   - Built-in GSL functions: `acosh`, `asinh`, `atanh`, `clamp`, `cosh`, `cross`, `degrees`,
     `distance`, `dot`, `exp2`, `fract`, `length`, `normalize`, `radians`, `sign`, `sinh`,
     `tanh`, `trunc`, `noiseHash3`, `warpField`, `pixelSize`, `displacementDrawn`,
-    `importMesh`, `importStep`, `importWarp`, `mesh`, `bvhSdf`, `vdbSdf`,
+    `mesh`, `bvhSdf`, `vdbSdf`,
     `meshWarped`, `vdbSdfWarped`, `meshUnion`, `meshIntersect`, `meshDifference`,
     `facePoint`, `facePointNormal`, `edgePoint`, `edgePointNormal`, `vertexPoint`,
     `vertexPointNormal`, `circleCenter`, `circleCenterNormal`, `meshVolume`, `meshArea`,
@@ -443,6 +442,8 @@ Annotations are organized into five categories based on their role:
 | Category      | Annotation                                        | Valid Targets                                   |
 | :------------ | :------------------------------------------------ | :---------------------------------------------- |
 | Presentation  | `@scene(size[, grid])`                            | Package directive (top of first file)           |
+| Presentation  | `@duration(seconds)`                              | Package directive (top of first file)           |
+| Presentation  | `@caption("text", start, end[, fade])`            | Top-level directive (any file in package)       |
 | Scalar        | `@range(min, max[, increment=inc][, period=sec])` | Variable assignments, inline scalar expressions |
 | Scalar        | `@values(v1, v2, ...)`                            | Variable assignments, inline scalar expressions |
 | UI Suggestion | `@point`                                          | Variable assignments, inline expressions        |
@@ -480,6 +481,17 @@ The `@scene` annotation configures the document viewport size and grid density:
   Arguments must be strictly positive (`size > 0`, `grid > 0`).
 * **Default Grid**: If `grid` is omitted, it defaults to `size / 10.0`.
 * **Syntax**: Must not end with a semicolon.
+
+##### Duration Annotation (`@duration`)
+
+Sets the document's animation loop length in seconds (`@duration(12)`). Positioned at the top of
+the first file alongside `@scene` (no trailing semicolon) and takes one positive numeric literal.
+
+##### Caption Annotation (`@caption`)
+
+Displays a caption line at the bottom of the viewer while the animation clock is in
+`[startTime, endTime]` (`@caption("Drill the bore", 4, 9, 1)`). Top-level only (no trailing
+semicolon); takes a string literal, `startTime`, `endTime`, and optional `fade` seconds.
 
 #### 2. Scalar Annotations
 
@@ -861,6 +873,13 @@ Variables representing 3D geometry can be configured with metadata properties:
   `shape.box` may also be evaluated in expressions to query bounding box extents.
 - **`name.color`**: RGB color components `[r, g, b]` normalized to `[0.0, 1.0]`.
 - **`name.material`**: Material parameter collection.
+- **`name.u` / `name.v`**: Intrinsic surface coordinates carried through shapes and sweeps.
+- **`name.simple`**: Simplified stand-in proxy field substituted when a part or feature is far from
+  the camera (works on any named shape anywhere in an expression).
+- **`name.detail` / `name.detailSize`**: Fine surface detail layer and pixel-size threshold.
+- **`name.featureSize`**: Geometric feature size (mm) below which the viewer prunes the feature
+  (`pruneBelow(field, size)` in `builtin`; a size of `0` uses the smallest extent of the value's
+  box).
 
 #### Property Lifecycle and Lifecycle Constraints
 Properties are declaration metadata and cannot be read in general expressions (except `.box`).
@@ -869,28 +888,53 @@ Cyclic dependencies among declarations and properties produce a compile-time err
 
 ### 9. Imports & Package System
 
+All imports in GSL v2 use a single unified top-level `import` statement at the top of the file.
+The compiler detects the import kind automatically from the path's file extension:
+
+- **No file extension** → **GSL package import** (imports an entire package directory).
+- **Recognized asset extension** (`.stl`, `.step`, `.stp`, `.hodge`, `.warp`) → **asset import**
+  (binds a typed asset handle for direct use in shape and geometry expressions).
+
+Legacy expression-based asset imports (e.g., `id = importMesh "something.stl";`) and specialized
+slot-numbered or keyword import forms (`importMesh`, `importStep`, `importWarp`) are deprecated
+and removed in GSL v2.
+
 #### Package Imports
-Imports let a file access other package modules. They must sit at the top of the file:
+
+Package imports let a file access other GSL package modules:
 ```gsl
 import . "vector";       // Dot import: pulls members into local scope without prefix
 import "vector";         // Qualified import: elements accessed as `vector.member(...)`
 import myLib "vector";   // Aliased import: elements accessed as `myLib.member(...)`
 ```
-*Segment Rules*: Import paths cannot contain `//`, start/end with `/`, contain `.` or `..`
-segments, or end with `.gsl`.
+**Rules & Restrictions**:
+- A `.gsl` file extension is **not allowed** in `import` paths; an extensionless path always denotes
+  a GSL package.
+- Individual `.gsl` files cannot be imported directly—imports always target a package.
+- Import paths cannot contain `//`, start/end with `/`, or contain `.` or `..` segments.
 
 #### Asset Imports
-Assets (such as STL meshes or CAD STEP files) can also be imported.
+
+External geometry and field assets (STL meshes, CAD STEP/Hodge files, and warp fields) are imported
+using the same top-level `import` statement with a required identifier binding:
 ```gsl
-import gMesh "gear.stl";
+import myMesh "something.stl";
 import gStep "gear.step";
+import wField "deform.warp";
 ```
+Importing `myMesh` makes the typed asset handle `myMesh` available directly in the document for
+inclusion in shapes (e.g., `mesh(myMesh)`, `bvhSdf(myMesh)`, `vdbSdf(myMesh)`, or `meshUnion`).
+It is convention, although not required, that asset imports appear after package imports.
 
-It is convention although not required that asset imports appear after package imports.
-
-**Restrictions**:
-- Suffixes are restricted (`.stl` for mesh imports; `.step`, `.stp`,  or `.hodge` for STEP imports).
-- Paths must be simple filenames located in the same directory the GSL file.
+**Rules & Restrictions**:
+- The asset type is detected from the filename extension:
+  - `.stl` for triangle meshes
+  - `.step`, `.stp`, or `.hodge` for CAD B-rep / annotated meshes
+  - `.warp` for displacement/warp fields
+- Unrecognized extensions (and `.gsl`) are compile-time errors.
+- Asset paths must be simple filenames located in the same directory as the GSL file.
+- Asset imports must bind an explicit identifier (`import <name> "<file>";`); dot-imports
+  (`import . "gear.stl";`) and unnamed asset imports are prohibited.
 
 #### Scope Semantics, Shadowing & Import Collisions
 
@@ -1074,23 +1118,23 @@ The following multi-argument numeric primitives and built-ins share these common
 
 #### Mesh Related Primitives and Built-in Functions
 
-The first argument (`index`) of these functions has the following common constraint:
-- Must be a non-negative integer literal
-  or a variable/expression bound to an imported asset slot (e.g. `importMesh` / `importStep`).
+The first argument (`asset`) of these functions has the following common constraint:
+- Must be a typed mesh/STEP asset handle bound by a top-level asset import
+  (e.g., `import myMesh "something.stl";`).
 
 **Functions**
-- `mesh(index [, placement])`: Instantiates an imported mesh in the scene.
+- `mesh(asset [, placement])`: Instantiates an imported mesh in the scene.
   - *Constraints*: The optional `placement` argument must be a 3D position vector (`[x, y, z]`)
     or a $4 \times 4$ transformation matrix.
   - *Operation*: Positions, rotates, and scales the specified imported mesh asset in 3D space.
   - *Result*: Returns a shape expression representing the instantiated mesh.
-- `bvhSdf(index)`: Signed distance to an imported mesh via BVH acceleration.
+- `bvhSdf(asset)`: Signed distance to an imported mesh via BVH acceleration.
   - *Constraints*: Must be called with exactly 1 argument.
   - *Operation*: Evaluates the exact
     signed distance from point `p` to the imported mesh asset using a Bounding Volume Hierarchy
     (BVH) triangle-set distance oracle with Generalized Winding Number (GWN) sign determination.
   - *Result*: Returns a **scalar** representing the signed distance value.
-- `vdbSdf(index [, voxelDivisor, halfBandVoxels])`:
+- `vdbSdf(asset [, voxelDivisor, halfBandVoxels])`:
   Signed distance to an imported mesh via baked OpenVDB level sets.
   - *Constraints*: Requires between 1 and 3 arguments.
     Optional `voxelDivisor` must be a positive integer literal (defaults to `256`).
