@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	lib "gradientcontrol.com/omega/core/parser"
-	"gradientcontrol.com/omega/core/parser/internal/parser2"
-	"gradientcontrol.com/omega/core/program"
+	lib "github.com/Gradient-Control-Laboratories/omega-core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/parser/internal/parser2"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func exprOp(t *testing.T, op *program.Operand, want program.Operation) []*program.Operand {

@@ -4,11 +4,11 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/assembler/propval"
-	"gradientcontrol.com/omega/core/internal/collect"
-	"gradientcontrol.com/omega/core/internal/link"
-	"gradientcontrol.com/omega/core/internal/source"
-	parser "gradientcontrol.com/omega/core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/propval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/collect"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/link"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	parser "github.com/Gradient-Control-Laboratories/omega-core/parser"
 )
 
 func parseAndValidate(t *testing.T, src string) error {
@@ -29,10 +29,7 @@ func parseAndValidate(t *testing.T, src string) error {
 
 func TestValidProperties(t *testing.T) {
 	src := `
-v = 1.0;
-v.min = 0.0;
-v.max = 2.0;
-v.period = 5.0;
+@range(0.0, 2.0, 5.0) v = 1.0;
 
 s = sphere(1.0);
 s.box = [[-1.0, -1.0, -1.0], [1.0, 1.0, 1.0]];
@@ -68,77 +65,6 @@ return s1;
 	}
 	if !strings.Contains(err.Error(), "cyclic dependency detected") {
 		t.Fatalf("expected 'cyclic dependency detected', got: %v", err)
-	}
-}
-
-func TestFunctionLocalSlider(t *testing.T) {
-	src := `
-f() {
-	v = 1.0;
-	v.min = 0.0;
-	v.max = 2.0;
-	return v;
-}
-
-return f();
-`
-	err := parseAndValidate(t, src)
-	if err == nil {
-		t.Fatalf("expected error for function-local slider, got nil")
-	}
-	if !strings.Contains(err.Error(), "slider properties (.min, .max, .period) are only permitted on top-level file scope declarations") {
-		t.Fatalf("expected top-level scope error, got: %v", err)
-	}
-}
-
-func TestSliderMissingBounds(t *testing.T) {
-	src := `
-v = 1.0;
-v.min = 0.0;
-
-return v;
-`
-	err := parseAndValidate(t, src)
-	if err == nil {
-		t.Fatalf("expected error for missing .max bound, got nil")
-	}
-	if !strings.Contains(err.Error(), "requires both .min and .max bounds") {
-		t.Fatalf("expected missing bounds error, got: %v", err)
-	}
-}
-
-func TestSliderInvertedRange(t *testing.T) {
-	src := `
-v = 1.0;
-v.min = 5.0;
-v.max = 2.0;
-
-return v;
-`
-	err := parseAndValidate(t, src)
-	if err == nil {
-		t.Fatalf("expected error for inverted min/max, got nil")
-	}
-	if !strings.Contains(err.Error(), "invalid slider range: min (5) must be less than max (2)") {
-		t.Fatalf("expected invalid slider range error, got: %v", err)
-	}
-}
-
-func TestPeriodNonPositive(t *testing.T) {
-	src := `
-v = 1.0;
-v.min = 0.0;
-v.max = 5.0;
-v.period = -1.0;
-
-return v;
-`
-	err := parseAndValidate(t, src)
-	if err == nil {
-		t.Fatalf("expected error for non-positive period, got nil")
-	}
-	if !strings.Contains(err.Error(), "property .period must be strictly positive") {
-		t.Fatalf("expected strictly positive period error, got: %v", err)
 	}
 }
 
@@ -410,10 +336,8 @@ return m;
 
 func TestMemberAccessNoCycle(t *testing.T) {
 	src := `
-x = 10.0;
+@range(0.0, 20.0) x = 10.0;
 y = p.x + 1.0;
-x.min = 0.0;
-x.max = 20.0;
 
 return y;
 `
@@ -429,9 +353,7 @@ f(a) {
 	return a;
 }
 
-stain = 1.0;
-stain.min = 0.0;
-stain.max = 5.0;
+@range(0.0, 5.0) stain = 1.0;
 
 v = f(stain);
 return v;
@@ -439,22 +361,6 @@ return v;
 	err := parseAndValidate(t, src)
 	if err != nil {
 		t.Fatalf("unexpected cycle or validation error: %v", err)
-	}
-}
-
-func TestSliderDefaultValueOutOfBounds(t *testing.T) {
-	src := `
-v = 10.0;
-v.min = 0.0;
-v.max = 5.0;
-return v;
-`
-	err := parseAndValidate(t, src)
-	if err == nil {
-		t.Fatalf("expected error for default value out of bounds, got nil")
-	}
-	if !strings.Contains(err.Error(), "slider default value 10 is outside range [0, 5]") {
-		t.Fatalf("expected default value out of range error, got: %v", err)
 	}
 }
 
@@ -592,5 +498,30 @@ return scaleRadius(5.0);
 	}
 	if !strings.Contains(err.Error(), "@range annotation on a parameter requires exactly 2 arguments: @range(min, max)") {
 		t.Fatalf("expected period rejection error, got: %v", err)
+	}
+}
+
+// The .min, .max and .period slider properties were retired for @range. A document
+// that sets one is rejected at its first such statement, top level or inside a
+// function, with a message that says what to write and how to migrate.
+func TestRemovedSliderProperties(t *testing.T) {
+	for name, src := range map[string]string{
+		"min":               "v = 1.0;\nv.min = 0.0;\nreturn v;\n",
+		"max":               "v = 1.0;\nv.max = 2.0;\nreturn v;\n",
+		"period":            "v = 1.0;\nv.period = 3.0;\nreturn v;\n",
+		"all three":         "v = 1.0;\nv.min = 0.0;\nv.max = 2.0;\nv.period = 3.0;\nreturn v;\n",
+		"inside a function": "f() {\n\tv = 1.0;\n\tv.min = 0.0;\n\tv.max = 2.0;\n\treturn v;\n}\nreturn f();\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			err := parseAndValidate(t, src)
+			if err == nil {
+				t.Fatalf("expected the retired slider property to be rejected, got nil")
+			}
+			for _, want := range []string{"was removed", "@range(min, max[, period])", "`gsl fix -range`", `"v"`} {
+				if !strings.Contains(err.Error(), want) {
+					t.Errorf("expected %q in the error, got: %v", want, err)
+				}
+			}
+		})
 	}
 }

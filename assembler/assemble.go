@@ -4,33 +4,33 @@ import (
 	"fmt"
 	"strings"
 
-	"gradientcontrol.com/omega/core/assembler/meshplan"
-	"gradientcontrol.com/omega/core/assembler/meshslots"
-	"gradientcontrol.com/omega/core/assembler/slider"
-	"gradientcontrol.com/omega/core/assembler/source"
-	"gradientcontrol.com/omega/core/assembler/topofold"
-	"gradientcontrol.com/omega/core/assembler/ui"
-	"gradientcontrol.com/omega/core/assembler/warpfold"
-	"gradientcontrol.com/omega/core/internal/assembler/annotation"
-	"gradientcontrol.com/omega/core/internal/assembler/constspec"
-	"gradientcontrol.com/omega/core/internal/assembler/deadcode"
-	"gradientcontrol.com/omega/core/internal/assembler/inline"
-	"gradientcontrol.com/omega/core/internal/assembler/property"
-	"gradientcontrol.com/omega/core/internal/assembler/propval"
-	internaltopofold "gradientcontrol.com/omega/core/internal/assembler/topofold"
-	"gradientcontrol.com/omega/core/internal/assembler/unroll"
-	internalwarpfold "gradientcontrol.com/omega/core/internal/assembler/warpfold"
-	"gradientcontrol.com/omega/core/internal/closure"
-	"gradientcontrol.com/omega/core/internal/collect"
-	"gradientcontrol.com/omega/core/internal/eval"
-	"gradientcontrol.com/omega/core/internal/link"
-	"gradientcontrol.com/omega/core/internal/lower"
-	"gradientcontrol.com/omega/core/internal/meshfold"
-	internalsource "gradientcontrol.com/omega/core/internal/source"
-	"gradientcontrol.com/omega/core/internal/types"
-	"gradientcontrol.com/omega/core/parser"
-	"gradientcontrol.com/omega/core/program"
-	"gradientcontrol.com/omega/core/program/textures"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/meshplan"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/meshslots"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/slider"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/topofold"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/ui"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/warpfold"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/annotation"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/constspec"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/deadcode"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/inline"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/property"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/propval"
+	internaltopofold "github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/topofold"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/unroll"
+	internalwarpfold "github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/warpfold"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/closure"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/collect"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/link"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/lower"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/meshfold"
+	internalsource "github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/types"
+	"github.com/Gradient-Control-Laboratories/omega-core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/textures"
 )
 
 // ParsePackageFunc parses all source files in a package into a *parser.Result.
@@ -52,14 +52,19 @@ type Result struct {
 	MeshSdfSlots   []*program.MeshSdfSlot
 	GlobalTextures *program.GlobalTextures
 	Diagnostics    []program.Diagnostic
-	Sliders        []slider.SliderInfo
-	UIControls     []ui.Control
-	Scene          *program.Scene
-	MeshPlan       *meshplan.MeshExportPlan
-	SdfSubtrees    []meshplan.SdfSubtree
-	PreviewBodies  []meshplan.PreviewBody
-	AudioReturns   []meshplan.SdfSubtree
-	Variants       map[string]VariantResult
+	// GradientNotes lists the geometry returns WithAnalyticGradient could not
+	// differentiate (empty unless that option is set).
+	GradientNotes []GradientNote
+	Sliders       []slider.SliderInfo
+	UIControls    []ui.Control
+	Scene         *program.Scene
+	Captions      []*program.Caption
+	Duration      *program.Duration
+	MeshPlan      *meshplan.MeshExportPlan
+	SdfSubtrees   []meshplan.SdfSubtree
+	PreviewBodies []meshplan.PreviewBody
+	AudioReturns  []meshplan.SdfSubtree
+	Variants      map[string]VariantResult
 }
 
 // Assemble collects packages directly and indirectly referenced by primarySources,
@@ -166,6 +171,7 @@ func assembleWithOptions(primarySources []string, srcMgr source.Manager, o *opti
 	if err != nil {
 		return nil, err
 	}
+	var gradientNotes []GradientNote
 	// Mark the document's parts for the viewer, drop declared boxes, and lower
 	// .color and .material properties over the primary geometry returns only
 	// (prog.Returns()[:geomCount]) so ColorReturns and MaterialReturns remain
@@ -178,6 +184,15 @@ func assembleWithOptions(primarySources []string, srcMgr source.Manager, o *opti
 		property.DropDeclaredBoxes(p)
 		if err := property.LowerReturnProperties(p); err != nil {
 			return nil, err
+		}
+		if o.analyticGradient {
+			notes, err := property.LowerGradientReturns(p)
+			if err != nil {
+				return nil, err
+			}
+			for _, n := range notes {
+				gradientNotes = append(gradientNotes, GradientNote{Return: n.Return, Reason: n.Reason})
+			}
 		}
 		return p, nil
 	})
@@ -200,9 +215,19 @@ func assembleWithOptions(primarySources []string, srcMgr source.Manager, o *opti
 	if err = annotation.ValidateReturns(prog); err != nil {
 		return nil, err
 	}
-	// A stand-in MarkParts could not give a part.
-	if err = property.CheckSimple(prog); err != nil {
+	// A stand-in MarkParts could not give a part: a shape's, now that types
+	// tell one, is sized by its box.
+	standIns, err := property.CheckSimple(prog)
+	if err != nil {
 		return nil, err
+	}
+	if standIns {
+		if err = link.References(prog, srcMgr, o.parsePkg); err != nil {
+			return nil, err
+		}
+		if err = types.Analyze(prog); err != nil {
+			return nil, err
+		}
 	}
 
 	// 4. Pre-Lowering Constant Evaluation & Structural AST Lowering
@@ -332,6 +357,7 @@ func assembleWithOptions(primarySources []string, srcMgr source.Manager, o *opti
 		MeshSdfSlots:   sdfSlots,
 		GlobalTextures: globalTex,
 		Diagnostics:    diags,
+		GradientNotes:  gradientNotes,
 		AudioReturns:   audioReturns,
 		Variants:       variants,
 	}
@@ -365,6 +391,8 @@ func assembleWithOptions(primarySources []string, srcMgr source.Manager, o *opti
 		result.Sliders = slider.Extract(sourceText, prog.Primary)
 		result.UIControls = ui.Extract(prog.Primary, prog.GetImport)
 		result.Scene = prog.Scene()
+		result.Captions = prog.Primary.Captions // an imported package's captions never show
+		result.Duration = prog.Primary.Duration // nor does its duration apply
 	}
 
 	return result, nil
@@ -519,11 +547,19 @@ func optimizeProgram(prog *program.Program, o *options, srcMgr source.Manager) (
 			return nil, err
 		}
 
-		// 6. Dead code elimination: prune unused declarations between rounds
+		// 6. Dead code elimination: prune unused declarations between rounds.
+		// What it removes can leave a fold to make (a constant the removed code
+		// kept from folding), so it counts toward the fixed point: stopping here
+		// left such a fold undone, and made a program's output depend on what
+		// else the libraries hold, which can add rounds of their own.
 		if o.enableDeadcodeRemoval {
+			before := deadcode.Declarations(prog)
 			prog, err = deadcode.Remove(prog)
 			if err != nil {
 				return nil, err
+			}
+			if deadcode.Declarations(prog) != before {
+				modifiedAny = true
 			}
 		}
 

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	gsllibs "gradientcontrol.com/omega/core/stdlib"
+	gsllibs "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
 )
 
 // The full library docs run to hundreds of kilobytes, more than a model should

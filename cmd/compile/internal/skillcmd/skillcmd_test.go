@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/program/preamble"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/preamble"
 )
 
 func run(t *testing.T, args ...string) (string, string, int) {

@@ -7,12 +7,8 @@
 // Press play to start the clock.
 
 // The wind, in m/s, and the direction it blows, in degrees from x.
-windSpeed = 10;
-windSpeed.min = 3;
-windSpeed.max = 25;
-windAngle = 20;
-windAngle.min = -180;
-windAngle.max = 180;
+@range(3, 25) windSpeed = 10;
+@range(-180, 180) windAngle = 20;
 wind = [cos(windAngle * 3.14159265 / 180), sin(windAngle * 3.14159265 / 180), 0];
 
 // Each piece is a slab 24 mm square, 32 mm apart.

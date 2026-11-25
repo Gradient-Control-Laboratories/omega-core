@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/program"
 )
 
 func (t *transformer) transformFile(file *program.PackageFile) error {
-	env := make(map[string]*closureVal)
+	env := t.fileEnv(file)
 	var newAssignments []*program.Assignment
 
 	for _, assign := range file.Assignments {
@@ -48,6 +48,38 @@ func (t *transformer) transformFile(file *program.PackageFile) error {
 	}
 
 	return nil
+}
+
+// fileEnv returns file's top-level closure bindings, creating the (empty) map
+// the first time; transformFile fills it in as it walks the assignments.
+func (t *transformer) fileEnv(file *program.PackageFile) map[string]*closureVal {
+	env, ok := t.fileEnvs[file]
+	if !ok {
+		env = make(map[string]*closureVal)
+		t.fileEnvs[file] = env
+	}
+	return env
+}
+
+// lexicalEnv is the environment the body of calleeFt (declared in calleeFile)
+// is transformed in when a call reaches it from a body transformed in
+// callerEnv. A function nested in one on the current chain sees what its
+// enclosing functions bind, which callerEnv carries. Any other function sees
+// only its own file's top level: the caller's bindings, such as a parameter
+// bound to a function, are not in its scope, and a parameter of its own with
+// the same name must not be rewritten by them.
+func (t *transformer) lexicalEnv(calleeFile *program.PackageFile, calleeFt *program.FnType, callerEnv map[string]*closureVal) map[string]*closureVal {
+	for _, fn := range t.fnStack {
+		for _, nft := range fn.FnTypes {
+			if nft == calleeFt {
+				return callerEnv
+			}
+		}
+	}
+	if calleeFile == nil {
+		return make(map[string]*closureVal)
+	}
+	return t.fileEnv(calleeFile)
 }
 
 func (t *transformer) transformFunction(file *program.PackageFile, fn *program.Function, parentEnv map[string]*closureVal) error {
@@ -793,7 +825,7 @@ func (t *transformer) rewriteOperand(file *program.PackageFile, enclosingFn *pro
 				}
 			}
 			if calleeFn != nil && !t.processedFns[calleeFn] && !t.isHigherOrderTemplate(calleeFile, calleeFn) {
-				if err := t.transformFunction(calleeFile, calleeFn, env); err != nil {
+				if err := t.transformFunction(calleeFile, calleeFn, t.lexicalEnv(calleeFile, calleeFt, env)); err != nil {
 					return err
 				}
 			}
@@ -846,13 +878,19 @@ func (t *transformer) rewriteOperand(file *program.PackageFile, enclosingFn *pro
 }
 
 // rewriteProperties rewrites the expressions of `name.prop = ...` statements,
-// which live on the assignment's variables rather than in its expression.
+// which live on the assignment's variables rather than in its expression, and
+// the bounds an explicit @range wrote, which hang off the assignment the same way.
 func (t *transformer) rewriteProperties(file *program.PackageFile, fn *program.Function, assign *program.Assignment, env map[string]*closureVal) error {
 	for _, v := range assign.Variables {
 		for _, prop := range v.Properties {
 			if err := t.rewriteOperand(file, fn, prop.Expression, env); err != nil {
 				return err
 			}
+		}
+	}
+	for _, op := range assign.Range.Operands() {
+		if err := t.rewriteOperand(file, fn, op, env); err != nil {
+			return err
 		}
 	}
 	return nil

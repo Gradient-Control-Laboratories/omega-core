@@ -1,7 +1,7 @@
 package inline
 
 import (
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // bindArg returns what a parameter bound to arg reads at each of its uses.

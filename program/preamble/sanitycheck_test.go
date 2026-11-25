@@ -3,7 +3,7 @@ package preamble
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func TestSanityCheck(t *testing.T) {

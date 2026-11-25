@@ -8,15 +8,13 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/compile"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/compile"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func TestCompile_StandardSDFWithSlidersAndParts(t *testing.T) {
 	src := `
-r = 10;
-r.min = 2;
-r.max = 20;
+@range(2, 20) r = 10;
 body = sphere(r);
 return body;
 `
@@ -114,9 +112,7 @@ func TestCompile_EmptySourceError(t *testing.T) {
 
 func TestCompile_AudioOnlyWithSliders(t *testing.T) {
 	src := `
-freq = 440;
-freq.min = 100;
-freq.max = 1000;
+@range(100, 1000) freq = 440;
 return audio(sin(freq * 2 * pi * time));
 `
 	resp := compile.Process(compile.Request{

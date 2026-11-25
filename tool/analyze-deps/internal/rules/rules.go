@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"gradientcontrol.com/omega/core/tool/analyze-deps/internal/graph"
+	"github.com/Gradient-Control-Laboratories/omega-core/tool/analyze-deps/internal/graph"
 )
 
 // Violation represents an architectural invariant violation.
@@ -25,7 +25,8 @@ func Check(g *graph.Graph) []Violation {
 	for _, node := range g.Packages {
 		for _, edge := range node.Imports {
 			// Rule 3: Prohibition of Framework Creep (stirigma)
-			if strings.HasPrefix(edge.RawImport, "gradientcontrol.com/stirigma/") {
+			if strings.HasPrefix(edge.RawImport, "github.com/Gradient-Control-Laboratories/stirigma/") ||
+				strings.HasPrefix(edge.RawImport, "gradientcontrol.com/stirigma/") {
 				violations = append(violations, Violation{
 					Rule:        "framework-creep",
 					FromPkg:     edge.FromPkg,

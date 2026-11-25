@@ -10,13 +10,13 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/internal/meshimport"
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/internal/test/require"
-	"gradientcontrol.com/omega/core/internal/test/stlbox"
-	"gradientcontrol.com/omega/core/program"
-	"gradientcontrol.com/omega/core/program/meshasset"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/meshimport"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/stlbox"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/meshasset"
 )
 
 // The box every test imports: 20 x 10 x 6 mm, centred on the origin.

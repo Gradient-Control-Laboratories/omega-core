@@ -1,4 +1,4 @@
-module gradientcontrol.com/omega/core
+module github.com/Gradient-Control-Laboratories/omega-core
 
 go 1.26.4
 

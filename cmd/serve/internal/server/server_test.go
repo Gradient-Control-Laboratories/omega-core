@@ -16,8 +16,8 @@ import (
 	"testing"
 	"time"
 
-	"gradientcontrol.com/omega/core/cmd/serve/internal/config"
-	"gradientcontrol.com/omega/core/cmd/serve/internal/server"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/serve/internal/config"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/serve/internal/server"
 )
 
 func setupTestServer(t *testing.T) (*server.Server, string, string) {
@@ -228,7 +228,7 @@ func TestProgressStreamCompileAndMesh(t *testing.T) {
 	compileBody, _ := json.Marshal(map[string]any{
 		"id":       "c-1",
 		"clientId": "client-1",
-		"source":   "r = 5; r.min = 1; r.max = 10; return sphere(r);",
+		"source":   "@range(1, 10) r = 5; return sphere(r);",
 	})
 	cRes, err := http.Post(ts.URL+"/api/compile", "application/json", bytes.NewReader(compileBody))
 	if err != nil {

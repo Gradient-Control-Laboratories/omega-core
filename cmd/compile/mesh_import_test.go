@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"gradientcontrol.com/omega/core/cmd/compile/internal/cli"
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/internal/test/require"
-	"gradientcontrol.com/omega/core/internal/test/stlbox"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/compile/internal/cli"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/stlbox"
 )
 
 // importedBox writes a 20 x 10 x 6 mm box STL beside a document and returns the document's path.

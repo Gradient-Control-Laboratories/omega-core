@@ -3,7 +3,7 @@ package types
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func (pa *PackageAnalyzer) inferBuiltinCall(name string, args []*program.Operand, env *TypeEnv, file *program.PackageFile) ([]*program.Type, error) {

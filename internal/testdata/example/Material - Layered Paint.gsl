@@ -1,0 +1,120 @@
+@scene(240, 20)
+
+// A white oak stick, bandsawn, painted in four stepped coats of coloured paint
+// toward its +X end; a shallow cylindrical scoop cut across its top through
+// all four coats into the wood; a fifth coat over its y- half after the cut;
+// and a chamfer along the edge between the top and the y- face.
+//
+// Each coat is the shape beneath it with a material laid over the material
+// beneath: coating.levelled adds the film's build to what it is laid on and
+// levels the relief under it by how far apart the saw's marks are. The
+// renderer moves each coated shape's surface by what its coat adds, before the
+// booleans after it, so every coat stands on the one below; the scoop's floor
+// is a clean cylinder showing the four coats as bands over the wood; the fifth
+// coat covers the cut on its side; and the chamfer's face shows all of it.
+
+// 200 x 40 x 40 mm stick, long axis along X
+stickLen = 200.0;
+stickWidth = 40.0;
+halfLen = stickLen / 2.0;
+halfWidth = stickWidth / 2.0;
+
+// Paint build per coat (mm)
+coatThickness = 0.10;
+
+// Each coat runs from this far back from the +X end to the end face
+offset1 = 160.0;
+offset2 = 140.0;
+offset3 = 120.0;
+offset4 = 100.0;
+
+oakBlank = boxCentered(vector.zero, [stickLen, stickWidth, stickWidth]);
+
+// White oak, bandsawn along X. The paint levels the saw's marks by how far
+// apart they are (2 mm for a bandsaw).
+stemOrigin = [0.0, -25.0, -18.0];
+bandsawn = wood.sawn(vector.dirX, 0.0);
+sawMarks = wood.prepWavelength(bandsawn);
+oakMat, oakCol = wood.species(
+  wood.whiteOakNumber,
+  stemOrigin,
+  vector.dirX,
+  wood.defaultLook,
+  0.0,
+  200.0,
+  oakBlank.dp,
+  bandsawn,
+  wood.noStain,
+  wood.unfinished
+);
+oak = oakBlank;
+oak.material = oakMat;
+oak.color = oakCol;
+
+// Plain coloured paint, 75 gloss units, no texture of its own. Each coat is
+// laid where x is past its step, and is the coat beneath elsewhere.
+paintFinish = material.make(coating.glossRoughness(75.0), 0, 1.5);
+stepRamp = 0.05;
+in1 = texture.mask(p.x, halfLen - offset1, stepRamp);
+in2 = texture.mask(p.x, halfLen - offset2, stepRamp);
+in3 = texture.mask(p.x, halfLen - offset3, stepRamp);
+in4 = texture.mask(p.x, halfLen - offset4, stepRamp);
+
+coat1Mat = material.blend(oakMat, coating.levelled(paintFinish, oakMat, coatThickness, sawMarks), in1);
+coat1Col = color.mixOklab(oakCol, [0.80, 0.18, 0.15], in1);
+coat1 = oak;
+coat1.material = coat1Mat;
+coat1.color = coat1Col;
+
+coat2Mat = material.blend(coat1Mat, coating.levelled(paintFinish, coat1Mat, coatThickness, sawMarks), in2);
+coat2Col = color.mixOklab(coat1Col, [0.92, 0.72, 0.15], in2);
+coat2 = coat1;
+coat2.material = coat2Mat;
+coat2.color = coat2Col;
+
+coat3Mat = material.blend(coat2Mat, coating.levelled(paintFinish, coat2Mat, coatThickness, sawMarks), in3);
+coat3Col = color.mixOklab(coat2Col, [0.16, 0.56, 0.34], in3);
+coat3 = coat2;
+coat3.material = coat3Mat;
+coat3.color = coat3Col;
+
+coat4Mat = material.blend(coat3Mat, coating.levelled(paintFinish, coat3Mat, coatThickness, sawMarks), in4);
+coat4Col = color.mixOklab(coat3Col, [0.15, 0.34, 0.70], in4);
+coat4 = coat3;
+coat4.material = coat4Mat;
+coat4.color = coat4Col;
+
+// A shallow cylindrical scoop across the top, where all four coats are,
+// through the paint and woodDepth into the oak, cutWidth wide: three times the
+// width of a 60-degree arc half that deep. So shallow a slope spreads each
+// coat into a band many times its thickness.
+woodDepth = 2.8;
+paintTop = halfWidth + 4.0 * coatThickness;
+cutBottom = halfWidth - woodDepth;
+cutDepth = paintTop - cutBottom;
+cutWidth = 1.5 * cutDepth / (1.0 - sqrt3 / 2.0);
+cutRadius = (cutWidth * cutWidth / 4.0 + cutDepth * cutDepth) / (2.0 * cutDepth);
+cutCentre = [halfLen - offset4 / 2.0, 0.0, cutBottom + cutRadius];
+cutout = cylinder(cutCentre, vector.dirY, cutRadius);
+cut = differenceSharp(coat4, cutout);
+
+// A fifth coat, laid after the cut, over the y- half of the stick: on the
+// y- face and over the scoop's floor on that side, covering the bands there.
+side = texture.mask(neg(p.y), 0.0, stepRamp);
+coat5Mat = material.blend(coat4Mat, coating.levelled(paintFinish, coat4Mat, coatThickness, sawMarks), side);
+coat5Col = color.mixOklab(coat4Col, [0.46, 0.24, 0.58], side);
+coat5 = cut;
+coat5.material = coat5Mat;
+coat5.color = coat5Col;
+
+// A 45-degree chamfer along the edge between the top and the y- face, its legs
+// chamferLeg from the outer paint, cut as a boolean: through the scoop it
+// shows the fifth coat lying over the cut, over the wood and the bands.
+chamferLeg = 3.0;
+outerTop = paintTop + coatThickness;
+outerSide = halfWidth + 4.0 * coatThickness + coatThickness;
+chamferAt = (outerTop + outerSide - chamferLeg) / sqrt2;
+chamferCut = chamferAt - (p.z - p.y) / sqrt2;
+stick = differenceSharp(coat5, chamferCut);
+
+return stick;

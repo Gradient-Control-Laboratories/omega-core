@@ -3,7 +3,7 @@
 ## 1. Overview
 
 This specification serves as the self-contained master improvement backlog for `omega-core`
-(`module gradientcontrol.com/omega/core`). It consolidates planned Geometric Specification Language
+(`module gradientcontrol.com/omega/core`). It consolidates planned Geometric Shape Language
 (GSL) evolution from [README.md](../../../README.md) and
 [doc/gsl_lang_spec_future.md](../../../doc/gsl_lang_spec_future.md) alongside compiler, evaluator,
 backend, native Rust/C++ FFI, interactive viewer, CLI toolchain, and code-hygiene improvements.
@@ -441,6 +441,101 @@ defined in [README.md](../../../README.md):
       mesh/STEP/warp imports and invokes no `mesh`, `bvhSdf`, or `vdbSdf` built-ins, avoiding two
       full-program `FoldMeshIndicesAt` clones plus an extra `eval.Fold` pass on analytical SDFs.
 
+- [x] **M15. Fold a Builtin Call's Constant Arguments into Its Body: Measured, Not to Build**
+  - The idea: `internal/assembler/inline/inline.go` returns early for builtin-package functions unless they
+    remap a field argument, so `profileXY` called with constant lists ships as a WGSL function over arrays,
+    and its per-vertex geometry is recomputed per point. Inlining such calls (letting a builtin with all
+    constant arguments through the ordinary rules) was prototyped and measured on 2026-11-18 in the Profile
+    Modeling track ([profile_modeling_20261117](../profile_modeling_20261117/plan.md), Phase 2).
+  - Measured on the GPU, 64 evaluations per point over 1M points, less a trivial field's time, on slider-free
+    copies of the examples:
+
+    | Field                         | As now | Builtins inlined | WGSL          |
+    | :---------------------------- | -----: | ---------------: | :------------ |
+    | `profile_arcs.gsl`            |  34 ms |           127 ms | 118 → 558 KB  |
+    | `profile_corners.gsl`         |  57 ms |            25 ms | 248 → 80 KB   |
+    | its left U (exact corners)    |   4 ms |           7.5 ms | 12 → 39 KB    |
+    | its blended U (without colour)| 13.5 ms |          9.5 ms | 60 → 14 KB    |
+
+  - Not to build as a rule: it is no reliable win (the arcs example is 3.7× slower, its code four times the
+    size), and it never reaches the documents people draw, whose points come from sliders, runtime values,
+    so their calls never have constant arguments. Our own fold also leaves constant work such as
+    `length()` of a constant vector to the GPU compiler.
+  - How to measure: `gpu-eval` with the parity harness's own `main` over many points is bound by its ~25 ms
+    floor (a trivial sphere costs as much as a profile part), so per-part numbers from it are noise. Keep
+    `assembleShader`'s prelude, replace `main` with a loop of 64 `sdShape` calls at shifted points summed
+    into one output per point, run 1M points with stride 1, and subtract a trivial field's time.
+
+- [ ] **M16. Let `bounds` Take an Evaluation Budget, as `certify` Does**
+  - `Evaluator.Enclose` (`eval/enclose.go`, what `gsl eval`'s `bounds` runs) stops at a fixed
+    `encloseBudget` of 240,000 interval evaluations, a sixth per face; `certify` takes the evaluator's
+    budget (`SetCertifyBudget`) and a request can raise it. A part whose intervals compound, as a
+    `sweep()` does (its section read at its path's distance), needs more: `certify` proves the space above
+    the Profile Modeling track's test sweeps in about 300,000 evaluations, and `bounds` cannot prove their
+    boxes at all ([profile_modeling_20261117](../profile_modeling_20261117/plan.md), Phase 6).
+  - Proposal: `Enclose` reads the evaluator's budget when one is set, its faces sharing it as now, and
+    `gsl eval`'s `bounds` request takes a budget as `certify`'s does. Test: a sweep's box proves with a
+    raised budget and not with the default.
+
+- [ ] **M17. Share What a Part's Box Repeats**
+  - A part's box reaches the WGSL as the `lo` and `hi` of `shrinkToVanish(shape, lo, hi, solid)`
+    (`internal/assembler/property/parts.go`), six expressions the box domain builds as trees, and the
+    codegen writes them out whole, evaluated per point for the viewer's culling. A profile's bounds arrive
+    fully expanded (min and max over every point's slider expression, read again in an arc profile's
+    bulge), and a rule such as `swept` reads a section's bound in several corners, so the same subtrees
+    repeat many times. Measured on 2026-11-18 in the Profile Modeling track
+    ([profile_modeling_20261117](../profile_modeling_20261117/plan.md), Phase 7): the box is 52 KB of a
+    60 KB closed `sweep` whose path keeps its box, and 33 KB of `profile_sweep_open.gsl`'s 45 KB.
+  - Prototyped (not kept, the patch in the session's scratchpad): before wrapping a part, hoist each
+    subtree its box repeats into a value of its own declared just before the part, largest saving first,
+    ordered so each value follows those it reads; the codegen writes them as `let`s. Values identical
+    (GPU checksums equal); with sliders as runtime values, 64 evaluations a point over 1M points:
+
+    | Field                          | WGSL now | Shared  | GPU per point              |
+    | :----------------------------- | -------: | ------: | :------------------------- |
+    | closed `sweep`, path with box  |  59.7 KB |  9.8 KB | within noise (0–6 ms)      |
+    | `profile_cylinder.gsl`         | 131.8 KB | 24.3 KB | 8–10 ms faster, about half |
+    | `profile_sweep_open.gsl`       |  55.4 KB | 23.8 KB | 2–5 ms faster              |
+    | the other `profile_*` examples | unchanged | unchanged |                          |
+
+    The alternative, keeping a library call that reads neither p nor time as a call in the box domain (with
+    `profileXY`'s bounds through single-return helpers), did less (19.8, 44.2 and 30.1 KB), grew
+    `profile_star.gsl` from 4.4 to 7.0 KB by keeping a box that folded to constants as a call, and needs a
+    p-read analysis in the box domain; both together were no better than sharing alone.
+  - Goldens: of the 87 example goldens (`backend/wgsl/internal/codegen/testdata/example`), four move with
+    the prototype, each slightly larger: CoreXY Printer 164,701 → 165,376 bytes, Printer Gantry 59,652 →
+    60,392, Motion Proof 4,205 → 4,242, Parametric Proof 4,348 → 4,369. They repeat only small subtrees,
+    where a `let` costs more than it saves; a minimum saving per hoist (to be measured) should leave them
+    as they are. Regenerating any golden waits for the owner's authorization, with the diff shown.
+  - Proposal: the pass in `MarkParts`, on the part's six corners together, hoisting a subtree only when
+    its saving passes the threshold; the hoisted values named so they cannot clash (`freshName`). Tests:
+    a part's values unchanged with the pass on and off; the closed sweep's and `profile_cylinder`'s WGSL
+    under a size bound; the four goldens above unchanged once the threshold is set.
+
+- [ ] **M18. Branch, Not Select, Where a Ternary's Condition Is the Same Everywhere**
+  - A GSL ternary becomes WGSL `select(falseValue, trueValue, condition)`
+    (`backend/wgsl/internal/wgsl/select.go`), which evaluates both values. Where a value is costly, a call,
+    and the condition is the same at every point, a constant kind, a slider or a descriptor handed to a
+    function, both run everywhere though one is wanted. The descriptors of `profileEdgesXY` are such a case:
+    every edge runs the Bezier step, a cubic solve, whatever its kind. Measured 2026-11-19 in the Profile
+    Modeling track ([profile_modeling_20261117](../profile_modeling_20261117/plan.md), Phase 3), 64
+    evaluations a point over 1M points, less a trivial field: the arc L as `profileXY` 4.3 ms, the same L
+    as `profileEdgesXY` with line and arc descriptors 44 ms, the example's Bezier plate 33 ms. Choosing
+    by a select on the constant kind measured no faster: the descriptors reach the WGSL as a function's
+    array argument, so the GPU compiler cannot see the kind as a constant.
+  - Prototyped by hand in the generated WGSL, the one dispatch in `profileAnyEdgeSidedXY` written as
+    `if (kind.y > 0.5) { return bezier(...); } return arc(...);`: the L 44 → 14.5 ms, the plate
+    33 → 17.8 ms. Most of what is left is the second dispatch, the tangents of either kind.
+  - Proposal: where either value of a ternary holds a call and its condition reads nothing that depends on
+    p, the codegen writes `var v: T; if (condition) { v = trueValue; } else { v = falseValue; }`, with the
+    statements only one value needs moved into its branch. A branch every point takes the same way costs
+    one of the two; a divergent one costs about what the select did. WGSL refuses an implicit derivative
+    (`textureSample`, `dpdx`) in control flow that is not uniform, so a value holding one keeps the select.
+    The interval and CPU paths, which evaluate both as now, are unchanged.
+  - Tests: GPU parity, values unchanged; the edge profiles' time on the GPU against these numbers; the
+    WGSL goldens that move (any document whose ternaries choose between calls on a constant, the stdlib's
+    corner kinds among them), shown and regenerated only with the owner's authorization.
+
 ## 6. Small Targeted Cleanups
 
 - [x] **S1. Generalized Postfix Modifier Chaining (`Modifiers []*Modifier`)**
@@ -680,7 +775,7 @@ defined in [README.md](../../../README.md):
     `setEditorDiagnostics` and a code-panel warning banner/gutter) so warnings are visible when the
     code editor panel is open without blocking rendering.
 
-- [ ] **S22. Warn on Unnecessary `import . "omega"` & Remove via `gsl fix`**
+- [x] **S22. Warn on Unnecessary `import . "omega"` & Remove via `gsl fix`**
   - Emit a `program.SeverityWarning` diagnostic when `import . "omega"` is encountered, advising
     that it is unnecessary because `builtin` is implicitly imported.
   - Update `gsl fix` (`cmd/fix`) to automatically remove `import . "omega"` from GSL sources.

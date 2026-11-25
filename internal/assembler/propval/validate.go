@@ -3,20 +3,21 @@ package propval
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/internal/eval"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 var validAssignablePropNames = map[string]bool{
-	"min":        true,
-	"max":        true,
-	"period":     true,
 	"color":      true,
 	"material":   true,
 	"box":        true,
 	"simple":     true,
 	"detail":     true,
 	"detailSize": true,
+	// The size of a geometric feature (a hole, a gear's teeth) the viewer
+	// prunes when it is too small to see (property/feature.go), or, on a value
+	// with a stand-in, the size it switches to it at (property/parts.go).
+	"featureSize": true,
 	// A shape's own surface frame: u and v are coordinates on it, authored by
 	// the primitives, so a material can read where it sits on the surface
 	// rather than being handed a frame that has to be kept in step by hand.
@@ -24,6 +25,11 @@ var validAssignablePropNames = map[string]bool{
 	"u": true,
 	"v": true,
 }
+
+// removedSliderProperties are the properties that set a slider's limits before
+// @range did. The parser still reads them so `gsl fix -range` can migrate a
+// document that uses them; compiling one is an error.
+var removedSliderProperties = map[string]bool{"min": true, "max": true, "period": true}
 
 // Validate inspects the AST of prog prior to property expansion, verifying
 // property assignment semantics, scope rules, type and value domains,
@@ -106,7 +112,7 @@ func validateFnType(ft *program.FnType, pkg *program.Package, file *program.Pack
 				continue
 			}
 			for _, param := range fn.Parameters {
-				if param.Range == nil || param.Range.IsSynthetic() {
+				if param.Range == nil {
 					continue
 				}
 				if param.Range.Min == nil || param.Range.Max == nil {
@@ -144,7 +150,7 @@ func validateFnType(ft *program.FnType, pkg *program.Package, file *program.Pack
 
 func validateAssignment(a *program.Assignment, isTopLevel bool, pkg *program.Package, file *program.PackageFile, getImport program.GetImportFunc) error {
 	// Validate explicit @range annotation if present
-	if a.Range != nil && !a.Range.IsSynthetic() {
+	if a.Range != nil {
 		if !isTopLevel {
 			return fileErr(file, a.Range.Start, "slider @range annotations on variables are only permitted on top-level file scope declarations")
 		}
@@ -205,6 +211,12 @@ func validateAssignment(a *program.Assignment, isTopLevel bool, pkg *program.Pac
 				continue
 			}
 
+			if removedSliderProperties[p.Name] {
+				return fileErr(file, p.Start, fmt.Sprintf(
+					"the slider property .%s was removed; write @range(min, max[, period]) in front of %q, or run `gsl fix -range` to update",
+					p.Name, v.Name))
+			}
+
 			if !validAssignablePropNames[p.Name] {
 				return fileErr(file, p.Start, fmt.Sprintf("invalid property %q assigned to variable %q", p.Name, v.Name))
 			}
@@ -219,77 +231,6 @@ func validateAssignment(a *program.Assignment, isTopLevel bool, pkg *program.Pac
 			if p.Expression != nil {
 				if err := validateExpression(p.Expression, isBox, file); err != nil {
 					return err
-				}
-			}
-		}
-
-		// Validate slider property constraints (.min, .max, .period)
-		if propMap["min"] != nil || propMap["max"] != nil || propMap["period"] != nil {
-			if !isTopLevel {
-				loc := a.Start
-				if p := propMap["min"]; p != nil {
-					loc = p.Start
-				} else if p := propMap["max"]; p != nil {
-					loc = p.Start
-				} else if p := propMap["period"]; p != nil {
-					loc = p.Start
-				}
-				return fileErr(file, loc, "slider properties (.min, .max, .period) are only permitted on top-level file scope declarations")
-			}
-
-			// Must be a scalar assignment
-			if isCollectionOrShapeTarget(a.Expression) {
-				loc := a.Start
-				return fileErr(file, loc, "slider properties can only be assigned to scalar numeric variables")
-			}
-
-			// Strict pairing requirement: both .min and .max required
-			if propMap["min"] == nil || propMap["max"] == nil {
-				loc := a.Start
-				if propMap["min"] != nil {
-					loc = propMap["min"].Start
-				} else if propMap["max"] != nil {
-					loc = propMap["max"].Start
-				} else if propMap["period"] != nil {
-					loc = propMap["period"].Start
-				}
-				return fileErr(file, loc, fmt.Sprintf("slider variable %q requires both .min and .max bounds", v.Name))
-			}
-
-			// Enforce compile-time constant evaluation on .min and .max
-			minVals, err := evalConstExpr(propMap["min"].Expression, pkg, getImport)
-			if err != nil {
-				return fileErr(file, propMap["min"].Start, fmt.Sprintf("property .min on variable %q must evaluate to a compile-time constant: %v", v.Name, err))
-			}
-			maxVals, err := evalConstExpr(propMap["max"].Expression, pkg, getImport)
-			if err != nil {
-				return fileErr(file, propMap["max"].Start, fmt.Sprintf("property .max on variable %q must evaluate to a compile-time constant: %v", v.Name, err))
-			}
-
-			if len(minVals) != 1 || len(maxVals) != 1 {
-				return fileErr(file, propMap["min"].Start, fmt.Sprintf("slider properties .min and .max on variable %q must evaluate to scalar values", v.Name))
-			}
-
-			if minVals[0] >= maxVals[0] {
-				return fileErr(file, propMap["min"].Start, fmt.Sprintf("invalid slider range: min (%v) must be less than max (%v)", minVals[0], maxVals[0]))
-			}
-
-			if periodProp := propMap["period"]; periodProp != nil {
-				pVals, err := evalConstExpr(periodProp.Expression, pkg, getImport)
-				if err != nil {
-					return fileErr(file, periodProp.Start, fmt.Sprintf("property .period on variable %q must evaluate to a compile-time constant: %v", v.Name, err))
-				}
-				if len(pVals) != 1 || pVals[0] <= 0 {
-					return fileErr(file, periodProp.Start, "property .period must be strictly positive")
-				}
-			}
-
-			if a.Expression != nil {
-				initVals, err := evalConstExpr(a.Expression, pkg, getImport)
-				if err == nil && len(initVals) == 1 {
-					if initVals[0] < minVals[0] || initVals[0] > maxVals[0] {
-						return fileErr(file, a.Expression.Start, fmt.Sprintf("slider default value %v is outside range [%v, %v]", initVals[0], minVals[0], maxVals[0]))
-					}
 				}
 			}
 		}

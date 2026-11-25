@@ -25,7 +25,7 @@ This spec will continue to be updated as the compiler and tools are being develo
 - Supports basic arithmetic, component-wise list algebra, modulo, logic, and comparison operators.
 - Provides first-class named and anonymous functions, allowing closures and function passing.
 - Exposes mesh/CAD STEP slot-numbered and expression-based asset imports.
-- Resolves variables and slider properties (`.min`, `.max`, `.period`) dynamically
+- Resolves variables and `@range` sliders dynamically
     to drive real-time parameter tweaking.
 - Evaluates mathematical primitives and built-in algorithms (like spatial remapping and
     cellular noise) either on CPU or compiles them to GPU shaders.
@@ -231,9 +231,13 @@ GSL is parsed using the `participle/v2` framework.
 The grammar is defined by the following AST structures:
 
 ```ebnf
-TopLevel           = SceneDirective? Import* MeshImport* StepImport* WarpImport* Declaration*
+TopLevel           = ( SceneDirective DurationDirective? | DurationDirective SceneDirective? )?
+                     CaptionDirective* Import* MeshImport* StepImport* WarpImport*
+                     ( Declaration | CaptionDirective )*
                      ( "return" Expression ( "," Expression )* ","? ";" )?
 SceneDirective     = "@scene" "(" Number ( "," Number )? ")"
+DurationDirective  = "@duration" "(" Number ")"
+CaptionDirective   = "@caption" "(" String "," Number "," Number ( "," Number )? ")"
 Import             = "import" ( Ident | "." )? String ";"
 MeshImport         = "importMesh" Int String ";"
 StepImport         = "importStep" Int String ";"
@@ -523,6 +527,9 @@ annotation or applying an annotation to an unsupported target produces a compile
 
 In the current GSL v1 implementation, the following annotations are supported:
 - **`@scene`**: Top-level directive configuring package-level viewport and grid extents.
+- **`@duration`**: Top-level directive giving the length of the document's animation, in seconds.
+- **`@caption`**: Top-level directive showing timed text at the bottom of the viewer during an
+  animation.
 - **`@range`**: Numeric slider bounds and optional animation periods on variable assignments,
   function parameters (2 arguments only), or inline expressions.
 - **`@point`**: 3D position controls on 3-component variable assignments, inline expressions,
@@ -584,9 +591,9 @@ scaleRadius(@range(0.5, 10.0) r) {
 }
 ```
 
-In addition to explicit `@range(...)` annotations, GSL v1 supports defining slider metadata using
-dot-syntax property assignments (e.g., `name.min`, `name.max`, `name.period`), which the compiler
-automatically synthesizes into canonical AST range annotations. See section 8 below.
+GSL v1 also set slider limits with dot-syntax property assignments (`name.min`, `name.max`,
+`name.period`). Those were removed in favor of `@range(...)`: a source that still sets one
+fails to compile, naming `@range`, and `gsl fix -range` rewrites it. See section 8 below.
 
 #### Point Annotations
 
@@ -841,38 +848,76 @@ The `@scene` annotation configures the document viewport size and grid density:
 * **Legacy Comments**: In GSL v1, legacy header comments (`// Scene Size:` and `// Scene Grid:`)
   are also supported as a fallback when `@scene` is omitted.
 
+#### Duration Directive
+
+The `@duration` directive says how long the document's animation runs, in seconds. It is to time
+what `@scene` is to space:
+
+```gsl
+@scene(60)
+@duration(12)
+```
+
+* **Position**: At the very top of the first file in a package, with `@scene`: directly above or
+  below it, or alone where there is no `@scene`. It precedes any captions, imports and
+  declarations. In any other file it is an error.
+* **Arguments**: One positive number literal. A name or an expression is not accepted.
+* **Effect**: The viewer's Time slider and end time span `[0, seconds]`, and the animation clock
+  starts over on passing the end, so the document and its captions loop. Without the directive
+  the clock runs on and the end time is whatever the viewer has.
+* **Scope**: Only the primary package's duration applies; an imported package's does not.
+* **Syntax**: Must not end with a semicolon.
+
+#### Caption Directive
+
+The `@caption` directive shows a line of text centred at the bottom of the viewer while the
+animation clock is in `[startTime, endTime]`:
+
+```gsl
+@caption("Rough stock", 0, 4)
+@caption("Drill the bore", 4, 9, 1)
+@caption("Two\nlines", 9, 12, 0)
+```
+
+* **Position**: Top level only, any number of them: ahead of the imports (under `@scene`) or among
+  the declarations, in any file of the package. Inside a function body it is an error.
+* **Arguments**: A string literal, then number literals in seconds: `startTime`, `endTime`, and an
+  optional `fade`. Names and expressions are not accepted. `endTime` must be greater than
+  `startTime`.
+* **Fade**: The caption fades in over `fade` seconds after `startTime` and out over `fade` seconds
+  before `endTime`, so it is fully shown between. Omitted, `fade` is 0.5, or half the interval
+  if that is shorter. Given, it must be at most half the interval; `0` shows and hides it at once.
+* **Text**: Escapes (`\n`, `\"`) are resolved; a `\n` breaks the line. It is shown as plain text.
+* **Overlap**: Captions showing at the same time stack, in source order.
+* **Scope**: Only the primary package's captions are shown; an imported package's are not.
+* **Syntax**: Must not end with a semicolon.
+
 ### 8. Variables, Sliders, and Properties
 
-A top-level variable assigned a single numeric literal can be decorated with property values to
-register it as a dynamic slider in the host user interface:
-- **`name.min`**: Minimum value constraint.
-- **`name.max`**: Maximum value constraint.
-- **`name.period`**: Animation clock driver period in seconds. The host drives the value
+A top-level variable assigned a single numeric literal can be given a slider range with an
+`@range(min, max[, period])` annotation (see the Annotations section), which registers it as a
+dynamic slider in the host user interface:
+- **`min`, `max`**: The slider's limits. Each is a compile-time constant expression and may read
+  other top-level constants.
+- **`period`** (optional): Animation clock driver period in seconds. The host drives the value
   sinusoidally between `min` and `max` using this timeframe.
 - **Snapping**: Snapping/rounding steps are configured by the decimal places of the original
   literal (`radius = 5;` snaps to integers, `radius = 0.50;` snaps to 0.01 increments).
 
 *Example Slider Configuration:*
 ```gsl
-radius = 5.00;
-radius.min = 0.5;
-radius.max = 10.0;
-radius.period = 4.0; // Oscillates over 4 seconds
+@range(0.5, 10.0, 4.0) radius = 5.00;  // Oscillates over 4 seconds
 ```
 
-#### Slider Validation Rules
-Slider properties (`.min`, `.max`, `.period`) are restricted strictly to top-level file scope.
-Assigning slider properties to function-local variables, parameters, or non-numeric types
-is rejected at compile time.
-A variable with any slider property must declare both `.min` and `.max`, where `min < max`.
-If `.period` is assigned, it must evaluate to a strictly positive constant (`period > 0`).
+> **Removed:** the `.min`, `.max` and `.period` properties (`radius.min = 0.5;`) were replaced by
+> `@range`. A source that sets one is rejected at compile time, naming `@range` and
+> `gsl fix -range`, which rewrites the source.
 
-#### Property-to-Annotation Canonicalization
-When `.min` and `.max` properties are defined on a top-level variable and no explicit `@range`
-annotation was declared in the source, the compiler's scope builder automatically synthesizes
-a canonical AST `Range` annotation on the defining `Assignment`.
-This allows downstream compiler stages (Assembler, constant-folding reachability, WGSL uniform emission)
-to operate uniformly on `Assignment.Range` without requiring dual-path handling for properties.
+#### Slider Validation Rules
+`@range` on a variable is restricted strictly to top-level file scope. Attaching it to
+function-local variables, parameters of other kinds, or non-numeric types is rejected at compile time.
+It must declare both bounds, where `min < max`.
+If a period is given, it must evaluate to a strictly positive constant (`period > 0`).
 
 #### Geometry and Field Properties
 Variables representing 3D geometry can be configured with metadata properties:
@@ -1072,6 +1117,10 @@ The following multi-argument numeric primitives and built-ins share these common
       - For lists, `index` is a 0-indexed scalar integer (`0.0`, `1.0`, etc.).
       - For matrices, `index` is passed
         as a 2-element list `[col, row]` representing 0-indexed column and row indices.
+      - A fold over a list of functions may also take `fn(accumulator, value, index, prev)`:
+        `prev` is the element before `value`, a function the callback can call (the first element
+        is handed itself, which `index` tells apart). Called with constant arguments it folds to a
+        constant, as a call on `value` does; a number carried in the accumulator does not.
     - The second argument (`numeric`) must be a list or matrix.
     - The length of lists and dimensions of matrices must be known at compile time.
     - The optional third argument (`initial`) is the starting accumulator value.

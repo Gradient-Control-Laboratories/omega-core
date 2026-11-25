@@ -3,8 +3,8 @@ package meshplan
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/assembler/variation"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/variation"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // SelectPrimarySdfProgram selects the primary analytical SDF subprogram and

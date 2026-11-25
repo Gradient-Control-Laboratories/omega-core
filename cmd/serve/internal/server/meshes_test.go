@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/test/stlbox"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/stlbox"
 )
 
 var (

@@ -18,9 +18,12 @@ appendices at the end of this file.
 ### Fidget — MPL-2.0
 
 `internal/fidget/vendor/` (11 crates), from
-<https://github.com/mkeeter/fidget> by Matt Keeter, vendored at upstream commit
-`e329a898` **with local modifications** (for example the `MeshOracle` op in
-`fidget-core`, `fidget-jit` panicking on `MeshOracle`, and wasm `getrandom`
+<https://github.com/mkeeter/fidget> by Matt Keeter, vendored from our fork
+<https://github.com/Gradient-Control-Laboratories/fidget> (the commit is pinned
+in `internal/fidget/vendor/FIDGET_PIN`), which is upstream commit `1879743d`
+**with local modifications** (listed in the fork's `FORK.md`; for example the
+`MeshOracle` op in `fidget-core`, `fidget-jit` panicking on `MeshOracle`, mesher
+fixes in `fidget-mesh`, a GPU channel pass in `fidget-wgpu`, and wasm `getrandom`
 selection). Every file in these crates, including the modified ones, remains
 under MPL-2.0. The license text is `internal/fidget/vendor/LICENSE`.
 The MPL is file-level: it does not apply to this repository's own files.
@@ -115,6 +118,13 @@ statement above. Provided as is, without warranty.
   `/voronoilines/`, `/intersectors/`). His site releases code that implements an
   algorithm or technique under the MIT License. Copyright (c) Inigo Quilez
   (Appendix D, MIT text).
+- **hg_sdf** (Mercury Demogroup, <https://mercury.sexy/hg_sdf/>) — the round
+  and chamfer boolean operators on two fields in `stdlib/builtin/booleans.gsl`
+  (`intersectRound`, `unionRound`, `differenceRound`, `intersectChamfer`,
+  `unionChamfer`, `differenceChamfer`) are hg_sdf's `fOpIntersectionRound`,
+  `fOpUnionRound`, `fOpDifferenceRound` and the three Chamfer operators.
+  hg_sdf is dual-licensed MIT OR CC-BY-NC-4.0; this repository uses it under the
+  MIT License. Copyright (c) 2011-2021 Mercury Demogroup (Appendix J, MIT text).
 - **Hash without Sine** (`hash22` / `hash23` by David Hoskins,
   <https://www.shadertoy.com/view/4djSRW>) in `examples/viewer/render/gsl-shading.js`
   and `internal/fidget/internal/mesh/litglass.go`. MIT License,
@@ -803,6 +813,32 @@ DEALINGS IN THE FONT SOFTWARE.
 MIT License
 
 Copyright (c) 2014 David Hoskins.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+## Appendix J — hg_sdf (MIT)
+
+```text
+MIT License
+
+Copyright (c) 2011-2021 Mercury Demogroup
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

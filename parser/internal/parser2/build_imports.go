@@ -6,17 +6,18 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
+	"github.com/Gradient-Control-Laboratories/omega-core/parser/internal/identifier2"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 	"github.com/alecthomas/participle/v2"
-	"gradientcontrol.com/omega/core/internal/scope"
-	"gradientcontrol.com/omega/core/parser/internal/identifier2"
-	"gradientcontrol.com/omega/core/program"
 )
 
-func buildImports(pkgFileScope scope.BuilderScope, imports []*Import) error {
+func buildImports(pkgFileScope scope.BuilderScope, source string, imports []*Import) ([]program.Diagnostic, error) {
+	var diags []program.Diagnostic
 	for _, imp := range imports {
 		path, err := verifyImportPath(imp.Path)
 		if err != nil {
-			return &participle.ParseError{
+			return diags, &participle.ParseError{
 				Pos: imp.Pos,
 				Msg: err.Error(),
 			}
@@ -27,7 +28,8 @@ func buildImports(pkgFileScope scope.BuilderScope, imports []*Import) error {
 		}
 
 		var prefix string
-		if path == "omega" && imp.Prefix == "." {
+		isOmegaDot := path == "omega" && imp.Prefix == "."
+		if isOmegaDot {
 			// Legacy omega dot imports still expose vector constants.
 			path = "vector"
 			prefix = "."
@@ -42,7 +44,7 @@ func buildImports(pkgFileScope scope.BuilderScope, imports []*Import) error {
 			prefix, err = verifyImportPrefix(imp.Prefix, path)
 		}
 		if err != nil {
-			return &participle.ParseError{
+			return diags, &participle.ParseError{
 				Pos: imp.Pos,
 				Msg: err.Error(),
 			}
@@ -54,14 +56,38 @@ func buildImports(pkgFileScope scope.BuilderScope, imports []*Import) error {
 
 		err = pkgFileScope.AddImport(newImp)
 		if err != nil {
-			return &participle.ParseError{
+			return diags, &participle.ParseError{
 				Pos: imp.Pos,
 				Msg: err.Error(),
 			}
 		}
+		if isOmegaDot {
+			diags = append(diags, omegaDotImportDiagnostic(source, imp))
+		}
 	}
 
-	return nil
+	return diags, nil
+}
+
+func omegaDotImportDiagnostic(source string, imp *Import) program.Diagnostic {
+	startOffset := imp.Pos.Offset
+	lineStart := strings.LastIndexByte(source[:startOffset], '\n') + 1
+	lineEnd := len(source)
+	if rel := strings.IndexByte(source[startOffset:], '\n'); rel >= 0 {
+		lineEnd = startOffset + rel
+	}
+	line := strings.TrimRight(source[lineStart:lineEnd], "\r")
+	col := startOffset - lineStart + 1
+	endOffset := min(imp.EndPos.Offset, lineStart+len(line))
+	length := max(endOffset-startOffset, 1)
+	return program.Diagnostic{
+		Severity: program.SeverityWarning,
+		Line:     line,
+		LineNum:  imp.Pos.Line,
+		Column:   col,
+		Length:   length,
+		Message:  "unnecessary `import . \"omega\"`; `builtin` is implicitly imported (remove it or run `gsl fix`)",
+	}
 }
 
 func verifyImportPath(path string) (string, error) {

@@ -3,7 +3,7 @@ package build
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // Helper utilities for working with *program.Type directly.

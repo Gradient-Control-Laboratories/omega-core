@@ -1,7 +1,7 @@
 package scope
 
 import (
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // AssignScope links an assignment statement to its parent scope.

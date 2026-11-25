@@ -3,15 +3,14 @@ package link_test
 import (
 	"strings"
 	"testing"
-	"time"
 
-	"gradientcontrol.com/omega/core/assembler/source"
-	"gradientcontrol.com/omega/core/internal/collect"
-	"gradientcontrol.com/omega/core/internal/link"
-	internalsource "gradientcontrol.com/omega/core/internal/source"
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	parser "gradientcontrol.com/omega/core/parser"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/collect"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/link"
+	internalsource "github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	parser "github.com/Gradient-Control-Laboratories/omega-core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func newMockManager() source.Manager {
@@ -199,21 +198,58 @@ return pkgA.x + pkgB.x;
 	assert.NoError(t, err)
 }
 
-func TestFastExitSingleOrZeroDotImports(t *testing.T) {
+func TestSingleOrZeroDotImportsNoCollisionDiagnostics(t *testing.T) {
+	cases := []struct {
+		name string
+		src  string
+	}{
+		{
+			name: "zero_dot_imports",
+			src: `
+x = 1.0;
+return x;
+`,
+		},
+		{
+			name: "single_dot_import",
+			src: `
+import . "pkgA";
+return x;
+`,
+		},
+	}
+
+	mgr := newMockManager()
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			diags, err := parseAndLink(t, tc.src, mgr)
+			assert.NoError(t, err)
+			assert.Equal(t, 0, len(diags))
+		})
+	}
+}
+
+func BenchmarkFastExitSingleOrZeroDotImports(b *testing.B) {
 	src := `
 x = 1.0;
 return x;
 `
 	mgr := newMockManager()
+<<<<<<< HEAD
 	prog, diags, err := collect.Program([]string{src}, mgr, parser.ParsePackage)
 	assert.NoError(t, err)
 	assert.Empty(t, diags)
-
-	start := time.Now()
-	for i := 0; i < 1000; i++ {
-		_, _ = link.ReferencesAndDiagnostics(prog, mgr, parser.ParsePackage)
+=======
+	prog, _, err := collect.Program([]string{src}, mgr, parser.ParsePackage)
+	if err != nil {
+		b.Fatal(err)
 	}
-	elapsed := time.Since(start)
-	// 1000 runs should complete very quickly (< 1 second under normal load)
-	assert.True(t, elapsed < 2*time.Second, "expected fast execution for single dot-import program")
+>>>>>>> main
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if _, err := link.ReferencesAndDiagnostics(prog, mgr, parser.ParsePackage); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // A keyed builtin reads data baked at compile time from its constant

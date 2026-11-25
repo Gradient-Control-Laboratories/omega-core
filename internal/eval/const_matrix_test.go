@@ -4,8 +4,8 @@ import (
 	"math"
 	"testing"
 
-	_ "gradientcontrol.com/omega/core/parser"
-	"gradientcontrol.com/omega/core/program"
+	_ "github.com/Gradient-Control-Laboratories/omega-core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func qfc(prefix, name string, args ...*program.Operand) *program.Operand {
@@ -71,6 +71,27 @@ func TestConstReduce(t *testing.T) {
 	got, err = Const(expr(program.Operation_REDUCE, vec(0, 0), ref("accum"), vec(1, 2, 3)), nil, fnTypes)
 	if err != nil || !approxEqual(got, []float64{6, 14}) {
 		t.Fatalf("reduce(initial, fn, coll): got %v, err %v", got, err)
+	}
+}
+
+// A reduce whose function takes the index as a third parameter folds with it,
+// as the lowering's unroll passes it: the element's index in the collection,
+// from 0 with an initial value and from 1 without, the first element having
+// seeded the accumulator.
+func TestConstReduceWithIndex(t *testing.T) {
+	fnTypes := []*program.FnType{
+		fnTypeDecl("weigh", []string{"acc", "x", "i"}, nil,
+			expr(program.Operation_ADD, ref("acc"), expr(program.Operation_MUL, ref("x"), ref("i")))),
+	}
+	// 0 + 1*0 + 2*1 + 3*2.
+	got, err := Const(expr(program.Operation_REDUCE, val(0), ref("weigh"), vec(1, 2, 3)), nil, fnTypes)
+	if err != nil || !approxEqual(got, []float64{8}) {
+		t.Fatalf("reduce(initial, fn(acc, x, i), coll): got %v, err %v", got, err)
+	}
+	// 1 + 2*1 + 3*2.
+	got, err = Const(expr(program.Operation_REDUCE, ref("weigh"), vec(1, 2, 3)), nil, fnTypes)
+	if err != nil || !approxEqual(got, []float64{9}) {
+		t.Fatalf("reduce(fn(acc, x, i), coll): got %v, err %v", got, err)
 	}
 }
 

@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"sort"
 
-	"gradientcontrol.com/omega/core/internal/fidget"
-	"gradientcontrol.com/omega/core/internal/fidget/convert"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget/convert"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // EvalGrad evaluates each scalar return of the program at the given points,

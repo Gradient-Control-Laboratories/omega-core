@@ -1,8 +1,6 @@
 // Scene Size: 500
 
-angle = 0.852;
-angle.min = 0;
-angle.max = 3.14159;
+@range(0, 3.14159) angle = 0.852;
 
 a = p.x;
 b = plane(vector.zero, map.rotateXY(vector.dirX, angle));

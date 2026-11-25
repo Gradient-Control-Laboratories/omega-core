@@ -7,10 +7,10 @@ import (
 	"math"
 	"testing"
 
-	"gradientcontrol.com/omega/core/eval"
-	"gradientcontrol.com/omega/core/internal/source"
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
 )
 
 // valueAt is expr's value at the origin with defs applied to doc.
@@ -23,12 +23,10 @@ func valueAt(t *testing.T, doc, defs, expr string) float64 {
 }
 
 // A def overrides a name however the document declares it: first after the @scene directive (which has no `;`, so
-// it leads the statement after it), behind an annotation, or with property lines (`r.min = ...`) that set and
-// declare nothing.
+// it leads the statement after it), or behind an annotation.
 func TestEvalGslDefsOverrideTheFormsDocumentsDeclare(t *testing.T) {
 	docs := map[string]string{
 		"first after @scene": "@scene(40)\nr = 10.0;\nball = length(p) - r;\nreturn ball;\n",
-		"with .min and .max": "@scene(40)\nr = 10.0;\nr.min = 5.0;\nr.max = 15.0;\nball = length(p) - r;\nreturn ball;\n",
 		"behind @range":      "@scene(40)\n@range(5, 15) r = 10.0;\nball = length(p) - r;\nreturn ball;\n",
 		"after a comment":    "@scene(40)\n// the radius\n@range(5, 15) r = 10.0;\nball = length(p) - r;\nreturn ball;\n",
 	}

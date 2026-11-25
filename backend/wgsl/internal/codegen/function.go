@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"gradientcontrol.com/omega/core/backend/wgsl/internal/accel"
-	"gradientcontrol.com/omega/core/backend/wgsl/internal/ir"
-	"gradientcontrol.com/omega/core/backend/wgsl/internal/wgsl"
-	"gradientcontrol.com/omega/core/internal"
-	"gradientcontrol.com/omega/core/internal/build"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl/internal/accel"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl/internal/ir"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl/internal/wgsl"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/build"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func (d *Delegate) BuildFunc(
@@ -52,6 +52,12 @@ func (d *Delegate) BuildFunc(
 
 	fnWgslName := d.buildFnName(fnName, declBScope)
 	fnInfo := wgsl.NewFnInfo(fnName, fnWgslName, paramNames, args)
+	for bs := declBScope; bs != nil && bs != d.rootBScope; bs = bs.Parent() {
+		if !bs.IsFileScope() && bs.Name() != "" {
+			fnInfo.SetPkgName(bs.Name())
+			break
+		}
+	}
 
 	// NewFnInfo appends a _<lambdaArg> suffix to the base name for each function
 	// argument, so distinct specializations of the same function get distinct
@@ -87,7 +93,7 @@ func (d *Delegate) BuildFuncReturn(
 	paramNames := wgslFnInfo.ParamNames()
 	paramTypes := wgslFnInfo.WGSLParamTypes()
 
-	mergedRefs, _, err := d.buildFunc(fnName, wgslName, globalRefs, paramNames, paramTypes, returnType, returnExprs)
+	mergedRefs, _, err := d.buildFunc(wgslFnInfo, fnName, wgslName, globalRefs, paramNames, paramTypes, returnType, returnExprs)
 	if err != nil {
 		return nil, err
 	}
@@ -106,6 +112,7 @@ func isRemapHelper(name string) bool {
 }
 
 func (d *Delegate) buildFunc(
+	fnInfo *wgsl.FnInfo,
 	fnName string,
 	wgslName string,
 	globalRefs []*wgsl.VarInfo,
@@ -295,9 +302,16 @@ func (d *Delegate) buildFunc(
 	if vanishes(wgslName, len(paramNames)) {
 		return finalGlobalRefs, wgslName, nil
 	}
+	// Nor is choose: every call is its branch (branch.go).
+	if chooses(wgslName, len(paramNames)) {
+		return finalGlobalRefs, wgslName, nil
+	}
 	// Nor are simplified and simpleValue: every call is its switch
 	// (simple.go). Their parameters may include module state after their own.
-	if simplifiedNameRE.MatchString(wgslName) || simpleValueNameRE.MatchString(wgslName) || detailValueNameRE.MatchString(wgslName) {
+	if isSimplified(fnInfo, len(paramNames)) ||
+		simpleValueNameRE.MatchString(wgslName) ||
+		detailValueNameRE.MatchString(wgslName) ||
+		isPruneBelow(fnInfo, len(paramNames)) {
 		return finalGlobalRefs, wgslName, nil
 	}
 

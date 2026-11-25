@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/program"
 )
 
 // shrinkToVanishName is builtin's marker for a part (3d.gsl): the part itself
@@ -46,6 +46,7 @@ func MarkParts(prog *program.Program) (*program.Program, error) {
 
 	cloned := proto.Clone(prog).(*program.Program)
 	taken := declaredNames(cloned.Primary)
+	var boxes *boxProp
 	for _, f := range cloned.Primary.Files {
 		if f == nil {
 			continue
@@ -57,10 +58,31 @@ func MarkParts(prog *program.Program) (*program.Program, error) {
 				continue
 			}
 			if len(a.Variables) == 1 && a.Variables[0] != nil {
-				if part, ok := parts[a.Variables[0].Name]; ok {
-					a.Expression = shrinkToVanish(simplified(a.Expression, a.Variables[0], part), part)
-				} else {
-					dropCarriedSimple(a.Variables[0])
+				v := a.Variables[0]
+				if part, ok := parts[v.Name]; ok {
+					var shared []*program.Assignment
+					shared, part.box = shareBoxRepeats(part.box, taken)
+					out = append(append(out[:len(out)-1], shared...), a)
+					a.Expression = shrinkToVanish(simplified(a.Expression, v, part), part)
+				} else if hasProp(v, simplePropName) {
+					// A value with a stand-in that is not a part switches where it
+					// stands, at its declared size, name.featureSize, cropped to its
+					// box where that is bounded; without a size, at its box, if
+					// bounded: only a shape has one, not a colour or a material.
+					// The box is read here while declared boxes, a fastener's carried
+					// with it, are still there. Anything else is lowered as a
+					// value's stand-in, and CheckSimple, once types tell a shape from
+					// a colour, takes an unbounded shape's off.
+					if boxes == nil {
+						boxes = partsBoxProp(prog)
+					}
+					bx := valueBox(prog, boxes, v.Name)
+					if size := standInSize(v); size != nil {
+						a.Expression = sizedStandIn(a.Expression, v, bx, size)
+					} else if bx != nil {
+						lo, hi := corners(bx)
+						a.Expression = call(simplifiedName, a.Expression, standInProxy(takeProp(v, simplePropName)), lo, hi)
+					}
 				}
 				continue
 			}
@@ -79,6 +101,9 @@ func MarkParts(prog *program.Program) (*program.Program, error) {
 				}
 				hidden := freshName("gsl_part_"+v.Name, taken)
 				named := &program.Variable{Name: v.Name, Properties: v.Properties}
+				var shared []*program.Assignment
+				shared, part.box = shareBoxRepeats(part.box, taken)
+				out = append(out, shared...)
 				out = append(out, &program.Assignment{
 					Start:      a.Start,
 					End:        a.End,
@@ -159,50 +184,137 @@ func shrinkToVanish(expr *program.Operand, part partBox) *program.Operand {
 		nary(program.Operation_COLLECT, part.box.hi[:]...), num(solid))
 }
 
-// simplePropName is the property that gives a part its simpler stand-in, and
-// simplifiedName builtin's marker for it (3d.gsl).
+// simplePropName is the property that gives a shape its simpler stand-in,
+// name.featureSize (featureSizePropName) the size it switches at where
+// declared, and
+// simplifiedName builtin's marker for them (3d.gsl): simplified(shape, proxy,
+// lo, hi) switches at the box's smallest extent, and simplified(shape, proxy,
+// lo, hi, size) at size.
 const (
 	simplePropName = "simple"
 	simplifiedName = "simplified"
 )
 
-// simplifiedCall is the simplified(part, proxy, lo, hi) inside a part's
-// shrinkToVanish, or nil when the value is not a part with a stand-in.
+// everywhere is the corner of the box a stand-in with no bounded box is
+// cropped to: far enough that the crop changes nothing.
+const everywhere = 1e9
+
+// simplifiedCall is a value's simplified(shape, proxy, lo, hi[, size]), inside
+// a part's shrinkToVanish or the declaration's own expression, or nil when the
+// value has no shape stand-in.
 func simplifiedCall(op *program.Operand) *program.FnCall {
-	outer := op.GetFnCall()
-	if !namedCall(outer, shrinkToVanishName, 4) {
-		return nil
+	fc := op.GetFnCall()
+	if namedCall(fc, shrinkToVanishName, 4) {
+		fc = fc.Arguments[0].GetFnCall()
 	}
-	inner := outer.Arguments[0].GetFnCall()
-	if !namedCall(inner, simplifiedName, 4) {
-		return nil
+	if namedCall(fc, simplifiedName, 4) || namedCall(fc, simplifiedName, 5) {
+		return fc
 	}
-	return inner
+	return nil
 }
 
-// simplified wraps a part's expression in builtin's simplified marker when its
-// variable has a simple property, which it takes off the variable, and returns
-// the expression as it is otherwise.
-func simplified(expr *program.Operand, v *program.Variable, part partBox) *program.Operand {
-	var proxy *program.Operand
+// takeProp takes the named property off v and returns its expression, or nil.
+func takeProp(v *program.Variable, name string) *program.Operand {
+	var found *program.Operand
 	kept := v.Properties[:0]
 	for _, prop := range v.Properties {
-		if prop != nil && prop.Name == simplePropName {
-			proxy = prop.Expression
+		if prop != nil && prop.Name == name {
+			found = prop.Expression
 			continue
 		}
 		kept = append(kept, prop)
 	}
 	v.Properties = kept
+	return found
+}
+
+// standInProxy is a stand-in's own expression, unwrapped from carriedSimple
+// when a function carried it out.
+func standInProxy(proxy *program.Operand) *program.Operand {
+	if fc := proxy.GetFnCall(); namedCall(fc, carriedSimpleName, 1) {
+		return fc.Arguments[0]
+	}
+	return proxy
+}
+
+// simplified wraps a part's expression in builtin's simplified marker when its
+// variable has a simple property, which it takes off the variable, with the
+// declared size when it has one, and returns the expression as it is
+// otherwise.
+func simplified(expr *program.Operand, v *program.Variable, part partBox) *program.Operand {
+	proxy := takeProp(v, simplePropName)
+	size := standInSize(v)
 	if proxy == nil {
 		return expr
 	}
-	if fc := proxy.GetFnCall(); namedCall(fc, carriedSimpleName, 1) {
-		proxy = fc.Arguments[0]
+	// A size carried out of a function stands in for a box a remap loses; a
+	// part has its own, and switches by that.
+	if fc := size.GetFnCall(); namedCall(fc, carriedSimpleName, 1) {
+		size = nil
 	}
-	return call(simplifiedName, expr, proxy,
+	args := []*program.Operand{expr, standInProxy(proxy),
 		nary(program.Operation_COLLECT, part.box.lo[:]...),
-		nary(program.Operation_COLLECT, part.box.hi[:]...))
+		nary(program.Operation_COLLECT, part.box.hi[:]...)}
+	if size != nil {
+		args = append(args, size)
+	}
+	return call(simplifiedName, args...)
+}
+
+// standInSize takes a stand-in's declared size, name.featureSize, off v: nil
+// when there is none, or when it is 0, which asks for the box.
+func standInSize(v *program.Variable) *program.Operand {
+	size := takeProp(v, featureSizePropName)
+	if size == nil || isZeroLiteral(size) {
+		return nil
+	}
+	return size
+}
+
+// sizedStandIn wraps a value that is not a part in simplified(value, proxy,
+// lo, hi, size), taking its stand-in off v, cropped to bx where that is
+// bounded and nowhere otherwise.
+func sizedStandIn(expr *program.Operand, v *program.Variable, bx *bbox, size *program.Operand) *program.Operand {
+	proxy := takeProp(v, simplePropName)
+	size = standInProxy(size)
+	lo, hi := corners(bx)
+	return call(simplifiedName, expr, standInProxy(proxy), lo, hi, size)
+}
+
+// corners is a box's corners as two collects, or everywhere's when it is nil.
+func corners(bx *bbox) (*program.Operand, *program.Operand) {
+	if bx == nil {
+		return nary(program.Operation_COLLECT, num(-everywhere), num(-everywhere), num(-everywhere)),
+			nary(program.Operation_COLLECT, num(everywhere), num(everywhere), num(everywhere))
+	}
+	return nary(program.Operation_COLLECT, program.CloneOperand(bx.lo[0]), program.CloneOperand(bx.lo[1]), program.CloneOperand(bx.lo[2])),
+		nary(program.Operation_COLLECT, program.CloneOperand(bx.hi[0]), program.CloneOperand(bx.hi[1]), program.CloneOperand(bx.hi[2]))
+}
+
+// valueBox is the box the analysis gives op, the box of its solid or else of
+// its surface, when it is bounded and written in names the document
+// resolves; nil otherwise.
+func valueBox(prog *program.Program, b *boxProp, name string) *bbox {
+	return operandBox(prog, b, ref(name))
+}
+
+func operandBox(prog *program.Program, b *boxProp, op *program.Operand) *bbox {
+	v, err := b.engine().Eval(op)
+	if err != nil {
+		return nil
+	}
+	bv, ok := v.(boxVal)
+	if !ok || bv.op != nil {
+		return nil
+	}
+	known := documentNames(prog)
+	if bx := bv.box; boundedBox(bx) && boxResolves(bx, known) {
+		return bx
+	}
+	if bx := bv.surface(); boundedBox(bx) && boxResolves(bx, known) {
+		return bx
+	}
+	return nil
 }
 
 // dropCarriedSimple takes a stand-in carried out of a function off v, which
@@ -231,24 +343,42 @@ func dropCarriedSimple(v *program.Variable) {
 // instead, leaving the shape: a library is used as it is written, with or
 // without the boxes that let its stand-ins out, and a part with no stand-in is
 // only drawn in full.
-func CheckSimple(prog *program.Program) error {
+//
+// A top-level shape that is not a part, with no declared size, has its
+// stand-in sized here by its box: simplified(value, proxy, lo, hi), where the
+// box is bounded, and the value alone, with no switch, where it is not. It
+// reports whether it rewrote anything, so the caller links and types again.
+func CheckSimple(prog *program.Program) (bool, error) {
 	if prog == nil || prog.Primary == nil {
-		return nil
+		return false, nil
 	}
+	changed := false
+	var boxes *boxProp
 	for _, f := range prog.Primary.Files {
 		if f == nil {
 			continue
 		}
 		for _, a := range f.Assignments {
 			if name := shapeStandIn(a, false); name != "" {
-				return fmt.Errorf("%s.simple: %s is not a part; only a named value that only a min or a return reads, and whose box is bounded, can have a simpler stand-in", name, name)
+				fc := a.Expression.GetFnCall()
+				value, stand := fc.Arguments[0], standInProxy(fc.Arguments[1])
+				if boxes == nil {
+					boxes = partsBoxProp(prog)
+				}
+				if bx := operandBox(prog, boxes, value); bx != nil {
+					lo, hi := corners(bx)
+					a.Expression = call(simplifiedName, value, stand, lo, hi)
+				} else {
+					a.Expression = value
+				}
+				changed = true
 			}
 		}
 	}
 	for _, f := range prog.Primary.Files {
 		for _, ft := range f.GetFnTypes() {
 			if name := fnTypeShapeStandIn(ft, false); name != "" {
-				return fmt.Errorf("%s.simple: a shape's stand-in leaves a function only on the local it returns, and only when that local also declares a box, colour or material", name)
+				return changed, fmt.Errorf("%s.simple: a shape's stand-in leaves a function only on the local it returns, and only when that local also declares a box, colour or material", name)
 			}
 		}
 	}
@@ -259,7 +389,7 @@ func CheckSimple(prog *program.Program) error {
 			}
 		}
 	}
-	return nil
+	return changed, nil
 }
 
 // shapeStandIn is the name a declaration gives a distance with a value's

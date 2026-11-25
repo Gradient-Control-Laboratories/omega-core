@@ -3,9 +3,9 @@ package source
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/assembler/source"
-	"gradientcontrol.com/omega/core/internal/stdpkg"
-	_ "gradientcontrol.com/omega/core/stdlib"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/stdpkg"
+	_ "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
 )
 
 // StdLibManager provides access to embedded standard library packages.

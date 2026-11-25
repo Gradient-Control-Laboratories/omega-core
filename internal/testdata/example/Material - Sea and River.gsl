@@ -9,23 +9,15 @@
 
 // The wind, in m/s, and the direction it blows, in degrees from x. It raises
 // the sea.
-windSpeed = 10;
-windSpeed.min = 3;
-windSpeed.max = 25;
-windAngle = 20;
-windAngle.min = -180;
-windAngle.max = 180;
+@range(3, 25) windSpeed = 10;
+@range(-180, 180) windAngle = 20;
 wind = [cos(windAngle * 3.14159265 / 180), sin(windAngle * 3.14159265 / 180), 0];
 
 // How sharp the sea's crests are, 0 to 1.
-choppiness = 0.6;
-choppiness.min = 0;
-choppiness.max = 1;
+@range(0, 1) choppiness = 0.6;
 
 // How silty the river is, clear 0 to brown 1.
-turbidity = 0.4;
-turbidity.min = 0;
-turbidity.max = 1;
+@range(0, 1) turbidity = 0.4;
 
 // Each piece is a slab 24 mm square, or a sphere as wide, 32 mm apart.
 slab(column, row) {

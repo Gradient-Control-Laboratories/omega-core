@@ -102,9 +102,13 @@ against feature size **for films that flow**.
 
 `coating.levelled(coat, baseMaterial, build, underSize)` — a flowed film over a
 prepared surface. One share, `material.filmKeeps(underSize, build)`, governs
-three things at once: the substrate's displacement is cut by it, its lay's
+three things at once: the substrate's relief is cut by it, its lay's
 anisotropy by it, and its lobe's variance by its **square**, variance going as
-amplitude squared.
+amplitude squared. The film's own thickness is not levelled: it is the
+record's build (`material.withBuild`), added to the base's, so a coat over a
+coat keeps both, and a shape that sets the result over the material it
+inherits is drawn that much proud of it (see "Layers" in
+`material_library.md`).
 
 `coating.clearCoat(baseMaterial, baseColor, tint, glossUnits, build,
 underSize)` — a clear urethane, lacquer or clear powder over any substance,
@@ -535,13 +539,11 @@ the generator emitting the operator list, and the stack UI.
 ### The parameters should not get a UI of their own
 
 Whichever route, a chosen argument should be written into the document as a
-top-level variable with `.min` and `.max`, because the **existing Parameters
+top-level variable with `@range`, because the **existing Parameters
 panel already turns one of those into a live slider**:
 
 ```gsl
-boltRough = 0.15;
-boltRough.min = 0.0;
-boltRough.max = 1.0;
+@range(0.0, 1.0) boltRough = 0.15;
 
 boltSurface, boltSurfaceColor = metal.steel();
 bolt.material = material.withRoughness(boltSurface, boltRough);
@@ -570,7 +572,7 @@ What is deliberately left for later:
 
 - **Control over a preset's parameters.** The plan is the one above: the
   browser rewrites the preset as its constructor call, with each chosen
-  argument a top-level variable with `.min` and `.max` that the Parameters
+  argument a top-level variable with `@range` that the Parameters
   panel already turns into a slider. Until then a preset is edited by hand, by
   replacing it with the constructor it names.
 - **Colour as a parameter.** A coating's colour is already separable — the
@@ -639,7 +641,7 @@ variable** in a document they give it that control.
 
 | kind | on the parameter (library) | written into the document | control |
 | --- | --- | --- | --- |
-| scalar | `@range(0, 1) peel` | `boltPeel = 0.3;` with `.min`/`.max` | slider — exists |
+| scalar | `@range(0, 1) peel` | `@range(0, 1) boltPeel = 0.3;` | slider — exists |
 | colour | `@color coatColor` | `@color boltCoat = [0.804, 0.098, 0.098];` | chip row in the Parameters panel — new |
 | point | `@point center` | `@point boltCenter = [0, 0, 0];` | point gizmo — exists |
 | direction | `@direction(axisOrigin) axisDir` | `@direction(boltOrigin) boltAxis = [0, 0, 1];` | arrow gizmo — new |
@@ -694,12 +696,8 @@ Bodies chip's convention; the chip row converts the same way.
 
    ```gsl
    @color boltCoatColor = [0.62, 0.06, 0.05];
-   boltGlossUnits = 85;
-   boltGlossUnits.min = 0;
-   boltGlossUnits.max = 100;
-   boltPeel = 0.7;
-   boltPeel.min = 0;
-   boltPeel.max = 1;
+   @range(0, 100) boltGlossUnits = 85;
+   @range(0, 1) boltPeel = 0.7;
    boltSurface, boltSurfaceColor, boltHeight, boltSlope = coating.powderCoat(boltCoatColor, boltGlossUnits, boltPeel);
    bolt.material = boltSurface;
    bolt.color = boltSurfaceColor;

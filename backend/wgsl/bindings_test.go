@@ -7,9 +7,9 @@ import (
 	"math"
 	"testing"
 
-	"gradientcontrol.com/omega/core/program/float16"
-	"gradientcontrol.com/omega/core/program/meshasset"
-	"gradientcontrol.com/omega/core/program/noise/spinodoid"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/float16"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/meshasset"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/noise/spinodoid"
 )
 
 func TestPackSpinodoidBinding_VariableBandsAndMetadata(t *testing.T) {

@@ -1,0 +1,40 @@
+/// Draft: faces tapered from a hinge curve by an angle to a pull direction, as
+/// on the walls of a molded or cast part. Each face turns about the curve where
+/// it meets the neutral plane until it leans `angle` from the pull, inward as it
+/// rises for a positive angle. Use qualified, e.g.
+/// draft.horizontalCurve(circleXY([0, 0], 10), p.z, radians(5)).
+
+/// The draft of a horizontal curve: the surface through a curve in a plane
+/// normal to the pull that leans `angle` from the pull, inward as it rises for a
+/// positive angle, as a field `horizontal·cos(angle) + vertical·sin(angle)`.
+///
+/// `horizontal` is the signed distance to the curve within the planes normal to
+/// the pull, negative inside, such as a 2D profile's field in x and y when the
+/// pull is z. `vertical` is the height above the curve's plane, the neutral
+/// plane, along the pull, such as p.z - z0. The section at height h is then the
+/// profile offset inward by h·tan(angle). The field has unit gradient wherever
+/// both have unit gradient, as a 2D distance and a height do, being
+/// perpendicular.
+///
+/// Draft turns each face about its own hinge, so a sharp corner of the profile
+/// stays sharp: give a profile with sharp corners as the max or min of its
+/// sides' half-planes, whose offsets keep them, not as its Euclidean distance,
+/// which rounds a convex corner offset outward and a concave one offset
+/// inward. A profile with no sharp corners, such as a rounded rectangle, may be
+/// its Euclidean distance: its rounds become cones, as draft makes them.
+horizontalCurve(horizontal, vertical, angle) {
+  return horizontal * cos(angle) + vertical * sin(angle);
+}
+
+/// The draft of a point: the cone with its apex at `center` whose side leans
+/// `angle` from `pull`, a unit vector, opening against the pull for a positive
+/// angle (below the apex for a pull of +z), as horizontalCurve of the distance
+/// from the cone's axis and the height above the apex. Negative inside the
+/// cone. Above the apex the field reads less than the distance to the cone, the
+/// apex being nearer than its side.
+point(center, pull, angle) {
+  offset = p - center;
+  vertical = dot(offset, pull);
+  horizontal = length(offset - pull * vertical);
+  return horizontalCurve(horizontal, vertical, angle);
+}

@@ -4,8 +4,8 @@ import (
 	"strconv"
 	"strings"
 
-	"gradientcontrol.com/omega/core/internal/build"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/build"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // Value implements the [build.Expression] interface.

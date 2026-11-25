@@ -3,8 +3,8 @@ package eval
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/internal/scope"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // Evaluator gives Fold's verdict on single operands of one program, for a

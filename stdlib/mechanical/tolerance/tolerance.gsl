@@ -1,0 +1,130 @@
+/// ISO 286 limits and fits: the standard tolerance grades IT5 to IT7 and the
+/// limit deviations of the shaft and hole tolerance zones a bearing's seats
+/// are made to, for nominal sizes over 6 up to 120 mm.
+
+// Tolerance: ISO 286 limits and fits
+//
+// A size on a drawing is a nominal and a tolerance zone, and the zone is a
+// letter, where it lies against the nominal, and a grade, how wide it is. A
+// shaft's zones are lower case: the upper deviation es and the lower ei,
+// added to the nominal, bound the size made. A hole's are upper case: ES and
+// EI. So a 25 mm journal in k5 is made between 25.002 and 25.011:
+//
+//   tolerance.shaftUpper(25.0, tolerance.k5)   // 0.011
+//   tolerance.shaftLower(25.0, tolerance.k5)   // 0.002
+//   tolerance.shaftDia(25.0, tolerance.k5, tolerance.maxMaterial)   // 25.011
+//
+// Everything is in millimetres. A size out of the table's ranges reads zero.
+//
+// THE ZONES are those bearing seats are made to (and a good many other fits):
+// shafts j5, j6, k5, k6, m5, m6, n6 and p6, holes H6, H7, J6, J7, K6, K7, M6 and
+// M7. MAXIMUM MATERIAL is the largest shaft and the smallest hole, the
+// condition a fit binds at; minimum material the other.
+//
+// THE TABLE is ISO 286-2's limit deviations, in micrometres, one row per
+// range of nominal size, "over lo up to and including hi": lo, hi, IT5, IT6,
+// IT7, then each shaft zone's es and ei, then each hole zone's ES and EI, in
+// the order above. ISO 286-2 splits these ranges further (10-14 and 14-18,
+// and so on), but none of these zones changes across a split. Sources: Simply
+// Bearings' ISO 286 tables (ISO 286-2) and Miki Pulley's excerpt of JIS B 0401
+// (JIS B 0401:2016, taken to be ISO 286:2010), which agree but for K6 over 6
+// to 10, where Simply Bearings prints -6: it is -7, since K6 is IT6 wide.
+// ISO 286-1's grades as Wikipedia tabulates them; every zone is its grade
+// wide. Neither source names 286-2's edition.
+toleranceTable = [
+  [6.0, 10.0, 6.0, 9.0, 15.0,
+   4.0, -2.0, 7.0, -2.0, 7.0, 1.0, 10.0, 1.0, 12.0, 6.0, 15.0, 6.0, 19.0, 10.0, 24.0, 15.0,
+   9.0, 0.0, 15.0, 0.0, 5.0, -4.0, 8.0, -7.0, 2.0, -7.0, 5.0, -10.0, -3.0, -12.0, 0.0, -15.0],
+  [10.0, 18.0, 8.0, 11.0, 18.0,
+   5.0, -3.0, 8.0, -3.0, 9.0, 1.0, 12.0, 1.0, 15.0, 7.0, 18.0, 7.0, 23.0, 12.0, 29.0, 18.0,
+   11.0, 0.0, 18.0, 0.0, 6.0, -5.0, 10.0, -8.0, 2.0, -9.0, 6.0, -12.0, -4.0, -15.0, 0.0, -18.0],
+  [18.0, 30.0, 9.0, 13.0, 21.0,
+   5.0, -4.0, 9.0, -4.0, 11.0, 2.0, 15.0, 2.0, 17.0, 8.0, 21.0, 8.0, 28.0, 15.0, 35.0, 22.0,
+   13.0, 0.0, 21.0, 0.0, 8.0, -5.0, 12.0, -9.0, 2.0, -11.0, 6.0, -15.0, -4.0, -17.0, 0.0, -21.0],
+  [30.0, 50.0, 11.0, 16.0, 25.0,
+   6.0, -5.0, 11.0, -5.0, 13.0, 2.0, 18.0, 2.0, 20.0, 9.0, 25.0, 9.0, 33.0, 17.0, 42.0, 26.0,
+   16.0, 0.0, 25.0, 0.0, 10.0, -6.0, 14.0, -11.0, 3.0, -13.0, 7.0, -18.0, -4.0, -20.0, 0.0, -25.0],
+  [50.0, 80.0, 13.0, 19.0, 30.0,
+   6.0, -7.0, 12.0, -7.0, 15.0, 2.0, 21.0, 2.0, 24.0, 11.0, 30.0, 11.0, 39.0, 20.0, 51.0, 32.0,
+   19.0, 0.0, 30.0, 0.0, 13.0, -6.0, 18.0, -12.0, 4.0, -15.0, 9.0, -21.0, -5.0, -24.0, 0.0, -30.0],
+  [80.0, 120.0, 15.0, 22.0, 35.0,
+   6.0, -9.0, 13.0, -9.0, 18.0, 3.0, 25.0, 3.0, 28.0, 13.0, 35.0, 13.0, 45.0, 23.0, 59.0, 37.0,
+   22.0, 0.0, 35.0, 0.0, 16.0, -6.0, 22.0, -13.0, 4.0, -18.0, 10.0, -25.0, -6.0, -28.0, 0.0, -35.0]];
+
+/// Shaft tolerance zones, for shaftUpper, shaftLower and shaftDia.
+j5 = 0.0;
+j6 = 1.0;
+k5 = 2.0;
+k6 = 3.0;
+m5 = 4.0;
+m6 = 5.0;
+n6 = 6.0;
+p6 = 7.0;
+
+/// Hole tolerance zones, for holeUpper, holeLower and holeDia.
+H6 = 0.0;
+H7 = 1.0;
+J6 = 2.0;
+J7 = 3.0;
+K6 = 4.0;
+K7 = 5.0;
+M6 = 6.0;
+M7 = 7.0;
+
+/// Standard tolerance grades, for grade.
+IT5 = 5.0;
+IT6 = 6.0;
+IT7 = 7.0;
+
+/// The material conditions, for shaftDia and holeDia: the largest shaft and
+/// the smallest hole, or the other way round.
+maxMaterial = 1.0;
+minMaterial = 2.0;
+
+// toleranceColumn: column `col` of the row whose range holds `nominal`, over
+// its lower end up to and including its upper, in micrometres; zero outside
+// the table.
+toleranceColumn(nominal, col) {
+  n = nominal;
+  return reduce((acc, v) { return acc + v; },
+                map((r) { return r[col] * clamp(sign(n - r[0] - 0.000001), 0.0, 1.0) * clamp(sign(r[1] + 0.000001 - n), 0.0, 1.0); },
+                    toleranceTable));
+}
+
+/// The standard tolerance grade `it` (IT5, IT6 or IT7) at a `nominal` size:
+/// the width of a zone of that grade.
+grade(nominal, it) {
+  return toleranceColumn(nominal, it - 3.0) / 1000.0;
+}
+
+/// A shaft zone's upper deviation es at a `nominal` size.
+shaftUpper(nominal, zone) {
+  return toleranceColumn(nominal, 5.0 + 2.0 * zone) / 1000.0;
+}
+
+/// A shaft zone's lower deviation ei at a `nominal` size.
+shaftLower(nominal, zone) {
+  return toleranceColumn(nominal, 6.0 + 2.0 * zone) / 1000.0;
+}
+
+/// A hole zone's upper deviation ES at a `nominal` size.
+holeUpper(nominal, zone) {
+  return toleranceColumn(nominal, 21.0 + 2.0 * zone) / 1000.0;
+}
+
+/// A hole zone's lower deviation EI at a `nominal` size.
+holeLower(nominal, zone) {
+  return toleranceColumn(nominal, 22.0 + 2.0 * zone) / 1000.0;
+}
+
+/// A shaft made to `zone` at a `nominal` size, at its maximum or minimum
+/// material `condition`: nominal + es or nominal + ei.
+shaftDia(nominal, zone, condition) {
+  return nominal + (condition < 1.5 ? shaftUpper(nominal, zone) : shaftLower(nominal, zone));
+}
+
+/// A hole made to `zone` at a `nominal` size, at its maximum or minimum
+/// material `condition`: nominal + EI or nominal + ES.
+holeDia(nominal, zone, condition) {
+  return nominal + (condition < 1.5 ? holeLower(nominal, zone) : holeUpper(nominal, zone));
+}

@@ -1,0 +1,58 @@
+@scene(160, 20)
+
+// A moulding swept along an open path and capped flat at both ends. The path
+// is an S: a straight run, a quarter bend to the left, a straight rise and a
+// quarter bend to the right, every joint smooth, so it leaves heading the way
+// it came in. sweepOpen(section, points, curvatures) reads the section with
+// its x across the path, positive on the right of travel, and its y as the
+// height z; each end is cut square to the path.
+//
+// The section stays inside the path's tube while it reaches across no farther
+// than a bend's radius on the bend's inside. Then the distance is exact beside
+// the path and over the caps. Beyond a cap it is that cap's distance, which
+// reads too far where another part of the rail is nearer than the cap: a
+// long reach outward, past the end of the last bend, looks back at the rise.
+//
+// The rail is coloured by a checkerboard in its frame: u the distance along
+// the path (negative beyond the start) and v the distance round the section,
+// both in mm, so the squares are square. Lengths are in mm.
+
+// The path: the straight run in, the rise between the bends, and the bends'
+// radius.
+@range(10, 50) runLength = 30.0;
+@range(10, 50) riseLength = 25.0;
+@range(8, 20) bendRadius = 14.0;
+
+// The section: how far it reaches left and right of the path, its height,
+// and the radius of the cove cut from its right top corner.
+@range(1, 6) reachLeft = 3.0;
+@range(3, 8) reachRight = 6.0;
+@range(4, 10) sectionHeight = 7.0;
+@range(1, 4) coveRadius = 3.0;
+
+// Checkerboard: the side of a square.
+@range(1, 8) checkerSize = 3.0;
+
+// The S, its first point at (startX, startY) so the rail sits about the
+// origin.
+startX = neg(runLength + 2 * bendRadius) / 2;
+startY = neg(riseLength + 2 * bendRadius) / 2;
+route = [[startX, startY],
+         [startX + runLength, startY],
+         [startX + runLength + bendRadius, startY + bendRadius],
+         [startX + runLength + bendRadius, startY + bendRadius + riseLength],
+         [startX + runLength + 2 * bendRadius, startY + 2 * bendRadius + riseLength]];
+bends = [0, 1 / bendRadius, 0, neg(1 / bendRadius)];
+
+// The moulding, drawn with x across the path and y up: a rectangle from
+// reachLeft left of the path to reachRight right of it, with a quarter-round
+// cove, an arc of negative curvature, cut from its right top corner.
+section = profileXY(
+  [[neg(reachLeft), 0], [reachRight, 0], [reachRight, sectionHeight - coveRadius],
+   [reachRight - coveRadius, sectionHeight], [neg(reachLeft), sectionHeight]],
+  [0, 0, neg(1 / coveRadius), 0, 0]);
+
+rail = sweepOpen(section, route, bends);
+rail.color = sin(pi * rail.u / checkerSize) * sin(pi * rail.v / checkerSize) > 0 ? color.gray : color.lightGray;
+
+return rail;

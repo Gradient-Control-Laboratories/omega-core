@@ -3,8 +3,8 @@ package topofold
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler/topofold"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/topofold"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 type mockMesh struct {

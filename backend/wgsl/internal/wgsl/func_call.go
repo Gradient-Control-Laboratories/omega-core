@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"gradientcontrol.com/omega/core/internal/build"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/build"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // FuncCall implements the [build.Expression] interface.
@@ -33,12 +33,11 @@ func (f *FuncCall) Codegen(ctx CodegenContext) string {
 
 	if f.PVarIsFirstArg {
 		// The "p" variable expression that is passed as the first argument
-		// is evaluated in terms of the "p" variable in the root context
+		// is evaluated in terms of the "p" variable in the root context. A
+		// constant one is the point the field is read at, as remap means it
+		// everywhere else (the CPU, fidget, exports), not an offset from p.
 		pExpr := ctx.P().Expr().(Expression)
 		pVal := pExpr.Codegen(ctx.Root())
-		if constExpr, ok := pExpr.(build.ConstExpression); ok && constExpr.ConstValues() != nil {
-			pVal = program.PVarName + " - " + pVal
-		}
 		argSrcs = append(argSrcs, pVal)
 		start = 1
 	}

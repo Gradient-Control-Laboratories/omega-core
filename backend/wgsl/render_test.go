@@ -4,13 +4,13 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/assembler/slider"
-	"gradientcontrol.com/omega/core/assembler/ui"
-	"gradientcontrol.com/omega/core/assembler/variation"
-	"gradientcontrol.com/omega/core/internal/source"
-	"gradientcontrol.com/omega/core/internal/test/require"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/slider"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/ui"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/variation"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func TestRender(t *testing.T) {
@@ -38,9 +38,7 @@ func TestRender_EmptyProgram(t *testing.T) {
 
 func TestRender_ZeroReturnsWithSlidersAndUIControls(t *testing.T) {
 	src := `importId = importStep "part.step";
-radius = 5;
-radius.min = 1;
-radius.max = 10;
+@range(1, 10) radius = 5;
 center = uiPoint([1, 2, 3]);
 xf = uiTransform([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [4, 5, 6, 1]]);
 cavity = length(p - center) - radius + noiseHash3(p);

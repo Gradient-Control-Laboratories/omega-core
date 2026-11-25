@@ -12,34 +12,50 @@ fn drill_prismVoid(p: vec3<f32>, zTop: f32, section: f32, depth: f32) -> f32 {
   return max(section, zTop - depth - p.z);
 }
 
-fn gsl_remap(p: vec3<f32>, gsl_param_33_8: f32, gsl_param_36_10: f32) -> f32 {
-  let m5 = fastener_screw(max(length(vec3<f32>(p.x, p.y, p.z - -2.7272727)) - 5.4772725, -p.z), max(max(max(length(p.xy) - 2.5, -10.0 - p.z), p.z - 1.375), (length(p.xy) - 2.5 + -p.z - 10.0 + 0.75) * 0.7071), drill_prismVoid(p, 2.75, max(max(abs(p.x) - 1.5, abs(0.5 * p.x + 0.8660254 * p.y) - 1.5), abs(0.5 * p.x - 0.8660254 * p.y) - 1.5), 1.56));
+fn gsl_remap(p: vec3<f32>, gsl_param_33_28: f32, gsl_param_34_32: f32) -> f32 {
+  let gsl_simpleWeight = gsl_simpleSized(9.5);
+  var gsl_simplePart = 1e10;
+  if (gsl_simpleWeight > 0.0) {
+    gsl_simplePart = fastener_screw(max(length(vec3<f32>(p.x, p.y, p.z - -2.7272727)) - 5.4772725, -p.z), max(max(max(length(p.xy) - 2.5, -10.0 - p.z), p.z - 1.375), (length(p.xy) - 2.5 + -p.z - 10.0 + 0.75) * 0.7071), drill_prismVoid(p, 2.75, max(max(abs(p.x) - 1.5, abs(0.5 * p.x + 0.8660254 * p.y) - 1.5), abs(0.5 * p.x - 0.8660254 * p.y) - 1.5), 1.56));
+  }
+  if (gsl_simpleWeight < 1.0) {
+    gsl_simplePart = mix(max(min(max(length(vec3<f32>(p.x, p.y, p.z - -2.7272727)) - 5.4772725, -p.z), max(max(length(p.xy) - 2.5, -10.0 - p.z), p.z - 1.375)), gsl_boxSdf(p, vec3<f32>(-4.76, -4.76, -10.01), vec3<f32>(4.76, 4.76, 2.76))), gsl_simplePart, gsl_simpleWeight);
+  }
+  let m5 = gsl_simplePart;
   return m5;
 }
 
-fn gsl_remap_2(p: vec3<f32>, gsl_param_33_8: f32, gsl_param_36_10: f32) -> f32 {
-  return gsl_remap(vec3<f32>(p.x * 0.00000000000000006123234 - p.z * -1.0, p.y, p.z * 0.00000000000000006123234 + p.x * -1.0), gsl_param_33_8, gsl_param_36_10);
+fn gsl_remap_2(p: vec3<f32>, gsl_param_33_28: f32, gsl_param_34_32: f32) -> f32 {
+  return gsl_remap(vec3<f32>(p.x * 0.00000000000000006123234 - p.z * -1.0, p.y, p.z * 0.00000000000000006123234 + p.x * -1.0), gsl_param_33_28, gsl_param_34_32);
 }
 
-fn gsl_remap_3(p: vec3<f32>, gsl_param_33_8: f32, gsl_param_36_10: f32) -> f32 {
-  return gsl_remap(vec3<f32>(p.x * 0.00000000000000006123234 - p.z * 1.0, p.y, p.z * 0.00000000000000006123234 + p.x * 1.0), gsl_param_33_8, gsl_param_36_10);
+fn gsl_remap_3(p: vec3<f32>, gsl_param_33_28: f32, gsl_param_34_32: f32) -> f32 {
+  return gsl_remap(vec3<f32>(p.x * 0.00000000000000006123234 - p.z * 1.0, p.y, p.z * 0.00000000000000006123234 + p.x * 1.0), gsl_param_33_28, gsl_param_34_32);
 }
 
-fn gsl_remap_4(p: vec3<f32>, gsl_param_33_8: f32, gsl_param_36_10: f32) -> f32 {
-  return gsl_remap(vec3<f32>(p.x, p.y * 0.00000000000000006123234 + p.z * 1.0, -p.y * 1.0 + p.z * 0.00000000000000006123234), gsl_param_33_8, gsl_param_36_10);
+fn gsl_remap_4(p: vec3<f32>, gsl_param_33_28: f32, gsl_param_34_32: f32) -> f32 {
+  return gsl_remap(vec3<f32>(p.x, p.y * 0.00000000000000006123234 + p.z * 1.0, -p.y * 1.0 + p.z * 0.00000000000000006123234), gsl_param_33_28, gsl_param_34_32);
 }
 
-fn gsl_remap_5(p: vec3<f32>, gsl_param_33_8: f32, gsl_param_36_10: f32) -> f32 {
-  let m5long = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -30.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 30.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
+fn gsl_remap_5(p: vec3<f32>, gsl_param_33_28: f32, gsl_param_34_32: f32) -> f32 {
+  let gsl_simpleWeight = gsl_simpleSized(8.5);
+  var gsl_simplePart = 1e10;
+  if (gsl_simpleWeight > 0.0) {
+    gsl_simplePart = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -30.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 30.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
+  }
+  if (gsl_simpleWeight < 1.0) {
+    gsl_simplePart = mix(max(min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -30.0 - p.z), p.z - 2.5)), gsl_boxSdf(p, vec3<f32>(-4.26, -4.26, -30.01), vec3<f32>(4.26, 4.26, 5.01))), gsl_simplePart, gsl_simpleWeight);
+  }
+  let m5long = gsl_simplePart;
   return m5long;
 }
 
-fn gsl_remap_6(p: vec3<f32>, gsl_param_33_8: f32, gsl_param_36_10: f32) -> f32 {
-  return gsl_remap_5(vec3<f32>(p.x * 0.00000000000000006123234 - p.z * -1.0, p.y, p.z * 0.00000000000000006123234 + p.x * -1.0), gsl_param_33_8, gsl_param_36_10);
+fn gsl_remap_6(p: vec3<f32>, gsl_param_33_28: f32, gsl_param_34_32: f32) -> f32 {
+  return gsl_remap_5(vec3<f32>(p.x * 0.00000000000000006123234 - p.z * -1.0, p.y, p.z * 0.00000000000000006123234 + p.x * -1.0), gsl_param_33_28, gsl_param_34_32);
 }
 
-fn gsl_remap_7(p: vec3<f32>, gsl_param_33_8: f32, gsl_param_36_10: f32) -> f32 {
-  return gsl_remap_5(vec3<f32>(p.x * 0.00000000000000006123234 - p.z * 1.0, p.y, p.z * 0.00000000000000006123234 + p.x * 1.0), gsl_param_33_8, gsl_param_36_10);
+fn gsl_remap_7(p: vec3<f32>, gsl_param_33_28: f32, gsl_param_34_32: f32) -> f32 {
+  return gsl_remap_5(vec3<f32>(p.x * 0.00000000000000006123234 - p.z * 1.0, p.y, p.z * 0.00000000000000006123234 + p.x * 1.0), gsl_param_33_28, gsl_param_34_32);
 }
 
 fn builtin_intersectSharp_2(fields: vec2<f32>) -> f32 {
@@ -136,9 +152,10 @@ fn beam2040(a: f32, b: f32, t: f32, span: f32) -> f32 {
   return max(section2040(a, b), abs(t - span / 2.0) - span / 2.0);
 }
 
-fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -> gsl_shape {
+fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_28: f32, gsl_param_34_32: f32) -> gsl_shape {
+  gsl_featurePixel = select(0.0, gsl_vanishEye.w * mix(max(length(gsl_vanishEye.xyz - p), 1.0), 1.0, gsl_vanishView.x), gsl_vanishEye.w > 0.0);
   gsl_partNear = vec3<f32>(1e10, 1e10, 1e10);
-  let lift = gsl_param_33_8;
+  let lift = gsl_param_33_28;
   let gz = -200.0 + lift;
   let gsl_partLo = vec3<f32>(-210.0, -210.0, min(-200.0, -(-0.0 - gz) - 10.0));
   let gsl_partHi = vec3<f32>(210.0, 210.0, max(200.0, -(-0.0 - gz) + 10.0));
@@ -239,7 +256,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
     if (abs(gsl_part) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part), gsl_partVanish.zw); }
   }
   let frame = gsl_part;
-  let travel = gsl_param_36_10;
+  let travel = gsl_param_34_32;
   let gsl_partLo_10 = vec3<f32>(min(-215.0, min(travel - 30.0, travel + 30.0)), -40.0, min(min(min(-200.0, min(gz - 30.0, gz + 30.0)), min(gz - 30.0, gz + 30.0)), min(gz - 30.0, gz + 30.0)));
   let gsl_partHi_10 = vec3<f32>(max(215.0, max(travel - 30.0, travel + 30.0)), 40.0, max(max(max(200.0, max(gz - 30.0, gz + 30.0)), max(gz - 30.0, gz + 30.0)), max(gz - 30.0, gz + 30.0)));
   let gsl_partBox_10 = gsl_boxDistance(p, gsl_partLo_10, gsl_partHi_10);
@@ -343,7 +360,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_20 <= gsl_vanishView.w) {
     let gsl_partVanish_20 = gsl_vanish(gsl_partLo_20, gsl_partHi_20);
     gsl_part_20 = 1e10;
-    if (gsl_partVanish_20.x > 0.0) { gsl_part_20 = gsl_remap_2(p - vec3<f32>(-215.0, -25.0, -190.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_20.y; }
+    if (gsl_partVanish_20.x > 0.0) { gsl_part_20 = gsl_remap_2(p - vec3<f32>(-215.0, -25.0, -190.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_20.y; }
     if (abs(gsl_part_20) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_20), gsl_partVanish_20.zw); }
   }
   let lowL1 = gsl_part_20;
@@ -354,7 +371,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_21 <= gsl_vanishView.w) {
     let gsl_partVanish_21 = gsl_vanish(gsl_partLo_21, gsl_partHi_21);
     gsl_part_21 = 1e10;
-    if (gsl_partVanish_21.x > 0.0) { gsl_part_21 = gsl_remap_2(p - vec3<f32>(-215.0, 25.0, -190.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_21.y; }
+    if (gsl_partVanish_21.x > 0.0) { gsl_part_21 = gsl_remap_2(p - vec3<f32>(-215.0, 25.0, -190.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_21.y; }
     if (abs(gsl_part_21) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_21), gsl_partVanish_21.zw); }
   }
   let lowL2 = gsl_part_21;
@@ -365,7 +382,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_22 <= gsl_vanishView.w) {
     let gsl_partVanish_22 = gsl_vanish(gsl_partLo_22, gsl_partHi_22);
     gsl_part_22 = 1e10;
-    if (gsl_partVanish_22.x > 0.0) { gsl_part_22 = gsl_remap_2(p - vec3<f32>(-215.0, -10.0, -155.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_22.y; }
+    if (gsl_partVanish_22.x > 0.0) { gsl_part_22 = gsl_remap_2(p - vec3<f32>(-215.0, -10.0, -155.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_22.y; }
     if (abs(gsl_part_22) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_22), gsl_partVanish_22.zw); }
   }
   let lowL3 = gsl_part_22;
@@ -376,7 +393,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_23 <= gsl_vanishView.w) {
     let gsl_partVanish_23 = gsl_vanish(gsl_partLo_23, gsl_partHi_23);
     gsl_part_23 = 1e10;
-    if (gsl_partVanish_23.x > 0.0) { gsl_part_23 = gsl_remap_2(p - vec3<f32>(-215.0, 10.0, -155.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_23.y; }
+    if (gsl_partVanish_23.x > 0.0) { gsl_part_23 = gsl_remap_2(p - vec3<f32>(-215.0, 10.0, -155.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_23.y; }
     if (abs(gsl_part_23) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_23), gsl_partVanish_23.zw); }
   }
   let lowL4 = gsl_part_23;
@@ -387,7 +404,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_24 <= gsl_vanishView.w) {
     let gsl_partVanish_24 = gsl_vanish(gsl_partLo_24, gsl_partHi_24);
     gsl_part_24 = 1e10;
-    if (gsl_partVanish_24.x > 0.0) { gsl_part_24 = gsl_remap_2(p - vec3<f32>(-215.0, -10.0, -130.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_24.y; }
+    if (gsl_partVanish_24.x > 0.0) { gsl_part_24 = gsl_remap_2(p - vec3<f32>(-215.0, -10.0, -130.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_24.y; }
     if (abs(gsl_part_24) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_24), gsl_partVanish_24.zw); }
   }
   let lowL5 = gsl_part_24;
@@ -398,7 +415,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_25 <= gsl_vanishView.w) {
     let gsl_partVanish_25 = gsl_vanish(gsl_partLo_25, gsl_partHi_25);
     gsl_part_25 = 1e10;
-    if (gsl_partVanish_25.x > 0.0) { gsl_part_25 = gsl_remap_2(p - vec3<f32>(-215.0, 10.0, -130.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_25.y; }
+    if (gsl_partVanish_25.x > 0.0) { gsl_part_25 = gsl_remap_2(p - vec3<f32>(-215.0, 10.0, -130.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_25.y; }
     if (abs(gsl_part_25) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_25), gsl_partVanish_25.zw); }
   }
   let lowL6 = gsl_part_25;
@@ -420,7 +437,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_27 <= gsl_vanishView.w) {
     let gsl_partVanish_27 = gsl_vanish(gsl_partLo_27, gsl_partHi_27);
     gsl_part_27 = 1e10;
-    if (gsl_partVanish_27.x > 0.0) { gsl_part_27 = gsl_remap_3(p - vec3<f32>(215.0, -25.0, -190.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_27.y; }
+    if (gsl_partVanish_27.x > 0.0) { gsl_part_27 = gsl_remap_3(p - vec3<f32>(215.0, -25.0, -190.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_27.y; }
     if (abs(gsl_part_27) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_27), gsl_partVanish_27.zw); }
   }
   let lowR1 = gsl_part_27;
@@ -431,7 +448,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_28 <= gsl_vanishView.w) {
     let gsl_partVanish_28 = gsl_vanish(gsl_partLo_28, gsl_partHi_28);
     gsl_part_28 = 1e10;
-    if (gsl_partVanish_28.x > 0.0) { gsl_part_28 = gsl_remap_3(p - vec3<f32>(215.0, 25.0, -190.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_28.y; }
+    if (gsl_partVanish_28.x > 0.0) { gsl_part_28 = gsl_remap_3(p - vec3<f32>(215.0, 25.0, -190.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_28.y; }
     if (abs(gsl_part_28) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_28), gsl_partVanish_28.zw); }
   }
   let lowR2 = gsl_part_28;
@@ -442,7 +459,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_29 <= gsl_vanishView.w) {
     let gsl_partVanish_29 = gsl_vanish(gsl_partLo_29, gsl_partHi_29);
     gsl_part_29 = 1e10;
-    if (gsl_partVanish_29.x > 0.0) { gsl_part_29 = gsl_remap_3(p - vec3<f32>(215.0, -10.0, -155.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_29.y; }
+    if (gsl_partVanish_29.x > 0.0) { gsl_part_29 = gsl_remap_3(p - vec3<f32>(215.0, -10.0, -155.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_29.y; }
     if (abs(gsl_part_29) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_29), gsl_partVanish_29.zw); }
   }
   let lowR3 = gsl_part_29;
@@ -453,7 +470,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_30 <= gsl_vanishView.w) {
     let gsl_partVanish_30 = gsl_vanish(gsl_partLo_30, gsl_partHi_30);
     gsl_part_30 = 1e10;
-    if (gsl_partVanish_30.x > 0.0) { gsl_part_30 = gsl_remap_3(p - vec3<f32>(215.0, 10.0, -155.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_30.y; }
+    if (gsl_partVanish_30.x > 0.0) { gsl_part_30 = gsl_remap_3(p - vec3<f32>(215.0, 10.0, -155.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_30.y; }
     if (abs(gsl_part_30) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_30), gsl_partVanish_30.zw); }
   }
   let lowR4 = gsl_part_30;
@@ -464,7 +481,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_31 <= gsl_vanishView.w) {
     let gsl_partVanish_31 = gsl_vanish(gsl_partLo_31, gsl_partHi_31);
     gsl_part_31 = 1e10;
-    if (gsl_partVanish_31.x > 0.0) { gsl_part_31 = gsl_remap_3(p - vec3<f32>(215.0, -10.0, -130.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_31.y; }
+    if (gsl_partVanish_31.x > 0.0) { gsl_part_31 = gsl_remap_3(p - vec3<f32>(215.0, -10.0, -130.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_31.y; }
     if (abs(gsl_part_31) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_31), gsl_partVanish_31.zw); }
   }
   let lowR5 = gsl_part_31;
@@ -475,7 +492,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_32 <= gsl_vanishView.w) {
     let gsl_partVanish_32 = gsl_vanish(gsl_partLo_32, gsl_partHi_32);
     gsl_part_32 = 1e10;
-    if (gsl_partVanish_32.x > 0.0) { gsl_part_32 = gsl_remap_3(p - vec3<f32>(215.0, 10.0, -130.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_32.y; }
+    if (gsl_partVanish_32.x > 0.0) { gsl_part_32 = gsl_remap_3(p - vec3<f32>(215.0, 10.0, -130.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_32.y; }
     if (abs(gsl_part_32) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_32), gsl_partVanish_32.zw); }
   }
   let lowR6 = gsl_part_32;
@@ -497,7 +514,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_34 <= gsl_vanishView.w) {
     let gsl_partVanish_34 = gsl_vanish(gsl_partLo_34, gsl_partHi_34);
     gsl_part_34 = 1e10;
-    if (gsl_partVanish_34.x > 0.0) { gsl_part_34 = gsl_remap_2(p - vec3<f32>(-215.0, -10.0, 145.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_34.y; }
+    if (gsl_partVanish_34.x > 0.0) { gsl_part_34 = gsl_remap_2(p - vec3<f32>(-215.0, -10.0, 145.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_34.y; }
     if (abs(gsl_part_34) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_34), gsl_partVanish_34.zw); }
   }
   let topL1 = gsl_part_34;
@@ -508,7 +525,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_35 <= gsl_vanishView.w) {
     let gsl_partVanish_35 = gsl_vanish(gsl_partLo_35, gsl_partHi_35);
     gsl_part_35 = 1e10;
-    if (gsl_partVanish_35.x > 0.0) { gsl_part_35 = gsl_remap_2(p - vec3<f32>(-215.0, 10.0, 145.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_35.y; }
+    if (gsl_partVanish_35.x > 0.0) { gsl_part_35 = gsl_remap_2(p - vec3<f32>(-215.0, 10.0, 145.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_35.y; }
     if (abs(gsl_part_35) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_35), gsl_partVanish_35.zw); }
   }
   let topL2 = gsl_part_35;
@@ -519,7 +536,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_36 <= gsl_vanishView.w) {
     let gsl_partVanish_36 = gsl_vanish(gsl_partLo_36, gsl_partHi_36);
     gsl_part_36 = 1e10;
-    if (gsl_partVanish_36.x > 0.0) { gsl_part_36 = gsl_remap_2(p - vec3<f32>(-215.0, -10.0, 165.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_36.y; }
+    if (gsl_partVanish_36.x > 0.0) { gsl_part_36 = gsl_remap_2(p - vec3<f32>(-215.0, -10.0, 165.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_36.y; }
     if (abs(gsl_part_36) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_36), gsl_partVanish_36.zw); }
   }
   let topL3 = gsl_part_36;
@@ -530,7 +547,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_37 <= gsl_vanishView.w) {
     let gsl_partVanish_37 = gsl_vanish(gsl_partLo_37, gsl_partHi_37);
     gsl_part_37 = 1e10;
-    if (gsl_partVanish_37.x > 0.0) { gsl_part_37 = gsl_remap_2(p - vec3<f32>(-215.0, 10.0, 165.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_37.y; }
+    if (gsl_partVanish_37.x > 0.0) { gsl_part_37 = gsl_remap_2(p - vec3<f32>(-215.0, 10.0, 165.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_37.y; }
     if (abs(gsl_part_37) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_37), gsl_partVanish_37.zw); }
   }
   let topL4 = gsl_part_37;
@@ -541,7 +558,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_38 <= gsl_vanishView.w) {
     let gsl_partVanish_38 = gsl_vanish(gsl_partLo_38, gsl_partHi_38);
     gsl_part_38 = 1e10;
-    if (gsl_partVanish_38.x > 0.0) { gsl_part_38 = gsl_remap_2(p - vec3<f32>(-215.0, 0.0, 190.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_38.y; }
+    if (gsl_partVanish_38.x > 0.0) { gsl_part_38 = gsl_remap_2(p - vec3<f32>(-215.0, 0.0, 190.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_38.y; }
     if (abs(gsl_part_38) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_38), gsl_partVanish_38.zw); }
   }
   let topL5 = gsl_part_38;
@@ -563,7 +580,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_40 <= gsl_vanishView.w) {
     let gsl_partVanish_40 = gsl_vanish(gsl_partLo_40, gsl_partHi_40);
     gsl_part_40 = 1e10;
-    if (gsl_partVanish_40.x > 0.0) { gsl_part_40 = gsl_remap_3(p - vec3<f32>(215.0, -10.0, 145.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_40.y; }
+    if (gsl_partVanish_40.x > 0.0) { gsl_part_40 = gsl_remap_3(p - vec3<f32>(215.0, -10.0, 145.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_40.y; }
     if (abs(gsl_part_40) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_40), gsl_partVanish_40.zw); }
   }
   let topR1 = gsl_part_40;
@@ -574,7 +591,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_41 <= gsl_vanishView.w) {
     let gsl_partVanish_41 = gsl_vanish(gsl_partLo_41, gsl_partHi_41);
     gsl_part_41 = 1e10;
-    if (gsl_partVanish_41.x > 0.0) { gsl_part_41 = gsl_remap_3(p - vec3<f32>(215.0, 10.0, 145.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_41.y; }
+    if (gsl_partVanish_41.x > 0.0) { gsl_part_41 = gsl_remap_3(p - vec3<f32>(215.0, 10.0, 145.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_41.y; }
     if (abs(gsl_part_41) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_41), gsl_partVanish_41.zw); }
   }
   let topR2 = gsl_part_41;
@@ -585,7 +602,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_42 <= gsl_vanishView.w) {
     let gsl_partVanish_42 = gsl_vanish(gsl_partLo_42, gsl_partHi_42);
     gsl_part_42 = 1e10;
-    if (gsl_partVanish_42.x > 0.0) { gsl_part_42 = gsl_remap_3(p - vec3<f32>(215.0, -10.0, 165.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_42.y; }
+    if (gsl_partVanish_42.x > 0.0) { gsl_part_42 = gsl_remap_3(p - vec3<f32>(215.0, -10.0, 165.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_42.y; }
     if (abs(gsl_part_42) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_42), gsl_partVanish_42.zw); }
   }
   let topR3 = gsl_part_42;
@@ -596,7 +613,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_43 <= gsl_vanishView.w) {
     let gsl_partVanish_43 = gsl_vanish(gsl_partLo_43, gsl_partHi_43);
     gsl_part_43 = 1e10;
-    if (gsl_partVanish_43.x > 0.0) { gsl_part_43 = gsl_remap_3(p - vec3<f32>(215.0, 10.0, 165.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_43.y; }
+    if (gsl_partVanish_43.x > 0.0) { gsl_part_43 = gsl_remap_3(p - vec3<f32>(215.0, 10.0, 165.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_43.y; }
     if (abs(gsl_part_43) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_43), gsl_partVanish_43.zw); }
   }
   let topR4 = gsl_part_43;
@@ -607,7 +624,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_44 <= gsl_vanishView.w) {
     let gsl_partVanish_44 = gsl_vanish(gsl_partLo_44, gsl_partHi_44);
     gsl_part_44 = 1e10;
-    if (gsl_partVanish_44.x > 0.0) { gsl_part_44 = gsl_remap_3(p - vec3<f32>(215.0, 0.0, 190.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_44.y; }
+    if (gsl_partVanish_44.x > 0.0) { gsl_part_44 = gsl_remap_3(p - vec3<f32>(215.0, 0.0, 190.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_44.y; }
     if (abs(gsl_part_44) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_44), gsl_partVanish_44.zw); }
   }
   let topR5 = gsl_part_44;
@@ -629,7 +646,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_46 <= gsl_vanishView.w) {
     let gsl_partVanish_46 = gsl_vanish(gsl_partLo_46, gsl_partHi_46);
     gsl_part_46 = 1e10;
-    if (gsl_partVanish_46.x > 0.0) { gsl_part_46 = gsl_remap_4(p - vec3<f32>(-200.0, -25.0, gz - 20.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_46.y; }
+    if (gsl_partVanish_46.x > 0.0) { gsl_part_46 = gsl_remap_4(p - vec3<f32>(-200.0, -25.0, gz - 20.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_46.y; }
     if (abs(gsl_part_46) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_46), gsl_partVanish_46.zw); }
   }
   let gantryL1 = gsl_part_46;
@@ -640,7 +657,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_47 <= gsl_vanishView.w) {
     let gsl_partVanish_47 = gsl_vanish(gsl_partLo_47, gsl_partHi_47);
     gsl_part_47 = 1e10;
-    if (gsl_partVanish_47.x > 0.0) { gsl_part_47 = gsl_remap_4(p - vec3<f32>(-200.0, -25.0, gz + 20.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_47.y; }
+    if (gsl_partVanish_47.x > 0.0) { gsl_part_47 = gsl_remap_4(p - vec3<f32>(-200.0, -25.0, gz + 20.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_47.y; }
     if (abs(gsl_part_47) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_47), gsl_partVanish_47.zw); }
   }
   let gantryL2 = gsl_part_47;
@@ -651,7 +668,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_48 <= gsl_vanishView.w) {
     let gsl_partVanish_48 = gsl_vanish(gsl_partLo_48, gsl_partHi_48);
     gsl_part_48 = 1e10;
-    if (gsl_partVanish_48.x > 0.0) { gsl_part_48 = gsl_remap_4(p - vec3<f32>(-180.0, -25.0, gz), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_48.y; }
+    if (gsl_partVanish_48.x > 0.0) { gsl_part_48 = gsl_remap_4(p - vec3<f32>(-180.0, -25.0, gz), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_48.y; }
     if (abs(gsl_part_48) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_48), gsl_partVanish_48.zw); }
   }
   let gantryL3 = gsl_part_48;
@@ -662,7 +679,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_49 <= gsl_vanishView.w) {
     let gsl_partVanish_49 = gsl_vanish(gsl_partLo_49, gsl_partHi_49);
     gsl_part_49 = 1e10;
-    if (gsl_partVanish_49.x > 0.0) { gsl_part_49 = gsl_remap_4(p - vec3<f32>(-160.0, -25.0, gz), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_49.y; }
+    if (gsl_partVanish_49.x > 0.0) { gsl_part_49 = gsl_remap_4(p - vec3<f32>(-160.0, -25.0, gz), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_49.y; }
     if (abs(gsl_part_49) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_49), gsl_partVanish_49.zw); }
   }
   let gantryL4 = gsl_part_49;
@@ -673,7 +690,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_50 <= gsl_vanishView.w) {
     let gsl_partVanish_50 = gsl_vanish(gsl_partLo_50, gsl_partHi_50);
     gsl_part_50 = 1e10;
-    if (gsl_partVanish_50.x > 0.0) { gsl_part_50 = gsl_remap_4(p - vec3<f32>(200.0, -25.0, gz - 20.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_50.y; }
+    if (gsl_partVanish_50.x > 0.0) { gsl_part_50 = gsl_remap_4(p - vec3<f32>(200.0, -25.0, gz - 20.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_50.y; }
     if (abs(gsl_part_50) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_50), gsl_partVanish_50.zw); }
   }
   let gantryR1 = gsl_part_50;
@@ -684,7 +701,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_51 <= gsl_vanishView.w) {
     let gsl_partVanish_51 = gsl_vanish(gsl_partLo_51, gsl_partHi_51);
     gsl_part_51 = 1e10;
-    if (gsl_partVanish_51.x > 0.0) { gsl_part_51 = gsl_remap_4(p - vec3<f32>(200.0, -25.0, gz + 20.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_51.y; }
+    if (gsl_partVanish_51.x > 0.0) { gsl_part_51 = gsl_remap_4(p - vec3<f32>(200.0, -25.0, gz + 20.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_51.y; }
     if (abs(gsl_part_51) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_51), gsl_partVanish_51.zw); }
   }
   let gantryR2 = gsl_part_51;
@@ -695,7 +712,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_52 <= gsl_vanishView.w) {
     let gsl_partVanish_52 = gsl_vanish(gsl_partLo_52, gsl_partHi_52);
     gsl_part_52 = 1e10;
-    if (gsl_partVanish_52.x > 0.0) { gsl_part_52 = gsl_remap_4(p - vec3<f32>(180.0, -25.0, gz), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_52.y; }
+    if (gsl_partVanish_52.x > 0.0) { gsl_part_52 = gsl_remap_4(p - vec3<f32>(180.0, -25.0, gz), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_52.y; }
     if (abs(gsl_part_52) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_52), gsl_partVanish_52.zw); }
   }
   let gantryR3 = gsl_part_52;
@@ -706,7 +723,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_53 <= gsl_vanishView.w) {
     let gsl_partVanish_53 = gsl_vanish(gsl_partLo_53, gsl_partHi_53);
     gsl_part_53 = 1e10;
-    if (gsl_partVanish_53.x > 0.0) { gsl_part_53 = gsl_remap_4(p - vec3<f32>(160.0, -25.0, gz), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_53.y; }
+    if (gsl_partVanish_53.x > 0.0) { gsl_part_53 = gsl_remap_4(p - vec3<f32>(160.0, -25.0, gz), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_53.y; }
     if (abs(gsl_part_53) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_53), gsl_partVanish_53.zw); }
   }
   let gantryR4 = gsl_part_53;
@@ -728,7 +745,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_55 <= gsl_vanishView.w) {
     let gsl_partVanish_55 = gsl_vanish(gsl_partLo_55, gsl_partHi_55);
     gsl_part_55 = 1e10;
-    if (gsl_partVanish_55.x > 0.0) { gsl_part_55 = gsl_remap_4(p - vec3<f32>(travel - 22.0, -26.0, gz - 22.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_55.y; }
+    if (gsl_partVanish_55.x > 0.0) { gsl_part_55 = gsl_remap_4(p - vec3<f32>(travel - 22.0, -26.0, gz - 22.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_55.y; }
     if (abs(gsl_part_55) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_55), gsl_partVanish_55.zw); }
   }
   let carriage1 = gsl_part_55;
@@ -739,7 +756,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_56 <= gsl_vanishView.w) {
     let gsl_partVanish_56 = gsl_vanish(gsl_partLo_56, gsl_partHi_56);
     gsl_part_56 = 1e10;
-    if (gsl_partVanish_56.x > 0.0) { gsl_part_56 = gsl_remap_4(p - vec3<f32>(travel + 22.0, -26.0, gz - 22.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_56.y; }
+    if (gsl_partVanish_56.x > 0.0) { gsl_part_56 = gsl_remap_4(p - vec3<f32>(travel + 22.0, -26.0, gz - 22.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_56.y; }
     if (abs(gsl_part_56) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_56), gsl_partVanish_56.zw); }
   }
   let carriage2 = gsl_part_56;
@@ -750,7 +767,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_57 <= gsl_vanishView.w) {
     let gsl_partVanish_57 = gsl_vanish(gsl_partLo_57, gsl_partHi_57);
     gsl_part_57 = 1e10;
-    if (gsl_partVanish_57.x > 0.0) { gsl_part_57 = gsl_remap_4(p - vec3<f32>(travel - 22.0, -26.0, gz + 22.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_57.y; }
+    if (gsl_partVanish_57.x > 0.0) { gsl_part_57 = gsl_remap_4(p - vec3<f32>(travel - 22.0, -26.0, gz + 22.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_57.y; }
     if (abs(gsl_part_57) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_57), gsl_partVanish_57.zw); }
   }
   let carriage3 = gsl_part_57;
@@ -761,7 +778,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_58 <= gsl_vanishView.w) {
     let gsl_partVanish_58 = gsl_vanish(gsl_partLo_58, gsl_partHi_58);
     gsl_part_58 = 1e10;
-    if (gsl_partVanish_58.x > 0.0) { gsl_part_58 = gsl_remap_4(p - vec3<f32>(travel + 22.0, -26.0, gz + 22.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_58.y; }
+    if (gsl_partVanish_58.x > 0.0) { gsl_part_58 = gsl_remap_4(p - vec3<f32>(travel + 22.0, -26.0, gz + 22.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_58.y; }
     if (abs(gsl_part_58) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_58), gsl_partVanish_58.zw); }
   }
   let carriage4 = gsl_part_58;
@@ -783,7 +800,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_60 <= gsl_vanishView.w) {
     let gsl_partVanish_60 = gsl_vanish(gsl_partLo_60, gsl_partHi_60);
     gsl_part_60 = 1e10;
-    if (gsl_partVanish_60.x > 0.0) { gsl_part_60 = gsl_remap_6(p - vec3<f32>(-210.0, -200.0, -190.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_60.y; }
+    if (gsl_partVanish_60.x > 0.0) { gsl_part_60 = gsl_remap_6(p - vec3<f32>(-210.0, -200.0, -190.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_60.y; }
     if (abs(gsl_part_60) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_60), gsl_partVanish_60.zw); }
   }
   let blindL1 = gsl_part_60;
@@ -794,7 +811,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_61 <= gsl_vanishView.w) {
     let gsl_partVanish_61 = gsl_vanish(gsl_partLo_61, gsl_partHi_61);
     gsl_part_61 = 1e10;
-    if (gsl_partVanish_61.x > 0.0) { gsl_part_61 = gsl_remap_6(p - vec3<f32>(-210.0, 200.0, -190.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_61.y; }
+    if (gsl_partVanish_61.x > 0.0) { gsl_part_61 = gsl_remap_6(p - vec3<f32>(-210.0, 200.0, -190.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_61.y; }
     if (abs(gsl_part_61) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_61), gsl_partVanish_61.zw); }
   }
   let blindL2 = gsl_part_61;
@@ -805,7 +822,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_62 <= gsl_vanishView.w) {
     let gsl_partVanish_62 = gsl_vanish(gsl_partLo_62, gsl_partHi_62);
     gsl_part_62 = 1e10;
-    if (gsl_partVanish_62.x > 0.0) { gsl_part_62 = gsl_remap_7(p - vec3<f32>(210.0, -200.0, -190.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_62.y; }
+    if (gsl_partVanish_62.x > 0.0) { gsl_part_62 = gsl_remap_7(p - vec3<f32>(210.0, -200.0, -190.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_62.y; }
     if (abs(gsl_part_62) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_62), gsl_partVanish_62.zw); }
   }
   let blindR1 = gsl_part_62;
@@ -816,7 +833,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_63 <= gsl_vanishView.w) {
     let gsl_partVanish_63 = gsl_vanish(gsl_partLo_63, gsl_partHi_63);
     gsl_part_63 = 1e10;
-    if (gsl_partVanish_63.x > 0.0) { gsl_part_63 = gsl_remap_7(p - vec3<f32>(210.0, 200.0, -190.0), gsl_param_33_8, gsl_param_36_10) + gsl_partVanish_63.y; }
+    if (gsl_partVanish_63.x > 0.0) { gsl_part_63 = gsl_remap_7(p - vec3<f32>(210.0, 200.0, -190.0), gsl_param_33_28, gsl_param_34_32) + gsl_partVanish_63.y; }
     if (abs(gsl_part_63) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_63), gsl_partVanish_63.zw); }
   }
   let blindR2 = gsl_part_63;
@@ -897,7 +914,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_33_8: f32, gsl_param_36_10: f32) -
   return gsl_min(gsl_min(gsl_min(gsl_min(gsl_s1, gsl_s2), gsl_s3), gsl_s4), gsl_s5);
 }
 
-fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_33_8: f32, gsl_param_36_10: f32) -> vec4<f32> {
+fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_33_28: f32, gsl_param_34_32: f32) -> vec4<f32> {
   if (gsl_colorIdx == 1u) { return vec4<f32>(vec3<f32>(0.9621, 0.9654, 0.9658), 1.0); }
   if (gsl_colorIdx == 2u) { return vec4<f32>(vec3<f32>(0.08, 0.08, 0.09), 1.0); }
   if (gsl_colorIdx == 3u) { return vec4<f32>(vec3<f32>(0.22, 0.22, 0.24), 1.0); }
@@ -905,7 +922,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_33_8: f3
   if (gsl_colorIdx == 5u) { return vec4<f32>(vec3<f32>(0.9593, 0.8952, 0.6822), 1.0); }
   return vec4<f32>(0.0, 0.0, 0.0, 0.0);
 }
-fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_33_8: f32, gsl_param_36_10: f32) -> gsl_material {
+fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_33_28: f32, gsl_param_34_32: f32) -> gsl_material {
   if (gsl_materialIdx == 1u) { let gsl_m = mat4x4<f32>(vec4<f32>(0.4, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)); return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0); }
   if (gsl_materialIdx == 2u) { let gsl_m = mat4x4<f32>(vec4<f32>(0.5, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)); return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0); }
   if (gsl_materialIdx == 3u) { let gsl_m = mat4x4<f32>(vec4<f32>(0.55, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)); return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0); }
@@ -930,4 +947,29 @@ fn gsl_vanish(lo: vec3<f32>, hi: vec3<f32>) -> vec4<f32> {
 
 fn gsl_boxDistance(q: vec3<f32>, lo: vec3<f32>, hi: vec3<f32>) -> f32 {
   return length(max(max(lo - q, q - hi), vec3<f32>(0.0)));
+}
+
+var<private> gsl_featurePixel: f32 = 0.0;
+
+fn gsl_featureWeight(size: f32) -> f32 {
+  if (gsl_featurePixel <= 0.0) { return 1.0; }
+  return smoothstep(gsl_vanishView.y, max(gsl_vanishView.z, gsl_vanishView.y + 1e-3), size / gsl_featurePixel);
+}
+
+var<private> gsl_simpleRung: f32;
+
+fn gsl_simple(lo: vec3<f32>, hi: vec3<f32>) -> f32 {
+  if (gsl_featurePixel <= 0.0 || gsl_simpleRung <= 0.0) { return 1.0; }
+  let size = hi - lo;
+  return smoothstep(0.5 * gsl_simpleRung, gsl_simpleRung, min(size.x, min(size.y, size.z)) / gsl_featurePixel);
+}
+
+fn gsl_simpleSized(size: f32) -> f32 {
+  if (gsl_featurePixel <= 0.0 || gsl_simpleRung <= 0.0) { return 1.0; }
+  return smoothstep(0.5 * gsl_simpleRung, gsl_simpleRung, size / gsl_featurePixel);
+}
+
+fn gsl_boxSdf(q: vec3<f32>, lo: vec3<f32>, hi: vec3<f32>) -> f32 {
+  let d = abs(q - 0.5 * (lo + hi)) - 0.5 * (hi - lo);
+  return length(max(d, vec3<f32>(0.0))) + min(max(d.x, max(d.y, d.z)), 0.0);
 }

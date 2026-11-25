@@ -6,7 +6,7 @@ package eval
 import (
 	"context"
 
-	"gradientcontrol.com/omega/core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
 )
 
 // Option configures program assembly inside the evaluator.
@@ -234,6 +234,13 @@ type LitOptions struct {
 	BackDim     float64
 	NoMaterials bool
 	Simple      *LitSimple
+
+	// Progress, if set, is called from the rendering goroutine as the render
+	// goes, with the share of the work done in [0, 1]. The shares never go
+	// back, and the last is 1. They are an estimate: the work is not the same
+	// in every phase or step, so the share is not proportional to the time
+	// left. It is called often (every march step) and must be quick.
+	Progress func(share float64)
 }
 
 // LitCamera places the camera in world Z-up coordinates.

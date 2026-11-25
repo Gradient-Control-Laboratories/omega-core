@@ -11,39 +11,25 @@
 
 animate = mod(time, 1);
 
-numTeeth1 = 16;
-numTeeth1.min = 14;
-numTeeth1.max = 30;
-numTeeth2 = 24;
-numTeeth2.min = 14;
-numTeeth2.max = 30;
-moduleVal = 0.5;
-moduleVal.min = 0.2;
-moduleVal.max = 1.0;
-pressureAngle = 0.35;
-pressureAngle.min = 0.2;
-pressureAngle.max = 0.5;
+@range(14, 30) numTeeth1 = 16;
+@range(14, 30) numTeeth2 = 24;
+@range(0.2, 1.0) moduleVal = 0.5;
+@range(0.2, 0.5) pressureAngle = 0.35;
 
 // A right angle by default, but nothing here needs one. The range stops short
 // of the shaft angle that would drive the slower gear's pitch cone out toward
 // a flat crown, where the back-cone approximation these teeth are built on
 // gives out.
-shaftAngle = 1.5707963;
-shaftAngle.min = 0.9;
-shaftAngle.max = 1.75;
+@range(0.9, 1.75) shaftAngle = 1.5707963;
 
 // The angle the tooth trace makes with the cone element: 0 is a straight
 // bevel, anything else a spiral bevel. Gear 2 is given the opposite hand
 // automatically -- a same-hand pair collides instead of meshing.
-spiralAngle = 0.5;
-spiralAngle.min = -1.0;
-spiralAngle.max = 1.0;
+@range(-1.0, 1.0) spiralAngle = 0.5;
 
 // Face width as a fraction of the cone distance; gear practice keeps it
 // under about a third.
-faceFraction = 0.3;
-faceFraction.min = 0.1;
-faceFraction.max = 0.4;
+@range(0.1, 0.4) faceFraction = 0.3;
 
 // The teeth run out on the two cones normal to the pitch cone, and each of
 // those is cut by a flat face set this far along the axis from that end's
@@ -51,19 +37,13 @@ faceFraction.max = 0.4;
 // out level with the tips; open it and the face stands proud with the tooth
 // heels stepping down to it. recess does the mirror at the small end,
 // setting the face back so the teeth project toward the mate.
-crownToBack = 0.4;
-crownToBack.min = 0.0;
-crownToBack.max = 1.5;
-recess = 0.4;
-recess.min = 0.0;
-recess.max = 1.5;
+@range(0.0, 1.5) crownToBack = 0.4;
+@range(0.0, 1.5) recess = 0.4;
 
 // The hub, which on a bevel gear rides the heel: standoffHeight is what it
 // projects past the back face, so zero (with the chamfer taken to zero too)
 // is a bare blank.
-standoffHeight = 1.2;
-standoffHeight.min = 0.0;
-standoffHeight.max = 2.5;
+@range(0.0, 2.5) standoffHeight = 1.2;
 standoffDiam1 = 3.0;
 standoffDiam2 = 3.6;
 standoffChamfer = 0.1;

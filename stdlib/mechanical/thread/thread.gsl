@@ -158,6 +158,70 @@ tapDrill(major, pitchVal) {
 }
 
 // =========================================================
+// Undercuts
+// =========================================================
+//
+// A THREAD UNDERCUT is the groove turned where an external thread meets a
+// shoulder, so the threading tool runs out into it rather than into the
+// shoulder: a floor at the undercut diameter dg, a 30-degree flank (to the
+// axis) rising from it to the major diameter on the thread's side, and a
+// radius r where the floor meets the shoulder. g2 is its whole width at the
+// major diameter; the floor's width g1 is g2 less the flank's run,
+// sqrt(3) (d - dg) / 2.
+//
+// DIN 76-1 form A and ISO 4755 share the floor, the flank and the radius
+// (but at P 4.5, where ISO gives 2.5) and differ in g2: 3.5 P for DIN, 3 P for
+// ISO. The rows are pitch, d - dg, DIN 76's g2, DIN 76's r and ISO 4755's r.
+// Sources: DIN 76-1 as HEIDENHAIN's MANUALplus manual prints it for
+// "undercut DIN 76" (columns I, K, R and W = 30 degrees); ISO 4755:1983 as
+// IS 1369-2:1993 gives it, transcribed by turngcode.com, which lists no
+// P 0.2 (its radius is DIN's here). DIN 76-1:2025-10 corrected some g2 and r
+// values in its table 1; these rows are the earlier edition's.
+undercutTable = [[0.2, 0.3, 0.7, 0.1, 0.1], [0.25, 0.4, 0.9, 0.12, 0.12], [0.3, 0.5, 1.05, 0.16, 0.16],
+                 [0.35, 0.6, 1.2, 0.16, 0.16], [0.4, 0.7, 1.4, 0.2, 0.2], [0.45, 0.7, 1.6, 0.2, 0.2],
+                 [0.5, 0.8, 1.75, 0.2, 0.2], [0.6, 1.0, 2.1, 0.4, 0.4], [0.7, 1.1, 2.45, 0.4, 0.4],
+                 [0.75, 1.2, 2.6, 0.4, 0.4], [0.8, 1.3, 2.8, 0.4, 0.4], [1.0, 1.6, 3.5, 0.6, 0.6],
+                 [1.25, 2.0, 4.4, 0.6, 0.6], [1.5, 2.3, 5.2, 0.8, 0.8], [1.75, 2.6, 6.1, 1.0, 1.0],
+                 [2.0, 3.0, 7.0, 1.0, 1.0], [2.5, 3.6, 8.7, 1.2, 1.2], [3.0, 4.4, 10.5, 1.6, 1.6],
+                 [3.5, 5.0, 12.0, 1.6, 1.6], [4.0, 5.7, 14.0, 2.0, 2.0], [4.5, 6.4, 16.0, 2.0, 2.5],
+                 [5.0, 7.0, 17.5, 2.5, 2.5], [5.5, 7.7, 19.0, 3.2, 3.2], [6.0, 8.3, 21.0, 3.2, 3.2]];
+
+/// DIN 76-1 form A thread undercuts, the normal width: g2 = 3.5 P. A form for
+/// undercutLength and undercutRadius, and for shaft.undercut.
+din76A = 1.0;
+
+/// ISO 4755 thread undercuts: g2 = 3 P, otherwise DIN 76's.
+iso4755 = 2.0;
+
+/// The undercut diameter dg for an external thread of `major` diameter and
+/// pitch `pitchVal`: the groove's floor, a little under the minor diameter.
+/// Zero for a pitch the table does not list.
+undercutDia(major, pitchVal) {
+  k = pitchVal;
+  return major - reduce((acc, v) { return acc + v; },
+                        map((r) { return r[1] * catalog.onRow(k, r[0], 0.0001); }, undercutTable));
+}
+
+/// The undercut's width g2 at the major diameter, for `form` din76A or
+/// iso4755: the length of thread a shoulder takes from its end.
+undercutLength(pitchVal, form) {
+  k = pitchVal;
+  din = reduce((acc, v) { return acc + v; },
+               map((r) { return r[2] * catalog.onRow(k, r[0], 0.0001); }, undercutTable));
+  return form > 1.5 ? 3.0 * pitchVal : din;
+}
+
+/// The undercut's radius r, where its floor meets the shoulder, for `form`.
+undercutRadius(pitchVal, form) {
+  k = pitchVal;
+  din = reduce((acc, v) { return acc + v; },
+               map((r) { return r[3] * catalog.onRow(k, r[0], 0.0001); }, undercutTable));
+  iso = reduce((acc, v) { return acc + v; },
+               map((r) { return r[4] * catalog.onRow(k, r[0], 0.0001); }, undercutTable));
+  return form > 1.5 ? iso : din;
+}
+
+// =========================================================
 // Profile (internal)
 // =========================================================
 
@@ -233,25 +297,46 @@ groove(major, pitchVal) {
   return max(minorR - rad, flank * 0.8660254 * flankScale(major, pitchVal));
 }
 
-// basicForm: the ISO 68-1 basic profile as a field, negative inside the
-// external thread's metal, which is the same region as an internal thread's
-// void. Unbounded along z.
-//
-// A boolean, start to finish: the cylinder at the major diameter, less the
-// groove. Nothing here is a magnitude multiplied by a sign.
-basicForm(major, pitchVal) {
+// isoForm: the ISO 68-1 profile whole, the cylinder at the major diameter
+// less the groove. A boolean, start to finish: nothing here is a magnitude
+// multiplied by a sign.
+isoForm(major, pitchVal) {
   return max(length(p.xy) - major / 2.0, neg(groove(major, pitchVal)));
 }
 
-// sinForm: the same envelope as a sinusoid instead of a truncated V. One
-// function for both hands, so a sinusoidal screw meshes with a sinusoidal
-// tapped hole rather than clashing with it half a pitch out of step.
-sinForm(major, pitchVal) {
+// sinusoid: the sinusoidal envelope whole.
+sinusoid(major, pitchVal) {
   radial = max(length(p.xy), 0.2);
   ang = 2.0 * pi * p.z / max(pitchVal, 0.01);
   along = cos(ang) * (p.x / radial) + sin(ang) * (p.y / radial);
   radiusAt = major / 2.0 - formDepth(pitchVal) * 0.5 * (1.0 - along);
   return (length(p.xy) - radiusAt) * 0.7;
+}
+
+// basicForm: the ISO 68-1 basic profile as a field, negative inside the
+// external thread's metal, which is the same region as an internal thread's
+// void. Unbounded along z.
+//
+// Stand-in at the pitch diameter when the crests and roots are smaller than a
+// pixel (P / 2, as a gear's is pi m / 2), so a screw, a tapped hole, or a
+// shaft.thread reads as its pitch cylinder when small on screen while keeping
+// the exact isoForm field when drawn or exported.
+basicForm(major, pitchVal) {
+  form = isoForm(major, pitchVal);
+  form.simple = length(p.xy) - pitchDia(major, pitchVal) / 2.0;
+  form.featureSize = pitchVal / 2.0;
+  return form;
+}
+
+// sinForm: the same envelope as a sinusoid instead of a truncated V. One
+// function for both hands, so a sinusoidal screw meshes with a sinusoidal
+// tapped hole rather than clashing with it half a pitch out of step, with the
+// same pitch-cylinder stand-in as basicForm.
+sinForm(major, pitchVal) {
+  form = sinusoid(major, pitchVal);
+  form.simple = length(p.xy) - pitchDia(major, pitchVal) / 2.0;
+  form.featureSize = pitchVal / 2.0;
+  return form;
 }
 
 // =========================================================

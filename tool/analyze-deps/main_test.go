@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/tool/analyze-deps/internal/graph"
-	"gradientcontrol.com/omega/core/tool/analyze-deps/internal/scoping"
+	"github.com/Gradient-Control-Laboratories/omega-core/tool/analyze-deps/internal/graph"
+	"github.com/Gradient-Control-Laboratories/omega-core/tool/analyze-deps/internal/scoping"
 )
 
 func captureStdout(t *testing.T, fn func()) string {
@@ -72,7 +72,7 @@ func TestPrintScopingAndGraphOutputs(t *testing.T) {
 	}
 
 	g := &graph.Graph{
-		ModulePrefix: "gradientcontrol.com/omega/core",
+		ModulePrefix: "github.com/Gradient-Control-Laboratories/omega-core",
 		Packages: map[string]*graph.PackageNode{
 			"program": {
 				ImportPath: "program",
@@ -80,7 +80,7 @@ func TestPrintScopingAndGraphOutputs(t *testing.T) {
 					{
 						FromPkg:        "program",
 						ToPkg:          "parser",
-						RawImport:      "gradientcontrol.com/omega/core/parser",
+						RawImport:      "github.com/Gradient-Control-Laboratories/omega-core/parser",
 						IsTest:         true,
 						IsExternalTest: true,
 					},
@@ -92,7 +92,7 @@ func TestPrintScopingAndGraphOutputs(t *testing.T) {
 					{
 						FromPkg:   "parser",
 						ToPkg:     "program",
-						RawImport: "gradientcontrol.com/omega/core/program",
+						RawImport: "github.com/Gradient-Control-Laboratories/omega-core/program",
 						IsTest:    false,
 					},
 				},

@@ -1,9 +1,7 @@
 @scene(8, 0.4)
 
 // Kinetic Sculpture Showcase: Continuous Time & Rotating Nested Gimbal Rings
-speed = 1.0;
-speed.min = 0.1;
-speed.max = 3.0;
+@range(0.1, 3.0) speed = 1.0;
 
 t = time * speed;
 

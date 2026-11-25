@@ -4,14 +4,14 @@ import (
 	"math"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/collect"
-	"gradientcontrol.com/omega/core/internal/eval"
-	"gradientcontrol.com/omega/core/internal/link"
-	"gradientcontrol.com/omega/core/internal/source"
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/internal/types"
-	parserlib "gradientcontrol.com/omega/core/parser"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/collect"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/link"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/types"
+	parserlib "github.com/Gradient-Control-Laboratories/omega-core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func approxEqual(a, b []float64) bool {
@@ -251,4 +251,28 @@ func TestEvalFold_ColorAndMaterialReturns(t *testing.T) {
 	file := prog.Primary.Files[0]
 	assert.Equal(t, []float64{4.0}, file.ColorReturns[0].ConstValues)
 	assert.Equal(t, []float64{12.0}, file.MaterialReturns[0].ConstValues)
+}
+
+// A 3-way select on a constant vector condition picks per component by sign,
+// as the runtime does: pruned to a branch only when every component picks it.
+func TestFoldSelectConstantPruning_3WayVector(t *testing.T) {
+	for _, c := range []struct {
+		src  string
+		want []float64
+	}{
+		{"return [-1.0, -2.0] ? [1.0, 1.0] : [2.0, 2.0] : [3.0, 3.0];", []float64{3, 3}},
+		{"return [1.0, 2.0] ? [1.0, 1.0] : [2.0, 2.0] : [3.0, 3.0];", []float64{1, 1}},
+		{"return [0.0, 0.0] ? [1.0, 1.0] : [2.0, 2.0] : [3.0, 3.0];", []float64{2, 2}},
+		{"return [1.0, -1.0] ? [1.0, 1.0] : [2.0, 2.0] : [3.0, 3.0];", []float64{1, 3}},
+		{"v = [-1.0, -2.0] ? [1.0, 1.0] : [2.0, 2.0] : [3.0, 3.0];\nreturn v.x + 5;", []float64{8}},
+	} {
+		prog, _, err := collect.Program([]string{c.src}, &source.MockManager{}, parserlib.ParsePackage)
+		assert.NoError(t, err)
+		_, err = eval.Fold(prog, nil)
+		assert.NoError(t, err)
+		ret := prog.Primary.Files[0].Returns[0]
+		if !approxEqual(ret.ConstValues, c.want) {
+			t.Errorf("%s folds to %v, want %v", c.src, ret.ConstValues, c.want)
+		}
+	}
 }

@@ -1,241 +1,4 @@
 // =========================================================
-// SWEEP LOFT
-// =========================================================
-/// Distance to a quadratic Bezier tube from `start` through `control` to `end`
-/// with `radius`; `orientation` orients the inside/outside sign. Returns
-/// (signedDistance, t, arcLength, closestPoint, tangent).
-//
-// Based on Inigo Quilez formulation (the cubic closest-point solve); the locals
-// keep his names.
-bezierTubeDir(start, control, end, radius, orientation) {
-  e = control - start;
-  f = start - 2.0 * control + end;
-  g = 2.0 * e;
-  d = start - p;
-
-  ff = dot(f, f);
-  ef = dot(e, f);
-  ee = dot(e, e);
-  df = dot(d, f);
-  de = dot(d, e);
-
-  kk = 1.0 / (ff + 1e-10);
-  kx = kk * ef;
-  ky = kk * (2.0 * ee + df) / 3.0;
-  kz = kk * de;
-
-  pp = ky - kx * kx;
-  qq = kx * (2.0 * kx * kx - 3.0 * ky) + kz;
-  h = qq * qq + 4.0 * pp * pp * pp;
-
-  sh = sqrt(max(h, 0.0));
-  w1 = (sh - qq) / 2.0;
-  w2 = (-sh - qq) / 2.0;
-  u1 = sign(w1) * exp(ln(max(abs(w1), 1e-12)) / 3.0);
-  u2 = sign(w2) * exp(ln(max(abs(w2), 1e-12)) / 3.0);
-  t1 = clamp(u1 + u2 - kx, 0.0, 1.0);
-  ev1 = d + (g + f * t1) * t1;
-  d1 = dot(ev1, ev1);
-
-  zz = sqrt(max(-pp, 0.0));
-  v = acos(clamp(qq / (2.0 * pp * zz - 1e-20), -1.0, 1.0)) / 3.0;
-  m = cos(v);
-  n = sin(v) * 1.732050808;
-  ta = clamp((m + m) * zz - kx, 0.0, 1.0);
-  tb = clamp((-n - m) * zz - kx, 0.0, 1.0);
-  tc = clamp((n - m) * zz - kx, 0.0, 1.0);
-  eva = d + (g + f * ta) * ta;
-  da = dot(eva, eva);
-  evb = d + (g + f * tb) * tb;
-  dbb = dot(evb, evb);
-  evc = d + (g + f * tc) * tc;
-  dc = dot(evc, evc);
-
-  tBest3 = (da <= dbb) ? ((da <= dc) ? ta : tc) : ((dbb <= dc) ? tb : tc);
-  d3 = min(min(da, dbb), dc);
-
-  dist2 = (h >= 0.0) ? d1 : d3;
-  tBest = (h >= 0.0) ? t1 : tBest3;
-
-  unsignedDistance = sqrt(dist2) - radius;
-
-  closestPoint = start + g * tBest + f * tBest * tBest;
-
-  tangentRaw = g + 2.0 * f * tBest;
-  tangentLength = length(tangentRaw);
-  tangent = tangentRaw / (tangentLength + 1e-12);
-
-  offset = p - closestPoint;
-  orientationSign = sign(dot(offset, normalize(orientation)));
-  signedDistance = (orientationSign != 0) ? orientationSign * unsignedDistance : unsignedDistance;
-
-  chordLength = length(end - start);
-  polygonLength = length(control - start) + length(end - control);
-  arcLength = (chordLength + polygonLength) * 0.5;
-
-  return signedDistance, tBest, arcLength, closestPoint, tangent;
-}
-
-/// Sweep a 2D profile along a quadratic Bezier start -> control -> end, lofting
-/// from startProfile at the start to endProfile at the end. The profile
-/// arguments are nullary functions returning a 2D field of p.
-sweepLoft(startProfile, endProfile, start, control, end, orientation, blend) {
-  distanceToCurve, curveParameter, arcLength, closestPoint, tangent = bezierTubeDir(start, control, end, 0, orientation);
-
-  unitOrientation = normalize(orientation);
-  orientationInPlane = unitOrientation - tangent * dot(unitOrientation, tangent);
-  orientationInPlaneLength = length(orientationInPlane);
-  binormal = orientationInPlane / (orientationInPlaneLength + 1e-12);
-  normal = cross(tangent, binormal);
-
-  offset = p - closestPoint;
-  localX = dot(offset, normal);
-  localY = dot(offset, binormal);
-
-  localPoint = [localX, localY, 0];
-  startDistance = remap(startProfile(), localPoint);
-  endDistance   = remap(endProfile(),   localPoint);
-
-  profileDistance = mix(startDistance, endDistance, curveParameter);
-
-  startTangent = normalize(2.0 * (control - start));
-  endTangent = normalize(2.0 * (end - control));
-  startCap = neg(dot(p - start, startTangent));
-  endCap = dot(p - end, endTangent);
-
-  return blend([profileDistance, startCap, endCap]);
-}
-
-/// As sweepLoft, combining the profile with its two end caps sharply.
-sweepLoft(startProfile, endProfile, start, control, end, orientation) {
-  return sweepLoft(startProfile, endProfile, start, control, end, orientation, intersectSharp);
-}
-
-/// Like sweepLoft, but scales the profile linearly from 1 to `scale`
-/// along the sweep.
-sweepLoftScale(startProfile, endProfile, start, control, end, orientation, scale, blend) {
-  distanceToCurve, curveParameter, arcLength, closestPoint, tangent = bezierTubeDir(start, control, end, 0, orientation);
-
-  unitOrientation = normalize(orientation);
-  orientationInPlane = unitOrientation - tangent * dot(unitOrientation, tangent);
-  orientationInPlaneLength = length(orientationInPlane);
-  binormal = orientationInPlane / (orientationInPlaneLength + 1e-12);
-  normal = cross(tangent, binormal);
-
-  offset = p - closestPoint;
-  localX = dot(offset, normal);
-  localY = dot(offset, binormal);
-
-  inverseScale = 1.0 / scale;
-
-  startScale = mix(1.0, scale, curveParameter);
-  endScale = mix(inverseScale, 1.0, curveParameter);
-
-  startLocalPoint = [localX / startScale, localY / startScale, 0];
-  endLocalPoint   = [localX / endScale,   localY / endScale,   0];
-
-  startDistance = remap(startProfile(), startLocalPoint) * startScale;
-  endDistance   = remap(endProfile(),   endLocalPoint)   * endScale;
-
-  profileDistance = mix(startDistance, endDistance, curveParameter);
-
-  startTangent = normalize(2.0 * (control - start));
-  endTangent = normalize(2.0 * (end - control));
-  startCap = neg(dot(p - start, startTangent));
-  endCap = dot(p - end, endTangent);
-
-  return blend([profileDistance, startCap, endCap]);
-}
-
-/// As sweepLoftScale, combining the profile with its two end caps sharply.
-sweepLoftScale(startProfile, endProfile, start, control, end, orientation, scale) {
-  return sweepLoftScale(startProfile, endProfile, start, control, end, orientation, scale, intersectSharp);
-}
-
-/// Like sweepLoftScale, but eases the scale with a smoothstep along the
-/// sweep instead of linearly.
-sweepLoftScaleSmooth(startProfile, endProfile, start, control, end, orientation, scale, blend) {
-  distanceToCurve, curveParameter, arcLength, closestPoint, tangent = bezierTubeDir(start, control, end, 0, orientation);
-
-  unitOrientation = normalize(orientation);
-  orientationInPlane = unitOrientation - tangent * dot(unitOrientation, tangent);
-  orientationInPlaneLength = length(orientationInPlane);
-  binormal = orientationInPlane / (orientationInPlaneLength + 1e-12);
-  normal = cross(tangent, binormal);
-
-  offset = p - closestPoint;
-  localX = dot(offset, normal);
-  localY = dot(offset, binormal);
-
-  clampedParameter = clamp(curveParameter, 0.0, 1.0);
-  easedParameter = clampedParameter * clampedParameter * (3.0 - 2.0 * clampedParameter);
-
-  inverseScale = 1.0 / scale;
-
-  startScale = mix(1.0, scale, easedParameter);
-  endScale = mix(inverseScale, 1.0, easedParameter);
-
-  startLocalPoint = [localX / startScale, localY / startScale, 0];
-  endLocalPoint   = [localX / endScale,   localY / endScale,   0];
-
-  startDistance = remap(startProfile(), startLocalPoint) * startScale;
-  endDistance   = remap(endProfile(),   endLocalPoint)   * endScale;
-
-  profileDistance = mix(startDistance, endDistance, easedParameter);
-
-  startTangent = normalize(2.0 * (control - start));
-  endTangent = normalize(2.0 * (end - control));
-  startCap = neg(dot(p - start, startTangent));
-  endCap = dot(p - end, endTangent);
-
-  return blend([profileDistance, startCap, endCap]);
-}
-
-/// As sweepLoftScaleSmooth, combining the profile with its two end caps sharply.
-sweepLoftScaleSmooth(startProfile, endProfile, start, control, end, orientation, scale) {
-  return sweepLoftScaleSmooth(startProfile, endProfile, start, control, end, orientation, scale, intersectSharp);
-}
-
-/// Variant of sweepLoftScaleSmooth that returns the swept profile and the
-/// two end caps separately as (profileDistance, startCap, endCap).
-sweepLoftScaleSmoothSeparateCaps(startProfile, endProfile, start, control, end, orientation, scale) {
-  distanceToCurve, curveParameter, arcLength, closestPoint, tangent = bezierTubeDir(start, control, end, 0, orientation);
-
-  unitOrientation = normalize(orientation);
-  orientationInPlane = unitOrientation - tangent * dot(unitOrientation, tangent);
-  orientationInPlaneLength = length(orientationInPlane);
-  binormal = orientationInPlane / (orientationInPlaneLength + 1e-12);
-  normal = cross(tangent, binormal);
-
-  offset = p - closestPoint;
-  localX = dot(offset, normal);
-  localY = dot(offset, binormal);
-
-  clampedParameter = clamp(curveParameter, 0.0, 1.0);
-  easedParameter = clampedParameter * clampedParameter * (3.0 - 2.0 * clampedParameter);
-
-  inverseScale = 1.0 / scale;
-
-  startScale = mix(1.0, scale, easedParameter);
-  endScale = mix(inverseScale, 1.0, easedParameter);
-
-  startLocalPoint = [localX / startScale, localY / startScale, 0];
-  endLocalPoint   = [localX / endScale,   localY / endScale,   0];
-
-  startDistance = remap(startProfile(), startLocalPoint) * startScale;
-  endDistance   = remap(endProfile(),   endLocalPoint)   * endScale;
-
-  profileDistance = mix(startDistance, endDistance, easedParameter);
-
-  startTangent = normalize(2.0 * (control - start));
-  endTangent = normalize(2.0 * (end - control));
-  startCap = neg(dot(p - start, startTangent));
-  endCap = dot(p - end, endTangent);
-
-  return profileDistance, startCap, endCap;
-}
-
-// =========================================================
 // EXTRUDE AND REVOLVE
 // =========================================================
 
@@ -308,4 +71,172 @@ revolve(profile, axisPoint, axisDirection) {
 // runs counterclockwise seen from the tip of the direction, so toward -Z.
 revolveAngle(axisPoint, axisDirection) {
   return atan(neg(p.z), ((p.x - axisPoint.x) * axisDirection.y - (p.y - axisPoint.y) * axisDirection.x) / length(axisDirection));
+}
+
+/// A profile revolved through `angle` about a line in its own plane, as
+/// revolve(profile, axisPoint, axisDirection) but only part of the way round,
+/// with flat caps. `angle`, in radians, starts at the sketch plane, where the
+/// profile is drawn, and runs counterclockwise seen from the tip of the
+/// direction, so toward -Z, as the frame's .u does; a negative angle turns
+/// the other way. An exact profile gives an exact solid, caps included, under
+/// revolve's own conditions: keep the profile to the right of the direction.
+/// Its frame and box are revolve's: .u the angle round the axis, .v the
+/// profile's own .u, the box the full turn's.
+//
+// Internal: the distance is the least of three: to the revolved surface,
+// within the sweep only; and to each cap, the profile lying flat in its
+// half-plane, which from p is sqrt(h^2 + max(d, 0)^2) for p's distance h from
+// the cap's plane and the profile's distance d at p's foot in it. The first
+// cap is the sketch plane itself, so its d is the profile where it stands.
+// The revolved distance is gated by a constant, and the sign is read from the
+// revolved distance against the sweep, as profileXY reads its sign, so a cell
+// on the surface stays bounded by the distance.
+revolve(profile, axisPoint, axisDirection, angle) {
+  along = ((p.x - axisPoint.x) * axisDirection.x + (p.y - axisPoint.y) * axisDirection.y) / length(axisDirection);
+  right = ((p.x - axisPoint.x) * axisDirection.y - (p.y - axisPoint.y) * axisDirection.x) / length(axisDirection);
+  radial = length([right, p.z]);
+  revolved = remap(profile, [
+    axisPoint.x + (along * axisDirection.x + radial * axisDirection.y) / length(axisDirection),
+    axisPoint.y + (along * axisDirection.y - radial * axisDirection.x) / length(axisDirection),
+    0]);
+  farRight = right * cos(angle) - p.z * sin(angle);
+  farDepth = right * sin(angle) + p.z * cos(angle);
+  farCap = remap(profile, [
+    axisPoint.x + (along * axisDirection.x + farRight * axisDirection.y) / length(axisDirection),
+    axisPoint.y + (along * axisDirection.y - farRight * axisDirection.x) / length(axisDirection),
+    0]);
+  // The sweep as a field, negative inside it: on the swept side of both cap
+  // planes (of either, for more than half a turn). Two planes, not an angle,
+  // so a box near the axis or a cap is bounded tightly.
+  turn = angle >= 0 ? 1 : neg(1);
+  wedge = abs(angle) <= pi ? max(turn * p.z, neg(turn) * farDepth) : min(turn * p.z, neg(turn) * farDepth);
+  reach = min(max(abs(revolved), wedge <= 0 ? 0 : nothing),
+              length([p.z, max(profile, 0)]),
+              length([farDepth, max(farCap, 0)]));
+  return max(revolved, wedge) < 0 ? neg(reach) : reach;
+}
+
+/// A 2D section swept along a closed path in the XY plane. `path` is any
+/// exact 2D field whose zero line is the path: a profileXY loop, a nested()
+/// of loops, a circle. `section` is a 2D profile drawn with x across the path,
+/// positive outside it, and y up, which becomes the height z. The section is
+/// read at the path's signed distance and the height, so its x = 0 line rides
+/// the path. The distance is never more than the true distance anywhere. It
+/// is exact while the whole section stays inside the path's tube: on the
+/// inside of every bend no farther across than the bend's radius, and nowhere
+/// past the middle of the shape the path encloses. A sharp corner is a bend of
+/// no radius: there the section sweeps round the outside and meets itself in a
+/// mitre on the inside, and near the corner the distance is a bound, short of
+/// the true one. Fillet the path's corners, wider than the section reaches,
+/// for a smooth sweep and an exact distance. Its frame: .u the
+/// path's own .u, the distance along it, and .v the section's .u, the
+/// distance round the section. Its box is the path's grown by the section's
+/// reach across it, between the section's lowest and highest.
+//
+// Internal: the body is one remap of the section, its coordinate in p and
+// the parameters alone, so the section's colour and material move with it
+// (property's unwrapRemaps); the frame is written at the call (property's
+// sweepFrame) and the box by property's swept rule.
+sweep(section, path) {
+  return remap(section, [path, p.z, 0]);
+}
+
+/// A 2D section swept along an open chain of lines in the XY plane, through
+/// `points` (at least two 2D points), and capped flat at both ends. `section`
+/// is drawn as sweep's is, x across the path and y up as z, its positive x on
+/// the right of travel along the chain, which is the outside of a
+/// counterclockwise loop: a piece of a closed path sweeps as the closed path
+/// does. The side wall is the section read at openProfileXY's distance to the
+/// chain; each cap is the section standing in the plane square to the chain
+/// at its end. The chain obeys openProfileXY's rule, its end lines crossing
+/// neither the chain nor each other, and the section stays inside the
+/// chain's tube, on the inside of every bend no farther across than its
+/// radius. Then the sign is right everywhere, and the distance is exact
+/// beside the chain and over the caps. Beyond a cap it is that cap's
+/// distance, which reads too far wherever another part of the sweep is
+/// nearer than the cap: a chain that bends back toward its end, with the
+/// section reaching out toward the point. There it is not a bound, though
+/// its sign stays right. A sharp corner is swept round on the outside and
+/// mitred on the inside, as sweep does, with the distance a bound near it.
+/// Its frame: .u the distance along the chain, as openProfileXY's .u, and .v
+/// the section's .u. Its box is the chain's grown by the section's reach
+/// across it, between the section's lowest and highest.
+//
+// Internal: the section is read three times, at the wall and in each cap's
+// plane, as the partial revolve reads its profile; the magnitude is the
+// least of the wall's distance, gated off where p's nearest point of the
+// extended chain is on one of its rays, and each cap's, the distance to the
+// section standing in that plane; the sign is negative where the wall's is
+// and the nearest point is on the chain. The frame is written at the call
+// (property's sweepFrame) and the box by property's sweptOpen rule.
+sweepOpen(section, points) {
+  count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
+  pools = openProfilePolygonPoolsXY(points);
+  first = normalize(points[1] - points[0]);
+  last = normalize(points[count - 1] - points[count - 2]);
+  nearest = min(pools.z, pools.w);
+  across = pools.x <= pools.y ? nearest : neg(nearest);
+  wall = remap(section, [across, p.z, 0]);
+  fromFirst = p.xy - points[0];
+  firstDepth = neg(dot(fromFirst, first));
+  firstCap = remap(section, [fromFirst.x * first.y - fromFirst.y * first.x, p.z, 0]);
+  fromLast = p.xy - points[count - 1];
+  lastDepth = dot(fromLast, last);
+  lastCap = remap(section, [fromLast.x * last.y - fromLast.y * last.x, p.z, 0]);
+  onRay = pools.z - pools.w;
+  reach = min(max(abs(wall), onRay <= 0 ? 0 : nothing),
+              length([firstDepth, max(firstCap, 0)]),
+              length([lastDepth, max(lastCap, 0)]));
+  return max(wall, onRay) < 0 ? neg(reach) : reach;
+}
+
+/// sweepOpen along a chain of lines and circular arcs, each edge bent to a
+/// signed curvature as openProfileXY(points, curvatures) bends it, one per
+/// edge: positive curving left along the chain. The caps stand square to the
+/// tangents at the chain's two ends.
+sweepOpen(section, points, curvatures) {
+  count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
+  pools = openProfilePoolsXY(points, curvatures);
+  first = profileEdgeTangentsXY(points[0], points[1], curvatures[0]).xy;
+  last = profileEdgeTangentsXY(points[count - 2], points[count - 1], curvatures[count - 2]).zw;
+  nearest = min(pools.z, pools.w);
+  across = pools.x <= pools.y ? nearest : neg(nearest);
+  wall = remap(section, [across, p.z, 0]);
+  fromFirst = p.xy - points[0];
+  firstDepth = neg(dot(fromFirst, first));
+  firstCap = remap(section, [fromFirst.x * first.y - fromFirst.y * first.x, p.z, 0]);
+  fromLast = p.xy - points[count - 1];
+  lastDepth = dot(fromLast, last);
+  lastCap = remap(section, [fromLast.x * last.y - fromLast.y * last.x, p.z, 0]);
+  onRay = pools.z - pools.w;
+  reach = min(max(abs(wall), onRay <= 0 ? 0 : nothing),
+              length([firstDepth, max(firstCap, 0)]),
+              length([lastDepth, max(lastCap, 0)]));
+  return max(wall, onRay) < 0 ? neg(reach) : reach;
+}
+
+/// sweepOpen along a chain of mixed edges, each named by a descriptor in
+/// `edges`, one fewer than the points, as openProfileEdgesXY reads them:
+/// edgeLine(), edgeArc(curvature) or edgeBezier(control). The caps stand
+/// square to the tangents at the chain's two ends, a Bezier's along its
+/// control polygon.
+sweepOpenEdges(section, points, edges) {
+  count = reduce([0, 0], (sum, point) { return sum + 1; }, points).x;
+  pools = openProfileEdgesPoolsXY(points, edges);
+  first = profileAnyEdgeTangentsXY(points[0], points[1], edges[0]).xy;
+  last = profileAnyEdgeTangentsXY(points[count - 2], points[count - 1], edges[count - 2]).zw;
+  nearest = min(pools.z, pools.w);
+  across = pools.x <= pools.y ? nearest : neg(nearest);
+  wall = remap(section, [across, p.z, 0]);
+  fromFirst = p.xy - points[0];
+  firstDepth = neg(dot(fromFirst, first));
+  firstCap = remap(section, [fromFirst.x * first.y - fromFirst.y * first.x, p.z, 0]);
+  fromLast = p.xy - points[count - 1];
+  lastDepth = dot(fromLast, last);
+  lastCap = remap(section, [fromLast.x * last.y - fromLast.y * last.x, p.z, 0]);
+  onRay = pools.z - pools.w;
+  reach = min(max(abs(wall), onRay <= 0 ? 0 : nothing),
+              length([firstDepth, max(firstCap, 0)]),
+              length([lastDepth, max(lastCap, 0)]));
+  return max(wall, onRay) < 0 ? neg(reach) : reach;
 }

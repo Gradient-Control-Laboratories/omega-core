@@ -1,7 +1,7 @@
 package build
 
 import (
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 type Delegate interface {
@@ -157,4 +157,22 @@ type ColorReturnsBuilder interface {
 // implement it (meshing, the CPU evaluator) never see materials.
 type MaterialReturnsBuilder interface {
 	BuildPackageMaterialReturns(materialExpressions []Expression) error
+}
+
+// DisplacedReturnsBuilder is an optional Delegate extension for renderers that
+// march displaced surfaces: it receives each return's displaced distance
+// (program.DisplacedReturns), nil for a return displaced as a whole by its
+// material's height, before the material returns, so a renderer knows which
+// returns not to move again by that height.
+type DisplacedReturnsBuilder interface {
+	BuildPackageDisplacedReturns(displacedExpressions []Expression) error
+}
+
+// GradientReturnsBuilder is the gradient counterpart of ColorReturnsBuilder: a
+// delegate that renders analytic normals receives each return's lowered
+// spatial gradient (a vec3 field of p; nil where that return could not be
+// differentiated), after the material hook and before BuildPackageReturns.
+// Only called when assembly lowered gradients (assembler.WithAnalyticGradient).
+type GradientReturnsBuilder interface {
+	BuildPackageGradientReturns(gradientExpressions []Expression) error
 }

@@ -1,0 +1,91 @@
+name: Build Native Libraries
+
+on:
+  workflow_call:
+    inputs:
+      omega-core-ref:
+        description: "Git ref (commit SHA or tag) of omega-core to build or fetch native libraries for"
+        required: true
+        type: string
+      artifact-name:
+        description: "Name of the uploaded workflow artifact"
+        required: false
+        default: "omega-core-native-libs"
+        type: string
+      force-build:
+        description: "Bypass prebuilt release tarball download and force a source build"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Native Libraries
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          repository: Gradient-Control-Laboratories/omega-core
+          ref: ${{ inputs.omega-core-ref }}
+          submodules: recursive
+          persist-credentials: false
+      - name: Rust and CMake
+        run: |
+          command -v cargo || curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+          command -v cmake || (sudo apt-get update && sudo apt-get install -y cmake)
+          cargo --version; cmake --version | head -1
+      - name: Restore protoc cache
+        id: protoc-cache
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/protoc
+          key: protoc-35.0-linux-x86_64
+      - name: Install protoc
+        if: steps.protoc-cache.outputs.cache-hit != 'true'
+        env:
+          PROTOC_VERSION: "35.0"
+          PROTOC_ASSET: linux-x86_64
+          PROTOC_SHA256: a45cda0989c17dd950db55f6fbe1e5814c50fda08e87aa422980ac1f89dddbbc
+        run: |
+          curl -sSfL -o "$RUNNER_TEMP/protoc.zip" \
+            "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-${PROTOC_ASSET}.zip"
+          python3 -c 'import hashlib, sys; d = hashlib.sha256(open(sys.argv[1], "rb").read()).hexdigest(); sys.exit(None if d == sys.argv[2] else f"protoc sha256 {d}, pinned {sys.argv[2]}")' "$RUNNER_TEMP/protoc.zip" "$PROTOC_SHA256"
+          python3 -m zipfile -e "$RUNNER_TEMP/protoc.zip" "$RUNNER_TEMP/protoc"
+          chmod +x "$RUNNER_TEMP/protoc/bin/protoc"
+      - name: Configure protoc
+        run: |
+          echo "PROTOC=$RUNNER_TEMP/protoc/bin/protoc" >> "$GITHUB_ENV"
+          "$RUNNER_TEMP/protoc/bin/protoc" --version
+      - name: The submodules' revisions (the cache key)
+        id: submodules
+        run: echo "hash=$(git ls-tree -r HEAD | awk '$2 == "commit"' | cksum | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/release
+          key: check-release-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/Cargo.lock') }}-${{ steps.submodules.outputs.hash }}
+          restore-keys: check-release-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/Cargo.lock') }}-
+      - name: Ensure native Fidget/Manifold libraries
+        env:
+          OMEGA_CORE_REF: ${{ inputs.omega-core-ref }}
+          FORCE_BUILD: ${{ inputs.force-build }}
+        run: |
+          args=(--version "${OMEGA_CORE_REF}" --out target/release)
+          if [ "${FORCE_BUILD}" = "true" ]; then
+            args+=(--force-build)
+          fi
+          ./tool/ensure-native-libs.sh "${args[@]}"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.artifact-name }}
+          retention-days: 1
+          path: |
+            target/release/librender.so
+            target/release/libmanifold_glue.so
+          if-no-files-found: error

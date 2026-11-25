@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/assembler/slider"
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/slider"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // TestSliderArithmetic covers a slider used inside otherwise-constant
@@ -16,9 +16,7 @@ import (
 // the slider's current value into the shader. Direct references
 // (sphere(radius)) were always live — the derived forms are the regression.
 func TestSliderArithmetic(t *testing.T) {
-	src := "radius = 2;\n" +
-		"radius.min = 1;\n" +
-		"radius.max = 5;\n" +
+	src := "@range(1, 5) radius = 2;\n" +
 		"sphere(r) { return length(p) - r; }\n" +
 		"scale = radius * 2;\n" +
 		"a = sphere(radius);\n" +

@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/backend/wgsl/internal/ir"
-	"gradientcontrol.com/omega/core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl/internal/ir"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
 )
 
 func TestStmtFormatting(t *testing.T) {

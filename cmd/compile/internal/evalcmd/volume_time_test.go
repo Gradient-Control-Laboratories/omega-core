@@ -3,8 +3,8 @@ package evalcmd_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
 )
 
 // volume stops at the timeLimit asked, in seconds, says time ended it, and refuses a negative one.

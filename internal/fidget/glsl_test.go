@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/fidget"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget"
 )
 
 // One uniform block, one 3D texture read by textureLoad, one function.

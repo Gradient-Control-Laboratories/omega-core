@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 const ln2 = 0.6931471805599453
@@ -461,7 +461,7 @@ func (dd *derivDomain) Builtin(name string, args []Value) (Value, error) {
 		if isZeroTangent(v.tangent) {
 			return dual{l, num(0)}, nil
 		}
-		return dual{l, div(call("dot", v.primal, v.tangent), nonZero(l))}, nil
+		return dual{l, normDerivative(v.primal, v.tangent, l)}, nil
 	case program.WorleyF1, program.WorleyF2:
 		// F1 is the distance from q to its nearest feature point, so it
 		// differentiates exactly as length() does — dot(q - feat, q') / F1 —
@@ -492,7 +492,7 @@ func (dd *derivDomain) Builtin(name string, args []Value) (Value, error) {
 			point = program.WorleyFarFeature
 		}
 		feat := call(point, append([]*program.Operand{v.primal}, rest...)...)
-		return dual{f1, div(call("dot", sub(v.primal, feat), v.tangent), nonZero(f1))}, nil
+		return dual{f1, normDerivative(sub(v.primal, feat), v.tangent, f1)}, nil
 	case program.WorleyWall:
 		// The distance to the plane between the nearest feature point a and
 		// the wall feature c, measured from a's side: its gradient is that
@@ -509,7 +509,7 @@ func (dd *derivDomain) Builtin(name string, args []Value) (Value, error) {
 			return dual{wall, num(0)}, nil
 		}
 		normal := sub(call(program.WorleyFeature, args...), call(program.WorleyWallFeature, args...))
-		return dual{wall, div(call("dot", normal, v.tangent), call("length", normal))}, nil
+		return dual{wall, normDerivative(normal, v.tangent, call("length", normal))}, nil
 	case program.WorleyFeature, program.WorleyFarFeature,
 		program.WorleyNearCell, program.WorleyFarCell, program.WorleyWallFeature:
 		// The winning cells and their feature points: piecewise constant in q —
@@ -527,7 +527,7 @@ func (dd *derivDomain) Builtin(name string, args []Value) (Value, error) {
 		if isZeroTangent(a.tangent) && isZeroTangent(b.tangent) {
 			return dual{l, num(0)}, nil
 		}
-		return dual{l, div(call("dot", sub(a.primal, b.primal), sub(a.tangent, b.tangent)), l)}, nil
+		return dual{l, normDerivative(sub(a.primal, b.primal), sub(a.tangent, b.tangent), l)}, nil
 	case "dot":
 		a, b := ds[0], ds[1]
 		return dual{call("dot", a.primal, b.primal),
@@ -547,9 +547,13 @@ func (dd *derivDomain) Builtin(name string, args []Value) (Value, error) {
 		return dual{call("normalize", v.primal), t}, nil
 	case "clamp":
 		x, lo, hi := ds[0], ds[1], ds[2]
-		inner := nary(program.Operation_SELECT, bin(program.Operation_GT, x.primal, hi.primal), hi.tangent, x.tangent)
-		t := nary(program.Operation_SELECT, bin(program.Operation_LT, x.primal, lo.primal), lo.tangent, inner)
-		return dual{call("clamp", x.primal, lo.primal, hi.primal), t}, nil
+		// Which side clamped is read by comparing the clamped value with x, both x's shape, not x
+		// with the bounds, which clamp may take as scalars for a vector x (normDerivative's unit
+		// vector is clamped by -1 and 1, and a second derivative differentiates that clamp).
+		clamped := call("clamp", x.primal, lo.primal, hi.primal)
+		inner := nary(program.Operation_SELECT, bin(program.Operation_LT, clamped, x.primal), hi.tangent, x.tangent)
+		t := nary(program.Operation_SELECT, bin(program.Operation_GT, clamped, x.primal), lo.tangent, inner)
+		return dual{clamped, t}, nil
 	case "sign", "trunc":
 		return dual{call(name, ds[0].primal), num(0)}, nil
 	case "noiseHash3":
@@ -587,10 +591,10 @@ func (dd *derivDomain) Builtin(name string, args []Value) (Value, error) {
 		return dual{value, call("dot", call(gradient, primals...), ds[0].tangent)}, nil
 	case "fract":
 		return dual{call("fract", ds[0].primal), ds[0].tangent}, nil
-	case program.PixelSize, program.DisplacementDrawn:
+	case program.PixelSize, program.DisplacementDrawn, program.DisplacementScale:
 		// The pixel footprint at the shading point, or the displacement drawn
-		// there: a per-pixel constant, not a function of p, so its tangent is
-		// zero.
+		// or being drawn there: a per-pixel constant, not a function of p, so
+		// its tangent is zero.
 		return dual{call(name), num(0)}, nil
 	case "exp2":
 		x := ds[0]
@@ -888,6 +892,19 @@ func sqrt(a *program.Operand) *program.Operand   { return un(program.Operation_S
 // Written as arithmetic, not a select, because backends evaluate both arms of a
 // select — the mesher does so on intervals — and the unguarded denominator in
 // one arm would reach the result whichever way the branch fell.
+// normDerivative is a norm's derivative, (v·v') / |v| with l = |v|, written as û·v' for û the unit
+// vector clamp(v / max(l, 1e-20), -1, 1), so that its interval bound is finite as well as its
+// value. nonZero's guard, l + (1 - (l > 0)), is right at a point but not over an interval that
+// holds l = 0: its two terms are bounded apart, so the divisor's bound holds 0 and the quotient
+// reads NaN, through every gradient of a length, a circle or a cylinder over a box that holds its
+// axis. Here each component of û lies in [-1, 1], where a unit vector's do, so the clamp binds
+// nowhere at a point and bounds û over any box; at v = 0, û is 0 and so is the derivative, as
+// with nonZero. v' appears once, so a small expansion stays unshared.
+func normDerivative(v, tangent, l *program.Operand) *program.Operand {
+	unit := call("clamp", div(v, nary(program.Operation_MAX, l, num(1e-20))), num(-1), num(1))
+	return call("dot", unit, tangent)
+}
+
 func nonZero(l *program.Operand) *program.Operand {
 	return add(l, sub(num(1), bin(program.Operation_GT, l, num(0))))
 }

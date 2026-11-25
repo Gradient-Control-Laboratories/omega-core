@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"math"
 
-	"gradientcontrol.com/omega/core/internal/fidget"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget"
 )
 
 // litSimpleRender draws the Simple frame: a plain sphere trace on march (the

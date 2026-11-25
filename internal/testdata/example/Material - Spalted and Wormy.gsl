@@ -32,18 +32,10 @@
 // indoor light has changed the colour, from fresh (0) to fully aged (1), and
 // weather how long the wood has stood outdoors, from fresh (0) to years (1).
 
-spalting = 0.50;
-spalting.min = 0;
-spalting.max = 1;
-wormholes = 0.50;
-wormholes.min = 0;
-wormholes.max = 1;
-age = 0.00;
-age.min = 0;
-age.max = 1;
-weather = 0.00;
-weather.min = 0;
-weather.max = 1;
+@range(0, 1) spalting = 0.50;
+@range(0, 1) wormholes = 0.50;
+@range(0, 1) age = 0.00;
+@range(0, 1) weather = 0.00;
 look = [0, age, weather];
 
 pitch = 340;

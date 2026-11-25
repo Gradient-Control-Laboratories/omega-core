@@ -1,0 +1,1295 @@
+/// Generalized shafts as stacks of segments along +Z: diameters, tapers,
+/// sections, hexes and flats, splines, gears, bevel gears, threads and crank
+/// pins and webs, with their machined ends, blended joints and end holes,
+/// joined so that no surface lies inside the solid where one segment meets the
+/// next; and the same list as its smooth envelope.
+
+// Shaft: generalized shafts
+//
+// A shaft is a stack of segments on the +Z axis, each placed by the two planes
+// it runs between, measured from one datum the way a baseline-dimensioned
+// drawing gives them:
+//
+//   shaft.body([shaft.diameter(20.0, 0.0, 20.0),
+//               shaft.taper(20.0, 12.0, 20.0, 26.0),
+//               shaft.diameter(12.0, 26.0, 60.0)])
+//
+// A segment is a solid, so the body is too: min it into the scene. Holes into
+// its ends come from mechanical/drill.
+//
+// THE VOCABULARY. Segments: shaft.diameter, taper, section (any 2D field),
+// hex, dFlat, doubleD, spline, gear (spur or helical), bevel (a bevel gear,
+// placed by its pitch apex and flat faces), thread (ISO 68-1), eccentric (a
+// crank pin) and web (a crank web). Ends, on spline, gear and
+// thread: shaft.planeEnd, runout (a cutter's), chamferEnd and threadRunout.
+// Joints, listed between two segments: shaft.fillet and shaft.chamfer. The
+// body declares its box from its end faces and its segments' reach, which a
+// caller's own .box replaces; shaft.envelope is the same list with its detail
+// dropped (a gear at its tip, a spline or a thread at its major diameter), for
+// proofs, meshing and assemblies.
+//
+// THE JOINTS. Segments that meet at a plane cannot simply be min'd: on the
+// joint plane, inside both, each capped segment reads 0, so their min is 0
+// there too: a sheet of zero inside the solid with no change of sign across
+// it. Nothing on the outside shows it, but it breaks every interior value and
+// every proof that relies on one, and an inset or a shell opens it into a
+// slit. Extending the smaller segment into the larger would close it, but
+// that needs to know which side is smaller, and a gear whose tip stands above
+// the next diameter while its root lies below it is the smaller side at some
+// angles and the larger at others.
+//
+// So the body also takes a BRIDGE for every RUN of consecutive segments: the
+// intersection of all their sections over the run's whole span, the first
+// unbounded above, the last unbounded below and those between unbounded both
+// ways. Over each member's own span the intersection lies inside that member,
+// so it adds no material whatever the convexity. On a joint plane, wherever
+// both sides are solid, the run of the two is negative, so the sheet is gone;
+// where only one side is solid it is positive and that segment's own end face
+// is a real face.
+//
+// Neighbours alone are not enough. A thin segment, a collar or a ring groove,
+// bridged only to each neighbour leaves every point of the section across it
+// no deeper than half its width, a shallow sheet in place of a zero one, which
+// an inset just as deep still opens. The run of all three carries the section
+// common to them straight across it.
+//
+// The distance is exact outside wherever the segments are: from within any
+// member's span, the nearest point of that member extended is the member's own
+// (an extension is only ever reached at its rim), so no bridge undercuts the
+// min of the capped segments. Inside it is a bound.
+//
+// A SEGMENT is a factory returning a closure, which only body calls, of two
+// extension lengths and a question: seg(0, 0, 0) is the segment capped to its
+// own span, seg(big, 0, 0) is the same section unbounded below it, seg(0, big, 0)
+// unbounded above it and seg(big, big, 0) both ways; seg(0, 0, 1) is the plane it
+// starts on and seg(0, 0, 2) the plane it ends on, which is how body finds the
+// shaft's two end faces without being told. Beyond its span a segment continues
+// at the diameter it ends with. seg(0, 0, 3) is its cut: nothing, unless an end
+// is a cutter runout. seg(e, e, 4) is its envelope, extended as its field is,
+// and seg(0, 0, 5) its reach from the axis. A joint answers seg(0, 0, 6) with a
+// fillet's radius and seg(0, 0, 7) with a chamfer's size, and everything else
+// so that the fold passes it unchanged. A segment whose material stands past
+// its own planes (a bevel's toe teeth) answers seg(0, 0, 8) with the lowest
+// point it reaches and seg(0, 0, 9) with the highest, negated, for the box;
+// every other segment, and every joint, answers nothing to both. Every question is a constant, so each
+// call folds to the one answer asked for.
+//
+// RUNOUTS. A hob or a disc cutter cannot stop at a gear's or a spline's end
+// plane. Named with shaft.runout(cutterDia), that end's gaps run on into the
+// neighbour, their floor rising from the root along the cutter's arc until it
+// breaks out of the neighbour's diameter, and within the cutter's reach the
+// neighbour is cut to the segment's profile. body cuts the runouts after the
+// fold, as it cuts the end holes. A chamfered end, shaft.chamferEnd(size), cuts
+// the segment's own prism at 45 degrees.
+//
+// THE ENDS. body(segments, bottomHole, topHole) cuts a mechanical/drill hole
+// stack into each end face, each depth measured from its own face as a drawing
+// gives it. The top stack is cut downward from the top face as drill.hole cuts
+// any hole; the bottom one is the same kind of stack turned over by a half turn
+// about X, which keeps x and the hand of a thread, so a keyway drawn on +x stays
+// on +x.
+//
+// Doc convention follows builtin/base.gsl: `///` lines are public docs.
+
+// The thread package under another name: in this file `thread` is the segment.
+import isoThread "mechanical/thread";
+
+// =========================================================
+// Entry Points
+// =========================================================
+
+/// The solid of a shaft: `segments`, a list of segments from this package
+/// (shaft.diameter, taper, section, hex, dFlat, doubleD, spline, gear, bevel,
+/// thread, eccentric, web), each between its own two planes, in order along +Z, each
+/// starting where the one before it ends, with a joint's blend (shaft.fillet,
+/// shaft.chamfer) listed between the two segments it joins. A lone segment
+/// needs no list. Exact outside wherever the segments are, a bound inside, and
+/// solid across every joint; its box is declared.
+body(segments) {
+  // This body is CLONED INTO THE CALLER'S FILE, where the segments' own
+  // arguments live, so every name in it has to resolve there: builtin is
+  // dot-imported everywhere, a name of this package's would not be. The
+  // extension length is written out for the same reason.
+  //
+  // The accumulator is [the shaft so far, every run still open]. The open
+  // runs are the runs that end at the previous segment, each the intersection
+  // of its members with the last of them still unbounded above, pooled by min:
+  // the bridges of all runs ending here are then max(open, this unbounded
+  // below), since max distributes over min. Passing this segment, every open
+  // run takes it as a member between (unbounded both ways) and a new run opens
+  // at it (unbounded above). The first segment has nothing before it to bridge
+  // to, so at i = 0 the fold takes it alone and opens its run; bridging it to
+  // the seed could never win and would still evaluate it twice. The index is a
+  // constant once the fold is unrolled, so the choice costs nothing.
+  //
+  // A joint's blend, shaft.fillet or shaft.chamfer, is an entry between two
+  // segments. Passing it, the fold changes nothing: it answers nothing capped
+  // or extended one way and everything extended both ways, so the shaft and
+  // the open runs carry straight through. At the segment after it, the fold
+  // asks the entry before, `prev`, for a fillet's radius and a chamfer's size,
+  // with constant arguments, so the question folds to a number; a segment
+  // answers nothing to both. A size it is told blends the shaft so far with
+  // this segment.
+  shaftSoFar = reduce((acc, seg, i, prev) {
+    openRuns = acc.y;
+    filletR = i < 0.5 ? nothing : prev(0.0, 0.0, 6.0).x;
+    chamferC = i < 0.5 ? nothing : prev(0.0, 0.0, 7.0).x;
+    q = seg(0.0, 0.0, 0.0);
+    here = filletR < 50000.0 ? unionRound(acc.x, q.x, filletR)
+                             : (chamferC < 50000.0 ? unionChamfer(acc.x, q.x, chamferC) : q.x);
+    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, q.y)),
+            i < 0.5 ? q.z : min(max(openRuns, q.w), q.z)];
+  }, segments, [100000.0, 100000.0]);
+  // The runouts, cut after the fold: where a cutter runs out past a segment's
+  // end, its gaps run on into the neighbour.
+  cuts = reduce((c, seg) { return min(c, seg(0.0, 0.0, 3.0).x); }, segments, 100000.0);
+  // The box: from the lowest end face to the highest, and out to the farthest
+  // any segment reaches from the axis (seg(0, 0, 5)). A segment whose material
+  // stands past its own planes, a bevel's toe teeth past its toe face, says how
+  // far: seg(0, 0, 8) the lowest it reaches and seg(0, 0, 9) the highest,
+  // negated, every other segment nothing to both. Each such segment counts by
+  // its extent and every other by its planes; when no segment has one, every
+  // test against 50000 folds and the box is the end faces, with nothing added
+  // to the shader of a shaft whose faces move with a slider. A caller's own
+  // .box replaces it.
+  bottomFace = reduce((low, seg) { return min(low, seg(0.0, 0.0, 1.0).x); }, segments, 100000.0);
+  topFace = reduce((high, seg) { return max(high, seg(0.0, 0.0, 2.0).x); }, segments, -100000.0);
+  reach = reduce((r, seg) { return max(r, seg(0.0, 0.0, 5.0).x); }, segments, 0.0);
+  extentLow = reduce((n, seg) { return min(n, seg(0.0, 0.0, 8.0).x); }, segments, 100000.0);
+  extentHigh = reduce((n, seg) { return min(n, seg(0.0, 0.0, 9.0).x); }, segments, 100000.0);
+  boxLow = reduce((below, seg) { return min(below, seg(0.0, 0.0, 8.0).x < 50000.0 ? seg(0.0, 0.0, 8.0).x : seg(0.0, 0.0, 1.0).x); }, segments, 100000.0);
+  boxHigh = reduce((above, seg) { return max(above, seg(0.0, 0.0, 9.0).x < 50000.0 ? neg(seg(0.0, 0.0, 9.0).x) : seg(0.0, 0.0, 2.0).x); }, segments, -100000.0);
+  // The stand-in: the envelope, when any segment has detail to give up
+  // (seg(0, 0, 12): a gear, spline, thread, knurl or bevel), and nothing
+  // otherwise, which the viewer takes for no stand-in, so a plain shaft is
+  // drawn as itself and costs no switch.
+  detailed = reduce((d, seg) { return min(d, seg(0.0, 0.0, 12.0).x); }, segments, 100000.0);
+  envelopeSoFar = reduce((acc, seg, i, prev) {
+    openRuns = acc.y;
+    filletR = i < 0.5 ? nothing : prev(0.0, 0.0, 6.0).x;
+    chamferC = i < 0.5 ? nothing : prev(0.0, 0.0, 7.0).x;
+    q = seg(0.0, 0.0, 4.0);
+    here = filletR < 50000.0 ? unionRound(acc.x, q.x, filletR)
+                             : (chamferC < 50000.0 ? unionChamfer(acc.x, q.x, chamferC) : q.x);
+    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, q.y)),
+            i < 0.5 ? q.z : min(max(openRuns, q.w), q.z)];
+  }, segments, [100000.0, 100000.0]);
+  solid = max(shaftSoFar.x, -cuts);
+  solid.box = [[neg(reach), neg(reach), extentLow < 50000.0 ? boxLow : bottomFace],
+               [reach, reach, extentHigh < 50000.0 ? boxHigh : topFace]];
+  solid.simple = detailed < 50000.0 ? envelopeSoFar.x : nothing;
+  return solid;
+}
+
+/// The same shaft with a hole stack cut into each end face: `bottomHole` into
+/// the lowest segment's starting plane and `topHole` into the highest
+/// segment's ending plane, each a list of mechanical/drill features, or a lone
+/// one, with every depth measured from its own end face. The bottom stack is
+/// turned over by a half turn about X, so a feature drawn on +x stays on +x.
+///
+///   shaft.body(segments, drill.centerHole(3.15, 6.7, 8.0),
+///              [drill.tap(6.0, 12.0), drill.blind(5.0, 15.0)])
+body(segments, bottomHole, topHole) {
+  // Cloned into the caller's file like body(segments), and written out in full
+  // for the same reason: it cannot call that one by name.
+  shaftSoFar = reduce((acc, seg, i, prev) {
+    openRuns = acc.y;
+    filletR = i < 0.5 ? nothing : prev(0.0, 0.0, 6.0).x;
+    chamferC = i < 0.5 ? nothing : prev(0.0, 0.0, 7.0).x;
+    q = seg(0.0, 0.0, 0.0);
+    here = filletR < 50000.0 ? unionRound(acc.x, q.x, filletR)
+                             : (chamferC < 50000.0 ? unionChamfer(acc.x, q.x, chamferC) : q.x);
+    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, q.y)),
+            i < 0.5 ? q.z : min(max(openRuns, q.w), q.z)];
+  }, segments, [100000.0, 100000.0]);
+  cuts = reduce((c, seg) { return min(c, seg(0.0, 0.0, 3.0).x); }, segments, 100000.0);
+  // The end faces, asked of the segments: the lowest starting plane and the
+  // highest ending one.
+  bottomFace = reduce((low, seg) { return min(low, seg(0.0, 0.0, 1.0).x); }, segments, 100000.0);
+  topFace = reduce((high, seg) { return max(high, seg(0.0, 0.0, 2.0).x); }, segments, -100000.0);
+  // The voids run on past their faces, as every drill void does, so no surface
+  // of either lies in the face it opens onto.
+  topVoid = drill.hole(topHole, topFace);
+  bottomVoid = remap(drill.hole(bottomHole, 0.0), [p.x, -p.y, bottomFace - p.z]);
+  // The box, as body(segments) gives it: the holes only take material away.
+  reach = reduce((r, seg) { return max(r, seg(0.0, 0.0, 5.0).x); }, segments, 0.0);
+  extentLow = reduce((n, seg) { return min(n, seg(0.0, 0.0, 8.0).x); }, segments, 100000.0);
+  extentHigh = reduce((n, seg) { return min(n, seg(0.0, 0.0, 9.0).x); }, segments, 100000.0);
+  boxLow = reduce((below, seg) { return min(below, seg(0.0, 0.0, 8.0).x < 50000.0 ? seg(0.0, 0.0, 8.0).x : seg(0.0, 0.0, 1.0).x); }, segments, 100000.0);
+  boxHigh = reduce((above, seg) { return max(above, seg(0.0, 0.0, 9.0).x < 50000.0 ? neg(seg(0.0, 0.0, 9.0).x) : seg(0.0, 0.0, 2.0).x); }, segments, -100000.0);
+  // The stand-in: the envelope, when any segment has detail to give up
+  // (seg(0, 0, 12): a gear, spline, thread, knurl or bevel), and nothing
+  // otherwise, which the viewer takes for no stand-in, so a plain shaft is
+  // drawn as itself and costs no switch.
+  detailed = reduce((d, seg) { return min(d, seg(0.0, 0.0, 12.0).x); }, segments, 100000.0);
+  envelopeSoFar = reduce((acc, seg, i, prev) {
+    openRuns = acc.y;
+    filletR = i < 0.5 ? nothing : prev(0.0, 0.0, 6.0).x;
+    chamferC = i < 0.5 ? nothing : prev(0.0, 0.0, 7.0).x;
+    q = seg(0.0, 0.0, 4.0);
+    here = filletR < 50000.0 ? unionRound(acc.x, q.x, filletR)
+                             : (chamferC < 50000.0 ? unionChamfer(acc.x, q.x, chamferC) : q.x);
+    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, q.y)),
+            i < 0.5 ? q.z : min(max(openRuns, q.w), q.z)];
+  }, segments, [100000.0, 100000.0]);
+  solid = max(shaftSoFar.x, -cuts, -topVoid, -bottomVoid);
+  solid.box = [[neg(reach), neg(reach), extentLow < 50000.0 ? boxLow : bottomFace],
+               [reach, reach, extentHigh < 50000.0 ? boxHigh : topFace]];
+  solid.simple = detailed < 50000.0 ? max(envelopeSoFar.x, -topVoid, -bottomVoid) : nothing;
+  return solid;
+}
+
+/// The simplified model of the same shaft: its smooth envelope, for proofs,
+/// meshing and assemblies, as thread.male's docs advise ("prove against the
+/// smooth cylinder"). A gear is its tip circle, a spline and a thread their
+/// major diameter, and runouts and their cuts are gone; the smooth segments
+/// and the joints' blends are as body has them, under the same box. It holds
+/// the detailed shaft.
+///
+///   shaft.envelope([shaft.gear(18.0, 2.0, radians(20.0), 0.0, 0.0, 30.0), shaft.diameter(30.0, 30.0, 60.0)])
+envelope(segments) {
+  // Cloned into the caller's file as body is; the fold is body's, asking each
+  // segment for its envelope (want 4) in place of its field.
+  shaftSoFar = reduce((acc, seg, i, prev) {
+    openRuns = acc.y;
+    filletR = i < 0.5 ? nothing : prev(0.0, 0.0, 6.0).x;
+    chamferC = i < 0.5 ? nothing : prev(0.0, 0.0, 7.0).x;
+    q = seg(0.0, 0.0, 4.0);
+    here = filletR < 50000.0 ? unionRound(acc.x, q.x, filletR)
+                             : (chamferC < 50000.0 ? unionChamfer(acc.x, q.x, chamferC) : q.x);
+    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, q.y)),
+            i < 0.5 ? q.z : min(max(openRuns, q.w), q.z)];
+  }, segments, [100000.0, 100000.0]);
+  bottomFace = reduce((low, seg) { return min(low, seg(0.0, 0.0, 1.0).x); }, segments, 100000.0);
+  topFace = reduce((high, seg) { return max(high, seg(0.0, 0.0, 2.0).x); }, segments, -100000.0);
+  reach = reduce((r, seg) { return max(r, seg(0.0, 0.0, 5.0).x); }, segments, 0.0);
+  extentLow = reduce((n, seg) { return min(n, seg(0.0, 0.0, 8.0).x); }, segments, 100000.0);
+  extentHigh = reduce((n, seg) { return min(n, seg(0.0, 0.0, 9.0).x); }, segments, 100000.0);
+  boxLow = reduce((below, seg) { return min(below, seg(0.0, 0.0, 8.0).x < 50000.0 ? seg(0.0, 0.0, 8.0).x : seg(0.0, 0.0, 1.0).x); }, segments, 100000.0);
+  boxHigh = reduce((above, seg) { return max(above, seg(0.0, 0.0, 9.0).x < 50000.0 ? neg(seg(0.0, 0.0, 9.0).x) : seg(0.0, 0.0, 2.0).x); }, segments, -100000.0);
+  solid = shaftSoFar.x;
+  solid.box = [[neg(reach), neg(reach), extentLow < 50000.0 ? boxLow : bottomFace],
+               [reach, reach, extentHigh < 50000.0 ? boxHigh : topFace]];
+  return solid;
+}
+
+/// The simplified model with its end holes, as body(segments, bottomHole,
+/// topHole) cuts them: a tapped or centre hole matters to a fit.
+envelope(segments, bottomHole, topHole) {
+  shaftSoFar = reduce((acc, seg, i, prev) {
+    openRuns = acc.y;
+    filletR = i < 0.5 ? nothing : prev(0.0, 0.0, 6.0).x;
+    chamferC = i < 0.5 ? nothing : prev(0.0, 0.0, 7.0).x;
+    q = seg(0.0, 0.0, 4.0);
+    here = filletR < 50000.0 ? unionRound(acc.x, q.x, filletR)
+                             : (chamferC < 50000.0 ? unionChamfer(acc.x, q.x, chamferC) : q.x);
+    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, q.y)),
+            i < 0.5 ? q.z : min(max(openRuns, q.w), q.z)];
+  }, segments, [100000.0, 100000.0]);
+  bottomFace = reduce((low, seg) { return min(low, seg(0.0, 0.0, 1.0).x); }, segments, 100000.0);
+  topFace = reduce((high, seg) { return max(high, seg(0.0, 0.0, 2.0).x); }, segments, -100000.0);
+  topVoid = drill.hole(topHole, topFace);
+  bottomVoid = remap(drill.hole(bottomHole, 0.0), [p.x, -p.y, bottomFace - p.z]);
+  reach = reduce((r, seg) { return max(r, seg(0.0, 0.0, 5.0).x); }, segments, 0.0);
+  extentLow = reduce((n, seg) { return min(n, seg(0.0, 0.0, 8.0).x); }, segments, 100000.0);
+  extentHigh = reduce((n, seg) { return min(n, seg(0.0, 0.0, 9.0).x); }, segments, 100000.0);
+  boxLow = reduce((below, seg) { return min(below, seg(0.0, 0.0, 8.0).x < 50000.0 ? seg(0.0, 0.0, 8.0).x : seg(0.0, 0.0, 1.0).x); }, segments, 100000.0);
+  boxHigh = reduce((above, seg) { return max(above, seg(0.0, 0.0, 9.0).x < 50000.0 ? neg(seg(0.0, 0.0, 9.0).x) : seg(0.0, 0.0, 2.0).x); }, segments, -100000.0);
+  solid = max(shaftSoFar.x, -topVoid, -bottomVoid);
+  solid.box = [[neg(reach), neg(reach), extentLow < 50000.0 ? boxLow : bottomFace],
+               [reach, reach, extentHigh < 50000.0 ? boxHigh : topFace]];
+  return solid;
+}
+
+/// The relief of a shaft's segments as a displacement height, for
+/// material.withDisplacement: every knurl's teeth, at most zero, and nothing
+/// anywhere else. The geometry stays the blank, at its maximum material
+/// condition, for the mesher, export and proofs; the renderer alone moves the
+/// surface.
+///
+///   steelMat, steelColor = metal.steel();
+///   knob.material = material.withDisplacement(steelMat, shaft.relief(segments));
+relief(segments) {
+  // Cloned into the caller's file as body is. Each segment answers its height
+  // to want 10; one with no relief answers nothing, and min with the seed
+  // folds it away.
+  return reduce((h, seg) { return min(h, seg(0.0, 0.0, 10.0).x); }, segments, 0.0);
+}
+
+/// The relief as paint on `baseColor`: darker toward the root as deep as the
+/// teeth go, wherever the renderer is not drawing them as displacement (a
+/// part small on screen, a mesh, an export), as thread.reliefColor paints a
+/// thread. Too small to resolve, it is `baseColor`.
+///
+///   knob.color = shaft.paint(steelColor, segments);
+paint(baseColor, segments) {
+  // Each segment answers minus the fraction of its depth here to want 11.
+  depth = clamp(neg(reduce((d, seg) { return min(d, seg(0.0, 0.0, 11.0).x); }, segments, 0.0)), 0.0, 1.0);
+  painted = color.mixOklab(baseColor, baseColor * 0.35, depth * (1.0 - displacementDrawn()));
+  painted.simple = baseColor;
+  return painted;
+}
+
+/// The shaft FINISHED in `finish`, a material, as a fastener is: body's solid
+/// wearing `finish` with every knurl's teeth as its displacement
+/// (shaft.relief), steel painted with them wherever they are not drawn
+/// (shaft.paint), and its envelope, painted at full strength, as its
+/// stand-in. So detail gives way by itself as the part shrinks on screen:
+/// teeth, then paint, then the plain blank. Setting .color after the call
+/// replaces the paint.
+///
+///   steelMat, steelColor = metal.steel();
+///   knob = shaft.body([shaft.knurl(20.0, 1.0, shaft.knurlDiamond, 0.0, 15.0),
+///                      shaft.diameter(12.0, 15.0, 40.0)], steelMat);
+body(segments, finish) {
+  // Cloned into the caller's file, and written out in full, as body is: the
+  // fold, its box, then the relief and the envelope, which are folds too.
+  shaftSoFar = reduce((acc, seg, i, prev) {
+    openRuns = acc.y;
+    filletR = i < 0.5 ? nothing : prev(0.0, 0.0, 6.0).x;
+    chamferC = i < 0.5 ? nothing : prev(0.0, 0.0, 7.0).x;
+    q = seg(0.0, 0.0, 0.0);
+    here = filletR < 50000.0 ? unionRound(acc.x, q.x, filletR)
+                             : (chamferC < 50000.0 ? unionChamfer(acc.x, q.x, chamferC) : q.x);
+    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, q.y)),
+            i < 0.5 ? q.z : min(max(openRuns, q.w), q.z)];
+  }, segments, [100000.0, 100000.0]);
+  cuts = reduce((c, seg) { return min(c, seg(0.0, 0.0, 3.0).x); }, segments, 100000.0);
+  bottomFace = reduce((low, seg) { return min(low, seg(0.0, 0.0, 1.0).x); }, segments, 100000.0);
+  topFace = reduce((high, seg) { return max(high, seg(0.0, 0.0, 2.0).x); }, segments, -100000.0);
+  reach = reduce((r, seg) { return max(r, seg(0.0, 0.0, 5.0).x); }, segments, 0.0);
+  extentLow = reduce((n, seg) { return min(n, seg(0.0, 0.0, 8.0).x); }, segments, 100000.0);
+  extentHigh = reduce((n, seg) { return min(n, seg(0.0, 0.0, 9.0).x); }, segments, 100000.0);
+  boxLow = reduce((below, seg) { return min(below, seg(0.0, 0.0, 8.0).x < 50000.0 ? seg(0.0, 0.0, 8.0).x : seg(0.0, 0.0, 1.0).x); }, segments, 100000.0);
+  boxHigh = reduce((above, seg) { return max(above, seg(0.0, 0.0, 9.0).x < 50000.0 ? neg(seg(0.0, 0.0, 9.0).x) : seg(0.0, 0.0, 2.0).x); }, segments, -100000.0);
+  relief = reduce((h, seg) { return min(h, seg(0.0, 0.0, 10.0).x); }, segments, 0.0);
+  depth = clamp(neg(reduce((d, seg) { return min(d, seg(0.0, 0.0, 11.0).x); }, segments, 0.0)), 0.0, 1.0);
+  envelopeSoFar = reduce((acc, seg, i, prev) {
+    openRuns = acc.y;
+    filletR = i < 0.5 ? nothing : prev(0.0, 0.0, 6.0).x;
+    chamferC = i < 0.5 ? nothing : prev(0.0, 0.0, 7.0).x;
+    q = seg(0.0, 0.0, 4.0);
+    here = filletR < 50000.0 ? unionRound(acc.x, q.x, filletR)
+                             : (chamferC < 50000.0 ? unionChamfer(acc.x, q.x, chamferC) : q.x);
+    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, q.y)),
+            i < 0.5 ? q.z : min(max(openRuns, q.w), q.z)];
+  }, segments, [100000.0, 100000.0]);
+  steelMat, steelColor = metal.steel();
+  tint = color.mixOklab(steelColor, steelColor * 0.35, depth * (1.0 - displacementDrawn()));
+  tint.simple = steelColor;
+  standTint = color.mixOklab(steelColor, steelColor * 0.35, depth);
+  standTint.simple = steelColor;
+  stand = envelopeSoFar.x;
+  stand.color = standTint;
+  stand.box = [[neg(reach), neg(reach), extentLow < 50000.0 ? boxLow : bottomFace],
+               [reach, reach, extentHigh < 50000.0 ? boxHigh : topFace]];
+  solid = max(shaftSoFar.x, -cuts);
+  solid.box = [[neg(reach), neg(reach), extentLow < 50000.0 ? boxLow : bottomFace],
+               [reach, reach, extentHigh < 50000.0 ? boxHigh : topFace]];
+  solid.material = material.withDisplacement(finish, relief);
+  solid.color = tint;
+  solid.simple = stand;
+  return solid;
+}
+
+/// The shaft finished in `finish` with a hole stack cut into each end face,
+/// as body(segments, bottomHole, topHole) cuts them; its stand-in keeps them.
+body(segments, bottomHole, topHole, finish) {
+  shaftSoFar = reduce((acc, seg, i, prev) {
+    openRuns = acc.y;
+    filletR = i < 0.5 ? nothing : prev(0.0, 0.0, 6.0).x;
+    chamferC = i < 0.5 ? nothing : prev(0.0, 0.0, 7.0).x;
+    q = seg(0.0, 0.0, 0.0);
+    here = filletR < 50000.0 ? unionRound(acc.x, q.x, filletR)
+                             : (chamferC < 50000.0 ? unionChamfer(acc.x, q.x, chamferC) : q.x);
+    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, q.y)),
+            i < 0.5 ? q.z : min(max(openRuns, q.w), q.z)];
+  }, segments, [100000.0, 100000.0]);
+  cuts = reduce((c, seg) { return min(c, seg(0.0, 0.0, 3.0).x); }, segments, 100000.0);
+  bottomFace = reduce((low, seg) { return min(low, seg(0.0, 0.0, 1.0).x); }, segments, 100000.0);
+  topFace = reduce((high, seg) { return max(high, seg(0.0, 0.0, 2.0).x); }, segments, -100000.0);
+  topVoid = drill.hole(topHole, topFace);
+  bottomVoid = remap(drill.hole(bottomHole, 0.0), [p.x, -p.y, bottomFace - p.z]);
+  reach = reduce((r, seg) { return max(r, seg(0.0, 0.0, 5.0).x); }, segments, 0.0);
+  extentLow = reduce((n, seg) { return min(n, seg(0.0, 0.0, 8.0).x); }, segments, 100000.0);
+  extentHigh = reduce((n, seg) { return min(n, seg(0.0, 0.0, 9.0).x); }, segments, 100000.0);
+  boxLow = reduce((below, seg) { return min(below, seg(0.0, 0.0, 8.0).x < 50000.0 ? seg(0.0, 0.0, 8.0).x : seg(0.0, 0.0, 1.0).x); }, segments, 100000.0);
+  boxHigh = reduce((above, seg) { return max(above, seg(0.0, 0.0, 9.0).x < 50000.0 ? neg(seg(0.0, 0.0, 9.0).x) : seg(0.0, 0.0, 2.0).x); }, segments, -100000.0);
+  relief = reduce((h, seg) { return min(h, seg(0.0, 0.0, 10.0).x); }, segments, 0.0);
+  depth = clamp(neg(reduce((d, seg) { return min(d, seg(0.0, 0.0, 11.0).x); }, segments, 0.0)), 0.0, 1.0);
+  envelopeSoFar = reduce((acc, seg, i, prev) {
+    openRuns = acc.y;
+    filletR = i < 0.5 ? nothing : prev(0.0, 0.0, 6.0).x;
+    chamferC = i < 0.5 ? nothing : prev(0.0, 0.0, 7.0).x;
+    q = seg(0.0, 0.0, 4.0);
+    here = filletR < 50000.0 ? unionRound(acc.x, q.x, filletR)
+                             : (chamferC < 50000.0 ? unionChamfer(acc.x, q.x, chamferC) : q.x);
+    return [i < 0.5 ? here : min(acc.x, here, max(openRuns, q.y)),
+            i < 0.5 ? q.z : min(max(openRuns, q.w), q.z)];
+  }, segments, [100000.0, 100000.0]);
+  steelMat, steelColor = metal.steel();
+  tint = color.mixOklab(steelColor, steelColor * 0.35, depth * (1.0 - displacementDrawn()));
+  tint.simple = steelColor;
+  standTint = color.mixOklab(steelColor, steelColor * 0.35, depth);
+  standTint.simple = steelColor;
+  stand = max(envelopeSoFar.x, -topVoid, -bottomVoid);
+  stand.color = standTint;
+  stand.box = [[neg(reach), neg(reach), extentLow < 50000.0 ? boxLow : bottomFace],
+               [reach, reach, extentHigh < 50000.0 ? boxHigh : topFace]];
+  solid = max(shaftSoFar.x, -cuts, -topVoid, -bottomVoid);
+  solid.box = [[neg(reach), neg(reach), extentLow < 50000.0 ? boxLow : bottomFace],
+               [reach, reach, extentHigh < 50000.0 ? boxHigh : topFace]];
+  solid.material = material.withDisplacement(finish, relief);
+  solid.color = tint;
+  solid.simple = stand;
+  return solid;
+}
+
+// =========================================================
+// Segments
+// =========================================================
+
+/// A plain diameter `dia` across, from the plane z = `from` up to z = `to`.
+/// A groove, a relief or a journal is a diameter too: list it between its
+/// neighbours.
+diameter(dia, from, to) {
+  seg(eDown, eUp, want) {
+    return want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : dia / 2.0)
+                      : (want > 2.5 && want < 3.5 ? q1(nothing) : prismQuad(length(p.xy) - dia / 2.0, from, to)));
+  }
+  return seg;
+}
+
+/// A taper from diameter `diaFrom` at the plane z = `from` to diameter
+/// `diaTo` at z = `to`: narrowing or widening, a cone shoulder between two
+/// diameters, a chamfer at a shaft's end.
+taper(diaFrom, diaTo, from, to) {
+  seg(eDown, eUp, want) {
+    return want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : max(diaFrom, diaTo) / 2.0)
+                      : (want > 2.5 && want < 3.5 ? q1(nothing) : taperQuad(diaFrom / 2.0, diaTo / 2.0, from, to)));
+  }
+  return seg;
+}
+
+/// Any 2D section `field`, a distance in the XY plane negative inside such as
+/// a profileXY, carried along the axis from z = `from` to z = `to`. Exact
+/// wherever the section is: the segment is the section's prism, square-ended.
+section(field, from, to) {
+  seg(eDown, eUp, want) {
+    return want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : sectionReach(field))
+                      : (want > 2.5 && want < 3.5 ? q1(nothing) : prismQuad(field, from, to)));
+  }
+  return seg;
+}
+
+/// A round `dia` across whose axis stands `offset` from the shaft's, at
+/// `angle` in radians from +x about +z: a crank pin, an eccentric journal, a
+/// cam's base circle. Exact. A crank of several throws is its pins at their
+/// angles.
+///
+///   shaft.eccentric(28.0, 40.0, 0.0, 45.0, 75.0)
+eccentric(dia, offset, angle, from, to) {
+  seg(eDown, eUp, want) {
+    return want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : abs(offset) + dia / 2.0)
+                      : (want > 2.5 && want < 3.5 ? q1(nothing)
+                                                  : prismQuad(length([p.x - offset * cos(angle), p.y - offset * sin(angle)]) - dia / 2.0, from, to)));
+  }
+  return seg;
+}
+
+/// A crank web: the convex hull of a circle of radius `mainR` about the
+/// shaft's axis and one of `pinR` about a pin thrown `offset` at `angle`, as
+/// shaft.eccentric places it. Exact. The two circles must not contain one
+/// another, |mainR - pinR| < offset. A counterweight or any other outline is a
+/// shaft.section.
+///
+///   shaft.web(25.0, 18.0, 40.0, 0.0, 30.0, 45.0)
+web(mainR, pinR, offset, angle, from, to) {
+  seg(eDown, eUp, want) {
+    return want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : max(mainR, abs(offset) + pinR))
+                      : (want > 2.5 && want < 3.5 ? q1(nothing) : prismQuad(webSection(mainR, pinR, offset, angle), from, to)));
+  }
+  return seg;
+}
+
+/// A hexagon `acrossFlats` wide, its flats facing +x and -x as
+/// drill.hexSocket's do. Exact.
+hex(acrossFlats, from, to) {
+  seg(eDown, eUp, want) {
+    return want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : acrossFlats / 1.7320508075688772)
+                      : (want > 2.5 && want < 3.5 ? q1(nothing) : prismQuad(hexSection(acrossFlats), from, to)));
+  }
+  return seg;
+}
+
+/// A D-shaft: a round of diameter `dia` with one flat facing +x, `acrossFlat`
+/// measured from the flat to the far side of the round, as drill.dFlat's
+/// bore is. Exact.
+dFlat(dia, acrossFlat, from, to) {
+  seg(eDown, eUp, want) {
+    return want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : dia / 2.0)
+                      : (want > 2.5 && want < 3.5 ? q1(nothing) : prismQuad(dFlatSection(dia, acrossFlat), from, to)));
+  }
+  return seg;
+}
+
+/// A double-D: a round of diameter `dia` with two opposed flats facing +x and
+/// -x, `acrossFlats` apart, as drill.doubleD's bore is. Exact.
+doubleD(dia, acrossFlats, from, to) {
+  seg(eDown, eUp, want) {
+    return want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : dia / 2.0)
+                      : (want > 2.5 && want < 3.5 ? q1(nothing) : prismQuad(doubleDSection(dia, acrossFlats), from, to)));
+  }
+  return seg;
+}
+
+/// A straight-sided male spline, the DIN 5463 / ISO 14 form: `count` teeth,
+/// each `width` across with parallel flanks, standing from the `minor`
+/// diameter out to the `major`, one centred on +x. It seats in
+/// drill.spline(count, major, width) over a bore at `minor`. Exact outside.
+spline(count, minor, major, width, from, to) {
+  seg(eDown, eUp, want) {
+    return want > 11.5 && want < 12.5 ? q1(0.0) : want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : major / 2.0)
+                      : (want > 3.5 ? prismQuad(length(p.xy) - major / 2.0, from, to)
+                                    : (want > 2.5 ? q1(nothing) : prismQuad(splineSection(count, minor, major, width), from, to))));
+  }
+  return seg;
+}
+
+/// The same spline with its two ends named, `bottomEnd` at `from` and
+/// `topEnd` at `to`, each shaft.planeEnd(), shaft.runout(cutterDia) or
+/// shaft.chamferEnd(size).
+spline(count, minor, major, width, from, to, bottomEnd, topEnd) {
+  seg(eDown, eUp, want) {
+    return want > 11.5 && want < 12.5 ? q1(0.0) : want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : major / 2.0)
+         : (want > 3.5 ? prismQuad(length(p.xy) - major / 2.0, from, to) : (want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(topEnd.x > 0.5 && topEnd.x < 1.5) ? q1(nothing) : machinedSegment(splineSection(count, minor, major, width), major / 2.0, minor / 2.0,
+                           from, to, want, bottomEnd, topEnd))));
+  }
+  return seg;
+}
+
+/// An involute gear cut on the shaft: `numTeeth` teeth of module `moduleVal`
+/// and pressure angle `pressureAngle`, the section gears.gearProfile draws
+/// (a quarter-module root clearance, a twentieth-module tip break), from
+/// z = `from` to z = `to`. A `helixAngle` other than 0 makes it helical,
+/// measured at the pitch circle and turning with z from the tooth position at
+/// `from`. A bound: the involute section is not exact, and a helix's twist
+/// stretches the field, which is divided out so that it never overstates the
+/// distance.
+gear(numTeeth, moduleVal, pressureAngle, helixAngle, from, to) {
+  seg(eDown, eUp, want) {
+    return want > 11.5 && want < 12.5 ? q1(0.0) : want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : numTeeth * moduleVal / 2.0 + moduleVal)
+                      : (want > 3.5 ? prismQuad(length(p.xy) - (numTeeth * moduleVal / 2.0 + moduleVal), from, to)
+                                    : (want > 2.5 ? q1(nothing) : prismQuad(gearSection(numTeeth, moduleVal, pressureAngle, helixAngle, from), from, to))));
+  }
+  return seg;
+}
+
+/// The same gear with its two ends named, `bottomEnd` at `from` and `topEnd`
+/// at `to`, each shaft.planeEnd(), shaft.runout(hobDia) or
+/// shaft.chamferEnd(size).
+///
+///   shaft.gear(20.0, 2.0, radians(20.0), 0.0, 20.0, 50.0, shaft.planeEnd(), shaft.runout(80.0))
+gear(numTeeth, moduleVal, pressureAngle, helixAngle, from, to, bottomEnd, topEnd) {
+  seg(eDown, eUp, want) {
+    return want > 11.5 && want < 12.5 ? q1(0.0) : want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : numTeeth * moduleVal / 2.0 + moduleVal)
+         : (want > 3.5 ? prismQuad(length(p.xy) - (numTeeth * moduleVal / 2.0 + moduleVal), from, to) : (want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(topEnd.x > 0.5 && topEnd.x < 1.5) ? q1(nothing) : machinedSegment(gearSection(numTeeth, moduleVal, pressureAngle, helixAngle, from),
+                           numTeeth * moduleVal / 2.0 + moduleVal, numTeeth * moduleVal / 2.0 - 1.25 * moduleVal,
+                           from, to, want, bottomEnd, topEnd))));
+  }
+  return seg;
+}
+
+/// The same gear with a `backlash`, for a running pair: every tooth thinned
+/// by that much across its flanks, by offsetting its section half of it
+/// inward, as gears.bevelTeeth does, so the tip also falls and the root
+/// deepens by half of it. A circular tooth thickness on the pitch circle falls
+/// by backlash / cos(pressureAngle).
+///
+///   shaft.gear(20.0, 2.0, radians(20.0), 0.0, 0.0, 20.0, shaft.planeEnd(), shaft.planeEnd(), 0.1)
+gear(numTeeth, moduleVal, pressureAngle, helixAngle, from, to, bottomEnd, topEnd, backlash) {
+  seg(eDown, eUp, want) {
+    return want > 11.5 && want < 12.5 ? q1(0.0) : want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : numTeeth * moduleVal / 2.0 + moduleVal)
+         : (want > 3.5 ? prismQuad(length(p.xy) - (numTeeth * moduleVal / 2.0 + moduleVal), from, to) : (want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(topEnd.x > 0.5 && topEnd.x < 1.5) ? q1(nothing) : machinedSegment(gearSection(numTeeth, moduleVal, pressureAngle, helixAngle, from, backlash),
+                           numTeeth * moduleVal / 2.0 + moduleVal, numTeeth * moduleVal / 2.0 - 1.25 * moduleVal,
+                           from, to, want, bottomEnd, topEnd))));
+  }
+  return seg;
+}
+
+/// A bevel gear: `numTeeth` teeth running against a mate of `mateTeeth` on
+/// shafts crossing at `shaftAngle`, of module `moduleVal` at the outer end and
+/// pressure angle `pressureAngle`, gears.bevelTeeth's tooth with shaft.gear's
+/// root clearance and tip break (a quarter and a twentieth of a module). The
+/// pitch cone follows from the two tooth counts and the shaft angle, as
+/// gears.bevelTooth derives it, so a gear and its mate cannot disagree.
+/// `spiralAngle` is signed by hand, 0 for a straight bevel, and a mate takes
+/// the opposite hand; `faceWidth` runs along the cone element in from the outer
+/// end, and `backlash` thins every tooth as gears.bevelTeeth does.
+///
+/// It is placed by its pitch apex `apex` on the axis and its two flat faces,
+/// the planes z = `from` and z = `to`; apex to back face is the gear's mounting
+/// distance. The teeth face the apex: with it below `from` they face -Z, the
+/// toe face at `from` and the back face at `to`, as gears.bevelGear's do; with
+/// it above `to` they face +Z, the same gear turned a half turn about X, which
+/// keeps the hand of the spiral. The ends are gears.bevelGear's: each tooth
+/// end runs out on its cone normal to the pitch cone, the back cone at the heel
+/// and the front cone at the toe, and the flat face cuts across it. The faces
+/// are where the drawing puts them; gears.bevelApexToCrown places them from the
+/// crown, the toe's tip corner lying (1 - faceWidth / outer cone distance) of
+/// the way along. A toe face set past the toe's tip corner leaves the toe teeth
+/// standing proud of it toward the apex, beyond the segment's plane, and the
+/// shaft's box holds them.
+///
+///   shaft.bevel(16.0, 24.0, 2.0, radians(20.0), pi / 2.0, 0.0, 9.0, 0.05, 50.0, 25.0, 33.0)
+bevel(numTeeth, mateTeeth, moduleVal, pressureAngle, shaftAngle, spiralAngle, faceWidth, backlash, apex, from, to) {
+  // The field and the envelope are asked with want 0 and a flag, as every
+  // segment passes its envelope through as want 0: handed the raw want, a
+  // helper that tells 4 from 0 itself leaves the shaft's box unbounded (the
+  // box analysis loses the closure's answers to every question then).
+  seg(eDown, eUp, want) {
+    return want > 11.5 && want < 12.5 ? q1(0.0) : want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 9.5 || (want > 5.5 && want < 7.5) ? nothing : bevelBoxAnswer(numTeeth, mateTeeth, moduleVal, shaftAngle, faceWidth, apex, from, to, want))
+                      : (want > 2.5 && want < 3.5 ? q1(nothing)
+                                                  : bevelSegment(bevelTeethField(numTeeth, mateTeeth, moduleVal, pressureAngle, shaftAngle, spiralAngle, backlash, apex, to),
+                                                                 numTeeth, mateTeeth, moduleVal, shaftAngle, faceWidth, apex, from, to,
+                                                                 want > 3.5 ? 1.0 : 0.0)));
+  }
+  return seg;
+}
+
+/// An external ISO 68-1 thread of `major` diameter and pitch `pitchVal`, cut
+/// from z = `from` to z = `to`: thread.male, the exact basic profile, as a
+/// prism segment. Its helix is phased from z = 0, as drill.tap's is, so a stud
+/// and a hole tapped to the same size at the same height mesh flank to flank.
+///
+///   shaft.thread(6.0, 1.0, 0.0, 20.0)
+thread(major, pitchVal, from, to) {
+  seg(eDown, eUp, want) {
+    return want > 11.5 && want < 12.5 ? q1(0.0) : want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : major / 2.0)
+                      : (want > 3.5 ? prismQuad(length(p.xy) - major / 2.0, from, to)
+                                    : (want > 2.5 ? q1(nothing) : prismQuad(isoThread.male(major, pitchVal), from, to))));
+  }
+  return seg;
+}
+
+/// The same thread with its two ends named, `bottomEnd` at `from` and
+/// `topEnd` at `to`, each shaft.planeEnd(), shaft.chamferEnd(size),
+/// shaft.threadRunout(length) or, for a thread-milled thread,
+/// shaft.runout(cutterDia).
+///
+///   shaft.thread(6.0, 1.0, 0.0, 20.0, shaft.chamferEnd(0.6), shaft.threadRunout(2.5))
+thread(major, pitchVal, from, to, bottomEnd, topEnd) {
+  seg(eDown, eUp, want) {
+    return want > 11.5 && want < 12.5 ? q1(0.0) : want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : major / 2.0)
+         : (want > 3.5 ? prismQuad(length(p.xy) - major / 2.0, from, to) : (want > 2.5 && !(bottomEnd.x > 0.5 && bottomEnd.x < 1.5) && !(bottomEnd.x > 2.5 && bottomEnd.x < 3.5)
+                                     && !(topEnd.x > 0.5 && topEnd.x < 1.5) && !(topEnd.x > 2.5 && topEnd.x < 3.5)
+           ? q1(nothing) : threadedSegment(major, pitchVal, from, to, want, bottomEnd, topEnd))));
+  }
+  return seg;
+}
+
+/// A knurl rolled on a round `dia` across, from z = `from` to z = `to`: ISO
+/// 13444's 90-degree teeth `pitchVal` apart (0.5, 0.6, 0.8, 1.0, 1.2 or 1.6)
+/// and pitchVal / 2 deep, in a `pattern`: shaft.knurlStraight,
+/// knurlLeft, knurlRight, knurlDiamond, knurlDiamondSunk or knurlAnnular. The
+/// count of teeth round it is whole, round(pi dia / pitchVal), so the pattern
+/// closes on itself.
+///
+/// A KNURL IS A FINISH, as a fastener's thread is: the geometry is the blank,
+/// a plain diameter at its maximum material condition, which the mesher,
+/// export and every proof see, and the teeth are a displacement height only
+/// the renderer reads, with paint standing in for them wherever they are not
+/// drawn. shaft.body(segments, finish) applies both, and the envelope as the
+/// stand-in; shaft.relief and shaft.paint give them to a part built otherwise.
+/// The teeth run out over about a pitch inside each end plane, the way a
+/// rolled knurl does, and fade a tooth depth under the root, so a section cut
+/// shows no pattern pressed into its face.
+///
+///   shaft.knurl(20.0, 1.0, shaft.knurlDiamond, 0.0, 15.0)
+knurl(dia, pitchVal, pattern, from, to) {
+  seg(eDown, eUp, want) {
+    return want > 11.5 && want < 12.5 ? q1(0.0) : want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 9.5 ? q1(want > 11.5 ? nothing
+                                      : (want > 10.5 ? knurlHeight(dia, pitchVal, pattern, from, to) / (pitchVal / 2.0)
+                                                     : knurlHeight(dia, pitchVal, pattern, from, to)))
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : dia / 2.0)
+                      : (want > 2.5 && want < 3.5 ? q1(nothing) : prismQuad(length(p.xy) - dia / 2.0, from, to))));
+  }
+  return seg;
+}
+
+/// Straight knurl teeth, along the axis (ISO 13444 RAA): a pattern for
+/// shaft.knurl.
+knurlStraight = 1.0;
+
+/// A left-hand knurl (RBL): one set of teeth on a helix at 30 degrees to the
+/// axis, turning clockwise, seen from +Z, as it rises.
+knurlLeft = 2.0;
+
+/// A right-hand knurl (RBR): teeth on a helix at 30 degrees to the axis,
+/// turning counterclockwise, seen from +Z, as it rises.
+knurlRight = 3.0;
+
+/// A diamond knurl with its points raised (RGE): both helices crossed.
+knurlDiamond = 4.0;
+
+/// A diamond knurl with its points sunk (RGV): both helices crossed, the
+/// diamonds pressed in.
+knurlDiamondSunk = 5.0;
+
+/// Annular knurl rings round the axis, `pitchVal` apart along it.
+knurlAnnular = 6.0;
+
+// =========================================================
+// Joints
+// =========================================================
+
+/// A fillet of radius `radius` where the segments either side of it meet:
+/// list it between them.
+///
+///   shaft.body([shaft.diameter(20.0, 0.0, 20.0), shaft.fillet(1.0), shaft.diameter(30.0, 20.0, 40.0)])
+///
+/// It rounds the concave corners of the joint, where the smaller segment meets
+/// the face of the larger; a convex edge stays sharp. At a square shoulder
+/// between round segments it is the exact arc. No larger than the step, nor
+/// than either segment is long.
+fillet(radius) {
+  joint(eDown, eUp, want) {
+    return want > 6.5 ? q1(nothing) : (want > 5.5 ? q1(radius) : jointAnswer(eDown, eUp, want));
+  }
+  return joint;
+}
+
+/// A 45-degree chamfer of `size` along each face where the segments either
+/// side of it meet: list it between them, as shaft.fillet. It fills the
+/// concave corners of the joint; at a square shoulder between round segments
+/// it is the exact line.
+chamfer(size) {
+  joint(eDown, eUp, want) {
+    return want > 7.5 ? q1(nothing) : (want > 6.5 ? q1(size) : (want > 5.5 ? q1(nothing) : jointAnswer(eDown, eUp, want)));
+  }
+  return joint;
+}
+
+// =========================================================
+// Cross holes
+// =========================================================
+
+/// A cross hole's void: `features`, a mechanical/drill stack or a lone
+/// feature, drilled radially into a shaft. Its mouth is the plane tangent to
+/// the cylinder `dia` across at height z = `z`, `angle` radians from +x about
+/// the axis, so every depth is measured from the surface, as a drawing gives
+/// it; drill.thru goes out the far side. shaft.crossHole cuts it from a
+/// shaft; it is a void like any other, to cut from anything.
+crossVoid(features, dia, z, angle) {
+  return remap(drill.hole(features, 0.0),
+               drill.axisAt([dia / 2.0 * cos(angle), dia / 2.0 * sin(angle), z], [cos(angle), sin(angle), 0.0]));
+}
+
+/// A cross hole, as an entry in a shaft's list: `void`, a shaft.crossVoid, cut
+/// from the shaft. List it after the segments:
+///
+///   shaft.body([shaft.diameter(20.0, 0.0, 40.0),
+///               shaft.crossHole(shaft.crossVoid([drill.tap(6.0, 10.0), drill.blind(5.0, 12.0)], 20.0, 15.0, 0.0))])
+///
+/// The fold passes it, as it passes a joint, and body cuts its void after the
+/// fold, as it cuts a runout's; the box is the shaft's, and a finished body's
+/// material, paint and stand-in go on as they would without it. Never list it
+/// between a shaft.fillet or shaft.chamfer and the segment it blends into. The
+/// simplified model, shaft.envelope, leaves it out.
+//
+// The void arrives placed: an entry cannot take the drill stack itself, since
+// a list of functions it captured is not one the fold can see.
+crossHole(void) {
+  hole(eDown, eUp, want) {
+    return want > 5.5 ? q1(nothing) : (want > 2.5 && want < 3.5 ? q1(void) : jointAnswer(eDown, eUp, want));
+  }
+  return hole;
+}
+
+/// `part`, built on a +Z datum the way a fastener is (its seating plane at
+/// z = 0, its shank down), placed on the axis of shaft.crossHole(…, dia, z,
+/// angle): its datum on the shaft's surface, its +Z pointing out. Placed with
+/// transform, so it keeps its box; a set screw in a tapped cross hole and the
+/// hole cannot drift apart.
+///
+///   screw = shaft.crossPlace(fastener.setScrew(6.0, 8.0, fastener.pointCup), 20.0, 15.0, 0.0)
+crossPlace(part, dia, z, angle) {
+  return transform.translate(transform.rotateZ(transform.rotateY(part, pi / 2.0), angle),
+                             [dia / 2.0 * cos(angle), dia / 2.0 * sin(angle), z]);
+}
+
+// =========================================================
+// Ends
+// =========================================================
+
+/// A machined segment's end at its plane: the teeth, flats or gaps stop there.
+planeEnd() {
+  return [0.0, 0.0];
+}
+
+/// A machined segment's end where the cutter, of diameter `cutterDia`, runs
+/// out: a hob or a disc cutter cannot stop at the plane, so past it the gaps
+/// run on into the neighbour, their floor rising from the root along the
+/// cutter's arc until it breaks out of the neighbour's diameter.
+runout(cutterDia) {
+  return [1.0, cutterDia / 2.0];
+}
+
+/// A machined segment's end with its blank chamfered by `size` at 45 degrees
+/// before the teeth are cut: the tips fall away toward the end plane.
+chamferEnd(size) {
+  return [2.0, size];
+}
+
+/// A thread's end where a lathe tool or a die retracts as it runs out: past
+/// the plane the groove's floor rises in a straight line from the root to the
+/// major diameter over `length` (ISO 4755 gives about 2.5 pitches).
+threadRunout(length) {
+  return [3.0, length];
+}
+
+/// A thread's end against a shoulder, with the undercut a threading tool runs
+/// out into: `form` thread.din76A (DIN 76-1 form A) or thread.iso4755. The
+/// thread keeps its planes, up to the shoulder, and its last g2
+/// (thread.undercutLength) is the groove: a floor at thread.undercutDia, a
+/// 30-degree flank rising from it to the major diameter on the thread's side,
+/// which cuts the last teeth down, and a radius thread.undercutRadius where
+/// the floor meets the shoulder.
+///
+///   shaft.thread(10.0, 1.5, 0.0, 30.0, shaft.chamferEnd(1.0), shaft.undercut(thread.din76A))
+undercut(form) {
+  return [4.0, form];
+}
+
+// =========================================================
+// Internal Geometry
+// =========================================================
+
+// Packs a scalar segment query answer into a vec4 so every segment closure
+// has a uniform vec4 return type across field and metadata modes.
+q1(v) {
+  return [v, 0.0, 0.0, 0.0];
+}
+
+// A 2D section's prism from z = from to z = to, evaluated once for all four
+// extension combinations [capped, extended below, extended above, extended both].
+// The prism of an exact section is exact, inside and out.
+prismBox(sectionField, axial) {
+  return sqrt(max(sectionField, 0.0) * max(sectionField, 0.0) + max(axial, 0.0) * max(axial, 0.0)) + min(max(sectionField, axial), 0.0);
+}
+
+prismQuad(sectionField, from, to) {
+  s = sectionField;
+  dDown = from - p.z;
+  dUp = p.z - to;
+  dDownExt = (from - 100000.0) - p.z;
+  dUpExt = p.z - (to + 100000.0);
+  return [prismBox(s, max(dDown, dUp)),
+          prismBox(s, max(dDownExt, dUp)),
+          prismBox(s, max(dDown, dUpExt)),
+          prismBox(s, max(dDownExt, dUpExt))];
+}
+
+// The web's section. The hull of two discs is the union of the discs between
+// them, centred along the segment joining their centres with the radius
+// running linearly from one to the other, so its distance is that to the
+// nearest of them. In the frame along the offset (`along`) and across it
+// (`across`, folded by symmetry), the radius falls by `slope` per unit of
+// offset, and the nearest disc is where the line from it to the point leaves
+// at that slope: its position, clamped to the segment, is t below. Within it
+// the distance is to a tangent line, beyond either end to that end's circle:
+// the two-circle hull's closed form, with clamp in place of branches.
+// A 90-degree knurl tooth's profile, 0 on its crest and -0.5 at its root, in
+// pitches, u pitches along: material/process/machined's tooth.
+knurlTooth(u) {
+  return neg(abs(u - floor(u) - 0.5));
+}
+
+// A knurl's teeth as a displacement height in the shaft's frame. Round the
+// axis a point is `around` teeth along, along it `along` pitches; a helix at
+// 30 degrees to the axis advances tan(30) of a tooth round it for each pitch
+// along it, so a right-hand one turns counterclockwise, seen from +Z, as it
+// rises. The ternaries choose between patterns, which are constants. The
+// bounds are thread.maleRelief's: zero on and beyond the end planes and the
+// cylinder a tooth depth outside the blank, rising half as fast as the
+// distance inside them (at a rate of one the height would cancel the end
+// face's own distance and leave a slab of exact zero), and zero a tooth depth
+// under the root, rising toward it at the full rate. A root, where the
+// renderer reads the height a tooth depth inside the blank, is bound by
+// neither.
+knurlHeight(dia, pitchVal, pattern, from, to) {
+  teeth = floor(pi * dia / pitchVal + 0.5);
+  around = atan(p.y, p.x) / (2.0 * pi) * teeth;
+  along = p.z / pitchVal;
+  left = knurlTooth(around + 0.57735026918962576 * along);
+  right = knurlTooth(around - 0.57735026918962576 * along);
+  tooth = pattern < 1.5 ? knurlTooth(around)
+        : (pattern < 2.5 ? left
+        : (pattern < 3.5 ? right
+        : (pattern < 4.5 ? min(left, right)
+        : (pattern < 5.5 ? max(left, right) : knurlTooth(along)))));
+  depth = pitchVal / 2.0;
+  r = length(p.xy);
+  runout = max(0.0, 0.5 * min(to - p.z, p.z - from, dia / 2.0 + depth - r));
+  return neg(min(neg(tooth) * pitchVal, runout, max(0.0, r - (dia / 2.0 - 2.0 * depth))));
+}
+
+webSection(mainR, pinR, offset, angle) {
+  c = cos(angle);
+  s = sin(angle);
+  along = p.x * c + p.y * s;
+  across = abs(p.y * c - p.x * s);
+  slope = (mainR - pinR) / offset;
+  run = sqrt(1.0 - slope * slope);
+  t = clamp((along - slope * across / run) / offset, 0.0, 1.0);
+  return length([along - t * offset, across]) - (mainR + t * (pinR - mainR));
+}
+
+// The hexagon's six corners, counterclockwise from 30 degrees, so its flats
+// face +-x.
+hexSection(acrossFlats) {
+  r = acrossFlats / 1.7320508075688772;
+  cx = r * 0.8660254037844386;
+  cy = r * 0.5;
+  return profileXY([[cx, cy], [0.0, r], [neg(cx), cy], [neg(cx), neg(cy)], [0.0, neg(r)], [cx, neg(cy)]]);
+}
+
+// The D: round from the top of the flat, through -x, to its bottom, in two
+// minor arcs, and back up the flat.
+dFlatSection(dia, acrossFlat) {
+  r = dia / 2.0;
+  flatX = acrossFlat - r;
+  flatY = sqrt(r * r - flatX * flatX);
+  return profileXY([[flatX, flatY], [neg(r), 0.0], [flatX, neg(flatY)]], [1.0 / r, 1.0 / r, 0.0]);
+}
+
+// The double D: up the +x flat, over the top arc, down the -x flat and under
+// the bottom arc.
+doubleDSection(dia, acrossFlats) {
+  r = dia / 2.0;
+  flatX = acrossFlats / 2.0;
+  flatY = sqrt(r * r - flatX * flatX);
+  return profileXY([[flatX, neg(flatY)], [flatX, flatY], [neg(flatX), flatY], [neg(flatX), neg(flatY)]],
+                   [0.0, 1.0 / r, 0.0, 1.0 / r]);
+}
+
+// The spline: one tooth on +x, a box from the axis out to an arc on the major
+// circle, repeated round the axis and joined to the minor disc. Every point is
+// nearest the tooth of its own sector, so the repeat is exact; tooth and disc
+// overlap rather than abut, so their min is exact outside with no sheet inside.
+splineSection(count, minor, major, width) {
+  halfWidth = width / 2.0;
+  majorR = major / 2.0;
+  tipX = sqrt(majorR * majorR - halfWidth * halfWidth);
+  tooth = remap(profileXY([[0.0, neg(halfWidth)], [tipX, neg(halfWidth)], [tipX, halfWidth], [0.0, halfWidth]],
+                          [0.0, 1.0 / majorR, 0.0, 0.0]),
+                map.patternPolarXY(count));
+  return min(length(p.xy) - minor / 2.0, tooth);
+}
+
+// The gear's section at this height: gears.gearProfile turned by the helix's
+// twist since `from`, and divided by the most the twist can stretch it, at the
+// tip circle, so the field stays a bound.
+gearSection(numTeeth, moduleVal, pressureAngle, helixAngle, from) {
+  pitchRadius = numTeeth * moduleVal / 2.0;
+  tipRadius = pitchRadius + moduleVal;
+  twistRate = tan(helixAngle) / pitchRadius;
+  twist = (p.z - from) * twistRate;
+  cosT = cos(twist);
+  sinT = sin(twist);
+  profile = remap(gears.gearProfile(numTeeth, moduleVal, pressureAngle, 0.0, 0.25, 0.05 * moduleVal),
+                  [p.x * cosT + p.y * sinT, p.y * cosT - p.x * sinT, p.z]);
+  return profile / sqrt(1.0 + tipRadius * twistRate * tipRadius * twistRate);
+}
+
+// The same section with every tooth thinned by `backlash` across its flanks:
+// offset half of it inward in the transverse section, before the twist's
+// stretch is divided out.
+gearSection(numTeeth, moduleVal, pressureAngle, helixAngle, from, backlash) {
+  pitchRadius = numTeeth * moduleVal / 2.0;
+  tipRadius = pitchRadius + moduleVal;
+  twistRate = tan(helixAngle) / pitchRadius;
+  twist = (p.z - from) * twistRate;
+  cosT = cos(twist);
+  sinT = sin(twist);
+  profile = remap(gears.gearProfile(numTeeth, moduleVal, pressureAngle, 0.0, 0.25, 0.05 * moduleVal),
+                  [p.x * cosT + p.y * sinT, p.y * cosT - p.x * sinT, p.z]);
+  return (profile + backlash / 2.0) / sqrt(1.0 + tipRadius * twistRate * tipRadius * twistRate);
+}
+
+// The bevel gear in its own frame: apex at the origin, the teeth facing it
+// down -Z. With the apex above `to` the frame is turned a half turn about X,
+// (x, -y, apex - z), so the same field faces +Z with the spiral's hand kept.
+// Its ends are gears.bevelGear's: the heel is its back cone AND its back face,
+// the toe its front cone OR its toe face (the front cone's continuation runs
+// through the blank, so as an intersection it would punch out the bore's
+// surroundings). Extending an end moves only its face: past the heel the back
+// cone still binds, well inside any neighbour's span; past the toe the root
+// cone narrows toward the apex. Asked for its envelope (want 4) it is the
+// blank, the tip cone between the same ends, which the teeth lie within.
+bevelEnds(outerCone, innerCone, elementDist, lz, toeFace, heelFace) {
+  heelCap = max(elementDist - outerCone, lz - heelFace);
+  toeCap = min(innerCone - elementDist, toeFace - lz);
+  return max(heelCap, toeCap);
+}
+
+bevelCap(teeth, tipCone, ends, moduleVal, envelope) {
+  return envelope > 0.5 ? max(tipCone, ends) : intersectChamfer(teeth, ends, 0.05 * moduleVal);
+}
+
+bevelSegment(teeth, numTeeth, mateTeeth, moduleVal, shaftAngle, faceWidth, apex, from, to, envelope) {
+  t = teeth;
+  pitchAngle = atan(sin(shaftAngle), mateTeeth / numTeeth + cos(shaftAngle));
+  sinD = sin(pitchAngle);
+  cosD = cos(pitchAngle);
+  outerCone = numTeeth * moduleVal / (2.0 * sinD);
+  innerCone = outerCone - faceWidth;
+  lz = (apex > to ? neg(1.0) : 1.0) * (p.z - apex);
+  baseToe = min(abs(from - apex), abs(to - apex));
+  baseHeel = max(abs(from - apex), abs(to - apex));
+  extDownToe = apex > to ? 0.0 : 100000.0;
+  extDownHeel = apex > to ? 100000.0 : 0.0;
+  extUpToe = apex > to ? 100000.0 : 0.0;
+  extUpHeel = apex > to ? 0.0 : 100000.0;
+  elementDist = length(p.xy) * sinD + lz * cosD;
+  tipAngle = pitchAngle + moduleVal / outerCone;
+  tipCone = length([p.x, p.y, lz]) * sin(clamp(atan(length(p.xy), lz) - tipAngle, neg(pi) / 2.0, pi / 2.0));
+  ends00 = bevelEnds(outerCone, innerCone, elementDist, lz, baseToe, baseHeel);
+  ends10 = bevelEnds(outerCone, innerCone, elementDist, lz, baseToe - extDownToe, baseHeel + extDownHeel);
+  ends01 = bevelEnds(outerCone, innerCone, elementDist, lz, baseToe - extUpToe, baseHeel + extUpHeel);
+  ends11 = bevelEnds(outerCone, innerCone, elementDist, lz, baseToe - 100000.0, baseHeel + 100000.0);
+  return [bevelCap(t, tipCone, ends00, moduleVal, envelope),
+          bevelCap(t, tipCone, ends10, moduleVal, envelope),
+          bevelCap(t, tipCone, ends01, moduleVal, envelope),
+          bevelCap(t, tipCone, ends11, moduleVal, envelope)];
+}
+
+// What a bevel answers for the box. With the pitch angle d, the outer cone
+// distance R and the addendum angle a = moduleVal / R: its reach (want 5) is
+// the crown, R sin(d + a) / cos(a) from the axis, as gears.bevelReach gives
+// it; its toe teeth reach the toe's tip corner, (R - faceWidth) cos(d + a) /
+// cos(a) from the apex, or the toe face where that is the nearer, the lowest
+// point (want 8) of a gear facing -Z or the highest (want 9, negated) of one
+// facing +Z.
+bevelBoxAnswer(numTeeth, mateTeeth, moduleVal, shaftAngle, faceWidth, apex, from, to, want) {
+  pitchAngle = atan(sin(shaftAngle), mateTeeth / numTeeth + cos(shaftAngle));
+  outerCone = numTeeth * moduleVal / (2.0 * sin(pitchAngle));
+  addendumAngle = moduleVal / outerCone;
+  toeTeeth = min(min(abs(from - apex), abs(to - apex)), (outerCone - faceWidth) * cos(pitchAngle + addendumAngle) / cos(addendumAngle));
+  return want < 5.5 ? outerCone * sin(pitchAngle + addendumAngle) / cos(addendumAngle)
+       : (want < 8.5 ? (apex > to ? nothing : apex + toeTeeth) : (apex > to ? neg(apex - toeTeeth) : nothing));
+}
+
+// The bevel's teeth, gears.bevelTeeth, in the frame bevelSegment describes.
+bevelTeethField(numTeeth, mateTeeth, moduleVal, pressureAngle, shaftAngle, spiralAngle, backlash, apex, to) {
+  facing = apex > to ? neg(1.0) : 1.0;
+  return remap(gears.bevelTeeth(numTeeth, moduleVal, pressureAngle, gears.bevelPitchAngle(numTeeth, mateTeeth, shaftAngle), spiralAngle, 0.0, backlash, 0.25, 0.05 * moduleVal),
+               [p.x, facing * p.y, facing * (p.z - apex)]);
+}
+
+// A machined segment whose ends are named. In the fold it is its finished
+// prism, capped and extended, as Phase 3's segments are, cut back at 45
+// degrees by `size` at a chamferEnd (the blank chamfered before the teeth).
+// Its cut, asked only when an end is a runout, is the space outside
+// `sectionField` within the cutter's reach past that end: the cutter's disc
+// in the half-section, of radius Rc centred at (rootR + Rc, the end plane),
+// so the floor of the gaps rises from the root along the cutter's arc into
+// the neighbour, which body cuts after the fold. An end is [kind, size]: 0 a
+// plane, 1 a runout (size the cutter's radius), 2 a chamfer. The ternaries
+// choose only between constants.
+machinedSegment(sectionField, blankR, rootR, from, to, want, bottomEnd, topEnd) {
+  s = sectionField;
+  r = length(p.xy);
+  radial = r - blankR;
+  chamferBottom = min((radial + (from - p.z) + bottomEnd.y) / sqrt2, bottomEnd.x > 1.5 ? nothing : neg(nothing));
+  chamferTop = min((radial + (p.z - to) + topEnd.y) / sqrt2, topEnd.x > 1.5 ? nothing : neg(nothing));
+  q = prismQuad(s, from, to);
+  ownQuad = [max(q.x, chamferBottom, chamferTop),
+             max(q.y, chamferBottom, chamferTop),
+             max(q.z, chamferBottom, chamferTop),
+             max(q.w, chamferBottom, chamferTop)];
+  runoutBottom = bottomEnd.x > 0.5 && bottomEnd.x < 1.5;
+  runoutTop = topEnd.x > 0.5 && topEnd.x < 1.5;
+  reachBottom = max(length([r - (rootR + bottomEnd.y), p.z - from]) - bottomEnd.y, runoutBottom ? neg(nothing) : nothing);
+  reachTop = max(length([r - (rootR + topEnd.y), p.z - to]) - topEnd.y, runoutTop ? neg(nothing) : nothing);
+  cut = max(neg(s), min(reachBottom, reachTop));
+  return want > 2.5 ? q1(runoutBottom || runoutTop ? cut : nothing) : ownQuad;
+}
+
+// A thread whose ends are named: machinedSegment of thread.male between the
+// major diameter and the basic minor, with a threadRunout handed to it as a
+// plane end, and its own cut for each threadRunout. That cut is the groove,
+// the space outside thread.male, within the triangle the floor's line closes
+// in the half-section: past the end plane, outside the line from (root, the
+// plane) to (major, the plane + length), and inside the major diameter. An
+// end is [kind, size], kind 3 a thread runout; the ternaries choose only
+// between constants.
+threadedSegment(major, pitchVal, from, to, want, bottomEnd, topEnd) {
+  section = isoThread.male(major, pitchVal);
+  majorR = major / 2.0;
+  rootR = isoThread.minorDia(major, pitchVal) / 2.0;
+  machined = machinedSegment(section, majorR, rootR, from, to, want,
+                             [bottomEnd.x > 2.5 ? 0.0 : bottomEnd.x, bottomEnd.y],
+                             [topEnd.x > 2.5 ? 0.0 : topEnd.x, topEnd.y]);
+  r = length(p.xy);
+  depth = majorR - rootR;
+  bottomLine = (depth * (from - p.z) - (r - rootR) * bottomEnd.y) / length([depth, bottomEnd.y]);
+  topLine = (depth * (p.z - to) - (r - rootR) * topEnd.y) / length([depth, topEnd.y]);
+  reachBottom = max(bottomLine, p.z - from, r - majorR, bottomEnd.x > 2.5 && bottomEnd.x < 3.5 ? neg(nothing) : nothing);
+  reachTop = max(topLine, to - p.z, r - majorR, topEnd.x > 2.5 && topEnd.x < 3.5 ? neg(nothing) : nothing);
+  runoutCut = max(neg(section), min(reachBottom, reachTop));
+  // A DIN 76 undercut at an end (kind 4, its size the form): the threaded part
+  // cut by the groove's flank, and the groove's floor and fillet added back
+  // over it, overlapping the threaded part under its last teeth so no surface
+  // lies inside between them.
+  flank = max(topEnd.x > 3.5 ? undercutFlank(major, pitchVal, topEnd.y, to, -1.0) : neg(nothing),
+              bottomEnd.x > 3.5 ? undercutFlank(major, pitchVal, bottomEnd.y, from, 1.0) : neg(nothing));
+  gTop0 = topEnd.x > 3.5 ? undercutGroove(major, pitchVal, topEnd.y, to, -1.0, 0.0) : nothing;
+  gTopE = topEnd.x > 3.5 ? undercutGroove(major, pitchVal, topEnd.y, to, -1.0, 100000.0) : nothing;
+  gBot0 = bottomEnd.x > 3.5 ? undercutGroove(major, pitchVal, bottomEnd.y, from, 1.0, 0.0) : nothing;
+  gBotE = bottomEnd.x > 3.5 ? undercutGroove(major, pitchVal, bottomEnd.y, from, 1.0, 100000.0) : nothing;
+  return want > 2.5 ? q1(min(machined.x, runoutCut))
+                    : (topEnd.x > 3.5 || bottomEnd.x > 3.5
+                       ? [min(max(machined.x, flank), min(gTop0, gBot0)),
+                          min(max(machined.y, flank), min(gTop0, gBotE)),
+                          min(max(machined.z, flank), min(gTopE, gBot0)),
+                          min(max(machined.w, flank), min(gTopE, gBotE))]
+                       : machined);
+}
+
+// A DIN 76 thread undercut's flank, as a half-space positive outside it: the
+// line in the half-section rising at 30 degrees to the axis from the floor to
+// the major diameter, which it reaches g2 in from the end plane `plane`.
+// `inward` is the direction from that plane into the thread along z, -1 at a
+// top end and +1 at a bottom one, so w below is the distance in from the
+// plane. Only the threaded part is cut by it.
+undercutFlank(major, pitchVal, form, plane, inward) {
+  w = inward * (p.z - plane);
+  return (1.7320508075688772 * (length(p.xy) - major / 2.0) + (isoThread.undercutLength(pitchVal, form) - w)) / 2.0;
+}
+
+// The undercut's floor and fillet, turned about the axis: in the half-section
+// (radius, distance in from the plane), the floor at dg / 2 from the plane to
+// g2 in, under the threaded part as far as the flank starts, and where it
+// meets the plane a fillet of radius r, concave, rising to dg / 2 + r. Past
+// the plane, extended by `ext`, it continues at that radius. Written as two
+// rectangles in the half-section, the floor's and the fillet's corner, the
+// second with the fillet's disc taken out, rather than as an outline: a
+// thread end whose kind a slider decides is a runtime choice, and both of its
+// branches are built, so what a thread without an undercut carries must cost
+// little.
+undercutGroove(major, pitchVal, form, plane, inward, ext) {
+  w = inward * (p.z - plane);
+  r = length(p.xy);
+  floorR = isoThread.undercutDia(major, pitchVal) / 2.0;
+  rho = isoThread.undercutRadius(pitchVal, form);
+  g2 = isoThread.undercutLength(pitchVal, form);
+  floorAxial = max(neg(ext) - w, w - g2);
+  floorBox = length([max(r - floorR, 0.0), max(floorAxial, 0.0)]) + min(max(r - floorR, floorAxial), 0.0);
+  cornerAxial = max(neg(ext) - w, w - rho);
+  cornerBox = length([max(r - floorR - rho, 0.0), max(cornerAxial, 0.0)]) + min(max(r - floorR - rho, cornerAxial), 0.0);
+  disc = length([r - floorR - rho, w - rho]) - rho;
+  return min(floorBox, max(cornerBox, neg(disc)));
+}
+
+// What a joint answers, other than its blend: nothing as a field, capped or
+// extended one way, but everything extended both ways, so the fold's shaft
+// and open runs pass it unchanged; nothing as a starting plane or a cut, and
+// as an ending plane the lowest there is, so body's end faces pass it too.
+// Asked with want 6 a fillet answers its radius, and with want 7 a chamfer its
+// size; everything else answers nothing to both, and body blends with what it
+// is told. Its envelope (want 4) is its field, so shaft.envelope passes it as
+// body does, and its reach (want 5) is none: a blend stays inside the larger of
+// the segments it joins.
+jointAnswer(eDown, eUp, want) {
+  return want > 4.5 ? q1(0.0)
+       : (want > 3.5 ? [nothing, nothing, nothing, neg(nothing)]
+       : (want > 2.5 ? q1(nothing)
+       : (want > 1.5 ? q1(neg(nothing))
+       : (want > 0.5 ? q1(nothing)
+                     : [nothing, nothing, nothing, neg(nothing)]))));
+}
+
+// A section segment's reach from the axis: unbounded. Its field is the
+// caller's, and a library function cannot read a parameter's .box (the box is
+// expanded before the clone reaches the caller's file), so the shaft's box is
+// unbounded across a section; a caller who knows better sets the shaft's .box.
+sectionReach(field) {
+  return nothing;
+}
+
+// What a segment answers: its field when `want` is 0, the plane it starts on
+// when 1, the plane it ends on when 2 and its cut when 3, which is nothing
+// unless an end runs out. body always asks with a constant, so
+// each answer is one of the four outright.
+segmentAnswer(want, field, from, to) {
+  return want > 2.5 ? nothing : (want > 1.5 ? to : (want > 0.5 ? from : field));
+}
+
+// The distance from q to the segment from a to b, in 2D. A segment of length
+// zero is its point: an extension of zero leaves one, and it must read as the
+// point rather than as nothing.
+segmentDistance2(q, a, b) {
+  edge = b - a;
+  offset = q - a;
+  along = clamp(dot(offset, edge) / max(dot(edge, edge), 1e-12), 0.0, 1.0);
+  return length(offset - edge * along);
+}
+
+// The exact signed distance to a taper of radius r0 at z = from and r1 at
+// z = to, continued as plain diameters down to the plane z = low and up to
+// z = high (low <= from < to <= high). A prism's formula is not enough here:
+// above the small end of a narrowing taper a point can lie nearest the sloped
+// side, not the rim, so the distance is taken in the taper's own half-section,
+// at q = (distance from the axis, z), as the nearest of its five edges: the
+// bottom cap, the side below the taper, the slope, the side above it and the
+// top cap. The axis is no edge of it, and for q on its side of the axis the
+// nearest point of each cap is too.
+//
+// The four edges that run along or across the axis are measured by clamping
+// rather than by projecting onto them. An extended side runs from a plane a
+// hundred metres off, and q minus that end, in float32, keeps only about a
+// hundredth of a millimetre; clamping z between the side's two planes only
+// ever subtracts the near one. The slope's two ends are both its own, so it
+// takes the general segment distance.
+//
+// The sign comes from containment, low <= z <= high and r <= radius(z), and is
+// applied by a select between the magnitude and its negation, as profileXY's
+// is: over a surface cell the condition is undecided and the bound widens to
+// the magnitude's range, which is the cell's size there.
+turnedTaperWith(q, slope, radiusHere, r0, r1, from, to, low, high) {
+  bottomCap = length([max(q.x - r0, 0.0), p.z - low]);
+  sideBelow = length([q.x - r0, max(low - p.z, p.z - from, 0.0)]);
+  sideAbove = length([q.x - r1, max(to - p.z, p.z - high, 0.0)]);
+  topCap = length([max(q.x - r1, 0.0), p.z - high]);
+  nearest = min(bottomCap, sideBelow, slope, sideAbove, topCap);
+  containment = max(low - p.z, p.z - high, q.x - radiusHere);
+  return containment > 0.0 ? nearest : neg(nearest);
+}
+
+taperQuad(r0, r1, from, to) {
+  q = [length(p.xy), p.z];
+  slope = segmentDistance2(q, [r0, from], [r1, to]);
+  radiusHere = r0 + (r1 - r0) * clamp((p.z - from) / (to - from), 0.0, 1.0);
+  return [turnedTaperWith(q, slope, radiusHere, r0, r1, from, to, from, to),
+          turnedTaperWith(q, slope, radiusHere, r0, r1, from, to, from - 100000.0, to),
+          turnedTaperWith(q, slope, radiusHere, r0, r1, from, to, from, to + 100000.0),
+          turnedTaperWith(q, slope, radiusHere, r0, r1, from, to, from - 100000.0, to + 100000.0)];
+}

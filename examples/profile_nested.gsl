@@ -1,0 +1,89 @@
+@scene(220, 20)
+
+// nested() makes one solid of several surfaces that do not cross, each field
+// negative on the solid's side of its own surface. On the left, a flange cut
+// from profile loops: a counterclockwise outline with rounded corners, four
+// clockwise bolt holes and a clockwise bore, and inside the bore a
+// counterclockwise hub with its own clockwise hole. The loops go in any order
+// and nest to any depth; their winding says which side is solid. On the right,
+// the same function in 3D: a block with a spherical void, each an exact
+// distance, cut open along y = 0 to show the void. Where every field is exact,
+// so is the result. Lengths are in mm.
+
+// Half the flange's thickness, and the round on its rims.
+@range(1, 8) halfThickness = 3.0;
+@range(0, 2) rimRadius = 0.5;
+
+// The outline: its half width and half height, and the round on its corners.
+@range(25, 45) halfWidth = 34.0;
+@range(18, 35) halfHeight = 24.0;
+@range(4, 12) cornerRadius = 9.0;
+
+// The holes: the bolt holes at the corners, the bore, and the hub in the bore
+// with its own hole.
+@range(1, 4) boltRadius = 3.0;
+@range(8, 16) boreRadius = 13.0;
+@range(3, 10) hubRadius = 7.0;
+@range(1, 5) hubHoleRadius = 3.0;
+
+// The block's half sizes and the void's radius.
+@range(10, 25) blockHalf = 18.0;
+@range(3, 12) voidRadius = 9.0;
+
+// A circle of four quarter arcs about center: counterclockwise, solid inside.
+circleXY(center, radius) {
+  k = 1 / radius;
+  return profileXY(
+    [[center.x + radius, center.y], [center.x, center.y + radius],
+     [center.x - radius, center.y], [center.x, center.y - radius]],
+    [k, k, k, k]);
+}
+
+// The same circle wound clockwise: a hole, solid outside.
+circleHoleXY(center, radius) {
+  k = neg(1 / radius);
+  return profileXY(
+    [[center.x + radius, center.y], [center.x, center.y - radius],
+     [center.x - radius, center.y], [center.x, center.y + radius]],
+    [k, k, k, k]);
+}
+
+// A rectangle whose corners are quarter arcs of cornerRadius, counterclockwise.
+outlineXY() {
+  w = halfWidth;
+  h = halfHeight;
+  r = cornerRadius;
+  k = 1 / r;
+  return profileXY(
+    [[neg(w) + r, neg(h)], [w - r, neg(h)], [w, neg(h) + r], [w, h - r],
+     [w - r, h], [neg(w) + r, h], [neg(w), h - r], [neg(w), neg(h) + r]],
+    [0, k, 0, k, 0, k, 0, k]);
+}
+
+// The flange's profile: every loop in one nested(), each bolt hole on its
+// corner's centre.
+flangeProfile() {
+  cx = halfWidth - cornerRadius;
+  cy = halfHeight - cornerRadius;
+  return nested([
+    outlineXY(),
+    circleHoleXY([cx, cy], boltRadius), circleHoleXY([neg(cx), cy], boltRadius),
+    circleHoleXY([neg(cx), neg(cy)], boltRadius), circleHoleXY([cx, neg(cy)], boltRadius),
+    circleHoleXY([0, 0], boreRadius),
+    circleXY([0, 0], hubRadius),
+    circleHoleXY([0, 0], hubHoleRadius)]);
+}
+
+// An exact box of half size blockHalf, and a void: neg() of a sphere, so it is
+// negative outside the sphere, on the solid's side.
+blockWithVoid() {
+  corner = abs(p) - [blockHalf, blockHalf, blockHalf];
+  block = length(max(corner, 0)) + min(max(corner.x, max(corner.y, corner.z)), 0);
+  hollow = neg(length(p) - voidRadius);
+  return nested([block, hollow]);
+}
+
+flange = remap(intersectRound([flangeProfile(), abs(p.z) - halfThickness], rimRadius), p - [-50, 0, 0]);
+cutBlock = remap(max(blockWithVoid(), p.y), p - [60, 0, 0]);
+
+return flange, cutBlock;

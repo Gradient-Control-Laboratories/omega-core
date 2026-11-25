@@ -4,6 +4,9 @@
 //
 // It sits under cmd/serve, not in compile, to use serve's server and configuration (cmd/serve/internal)
 // as they are.
+//
+// `compile export`, which `gsl export` runs, is here too (export.go): it finds the viewer's files as
+// `compile viewer` does, and saves them with a file's compiled field as a folder that needs no server.
 package viewer
 
 import (
@@ -22,8 +25,8 @@ import (
 	"strings"
 	"time"
 
-	"gradientcontrol.com/omega/core/cmd/serve/internal/config"
-	"gradientcontrol.com/omega/core/cmd/serve/internal/server"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/serve/internal/config"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/serve/internal/server"
 )
 
 const usage = `Usage of compile viewer (gsl viewer):

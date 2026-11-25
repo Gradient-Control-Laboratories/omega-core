@@ -5,7 +5,7 @@
 package refs
 
 import (
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // MeshReference is one call site's request for an imported mesh asset.
@@ -74,6 +74,12 @@ func (w *walker) walkPackage(m *program.Package, getImport program.GetImportFunc
 			w.operand(r)
 		}
 		for _, r := range f.MaterialReturns {
+			w.operand(r)
+		}
+		for _, r := range f.GradientReturns {
+			w.operand(r)
+		}
+		for _, r := range f.DisplacedReturns {
 			w.operand(r)
 		}
 		if getImport == nil {

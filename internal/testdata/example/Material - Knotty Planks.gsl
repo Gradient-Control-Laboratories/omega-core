@@ -26,9 +26,7 @@
 // age is how far indoor light has changed the colour, from fresh (0) to fully
 // aged (1), which also yellows the linseed.
 
-age = 0.00;
-age.min = 0;
-age.max = 1;
+@range(0, 1) age = 0.00;
 look = [0, age, 0];
 
 plankLength = 1200;

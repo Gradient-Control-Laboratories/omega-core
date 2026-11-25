@@ -14,16 +14,16 @@ import (
 	"strings"
 	"sync"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/assembler/meshplan"
-	"gradientcontrol.com/omega/core/assembler/slider"
-	"gradientcontrol.com/omega/core/assembler/ui"
-	"gradientcontrol.com/omega/core/assembler/variation"
-	"gradientcontrol.com/omega/core/backend/audio"
-	"gradientcontrol.com/omega/core/backend/wgsl"
-	"gradientcontrol.com/omega/core/internal/build"
-	"gradientcontrol.com/omega/core/internal/meshimport"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/meshplan"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/slider"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/ui"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/variation"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/audio"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/build"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/meshimport"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // ProgressFunc reports compilation or meshing progress milestones.
@@ -37,6 +37,17 @@ type Request struct {
 	// Meshes finds the STL files the source's importMesh declarations name;
 	// nil when the server has none to offer.
 	Meshes meshimport.Finder `json:"-"`
+	// AnalyticNormals asks for each return's analytic gradient to be emitted
+	// as gsl_gradField, for the Render panel's Analytic normals.
+	AnalyticNormals bool `json:"analyticNormals,omitempty"`
+}
+
+// GradientNote is a return whose analytic normal is not available, so the
+// viewer takes central differences for it. Return is 1-based, as shapeIndex is;
+// 0 means the whole program.
+type GradientNote struct {
+	Return int    `json:"return"`
+	Reason string `json:"reason"`
 }
 
 // Audio contains compiled Web Audio synthesis JavaScript and duration.
@@ -57,6 +68,8 @@ type Response struct {
 	Sliders        []slider.SliderInfo   `json:"sliders,omitempty"`
 	UIControls     []ui.Control          `json:"uiControls,omitempty"`
 	Scene          *program.Scene        `json:"scene,omitempty"`
+	Captions       []*program.Caption    `json:"captions,omitempty"`
+	Duration       *program.Duration     `json:"duration,omitempty"`
 	MeshDecls      any                   `json:"meshDecls,omitempty"`
 	Audio          *Audio                `json:"audio,omitempty"`
 	Warnings       []program.Error       `json:"warnings,omitempty"`
@@ -65,6 +78,10 @@ type Response struct {
 	// MeshSdfBindings carries the preview grid the shader samples for each of
 	// MeshSdfSlots.
 	MeshSdfBindings []wgsl.MeshSdfBinding `json:"meshSdfBindings,omitempty"`
+
+	// GradientNotes lists the returns without an analytic normal, when the
+	// request asked for AnalyticNormals.
+	GradientNotes []GradientNote `json:"gradientNotes,omitempty"`
 }
 
 // Process executes the in-process GSL compilation pipeline (AST assembly, WGSL codegen, and audio JS codegen).
@@ -86,6 +103,9 @@ func Process(req Request, sourcePaths []string, progressFn ProgressFunc) *Respon
 	// The mesh plan lists the meshes the program places (mesh(i, placement)),
 	// which the viewer draws itself, as omega's canvas does.
 	asmOpts := append(AssemblerOptions(sourcePaths, progressFn), assembler.ExtractMeshPlan("leaf-"))
+	if req.AnalyticNormals {
+		asmOpts = append(asmOpts, assembler.WithAnalyticGradient())
+	}
 
 	asmRes, err := assembler.Assemble([]string{req.Source}, asmOpts...)
 	if err != nil {
@@ -96,18 +116,35 @@ func Process(req Request, sourcePaths []string, progressFn ProgressFunc) *Respon
 	resp.Sliders = asmRes.Sliders
 	resp.UIControls = asmRes.UIControls
 	resp.Scene = asmRes.Scene
+	resp.Captions = asmRes.Captions
+	resp.Duration = asmRes.Duration
 	resp.Warnings = collectWarnings(req.Source, asmRes.Program, asmRes.Diagnostics)
 
 	if len(asmRes.Program.Returns()) > 0 {
 		// With placed meshes, the shader draws only the program's SDF parts.
 		renderProg := asmRes.Program
+		previewed := false
 		if plan := asmRes.MeshPlan; plan != nil && plan.Root != nil {
 			if decls := plan.MeshDecls(); len(decls) > 0 {
 				resp.MeshDecls = decls
 			}
 			renderProg = meshplan.PreviewProgram(renderProg, plan, asmRes.SdfSubtrees)
+			previewed = renderProg != asmRes.Program
 		} else if len(asmRes.AudioReturns) > 0 {
 			renderProg = variation.PrunePrimary(renderProg)
+		}
+		if req.AnalyticNormals {
+			if previewed {
+				// The preview program's returns are the plan's SDF parts, not
+				// the returns the gradients were taken of, and it carries no
+				// lowered return fields, so the shader gets no gsl_gradField.
+				resp.GradientNotes = append(resp.GradientNotes, GradientNote{Return: 0,
+					Reason: "the program places meshes; its preview shader has no analytic gradient"})
+			} else {
+				for _, n := range asmRes.GradientNotes {
+					resp.GradientNotes = append(resp.GradientNotes, GradientNote{Return: n.Return + 1, Reason: n.Reason})
+				}
+			}
 		}
 
 		wgslOpts := []wgsl.Option{}

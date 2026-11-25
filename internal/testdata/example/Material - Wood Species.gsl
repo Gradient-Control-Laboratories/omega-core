@@ -45,15 +45,9 @@
 // outdoors, from fresh (0) to years (1): silver grey, the latewood standing
 // proud, drying checks.
 
-oil = 0;
-oil.min = 0;
-oil.max = 1;
-age = 0.00;
-age.min = 0;
-age.max = 1;
-weather = 0.00;
-weather.min = 0;
-weather.max = 1;
+@range(0, 1) oil = 0;
+@range(0, 1) age = 0.00;
+@range(0, 1) weather = 0.00;
 look = [oil, age, weather];
 
 up = [0, 0, 1];

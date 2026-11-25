@@ -3,8 +3,8 @@ package property
 import (
 	"fmt"
 
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/program"
 )
 
 // PROPERTIES CARRIED OUT OF A FUNCTION. A property is a fact about a named
@@ -117,7 +117,7 @@ import (
 // carriedProperties are the properties a function's returned local can carry.
 // The frame coordinates u and v are carried only in a program that reads one:
 // in any other, eraseFrames has taken them off every function first.
-var carriedProperties = []string{"color", "material", uProperty, vProperty, simplePropName}
+var carriedProperties = []string{"color", "material", uProperty, vProperty, simplePropName, featureSizePropName}
 
 // shapeProperties are the properties only a shape takes, which tell a shape's
 // stand-in from a value's (see A PART'S STAND-IN above).
@@ -186,17 +186,180 @@ func CarryReturnProperties(prog *program.Program) error {
 	}
 	// revolve's frame is not one a companion can return (see revolveFrame),
 	// and like any frame it is carried only in a program that reads one.
-	var rev *revolveFrame
+	var frames builtinFrames
 	if packageReadsFrame(prog.Primary) {
-		if rev = findRevolve(pkgs, paths); rev != nil {
-			carriers[rev.key] = carrier{slots: [][]string{{uProperty, vProperty}}}
+		if frames.rev = findRevolve(pkgs, paths); frames.rev != nil {
+			carriers[frames.rev.key] = carrier{slots: [][]string{{uProperty, vProperty}}}
+			if frames.rev.partial {
+				partial := frames.rev.key
+				partial.params = 4
+				carriers[partial] = carrier{slots: [][]string{{uProperty, vProperty}}}
+			}
+		}
+		if frames.sweep = findSweep(pkgs, paths); frames.sweep != nil {
+			carriers[frames.sweep.key] = carrier{slots: [][]string{{uProperty, vProperty}}}
+			for _, form := range frames.sweep.open {
+				open := frames.sweep.key
+				open.name, open.params = form.name, form.params
+				carriers[open] = carrier{slots: [][]string{{uProperty, vProperty}}}
+			}
 		}
 	}
 	if len(carriers) == 0 {
 		return nil
 	}
-	carryCalls(prog.Primary, carriers, rev)
+	carryCalls(prog.Primary, carriers, frames)
 	return nil
+}
+
+// builtinFrames are the builtin functions whose frame is written at the call,
+// from frame reads of their arguments no companion could make: revolve's
+// (revolveFrame) and sweep's (sweepFrame).
+type builtinFrames struct {
+	rev   *revolveFrame
+	sweep *sweepFrame
+}
+
+// valueOr is the value of prop for the call fc when fc is one of these, and
+// companion, the call of an ordinary carrier's companion, when it is not.
+func (f builtinFrames) valueOr(fc *program.FnCall, prop string, companion *program.Operand) *program.Operand {
+	return f.sweep.valueOr(fc, prop, f.rev.valueOr(fc, prop, companion))
+}
+
+// SWEEP'S FRAME. builtin's sweep(section, path) (sweep.gsl) is one remap of its
+// section, read at the path's distance and the height. Its frame is the
+// path's own u, the distance along the path, and v the section's own u where
+// the sweep reads the section; both are frame reads of arguments, so, as for
+// revolve, they are written at the call:
+//
+//	rail = sweep(moulding, route);   becomes   gslCarry1 = route.u;
+//	                                           gslCarry2 = remap(moulding.u, <sweep's coordinate>);
+//	                                           rail = sweep(moulding, route);
+//	                                           rail.u = gslCarry1;  rail.v = gslCarry2;
+//
+// The open sweeps, sweepOpen(section, points[, curvatures]) and
+// sweepOpenEdges(section, points, edges), have the same frame about the chain's
+// openProfileXY (or openProfileEdgesXY) on the same points: a body is not
+// one remap (its caps read the section elsewhere), so its values are written
+// from sweep's coordinate with that profile as the path.
+type sweepFrame struct {
+	key  carrierKey
+	fn   *program.Function
+	open []openSweep // builtin's open sweeps, each overload
+}
+
+// openSweep is one overload of an open sweep and the open profile its frame is
+// read from, called on its arguments after the section.
+type openSweep struct {
+	name    string
+	params  int
+	profile string
+}
+
+const (
+	sweepName         = "sweep"
+	sweepOpenName     = "sweepOpen"
+	openProfileXYName = "openProfileXY"
+
+	sweepOpenEdgesName     = "sweepOpenEdges"
+	openProfileEdgesXYName = "openProfileEdgesXY"
+)
+
+// findSweep finds builtin's two-parameter sweep among pkgs, or nil when it is
+// not there or its body is no longer one remap of its first parameter.
+func findSweep(pkgs []*program.Package, paths []string) *sweepFrame {
+	for i, pkg := range pkgs {
+		if pkg == nil || pkg.Path != builtinPath {
+			continue
+		}
+		for _, f := range pkg.Files {
+			if f == nil {
+				continue
+			}
+			for _, ft := range f.FnTypes {
+				if ft == nil || ft.Name != sweepName {
+					continue
+				}
+				for _, g := range ft.Groups {
+					if g == nil || g.ParamCount != 2 || len(g.Functions) == 0 {
+						continue
+					}
+					fn := g.Functions[0]
+					if remapCoordinate(fn, 2) == nil {
+						return nil
+					}
+					return &sweepFrame{key: carrierKey{pkgPath: paths[i], name: sweepName, params: 2}, fn: fn,
+						open: openSweeps(pkg)}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// openSweeps are pkg's open sweep overloads: sweepOpen of two and three
+// parameters, read from openProfileXY, and sweepOpenEdges of three, read from
+// openProfileEdgesXY.
+func openSweeps(pkg *program.Package) []openSweep {
+	forms := []openSweep{
+		{sweepOpenName, 2, openProfileXYName},
+		{sweepOpenName, 3, openProfileXYName},
+		{sweepOpenEdgesName, 3, openProfileEdgesXYName},
+	}
+	var out []openSweep
+	for _, f := range pkg.Files {
+		if f == nil {
+			continue
+		}
+		for _, ft := range f.FnTypes {
+			if ft == nil {
+				continue
+			}
+			for _, form := range forms {
+				if ft.Name == form.name && hasOverload(ft, form.params) {
+					out = append(out, form)
+				}
+			}
+		}
+	}
+	return out
+}
+
+// valueOr is the value of prop for the call fc when fc is a sweep or an open
+// sweep, and otherwise, the value it was handed.
+func (sw *sweepFrame) valueOr(fc *program.FnCall, prop string, otherwise *program.Operand) *program.Operand {
+	if sw == nil || fc == nil || fc.Reference == nil || fc.Reference.PkgPath != sw.key.pkgPath {
+		return otherwise
+	}
+	arg := func(i int) *program.Operand { return proto.Clone(fc.Arguments[i]).(*program.Operand) }
+	var path, u *program.Operand
+	switch {
+	case fc.Reference.Name == sw.key.name && len(fc.Arguments) == 2:
+		path = arg(1)
+		u = nary(program.Operation_SURFACEU, arg(1))
+	case sw.openProfile(fc) != "":
+		// The chain's open profile, called as the sweep was; its u is its
+		// companion's, since a frame read of a call written here would reach
+		// no companion.
+		profile := &program.FnCall{
+			Reference: &program.Reference{Prefix: fc.Reference.Prefix, Name: sw.openProfile(fc), PkgPath: fc.Reference.PkgPath},
+			Arguments: fc.Arguments[1:],
+		}
+		path = &program.Operand{T: &program.Operand_FnCall{FnCall: proto.Clone(profile).(*program.FnCall)}}
+		u = companionCall(profile, uProperty, 0, false)
+	default:
+		return otherwise
+	}
+	if prop == uProperty {
+		return u
+	}
+	params := map[string]*program.Operand{
+		sw.fn.Parameters[0].Name: fc.Arguments[0],
+		sw.fn.Parameters[1].Name: path,
+	}
+	return nary(program.Operation_REMAP,
+		nary(program.Operation_SURFACEU, arg(0)),
+		substituteParams(remapCoordinate(sw.fn, 2), params))
 }
 
 // REVOLVE'S FRAME. builtin's revolve(profile, axisPoint, axisDirection)
@@ -216,9 +379,15 @@ func CarryReturnProperties(prog *program.Program) error {
 //
 // A function that returns a revolve does not carry this frame out: there is
 // no companion for its own to call.
+//
+// The partial revolve, revolve(profile, axisPoint, axisDirection, angle), has
+// the same frame and is not one remap (its caps read the profile elsewhere),
+// so it is carried here too, its values read from its first three arguments
+// and the full revolve's coordinate.
 type revolveFrame struct {
-	key carrierKey
-	fn  *program.Function
+	key     carrierKey
+	fn      *program.Function
+	partial bool // builtin also has the four-parameter partial revolve
 }
 
 const (
@@ -251,7 +420,8 @@ func findRevolve(pkgs []*program.Package, paths []string) *revolveFrame {
 					if revolveCoordinate(fn) == nil {
 						return nil
 					}
-					return &revolveFrame{key: carrierKey{pkgPath: paths[i], name: revolveName, params: 3}, fn: fn}
+					return &revolveFrame{key: carrierKey{pkgPath: paths[i], name: revolveName, params: 3}, fn: fn,
+						partial: hasOverload(ft, 4)}
 				}
 			}
 		}
@@ -262,7 +432,14 @@ func findRevolve(pkgs []*program.Package, paths []string) *revolveFrame {
 // revolveCoordinate is the coordinate fn's body remaps its first parameter by,
 // or nil when the body is not that one remap.
 func revolveCoordinate(fn *program.Function) *program.Operand {
-	if fn == nil || len(fn.Parameters) != 3 || len(fn.Returns) != 1 || len(fn.Assignments) != 0 {
+	return remapCoordinate(fn, 3)
+}
+
+// remapCoordinate is the coordinate the body of fn, a function of params
+// parameters, remaps its first parameter by, or nil when the body is not that
+// one remap.
+func remapCoordinate(fn *program.Function, params int) *program.Operand {
+	if fn == nil || len(fn.Parameters) != params || len(fn.Returns) != 1 || len(fn.Assignments) != 0 {
 		return nil
 	}
 	e, ok := fn.Returns[0].T.(*program.Operand_Expression)
@@ -279,7 +456,8 @@ func revolveCoordinate(fn *program.Function) *program.Operand {
 // valueOr is the value of prop for the call fc when fc is a revolve, and
 // companion, the call of an ordinary carrier's companion, when it is not.
 func (rev *revolveFrame) valueOr(fc *program.FnCall, prop string, companion *program.Operand) *program.Operand {
-	if rev == nil || fc == nil || fc.Reference == nil || len(fc.Arguments) != 3 ||
+	if rev == nil || fc == nil || fc.Reference == nil ||
+		!(len(fc.Arguments) == 3 || (rev.partial && len(fc.Arguments) == 4)) ||
 		fc.Reference.Name != rev.key.name || fc.Reference.PkgPath != rev.key.pkgPath {
 		return companion
 	}
@@ -423,7 +601,8 @@ func addCompanions(pkg *program.Package, pkgPath string, slotsOf map[*program.Fu
 }
 
 // dropReturnedSimple takes the stand-in off the local fn returns at place i,
-// when the local sets one itself.
+// when the local sets one itself, and the size it switches at with it, so
+// the function does not prune the local by it.
 func dropReturnedSimple(fn *program.Function, i int) {
 	a, place := returnedLocal(fn, fn.Returns[i])
 	if a == nil {
@@ -432,7 +611,7 @@ func dropReturnedSimple(fn *program.Function, i int) {
 	v := a.Variables[place]
 	kept := v.Properties[:0]
 	for _, p := range v.Properties {
-		if p != nil && p.Name == simplePropName {
+		if p != nil && (p.Name == simplePropName || p.Name == featureSizePropName) {
 			continue
 		}
 		kept = append(kept, p)
@@ -537,6 +716,23 @@ func returnedProperties(fn *program.Function, ret *program.Operand, pkgPath stri
 	// What a carrier's part carries makes it a shape: a colour carries nothing.
 	if !shape {
 		delete(out, simplePropName)
+		delete(out, featureSizePropName)
+	}
+	// A stand-in switches at the size of the part it stands in for, the
+	// smallest extent of the box the local declares, so a part placed through
+	// a remap, which keeps no box, still has one (MarkParts).
+	if _, ok := out[simplePropName]; ok {
+		if _, sized := out[featureSizePropName]; !sized {
+			for _, p := range last.Variables[place].Properties {
+				if p != nil && p.Name == "box" {
+					out[featureSizePropName] = call(featureExtentName, program.CloneOperand(p.Expression))
+				}
+			}
+		}
+	} else {
+		// Without a stand-in a feature's size is its own to prune by, in the
+		// function (drill.hole's void), and is not carried.
+		delete(out, featureSizePropName)
 	}
 	return nonEmpty(out)
 }
@@ -577,8 +773,19 @@ func companionOf(fn *program.Function, expr *program.Operand, keep bool) *progra
 	for _, a := range fn.Assignments {
 		ca := proto.Clone(a).(*program.Assignment)
 		if !keep {
+			// What a value looks like stays with it: a colour built in a local
+			// with a stand-in or a fine detail of its own (t.simple, t.detail),
+			// set on the part as s.color = t, is that colour only with them, and
+			// Expand lowers them inside the companion as it would inside fn.
+			// Every other property is the part's, carried by its own companion.
 			for _, v := range ca.Variables {
-				v.Properties = nil
+				kept := v.Properties[:0]
+				for _, prop := range v.Properties {
+					if prop != nil && (prop.Name == simplePropName || prop.Name == detailPropName || prop.Name == detailSizePropName) {
+						kept = append(kept, prop)
+					}
+				}
+				v.Properties = kept
 			}
 		}
 		c.Assignments = append(c.Assignments, ca)
@@ -592,7 +799,7 @@ func companionOf(fn *program.Function, expr *program.Operand, keep bool) *progra
 
 // carryCalls gives every call to a carrier in pkg's declarations and returns
 // the carried properties, hoisting a nested call into a declaration of its own.
-func carryCalls(pkg *program.Package, carriers map[carrierKey]carrier, rev *revolveFrame) {
+func carryCalls(pkg *program.Package, carriers map[carrierKey]carrier, frames builtinFrames) {
 	taken := map[string]bool{}
 	for _, f := range pkg.Files {
 		if f == nil {
@@ -629,7 +836,7 @@ func carryCalls(pkg *program.Package, carriers map[carrierKey]carrier, rev *revo
 				Start:      at.Start,
 				End:        at.End,
 				Variables:  []*program.Variable{{Name: name}},
-				Expression: rev.valueOr(fc, prop, companionCall(fc, prop, i, multi)),
+				Expression: frames.valueOr(fc, prop, companionCall(fc, prop, i, multi)),
 			})
 			return &program.Property{
 				Start:      at.Start,
@@ -693,7 +900,12 @@ func carryCalls(pkg *program.Package, carriers map[carrierKey]carrier, rev *revo
 								standIn(a, v, own, companionCall(fc.FnCall, prop, i, c.multi))
 								continue
 							}
-							v.Properties = append(v.Properties, carried(a, fc.FnCall, prop, i, c.multi))
+							cp := carried(a, fc.FnCall, prop, i, c.multi)
+							if prop == featureSizePropName {
+								// Marked as carried: a part keeps its own box (MarkParts).
+								cp.Expression = call(carriedSimpleName, cp.Expression)
+							}
+							v.Properties = append(v.Properties, cp)
 						}
 					}
 					out = append(out, a)
@@ -705,6 +917,23 @@ func carryCalls(pkg *program.Package, carriers map[carrierKey]carrier, rev *revo
 			if len(a.Variables) == 1 && a.Variables[0] != nil && !hasProperty(a.Variables[0], simplePropName) {
 				if stand, ok := withStandIns(a.Expression, carriers); ok {
 					standIn(a, a.Variables[0], propertyNames(a.Variables[0]), stand)
+					// The size it switches at is the smallest its calls carry,
+					// declared beside it unless the document set one.
+					if !hasProperty(a.Variables[0], featureSizePropName) {
+						var sizes []*program.Operand
+						for _, fc := range sizedCalls(a.Expression, carriers) {
+							sizes = append(sizes, carried(a, fc, featureSizePropName, 0, false).Expression)
+						}
+						if len(sizes) > 0 {
+							size := sizes[0]
+							if len(sizes) > 1 {
+								size = nary(program.Operation_MIN, sizes...)
+							}
+							a.Variables[0].Properties = append(a.Variables[0].Properties, &program.Property{
+								Start: a.Start, End: a.End, Name: featureSizePropName, Expression: call(carriedSimpleName, size),
+							})
+						}
+					}
 				}
 			}
 			a.Expression = hoistCalls(a.Expression, carriers, hoist(a, nil))
@@ -816,7 +1045,7 @@ func carriedBy(fc *program.FnCall, carriers map[carrierKey]carrier) []string {
 	}
 	var props []string
 	for _, p := range c.slots[0] {
-		if p != simplePropName {
+		if p != simplePropName && p != featureSizePropName {
 			props = append(props, p)
 		}
 	}
@@ -1041,4 +1270,59 @@ func operandReads(op *program.Operand, name string) bool {
 		panic(fmt.Sprintf("internal error: unhandled operand type %T in operandReads; please add a new case to this switch", t))
 	}
 	return false
+}
+
+// hasOverload reports whether ft has an overload of params parameters.
+func hasOverload(ft *program.FnType, params int) bool {
+	for _, g := range ft.Groups {
+		if g != nil && int(g.ParamCount) == params && len(g.Functions) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// openProfile is the open profile whose frame the open sweep fc carries, or ""
+// when fc is no open sweep of builtin's.
+func (sw *sweepFrame) openProfile(fc *program.FnCall) string {
+	for _, form := range sw.open {
+		if fc.Reference.Name == form.name && len(fc.Arguments) == form.params {
+			return form.profile
+		}
+	}
+	return ""
+}
+
+// sizedCalls are the single-return calls beneath op that carry a stand-in's
+// size, outermost first: the parts a placed declaration's stand-in stands in
+// for.
+func sizedCalls(op *program.Operand, carriers map[carrierKey]carrier) []*program.FnCall {
+	var out []*program.FnCall
+	var visit func(op *program.Operand)
+	visit = func(op *program.Operand) {
+		if op == nil {
+			return
+		}
+		switch t := op.T.(type) {
+		case *program.Operand_Expression:
+			if t.Expression != nil {
+				for _, o := range t.Expression.Operands {
+					visit(o)
+				}
+			}
+		case *program.Operand_FnCall:
+			fc := t.FnCall
+			if c, ok := carrierOf(fc, carriers); ok && !c.multi && hasSlot(c.slots[0], featureSizePropName) {
+				out = append(out, fc)
+				return
+			}
+			if fc != nil {
+				for _, a := range fc.Arguments {
+					visit(a)
+				}
+			}
+		}
+	}
+	visit(op)
+	return out
 }

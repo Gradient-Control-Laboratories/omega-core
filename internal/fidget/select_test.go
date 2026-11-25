@@ -3,8 +3,8 @@ package fidget
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 func TestSelectBranchOrder(t *testing.T) {

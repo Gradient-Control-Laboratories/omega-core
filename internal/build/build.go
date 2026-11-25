@@ -3,10 +3,10 @@ package build
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/internal/eval"
-	"gradientcontrol.com/omega/core/internal/scope"
-	"gradientcontrol.com/omega/core/internal/types"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/types"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 	errlog "log"
 )
 
@@ -176,6 +176,30 @@ func (b *Builder) build(prog *program.Program, progScope *scope.ProgScope) error
 		CheckScope(b, lastFileScope)
 	}
 
+	// Hand the displaced distances to delegates that march displaced surfaces,
+	// before the material returns: a return displaced inside its booleans is
+	// not also moved by its material's height.
+	if db, ok := b.delegate.(DisplacedReturnsBuilder); ok {
+		displacedOps := prog.DisplacedReturns()
+		if len(displacedOps) > 0 {
+			displacedExprs := make([]Expression, len(displacedOps))
+			for i, op := range displacedOps {
+				if op != nil {
+					expr, err := program.VisitOperand(op, b)
+					if err != nil {
+						return ErrLoc(lastFileScope, op.Start, err)
+					}
+					displacedExprs[i] = expr
+				}
+				CheckScope(b, lastFileScope)
+			}
+			if err := db.BuildPackageDisplacedReturns(displacedExprs); err != nil {
+				return err
+			}
+			CheckScope(b, lastFileScope)
+		}
+	}
+
 	// Hand pre-lowered color returns to delegates that render color.
 	// Optional: delegates that don't implement ColorReturnsBuilder render no color.
 	// Done before BuildPackageReturns so the delegate can weave the color function
@@ -218,6 +242,29 @@ func (b *Builder) build(prog *program.Program, progScope *scope.ProgScope) error
 				CheckScope(b, lastFileScope)
 			}
 			if err := mb.BuildPackageMaterialReturns(materialExprs); err != nil {
+				return err
+			}
+			CheckScope(b, lastFileScope)
+		}
+	}
+
+	// And for gradient returns, present only when assembly was asked for
+	// analytic gradients, for delegates that render analytic normals.
+	if gb, ok := b.delegate.(GradientReturnsBuilder); ok {
+		gradientOps := prog.GradientReturns()
+		if len(gradientOps) > 0 {
+			gradientExprs := make([]Expression, len(gradientOps))
+			for i, op := range gradientOps {
+				if op != nil {
+					expr, err := program.VisitOperand(op, b)
+					if err != nil {
+						return ErrLoc(lastFileScope, op.Start, err)
+					}
+					gradientExprs[i] = expr
+				}
+				CheckScope(b, lastFileScope)
+			}
+			if err := gb.BuildPackageGradientReturns(gradientExprs); err != nil {
 				return err
 			}
 			CheckScope(b, lastFileScope)

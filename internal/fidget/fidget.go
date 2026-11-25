@@ -192,9 +192,11 @@ void         render_result_free(RenderResult result);
 // render_result_free like the mesh/PNG results.
 RenderResult serialize_tape(const TreeIndex* outputs, size_t count);
 
-// serialize_tape with each output's colour (3) and material (12) trees, 15
+// serialize_tape with each output's colour (3) and material (16) trees, 19
 // indices per output, UINT64_MAX for one it lacks, and a displaced flag each.
-RenderResult serialize_tape_appearance(const TreeIndex* outputs, size_t count, const TreeIndex* appearance, const uint8_t* displaced);
+// slots is the indices per output the caller laid out; the library rejects a
+// layout other than its own.
+RenderResult serialize_tape_appearance(const TreeIndex* outputs, size_t count, const TreeIndex* appearance, size_t slots, const uint8_t* displaced);
 
 // The fragment entry point of a WGSL module as GLSL ES 3.00. Code 0 carries
 // JSON (the text and the names a WebGL2 host binds); any other code carries a
@@ -215,8 +217,8 @@ import (
 	"sync"
 	"unsafe"
 
-	"gradientcontrol.com/omega/core/program/noise"
-	"gradientcontrol.com/omega/core/program/noise/spinodoid"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/noise"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/noise/spinodoid"
 )
 
 var mu sync.Mutex
@@ -808,12 +810,60 @@ func GLSLES300(wgsl, entryPoint string) (*GLSL, error) {
 	return out, nil
 }
 
-// Appearance is one output's colour (3 trees) and material (12 trees, rows
-// flattened) for SerializeTapeWithAppearance; nil when the output has none.
+// What one output's appearance takes in the flat array handed to the Rust
+// serializer: its colour's trees, then its material's. A material is four rows
+// of four, flattened (surface, emissive, volume, lay: see tape.proto).
+const (
+	appearanceColorTrees    = 3
+	appearanceMaterialTrees = 16
+	appearanceSlots         = appearanceColorTrees + appearanceMaterialTrees
+)
+
+// errAppearanceLayout is the Rust serializer's code for an appearance laid out
+// with a different number of slots than it expects: the Go and Rust sides, or a
+// stale librender, disagree.
+const errAppearanceLayout = -43
+
+// Appearance is one output's colour (3 trees) and material (16 trees, four rows
+// of four flattened) for SerializeTapeWithAppearance; nil when the output has
+// none. Any other length is an error, not a quietly absent colour or material.
 type Appearance struct {
 	Color     []TreeIndex
 	Material  []TreeIndex
 	Displaced bool
+}
+
+// packAppearance lays the appearances out as the Rust serializer reads them:
+// appearanceSlots trees per output, absent for a colour or material the output
+// lacks, and a displaced flag each.
+func packAppearance(appearance []Appearance) (flat []TreeIndex, displaced []uint8, err error) {
+	const absent = ^TreeIndex(0)
+	flat = make([]TreeIndex, appearanceSlots*len(appearance))
+	displaced = make([]uint8, len(appearance))
+	for i, a := range appearance {
+		row := flat[appearanceSlots*i : appearanceSlots*(i+1)]
+		for k := range row {
+			row[k] = absent
+		}
+		switch len(a.Color) {
+		case 0:
+		case appearanceColorTrees:
+			copy(row[:appearanceColorTrees], a.Color)
+		default:
+			return nil, nil, fmt.Errorf("output %d: colour has %d trees, want %d", i, len(a.Color), appearanceColorTrees)
+		}
+		switch len(a.Material) {
+		case 0:
+		case appearanceMaterialTrees:
+			copy(row[appearanceColorTrees:], a.Material)
+		default:
+			return nil, nil, fmt.Errorf("output %d: material has %d trees, want %d (four rows of four)", i, len(a.Material), appearanceMaterialTrees)
+		}
+		if a.Displaced {
+			displaced[i] = 1
+		}
+	}
+	return flat, displaced, nil
 }
 
 // SerializeTapeWithAppearance is SerializeTape with each output's colour and
@@ -825,29 +875,16 @@ func SerializeTapeWithAppearance(treeIndices []TreeIndex, appearance []Appearanc
 	if len(appearance) != len(treeIndices) {
 		return nil, fmt.Errorf("%d appearances for %d outputs", len(appearance), len(treeIndices))
 	}
-	const absent = ^TreeIndex(0)
-	flat := make([]TreeIndex, 15*len(treeIndices))
-	displaced := make([]uint8, len(treeIndices))
-	for i, a := range appearance {
-		row := flat[15*i : 15*i+15]
-		for k := range row {
-			row[k] = absent
-		}
-		if len(a.Color) == 3 {
-			copy(row[0:3], a.Color)
-		}
-		if len(a.Material) == 12 {
-			copy(row[3:15], a.Material)
-		}
-		if a.Displaced {
-			displaced[i] = 1
-		}
+	flat, displaced, err := packAppearance(appearance)
+	if err != nil {
+		return nil, err
 	}
 
 	result := C.serialize_tape_appearance(
 		(*C.TreeIndex)(unsafe.Pointer(&treeIndices[0])),
 		C.size_t(len(treeIndices)),
 		(*C.TreeIndex)(unsafe.Pointer(&flat[0])),
+		C.size_t(appearanceSlots),
 		(*C.uint8_t)(unsafe.Pointer(&displaced[0])),
 	)
 	defer C.render_result_free(result)
@@ -858,6 +895,9 @@ func SerializeTapeWithAppearance(treeIndices []TreeIndex, appearance []Appearanc
 	}
 	if result.code == 0 {
 		return safeSlice, nil
+	}
+	if result.code == errAppearanceLayout {
+		return nil, fmt.Errorf("serialize tape: the appearance layout (%d slots an output) is not the one librender expects; rebuild it", appearanceSlots)
 	}
 	return nil, fmt.Errorf("serialize tape failed: %d", result.code)
 }

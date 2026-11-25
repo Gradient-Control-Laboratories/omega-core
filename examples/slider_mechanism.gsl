@@ -18,10 +18,8 @@ slideOffset = 40;
 
 // Slide position. Its limits depend on the two radii: it can only travel while
 // the circles still overlap, so its range follows them.
+@range(abs(slideRadius - baseRadius) - slideOffset, slideRadius + baseRadius - slideOffset, 10)
 slidePos = 20.2;
-slidePos.min = abs(slideRadius - baseRadius) - slideOffset;
-slidePos.max = slideRadius + baseRadius - slideOffset;
-slidePos.period = 10;
 
 // Shaft and fixture dimensions.
 shaftRadius = 5;

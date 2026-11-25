@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/internal/source"
-	"gradientcontrol.com/omega/core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
 )
 
 func hostOf(t *testing.T, src string) *HostModule {
@@ -83,12 +83,8 @@ func TestMarchSetsTheVanishGlobalsOnlyForParts(t *testing.T) {
 // The module declares what sdShape expects, the sliders as one uniform block
 // laid out as WGSL lays it out, and the two functions, with no entry point.
 func TestHost(t *testing.T) {
-	host := hostOf(t, `r = 5;
-r.min = 1;
-r.max = 10;
-h = 2;
-h.min = 1;
-h.max = 4;
+	host := hostOf(t, `@range(1, 10) r = 5;
+@range(1, 4) h = 2;
 return max(length(p) - r, abs(p.z) - h);`)
 
 	require.False(t, host.Parts)

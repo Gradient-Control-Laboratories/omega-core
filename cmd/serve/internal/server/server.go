@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"sync"
 
-	"gradientcontrol.com/omega/core/cmd/serve/internal/config"
-	"gradientcontrol.com/omega/core/program/preamble"
+	"github.com/Gradient-Control-Laboratories/omega-core/cmd/serve/internal/config"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/preamble"
 )
 
 // ProgressEvent represents a single NDJSON progress update pushed over GET /api/progress.
@@ -63,6 +63,9 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("POST /api/save", s.handleSave)
 	s.mux.HandleFunc("POST /api/compile", s.handleCompile)
 	s.mux.HandleFunc("POST /api/mesh", s.handleMesh)
+	s.mux.HandleFunc("POST /api/render-lit", s.handleRenderLit)
+	s.mux.HandleFunc("POST /api/tape", s.handleTape)
+	s.mux.HandleFunc("POST /api/export", s.handleExport)
 	s.mux.HandleFunc("POST /api/asset", s.handleAsset)
 
 	// The Help panel's GSL reference, generated from the standard library
