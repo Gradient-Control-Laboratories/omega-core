@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/backend/mesh"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/mesh"
 )
 
 func TestMesh_Sphere(t *testing.T) {

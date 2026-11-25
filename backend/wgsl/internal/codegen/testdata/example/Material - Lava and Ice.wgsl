@@ -157,7 +157,7 @@ fn builtin_intersectSharp(fields: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
 fn builtin_intersectRound(fields: vec3<f32>, radius: f32, noiseTex: texture_3d<f32>) -> f32 {
   let sharp = builtin_intersectSharp(fields, noiseTex);
   let sumOfSquares = 0.0 + max(fields.x + radius, 0.0) * max(fields.x + radius, 0.0) + max(fields.y + radius, 0.0) * max(fields.y + radius, 0.0) + max(fields.z + radius, 0.0) * max(fields.z + radius, 0.0);
-  return sharp - max(sharp + radius, 0.0) + sqrt(max(sumOfSquares, 0.000000000000000000000000000001));
+  return min(sharp, 0.000000000000000000000000000001 - radius) + sqrt(max(sumOfSquares, 0.000000000000000000000000000001));
 }
 
 fn builtin_gcl_closure_intersectRound(fields: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
@@ -345,7 +345,7 @@ fn gcl_closure_iceFloes(p: vec3<f32>, wind: vec3<f32>, time: f32, floeSize: f32,
   return gsl_result;
 }
 
-fn gsl_shapeParts(p: vec3<f32>, time: f32, gsl_param_12_13: f32, gsl_param_19_12: f32, noiseTex: texture_3d<f32>) -> array<f32, 2> {
+fn gsl_shapeParts(p: vec3<f32>, time: f32, gsl_param_12_31: f32, gsl_param_17_25: f32, noiseTex: texture_3d<f32>) -> array<f32, 2> {
   gsl_partNear = vec3<f32>(1e10, 1e10, 1e10);
   let gsl_partLo = vec3<f32>(-28.0, -12.0, -4.0);
   let gsl_partHi = vec3<f32>(-4.0, 12.0, 4.0);
@@ -358,26 +358,26 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32, gsl_param_12_13: f32, gsl_param_19_12
     if (abs(gsl_part) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part), gsl_partVanish.zw); }
   }
   let lava = gsl_part;
-  let windAngle = gsl_param_12_13;
+  let windAngle = gsl_param_12_31;
   let wind = vec3<f32>(cos(windAngle * 3.1415927 / 180.0), sin(windAngle * 3.1415927 / 180.0), 0.0);
-  let iceStage = gsl_param_19_12;
+  let iceStage = gsl_param_17_25;
   let gsl_result_3 = gcl_closure_iceFloes(p, wind, time, 8.0, 120.0, iceStage, 0.3, noiseTex);
   let iceHeight = gsl_result_3.v_3;
   let ice = builtin_gcl_closure_boxCentered(p - vec3<f32>(16.0, -0.0, 0.0), vec3<f32>(0.0, 0.0, 0.0) * 0.5, abs(vec3<f32>(24.0, 24.0, 8.0)), noiseTex) - iceHeight;
   return array<f32, 2>(lava, ice);
 }
 
-fn sdShape(p: vec3<f32>, time: f32, gsl_param_12_13: f32, gsl_param_19_12: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
-  let gsl_d = gsl_shapeParts(p, time, gsl_param_12_13, gsl_param_19_12, noiseTex);
+fn sdShape(p: vec3<f32>, time: f32, gsl_param_12_31: f32, gsl_param_17_25: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
+  let gsl_d = gsl_shapeParts(p, time, gsl_param_12_31, gsl_param_17_25, noiseTex);
   let gsl_s1 = gsl_shape(gsl_d[0], 1u);
   let gsl_s2 = gsl_shape(gsl_d[1], 2u);
   return gsl_min(gsl_s1, gsl_s2);
 }
-fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_12_13: f32, gsl_param_19_12: f32, noiseTex: texture_3d<f32>) -> vec4<f32> {
+fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_12_31: f32, gsl_param_17_25: f32, noiseTex: texture_3d<f32>) -> vec4<f32> {
   if (gsl_colorIdx == 1u) {
     var gsl_simpleValue = vec3<f32>(0.079512164, 0.072891675, 0.069725566);
     if (gsl_simpleDetail > 0.0) {
-      let windAngle = gsl_param_12_13;
+      let windAngle = gsl_param_12_31;
       let wind = vec3<f32>(cos(windAngle * 3.1415927 / 180.0), sin(windAngle * 3.1415927 / 180.0), 0.0);
       let gsl_result = gcl_closure_driftingCellsLatticeXY(wind, time, p / 8.0, vec3<f32>(8.0, 8.0, 8.0), 20.0, noiseTex);
       let cells = gsl_result.v_1;
@@ -388,20 +388,20 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_12_13: f
     return vec4<f32>(lavaColor, 1.0);
   }
   if (gsl_colorIdx == 2u) {
-    let windAngle = gsl_param_12_13;
+    let windAngle = gsl_param_12_31;
     let wind = vec3<f32>(cos(windAngle * 3.1415927 / 180.0), sin(windAngle * 3.1415927 / 180.0), 0.0);
-    let iceStage = gsl_param_19_12;
+    let iceStage = gsl_param_17_25;
     let gsl_result_3 = gcl_closure_iceFloes(p, wind, time, 8.0, 120.0, iceStage, 0.3, noiseTex);
     let iceColor = gsl_result_3.v_2;
     return vec4<f32>(iceColor, 1.0);
   }
   return vec4<f32>(0.0, 0.0, 0.0, 0.0);
 }
-fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_12_13: f32, gsl_param_19_12: f32, noiseTex: texture_3d<f32>) -> gsl_material {
+fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_12_31: f32, gsl_param_17_25: f32, noiseTex: texture_3d<f32>) -> gsl_material {
   if (gsl_materialIdx == 1u) {
     var gsl_simpleValue_2 = mat4x4<f32>(vec4<f32>(0.494, 0.0, 1.58, 0.0), vec4<f32>(1.0, 0.026, 0.0, 0.146), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     if (gsl_simpleDetail > 0.0) {
-      let windAngle = gsl_param_12_13;
+      let windAngle = gsl_param_12_31;
       let wind = vec3<f32>(cos(windAngle * 3.1415927 / 180.0), sin(windAngle * 3.1415927 / 180.0), 0.0);
       let gsl_result = gcl_closure_driftingCellsLatticeXY(wind, time, p / 8.0, vec3<f32>(8.0, 8.0, 8.0), 20.0, noiseTex);
       let cells = gsl_result.v_1;
@@ -413,9 +413,9 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_12
     let gsl_m = lavaMat; return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
   }
   if (gsl_materialIdx == 2u) {
-    let windAngle = gsl_param_12_13;
+    let windAngle = gsl_param_12_31;
     let wind = vec3<f32>(cos(windAngle * 3.1415927 / 180.0), sin(windAngle * 3.1415927 / 180.0), 0.0);
-    let iceStage = gsl_param_19_12;
+    let iceStage = gsl_param_17_25;
     let gsl_result_3 = gcl_closure_iceFloes(p, wind, time, 8.0, 120.0, iceStage, 0.3, noiseTex);
     let iceMat = gsl_result_3.v_1;
     let gsl_m = iceMat; return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
@@ -447,8 +447,8 @@ var<private> gsl_dispDrawn: f32 = 0.0;
 
 const gsl_foldK = array<vec3<f32>, 8>(vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 0.0, 0.0), vec3<f32>(0.0, 1.0, 0.0), vec3<f32>(1.0, 1.0, 0.0), vec3<f32>(0.0, 0.0, 1.0), vec3<f32>(1.0, 0.0, 1.0), vec3<f32>(0.0, 1.0, 1.0), vec3<f32>(1.0, 1.0, 1.0));
 
-fn gsl_heights(p: vec3<f32>, time: f32, gsl_param_12_13: f32, gsl_param_19_12: f32, noiseTex: texture_3d<f32>) -> array<f32, 2> {
-  let windAngle = gsl_param_12_13;
+fn gsl_heights(p: vec3<f32>, time: f32, gsl_param_12_31: f32, gsl_param_17_25: f32, noiseTex: texture_3d<f32>) -> array<f32, 2> {
+  let windAngle = gsl_param_12_31;
   let wind = vec3<f32>(cos(windAngle * 3.1415927 / 180.0), sin(windAngle * 3.1415927 / 180.0), 0.0);
   let gsl_result = gcl_closure_driftingCellsLatticeXY(wind, time, p / 8.0, vec3<f32>(8.0, 8.0, 8.0), 20.0, noiseTex);
   let cells = gsl_result.v_1;
@@ -459,15 +459,15 @@ fn gsl_heights(p: vec3<f32>, time: f32, gsl_param_12_13: f32, gsl_param_19_12: f
     gsl_simpleValue_3 = mat4x4<f32>(mix(gsl_simpleValue_3[0], gsl_simpleFull_2[0], gsl_simpleDetail), mix(gsl_simpleValue_3[1], gsl_simpleFull_2[1], gsl_simpleDetail), mix(gsl_simpleValue_3[2], gsl_simpleFull_2[2], gsl_simpleDetail), mix(gsl_simpleValue_3[3], gsl_simpleFull_2[3], gsl_simpleDetail));
   }
   let lavaMat = gsl_simpleValue_3;
-  let iceStage = gsl_param_19_12;
+  let iceStage = gsl_param_17_25;
   let gsl_result_3 = gcl_closure_iceFloes(p, wind, time, 8.0, 120.0, iceStage, 0.3, noiseTex);
   let iceMat = gsl_result_3.v_1;
   return array<f32, 2>(lavaMat[2].z, iceMat[2].z);
 }
 
-fn gsl_sdShapeDisplaced(p: vec3<f32>, time: f32, gsl_dispK: f32, gsl_param_12_13: f32, gsl_param_19_12: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
-  let gsl_d = gsl_shapeParts(p, time, gsl_param_12_13, gsl_param_19_12, noiseTex);
-  let gsl_h = gsl_heights(p, time, gsl_param_12_13, gsl_param_19_12, noiseTex);
+fn gsl_sdShapeDisplaced(p: vec3<f32>, time: f32, gsl_dispK: f32, gsl_param_12_31: f32, gsl_param_17_25: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
+  let gsl_d = gsl_shapeParts(p, time, gsl_param_12_31, gsl_param_17_25, noiseTex);
+  let gsl_h = gsl_heights(p, time, gsl_param_12_31, gsl_param_17_25, noiseTex);
   let gsl_s1 = gsl_shape(gsl_d[0] - gsl_h[0] * gsl_dispK, 1u);
   let gsl_s2 = gsl_shape(gsl_d[1] - gsl_h[1] * gsl_dispK, 2u);
   return gsl_min(gsl_s1, gsl_s2);

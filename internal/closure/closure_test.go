@@ -1,21 +1,25 @@
 package closure_test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler/source"
-	"gradientcontrol.com/omega/core/internal/closure"
-	"gradientcontrol.com/omega/core/internal/collect"
-	"gradientcontrol.com/omega/core/internal/link"
-	internalsource "gradientcontrol.com/omega/core/internal/source"
-	parser "gradientcontrol.com/omega/core/parser"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/closure"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/collect"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/link"
+	internalsource "github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	parser "github.com/Gradient-Control-Laboratories/omega-core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func runPipeline(src string) (*program.Program, error) {
 	srcMgr := &internalsource.MockManager{}
-	prog, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	prog, diags, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	if len(diags) != 0 {
+		return nil, fmt.Errorf("unexpected diagnostics: %+v", diags)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -406,7 +410,10 @@ return stepped(3.0);
 }
 
 func runPipelineWithManager(src string, srcMgr source.Manager) (*program.Program, error) {
-	prog, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	prog, diags, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	if len(diags) != 0 {
+		return nil, fmt.Errorf("unexpected diagnostics: %+v", diags)
+	}
 	if err != nil {
 		return nil, err
 	}

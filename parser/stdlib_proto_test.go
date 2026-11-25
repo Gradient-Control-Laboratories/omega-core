@@ -3,10 +3,10 @@ package parser
 import (
 	"testing"
 
+	"github.com/Gradient-Control-Laboratories/omega-core/parser/internal/parser2"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	gsllibs "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/parser/internal/parser2"
-	"gradientcontrol.com/omega/core/program"
-	gsllibs "gradientcontrol.com/omega/core/stdlib"
 )
 
 // TestStdlibProtosUpToDate ensures every embedded <ImportPath>/package.pb in
@@ -21,9 +21,12 @@ func TestStdlibProtosUpToDate(t *testing.T) {
 			continue
 		}
 
-		freshPkg, err := parser2.Parse(lib.Sources)
+		freshPkg, diags, err := parser2.Parse(lib.Sources)
 		if err != nil {
 			t.Fatalf("parser2.Parse(%q) failed: %v", lib.ImportPath, err)
+		}
+		if len(diags) != 0 {
+			t.Fatalf("parser2.Parse(%q) returned unexpected diagnostics: %+v", lib.ImportPath, diags)
 		}
 		if !proto.Equal(embeddedPkg, freshPkg) {
 			t.Errorf("stdlib %q package.pb AST differs from fresh parser2.Parse output; run ./tool/build-stdlib.sh --force", lib.ImportPath)

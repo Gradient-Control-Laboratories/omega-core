@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"math"
 
-	"gradientcontrol.com/omega/core/assembler/meshslots"
-	"gradientcontrol.com/omega/core/internal/scope"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/meshslots"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // Const evaluates an Operand to a scalar or vector of float64 values using the
@@ -150,6 +150,11 @@ type constCtx struct {
 	// a lambda closes over the call it was written in.
 	frames []*frame
 	cache  map[*program.Operand]value
+
+	// point is the point p is read at while a remap to a constant point is
+	// evaluated (nil otherwise, when p is no constant). Nothing is cached
+	// under it: a value read there is the value at that point only.
+	point *value
 }
 
 // frame is one in-flight user function call's local scope. vals caches
@@ -246,13 +251,13 @@ func (c *constCtx) operand(op *program.Operand) (value, error) {
 	if op == nil {
 		return value{}, fmt.Errorf("nil operand")
 	}
-	if len(c.frames) == 0 && c.cache != nil {
+	if len(c.frames) == 0 && c.cache != nil && c.point == nil {
 		if cached, ok := c.cache[op]; ok {
 			return cached, nil
 		}
 	}
 	val, err := c.evalOperand(op)
-	if err == nil && len(c.frames) == 0 && c.cache != nil {
+	if err == nil && len(c.frames) == 0 && c.cache != nil && c.point == nil {
 		c.cache[op] = val
 	}
 	return val, err
@@ -356,6 +361,11 @@ func (c *constCtx) reference(ref *program.Reference) (value, error) {
 
 	// 2. Unqualified reference
 	name := ref.Name
+
+	// p, inside a remap to a constant point, is that point.
+	if name == program.PVarName && c.point != nil {
+		return *c.point, nil
+	}
 
 	// Check local/frame scope
 	for fr := c.topFrame(); fr != nil; fr = fr.parent {
@@ -682,6 +692,11 @@ func (c *constCtx) expression(expr *program.Expression) (value, error) {
 	}
 	if expr.Operation == program.Operation_SELECT {
 		return c.selectValues(expr.Operands)
+	}
+	// remap(field, coords): the field with p := coords, a constant when the
+	// coordinates are one and the field reads nothing else that is not.
+	if expr.Operation == program.Operation_REMAP && len(expr.Operands) == 2 {
+		return c.remapAt(expr.Operands[0], expr.Operands[1])
 	}
 
 	// Evaluate all operands first for the element-wise ops below.
@@ -1395,8 +1410,15 @@ func (c *constCtx) reduceValues(operands []*program.Operand) (value, error) {
 			return value{}, err
 		}
 	}
-	for _, element := range elements {
-		acc, err = c.callFn2(fnOp, acc, element)
+	// The index is the element's in the whole collection, as the lowering's
+	// unroll passes it: from 0 with an initial value, from 1 without, the
+	// first element having seeded the accumulator.
+	first := 0
+	if len(operands) == 2 {
+		first = 1
+	}
+	for i, element := range elements {
+		acc, err = c.callReduceFn(fnOp, acc, element, first+i)
 		if err != nil {
 			return value{}, err
 		}
@@ -1404,14 +1426,18 @@ func (c *constCtx) reduceValues(operands []*program.Operand) (value, error) {
 	return acc, nil
 }
 
-// callFn2 invokes a two-parameter function operand — a reduce's
-// (accumulator, value) fold function — with the given arguments.
-func (c *constCtx) callFn2(fnOp *program.Operand, a, b value) (value, error) {
+// callReduceFn invokes a reduce's fold function operand: with (accumulator,
+// value) when it has a two-parameter form, otherwise with (accumulator,
+// value, index).
+func (c *constCtx) callReduceFn(fnOp *program.Operand, acc, element value, index int) (value, error) {
 	ref := fnOp.GetReference()
 	if ref == nil {
 		return value{}, fmt.Errorf("reduce expects a function reference")
 	}
-	return c.userFunctionCall(ref.Prefix, ref.Name, []value{a, b})
+	if _, _, _, err := c.lookupFunction(ref.Prefix, ref.Name, 2); err == nil {
+		return c.userFunctionCall(ref.Prefix, ref.Name, []value{acc, element})
+	}
+	return c.userFunctionCall(ref.Prefix, ref.Name, []value{acc, element, scalarVal(float64(index))})
 }
 
 // mapElements expands a map call's collection operands to elements, matching
@@ -1840,4 +1866,20 @@ func (c *constCtx) selectValues(operands []*program.Operand) (value, error) {
 		}
 	}
 	return vectorVal(out), nil
+}
+
+// remapAt evaluates field with p bound to coords, which must be a constant
+// point, and restores the point it was read at before.
+func (c *constCtx) remapAt(field, coords *program.Operand) (value, error) {
+	at, err := c.operand(coords)
+	if err != nil {
+		return value{}, fmt.Errorf("remap coordinates: %w", err)
+	}
+	if at.elems != nil || len(at.scalars) != 3 {
+		return value{}, fmt.Errorf("remap coordinates are not a point")
+	}
+	outer := c.point
+	c.point = &at
+	defer func() { c.point = outer }()
+	return c.operand(field)
 }

@@ -17,7 +17,7 @@ import (
 	"regexp"
 	"strings"
 
-	gsllibs "gradientcontrol.com/omega/core/stdlib"
+	gsllibs "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
 )
 
 // Entry is one browsable surface. Kind is the annotation that marked it, so a

@@ -3,7 +3,7 @@ package scope
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // FnScope represents the scope inside a GSL function body.
@@ -215,9 +215,6 @@ func (f *FnScope) AddPropertyAssignment(varName, propName string, expr *program.
 	}
 
 	variable.Var.AddPropertyAssignment(propName, expr, start, end)
-	if propName == "min" || propName == "max" || propName == "period" {
-		synthesizeRangeAnnotation(variable)
-	}
 	return nil
 }
 

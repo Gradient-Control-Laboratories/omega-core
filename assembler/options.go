@@ -1,11 +1,11 @@
 package assembler
 
 import (
-	"gradientcontrol.com/omega/core/assembler/source"
-	"gradientcontrol.com/omega/core/assembler/topofold"
-	"gradientcontrol.com/omega/core/assembler/warpfold"
-	internalsource "gradientcontrol.com/omega/core/internal/source"
-	"gradientcontrol.com/omega/core/program/progress"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/topofold"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/warpfold"
+	internalsource "github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/progress"
 )
 
 // Option configures program assembly.
@@ -24,6 +24,7 @@ type options struct {
 	meshPlanIdPrefix      string
 	variants              map[string]string
 	progressFn            progress.Callback
+	analyticGradient      bool
 }
 
 // Parser supplies a custom package parser (such as parser.CachingParser.ParsePackage)
@@ -110,6 +111,25 @@ func ExtractMeshPlan(idPrefix string) Option {
 func WithVariants(variants map[string]string) Option {
 	return func(o *options) {
 		o.variants = variants
+	}
+}
+
+// GradientNote reports a geometry return whose analytic gradient could not be
+// lowered (an op or builtin with no derivative rule). Its gradient is left nil,
+// and a renderer falls back to central differences for hits on that return.
+type GradientNote struct {
+	Return int    // 0-based index into the geometry returns
+	Reason string // why the derivative failed
+}
+
+// WithAnalyticGradient lowers the spatial gradient d/dp of each geometry return
+// alongside its distance (Program.GradientReturns), for a backend to emit as an
+// analytic normal. Each return that could not be differentiated is reported in
+// Result.GradientNotes. Off by default: it adds a differentiated copy of every
+// return to the program.
+func WithAnalyticGradient() Option {
+	return func(o *options) {
+		o.analyticGradient = true
 	}
 }
 

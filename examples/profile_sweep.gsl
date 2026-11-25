@@ -2,8 +2,8 @@
 
 // One profile swept along another. The path is an L with a filleted inside
 // corner and a rounded heel; the section is a small moulding with a cove.
-// The sweep is a remap, as revolve is: the section is read with its x as the
-// path's signed distance, positive outside the L, and its y as the height z.
+// sweep(section, path) reads the section with its x as the path's signed
+// distance, positive outside the L, and its y as the height z.
 // So the section's x = 0 line rides the path, what it draws at x > 0 hangs
 // outside the L and what it draws at x < 0 sits inside.
 //
@@ -57,10 +57,9 @@ sectionProfile() {
 path = remap(pathProfile(), p - [-30, -30, 0]);
 section = sectionProfile();
 
-// The sweep: the section read at (the path's distance, z).
-rail = remap(section, [path, p.z, 0]);
-rail.u = path.u;
-rail.v = remap(section.u, [path, p.z, 0]);
+// The sweep: the section read at (the path's distance, z). Its frame is u the
+// distance along the path and v the distance round the section.
+rail = sweep(section, path);
 rail.color = sin(pi * rail.u / checkerSize) * sin(pi * rail.v / checkerSize) > 0 ? color.gray : color.lightGray;
 
 return rail;

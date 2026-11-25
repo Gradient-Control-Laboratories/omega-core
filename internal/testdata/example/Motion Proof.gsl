@@ -15,9 +15,7 @@
 // in the downswing window near 0.88: a conspiracy of configuration and
 // instant that no sampled check pins down.
 
-crankR = 3.0;
-crankR.min = 2.2;
-crankR.max = 3.2;
+@range(2.2, 3.2) crankR = 3.0;
 
 rodLen = 8.0;
 rodR = 0.45;

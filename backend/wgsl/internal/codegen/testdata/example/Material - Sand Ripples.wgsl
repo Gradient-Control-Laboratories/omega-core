@@ -119,7 +119,7 @@ fn builtin_intersectSharp(fields: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
 fn builtin_intersectRound(fields: vec3<f32>, radius: f32, noiseTex: texture_3d<f32>) -> f32 {
   let sharp = builtin_intersectSharp(fields, noiseTex);
   let sumOfSquares = 0.0 + max(fields.x + radius, 0.0) * max(fields.x + radius, 0.0) + max(fields.y + radius, 0.0) * max(fields.y + radius, 0.0) + max(fields.z + radius, 0.0) * max(fields.z + radius, 0.0);
-  return sharp - max(sharp + radius, 0.0) + sqrt(max(sumOfSquares, 0.000000000000000000000000000001));
+  return min(sharp, 0.000000000000000000000000000001 - radius) + sqrt(max(sumOfSquares, 0.000000000000000000000000000001));
 }
 
 fn builtin_gcl_closure_intersectRound(fields: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
@@ -133,7 +133,7 @@ fn builtin_gcl_closure_boxCentered(p: vec3<f32>, center: vec3<f32>, size: vec3<f
   return solid;
 }
 
-fn sdShape(p: vec3<f32>, time: f32, gsl_param_10_13: f32, gsl_param_13_13: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
+fn sdShape(p: vec3<f32>, time: f32, gsl_param_10_27: f32, gsl_param_11_31: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
   gsl_partNear = vec3<f32>(1e10, 1e10, 1e10);
   let gsl_partLo = vec3<f32>(-12.0, -12.0, -4.0);
   let gsl_partHi = vec3<f32>(12.0, 12.0, 4.0);
@@ -150,50 +150,55 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_10_13: f32, gsl_param_13_13: f32, 
   return gsl_s1;
 }
 
-fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_10_13: f32, gsl_param_13_13: f32, noiseTex: texture_3d<f32>) -> vec4<f32> {
+fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_10_27: f32, gsl_param_11_31: f32, noiseTex: texture_3d<f32>) -> vec4<f32> {
   if (gsl_colorIdx == 1u) {
-    let windSpeed = gsl_param_10_13;
-    let gsl_tmp_14 = (vec3<f32>(0.7029593, 0.013074556, 0.07086855) + vec3<f32>(0.12094366, -0.0037923725, -0.004386356) * 0.0375 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * (3.0 - 2.0 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0))).x + 0.39633778 * (vec3<f32>(0.7029593, 0.013074556, 0.07086855) + vec3<f32>(0.12094366, -0.0037923725, -0.004386356) * 0.0375 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * (3.0 - 2.0 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0))).y + 0.21580376 * (vec3<f32>(0.7029593, 0.013074556, 0.07086855) + vec3<f32>(0.12094366, -0.0037923725, -0.004386356) * 0.0375 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * (3.0 - 2.0 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0))).z;
-    let gsl_tmp_15 = (vec3<f32>(0.7029593, 0.013074556, 0.07086855) + vec3<f32>(0.12094366, -0.0037923725, -0.004386356) * 0.0375 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * (3.0 - 2.0 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0))).x - 0.105561346 * (vec3<f32>(0.7029593, 0.013074556, 0.07086855) + vec3<f32>(0.12094366, -0.0037923725, -0.004386356) * 0.0375 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * (3.0 - 2.0 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0))).y - 0.06385417 * (vec3<f32>(0.7029593, 0.013074556, 0.07086855) + vec3<f32>(0.12094366, -0.0037923725, -0.004386356) * 0.0375 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * (3.0 - 2.0 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0))).z;
-    let gsl_tmp_16 = (vec3<f32>(0.7029593, 0.013074556, 0.07086855) + vec3<f32>(0.12094366, -0.0037923725, -0.004386356) * 0.0375 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * (3.0 - 2.0 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0))).x - 0.08948418 * (vec3<f32>(0.7029593, 0.013074556, 0.07086855) + vec3<f32>(0.12094366, -0.0037923725, -0.004386356) * 0.0375 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * (3.0 - 2.0 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0))).y - 1.2914855 * (vec3<f32>(0.7029593, 0.013074556, 0.07086855) + vec3<f32>(0.12094366, -0.0037923725, -0.004386356) * 0.0375 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * (3.0 - 2.0 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0))).z;
-    let gsl_tmp_17 = vec3<f32>(gsl_tmp_14 * gsl_tmp_14 * gsl_tmp_14, gsl_tmp_15 * gsl_tmp_15 * gsl_tmp_15, gsl_tmp_16 * gsl_tmp_16 * gsl_tmp_16);
+    let windSpeed = gsl_param_10_27;
+    let gsl_tmp_1 = clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * (3.0 - 2.0 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0));
+    let gsl_tmp_10 = vec3<f32>(0.7029593, 0.013074556, 0.07086855) + vec3<f32>(0.12094366, -0.0037923725, -0.004386356) * 0.0375 * gsl_tmp_1;
+    let gsl_tmp_11 = gsl_tmp_10.x + 0.39633778 * gsl_tmp_10.y + 0.21580376 * gsl_tmp_10.z;
+    let gsl_tmp_12 = gsl_tmp_10.x - 0.105561346 * gsl_tmp_10.y - 0.06385417 * gsl_tmp_10.z;
+    let gsl_tmp_13 = gsl_tmp_10.x - 0.08948418 * gsl_tmp_10.y - 1.2914855 * gsl_tmp_10.z;
+    let gsl_tmp_14 = vec3<f32>(gsl_tmp_11 * gsl_tmp_11 * gsl_tmp_11, gsl_tmp_12 * gsl_tmp_12 * gsl_tmp_12, gsl_tmp_13 * gsl_tmp_13 * gsl_tmp_13);
     var gsl_detailValue = 0.083;
     if (max(gsl_pw, gsl_detailPw) < 0.15) { let gsl_detailOuterPw = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
-      let gsl_tmp_5 = p / 0.3;
-      gsl_detailValue = texture_fadeTo(select(0.0, 1.0, fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cellularScan(gsl_tmp_5, 1, noiseTex).nearCell + vec3<f32>(23.0, 61.0, 7.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((gsl_cellularScan(gsl_tmp_5, 1, noiseTex).nearCell + vec3<f32>(23.0, 61.0, 7.0)) / 64.0)) & vec3<i32>(63), 0).rgb).x < 0.083), 0.083, 0.3, noiseTex);
+      let gsl_tmp_9 = p / 0.3;
+      gsl_detailValue = texture_fadeTo(select(0.0, 1.0, fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cellularScan(gsl_tmp_9, 1, noiseTex).nearCell + vec3<f32>(23.0, 61.0, 7.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((gsl_cellularScan(gsl_tmp_9, 1, noiseTex).nearCell + vec3<f32>(23.0, 61.0, 7.0)) / 64.0)) & vec3<i32>(63), 0).rgb).x < 0.083), 0.083, 0.3, noiseTex);
       gsl_pw = gsl_detailOuterPw;
     }
-    var gsl_simpleValue = color_mixOklab(color_gammaEncode(vec3<f32>(dot(vec3<f32>(4.0767417, -3.3077116, 0.23096994), gsl_tmp_17), dot(vec3<f32>(-1.268438, 2.6097574, -0.34131938), gsl_tmp_17), dot(vec3<f32>(-0.0041960864, -0.7034186, 1.7076147), gsl_tmp_17)), noiseTex), vec3<f32>(0.3, 0.26, 0.22), 0.083, noiseTex);
+    var gsl_simpleValue = color_mixOklab(color_gammaEncode(vec3<f32>(dot(vec3<f32>(4.0767417, -3.3077116, 0.23096994), gsl_tmp_14), dot(vec3<f32>(-1.268438, 2.6097574, -0.34131938), gsl_tmp_14), dot(vec3<f32>(-0.0041960864, -0.7034186, 1.7076147), gsl_tmp_14)), noiseTex), vec3<f32>(0.3, 0.26, 0.22), 0.083, noiseTex);
     if (gsl_simpleDetail > 0.0) {
-      let windAngle = gsl_param_13_13;
+      let windAngle = gsl_param_11_31;
       let wind = vec3<f32>(cos(windAngle * 3.1415927 / 180.0), sin(windAngle * 3.1415927 / 180.0), 0.0);
-      let gsl_tmp_1 = p - normalize(wind) * 0.00035 * pow(windSpeed / 8.0, 3.0) * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * (3.0 - 2.0 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0)) * 60.0 * (0.06 + 0.0075 * windSpeed) / (0.06 + 0.0075 * windSpeed) * time;
-      let gsl_tmp_2 = fract(dot(gsl_tmp_1, normalize(wind)) / (60.0 * (0.06 + 0.0075 * windSpeed)) + 0.35 * noise_gradientLattice(gsl_tmp_1 / (3.0 * 60.0 * (0.06 + 0.0075 * windSpeed)) + vec3<f32>(5.0, 23.0, 41.0), noiseTex));
-      let gsl_tmp_3 = select(cos(1.5707963 * (gsl_tmp_2 - 0.7) / 0.3), sin(1.5707963 * gsl_tmp_2 / 0.7), gsl_tmp_2 < 0.7);
-      gsl_simpleValue = mix(gsl_simpleValue, color_mixOklab(color_mixOklab(color_mixOklab(vec3<f32>(0.76, 0.64, 0.44), vec3<f32>(0.3, 0.26, 0.22), 0.5 * (1.0 - gsl_tmp_3) * (1.0 - gsl_tmp_3) * (1.0 - gsl_tmp_3), noiseTex), vec3<f32>(0.86, 0.76, 0.58), 0.25 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * (3.0 - 2.0 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0)) * texture_mask(noise_gradientLattice((p - normalize(wind) * windSpeed * 60.0 * (0.06 + 0.0075 * windSpeed) / (0.06 + 0.0075 * windSpeed) * time) / vec3<f32>(0.25 * 60.0 * (0.06 + 0.0075 * windSpeed), 0.25 * 60.0 * (0.06 + 0.0075 * windSpeed), 0.25 * 60.0 * (0.06 + 0.0075 * windSpeed)) + vec3<f32>(3.0, 7.0, 11.0), noiseTex), 0.3, 0.2, noiseTex) * texture_fadeDetail(0.25 * 60.0 * (0.06 + 0.0075 * windSpeed), noiseTex), noiseTex), vec3<f32>(0.3, 0.26, 0.22), gsl_detailValue, noiseTex), gsl_simpleDetail);
+      let gsl_tmp_2 = 60.0 * (0.06 + 0.0075 * windSpeed) / (0.06 + 0.0075 * windSpeed);
+      let gsl_tmp_3 = p - normalize(wind) * 0.00035 * pow(windSpeed / 8.0, 3.0) * gsl_tmp_1 * gsl_tmp_2 * time;
+      let gsl_tmp_4 = fract(dot(gsl_tmp_3, normalize(wind)) / (60.0 * (0.06 + 0.0075 * windSpeed)) + 0.35 * noise_gradientLattice(gsl_tmp_3 / (3.0 * 60.0 * (0.06 + 0.0075 * windSpeed)) + vec3<f32>(5.0, 23.0, 41.0), noiseTex));
+      let gsl_tmp_5 = select(cos(1.5707963 * (gsl_tmp_4 - 0.7) / 0.3), sin(1.5707963 * gsl_tmp_4 / 0.7), gsl_tmp_4 < 0.7);
+      gsl_simpleValue = mix(gsl_simpleValue, color_mixOklab(color_mixOklab(color_mixOklab(vec3<f32>(0.76, 0.64, 0.44), vec3<f32>(0.3, 0.26, 0.22), 0.5 * (1.0 - gsl_tmp_5) * (1.0 - gsl_tmp_5) * (1.0 - gsl_tmp_5), noiseTex), vec3<f32>(0.86, 0.76, 0.58), 0.25 * gsl_tmp_1 * texture_mask(noise_gradientLattice((p - normalize(wind) * windSpeed * gsl_tmp_2 * time) / vec3<f32>(0.25 * 60.0 * (0.06 + 0.0075 * windSpeed), 0.25 * 60.0 * (0.06 + 0.0075 * windSpeed), 0.25 * 60.0 * (0.06 + 0.0075 * windSpeed)) + vec3<f32>(3.0, 7.0, 11.0), noiseTex), 0.3, 0.2, noiseTex) * texture_fadeDetail(0.25 * 60.0 * (0.06 + 0.0075 * windSpeed), noiseTex), noiseTex), vec3<f32>(0.3, 0.26, 0.22), gsl_detailValue, noiseTex), gsl_simpleDetail);
     }
     let sandColor = gsl_simpleValue;
     return vec4<f32>(sandColor, 1.0);
   }
   return vec4<f32>(0.0, 0.0, 0.0, 0.0);
 }
-fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_10_13: f32, gsl_param_13_13: f32, noiseTex: texture_3d<f32>) -> gsl_material {
+fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_10_27: f32, gsl_param_11_31: f32, noiseTex: texture_3d<f32>) -> gsl_material {
   if (gsl_materialIdx == 1u) {
-    let windSpeed = gsl_param_10_13;
+    let windSpeed = gsl_param_10_27;
     var gsl_detailValue_2 = 0.0;
     if (max(gsl_pw, gsl_detailPw) < 0.15) { let gsl_detailOuterPw_2 = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
-      let gsl_tmp_4 = clamp(1.0 - noise_cellularF1Lattice(p / 0.3, noiseTex) * 0.3 / 0.135, 0.0, 1.0);
-      gsl_detailValue_2 = gsl_tmp_4 * gsl_tmp_4 * 0.12 * (1.0 - texture_mask(gsl_pw, 0.1125, 0.0375, noiseTex));
+      let gsl_tmp_6 = clamp(1.0 - noise_cellularF1Lattice(p / 0.3, noiseTex) * 0.3 / 0.135, 0.0, 1.0);
+      gsl_detailValue_2 = gsl_tmp_6 * gsl_tmp_6 * 0.12 * (1.0 - texture_mask(gsl_pw, 0.1125, 0.0375, noiseTex));
       gsl_pw = gsl_detailOuterPw_2;
     }
     var gsl_simpleValue_2 = mat4x4<f32>(vec4<f32>(0.91341454, 0.0, 1.54, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 60.0 * (0.06 + 0.0075 * windSpeed) / 17.0 * 0.637, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     if (gsl_simpleDetail > 0.0) {
-      let windAngle = gsl_param_13_13;
+      let windAngle = gsl_param_11_31;
       let wind = vec3<f32>(cos(windAngle * 3.1415927 / 180.0), sin(windAngle * 3.1415927 / 180.0), 0.0);
-      let gsl_tmp_1 = p - normalize(wind) * 0.00035 * pow(windSpeed / 8.0, 3.0) * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * (3.0 - 2.0 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0)) * 60.0 * (0.06 + 0.0075 * windSpeed) / (0.06 + 0.0075 * windSpeed) * time;
-      let gsl_tmp_2 = fract(dot(gsl_tmp_1, normalize(wind)) / (60.0 * (0.06 + 0.0075 * windSpeed)) + 0.35 * noise_gradientLattice(gsl_tmp_1 / (3.0 * 60.0 * (0.06 + 0.0075 * windSpeed)) + vec3<f32>(5.0, 23.0, 41.0), noiseTex));
-      let gsl_tmp_3 = select(cos(1.5707963 * (gsl_tmp_2 - 0.7) / 0.3), sin(1.5707963 * gsl_tmp_2 / 0.7), gsl_tmp_2 < 0.7);
-      let gsl_simpleFull = material_withDisplacement(material_make(sqrt(sqrt(0.6561 + (1.0 - texture_fadeDetail(60.0 * (0.06 + 0.0075 * windSpeed), noiseTex) * gsl_dispDrawn) * 0.04)), 0.0, 1.54, noiseTex), 60.0 * (0.06 + 0.0075 * windSpeed) / 17.0 * gsl_tmp_3 * texture_fadeDetail(60.0 * (0.06 + 0.0075 * windSpeed), noiseTex) + gsl_detailValue_2, noiseTex);
+      let gsl_tmp_1 = clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0) * (3.0 - 2.0 * clamp((windSpeed - 5.0) / 1.0 * 0.5 + 0.5, 0.0, 1.0));
+      let gsl_tmp_2 = 60.0 * (0.06 + 0.0075 * windSpeed) / (0.06 + 0.0075 * windSpeed);
+      let gsl_tmp_3 = p - normalize(wind) * 0.00035 * pow(windSpeed / 8.0, 3.0) * gsl_tmp_1 * gsl_tmp_2 * time;
+      let gsl_tmp_4 = fract(dot(gsl_tmp_3, normalize(wind)) / (60.0 * (0.06 + 0.0075 * windSpeed)) + 0.35 * noise_gradientLattice(gsl_tmp_3 / (3.0 * 60.0 * (0.06 + 0.0075 * windSpeed)) + vec3<f32>(5.0, 23.0, 41.0), noiseTex));
+      let gsl_tmp_5 = select(cos(1.5707963 * (gsl_tmp_4 - 0.7) / 0.3), sin(1.5707963 * gsl_tmp_4 / 0.7), gsl_tmp_4 < 0.7);
+      let gsl_simpleFull = material_withDisplacement(material_make(sqrt(sqrt(0.6561 + (1.0 - texture_fadeDetail(60.0 * (0.06 + 0.0075 * windSpeed), noiseTex) * gsl_dispDrawn) * 0.04)), 0.0, 1.54, noiseTex), 60.0 * (0.06 + 0.0075 * windSpeed) / 17.0 * gsl_tmp_5 * texture_fadeDetail(60.0 * (0.06 + 0.0075 * windSpeed), noiseTex) + gsl_detailValue_2, noiseTex);
       gsl_simpleValue_2 = mat4x4<f32>(mix(gsl_simpleValue_2[0], gsl_simpleFull[0], gsl_simpleDetail), mix(gsl_simpleValue_2[1], gsl_simpleFull[1], gsl_simpleDetail), mix(gsl_simpleValue_2[2], gsl_simpleFull[2], gsl_simpleDetail), mix(gsl_simpleValue_2[3], gsl_simpleFull[3], gsl_simpleDetail));
     }
     let sandMat = gsl_simpleValue_2;

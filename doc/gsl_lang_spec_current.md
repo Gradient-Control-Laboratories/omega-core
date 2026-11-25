@@ -25,7 +25,7 @@ This spec will continue to be updated as the compiler and tools are being develo
 - Supports basic arithmetic, component-wise list algebra, modulo, logic, and comparison operators.
 - Provides first-class named and anonymous functions, allowing closures and function passing.
 - Exposes mesh/CAD STEP slot-numbered and expression-based asset imports.
-- Resolves variables and slider properties (`.min`, `.max`, `.period`) dynamically
+- Resolves variables and `@range` sliders dynamically
     to drive real-time parameter tweaking.
 - Evaluates mathematical primitives and built-in algorithms (like spatial remapping and
     cellular noise) either on CPU or compiles them to GPU shaders.
@@ -231,9 +231,13 @@ GSL is parsed using the `participle/v2` framework.
 The grammar is defined by the following AST structures:
 
 ```ebnf
-TopLevel           = SceneDirective? Import* MeshImport* StepImport* WarpImport* Declaration*
+TopLevel           = ( SceneDirective DurationDirective? | DurationDirective SceneDirective? )?
+                     CaptionDirective* Import* MeshImport* StepImport* WarpImport*
+                     ( Declaration | CaptionDirective )*
                      ( "return" Expression ( "," Expression )* ","? ";" )?
 SceneDirective     = "@scene" "(" Number ( "," Number )? ")"
+DurationDirective  = "@duration" "(" Number ")"
+CaptionDirective   = "@caption" "(" String "," Number "," Number ( "," Number )? ")"
 Import             = "import" ( Ident | "." )? String ";"
 MeshImport         = "importMesh" Int String ";"
 StepImport         = "importStep" Int String ";"
@@ -263,7 +267,8 @@ Comparison         = Terms ( ( ">=" | ">" | "<=>" | "<=" | "<" ) Terms )?
 Terms              = Term ( ( "+" | "-" ) Term )*
 Term               = Factor ( ( "*" | "/" | "%" ) Factor )*
 
-Factor             = "!"? "-"? Value ( "." Ident )? ( "[" Expression "]" )?
+Factor             = "!"? "-"? Value Modifier*
+Modifier           = "." Ident Arguments? | "[" Expression "]"
 
 Value              = ImportRef | Number | FunctionCall | QualifiedRef | Reference | AnonCall
                    | SubExpression | Collection | String | AnnotatedExpr
@@ -451,6 +456,18 @@ GSL is structured around fundamental mathematical and geometric types:
 * **Indexing**: Accesses component scalars in lists using single brackets (e.g. `v[0]` for $x$,
   `v[1]` for $y$), or column vectors in matrices (`mat[0]`).
   Constant indices out of bounds produce a compile-time error.
+* **Postfix Modifier Chaining**: Indexing (`[i]`), swizzles (`.x`..`.xyzw`), derivatives (`.dp`,
+  `.dtime`, `.d(var)`), and geometry/surface properties (`.box`, `.second`, `.u`, `.v`) fold
+  left-to-right. Chaining is validated at parse time as follows:
+
+| Previous Modifier                       | Allowed Next Modifiers                                        |
+| :-------------------------------------- | :------------------------------------------------------------ |
+| `[index]`                               | `[index]`, swizzle, derivative, `.second`, `.u`, `.v`, `.box` |
+| Swizzle (`.x`..`.xyzw`)                 | `[index]` (2+ components), swizzle, derivative                |
+| Derivative (`.dp`, `.dtime`, `.d(var)`) | `[index]`, swizzle, derivative                                |
+| `.box`                                  | `[index]`, derivative                                         |
+| `.second`                               | `.u`, `.v`, derivative                                        |
+| `.u`, `.v`                              | derivative                                                    |
 * **Operator Precedence**:
 
 | Precedence | Operators | Description |
@@ -488,41 +505,53 @@ GSL is structured around fundamental mathematical and geometric types:
 
 ### 7. Annotations
 
-Annotations are optional compile-time only metadata declarations that begin with `@` followed by an identifier.
-Annotations are parsed and stored as metadata in the AST, but are otherwise ignored by the compiler.
-They are hints from the author of a GSL program to the host application about suggested ways
-that the program could be changed, how functions should be called, or how to provide a better user
-experience.
-
-An annotation begins with `@` followed by an identifier and optional parenthesized arguments:
+Annotations are optional compile-time metadata declarations that begin with `@` followed by an
+identifier and optional parenthesized arguments:
 
 ```gsl
+@annotationName
 @annotationName(arg1, arg2, ...)
 ```
 
-Not all annotations are supported on all target types (declarations, parameters, or expressions).
-Each annotation definition specifies which target types it supports.
-Applying an unrecognized annotation or applying an annotation to an unsupported target produces
-a compile-time error (`unsupported annotation @<name>`).
+Depending on the annotation, the parser either attaches range metadata (`@range`), lowers the
+annotated expression into a `ui*` built-in wrapper (`@point`, `@transform`, `@spline`, `@color`,
+`@direction`), or records declaration/parameter metadata on the AST (`@material`, `@finish`,
+`@surface`, `@frame`, and control annotations on function parameters). Annotations never alter the
+mathematical result of a program.
 
-By default, each type of annotation may only be specified at most once per target
-(declaration, parameter, or expression), unless explicitly allowed by the annotation definition.
-Annotations may enforce further restrictions, such as requiring that arguments evaluate to
-compile-time constants or restricting the target variable's or expression's type or value.
+Not all annotations are supported on all target types (package directives, variable assignments,
+function declarations, function parameters, or inline expressions). Applying an unrecognized
+annotation or applying an annotation to an unsupported target produces a compile-time error.
 
 #### Supported Annotations
 
-In the current GSL v1 implementation, annotations are supported as top-level scene directives,
-preceding top-level variable declarations, preceding function parameters, and inline expressions:
+In the current GSL v1 implementation, the following annotations are supported:
 - **`@scene`**: Top-level directive configuring package-level viewport and grid extents.
-- **`@range`**: Numeric slider bounds and optional animation periods on variable declarations,
-  inline numeric literals, or parameter bounds suggestions.
-- **`@point`**: 3D position controls on 3-component variable declarations
-  or inline expressions.
-- **`@transform`**: 3D spatial transformation gizmos on 4x4 matrix variable declarations
-  or inline expressions.
-- **`@spline`**: Multi-handle 3D spline curve manipulators on variable declarations
-  or inline expressions.
+- **`@duration`**: Top-level directive giving the length of the document's animation, in seconds.
+- **`@caption`**: Top-level directive showing timed text at the bottom of the viewer during an
+  animation.
+- **`@range`**: Numeric slider bounds and optional animation periods on variable assignments,
+  function parameters (2 arguments only), or inline expressions.
+- **`@point`**: 3D position controls on 3-component variable assignments, inline expressions,
+  or function parameters.
+- **`@direction`**: 3D direction arrow controls (with an optional anchor point) on 3-component
+  variable assignments, inline expressions, or function parameters.
+- **`@color`**: sRGB color controls on 3-component variable assignments, inline expressions,
+  or function parameters.
+- **`@transform`**: 3D spatial transformation gizmos on 4x4 matrix variable assignments, inline
+  expressions, or function parameters.
+- **`@spline`**: Multi-handle 3D spline curve manipulators on variable assignments or inline
+  expressions.
+- **`@frame`**: Parameter-only annotation indicating a body's `[body.u, body.v]` frame.
+- **`@material`**: Declaration-level annotation marking a browsable material function returning a
+  `(material, color)` pair.
+- **`@finish`**: Declaration-level annotation marking a colorless material finish preset (constant
+  or function).
+- **`@surface`**: Function-level annotation marking a surface operator preset.
+
+> Note: `@values` is reserved in the parser's annotation registry for variable assignments with at
+> least two arguments, but is not yet wired into declaration building and currently produces an
+> `unsupported annotation @values` error.
 
 #### Range Annotations (Sliders)
 
@@ -562,9 +591,9 @@ scaleRadius(@range(0.5, 10.0) r) {
 }
 ```
 
-In addition to explicit `@range(...)` annotations, GSL v1 supports defining slider metadata using
-dot-syntax property assignments (e.g., `name.min`, `name.max`, `name.period`), which the compiler
-automatically synthesizes into canonical AST range annotations. See section 8 below.
+GSL v1 also set slider limits with dot-syntax property assignments (`name.min`, `name.max`,
+`name.period`). Those were removed in favor of `@range(...)`: a source that still sets one
+fails to compile, naming `@range`, and `gsl fix -range` rewrites it. See section 8 below.
 
 #### Point Annotations
 
@@ -589,6 +618,56 @@ s = sphere(p - @point [1.0, 2.0, 3.0]);
 The parser automatically rewrites `@point <expr>` into `uiPoint(<expr>)`.
 In the editor and host UI, this registers an interactive 3D point handle that allows
 direct spatial manipulation of the vector.
+When `@point` is placed on a function parameter, it is recorded on the parameter without lowering
+to indicate that the parameter expects a 3D point.
+
+#### Direction Annotations
+
+A top-level variable assignment or a 3-component vector within an expression can be decorated with
+`@direction` or `@direction(anchor)`:
+
+```gsl
+@direction
+buildDir = [0.0, 0.0, 1.0];
+
+// Anchor point from which the @direction(center) arrow is drawn
+@point
+center = [10.0, 0.0, 5.0];
+
+@direction(center)
+axis = [0.0, 0.0, 1.0];
+```
+
+**Arguments**:
+- Takes 0 or 1 argument: `@direction` draws the arrow from the origin; `@direction(anchor)` draws
+  the arrow from the specified anchor point (a constant 3D point or a `@point` variable).
+- On a function parameter, `@direction(anchor)` must name a sibling parameter of the same
+  function (e.g., `turned(@point axisOrigin, @direction(axisOrigin) axisDir)`).
+
+**Lowering**:
+The parser rewrites `@direction <expr>` into `uiDirection(<expr>)` and `@direction(anchor) <expr>`
+into `uiDirection(<expr>, anchor)`. On a function parameter, `@direction` is recorded on the
+parameter without lowering.
+
+#### Color Annotations
+
+A top-level variable assignment or a 3-component sRGB vector within an expression can be decorated
+with `@color`:
+
+```gsl
+@color
+coat = [0.804, 0.098, 0.098];
+
+c = applyColor(@color [0.2, 0.2, 0.2]);
+```
+
+**Restrictions**:
+- Takes no arguments.
+- The decorated expression must evaluate to a 3-component `[r, g, b]` vector.
+
+**Lowering**:
+The parser rewrites `@color <expr>` into `uiColor(<expr>)`, registering a color picker control in
+the host UI. On a function parameter, `@color` is recorded on the parameter without lowering.
 
 #### Transform Annotations
 
@@ -622,6 +701,8 @@ s = myFunc(@transform [[1.0, 0.0, 0.0, 0.0],
 
 The parser automatically rewrites `@transform <expr>` into `uiTransform(<expr>)`.
 In the editor and host UI, this registers an interactive 3D spatial transformation gizmo.
+When `@transform` is placed on a function parameter, it is recorded on the parameter without
+lowering.
 
 #### Spline Viewport Manipulator (@spline, uiSpline)
 
@@ -716,8 +797,38 @@ path = uiSpline([start, bend, end]);
 - **UI Registration**: The compiler UI extraction pass registers a composite `spline` control.
   The host viewer draws a visible spline curve connecting the frames above scene geometry
   and binds each matrix handle for interactive manipulation.
-- **Shader Stripping**: Calls to `uiSpline` (along with `uiPoint` and `uiTransform`)
-  are stripped during shader code generation and lowered to their underlying list expressions.
+- **Shader Stripping**: Calls to `uiSpline` (along with `uiPoint`, `uiTransform`, `uiColor`,
+  and `uiDirection`) are stripped during shader code generation and lowered to their underlying
+  expressions.
+
+#### Frame Parameter Annotation (`@frame`)
+
+`@frame` is a parameter-only annotation that takes no arguments:
+
+```gsl
+@surface turned(baseMaterial, @color baseColor, @frame frame) {
+  ...
+}
+```
+
+It indicates that the parameter receives a body's `[body.u, body.v]` frame, which tooling reads
+from the body rather than prompting the user with a control. Applying `@frame` to any target other
+than a function parameter produces a compile-time error.
+
+#### Declaration Annotations (`@material`, `@finish`, `@surface`)
+
+Unlike the viewport control annotations above, `@material`, `@finish`, and `@surface` are
+**recorded** on the package file (`PackageFile.Annotations`) rather than lowered into the
+expression tree. They mark a symbol name (covering all overloads of an annotated function) and
+never alter what the declaration compiles to:
+
+- **`@material`**: Takes no arguments. Marks a browsable material function returning a
+  `(material, color)` pair. The assembler rejects `@material` on a constant assignment because a
+  constant cannot carry both a material record and an albedo color.
+- **`@finish`**: Takes no arguments. Valid on a variable assignment or function declaration. Marks
+  a material finish preset that carries no albedo color on its own.
+- **`@surface`**: Takes no arguments. Valid only on function declarations. Marks a surface operator
+  preset taking a base material first and returning the modified surface.
 
 #### Scene Annotation
 
@@ -737,38 +848,76 @@ The `@scene` annotation configures the document viewport size and grid density:
 * **Legacy Comments**: In GSL v1, legacy header comments (`// Scene Size:` and `// Scene Grid:`)
   are also supported as a fallback when `@scene` is omitted.
 
+#### Duration Directive
+
+The `@duration` directive says how long the document's animation runs, in seconds. It is to time
+what `@scene` is to space:
+
+```gsl
+@scene(60)
+@duration(12)
+```
+
+* **Position**: At the very top of the first file in a package, with `@scene`: directly above or
+  below it, or alone where there is no `@scene`. It precedes any captions, imports and
+  declarations. In any other file it is an error.
+* **Arguments**: One positive number literal. A name or an expression is not accepted.
+* **Effect**: The viewer's Time slider and end time span `[0, seconds]`, and the animation clock
+  starts over on passing the end, so the document and its captions loop. Without the directive
+  the clock runs on and the end time is whatever the viewer has.
+* **Scope**: Only the primary package's duration applies; an imported package's does not.
+* **Syntax**: Must not end with a semicolon.
+
+#### Caption Directive
+
+The `@caption` directive shows a line of text centred at the bottom of the viewer while the
+animation clock is in `[startTime, endTime]`:
+
+```gsl
+@caption("Rough stock", 0, 4)
+@caption("Drill the bore", 4, 9, 1)
+@caption("Two\nlines", 9, 12, 0)
+```
+
+* **Position**: Top level only, any number of them: ahead of the imports (under `@scene`) or among
+  the declarations, in any file of the package. Inside a function body it is an error.
+* **Arguments**: A string literal, then number literals in seconds: `startTime`, `endTime`, and an
+  optional `fade`. Names and expressions are not accepted. `endTime` must be greater than
+  `startTime`.
+* **Fade**: The caption fades in over `fade` seconds after `startTime` and out over `fade` seconds
+  before `endTime`, so it is fully shown between. Omitted, `fade` is 0.5, or half the interval
+  if that is shorter. Given, it must be at most half the interval; `0` shows and hides it at once.
+* **Text**: Escapes (`\n`, `\"`) are resolved; a `\n` breaks the line. It is shown as plain text.
+* **Overlap**: Captions showing at the same time stack, in source order.
+* **Scope**: Only the primary package's captions are shown; an imported package's are not.
+* **Syntax**: Must not end with a semicolon.
+
 ### 8. Variables, Sliders, and Properties
 
-A top-level variable assigned a single numeric literal can be decorated with property values to
-register it as a dynamic slider in the host user interface:
-- **`name.min`**: Minimum value constraint.
-- **`name.max`**: Maximum value constraint.
-- **`name.period`**: Animation clock driver period in seconds. The host drives the value
+A top-level variable assigned a single numeric literal can be given a slider range with an
+`@range(min, max[, period])` annotation (see the Annotations section), which registers it as a
+dynamic slider in the host user interface:
+- **`min`, `max`**: The slider's limits. Each is a compile-time constant expression and may read
+  other top-level constants.
+- **`period`** (optional): Animation clock driver period in seconds. The host drives the value
   sinusoidally between `min` and `max` using this timeframe.
 - **Snapping**: Snapping/rounding steps are configured by the decimal places of the original
   literal (`radius = 5;` snaps to integers, `radius = 0.50;` snaps to 0.01 increments).
 
 *Example Slider Configuration:*
 ```gsl
-radius = 5.00;
-radius.min = 0.5;
-radius.max = 10.0;
-radius.period = 4.0; // Oscillates over 4 seconds
+@range(0.5, 10.0, 4.0) radius = 5.00;  // Oscillates over 4 seconds
 ```
 
-#### Slider Validation Rules
-Slider properties (`.min`, `.max`, `.period`) are restricted strictly to top-level file scope.
-Assigning slider properties to function-local variables, parameters, or non-numeric types
-is rejected at compile time.
-A variable with any slider property must declare both `.min` and `.max`, where `min < max`.
-If `.period` is assigned, it must evaluate to a strictly positive constant (`period > 0`).
+> **Removed:** the `.min`, `.max` and `.period` properties (`radius.min = 0.5;`) were replaced by
+> `@range`. A source that sets one is rejected at compile time, naming `@range` and
+> `gsl fix -range`, which rewrites the source.
 
-#### Property-to-Annotation Canonicalization
-When `.min` and `.max` properties are defined on a top-level variable and no explicit `@range`
-annotation was declared in the source, the compiler's scope builder automatically synthesizes
-a canonical AST `Range` annotation on the defining `Assignment`.
-This allows downstream compiler stages (Assembler, constant-folding reachability, WGSL uniform emission)
-to operate uniformly on `Assignment.Range` without requiring dual-path handling for properties.
+#### Slider Validation Rules
+`@range` on a variable is restricted strictly to top-level file scope. Attaching it to
+function-local variables, parameters of other kinds, or non-numeric types is rejected at compile time.
+It must declare both bounds, where `min < max`.
+If a period is given, it must evaluate to a strictly positive constant (`period > 0`).
 
 #### Geometry and Field Properties
 Variables representing 3D geometry can be configured with metadata properties:
@@ -968,6 +1117,10 @@ The following multi-argument numeric primitives and built-ins share these common
       - For lists, `index` is a 0-indexed scalar integer (`0.0`, `1.0`, etc.).
       - For matrices, `index` is passed
         as a 2-element list `[col, row]` representing 0-indexed column and row indices.
+      - A fold over a list of functions may also take `fn(accumulator, value, index, prev)`:
+        `prev` is the element before `value`, a function the callback can call (the first element
+        is handed itself, which `index` tells apart). Called with constant arguments it folds to a
+        constant, as a call on `value` does; a number carried in the accumulator does not.
     - The second argument (`numeric`) must be a list or matrix.
     - The length of lists and dimensions of matrices must be known at compile time.
     - The optional third argument (`initial`) is the starting accumulator value.

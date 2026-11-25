@@ -6,7 +6,7 @@ package eval
 import (
 	"context"
 
-	"gradientcontrol.com/omega/core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
 )
 
 // Option configures program assembly inside the evaluator.
@@ -192,11 +192,15 @@ type SurfaceSample struct {
 	Converged bool
 }
 
-// VolumeBounds brackets the solid volume inside a containing region in cubic millimetres.
+// VolumeBounds brackets the solid volume inside a containing region in cubic millimetres. Converged says the
+// bracket is as narrow as the tolerance asked; where it is not, the bracket still holds and Reason says what
+// ended the search (ReasonBudget or ReasonDepth).
 type VolumeBounds struct {
-	Lower float64 `json:"lowerMm3"`
-	Upper float64 `json:"upperMm3"`
-	Evals int     `json:"evals"`
+	Lower     float64 `json:"lowerMm3"`
+	Upper     float64 `json:"upperMm3"`
+	Evals     int     `json:"evals"`
+	Converged bool    `json:"converged"`
+	Reason    string  `json:"reason,omitempty"`
 }
 
 // LitView is the camera and ground of a lit CPU render.
@@ -230,6 +234,13 @@ type LitOptions struct {
 	BackDim     float64
 	NoMaterials bool
 	Simple      *LitSimple
+
+	// Progress, if set, is called from the rendering goroutine as the render
+	// goes, with the share of the work done in [0, 1]. The shares never go
+	// back, and the last is 1. They are an estimate: the work is not the same
+	// in every phase or step, so the share is not proportional to the time
+	// left. It is called often (every march step) and must be quick.
+	Progress func(share float64)
 }
 
 // LitCamera places the camera in world Z-up coordinates.

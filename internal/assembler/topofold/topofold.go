@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"math"
 
-	"gradientcontrol.com/omega/core/assembler/meshslots"
-	"gradientcontrol.com/omega/core/assembler/topofold"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/meshslots"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/topofold"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 var topoPointBuiltins = map[string]bool{
@@ -136,6 +136,12 @@ func hasTopoCall(pkg *program.Package) bool {
 		for _, r := range file.MaterialReturns {
 			walkOp(r)
 		}
+		for _, r := range file.GradientReturns {
+			walkOp(r)
+		}
+		for _, r := range file.DisplacedReturns {
+			walkOp(r)
+		}
 	}
 	return found
 }
@@ -214,6 +220,12 @@ func foldPackage(
 			return err
 		}
 		if err := folder.foldReturns(&file.MaterialReturns, consts, foldedScope); err != nil {
+			return err
+		}
+		if err := folder.foldReturns(&file.GradientReturns, consts); err != nil {
+			return err
+		}
+		if err := folder.foldReturns(&file.DisplacedReturns, consts); err != nil {
 			return err
 		}
 	}
@@ -683,42 +695,138 @@ func constValues(op *program.Operand, consts map[string][]float64) ([]float64, b
 			return vals, ok && len(vals) > 0
 		}
 	case *program.Operand_Expression:
-		if t.Expression != nil && t.Expression.Operation == program.Operation_COLLECT {
-			var out []float64
-			for _, elem := range t.Expression.Operands {
-				vals, ok := constValues(elem, consts)
-				if !ok {
-					return nil, false
+		if t.Expression != nil {
+			switch t.Expression.Operation {
+			case program.Operation_COLLECT:
+				var out []float64
+				for _, elem := range t.Expression.Operands {
+					vals, ok := constValues(elem, consts)
+					if !ok {
+						return nil, false
+					}
+					out = append(out, vals...)
 				}
-				out = append(out, vals...)
+				return out, len(out) > 0
+			case program.Operation_NEG:
+				if len(t.Expression.Operands) == 1 {
+					vals, ok := constValues(t.Expression.Operands[0], consts)
+					if !ok {
+						return nil, false
+					}
+					neg := make([]float64, len(vals))
+					for i, v := range vals {
+						neg[i] = -v
+					}
+					return neg, true
+				}
+			case program.Operation_INDEX:
+				if len(t.Expression.Operands) == 2 {
+					return indexConstValues(t.Expression.Operands[0], t.Expression.Operands[1], consts)
+				}
+			case program.Operation_ADD, program.Operation_SUB, program.Operation_MUL, program.Operation_DIV:
+				if len(t.Expression.Operands) == 2 {
+					return binaryConstValues(t.Expression.Operation, t.Expression.Operands[0], t.Expression.Operands[1], consts)
+				}
 			}
-			return out, len(out) > 0
-		}
-		if t.Expression != nil && t.Expression.Operation == program.Operation_NEG && len(t.Expression.Operands) == 1 {
-			vals, ok := constValues(t.Expression.Operands[0], consts)
-			if !ok {
-				return nil, false
-			}
-			neg := make([]float64, len(vals))
-			for i, v := range vals {
-				neg[i] = -v
-			}
-			return neg, true
 		}
 	case *program.Operand_FnCall:
 		fc := t.FnCall
-		if fc != nil && fc.Reference != nil && fc.Reference.Prefix == "" && len(fc.Arguments) == 1 {
-			switch fc.Reference.Name {
-			case "uiPoint", "uiTransform", "uiColor", "uiDirection":
-				return constValues(fc.Arguments[0], consts)
+		if fc != nil && fc.Reference != nil {
+			if fc.Reference.Prefix == "" && len(fc.Arguments) == 1 {
+				switch fc.Reference.Name {
+				case "uiPoint", "uiTransform", "uiColor", "uiDirection":
+					return constValues(fc.Arguments[0], consts)
+				}
+			}
+			if fc.Reference.PkgPath == "vector" && fc.Reference.Name == "multiplyScalar" && len(fc.Arguments) == 2 {
+				return binaryConstValues(program.Operation_MUL, fc.Arguments[0], fc.Arguments[1], consts)
 			}
 		}
 	}
 	return nil, false
 }
 
+<<<<<<< HEAD
 func (f *topoFolder) resolveMeshSlot(name string, argOp *program.Operand, consts map[string][]float64, scope *evalScope) (int, error) {
 	vals, ok := scope.resolve(argOp, consts)
+=======
+func typeFlatSize(t *program.Type) int {
+	if t == nil || t.IsScalar() {
+		return 1
+	}
+	if t.IsList() || t.IsMatrix() {
+		return int(t.Size) * typeFlatSize(t.ElemType)
+	}
+	return 1
+}
+
+func indexConstValues(targetOp, indexOp *program.Operand, consts map[string][]float64) ([]float64, bool) {
+	targetVals, ok := constValues(targetOp, consts)
+	if !ok {
+		return nil, false
+	}
+	idxVals, ok := constValues(indexOp, consts)
+	if !ok || len(idxVals) != 1 {
+		return nil, false
+	}
+	idx := int(idxVals[0])
+	if float64(idx) != idxVals[0] || idx < 0 {
+		return nil, false
+	}
+	stride := 1
+	if targetOp.Type != nil && (targetOp.Type.IsMatrix() || targetOp.Type.IsList()) && targetOp.Type.ElemType != nil {
+		stride = typeFlatSize(targetOp.Type.ElemType)
+	}
+	start := idx * stride
+	end := start + stride
+	if stride <= 0 || end > len(targetVals) {
+		return nil, false
+	}
+	return targetVals[start:end], true
+}
+
+func binaryConstValues(op program.Operation, lhsOp, rhsOp *program.Operand, consts map[string][]float64) ([]float64, bool) {
+	lhs, ok := constValues(lhsOp, consts)
+	if !ok || len(lhs) == 0 {
+		return nil, false
+	}
+	rhs, ok := constValues(rhsOp, consts)
+	if !ok || len(rhs) == 0 {
+		return nil, false
+	}
+	n := len(lhs)
+	if len(rhs) > n {
+		if len(lhs) != 1 {
+			return nil, false
+		}
+		n = len(rhs)
+	} else if len(rhs) != 1 && len(rhs) != n {
+		return nil, false
+	}
+	out := make([]float64, n)
+	for i := 0; i < n; i++ {
+		a := lhs[i%len(lhs)]
+		b := rhs[i%len(rhs)]
+		switch op {
+		case program.Operation_ADD:
+			out[i] = a + b
+		case program.Operation_SUB:
+			out[i] = a - b
+		case program.Operation_MUL:
+			out[i] = a * b
+		case program.Operation_DIV:
+			if b == 0 {
+				return nil, false
+			}
+			out[i] = a / b
+		}
+	}
+	return out, true
+}
+
+func (f *topoFolder) resolveMeshSlot(name string, argOp *program.Operand, consts map[string][]float64) (int, error) {
+	vals, ok := constValues(argOp, consts)
+>>>>>>> main
 	if !ok {
 		return 0, f.errorAt(argOp.GetStart(), fmt.Sprintf("%s: the mesh id must be a constant", name))
 	}

@@ -3,8 +3,8 @@ package meshplan
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/internal/eval"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // parseMeshArgs extracts the asset index and 4x4 homogeneous placement matrix

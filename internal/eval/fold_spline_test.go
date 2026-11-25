@@ -3,15 +3,15 @@ package eval_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/collect"
-	"gradientcontrol.com/omega/core/internal/eval"
-	"gradientcontrol.com/omega/core/internal/source"
-	"gradientcontrol.com/omega/core/internal/types"
-	parserlib "gradientcontrol.com/omega/core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/collect"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/types"
+	parserlib "github.com/Gradient-Control-Laboratories/omega-core/parser"
 )
 
 func TestFoldLocalSplinePreservesNestedMatrix(t *testing.T) {
-	prog, err := collect.Program([]string{`frames() {
+	prog, diags, err := collect.Program([]string{`frames() {
   frame = uiTransform([[1,0,0,0],[0,1,0,0],[0,0,1,0],[3,4,5,1]]);
   path = uiSpline([frame, frame, frame]);
   selected = path[2];
@@ -21,6 +21,9 @@ func TestFoldLocalSplinePreservesNestedMatrix(t *testing.T) {
 return frames();`}, &source.MockManager{}, parserlib.ParsePackage)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if len(diags) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", diags)
 	}
 	if err := types.Analyze(prog); err != nil {
 		t.Fatal(err)

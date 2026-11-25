@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // Whether a program lays a material is read by reachability, not by scanning

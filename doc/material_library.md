@@ -437,6 +437,27 @@ a program carries a height, every ray in it pays the displaced band; a zero
 height does not buy that back, which is one half of the two-names question in
 "Animation".
 
+**Layers.** A height moves the shape that sets it, not the return as a whole:
+each named shape whose material carries a height is moved, before the booleans
+that use it, by what its material adds over the material it inherits
+(`property.LowerDisplacedReturns`). A coat is a new name over the shape it
+covers, `coat1 = part; coat1.material = coating.levelled(paint, partMat,
+build, underSize)`; `levelled` adds its `build` to the base's
+(`material.withBuild`, row 2's fourth component) and levels only the relief,
+so coats stack, a cut taken after them stays flat and shows each coat as a
+band over what it covers (inside the solid beneath a coat, the coat's colour
+and material give way to the ones it was laid over), and paint laid over the
+cut covers it again. `examples/coated_oak_stick.gsl` is the worked case. A
+return that is one shape with its own material is moved as a whole, exactly as
+before. A coat reads the heights beneath it at the closest point of the shape
+its chain stands on (`p - d * grad d / |grad d|^2`), so a relief that varies
+through the volume, wood's pores, is the same under every coat however far it
+stands off; colour stays volumetric, so a cut shows the wood's grain. Every
+height read at one point is evaluated in one remap, so a stack of coats, and
+paint laid over a cut through them, costs the march one evaluation of the
+material beneath: the example's displaced field costs what an undisplaced
+material lookup per sample does.
+
 **Relief the operator returns.** A relief that is the part's own shape, teeth,
 bars, studs, scales, a weave, is returned as the operator's third value and
 marked `relief` in the catalog; the panel applies it to the body, and a

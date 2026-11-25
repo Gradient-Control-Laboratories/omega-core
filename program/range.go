@@ -1,9 +1,19 @@
 package program
 
-// IsSynthetic returns true if the RangeAnnotation was synthesized in the parser
-// from v1 .min/.max properties rather than written explicitly in the source.
-func (r *Range) IsSynthetic() bool {
-	return r.Start.Line == r.End.Line && r.Start.Column == r.End.Column
+// Operands returns the bound and period expressions the range wrote, for a pass
+// that walks a declaration's expressions as it walks its properties'. A nil range
+// has none.
+func (r *Range) Operands() []*Operand {
+	if r == nil {
+		return nil
+	}
+	var ops []*Operand
+	for _, op := range []*Operand{r.Min, r.Max, r.Period} {
+		if op != nil {
+			ops = append(ops, op)
+		}
+	}
+	return ops
 }
 
 func operandConst(op *Operand) (float64, bool) {

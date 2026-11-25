@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"gradientcontrol.com/omega/core/internal/build"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/build"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // AudioToJs generates AudioToJs code from a GSL program for audio output
@@ -26,6 +26,7 @@ func AudioToJs(
 		complexityScore: 0,
 		varMap:          make(map[string]build.VarInfo),
 		builtFns:        make(map[string]bool),
+		fnJSNames:       make(map[string]bool),
 	}
 
 	err := build.Build(d, prog, false)
@@ -76,6 +77,10 @@ func (d *Delegate) BuildPackageReturns(ops []*program.Operand, expressions []bui
 	// Add helper functions
 	sb.WriteString(JSRuntimeHelpers())
 	sb.WriteString("\n")
+	if d.noiseUsed {
+		sb.WriteString(JSNoiseHelper())
+		sb.WriteString("\n")
+	}
 
 	// Generate the function that computes audio
 	sb.WriteString("function computeAudio(gsl_time) {\n")

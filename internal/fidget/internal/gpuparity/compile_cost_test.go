@@ -16,8 +16,8 @@ import (
 	"testing"
 	"time"
 
-	"gradientcontrol.com/omega/core/assembler"
-	"gradientcontrol.com/omega/core/program/noise"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/noise"
 )
 
 // TestShaderCompileCost measures what each example's shader costs to compile,

@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"gradientcontrol.com/omega/core/program/meshasset"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/meshasset"
 )
 
 // Bytes is the box from lo to hi as binary STL: twelve triangles wound

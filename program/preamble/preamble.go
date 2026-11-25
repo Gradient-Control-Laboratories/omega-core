@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func PrimitiveAndBuiltinDescriptiveText() string {

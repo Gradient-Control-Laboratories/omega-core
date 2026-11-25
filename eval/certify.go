@@ -8,7 +8,7 @@ import (
 	"math"
 	"sort"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 const (

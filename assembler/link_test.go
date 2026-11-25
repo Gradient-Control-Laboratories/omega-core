@@ -7,16 +7,16 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/assembler/deadcode"
-	"gradientcontrol.com/omega/core/internal/collect"
-	"gradientcontrol.com/omega/core/internal/eval"
-	"gradientcontrol.com/omega/core/internal/link"
-	"gradientcontrol.com/omega/core/internal/lower"
-	"gradientcontrol.com/omega/core/internal/source"
-	src_test "gradientcontrol.com/omega/core/internal/srctest"
-	"gradientcontrol.com/omega/core/internal/types"
-	parser "gradientcontrol.com/omega/core/parser"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/deadcode"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/collect"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/link"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/lower"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	src_test "github.com/Gradient-Control-Laboratories/omega-core/internal/srctest"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/types"
+	parser "github.com/Gradient-Control-Laboratories/omega-core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func TestRebuild(t *testing.T) {
@@ -30,7 +30,10 @@ func testRebuildOne(t *testing.T, srcFile string) {
 func runTestRebuildOne(t *testing.T, srcFile string, src []byte) (*program.Program, error) {
 	pkgMgr := source.NewLocalManager("../stdlib")
 
-	prog, err := collect.Program([]string{string(src)}, pkgMgr, parser.ParsePackage)
+	prog, diags, err := collect.Program([]string{string(src)}, pkgMgr, parser.ParsePackage)
+	if len(diags) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", diags)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -164,9 +167,12 @@ func TestReferencesInPlace(t *testing.T) {
 		return x + used();
 	`
 
-	prog, err := collect.Program([]string{src}, pkgMgr, parser.ParsePackage)
+	prog, diags, err := collect.Program([]string{src}, pkgMgr, parser.ParsePackage)
 	if err != nil {
 		t.Fatalf("failed to collect: %v", err)
+	}
+	if len(diags) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", diags)
 	}
 
 	// Run in-place reference resolution
@@ -230,7 +236,10 @@ func testReferencesOne(t *testing.T, srcFile string) {
 func runTestReferencesOn(t *testing.T, srcFile string, src []byte) (*program.Program, error) {
 	pkgMgr := source.NewLocalManager("../stdlib")
 
-	prog, err := collect.Program([]string{string(src)}, pkgMgr, parser.ParsePackage)
+	prog, diags, err := collect.Program([]string{string(src)}, pkgMgr, parser.ParsePackage)
+	if len(diags) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", diags)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -418,9 +427,12 @@ func TestLinkConstantEvaluation(t *testing.T) {
 		return 0.0;
 	`
 
-	prog, err := collect.Program([]string{src}, pkgMgr, parser.ParsePackage)
+	prog, diags, err := collect.Program([]string{src}, pkgMgr, parser.ParsePackage)
 	if err != nil {
 		t.Fatalf("failed to collect: %v", err)
+	}
+	if len(diags) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", diags)
 	}
 
 	prog.Primary.Path = "test"
@@ -503,9 +515,12 @@ func TestLinkConstantEvaluationWithImports(t *testing.T) {
 		return 0.0;
 	`
 
-	prog, err := collect.Program([]string{src}, pkgMgr, parser.ParsePackage)
+	prog, diags, err := collect.Program([]string{src}, pkgMgr, parser.ParsePackage)
 	if err != nil {
 		t.Fatalf("failed to collect: %v", err)
+	}
+	if len(diags) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", diags)
 	}
 
 	prog.Primary.Path = "test"

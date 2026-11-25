@@ -3,9 +3,9 @@ package codegen
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/backend/wgsl/internal/wgsl"
-	"gradientcontrol.com/omega/core/internal/build"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl/internal/wgsl"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/build"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func (d *Delegate) Remap(remapOp *program.Operand, targetOp *program.Operand, expr build.Expression, targetExpr build.Expression) (build.Expression, error) {
@@ -100,6 +100,7 @@ func (d *Delegate) Remap(remapOp *program.Operand, targetOp *program.Operand, ex
 		// no-op (prevScope is already the primary agent scope).
 		prevScope := d.currentScope()
 		tempScope := prevScope.copy(fnName)
+		tempScope.isFunctionScope = true
 		tempScope.bScope = d.primaryBScope
 		if prevScope.bScope.IsFileScope() {
 			tempScope.parent = d.rootScope()
@@ -123,7 +124,7 @@ func (d *Delegate) Remap(remapOp *program.Operand, targetOp *program.Operand, ex
 			}
 
 			var actualFnName string
-			mergedRefs, actualFnName, err = d.buildFunc(fnName, fnName, refs, nil, nil, returnType, []build.Expression{returnExpr})
+			mergedRefs, actualFnName, err = d.buildFunc(nil, fnName, fnName, refs, nil, nil, returnType, []build.Expression{returnExpr})
 			if err == nil {
 				fnName = actualFnName
 			}

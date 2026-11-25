@@ -1,5 +1,5 @@
 /// Index of the mechanical family; its libraries are the sub-packages catalog,
-/// thread, fastener, drill, driver, gears and joint.
+/// thread, fastener, drill, driver, gears, joint, shaft, bearing and tolerance.
 
 // Mechanical Library (mechanical)
 //
@@ -13,6 +13,9 @@
 //   import "mechanical/driver";    // screwdriver bits and screwdrivers
 //   import "mechanical/gears";     // involute spur and bevel gears
 //   import "mechanical/joint";     // joints: the interface between parts in one call
+//   import "mechanical/shaft";     // shafts as a stack of coaxial segments
+//   import "mechanical/bearing";   // ball bearings, plain bushes and their seats
+//   import "mechanical/tolerance"; // ISO 286 limits and fits
 //
 // They share one list of standard sizes. mechanical/catalog holds it — one row
 // per nominal diameter carrying the thread pitch and every fastener dimension

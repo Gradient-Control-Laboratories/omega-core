@@ -255,6 +255,9 @@
 .cm-diagnostic-error {
     border-left-color: #cb4c4c;
 }
+.cm-diagnostic-warning {
+    border-left-color: #d7a63c;
+}
 .cm-diagnostic pre,
 .cm-diagnostic-text {
     font-family: 'IBM Plex Mono', monospace;
@@ -281,7 +284,7 @@
     border-color: #444;
 }
 
-/* Red wavy underline under the diagnostic range. */
+/* Wavy underline under diagnostic ranges (red for errors, amber for warnings). */
 .cm-lintRange-error {
     background-image: linear-gradient(
         45deg,
@@ -298,11 +301,32 @@
     padding-bottom: 2px;
 }
 
-/* Line-number tint for error lines. The errorLineClassField state field
- * in editor.js adds .cm-has-error to every gutter cell on a diagnostic's
- * line; tinting the line number is a lighter-weight error signal than the
- * default lintGutter's marker column. */
+.cm-lintRange-warning {
+    background-image: linear-gradient(
+        45deg,
+        transparent 65%, #d7a63c 80%, transparent 90%
+    ), linear-gradient(
+        135deg,
+        transparent 5%, #d7a63c 15%, transparent 25%,
+        transparent 35%, #d7a63c 50%, transparent 60%,
+        transparent 70%, #d7a63c 85%, transparent 95%
+    );
+    background-repeat: repeat-x;
+    background-size: 8px 3px;
+    background-position: left bottom;
+    padding-bottom: 2px;
+}
+
+/* Line-number tint for diagnostic lines. diagnosticLineClassField in
+ * editor.js adds .cm-has-error or .cm-has-warning to every gutter cell on a
+ * diagnostic's line; tinting the line number is a lighter-weight signal than
+ * the default lintGutter's marker column. */
 .cm-gutterElement.cm-has-error {
     color: #cb4c4c;
+    font-weight: 600;
+}
+
+.cm-gutterElement.cm-has-warning {
+    color: #d7a63c;
     font-weight: 600;
 }

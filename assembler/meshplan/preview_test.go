@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	parser "gradientcontrol.com/omega/core/parser"
-	"gradientcontrol.com/omega/core/program"
+	parser "github.com/Gradient-Control-Laboratories/omega-core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func TestPreviewBodiesMapsReturnsToSlotsAndMeshes(t *testing.T) {
@@ -84,9 +84,7 @@ return red, blue;
 uiTransform(m) {
 	return m;
 }
-radius = 2.0;
-radius.min = 1.0;
-radius.max = 5.0;
+@range(1.0, 5.0) radius = 2.0;
 xf = uiTransform([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [4, 5, 6, 1]]);
 cavity = length(p) - radius + noiseHash3(p)[0];
 solid = length(p) - 2.0;

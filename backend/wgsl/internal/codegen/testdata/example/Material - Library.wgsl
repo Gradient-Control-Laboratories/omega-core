@@ -184,8 +184,8 @@ fn noise_voronoi(p: vec3<f32>, size: f32, randomness: f32, metric: f32, smoothne
 }
 
 fn gsl_remap_3(p: vec3<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
-  let gsl_tmp_383 = clamp((-noise_voronoi(p, 5.0, 1.0, 0.0, 0.0, noiseTex) / 5.0 - -0.38) / 0.08 * 0.5 + 0.5, 0.0, 1.0);
-  return gsl_tmp_383 * gsl_tmp_383 * (3.0 - 2.0 * gsl_tmp_383);
+  let gsl_tmp_573 = clamp((-noise_voronoi(p, 5.0, 1.0, 0.0, 0.0, noiseTex) / 5.0 - -0.38) / 0.08 * 0.5 + 0.5, 0.0, 1.0);
+  return gsl_tmp_573 * gsl_tmp_573 * (3.0 - 2.0 * gsl_tmp_573);
 }
 
 fn texture_paint(field: f32, edge: f32, width: f32, colorA: vec3<f32>, colorB: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
@@ -193,8 +193,8 @@ fn texture_paint(field: f32, edge: f32, width: f32, colorA: vec3<f32>, colorB: v
 }
 
 fn gsl_remap_4(p: vec3<f32>, color_white: vec3<f32>, color_gray: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
-  let gsl_tmp_623 = clamp((-noise_voronoi(p, 5.0, 1.0, 0.0, 0.0, noiseTex) / 5.0 - -0.38) / 0.08 * 0.5 + 0.5, 0.0, 1.0);
-  return gsl_tmp_623 * gsl_tmp_623 * (3.0 - 2.0 * gsl_tmp_623);
+  let gsl_tmp_768 = clamp((-noise_voronoi(p, 5.0, 1.0, 0.0, 0.0, noiseTex) / 5.0 - -0.38) / 0.08 * 0.5 + 0.5, 0.0, 1.0);
+  return gsl_tmp_768 * gsl_tmp_768 * (3.0 - 2.0 * gsl_tmp_768);
 }
 
 fn texture_coverageDisc(gsl_var_distance: f32, radius: f32, noiseTex: texture_3d<f32>) -> f32 {
@@ -423,29 +423,29 @@ fn wood_poreDistanceAt(local: vec3<f32>, progress: f32, poreSize: f32, ringPoros
   let poreCellSize = max(poreSize, 0.01);
   let poreQ = local.xy / poreCellSize;
   let poreBase = floor(poreQ - 0.5);
-  let gsl_tmp_251 = poreBase + vec2<f32>(0.0, 0.0);
-  let gsl_tmp_252 = local.z / (poreCellSize * 8.0) + fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_251.x, gsl_tmp_251.y, gsl_tmp_251.x - gsl_tmp_251.y + 6007.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_251.x, gsl_tmp_251.y, gsl_tmp_251.x - gsl_tmp_251.y + 6007.0)) / 64.0)) & vec3<i32>(63), 0).rgb).y;
-  let gsl_tmp_253 = floor(gsl_tmp_252);
-  let gsl_tmp_254 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_251.x, gsl_tmp_251.y, gsl_tmp_253))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_251.x, gsl_tmp_251.y, gsl_tmp_253)) / 64.0)) & vec3<i32>(63), 0).rgb);
+  let gsl_tmp_381 = poreBase + vec2<f32>(0.0, 0.0);
+  let gsl_tmp_382 = local.z / (poreCellSize * 8.0) + fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_381.x, gsl_tmp_381.y, gsl_tmp_381.x - gsl_tmp_381.y + 6007.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_381.x, gsl_tmp_381.y, gsl_tmp_381.x - gsl_tmp_381.y + 6007.0)) / 64.0)) & vec3<i32>(63), 0).rgb).y;
+  let gsl_tmp_383 = floor(gsl_tmp_382);
+  let gsl_tmp_384 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_381.x, gsl_tmp_381.y, gsl_tmp_383))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_381.x, gsl_tmp_381.y, gsl_tmp_383)) / 64.0)) & vec3<i32>(63), 0).rgb);
   let sizeShare = wood_poreSizeShare(progress, ringPorosity, poreZone, noiseTex);
   let size = sizeShare.x;
   let poreShare = sizeShare.y;
-  let gsl_tmp_255 = select(10.0, min(10.0, length(vec2<f32>(length(poreQ - (gsl_tmp_251 + gsl_tmp_254.xy)), max(abs(gsl_tmp_252 - gsl_tmp_253 - 0.5) - 0.2 - 0.25 * gsl_tmp_254.x, 0.0) * 8.0)) / size), gsl_tmp_254.z < poreShare);
-  let gsl_tmp_256 = poreBase + vec2<f32>(1.0, 0.0);
-  let gsl_tmp_257 = local.z / (poreCellSize * 8.0) + fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_256.x, gsl_tmp_256.y, gsl_tmp_256.x - gsl_tmp_256.y + 6007.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_256.x, gsl_tmp_256.y, gsl_tmp_256.x - gsl_tmp_256.y + 6007.0)) / 64.0)) & vec3<i32>(63), 0).rgb).y;
-  let gsl_tmp_258 = floor(gsl_tmp_257);
-  let gsl_tmp_259 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_256.x, gsl_tmp_256.y, gsl_tmp_258))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_256.x, gsl_tmp_256.y, gsl_tmp_258)) / 64.0)) & vec3<i32>(63), 0).rgb);
-  let gsl_tmp_260 = select(gsl_tmp_255, min(gsl_tmp_255, length(vec2<f32>(length(poreQ - (gsl_tmp_256 + gsl_tmp_259.xy)), max(abs(gsl_tmp_257 - gsl_tmp_258 - 0.5) - 0.2 - 0.25 * gsl_tmp_259.x, 0.0) * 8.0)) / size), gsl_tmp_259.z < poreShare);
-  let gsl_tmp_261 = poreBase + vec2<f32>(0.0, 1.0);
-  let gsl_tmp_262 = local.z / (poreCellSize * 8.0) + fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_261.x, gsl_tmp_261.y, gsl_tmp_261.x - gsl_tmp_261.y + 6007.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_261.x, gsl_tmp_261.y, gsl_tmp_261.x - gsl_tmp_261.y + 6007.0)) / 64.0)) & vec3<i32>(63), 0).rgb).y;
-  let gsl_tmp_263 = floor(gsl_tmp_262);
-  let gsl_tmp_264 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_261.x, gsl_tmp_261.y, gsl_tmp_263))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_261.x, gsl_tmp_261.y, gsl_tmp_263)) / 64.0)) & vec3<i32>(63), 0).rgb);
-  let gsl_tmp_265 = select(gsl_tmp_260, min(gsl_tmp_260, length(vec2<f32>(length(poreQ - (gsl_tmp_261 + gsl_tmp_264.xy)), max(abs(gsl_tmp_262 - gsl_tmp_263 - 0.5) - 0.2 - 0.25 * gsl_tmp_264.x, 0.0) * 8.0)) / size), gsl_tmp_264.z < poreShare);
-  let gsl_tmp_266 = poreBase + vec2<f32>(1.0, 1.0);
-  let gsl_tmp_267 = local.z / (poreCellSize * 8.0) + fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_266.x, gsl_tmp_266.y, gsl_tmp_266.x - gsl_tmp_266.y + 6007.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_266.x, gsl_tmp_266.y, gsl_tmp_266.x - gsl_tmp_266.y + 6007.0)) / 64.0)) & vec3<i32>(63), 0).rgb).y;
-  let gsl_tmp_268 = floor(gsl_tmp_267);
-  let gsl_tmp_269 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_266.x, gsl_tmp_266.y, gsl_tmp_268))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_266.x, gsl_tmp_266.y, gsl_tmp_268)) / 64.0)) & vec3<i32>(63), 0).rgb);
-  let nearestPore = select(gsl_tmp_265, min(gsl_tmp_265, length(vec2<f32>(length(poreQ - (gsl_tmp_266 + gsl_tmp_269.xy)), max(abs(gsl_tmp_267 - gsl_tmp_268 - 0.5) - 0.2 - 0.25 * gsl_tmp_269.x, 0.0) * 8.0)) / size), gsl_tmp_269.z < poreShare);
+  let gsl_tmp_385 = select(10.0, min(10.0, length(vec2<f32>(length(poreQ - (gsl_tmp_381 + gsl_tmp_384.xy)), max(abs(gsl_tmp_382 - gsl_tmp_383 - 0.5) - 0.2 - 0.25 * gsl_tmp_384.x, 0.0) * 8.0)) / size), gsl_tmp_384.z < poreShare);
+  let gsl_tmp_386 = poreBase + vec2<f32>(1.0, 0.0);
+  let gsl_tmp_387 = local.z / (poreCellSize * 8.0) + fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_386.x, gsl_tmp_386.y, gsl_tmp_386.x - gsl_tmp_386.y + 6007.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_386.x, gsl_tmp_386.y, gsl_tmp_386.x - gsl_tmp_386.y + 6007.0)) / 64.0)) & vec3<i32>(63), 0).rgb).y;
+  let gsl_tmp_388 = floor(gsl_tmp_387);
+  let gsl_tmp_389 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_386.x, gsl_tmp_386.y, gsl_tmp_388))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_386.x, gsl_tmp_386.y, gsl_tmp_388)) / 64.0)) & vec3<i32>(63), 0).rgb);
+  let gsl_tmp_390 = select(gsl_tmp_385, min(gsl_tmp_385, length(vec2<f32>(length(poreQ - (gsl_tmp_386 + gsl_tmp_389.xy)), max(abs(gsl_tmp_387 - gsl_tmp_388 - 0.5) - 0.2 - 0.25 * gsl_tmp_389.x, 0.0) * 8.0)) / size), gsl_tmp_389.z < poreShare);
+  let gsl_tmp_391 = poreBase + vec2<f32>(0.0, 1.0);
+  let gsl_tmp_392 = local.z / (poreCellSize * 8.0) + fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_391.x, gsl_tmp_391.y, gsl_tmp_391.x - gsl_tmp_391.y + 6007.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_391.x, gsl_tmp_391.y, gsl_tmp_391.x - gsl_tmp_391.y + 6007.0)) / 64.0)) & vec3<i32>(63), 0).rgb).y;
+  let gsl_tmp_393 = floor(gsl_tmp_392);
+  let gsl_tmp_394 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_391.x, gsl_tmp_391.y, gsl_tmp_393))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_391.x, gsl_tmp_391.y, gsl_tmp_393)) / 64.0)) & vec3<i32>(63), 0).rgb);
+  let gsl_tmp_395 = select(gsl_tmp_390, min(gsl_tmp_390, length(vec2<f32>(length(poreQ - (gsl_tmp_391 + gsl_tmp_394.xy)), max(abs(gsl_tmp_392 - gsl_tmp_393 - 0.5) - 0.2 - 0.25 * gsl_tmp_394.x, 0.0) * 8.0)) / size), gsl_tmp_394.z < poreShare);
+  let gsl_tmp_396 = poreBase + vec2<f32>(1.0, 1.0);
+  let gsl_tmp_397 = local.z / (poreCellSize * 8.0) + fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_396.x, gsl_tmp_396.y, gsl_tmp_396.x - gsl_tmp_396.y + 6007.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_396.x, gsl_tmp_396.y, gsl_tmp_396.x - gsl_tmp_396.y + 6007.0)) / 64.0)) & vec3<i32>(63), 0).rgb).y;
+  let gsl_tmp_398 = floor(gsl_tmp_397);
+  let gsl_tmp_399 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_396.x, gsl_tmp_396.y, gsl_tmp_398))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_396.x, gsl_tmp_396.y, gsl_tmp_398)) / 64.0)) & vec3<i32>(63), 0).rgb);
+  let nearestPore = select(gsl_tmp_395, min(gsl_tmp_395, length(vec2<f32>(length(poreQ - (gsl_tmp_396 + gsl_tmp_399.xy)), max(abs(gsl_tmp_397 - gsl_tmp_398 - 0.5) - 0.2 - 0.25 * gsl_tmp_399.x, 0.0) * 8.0)) / size), gsl_tmp_399.z < poreShare);
   return vec2<f32>(nearestPore, size);
 }
 
@@ -640,9 +640,9 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f
     if (abs(gsl_part_7) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_7), gsl_partVanish_7.zw); }
   }
   let checkerBall = gsl_part_7;
-  let gsl_tmp_512 = vec3<f32>(0.0, 0.0, 0.0) + vec3<f32>(0.94226784, 0.33486015, 0.0) * 0.010944857 * sin(0.35342917 * dot(vec3<f32>(0.94226784, 0.33486015, 0.0), p) - 0.64525276 * time + 0.0) + vec3<f32>(0.9991408, 0.04144492, 0.0) * 0.01742606 * sin(0.45396015 * dot(vec3<f32>(0.9991408, 0.04144492, 0.0), p) - 0.73128647 * time + 2.1) + vec3<f32>(0.83012927, 0.55757093, 0.0) * 0.020284768 * sin(0.5670575 * dot(vec3<f32>(0.83012927, 0.55757093, 0.0), p) - 0.81732017 * time + 4.4) + vec3<f32>(0.9817281, 0.19028927, 0.0) * 0.022745797 * sin(0.6927212 * dot(vec3<f32>(0.9817281, 0.19028927, 0.0), p) - 0.90335387 * time + 1.3) + vec3<f32>(0.73748547, 0.675363, 0.0) * 0.023844866 * sin(0.90477866 * dot(vec3<f32>(0.73748547, 0.675363, 0.0), p) - 1.0324044 * time + 5.2) + vec3<f32>(0.96676344, -0.25567245, 0.0) * 0.022270106 * sin(1.2315043 * dot(vec3<f32>(0.96676344, -0.25567245, 0.0), p) - 1.2044718 * time + 3.3) + vec3<f32>(0.54747134, 0.8368244, 0.0) * 0.017706865 * sin(1.8158406 * dot(vec3<f32>(0.54747134, 0.8368244, 0.0), p) - 1.4625729 * time + 0.7) + vec3<f32>(0.84802806, -0.52995133, 0.0) * 0.011648065 * sin(2.7708848 * dot(vec3<f32>(0.84802806, -0.52995133, 0.0), p) - 1.8067077 * time + 2.9);
-  let gsl_tmp_513 = 0.0 + 0.018241428 * cos(0.35342917 * dot(vec3<f32>(0.94226784, 0.33486015, 0.0), p + gsl_tmp_512) - 0.64525276 * time + 0.0) + 0.029043432 * cos(0.45396015 * dot(vec3<f32>(0.9991408, 0.04144492, 0.0), p + gsl_tmp_512) - 0.73128647 * time + 2.1) + 0.03380795 * cos(0.5670575 * dot(vec3<f32>(0.83012927, 0.55757093, 0.0), p + gsl_tmp_512) - 0.81732017 * time + 4.4) + 0.037909664 * cos(0.6927212 * dot(vec3<f32>(0.9817281, 0.19028927, 0.0), p + gsl_tmp_512) - 0.90335387 * time + 1.3) + 0.039741445 * cos(0.90477866 * dot(vec3<f32>(0.73748547, 0.675363, 0.0), p + gsl_tmp_512) - 1.0324044 * time + 5.2) + 0.037116844 * cos(1.2315043 * dot(vec3<f32>(0.96676344, -0.25567245, 0.0), p + gsl_tmp_512) - 1.2044718 * time + 3.3) + 0.029511444 * cos(1.8158406 * dot(vec3<f32>(0.54747134, 0.8368244, 0.0), p + gsl_tmp_512) - 1.4625729 * time + 0.7) + 0.019413443 * cos(2.7708848 * dot(vec3<f32>(0.84802806, -0.52995133, 0.0), p + gsl_tmp_512) - 1.8067077 * time + 2.9);
-  let waterHeight = gsl_tmp_513;
+  let gsl_tmp_660 = vec3<f32>(0.0, 0.0, 0.0) + vec3<f32>(0.94226784, 0.33486015, 0.0) * 0.010944857 * sin(0.35342917 * dot(vec3<f32>(0.94226784, 0.33486015, 0.0), p) - 0.64525276 * time + 0.0) + vec3<f32>(0.9991408, 0.04144492, 0.0) * 0.01742606 * sin(0.45396015 * dot(vec3<f32>(0.9991408, 0.04144492, 0.0), p) - 0.73128647 * time + 2.1) + vec3<f32>(0.83012927, 0.55757093, 0.0) * 0.020284768 * sin(0.5670575 * dot(vec3<f32>(0.83012927, 0.55757093, 0.0), p) - 0.81732017 * time + 4.4) + vec3<f32>(0.9817281, 0.19028927, 0.0) * 0.022745797 * sin(0.6927212 * dot(vec3<f32>(0.9817281, 0.19028927, 0.0), p) - 0.90335387 * time + 1.3) + vec3<f32>(0.73748547, 0.675363, 0.0) * 0.023844866 * sin(0.90477866 * dot(vec3<f32>(0.73748547, 0.675363, 0.0), p) - 1.0324044 * time + 5.2) + vec3<f32>(0.96676344, -0.25567245, 0.0) * 0.022270106 * sin(1.2315043 * dot(vec3<f32>(0.96676344, -0.25567245, 0.0), p) - 1.2044718 * time + 3.3) + vec3<f32>(0.54747134, 0.8368244, 0.0) * 0.017706865 * sin(1.8158406 * dot(vec3<f32>(0.54747134, 0.8368244, 0.0), p) - 1.4625729 * time + 0.7) + vec3<f32>(0.84802806, -0.52995133, 0.0) * 0.011648065 * sin(2.7708848 * dot(vec3<f32>(0.84802806, -0.52995133, 0.0), p) - 1.8067077 * time + 2.9);
+  let gsl_tmp_661 = 0.0 + 0.018241428 * cos(0.35342917 * dot(vec3<f32>(0.94226784, 0.33486015, 0.0), p + gsl_tmp_660) - 0.64525276 * time + 0.0) + 0.029043432 * cos(0.45396015 * dot(vec3<f32>(0.9991408, 0.04144492, 0.0), p + gsl_tmp_660) - 0.73128647 * time + 2.1) + 0.03380795 * cos(0.5670575 * dot(vec3<f32>(0.83012927, 0.55757093, 0.0), p + gsl_tmp_660) - 0.81732017 * time + 4.4) + 0.037909664 * cos(0.6927212 * dot(vec3<f32>(0.9817281, 0.19028927, 0.0), p + gsl_tmp_660) - 0.90335387 * time + 1.3) + 0.039741445 * cos(0.90477866 * dot(vec3<f32>(0.73748547, 0.675363, 0.0), p + gsl_tmp_660) - 1.0324044 * time + 5.2) + 0.037116844 * cos(1.2315043 * dot(vec3<f32>(0.96676344, -0.25567245, 0.0), p + gsl_tmp_660) - 1.2044718 * time + 3.3) + 0.029511444 * cos(1.8158406 * dot(vec3<f32>(0.54747134, 0.8368244, 0.0), p + gsl_tmp_660) - 1.4625729 * time + 0.7) + 0.019413443 * cos(2.7708848 * dot(vec3<f32>(0.84802806, -0.52995133, 0.0), p + gsl_tmp_660) - 1.8067077 * time + 2.9);
+  let waterHeight = gsl_tmp_661;
   let waterBall = (builtin_sphere(p - vec3<f32>(187.5, 0.0, 0.0), 25.0, noiseTex) - waterHeight) / 1.2928541;
   let gsl_partLo_8 = vec3<f32>(237.5, -25.0, -25.0);
   let gsl_partHi_8 = vec3<f32>(287.5, 25.0, 25.0);
@@ -697,42 +697,42 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_
   if (gsl_colorIdx == 2u) {
     var gsl_detailValue = vec3<f32>(0.55051714, 0.5512089, 0.5521506);
     if (max(gsl_pw, gsl_detailPw) < 1.2) { let gsl_detailOuterPw = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
-      let gsl_tmp_1 = p + (noise_gradientLatticeVector(p / 5.2, noiseTex) + noise_gradientLatticeVector(p * 2.03 / 5.2 + vec3<f32>(17.3, 5.1, 9.7), noiseTex) * 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.975) / 0.325 * 0.5 + 0.5, 0.0, 1.0), noiseTex))) * 1.056;
-      let gsl_tmp_2 = gsl_tmp_1 / 4.0;
-      let gsl_tmp_5 = gsl_cellularScan(gsl_tmp_2, 1, noiseTex).nearCell;
-      let gsl_tmp_25 = fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_tmp_5 + vec3<f32>(101.0, 0.0, 0.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((gsl_tmp_5 + vec3<f32>(101.0, 0.0, 0.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
-      let gsl_tmp_29 = noise_gradientLattice(p / 1.2 + vec3<f32>(1.7, 9.1, 4.4), noiseTex) + 0.15 * (1.0 - texture_mask(gsl_pw, 0.18, 0.06, noiseTex)) * noise_gradientLattice(p / 0.48 + vec3<f32>(8.2, 2.6, 7.3), noiseTex) + 0.4 * noise_gradientLattice(p / 3.6 + vec3<f32>(4.2, 6.6, 1.3), noiseTex);
-      let gsl_tmp_27 = normalize(gsl_tmp_25 - 0.5 + vec3<f32>(0.0001, 0.0, 0.0));
-      let gsl_tmp_28 = dot(p, gsl_tmp_27);
-      let gsl_tmp_4 = gsl_cellularScan(gsl_tmp_2, 1, noiseTex).f2;
-      let gsl_tmp_3 = gsl_cellularScan(gsl_tmp_2, 1, noiseTex).f1;
-      let gsl_tmp_6 = gsl_cellularScan(gsl_tmp_2, 1, noiseTex).farCell;
-      let gsl_tmp_31 = 1.0 - texture_mask((gsl_tmp_4 * gsl_tmp_4 - gsl_tmp_3 * gsl_tmp_3) / (2.0 * max(length(gsl_tmp_6 + fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_tmp_6)) & vec3<i32>(63), 0).rgb) - gsl_tmp_5 - fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_tmp_5)) & vec3<i32>(63), 0).rgb)), 0.001)) * 4.0, 0.24, 0.2, noiseTex);
-      let gsl_tmp_30 = texture_fadeTo(abs(noise_gradientLattice(p / 0.6 + vec3<f32>(6.1, 4.9, 2.2), noiseTex)), 0.157, 0.6, noiseTex) + 0.5 * texture_fadeTo(abs(noise_gradientLattice(p / 0.24 + vec3<f32>(1.1, 3.5, 8.8), noiseTex)), 0.157, 0.24, noiseTex);
-      let gsl_tmp_32 = vec3<f32>(0.5981807, 0.000000000048424487, 0.000000022296533) + vec3<f32>((gsl_tmp_25.y - 0.5) * 0.1 + 0.1 * gsl_tmp_29 + 0.015 * noise_gradientLattice((p - gsl_tmp_27 * gsl_tmp_28) / 0.32 + gsl_tmp_27 * gsl_tmp_28 / 3.2, noiseTex) * (1.0 - texture_mask(gsl_pw, 0.12, 0.04, noiseTex)) + 0.04 * gsl_tmp_31 + 0.12 * (gsl_tmp_30 - 0.235) * (0.5 + gsl_tmp_31), 0.0, 0.0) - vec3<f32>(0.0, 0.000000000048424487, 0.000000022296533) * 0.3 * gsl_tmp_31;
-      let gsl_tmp_7 = (gsl_tmp_1 + p + (noise_gradientLatticeVector(p / 2.0, noiseTex) + noise_gradientLatticeVector(p * 2.03 / 2.0 + vec3<f32>(17.3, 5.1, 9.7), noiseTex) * 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.375) / 0.125 * 0.5 + 0.5, 0.0, 1.0), noiseTex))) * 0.384 - p + vec3<f32>(148.4, 45.2, 23.6)) / 1.8;
-      let gsl_tmp_10 = gsl_cellularScan(gsl_tmp_7, 1, noiseTex).nearCell;
-      let gsl_tmp_13 = fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_tmp_10 + vec3<f32>(7.0, 29.0, 0.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((gsl_tmp_10 + vec3<f32>(7.0, 29.0, 0.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
-      let gsl_tmp_15 = stone_quartzOf(gsl_tmp_10, 1.8, 4.0, noiseTex);
-      let gsl_tmp_24 = select(0.0, 1.0 - gsl_tmp_15, gsl_tmp_13.x < 0.15);
-      let gsl_tmp_34 = gsl_tmp_32 + (vec3<f32>(0.5981807, 0.000000000048424487, 0.000000022296533) + vec3<f32>(0.06 + (gsl_tmp_13.y - 0.5) * 0.06 + 0.04 * gsl_tmp_29 + 0.12 * (gsl_tmp_30 - 0.235), -0.000000000024212243, -0.000000011148266) - gsl_tmp_32) * gsl_tmp_24;
-      let gsl_tmp_8 = gsl_cellularScan(gsl_tmp_7, 1, noiseTex).f1;
-      let gsl_tmp_33 = 1.0 - texture_mask(gsl_tmp_8, 0.3, 0.25, noiseTex);
-      let gsl_tmp_9 = gsl_cellularScan(gsl_tmp_7, 1, noiseTex).f2;
-      let gsl_tmp_11 = gsl_cellularScan(gsl_tmp_7, 1, noiseTex).farCell;
-      let gsl_tmp_12 = (gsl_tmp_9 * gsl_tmp_9 - gsl_tmp_8 * gsl_tmp_8) / (2.0 * max(length(gsl_tmp_11 + fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_tmp_11)) & vec3<i32>(63), 0).rgb) - gsl_tmp_10 - fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_tmp_10)) & vec3<i32>(63), 0).rgb)), 0.001));
-      let gsl_tmp_14 = 2.0 * texture_mask(gsl_tmp_12 * 1.8, 0.0, 0.2, noiseTex) - 1.0;
-      let gsl_tmp_22 = gsl_tmp_15 * (0.5 + 0.5 * gsl_tmp_14) + stone_quartzOf(gsl_tmp_11, 1.8, 4.0, noiseTex) * (0.5 - 0.5 * gsl_tmp_14);
-      let gsl_tmp_35 = gsl_tmp_34 + (vec3<f32>(0.775, 0.00000000006476233, 0.000000029819127) + vec3<f32>((gsl_tmp_13.z - 0.5) * 0.12 - 0.1 * gsl_tmp_33 + 0.05 * dot(gsl_tmp_7 - gsl_tmp_10 - fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_tmp_10)) & vec3<i32>(63), 0).rgb), normalize(gsl_tmp_13 - 0.5 + vec3<f32>(0.0, 0.0001, 0.0))) + 0.01 * (1.0 - texture_mask(gsl_tmp_12 * 1.8, 0.08, 0.06, noiseTex)) * (1.0 - texture_mask(gsl_pw, 0.075, 0.025, noiseTex)) + 0.02 * gsl_tmp_29 + 0.06 * (gsl_tmp_30 - 0.235), -0.003 * gsl_tmp_33, -0.01 * gsl_tmp_33 + (gsl_tmp_13.y - 0.5) * 0.02) - gsl_tmp_34) * gsl_tmp_22 + vec3<f32>(0.15 * noise_gradientLattice(p / 12.0 + vec3<f32>(2.9, 8.3, 6.1), noiseTex) + 0.08 * noise_gradientLattice(p / 5.6 + vec3<f32>(9.4, 1.2, 3.8), noiseTex), 0.0, 0.0);
-      let gsl_tmp_16 = (gsl_tmp_1 + vec3<f32>(21.2, 246.8, 68.4)) / 0.6;
-      let gsl_tmp_19 = gsl_cellularScan(gsl_tmp_16, 1, noiseTex).nearCell;
-      let gsl_tmp_26 = fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_tmp_19 + vec3<f32>(3.0, 0.0, 41.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((gsl_tmp_19 + vec3<f32>(3.0, 0.0, 41.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
-      let gsl_tmp_18 = gsl_cellularScan(gsl_tmp_16, 1, noiseTex).f2;
-      let gsl_tmp_17 = gsl_cellularScan(gsl_tmp_16, 1, noiseTex).f1;
-      let gsl_tmp_20 = gsl_cellularScan(gsl_tmp_16, 1, noiseTex).farCell;
-      let gsl_tmp_21 = 2.0 * texture_mask((gsl_tmp_18 * gsl_tmp_18 - gsl_tmp_17 * gsl_tmp_17) / (2.0 * max(length(gsl_tmp_20 + fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_tmp_20)) & vec3<i32>(63), 0).rgb) - gsl_tmp_19 - fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_tmp_19)) & vec3<i32>(63), 0).rgb)), 0.001)) * 0.6, 0.0, 0.2, noiseTex) - 1.0;
-      let gsl_tmp_23 = stone_maficOf(gsl_tmp_19, 0.6, 4.0, gsl_tmp_15, noiseTex) * (0.5 + 0.5 * gsl_tmp_21) + stone_maficOf(gsl_tmp_20, 0.6, 4.0, gsl_tmp_15, noiseTex) * (0.5 - 0.5 * gsl_tmp_21);
-      gsl_detailValue = color_oklab2rgb(vec3<f32>(0.6418677, -0.000099999954, -0.00039997892) + (gsl_tmp_35 + (vec3<f32>(0.30524173, 0.0, 0.0) + vec3<f32>((gsl_tmp_26.y - 0.5) * 0.06 + select(0.0, 0.12, gsl_tmp_26.z > 0.96), 0.0, 0.0) + select(vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(0.03, 0.01, 0.02), gsl_tmp_26.z < 0.08) - gsl_tmp_35) * gsl_tmp_23 - vec3<f32>(0.6418677, -0.000099999954, -0.00039997892)) * (1.0 - texture_mask(gsl_pw, 0.9, 0.3, noiseTex)), noiseTex);
+      let gsl_tmp_11 = p + (noise_gradientLatticeVector(p / 5.2, noiseTex) + noise_gradientLatticeVector(p * 2.03 / 5.2 + vec3<f32>(17.3, 5.1, 9.7), noiseTex) * 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.975) / 0.325 * 0.5 + 0.5, 0.0, 1.0), noiseTex))) * 1.056;
+      let gsl_tmp_12 = gsl_tmp_11 / 4.0;
+      let gsl_tmp_15 = gsl_cellularScan(gsl_tmp_12, 1, noiseTex).nearCell;
+      let gsl_tmp_35 = fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_tmp_15 + vec3<f32>(101.0, 0.0, 0.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((gsl_tmp_15 + vec3<f32>(101.0, 0.0, 0.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
+      let gsl_tmp_41 = noise_gradientLattice(p / 1.2 + vec3<f32>(1.7, 9.1, 4.4), noiseTex) + 0.15 * (1.0 - texture_mask(gsl_pw, 0.18, 0.06, noiseTex)) * noise_gradientLattice(p / 0.48 + vec3<f32>(8.2, 2.6, 7.3), noiseTex) + 0.4 * noise_gradientLattice(p / 3.6 + vec3<f32>(4.2, 6.6, 1.3), noiseTex);
+      let gsl_tmp_39 = normalize(gsl_tmp_35 - 0.5 + vec3<f32>(0.0001, 0.0, 0.0));
+      let gsl_tmp_40 = dot(p, gsl_tmp_39);
+      let gsl_tmp_14 = gsl_cellularScan(gsl_tmp_12, 1, noiseTex).f2;
+      let gsl_tmp_13 = gsl_cellularScan(gsl_tmp_12, 1, noiseTex).f1;
+      let gsl_tmp_16 = gsl_cellularScan(gsl_tmp_12, 1, noiseTex).farCell;
+      let gsl_tmp_43 = 1.0 - texture_mask((gsl_tmp_14 * gsl_tmp_14 - gsl_tmp_13 * gsl_tmp_13) / (2.0 * max(length(gsl_tmp_16 + fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_tmp_16)) & vec3<i32>(63), 0).rgb) - gsl_tmp_15 - fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_tmp_15)) & vec3<i32>(63), 0).rgb)), 0.001)) * 4.0, 0.24, 0.2, noiseTex);
+      let gsl_tmp_42 = texture_fadeTo(abs(noise_gradientLattice(p / 0.6 + vec3<f32>(6.1, 4.9, 2.2), noiseTex)), 0.157, 0.6, noiseTex) + 0.5 * texture_fadeTo(abs(noise_gradientLattice(p / 0.24 + vec3<f32>(1.1, 3.5, 8.8), noiseTex)), 0.157, 0.24, noiseTex);
+      let gsl_tmp_44 = vec3<f32>(0.5981807, 0.000000000048424487, 0.000000022296533) + vec3<f32>((gsl_tmp_35.y - 0.5) * 0.1 + 0.1 * gsl_tmp_41 + 0.015 * noise_gradientLattice((p - gsl_tmp_39 * gsl_tmp_40) / 0.32 + gsl_tmp_39 * gsl_tmp_40 / 3.2, noiseTex) * (1.0 - texture_mask(gsl_pw, 0.12, 0.04, noiseTex)) + 0.04 * gsl_tmp_43 + 0.12 * (gsl_tmp_42 - 0.235) * (0.5 + gsl_tmp_43), 0.0, 0.0) - vec3<f32>(0.0, 0.000000000048424487, 0.000000022296533) * 0.3 * gsl_tmp_43;
+      let gsl_tmp_17 = (gsl_tmp_11 + p + (noise_gradientLatticeVector(p / 2.0, noiseTex) + noise_gradientLatticeVector(p * 2.03 / 2.0 + vec3<f32>(17.3, 5.1, 9.7), noiseTex) * 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.375) / 0.125 * 0.5 + 0.5, 0.0, 1.0), noiseTex))) * 0.384 - p + vec3<f32>(148.4, 45.2, 23.6)) / 1.8;
+      let gsl_tmp_20 = gsl_cellularScan(gsl_tmp_17, 1, noiseTex).nearCell;
+      let gsl_tmp_23 = fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_tmp_20 + vec3<f32>(7.0, 29.0, 0.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((gsl_tmp_20 + vec3<f32>(7.0, 29.0, 0.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
+      let gsl_tmp_25 = stone_quartzOf(gsl_tmp_20, 1.8, 4.0, noiseTex);
+      let gsl_tmp_34 = select(0.0, 1.0 - gsl_tmp_25, gsl_tmp_23.x < 0.15);
+      let gsl_tmp_50 = gsl_tmp_44 + (vec3<f32>(0.5981807, 0.000000000048424487, 0.000000022296533) + vec3<f32>(0.06 + (gsl_tmp_23.y - 0.5) * 0.06 + 0.04 * gsl_tmp_41 + 0.12 * (gsl_tmp_42 - 0.235), -0.000000000024212243, -0.000000011148266) - gsl_tmp_44) * gsl_tmp_34;
+      let gsl_tmp_18 = gsl_cellularScan(gsl_tmp_17, 1, noiseTex).f1;
+      let gsl_tmp_47 = 1.0 - texture_mask(gsl_tmp_18, 0.3, 0.25, noiseTex);
+      let gsl_tmp_19 = gsl_cellularScan(gsl_tmp_17, 1, noiseTex).f2;
+      let gsl_tmp_21 = gsl_cellularScan(gsl_tmp_17, 1, noiseTex).farCell;
+      let gsl_tmp_22 = (gsl_tmp_19 * gsl_tmp_19 - gsl_tmp_18 * gsl_tmp_18) / (2.0 * max(length(gsl_tmp_21 + fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_tmp_21)) & vec3<i32>(63), 0).rgb) - gsl_tmp_20 - fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_tmp_20)) & vec3<i32>(63), 0).rgb)), 0.001));
+      let gsl_tmp_24 = 2.0 * texture_mask(gsl_tmp_22 * 1.8, 0.0, 0.2, noiseTex) - 1.0;
+      let gsl_tmp_32 = gsl_tmp_25 * (0.5 + 0.5 * gsl_tmp_24) + stone_quartzOf(gsl_tmp_21, 1.8, 4.0, noiseTex) * (0.5 - 0.5 * gsl_tmp_24);
+      let gsl_tmp_51 = gsl_tmp_50 + (vec3<f32>(0.775, 0.00000000006476233, 0.000000029819127) + vec3<f32>((gsl_tmp_23.z - 0.5) * 0.12 - 0.1 * gsl_tmp_47 + 0.05 * dot(gsl_tmp_17 - gsl_tmp_20 - fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_tmp_20)) & vec3<i32>(63), 0).rgb), normalize(gsl_tmp_23 - 0.5 + vec3<f32>(0.0, 0.0001, 0.0))) + 0.01 * (1.0 - texture_mask(gsl_tmp_22 * 1.8, 0.08, 0.06, noiseTex)) * (1.0 - texture_mask(gsl_pw, 0.075, 0.025, noiseTex)) + 0.02 * gsl_tmp_41 + 0.06 * (gsl_tmp_42 - 0.235), -0.003 * gsl_tmp_47, -0.01 * gsl_tmp_47 + (gsl_tmp_23.y - 0.5) * 0.02) - gsl_tmp_50) * gsl_tmp_32 + vec3<f32>(0.15 * noise_gradientLattice(p / 12.0 + vec3<f32>(2.9, 8.3, 6.1), noiseTex) + 0.08 * noise_gradientLattice(p / 5.6 + vec3<f32>(9.4, 1.2, 3.8), noiseTex), 0.0, 0.0);
+      let gsl_tmp_26 = (gsl_tmp_11 + vec3<f32>(21.2, 246.8, 68.4)) / 0.6;
+      let gsl_tmp_29 = gsl_cellularScan(gsl_tmp_26, 1, noiseTex).nearCell;
+      let gsl_tmp_36 = fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_tmp_29 + vec3<f32>(3.0, 0.0, 41.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((gsl_tmp_29 + vec3<f32>(3.0, 0.0, 41.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
+      let gsl_tmp_28 = gsl_cellularScan(gsl_tmp_26, 1, noiseTex).f2;
+      let gsl_tmp_27 = gsl_cellularScan(gsl_tmp_26, 1, noiseTex).f1;
+      let gsl_tmp_30 = gsl_cellularScan(gsl_tmp_26, 1, noiseTex).farCell;
+      let gsl_tmp_31 = 2.0 * texture_mask((gsl_tmp_28 * gsl_tmp_28 - gsl_tmp_27 * gsl_tmp_27) / (2.0 * max(length(gsl_tmp_30 + fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_tmp_30)) & vec3<i32>(63), 0).rgb) - gsl_tmp_29 - fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_tmp_29)) & vec3<i32>(63), 0).rgb)), 0.001)) * 0.6, 0.0, 0.2, noiseTex) - 1.0;
+      let gsl_tmp_33 = stone_maficOf(gsl_tmp_29, 0.6, 4.0, gsl_tmp_25, noiseTex) * (0.5 + 0.5 * gsl_tmp_31) + stone_maficOf(gsl_tmp_30, 0.6, 4.0, gsl_tmp_25, noiseTex) * (0.5 - 0.5 * gsl_tmp_31);
+      gsl_detailValue = color_oklab2rgb(vec3<f32>(0.6418677, -0.000099999954, -0.00039997892) + (gsl_tmp_51 + (vec3<f32>(0.30524173, 0.0, 0.0) + vec3<f32>((gsl_tmp_36.y - 0.5) * 0.06 + select(0.0, 0.12, gsl_tmp_36.z > 0.96), 0.0, 0.0) + select(vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(0.03, 0.01, 0.02), gsl_tmp_36.z < 0.08) - gsl_tmp_51) * gsl_tmp_33 - vec3<f32>(0.6418677, -0.000099999954, -0.00039997892)) * (1.0 - texture_mask(gsl_pw, 0.9, 0.3, noiseTex)), noiseTex);
       gsl_pw = gsl_detailOuterPw;
     }
     var gsl_simpleValue_2 = vec3<f32>(0.55051714, 0.5512089, 0.5521506);
@@ -743,54 +743,54 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_
     return vec4<f32>(graniteColor, 1.0);
   }
   if (gsl_colorIdx == 3u) {
-    let gsl_tmp_664 = map_axisAt(p, vec3<f32>(-187.5, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex);
-    let gsl_tmp_665 = length(gsl_tmp_664.xy);
-    let gsl_tmp_666 = gsl_tmp_664.xy / max(gsl_tmp_665, 0.001) * 40.0;
+    let gsl_tmp_805 = map_axisAt(p, vec3<f32>(-187.5, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex);
+    let gsl_tmp_806 = length(gsl_tmp_805.xy);
+    let gsl_tmp_807 = gsl_tmp_805.xy / max(gsl_tmp_806, 0.001) * 40.0;
     let color_white = vec3<f32>(1.0, 1.0, 1.0);
     let color_gray = vec3<f32>(0.5, 0.5, 0.5);
-    let gsl_tmp_637 = vec2<f32>(gsl_tmp_665 * (1.0 + 0.08 * gsl_remap(vec3<f32>(gsl_tmp_666.x, gsl_tmp_666.y, gsl_tmp_664.z * 0.25), color_white, color_gray, noiseTex)) / 1.5 + 0.3 * gsl_remap_2(vec3<f32>(gsl_tmp_664.x, gsl_tmp_664.y, gsl_tmp_664.z * 0.2), color_white, color_gray, noiseTex), 0.0);
-    let gsl_tmp_638 = gsl_tmp_637.x;
-    let gsl_tmp_639 = floor(gsl_tmp_638);
-    let gsl_tmp_640 = wood_ringBoundary(gsl_tmp_639, 3.0, noiseTex);
-    let gsl_tmp_641 = wood_ringBoundary(gsl_tmp_639 + 1.0, 3.0, noiseTex);
-    let gsl_tmp_643 = gsl_tmp_638 >= gsl_tmp_641;
-    let gsl_tmp_642 = gsl_tmp_638 < gsl_tmp_640;
-    let gsl_tmp_644 = select(select(gsl_tmp_640, gsl_tmp_641, gsl_tmp_643), wood_ringBoundary(gsl_tmp_639 - 1.0, 3.0, noiseTex), gsl_tmp_642);
-    let gsl_tmp_646 = (gsl_tmp_638 - gsl_tmp_644) / (select(select(gsl_tmp_641, wood_ringBoundary(gsl_tmp_639 + 2.0, 3.0, noiseTex), gsl_tmp_643), gsl_tmp_640, gsl_tmp_642) - gsl_tmp_644);
-    let gsl_tmp_645 = select(select(gsl_tmp_639, gsl_tmp_639 + 1.0, gsl_tmp_643), gsl_tmp_639 - 1.0, gsl_tmp_642);
-    let gsl_tmp_647 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_645, gsl_tmp_645 + 11.0, 3.0 * gsl_tmp_645 + 41.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_645, gsl_tmp_645 + 11.0, 3.0 * gsl_tmp_645 + 41.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
-    let gsl_tmp_648 = texture_mask(gsl_tmp_646, 0.4 + (gsl_tmp_647.x - 0.5) * 0.027, 0.3, noiseTex) * (1.0 + (gsl_tmp_647.y - 0.5) * 0.18);
-    let gsl_tmp_635 = map_axisAt(p, vec3<f32>(-187.5, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex);
-    let gsl_tmp_636 = length(gsl_tmp_635.xy);
+    let gsl_tmp_778 = vec2<f32>(gsl_tmp_806 * (1.0 + 0.08 * gsl_remap(vec3<f32>(gsl_tmp_807.x, gsl_tmp_807.y, gsl_tmp_805.z * 0.25), color_white, color_gray, noiseTex)) / 1.5 + 0.3 * gsl_remap_2(vec3<f32>(gsl_tmp_805.x, gsl_tmp_805.y, gsl_tmp_805.z * 0.2), color_white, color_gray, noiseTex), 0.0);
+    let gsl_tmp_779 = gsl_tmp_778.x;
+    let gsl_tmp_780 = floor(gsl_tmp_779);
+    let gsl_tmp_781 = wood_ringBoundary(gsl_tmp_780, 3.0, noiseTex);
+    let gsl_tmp_782 = wood_ringBoundary(gsl_tmp_780 + 1.0, 3.0, noiseTex);
+    let gsl_tmp_784 = gsl_tmp_779 >= gsl_tmp_782;
+    let gsl_tmp_783 = gsl_tmp_779 < gsl_tmp_781;
+    let gsl_tmp_785 = select(select(gsl_tmp_781, gsl_tmp_782, gsl_tmp_784), wood_ringBoundary(gsl_tmp_780 - 1.0, 3.0, noiseTex), gsl_tmp_783);
+    let gsl_tmp_787 = (gsl_tmp_779 - gsl_tmp_785) / (select(select(gsl_tmp_782, wood_ringBoundary(gsl_tmp_780 + 2.0, 3.0, noiseTex), gsl_tmp_784), gsl_tmp_781, gsl_tmp_783) - gsl_tmp_785);
+    let gsl_tmp_786 = select(select(gsl_tmp_780, gsl_tmp_780 + 1.0, gsl_tmp_784), gsl_tmp_780 - 1.0, gsl_tmp_783);
+    let gsl_tmp_788 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_786, gsl_tmp_786 + 11.0, 3.0 * gsl_tmp_786 + 41.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_786, gsl_tmp_786 + 11.0, 3.0 * gsl_tmp_786 + 41.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
+    let gsl_tmp_789 = texture_mask(gsl_tmp_787, 0.4 + (gsl_tmp_788.x - 0.5) * 0.027, 0.3, noiseTex) * (1.0 + (gsl_tmp_788.y - 0.5) * 0.18);
+    let gsl_tmp_776 = map_axisAt(p, vec3<f32>(-187.5, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex);
+    let gsl_tmp_777 = length(gsl_tmp_776.xy);
     var gsl_detailValue_2 = 0.0;
     if (max(gsl_pw, gsl_detailPw) < 0.075) { let gsl_detailOuterPw_2 = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
-      let gsl_tmp_649 = (atan2(gsl_tmp_635.y, gsl_tmp_635.x) + 3.1415927) / 6.2831855 * 3351.0 - 0.5;
-      let gsl_tmp_650 = floor(gsl_tmp_649);
-      let gsl_tmp_652 = wood_fibreFile(gsl_floored(gsl_tmp_650, 3351.0), gsl_tmp_636, gsl_tmp_635.z, noiseTex);
-      let gsl_tmp_651 = gsl_tmp_649 - gsl_tmp_650;
-      gsl_detailValue_2 = (gsl_tmp_652 + (wood_fibreFile(gsl_floored((gsl_tmp_650 + 1.0), 3351.0), gsl_tmp_636, gsl_tmp_635.z, noiseTex) - gsl_tmp_652) * gsl_tmp_651 * gsl_tmp_651 * (3.0 - 2.0 * gsl_tmp_651) - 0.5) * 0.08 * (1.0 - 0.6 * gsl_tmp_648) * texture_fadeDetail(min(0.15, 6.2831855 * gsl_tmp_636 / 3351.0), noiseTex);
+      let gsl_tmp_790 = (atan2(gsl_tmp_776.y, gsl_tmp_776.x) + 3.1415927) / 6.2831855 * 3351.0 - 0.5;
+      let gsl_tmp_791 = floor(gsl_tmp_790);
+      let gsl_tmp_793 = wood_fibreFile(gsl_floored(gsl_tmp_791, 3351.0), gsl_tmp_777, gsl_tmp_776.z, noiseTex);
+      let gsl_tmp_792 = gsl_tmp_790 - gsl_tmp_791;
+      gsl_detailValue_2 = (gsl_tmp_793 + (wood_fibreFile(gsl_floored((gsl_tmp_791 + 1.0), 3351.0), gsl_tmp_777, gsl_tmp_776.z, noiseTex) - gsl_tmp_793) * gsl_tmp_792 * gsl_tmp_792 * (3.0 - 2.0 * gsl_tmp_792) - 0.5) * 0.08 * (1.0 - 0.6 * gsl_tmp_789) * texture_fadeDetail(min(0.15, 6.2831855 * gsl_tmp_777 / 3351.0), noiseTex);
       gsl_pw = gsl_detailOuterPw_2;
     }
-    let gsl_tmp_655 = wood_poreSizeShare__spec1(gsl_tmp_646, 0.3, noiseTex).x;
-    var gsl_detailValue_3 = 0.05 * gsl_tmp_655 * gsl_tmp_655;
+    let gsl_tmp_796 = wood_poreSizeShare__spec1(gsl_tmp_787, 0.3, noiseTex).x;
+    var gsl_detailValue_3 = 0.05 * gsl_tmp_796 * gsl_tmp_796;
     if (max(gsl_pw, gsl_detailPw) < 0.14) { let gsl_detailOuterPw_3 = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
-      let gsl_tmp_653 = wood_poreDistanceAt(gsl_tmp_635, gsl_tmp_646, 0.5, 1.0, 0.3, noiseTex);
-      let gsl_tmp_654 = texture_fadeDetail(0.28 * gsl_tmp_653.y, noiseTex);
-      gsl_detailValue_3 = (1.0 - texture_mask(gsl_tmp_653.x, 0.28, 0.06, noiseTex)) * gsl_tmp_654 + 0.05 * gsl_tmp_653.y * gsl_tmp_653.y * (1.0 - gsl_tmp_654);
+      let gsl_tmp_794 = wood_poreDistanceAt(gsl_tmp_776, gsl_tmp_787, 0.5, 1.0, 0.3, noiseTex);
+      let gsl_tmp_795 = texture_fadeDetail(0.28 * gsl_tmp_794.y, noiseTex);
+      gsl_detailValue_3 = (1.0 - texture_mask(gsl_tmp_794.x, 0.28, 0.06, noiseTex)) * gsl_tmp_795 + 0.05 * gsl_tmp_794.y * gsl_tmp_794.y * (1.0 - gsl_tmp_795);
       gsl_pw = gsl_detailOuterPw_3;
     }
     var gsl_simpleValue_3 = vec3<f32>(0.5854705, 0.48488966, 0.378912);
     if (gsl_simpleDetail > 0.0) {
-      let gsl_tmp_656 = (atan2(gsl_tmp_635.y, gsl_tmp_635.x) + 3.1415927) / 6.2831855 * 250.0;
-      let gsl_tmp_657 = gsl_floored(floor(gsl_tmp_656), 250.0);
-      let gsl_tmp_658 = gsl_tmp_635.z / 12.0 + fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_657, gsl_tmp_657 + 17.0, 3.0 * gsl_tmp_657 + 5.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_657, gsl_tmp_657 + 17.0, 3.0 * gsl_tmp_657 + 5.0)) / 64.0)) & vec3<i32>(63), 0).rgb).y;
-      let gsl_tmp_659 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_657, floor(gsl_tmp_658), gsl_tmp_657 + 401.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_657, floor(gsl_tmp_658), gsl_tmp_657 + 401.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
-      let gsl_tmp_660 = vec3<f32>(0.62887883, 0.019482663, 0.048678815) + vec3<f32>(-0.044444397, -0.0012675361, -0.0034771787) * gsl_tmp_648 + vec3<f32>((fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_645, gsl_tmp_645 + 5.0, 2.0 * gsl_tmp_645 + 29.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_645, gsl_tmp_645 + 5.0, 2.0 * gsl_tmp_645 + 29.0)) / 64.0)) & vec3<i32>(63), 0).rgb).x - 0.5) * 0.08 + gsl_detailValue_2 + 0.1 * 1.0 * select(0.0, 1.0, gsl_tmp_659.z < 0.5) * (1.0 - texture_mask(abs(gsl_tmp_656 - floor(gsl_tmp_656) - 0.2 - 0.6 * gsl_tmp_659.x) * 6.2831855 * gsl_tmp_636 / 250.0, 0.15, 0.05, noiseTex)) * (1.0 - texture_mask(abs(gsl_tmp_658 - floor(gsl_tmp_658) - 0.5) * 2.0 / (0.35 + 0.65 * gsl_tmp_659.y), 1.0, 0.1, noiseTex)) * (1.0 - texture_mask(gsl_pw, 0.1125, 0.0375, noiseTex)) + 0.0, 0.0, 0.0) + vec3<f32>(0.042521644, 0.0007117121, -0.0038856908) * texture_mask(gsl_tmp_637.x, 999979.3, 0.3, noiseTex);
-      let gsl_tmp_661 = gsl_tmp_660 + (vec3<f32>(0.0, 0.0, 0.0) - gsl_tmp_660) * 0.0 * (1.0 - texture_mask(abs(gsl_tmp_637.x - 999979.3 + 0.3), 0.3, 0.1, noiseTex));
-      let gsl_tmp_662 = gsl_tmp_661 + (vec3<f32>(0.0, 0.0, 0.0) - gsl_tmp_661) * 0.0;
-      let gsl_tmp_663 = gsl_tmp_662 + (vec3<f32>(0.4547599, 0.03102755, 0.056627084) - gsl_tmp_662) * 0.85 * gsl_detailValue_3 - vec3<f32>(0.0, 0.0, 0.0);
-      let gsl_tmp_376 = color_oklab2rgb(gsl_tmp_663 + (vec3<f32>(0.41371727, 0.012464928, 0.032169826) - gsl_tmp_663) * 0.8 * gsl_tmp_637.y, noiseTex);
-      gsl_simpleValue_3 = mix(gsl_simpleValue_3, gsl_tmp_376, gsl_simpleDetail);
+      let gsl_tmp_797 = (atan2(gsl_tmp_776.y, gsl_tmp_776.x) + 3.1415927) / 6.2831855 * 250.0;
+      let gsl_tmp_798 = gsl_floored(floor(gsl_tmp_797), 250.0);
+      let gsl_tmp_799 = gsl_tmp_776.z / 12.0 + fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_798, gsl_tmp_798 + 17.0, 3.0 * gsl_tmp_798 + 5.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_798, gsl_tmp_798 + 17.0, 3.0 * gsl_tmp_798 + 5.0)) / 64.0)) & vec3<i32>(63), 0).rgb).y;
+      let gsl_tmp_800 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_798, floor(gsl_tmp_799), gsl_tmp_798 + 401.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_798, floor(gsl_tmp_799), gsl_tmp_798 + 401.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
+      let gsl_tmp_801 = vec3<f32>(0.62887883, 0.019482663, 0.048678815) + vec3<f32>(-0.044444397, -0.0012675361, -0.0034771787) * gsl_tmp_789 + vec3<f32>((fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_786, gsl_tmp_786 + 5.0, 2.0 * gsl_tmp_786 + 29.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_786, gsl_tmp_786 + 5.0, 2.0 * gsl_tmp_786 + 29.0)) / 64.0)) & vec3<i32>(63), 0).rgb).x - 0.5) * 0.08 + gsl_detailValue_2 + 0.1 * 1.0 * select(0.0, 1.0, gsl_tmp_800.z < 0.5) * (1.0 - texture_mask(abs(gsl_tmp_797 - floor(gsl_tmp_797) - 0.2 - 0.6 * gsl_tmp_800.x) * 6.2831855 * gsl_tmp_777 / 250.0, 0.15, 0.05, noiseTex)) * (1.0 - texture_mask(abs(gsl_tmp_799 - floor(gsl_tmp_799) - 0.5) * 2.0 / (0.35 + 0.65 * gsl_tmp_800.y), 1.0, 0.1, noiseTex)) * (1.0 - texture_mask(gsl_pw, 0.1125, 0.0375, noiseTex)) + 0.0, 0.0, 0.0) + vec3<f32>(0.042521644, 0.0007117121, -0.0038856908) * texture_mask(gsl_tmp_778.x, 999979.3, 0.3, noiseTex);
+      let gsl_tmp_802 = gsl_tmp_801 + (vec3<f32>(0.0, 0.0, 0.0) - gsl_tmp_801) * 0.0 * (1.0 - texture_mask(abs(gsl_tmp_778.x - 999979.3 + 0.3), 0.3, 0.1, noiseTex));
+      let gsl_tmp_803 = gsl_tmp_802 + (vec3<f32>(0.0, 0.0, 0.0) - gsl_tmp_802) * 0.0;
+      let gsl_tmp_804 = gsl_tmp_803 + (vec3<f32>(0.4547599, 0.03102755, 0.056627084) - gsl_tmp_803) * 0.85 * gsl_detailValue_3 - vec3<f32>(0.0, 0.0, 0.0);
+      let gsl_tmp_547 = color_oklab2rgb(gsl_tmp_804 + (vec3<f32>(0.41371727, 0.012464928, 0.032169826) - gsl_tmp_804) * 0.8 * gsl_tmp_778.y, noiseTex);
+      gsl_simpleValue_3 = mix(gsl_simpleValue_3, gsl_tmp_547, gsl_simpleDetail);
     }
     let oakColor = gsl_simpleValue_3;
     return vec4<f32>(oakColor, 1.0);
@@ -798,84 +798,37 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_
   if (gsl_colorIdx == 4u) {
     var gsl_simpleValue_4 = vec3<f32>(0.6824685, 0.58169425, 0.44390574);
     if (gsl_simpleDetail > 0.0) {
-      let gsl_tmp_377 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 22.5) / 7.5 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 60.0, noiseTex), 1.0);
-      let gsl_tmp_378 = vec2<f32>(gsl_tmp_377.x + 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 11.25) / 3.75 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 30.0, noiseTex), gsl_tmp_377.y + 0.5);
-      let gsl_tmp_379 = vec2<f32>(gsl_tmp_378.x + 0.25 * (1.0 - ease_quadratic(clamp((gsl_pw - 5.625) / 1.875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 15.0, noiseTex), gsl_tmp_378.y + 0.25);
-      let gsl_tmp_380 = vec2<f32>(gsl_tmp_379.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 2.8125) / 0.9375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 7.5, noiseTex), gsl_tmp_379.y + 0.0);
-      let gsl_tmp_381 = vec2<f32>(gsl_tmp_380.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.40625) / 0.46875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 3.75, noiseTex), gsl_tmp_380.y + 0.0);
-      let gsl_tmp_382 = vec2<f32>(gsl_tmp_381.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.703125) / 0.234375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.875, noiseTex), gsl_tmp_381.y + 0.0);
-      let gsl_tmp_37 = 0.5 * (noise_gradientLattice(p / 15.0, noiseTex) + 0.5 * noise_gradientLattice(p / 7.5, noiseTex) + 0.25 * noise_gradientLattice(p / 3.75, noiseTex)) + 0.67 * 2.0 * gsl_tmp_382.x / max(gsl_tmp_382.y, 0.000001) - texture_fadeTo(noise_cellularEdges(p, 1.5, noiseTex) / 1.5, 0.199, 1.5, noiseTex) * 0.24;
-      let gsl_tmp_38 = 0.35 * texture_mask(gsl_tmp_37, -0.3, 0.3, noiseTex);
-      let gsl_tmp_398 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.875) / 0.625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 5.0, noiseTex), 1.0);
-      let gsl_tmp_399 = vec2<f32>(gsl_tmp_398.x + 0.6 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.9375) / 0.3125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 2.5, noiseTex), gsl_tmp_398.y + 0.6);
-      let gsl_tmp_400 = vec2<f32>(gsl_tmp_399.x + 0.36 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.46875) / 0.15625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.25, noiseTex), gsl_tmp_399.y + 0.36);
-      let gsl_tmp_401 = vec2<f32>(gsl_tmp_400.x + 0.216 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.234375) / 0.078125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.625, noiseTex), gsl_tmp_400.y + 0.216);
-      let gsl_tmp_402 = vec2<f32>(gsl_tmp_401.x + 0.1296 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.1171875) / 0.0390625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.3125, noiseTex), gsl_tmp_401.y + 0.1296);
-      let gsl_tmp_403 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.875) / 0.625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 5.0, noiseTex), 1.0);
-      let gsl_tmp_404 = vec2<f32>(gsl_tmp_403.x + 0.6 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.9375) / 0.3125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 2.5, noiseTex), gsl_tmp_403.y + 0.6);
-      let gsl_tmp_405 = vec2<f32>(gsl_tmp_404.x + 0.36 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.46875) / 0.15625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.25, noiseTex), gsl_tmp_404.y + 0.36);
-      let gsl_tmp_406 = vec2<f32>(gsl_tmp_405.x + 0.216 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.234375) / 0.078125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.625, noiseTex), gsl_tmp_405.y + 0.216);
-      let gsl_tmp_407 = vec2<f32>(gsl_tmp_406.x + 0.1296 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.1171875) / 0.0390625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.3125, noiseTex), gsl_tmp_406.y + 0.1296);
-      let gsl_tmp_408 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 15.0) / 5.0 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 40.0, noiseTex), 1.0);
-      let gsl_tmp_409 = vec2<f32>(gsl_tmp_408.x + 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 7.5) / 2.5 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 20.0, noiseTex), gsl_tmp_408.y + 0.5);
-      let gsl_tmp_410 = vec2<f32>(gsl_tmp_409.x + 0.25 * (1.0 - ease_quadratic(clamp((gsl_pw - 3.75) / 1.25 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 10.0, noiseTex), gsl_tmp_409.y + 0.25);
-      let gsl_tmp_411 = vec2<f32>(gsl_tmp_410.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.875) / 0.625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 5.0, noiseTex), gsl_tmp_410.y + 0.0);
-      let gsl_tmp_412 = vec2<f32>(gsl_tmp_411.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.9375) / 0.3125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 2.5, noiseTex), gsl_tmp_411.y + 0.0);
-      let gsl_tmp_413 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 15.0) / 5.0 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 40.0, noiseTex), 1.0);
-      let gsl_tmp_414 = vec2<f32>(gsl_tmp_413.x + 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 7.5) / 2.5 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 20.0, noiseTex), gsl_tmp_413.y + 0.5);
-      let gsl_tmp_415 = vec2<f32>(gsl_tmp_414.x + 0.25 * (1.0 - ease_quadratic(clamp((gsl_pw - 3.75) / 1.25 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 10.0, noiseTex), gsl_tmp_414.y + 0.25);
-      let gsl_tmp_416 = vec2<f32>(gsl_tmp_415.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.875) / 0.625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 5.0, noiseTex), gsl_tmp_415.y + 0.0);
-      let gsl_tmp_417 = vec2<f32>(gsl_tmp_416.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.9375) / 0.3125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 2.5, noiseTex), gsl_tmp_416.y + 0.0);
+      let gsl_tmp_554 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 22.5) / 7.5 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 60.0, noiseTex), 1.0);
+      let gsl_tmp_555 = vec2<f32>(gsl_tmp_554.x + 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 11.25) / 3.75 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 30.0, noiseTex), gsl_tmp_554.y + 0.5);
+      let gsl_tmp_556 = vec2<f32>(gsl_tmp_555.x + 0.25 * (1.0 - ease_quadratic(clamp((gsl_pw - 5.625) / 1.875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 15.0, noiseTex), gsl_tmp_555.y + 0.25);
+      let gsl_tmp_557 = vec2<f32>(gsl_tmp_556.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 2.8125) / 0.9375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 7.5, noiseTex), gsl_tmp_556.y + 0.0);
+      let gsl_tmp_558 = vec2<f32>(gsl_tmp_557.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.40625) / 0.46875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 3.75, noiseTex), gsl_tmp_557.y + 0.0);
+      let gsl_tmp_559 = vec2<f32>(gsl_tmp_558.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.703125) / 0.234375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.875, noiseTex), gsl_tmp_558.y + 0.0);
+      let gsl_tmp_105 = 0.5 * (noise_gradientLattice(p / 15.0, noiseTex) + 0.5 * noise_gradientLattice(p / 7.5, noiseTex) + 0.25 * noise_gradientLattice(p / 3.75, noiseTex)) + 0.67 * 2.0 * gsl_tmp_559.x / max(gsl_tmp_559.y, 0.000001) - texture_fadeTo(noise_cellularEdges(p, 1.5, noiseTex) / 1.5, 0.199, 1.5, noiseTex) * 0.24;
+      let gsl_tmp_106 = 0.35 * texture_mask(gsl_tmp_105, -0.3, 0.3, noiseTex);
+      let gsl_tmp_561 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.875) / 0.625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 5.0, noiseTex), 1.0);
+      let gsl_tmp_562 = vec2<f32>(gsl_tmp_561.x + 0.6 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.9375) / 0.3125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 2.5, noiseTex), gsl_tmp_561.y + 0.6);
+      let gsl_tmp_563 = vec2<f32>(gsl_tmp_562.x + 0.36 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.46875) / 0.15625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.25, noiseTex), gsl_tmp_562.y + 0.36);
+      let gsl_tmp_564 = vec2<f32>(gsl_tmp_563.x + 0.216 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.234375) / 0.078125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.625, noiseTex), gsl_tmp_563.y + 0.216);
+      let gsl_tmp_565 = vec2<f32>(gsl_tmp_564.x + 0.1296 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.1171875) / 0.0390625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.3125, noiseTex), gsl_tmp_564.y + 0.1296);
+      let gsl_tmp_566 = vec2<f32>(gsl_tmp_565.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.05859375) / 0.01953125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.15625, noiseTex), gsl_tmp_565.y + 0.0);
+      let gsl_tmp_567 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 15.0) / 5.0 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 40.0, noiseTex), 1.0);
+      let gsl_tmp_568 = vec2<f32>(gsl_tmp_567.x + 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 7.5) / 2.5 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 20.0, noiseTex), gsl_tmp_567.y + 0.5);
+      let gsl_tmp_569 = vec2<f32>(gsl_tmp_568.x + 0.25 * (1.0 - ease_quadratic(clamp((gsl_pw - 3.75) / 1.25 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 10.0, noiseTex), gsl_tmp_568.y + 0.25);
+      let gsl_tmp_570 = vec2<f32>(gsl_tmp_569.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.875) / 0.625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 5.0, noiseTex), gsl_tmp_569.y + 0.0);
+      let gsl_tmp_571 = vec2<f32>(gsl_tmp_570.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.9375) / 0.3125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 2.5, noiseTex), gsl_tmp_570.y + 0.0);
+      let gsl_tmp_572 = vec2<f32>(gsl_tmp_571.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.46875) / 0.15625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.25, noiseTex), gsl_tmp_571.y + 0.0);
+      let gsl_tmp_109 = 2.0 * gsl_tmp_566.x / max(gsl_tmp_566.y, 0.000001) + 0.4 * 2.0 * gsl_tmp_572.x / max(gsl_tmp_572.y, 0.000001);
       let color_white = vec3<f32>(1.0, 1.0, 1.0);
       let color_gray = vec3<f32>(0.5, 0.5, 0.5);
-      let gsl_tmp_384 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 7.5) / 2.5 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 20.0, noiseTex), 1.0);
-      let gsl_tmp_385 = vec2<f32>(gsl_tmp_384.x + 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 3.75) / 1.25 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 10.0, noiseTex), gsl_tmp_384.y + 0.5);
-      let gsl_tmp_386 = vec2<f32>(gsl_tmp_385.x + 0.25 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.875) / 0.625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 5.0, noiseTex), gsl_tmp_385.y + 0.25);
-      let gsl_tmp_387 = vec2<f32>(gsl_tmp_386.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.9375) / 0.3125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 2.5, noiseTex), gsl_tmp_386.y + 0.0);
-      let gsl_tmp_388 = vec2<f32>(gsl_tmp_387.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.46875) / 0.15625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.25, noiseTex), gsl_tmp_387.y + 0.0);
-      let gsl_tmp_389 = vec2<f32>(gsl_tmp_388.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.234375) / 0.078125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.625, noiseTex), gsl_tmp_388.y + 0.0);
-      let gsl_tmp_39 = texture_fadeTo(gsl_remap_3(p + (noise_gradientLatticeVector(p / 4.0, noiseTex) + noise_gradientLatticeVector(p * 2.03 / 4.0 + vec3<f32>(17.3, 5.1, 9.7), noiseTex) * 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.75) / 0.25 * 0.5 + 0.5, 0.0, 1.0), noiseTex))) * 1.44, color_white, color_gray, noiseTex) * texture_mask(2.0 * gsl_tmp_389.x / max(gsl_tmp_389.y, 0.000001), -0.15, 0.2, noiseTex), 0.159, 3.0, noiseTex) - 0.159;
-      let gsl_tmp_418 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.875) / 0.625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 5.0, noiseTex), 1.0);
-      let gsl_tmp_419 = vec2<f32>(gsl_tmp_418.x + 0.6 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.9375) / 0.3125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 2.5, noiseTex), gsl_tmp_418.y + 0.6);
-      let gsl_tmp_420 = vec2<f32>(gsl_tmp_419.x + 0.36 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.46875) / 0.15625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.25, noiseTex), gsl_tmp_419.y + 0.36);
-      let gsl_tmp_421 = vec2<f32>(gsl_tmp_420.x + 0.216 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.234375) / 0.078125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.625, noiseTex), gsl_tmp_420.y + 0.216);
-      let gsl_tmp_422 = vec2<f32>(gsl_tmp_421.x + 0.1296 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.1171875) / 0.0390625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.3125, noiseTex), gsl_tmp_421.y + 0.1296);
-      let gsl_tmp_423 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.875) / 0.625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 5.0, noiseTex), 1.0);
-      let gsl_tmp_424 = vec2<f32>(gsl_tmp_423.x + 0.6 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.9375) / 0.3125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 2.5, noiseTex), gsl_tmp_423.y + 0.6);
-      let gsl_tmp_425 = vec2<f32>(gsl_tmp_424.x + 0.36 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.46875) / 0.15625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.25, noiseTex), gsl_tmp_424.y + 0.36);
-      let gsl_tmp_426 = vec2<f32>(gsl_tmp_425.x + 0.216 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.234375) / 0.078125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.625, noiseTex), gsl_tmp_425.y + 0.216);
-      let gsl_tmp_427 = vec2<f32>(gsl_tmp_426.x + 0.1296 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.1171875) / 0.0390625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.3125, noiseTex), gsl_tmp_426.y + 0.1296);
-      let gsl_tmp_428 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 15.0) / 5.0 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 40.0, noiseTex), 1.0);
-      let gsl_tmp_429 = vec2<f32>(gsl_tmp_428.x + 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 7.5) / 2.5 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 20.0, noiseTex), gsl_tmp_428.y + 0.5);
-      let gsl_tmp_430 = vec2<f32>(gsl_tmp_429.x + 0.25 * (1.0 - ease_quadratic(clamp((gsl_pw - 3.75) / 1.25 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 10.0, noiseTex), gsl_tmp_429.y + 0.25);
-      let gsl_tmp_431 = vec2<f32>(gsl_tmp_430.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.875) / 0.625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 5.0, noiseTex), gsl_tmp_430.y + 0.0);
-      let gsl_tmp_432 = vec2<f32>(gsl_tmp_431.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.9375) / 0.3125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 2.5, noiseTex), gsl_tmp_431.y + 0.0);
-      let gsl_tmp_433 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 15.0) / 5.0 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 40.0, noiseTex), 1.0);
-      let gsl_tmp_434 = vec2<f32>(gsl_tmp_433.x + 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 7.5) / 2.5 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 20.0, noiseTex), gsl_tmp_433.y + 0.5);
-      let gsl_tmp_435 = vec2<f32>(gsl_tmp_434.x + 0.25 * (1.0 - ease_quadratic(clamp((gsl_pw - 3.75) / 1.25 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 10.0, noiseTex), gsl_tmp_434.y + 0.25);
-      let gsl_tmp_436 = vec2<f32>(gsl_tmp_435.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.875) / 0.625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 5.0, noiseTex), gsl_tmp_435.y + 0.0);
-      let gsl_tmp_437 = vec2<f32>(gsl_tmp_436.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.9375) / 0.3125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 2.5, noiseTex), gsl_tmp_436.y + 0.0);
-      let gsl_tmp_438 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.875) / 0.625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 5.0, noiseTex), 1.0);
-      let gsl_tmp_439 = vec2<f32>(gsl_tmp_438.x + 0.6 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.9375) / 0.3125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 2.5, noiseTex), gsl_tmp_438.y + 0.6);
-      let gsl_tmp_440 = vec2<f32>(gsl_tmp_439.x + 0.36 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.46875) / 0.15625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.25, noiseTex), gsl_tmp_439.y + 0.36);
-      let gsl_tmp_441 = vec2<f32>(gsl_tmp_440.x + 0.216 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.234375) / 0.078125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.625, noiseTex), gsl_tmp_440.y + 0.216);
-      let gsl_tmp_442 = vec2<f32>(gsl_tmp_441.x + 0.1296 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.1171875) / 0.0390625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.3125, noiseTex), gsl_tmp_441.y + 0.1296);
-      let gsl_tmp_443 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.875) / 0.625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 5.0, noiseTex), 1.0);
-      let gsl_tmp_444 = vec2<f32>(gsl_tmp_443.x + 0.6 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.9375) / 0.3125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 2.5, noiseTex), gsl_tmp_443.y + 0.6);
-      let gsl_tmp_445 = vec2<f32>(gsl_tmp_444.x + 0.36 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.46875) / 0.15625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.25, noiseTex), gsl_tmp_444.y + 0.36);
-      let gsl_tmp_446 = vec2<f32>(gsl_tmp_445.x + 0.216 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.234375) / 0.078125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.625, noiseTex), gsl_tmp_445.y + 0.216);
-      let gsl_tmp_447 = vec2<f32>(gsl_tmp_446.x + 0.1296 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.1171875) / 0.0390625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.3125, noiseTex), gsl_tmp_446.y + 0.1296);
-      let gsl_tmp_448 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 15.0) / 5.0 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 40.0, noiseTex), 1.0);
-      let gsl_tmp_449 = vec2<f32>(gsl_tmp_448.x + 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 7.5) / 2.5 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 20.0, noiseTex), gsl_tmp_448.y + 0.5);
-      let gsl_tmp_450 = vec2<f32>(gsl_tmp_449.x + 0.25 * (1.0 - ease_quadratic(clamp((gsl_pw - 3.75) / 1.25 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 10.0, noiseTex), gsl_tmp_449.y + 0.25);
-      let gsl_tmp_451 = vec2<f32>(gsl_tmp_450.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.875) / 0.625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 5.0, noiseTex), gsl_tmp_450.y + 0.0);
-      let gsl_tmp_452 = vec2<f32>(gsl_tmp_451.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.9375) / 0.3125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 2.5, noiseTex), gsl_tmp_451.y + 0.0);
-      let gsl_tmp_453 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 15.0) / 5.0 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 40.0, noiseTex), 1.0);
-      let gsl_tmp_454 = vec2<f32>(gsl_tmp_453.x + 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 7.5) / 2.5 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 20.0, noiseTex), gsl_tmp_453.y + 0.5);
-      let gsl_tmp_455 = vec2<f32>(gsl_tmp_454.x + 0.25 * (1.0 - ease_quadratic(clamp((gsl_pw - 3.75) / 1.25 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 10.0, noiseTex), gsl_tmp_454.y + 0.25);
-      let gsl_tmp_456 = vec2<f32>(gsl_tmp_455.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.875) / 0.625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 5.0, noiseTex), gsl_tmp_455.y + 0.0);
-      let gsl_tmp_457 = vec2<f32>(gsl_tmp_456.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.9375) / 0.3125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 2.5, noiseTex), gsl_tmp_456.y + 0.0);
-      gsl_simpleValue_4 = mix(gsl_simpleValue_4, texture_paint(gsl_tmp_37, 0.0, 0.08, color_mixOklab(vec3<f32>(0.77, 0.78, 0.78), vec3<f32>(0.6585775, 0.47784516, 0.14561833), gsl_tmp_38, noiseTex), color_mixOklab(vec3<f32>(0.6585775, 0.47784516, 0.14561833), color_oklab2rgb(vec3<f32>(0.4104389, 0.04798136, 0.060527567) + vec3<f32>(0.09 * (2.0 * (gsl_tmp_402.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.05859375) / 0.01953125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.15625, noiseTex)) / max(gsl_tmp_407.y + 0.0, 0.000001) + 0.4 * 2.0 * (gsl_tmp_412.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.46875) / 0.15625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.25, noiseTex)) / max(gsl_tmp_417.y + 0.0, 0.000001)) - 0.11 * gsl_tmp_39, 0.006 * (2.0 * (gsl_tmp_422.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.05859375) / 0.01953125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.15625, noiseTex)) / max(gsl_tmp_427.y + 0.0, 0.000001) + 0.4 * 2.0 * (gsl_tmp_432.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.46875) / 0.15625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.25, noiseTex)) / max(gsl_tmp_437.y + 0.0, 0.000001)) - 0.01 * gsl_tmp_39, 0.025 * (2.0 * (gsl_tmp_442.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.05859375) / 0.01953125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.15625, noiseTex)) / max(gsl_tmp_447.y + 0.0, 0.000001) + 0.4 * 2.0 * (gsl_tmp_452.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.46875) / 0.15625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.25, noiseTex)) / max(gsl_tmp_457.y + 0.0, 0.000001)) - 0.02 * gsl_tmp_39), noiseTex), texture_mask(gsl_tmp_37, 0.25, 0.25, noiseTex), noiseTex), noiseTex), gsl_simpleDetail);
+      let gsl_tmp_574 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 7.5) / 2.5 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 20.0, noiseTex), 1.0);
+      let gsl_tmp_575 = vec2<f32>(gsl_tmp_574.x + 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 3.75) / 1.25 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 10.0, noiseTex), gsl_tmp_574.y + 0.5);
+      let gsl_tmp_576 = vec2<f32>(gsl_tmp_575.x + 0.25 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.875) / 0.625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 5.0, noiseTex), gsl_tmp_575.y + 0.25);
+      let gsl_tmp_577 = vec2<f32>(gsl_tmp_576.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.9375) / 0.3125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 2.5, noiseTex), gsl_tmp_576.y + 0.0);
+      let gsl_tmp_578 = vec2<f32>(gsl_tmp_577.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.46875) / 0.15625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.25, noiseTex), gsl_tmp_577.y + 0.0);
+      let gsl_tmp_579 = vec2<f32>(gsl_tmp_578.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.234375) / 0.078125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.625, noiseTex), gsl_tmp_578.y + 0.0);
+      let gsl_tmp_110 = texture_fadeTo(gsl_remap_3(p + (noise_gradientLatticeVector(p / 4.0, noiseTex) + noise_gradientLatticeVector(p * 2.03 / 4.0 + vec3<f32>(17.3, 5.1, 9.7), noiseTex) * 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.75) / 0.25 * 0.5 + 0.5, 0.0, 1.0), noiseTex))) * 1.44, color_white, color_gray, noiseTex) * texture_mask(2.0 * gsl_tmp_579.x / max(gsl_tmp_579.y, 0.000001), -0.15, 0.2, noiseTex), 0.159, 3.0, noiseTex) - 0.159;
+      gsl_simpleValue_4 = mix(gsl_simpleValue_4, texture_paint(gsl_tmp_105, 0.0, 0.08, color_mixOklab(vec3<f32>(0.77, 0.78, 0.78), vec3<f32>(0.6585775, 0.47784516, 0.14561833), gsl_tmp_106, noiseTex), color_mixOklab(vec3<f32>(0.6585775, 0.47784516, 0.14561833), color_oklab2rgb(vec3<f32>(0.4104389, 0.04798136, 0.060527567) + vec3<f32>(0.09 * gsl_tmp_109 - 0.11 * gsl_tmp_110, 0.006 * gsl_tmp_109 - 0.01 * gsl_tmp_110, 0.025 * gsl_tmp_109 - 0.02 * gsl_tmp_110), noiseTex), texture_mask(gsl_tmp_105, 0.25, 0.25, noiseTex), noiseTex), noiseTex), gsl_simpleDetail);
     }
     let rustedColor = gsl_simpleValue_4;
     return vec4<f32>(rustedColor, 1.0);
@@ -883,49 +836,37 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_
   if (gsl_colorIdx == 5u) {
     var gsl_simpleValue_5 = vec3<f32>(0.7927733, 0.85689414, 0.7547779);
     if (gsl_simpleDetail > 0.0) {
-      let gsl_tmp_474 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 22.5) / 7.5 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 60.0, noiseTex), 1.0);
-      let gsl_tmp_475 = vec2<f32>(gsl_tmp_474.x + 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 11.25) / 3.75 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 30.0, noiseTex), gsl_tmp_474.y + 0.5);
-      let gsl_tmp_476 = vec2<f32>(gsl_tmp_475.x + 0.25 * (1.0 - ease_quadratic(clamp((gsl_pw - 5.625) / 1.875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 15.0, noiseTex), gsl_tmp_475.y + 0.25);
-      let gsl_tmp_477 = vec2<f32>(gsl_tmp_476.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 2.8125) / 0.9375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 7.5, noiseTex), gsl_tmp_476.y + 0.0);
-      let gsl_tmp_478 = vec2<f32>(gsl_tmp_477.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.40625) / 0.46875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 3.75, noiseTex), gsl_tmp_477.y + 0.0);
-      let gsl_tmp_479 = vec2<f32>(gsl_tmp_478.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.703125) / 0.234375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.875, noiseTex), gsl_tmp_478.y + 0.0);
-      let gsl_tmp_47 = 0.5 * (noise_gradientLattice(p / 15.0, noiseTex) + 0.5 * noise_gradientLattice(p / 7.5, noiseTex) + 0.25 * noise_gradientLattice(p / 3.75, noiseTex)) + 0.67 * 2.0 * gsl_tmp_479.x / max(gsl_tmp_479.y, 0.000001) - texture_fadeTo(noise_cellularEdges(p, 1.5, noiseTex) / 1.5, 0.199, 1.5, noiseTex) * 0.24;
-      let gsl_tmp_48 = 0.35 * texture_mask(gsl_tmp_47, -0.3, 0.3, noiseTex);
-      let gsl_tmp_602 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.875) / 0.625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 5.0, noiseTex), 1.0);
-      let gsl_tmp_603 = vec2<f32>(gsl_tmp_602.x + 0.6 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.9375) / 0.3125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 2.5, noiseTex), gsl_tmp_602.y + 0.6);
-      let gsl_tmp_604 = vec2<f32>(gsl_tmp_603.x + 0.36 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.46875) / 0.15625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.25, noiseTex), gsl_tmp_603.y + 0.36);
-      let gsl_tmp_605 = vec2<f32>(gsl_tmp_604.x + 0.216 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.234375) / 0.078125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.625, noiseTex), gsl_tmp_604.y + 0.216);
-      let gsl_tmp_606 = vec2<f32>(gsl_tmp_605.x + 0.1296 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.1171875) / 0.0390625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.3125, noiseTex), gsl_tmp_605.y + 0.1296);
-      let gsl_tmp_607 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.875) / 0.625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 5.0, noiseTex), 1.0);
-      let gsl_tmp_608 = vec2<f32>(gsl_tmp_607.x + 0.6 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.9375) / 0.3125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 2.5, noiseTex), gsl_tmp_607.y + 0.6);
-      let gsl_tmp_609 = vec2<f32>(gsl_tmp_608.x + 0.36 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.46875) / 0.15625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.25, noiseTex), gsl_tmp_608.y + 0.36);
-      let gsl_tmp_610 = vec2<f32>(gsl_tmp_609.x + 0.216 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.234375) / 0.078125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.625, noiseTex), gsl_tmp_609.y + 0.216);
-      let gsl_tmp_611 = vec2<f32>(gsl_tmp_610.x + 0.1296 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.1171875) / 0.0390625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.3125, noiseTex), gsl_tmp_610.y + 0.1296);
-      let gsl_tmp_612 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 15.0) / 5.0 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 40.0, noiseTex), 1.0);
-      let gsl_tmp_613 = vec2<f32>(gsl_tmp_612.x + 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 7.5) / 2.5 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 20.0, noiseTex), gsl_tmp_612.y + 0.5);
-      let gsl_tmp_614 = vec2<f32>(gsl_tmp_613.x + 0.25 * (1.0 - ease_quadratic(clamp((gsl_pw - 3.75) / 1.25 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 10.0, noiseTex), gsl_tmp_613.y + 0.25);
-      let gsl_tmp_615 = vec2<f32>(gsl_tmp_614.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.875) / 0.625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 5.0, noiseTex), gsl_tmp_614.y + 0.0);
-      let gsl_tmp_616 = vec2<f32>(gsl_tmp_615.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.9375) / 0.3125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 2.5, noiseTex), gsl_tmp_615.y + 0.0);
-      let gsl_tmp_617 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 15.0) / 5.0 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 40.0, noiseTex), 1.0);
-      let gsl_tmp_618 = vec2<f32>(gsl_tmp_617.x + 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 7.5) / 2.5 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 20.0, noiseTex), gsl_tmp_617.y + 0.5);
-      let gsl_tmp_619 = vec2<f32>(gsl_tmp_618.x + 0.25 * (1.0 - ease_quadratic(clamp((gsl_pw - 3.75) / 1.25 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 10.0, noiseTex), gsl_tmp_618.y + 0.25);
-      let gsl_tmp_620 = vec2<f32>(gsl_tmp_619.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.875) / 0.625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 5.0, noiseTex), gsl_tmp_619.y + 0.0);
-      let gsl_tmp_621 = vec2<f32>(gsl_tmp_620.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.9375) / 0.3125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 2.5, noiseTex), gsl_tmp_620.y + 0.0);
-      let gsl_tmp_622 = 2.0 * (gsl_tmp_606.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.05859375) / 0.01953125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.15625, noiseTex)) / max(gsl_tmp_611.y + 0.0, 0.000001) + 0.4 * 2.0 * (gsl_tmp_616.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.46875) / 0.15625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.25, noiseTex)) / max(gsl_tmp_621.y + 0.0, 0.000001);
+      let gsl_tmp_611 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 22.5) / 7.5 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 60.0, noiseTex), 1.0);
+      let gsl_tmp_612 = vec2<f32>(gsl_tmp_611.x + 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 11.25) / 3.75 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 30.0, noiseTex), gsl_tmp_611.y + 0.5);
+      let gsl_tmp_613 = vec2<f32>(gsl_tmp_612.x + 0.25 * (1.0 - ease_quadratic(clamp((gsl_pw - 5.625) / 1.875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 15.0, noiseTex), gsl_tmp_612.y + 0.25);
+      let gsl_tmp_614 = vec2<f32>(gsl_tmp_613.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 2.8125) / 0.9375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 7.5, noiseTex), gsl_tmp_613.y + 0.0);
+      let gsl_tmp_615 = vec2<f32>(gsl_tmp_614.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.40625) / 0.46875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 3.75, noiseTex), gsl_tmp_614.y + 0.0);
+      let gsl_tmp_616 = vec2<f32>(gsl_tmp_615.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.703125) / 0.234375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.875, noiseTex), gsl_tmp_615.y + 0.0);
+      let gsl_tmp_119 = 0.5 * (noise_gradientLattice(p / 15.0, noiseTex) + 0.5 * noise_gradientLattice(p / 7.5, noiseTex) + 0.25 * noise_gradientLattice(p / 3.75, noiseTex)) + 0.67 * 2.0 * gsl_tmp_616.x / max(gsl_tmp_616.y, 0.000001) - texture_fadeTo(noise_cellularEdges(p, 1.5, noiseTex) / 1.5, 0.199, 1.5, noiseTex) * 0.24;
+      let gsl_tmp_120 = 0.35 * texture_mask(gsl_tmp_119, -0.3, 0.3, noiseTex);
+      let gsl_tmp_755 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.875) / 0.625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 5.0, noiseTex), 1.0);
+      let gsl_tmp_756 = vec2<f32>(gsl_tmp_755.x + 0.6 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.9375) / 0.3125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 2.5, noiseTex), gsl_tmp_755.y + 0.6);
+      let gsl_tmp_757 = vec2<f32>(gsl_tmp_756.x + 0.36 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.46875) / 0.15625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.25, noiseTex), gsl_tmp_756.y + 0.36);
+      let gsl_tmp_758 = vec2<f32>(gsl_tmp_757.x + 0.216 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.234375) / 0.078125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.625, noiseTex), gsl_tmp_757.y + 0.216);
+      let gsl_tmp_759 = vec2<f32>(gsl_tmp_758.x + 0.1296 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.1171875) / 0.0390625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.3125, noiseTex), gsl_tmp_758.y + 0.1296);
+      let gsl_tmp_760 = vec2<f32>(gsl_tmp_759.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.05859375) / 0.01953125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.15625, noiseTex), gsl_tmp_759.y + 0.0);
+      let gsl_tmp_761 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 15.0) / 5.0 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 40.0, noiseTex), 1.0);
+      let gsl_tmp_762 = vec2<f32>(gsl_tmp_761.x + 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 7.5) / 2.5 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 20.0, noiseTex), gsl_tmp_761.y + 0.5);
+      let gsl_tmp_763 = vec2<f32>(gsl_tmp_762.x + 0.25 * (1.0 - ease_quadratic(clamp((gsl_pw - 3.75) / 1.25 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 10.0, noiseTex), gsl_tmp_762.y + 0.25);
+      let gsl_tmp_764 = vec2<f32>(gsl_tmp_763.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.875) / 0.625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 5.0, noiseTex), gsl_tmp_763.y + 0.0);
+      let gsl_tmp_765 = vec2<f32>(gsl_tmp_764.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.9375) / 0.3125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 2.5, noiseTex), gsl_tmp_764.y + 0.0);
+      let gsl_tmp_766 = vec2<f32>(gsl_tmp_765.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.46875) / 0.15625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.25, noiseTex), gsl_tmp_765.y + 0.0);
+      let gsl_tmp_767 = 2.0 * gsl_tmp_760.x / max(gsl_tmp_760.y, 0.000001) + 0.4 * 2.0 * gsl_tmp_766.x / max(gsl_tmp_766.y, 0.000001);
       let color_white = vec3<f32>(1.0, 1.0, 1.0);
       let color_gray = vec3<f32>(0.5, 0.5, 0.5);
-      let gsl_tmp_624 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 7.5) / 2.5 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 20.0, noiseTex), 1.0);
-      let gsl_tmp_625 = vec2<f32>(gsl_tmp_624.x + 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 3.75) / 1.25 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 10.0, noiseTex), gsl_tmp_624.y + 0.5);
-      let gsl_tmp_626 = vec2<f32>(gsl_tmp_625.x + 0.25 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.875) / 0.625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 5.0, noiseTex), gsl_tmp_625.y + 0.25);
-      let gsl_tmp_627 = vec2<f32>(gsl_tmp_626.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.9375) / 0.3125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 2.5, noiseTex), gsl_tmp_626.y + 0.0);
-      let gsl_tmp_628 = vec2<f32>(gsl_tmp_627.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.46875) / 0.15625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.25, noiseTex), gsl_tmp_627.y + 0.0);
-      let gsl_tmp_629 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 7.5) / 2.5 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 20.0, noiseTex), 1.0);
-      let gsl_tmp_630 = vec2<f32>(gsl_tmp_629.x + 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 3.75) / 1.25 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 10.0, noiseTex), gsl_tmp_629.y + 0.5);
-      let gsl_tmp_631 = vec2<f32>(gsl_tmp_630.x + 0.25 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.875) / 0.625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 5.0, noiseTex), gsl_tmp_630.y + 0.25);
-      let gsl_tmp_632 = vec2<f32>(gsl_tmp_631.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.9375) / 0.3125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 2.5, noiseTex), gsl_tmp_631.y + 0.0);
-      let gsl_tmp_633 = vec2<f32>(gsl_tmp_632.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.46875) / 0.15625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.25, noiseTex), gsl_tmp_632.y + 0.0);
-      let gsl_tmp_634 = texture_fadeTo(gsl_remap_4(p + (noise_gradientLatticeVector(p / 4.0, noiseTex) + noise_gradientLatticeVector(p * 2.03 / 4.0 + vec3<f32>(17.3, 5.1, 9.7), noiseTex) * 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.75) / 0.25 * 0.5 + 0.5, 0.0, 1.0), noiseTex))) * 1.44, color_white, color_gray, noiseTex) * texture_mask(2.0 * (gsl_tmp_628.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.234375) / 0.078125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.625, noiseTex)) / max(gsl_tmp_633.y + 0.0, 0.000001), -0.15, 0.2, noiseTex), 0.159, 3.0, noiseTex) - 0.159;
-      gsl_simpleValue_5 = mix(gsl_simpleValue_5, texture_paint(gsl_tmp_47, 0.0, 0.08, color_mixOklab(vec3<f32>(0.9695, 0.8112, 0.7497), vec3<f32>(0.67572874, 0.9464596, 0.7818527), gsl_tmp_48, noiseTex), color_mixOklab(vec3<f32>(0.67572874, 0.9464596, 0.7818527), color_oklab2rgb(vec3<f32>(0.702035, -0.058106415, -0.015318653) + vec3<f32>(0.09 * gsl_tmp_622 - 0.11 * gsl_tmp_634, 0.006 * gsl_tmp_622 - 0.01 * gsl_tmp_634, 0.025 * gsl_tmp_622 - 0.02 * gsl_tmp_634), noiseTex), texture_mask(gsl_tmp_47, 0.25, 0.25, noiseTex), noiseTex), noiseTex), gsl_simpleDetail);
+      let gsl_tmp_769 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 7.5) / 2.5 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 20.0, noiseTex), 1.0);
+      let gsl_tmp_770 = vec2<f32>(gsl_tmp_769.x + 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 3.75) / 1.25 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 10.0, noiseTex), gsl_tmp_769.y + 0.5);
+      let gsl_tmp_771 = vec2<f32>(gsl_tmp_770.x + 0.25 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.875) / 0.625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 5.0, noiseTex), gsl_tmp_770.y + 0.25);
+      let gsl_tmp_772 = vec2<f32>(gsl_tmp_771.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.9375) / 0.3125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 2.5, noiseTex), gsl_tmp_771.y + 0.0);
+      let gsl_tmp_773 = vec2<f32>(gsl_tmp_772.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.46875) / 0.15625 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.25, noiseTex), gsl_tmp_772.y + 0.0);
+      let gsl_tmp_774 = vec2<f32>(gsl_tmp_773.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.234375) / 0.078125 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 0.625, noiseTex), gsl_tmp_773.y + 0.0);
+      let gsl_tmp_775 = texture_fadeTo(gsl_remap_4(p + (noise_gradientLatticeVector(p / 4.0, noiseTex) + noise_gradientLatticeVector(p * 2.03 / 4.0 + vec3<f32>(17.3, 5.1, 9.7), noiseTex) * 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.75) / 0.25 * 0.5 + 0.5, 0.0, 1.0), noiseTex))) * 1.44, color_white, color_gray, noiseTex) * texture_mask(2.0 * gsl_tmp_774.x / max(gsl_tmp_774.y, 0.000001), -0.15, 0.2, noiseTex), 0.159, 3.0, noiseTex) - 0.159;
+      gsl_simpleValue_5 = mix(gsl_simpleValue_5, texture_paint(gsl_tmp_119, 0.0, 0.08, color_mixOklab(vec3<f32>(0.9695, 0.8112, 0.7497), vec3<f32>(0.67572874, 0.9464596, 0.7818527), gsl_tmp_120, noiseTex), color_mixOklab(vec3<f32>(0.67572874, 0.9464596, 0.7818527), color_oklab2rgb(vec3<f32>(0.702035, -0.058106415, -0.015318653) + vec3<f32>(0.09 * gsl_tmp_767 - 0.11 * gsl_tmp_775, 0.006 * gsl_tmp_767 - 0.01 * gsl_tmp_775, 0.025 * gsl_tmp_767 - 0.02 * gsl_tmp_775), noiseTex), texture_mask(gsl_tmp_119, 0.25, 0.25, noiseTex), noiseTex), noiseTex), gsl_simpleDetail);
     }
     let patinaColor = gsl_simpleValue_5;
     return vec4<f32>(patinaColor, 1.0);
@@ -935,9 +876,9 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_
     if (gsl_simpleDetail > 0.0) {
       let color_black = vec3<f32>(0.0, 0.0, 0.0);
       let color_white = vec3<f32>(1.0, 1.0, 1.0);
-      let gsl_tmp_49 = p / 1.0;
-      let gsl_tmp_50 = playful_glitterFlakes(gsl_cellularScan(gsl_tmp_49, 1, noiseTex).f1 * 1.0, 1.0, 0.25, noiseTex);
-      gsl_simpleValue_6 = mix(gsl_simpleValue_6, color_mixOklab(color_black, color_white, gsl_tmp_50, noiseTex), gsl_simpleDetail);
+      let gsl_tmp_133 = p / 1.0;
+      let gsl_tmp_134 = playful_glitterFlakes(gsl_cellularScan(gsl_tmp_133, 1, noiseTex).f1 * 1.0, 1.0, 0.25, noiseTex);
+      gsl_simpleValue_6 = mix(gsl_simpleValue_6, color_mixOklab(color_black, color_white, gsl_tmp_134, noiseTex), gsl_simpleDetail);
     }
     let glitterColor = gsl_simpleValue_6;
     return vec4<f32>(glitterColor, 1.0);
@@ -947,21 +888,21 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_
     if (gsl_simpleDetail > 0.0) {
       let color_white = vec3<f32>(1.0, 1.0, 1.0);
       let color_black = vec3<f32>(0.0, 0.0, 0.0);
-      let gsl_tmp_82 = texture_squareWave(p.x, 20.0, noiseTex);
-      let gsl_tmp_83 = texture_squareWave(p.y, 20.0, noiseTex);
-      let gsl_tmp_85 = gsl_tmp_82 + gsl_tmp_83 - 2.0 * gsl_tmp_82 * gsl_tmp_83;
-      let gsl_tmp_84 = texture_squareWave(p.z, 20.0, noiseTex);
-      gsl_simpleValue_7 = mix(gsl_simpleValue_7, color_mixOklab(color_white, color_black, gsl_tmp_85 + gsl_tmp_84 - 2.0 * gsl_tmp_85 * gsl_tmp_84, noiseTex), gsl_simpleDetail);
+      let gsl_tmp_184 = texture_squareWave(p.x, 20.0, noiseTex);
+      let gsl_tmp_185 = texture_squareWave(p.y, 20.0, noiseTex);
+      let gsl_tmp_187 = gsl_tmp_184 + gsl_tmp_185 - 2.0 * gsl_tmp_184 * gsl_tmp_185;
+      let gsl_tmp_186 = texture_squareWave(p.z, 20.0, noiseTex);
+      gsl_simpleValue_7 = mix(gsl_simpleValue_7, color_mixOklab(color_white, color_black, gsl_tmp_187 + gsl_tmp_186 - 2.0 * gsl_tmp_187 * gsl_tmp_186, noiseTex), gsl_simpleDetail);
     }
     return vec4<f32>(gsl_simpleValue_7, 1.0);
   }
   if (gsl_colorIdx == 8u) {
     var gsl_simpleValue_8 = vec3<f32>(0.048666414, 0.1840356, 0.30572936);
     if (gsl_simpleDetail > 0.0) {
-      let gsl_tmp_512 = vec3<f32>(0.0, 0.0, 0.0) + vec3<f32>(0.94226784, 0.33486015, 0.0) * 0.010944857 * sin(0.35342917 * dot(vec3<f32>(0.94226784, 0.33486015, 0.0), p) - 0.64525276 * time + 0.0) + vec3<f32>(0.9991408, 0.04144492, 0.0) * 0.01742606 * sin(0.45396015 * dot(vec3<f32>(0.9991408, 0.04144492, 0.0), p) - 0.73128647 * time + 2.1) + vec3<f32>(0.83012927, 0.55757093, 0.0) * 0.020284768 * sin(0.5670575 * dot(vec3<f32>(0.83012927, 0.55757093, 0.0), p) - 0.81732017 * time + 4.4) + vec3<f32>(0.9817281, 0.19028927, 0.0) * 0.022745797 * sin(0.6927212 * dot(vec3<f32>(0.9817281, 0.19028927, 0.0), p) - 0.90335387 * time + 1.3) + vec3<f32>(0.73748547, 0.675363, 0.0) * 0.023844866 * sin(0.90477866 * dot(vec3<f32>(0.73748547, 0.675363, 0.0), p) - 1.0324044 * time + 5.2) + vec3<f32>(0.96676344, -0.25567245, 0.0) * 0.022270106 * sin(1.2315043 * dot(vec3<f32>(0.96676344, -0.25567245, 0.0), p) - 1.2044718 * time + 3.3) + vec3<f32>(0.54747134, 0.8368244, 0.0) * 0.017706865 * sin(1.8158406 * dot(vec3<f32>(0.54747134, 0.8368244, 0.0), p) - 1.4625729 * time + 0.7) + vec3<f32>(0.84802806, -0.52995133, 0.0) * 0.011648065 * sin(2.7708848 * dot(vec3<f32>(0.84802806, -0.52995133, 0.0), p) - 1.8067077 * time + 2.9);
-      let gsl_tmp_513 = 0.0 + 0.018241428 * cos(0.35342917 * dot(vec3<f32>(0.94226784, 0.33486015, 0.0), p + gsl_tmp_512) - 0.64525276 * time + 0.0) + 0.029043432 * cos(0.45396015 * dot(vec3<f32>(0.9991408, 0.04144492, 0.0), p + gsl_tmp_512) - 0.73128647 * time + 2.1) + 0.03380795 * cos(0.5670575 * dot(vec3<f32>(0.83012927, 0.55757093, 0.0), p + gsl_tmp_512) - 0.81732017 * time + 4.4) + 0.037909664 * cos(0.6927212 * dot(vec3<f32>(0.9817281, 0.19028927, 0.0), p + gsl_tmp_512) - 0.90335387 * time + 1.3) + 0.039741445 * cos(0.90477866 * dot(vec3<f32>(0.73748547, 0.675363, 0.0), p + gsl_tmp_512) - 1.0324044 * time + 5.2) + 0.037116844 * cos(1.2315043 * dot(vec3<f32>(0.96676344, -0.25567245, 0.0), p + gsl_tmp_512) - 1.2044718 * time + 3.3) + 0.029511444 * cos(1.8158406 * dot(vec3<f32>(0.54747134, 0.8368244, 0.0), p + gsl_tmp_512) - 1.4625729 * time + 0.7) + 0.019413443 * cos(2.7708848 * dot(vec3<f32>(0.84802806, -0.52995133, 0.0), p + gsl_tmp_512) - 1.8067077 * time + 2.9);
-      let gsl_tmp_514 = texture_mask(gsl_tmp_513 + 0.037855294 * texture_fadeTo(noise_gradientLattice((p - vec3<f32>(0.95782626, 0.28734788, 0.0) * 1.3692689 * time) / 0.5 + vec3<f32>(13.0, 71.0, 5.0), noiseTex), 0.0, 0.5, noiseTex), 0.14711061, 0.018927647, noiseTex);
-      gsl_simpleValue_8 = mix(gsl_simpleValue_8, color_mixOklab(color_mixOklab(vec3<f32>(0.04, 0.16, 0.29), vec3<f32>(0.1, 0.42, 0.44), 0.5 * texture_mask(gsl_tmp_513, 0.06309216, 0.06309216, noiseTex), noiseTex), vec3<f32>(0.92, 0.94, 0.94), gsl_tmp_514, noiseTex), gsl_simpleDetail);
+      let gsl_tmp_660 = vec3<f32>(0.0, 0.0, 0.0) + vec3<f32>(0.94226784, 0.33486015, 0.0) * 0.010944857 * sin(0.35342917 * dot(vec3<f32>(0.94226784, 0.33486015, 0.0), p) - 0.64525276 * time + 0.0) + vec3<f32>(0.9991408, 0.04144492, 0.0) * 0.01742606 * sin(0.45396015 * dot(vec3<f32>(0.9991408, 0.04144492, 0.0), p) - 0.73128647 * time + 2.1) + vec3<f32>(0.83012927, 0.55757093, 0.0) * 0.020284768 * sin(0.5670575 * dot(vec3<f32>(0.83012927, 0.55757093, 0.0), p) - 0.81732017 * time + 4.4) + vec3<f32>(0.9817281, 0.19028927, 0.0) * 0.022745797 * sin(0.6927212 * dot(vec3<f32>(0.9817281, 0.19028927, 0.0), p) - 0.90335387 * time + 1.3) + vec3<f32>(0.73748547, 0.675363, 0.0) * 0.023844866 * sin(0.90477866 * dot(vec3<f32>(0.73748547, 0.675363, 0.0), p) - 1.0324044 * time + 5.2) + vec3<f32>(0.96676344, -0.25567245, 0.0) * 0.022270106 * sin(1.2315043 * dot(vec3<f32>(0.96676344, -0.25567245, 0.0), p) - 1.2044718 * time + 3.3) + vec3<f32>(0.54747134, 0.8368244, 0.0) * 0.017706865 * sin(1.8158406 * dot(vec3<f32>(0.54747134, 0.8368244, 0.0), p) - 1.4625729 * time + 0.7) + vec3<f32>(0.84802806, -0.52995133, 0.0) * 0.011648065 * sin(2.7708848 * dot(vec3<f32>(0.84802806, -0.52995133, 0.0), p) - 1.8067077 * time + 2.9);
+      let gsl_tmp_661 = 0.0 + 0.018241428 * cos(0.35342917 * dot(vec3<f32>(0.94226784, 0.33486015, 0.0), p + gsl_tmp_660) - 0.64525276 * time + 0.0) + 0.029043432 * cos(0.45396015 * dot(vec3<f32>(0.9991408, 0.04144492, 0.0), p + gsl_tmp_660) - 0.73128647 * time + 2.1) + 0.03380795 * cos(0.5670575 * dot(vec3<f32>(0.83012927, 0.55757093, 0.0), p + gsl_tmp_660) - 0.81732017 * time + 4.4) + 0.037909664 * cos(0.6927212 * dot(vec3<f32>(0.9817281, 0.19028927, 0.0), p + gsl_tmp_660) - 0.90335387 * time + 1.3) + 0.039741445 * cos(0.90477866 * dot(vec3<f32>(0.73748547, 0.675363, 0.0), p + gsl_tmp_660) - 1.0324044 * time + 5.2) + 0.037116844 * cos(1.2315043 * dot(vec3<f32>(0.96676344, -0.25567245, 0.0), p + gsl_tmp_660) - 1.2044718 * time + 3.3) + 0.029511444 * cos(1.8158406 * dot(vec3<f32>(0.54747134, 0.8368244, 0.0), p + gsl_tmp_660) - 1.4625729 * time + 0.7) + 0.019413443 * cos(2.7708848 * dot(vec3<f32>(0.84802806, -0.52995133, 0.0), p + gsl_tmp_660) - 1.8067077 * time + 2.9);
+      let gsl_tmp_664 = texture_mask(gsl_tmp_661 + 0.037855294 * texture_fadeTo(noise_gradientLattice((p - vec3<f32>(0.95782626, 0.28734788, 0.0) * 1.3692689 * time) / 0.5 + vec3<f32>(13.0, 71.0, 5.0), noiseTex), 0.0, 0.5, noiseTex), 0.14711061, 0.018927647, noiseTex);
+      gsl_simpleValue_8 = mix(gsl_simpleValue_8, color_mixOklab(color_mixOklab(vec3<f32>(0.04, 0.16, 0.29), vec3<f32>(0.1, 0.42, 0.44), 0.5 * texture_mask(gsl_tmp_661, 0.06309216, 0.06309216, noiseTex), noiseTex), vec3<f32>(0.92, 0.94, 0.94), gsl_tmp_664, noiseTex), gsl_simpleDetail);
     }
     let waterColor = gsl_simpleValue_8;
     return vec4<f32>(waterColor, 1.0);
@@ -995,27 +936,27 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, noiseTex: te
   if (gsl_materialIdx == 3u) {
     var gsl_detailValue_4 = vec2<f32>(0.0, 0.0);
     if (max(gsl_pw, gsl_detailPw) < 0.14) { let gsl_detailOuterPw_4 = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
-      let gsl_tmp_599 = map_axisAt(p, vec3<f32>(-187.5, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex);
-      let gsl_tmp_600 = length(gsl_tmp_599.xy);
-      let gsl_tmp_601 = gsl_tmp_599.xy / max(gsl_tmp_600, 0.001) * 40.0;
+      let gsl_tmp_743 = map_axisAt(p, vec3<f32>(-187.5, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex);
+      let gsl_tmp_744 = length(gsl_tmp_743.xy);
+      let gsl_tmp_745 = gsl_tmp_743.xy / max(gsl_tmp_744, 0.001) * 40.0;
       let color_white = vec3<f32>(1.0, 1.0, 1.0);
       let color_gray = vec3<f32>(0.5, 0.5, 0.5);
-      let gsl_tmp_583 = gsl_tmp_600 * (1.0 + 0.08 * gsl_remap(vec3<f32>(gsl_tmp_601.x, gsl_tmp_601.y, gsl_tmp_599.z * 0.25), color_white, color_gray, noiseTex)) / 1.5 + 0.3 * gsl_remap_2(vec3<f32>(gsl_tmp_599.x, gsl_tmp_599.y, gsl_tmp_599.z * 0.2), color_white, color_gray, noiseTex);
-      let gsl_tmp_584 = floor(gsl_tmp_583);
-      let gsl_tmp_585 = wood_ringBoundary(gsl_tmp_584, 3.0, noiseTex);
-      let gsl_tmp_586 = wood_ringBoundary(gsl_tmp_584 + 1.0, 3.0, noiseTex);
-      let gsl_tmp_588 = gsl_tmp_583 >= gsl_tmp_586;
-      let gsl_tmp_587 = gsl_tmp_583 < gsl_tmp_585;
-      let gsl_tmp_589 = select(select(gsl_tmp_585, gsl_tmp_586, gsl_tmp_588), wood_ringBoundary(gsl_tmp_584 - 1.0, 3.0, noiseTex), gsl_tmp_587);
-      gsl_detailValue_4 = wood_poreSurfaceAt(map_axisAt(p, vec3<f32>(-187.5, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex), (gsl_tmp_583 - gsl_tmp_589) / (select(select(gsl_tmp_586, wood_ringBoundary(gsl_tmp_584 + 2.0, 3.0, noiseTex), gsl_tmp_588), gsl_tmp_585, gsl_tmp_587) - gsl_tmp_589), 1.5, 0.5, 1.0, 0.0, noiseTex) * 1.0;
+      let gsl_tmp_727 = gsl_tmp_744 * (1.0 + 0.08 * gsl_remap(vec3<f32>(gsl_tmp_745.x, gsl_tmp_745.y, gsl_tmp_743.z * 0.25), color_white, color_gray, noiseTex)) / 1.5 + 0.3 * gsl_remap_2(vec3<f32>(gsl_tmp_743.x, gsl_tmp_743.y, gsl_tmp_743.z * 0.2), color_white, color_gray, noiseTex);
+      let gsl_tmp_728 = floor(gsl_tmp_727);
+      let gsl_tmp_729 = wood_ringBoundary(gsl_tmp_728, 3.0, noiseTex);
+      let gsl_tmp_730 = wood_ringBoundary(gsl_tmp_728 + 1.0, 3.0, noiseTex);
+      let gsl_tmp_732 = gsl_tmp_727 >= gsl_tmp_730;
+      let gsl_tmp_731 = gsl_tmp_727 < gsl_tmp_729;
+      let gsl_tmp_733 = select(select(gsl_tmp_729, gsl_tmp_730, gsl_tmp_732), wood_ringBoundary(gsl_tmp_728 - 1.0, 3.0, noiseTex), gsl_tmp_731);
+      gsl_detailValue_4 = wood_poreSurfaceAt(map_axisAt(p, vec3<f32>(-187.5, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex), (gsl_tmp_727 - gsl_tmp_733) / (select(select(gsl_tmp_730, wood_ringBoundary(gsl_tmp_728 + 2.0, 3.0, noiseTex), gsl_tmp_732), gsl_tmp_729, gsl_tmp_731) - gsl_tmp_733), 1.5, 0.5, 1.0, 0.0, noiseTex) * 1.0;
       gsl_pw = gsl_detailOuterPw_4;
     }
     var gsl_simpleValue_11 = mat4x4<f32>(vec4<f32>(0.6685386, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     if (gsl_simpleDetail > 0.0) {
-      let gsl_tmp_368 = gsl_detailValue_4;
-      let gsl_tmp_370 = 0.5851758 + 0.3148242 * gsl_tmp_368.y;
-      let gsl_tmp_371 = vec2<f32>(gsl_tmp_370, gsl_tmp_368.x);
-      let gsl_simpleFull = material_withDisplacement(wood_woodFinish(sqrt(sqrt(gsl_tmp_371.x * gsl_tmp_371.x * gsl_tmp_371.x * gsl_tmp_371.x + 0.0825 * material_hiddenShare__spec1(1.0 - texture_mask(gsl_pw, 0.105, 0.035, noiseTex), noiseTex))), noiseTex), gsl_tmp_371.y, noiseTex);
+      let gsl_tmp_528 = gsl_detailValue_4;
+      let gsl_tmp_530 = 0.5851758 + 0.3148242 * gsl_tmp_528.y;
+      let gsl_tmp_531 = vec2<f32>(gsl_tmp_530, gsl_tmp_528.x);
+      let gsl_simpleFull = material_withDisplacement(wood_woodFinish(sqrt(sqrt(gsl_tmp_531.x * gsl_tmp_531.x * gsl_tmp_531.x * gsl_tmp_531.x + 0.0825 * material_hiddenShare__spec1(1.0 - texture_mask(gsl_pw, 0.105, 0.035, noiseTex), noiseTex))), noiseTex), gsl_tmp_531.y, noiseTex);
       gsl_simpleValue_11 = mat4x4<f32>(mix(gsl_simpleValue_11[0], gsl_simpleFull[0], gsl_simpleDetail), mix(gsl_simpleValue_11[1], gsl_simpleFull[1], gsl_simpleDetail), mix(gsl_simpleValue_11[2], gsl_simpleFull[2], gsl_simpleDetail), mix(gsl_simpleValue_11[3], gsl_simpleFull[3], gsl_simpleDetail));
     }
     let oakMat = gsl_simpleValue_11;
@@ -1024,15 +965,15 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, noiseTex: te
   if (gsl_materialIdx == 4u) {
     var gsl_simpleValue_12 = mat4x4<f32>(vec4<f32>(0.71344036, 0.43948862, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     if (gsl_simpleDetail > 0.0) {
-      let gsl_tmp_377 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 22.5) / 7.5 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 60.0, noiseTex), 1.0);
-      let gsl_tmp_378 = vec2<f32>(gsl_tmp_377.x + 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 11.25) / 3.75 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 30.0, noiseTex), gsl_tmp_377.y + 0.5);
-      let gsl_tmp_379 = vec2<f32>(gsl_tmp_378.x + 0.25 * (1.0 - ease_quadratic(clamp((gsl_pw - 5.625) / 1.875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 15.0, noiseTex), gsl_tmp_378.y + 0.25);
-      let gsl_tmp_380 = vec2<f32>(gsl_tmp_379.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 2.8125) / 0.9375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 7.5, noiseTex), gsl_tmp_379.y + 0.0);
-      let gsl_tmp_381 = vec2<f32>(gsl_tmp_380.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.40625) / 0.46875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 3.75, noiseTex), gsl_tmp_380.y + 0.0);
-      let gsl_tmp_382 = vec2<f32>(gsl_tmp_381.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.703125) / 0.234375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.875, noiseTex), gsl_tmp_381.y + 0.0);
-      let gsl_tmp_37 = 0.5 * (noise_gradientLattice(p / 15.0, noiseTex) + 0.5 * noise_gradientLattice(p / 7.5, noiseTex) + 0.25 * noise_gradientLattice(p / 3.75, noiseTex)) + 0.67 * 2.0 * gsl_tmp_382.x / max(gsl_tmp_382.y, 0.000001) - texture_fadeTo(noise_cellularEdges(p, 1.5, noiseTex) / 1.5, 0.199, 1.5, noiseTex) * 0.24;
-      let gsl_tmp_38 = 0.35 * texture_mask(gsl_tmp_37, -0.3, 0.3, noiseTex);
-      let gsl_simpleFull_2 = texture_paintMaterial(gsl_tmp_37, 0.0, 0.08, material_blend(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), mat4x4<f32>(vec4<f32>(0.92, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), gsl_tmp_38, noiseTex), mat4x4<f32>(vec4<f32>(0.92, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), noiseTex);
+      let gsl_tmp_554 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 22.5) / 7.5 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 60.0, noiseTex), 1.0);
+      let gsl_tmp_555 = vec2<f32>(gsl_tmp_554.x + 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 11.25) / 3.75 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 30.0, noiseTex), gsl_tmp_554.y + 0.5);
+      let gsl_tmp_556 = vec2<f32>(gsl_tmp_555.x + 0.25 * (1.0 - ease_quadratic(clamp((gsl_pw - 5.625) / 1.875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 15.0, noiseTex), gsl_tmp_555.y + 0.25);
+      let gsl_tmp_557 = vec2<f32>(gsl_tmp_556.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 2.8125) / 0.9375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 7.5, noiseTex), gsl_tmp_556.y + 0.0);
+      let gsl_tmp_558 = vec2<f32>(gsl_tmp_557.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.40625) / 0.46875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 3.75, noiseTex), gsl_tmp_557.y + 0.0);
+      let gsl_tmp_559 = vec2<f32>(gsl_tmp_558.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.703125) / 0.234375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.875, noiseTex), gsl_tmp_558.y + 0.0);
+      let gsl_tmp_105 = 0.5 * (noise_gradientLattice(p / 15.0, noiseTex) + 0.5 * noise_gradientLattice(p / 7.5, noiseTex) + 0.25 * noise_gradientLattice(p / 3.75, noiseTex)) + 0.67 * 2.0 * gsl_tmp_559.x / max(gsl_tmp_559.y, 0.000001) - texture_fadeTo(noise_cellularEdges(p, 1.5, noiseTex) / 1.5, 0.199, 1.5, noiseTex) * 0.24;
+      let gsl_tmp_106 = 0.35 * texture_mask(gsl_tmp_105, -0.3, 0.3, noiseTex);
+      let gsl_simpleFull_2 = texture_paintMaterial(gsl_tmp_105, 0.0, 0.08, material_blend(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), mat4x4<f32>(vec4<f32>(0.92, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), gsl_tmp_106, noiseTex), mat4x4<f32>(vec4<f32>(0.92, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), noiseTex);
       gsl_simpleValue_12 = mat4x4<f32>(mix(gsl_simpleValue_12[0], gsl_simpleFull_2[0], gsl_simpleDetail), mix(gsl_simpleValue_12[1], gsl_simpleFull_2[1], gsl_simpleDetail), mix(gsl_simpleValue_12[2], gsl_simpleFull_2[2], gsl_simpleDetail), mix(gsl_simpleValue_12[3], gsl_simpleFull_2[3], gsl_simpleDetail));
     }
     let rustedMat = gsl_simpleValue_12;
@@ -1041,15 +982,15 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, noiseTex: te
   if (gsl_materialIdx == 5u) {
     var gsl_simpleValue_13 = mat4x4<f32>(vec4<f32>(0.66949147, 0.43948862, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     if (gsl_simpleDetail > 0.0) {
-      let gsl_tmp_474 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 22.5) / 7.5 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 60.0, noiseTex), 1.0);
-      let gsl_tmp_475 = vec2<f32>(gsl_tmp_474.x + 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 11.25) / 3.75 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 30.0, noiseTex), gsl_tmp_474.y + 0.5);
-      let gsl_tmp_476 = vec2<f32>(gsl_tmp_475.x + 0.25 * (1.0 - ease_quadratic(clamp((gsl_pw - 5.625) / 1.875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 15.0, noiseTex), gsl_tmp_475.y + 0.25);
-      let gsl_tmp_477 = vec2<f32>(gsl_tmp_476.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 2.8125) / 0.9375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 7.5, noiseTex), gsl_tmp_476.y + 0.0);
-      let gsl_tmp_478 = vec2<f32>(gsl_tmp_477.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.40625) / 0.46875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 3.75, noiseTex), gsl_tmp_477.y + 0.0);
-      let gsl_tmp_479 = vec2<f32>(gsl_tmp_478.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.703125) / 0.234375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.875, noiseTex), gsl_tmp_478.y + 0.0);
-      let gsl_tmp_47 = 0.5 * (noise_gradientLattice(p / 15.0, noiseTex) + 0.5 * noise_gradientLattice(p / 7.5, noiseTex) + 0.25 * noise_gradientLattice(p / 3.75, noiseTex)) + 0.67 * 2.0 * gsl_tmp_479.x / max(gsl_tmp_479.y, 0.000001) - texture_fadeTo(noise_cellularEdges(p, 1.5, noiseTex) / 1.5, 0.199, 1.5, noiseTex) * 0.24;
-      let gsl_tmp_48 = 0.35 * texture_mask(gsl_tmp_47, -0.3, 0.3, noiseTex);
-      let gsl_simpleFull_3 = texture_paintMaterial(gsl_tmp_47, 0.0, 0.08, material_blend(mat4x4<f32>(vec4<f32>(0.35, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), mat4x4<f32>(vec4<f32>(0.92, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), gsl_tmp_48, noiseTex), mat4x4<f32>(vec4<f32>(0.92, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), noiseTex);
+      let gsl_tmp_611 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 22.5) / 7.5 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 60.0, noiseTex), 1.0);
+      let gsl_tmp_612 = vec2<f32>(gsl_tmp_611.x + 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 11.25) / 3.75 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 30.0, noiseTex), gsl_tmp_611.y + 0.5);
+      let gsl_tmp_613 = vec2<f32>(gsl_tmp_612.x + 0.25 * (1.0 - ease_quadratic(clamp((gsl_pw - 5.625) / 1.875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 15.0, noiseTex), gsl_tmp_612.y + 0.25);
+      let gsl_tmp_614 = vec2<f32>(gsl_tmp_613.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 2.8125) / 0.9375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 7.5, noiseTex), gsl_tmp_613.y + 0.0);
+      let gsl_tmp_615 = vec2<f32>(gsl_tmp_614.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.40625) / 0.46875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 3.75, noiseTex), gsl_tmp_614.y + 0.0);
+      let gsl_tmp_616 = vec2<f32>(gsl_tmp_615.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.703125) / 0.234375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.875, noiseTex), gsl_tmp_615.y + 0.0);
+      let gsl_tmp_119 = 0.5 * (noise_gradientLattice(p / 15.0, noiseTex) + 0.5 * noise_gradientLattice(p / 7.5, noiseTex) + 0.25 * noise_gradientLattice(p / 3.75, noiseTex)) + 0.67 * 2.0 * gsl_tmp_616.x / max(gsl_tmp_616.y, 0.000001) - texture_fadeTo(noise_cellularEdges(p, 1.5, noiseTex) / 1.5, 0.199, 1.5, noiseTex) * 0.24;
+      let gsl_tmp_120 = 0.35 * texture_mask(gsl_tmp_119, -0.3, 0.3, noiseTex);
+      let gsl_simpleFull_3 = texture_paintMaterial(gsl_tmp_119, 0.0, 0.08, material_blend(mat4x4<f32>(vec4<f32>(0.35, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), mat4x4<f32>(vec4<f32>(0.92, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), gsl_tmp_120, noiseTex), mat4x4<f32>(vec4<f32>(0.92, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), noiseTex);
       gsl_simpleValue_13 = mat4x4<f32>(mix(gsl_simpleValue_13[0], gsl_simpleFull_3[0], gsl_simpleDetail), mix(gsl_simpleValue_13[1], gsl_simpleFull_3[1], gsl_simpleDetail), mix(gsl_simpleValue_13[2], gsl_simpleFull_3[2], gsl_simpleDetail), mix(gsl_simpleValue_13[3], gsl_simpleFull_3[3], gsl_simpleDetail));
     }
     let patinaMat = gsl_simpleValue_13;
@@ -1059,9 +1000,9 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, noiseTex: te
     let material_polishedMetal = mat4x4<f32>(vec4<f32>(0.15, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     var gsl_simpleValue_14 = mat4x4<f32>(material_polishedMetal[0] + (vec4<f32>(0.08, 1.0, 1.5, 0.0) - material_polishedMetal[0]) * 0.06335398, material_polishedMetal[1] + (vec4<f32>(0.0, 0.0, 0.0, 0.0) - material_polishedMetal[1]) * 0.06335398, material_polishedMetal[2] + (vec4<f32>(0.0, 0.0, 0.0, 0.0) - material_polishedMetal[2]) * 0.06335398, material_polishedMetal[3] + (vec4<f32>(0.0, 0.0, 0.0, 0.0) - material_polishedMetal[3]) * 0.06335398);
     if (gsl_simpleDetail > 0.0) {
-      let gsl_tmp_49 = p / 1.0;
-      let gsl_tmp_50 = playful_glitterFlakes(gsl_cellularScan(gsl_tmp_49, 1, noiseTex).f1 * 1.0, 1.0, 0.25, noiseTex);
-      let gsl_simpleFull_4 = material_blend(material_polishedMetal, mat4x4<f32>(vec4<f32>(0.08, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), gsl_tmp_50, noiseTex);
+      let gsl_tmp_133 = p / 1.0;
+      let gsl_tmp_134 = playful_glitterFlakes(gsl_cellularScan(gsl_tmp_133, 1, noiseTex).f1 * 1.0, 1.0, 0.25, noiseTex);
+      let gsl_simpleFull_4 = material_blend(material_polishedMetal, mat4x4<f32>(vec4<f32>(0.08, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), gsl_tmp_134, noiseTex);
       gsl_simpleValue_14 = mat4x4<f32>(mix(gsl_simpleValue_14[0], gsl_simpleFull_4[0], gsl_simpleDetail), mix(gsl_simpleValue_14[1], gsl_simpleFull_4[1], gsl_simpleDetail), mix(gsl_simpleValue_14[2], gsl_simpleFull_4[2], gsl_simpleDetail), mix(gsl_simpleValue_14[3], gsl_simpleFull_4[3], gsl_simpleDetail));
     }
     let glitterMat = gsl_simpleValue_14;
@@ -1074,10 +1015,10 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, noiseTex: te
   if (gsl_materialIdx == 8u) {
     var gsl_simpleValue_15 = mat4x4<f32>(vec4<f32>(0.2354835, 0.0, 1.3399427, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     if (gsl_simpleDetail > 0.0) {
-      let gsl_tmp_512 = vec3<f32>(0.0, 0.0, 0.0) + vec3<f32>(0.94226784, 0.33486015, 0.0) * 0.010944857 * sin(0.35342917 * dot(vec3<f32>(0.94226784, 0.33486015, 0.0), p) - 0.64525276 * time + 0.0) + vec3<f32>(0.9991408, 0.04144492, 0.0) * 0.01742606 * sin(0.45396015 * dot(vec3<f32>(0.9991408, 0.04144492, 0.0), p) - 0.73128647 * time + 2.1) + vec3<f32>(0.83012927, 0.55757093, 0.0) * 0.020284768 * sin(0.5670575 * dot(vec3<f32>(0.83012927, 0.55757093, 0.0), p) - 0.81732017 * time + 4.4) + vec3<f32>(0.9817281, 0.19028927, 0.0) * 0.022745797 * sin(0.6927212 * dot(vec3<f32>(0.9817281, 0.19028927, 0.0), p) - 0.90335387 * time + 1.3) + vec3<f32>(0.73748547, 0.675363, 0.0) * 0.023844866 * sin(0.90477866 * dot(vec3<f32>(0.73748547, 0.675363, 0.0), p) - 1.0324044 * time + 5.2) + vec3<f32>(0.96676344, -0.25567245, 0.0) * 0.022270106 * sin(1.2315043 * dot(vec3<f32>(0.96676344, -0.25567245, 0.0), p) - 1.2044718 * time + 3.3) + vec3<f32>(0.54747134, 0.8368244, 0.0) * 0.017706865 * sin(1.8158406 * dot(vec3<f32>(0.54747134, 0.8368244, 0.0), p) - 1.4625729 * time + 0.7) + vec3<f32>(0.84802806, -0.52995133, 0.0) * 0.011648065 * sin(2.7708848 * dot(vec3<f32>(0.84802806, -0.52995133, 0.0), p) - 1.8067077 * time + 2.9);
-      let gsl_tmp_513 = 0.0 + 0.018241428 * cos(0.35342917 * dot(vec3<f32>(0.94226784, 0.33486015, 0.0), p + gsl_tmp_512) - 0.64525276 * time + 0.0) + 0.029043432 * cos(0.45396015 * dot(vec3<f32>(0.9991408, 0.04144492, 0.0), p + gsl_tmp_512) - 0.73128647 * time + 2.1) + 0.03380795 * cos(0.5670575 * dot(vec3<f32>(0.83012927, 0.55757093, 0.0), p + gsl_tmp_512) - 0.81732017 * time + 4.4) + 0.037909664 * cos(0.6927212 * dot(vec3<f32>(0.9817281, 0.19028927, 0.0), p + gsl_tmp_512) - 0.90335387 * time + 1.3) + 0.039741445 * cos(0.90477866 * dot(vec3<f32>(0.73748547, 0.675363, 0.0), p + gsl_tmp_512) - 1.0324044 * time + 5.2) + 0.037116844 * cos(1.2315043 * dot(vec3<f32>(0.96676344, -0.25567245, 0.0), p + gsl_tmp_512) - 1.2044718 * time + 3.3) + 0.029511444 * cos(1.8158406 * dot(vec3<f32>(0.54747134, 0.8368244, 0.0), p + gsl_tmp_512) - 1.4625729 * time + 0.7) + 0.019413443 * cos(2.7708848 * dot(vec3<f32>(0.84802806, -0.52995133, 0.0), p + gsl_tmp_512) - 1.8067077 * time + 2.9);
-      let gsl_tmp_514 = texture_mask(gsl_tmp_513 + 0.037855294 * texture_fadeTo(noise_gradientLattice((p - vec3<f32>(0.95782626, 0.28734788, 0.0) * 1.3692689 * time) / 0.5 + vec3<f32>(13.0, 71.0, 5.0), noiseTex), 0.0, 0.5, noiseTex), 0.14711061, 0.018927647, noiseTex);
-      let gsl_simpleFull_5 = material_blend(mat4x4<f32>(vec4<f32>(0.23280893, 0.0, 1.34, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), mat4x4<f32>(vec4<f32>(0.7, 0.0, 1.33, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), gsl_tmp_514, noiseTex);
+      let gsl_tmp_660 = vec3<f32>(0.0, 0.0, 0.0) + vec3<f32>(0.94226784, 0.33486015, 0.0) * 0.010944857 * sin(0.35342917 * dot(vec3<f32>(0.94226784, 0.33486015, 0.0), p) - 0.64525276 * time + 0.0) + vec3<f32>(0.9991408, 0.04144492, 0.0) * 0.01742606 * sin(0.45396015 * dot(vec3<f32>(0.9991408, 0.04144492, 0.0), p) - 0.73128647 * time + 2.1) + vec3<f32>(0.83012927, 0.55757093, 0.0) * 0.020284768 * sin(0.5670575 * dot(vec3<f32>(0.83012927, 0.55757093, 0.0), p) - 0.81732017 * time + 4.4) + vec3<f32>(0.9817281, 0.19028927, 0.0) * 0.022745797 * sin(0.6927212 * dot(vec3<f32>(0.9817281, 0.19028927, 0.0), p) - 0.90335387 * time + 1.3) + vec3<f32>(0.73748547, 0.675363, 0.0) * 0.023844866 * sin(0.90477866 * dot(vec3<f32>(0.73748547, 0.675363, 0.0), p) - 1.0324044 * time + 5.2) + vec3<f32>(0.96676344, -0.25567245, 0.0) * 0.022270106 * sin(1.2315043 * dot(vec3<f32>(0.96676344, -0.25567245, 0.0), p) - 1.2044718 * time + 3.3) + vec3<f32>(0.54747134, 0.8368244, 0.0) * 0.017706865 * sin(1.8158406 * dot(vec3<f32>(0.54747134, 0.8368244, 0.0), p) - 1.4625729 * time + 0.7) + vec3<f32>(0.84802806, -0.52995133, 0.0) * 0.011648065 * sin(2.7708848 * dot(vec3<f32>(0.84802806, -0.52995133, 0.0), p) - 1.8067077 * time + 2.9);
+      let gsl_tmp_661 = 0.0 + 0.018241428 * cos(0.35342917 * dot(vec3<f32>(0.94226784, 0.33486015, 0.0), p + gsl_tmp_660) - 0.64525276 * time + 0.0) + 0.029043432 * cos(0.45396015 * dot(vec3<f32>(0.9991408, 0.04144492, 0.0), p + gsl_tmp_660) - 0.73128647 * time + 2.1) + 0.03380795 * cos(0.5670575 * dot(vec3<f32>(0.83012927, 0.55757093, 0.0), p + gsl_tmp_660) - 0.81732017 * time + 4.4) + 0.037909664 * cos(0.6927212 * dot(vec3<f32>(0.9817281, 0.19028927, 0.0), p + gsl_tmp_660) - 0.90335387 * time + 1.3) + 0.039741445 * cos(0.90477866 * dot(vec3<f32>(0.73748547, 0.675363, 0.0), p + gsl_tmp_660) - 1.0324044 * time + 5.2) + 0.037116844 * cos(1.2315043 * dot(vec3<f32>(0.96676344, -0.25567245, 0.0), p + gsl_tmp_660) - 1.2044718 * time + 3.3) + 0.029511444 * cos(1.8158406 * dot(vec3<f32>(0.54747134, 0.8368244, 0.0), p + gsl_tmp_660) - 1.4625729 * time + 0.7) + 0.019413443 * cos(2.7708848 * dot(vec3<f32>(0.84802806, -0.52995133, 0.0), p + gsl_tmp_660) - 1.8067077 * time + 2.9);
+      let gsl_tmp_664 = texture_mask(gsl_tmp_661 + 0.037855294 * texture_fadeTo(noise_gradientLattice((p - vec3<f32>(0.95782626, 0.28734788, 0.0) * 1.3692689 * time) / 0.5 + vec3<f32>(13.0, 71.0, 5.0), noiseTex), 0.0, 0.5, noiseTex), 0.14711061, 0.018927647, noiseTex);
+      let gsl_simpleFull_5 = material_blend(mat4x4<f32>(vec4<f32>(0.23280893, 0.0, 1.34, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), mat4x4<f32>(vec4<f32>(0.7, 0.0, 1.33, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), gsl_tmp_664, noiseTex);
       gsl_simpleValue_15 = mat4x4<f32>(mix(gsl_simpleValue_15[0], gsl_simpleFull_5[0], gsl_simpleDetail), mix(gsl_simpleValue_15[1], gsl_simpleFull_5[1], gsl_simpleDetail), mix(gsl_simpleValue_15[2], gsl_simpleFull_5[2], gsl_simpleDetail), mix(gsl_simpleValue_15[3], gsl_simpleFull_5[3], gsl_simpleDetail));
     }
     let waterMat = gsl_simpleValue_15;
@@ -1193,74 +1134,74 @@ const gsl_foldK_3 = array<vec2<f32>, 9>(vec2<f32>(-1.0, -1.0), vec2<f32>(0.0, -1
 
 fn gsl_heights(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f32, 10> {
   var gsl_detailValue_5 = vec2<f32>(0.0, 0.0);
-  let gsl_tmp_599 = map_axisAt(p, vec3<f32>(-187.5, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex);
-  let gsl_tmp_600 = length(gsl_tmp_599.xy);
-  let gsl_tmp_601 = gsl_tmp_599.xy / max(gsl_tmp_600, 0.001) * 40.0;
+  let gsl_tmp_743 = map_axisAt(p, vec3<f32>(-187.5, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex);
+  let gsl_tmp_744 = length(gsl_tmp_743.xy);
+  let gsl_tmp_745 = gsl_tmp_743.xy / max(gsl_tmp_744, 0.001) * 40.0;
   let color_white = vec3<f32>(1.0, 1.0, 1.0);
   let color_gray = vec3<f32>(0.5, 0.5, 0.5);
-  let gsl_tmp_583 = gsl_tmp_600 * (1.0 + 0.08 * gsl_remap(vec3<f32>(gsl_tmp_601.x, gsl_tmp_601.y, gsl_tmp_599.z * 0.25), color_white, color_gray, noiseTex)) / 1.5 + 0.3 * gsl_remap_2(vec3<f32>(gsl_tmp_599.x, gsl_tmp_599.y, gsl_tmp_599.z * 0.2), color_white, color_gray, noiseTex);
-  let gsl_tmp_584 = floor(gsl_tmp_583);
-  let gsl_tmp_585 = wood_ringBoundary(gsl_tmp_584, 3.0, noiseTex);
-  let gsl_tmp_586 = wood_ringBoundary(gsl_tmp_584 + 1.0, 3.0, noiseTex);
-  let gsl_tmp_588 = gsl_tmp_583 >= gsl_tmp_586;
-  let gsl_tmp_587 = gsl_tmp_583 < gsl_tmp_585;
-  let gsl_tmp_589 = select(select(gsl_tmp_585, gsl_tmp_586, gsl_tmp_588), wood_ringBoundary(gsl_tmp_584 - 1.0, 3.0, noiseTex), gsl_tmp_587);
+  let gsl_tmp_727 = gsl_tmp_744 * (1.0 + 0.08 * gsl_remap(vec3<f32>(gsl_tmp_745.x, gsl_tmp_745.y, gsl_tmp_743.z * 0.25), color_white, color_gray, noiseTex)) / 1.5 + 0.3 * gsl_remap_2(vec3<f32>(gsl_tmp_743.x, gsl_tmp_743.y, gsl_tmp_743.z * 0.2), color_white, color_gray, noiseTex);
+  let gsl_tmp_728 = floor(gsl_tmp_727);
+  let gsl_tmp_729 = wood_ringBoundary(gsl_tmp_728, 3.0, noiseTex);
+  let gsl_tmp_730 = wood_ringBoundary(gsl_tmp_728 + 1.0, 3.0, noiseTex);
+  let gsl_tmp_732 = gsl_tmp_727 >= gsl_tmp_730;
+  let gsl_tmp_731 = gsl_tmp_727 < gsl_tmp_729;
+  let gsl_tmp_733 = select(select(gsl_tmp_729, gsl_tmp_730, gsl_tmp_732), wood_ringBoundary(gsl_tmp_728 - 1.0, 3.0, noiseTex), gsl_tmp_731);
   if (max(gsl_pw, gsl_detailPw) < 0.14) { let gsl_detailOuterPw_5 = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
-    gsl_detailValue_5 = wood_poreSurfaceAt(map_axisAt(p, vec3<f32>(-187.5, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex), (gsl_tmp_583 - gsl_tmp_589) / (select(select(gsl_tmp_586, wood_ringBoundary(gsl_tmp_584 + 2.0, 3.0, noiseTex), gsl_tmp_588), gsl_tmp_585, gsl_tmp_587) - gsl_tmp_589), 1.5, 0.5, 1.0, 0.0, noiseTex) * 1.0;
+    gsl_detailValue_5 = wood_poreSurfaceAt(map_axisAt(p, vec3<f32>(-187.5, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex), (gsl_tmp_727 - gsl_tmp_733) / (select(select(gsl_tmp_730, wood_ringBoundary(gsl_tmp_728 + 2.0, 3.0, noiseTex), gsl_tmp_732), gsl_tmp_729, gsl_tmp_731) - gsl_tmp_733), 1.5, 0.5, 1.0, 0.0, noiseTex) * 1.0;
     gsl_pw = gsl_detailOuterPw_5;
   }
-  let gsl_tmp_368 = gsl_detailValue_5;
-  let gsl_tmp_370 = 0.5851758 + 0.3148242 * gsl_tmp_368.y;
-  let gsl_tmp_371 = vec2<f32>(gsl_tmp_370, gsl_tmp_368.x);
+  let gsl_tmp_528 = gsl_detailValue_5;
+  let gsl_tmp_530 = 0.5851758 + 0.3148242 * gsl_tmp_528.y;
+  let gsl_tmp_531 = vec2<f32>(gsl_tmp_530, gsl_tmp_528.x);
   var gsl_simpleValue_17 = mat4x4<f32>(vec4<f32>(0.6685386, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
   if (gsl_simpleDetail > 0.0) {
-    let gsl_simpleFull_7 = material_withDisplacement(wood_woodFinish(sqrt(sqrt(gsl_tmp_371.x * gsl_tmp_371.x * gsl_tmp_371.x * gsl_tmp_371.x + 0.0825 * material_hiddenShare__spec1(1.0 - texture_mask(gsl_pw, 0.105, 0.035, noiseTex), noiseTex))), noiseTex), gsl_tmp_371.y, noiseTex);
+    let gsl_simpleFull_7 = material_withDisplacement(wood_woodFinish(sqrt(sqrt(gsl_tmp_531.x * gsl_tmp_531.x * gsl_tmp_531.x * gsl_tmp_531.x + 0.0825 * material_hiddenShare__spec1(1.0 - texture_mask(gsl_pw, 0.105, 0.035, noiseTex), noiseTex))), noiseTex), gsl_tmp_531.y, noiseTex);
     gsl_simpleValue_17 = mat4x4<f32>(mix(gsl_simpleValue_17[0], gsl_simpleFull_7[0], gsl_simpleDetail), mix(gsl_simpleValue_17[1], gsl_simpleFull_7[1], gsl_simpleDetail), mix(gsl_simpleValue_17[2], gsl_simpleFull_7[2], gsl_simpleDetail), mix(gsl_simpleValue_17[3], gsl_simpleFull_7[3], gsl_simpleDetail));
   }
   let oakMat = gsl_simpleValue_17;
-  let gsl_tmp_377 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 22.5) / 7.5 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 60.0, noiseTex), 1.0);
-  let gsl_tmp_378 = vec2<f32>(gsl_tmp_377.x + 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 11.25) / 3.75 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 30.0, noiseTex), gsl_tmp_377.y + 0.5);
-  let gsl_tmp_379 = vec2<f32>(gsl_tmp_378.x + 0.25 * (1.0 - ease_quadratic(clamp((gsl_pw - 5.625) / 1.875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 15.0, noiseTex), gsl_tmp_378.y + 0.25);
-  let gsl_tmp_380 = vec2<f32>(gsl_tmp_379.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 2.8125) / 0.9375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 7.5, noiseTex), gsl_tmp_379.y + 0.0);
-  let gsl_tmp_381 = vec2<f32>(gsl_tmp_380.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.40625) / 0.46875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 3.75, noiseTex), gsl_tmp_380.y + 0.0);
-  let gsl_tmp_382 = vec2<f32>(gsl_tmp_381.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.703125) / 0.234375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.875, noiseTex), gsl_tmp_381.y + 0.0);
-  let gsl_tmp_37 = 0.5 * (noise_gradientLattice(p / 15.0, noiseTex) + 0.5 * noise_gradientLattice(p / 7.5, noiseTex) + 0.25 * noise_gradientLattice(p / 3.75, noiseTex)) + 0.67 * 2.0 * gsl_tmp_382.x / max(gsl_tmp_382.y, 0.000001) - texture_fadeTo(noise_cellularEdges(p, 1.5, noiseTex) / 1.5, 0.199, 1.5, noiseTex) * 0.24;
-  let gsl_tmp_38 = 0.35 * texture_mask(gsl_tmp_37, -0.3, 0.3, noiseTex);
+  let gsl_tmp_554 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 22.5) / 7.5 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 60.0, noiseTex), 1.0);
+  let gsl_tmp_555 = vec2<f32>(gsl_tmp_554.x + 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 11.25) / 3.75 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 30.0, noiseTex), gsl_tmp_554.y + 0.5);
+  let gsl_tmp_556 = vec2<f32>(gsl_tmp_555.x + 0.25 * (1.0 - ease_quadratic(clamp((gsl_pw - 5.625) / 1.875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 15.0, noiseTex), gsl_tmp_555.y + 0.25);
+  let gsl_tmp_557 = vec2<f32>(gsl_tmp_556.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 2.8125) / 0.9375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 7.5, noiseTex), gsl_tmp_556.y + 0.0);
+  let gsl_tmp_558 = vec2<f32>(gsl_tmp_557.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.40625) / 0.46875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 3.75, noiseTex), gsl_tmp_557.y + 0.0);
+  let gsl_tmp_559 = vec2<f32>(gsl_tmp_558.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.703125) / 0.234375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.875, noiseTex), gsl_tmp_558.y + 0.0);
+  let gsl_tmp_105 = 0.5 * (noise_gradientLattice(p / 15.0, noiseTex) + 0.5 * noise_gradientLattice(p / 7.5, noiseTex) + 0.25 * noise_gradientLattice(p / 3.75, noiseTex)) + 0.67 * 2.0 * gsl_tmp_559.x / max(gsl_tmp_559.y, 0.000001) - texture_fadeTo(noise_cellularEdges(p, 1.5, noiseTex) / 1.5, 0.199, 1.5, noiseTex) * 0.24;
+  let gsl_tmp_106 = 0.35 * texture_mask(gsl_tmp_105, -0.3, 0.3, noiseTex);
   var gsl_simpleValue_18 = mat4x4<f32>(vec4<f32>(0.71344036, 0.43948862, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
   if (gsl_simpleDetail > 0.0) {
-    let gsl_simpleFull_8 = texture_paintMaterial(gsl_tmp_37, 0.0, 0.08, material_blend(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), mat4x4<f32>(vec4<f32>(0.92, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), gsl_tmp_38, noiseTex), mat4x4<f32>(vec4<f32>(0.92, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), noiseTex);
+    let gsl_simpleFull_8 = texture_paintMaterial(gsl_tmp_105, 0.0, 0.08, material_blend(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), mat4x4<f32>(vec4<f32>(0.92, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), gsl_tmp_106, noiseTex), mat4x4<f32>(vec4<f32>(0.92, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), noiseTex);
     gsl_simpleValue_18 = mat4x4<f32>(mix(gsl_simpleValue_18[0], gsl_simpleFull_8[0], gsl_simpleDetail), mix(gsl_simpleValue_18[1], gsl_simpleFull_8[1], gsl_simpleDetail), mix(gsl_simpleValue_18[2], gsl_simpleFull_8[2], gsl_simpleDetail), mix(gsl_simpleValue_18[3], gsl_simpleFull_8[3], gsl_simpleDetail));
   }
   let rustedMat = gsl_simpleValue_18;
-  let gsl_tmp_474 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 22.5) / 7.5 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 60.0, noiseTex), 1.0);
-  let gsl_tmp_475 = vec2<f32>(gsl_tmp_474.x + 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 11.25) / 3.75 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 30.0, noiseTex), gsl_tmp_474.y + 0.5);
-  let gsl_tmp_476 = vec2<f32>(gsl_tmp_475.x + 0.25 * (1.0 - ease_quadratic(clamp((gsl_pw - 5.625) / 1.875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 15.0, noiseTex), gsl_tmp_475.y + 0.25);
-  let gsl_tmp_477 = vec2<f32>(gsl_tmp_476.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 2.8125) / 0.9375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 7.5, noiseTex), gsl_tmp_476.y + 0.0);
-  let gsl_tmp_478 = vec2<f32>(gsl_tmp_477.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.40625) / 0.46875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 3.75, noiseTex), gsl_tmp_477.y + 0.0);
-  let gsl_tmp_479 = vec2<f32>(gsl_tmp_478.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.703125) / 0.234375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.875, noiseTex), gsl_tmp_478.y + 0.0);
-  let gsl_tmp_47 = 0.5 * (noise_gradientLattice(p / 15.0, noiseTex) + 0.5 * noise_gradientLattice(p / 7.5, noiseTex) + 0.25 * noise_gradientLattice(p / 3.75, noiseTex)) + 0.67 * 2.0 * gsl_tmp_479.x / max(gsl_tmp_479.y, 0.000001) - texture_fadeTo(noise_cellularEdges(p, 1.5, noiseTex) / 1.5, 0.199, 1.5, noiseTex) * 0.24;
-  let gsl_tmp_48 = 0.35 * texture_mask(gsl_tmp_47, -0.3, 0.3, noiseTex);
+  let gsl_tmp_611 = vec2<f32>(0.0 + 1.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 22.5) / 7.5 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 60.0, noiseTex), 1.0);
+  let gsl_tmp_612 = vec2<f32>(gsl_tmp_611.x + 0.5 * (1.0 - ease_quadratic(clamp((gsl_pw - 11.25) / 3.75 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 30.0, noiseTex), gsl_tmp_611.y + 0.5);
+  let gsl_tmp_613 = vec2<f32>(gsl_tmp_612.x + 0.25 * (1.0 - ease_quadratic(clamp((gsl_pw - 5.625) / 1.875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 15.0, noiseTex), gsl_tmp_612.y + 0.25);
+  let gsl_tmp_614 = vec2<f32>(gsl_tmp_613.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 2.8125) / 0.9375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 7.5, noiseTex), gsl_tmp_613.y + 0.0);
+  let gsl_tmp_615 = vec2<f32>(gsl_tmp_614.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 1.40625) / 0.46875 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 3.75, noiseTex), gsl_tmp_614.y + 0.0);
+  let gsl_tmp_616 = vec2<f32>(gsl_tmp_615.x + 0.0 * (1.0 - ease_quadratic(clamp((gsl_pw - 0.703125) / 0.234375 * 0.5 + 0.5, 0.0, 1.0), noiseTex)) * noise_gradientLattice(p / 1.875, noiseTex), gsl_tmp_615.y + 0.0);
+  let gsl_tmp_119 = 0.5 * (noise_gradientLattice(p / 15.0, noiseTex) + 0.5 * noise_gradientLattice(p / 7.5, noiseTex) + 0.25 * noise_gradientLattice(p / 3.75, noiseTex)) + 0.67 * 2.0 * gsl_tmp_616.x / max(gsl_tmp_616.y, 0.000001) - texture_fadeTo(noise_cellularEdges(p, 1.5, noiseTex) / 1.5, 0.199, 1.5, noiseTex) * 0.24;
+  let gsl_tmp_120 = 0.35 * texture_mask(gsl_tmp_119, -0.3, 0.3, noiseTex);
   var gsl_simpleValue_19 = mat4x4<f32>(vec4<f32>(0.66949147, 0.43948862, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
   if (gsl_simpleDetail > 0.0) {
-    let gsl_simpleFull_9 = texture_paintMaterial(gsl_tmp_47, 0.0, 0.08, material_blend(mat4x4<f32>(vec4<f32>(0.35, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), mat4x4<f32>(vec4<f32>(0.92, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), gsl_tmp_48, noiseTex), mat4x4<f32>(vec4<f32>(0.92, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), noiseTex);
+    let gsl_simpleFull_9 = texture_paintMaterial(gsl_tmp_119, 0.0, 0.08, material_blend(mat4x4<f32>(vec4<f32>(0.35, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), mat4x4<f32>(vec4<f32>(0.92, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), gsl_tmp_120, noiseTex), mat4x4<f32>(vec4<f32>(0.92, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), noiseTex);
     gsl_simpleValue_19 = mat4x4<f32>(mix(gsl_simpleValue_19[0], gsl_simpleFull_9[0], gsl_simpleDetail), mix(gsl_simpleValue_19[1], gsl_simpleFull_9[1], gsl_simpleDetail), mix(gsl_simpleValue_19[2], gsl_simpleFull_9[2], gsl_simpleDetail), mix(gsl_simpleValue_19[3], gsl_simpleFull_9[3], gsl_simpleDetail));
   }
   let patinaMat = gsl_simpleValue_19;
   let material_polishedMetal = mat4x4<f32>(vec4<f32>(0.15, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
-  let gsl_tmp_49 = p / 1.0;
-  let gsl_tmp_50 = playful_glitterFlakes(gsl_cellularScan(gsl_tmp_49, 1, noiseTex).f1 * 1.0, 1.0, 0.25, noiseTex);
+  let gsl_tmp_133 = p / 1.0;
+  let gsl_tmp_134 = playful_glitterFlakes(gsl_cellularScan(gsl_tmp_133, 1, noiseTex).f1 * 1.0, 1.0, 0.25, noiseTex);
   var gsl_simpleValue_20 = mat4x4<f32>(material_polishedMetal[0] + (vec4<f32>(0.08, 1.0, 1.5, 0.0) - material_polishedMetal[0]) * 0.06335398, material_polishedMetal[1] + (vec4<f32>(0.0, 0.0, 0.0, 0.0) - material_polishedMetal[1]) * 0.06335398, material_polishedMetal[2] + (vec4<f32>(0.0, 0.0, 0.0, 0.0) - material_polishedMetal[2]) * 0.06335398, material_polishedMetal[3] + (vec4<f32>(0.0, 0.0, 0.0, 0.0) - material_polishedMetal[3]) * 0.06335398);
   if (gsl_simpleDetail > 0.0) {
-    let gsl_simpleFull_10 = material_blend(material_polishedMetal, mat4x4<f32>(vec4<f32>(0.08, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), gsl_tmp_50, noiseTex);
+    let gsl_simpleFull_10 = material_blend(material_polishedMetal, mat4x4<f32>(vec4<f32>(0.08, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), gsl_tmp_134, noiseTex);
     gsl_simpleValue_20 = mat4x4<f32>(mix(gsl_simpleValue_20[0], gsl_simpleFull_10[0], gsl_simpleDetail), mix(gsl_simpleValue_20[1], gsl_simpleFull_10[1], gsl_simpleDetail), mix(gsl_simpleValue_20[2], gsl_simpleFull_10[2], gsl_simpleDetail), mix(gsl_simpleValue_20[3], gsl_simpleFull_10[3], gsl_simpleDetail));
   }
   let glitterMat = gsl_simpleValue_20;
-  let gsl_tmp_512 = vec3<f32>(0.0, 0.0, 0.0) + vec3<f32>(0.94226784, 0.33486015, 0.0) * 0.010944857 * sin(0.35342917 * dot(vec3<f32>(0.94226784, 0.33486015, 0.0), p) - 0.64525276 * time + 0.0) + vec3<f32>(0.9991408, 0.04144492, 0.0) * 0.01742606 * sin(0.45396015 * dot(vec3<f32>(0.9991408, 0.04144492, 0.0), p) - 0.73128647 * time + 2.1) + vec3<f32>(0.83012927, 0.55757093, 0.0) * 0.020284768 * sin(0.5670575 * dot(vec3<f32>(0.83012927, 0.55757093, 0.0), p) - 0.81732017 * time + 4.4) + vec3<f32>(0.9817281, 0.19028927, 0.0) * 0.022745797 * sin(0.6927212 * dot(vec3<f32>(0.9817281, 0.19028927, 0.0), p) - 0.90335387 * time + 1.3) + vec3<f32>(0.73748547, 0.675363, 0.0) * 0.023844866 * sin(0.90477866 * dot(vec3<f32>(0.73748547, 0.675363, 0.0), p) - 1.0324044 * time + 5.2) + vec3<f32>(0.96676344, -0.25567245, 0.0) * 0.022270106 * sin(1.2315043 * dot(vec3<f32>(0.96676344, -0.25567245, 0.0), p) - 1.2044718 * time + 3.3) + vec3<f32>(0.54747134, 0.8368244, 0.0) * 0.017706865 * sin(1.8158406 * dot(vec3<f32>(0.54747134, 0.8368244, 0.0), p) - 1.4625729 * time + 0.7) + vec3<f32>(0.84802806, -0.52995133, 0.0) * 0.011648065 * sin(2.7708848 * dot(vec3<f32>(0.84802806, -0.52995133, 0.0), p) - 1.8067077 * time + 2.9);
-  let gsl_tmp_513 = 0.0 + 0.018241428 * cos(0.35342917 * dot(vec3<f32>(0.94226784, 0.33486015, 0.0), p + gsl_tmp_512) - 0.64525276 * time + 0.0) + 0.029043432 * cos(0.45396015 * dot(vec3<f32>(0.9991408, 0.04144492, 0.0), p + gsl_tmp_512) - 0.73128647 * time + 2.1) + 0.03380795 * cos(0.5670575 * dot(vec3<f32>(0.83012927, 0.55757093, 0.0), p + gsl_tmp_512) - 0.81732017 * time + 4.4) + 0.037909664 * cos(0.6927212 * dot(vec3<f32>(0.9817281, 0.19028927, 0.0), p + gsl_tmp_512) - 0.90335387 * time + 1.3) + 0.039741445 * cos(0.90477866 * dot(vec3<f32>(0.73748547, 0.675363, 0.0), p + gsl_tmp_512) - 1.0324044 * time + 5.2) + 0.037116844 * cos(1.2315043 * dot(vec3<f32>(0.96676344, -0.25567245, 0.0), p + gsl_tmp_512) - 1.2044718 * time + 3.3) + 0.029511444 * cos(1.8158406 * dot(vec3<f32>(0.54747134, 0.8368244, 0.0), p + gsl_tmp_512) - 1.4625729 * time + 0.7) + 0.019413443 * cos(2.7708848 * dot(vec3<f32>(0.84802806, -0.52995133, 0.0), p + gsl_tmp_512) - 1.8067077 * time + 2.9);
-  let gsl_tmp_514 = texture_mask(gsl_tmp_513 + 0.037855294 * texture_fadeTo(noise_gradientLattice((p - vec3<f32>(0.95782626, 0.28734788, 0.0) * 1.3692689 * time) / 0.5 + vec3<f32>(13.0, 71.0, 5.0), noiseTex), 0.0, 0.5, noiseTex), 0.14711061, 0.018927647, noiseTex);
+  let gsl_tmp_660 = vec3<f32>(0.0, 0.0, 0.0) + vec3<f32>(0.94226784, 0.33486015, 0.0) * 0.010944857 * sin(0.35342917 * dot(vec3<f32>(0.94226784, 0.33486015, 0.0), p) - 0.64525276 * time + 0.0) + vec3<f32>(0.9991408, 0.04144492, 0.0) * 0.01742606 * sin(0.45396015 * dot(vec3<f32>(0.9991408, 0.04144492, 0.0), p) - 0.73128647 * time + 2.1) + vec3<f32>(0.83012927, 0.55757093, 0.0) * 0.020284768 * sin(0.5670575 * dot(vec3<f32>(0.83012927, 0.55757093, 0.0), p) - 0.81732017 * time + 4.4) + vec3<f32>(0.9817281, 0.19028927, 0.0) * 0.022745797 * sin(0.6927212 * dot(vec3<f32>(0.9817281, 0.19028927, 0.0), p) - 0.90335387 * time + 1.3) + vec3<f32>(0.73748547, 0.675363, 0.0) * 0.023844866 * sin(0.90477866 * dot(vec3<f32>(0.73748547, 0.675363, 0.0), p) - 1.0324044 * time + 5.2) + vec3<f32>(0.96676344, -0.25567245, 0.0) * 0.022270106 * sin(1.2315043 * dot(vec3<f32>(0.96676344, -0.25567245, 0.0), p) - 1.2044718 * time + 3.3) + vec3<f32>(0.54747134, 0.8368244, 0.0) * 0.017706865 * sin(1.8158406 * dot(vec3<f32>(0.54747134, 0.8368244, 0.0), p) - 1.4625729 * time + 0.7) + vec3<f32>(0.84802806, -0.52995133, 0.0) * 0.011648065 * sin(2.7708848 * dot(vec3<f32>(0.84802806, -0.52995133, 0.0), p) - 1.8067077 * time + 2.9);
+  let gsl_tmp_661 = 0.0 + 0.018241428 * cos(0.35342917 * dot(vec3<f32>(0.94226784, 0.33486015, 0.0), p + gsl_tmp_660) - 0.64525276 * time + 0.0) + 0.029043432 * cos(0.45396015 * dot(vec3<f32>(0.9991408, 0.04144492, 0.0), p + gsl_tmp_660) - 0.73128647 * time + 2.1) + 0.03380795 * cos(0.5670575 * dot(vec3<f32>(0.83012927, 0.55757093, 0.0), p + gsl_tmp_660) - 0.81732017 * time + 4.4) + 0.037909664 * cos(0.6927212 * dot(vec3<f32>(0.9817281, 0.19028927, 0.0), p + gsl_tmp_660) - 0.90335387 * time + 1.3) + 0.039741445 * cos(0.90477866 * dot(vec3<f32>(0.73748547, 0.675363, 0.0), p + gsl_tmp_660) - 1.0324044 * time + 5.2) + 0.037116844 * cos(1.2315043 * dot(vec3<f32>(0.96676344, -0.25567245, 0.0), p + gsl_tmp_660) - 1.2044718 * time + 3.3) + 0.029511444 * cos(1.8158406 * dot(vec3<f32>(0.54747134, 0.8368244, 0.0), p + gsl_tmp_660) - 1.4625729 * time + 0.7) + 0.019413443 * cos(2.7708848 * dot(vec3<f32>(0.84802806, -0.52995133, 0.0), p + gsl_tmp_660) - 1.8067077 * time + 2.9);
+  let gsl_tmp_664 = texture_mask(gsl_tmp_661 + 0.037855294 * texture_fadeTo(noise_gradientLattice((p - vec3<f32>(0.95782626, 0.28734788, 0.0) * 1.3692689 * time) / 0.5 + vec3<f32>(13.0, 71.0, 5.0), noiseTex), 0.0, 0.5, noiseTex), 0.14711061, 0.018927647, noiseTex);
   var gsl_simpleValue_21 = mat4x4<f32>(vec4<f32>(0.2354835, 0.0, 1.3399427, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
   if (gsl_simpleDetail > 0.0) {
-    let gsl_simpleFull_11 = material_blend(mat4x4<f32>(vec4<f32>(0.23280893, 0.0, 1.34, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), mat4x4<f32>(vec4<f32>(0.7, 0.0, 1.33, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), gsl_tmp_514, noiseTex);
+    let gsl_simpleFull_11 = material_blend(mat4x4<f32>(vec4<f32>(0.23280893, 0.0, 1.34, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), mat4x4<f32>(vec4<f32>(0.7, 0.0, 1.33, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), gsl_tmp_664, noiseTex);
     gsl_simpleValue_21 = mat4x4<f32>(mix(gsl_simpleValue_21[0], gsl_simpleFull_11[0], gsl_simpleDetail), mix(gsl_simpleValue_21[1], gsl_simpleFull_11[1], gsl_simpleDetail), mix(gsl_simpleValue_21[2], gsl_simpleFull_11[2], gsl_simpleDetail), mix(gsl_simpleValue_21[3], gsl_simpleFull_11[3], gsl_simpleDetail));
   }
   let waterMat = gsl_simpleValue_21;

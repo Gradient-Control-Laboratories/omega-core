@@ -48,6 +48,9 @@ type Body struct {
 	Color     string
 	Positions []float32
 	Indices   []uint32
+	// Normals, when present, is one unit normal per vertex in the positions' frame, written as the NORMAL
+	// attribute. A body without them is written without the attribute.
+	Normals []float32
 }
 
 // RootRotation is the root node's rotation, as glTF's [x, y, z, w]
@@ -175,6 +178,10 @@ func Write(out io.Writer, bodies []Body) error {
 				b.Name, len(b.Positions), len(b.Indices))
 		}
 		vertices := uint32(len(b.Positions) / 3)
+		if b.Normals != nil && len(b.Normals) != len(b.Positions) {
+			return fmt.Errorf("body %s: %d normal floats for %d position floats, not one normal per vertex",
+				b.Name, len(b.Normals), len(b.Positions))
+		}
 		for _, ix := range b.Indices {
 			if ix >= vertices {
 				return fmt.Errorf("body %s: index %d is past its %d vertices", b.Name, ix, vertices)
@@ -200,11 +207,21 @@ func Write(out io.Writer, bodies []Body) error {
 				Name: b.Name,
 				PBR:  pbr{BaseColorFactor: LinearColor(b.Color), MetallicFactor: 0},
 			})
+			attributes := map[string]int{"POSITION": len(doc.Accessors) - 2}
+			indexAccessor := len(doc.Accessors) - 1
+			// Normals follow the positions and indices, so a body without them is laid out as it always was.
+			if b.Normals != nil {
+				normals := addView(&doc, &bin, float32Bytes(b.Normals), targetArray)
+				doc.Accessors = append(doc.Accessors, accessor{
+					BufferView: normals, ComponentType: componentFloat, Count: int(vertices), Type: "VEC3",
+				})
+				attributes["NORMAL"] = len(doc.Accessors) - 1
+			}
 			doc.Meshes = append(doc.Meshes, mesh{
 				Name: b.Name,
 				Primitives: []primitive{{
-					Attributes: map[string]int{"POSITION": len(doc.Accessors) - 2},
-					Indices:    len(doc.Accessors) - 1,
+					Attributes: attributes,
+					Indices:    indexAccessor,
 					Material:   len(doc.Materials) - 1,
 					Mode:       modeTriangles,
 				}},

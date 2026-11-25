@@ -13,8 +13,11 @@
 // Representation: a list of four vec4 rows,
 //   row 0  [roughness, metallic, ior, reserved]
 //   row 1  [emissive r, g, b, emissive strength]        (rgb is sRGB, like color)
-//   row 2  [transmission, absorptionDistance, displacement, reserved]
+//   row 2  [transmission, absorptionDistance, displacement, build]
 //   row 3  [lay x, y, z, anisotropy]                    (see withLay)
+// The displacement is the whole height the surface is drawn at; build is the
+// part of it that is film laid on the surface beneath (see withBuild), the
+// rest its relief.
 // Rows may be appended in later versions, so build records with `make` and
 // the presets and read them with the accessors rather than indexing rows.
 //
@@ -125,10 +128,25 @@ absorptionDistance(m) {
   return volume.y;
 }
 
-/// Displacement of m, in mm.
+/// Displacement of m, in mm: the whole height its surface is drawn at, its
+/// relief and its build together.
 displacement(m) {
   volume = m[2];
   return volume.z;
+}
+
+/// Build of m, in mm: how much of its displacement is film standing on the
+/// surface beneath it, laid by withBuild; 0 for a material laid on nothing.
+build(m) {
+  volume = m[2];
+  return volume.w;
+}
+
+/// Relief of m, in mm: its displacement less its build, the marks on its
+/// surface rather than the film it stands on.
+relief(m) {
+  volume = m[2];
+  return volume.z - volume.w;
 }
 
 /// The direction of m's lay (vec3), the way its grooves run; see withLay.
@@ -223,6 +241,18 @@ withDisplacement(m, height) {
 /// stays: a finish over a thread leaves the thread and adds its own marks.
 addDisplacement(m, height) {
   return withDisplacement(m, displacement(m) + height);
+}
+
+/// m standing `thickness` mm proud of the surface it is laid on: its build
+/// becomes `thickness` and its displacement its relief plus that, so a film's
+/// thickness and the marks on it are kept apart. A coat laid over another
+/// (coating.levelled) adds its build to the one beneath and levels only the
+/// relief; and where a shape sets a material over the one it inherits, the
+/// renderer moves its surface by the difference, so coats stack on the part
+/// and on each other.
+withBuild(m, thickness) {
+  volume = m[2];
+  return withDisplacement([m[0], m[1], [volume.x, volume.y, volume.z, thickness], m[3]], volume.z - volume.w + thickness);
 }
 
 /// m with a lay: grooves too fine to see, running along `direction` (a

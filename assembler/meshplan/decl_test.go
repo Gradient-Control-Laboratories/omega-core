@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func TestParseMeshArgs_Identity(t *testing.T) {

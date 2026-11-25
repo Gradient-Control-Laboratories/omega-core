@@ -15,7 +15,7 @@ fn builtin_shell(d: f32, thickness: f32) -> f32 {
 }
 
 fn builtin_shell_2(d: f32, thickness: f32, bias: f32) -> f32 {
-  return abs(d + bias * thickness * 0.5) - thickness * 0.5;
+  return abs(d - bias * thickness * 0.5) - thickness * 0.5;
 }
 
 fn builtin_twoBodyField(d1: f32, d2: f32) -> f32 {
@@ -63,7 +63,7 @@ fn builtin_intersectSharp(fields: vec3<f32>) -> f32 {
 fn builtin_intersectRound(fields: vec3<f32>, radius: f32) -> f32 {
   let sharp = builtin_intersectSharp(fields);
   let sumOfSquares = 0.0 + max(fields.x + radius, 0.0) * max(fields.x + radius, 0.0) + max(fields.y + radius, 0.0) * max(fields.y + radius, 0.0) + max(fields.z + radius, 0.0) * max(fields.z + radius, 0.0);
-  return sharp - max(sharp + radius, 0.0) + sqrt(max(sumOfSquares, 0.000000000000000000000000000001));
+  return min(sharp, 0.000000000000000000000000000001 - radius) + sqrt(max(sumOfSquares, 0.000000000000000000000000000001));
 }
 
 fn builtin_gcl_closure_intersectRound(fields: vec3<f32>) -> f32 {
@@ -110,8 +110,8 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
     if (abs(gsl_part_2) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_2), gsl_partVanish_2.zw); }
   }
   let hollow = gsl_part_2;
-  let gsl_partLo_3 = vec3<f32>(-8.75, -8.75, -8.75);
-  let gsl_partHi_3 = vec3<f32>(8.75, 8.75, 8.75);
+  let gsl_partLo_3 = vec3<f32>(-9.125, -9.125, -9.125);
+  let gsl_partHi_3 = vec3<f32>(9.125, 9.125, 9.125);
   let gsl_partBox_3 = gsl_boxDistance(p, gsl_partLo_3, gsl_partHi_3);
   var gsl_part_3 = gsl_partBox_3;
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_3 <= gsl_vanishView.w) {

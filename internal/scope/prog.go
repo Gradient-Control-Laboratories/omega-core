@@ -3,7 +3,7 @@ package scope
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // ProgScope represents the top-level scope enclosing an entire GSL program.

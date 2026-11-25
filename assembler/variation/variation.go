@@ -3,9 +3,9 @@
 package variation
 
 import (
-	"gradientcontrol.com/omega/core/internal/assembler/deadcode"
-	"gradientcontrol.com/omega/core/program"
-	"gradientcontrol.com/omega/core/program/textures"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/deadcode"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/textures"
 )
 
 // Program builds the self-contained program that evaluates the given returns
@@ -58,6 +58,8 @@ func ProgramWithExtraRoots(prog *program.Program, returns, extraRoots []*program
 			Path:         module.Path,
 			Files:        files,
 			Scene:        program.CloneScene(module.Scene),
+			Captions:     program.CloneCaptions(module.Captions),
+			Duration:     program.CloneDuration(module.Duration),
 		},
 	}
 	if len(prog.Dependencies) > 0 {
@@ -81,9 +83,11 @@ func PrunePrimary(prog *program.Program) *program.Program {
 	returns := prog.Returns()
 	colorReturns := prog.ColorReturns()
 	materialReturns := prog.MaterialReturns()
+	gradientReturns := prog.GradientReturns()
+	displacedReturns := prog.DisplacedReturns()
 	controlRoots := ControlRoots(module)
 
-	deadcodeReturns := make([]*program.Operand, 0, len(returns)+len(colorReturns)+len(materialReturns)+len(controlRoots))
+	deadcodeReturns := make([]*program.Operand, 0, len(returns)+len(colorReturns)+len(materialReturns)+len(gradientReturns)+len(displacedReturns)+len(controlRoots))
 	deadcodeReturns = append(deadcodeReturns, returns...)
 	for _, c := range colorReturns {
 		if c != nil {
@@ -95,6 +99,16 @@ func PrunePrimary(prog *program.Program) *program.Program {
 			deadcodeReturns = append(deadcodeReturns, m)
 		}
 	}
+	for _, g := range gradientReturns {
+		if g != nil {
+			deadcodeReturns = append(deadcodeReturns, g)
+		}
+	}
+	for _, d := range displacedReturns {
+		if d != nil {
+			deadcodeReturns = append(deadcodeReturns, d)
+		}
+	}
 	deadcodeReturns = append(deadcodeReturns, controlRoots...)
 
 	var files []*program.PackageFile
@@ -104,17 +118,19 @@ func PrunePrimary(prog *program.Program) *program.Program {
 			fReturns = deadcodeReturns
 		}
 		files = append(files, &program.PackageFile{
-			Path:            f.Path,
-			Source:          f.Source,
-			Imports:         f.Imports,
-			Assignments:     pruneMeshTypedAssignments(f.Assignments),
-			FnTypes:         f.FnTypes,
-			Returns:         fReturns,
-			ColorReturns:    f.ColorReturns,
-			MaterialReturns: f.MaterialReturns,
-			MeshImports:     f.MeshImports,
-			StepImports:     f.StepImports,
-			WarpImports:     f.WarpImports,
+			Path:             f.Path,
+			Source:           f.Source,
+			Imports:          f.Imports,
+			Assignments:      pruneMeshTypedAssignments(f.Assignments),
+			FnTypes:          f.FnTypes,
+			Returns:          fReturns,
+			ColorReturns:     f.ColorReturns,
+			MaterialReturns:  f.MaterialReturns,
+			GradientReturns:  f.GradientReturns,
+			DisplacedReturns: f.DisplacedReturns,
+			MeshImports:      f.MeshImports,
+			StepImports:      f.StepImports,
+			WarpImports:      f.WarpImports,
 		})
 	}
 
@@ -127,6 +143,8 @@ func PrunePrimary(prog *program.Program) *program.Program {
 			Path:         module.Path,
 			Files:        files,
 			Scene:        program.CloneScene(module.Scene),
+			Captions:     program.CloneCaptions(module.Captions),
+			Duration:     program.CloneDuration(module.Duration),
 		},
 	}
 	if len(prog.Dependencies) > 0 {
@@ -140,6 +158,8 @@ func PrunePrimary(prog *program.Program) *program.Program {
 	lastIdx := len(out.Primary.Files) - 1
 	out.Primary.Files[lastIdx].ColorReturns = colorReturns
 	out.Primary.Files[lastIdx].MaterialReturns = materialReturns
+	out.Primary.Files[lastIdx].GradientReturns = gradientReturns
+	out.Primary.Files[lastIdx].DisplacedReturns = displacedReturns
 	out.MeshSdfSlots, out.GlobalTextures = textures.Extract(out)
 	return out
 }

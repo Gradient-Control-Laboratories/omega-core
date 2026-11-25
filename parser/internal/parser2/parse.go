@@ -3,13 +3,31 @@ package parser2
 import (
 	"errors"
 
+	"github.com/Gradient-Control-Laboratories/omega-core/parser/internal/annotation"
 	participle "github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
-	"gradientcontrol.com/omega/core/parser/internal/annotation"
 )
 
 func (d *TopLevel) Parse(lex *lexer.PeekingLexer) error {
-	err := d.parseScene(lex)
+	// @duration stands with @scene at the top, on either side of it.
+	err := d.parseDuration(lex)
+	if err != nil {
+		return err
+	}
+
+	err = d.parseScene(lex)
+	if err != nil {
+		return err
+	}
+
+	if d.Duration == nil {
+		err = d.parseDuration(lex)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = d.parseLeadingCaptions(lex)
 	if err != nil {
 		return err
 	}
@@ -88,6 +106,8 @@ func isCompleteDeclaration(decl Declaration) bool {
 		return d.EndPos.Line > 0
 	case *AnnotatedDeclaration:
 		return d.EndPos.Line > 0 && isCompleteDeclaration(d.Declaration)
+	case *CaptionDirective:
+		return d.EndPos.Line > 0
 	default:
 		return false
 	}

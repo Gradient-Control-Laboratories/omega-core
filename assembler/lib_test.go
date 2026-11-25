@@ -7,13 +7,13 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler/meshplan"
-	"gradientcontrol.com/omega/core/assembler/topofold"
-	"gradientcontrol.com/omega/core/assembler/variation"
-	"gradientcontrol.com/omega/core/assembler/warpfold"
-	"gradientcontrol.com/omega/core/internal/source"
-	src_test "gradientcontrol.com/omega/core/internal/srctest"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/meshplan"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/topofold"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/variation"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/warpfold"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	src_test "github.com/Gradient-Control-Laboratories/omega-core/internal/srctest"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func TestAssembleSingle(t *testing.T) {
@@ -749,9 +749,7 @@ return map(doubleVal, xs);
 func TestAssemble_SliderVariablePreservedInPreLoweringFold(t *testing.T) {
 	pkgMgr := &source.MockManager{}
 	src := `
-radius = 25.0;
-radius.min = 5.0;
-radius.max = 50.0;
+@range(5.0, 50.0) radius = 25.0;
 scaled = radius * 2.0;
 return sphere(scaled);
 `
@@ -775,9 +773,7 @@ return sphere(scaled);
 func TestAssemble_ExtractUI_Populated(t *testing.T) {
 	pkgMgr := &source.MockManager{}
 	src := `@scene(200, 10)
-radius = 25.0;
-radius.min = 5.0;
-radius.max = 50.0;
+@range(5.0, 50.0) radius = 25.0;
 return sphere(radius);
 `
 	res, err := Assemble([]string{src}, SourceManager(pkgMgr), ExtractUI())
@@ -801,9 +797,7 @@ return sphere(radius);
 func TestAssemble_ExtractUI_ZeroHeadlessOverhead(t *testing.T) {
 	pkgMgr := &source.MockManager{}
 	src := `@scene(200, 10)
-radius = 25.0;
-radius.min = 5.0;
-radius.max = 50.0;
+@range(5.0, 50.0) radius = 25.0;
 return sphere(radius);
 `
 	res, err := Assemble([]string{src}, SourceManager(pkgMgr))
@@ -1639,6 +1633,7 @@ return vol + pt.x;
 	}
 }
 
+<<<<<<< HEAD
 func TestAssemble_TopoFoldWithUITransformDerivedMatrix(t *testing.T) {
 	pkgMgr := source.NewLocalManager("../stdlib")
 	src := `import . "omega";
@@ -1651,6 +1646,17 @@ branch() {
   return pt.x + pt.z + n.z;
 }
 return branch(), mesh(partId, partXfScaled);
+=======
+func TestAssemble_TopoFoldScaledUiTransform(t *testing.T) {
+	pkgMgr := source.NewLocalManager("../stdlib")
+	src := `import . "omega";
+partId = importStep "bracket.step";
+partXf = uiTransform([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [10, 20, 30, 1]]);
+partScale = 2.0;
+partXfScaled = [partXf[0] * partScale, partXf[1] * partScale, partXf[2] * partScale, partXf[3]];
+pt, n = facePointNormal(partId, 1, [0.0, 0.0], partXfScaled);
+return pt.x + n.z;
+>>>>>>> main
 `
 	resolver := &mockTopoResolver{
 		mesh: &mockTopoMesh{
@@ -1661,6 +1667,7 @@ return branch(), mesh(partId, partXfScaled);
 	}
 	res, err := Assemble([]string{src}, SourceManager(pkgMgr), GeometryResolver(resolver))
 	if err != nil {
+<<<<<<< HEAD
 		t.Fatalf("Assemble with UI-derived transform failed: %v", err)
 	}
 	// Local facePoint = [2.0+0.5, 3.0+0.25, 4.0] = [2.5, 3.25, 4.0]
@@ -1669,5 +1676,99 @@ return branch(), mesh(partId, partXfScaled);
 	ret := res.Program.Primary.Files[0].Returns[0]
 	if ret.GetValue() != 29.0 {
 		t.Fatalf("expected folded branch() return 29.0, got %v", ret)
+=======
+		t.Fatalf("Assemble with GeometryResolver failed: %v", err)
+	}
+	ret := res.Program.Primary.Files[0].Returns[0]
+	// pt.x = 2.0*2.0 + 10.0 = 14.0, n.z = 1.0 -> 15.0
+	if ret.GetValue() != 15.0 {
+		t.Fatalf("expected folded return 15.0, got %v", ret)
+	}
+}
+
+func TestAssemble_TopoFoldUiDerivedArithmeticAndErrors(t *testing.T) {
+	pkgMgr := source.NewLocalManager("../stdlib")
+	resolver := &mockTopoResolver{
+		mesh: &mockTopoMesh{
+			volume: 450.0,
+			facePt: [3]float64{2.0, 3.0, 4.0},
+			normal: [3]float64{0.0, 0.0, 1.0},
+		},
+	}
+
+	// Covers scalar ADD, SUB, MUL, DIV, NEG, vector.multiplyScalar, and 2D indexing on UI-derived constants.
+	src := `import . "omega";
+partId = importStep "bracket.step";
+uvBase = uiPoint([2.0, 4.0, 6.0]);
+u = (uvBase[0] + 2.0 - 1.0) / 2.0;
+v = (uvBase[1] * 1.5 - 3.0) / 2.0;
+uv = [u, v];
+partXf = uiTransform([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]);
+negScale = -(-1.0);
+col0 = negScale * partXf[0];
+xf = [col0, partXf[1], partXf[2], [partXf[3][0] + 5.0, 0.0, 0.0, 1.0]];
+pt = facePoint(partId, 1, uv, xf);
+return pt.x + pt.y;
+`
+	res, err := Assemble([]string{src}, SourceManager(pkgMgr), GeometryResolver(resolver))
+	if err != nil {
+		t.Fatalf("Assemble failed: %v", err)
+	}
+	// u = (2+2-1)/2 = 1.5, v = (4*1.5-3)/2 = 1.5
+	// mockTopoMesh.FacePoint returns [2+u, 3+v, 4] = [3.5, 4.5, 4]; +5 in x -> [8.5, 4.5, 4], x+y = 13.0
+	if got := res.Program.Primary.Files[0].Returns[0].GetValue(); got != 13.0 {
+		t.Fatalf("expected folded return 13.0, got %v", got)
+	}
+
+	errCases := []struct {
+		name string
+		src  string
+		want string
+	}{
+		{
+			name: "ui_derived_div_by_zero",
+			src: `import . "omega";
+partId = importStep "bracket.step";
+uvBase = uiPoint([1.0, 2.0, 3.0]);
+badUv = [uvBase[0] / 0.0, 0.0];
+pt = facePoint(partId, 1, badUv);
+return pt.x;
+`,
+			want: "facePoint: argument 3 must be a constant",
+		},
+		{
+			name: "ui_derived_negative_index",
+			src: `import . "omega";
+partId = importStep "bracket.step";
+uvBase = uiPoint([1.0, 2.0, 3.0]);
+idx = uiPoint([-1.0, 0.0, 0.0])[0];
+badUv = [uvBase[idx], 0.0];
+pt = facePoint(partId, 1, badUv);
+return pt.x;
+`,
+			want: "facePoint: argument 3 must be a constant",
+		},
+		{
+			name: "ui_derived_out_of_bounds_index",
+			src: `import . "omega";
+partId = importStep "bracket.step";
+uvBase = uiPoint([1.0, 2.0, 3.0]);
+idx = uiPoint([9.0, 0.0, 0.0])[0];
+badUv = [uvBase[idx], 0.0];
+pt = facePoint(partId, 1, badUv);
+return pt.x;
+`,
+			want: "facePoint: argument 3 must be a constant",
+		},
+	}
+
+	for _, tc := range errCases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := Assemble([]string{tc.src}, SourceManager(pkgMgr), GeometryResolver(resolver))
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("got err=%v, want error containing %q", err, tc.want)
+			}
+		})
+>>>>>>> main
 	}
 }

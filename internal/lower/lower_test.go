@@ -1,22 +1,26 @@
 package lower_test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/closure"
-	"gradientcontrol.com/omega/core/internal/collect"
-	"gradientcontrol.com/omega/core/internal/link"
-	"gradientcontrol.com/omega/core/internal/lower"
-	"gradientcontrol.com/omega/core/internal/source"
-	"gradientcontrol.com/omega/core/internal/types"
-	parser "gradientcontrol.com/omega/core/parser"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/closure"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/collect"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/link"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/lower"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/types"
+	parser "github.com/Gradient-Control-Laboratories/omega-core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func runPipeline(src string) (*program.Program, error) {
 	srcMgr := &source.MockManager{}
-	prog, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	prog, diags, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	if len(diags) != 0 {
+		return nil, fmt.Errorf("unexpected diagnostics: %+v", diags)
+	}
 	if err != nil {
 		return nil, err
 	}

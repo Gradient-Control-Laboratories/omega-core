@@ -3,10 +3,10 @@ package codegen
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/backend/wgsl/internal/accel"
-	"gradientcontrol.com/omega/core/backend/wgsl/internal/wgsl"
-	"gradientcontrol.com/omega/core/internal/build"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl/internal/accel"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl/internal/wgsl"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/build"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // nestedMeshDistanceWGSL stands in for a mesh() nested inside an expression,
@@ -26,6 +26,23 @@ func (d *Delegate) BuildFuncCall(
 		} else {
 			op = &program.Operand{Start: op.Start, End: op.End, Type: info.ReturnType(), T: op.T}
 		}
+	}
+	if isPruneBelow(info, len(expressions)) {
+		args := make([]wgsl.Expression, len(expressions))
+		for i, e := range expressions {
+			args[i] = e.(wgsl.Expression)
+		}
+		return d.pruneGuard(op, args, info.WGSLReturnType()), nil
+	}
+	// A stand-in's switches read only their four or five arguments, so a call
+	// that also carries module state (the noise tile a noisy part needs) is
+	// switched as well.
+	if isSimplified(info, len(expressions)) {
+		args := make([]wgsl.Expression, len(expressions))
+		for i, e := range expressions {
+			args[i] = e.(wgsl.Expression)
+		}
+		return d.simpleCall(op, args, info.WGSLReturnType()), nil
 	}
 	return d.buildFuncCall(
 		op, info.WgslName(),
@@ -50,15 +67,13 @@ func (d *Delegate) buildFuncCall(
 		}
 		return d.vanishGuard(fnCallOp, parts, returnType), nil
 	}
-	// A stand-in's switches read only their four arguments, so a call that
-	// also carries module state (the noise tile a noisy part needs) is
-	// switched as well.
-	if simplifies(wgslName, len(expressions)) {
+	// choose is never called either: every call is its branch (branch.go).
+	if chooses(wgslName, len(expressions)) && len(globalRefs) == 0 {
 		args := make([]wgsl.Expression, len(expressions))
 		for i, e := range expressions {
 			args[i] = e.(wgsl.Expression)
 		}
-		return d.simpleCall(fnCallOp, args, returnType), nil
+		return d.chooseBranch(fnCallOp, args, returnType), nil
 	}
 	if simpleValues(wgslName, len(expressions)) {
 		args := make([]wgsl.Expression, len(expressions))
@@ -324,6 +339,17 @@ func (d *Delegate) BuildBuiltinCall(
 	if builtin.Name == program.DisplacementDrawn {
 		d.dispDrawnUsed = true
 		return wgsl.NewOpaqueExpr(op, wgsl.TypeF32, build.PrecedenceHighest, "gsl_dispDrawn", "gsl_dispDrawn"), nil
+	}
+
+	// displacementScale() -> f32: the scale the march is moving surfaces by, a
+	// private var the codegen declares 0 (dispScaleDeclWGSL) and
+	// gsl_sdShapeDisplaced sets before evaluating the displaced returns. It
+	// keeps that value through the shading that follows the march, so a
+	// layer's colour switch sees the scale its surface was drawn with; meshing,
+	// bounds and probes never set it.
+	if builtin.Name == program.DisplacementScale {
+		d.dispScaleUsed = true
+		return wgsl.NewOpaqueExpr(op, wgsl.TypeF32, build.PrecedenceHighest, dispScaleVar, dispScaleVar), nil
 	}
 
 	// The worley* builtins: the 27-neighbour scan, emitted as a helper with a

@@ -5,10 +5,10 @@ import (
 	"crypto/sha256"
 	"testing"
 
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/stdpkg"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	gsllibs "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/internal/stdpkg"
-	"gradientcontrol.com/omega/core/program"
-	gsllibs "gradientcontrol.com/omega/core/stdlib"
 )
 
 // A package parsed a second time by CachingParser comes from the cache, and
@@ -127,23 +127,26 @@ func TestCachingParserEvictsLeastRecentlyUsed(t *testing.T) {
 	}
 	key := func(s string) [32]byte { return stdpkg.SourcesHash([]string{s}) }
 	pkg := &program.Package{}
-	c.put(key("a"), pkg, 4)
-	c.put(key("b"), pkg, 4)
-	if c.get(key("a")) == nil {
+	c.put(key("a"), pkg, nil, 4)
+	c.put(key("b"), pkg, nil, 4)
+	if p, _ := c.get(key("a")); p == nil {
 		t.Fatal("a missing")
 	}
-	c.put(key("c"), pkg, 4) // over the limit: b is the least recently used
-	if c.get(key("b")) != nil {
+	c.put(key("c"), pkg, nil, 4) // over the limit: b is the least recently used
+	if p, _ := c.get(key("b")); p != nil {
 		t.Fatal("b should have been evicted")
 	}
-	if c.get(key("a")) == nil || c.get(key("c")) == nil {
-		t.Fatal("a and c should remain")
+	if pA, _ := c.get(key("a")); pA == nil {
+		t.Fatal("a should remain")
+	}
+	if pC, _ := c.get(key("c")); pC == nil {
+		t.Fatal("c should remain")
 	}
 	if c.size != 8 {
 		t.Fatalf("size = %d, want 8", c.size)
 	}
-	c.put(key("big"), pkg, 11)
-	if c.get(key("big")) != nil {
+	c.put(key("big"), pkg, nil, 11)
+	if p, _ := c.get(key("big")); p != nil {
 		t.Fatal("a package larger than the limit should not be cached")
 	}
 }

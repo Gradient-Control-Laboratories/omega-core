@@ -36,7 +36,7 @@ documentation with `bin/gsl skill` (generated from `program/preamble/` and the e
 
 ## 3. Standalone SDK Boundary Invariants
 
-`omega-core` (`module gradientcontrol.com/omega/core`) is a standalone, pure compiler and geometry
+`omega-core` (`module github.com/Gradient-Control-Laboratories/omega-core`) is a standalone, pure compiler and geometry
 SDK:
 - Never introduce dependencies on Stirigma, gRPC microservice dispatchers, cloud SDKs, or parent
   `omega` packages.
@@ -76,4 +76,11 @@ single-responsibility boundaries:
 - `backend/{wgsl,mesh,audio,tape}/` — Target emitters for WebGPU shaders, STL meshes, WebAudio JS,
   and bytecode tapes.
 - `cmd/{gsl,compile,serve,fix}/` — Unified CLI toolchain built into `bin/` via `./tool/build-cli.sh`.
+
+## 7. Testing
+
+- Prefer assembling real GSL snippets via `assembler.Assemble(...)` (or `parser.ParsePackage(...)`
+  for parser/pre-assembly tests) rather than hand-constructing `program.Program`, `program.Package`,
+  or `program.PackageFile` structs; reserve synthetic AST literals only for intentional
+  empty/boundary-input tests.
 

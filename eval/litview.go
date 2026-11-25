@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"math"
 
-	"gradientcontrol.com/omega/core/internal/fidget"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // RenderLitLinear is RenderLit returning the image before display encoding,
@@ -173,6 +173,7 @@ func litViewerMarch(
 	pixelScale, ortho, extent float64,
 	proxy litPartProxy,
 	isHit []bool, surfT []float64, hitPos [][3]float64, shapeOf []int,
+	progress func(share float64),
 ) error {
 	n := len(origins)
 	t := make([]float64, n)
@@ -271,6 +272,9 @@ func litViewerMarch(
 		}
 	}
 
+	// The march's progress is the share of its rays that are settled (hit, out
+	// of the scene, or out of steps): the live set only shrinks.
+	startLive := len(live)
 	for step := 0; step < viewMaxSteps && len(live) > 0; step++ {
 		next := live[:0:0]
 		for _, i := range live {
@@ -281,6 +285,9 @@ func litViewerMarch(
 		live = next
 		if len(live) == 0 {
 			break
+		}
+		if progress != nil {
+			progress(1 - float64(len(live))/float64(startLive))
 		}
 		pts := make([][3]float64, len(live))
 		for j, i := range live {
@@ -348,6 +355,9 @@ func litViewerMarch(
 			}
 		}
 		live = next
+	}
+	if progress != nil {
+		progress(1)
 	}
 	return nil
 }

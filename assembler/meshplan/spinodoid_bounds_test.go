@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func requireBounds6(t *testing.T, got []float64, want [6]float64) {

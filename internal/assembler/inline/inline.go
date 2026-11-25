@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"gradientcontrol.com/omega/core/internal/eval"
-	"gradientcontrol.com/omega/core/internal/scope"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // Transform runs a function inlining pass over the entire program AST.
@@ -318,6 +318,11 @@ func (in *inliner) transformPackage(pkg *program.Package, pkgScope *scope.PkgSco
 					}
 				}
 			}
+			for _, op := range assign.Range.Operands() {
+				if err := in.transformOperand(op, fileScope, file, currentPkgPath); err != nil {
+					return err
+				}
+			}
 			// A property is written below the part it belongs to and may read a
 			// top-level variable declared between the two, in order as written:
 			// a = sphere(5); x = 8; a.color = pattern(x). Its temporaries go in
@@ -360,6 +365,29 @@ func (in *inliner) transformPackage(pkg *program.Package, pkgScope *scope.PkgSco
 			}
 		}
 		for _, ret := range file.MaterialReturns {
+			in.hoistedAssignments = nil
+			if err := in.transformOperand(ret, fileScope, file, currentPkgPath); err != nil {
+				return err
+			}
+			if len(in.hoistedAssignments) > 0 {
+				file.Assignments = append(file.Assignments, in.hoistedAssignments...)
+				in.hoistedAssignments = nil
+			}
+		}
+		for _, ret := range file.DisplacedReturns {
+			if ret == nil {
+				continue
+			}
+			in.hoistedAssignments = nil
+			if err := in.transformOperand(ret, fileScope, file, currentPkgPath); err != nil {
+				return err
+			}
+			if len(in.hoistedAssignments) > 0 {
+				file.Assignments = append(file.Assignments, in.hoistedAssignments...)
+				in.hoistedAssignments = nil
+			}
+		}
+		for _, ret := range file.GradientReturns {
 			in.hoistedAssignments = nil
 			if err := in.transformOperand(ret, fileScope, file, currentPkgPath); err != nil {
 				return err
@@ -431,6 +459,11 @@ func (in *inliner) transformFunction(fn *program.Function, fileScope *scope.PkgF
 				if err := in.transformOperand(prop.Expression, fileScope, targetFile, currentPkgPath); err != nil {
 					return err
 				}
+			}
+		}
+		for _, op := range assign.Range.Operands() {
+			if err := in.transformOperand(op, fileScope, targetFile, currentPkgPath); err != nil {
+				return err
 			}
 		}
 		if len(in.hoistedAssignments) > 0 {
@@ -610,6 +643,12 @@ func (in *inliner) buildCallCounts() {
 				countInOperand(r)
 			}
 			for _, r := range file.MaterialReturns {
+				countInOperand(r)
+			}
+			for _, r := range file.GradientReturns {
+				countInOperand(r)
+			}
+			for _, r := range file.DisplacedReturns {
 				countInOperand(r)
 			}
 			for _, ft := range file.FnTypes {

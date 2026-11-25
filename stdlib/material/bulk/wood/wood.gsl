@@ -898,6 +898,26 @@ sandingPoint(local, grit) {
   return [local.x, local.y, local.z / 40] / (1.6 * gritSize(grit));
 }
 
+// The spacing of a saw's marks, mm: a bandsaw's (noisiness 0) 2 mm, a
+// chainsaw's (1) 4 mm.
+sawnPitch(noisiness) {
+  return 2 + 2 * noisiness;
+}
+
+/// prepWavelength(prep): how far apart, in mm, the relief a prepared surface
+/// carries is: the grit's scratches for sanded, the saw's marks for sawn (2 mm
+/// for a bandsaw), the blade's 1.2 mm arcs for tableSawn, the knife marks for
+/// planed and the char's blocks for torched. A film levels relief by this
+/// (material.filmKeeps), so a coat laid over the wood takes it as its
+/// `underSize`: coating.levelled(paint, oakMat, build, wood.prepWavelength(prep)).
+prepWavelength(prep) {
+  head = prep[0];
+  kind = head.x;
+  size = head.y;
+  amount = head.z;
+  return kind < 1.5 ? gritSize(size) : (kind < 2.5 ? sawnPitch(amount) : (kind < 3.5 ? 1.2 : (kind < 4.5 ? size : 0.3 * size)));
+}
+
 // Saw marks across the feed, s mm along it: a bandsaw's (noisiness 0) 2 mm
 // apart and 0.18 mm deep, each a shallow vee, which with the torn fibres
 // gives the roughness measured on band-milled boards, Ra 52 um (Richter
@@ -907,7 +927,7 @@ sandingPoint(local, grit) {
 // spacing and washboard, are judged. `wander`, `washboard` and `fibres` are
 // gradient noise at p / 30, p / 40 + 13 and fibrePoint(local).
 sawnHeight(s, noisiness, wander, washboard, fibres) {
-  pitch = 2 + 2 * noisiness;
+  pitch = sawnPitch(noisiness);
   depth = 0.18 + 0.62 * noisiness;
   q = s / pitch + 2 * noisiness * wander;
   k = floor(q);
@@ -1017,7 +1037,7 @@ prepHeight(prep, normal, local, progress, ringWidth, build) {
   second = noise.gradientLattice(secondAt);
   third = noise.gradientLattice(p / 40 + 13);
   sanding = kind < 1.5 ? sandedHeight(first, size) * material.filmKeeps(gritSize(size), build) : 0;
-  sawing = kind > 1.5 ? (kind < 2.5 ? sawnHeight(s, amount, second, third, first) * material.filmKeeps(1 + 3 * amount, build) : 0) : 0;
+  sawing = kind > 1.5 ? (kind < 2.5 ? sawnHeight(s, amount, second, third, first) * material.filmKeeps(sawnPitch(amount), build) : 0) : 0;
   ripping = kind > 2.5 ? (kind < 3.5 ? tableSawnHeight(s, aboveCentre, amount, first) * material.filmKeeps(1.2, build) : 0) : 0;
   planing = kind > 3.5 ? (kind < 4.5 ? planedHeight(s, size, first) * material.filmKeeps(size, build) : 0) : 0;
   burning = kind > 4.5 ? torchedHeight(progress, ringWidth, size, first, second) * material.filmKeeps(0.3 * size, build) : 0;
@@ -1075,11 +1095,11 @@ prepSlopes(prep, normal, grainIn, ringWidth, build, standIn) {
   grit = gritSize(size);
   sandKeeps = material.filmKeeps(grit, build);
   sanding = sandKeeps * sandKeeps * hiddenShare(grit, standIn);
-  pitch = 2 + 2 * amount;
+  pitch = sawnPitch(amount);
   depth = 0.18 + 0.62 * amount;
   steep = 2 * depth * (1.2 + 0.6 * amount) / pitch;
   spread = 0.4 + 1.2 * amount;
-  sawKeeps = material.filmKeeps(1 + 3 * amount, build) * inSurface;
+  sawKeeps = material.filmKeeps(pitch, build) * inSurface;
   sawScale = sawKeeps * sawKeeps / (1 + steep * steep);
   marks = 8 * (depth / pitch) * (depth / pitch) * (1 + spread * spread / 12) * sawScale * hiddenShare(pitch, standIn);
   fuzz = 22.2 * (0.02 + 0.08 * amount) * (0.02 + 0.08 * amount) * sawScale * hiddenShare(0.15, standIn);

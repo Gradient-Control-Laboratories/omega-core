@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // colorProperty is the declaration-property name that authors a shape's RGB
@@ -134,10 +134,17 @@ func MaterialFields(pkg *program.Package, getImport program.GetImportFunc) ([]*p
 }
 
 func propertyFields(pkg *program.Package, getImport program.GetImportFunc, spec fieldSpec) ([]*program.Operand, error) {
+	return layeredPropertyFields(pkg, getImport, spec, nil)
+}
+
+// layeredPropertyFields is propertyFields with each layered shape's value
+// switching by layer (layers.go); lay nil switches nothing.
+func layeredPropertyFields(pkg *program.Package, getImport program.GetImportFunc, spec fieldSpec, lay *layers) ([]*program.Operand, error) {
 	if pkg == nil || !packageHasProperty(pkg, spec.name) {
 		return nil, nil
 	}
 	r := newResolver(pkg, getImport, spec)
+	r.layers = lay
 	if len(pkg.Files) == 0 {
 		return nil, nil
 	}
@@ -349,6 +356,9 @@ type resolver struct {
 	// constantRows are rows every unit has the same constant in, which blend
 	// takes as they are: a material's lay where the program gives none a lay.
 	constantRows map[int]*program.Operand
+	// layers, when set, switches each layered shape's value to the one it
+	// inherits inside the solid beneath its layer (layers.go).
+	layers *layers
 }
 
 // hasField reports whether a declaration carries the property — it has an
@@ -412,6 +422,22 @@ func (r *resolver) resolveField(name string) (*program.Operand, error) {
 				return nil, err
 			}
 		}
+		if w := r.layers.beneath(name); w != nil {
+			// Inside the solid beneath its layer, a layered shape shows what
+			// it was laid over.
+			r.fieldMemo[name] = nil // tentative (breaks cycles)
+			body := r.decls[name]
+			if stand != nil {
+				body = stand.Arguments[0]
+			}
+			inherited, err := r.fieldOf(body)
+			if err != nil {
+				return nil, err
+			}
+			if inherited != nil {
+				c = switchField(r.spec, w, c, inherited)
+			}
+		}
 		r.fieldMemo[name] = c
 		return c, nil
 	}
@@ -456,8 +482,13 @@ func (r *resolver) simplifiedField(field *program.Operand, stand *program.FnCall
 	if proxy == nil {
 		return field, nil
 	}
-	return call(simplifiedName, field, proxy,
-		program.CloneOperand(stand.Arguments[2]), program.CloneOperand(stand.Arguments[3])), nil
+	args := []*program.Operand{field, proxy,
+		program.CloneOperand(stand.Arguments[2]), program.CloneOperand(stand.Arguments[3])}
+	if len(stand.Arguments) == 5 {
+		// A declared size switches the colour where it switches the shape.
+		args = append(args, program.CloneOperand(stand.Arguments[4]))
+	}
+	return call(simplifiedName, args...), nil
 }
 
 // fieldOf computes an expression's property field, or nil if it references no

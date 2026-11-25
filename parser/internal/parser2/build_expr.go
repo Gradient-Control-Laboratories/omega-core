@@ -4,10 +4,11 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/lang"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
-	"gradientcontrol.com/omega/core/internal/scope"
-	"gradientcontrol.com/omega/core/program"
 )
 
 func buildExpressions(buildScope scope.BuilderScope, expressions []*Expression) ([]*program.Operand, error) {
@@ -350,67 +351,14 @@ func buildFactor(buildScope scope.BuilderScope, factor *Factor) (*program.Operan
 		return value, err
 	}
 
-	if access := factor.Access; access != nil {
-		if access.Args != nil && access.Name != program.DAccessor {
-			return value, &participle.ParseError{
-				Pos: access.Pos,
-				Msg: fmt.Sprintf("accessor .%s takes no arguments", access.Name),
-			}
+	for _, mod := range factor.Modifiers {
+		if err := validateModifierSequence(value, mod); err != nil {
+			return value, err
 		}
-		switch access.Name {
-		case program.DAccessor:
-			// Forward-mode derivative with respect to a named variable,
-			// .d(var). Expanded by the autodiff pass.
-			var args []*Expression
-			if access.Args != nil {
-				args = access.Args.Expressions
-			}
-			if value, err = newDerivWrt(buildScope, value, args, access.Pos, access.EndPos); err != nil {
-				return value, err
-			}
-		case program.DTimeAccessor, program.DPAccessor:
-			// Forward-mode derivative: .dtime is d/d(time), .dp is the
-			// spatial gradient d/d(p). Expanded by the autodiff pass.
-			value = newDeriv(value, access.Name, access.EndPos)
-		case program.SecondAccessor:
-			// Second-closest primitive-surface distance. Expanded by the
-			// self-computing-property pass.
-			value = newSecond(value, access.EndPos)
-		case program.BoxAccessor:
-			// Bounding box of the field's solid. Expanded by the
-			// self-computing-property pass.
-			value = newBox(value, access.EndPos)
-		case program.UAccessor, program.VAccessor:
-			// Surface frame coordinate of the field (.u, .v). Expanded by the
-			// self-computing-property pass.
-			value = newSurfaceFrame(value, access.Name, access.EndPos)
-		default:
-			isAccessor, err := IsAccessor(access.Name)
-			if err != nil {
-				return value, &participle.ParseError{
-					Pos: lexer.Position{Line: access.EndPos.Line, Column: access.EndPos.Column - len(access.Name)},
-					Msg: err.Error(),
-				}
-			}
-			if !isAccessor {
-				return value, &participle.ParseError{
-					Pos: lexer.Position{Line: access.EndPos.Line, Column: access.EndPos.Column - len(access.Name)},
-					Msg: fmt.Sprintf("invalid accessor: %s", access.Name),
-				}
-			}
-			value = newAccess(value, access.Name, access.EndPos)
-		}
-	}
-
-	if factor.Index != nil {
-		index, err := buildExpression(buildScope, factor.Index)
+		value, err = applyModifier(buildScope, value, mod)
 		if err != nil {
 			return value, err
 		}
-		value = program.NewExpression(
-			program.Operation_INDEX, []*program.Operand{value, index},
-			posToLocation(factor.Pos), posToLocation(factor.EndPos),
-		)
 	}
 
 	if factor.Negative {
@@ -436,4 +384,162 @@ func buildFactor(buildScope scope.BuilderScope, factor *Factor) (*program.Operan
 		program.Operation_NOT, []*program.Operand{value},
 		posToLocation(factor.Pos), value.End,
 	), nil
+}
+
+func applyModifier(buildScope scope.BuilderScope, value *program.Operand, mod *Modifier) (*program.Operand, error) {
+	// Invariant: mod is guaranteed non-nil by the parser grammar ("@@*"), with
+	// either Access populated or Bracket set ("@@ | @'[' @@? ']'").
+	if access := mod.Access; access != nil {
+		if access.Args != nil && access.Name != program.DAccessor {
+			return value, &participle.ParseError{
+				Pos: access.Pos,
+				Msg: fmt.Sprintf("accessor .%s takes no arguments", access.Name),
+			}
+		}
+		switch access.Name {
+		case program.DAccessor:
+			// Forward-mode derivative with respect to a named variable,
+			// .d(var). Expanded by the autodiff pass.
+			var args []*Expression
+			if access.Args != nil {
+				args = access.Args.Expressions
+			}
+			return newDerivWrt(buildScope, value, args, access.Pos, access.EndPos)
+		case program.DTimeAccessor, program.DPAccessor:
+			// Forward-mode derivative: .dtime is d/d(time), .dp is the
+			// spatial gradient d/d(p). Expanded by the autodiff pass.
+			return newDeriv(value, access.Name, access.EndPos), nil
+		case program.SecondAccessor:
+			// Second-closest primitive-surface distance. Expanded by the
+			// self-computing-property pass.
+			return newSecond(value, access.EndPos), nil
+		case program.BoxAccessor:
+			// Bounding box of the field's solid. Expanded by the
+			// self-computing-property pass.
+			return newBox(value, access.EndPos), nil
+		case program.UAccessor, program.VAccessor:
+			// Surface frame coordinate of the field (.u, .v). Expanded by the
+			// self-computing-property pass.
+			return newSurfaceFrame(value, access.Name, access.EndPos), nil
+		default:
+			isAccessor, err := IsAccessor(access.Name)
+			if err != nil {
+				return value, &participle.ParseError{
+					Pos: lexer.Position{Line: access.EndPos.Line, Column: access.EndPos.Column - len(access.Name)},
+					Msg: err.Error(),
+				}
+			}
+			if !isAccessor {
+				return value, &participle.ParseError{
+					Pos: lexer.Position{Line: access.EndPos.Line, Column: access.EndPos.Column - len(access.Name)},
+					Msg: fmt.Sprintf("invalid accessor: %s", access.Name),
+				}
+			}
+			return newAccess(value, access.Name, access.EndPos), nil
+		}
+	}
+
+	if mod.Index == nil {
+		return value, &participle.ParseError{
+			Pos: mod.Pos,
+			Msg: "index expression cannot be empty",
+		}
+	}
+	index, err := buildExpression(buildScope, mod.Index)
+	if err != nil {
+		return value, err
+	}
+	return program.NewExpression(
+		program.Operation_INDEX, []*program.Operand{value, index},
+		value.Start, posToLocation(mod.EndPos),
+	), nil
+}
+
+func classifyOperandModifier(op *program.Operand) (lang.ModifierKind, string) {
+	expr := op.GetExpression()
+	if expr == nil {
+		return lang.ModNone, ""
+	}
+	switch expr.Operation {
+	case program.Operation_INDEX:
+		return lang.ModIndex, ""
+	case program.Operation_DERIV:
+		if len(expr.Operands) >= 2 {
+			if ref := expr.Operands[1].GetReference(); ref != nil {
+				switch ref.Name {
+				case program.PVarName:
+					return lang.ModDeriv, program.DPAccessor
+				case program.TimeVarName:
+					return lang.ModDeriv, program.DTimeAccessor
+				}
+			}
+		}
+		return lang.ModDeriv, program.DAccessor + "(...)"
+	case program.Operation_BOUNDINGBOX:
+		return lang.ModBox, program.BoxAccessor
+	case program.Operation_SECONDCLOSEST:
+		return lang.ModSecond, program.SecondAccessor
+	case program.Operation_SURFACEU:
+		return lang.ModSurfaceFrame, program.UAccessor
+	case program.Operation_SURFACEV:
+		return lang.ModSurfaceFrame, program.VAccessor
+	case program.Operation_ACCESS:
+		if len(expr.Operands) >= 2 {
+			if ref := expr.Operands[1].GetReference(); ref != nil {
+				if len(ref.Name) == 1 {
+					return lang.ModSwizzleScalar, ref.Name
+				}
+				return lang.ModSwizzleVec, ref.Name
+			}
+		}
+		return lang.ModSwizzleVec, ""
+	default:
+		return lang.ModNone, ""
+	}
+}
+
+func classifyModifier(mod *Modifier) lang.ModifierKind {
+	if mod.Access == nil {
+		return lang.ModIndex
+	}
+	switch mod.Access.Name {
+	case program.DAccessor, program.DTimeAccessor, program.DPAccessor:
+		return lang.ModDeriv
+	case program.BoxAccessor:
+		return lang.ModBox
+	case program.SecondAccessor:
+		return lang.ModSecond
+	case program.UAccessor, program.VAccessor:
+		return lang.ModSurfaceFrame
+	default:
+		if len(mod.Access.Name) == 1 {
+			return lang.ModSwizzleScalar
+		}
+		return lang.ModSwizzleVec
+	}
+}
+
+func validateModifierSequence(prev *program.Operand, cur *Modifier) error {
+	prevKind, prevName := classifyOperandModifier(prev)
+	if prevKind == lang.ModNone {
+		return nil
+	}
+	curKind := classifyModifier(cur)
+	if lang.IsAllowedModifierTransition(prevKind, curKind) {
+		return nil
+	}
+	if cur.Access == nil {
+		return &participle.ParseError{
+			Pos: cur.Pos,
+			Msg: fmt.Sprintf("cannot index after .%s", prevName),
+		}
+	}
+	msg := fmt.Sprintf("cannot apply .%s after .%s", cur.Access.Name, prevName)
+	if prevKind == lang.ModSurfaceFrame && curKind == lang.ModSecond {
+		msg += fmt.Sprintf(" (did you mean .second.%s?)", prevName)
+	}
+	return &participle.ParseError{
+		Pos: cur.Access.Pos,
+		Msg: msg,
+	}
 }

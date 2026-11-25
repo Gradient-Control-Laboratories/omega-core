@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
 )
 
 // TestExtractMeshDeclsMultiplyFolds guards the (temporarily closed-form)
@@ -48,4 +48,3 @@ return mesh(0, matrix.multiply(placement, fromLocal));
 		}
 	}
 }
-

@@ -70,6 +70,13 @@ const PixelSize = "pixelSize"
 
 const DisplacementDrawn = "displacementDrawn"
 
+// DisplacementScale is how far a renderer is moving surfaces by their
+// materials' heights where a distance is being evaluated for display, 0 to 1:
+// the march's displacement knob in the viewer, 1 in the lit renderer, 0 for
+// meshing, export and every other evaluation. The displaced returns
+// (property.LowerDisplacedReturns) scale each layer's height by it.
+const DisplacementScale = "displacementScale"
+
 func IsReservedWord(name string) bool {
 	return reservedMap[name]
 }
@@ -169,6 +176,7 @@ var reservedMap = map[string]bool{
 
 	// --- Built-in Displacement Functions ---
 	DisplacementDrawn: true,
+	DisplacementScale: true,
 
 	// --- Built-in UI Functions ---
 	"uiPoint":     true,

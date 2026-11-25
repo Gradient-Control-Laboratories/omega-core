@@ -3,7 +3,7 @@ package unroll
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // Transform lowers collection arithmetic, unary negation, and math op calls
@@ -134,6 +134,36 @@ func (c *unrollContext) transformFile(file *program.PackageFile) error {
 			return err
 		}
 		file.MaterialReturns[i] = walked
+		if len(c.hoisted) > 0 {
+			file.Assignments = append(file.Assignments, c.hoisted...)
+			c.hoisted = nil
+		}
+	}
+	for i, ret := range file.GradientReturns {
+		if ret == nil {
+			continue
+		}
+		c.hoisted = nil
+		walked, err := c.unrollOperand(ret)
+		if err != nil {
+			return err
+		}
+		file.GradientReturns[i] = walked
+		if len(c.hoisted) > 0 {
+			file.Assignments = append(file.Assignments, c.hoisted...)
+			c.hoisted = nil
+		}
+	}
+	for i, ret := range file.DisplacedReturns {
+		if ret == nil {
+			continue
+		}
+		c.hoisted = nil
+		walked, err := c.unrollOperand(ret)
+		if err != nil {
+			return err
+		}
+		file.DisplacedReturns[i] = walked
 		if len(c.hoisted) > 0 {
 			file.Assignments = append(file.Assignments, c.hoisted...)
 			c.hoisted = nil

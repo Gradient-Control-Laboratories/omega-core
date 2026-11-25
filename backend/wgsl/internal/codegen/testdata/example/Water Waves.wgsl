@@ -2,9 +2,9 @@ fn ease_cubic(t: f32, noiseTex: texture_3d<f32>) -> f32 {
   return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
 }
 
-fn gsl_remap(p: vec3<f32>, gsl_param_12_10: f32, gsl_param_15_10: f32, gsl_param_18_10: f32, gsl_param_24_13: f32, gsl_param_30_12: f32, gsl_param_33_14: f32, time: f32, noiseTex: texture_3d<f32>) -> f32 {
-  let waveSize = gsl_param_30_12;
-  let waveMorph = gsl_param_24_13;
+fn gsl_remap(p: vec3<f32>, gsl_param_12_26: f32, gsl_param_13_26: f32, gsl_param_14_26: f32, gsl_param_18_29: f32, gsl_param_22_26: f32, gsl_param_23_27: f32, time: f32, noiseTex: texture_3d<f32>) -> f32 {
+  let waveSize = gsl_param_22_26;
+  let waveMorph = gsl_param_18_29;
   return noise_gradientLattice4(vec4<f32>(p.x / waveSize, p.y / waveSize, p.z / waveSize, time / waveMorph), noiseTex) * waveSize / 10.0;
 }
 
@@ -46,23 +46,23 @@ fn noise_gradientLattice4(q4: vec4<f32>, noiseTex: texture_3d<f32>) -> f32 {
   return gsl_fold;
 }
 
-fn sdShape(p: vec3<f32>, time: f32, gsl_param_12_10: f32, gsl_param_15_10: f32, gsl_param_18_10: f32, gsl_param_24_13: f32, gsl_param_30_12: f32, gsl_param_33_14: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
-  let waveHeight = gsl_param_33_14;
-  let waveVx = gsl_param_12_10;
-  let waveVy = gsl_param_15_10;
-  let waveVz = gsl_param_18_10;
+fn sdShape(p: vec3<f32>, time: f32, gsl_param_12_26: f32, gsl_param_13_26: f32, gsl_param_14_26: f32, gsl_param_18_29: f32, gsl_param_22_26: f32, gsl_param_23_27: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
+  let waveHeight = gsl_param_23_27;
+  let waveVx = gsl_param_12_26;
+  let waveVy = gsl_param_13_26;
+  let waveVz = gsl_param_14_26;
   let drift = p - vec3<f32>(waveVx, waveVy, waveVz) * time;
-  let waves = waveHeight * gsl_remap(drift, gsl_param_12_10, gsl_param_15_10, gsl_param_18_10, gsl_param_24_13, gsl_param_30_12, gsl_param_33_14, time, noiseTex);
+  let waves = waveHeight * gsl_remap(drift, gsl_param_12_26, gsl_param_13_26, gsl_param_14_26, gsl_param_18_29, gsl_param_22_26, gsl_param_23_27, time, noiseTex);
   let water = (length(p) - 12.0 - waves) / (1.0 + waveHeight);
   let gsl_s1 = gsl_shape(water, 1u);
   return gsl_s1;
 }
 
-fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_12_10: f32, gsl_param_15_10: f32, gsl_param_18_10: f32, gsl_param_24_13: f32, gsl_param_30_12: f32, gsl_param_33_14: f32, noiseTex: texture_3d<f32>) -> vec4<f32> {
+fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_12_26: f32, gsl_param_13_26: f32, gsl_param_14_26: f32, gsl_param_18_29: f32, gsl_param_22_26: f32, gsl_param_23_27: f32, noiseTex: texture_3d<f32>) -> vec4<f32> {
   if (gsl_colorIdx == 1u) { return vec4<f32>(vec3<f32>(0.15, 0.45, 0.75), 1.0); }
   return vec4<f32>(0.0, 0.0, 0.0, 0.0);
 }
-fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_12_10: f32, gsl_param_15_10: f32, gsl_param_18_10: f32, gsl_param_24_13: f32, gsl_param_30_12: f32, gsl_param_33_14: f32, noiseTex: texture_3d<f32>) -> gsl_material {
+fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_12_26: f32, gsl_param_13_26: f32, gsl_param_14_26: f32, gsl_param_18_29: f32, gsl_param_22_26: f32, gsl_param_23_27: f32, noiseTex: texture_3d<f32>) -> gsl_material {
   if (gsl_materialIdx == 1u) { let gsl_m = mat4x4<f32>(vec4<f32>(0.0, 0.0, 1.333, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.6, 24.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)); return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0); }
   return gsl_material(vec4<f32>(0.5, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), 0.0);
 }

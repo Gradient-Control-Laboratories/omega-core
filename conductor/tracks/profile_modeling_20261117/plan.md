@@ -1,0 +1,324 @@
+# Implementation Plan: Profile Modeling
+
+## Overview
+
+Implements [spec.md](./spec.md) in the order of its section 4, test first. Phase 0 commits the ground truth
+the rest is measured against: #45 checked `profileXY` against a brute-force reference only in scratch, so
+no committed test says today's profiles are exact. Each later phase adds one candidate and holds it to the
+same reference.
+
+Every phase that adds a function to the stdlib checks four things before it is done:
+
+1. **Exact** (or, where the spec allows a bound, within it): the field against the Go reference.
+2. **Provable:** interval bounds over surface cells are sound and tight, `certify` proves clearance, and
+   `bounds` proves the box (`eval/profile_provable_test.go`).
+3. **In WGSL:** the example compiles to WGSL, under its size budget, and renders in the viewer as the CPU
+   evaluates it (the owner's check).
+4. **No silent golden moves:** a stdlib edit can move `testdata/example` goldens; any that move are shown
+   with the reason and regenerated only on the owner's go.
+
+Where a phase needs an API the spec does not fix (how a vertex names its blend, how an edge says it is a
+Bezier), the phase opens with a proposal for the owner to approve before any code is written.
+
+## Execution Metrics & Effort Tracking
+
+| Metric             | Elapsed Time  |
+| :----------------- | :------------ |
+| **Spec Creation**  | `~20 mins`    |
+| **Plan Creation**  | `in progress` |
+| **Implementation** | `pending`     |
+| **Code Review**    | `pending`     |
+| **Effort**         | `pending`     |
+
+---
+
+## Phase 0: Ground Truth [checkpoint: ac68832]
+
+- [x] Task: Gate: the development Rust library (`target/release`) matches `main`'s Rust; the Go packages
+      that evaluate fields (`eval`, `cmd/compile`) did not link against the one there. Met on the owner's go
+      by copying a build whose Rust is identical to 6f5462b, rather than rebuilding.
+- [x] Task: A brute-force reference for profiles, in Go (`eval/profile_reference_test.go`)
+  - [x] Distance to a densely sampled boundary, sign by containment; one helper the later phases reuse
+        (`refLoop`, `newRefProfile`, `profileCases`)
+  - [x] Today's `profileXY(points)` and `profileXY(points, curvatures)` agree with it to within 2e-5 mm
+        (worst 3.6e-6): an L, a star, a square with a hole (`max` by hand), the arc L of
+        `profile_cylinder.gsl`, and a slot with a collinear point and tangent-continuous joints. Restoring
+        #45's `turn >= 0` corner sign fails the slot (+5 for -5 on the collinear point's normal).
+  - [x] `extrude` and `revolve` of those profiles agree with the reference composed in 3D (worst 3.5e-6
+        and 8.6e-6)
+- [x] Task: Provability and size, recorded (`eval/profile_provable_test.go`)
+  - [x] Interval bounds over 0.5 mm cells on each profile's boundary, and on an extrude's rims and cap,
+        sharp and with `intersectRound(2)`, contain the field and are at most 4 cell diagonals wide (widest
+        2.16). `certify` proves each extrude clear 0.25 mm above its cap and beside it, both rim kinds.
+        Restoring #45's gated magnitude (`outside <= inside ? outside : neg(inside)`) fails every profile
+        (17 to 78 diagonals).
+  - [x] `bounds` (`Evaluator.Enclose`, the interval proof `gsl eval` runs; not `Evaluator.Bounds`, the grid
+        fit beneath it) proves each extrude's box, holding the reference's and standing off it by at most
+        0.071 mm. Not the star's over the test's region: there it runs out of budget, though the same star
+        proves over [-30, -30, -10, 30, 30, 22]. That is `Enclose`'s sensitivity to where its cuts land, a
+        finding for the `gsl eval` tracks, and the test logs the star rather than asserting it.
+  - [x] The WGSL size of each `examples/profile_*.gsl` on 85a0152, the budget later phases compare against:
+        `profile_star` 12,337 bytes, `profile_sweep` 113,847, `profile_arcs` 119,522, `profile_cylinder`
+        190,178
+- [x] Task: Recheck spec section 5's constraints 1–4 on `main` and record which still hold in the spec:
+      1 and 4 are lifted, 2 and 3 hold
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+
+## Phase 1: Several Loops in One Profile (C1) [checkpoint: c94b0d8]
+
+- [x] Task: Proposal: the signature (a list of loops, each points or points and curvatures), how nesting is
+      checked, and what a loop that does not nest reports. Decided: a generic `nested(fields)` taking
+      each loop as its own `profileXY` field, nearest surface wins; the winding rule documented and pinned
+      by a test, not checked (spec section 4, C1)
+- [x] Task: Write failing tests (Red Phase) (`eval/profile_nested_test.go`)
+  - [x] An outline with two holes and an island inside one, polygon and arc loops mixed, against the
+        reference; the same loops in another order; two separate islands (worst 3.6e-6)
+  - [x] `extrude` of it against the reference (1.9e-6); surface cells tight (widest 1.93 diagonals);
+        `certify` proves the holes and the space above empty; `bounds` proves its box
+  - [x] `.u` is the nearest loop's own
+  - [x] A 3D solid with a void against an analytic reference (7.1e-7)
+  - [x] A mis-wound loop's result pinned: its own distance where it is nearest, so void just outside it in
+        the material
+- [x] Task: Implement (Green & Refactor Phase); `.box` and `.u` across loops: `nested(fields)` in
+      `stdlib/builtin/booleans.gsl`; box and `.u` carry without code of their own. Restoring a gated
+      magnitude fails the plate's surface cells (51 diagonals). No golden moved (stdlib, assembler, parser,
+      program and WGSL suites)
+- [x] Task: An example, its WGSL size against the budget, and the owner's viewer check:
+      `examples/profile_nested.gsl`, a flange of eight loops nested four deep and a block with a void cut
+      open; 100,690 bytes of WGSL (its own budget from here); the other examples' sizes unchanged; checked by the owner in the viewer
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+
+## Phase 2: Corner Blends, per Vertex (C2) [checkpoint: 4496b6e]
+
+- [x] Task: Proposal: how a vertex names its blend (none, arc fillet, line chamfer, field blend) and its size,
+      and what is refused (a fillet larger than its edges allow). Decided: corner helpers in a `corners`
+      list, one edge-blend operator per profile for `cornerBlend()` vertices, `everyCorner()`, clamping
+      (spec section 4, C2)
+- [x] Task: Part A, corners between straight edges
+  - [x] Write failing tests (Red Phase) (`eval/profile_corners_test.go`): exact fillets and chamfers
+        against the reference, convex and reflex, mixed with sharp corners (worst 2.1e-6); `everyCorner()`
+        (3.3e-6); clamped fillets make the circle they should (2.8e-6); surface cells tight, at cells scaled
+        to the smallest fillet (widest 2.89); a corner next to an arc stays sharp. WGSL: the U with its
+        eight corners blended is 8,079 bytes, against 62,374 for the plain polygon (each step's work is a
+        helper taking values, which the WGSL backend emits as a function instead of unrolling; a helper
+        must not index a list by a passed index, which WGSL refuses as not constant)
+  - [x] Implement (Green & Refactor Phase): the pools walk a corner's trimmed edges and its arc or chamfer
+        (`profileXY(points, curvatures, corners)` and the corner helpers in `stdlib/builtin/2d.gsl`).
+        Flipping the fillet's curvature sign fails the reference. No golden moved. Found on the way, not
+        fixed: a `map`-built list handed in as `curvatures` fails to assemble once the profile is named,
+        with or without corners (its box pass, likely); the test writes its curvatures out
+  - [x] Proposal, then tests and implementation: how a `cornerBlend()` corner's field enters the pools,
+        where it is a bound, and that the rest of the loop stays exact. A piece between trims at half the
+        shorter edge, its field the blend of the two edge lines (the dual at a reflex corner), never less
+        than the distance to the triangle of the corner and its trims: without that bound the blend of two
+        lines claims less than the corner's distance far off and takes the sign of other parts of the loop
+        (`intersectLp`: 139 of 4,809 far points wrong-signed). `eval/profile_corner_blend_test.go`, with
+        `intersectRound`, `intersectChamfer` and `intersectLp`: exact outside the pieces (1.9e-6); the
+        documented formula inside them; 1-Lipschitz and continuous (steepest 1.0001); surface cells sound
+        (widest 3.35); the sign right at every far point. `profileXY(points, curvatures, corners, blend)`;
+        WGSL 21,007 bytes for the U with two blend corners
+  - [x] Viewer, cost and frame (`examples/profile_corners.gsl`, checked by the owner):
+    - The first build hung the GPU. The corner pools now make one pass for all three pools (each feature
+      offering a vector, the nearest pool keeping a constant gate of its own), a fillet and a chamfer are
+      one edge, and each trim is computed once. `gpu-eval`, 4M points: the example from 124 ms to 61–63
+      ms, against 39–43 ms for `profile_arcs.gsl` (whole examples only: that harness's ~25 ms floor makes
+      its per-part numbers noise). Folding the per-vertex geometry by inlining was measured and is not to
+      build (backlog `M15`): the arcs example 3.7× slower, the corners example 2.3× faster, and slider-
+      driven profiles never qualify.
+    - A blended corner's `.u` follows its two legs and changes piece where the field does (it had run
+      along the chord, diagonally across half of each edge).
+    - Found, worked around, not reduced: with a blend made from a slider, the blend form's two-name box
+      assignment went undefined (the box now comes from `profileArcBoxXY`).
+- [ ] Task: Part B, corners next to an arc edge (line to arc, arc to arc): **deferred by the owner,
+      2026-11-17**, for implicit blends and more pressing work, after Part A's GPU cost. An exact fillet
+      there is a line–circle or circle–circle intersection and a shorter arc of the same circle; a fillet
+      too big for its edges has no closed-form largest fit. Until then a corner next to an arc stays
+      sharp, as documented, and `cornerBlend()` too works between straight edges only
+- [x] Task: An example mixing the kinds; WGSL size; the owner's viewer check (Part A's corners)
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+
+## Phase 3: Quadratic Bezier Edges (C6) [checkpoint: c33e494]
+
+- [x] Task: Proposal: how an edge is marked as a quadratic Bezier (its control point) alongside lines and
+      arcs, and how the 2D distance reuses `bezierQuadPointRound`'s closed-form solve. Decided:
+      `profileEdgesXY(points, edges)` with `edgeLine()`, `edgeArc(curvature)`, `edgeBezier(control)`;
+      `openProfileEdgesXY` and `sweepOpenEdges` too (spec section 4, C6)
+- [x] Task: Write failing tests (Red Phase) (`eval/profile_edges_test.go`): Bezier edges, alone and mixed
+      with lines and arcs, exact against the reference (worst 5e-6), with smooth and sharp joints; a
+      straight Bezier is its chord; lines and arcs alone agree with `profileXY(points, curvatures)`; `.u`
+      the arc length (worst 2.6e-5); surface cells (curved Bezier 5.93, limit 6 by the owner; straight
+      2.18, limit 4); `certify` (18,089, 34,281 and 3,417 evaluations); the open forms against the extended
+      chain (worst 7.5e-6) and agreeing with `openProfileXY` and `sweepOpen` on lines and arcs;
+      `sweepOpenEdges`'s formula (worst 4.8e-6), frame and box
+- [x] Task: Implement (Green & Refactor Phase); `.u` along a Bezier edge is its arc length:
+      `edgeLine`, `edgeArc`, `edgeBezier`, `profileEdgesXY`, `openProfileEdgesXY` in
+      `stdlib/builtin/2d.gsl`; `sweepOpenEdges` in `stdlib/builtin/sweep.gsl`; the box and frame rules
+      generalised to it (`sweptOpen` takes the helpers' names, `sweepFrame` a table of open sweeps). The
+      Bezier step's choices in spec section 4, C6. Full suite clean but `internal/link`'s
+      `TestFastExitSingleOrZeroDotImports`, a 2 s timing test that failed on `main`'s worktree too under a
+      load average of 225; builtin's `package.pb` is 365 KB here against 181 KB on `main`, and the test
+      links it a thousand times, so it is close to its limit even unloaded (1.77 s)
+- [x] Task: An example; WGSL size (watch the per-step accumulator reads, spec section 5.5); the owner's
+      viewer check: `examples/profile_bezier.gsl`, a mixed-edge plate extruded and a rail swept along
+      Bezier bends; 52.7 KB of WGSL, accepted by naga. The owner's first look found the plate's sign wrong
+      beside a tight Bezier and its checkerboard read from the wrong place; both fixed (spec section 4,
+      C6), the plate added as the "tight Bezier" test loop (worst 5.8e-6, cells 9.18, limit 10 by the
+      owner). Checked by the owner: looks right
+- [x] Task: The GPU cost (2026-11-19, 64 evaluations a point over 1M points, less a trivial field): the arc
+      L as `profileXY` 4.3 ms, as `profileEdgesXY` 44 ms, the plate 33 ms; every edge runs the Bezier step.
+      Measured by removing each part: the Newton step costs ~10 ms and buys only the tight edge's last
+      3.2e-4 mm; the sampled points narrow the widest cells (11.2 → 9.18); the triangle bound is what
+      certify needs. A select on the constant kind is no faster. The owner kept the step and asked for a
+      codegen proposal, uniform branches: backlog M18, prototyped by hand at 14.5 and 17.8 ms
+- [x] Task: The edge dispatch on `choose` (M18, built as an explicit marker by the owner's choice, #92):
+      `profileAnyEdgeSidedXY` and `profileAnyEdgeRun` choose the edge's kind's step, so the GPU computes
+      only that one. The L 45.5 → 12.2 ms, the plate 32 → 16.4 ms (`profileXY` 5.1 ms), checksums identical;
+      the CPU and interval paths, which read the ternary, unchanged in every edge test
+- [x] Task: Robustness (2026-11-19, the owner: make open profiles robust, with good coverage, assuming the
+      tangent rays cross nothing). Probing found a Bezier that hooks back past its chord, an end tangent
+      more than a right angle from it, wrong in sign and size (51 mm on a closed loop, 30 on an open chain):
+      the side rule's "across the chord from the control" holds only for an edge that is a graph over its
+      chord. Such an edge is now two pieces split where its tangent bisects its turn (the owner's choice),
+      chosen on the constant hook so ordinary edges cost as before; profile_bezier's WGSL 60.0 → 61.7 KB,
+      accepted by naga. A control on an end point made the field NaN everywhere: its tangent is now the
+      chord's, the limit of the derivative, and a straight edge reads its chord's side. Consecutive equal
+      points break an open chain (wrong or NaN everywhere): documented, by the owner's choice. New tests
+      (`eval/profile_open_robust_test.go`), all exact to the reference: single edges, semicircles, tiny
+      curvatures, collinear and short edges, a U turn and a hairpin, arc joints, a chain 2 km out, rotated
+      and reversed chains, hooks open and closed, degenerate controls, and an open Bezier chain's `.u`,
+      cells (3.29) and certify. Removing the split fails exactly the five hook cases. Found and left: `.u`
+      settles a tie between features within 1e-4 mm, so beside a corner or an end it can be off by up to
+      sqrt(2 d 1e-4) at distance d (0.03 mm at 5 mm), in closed profiles too; a one-element list such as
+      `[0.1]` is one tree in the fidget backend, which reported it a number, so `openProfileXY([a, b], [k])`,
+      one arc, failed on the CPU paths: fixed by the owner's choice in #101 (index 0 of such a target is the
+      target), merged here, and the one-arc chains added to the tests (exact)
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+
+## Phase 4: Tighter Boxes (C7) [checkpoint: 1b00f7d]
+
+- [x] Task: Proposal. Decided: exact per edge (arcs' axis extremes on the arc, Beziers' per-axis
+      extremum), every form, the corner forms by their loop without corners (spec section 4, C7)
+- [x] Task: Write failing tests (Red Phase) (`eval/profile_boxes_test.go`): an arc profile's and a Bezier
+      profile's boxes contain the reference boundary and are within 0.02 mm of its true box (the 0.01
+      padding and the sampling); a corner form's is its loop's without corners; an open sweep's along arcs.
+      Red: the arc L loose by 28.3 mm a side, the slot 15.8, the moulding 4.62, the sweep along arcs 26.6
+- [x] Task: Implement (Green & Refactor Phase), within whatever Phase 0 found `.box` can hold: exact edge
+      boxes in `stdlib/builtin/2d.gsl` (`profileArcEdgeBoxXY`, `profileBezierEdgeBoxXY`, their unions);
+      a `.box` in the stdlib could not hold them (constraint 1 holds there), so `profileBox` Go rules give
+      the box (spec section 4, C7). Without the rule the arc box tests fail. `TestSweepOpen_Box`'s arc case
+      now expects the exact box, with the owner's authorization. GPU and size cost recorded in the spec.
+      The owner's viewer check (bezier, sweep_open, corners, cylinder render as before): look right
+- [x] Task: Constant boxes fold again (2026-11-19, the owner chose all four fixes). The constant evaluator
+      called a reduce's function with two arguments, so the exact boxes' index-reading helpers never folded
+      and ran per point. Fixed off `main` in `const-fold-fixes`, with two more folding bugs found beside it:
+      a three-way select on a constant vector folded to its positive branch whatever the signs (a
+      miscompile), and a constant division or mod by zero reached WGSL as `+Inf.0` or `NaN.0` (now a
+      compile error); merged here. A constant arc profile's WGSL 10.7 → 5.4 KB, its box numbers again.
+      `profileBox` reads one corner a side, not both corners' least and most: profile_bezier's slider-driven
+      box 18 → 10 helper references
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+
+## Phase 5: Partial Revolve (C3) [checkpoint: 9248b1b]
+
+Taken next after Phase 2, before Phases 3 and 4 (the owner, 2026-11-18).
+
+- [x] Task: Proposal: the signature (angle range, its origin) and the caps. Decided: one angle from the
+      sketch plane, flat caps, the exact formula and Go box and frame rules of spec section 4, C3
+- [x] Task: Write failing tests (Red Phase) (`eval/profile_partial_revolve_test.go`): exact against the
+      reference on a quarter turn, three quarters, a sixth the other way and the arc L (worst 1.3e-5); an
+      independent point cloud of the boundary (within its 0.25 mm spacing); surface cells (widest 2.88);
+      `certify` behind the sketch plane; a proven box; `.u` and `.v` the full revolve's
+- [x] Task: Implement (Green & Refactor Phase): `revolve(profile, axisPoint, axisDirection, angle)` in
+      `stdlib/builtin/sweep.gsl`; the frame by the revolve carry rule, now for four arguments too, and the
+      full turn's box (`internal/assembler/property`). The sweep is tested by two planes, not an angle:
+      `atan2`'s intervals near the axis left the sign undecided and `bounds` could not prove the box.
+      Dropping the far cap fails the reference (off by 41 mm). No golden moved
+- [x] Task: An example; WGSL size; the owner's viewer check: `examples/profile_revolve.gsl`, a flanged
+      sleeve cut open and an arch; 65 KB of WGSL with a slider angle. Checked by the owner: right, and slow.
+      Measured (64 evaluations a point, less the floor): the sleeve 56 ms partial against 26 ms full, the
+      profile read three times; `profile_cylinder.gsl` 44 ms. Most of the cost is the profile itself, whose
+      pools make three passes
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+
+## Phase 6: `sweep()` (C4) [checkpoint: 21a7af6]
+
+- [x] Task: Proposal: the signature, starting from the remap in `profile_sweep.gsl`. Decided: `sweep(section,
+      path)`, the path any exact 2D field; corners as the distance makes them; Go frame and box rules (spec
+      section 4, C4)
+- [x] Task: Closed planar paths, exact (`eval/profile_sweep_test.go`)
+  - [x] Write failing tests (Red Phase): the composition, from the references (worst 5.6e-6); against the
+        swept surface sampled on its own by level sets of the path's distance, never more than its distance
+        anywhere, exact to the sampling on a filleted path (0.097 mm at 0.2 mm), short by up to 0.355 mm near
+        a sharp corner, as documented; surface cells (widest 5.54, limit 6); `certify` above it (291,497 and
+        303,329 evaluations); the box; the frame
+  - [x] Implement (Green & Refactor Phase): `sweep(section, path)` in `stdlib/builtin/sweep.gsl`, one remap;
+        its frame by `sweepFrame` and its box by the `swept` rule (`internal/assembler/property`);
+        `profile_sweep.gsl` rewritten on it, its values and frame unchanged at sample points. Removing the
+        box rule fails the box test. No golden moved
+- [x] Task: Proposal for open paths. Decided: `openProfileXY(points[, curvatures])`, signed, its ends
+      extended as tangent rays; flat caps by `sweepOpen` (Phase 7); finite 2D strokes later; non-planar
+      paths split off (spec section 4, C4 and C5)
+- [x] Task: Open planar profiles (`eval/profile_open_test.go`)
+  - [x] Write failing tests (Red Phase): exact against a reference distance to the extended chain, straight
+        and with arcs (worst 5.2e-6); the sign right of travel; a piece of a closed profile agrees with it
+        beside that piece; `.u` along the chain and past its ends (worst 3.1e-5); surface cells (widest
+        1.79); `certify` on the right side (at most 1,737 evaluations)
+  - [x] Implement (Green & Refactor Phase): `openProfileXY` in `stdlib/builtin/2d.gsl`, one pass of pools
+        through the closed profile's own steps, the first point's turn made nothing by a mirrored previous
+        edge and the last point shut by a constant gate; the rays offered beside the pass. Flipping the
+        first ray's overshoot fails the reference test by 54.7 mm
+- [ ] Task: Non-planar paths, with a stated Lipschitz bound: **deferred by the owner, 2026-11-19, not yet a
+      priority.** A note for when it is taken up, reasoned and not yet checked numerically: with a
+      rotation-minimizing frame the section's coordinates have gradients U and V, orthonormal, so the sweep
+      is 1-Lipschitz and exact within the path's reach, as the planar one is; the bound is needed only where
+      the frame twists, sqrt(1 + (w r / (1 - k r))^2) at twist rate w, distance r and curvature k, and a
+      round section has 1 at any twist. A polyline with a bend radius per vertex has that frame in closed
+      form (a rotation at each bend)
+  - [ ] Proposal: frame transport along the path, and the bound
+  - [ ] Write failing tests (Red Phase): the field never exceeds the reference distance and stays within the
+        bound; `certify` holds
+  - [ ] Implement (Green & Refactor Phase)
+- [x] Task: WGSL size; the owner's viewer check: `profile_sweep.gsl` on `sweep()`, 17 KB of WGSL, checked by
+      the owner (closed planar paths; open and non-planar paths to come)
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+
+## Phase 7: Caps for Sweeps (C5) [checkpoint: dd653e6]
+
+- [x] Task: Write failing tests (Red Phase) (`eval/profile_sweep_open_test.go`): the formula from the
+      references (worst 7.3e-6); against the swept solid sampled on its own, wall and caps apart: where the
+      condition holds never over (worst 0.0003 mm) and, on the smooth S, never short by more than the
+      sampling (0.055 mm); beyond a cap with another part nearer, over by up to 1.73 mm, logged; surface
+      cells (S widest 3.00, limit 6; zigzag 9.00, soundness only); `certify` above and beyond the first
+      cap; the box, lines and arcs; the frame. Written after the implementation, so checked by mutation:
+      without the box rule the box test fails, without the wall's gate the formula is off by 9.4 mm
+- [x] Task: Implement (Green & Refactor Phase): `sweepOpen(section, points[, curvatures])` in
+      `stdlib/builtin/sweep.gsl`, three reads of the section; the frame by `sweepFrame` from
+      `openProfileXY`'s companion (a frame read of a call written at the call reaches none) and `sweep`'s
+      coordinate; the box by the `sweptOpen` rule from `openProfileLowXY` and `openProfileHighXY`. Owner's decision on
+      the cap formula and the corner cells in spec section 4, C5. `package.pb` regenerated (it was stale
+      after the `openProfileXY` commit). Full suite clean, no golden moved
+- [x] Task: An example; WGSL size; the GPU cost of reading the section three times; the owner's viewer check:
+      `examples/profile_sweep_open.gsl`, a coved moulding along an S with flat caps; 55 KB of WGSL with its
+      frame and sliders, 45 KB without the frame, most of it the box (the `swept` rule repeats the
+      section's bounds, whole expressions, where `revolved` reads each a few times). The other examples'
+      WGSL unchanged (sweep and revolve byte for byte). GPU, slider-free copies without colour, 64
+      evaluations a point over 1M points, less a trivial field's 25.9 ms: closed `sweep` 2.9 ms,
+      `sweepOpen` three reads 8.8 ms, the one-read alternative 4.9 ms. Checked by the owner: looks right
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+
+## Phase 8: Verification and Records
+
+- [x] Task: Full Go suite with `go vet`; `tool/check.sh`. 2026-11-19 on `modeling-robust`: `tool/check.sh` stops
+      at gofmt on 28 files this track never touched, which `main` fails alike under go1.26.4; its other steps
+      run by hand: the dependency rules and `go vet` clean, every test passing but `internal/link`'s 2 s timing test under the suite's load, which passes alone (1.66 s)
+- [x] Task: The stdlib's doc comments, `gsl skill`'s text and the language spec describe the new functions;
+      CHANGELOG. Every new function has its `///` comment, and `gsl skill builtin` prints each (it reads
+      them). The language spec documents the language and its primitives, not library functions, so it
+      needs nothing for these; `choose`'s GPU branch belongs with #92. The CHANGELOG has each addition,
+      the one-pass `profileXY` and exact boxes under Changed, and the folding fixes under Fixed
+- [ ] Task: The wheel's Python tests on a wheel built from the branch: not run, a long build that waits
+      for the owner's go
+- [x] Task: Metrics recorded (2026-11-19, `modeling-robust`). WGSL per example: arcs 8.2 KB, bezier 61.2,
+      corners 61.4, cylinder 40.3, nested 12.1, revolve 23.4, star 4.4, sweep 17.5, sweep_open 34.0, every
+      one accepted by naga. 56 test functions in `eval/profile_*_test.go`. GPU costs are in the phases
+      above

@@ -1,9 +1,9 @@
 package slider
 
 import (
-	"gradientcontrol.com/omega/core/internal/eval"
-	"gradientcontrol.com/omega/core/program"
-	"gradientcontrol.com/omega/core/program/edit"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/edit"
 )
 
 // SliderInfo describes a top-level variable declared with both a `.min` and `.max` property
@@ -27,7 +27,7 @@ type SliderInfo struct {
 
 // Extract walks the top-level declarations and returns one
 // SliderInfo per variable that satisfies all of:
-//   - has a range annotation (explicit @range or synthesized from .min/.max)
+//   - has an @range annotation
 //   - is a simple assignment to a single name
 //   - the assignment expression is a plain numeric literal whose source
 //     span we can locate exactly (so the UI can rewrite the literal in
@@ -83,18 +83,19 @@ func topLevel(pkg *program.Package) ([]*program.Assignment, []*program.FnType) {
 
 func sliderFromAssignment(source string, a *program.Assignment,
 	assignments []*program.Assignment, fnTypes []*program.FnType) (SliderInfo, bool) {
-	if len(a.Variables) != 1 || a.Range == nil || a.Expression == nil {
+	rng := a.Range
+	if len(a.Variables) != 1 || rng == nil || a.Expression == nil {
 		return SliderInfo{}, false
 	}
 	v := a.Variables[0]
 
-	minVal, okMin := a.Range.MinConst()
+	minVal, okMin := rng.MinConst()
 	if !okMin {
-		minVal, okMin = foldBound(a.Range.Min, assignments, fnTypes)
+		minVal, okMin = foldBound(rng.Min, assignments, fnTypes)
 	}
-	maxVal, okMax := a.Range.MaxConst()
+	maxVal, okMax := rng.MaxConst()
 	if !okMax {
-		maxVal, okMax = foldBound(a.Range.Max, assignments, fnTypes)
+		maxVal, okMax = foldBound(rng.Max, assignments, fnTypes)
 	}
 	if !okMin || !okMax {
 		return SliderInfo{}, false
@@ -117,9 +118,9 @@ func sliderFromAssignment(source string, a *program.Assignment,
 	}
 
 	var period float64
-	p, okPeriod := a.Range.PeriodConst()
-	if !okPeriod && a.Range.Period != nil {
-		p, okPeriod = foldBound(a.Range.Period, assignments, fnTypes)
+	p, okPeriod := rng.PeriodConst()
+	if !okPeriod && rng.Period != nil {
+		p, okPeriod = foldBound(rng.Period, assignments, fnTypes)
 	}
 	if okPeriod && p > 0 {
 		period = p

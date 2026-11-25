@@ -17,8 +17,9 @@ import tempfile
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, Tuple, Union
 
-__all__ = ["Bounds", "Certificate", "Description", "Document", "EvalError", "Extremum", "Field", "Fields", "Picture",
-           "Session", "SurfaceSample", "Volume"]
+__all__ = ["Bounds", "Certificate", "Description", "Document", "EvalError", "Extremum", "Field", "Fields", "Mesh",
+           "MeshBody", "Picture", "Session", "Shader", "ShaderSlider", "ShaderTexture", "ShaderUniform", "SurfaceSample",
+           "Volume"]
 
 Vec3 = Tuple[float, float, float]
 Region = Sequence[float]
@@ -138,9 +139,12 @@ class Certificate:
 
 @dataclass(frozen=True)
 class Bounds:
-    """The box of the grid cells where ``expr`` is below zero; it can fall short of the surface by up to a cell
-    (``cell_size``), so grow it before relying on it as an enclosure. ``min_value`` at ``min_at`` is the least sample,
-    reported even when nothing was found."""
+    """A box around where ``expr`` is below zero. When ``proven``, interval arithmetic shows nothing of the part lies
+    outside it, and ``cell_size`` is how far it can stand off the part on each axis; ``found`` is then false only where
+    the region is proven empty. When not ``proven`` (``reason`` says why: the field's intervals are ``unbounded``, too
+    ``loose`` to bring the box near the part, or too loose for the ``budget``), it is a fit on a grid of ``resolution`` cells a side that can miss a wall thinner
+    than a cell and fall short of the surface by up to one (``cell_size``): do not read a size from it. ``min_value``
+    at ``min_at`` is the grid's least sample, reported even when nothing was found."""
 
     expr: str
     found: bool
@@ -150,6 +154,8 @@ class Bounds:
     resolution: int
     min_value: Optional[float]
     min_at: Vec3
+    proven: bool = False
+    reason: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -165,12 +171,16 @@ class SurfaceSample:
 
 @dataclass(frozen=True)
 class Volume:
-    """The volume where ``expr`` is below zero inside the region, bracketed, in cubic millimetres."""
+    """The volume where ``expr`` is below zero inside the region, bracketed, in cubic millimetres. The bracket always
+    holds; ``converged`` says it is as narrow as the tolerance asked, and ``reason`` what ended the search where it is
+    not (``time``, ``budget`` or ``depth``)."""
 
     expr: str
     lower_mm3: float
     upper_mm3: float
     evals: int
+    converged: bool = True
+    reason: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -180,6 +190,96 @@ class Picture:
     path: str
     width: int
     height: int
+
+
+@dataclass(frozen=True)
+class MeshBody:
+    """One body of a mesh, a top-level return: its ``name`` and ``index`` (from 1), and what its triangles say of it.
+    ``open_edges`` and ``non_manifold_edges`` are both 0 for a closed surface; ``volume_mm3`` is the volume the
+    triangles enclose (negative if they face inward), the mesh's own and not the field's."""
+
+    name: str
+    index: int
+    vertices: int
+    triangles: int
+    open_edges: int
+    non_manifold_edges: int
+    volume_mm3: Optional[float]
+
+
+@dataclass(frozen=True)
+class Mesh:
+    """A ``.glb`` written at ``path``: the ``region`` it was meshed over, as ``(x0, y0, z0, x1, y1, z1)`` in mm, and
+    its ``bodies``."""
+
+    path: str
+    region: Tuple[float, ...]
+    bodies: Tuple[MeshBody, ...]
+
+
+@dataclass(frozen=True)
+class ShaderUniform:
+    """A member of a shader's uniform block that is not a slider: ``time``, or a value the document fixes, such as
+    the box a mesh's distance grid covers. ``value`` goes at ``offset`` bytes into the block, a float per
+    component."""
+
+    name: str
+    type: str
+    offset: int
+    value: Tuple[float, ...]
+
+
+@dataclass(frozen=True)
+class ShaderSlider:
+    """A slider and the member of the uniform block that carries it: write a float at ``offset`` to move it, without
+    asking for the shader again. ``name`` is the document's; ``uniform`` is the block member's."""
+
+    name: str
+    uniform: str
+    type: str
+    offset: int
+    value: float
+    min: float
+    max: float
+
+
+@dataclass(frozen=True)
+class ShaderTexture:
+    """A texture the field reads, written at ``path`` as raw texels: ``size`` of ``format`` (``"rgba8unorm"`` or
+    ``"r16float"``), x fastest. ``uniform`` is what to bind: the texture in WGSL, at ``binding`` (with its sampler,
+    if any, at ``sampler_binding``), the sampler by name in GLSL. Read it ``filter`` (``"nearest"`` or
+    ``"linear"``), clamped to the edge."""
+
+    uniform: str
+    kind: str
+    format: str
+    filter: str
+    size: Tuple[int, int, int]
+    path: str
+    binding: Optional[int] = None
+    sampler_uniform: Optional[str] = None
+    sampler_binding: Optional[int] = None
+
+
+@dataclass(frozen=True)
+class Shader:
+    """A document's field as a library a host's shader calls, in ``target``'s language. ``code`` declares the uniform
+    block and the textures and defines ``field`` (``gsl_field(p)``: distance and body) and ``march`` (``gsl_march``:
+    the first surface along a ray). It has no entry point: the host adds its own, binds a buffer of ``block_bytes``
+    to ``uniform_block``, writes ``uniforms`` and ``sliders`` into it, and loads ``textures``. ``bodies`` are
+    ``(name, index)`` for each return; ``region`` is the box to march."""
+
+    target: str
+    code: str
+    field: str
+    march: str
+    uniform_block: str
+    block_bytes: int
+    uniforms: Tuple[ShaderUniform, ...]
+    sliders: Tuple[ShaderSlider, ...]
+    textures: Tuple[ShaderTexture, ...]
+    bodies: Tuple[Tuple[str, int], ...]
+    region: Tuple[float, ...]
 
 
 @dataclass(frozen=True)
@@ -303,10 +403,11 @@ class Document:
         r = self._ask("describe")
         return Description(_ranges(r["sliders"]) or {}, tuple(r["names"]), tuple(r["returns"]))
 
-    def eval(self, exprs: Union[str, Sequence[str]], points: Iterable[Sequence[float]], *, defs: str = "") -> Fields:
+    def eval(self, exprs: Union[str, Sequence[str], None], points: Iterable[Sequence[float]], *,
+             defs: str = "") -> Fields:
         """Each expression's value and gradient at each point (``.dp``, ``.dtime`` and ``.d(var)`` are expressions
-        too). Send many points at once: each question costs a round trip."""
-        exprs = [exprs] if isinstance(exprs, str) else list(exprs)
+        too); ``exprs`` None is the document's returns. Send many points at once: each question costs a round trip."""
+        exprs = None if exprs is None else [exprs] if isinstance(exprs, str) else list(exprs)
         r = self._ask("eval", exprs=exprs, points=_points(points), defs=defs)
         return Fields([Field._of(group) for group in r["groups"]])
 
@@ -335,12 +436,14 @@ class Document:
 
     def bounds(self, expr: Optional[str] = None, *, region: Optional[Region] = None, resolution: int = 0,
                defs: str = "") -> Bounds:
-        """The box where ``expr`` is below zero, fitted on a grid of ``resolution`` cells a side (0: 32) over
-        ``region`` (default: 1024 mm about the origin). It can fall a cell short of the surface: see :class:`Bounds`."""
+        """A box that holds where ``expr`` is below zero, within ``region`` (default: 1024 mm about the origin):
+        proven where the field's intervals allow, else fitted on a grid of ``resolution`` cells a side (0: 32, at
+        most 64). Read ``proven`` before reading a size from it: see :class:`Bounds`."""
         r = self._ask("bounds", expr=expr, region=_region(region) if region is not None else None,
                       resolution=resolution or None, defs=defs)
         return Bounds(r["expr"], r["found"], _vec(r["bboxMin"]), _vec(r["bboxMax"]), _vec(r["cellSize"]),
-                      r["resolution"], r.get("minValue"), _vec(r["minAt"]))  # type: ignore[arg-type]
+                      r["resolution"], r.get("minValue"), _vec(r["minAt"]),  # type: ignore[arg-type]
+                      bool(r.get("proven", False)), r.get("reason"))
 
     def surface(self, points: Iterable[Sequence[float]], expr: Optional[str] = None, *, max_iters: int = 0,
                 tolerance: float = 0.0, defs: str = "") -> Tuple[SurfaceSample, ...]:
@@ -363,8 +466,40 @@ class Document:
                       height=int(height), light=light or None, extent=extent or None, time=time or None, defs=defs)
         return Picture(r["out"], r["width"], r["height"])
 
-    def volume(self, expr: Optional[str] = None, *, region: Region, relative_tolerance: float = 0.0) -> Volume:
-        """The volume inside the region, bracketed (``relative_tolerance`` 0 takes the default 0.05, which is quick;
-        0.01 takes seconds)."""
-        r = self._ask("volume", expr=expr, region=_region(region), relativeTolerance=relative_tolerance or None)
-        return Volume(r["expr"], r["lowerMm3"], r["upperMm3"], r["evals"])
+    def mesh(self, out: Union[str, "os.PathLike[str]"], *, region: Optional[Region] = None, subdivision: int = 0,
+             algorithm: str = "", time: float = 0.0, defs: str = "") -> Mesh:
+        """Mesh the document's returns, each a body, into the ``.glb`` ``out``, with a normal per vertex taken from
+        the field's gradient. ``region`` defaults to the box the field fills, ``subdivision`` to 9 and ``algorithm``
+        to ``"mdc"``, as ``gsl compile`` has them. Meshing is the slow question: ask it when a file is wanted."""
+        r = self._ask("mesh", out=os.path.abspath(os.fspath(out)), region=_region(region) if region is not None else None,
+                      subdivision=int(subdivision) or None, algorithm=algorithm, time=time or None, defs=defs)
+        bodies = tuple(MeshBody(b["name"], b["index"], b["vertices"], b["triangles"], b["openEdges"],
+                                b["nonManifoldEdges"], b["volumeMm3"]) for b in r["bodies"])
+        return Mesh(r["out"], tuple(r["region"]), bodies)
+
+    def shader(self, target: str, *, out_dir: Optional[Union[str, "os.PathLike[str]"]] = None,
+               defs: str = "") -> Shader:
+        """The document's field as a library for a host's own shader, in ``target``: ``"wgsl"`` for WebGPU or
+        ``"glsl-es300"`` for WebGL2. Textures the field reads are written under ``out_dir``, which only a document
+        that reads one needs. Asking is quick next to :meth:`mesh`: nothing is meshed."""
+        r = self._ask("shader", target=target, outDir=os.path.abspath(os.fspath(out_dir)) if out_dir is not None else None,
+                      defs=defs)
+        uniforms = tuple(ShaderUniform(u["name"], u["type"], u["offset"], tuple(u["value"])) for u in r["uniforms"])
+        sliders = tuple(ShaderSlider(s["name"], s["uniform"], s["type"], s["offset"], s["value"], s["min"], s["max"])
+                        for s in r["sliders"])
+        textures = tuple(ShaderTexture(t["uniform"], t["kind"], t["format"], t["filter"], tuple(t["size"]), t["path"],
+                                       t.get("binding"), t.get("samplerUniform"), t.get("samplerBinding"))
+                         for t in r["textures"])
+        return Shader(r["target"], r["code"], r["entry"]["field"], r["entry"]["march"], r["uniformBlock"],
+                      r["blockBytes"], uniforms, sliders, textures,
+                      tuple((b["name"], b["index"]) for b in r["bodies"]), tuple(r["region"]))
+
+    def volume(self, expr: Optional[str] = None, *, region: Region, relative_tolerance: float = 0.0,
+               defs: str = "", time_limit: float = 0.0) -> Volume:
+        """The volume inside the region, bracketed (``relative_tolerance`` 0 takes the default 0.05, which is quick
+        on a plain part; 0.01 takes seconds). The search stops after ``time_limit`` seconds (0 takes the default,
+        10), with the bracket it has."""
+        r = self._ask("volume", expr=expr, region=_region(region), relativeTolerance=relative_tolerance or None,
+                      defs=defs, timeLimit=time_limit or None)
+        return Volume(r["expr"], r["lowerMm3"], r["upperMm3"], r["evals"], bool(r.get("converged", True)),
+                      r.get("reason"))

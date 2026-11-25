@@ -2,11 +2,11 @@ fn gsl_floored(a: f32, n: f32) -> f32 {
   return a - n * floor(a / n);
 }
 
-fn builtin_intersectChamfer(d1: f32, d2: f32, d3: f32, setback: f32, noiseTex: texture_3d<f32>) -> f32 {
+fn builtin_intersectChamfer(d1: f32, d2: f32, d3: f32, offset: f32, noiseTex: texture_3d<f32>) -> f32 {
   let face = max(max(d1, d2), d3);
   let total = d1 + d2 + d3;
-  let edge = (total - min(min(d1, d2), d3) + setback) / 1.4142135;
-  let corner = (total + setback) / 1.7320508;
+  let edge = (total - min(min(d1, d2), d3) + offset) / 1.4142135;
+  let corner = (total + offset) / 1.7320508;
   return max(max(face, edge), corner);
 }
 
@@ -614,9 +614,13 @@ fn wood_sandedHeight(scratches: f32, grit: f32, noiseTex: texture_3d<f32>) -> f3
   return -0.12 * d * groove * groove * texture_fadeDetail(d, noiseTex);
 }
 
+fn wood_sawnPitch(noisiness: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return 2.0 + 2.0 * noisiness;
+}
+
 fn wood_sawnHeight(s: f32, noisiness: f32, wander: f32, washboard: f32, fibres: f32, noiseTex: texture_3d<f32>) -> f32 {
   let depth = 0.18 + 0.62 * noisiness;
-  let pitch = 2.0 + 2.0 * noisiness;
+  let pitch = wood_sawnPitch(noisiness, noiseTex);
   let q = s / pitch + 2.0 * noisiness * wander;
   let k = floor(q);
   let uneven = 1.0 + (fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(k, k + 29.0, 2.0 * k + 3.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(k, k + 29.0, 2.0 * k + 3.0)) / 64.0)) & vec3<i32>(63), 0).rgb).x - 0.5) * (0.4 + 1.2 * noisiness);
@@ -672,7 +676,7 @@ fn wood_prepHeight(p: vec3<f32>, prep: mat3x4<f32>, normal: vec3<f32>, local: ve
   let secondAt = select(crackAlong.xyz, p / 30.0, kind < 4.5);
   let second = noise_gradientLattice(secondAt, noiseTex);
   let third = noise_gradientLattice(p / 40.0 + 13.0, noiseTex);
-  let sawing = select(0.0, select(0.0, wood_sawnHeight(s, amount, second, third, first, noiseTex) * material_filmKeeps(1.0 + 3.0 * amount, build, noiseTex), kind < 2.5), kind > 1.5);
+  let sawing = select(0.0, select(0.0, wood_sawnHeight(s, amount, second, third, first, noiseTex) * material_filmKeeps(wood_sawnPitch(amount, noiseTex), build, noiseTex), kind < 2.5), kind > 1.5);
   let blade = prep[2];
   let rise = blade.xyz - along * dot(blade.xyz, along);
   let aboveCentre = blade.w + dot(p, rise / max(length(rise), 0.000001));
@@ -708,9 +712,9 @@ fn wood_prepSlopes(prep: mat3x4<f32>, normal: vec3<f32>, grainIn: f32, ringWidth
   let ripKeeps = material_filmKeeps(1.2, build, noiseTex) * inSurface;
   let ripping = 6.85 * amount * amount * ripKeeps * ripKeeps * wood_hiddenShare(1.2, standIn, noiseTex);
   let depth = 0.18 + 0.62 * amount;
-  let pitch = 2.0 + 2.0 * amount;
+  let pitch = wood_sawnPitch(amount, noiseTex);
   let spread = 0.4 + 1.2 * amount;
-  let sawKeeps = material_filmKeeps(1.0 + 3.0 * amount, build, noiseTex) * inSurface;
+  let sawKeeps = material_filmKeeps(pitch, build, noiseTex) * inSurface;
   let steep = 2.0 * depth * (1.2 + 0.6 * amount) / pitch;
   let sawScale = sawKeeps * sawKeeps / (1.0 + steep * steep);
   let marks = 8.0 * depth / pitch * depth / pitch * (1.0 + spread * spread / 12.0) * sawScale * wood_hiddenShare(pitch, standIn, noiseTex);
@@ -828,13 +832,13 @@ fn cube(p: vec3<f32>, x: f32, y: f32, noiseTex: texture_3d<f32>) -> f32 {
   return max(flat, blended);
 }
 
-fn sdShape(p: vec3<f32>, time: f32, gsl_param_29_7: f32, gsl_param_32_11: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
+fn sdShape(p: vec3<f32>, time: f32, gsl_param_29_20: f32, gsl_param_30_24: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
   let cubes = min(min(min(min(min(min(min(min(min(min(min(min(min(min(min(1000.0, cube(p, -360.0, 105.0, noiseTex)), cube(p, -300.0, 105.0, noiseTex)), cube(p, -240.0, 105.0, noiseTex)), cube(p, -180.0, 105.0, noiseTex)), cube(p, -120.0, 105.0, noiseTex)), cube(p, -60.0, 105.0, noiseTex)), cube(p, 0.0, 105.0, noiseTex)), cube(p, 60.0, 105.0, noiseTex)), cube(p, 120.0, 105.0, noiseTex)), cube(p, 180.0, 105.0, noiseTex)), cube(p, 240.0, 105.0, noiseTex)), cube(p, 300.0, 105.0, noiseTex)), cube(p, 360.0, 105.0, noiseTex)), min(min(min(min(min(min(min(min(min(min(min(min(min(1000.0, cube(p, -360.0, 35.0, noiseTex)), cube(p, -300.0, 35.0, noiseTex)), cube(p, -240.0, 35.0, noiseTex)), cube(p, -180.0, 35.0, noiseTex)), cube(p, -120.0, 35.0, noiseTex)), cube(p, -60.0, 35.0, noiseTex)), cube(p, 0.0, 35.0, noiseTex)), cube(p, 60.0, 35.0, noiseTex)), cube(p, 120.0, 35.0, noiseTex)), cube(p, 180.0, 35.0, noiseTex)), cube(p, 240.0, 35.0, noiseTex)), cube(p, 300.0, 35.0, noiseTex)), cube(p, 360.0, 35.0, noiseTex))), min(min(min(min(min(min(min(min(min(min(min(min(min(min(1000.0, cube(p, -360.0, -35.0, noiseTex)), cube(p, -300.0, -35.0, noiseTex)), cube(p, -240.0, -35.0, noiseTex)), cube(p, -180.0, -35.0, noiseTex)), cube(p, -120.0, -35.0, noiseTex)), cube(p, -60.0, -35.0, noiseTex)), cube(p, 0.0, -35.0, noiseTex)), cube(p, 60.0, -35.0, noiseTex)), cube(p, 120.0, -35.0, noiseTex)), cube(p, 180.0, -35.0, noiseTex)), cube(p, 240.0, -35.0, noiseTex)), cube(p, 300.0, -35.0, noiseTex)), cube(p, 360.0, -35.0, noiseTex)), min(min(min(min(min(min(min(min(min(min(min(min(min(1000.0, cube(p, -360.0, -105.0, noiseTex)), cube(p, -300.0, -105.0, noiseTex)), cube(p, -240.0, -105.0, noiseTex)), cube(p, -180.0, -105.0, noiseTex)), cube(p, -120.0, -105.0, noiseTex)), cube(p, -60.0, -105.0, noiseTex)), cube(p, 0.0, -105.0, noiseTex)), cube(p, 60.0, -105.0, noiseTex)), cube(p, 120.0, -105.0, noiseTex)), cube(p, 180.0, -105.0, noiseTex)), cube(p, 240.0, -105.0, noiseTex)), cube(p, 300.0, -105.0, noiseTex)), cube(p, 360.0, -105.0, noiseTex))));
   let gsl_s1 = gsl_shape(cubes, 1u);
   return gsl_s1;
 }
 
-fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_29_7: f32, gsl_param_32_11: f32, noiseTex: texture_3d<f32>) -> vec4<f32> {
+fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_29_20: f32, gsl_param_30_24: f32, noiseTex: texture_3d<f32>) -> vec4<f32> {
   if (gsl_colorIdx == 1u) {
     let material_bulk_wood_pineNumber = 14.0;
     let material_bulk_wood_sugarMapleNumber = 6.0;
@@ -845,12 +849,12 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_29_7: f3
     let column = clamp(floor(p.x / 60.0 + 6.5), 0.0, 12.0);
     let centre = vec2<f32>((column - 6.0) * 60.0, (1.5 - rank) * 70.0);
     let stem = vec3<f32>(centre.x - 60.0, centre.y - 35.0, 0.0);
-    let age = gsl_param_29_7;
-    let weather = gsl_param_32_11;
+    let age = gsl_param_29_20;
+    let weather = gsl_param_30_24;
     let look = vec3<f32>(0.0, age, weather);
     let gsl_tmp_17 = floor(p.x / 60.0 + 6.5);
     let gsl_tmp_18 = floor((140.0 - p.y) / 70.0);
-    let gsl_tmp_19 = vec2<f32>(select(select(0.0, 0.0, gsl_tmp_17 > 12.0), 0.0, gsl_tmp_17 < 0.0) * 60.0, -select(select(0.0, 0.0, gsl_tmp_18 > 3.0), 0.0, gsl_tmp_18 < 0.0) * 70.0);
+    let gsl_tmp_19 = vec2<f32>(select(select(0.0, 0.0, clamp(gsl_tmp_17, 0.0, 12.0) < gsl_tmp_17), 0.0, clamp(gsl_tmp_17, 0.0, 12.0) > gsl_tmp_17) * 60.0, -select(select(0.0, 0.0, clamp(gsl_tmp_18, 0.0, 3.0) < gsl_tmp_18), 0.0, clamp(gsl_tmp_18, 0.0, 3.0) > gsl_tmp_18) * 70.0);
     let gsl_tmp_10 = centre.x - 20.0 - p.x;
     let gsl_tmp_11 = centre.y - 20.0 - p.y;
     let gsl_tmp_23 = select(-0.0, select(gsl_tmp_19.y - 0.0, gsl_tmp_19.x - 1.0, gsl_tmp_10 > gsl_tmp_11), max(gsl_tmp_10, gsl_tmp_11) > -p.z);
@@ -869,7 +873,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_29_7: f3
     let gsl_tmp_7 = max(max(gsl_tmp_5, gsl_tmp_6), p.z - 40.0);
     let gsl_tmp_36 = floor(p.x / 60.0 + 6.5);
     let gsl_tmp_37 = floor((140.0 - p.y) / 70.0);
-    let gsl_tmp_38 = vec2<f32>(select(select(0.0, 0.0, gsl_tmp_36 > 12.0), 0.0, gsl_tmp_36 < 0.0) * 60.0, -select(select(0.0, 0.0, gsl_tmp_37 > 3.0), 0.0, gsl_tmp_37 < 0.0) * 70.0);
+    let gsl_tmp_38 = vec2<f32>(select(select(0.0, 0.0, clamp(gsl_tmp_36, 0.0, 12.0) < gsl_tmp_36), 0.0, clamp(gsl_tmp_36, 0.0, 12.0) > gsl_tmp_36) * 60.0, -select(select(0.0, 0.0, clamp(gsl_tmp_37, 0.0, 3.0) < gsl_tmp_37), 0.0, clamp(gsl_tmp_37, 0.0, 3.0) > gsl_tmp_37) * 70.0);
     let gsl_tmp_29 = centre.x - 20.0 - p.x;
     let gsl_tmp_30 = centre.y - 20.0 - p.y;
     let gsl_tmp_42 = select(-0.0, select(gsl_tmp_38.y - 1.0, gsl_tmp_38.x - 0.0, gsl_tmp_29 > gsl_tmp_30), max(gsl_tmp_29, gsl_tmp_30) > -p.z);
@@ -888,7 +892,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_29_7: f3
     let gsl_tmp_26 = max(max(gsl_tmp_24, gsl_tmp_25), p.z - 40.0);
     let gsl_tmp_55 = floor(p.x / 60.0 + 6.5);
     let gsl_tmp_56 = floor((140.0 - p.y) / 70.0);
-    let gsl_tmp_57 = vec2<f32>(select(select(0.0, 0.0, gsl_tmp_55 > 12.0), 0.0, gsl_tmp_55 < 0.0) * 60.0, -select(select(0.0, 0.0, gsl_tmp_56 > 3.0), 0.0, gsl_tmp_56 < 0.0) * 70.0);
+    let gsl_tmp_57 = vec2<f32>(select(select(0.0, 0.0, clamp(gsl_tmp_55, 0.0, 12.0) < gsl_tmp_55), 0.0, clamp(gsl_tmp_55, 0.0, 12.0) > gsl_tmp_55) * 60.0, -select(select(0.0, 0.0, clamp(gsl_tmp_56, 0.0, 3.0) < gsl_tmp_56), 0.0, clamp(gsl_tmp_56, 0.0, 3.0) > gsl_tmp_56) * 70.0);
     let gsl_tmp_48 = centre.x - 20.0 - p.x;
     let gsl_tmp_49 = centre.y - 20.0 - p.y;
     let gsl_tmp_61 = select(-1.0, select(gsl_tmp_57.y - 0.0, gsl_tmp_57.x - 0.0, gsl_tmp_48 > gsl_tmp_49), max(gsl_tmp_48, gsl_tmp_49) > -p.z);
@@ -913,7 +917,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_29_7: f3
   }
   return vec4<f32>(0.0, 0.0, 0.0, 0.0);
 }
-fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_29_7: f32, gsl_param_32_11: f32, noiseTex: texture_3d<f32>) -> gsl_material {
+fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_29_20: f32, gsl_param_30_24: f32, noiseTex: texture_3d<f32>) -> gsl_material {
   if (gsl_materialIdx == 1u) {
     let material_bulk_wood_pineNumber = 14.0;
     let material_bulk_wood_sugarMapleNumber = 6.0;
@@ -924,12 +928,12 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_29
     let column = clamp(floor(p.x / 60.0 + 6.5), 0.0, 12.0);
     let centre = vec2<f32>((column - 6.0) * 60.0, (1.5 - rank) * 70.0);
     let stem = vec3<f32>(centre.x - 60.0, centre.y - 35.0, 0.0);
-    let age = gsl_param_29_7;
-    let weather = gsl_param_32_11;
+    let age = gsl_param_29_20;
+    let weather = gsl_param_30_24;
     let look = vec3<f32>(0.0, age, weather);
     let gsl_tmp_17 = floor(p.x / 60.0 + 6.5);
     let gsl_tmp_18 = floor((140.0 - p.y) / 70.0);
-    let gsl_tmp_19 = vec2<f32>(select(select(0.0, 0.0, gsl_tmp_17 > 12.0), 0.0, gsl_tmp_17 < 0.0) * 60.0, -select(select(0.0, 0.0, gsl_tmp_18 > 3.0), 0.0, gsl_tmp_18 < 0.0) * 70.0);
+    let gsl_tmp_19 = vec2<f32>(select(select(0.0, 0.0, clamp(gsl_tmp_17, 0.0, 12.0) < gsl_tmp_17), 0.0, clamp(gsl_tmp_17, 0.0, 12.0) > gsl_tmp_17) * 60.0, -select(select(0.0, 0.0, clamp(gsl_tmp_18, 0.0, 3.0) < gsl_tmp_18), 0.0, clamp(gsl_tmp_18, 0.0, 3.0) > gsl_tmp_18) * 70.0);
     let gsl_tmp_10 = centre.x - 20.0 - p.x;
     let gsl_tmp_11 = centre.y - 20.0 - p.y;
     let gsl_tmp_23 = select(-0.0, select(gsl_tmp_19.y - 0.0, gsl_tmp_19.x - 1.0, gsl_tmp_10 > gsl_tmp_11), max(gsl_tmp_10, gsl_tmp_11) > -p.z);
@@ -948,7 +952,7 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_29
     let gsl_tmp_7 = max(max(gsl_tmp_5, gsl_tmp_6), p.z - 40.0);
     let gsl_tmp_36 = floor(p.x / 60.0 + 6.5);
     let gsl_tmp_37 = floor((140.0 - p.y) / 70.0);
-    let gsl_tmp_38 = vec2<f32>(select(select(0.0, 0.0, gsl_tmp_36 > 12.0), 0.0, gsl_tmp_36 < 0.0) * 60.0, -select(select(0.0, 0.0, gsl_tmp_37 > 3.0), 0.0, gsl_tmp_37 < 0.0) * 70.0);
+    let gsl_tmp_38 = vec2<f32>(select(select(0.0, 0.0, clamp(gsl_tmp_36, 0.0, 12.0) < gsl_tmp_36), 0.0, clamp(gsl_tmp_36, 0.0, 12.0) > gsl_tmp_36) * 60.0, -select(select(0.0, 0.0, clamp(gsl_tmp_37, 0.0, 3.0) < gsl_tmp_37), 0.0, clamp(gsl_tmp_37, 0.0, 3.0) > gsl_tmp_37) * 70.0);
     let gsl_tmp_29 = centre.x - 20.0 - p.x;
     let gsl_tmp_30 = centre.y - 20.0 - p.y;
     let gsl_tmp_42 = select(-0.0, select(gsl_tmp_38.y - 1.0, gsl_tmp_38.x - 0.0, gsl_tmp_29 > gsl_tmp_30), max(gsl_tmp_29, gsl_tmp_30) > -p.z);
@@ -967,7 +971,7 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_29
     let gsl_tmp_26 = max(max(gsl_tmp_24, gsl_tmp_25), p.z - 40.0);
     let gsl_tmp_55 = floor(p.x / 60.0 + 6.5);
     let gsl_tmp_56 = floor((140.0 - p.y) / 70.0);
-    let gsl_tmp_57 = vec2<f32>(select(select(0.0, 0.0, gsl_tmp_55 > 12.0), 0.0, gsl_tmp_55 < 0.0) * 60.0, -select(select(0.0, 0.0, gsl_tmp_56 > 3.0), 0.0, gsl_tmp_56 < 0.0) * 70.0);
+    let gsl_tmp_57 = vec2<f32>(select(select(0.0, 0.0, clamp(gsl_tmp_55, 0.0, 12.0) < gsl_tmp_55), 0.0, clamp(gsl_tmp_55, 0.0, 12.0) > gsl_tmp_55) * 60.0, -select(select(0.0, 0.0, clamp(gsl_tmp_56, 0.0, 3.0) < gsl_tmp_56), 0.0, clamp(gsl_tmp_56, 0.0, 3.0) > gsl_tmp_56) * 70.0);
     let gsl_tmp_48 = centre.x - 20.0 - p.x;
     let gsl_tmp_49 = centre.y - 20.0 - p.y;
     let gsl_tmp_61 = select(-1.0, select(gsl_tmp_57.y - 0.0, gsl_tmp_57.x - 0.0, gsl_tmp_48 > gsl_tmp_49), max(gsl_tmp_48, gsl_tmp_49) > -p.z);

@@ -5,12 +5,12 @@ import (
 	"math"
 	"slices"
 
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
+	"github.com/Gradient-Control-Laboratories/omega-core/parser/internal/annotation"
+	"github.com/Gradient-Control-Laboratories/omega-core/parser/internal/identifier2"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
-	"gradientcontrol.com/omega/core/internal/scope"
-	"gradientcontrol.com/omega/core/parser/internal/annotation"
-	"gradientcontrol.com/omega/core/parser/internal/identifier2"
-	"gradientcontrol.com/omega/core/program"
 )
 
 func buildFunction(parentScope scope.BuilderScope, decl *NamedFunction) error {
@@ -351,7 +351,7 @@ func extractPositiveFloatLiteral(expr *Expression) (float64, bool) {
 		return 0, false
 	}
 	factor := terms.Left.Left
-	if factor.Negative || factor.Not {
+	if factor.Negative || factor.Not || len(factor.Modifiers) > 0 {
 		return 0, false
 	}
 	if factor.Value == nil {
@@ -397,7 +397,7 @@ func extractNonNegativeIntLiteral(expr *Expression) (int, bool) {
 		return 0, false
 	}
 	factor := terms.Left.Left
-	if factor.Negative || factor.Not {
+	if factor.Negative || factor.Not || len(factor.Modifiers) > 0 {
 		return 0, false
 	}
 	if factor.Value == nil {
@@ -443,7 +443,7 @@ func extractStringLiteral(expr *Expression) (*String, bool) {
 		return nil, false
 	}
 	factor := term.Left
-	if factor.Negative || factor.Not {
+	if factor.Negative || factor.Not || len(factor.Modifiers) > 0 {
 		return nil, false
 	}
 	if factor.Value == nil {

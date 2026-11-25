@@ -9,30 +9,18 @@
 
 waterMat, waterColor = glass.water();
 
-waveVx = 2.0;
-waveVx.min = -10;
-waveVx.max = 10;
-waveVy = 1.0;
-waveVy.min = -10;
-waveVy.max = 10;
-waveVz = 3.0;
-waveVz.min = -10;
-waveVz.max = 10;
+@range(-10, 10) waveVx = 2.0;
+@range(-10, 10) waveVy = 1.0;
+@range(-10, 10) waveVz = 3.0;
 
 // How fast the waves change shape as they go: the noise's cell size along
 // time, in seconds. Smaller changes faster.
-waveMorph = 3.0;
-waveMorph.min = 0.5;
-waveMorph.max = 10;
+@range(0.5, 10) waveMorph = 3.0;
 
 // The waves' size (the noise's cell size, in mm) and height (a multiple of
 // the noise's own height, which grows with its size).
-waveSize = 2.5;
-waveSize.min = 1;
-waveSize.max = 12;
-waveHeight = 2.0;
-waveHeight.min = 0;
-waveHeight.max = 4;
+@range(1, 12) waveSize = 2.5;
+@range(0, 4) waveHeight = 2.0;
 
 // The noise is sampled where the waves were time seconds ago, so they travel
 // at the chosen velocity. They add at most waveHeight to the field's slope, so

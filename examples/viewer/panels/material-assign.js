@@ -355,7 +355,7 @@ function rewriteDestructure(lines, idx, body, call) {
 //
 // One top-level variable is written per parameter, named `<body><Param>`
 // (boltCoatColor, boltGlossUnits), each with the control its kind declares:
-// a scalar with .min and .max for the slider, @color for the chip row, @point,
+// a scalar with @range for the slider, @color for the chip row, @point,
 // @direction and @transform for the gizmos. The template follows, filled in
 // for the body, in place of the one-line form the panel wrote. From here the
 // Parameters panel and the viewer take over; this edit is made once.
@@ -411,7 +411,7 @@ function declarationLines(p, names) {
     const vec = (xs) => `[${xs.map(numberText).join(", ")}]`;
     switch (p.kind) {
         case "range":
-            return [`${v} = ${numberText(p.default[0])};`, `${v}.min = ${numberText(p.min)};`, `${v}.max = ${numberText(p.max)};`];
+            return [`@range(${numberText(p.min)}, ${numberText(p.max)}) ${v} = ${numberText(p.default[0])};`];
         case "color":
             return [`@color ${v} = ${vec(p.default)};`];
         case "point":
@@ -445,16 +445,15 @@ function liftedNames(value, body) {
 }
 
 // removeUnreadDeclarations drops the top-level declarations of `names` that
-// nothing reads any more, with their .min and .max lines, until none is left
-// to drop: a direction's declaration reads its anchor's, so the anchor goes
-// on the pass after the direction.
+// nothing reads any more, until none is left to drop: a direction's declaration
+// reads its anchor's, so the anchor goes on the pass after the direction.
 function removeUnreadDeclarations(source, names) {
     let lines = source.split("\n");
     let pending = new Set(names);
     for (let changed = true; changed && pending.size;) {
         changed = false;
         for (const name of [...pending]) {
-            const own = (line) => declaresOrSets(line, name);
+            const own = (line) => declares(line, name);
             const readElsewhere = lines.some((line) => !own(line) && new RegExp(`\\b${escapeName(name)}\\b`).test(codeOf(line)));
             if (readElsewhere) continue;
             lines = lines.filter((line) => !own(line));
@@ -465,12 +464,10 @@ function removeUnreadDeclarations(source, names) {
     return lines.join("\n");
 }
 
-// declaresOrSets: the line is `name = …`, with or without an annotation in
-// front, or `name.min = …` / `name.max = …`.
-function declaresOrSets(line, name) {
-    const n = escapeName(name);
-    return new RegExp(`^(@\\w+(\\([^)]*\\))?\\s+)?${n}\\s*=(?!=)`).test(line) ||
-        new RegExp(`^\\s*${n}\\.(min|max)\\s*=`).test(line);
+// declares: the line is `name = …`, with or without an annotation in front
+// (`@range(0, 1) name = …`).
+function declares(line, name) {
+    return new RegExp(`^(@\\w+(\\([^)]*\\))?\\s+)?${escapeName(name)}\\s*=(?!=)`).test(line);
 }
 
 // declarationRE matches the top-level declaration of `name`, with or without
@@ -967,16 +964,25 @@ function readParameter(lines, p, arg) {
     const value = decl ? parse(decl[2].trim()) : null;
     if (value === null) return null;
     if (p.kind === "color") return { value, variable: arg };
-    return { value, variable: arg, min: numberProperty(lines, arg, "min") ?? p.min, max: numberProperty(lines, arg, "max") ?? p.max };
+    // The limits are the declaration's @range; a bound the document does not
+    // give as a number is the catalog's.
+    const limits = rangeLimits(decl[1] || "");
+    return {
+        value, variable: arg,
+        min: limits.min ?? p.min,
+        max: limits.max ?? p.max,
+    };
 }
 
 const NUMBER_RE = /^-?(\d+\.?\d*|\.\d+)$/;
 
-// numberProperty is the number a line `name.property = …;` sets, or null.
-function numberProperty(lines, name, property) {
-    const re = new RegExp(`^\\s*${escapeName(name)}\\.${property}\\s*=\\s*([^;]*);`);
-    const text = lines.map((line) => line.match(re)).find(Boolean)?.[1].trim();
-    return text !== undefined && NUMBER_RE.test(text) ? Number(text) : null;
+// rangeLimits are the numbers an annotation `@range(min, max[, period])` gives
+// as its limits, each null when the annotation is not a range or writes that
+// limit as anything but a number.
+function rangeLimits(annotation) {
+    const m = annotation.match(/^@range\(\s*([^,)]*)\s*,\s*([^,)]*?)\s*(?:,[^)]*)?\)/);
+    const number = (text) => (text !== undefined && NUMBER_RE.test(text.trim()) ? Number(text) : null);
+    return { min: number(m?.[1]), max: number(m?.[2]) };
 }
 
 // valueText writes a parameter's value as GSL: a number, or a color.

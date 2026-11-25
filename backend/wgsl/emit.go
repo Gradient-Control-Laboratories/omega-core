@@ -1,8 +1,8 @@
 package wgsl
 
 import (
-	"gradientcontrol.com/omega/core/program"
-	"gradientcontrol.com/omega/core/program/progress"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program/progress"
 )
 
 // Option configures WGSL shader rendering.

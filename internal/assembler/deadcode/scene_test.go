@@ -4,9 +4,9 @@ import (
 	"reflect"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/assembler/deadcode"
-	"gradientcontrol.com/omega/core/internal/source"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/deadcode"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func TestRemovePreservesSceneAndSamplingBounds(t *testing.T) {

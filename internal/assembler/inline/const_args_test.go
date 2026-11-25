@@ -3,15 +3,15 @@ package inline_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/assembler/inline"
-	"gradientcontrol.com/omega/core/internal/closure"
-	"gradientcontrol.com/omega/core/internal/collect"
-	"gradientcontrol.com/omega/core/internal/link"
-	"gradientcontrol.com/omega/core/internal/lower"
-	"gradientcontrol.com/omega/core/internal/source"
-	"gradientcontrol.com/omega/core/internal/types"
-	parser "gradientcontrol.com/omega/core/parser"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/inline"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/closure"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/collect"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/link"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/lower"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/types"
+	parser "github.com/Gradient-Control-Laboratories/omega-core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // literalChecker reports the literals under some top-level declarations as
@@ -27,9 +27,12 @@ func (c literalChecker) IsParameter(op *program.Operand) bool { return c[op] }
 func inlineWithParameters(t *testing.T, src string, params []string) *program.Program {
 	t.Helper()
 	srcMgr := &source.MockManager{}
-	prog, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	prog, diags, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if len(diags) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", diags)
 	}
 	step := func(err error) {
 		t.Helper()

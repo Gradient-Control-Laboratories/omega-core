@@ -111,43 +111,43 @@ fn thread_paint(base: vec3<f32>, height: f32, pitchVal: f32) -> vec3<f32> {
 }
 
 fn gsl_remap_4(p: vec3<f32>) -> f32 {
-  let gslCarry4 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 16.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
-  return gslCarry4;
+  let gslCarry9 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 16.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
+  return gslCarry9;
 }
 
 fn gsl_remap_5(p: vec3<f32>) -> f32 {
-  let gslCarry1 = min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5));
-  return gslCarry1;
+  let gslCarry5 = min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5));
+  return gslCarry5;
 }
 
 fn gsl_remap_6(p: vec3<f32>) -> f32 {
-  let gslCarry10 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 16.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
-  return gslCarry10;
-}
-
-fn gsl_remap_7(p: vec3<f32>) -> f32 {
-  let gslCarry7 = min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5));
-  return gslCarry7;
-}
-
-fn gsl_remap_8(p: vec3<f32>) -> f32 {
-  let gslCarry16 = fastener_nut(p, 5.0);
+  let gslCarry16 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 16.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
   return gslCarry16;
 }
 
+fn gsl_remap_7(p: vec3<f32>) -> f32 {
+  let gslCarry12 = min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5));
+  return gslCarry12;
+}
+
+fn gsl_remap_8(p: vec3<f32>) -> f32 {
+  let gslCarry23 = fastener_nut(p, 5.0);
+  return gslCarry23;
+}
+
 fn gsl_remap_9(p: vec3<f32>) -> f32 {
-  let gslCarry13 = max(max(max(max(max(abs(p.x) - 4.0, abs(0.5 * p.x + 0.8660254 * p.y) - 4.0), abs(0.5 * p.x - 0.8660254 * p.y) - 4.0), -p.z), p.z - 4.7), -(length(p.xy) - 2.0669873));
-  return gslCarry13;
+  let gslCarry19 = max(max(max(max(max(abs(p.x) - 4.0, abs(0.5 * p.x + 0.8660254 * p.y) - 4.0), abs(0.5 * p.x - 0.8660254 * p.y) - 4.0), -p.z), p.z - 4.7), -(length(p.xy) - 2.0669873));
+  return gslCarry19;
 }
 
 fn gsl_remap_10(p: vec3<f32>) -> f32 {
-  let gslCarry22 = fastener_nut(p, 5.0);
-  return gslCarry22;
+  let gslCarry30 = fastener_nut(p, 5.0);
+  return gslCarry30;
 }
 
 fn gsl_remap_11(p: vec3<f32>) -> f32 {
-  let gslCarry19 = max(max(max(max(max(abs(p.x) - 4.0, abs(0.5 * p.x + 0.8660254 * p.y) - 4.0), abs(0.5 * p.x - 0.8660254 * p.y) - 4.0), -p.z), p.z - 4.7), -(length(p.xy) - 2.0669873));
-  return gslCarry19;
+  let gslCarry26 = max(max(max(max(max(abs(p.x) - 4.0, abs(0.5 * p.x + 0.8660254 * p.y) - 4.0), abs(0.5 * p.x - 0.8660254 * p.y) - 4.0), -p.z), p.z - 4.7), -(length(p.xy) - 2.0669873));
+  return gslCarry26;
 }
 
 fn thread_reliefColor(base: vec3<f32>, height: f32, pitchVal: f32) -> vec3<f32> {
@@ -166,190 +166,254 @@ fn material_withDisplacement(m: mat4x4<f32>, height: f32) -> mat4x4<f32> {
 }
 
 fn gsl_remap_12(p: vec3<f32>) -> f32 {
-  let gslCarry28 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 16.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
-  return gslCarry28;
-}
-
-fn gsl_remap_13(p: vec3<f32>) -> f32 {
-  let gslCarry25 = min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5));
-  return gslCarry25;
-}
-
-fn gsl_remap_14(p: vec3<f32>) -> f32 {
-  let gslCarry34 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 16.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
-  return gslCarry34;
-}
-
-fn gsl_remap_15(p: vec3<f32>) -> f32 {
-  let gslCarry31 = min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5));
-  return gslCarry31;
-}
-
-fn gsl_remap_16(p: vec3<f32>) -> f32 {
-  let gslCarry40 = fastener_nut(p, 5.0);
-  return gslCarry40;
-}
-
-fn gsl_remap_17(p: vec3<f32>) -> f32 {
-  let gslCarry37 = max(max(max(max(max(abs(p.x) - 4.0, abs(0.5 * p.x + 0.8660254 * p.y) - 4.0), abs(0.5 * p.x - 0.8660254 * p.y) - 4.0), -p.z), p.z - 4.7), -(length(p.xy) - 2.0669873));
+  let gslCarry37 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 16.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
   return gslCarry37;
 }
 
+fn gsl_remap_13(p: vec3<f32>) -> f32 {
+  let gslCarry33 = min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5));
+  return gslCarry33;
+}
+
+fn gsl_remap_14(p: vec3<f32>) -> f32 {
+  let gslCarry44 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 16.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
+  return gslCarry44;
+}
+
+fn gsl_remap_15(p: vec3<f32>) -> f32 {
+  let gslCarry40 = min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5));
+  return gslCarry40;
+}
+
+fn gsl_remap_16(p: vec3<f32>) -> f32 {
+  let gslCarry51 = fastener_nut(p, 5.0);
+  return gslCarry51;
+}
+
+fn gsl_remap_17(p: vec3<f32>) -> f32 {
+  let gslCarry47 = max(max(max(max(max(abs(p.x) - 4.0, abs(0.5 * p.x + 0.8660254 * p.y) - 4.0), abs(0.5 * p.x - 0.8660254 * p.y) - 4.0), -p.z), p.z - 4.7), -(length(p.xy) - 2.0669873));
+  return gslCarry47;
+}
+
 fn gsl_remap_18(p: vec3<f32>) -> f32 {
-  let gslCarry46 = fastener_nut(p, 5.0);
-  return gslCarry46;
-}
-
-fn gsl_remap_19(p: vec3<f32>) -> f32 {
-  let gslCarry43 = max(max(max(max(max(abs(p.x) - 4.0, abs(0.5 * p.x + 0.8660254 * p.y) - 4.0), abs(0.5 * p.x - 0.8660254 * p.y) - 4.0), -p.z), p.z - 4.7), -(length(p.xy) - 2.0669873));
-  return gslCarry43;
-}
-
-fn gsl_remap_20(p: vec3<f32>) -> f32 {
-  let gslCarry52 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 16.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
-  return gslCarry52;
-}
-
-fn gsl_remap_21(p: vec3<f32>) -> f32 {
-  let gslCarry49 = min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5));
-  return gslCarry49;
-}
-
-fn gsl_remap_22(p: vec3<f32>) -> f32 {
-  let gslCarry58 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 16.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
+  let gslCarry58 = fastener_nut(p, 5.0);
   return gslCarry58;
 }
 
-fn gsl_remap_23(p: vec3<f32>) -> f32 {
-  let gslCarry55 = min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5));
-  return gslCarry55;
+fn gsl_remap_19(p: vec3<f32>) -> f32 {
+  let gslCarry54 = max(max(max(max(max(abs(p.x) - 4.0, abs(0.5 * p.x + 0.8660254 * p.y) - 4.0), abs(0.5 * p.x - 0.8660254 * p.y) - 4.0), -p.z), p.z - 4.7), -(length(p.xy) - 2.0669873));
+  return gslCarry54;
 }
 
-fn gsl_remap_24(p: vec3<f32>) -> f32 {
-  let gslCarry64 = fastener_nut(p, 5.0);
-  return gslCarry64;
+fn gsl_remap_20(p: vec3<f32>) -> f32 {
+  let gslCarry65 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 16.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
+  return gslCarry65;
 }
 
-fn gsl_remap_25(p: vec3<f32>) -> f32 {
-  let gslCarry61 = max(max(max(max(max(abs(p.x) - 4.0, abs(0.5 * p.x + 0.8660254 * p.y) - 4.0), abs(0.5 * p.x - 0.8660254 * p.y) - 4.0), -p.z), p.z - 4.7), -(length(p.xy) - 2.0669873));
+fn gsl_remap_21(p: vec3<f32>) -> f32 {
+  let gslCarry61 = min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5));
   return gslCarry61;
 }
 
-fn gsl_remap_26(p: vec3<f32>) -> f32 {
-  let gslCarry70 = fastener_nut(p, 5.0);
-  return gslCarry70;
+fn gsl_remap_22(p: vec3<f32>) -> f32 {
+  let gslCarry72 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 16.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
+  return gslCarry72;
 }
 
-fn gsl_remap_27(p: vec3<f32>) -> f32 {
-  let gslCarry67 = max(max(max(max(max(abs(p.x) - 4.0, abs(0.5 * p.x + 0.8660254 * p.y) - 4.0), abs(0.5 * p.x - 0.8660254 * p.y) - 4.0), -p.z), p.z - 4.7), -(length(p.xy) - 2.0669873));
-  return gslCarry67;
+fn gsl_remap_23(p: vec3<f32>) -> f32 {
+  let gslCarry68 = min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5));
+  return gslCarry68;
 }
 
-fn gsl_remap_28(p: vec3<f32>) -> f32 {
-  let gsl_tmp_276 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_275 = max(length(p.xy), 0.2);
-  let gslCarry75 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max((length(p.xy) - (2.5 - 0.21650636 * (1.0 - (cos(gsl_tmp_276) * p.x / gsl_tmp_275 + sin(gsl_tmp_276) * p.y / gsl_tmp_275)))) * 0.7, -16.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 16.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
-  return gslCarry75;
-}
-
-fn gsl_remap_29(p: vec3<f32>) -> f32 {
-  let gslCarry73 = min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5));
-  return gslCarry73;
-}
-
-fn gsl_remap_30(p: vec3<f32>) -> f32 {
-  let gsl_tmp_292 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_291 = max(length(p.xy), 0.2);
-  let gslCarry79 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max((length(p.xy) - (2.5 - 0.21650636 * (1.0 - (cos(gsl_tmp_292) * p.x / gsl_tmp_291 + sin(gsl_tmp_292) * p.y / gsl_tmp_291)))) * 0.7, -16.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 16.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
+fn gsl_remap_24(p: vec3<f32>) -> f32 {
+  let gslCarry79 = fastener_nut(p, 5.0);
   return gslCarry79;
 }
 
-fn gsl_remap_31(p: vec3<f32>) -> f32 {
-  let gslCarry77 = min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5));
-  return gslCarry77;
+fn gsl_remap_25(p: vec3<f32>) -> f32 {
+  let gslCarry75 = max(max(max(max(max(abs(p.x) - 4.0, abs(0.5 * p.x + 0.8660254 * p.y) - 4.0), abs(0.5 * p.x - 0.8660254 * p.y) - 4.0), -p.z), p.z - 4.7), -(length(p.xy) - 2.0669873));
+  return gslCarry75;
 }
 
-fn gsl_remap_32(p: vec3<f32>) -> f32 {
-  let gsl_tmp_312 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_311 = max(length(p.xy), 0.2);
-  let gslCarry83 = max(fastener_nut(p, 5.0), -((length(p.xy) - (2.5 - 0.21650636 * (1.0 - (cos(gsl_tmp_312) * p.x / gsl_tmp_311 + sin(gsl_tmp_312) * p.y / gsl_tmp_311)))) * 0.7));
-  return gslCarry83;
+fn gsl_remap_26(p: vec3<f32>) -> f32 {
+  let gslCarry86 = fastener_nut(p, 5.0);
+  return gslCarry86;
 }
 
-fn gsl_remap_33(p: vec3<f32>) -> f32 {
-  let gslCarry81 = max(max(max(max(max(abs(p.x) - 4.0, abs(0.5 * p.x + 0.8660254 * p.y) - 4.0), abs(0.5 * p.x - 0.8660254 * p.y) - 4.0), -p.z), p.z - 4.7), -(length(p.xy) - 2.0669873));
-  return gslCarry81;
+fn gsl_remap_27(p: vec3<f32>) -> f32 {
+  let gslCarry82 = max(max(max(max(max(abs(p.x) - 4.0, abs(0.5 * p.x + 0.8660254 * p.y) - 4.0), abs(0.5 * p.x - 0.8660254 * p.y) - 4.0), -p.z), p.z - 4.7), -(length(p.xy) - 2.0669873));
+  return gslCarry82;
 }
 
-fn gsl_remap_34(p: vec3<f32>) -> f32 {
-  let gsl_tmp_328 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_327 = max(length(p.xy), 0.2);
-  let gslCarry87 = max(fastener_nut(p, 5.0), -((length(p.xy) - (2.5 - 0.21650636 * (1.0 - (cos(gsl_tmp_328) * p.x / gsl_tmp_327 + sin(gsl_tmp_328) * p.y / gsl_tmp_327)))) * 0.7));
-  return gslCarry87;
+fn gsl_remap_28(p: vec3<f32>) -> f32 {
+  let gsl_simpleWeight = gsl_simpleSized(0.4);
+  var gsl_simplePart = 1e10;
+  if (gsl_simpleWeight > 0.0) {
+    let gsl_tmp_290 = 6.2831855 * p.z / 0.8;
+    let gsl_tmp_289 = max(length(p.xy), 0.2);
+    gsl_simplePart = (length(p.xy) - (2.5 - 0.21650636 * (1.0 - (cos(gsl_tmp_290) * p.x / gsl_tmp_289 + sin(gsl_tmp_290) * p.y / gsl_tmp_289)))) * 0.7;
+  }
+  if (gsl_simpleWeight < 1.0) {
+    gsl_simplePart = mix(max(length(p.xy) - 2.2402, gsl_boxSdf(p, vec3<f32>(-1000000000.0, -1000000000.0, -1000000000.0), vec3<f32>(1000000000.0, 1000000000.0, 1000000000.0))), gsl_simplePart, gsl_simpleWeight);
+  }
+  let gslCarry92 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(gsl_simplePart, -16.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 16.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
+  return gslCarry92;
 }
 
-fn gsl_remap_35(p: vec3<f32>) -> f32 {
-  let gslCarry85 = max(max(max(max(max(abs(p.x) - 4.0, abs(0.5 * p.x + 0.8660254 * p.y) - 4.0), abs(0.5 * p.x - 0.8660254 * p.y) - 4.0), -p.z), p.z - 4.7), -(length(p.xy) - 2.0669873));
-  return gslCarry85;
-}
-
-fn gsl_remap_36(p: vec3<f32>) -> f32 {
-  let gsl_tmp_339 = length(p.xy);
-  let gsl_tmp_341 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_340 = max(length(p.xy), 0.2);
-  let gslCarry91 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(max(length(p.xy) - 2.5, -max(2.0669873 - gsl_tmp_339, ((1.0 - acos(clamp(cos(gsl_tmp_341) * p.x / gsl_tmp_340 + sin(gsl_tmp_341) * p.y / gsl_tmp_340, -1.0, 1.0)) / 3.1415927) * 0.4 - 0.1 - (gsl_tmp_339 - 2.0669873) * 0.57735026) * 0.86383384)), -16.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 16.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
-  return gslCarry91;
-}
-
-fn gsl_remap_37(p: vec3<f32>) -> f32 {
+fn gsl_remap_29(p: vec3<f32>) -> f32 {
   let gslCarry89 = min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5));
   return gslCarry89;
 }
 
-fn gsl_remap_38(p: vec3<f32>) -> f32 {
-  let gsl_tmp_356 = length(p.xy);
-  let gsl_tmp_358 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_357 = max(length(p.xy), 0.2);
-  let gslCarry95 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(max(length(p.xy) - 2.5, -max(2.0669873 - gsl_tmp_356, ((1.0 - acos(clamp(cos(gsl_tmp_358) * p.x / gsl_tmp_357 + sin(gsl_tmp_358) * p.y / gsl_tmp_357, -1.0, 1.0)) / 3.1415927) * 0.4 - 0.1 - (gsl_tmp_356 - 2.0669873) * 0.57735026) * 0.86383384)), -16.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 16.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
-  return gslCarry95;
-}
-
-fn gsl_remap_39(p: vec3<f32>) -> f32 {
-  let gslCarry93 = min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5));
-  return gslCarry93;
-}
-
-fn gsl_remap_40(p: vec3<f32>) -> f32 {
-  let gsl_tmp_377 = length(p.xy);
-  let gsl_tmp_379 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_378 = max(length(p.xy), 0.2);
-  let gslCarry99 = max(fastener_nut(p, 5.0), -max(length(p.xy) - 2.5, -max(2.0669873 - gsl_tmp_377, ((1.0 - acos(clamp(cos(gsl_tmp_379) * p.x / gsl_tmp_378 + sin(gsl_tmp_379) * p.y / gsl_tmp_378, -1.0, 1.0)) / 3.1415927) * 0.4 - 0.1 - (gsl_tmp_377 - 2.0669873) * 0.57735026) * 0.86383384)));
-  return gslCarry99;
-}
-
-fn gsl_remap_41(p: vec3<f32>) -> f32 {
-  let gslCarry97 = max(max(max(max(max(abs(p.x) - 4.0, abs(0.5 * p.x + 0.8660254 * p.y) - 4.0), abs(0.5 * p.x - 0.8660254 * p.y) - 4.0), -p.z), p.z - 4.7), -(length(p.xy) - 2.0669873));
+fn gsl_remap_30(p: vec3<f32>) -> f32 {
+  let gsl_simpleWeight = gsl_simpleSized(0.4);
+  var gsl_simplePart = 1e10;
+  if (gsl_simpleWeight > 0.0) {
+    let gsl_tmp_306 = 6.2831855 * p.z / 0.8;
+    let gsl_tmp_305 = max(length(p.xy), 0.2);
+    gsl_simplePart = (length(p.xy) - (2.5 - 0.21650636 * (1.0 - (cos(gsl_tmp_306) * p.x / gsl_tmp_305 + sin(gsl_tmp_306) * p.y / gsl_tmp_305)))) * 0.7;
+  }
+  if (gsl_simpleWeight < 1.0) {
+    gsl_simplePart = mix(max(length(p.xy) - 2.2402, gsl_boxSdf(p, vec3<f32>(-1000000000.0, -1000000000.0, -1000000000.0), vec3<f32>(1000000000.0, 1000000000.0, 1000000000.0))), gsl_simplePart, gsl_simpleWeight);
+  }
+  let gslCarry97 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(gsl_simplePart, -16.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 16.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
   return gslCarry97;
 }
 
-fn gsl_remap_42(p: vec3<f32>) -> f32 {
-  let gsl_tmp_394 = length(p.xy);
-  let gsl_tmp_396 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_395 = max(length(p.xy), 0.2);
-  let gslCarry103 = max(fastener_nut(p, 5.0), -max(length(p.xy) - 2.5, -max(2.0669873 - gsl_tmp_394, ((1.0 - acos(clamp(cos(gsl_tmp_396) * p.x / gsl_tmp_395 + sin(gsl_tmp_396) * p.y / gsl_tmp_395, -1.0, 1.0)) / 3.1415927) * 0.4 - 0.1 - (gsl_tmp_394 - 2.0669873) * 0.57735026) * 0.86383384)));
+fn gsl_remap_31(p: vec3<f32>) -> f32 {
+  let gslCarry94 = min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5));
+  return gslCarry94;
+}
+
+fn gsl_remap_32(p: vec3<f32>) -> f32 {
+  let gsl_simpleWeight = gsl_simpleSized(0.4);
+  var gsl_simplePart = 1e10;
+  if (gsl_simpleWeight > 0.0) {
+    let gsl_tmp_327 = 6.2831855 * p.z / 0.8;
+    let gsl_tmp_326 = max(length(p.xy), 0.2);
+    gsl_simplePart = (length(p.xy) - (2.5 - 0.21650636 * (1.0 - (cos(gsl_tmp_327) * p.x / gsl_tmp_326 + sin(gsl_tmp_327) * p.y / gsl_tmp_326)))) * 0.7;
+  }
+  if (gsl_simpleWeight < 1.0) {
+    gsl_simplePart = mix(max(length(p.xy) - 2.2402, gsl_boxSdf(p, vec3<f32>(-1000000000.0, -1000000000.0, -1000000000.0), vec3<f32>(1000000000.0, 1000000000.0, 1000000000.0))), gsl_simplePart, gsl_simpleWeight);
+  }
+  let gslCarry101 = max(fastener_nut(p, 5.0), -gsl_simplePart);
+  return gslCarry101;
+}
+
+fn gsl_remap_33(p: vec3<f32>) -> f32 {
+  let gslCarry99 = max(max(max(max(max(abs(p.x) - 4.0, abs(0.5 * p.x + 0.8660254 * p.y) - 4.0), abs(0.5 * p.x - 0.8660254 * p.y) - 4.0), -p.z), p.z - 4.7), -(length(p.xy) - 2.0669873));
+  return gslCarry99;
+}
+
+fn gsl_remap_34(p: vec3<f32>) -> f32 {
+  let gsl_simpleWeight = gsl_simpleSized(0.4);
+  var gsl_simplePart = 1e10;
+  if (gsl_simpleWeight > 0.0) {
+    let gsl_tmp_344 = 6.2831855 * p.z / 0.8;
+    let gsl_tmp_343 = max(length(p.xy), 0.2);
+    gsl_simplePart = (length(p.xy) - (2.5 - 0.21650636 * (1.0 - (cos(gsl_tmp_344) * p.x / gsl_tmp_343 + sin(gsl_tmp_344) * p.y / gsl_tmp_343)))) * 0.7;
+  }
+  if (gsl_simpleWeight < 1.0) {
+    gsl_simplePart = mix(max(length(p.xy) - 2.2402, gsl_boxSdf(p, vec3<f32>(-1000000000.0, -1000000000.0, -1000000000.0), vec3<f32>(1000000000.0, 1000000000.0, 1000000000.0))), gsl_simplePart, gsl_simpleWeight);
+  }
+  let gslCarry105 = max(fastener_nut(p, 5.0), -gsl_simplePart);
+  return gslCarry105;
+}
+
+fn gsl_remap_35(p: vec3<f32>) -> f32 {
+  let gslCarry103 = max(max(max(max(max(abs(p.x) - 4.0, abs(0.5 * p.x + 0.8660254 * p.y) - 4.0), abs(0.5 * p.x - 0.8660254 * p.y) - 4.0), -p.z), p.z - 4.7), -(length(p.xy) - 2.0669873));
   return gslCarry103;
 }
 
+fn gsl_remap_36(p: vec3<f32>) -> f32 {
+  let gsl_simpleWeight = gsl_simpleSized(0.4);
+  var gsl_simplePart = 1e10;
+  if (gsl_simpleWeight > 0.0) {
+    let gsl_tmp_355 = length(p.xy);
+    let gsl_tmp_357 = 6.2831855 * p.z / 0.8;
+    let gsl_tmp_356 = max(length(p.xy), 0.2);
+    gsl_simplePart = max(length(p.xy) - 2.5, -max(2.0669873 - gsl_tmp_355, ((1.0 - acos(clamp(cos(gsl_tmp_357) * p.x / gsl_tmp_356 + sin(gsl_tmp_357) * p.y / gsl_tmp_356, -1.0, 1.0)) / 3.1415927) * 0.4 - 0.1 - (gsl_tmp_355 - 2.0669873) * 0.57735026) * 0.86383384));
+  }
+  if (gsl_simpleWeight < 1.0) {
+    gsl_simplePart = mix(max(length(p.xy) - 2.2402, gsl_boxSdf(p, vec3<f32>(-1000000000.0, -1000000000.0, -1000000000.0), vec3<f32>(1000000000.0, 1000000000.0, 1000000000.0))), gsl_simplePart, gsl_simpleWeight);
+  }
+  let gslCarry110 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(gsl_simplePart, -16.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 16.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
+  return gslCarry110;
+}
+
+fn gsl_remap_37(p: vec3<f32>) -> f32 {
+  let gslCarry107 = min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5));
+  return gslCarry107;
+}
+
+fn gsl_remap_38(p: vec3<f32>) -> f32 {
+  let gsl_simpleWeight = gsl_simpleSized(0.4);
+  var gsl_simplePart = 1e10;
+  if (gsl_simpleWeight > 0.0) {
+    let gsl_tmp_373 = length(p.xy);
+    let gsl_tmp_375 = 6.2831855 * p.z / 0.8;
+    let gsl_tmp_374 = max(length(p.xy), 0.2);
+    gsl_simplePart = max(length(p.xy) - 2.5, -max(2.0669873 - gsl_tmp_373, ((1.0 - acos(clamp(cos(gsl_tmp_375) * p.x / gsl_tmp_374 + sin(gsl_tmp_375) * p.y / gsl_tmp_374, -1.0, 1.0)) / 3.1415927) * 0.4 - 0.1 - (gsl_tmp_373 - 2.0669873) * 0.57735026) * 0.86383384));
+  }
+  if (gsl_simpleWeight < 1.0) {
+    gsl_simplePart = mix(max(length(p.xy) - 2.2402, gsl_boxSdf(p, vec3<f32>(-1000000000.0, -1000000000.0, -1000000000.0), vec3<f32>(1000000000.0, 1000000000.0, 1000000000.0))), gsl_simplePart, gsl_simpleWeight);
+  }
+  let gslCarry115 = fastener_screw(max(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), (length(p.xy) - 4.25 + p.z - 5.0 + 0.2) * 0.7071), max(max(max(gsl_simplePart, -16.0 - p.z), p.z - 2.5), (length(p.xy) - 2.5 + -p.z - 16.0 + 0.75) * 0.7071), drill_prismVoid(p, 5.0, max(max(abs(p.x) - 2.0, abs(0.5 * p.x + 0.8660254 * p.y) - 2.0), abs(0.5 * p.x - 0.8660254 * p.y) - 2.0), 2.5));
+  return gslCarry115;
+}
+
+fn gsl_remap_39(p: vec3<f32>) -> f32 {
+  let gslCarry112 = min(max(max(length(p.xy) - 4.25, -p.z), p.z - 5.0), max(max(length(p.xy) - 2.5, -16.0 - p.z), p.z - 2.5));
+  return gslCarry112;
+}
+
+fn gsl_remap_40(p: vec3<f32>) -> f32 {
+  let gsl_simpleWeight = gsl_simpleSized(0.4);
+  var gsl_simplePart = 1e10;
+  if (gsl_simpleWeight > 0.0) {
+    let gsl_tmp_396 = length(p.xy);
+    let gsl_tmp_398 = 6.2831855 * p.z / 0.8;
+    let gsl_tmp_397 = max(length(p.xy), 0.2);
+    gsl_simplePart = max(length(p.xy) - 2.5, -max(2.0669873 - gsl_tmp_396, ((1.0 - acos(clamp(cos(gsl_tmp_398) * p.x / gsl_tmp_397 + sin(gsl_tmp_398) * p.y / gsl_tmp_397, -1.0, 1.0)) / 3.1415927) * 0.4 - 0.1 - (gsl_tmp_396 - 2.0669873) * 0.57735026) * 0.86383384));
+  }
+  if (gsl_simpleWeight < 1.0) {
+    gsl_simplePart = mix(max(length(p.xy) - 2.2402, gsl_boxSdf(p, vec3<f32>(-1000000000.0, -1000000000.0, -1000000000.0), vec3<f32>(1000000000.0, 1000000000.0, 1000000000.0))), gsl_simplePart, gsl_simpleWeight);
+  }
+  let gslCarry119 = max(fastener_nut(p, 5.0), -gsl_simplePart);
+  return gslCarry119;
+}
+
+fn gsl_remap_41(p: vec3<f32>) -> f32 {
+  let gslCarry117 = max(max(max(max(max(abs(p.x) - 4.0, abs(0.5 * p.x + 0.8660254 * p.y) - 4.0), abs(0.5 * p.x - 0.8660254 * p.y) - 4.0), -p.z), p.z - 4.7), -(length(p.xy) - 2.0669873));
+  return gslCarry117;
+}
+
+fn gsl_remap_42(p: vec3<f32>) -> f32 {
+  let gsl_simpleWeight = gsl_simpleSized(0.4);
+  var gsl_simplePart = 1e10;
+  if (gsl_simpleWeight > 0.0) {
+    let gsl_tmp_415 = length(p.xy);
+    let gsl_tmp_417 = 6.2831855 * p.z / 0.8;
+    let gsl_tmp_416 = max(length(p.xy), 0.2);
+    gsl_simplePart = max(length(p.xy) - 2.5, -max(2.0669873 - gsl_tmp_415, ((1.0 - acos(clamp(cos(gsl_tmp_417) * p.x / gsl_tmp_416 + sin(gsl_tmp_417) * p.y / gsl_tmp_416, -1.0, 1.0)) / 3.1415927) * 0.4 - 0.1 - (gsl_tmp_415 - 2.0669873) * 0.57735026) * 0.86383384));
+  }
+  if (gsl_simpleWeight < 1.0) {
+    gsl_simplePart = mix(max(length(p.xy) - 2.2402, gsl_boxSdf(p, vec3<f32>(-1000000000.0, -1000000000.0, -1000000000.0), vec3<f32>(1000000000.0, 1000000000.0, 1000000000.0))), gsl_simplePart, gsl_simpleWeight);
+  }
+  let gslCarry123 = max(fastener_nut(p, 5.0), -gsl_simplePart);
+  return gslCarry123;
+}
+
 fn gsl_remap_43(p: vec3<f32>) -> f32 {
-  let gslCarry101 = max(max(max(max(max(abs(p.x) - 4.0, abs(0.5 * p.x + 0.8660254 * p.y) - 4.0), abs(0.5 * p.x - 0.8660254 * p.y) - 4.0), -p.z), p.z - 4.7), -(length(p.xy) - 2.0669873));
-  return gslCarry101;
+  let gslCarry121 = max(max(max(max(max(abs(p.x) - 4.0, abs(0.5 * p.x + 0.8660254 * p.y) - 4.0), abs(0.5 * p.x - 0.8660254 * p.y) - 4.0), -p.z), p.z - 4.7), -(length(p.xy) - 2.0669873));
+  return gslCarry121;
 }
 
 fn gsl_remap_44(p: vec3<f32>) -> vec3<f32> {
   let gsl_tmp_24 = 6.2831855 * p.z / 0.8;
   let gsl_tmp_23 = max(length(p.xy), 0.2);
-  let gslCarry5 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_24) * p.x / gsl_tmp_23 + sin(gsl_tmp_24) * p.y / gsl_tmp_23, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
-  return gslCarry5;
+  let gslCarry10 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_24) * p.x / gsl_tmp_23 + sin(gsl_tmp_24) * p.y / gsl_tmp_23, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
+  return gslCarry10;
 }
 
 fn gsl_remap_45(p: vec3<f32>) -> vec3<f32> {
@@ -359,190 +423,190 @@ fn gsl_remap_45(p: vec3<f32>) -> vec3<f32> {
 fn gsl_remap_46(p: vec3<f32>) -> vec3<f32> {
   let gsl_tmp_40 = 6.2831855 * p.z / 0.8;
   let gsl_tmp_39 = max(length(p.xy), 0.2);
-  let gslCarry11 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_40) * p.x / gsl_tmp_39 + sin(gsl_tmp_40) * p.y / gsl_tmp_39, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
-  return gslCarry11;
-}
-
-fn gsl_remap_47(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_64 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_63 = max(length(p.xy), 0.2);
-  let gslCarry17 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_64) * p.x / gsl_tmp_63 + sin(gsl_tmp_64) * p.y / gsl_tmp_63, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
+  let gslCarry17 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_40) * p.x / gsl_tmp_39 + sin(gsl_tmp_40) * p.y / gsl_tmp_39, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
   return gslCarry17;
 }
 
+fn gsl_remap_47(p: vec3<f32>) -> vec3<f32> {
+  let gsl_tmp_65 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_64 = max(length(p.xy), 0.2);
+  let gslCarry24 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_65) * p.x / gsl_tmp_64 + sin(gsl_tmp_65) * p.y / gsl_tmp_64, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
+  return gslCarry24;
+}
+
 fn gsl_remap_48(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_84 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_83 = max(length(p.xy), 0.2);
-  let gslCarry23 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_84) * p.x / gsl_tmp_83 + sin(gsl_tmp_84) * p.y / gsl_tmp_83, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
-  return gslCarry23;
+  let gsl_tmp_86 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_85 = max(length(p.xy), 0.2);
+  let gslCarry31 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_86) * p.x / gsl_tmp_85 + sin(gsl_tmp_86) * p.y / gsl_tmp_85, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
+  return gslCarry31;
 }
 
 fn gsl_remap_49(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_98 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_97 = max(length(p.xy), 0.2);
-  let gslCarry29 = thread_reliefColor(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_98) * p.x / gsl_tmp_97 + sin(gsl_tmp_98) * p.y / gsl_tmp_97, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
-  return gslCarry29;
-}
-
-fn gsl_remap_50(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_92 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_91 = max(length(p.xy), 0.2);
-  let gslCarry26 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_92) * p.x / gsl_tmp_91 + sin(gsl_tmp_92) * p.y / gsl_tmp_91, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
-  return gslCarry26;
-}
-
-fn gsl_remap_51(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_118 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_117 = max(length(p.xy), 0.2);
-  let gslCarry35 = thread_reliefColor(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_118) * p.x / gsl_tmp_117 + sin(gsl_tmp_118) * p.y / gsl_tmp_117, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
-  return gslCarry35;
-}
-
-fn gsl_remap_52(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_112 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_111 = max(length(p.xy), 0.2);
-  let gslCarry32 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_112) * p.x / gsl_tmp_111 + sin(gsl_tmp_112) * p.y / gsl_tmp_111, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
-  return gslCarry32;
-}
-
-fn gsl_remap_53(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_146 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_145 = max(length(p.xy), 0.2);
-  let gslCarry41 = thread_reliefColor(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_146) * p.x / gsl_tmp_145 + sin(gsl_tmp_146) * p.y / gsl_tmp_145, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
-  return gslCarry41;
-}
-
-fn gsl_remap_54(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_134 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_133 = max(length(p.xy), 0.2);
-  let gslCarry38 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_134) * p.x / gsl_tmp_133 + sin(gsl_tmp_134) * p.y / gsl_tmp_133, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
+  let gsl_tmp_100 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_99 = max(length(p.xy), 0.2);
+  let gslCarry38 = thread_reliefColor(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_100) * p.x / gsl_tmp_99 + sin(gsl_tmp_100) * p.y / gsl_tmp_99, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
   return gslCarry38;
 }
 
+fn gsl_remap_50(p: vec3<f32>) -> vec3<f32> {
+  let gsl_tmp_94 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_93 = max(length(p.xy), 0.2);
+  let gslCarry34 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_94) * p.x / gsl_tmp_93 + sin(gsl_tmp_94) * p.y / gsl_tmp_93, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
+  return gslCarry34;
+}
+
+fn gsl_remap_51(p: vec3<f32>) -> vec3<f32> {
+  let gsl_tmp_120 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_119 = max(length(p.xy), 0.2);
+  let gslCarry45 = thread_reliefColor(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_120) * p.x / gsl_tmp_119 + sin(gsl_tmp_120) * p.y / gsl_tmp_119, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
+  return gslCarry45;
+}
+
+fn gsl_remap_52(p: vec3<f32>) -> vec3<f32> {
+  let gsl_tmp_114 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_113 = max(length(p.xy), 0.2);
+  let gslCarry41 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_114) * p.x / gsl_tmp_113 + sin(gsl_tmp_114) * p.y / gsl_tmp_113, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
+  return gslCarry41;
+}
+
+fn gsl_remap_53(p: vec3<f32>) -> vec3<f32> {
+  let gsl_tmp_150 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_149 = max(length(p.xy), 0.2);
+  let gslCarry52 = thread_reliefColor(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_150) * p.x / gsl_tmp_149 + sin(gsl_tmp_150) * p.y / gsl_tmp_149, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
+  return gslCarry52;
+}
+
+fn gsl_remap_54(p: vec3<f32>) -> vec3<f32> {
+  let gsl_tmp_137 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_136 = max(length(p.xy), 0.2);
+  let gslCarry48 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_137) * p.x / gsl_tmp_136 + sin(gsl_tmp_137) * p.y / gsl_tmp_136, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
+  return gslCarry48;
+}
+
 fn gsl_remap_55(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_170 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_169 = max(length(p.xy), 0.2);
-  let gslCarry47 = thread_reliefColor(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_170) * p.x / gsl_tmp_169 + sin(gsl_tmp_170) * p.y / gsl_tmp_169, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
-  return gslCarry47;
-}
-
-fn gsl_remap_56(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_158 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_157 = max(length(p.xy), 0.2);
-  let gslCarry44 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_158) * p.x / gsl_tmp_157 + sin(gsl_tmp_158) * p.y / gsl_tmp_157, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
-  return gslCarry44;
-}
-
-fn gsl_remap_57(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_186 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_185 = max(length(p.xy), 0.2);
-  let gslCarry53 = thread_reliefColor(vec3<f32>(0.77, 0.78, 0.78), -min(min(0.21650636 * (1.0 - clamp(cos(gsl_tmp_186) * p.x / gsl_tmp_185 + sin(gsl_tmp_186) * p.y / gsl_tmp_185, -1.0, 1.0)), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
-  return gslCarry53;
-}
-
-fn gsl_remap_58(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_180 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_179 = max(length(p.xy), 0.2);
-  let gslCarry50 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(0.21650636 * (1.0 - clamp(cos(gsl_tmp_180) * p.x / gsl_tmp_179 + sin(gsl_tmp_180) * p.y / gsl_tmp_179, -1.0, 1.0)), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
-  return gslCarry50;
-}
-
-fn gsl_remap_59(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_206 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_205 = max(length(p.xy), 0.2);
-  let gslCarry59 = thread_reliefColor(vec3<f32>(0.77, 0.78, 0.78), -min(min(0.21650636 * (1.0 - clamp(cos(gsl_tmp_206) * p.x / gsl_tmp_205 + sin(gsl_tmp_206) * p.y / gsl_tmp_205, -1.0, 1.0)), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
+  let gsl_tmp_177 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_176 = max(length(p.xy), 0.2);
+  let gslCarry59 = thread_reliefColor(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_177) * p.x / gsl_tmp_176 + sin(gsl_tmp_177) * p.y / gsl_tmp_176, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
   return gslCarry59;
 }
 
-fn gsl_remap_60(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_200 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_199 = max(length(p.xy), 0.2);
-  let gslCarry56 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(0.21650636 * (1.0 - clamp(cos(gsl_tmp_200) * p.x / gsl_tmp_199 + sin(gsl_tmp_200) * p.y / gsl_tmp_199, -1.0, 1.0)), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
-  return gslCarry56;
+fn gsl_remap_56(p: vec3<f32>) -> vec3<f32> {
+  let gsl_tmp_164 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_163 = max(length(p.xy), 0.2);
+  let gslCarry55 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_164) * p.x / gsl_tmp_163 + sin(gsl_tmp_164) * p.y / gsl_tmp_163, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
+  return gslCarry55;
 }
 
-fn gsl_remap_61(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_234 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_233 = max(length(p.xy), 0.2);
-  let gslCarry65 = thread_reliefColor(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - 0.21650636 * (1.0 - clamp(cos(gsl_tmp_234) * p.x / gsl_tmp_233 + sin(gsl_tmp_234) * p.y / gsl_tmp_233, -1.0, 1.0)), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
-  return gslCarry65;
+fn gsl_remap_57(p: vec3<f32>) -> vec3<f32> {
+  let gsl_tmp_194 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_193 = max(length(p.xy), 0.2);
+  let gslCarry66 = thread_reliefColor(vec3<f32>(0.77, 0.78, 0.78), -min(min(0.21650636 * (1.0 - clamp(cos(gsl_tmp_194) * p.x / gsl_tmp_193 + sin(gsl_tmp_194) * p.y / gsl_tmp_193, -1.0, 1.0)), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
+  return gslCarry66;
 }
 
-fn gsl_remap_62(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_222 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_221 = max(length(p.xy), 0.2);
-  let gslCarry62 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - 0.21650636 * (1.0 - clamp(cos(gsl_tmp_222) * p.x / gsl_tmp_221 + sin(gsl_tmp_222) * p.y / gsl_tmp_221, -1.0, 1.0)), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
+fn gsl_remap_58(p: vec3<f32>) -> vec3<f32> {
+  let gsl_tmp_188 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_187 = max(length(p.xy), 0.2);
+  let gslCarry62 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(0.21650636 * (1.0 - clamp(cos(gsl_tmp_188) * p.x / gsl_tmp_187 + sin(gsl_tmp_188) * p.y / gsl_tmp_187, -1.0, 1.0)), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
   return gslCarry62;
 }
 
+fn gsl_remap_59(p: vec3<f32>) -> vec3<f32> {
+  let gsl_tmp_214 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_213 = max(length(p.xy), 0.2);
+  let gslCarry73 = thread_reliefColor(vec3<f32>(0.77, 0.78, 0.78), -min(min(0.21650636 * (1.0 - clamp(cos(gsl_tmp_214) * p.x / gsl_tmp_213 + sin(gsl_tmp_214) * p.y / gsl_tmp_213, -1.0, 1.0)), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
+  return gslCarry73;
+}
+
+fn gsl_remap_60(p: vec3<f32>) -> vec3<f32> {
+  let gsl_tmp_208 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_207 = max(length(p.xy), 0.2);
+  let gslCarry69 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(0.21650636 * (1.0 - clamp(cos(gsl_tmp_208) * p.x / gsl_tmp_207 + sin(gsl_tmp_208) * p.y / gsl_tmp_207, -1.0, 1.0)), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
+  return gslCarry69;
+}
+
+fn gsl_remap_61(p: vec3<f32>) -> vec3<f32> {
+  let gsl_tmp_244 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_243 = max(length(p.xy), 0.2);
+  let gslCarry80 = thread_reliefColor(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - 0.21650636 * (1.0 - clamp(cos(gsl_tmp_244) * p.x / gsl_tmp_243 + sin(gsl_tmp_244) * p.y / gsl_tmp_243, -1.0, 1.0)), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
+  return gslCarry80;
+}
+
+fn gsl_remap_62(p: vec3<f32>) -> vec3<f32> {
+  let gsl_tmp_231 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_230 = max(length(p.xy), 0.2);
+  let gslCarry76 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - 0.21650636 * (1.0 - clamp(cos(gsl_tmp_231) * p.x / gsl_tmp_230 + sin(gsl_tmp_231) * p.y / gsl_tmp_230, -1.0, 1.0)), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
+  return gslCarry76;
+}
+
 fn gsl_remap_63(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_258 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_257 = max(length(p.xy), 0.2);
-  let gslCarry71 = thread_reliefColor(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - 0.21650636 * (1.0 - clamp(cos(gsl_tmp_258) * p.x / gsl_tmp_257 + sin(gsl_tmp_258) * p.y / gsl_tmp_257, -1.0, 1.0)), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
-  return gslCarry71;
+  let gsl_tmp_271 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_270 = max(length(p.xy), 0.2);
+  let gslCarry87 = thread_reliefColor(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - 0.21650636 * (1.0 - clamp(cos(gsl_tmp_271) * p.x / gsl_tmp_270 + sin(gsl_tmp_271) * p.y / gsl_tmp_270, -1.0, 1.0)), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
+  return gslCarry87;
 }
 
 fn gsl_remap_64(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_246 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_245 = max(length(p.xy), 0.2);
-  let gslCarry68 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - 0.21650636 * (1.0 - clamp(cos(gsl_tmp_246) * p.x / gsl_tmp_245 + sin(gsl_tmp_246) * p.y / gsl_tmp_245, -1.0, 1.0)), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
-  return gslCarry68;
+  let gsl_tmp_258 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_257 = max(length(p.xy), 0.2);
+  let gslCarry83 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - 0.21650636 * (1.0 - clamp(cos(gsl_tmp_258) * p.x / gsl_tmp_257 + sin(gsl_tmp_258) * p.y / gsl_tmp_257, -1.0, 1.0)), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
+  return gslCarry83;
 }
 
 fn gsl_remap_65(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_268 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_267 = max(length(p.xy), 0.2);
-  let gslCarry74 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(0.21650636 * (1.0 - clamp(cos(gsl_tmp_268) * p.x / gsl_tmp_267 + sin(gsl_tmp_268) * p.y / gsl_tmp_267, -1.0, 1.0)), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
-  return gslCarry74;
-}
-
-fn gsl_remap_66(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_284 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_283 = max(length(p.xy), 0.2);
-  let gslCarry78 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(0.21650636 * (1.0 - clamp(cos(gsl_tmp_284) * p.x / gsl_tmp_283 + sin(gsl_tmp_284) * p.y / gsl_tmp_283, -1.0, 1.0)), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
-  return gslCarry78;
-}
-
-fn gsl_remap_67(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_302 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_301 = max(length(p.xy), 0.2);
-  let gslCarry82 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - 0.21650636 * (1.0 - clamp(cos(gsl_tmp_302) * p.x / gsl_tmp_301 + sin(gsl_tmp_302) * p.y / gsl_tmp_301, -1.0, 1.0)), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
-  return gslCarry82;
-}
-
-fn gsl_remap_68(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_318 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_317 = max(length(p.xy), 0.2);
-  let gslCarry86 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - 0.21650636 * (1.0 - clamp(cos(gsl_tmp_318) * p.x / gsl_tmp_317 + sin(gsl_tmp_318) * p.y / gsl_tmp_317, -1.0, 1.0)), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
-  return gslCarry86;
-}
-
-fn gsl_remap_69(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_332 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_331 = max(length(p.xy), 0.2);
-  let gslCarry90 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_332) * p.x / gsl_tmp_331 + sin(gsl_tmp_332) * p.y / gsl_tmp_331, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
+  let gsl_tmp_282 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_281 = max(length(p.xy), 0.2);
+  let gslCarry90 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(0.21650636 * (1.0 - clamp(cos(gsl_tmp_282) * p.x / gsl_tmp_281 + sin(gsl_tmp_282) * p.y / gsl_tmp_281, -1.0, 1.0)), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
   return gslCarry90;
 }
 
+fn gsl_remap_66(p: vec3<f32>) -> vec3<f32> {
+  let gsl_tmp_298 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_297 = max(length(p.xy), 0.2);
+  let gslCarry95 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(0.21650636 * (1.0 - clamp(cos(gsl_tmp_298) * p.x / gsl_tmp_297 + sin(gsl_tmp_298) * p.y / gsl_tmp_297, -1.0, 1.0)), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
+  return gslCarry95;
+}
+
+fn gsl_remap_67(p: vec3<f32>) -> vec3<f32> {
+  let gsl_tmp_317 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_316 = max(length(p.xy), 0.2);
+  let gslCarry100 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - 0.21650636 * (1.0 - clamp(cos(gsl_tmp_317) * p.x / gsl_tmp_316 + sin(gsl_tmp_317) * p.y / gsl_tmp_316, -1.0, 1.0)), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
+  return gslCarry100;
+}
+
+fn gsl_remap_68(p: vec3<f32>) -> vec3<f32> {
+  let gsl_tmp_334 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_333 = max(length(p.xy), 0.2);
+  let gslCarry104 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - 0.21650636 * (1.0 - clamp(cos(gsl_tmp_334) * p.x / gsl_tmp_333 + sin(gsl_tmp_334) * p.y / gsl_tmp_333, -1.0, 1.0)), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
+  return gslCarry104;
+}
+
+fn gsl_remap_69(p: vec3<f32>) -> vec3<f32> {
+  let gsl_tmp_348 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_347 = max(length(p.xy), 0.2);
+  let gslCarry108 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_348) * p.x / gsl_tmp_347 + sin(gsl_tmp_348) * p.y / gsl_tmp_347, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
+  return gslCarry108;
+}
+
 fn gsl_remap_70(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_349 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_348 = max(length(p.xy), 0.2);
-  let gslCarry94 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_349) * p.x / gsl_tmp_348 + sin(gsl_tmp_349) * p.y / gsl_tmp_348, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
-  return gslCarry94;
+  let gsl_tmp_366 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_365 = max(length(p.xy), 0.2);
+  let gslCarry113 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(min(clamp((acos(clamp(cos(gsl_tmp_366) * p.x / gsl_tmp_365 + sin(gsl_tmp_366) * p.y / gsl_tmp_365, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)), 0.8);
+  return gslCarry113;
 }
 
 fn gsl_remap_71(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_368 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_367 = max(length(p.xy), 0.2);
-  let gslCarry98 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_368) * p.x / gsl_tmp_367 + sin(gsl_tmp_368) * p.y / gsl_tmp_367, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
-  return gslCarry98;
+  let gsl_tmp_387 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_386 = max(length(p.xy), 0.2);
+  let gslCarry118 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_387) * p.x / gsl_tmp_386 + sin(gsl_tmp_387) * p.y / gsl_tmp_386, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
+  return gslCarry118;
 }
 
 fn gsl_remap_72(p: vec3<f32>) -> vec3<f32> {
-  let gsl_tmp_385 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_384 = max(length(p.xy), 0.2);
-  let gslCarry102 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_385) * p.x / gsl_tmp_384 + sin(gsl_tmp_385) * p.y / gsl_tmp_384, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
-  return gslCarry102;
+  let gsl_tmp_406 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_405 = max(length(p.xy), 0.2);
+  let gslCarry122 = thread_paint(vec3<f32>(0.77, 0.78, 0.78), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_406) * p.x / gsl_tmp_405 + sin(gsl_tmp_406) * p.y / gsl_tmp_405, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))), 0.8);
+  return gslCarry122;
 }
 
 fn gsl_remap_73(p: vec3<f32>) -> vec4<f32> {
@@ -554,171 +618,171 @@ fn gsl_remap_74(p: vec3<f32>) -> vec4<f32> {
 }
 
 fn gsl_remap_75(p: vec3<f32>) -> vec4<f32> {
-  let gsl_tmp_102 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_101 = max(length(p.xy), 0.2);
-  let gslCarry30 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(min(clamp((acos(clamp(cos(gsl_tmp_102) * p.x / gsl_tmp_101 + sin(gsl_tmp_102) * p.y / gsl_tmp_101, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)));
-  return gslCarry30[0];
+  let gsl_tmp_104 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_103 = max(length(p.xy), 0.2);
+  let gslCarry39 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(min(clamp((acos(clamp(cos(gsl_tmp_104) * p.x / gsl_tmp_103 + sin(gsl_tmp_104) * p.y / gsl_tmp_103, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)));
+  return gslCarry39[0];
 }
 
 fn gsl_remap_76(p: vec3<f32>) -> vec4<f32> {
-  let gsl_tmp_102 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_101 = max(length(p.xy), 0.2);
-  let gslCarry30 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(min(clamp((acos(clamp(cos(gsl_tmp_102) * p.x / gsl_tmp_101 + sin(gsl_tmp_102) * p.y / gsl_tmp_101, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)));
-  return gslCarry30[1];
+  let gsl_tmp_104 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_103 = max(length(p.xy), 0.2);
+  let gslCarry39 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(min(clamp((acos(clamp(cos(gsl_tmp_104) * p.x / gsl_tmp_103 + sin(gsl_tmp_104) * p.y / gsl_tmp_103, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)));
+  return gslCarry39[1];
 }
 
 fn gsl_remap_77(p: vec3<f32>) -> vec4<f32> {
-  let gsl_tmp_102 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_101 = max(length(p.xy), 0.2);
-  let gslCarry30 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(min(clamp((acos(clamp(cos(gsl_tmp_102) * p.x / gsl_tmp_101 + sin(gsl_tmp_102) * p.y / gsl_tmp_101, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)));
-  return gslCarry30[2];
+  let gsl_tmp_104 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_103 = max(length(p.xy), 0.2);
+  let gslCarry39 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(min(clamp((acos(clamp(cos(gsl_tmp_104) * p.x / gsl_tmp_103 + sin(gsl_tmp_104) * p.y / gsl_tmp_103, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)));
+  return gslCarry39[2];
 }
 
 fn gsl_remap_78(p: vec3<f32>) -> vec4<f32> {
-  let gsl_tmp_122 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_121 = max(length(p.xy), 0.2);
-  let gslCarry36 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(min(clamp((acos(clamp(cos(gsl_tmp_122) * p.x / gsl_tmp_121 + sin(gsl_tmp_122) * p.y / gsl_tmp_121, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)));
-  return gslCarry36[0];
+  let gsl_tmp_124 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_123 = max(length(p.xy), 0.2);
+  let gslCarry46 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(min(clamp((acos(clamp(cos(gsl_tmp_124) * p.x / gsl_tmp_123 + sin(gsl_tmp_124) * p.y / gsl_tmp_123, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)));
+  return gslCarry46[0];
 }
 
 fn gsl_remap_79(p: vec3<f32>) -> vec4<f32> {
-  let gsl_tmp_122 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_121 = max(length(p.xy), 0.2);
-  let gslCarry36 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(min(clamp((acos(clamp(cos(gsl_tmp_122) * p.x / gsl_tmp_121 + sin(gsl_tmp_122) * p.y / gsl_tmp_121, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)));
-  return gslCarry36[1];
+  let gsl_tmp_124 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_123 = max(length(p.xy), 0.2);
+  let gslCarry46 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(min(clamp((acos(clamp(cos(gsl_tmp_124) * p.x / gsl_tmp_123 + sin(gsl_tmp_124) * p.y / gsl_tmp_123, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)));
+  return gslCarry46[1];
 }
 
 fn gsl_remap_80(p: vec3<f32>) -> vec4<f32> {
-  let gsl_tmp_122 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_121 = max(length(p.xy), 0.2);
-  let gslCarry36 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(min(clamp((acos(clamp(cos(gsl_tmp_122) * p.x / gsl_tmp_121 + sin(gsl_tmp_122) * p.y / gsl_tmp_121, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)));
-  return gslCarry36[2];
+  let gsl_tmp_124 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_123 = max(length(p.xy), 0.2);
+  let gslCarry46 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(min(clamp((acos(clamp(cos(gsl_tmp_124) * p.x / gsl_tmp_123 + sin(gsl_tmp_124) * p.y / gsl_tmp_123, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)));
+  return gslCarry46[2];
 }
 
 fn gsl_remap_81(p: vec3<f32>) -> vec4<f32> {
-  let gsl_tmp_152 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_151 = max(length(p.xy), 0.2);
-  let gslCarry42 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_152) * p.x / gsl_tmp_151 + sin(gsl_tmp_152) * p.y / gsl_tmp_151, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))));
-  return gslCarry42[0];
+  let gsl_tmp_157 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_156 = max(length(p.xy), 0.2);
+  let gslCarry53 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_157) * p.x / gsl_tmp_156 + sin(gsl_tmp_157) * p.y / gsl_tmp_156, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))));
+  return gslCarry53[0];
 }
 
 fn gsl_remap_82(p: vec3<f32>) -> vec4<f32> {
-  let gsl_tmp_152 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_151 = max(length(p.xy), 0.2);
-  let gslCarry42 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_152) * p.x / gsl_tmp_151 + sin(gsl_tmp_152) * p.y / gsl_tmp_151, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))));
-  return gslCarry42[1];
+  let gsl_tmp_157 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_156 = max(length(p.xy), 0.2);
+  let gslCarry53 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_157) * p.x / gsl_tmp_156 + sin(gsl_tmp_157) * p.y / gsl_tmp_156, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))));
+  return gslCarry53[1];
 }
 
 fn gsl_remap_83(p: vec3<f32>) -> vec4<f32> {
-  let gsl_tmp_152 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_151 = max(length(p.xy), 0.2);
-  let gslCarry42 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_152) * p.x / gsl_tmp_151 + sin(gsl_tmp_152) * p.y / gsl_tmp_151, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))));
-  return gslCarry42[2];
+  let gsl_tmp_157 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_156 = max(length(p.xy), 0.2);
+  let gslCarry53 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_157) * p.x / gsl_tmp_156 + sin(gsl_tmp_157) * p.y / gsl_tmp_156, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))));
+  return gslCarry53[2];
 }
 
 fn gsl_remap_84(p: vec3<f32>) -> vec4<f32> {
-  let gsl_tmp_176 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_175 = max(length(p.xy), 0.2);
-  let gslCarry48 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_176) * p.x / gsl_tmp_175 + sin(gsl_tmp_176) * p.y / gsl_tmp_175, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))));
-  return gslCarry48[0];
-}
-
-fn gsl_remap_85(p: vec3<f32>) -> vec4<f32> {
-  let gsl_tmp_176 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_175 = max(length(p.xy), 0.2);
-  let gslCarry48 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_176) * p.x / gsl_tmp_175 + sin(gsl_tmp_176) * p.y / gsl_tmp_175, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))));
-  return gslCarry48[1];
-}
-
-fn gsl_remap_86(p: vec3<f32>) -> vec4<f32> {
-  let gsl_tmp_176 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_175 = max(length(p.xy), 0.2);
-  let gslCarry48 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_176) * p.x / gsl_tmp_175 + sin(gsl_tmp_176) * p.y / gsl_tmp_175, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))));
-  return gslCarry48[2];
-}
-
-fn gsl_remap_87(p: vec3<f32>) -> vec4<f32> {
-  let gsl_tmp_190 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_189 = max(length(p.xy), 0.2);
-  let gslCarry54 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(min(0.21650636 * (1.0 - clamp(cos(gsl_tmp_190) * p.x / gsl_tmp_189 + sin(gsl_tmp_190) * p.y / gsl_tmp_189, -1.0, 1.0)), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)));
-  return gslCarry54[0];
-}
-
-fn gsl_remap_88(p: vec3<f32>) -> vec4<f32> {
-  let gsl_tmp_190 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_189 = max(length(p.xy), 0.2);
-  let gslCarry54 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(min(0.21650636 * (1.0 - clamp(cos(gsl_tmp_190) * p.x / gsl_tmp_189 + sin(gsl_tmp_190) * p.y / gsl_tmp_189, -1.0, 1.0)), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)));
-  return gslCarry54[1];
-}
-
-fn gsl_remap_89(p: vec3<f32>) -> vec4<f32> {
-  let gsl_tmp_190 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_189 = max(length(p.xy), 0.2);
-  let gslCarry54 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(min(0.21650636 * (1.0 - clamp(cos(gsl_tmp_190) * p.x / gsl_tmp_189 + sin(gsl_tmp_190) * p.y / gsl_tmp_189, -1.0, 1.0)), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)));
-  return gslCarry54[2];
-}
-
-fn gsl_remap_90(p: vec3<f32>) -> vec4<f32> {
-  let gsl_tmp_210 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_209 = max(length(p.xy), 0.2);
-  let gslCarry60 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(min(0.21650636 * (1.0 - clamp(cos(gsl_tmp_210) * p.x / gsl_tmp_209 + sin(gsl_tmp_210) * p.y / gsl_tmp_209, -1.0, 1.0)), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)));
+  let gsl_tmp_184 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_183 = max(length(p.xy), 0.2);
+  let gslCarry60 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_184) * p.x / gsl_tmp_183 + sin(gsl_tmp_184) * p.y / gsl_tmp_183, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))));
   return gslCarry60[0];
 }
 
-fn gsl_remap_91(p: vec3<f32>) -> vec4<f32> {
-  let gsl_tmp_210 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_209 = max(length(p.xy), 0.2);
-  let gslCarry60 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(min(0.21650636 * (1.0 - clamp(cos(gsl_tmp_210) * p.x / gsl_tmp_209 + sin(gsl_tmp_210) * p.y / gsl_tmp_209, -1.0, 1.0)), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)));
+fn gsl_remap_85(p: vec3<f32>) -> vec4<f32> {
+  let gsl_tmp_184 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_183 = max(length(p.xy), 0.2);
+  let gslCarry60 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_184) * p.x / gsl_tmp_183 + sin(gsl_tmp_184) * p.y / gsl_tmp_183, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))));
   return gslCarry60[1];
 }
 
-fn gsl_remap_92(p: vec3<f32>) -> vec4<f32> {
-  let gsl_tmp_210 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_209 = max(length(p.xy), 0.2);
-  let gslCarry60 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(min(0.21650636 * (1.0 - clamp(cos(gsl_tmp_210) * p.x / gsl_tmp_209 + sin(gsl_tmp_210) * p.y / gsl_tmp_209, -1.0, 1.0)), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)));
+fn gsl_remap_86(p: vec3<f32>) -> vec4<f32> {
+  let gsl_tmp_184 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_183 = max(length(p.xy), 0.2);
+  let gslCarry60 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(max(0.43301272 - clamp((acos(clamp(cos(gsl_tmp_184) * p.x / gsl_tmp_183 + sin(gsl_tmp_184) * p.y / gsl_tmp_183, -1.0, 1.0)) / 3.1415927 * 0.4 - 0.05) * 1.7320508, 0.0, 0.43301272), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))));
   return gslCarry60[2];
 }
 
+fn gsl_remap_87(p: vec3<f32>) -> vec4<f32> {
+  let gsl_tmp_198 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_197 = max(length(p.xy), 0.2);
+  let gslCarry67 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(min(0.21650636 * (1.0 - clamp(cos(gsl_tmp_198) * p.x / gsl_tmp_197 + sin(gsl_tmp_198) * p.y / gsl_tmp_197, -1.0, 1.0)), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)));
+  return gslCarry67[0];
+}
+
+fn gsl_remap_88(p: vec3<f32>) -> vec4<f32> {
+  let gsl_tmp_198 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_197 = max(length(p.xy), 0.2);
+  let gslCarry67 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(min(0.21650636 * (1.0 - clamp(cos(gsl_tmp_198) * p.x / gsl_tmp_197 + sin(gsl_tmp_198) * p.y / gsl_tmp_197, -1.0, 1.0)), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)));
+  return gslCarry67[1];
+}
+
+fn gsl_remap_89(p: vec3<f32>) -> vec4<f32> {
+  let gsl_tmp_198 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_197 = max(length(p.xy), 0.2);
+  let gslCarry67 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(min(0.21650636 * (1.0 - clamp(cos(gsl_tmp_198) * p.x / gsl_tmp_197 + sin(gsl_tmp_198) * p.y / gsl_tmp_197, -1.0, 1.0)), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)));
+  return gslCarry67[2];
+}
+
+fn gsl_remap_90(p: vec3<f32>) -> vec4<f32> {
+  let gsl_tmp_218 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_217 = max(length(p.xy), 0.2);
+  let gslCarry74 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(min(0.21650636 * (1.0 - clamp(cos(gsl_tmp_218) * p.x / gsl_tmp_217 + sin(gsl_tmp_218) * p.y / gsl_tmp_217, -1.0, 1.0)), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)));
+  return gslCarry74[0];
+}
+
+fn gsl_remap_91(p: vec3<f32>) -> vec4<f32> {
+  let gsl_tmp_218 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_217 = max(length(p.xy), 0.2);
+  let gslCarry74 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(min(0.21650636 * (1.0 - clamp(cos(gsl_tmp_218) * p.x / gsl_tmp_217 + sin(gsl_tmp_218) * p.y / gsl_tmp_217, -1.0, 1.0)), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)));
+  return gslCarry74[1];
+}
+
+fn gsl_remap_92(p: vec3<f32>) -> vec4<f32> {
+  let gsl_tmp_218 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_217 = max(length(p.xy), 0.2);
+  let gslCarry74 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(min(0.21650636 * (1.0 - clamp(cos(gsl_tmp_218) * p.x / gsl_tmp_217 + sin(gsl_tmp_218) * p.y / gsl_tmp_217, -1.0, 1.0)), max(0.0, 0.5 * min(min(0.0 - p.z, p.z - -16.0), 2.9330127 - length(p.xy)))), max(0.0, length(p.xy) - 1.6339746)));
+  return gslCarry74[2];
+}
+
 fn gsl_remap_93(p: vec3<f32>) -> vec4<f32> {
-  let gsl_tmp_240 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_239 = max(length(p.xy), 0.2);
-  let gslCarry66 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(max(0.43301272 - 0.21650636 * (1.0 - clamp(cos(gsl_tmp_240) * p.x / gsl_tmp_239 + sin(gsl_tmp_240) * p.y / gsl_tmp_239, -1.0, 1.0)), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))));
-  return gslCarry66[0];
+  let gsl_tmp_251 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_250 = max(length(p.xy), 0.2);
+  let gslCarry81 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(max(0.43301272 - 0.21650636 * (1.0 - clamp(cos(gsl_tmp_251) * p.x / gsl_tmp_250 + sin(gsl_tmp_251) * p.y / gsl_tmp_250, -1.0, 1.0)), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))));
+  return gslCarry81[0];
 }
 
 fn gsl_remap_94(p: vec3<f32>) -> vec4<f32> {
-  let gsl_tmp_240 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_239 = max(length(p.xy), 0.2);
-  let gslCarry66 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(max(0.43301272 - 0.21650636 * (1.0 - clamp(cos(gsl_tmp_240) * p.x / gsl_tmp_239 + sin(gsl_tmp_240) * p.y / gsl_tmp_239, -1.0, 1.0)), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))));
-  return gslCarry66[1];
+  let gsl_tmp_251 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_250 = max(length(p.xy), 0.2);
+  let gslCarry81 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(max(0.43301272 - 0.21650636 * (1.0 - clamp(cos(gsl_tmp_251) * p.x / gsl_tmp_250 + sin(gsl_tmp_251) * p.y / gsl_tmp_250, -1.0, 1.0)), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))));
+  return gslCarry81[1];
 }
 
 fn gsl_remap_95(p: vec3<f32>) -> vec4<f32> {
-  let gsl_tmp_240 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_239 = max(length(p.xy), 0.2);
-  let gslCarry66 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(max(0.43301272 - 0.21650636 * (1.0 - clamp(cos(gsl_tmp_240) * p.x / gsl_tmp_239 + sin(gsl_tmp_240) * p.y / gsl_tmp_239, -1.0, 1.0)), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))));
-  return gslCarry66[2];
+  let gsl_tmp_251 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_250 = max(length(p.xy), 0.2);
+  let gslCarry81 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(max(0.43301272 - 0.21650636 * (1.0 - clamp(cos(gsl_tmp_251) * p.x / gsl_tmp_250 + sin(gsl_tmp_251) * p.y / gsl_tmp_250, -1.0, 1.0)), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))));
+  return gslCarry81[2];
 }
 
 fn gsl_remap_96(p: vec3<f32>) -> vec4<f32> {
-  let gsl_tmp_264 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_263 = max(length(p.xy), 0.2);
-  let gslCarry72 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(max(0.43301272 - 0.21650636 * (1.0 - clamp(cos(gsl_tmp_264) * p.x / gsl_tmp_263 + sin(gsl_tmp_264) * p.y / gsl_tmp_263, -1.0, 1.0)), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))));
-  return gslCarry72[0];
+  let gsl_tmp_278 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_277 = max(length(p.xy), 0.2);
+  let gslCarry88 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(max(0.43301272 - 0.21650636 * (1.0 - clamp(cos(gsl_tmp_278) * p.x / gsl_tmp_277 + sin(gsl_tmp_278) * p.y / gsl_tmp_277, -1.0, 1.0)), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))));
+  return gslCarry88[0];
 }
 
 fn gsl_remap_97(p: vec3<f32>) -> vec4<f32> {
-  let gsl_tmp_264 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_263 = max(length(p.xy), 0.2);
-  let gslCarry72 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(max(0.43301272 - 0.21650636 * (1.0 - clamp(cos(gsl_tmp_264) * p.x / gsl_tmp_263 + sin(gsl_tmp_264) * p.y / gsl_tmp_263, -1.0, 1.0)), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))));
-  return gslCarry72[1];
+  let gsl_tmp_278 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_277 = max(length(p.xy), 0.2);
+  let gslCarry88 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(max(0.43301272 - 0.21650636 * (1.0 - clamp(cos(gsl_tmp_278) * p.x / gsl_tmp_277 + sin(gsl_tmp_278) * p.y / gsl_tmp_277, -1.0, 1.0)), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))));
+  return gslCarry88[1];
 }
 
 fn gsl_remap_98(p: vec3<f32>) -> vec4<f32> {
-  let gsl_tmp_264 = 6.2831855 * p.z / 0.8;
-  let gsl_tmp_263 = max(length(p.xy), 0.2);
-  let gslCarry72 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(max(0.43301272 - 0.21650636 * (1.0 - clamp(cos(gsl_tmp_264) * p.x / gsl_tmp_263 + sin(gsl_tmp_264) * p.y / gsl_tmp_263, -1.0, 1.0)), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))));
-  return gslCarry72[2];
+  let gsl_tmp_278 = 6.2831855 * p.z / 0.8;
+  let gsl_tmp_277 = max(length(p.xy), 0.2);
+  let gslCarry88 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), -min(max(0.43301272 - 0.21650636 * (1.0 - clamp(cos(gsl_tmp_278) * p.x / gsl_tmp_277 + sin(gsl_tmp_278) * p.y / gsl_tmp_277, -1.0, 1.0)), 0.0), max(0.0, 0.5 * min(min(4.7 - p.z, p.z - 0.0), 3.3660254 - length(p.xy)))));
+  return gslCarry88[2];
 }
 
 fn fastener_nut(p: vec3<f32>, nominalDia: f32) -> f32 {
@@ -735,6 +799,7 @@ fn fastener_screw(head: f32, shank: f32, drive: f32) -> f32 {
 }
 
 fn gsl_shapeParts(p: vec3<f32>, time: f32) -> array<f32, 24> {
+  gsl_featurePixel = select(0.0, gsl_vanishEye.w * mix(max(length(gsl_vanishEye.xyz - p), 1.0), 1.0, gsl_vanishView.x), gsl_vanishEye.w > 0.0);
   gsl_partNear = vec3<f32>(1e10, 1e10, 1e10);
   let gsl_partLo = vec3<f32>(-34.26, -20.26, -0.01);
   let gsl_partHi = vec3<f32>(-25.74, -11.74, 21.01);
@@ -1520,12 +1585,24 @@ fn gsl_boxDistance(q: vec3<f32>, lo: vec3<f32>, hi: vec3<f32>) -> f32 {
   return length(max(max(lo - q, q - hi), vec3<f32>(0.0)));
 }
 
+var<private> gsl_featurePixel: f32 = 0.0;
+
+fn gsl_featureWeight(size: f32) -> f32 {
+  if (gsl_featurePixel <= 0.0) { return 1.0; }
+  return smoothstep(gsl_vanishView.y, max(gsl_vanishView.z, gsl_vanishView.y + 1e-3), size / gsl_featurePixel);
+}
+
 var<private> gsl_simpleRung: f32;
 
 fn gsl_simple(lo: vec3<f32>, hi: vec3<f32>) -> f32 {
-  if (gsl_vanishEye.w <= 0.0 || gsl_simpleRung <= 0.0) { return 1.0; }
-  let px = gsl_vanish(lo, hi).z;
-  return smoothstep(0.5 * gsl_simpleRung, gsl_simpleRung, px);
+  if (gsl_featurePixel <= 0.0 || gsl_simpleRung <= 0.0) { return 1.0; }
+  let size = hi - lo;
+  return smoothstep(0.5 * gsl_simpleRung, gsl_simpleRung, min(size.x, min(size.y, size.z)) / gsl_featurePixel);
+}
+
+fn gsl_simpleSized(size: f32) -> f32 {
+  if (gsl_featurePixel <= 0.0 || gsl_simpleRung <= 0.0) { return 1.0; }
+  return smoothstep(0.5 * gsl_simpleRung, gsl_simpleRung, size / gsl_featurePixel);
 }
 
 fn gsl_boxSdf(q: vec3<f32>, lo: vec3<f32>, hi: vec3<f32>) -> f32 {

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"math"
 
-	"gradientcontrol.com/omega/core/internal/build"
-	"gradientcontrol.com/omega/core/internal/fidget"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/build"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func (d *Delegate) BuildBuiltinCall(
@@ -60,6 +60,10 @@ func (d *Delegate) BuildBuiltinCall(
 	case program.DisplacementDrawn:
 		// Meshing and export move no surface by its material's height; the
 		// lit renderer moves every one by all of it (dispDrawn).
+		return d.BuildValue(op, d.dispDrawn)
+	case program.DisplacementScale:
+		// The same weight, asked while marching: the lit renderer moves every
+		// surface by all of its height, meshing and export by none.
 		return d.BuildValue(op, d.dispDrawn)
 	case "length":
 		return d.builtinLength(op, args[0].(*TreeNode))

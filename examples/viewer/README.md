@@ -42,7 +42,10 @@ in your default WebGPU-capable browser (Chrome 113+, Edge 113+, or Safari 18+ on
   - **Parameters**: Live sliders for `.min`/`.max` variables and color chips for `@color` controls
     that update uniforms at 60 FPS and rewrite GSL source spans, with the animation transport at
     the bottom: a `time` range, rewind / play-pause / fast-forward, the end time, and the
-    synthesized Web Audio volume for programs with `audio(...)` outputs.
+    synthesized Web Audio volume for programs with `audio(...)` outputs. A document's
+    `@caption("text", start, end [, fade])` lines show at the bottom of the canvas as the clock
+    passes through them (`ui/captions.js`). A document's `@duration(seconds)` sets the end time
+    and the `time` range, and the clock starts over there.
   - **Imports**: Drag-and-drop `.stl` or `.obj` files to render hybrid B-rep meshes alongside
     implicit SDFs.
   - **Scene**: The bounding box size and grid spacing in mm; a document's `@scene` directive sets
@@ -59,10 +62,32 @@ in your default WebGPU-capable browser (Chrome 113+, Edge 113+, or Safari 18+ on
     its Bodies-panel color) or STL (a zip of one STL per body when several are shown). Only the bodies
     the Bodies panel shows are exported.
 
+## Static Export
+
+`gsl export` writes the viewer as a folder that any static web server can host, with no `gsl serve`
+behind it:
+
+```bash
+./bin/gsl export examples/gears.gsl examples/can.gsl -o site
+```
+
+The folder holds this viewer's files and, under `models/`, each document's source with the field it
+compiles to (the bundle `/api/compile` answers). The page draws what the viewer draws, and its
+sliders, gizmos, time, sections and render settings work, since those only set shader uniforms. It
+compiles nothing, so the code panel is read-only and Save As, Imports, Export, Materials and Help
+are not offered. Several documents share the one page: the menu lists them, and `?file=can.gsl`
+on the address opens one, and adding `&embed` hides the menu, for a page set into another as a
+frame. Browsers do not load the page from a `file://` address.
+
+The Export panel's `Web page (.zip)` format downloads the same folder for the open document, as the
+editor shows it, saved or not (`POST /api/export`). Unzip it onto a web server.
+
 ## Directory Layout
 
-- `index.html`, `main.js`, `style.css`: Top-level application shell, HTTP `/api/*` client, and panel
-  wiring.
+- `index.html`, `main.js`, `style.css`: Top-level application shell and panel wiring.
+- `host.js`: The viewer's host, the HTTP `/api/*` client: where documents come from, what compiles
+  them and where they are saved. `host-static.js` answers the same calls from files beside the page
+  and compiles nothing; `gsl export` saves it as `host.js` (see Static Export).
 - `render/`: Three.js/WebGPU raymarching viewport (`viewer.js`), TSL/WGSL render graph, shading,
   glass, displacement, path tracing, 3D gizmos, and audio worklet processor.
 - `panels/`: Inspector panel controllers and styles (`slider-panel`, `mesh-import`, `export-panel`,

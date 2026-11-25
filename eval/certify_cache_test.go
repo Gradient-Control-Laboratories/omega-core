@@ -6,15 +6,13 @@ import (
 	"context"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // cacheBallDoc is paramBallDoc with the radius read through a product with a
 // plain literal, which a plain build folds to a number.
 const cacheBallDoc = `
-rad = 3.0;
-rad.min = 1.0;
-rad.max = 6.5;
+@range(1.0, 6.5) rad = 3.0;
 gain = 1.0;
 wall = length(p - [8.0, 0.0, 0.0]) - 2.0;
 `

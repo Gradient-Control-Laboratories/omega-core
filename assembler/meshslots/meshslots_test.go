@@ -3,7 +3,7 @@ package meshslots
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func runeList(s string) *program.Operand {

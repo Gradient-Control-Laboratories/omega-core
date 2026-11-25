@@ -6,7 +6,7 @@ import (
 	"context"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // timeBallDoc: a ball translating with time toward a fixed wall. Early in the
@@ -72,9 +72,7 @@ func TestCertifyOverTimeMotionEnvelope(t *testing.T) {
 // together — one proof over the whole motion AND every configuration.
 func TestCertifyTimeComposesWithSliders(t *testing.T) {
 	doc := `
-rad = 1.0;
-rad.min = 0.5;
-rad.max = 1.5;
+@range(0.5, 1.5) rad = 1.0;
 ball = length(p - [2.0 * time, 0.0, 0.0]) - rad;
 wall = length(p - [8.0, 0.0, 0.0]) - 2.0;
 return ball;

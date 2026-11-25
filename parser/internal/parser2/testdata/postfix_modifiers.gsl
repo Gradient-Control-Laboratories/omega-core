@@ -1,0 +1,23 @@
+m = [[1, 2], [3, 4]];
+pts = [[10, 20, 30], [40, 50, 60]];
+flags = [0, 1];
+t = 2;
+v = [t, t * 2, t * 3];
+body = sphere(1);
+
+a = m[0][1];
+b = pts[0].x;
+c = pts[1].yz;
+d = body.box[0];
+e = body.box[1].z;
+g = -m[0][1] + !flags[0];
+h = v.d(t)[0] + pts[0].d(t).y;
+
+// bad1 = m[0][];          // ERROR: 1 index expression cannot be empty
+// bad2 = pts[0].foo;      // ERROR: 2 invalid accessor: foo
+// bad3 = pts[0].xxxxx;    // ERROR: 3 accessor must be 1 to 4 characters: xxxxx
+// bad4 = pts[0].x(1);     // ERROR: 4 accessor .x takes no arguments
+// bad5 = pts[0].d(1);     // ERROR: 5 .d takes the name of a variable
+// m[0][1] = 5;            // ERROR: 6 unexpected token "["
+
+return a + b + c[0] + d.x + e + g + h;

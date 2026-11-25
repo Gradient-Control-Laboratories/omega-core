@@ -3,13 +3,13 @@ package eval_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/collect"
-	"gradientcontrol.com/omega/core/internal/eval"
-	"gradientcontrol.com/omega/core/internal/source"
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/internal/types"
-	parserlib "gradientcontrol.com/omega/core/parser"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/collect"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/types"
+	parserlib "github.com/Gradient-Control-Laboratories/omega-core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // sliderChecker marks references to ranged variables as runtime parameters,
@@ -23,8 +23,9 @@ func (c sliderChecker) IsParameter(op *program.Operand) bool {
 
 func analyzed(t *testing.T, src string) *program.Program {
 	t.Helper()
-	prog, err := collect.Program([]string{src}, &source.MockManager{}, parserlib.ParsePackage)
+	prog, diags, err := collect.Program([]string{src}, &source.MockManager{}, parserlib.ParsePackage)
 	assert.NoError(t, err)
+	assert.Empty(t, diags)
 	assert.NoError(t, types.Analyze(prog))
 	return prog
 }

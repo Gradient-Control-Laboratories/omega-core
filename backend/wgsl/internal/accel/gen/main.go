@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"gradientcontrol.com/omega/core/backend/wgsl/internal/accel"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl/internal/accel"
 )
 
 func main() {
@@ -91,4 +91,3 @@ func resolvePath(p string) string {
 
 	return p
 }
-

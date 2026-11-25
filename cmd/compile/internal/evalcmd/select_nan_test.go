@@ -3,8 +3,8 @@ package evalcmd_test
 import (
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
 )
 
 // z is 0 everywhere, but not a constant the compiler can fold, so 1 / z is infinite and z / z is NaN at every point.
@@ -69,7 +69,7 @@ func TestEval_ATernaryKeepsTheGradientOfAZeroBranch(t *testing.T) {
 // both, its other branch divides by a zero normal difference: the field there is still the sharp union's distance.
 func TestEval_UnionRoundExactOnTheAxisOutsideBothBalls(t *testing.T) {
 	doc := "@scene(60)\na = length(p - [-6, 0, 0]) - 8;\nb = length(p - [6, 0, 0]) - 8;\n" +
-		"u = unionRoundExact(() { return a; }, () { return b; });\nreturn u;\n"
+		"u = unionRoundExact(a, b, 0, a.dp, b.dp);\nreturn u;\n"
 	r, code := ask(t, document(t, doc), map[string]any{"op": "eval", "exprs": []string{"u"},
 		"points": [][3]float64{{20, 0, 0}, {-25, 0, 0}}})
 	require.Equal(t, 0, code, r)

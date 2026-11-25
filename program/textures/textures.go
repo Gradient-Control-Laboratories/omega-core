@@ -3,7 +3,7 @@ package textures
 import (
 	"sort"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // Extract scans all reachable statements and expressions across prog (Primary and
@@ -91,6 +91,12 @@ func (w *walker) walkPackage(pkg *program.Package) {
 			w.walkOperand(r)
 		}
 		for _, r := range file.MaterialReturns {
+			w.walkOperand(r)
+		}
+		for _, r := range file.GradientReturns {
+			w.walkOperand(r)
+		}
+		for _, r := range file.DisplacedReturns {
 			w.walkOperand(r)
 		}
 	}

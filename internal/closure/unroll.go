@@ -2,9 +2,10 @@ package closure
 
 import (
 	"fmt"
+	"strings"
 
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/program"
 )
 
 // unrollFunctionFold rewrites, in place, a map or reduce whose COLLECTION is a
@@ -37,11 +38,55 @@ func (t *transformer) unrollFunctionFold(file *program.PackageFile, enclosingFn 
 	if len(elements) == 0 {
 		return false, nil
 	}
-	if !t.anyFunctionValue(file, enclosingFn, elements) {
-		return false, nil
-	}
-
 	prefix, name, arity, ok := t.callbackArity(file, enclosingFn, cbOp)
+	var extra []string
+	if !t.anyFunctionValue(file, enclosingFn, elements) {
+		// A fold over values is lower.Transform's, unless its callback
+		// differentiates: then the property pass, which runs first, has to see
+		// each element as an argument.
+		if !ok || !t.callbackDifferentiates(file, enclosingFn, prefix, name, arity) {
+			return false, nil
+		}
+		// The property pass keys a function's derivative companion by name and
+		// arity, and the parser names every lambda gsl_anon, so a lambda folding
+		// inside another of its arity would be taken for a call to itself. A
+		// hoisted lambda is named only by the fold that holds it, which this
+		// replaces, so it can be renamed apart.
+		if prefix == "" && strings.HasPrefix(name, "gsl_anon") {
+			if _, ft := t.lookupFnTypeInScope(enclosingFn, file, prefix, name); ft != nil {
+				t.nameCounters["gsl_anon_unrolled"]++
+				name = fmt.Sprintf("gsl_anon_unrolled_%d", t.nameCounters["gsl_anon_unrolled"])
+				ft.Name = name
+				// What the lambda reads of the function it is written in reaches it
+				// as arguments, under the same names: the property pass follows a
+				// parameter to its argument, but not a name read from an enclosing
+				// function's scope.
+				// A list bound into the enclosing clone is not one of its
+				// parameters: the lambda folds it by the same binding.
+				// The elements are expressions of the enclosing function, so
+				// what they read of it reaches the lambda as parameters too.
+				var carried []*program.Operand
+				for _, fg := range ft.Groups {
+					for _, cbFn := range fg.Functions {
+						for listName, els := range t.listBindings[enclosingFn] {
+							if functionReads(cbFn, listName) {
+								if t.listBindings[cbFn] == nil {
+									t.listBindings[cbFn] = map[string][]*program.Operand{}
+								}
+								t.listBindings[cbFn][listName] = cloneOperands(els)
+								carried = append(carried, els...)
+							}
+						}
+					}
+				}
+				extra = liftEnclosingReads(enclosingFn, ft, carried)
+				// And it moves to the file's own functions: the property pass
+				// differentiates through a function declared at the top level of
+				// a file, and not through one nested in another function.
+				t.hoistToFile(file, enclosingFn, ft)
+			}
+		}
+	}
 	if !ok {
 		return false, fmt.Errorf("cannot resolve the function folding this list of functions: its elements have to be applied by a callback this pass can see")
 	}
@@ -52,6 +97,9 @@ func (t *transformer) unrollFunctionFold(file *program.PackageFile, enclosingFn 
 			args := []*program.Operand{elem}
 			if arity == 2 {
 				args = append(args, program.NewValue(float64(i), op.Start, op.End))
+			}
+			for _, n := range extra {
+				args = append(args, program.NewReference("", n, op.Start, op.End))
 			}
 			results[i] = program.NewFnCall(prefix, name, args, op.Start, op.End)
 		}
@@ -67,8 +115,24 @@ func (t *transformer) unrollFunctionFold(file *program.PackageFile, enclosingFn 
 	}
 	for i := start; i < len(elements); i++ {
 		args := []*program.Operand{acc, elements[i]}
-		if arity == 3 {
+		if arity >= 3 {
 			args = append(args, program.NewValue(float64(i), op.Start, op.End))
+		}
+		// A fourth parameter is handed the element before this one, so the
+		// callback can ask its predecessor with constant arguments, which fold
+		// as any call on an element does; a number carried in the accumulator
+		// would not. The first element has none and is handed itself, which
+		// its index tells apart. Each is a copy: specialization rewrites its
+		// arguments in place, and the element is passed as `elem` too.
+		if arity == 4 {
+			prev := elements[i]
+			if i > 0 {
+				prev = elements[i-1]
+			}
+			args = append(args, proto.Clone(prev).(*program.Operand))
+		}
+		for _, n := range extra {
+			args = append(args, program.NewReference("", n, op.Start, op.End))
 		}
 		acc = program.NewFnCall(prefix, name, args, op.Start, op.End)
 	}
@@ -209,8 +273,9 @@ func (t *transformer) anyFunctionValue(file *program.PackageFile, enclosingFn *p
 }
 
 // callbackArity resolves the fold's callback to a name this pass can emit a
-// call to, and the number of parameters it declares — 2 or 3 for reduce
-// (accumulator and element, plus an optional index), 1 or 2 for map.
+// call to, and the number of parameters it declares — 2 to 4 for reduce
+// (accumulator and element, plus an optional index and then the element
+// before), 1 or 2 for map.
 func (t *transformer) callbackArity(file *program.PackageFile, enclosingFn *program.Function, cbOp *program.Operand) (string, string, int, bool) {
 	if cbOp == nil {
 		return "", "", 0, false

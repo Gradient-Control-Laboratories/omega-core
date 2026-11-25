@@ -4,18 +4,21 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/assembler/annotation"
-	"gradientcontrol.com/omega/core/internal/collect"
-	"gradientcontrol.com/omega/core/internal/link"
-	"gradientcontrol.com/omega/core/internal/source"
-	"gradientcontrol.com/omega/core/internal/types"
-	parser "gradientcontrol.com/omega/core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/annotation"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/collect"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/link"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/types"
+	parser "github.com/Gradient-Control-Laboratories/omega-core/parser"
 )
 
 func parseAndValidate(t *testing.T, src string) error {
 	t.Helper()
 	srcMgr := source.NewLocalManager("../../../stdlib")
-	prog, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	prog, diags, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	if len(diags) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", diags)
+	}
 	if err != nil {
 		return err
 	}
@@ -30,7 +33,10 @@ func parseAndValidate(t *testing.T, src string) error {
 func parseAndValidateReturns(t *testing.T, src string) error {
 	t.Helper()
 	srcMgr := source.NewLocalManager("../../../stdlib")
-	prog, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	prog, diags, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	if len(diags) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", diags)
+	}
 	if err != nil {
 		return err
 	}

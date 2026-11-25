@@ -1,9 +1,9 @@
 package parser
 
 import (
-	"gradientcontrol.com/omega/core/internal/stdpkg"
-	"gradientcontrol.com/omega/core/parser/internal/parser2"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/stdpkg"
+	"github.com/Gradient-Control-Laboratories/omega-core/parser/internal/parser2"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // Result holds the parsed package.
@@ -13,7 +13,8 @@ import (
 //   - Result.Package.Files always contains at least one non-nil *program.PackageFile
 //     (len(res.Package.Files) >= 1 and res.Package.Files[0] != nil).
 type Result struct {
-	Package *program.Package
+	Package     *program.Package
+	Diagnostics []program.Diagnostic
 }
 
 // ParsePackage parses all source files in a package into a Result without caching
@@ -32,6 +33,6 @@ func ParsePackage(sources []string) (*Result, error) {
 			return &Result{Package: program.GetStdPackage(importPath)}, nil
 		}
 	}
-	pkg, err := parser2.Parse(sources)
-	return &Result{Package: pkg}, err
+	pkg, diags, err := parser2.Parse(sources)
+	return &Result{Package: pkg, Diagnostics: diags}, err
 }

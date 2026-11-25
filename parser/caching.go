@@ -5,10 +5,10 @@ import (
 	"crypto/sha256"
 	"sync"
 
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/stdpkg"
+	"github.com/Gradient-Control-Laboratories/omega-core/parser/internal/parser2"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/internal/stdpkg"
-	"gradientcontrol.com/omega/core/parser/internal/parser2"
-	"gradientcontrol.com/omega/core/program"
 )
 
 // defaultCacheLimit bounds the non-stdlib source bytes whose parses are kept by default (4 MiB).
@@ -29,9 +29,10 @@ type CachingParser struct {
 }
 
 type parseEntry struct {
-	key  [sha256.Size]byte
-	pkg  *program.Package
-	size int
+	key   [sha256.Size]byte
+	pkg   *program.Package
+	diags []program.Diagnostic
+	size  int
 }
 
 // NewCachingParser creates a new CachingParser backed by an LRU cache for user
@@ -61,17 +62,17 @@ func (c *CachingParser) ParsePackage(sources []string) (*Result, error) {
 			return &Result{Package: program.GetStdPackage(importPath)}, nil
 		}
 	}
-	if pkg := c.get(key); pkg != nil {
-		return &Result{Package: pkg}, nil
+	if pkg, diags := c.get(key); pkg != nil {
+		return &Result{Package: pkg, Diagnostics: diags}, nil
 	}
-	pkg, err := parser2.Parse(sources)
+	pkg, diags, err := parser2.Parse(sources)
 	if err == nil {
-		c.put(key, proto.Clone(pkg).(*program.Package), sourcesSize(sources))
+		c.put(key, proto.Clone(pkg).(*program.Package), diags, sourcesSize(sources))
 	}
-	return &Result{Package: pkg}, err
+	return &Result{Package: pkg, Diagnostics: diags}, err
 }
 
-func (c *CachingParser) get(key [sha256.Size]byte) *program.Package {
+func (c *CachingParser) get(key [sha256.Size]byte) (*program.Package, []program.Diagnostic) {
 	c.mu.Lock()
 	el, ok := c.entries[key]
 	if ok {
@@ -79,14 +80,15 @@ func (c *CachingParser) get(key [sha256.Size]byte) *program.Package {
 	}
 	c.mu.Unlock()
 	if !ok {
-		return nil
+		return nil, nil
 	}
 	// The cached package is never written after it is stored, so cloning it
 	// outside the lock is safe.
-	return proto.Clone(el.Value.(*parseEntry).pkg).(*program.Package)
+	entry := el.Value.(*parseEntry)
+	return proto.Clone(entry.pkg).(*program.Package), append([]program.Diagnostic(nil), entry.diags...)
 }
 
-func (c *CachingParser) put(key [sha256.Size]byte, pkg *program.Package, size int) {
+func (c *CachingParser) put(key [sha256.Size]byte, pkg *program.Package, diags []program.Diagnostic, size int) {
 	if size > c.limit {
 		return
 	}
@@ -96,7 +98,8 @@ func (c *CachingParser) put(key [sha256.Size]byte, pkg *program.Package, size in
 		c.order.MoveToFront(el)
 		return
 	}
-	c.entries[key] = c.order.PushFront(&parseEntry{key: key, pkg: pkg, size: size})
+	diagsCopy := append([]program.Diagnostic(nil), diags...)
+	c.entries[key] = c.order.PushFront(&parseEntry{key: key, pkg: pkg, diags: diagsCopy, size: size})
 	c.size += size
 	for c.size > c.limit {
 		oldest := c.order.Back()

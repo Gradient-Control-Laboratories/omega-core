@@ -1,14 +1,19 @@
 package convert
 
 import (
-	"gradientcontrol.com/omega/core/internal/build"
-	"gradientcontrol.com/omega/core/internal/fidget"
+	"fmt"
+
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/build"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget"
 )
 
 // Ensure the color wrapper also satisfies the material hook. It rides on the
 // same wrapper for the same reason: only the paths that render appearance pay
 // for lowering it, so meshing and plain evaluation stay byte-identical.
 var _ build.MaterialReturnsBuilder = (*colorDelegate)(nil)
+
+// And the displaced-distance hook, which only the lit renderer uses.
+var _ build.DisplacedReturnsBuilder = (*colorDelegate)(nil)
 
 // materialRows is how many vec4 rows a material record carries, and
 // materialRowSize how wide each row is. The layout is the one declared in
@@ -26,6 +31,34 @@ const (
 	displacementRow  = 2
 	displacementComp = 2
 )
+
+// BuildPackageDisplacedReturns implements [build.DisplacedReturnsBuilder]: it
+// records each return's distance displaced inside its booleans, for the lit
+// renderer to march in place of its distance minus its material's height.
+// Meshing and export move no surface, so for them nothing is recorded.
+func (cd *colorDelegate) BuildPackageDisplacedReturns(displacedExpressions []build.Expression) error {
+	d := cd.Delegate
+	if !d.pixelSizeInput {
+		return nil
+	}
+	trees := make([]fidget.TreeIndex, len(displacedExpressions))
+	has := make([]bool, len(displacedExpressions))
+	for i, e := range displacedExpressions {
+		if e == nil {
+			continue
+		}
+		node, ok := e.(*TreeNode)
+		if !ok || len(node.Trees()) != 1 {
+			return build.ErrLoc(d.GetScope(), e.Start(),
+				fmt.Errorf("expected a numeric displaced distance, got %s", e.Type().String()))
+		}
+		trees[i] = node.Trees()[0]
+		has[i] = true
+	}
+	d.inTreeReturns = trees
+	d.hasInTreeReturn = has
+	return nil
+}
 
 // BuildPackageMaterialReturns implements [build.MaterialReturnsBuilder]: it
 // records each return's lowered material field as three rows of four trees,

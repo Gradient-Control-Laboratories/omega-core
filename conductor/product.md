@@ -2,8 +2,8 @@
 
 ## Vision
 
-`omega-core` (`module gradientcontrol.com/omega/core`) is the standalone Go compiler SDK and CLI
-toolchain for the Geometric Specification Language (GSL). It provides pure, modular compiler
+`omega-core` (`module github.com/Gradient-Control-Laboratories/omega-core`) is the standalone Go compiler SDK and CLI
+toolchain for the Geometric Shape Language (GSL). It provides pure, modular compiler
 libraries and command-line tools (`gsl compile`, `gsl serve`, `gsl fix`) for parsing, linking,
 evaluating, certifying, and compiling GSL signed-distance-field (SDF) models into WebGPU compute
 shaders (WGSL), watertight 3D meshes (STL), spatial bytecode tapes, and WebAudio synthesizers.

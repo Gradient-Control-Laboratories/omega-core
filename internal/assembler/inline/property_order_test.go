@@ -1,17 +1,18 @@
 package inline_test
 
 import (
+	"fmt"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/assembler/inline"
-	"gradientcontrol.com/omega/core/internal/closure"
-	"gradientcontrol.com/omega/core/internal/collect"
-	"gradientcontrol.com/omega/core/internal/link"
-	"gradientcontrol.com/omega/core/internal/lower"
-	"gradientcontrol.com/omega/core/internal/source"
-	"gradientcontrol.com/omega/core/internal/types"
-	parser "gradientcontrol.com/omega/core/parser"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/inline"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/closure"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/collect"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/link"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/lower"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/types"
+	parser "github.com/Gradient-Control-Laboratories/omega-core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // sliderChecker marks the named top-level variables as parameters, the way
@@ -30,7 +31,10 @@ func (c sliderChecker) IsParameter(op *program.Operand) bool {
 // parameters through the inline pass.
 func runPipelineWithSliders(src string, sliders sliderChecker) (*program.Program, error) {
 	srcMgr := &source.MockManager{}
-	prog, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	prog, diags, err := collect.Program([]string{src}, srcMgr, parser.ParsePackage)
+	if len(diags) != 0 {
+		return nil, fmt.Errorf("unexpected diagnostics: %+v", diags)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -136,9 +140,7 @@ func indexOf(names []string, want string) int {
 func TestInline_PropertyTemporariesFollowTheSliderTheyRead(t *testing.T) {
 	src := patternFn + `
 a = sphere(5);
-x = 8;
-x.min = 0.5;
-x.max = 50;
+@range(0.5, 50) x = 8;
 a.color = pattern(x);
 return a;
 `
@@ -173,9 +175,7 @@ return a;
 // their place in front of the part, as before.
 func TestInline_PropertyTemporariesStayAheadOfThePartOtherwise(t *testing.T) {
 	src := patternFn + `
-x = 8;
-x.min = 0.5;
-x.max = 50;
+@range(0.5, 50) x = 8;
 a = sphere(5);
 a.color = pattern(x);
 return a;

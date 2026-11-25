@@ -3,7 +3,7 @@ package property
 import (
 	"fmt"
 
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // secondInf is the sentinel "no second-closest surface" distance: large and
@@ -642,4 +642,14 @@ func subPair(a, b pair) pair {
 		return pair{first: first, second: sub(a.second, b.first)}
 	}
 	return pair{first: first, second: inf()}
+}
+
+// Primal is a pair's plain value, for an index the Engine evaluates (see
+// frame.indexOperand).
+func (dd *secondDomain) Primal(v Value) (*program.Operand, bool) {
+	p, ok := v.(pair)
+	if !ok || p.first == nil {
+		return nil, false
+	}
+	return p.first, true
 }

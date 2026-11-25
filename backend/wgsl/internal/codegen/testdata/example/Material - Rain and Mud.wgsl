@@ -89,7 +89,7 @@ fn builtin_intersectSharp(fields: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
 fn builtin_intersectRound(fields: vec3<f32>, radius: f32, noiseTex: texture_3d<f32>) -> f32 {
   let sharp = builtin_intersectSharp(fields, noiseTex);
   let sumOfSquares = 0.0 + max(fields.x + radius, 0.0) * max(fields.x + radius, 0.0) + max(fields.y + radius, 0.0) * max(fields.y + radius, 0.0) + max(fields.z + radius, 0.0) * max(fields.z + radius, 0.0);
-  return sharp - max(sharp + radius, 0.0) + sqrt(max(sumOfSquares, 0.000000000000000000000000000001));
+  return min(sharp, 0.000000000000000000000000000001 - radius) + sqrt(max(sumOfSquares, 0.000000000000000000000000000001));
 }
 
 fn builtin_gcl_closure_intersectRound(fields: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
@@ -203,9 +203,9 @@ fn animated_mudPot(p: vec3<f32>, time: f32, bubbleSize: f32, period: f32, thinne
   return gsl_result;
 }
 
-fn gsl_shapeParts(p: vec3<f32>, time: f32, gsl_param_10_12: f32, gsl_param_16_12: f32, noiseTex: texture_3d<f32>) -> array<f32, 2> {
+fn gsl_shapeParts(p: vec3<f32>, time: f32, gsl_param_10_26: f32, gsl_param_14_25: f32, noiseTex: texture_3d<f32>) -> array<f32, 2> {
   gsl_partNear = vec3<f32>(1e10, 1e10, 1e10);
-  let rainfall = gsl_param_10_12;
+  let rainfall = gsl_param_10_26;
   let gsl_result = animated_rain(p, time, rainfall, 2.0, noiseTex);
   let rainHeight = gsl_result.v_3;
   let gsl_partLo = vec3<f32>(-28.0 - max(rainHeight, 0.0), -12.0 - max(rainHeight, 0.0), -4.0 - max(rainHeight, 0.0));
@@ -219,7 +219,7 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32, gsl_param_10_12: f32, gsl_param_16_12
     if (abs(gsl_part) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part), gsl_partVanish.zw); }
   }
   let rain = gsl_part;
-  let thinness = gsl_param_16_12;
+  let thinness = gsl_param_14_25;
   let gsl_result_2 = animated_mudPot(p, time, 6.0, 2.0, thinness, noiseTex);
   let mudHeight = gsl_result_2.v_3;
   let gsl_partLo_2 = vec3<f32>(4.0 - max(mudHeight, 0.0), -12.0 - max(mudHeight, 0.0), -4.0 - max(mudHeight, 0.0));
@@ -236,36 +236,36 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32, gsl_param_10_12: f32, gsl_param_16_12
   return array<f32, 2>(rain, mud);
 }
 
-fn sdShape(p: vec3<f32>, time: f32, gsl_param_10_12: f32, gsl_param_16_12: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
-  let gsl_d = gsl_shapeParts(p, time, gsl_param_10_12, gsl_param_16_12, noiseTex);
+fn sdShape(p: vec3<f32>, time: f32, gsl_param_10_26: f32, gsl_param_14_25: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
+  let gsl_d = gsl_shapeParts(p, time, gsl_param_10_26, gsl_param_14_25, noiseTex);
   let gsl_s1 = gsl_shape(gsl_d[0], 1u);
   let gsl_s2 = gsl_shape(gsl_d[1], 2u);
   return gsl_min(gsl_s1, gsl_s2);
 }
-fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_10_12: f32, gsl_param_16_12: f32, noiseTex: texture_3d<f32>) -> vec4<f32> {
+fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, gsl_param_10_26: f32, gsl_param_14_25: f32, noiseTex: texture_3d<f32>) -> vec4<f32> {
   if (gsl_colorIdx == 1u) {
-    let rainfall = gsl_param_10_12;
+    let rainfall = gsl_param_10_26;
     let gsl_result = animated_rain(p, time, rainfall, 2.0, noiseTex);
     let rainColor = gsl_result.v_2;
     return vec4<f32>(rainColor, 1.0);
   }
   if (gsl_colorIdx == 2u) {
-    let thinness = gsl_param_16_12;
+    let thinness = gsl_param_14_25;
     let gsl_result_2 = animated_mudPot(p, time, 6.0, 2.0, thinness, noiseTex);
     let mudColor = gsl_result_2.v_2;
     return vec4<f32>(mudColor, 1.0);
   }
   return vec4<f32>(0.0, 0.0, 0.0, 0.0);
 }
-fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_10_12: f32, gsl_param_16_12: f32, noiseTex: texture_3d<f32>) -> gsl_material {
+fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, gsl_param_10_26: f32, gsl_param_14_25: f32, noiseTex: texture_3d<f32>) -> gsl_material {
   if (gsl_materialIdx == 1u) {
-    let rainfall = gsl_param_10_12;
+    let rainfall = gsl_param_10_26;
     let gsl_result = animated_rain(p, time, rainfall, 2.0, noiseTex);
     let rainMat = gsl_result.v_1;
     let gsl_m = rainMat; return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
   }
   if (gsl_materialIdx == 2u) {
-    let thinness = gsl_param_16_12;
+    let thinness = gsl_param_14_25;
     let gsl_result_2 = animated_mudPot(p, time, 6.0, 2.0, thinness, noiseTex);
     let mudMat = gsl_result_2.v_1;
     let gsl_m = mudMat; return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
@@ -295,19 +295,19 @@ var<private> gsl_simpleDetail: f32 = 1.0;
 
 var<private> gsl_dispDrawn: f32 = 0.0;
 
-fn gsl_heights(p: vec3<f32>, time: f32, gsl_param_10_12: f32, gsl_param_16_12: f32, noiseTex: texture_3d<f32>) -> array<f32, 2> {
-  let rainfall = gsl_param_10_12;
+fn gsl_heights(p: vec3<f32>, time: f32, gsl_param_10_26: f32, gsl_param_14_25: f32, noiseTex: texture_3d<f32>) -> array<f32, 2> {
+  let rainfall = gsl_param_10_26;
   let gsl_result = animated_rain(p, time, rainfall, 2.0, noiseTex);
   let rainMat = gsl_result.v_1;
-  let thinness = gsl_param_16_12;
+  let thinness = gsl_param_14_25;
   let gsl_result_2 = animated_mudPot(p, time, 6.0, 2.0, thinness, noiseTex);
   let mudMat = gsl_result_2.v_1;
   return array<f32, 2>(rainMat[2].z, mudMat[2].z);
 }
 
-fn gsl_sdShapeDisplaced(p: vec3<f32>, time: f32, gsl_dispK: f32, gsl_param_10_12: f32, gsl_param_16_12: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
-  let gsl_d = gsl_shapeParts(p, time, gsl_param_10_12, gsl_param_16_12, noiseTex);
-  let gsl_h = gsl_heights(p, time, gsl_param_10_12, gsl_param_16_12, noiseTex);
+fn gsl_sdShapeDisplaced(p: vec3<f32>, time: f32, gsl_dispK: f32, gsl_param_10_26: f32, gsl_param_14_25: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
+  let gsl_d = gsl_shapeParts(p, time, gsl_param_10_26, gsl_param_14_25, noiseTex);
+  let gsl_h = gsl_heights(p, time, gsl_param_10_26, gsl_param_14_25, noiseTex);
   let gsl_s1 = gsl_shape(gsl_d[0] - gsl_h[0] * gsl_dispK, 1u);
   let gsl_s2 = gsl_shape(gsl_d[1] - gsl_h[1] * gsl_dispK, 2u);
   return gsl_min(gsl_s1, gsl_s2);

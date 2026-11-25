@@ -1,8 +1,8 @@
 package codegen
 
 import (
-	"gradientcontrol.com/omega/core/backend/wgsl/internal/ir"
-	"gradientcontrol.com/omega/core/backend/wgsl/internal/wgsl"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl/internal/ir"
+	"github.com/Gradient-Control-Laboratories/omega-core/backend/wgsl/internal/wgsl"
 )
 
 type BuildContext struct {
@@ -27,6 +27,7 @@ func (c BuildContext) WithP(p *wgsl.VarInfo) wgsl.CodegenContext {
 
 func (c BuildContext) EmitVar(ref *wgsl.VarInfo) {
 	if c.delegate.ShouldGenerate(ref) && c.delegate.markGenerated(ref.WGSLName()) {
+		c.delegate.needSliderParam(ref)
 		c.delegate.emitVar(ref, c)
 	}
 }

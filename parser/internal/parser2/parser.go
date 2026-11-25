@@ -9,9 +9,9 @@ import (
 	participle "github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
 
-	"gradientcontrol.com/omega/core/internal"
-	"gradientcontrol.com/omega/core/internal/scope"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 var gslLexer = lexer.MustSimple([]lexer.SimpleRule{
@@ -40,13 +40,16 @@ var options = []participle.Option{
 	participle.Elide("Whitespace", "Comment"),
 	// Lookahead 3 for distinguishing between qualified function calls and qualified references
 	participle.UseLookahead(3),
-	participle.Union[Declaration](&NamedFunction{}, &PropertyAssignment{}, &Assignment{}, &AnnotatedDeclaration{}),
+	// CaptionDirective precedes AnnotatedDeclaration: both begin with '@', and
+	// a caption answers NextMatch for any other name.
+	participle.Union[Declaration](&NamedFunction{}, &PropertyAssignment{}, &Assignment{}, &CaptionDirective{}, &AnnotatedDeclaration{}),
 	// Order is important here. ImportRef is first so the `importStep`/`importMesh`
 	// keywords are matched before they could be consumed as a plain Reference.
 	participle.Union[Value](&ImportRef{}, &Number{}, &FunctionCall{}, &QualifiedRef{}, &Reference{}, &AnonCall{}, &SubExpression{}, &Collection{}, &String{}, &AnnotatedExpr{}),
 }
 
-// Parse parses all source files in a package into a program.Package.
+// Parse parses all source files in a package into a program.Package
+// along with any non-fatal parser diagnostics.
 //
 // Invariants:
 //   - The returned *program.Package is never nil.
@@ -55,7 +58,7 @@ var options = []participle.Option{
 //   - If a syntax or semantic error occurs, Parse returns the *program.Error and
 //     pkg preserves all files, scene metadata, imports, and declarations
 //     completed prior to the error.
-func Parse(sources []string) (*program.Package, error) {
+func Parse(sources []string) (*program.Package, []program.Diagnostic, error) {
 	pkg := &program.Package{
 		VersionMajor: program.VersionMajor,
 		VersionMinor: program.VersionMinor,
@@ -64,7 +67,8 @@ func Parse(sources []string) (*program.Package, error) {
 	if len(sources) == 0 {
 		pkgFile := &program.PackageFile{}
 		pkg.Files = append(pkg.Files, pkgFile)
-		return recordFileError(pkg, pkgFile, "", errors.New("no sources provided to parse"))
+		p, err := recordFileError(pkg, pkgFile, "", errors.New("no sources provided to parse"))
+		return p, nil, err
 	}
 
 	prog := &program.Program{
@@ -74,10 +78,12 @@ func Parse(sources []string) (*program.Package, error) {
 	if err != nil {
 		pkgFile := &program.PackageFile{}
 		pkg.Files = append(pkg.Files, pkgFile)
-		return recordFileError(pkg, pkgFile, "", err)
+		p, err := recordFileError(pkg, pkgFile, "", err)
+		return p, nil, err
 	}
 	pkgScope := progScope.Primary
 
+	var diags []program.Diagnostic
 	for i, source := range sources {
 		pkgFile := &program.PackageFile{}
 		pkg.Files = append(pkg.Files, pkgFile)
@@ -88,7 +94,8 @@ func Parse(sources []string) (*program.Package, error) {
 			if perr == nil {
 				perr = internal.Err(errors.New("nil AST with no parse error"))
 			}
-			return recordFileError(pkg, pkgFile, source, perr)
+			p, err := recordFileError(pkg, pkgFile, source, perr)
+			return p, diags, err
 		}
 
 		if i == 0 {
@@ -96,30 +103,57 @@ func Parse(sources []string) (*program.Package, error) {
 				sc, err := newScene(topLevel.Scene.Size, topLevel.Scene.Grid,
 					posToLocation(topLevel.Scene.Pos), posToLocation(topLevel.Scene.EndPos))
 				if err != nil {
-					return recordFileError(pkg, pkgFile, source, participle.Errorf(topLevel.Scene.Pos, "%s", err.Error()))
+					p, err := recordFileError(pkg, pkgFile, source, participle.Errorf(topLevel.Scene.Pos, "%s", err.Error()))
+					return p, diags, err
 				}
 				pkg.Scene = sc
 			} else {
-				pkg.Scene = fromLegacyComments(source)
+				sc, diag := fromLegacyCommentsWithDiag(source)
+				pkg.Scene = sc
+				if diag != nil {
+					diags = append(diags, *diag)
+				}
 			}
 		} else if topLevel.Scene != nil {
-			return recordFileError(pkg, pkgFile, source, participle.Errorf(topLevel.Scene.Pos, "@scene directive is only allowed in the first source file"))
+			p, err := recordFileError(pkg, pkgFile, source, participle.Errorf(topLevel.Scene.Pos, "@scene directive is only allowed in the first source file"))
+			return p, diags, err
 		}
 
-		if berr := buildPkgFile(pkgFileScope, topLevel); berr != nil {
-			return recordFileError(pkg, pkgFile, source, berr)
+		if topLevel.Duration != nil {
+			if i != 0 {
+				p, err := recordFileError(pkg, pkgFile, source, participle.Errorf(topLevel.Duration.Pos, "@duration directive is only allowed in the first source file"))
+				return p, diags, err
+			}
+			dur, err := newDuration(topLevel.Duration.Seconds,
+				posToLocation(topLevel.Duration.Pos), posToLocation(topLevel.Duration.EndPos))
+			if err != nil {
+				p, err := recordFileError(pkg, pkgFile, source, participle.Errorf(topLevel.Duration.Pos, "%s", err.Error()))
+				return p, diags, err
+			}
+			pkg.Duration = dur
+		}
+
+		pkg.Captions = append(pkg.Captions, takeCaptions(topLevel)...)
+
+		impDiags, berr := buildPkgFile(pkgFileScope, source, topLevel)
+		diags = append(diags, impDiags...)
+		if berr != nil {
+			p, err := recordFileError(pkg, pkgFile, source, berr)
+			return p, diags, err
 		}
 
 		if perr != nil {
-			return recordFileError(pkg, pkgFile, source, perr)
+			p, err := recordFileError(pkg, pkgFile, source, perr)
+			return p, diags, err
 		}
 
 		if i < len(sources)-1 && len(topLevel.Return) > 0 {
-			return recordFileError(pkg, pkgFile, source, participle.Errorf(topLevel.Return[0].Pos, "return statement is only allowed in the last source file"))
+			p, err := recordFileError(pkg, pkgFile, source, participle.Errorf(topLevel.Return[0].Pos, "return statement is only allowed in the last source file"))
+			return p, diags, err
 		}
 	}
 
-	return pkg, nil
+	return pkg, diags, nil
 }
 
 func recordFileError(pkg *program.Package, pkgFile *program.PackageFile, source string, err error) (*program.Package, error) {

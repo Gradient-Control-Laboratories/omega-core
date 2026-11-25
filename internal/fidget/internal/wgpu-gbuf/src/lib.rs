@@ -3,7 +3,7 @@
 //! Each return is voxel-rendered on its own and the images merged on the GPU,
 //! which keeps the nearest hit and tags it with its return; the colour pass
 //! then evaluates each return's colour tapes at its hits, the channel pass
-//! (an omega fork addition) its twelve material tapes, and SSAO runs over the
+//! (an omega fork addition) its sixteen material tapes, and SSAO runs over the
 //! merged depth. A return without a colour takes the caller's palette colour,
 //! and one without a material the default record, both as constants. Normals
 //! are each return's own full-precision ones, not the merged image's packed
@@ -11,26 +11,34 @@
 
 use fidget_core::{
     context::{Context, Tree},
+    render::VoxelSize,
     shape::ShapeVars,
     vm::VmShape,
 };
 use fidget_raster::voxel::RenderConfig;
 use fidget_wgpu::{
-    Gpu, RenderShape,
-    color::{ShapeChannelBuffers, ShapeColor, ShapeColorBuffers},
+    Context as GpuContext, Gpu, RenderShape,
+    buf::{BufferTag, FlexBuffer, ReadBuffer},
+    channels::RenderChannels,
+    color::{RenderColor, ShapeColor},
     voxel::{
-        Context as VoxelContext, Workspace,
-        effects::{
-            ChannelOutput, ChannelWorkspace, ColorWorkspace, Context as EffectsContext,
-            MergeSettings, MergeWorkspace, ShadeWorkspace, SsaoWorkspace,
-        },
+        channels::{self, ChannelSize},
+        color, merge, render, shade, ssao,
     },
 };
 use tape_core::Decoded;
 
+/// How many floats a material record is: four rows of four (surface, emissive,
+/// volume, lay), as `gsl_material` and the tape's `appearance` carry it.
+pub const MATERIAL_FLOATS: usize = 16;
+
 /// The material record's default, as the viewer's GSL_MATERIAL_DEFAULT_WGSL:
-/// roughness 0.5, metallic 0, ior 1.5, no emission, no volume.
-pub const DEFAULT_MATERIAL: [f32; 12] = [0.5, 0.0, 1.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+/// roughness 0.5, metallic 0, ior 1.5, no emission, no volume, no lay.
+pub const DEFAULT_MATERIAL: [f32; MATERIAL_FLOATS] =
+    [0.5, 0.0, 1.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+
+/// The material record's rows, each one channel pass of four floats a pixel.
+const MATERIAL_ROWS: usize = MATERIAL_FLOATS / 4;
 
 fn to_shape(tree: &Tree) -> Result<VmShape, String> {
     let mut ctx = Context::new();
@@ -41,11 +49,12 @@ fn to_shape(tree: &Tree) -> Result<VmShape, String> {
 /// A decoded tape made ready to render.
 pub struct Scene {
     shapes: Vec<RenderShape>,
-    colors: ShapeColorBuffers,
-    // One channel pass per material row, four floats a pixel each: twelve at
-    // once is 48 bytes a pixel, which passes WebGPU's 128 MiB storage binding
-    // above 2.8 megapixels; 16 matches fidget's own geometry buffers.
-    materials: Option<[ShapeChannelBuffers; 3]>,
+    colors: RenderColor,
+    // One channel pass per material row, four floats a pixel each: all sixteen
+    // at once is 64 bytes a pixel, which passes WebGPU's default 128 MiB
+    // storage binding above 2.1 megapixels (a viewer can ask for the adapter's
+    // larger limit); one row is 16, as fidget's own geometry buffers.
+    materials: Option<[RenderChannels; MATERIAL_ROWS]>,
     vars: ShapeVars<f32>,
     /// Per return: its colour came from the tape (else the palette).
     pub has_color: Vec<bool>,
@@ -55,8 +64,9 @@ pub struct Scene {
 
 impl Scene {
     /// `palette` gives the colour (sRGB, 0-1) of each return that has none of
-    /// its own, indexed by return, wrapping if short.
-    pub fn new(d: Decoded, palette: &[[f32; 3]]) -> Result<Scene, String> {
+    /// its own, indexed by return, wrapping if short. The scene's tapes live in
+    /// GPU buffers, so it is built for one `gpu`.
+    pub fn new(gpu: &Gpu, d: Decoded, palette: &[[f32; 3]]) -> Result<Scene, String> {
         let n = d.output_trees.len();
         let mut shapes = Vec::with_capacity(n);
         let mut colors = Vec::with_capacity(n);
@@ -73,7 +83,8 @@ impl Scene {
                 _ => tree.clone(),
             };
             shapes.push(
-                RenderShape::new(&to_shape(&field)?).map_err(|e| format!("return {k}: {e}"))?,
+                gpu.build_render_shape(&to_shape(&field)?)
+                    .map_err(|e| format!("return {k}: {e}"))?,
             );
 
             let color: [Tree; 3] = match app.and_then(|a| a.color.clone()) {
@@ -102,14 +113,14 @@ impl Scene {
             };
             materials.push(material.iter().map(to_shape).collect::<Result<Vec<_>, _>>()?);
         }
-        let colors = ShapeColorBuffers::new(&colors).map_err(|e| format!("colour: {e}"))?;
+        let colors = gpu.build_render_color(&colors).map_err(|e| format!("colour: {e}"))?;
         // Every return at the default: the constant needs no pass.
         let materials = if has_material.iter().any(|&m| m) {
-            let row = |r: usize| -> Result<ShapeChannelBuffers, String> {
+            let row = |r: usize| -> Result<RenderChannels, String> {
                 let rows: Vec<Vec<VmShape>> = materials.iter().map(|m| m[4 * r..4 * r + 4].to_vec()).collect();
-                ShapeChannelBuffers::new(&rows, 4).map_err(|e| format!("material: {e}"))
+                gpu.build_render_channels(&rows, 4).map_err(|e| format!("material: {e}"))
             };
-            Some([row(0)?, row(1)?, row(2)?])
+            Some([row(0)?, row(1)?, row(2)?, row(3)?])
         } else {
             None
         };
@@ -135,108 +146,151 @@ pub struct GBuffer {
     pub normal: Vec<f32>,
     /// sRGB colour, 4 bytes per pixel (alpha 255 on a hit).
     pub color: Vec<u8>,
-    /// The material record, 12 per pixel.
+    /// The material record, `MATERIAL_FLOATS` (16) per pixel: four rows of four.
     pub material: Vec<f32>,
     /// Blurred SSAO occlusion, 1 for none; NaN on a miss.
     pub occlusion: Vec<f32>,
 }
 
+/// The buffers that depend on the frame size, rebuilt when the size changes.
+struct Frame {
+    size: VoxelSize,
+    render: render::Buffers,
+    merge: merge::Buffers,
+    /// The colour pass writes here.
+    shade: shade::Buffers,
+    ssao: ssao::Buffers,
+    /// One per material row, built the first time a scene with materials is
+    /// drawn at this size (they are 16 bytes a pixel each).
+    channels: Option<[channels::Buffers; MATERIAL_ROWS]>,
+}
+
+/// Copies a GPU buffer into a buffer the host can map.
+fn readback<T: BufferTag>(gpu: &Gpu, buf: &FlexBuffer<T>) -> Result<ReadBuffer<T>, String> {
+    let mut rb = gpu.read_buffer_for(buf);
+    gpu.copy(buf, &mut rb).map_err(|e| format!("copy: {e}"))?;
+    Ok(rb)
+}
+
 /// GPU state for rendering scenes; one per thread or worker.
 pub struct Renderer {
     gpu: Gpu,
-    voxel: VoxelContext,
-    effects: EffectsContext,
-    workspace: Workspace,
-    merge: MergeWorkspace,
-    color_ws: ColorWorkspace,
-    shade: ShadeWorkspace,
-    channel_ws: [ChannelWorkspace; 3],
-    channel_out: [ChannelOutput; 3],
-    ssao: SsaoWorkspace,
+    voxel: render::Context,
+    merge: merge::Context,
+    color: color::Context,
+    channels: channels::Context,
+    ssao: ssao::Context,
+    voxel_ws: render::Workspace,
+    merge_ws: merge::Workspace,
+    color_ws: color::Workspace,
+    channel_ws: [channels::Workspace; MATERIAL_ROWS],
+    ssao_ws: ssao::Workspace,
+    frame: Option<Frame>,
 }
 
 impl Renderer {
     pub fn new(gpu: &Gpu) -> Renderer {
-        let voxel = VoxelContext::new(gpu);
-        let effects = EffectsContext::new(gpu);
+        let voxel = render::Context::new(gpu);
+        let merge = merge::Context::new(gpu);
+        let color = color::Context::new(gpu);
+        let channels = channels::Context::new(gpu);
+        let ssao = ssao::Context::new(gpu);
         Renderer {
-            workspace: voxel.workspace(),
-            merge: effects.merge_workspace(),
-            color_ws: effects.color_workspace(),
-            shade: effects.shade_workspace(),
-            channel_ws: [effects.channel_workspace(), effects.channel_workspace(), effects.channel_workspace()],
-            channel_out: [effects.channel_output(), effects.channel_output(), effects.channel_output()],
-            ssao: effects.ssao_workspace(),
+            voxel_ws: voxel.workspace(),
+            merge_ws: merge.workspace(),
+            color_ws: color.workspace(),
+            channel_ws: std::array::from_fn(|_| channels.workspace()),
+            ssao_ws: ssao.workspace(),
             voxel,
-            effects,
+            merge,
+            color,
+            channels,
+            ssao,
+            frame: None,
             gpu: gpu.clone(),
         }
     }
 
     pub async fn render(&mut self, scene: &Scene, cfg: RenderConfig) -> Result<GBuffer, String> {
         let gpu = &self.gpu;
-        let (w, h) = (cfg.image_size.width(), cfg.image_size.height());
+        let size = cfg.image_size;
+        let (w, h) = (size.width(), size.height());
         let px = (w as usize) * (h as usize);
+
+        // The size-dependent buffers: kept from the last frame if it was this
+        // size, else rebuilt (the old ones are dropped first, so the two sets
+        // are never alive together).
+        if self.frame.as_ref().map(|f| f.size) != Some(size) {
+            self.frame = None;
+            self.frame = Some(Frame {
+                size,
+                render: self.voxel.buffers(size).map_err(|e| format!("render buffers: {e}"))?,
+                merge: self.merge.buffers(size).map_err(|e| format!("merge buffers: {e}"))?,
+                shade: self.color.buffers(size).map_err(|e| format!("colour buffers: {e}"))?,
+                ssao: self.ssao.buffers(size.into()).map_err(|e| format!("ssao buffers: {e}"))?,
+                channels: None,
+            });
+        }
+        let frame = self.frame.as_mut().unwrap();
+        if scene.materials.is_some() && frame.channels.is_none() {
+            let cs = ChannelSize { size, channels: 4 };
+            let build = || self.channels.buffers(cs).map_err(|e| format!("material buffers: {e}"));
+            frame.channels = Some([build()?, build()?, build()?, build()?]);
+        }
 
         // Each return on its own, its geometry kept for the full-precision
         // normals, then merged: nearest hit wins, tagged with its return.
-        self.merge.reset();
+        frame.merge.reset();
+        let settings = render::Settings { vars: &scene.vars, world_to_model: cfg.world_to_model };
         let mut geoms = Vec::with_capacity(scene.shapes.len());
         for shape in &scene.shapes {
             self.voxel
-                .submit_with_vars(shape, &scene.vars, &mut self.workspace, &cfg)
+                .submit(shape, settings, &mut self.voxel_ws, &mut frame.render)
                 .map_err(|e| format!("render: {e}"))?;
-            let mut rb = gpu.read_buffer_for(self.workspace.output());
-            gpu.copy(self.workspace.output(), &mut rb);
-            geoms.push(rb);
-            self.effects
-                .submit_merge(
-                    self.workspace.output(),
-                    MergeSettings { denoise: false, z_scale: 1.0 },
-                    &mut self.merge,
+            geoms.push(readback(gpu, frame.render.output())?);
+            self.merge
+                .submit(
+                    &frame.render,
+                    merge::Settings { denoise: false, z_scale: 1.0 },
+                    &mut self.merge_ws,
+                    &mut frame.merge,
                 )
                 .map_err(|e| format!("merge: {e}"))?;
         }
 
-        self.effects
-            .submit_color_with_vars(
-                &self.merge,
-                &cfg.world_to_model,
-                &scene.colors,
+        self.color
+            .submit(
+                color::Args { image: &frame.merge, color: &scene.colors },
+                color::Settings { vars: &scene.vars, world_to_model: cfg.world_to_model },
                 &mut self.color_ws,
-                &scene.vars,
-                &mut self.shade,
+                &mut frame.shade,
             )
             .map_err(|e| format!("colour: {e}"))?;
-        if let Some(rows) = &scene.materials {
+        if let (Some(rows), Some(outs)) = (&scene.materials, frame.channels.as_mut()) {
             for (r, m) in rows.iter().enumerate() {
-                self.effects
-                    .submit_channels_with_vars(
-                        &self.merge,
-                        &cfg.world_to_model,
-                        m,
+                self.channels
+                    .submit(
+                        channels::Args { image: &frame.merge, channels: m },
+                        channels::Settings { vars: &scene.vars, world_to_model: cfg.world_to_model },
                         &mut self.channel_ws[r],
-                        &scene.vars,
-                        &mut self.channel_out[r],
+                        &mut outs[r],
                     )
                     .map_err(|e| format!("material: {e}"))?;
             }
         }
-        self.effects.submit_ssao(&self.merge, &mut self.ssao).map_err(|e| format!("ssao: {e}"))?;
+        self.ssao
+            .submit(&frame.merge, (), &mut self.ssao_ws, &mut frame.ssao)
+            .map_err(|e| format!("ssao: {e}"))?;
 
-        let mut merged_rb = gpu.read_buffer_for(self.merge.output());
-        gpu.copy(self.merge.output(), &mut merged_rb);
-        let mut color_rb = gpu.read_buffer_for(self.shade.output());
-        gpu.copy(self.shade.output(), &mut color_rb);
-        let mut occl_rb = gpu.read_buffer_for(self.ssao.blurred_occlusion());
-        gpu.copy(self.ssao.blurred_occlusion(), &mut occl_rb);
-        let mut mat_rb = scene.materials.as_ref().map(|_| {
-            self.channel_out.each_ref().map(|out| {
-                let mut rb = gpu.read_buffer_for(out.output());
-                gpu.copy(out.output(), &mut rb);
-                rb
-            })
-        });
+        let mut merged_rb = readback(gpu, frame.merge.output())?;
+        let mut color_rb = readback(gpu, frame.shade.output())?;
+        let mut occl_rb = readback(gpu, frame.ssao.blurred_occlusion())?;
+        let mut mat_rb = Vec::new();
+        if let (Some(_), Some(outs)) = (&scene.materials, &frame.channels) {
+            for out in outs {
+                mat_rb.push(readback(gpu, out.output())?);
+            }
+        }
 
         let merged = gpu.map_async(&mut merged_rb).await.to_vec();
         let color = gpu.map_async(&mut color_rb).await.to_vec();
@@ -246,10 +300,8 @@ impl Renderer {
             geom_px.push(gpu.map_async(rb).await.to_vec());
         }
         let mut material_rows: Vec<Vec<f32>> = Vec::new();
-        if let Some(rbs) = &mut mat_rb {
-            for rb in rbs.iter_mut() {
-                material_rows.push(gpu.map_async(rb).await.to_vec());
-            }
+        for rb in mat_rb.iter_mut() {
+            material_rows.push(gpu.map_async(rb).await.to_vec());
         }
 
         let mut g = GBuffer {
@@ -259,7 +311,7 @@ impl Renderer {
             depth: vec![0; px],
             normal: vec![0.0; 3 * px],
             color: Vec::with_capacity(4 * px),
-            material: Vec::with_capacity(12 * px),
+            material: Vec::with_capacity(MATERIAL_FLOATS * px),
             occlusion,
         };
         for i in 0..px {

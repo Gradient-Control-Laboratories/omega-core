@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	gsllibs "gradientcontrol.com/omega/core/stdlib"
+	gsllibs "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
 )
 
 // TestEveryPackageHasASummary: the index is only useful if each line says

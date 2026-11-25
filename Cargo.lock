@@ -680,7 +680,7 @@ dependencies = [
 
 [[package]]
 name = "fidget"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "document-features",
  "fidget-bytecode",
@@ -697,7 +697,7 @@ dependencies = [
 
 [[package]]
 name = "fidget-bytecode"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "fidget-core",
  "serde",
@@ -708,7 +708,7 @@ dependencies = [
 
 [[package]]
 name = "fidget-core"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "facet",
  "getrandom 0.2.15",
@@ -719,13 +719,13 @@ dependencies = [
  "rand",
  "rayon",
  "serde",
- "strum",
  "thiserror",
+ "workspace-hack",
 ]
 
 [[package]]
 name = "fidget-gui"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "fidget-core",
  "nalgebra",
@@ -734,7 +734,7 @@ dependencies = [
 
 [[package]]
 name = "fidget-jit"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "arrayvec",
  "dynasmrt",
@@ -746,7 +746,7 @@ dependencies = [
 
 [[package]]
 name = "fidget-mesh"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "arrayvec",
  "fidget-core",
@@ -771,7 +771,7 @@ dependencies = [
 
 [[package]]
 name = "fidget-rhai"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "enum-map",
  "facet",
@@ -784,7 +784,7 @@ dependencies = [
 
 [[package]]
 name = "fidget-shapes"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "enum-map",
  "facet",
@@ -796,7 +796,7 @@ dependencies = [
 
 [[package]]
 name = "fidget-solver"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "fidget-core",
  "nalgebra",
@@ -2025,6 +2025,7 @@ dependencies = [
  "fidget-mesh",
  "image",
  "libc",
+ "naga",
  "nalgebra",
  "prost",
  "serde",
@@ -2941,6 +2942,10 @@ name = "wit-bindgen"
 version = "0.57.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e"
+
+[[package]]
+name = "workspace-hack"
+version = "0.1.0"
 
 [[package]]
 name = "xml-rs"

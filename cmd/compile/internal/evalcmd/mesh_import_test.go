@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/test/assert"
-	"gradientcontrol.com/omega/core/internal/test/require"
-	"gradientcontrol.com/omega/core/internal/test/stlbox"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/assert"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/stlbox"
 )
 
 // A document beside the box STL it imports: 20 x 10 x 6 mm about the origin.

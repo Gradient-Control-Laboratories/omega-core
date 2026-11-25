@@ -1,12 +1,12 @@
 package meshfold
 
 import (
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/meshslots"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/closure"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/types"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/assembler/meshslots"
-	"gradientcontrol.com/omega/core/internal/closure"
-	"gradientcontrol.com/omega/core/internal/eval"
-	"gradientcontrol.com/omega/core/internal/types"
-	"gradientcontrol.com/omega/core/program"
 )
 
 // TODO: Inline this func
@@ -172,6 +172,12 @@ func (f *meshFolder) file(file *program.PackageFile) {
 		f.operand(r)
 	}
 	for _, r := range file.MaterialReturns {
+		f.operand(r)
+	}
+	for _, r := range file.GradientReturns {
+		f.operand(r)
+	}
+	for _, r := range file.DisplacedReturns {
 		f.operand(r)
 	}
 }

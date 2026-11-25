@@ -26,12 +26,8 @@
 // the shellac; weather how long the wood has stood outdoors, from fresh (0)
 // to years (1).
 
-age = 0.00;
-age.min = 0;
-age.max = 1;
-weather = 0.00;
-weather.min = 0;
-weather.max = 1;
+@range(0, 1) age = 0.00;
+@range(0, 1) weather = 0.00;
 look = [0, age, weather];
 
 up = [0, 0, 1];

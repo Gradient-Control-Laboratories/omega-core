@@ -6,7 +6,7 @@ import (
 	"context"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
 // derivedSliderDoc reaches its slider only through a declaration that does
@@ -14,9 +14,7 @@ import (
 // k's default, so unless the parametric fold keeps it dynamic, every use of
 // grow is the constant 0 and the claim below holds at the default alone.
 const derivedSliderDoc = `
-k = 0.0;
-k.min = 0.0;
-k.max = 1.0;
+@range(0.0, 1.0) k = 0.0;
 grow = k * 2.0;
 ball = length(p) - 1.0 - grow;
 return ball;

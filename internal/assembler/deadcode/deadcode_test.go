@@ -1,21 +1,25 @@
 package deadcode_test
 
 import (
+	"fmt"
 	"testing"
 
-	"gradientcontrol.com/omega/core/assembler/source"
-	"gradientcontrol.com/omega/core/internal/assembler/deadcode"
-	"gradientcontrol.com/omega/core/internal/collect"
-	"gradientcontrol.com/omega/core/internal/eval"
-	"gradientcontrol.com/omega/core/internal/link"
-	internalsource "gradientcontrol.com/omega/core/internal/source"
-	"gradientcontrol.com/omega/core/internal/types"
-	parserlib "gradientcontrol.com/omega/core/parser"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/deadcode"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/collect"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/link"
+	internalsource "github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/types"
+	parserlib "github.com/Gradient-Control-Laboratories/omega-core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func assembleUnpruned(primarySources []string, srcMgr source.Manager) (*program.Program, error) {
-	prog, err := collect.Program(primarySources, srcMgr, parserlib.ParsePackage)
+	prog, diags, err := collect.Program(primarySources, srcMgr, parserlib.ParsePackage)
+	if len(diags) != 0 {
+		return nil, fmt.Errorf("unexpected diagnostics: %+v", diags)
+	}
 	if err != nil {
 		return nil, err
 	}

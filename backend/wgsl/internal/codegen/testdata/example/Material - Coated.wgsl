@@ -56,22 +56,22 @@ fn builtin_firstOf(list: f32, noiseTex: texture_3d<f32>) -> f32 {
   return list;
 }
 
-fn builtin_intersectChamferEdges(fields: vec2<f32>, setback: f32, noiseTex: texture_3d<f32>) -> f32 {
+fn builtin_intersectChamferEdges(fields: vec2<f32>, offset: f32, noiseTex: texture_3d<f32>) -> f32 {
   let face = builtin_intersectSharp(fields, noiseTex);
-  return builtin_intersectSharp(vec2<f32>(builtin_intersectSharp(vec2<f32>(select(face, (fields.x + fields.x + setback) / 1.4142135, 0.0 > 0.0), select(face, (fields.x + fields.y + setback) / 1.4142135, 1.0 > 0.0)), noiseTex), builtin_intersectSharp(vec2<f32>(select(face, (fields.y + fields.x + setback) / 1.4142135, 0.0 > 0.0), select(face, (fields.y + fields.y + setback) / 1.4142135, 0.0 > 0.0)), noiseTex)), noiseTex);
+  return builtin_intersectSharp(vec2<f32>(builtin_intersectSharp(vec2<f32>(select(face, (fields.x + fields.x + offset) / 1.4142135, 0.0 > 0.0), select(face, (fields.x + fields.y + offset) / 1.4142135, 1.0 > 0.0)), noiseTex), builtin_intersectSharp(vec2<f32>(select(face, (fields.y + fields.x + offset) / 1.4142135, 0.0 > 0.0), select(face, (fields.y + fields.y + offset) / 1.4142135, 0.0 > 0.0)), noiseTex)), noiseTex);
 }
 
 fn builtin_lastOf(list: f32, noiseTex: texture_3d<f32>) -> f32 {
   return list;
 }
 
-fn builtin_intersectChamferVertices(fields: vec2<f32>, setback: f32, noiseTex: texture_3d<f32>) -> f32 {
+fn builtin_intersectChamferVertices(fields: vec2<f32>, offset: f32, noiseTex: texture_3d<f32>) -> f32 {
   let face = builtin_intersectSharp(fields, noiseTex);
-  return builtin_intersectSharp(vec2<f32>(builtin_intersectSharp(vec2<f32>(builtin_intersectSharp(vec2<f32>(select(face, (fields.x + fields.x + fields.x + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.x + fields.x + fields.y + setback) / 1.7320508, 0.0 > 0.0)), noiseTex), builtin_intersectSharp(vec2<f32>(select(face, (fields.x + fields.y + fields.x + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.x + fields.y + fields.y + setback) / 1.7320508, 0.0 > 0.0)), noiseTex)), noiseTex), builtin_intersectSharp(vec2<f32>(builtin_intersectSharp(vec2<f32>(select(face, (fields.y + fields.x + fields.x + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.y + fields.x + fields.y + setback) / 1.7320508, 0.0 > 0.0)), noiseTex), builtin_intersectSharp(vec2<f32>(select(face, (fields.y + fields.y + fields.x + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.y + fields.y + fields.y + setback) / 1.7320508, 0.0 > 0.0)), noiseTex)), noiseTex)), noiseTex);
+  return builtin_intersectSharp(vec2<f32>(builtin_intersectSharp(vec2<f32>(builtin_intersectSharp(vec2<f32>(select(face, (fields.x + fields.x + fields.x + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.x + fields.x + fields.y + offset) / 1.7320508, 0.0 > 0.0)), noiseTex), builtin_intersectSharp(vec2<f32>(select(face, (fields.x + fields.y + fields.x + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.x + fields.y + fields.y + offset) / 1.7320508, 0.0 > 0.0)), noiseTex)), noiseTex), builtin_intersectSharp(vec2<f32>(builtin_intersectSharp(vec2<f32>(select(face, (fields.y + fields.x + fields.x + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.y + fields.x + fields.y + offset) / 1.7320508, 0.0 > 0.0)), noiseTex), builtin_intersectSharp(vec2<f32>(select(face, (fields.y + fields.y + fields.x + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.y + fields.y + fields.y + offset) / 1.7320508, 0.0 > 0.0)), noiseTex)), noiseTex)), noiseTex);
 }
 
-fn builtin_intersectChamfer(fields: vec2<f32>, setback: f32, noiseTex: texture_3d<f32>) -> f32 {
-  return max(max(builtin_intersectSharp(fields, noiseTex), builtin_intersectChamferEdges(fields, builtin_firstOf(setback, noiseTex), noiseTex)), builtin_intersectChamferVertices(fields, builtin_lastOf(setback, noiseTex), noiseTex));
+fn builtin_intersectChamfer(fields: vec2<f32>, offset: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return max(max(builtin_intersectSharp(fields, noiseTex), builtin_intersectChamferEdges(fields, builtin_firstOf(offset, noiseTex), noiseTex)), builtin_intersectChamferVertices(fields, builtin_lastOf(offset, noiseTex), noiseTex));
 }
 
 fn builtin_gcl_closure_intersectChamfer(fields: vec2<f32>, noiseTex: texture_3d<f32>) -> f32 {
@@ -192,18 +192,18 @@ fn builtin_intersectSharp_2(fields: vec3<f32>, noiseTex: texture_3d<f32>) -> f32
   return max(max(fields.x, fields.y), fields.z);
 }
 
-fn builtin_intersectChamferEdges_2(fields: vec3<f32>, setback: f32, noiseTex: texture_3d<f32>) -> f32 {
+fn builtin_intersectChamferEdges_2(fields: vec3<f32>, offset: f32, noiseTex: texture_3d<f32>) -> f32 {
   let face = builtin_intersectSharp_2(fields, noiseTex);
-  return builtin_intersectSharp_2(vec3<f32>(builtin_intersectSharp_2(vec3<f32>(select(face, (fields.x + fields.x + setback) / 1.4142135, 0.0 > 0.0), select(face, (fields.x + fields.y + setback) / 1.4142135, 1.0 > 0.0), select(face, (fields.x + fields.z + setback) / 1.4142135, 1.0 > 0.0)), noiseTex), builtin_intersectSharp_2(vec3<f32>(select(face, (fields.y + fields.x + setback) / 1.4142135, 0.0 > 0.0), select(face, (fields.y + fields.y + setback) / 1.4142135, 0.0 > 0.0), select(face, (fields.y + fields.z + setback) / 1.4142135, 1.0 > 0.0)), noiseTex), builtin_intersectSharp_2(vec3<f32>(select(face, (fields.z + fields.x + setback) / 1.4142135, 0.0 > 0.0), select(face, (fields.z + fields.y + setback) / 1.4142135, 0.0 > 0.0), select(face, (fields.z + fields.z + setback) / 1.4142135, 0.0 > 0.0)), noiseTex)), noiseTex);
+  return builtin_intersectSharp_2(vec3<f32>(builtin_intersectSharp_2(vec3<f32>(select(face, (fields.x + fields.x + offset) / 1.4142135, 0.0 > 0.0), select(face, (fields.x + fields.y + offset) / 1.4142135, 1.0 > 0.0), select(face, (fields.x + fields.z + offset) / 1.4142135, 1.0 > 0.0)), noiseTex), builtin_intersectSharp_2(vec3<f32>(select(face, (fields.y + fields.x + offset) / 1.4142135, 0.0 > 0.0), select(face, (fields.y + fields.y + offset) / 1.4142135, 0.0 > 0.0), select(face, (fields.y + fields.z + offset) / 1.4142135, 1.0 > 0.0)), noiseTex), builtin_intersectSharp_2(vec3<f32>(select(face, (fields.z + fields.x + offset) / 1.4142135, 0.0 > 0.0), select(face, (fields.z + fields.y + offset) / 1.4142135, 0.0 > 0.0), select(face, (fields.z + fields.z + offset) / 1.4142135, 0.0 > 0.0)), noiseTex)), noiseTex);
 }
 
-fn builtin_intersectChamferVertices_2(fields: vec3<f32>, setback: f32, noiseTex: texture_3d<f32>) -> f32 {
+fn builtin_intersectChamferVertices_2(fields: vec3<f32>, offset: f32, noiseTex: texture_3d<f32>) -> f32 {
   let face = builtin_intersectSharp_2(fields, noiseTex);
-  return builtin_intersectSharp_2(vec3<f32>(builtin_intersectSharp_2(vec3<f32>(builtin_intersectSharp_2(vec3<f32>(select(face, (fields.x + fields.x + fields.x + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.x + fields.x + fields.y + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.x + fields.x + fields.z + setback) / 1.7320508, 0.0 > 0.0)), noiseTex), builtin_intersectSharp_2(vec3<f32>(select(face, (fields.x + fields.y + fields.x + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.x + fields.y + fields.y + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.x + fields.y + fields.z + setback) / 1.7320508, 1.0 > 0.0)), noiseTex), builtin_intersectSharp_2(vec3<f32>(select(face, (fields.x + fields.z + fields.x + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.x + fields.z + fields.y + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.x + fields.z + fields.z + setback) / 1.7320508, 0.0 > 0.0)), noiseTex)), noiseTex), builtin_intersectSharp_2(vec3<f32>(builtin_intersectSharp_2(vec3<f32>(select(face, (fields.y + fields.x + fields.x + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.y + fields.x + fields.y + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.y + fields.x + fields.z + setback) / 1.7320508, 0.0 > 0.0)), noiseTex), builtin_intersectSharp_2(vec3<f32>(select(face, (fields.y + fields.y + fields.x + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.y + fields.y + fields.y + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.y + fields.y + fields.z + setback) / 1.7320508, 0.0 > 0.0)), noiseTex), builtin_intersectSharp_2(vec3<f32>(select(face, (fields.y + fields.z + fields.x + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.y + fields.z + fields.y + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.y + fields.z + fields.z + setback) / 1.7320508, 0.0 > 0.0)), noiseTex)), noiseTex), builtin_intersectSharp_2(vec3<f32>(builtin_intersectSharp_2(vec3<f32>(select(face, (fields.z + fields.x + fields.x + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.z + fields.x + fields.y + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.z + fields.x + fields.z + setback) / 1.7320508, 0.0 > 0.0)), noiseTex), builtin_intersectSharp_2(vec3<f32>(select(face, (fields.z + fields.y + fields.x + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.z + fields.y + fields.y + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.z + fields.y + fields.z + setback) / 1.7320508, 0.0 > 0.0)), noiseTex), builtin_intersectSharp_2(vec3<f32>(select(face, (fields.z + fields.z + fields.x + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.z + fields.z + fields.y + setback) / 1.7320508, 0.0 > 0.0), select(face, (fields.z + fields.z + fields.z + setback) / 1.7320508, 0.0 > 0.0)), noiseTex)), noiseTex)), noiseTex);
+  return builtin_intersectSharp_2(vec3<f32>(builtin_intersectSharp_2(vec3<f32>(builtin_intersectSharp_2(vec3<f32>(select(face, (fields.x + fields.x + fields.x + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.x + fields.x + fields.y + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.x + fields.x + fields.z + offset) / 1.7320508, 0.0 > 0.0)), noiseTex), builtin_intersectSharp_2(vec3<f32>(select(face, (fields.x + fields.y + fields.x + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.x + fields.y + fields.y + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.x + fields.y + fields.z + offset) / 1.7320508, 1.0 > 0.0)), noiseTex), builtin_intersectSharp_2(vec3<f32>(select(face, (fields.x + fields.z + fields.x + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.x + fields.z + fields.y + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.x + fields.z + fields.z + offset) / 1.7320508, 0.0 > 0.0)), noiseTex)), noiseTex), builtin_intersectSharp_2(vec3<f32>(builtin_intersectSharp_2(vec3<f32>(select(face, (fields.y + fields.x + fields.x + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.y + fields.x + fields.y + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.y + fields.x + fields.z + offset) / 1.7320508, 0.0 > 0.0)), noiseTex), builtin_intersectSharp_2(vec3<f32>(select(face, (fields.y + fields.y + fields.x + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.y + fields.y + fields.y + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.y + fields.y + fields.z + offset) / 1.7320508, 0.0 > 0.0)), noiseTex), builtin_intersectSharp_2(vec3<f32>(select(face, (fields.y + fields.z + fields.x + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.y + fields.z + fields.y + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.y + fields.z + fields.z + offset) / 1.7320508, 0.0 > 0.0)), noiseTex)), noiseTex), builtin_intersectSharp_2(vec3<f32>(builtin_intersectSharp_2(vec3<f32>(select(face, (fields.z + fields.x + fields.x + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.z + fields.x + fields.y + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.z + fields.x + fields.z + offset) / 1.7320508, 0.0 > 0.0)), noiseTex), builtin_intersectSharp_2(vec3<f32>(select(face, (fields.z + fields.y + fields.x + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.z + fields.y + fields.y + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.z + fields.y + fields.z + offset) / 1.7320508, 0.0 > 0.0)), noiseTex), builtin_intersectSharp_2(vec3<f32>(select(face, (fields.z + fields.z + fields.x + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.z + fields.z + fields.y + offset) / 1.7320508, 0.0 > 0.0), select(face, (fields.z + fields.z + fields.z + offset) / 1.7320508, 0.0 > 0.0)), noiseTex)), noiseTex)), noiseTex);
 }
 
-fn builtin_intersectChamfer_2(fields: vec3<f32>, setback: f32, noiseTex: texture_3d<f32>) -> f32 {
-  return max(max(builtin_intersectSharp_2(fields, noiseTex), builtin_intersectChamferEdges_2(fields, builtin_firstOf(setback, noiseTex), noiseTex)), builtin_intersectChamferVertices_2(fields, builtin_lastOf(setback, noiseTex), noiseTex));
+fn builtin_intersectChamfer_2(fields: vec3<f32>, offset: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return max(max(builtin_intersectSharp_2(fields, noiseTex), builtin_intersectChamferEdges_2(fields, builtin_firstOf(offset, noiseTex), noiseTex)), builtin_intersectChamferVertices_2(fields, builtin_lastOf(offset, noiseTex), noiseTex));
 }
 
 fn builtin_gcl_closure_intersectChamfer_5(fields: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
@@ -269,7 +269,7 @@ fn ease_cubic(t: f32, noiseTex: texture_3d<f32>) -> f32 {
 fn builtin_intersectRound(fields: vec3<f32>, radius: f32, noiseTex: texture_3d<f32>) -> f32 {
   let sharp = builtin_intersectSharp_2(fields, noiseTex);
   let sumOfSquares = 0.0 + max(fields.x + radius, 0.0) * max(fields.x + radius, 0.0) + max(fields.y + radius, 0.0) * max(fields.y + radius, 0.0) + max(fields.z + radius, 0.0) * max(fields.z + radius, 0.0);
-  return sharp - max(sharp + radius, 0.0) + sqrt(max(sumOfSquares, 0.000000000000000000000000000001));
+  return min(sharp, 0.000000000000000000000000000001 - radius) + sqrt(max(sumOfSquares, 0.000000000000000000000000000001));
 }
 
 fn builtin_gcl_closure_intersectRound(fields: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
@@ -410,6 +410,21 @@ fn builtin_gcl_closure_boxCentered_11(p: vec3<f32>, center: vec3<f32>, size: vec
 fn material_filmKeeps(wavelength: f32, build: f32, noiseTex: texture_3d<f32>) -> f32 {
   let x = wavelength / (15.0 * max(build, 0.0001));
   return 1.0 - exp(-x * x);
+}
+
+fn material_relief(m: mat4x4<f32>, noiseTex: texture_3d<f32>) -> f32 {
+  let volume = m[2];
+  return volume.z - volume.w;
+}
+
+fn material_build(m: mat4x4<f32>, noiseTex: texture_3d<f32>) -> f32 {
+  let volume = m[2];
+  return volume.w;
+}
+
+fn material_withBuild(m: mat4x4<f32>, thickness: f32, noiseTex: texture_3d<f32>) -> mat4x4<f32> {
+  let volume = m[2];
+  return material_withDisplacement(mat4x4<f32>(m[0], m[1], vec4<f32>(volume.x, volume.y, volume.z, thickness), m[3]), volume.z - volume.w + thickness, noiseTex);
 }
 
 fn material_lay(m: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
@@ -664,9 +679,11 @@ fn coating_levelled(coat: mat4x4<f32>, baseMaterial: mat4x4<f32>, build: f32, un
   let baseRough = material_roughness(baseMaterial, noiseTex);
   let baseAlpha = baseRough * baseRough;
   let alpha = sqrt(coatAlpha * coatAlpha + keeps * keeps * baseAlpha * baseAlpha);
-  let lobe = material_withRoughness(coat, sqrt(alpha), noiseTex);
-  let relief = material_displacement(coat, noiseTex) + material_displacement(baseMaterial, noiseTex) * keeps;
-  return material_withDisplacement(material_withLay(lobe, material_lay(baseMaterial, noiseTex), material_anisotropy(baseMaterial, noiseTex) * keeps, noiseTex), relief, noiseTex);
+  let lobe = material_withRoughness(material_withBuild(coat, 0.0, noiseTex), sqrt(alpha), noiseTex);
+  let relief = material_relief(coat, noiseTex) + material_relief(baseMaterial, noiseTex) * keeps;
+  let surface = material_withDisplacement(material_withLay(lobe, material_lay(baseMaterial, noiseTex), material_anisotropy(baseMaterial, noiseTex) * keeps, noiseTex), relief, noiseTex);
+  let stacked = material_build(baseMaterial, noiseTex) + material_build(coat, noiseTex) + build;
+  return material_withBuild(surface, stacked, noiseTex);
 }
 
 fn coating_clearCoat(baseMaterial: mat4x4<f32>, baseColor: vec3<f32>, tint: vec3<f32>, glossUnits: f32, build: f32, underSize: f32, noiseTex: texture_3d<f32>) -> gsl_struct {
@@ -1034,8 +1051,8 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_
   if (gsl_colorIdx == 11u) {
     var gsl_detailValue = 1.0;
     if (max(gsl_pw, gsl_detailPw) < 2.0) { let gsl_detailOuterPw = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
-      let gsl_tmp_3 = p / 4.0;
-      gsl_detailValue = texture_fadeTo(0.85 + 0.3 * fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cellularScan(gsl_tmp_3, 1, noiseTex).nearCell + vec3<f32>(41.0, 7.0, 13.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((gsl_cellularScan(gsl_tmp_3, 1, noiseTex).nearCell + vec3<f32>(41.0, 7.0, 13.0)) / 64.0)) & vec3<i32>(63), 0).rgb).x, 1.0, 4.0, noiseTex);
+      let gsl_tmp_6 = p / 4.0;
+      gsl_detailValue = texture_fadeTo(0.85 + 0.3 * fract(textureLoad(noiseTex, vec3<i32>(floor(gsl_cellularScan(gsl_tmp_6, 1, noiseTex).nearCell + vec3<f32>(41.0, 7.0, 13.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((gsl_cellularScan(gsl_tmp_6, 1, noiseTex).nearCell + vec3<f32>(41.0, 7.0, 13.0)) / 64.0)) & vec3<i32>(63), 0).rgb).x, 1.0, 4.0, noiseTex);
       gsl_pw = gsl_detailOuterPw;
     }
     var gsl_simpleValue = vec3<f32>(0.18, 0.32, 0.45);
@@ -1177,8 +1194,8 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, noiseTex: te
   if (gsl_materialIdx == 10u) {
     var gsl_detailValue_5 = 0.0;
     if (max(gsl_pw, gsl_detailPw) < 0.1) { let gsl_detailOuterPw_5 = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
-      let gsl_tmp_2 = clamp(1.0 - noise_cellularF1Lattice(p / 0.2, noiseTex) * 0.2 / 0.09, 0.0, 1.0);
-      gsl_detailValue_5 = gsl_tmp_2 * gsl_tmp_2 * 0.08 * (1.0 - texture_mask(gsl_pw, 0.075, 0.025, noiseTex));
+      let gsl_tmp_5 = clamp(1.0 - noise_cellularF1Lattice(p / 0.2, noiseTex) * 0.2 / 0.09, 0.0, 1.0);
+      gsl_detailValue_5 = gsl_tmp_5 * gsl_tmp_5 * 0.08 * (1.0 - texture_mask(gsl_pw, 0.075, 0.025, noiseTex));
       gsl_pw = gsl_detailOuterPw_5;
     }
     var gsl_simpleValue_6 = mat4x4<f32>(vec4<f32>(0.81903625, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
@@ -1192,9 +1209,9 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, noiseTex: te
   if (gsl_materialIdx == 11u) {
     var gsl_detailValue_6 = 0.0;
     if (max(gsl_pw, gsl_detailPw) < 2.0) { let gsl_detailOuterPw_6 = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
-      let gsl_tmp_3 = p / 4.0;
-      let gsl_tmp_4 = clamp(gsl_cellularScan(gsl_tmp_3, 1, noiseTex).f1 * 4.0 / 2.8, 0.0, 1.0);
-      gsl_detailValue_6 = (gsl_tmp_4 * gsl_tmp_4 - 0.578) * 0.24 * (1.0 - texture_mask(gsl_pw, 1.5, 0.5, noiseTex));
+      let gsl_tmp_6 = p / 4.0;
+      let gsl_tmp_7 = clamp(gsl_cellularScan(gsl_tmp_6, 1, noiseTex).f1 * 4.0 / 2.8, 0.0, 1.0);
+      gsl_detailValue_6 = (gsl_tmp_7 * gsl_tmp_7 - 0.578) * 0.24 * (1.0 - texture_mask(gsl_pw, 1.5, 0.5, noiseTex));
       gsl_pw = gsl_detailOuterPw_6;
     }
     var gsl_simpleValue_7 = mat4x4<f32>(vec4<f32>(0.38729835, 0.5, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
@@ -1391,9 +1408,9 @@ fn gsl_heights(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f32,
   }
   let wrinkleMat = gsl_simpleValue_11;
   var gsl_detailValue_10 = 0.0;
-  let gsl_tmp_2 = clamp(1.0 - noise_cellularF1Lattice(p / 0.2, noiseTex) * 0.2 / 0.09, 0.0, 1.0);
+  let gsl_tmp_5 = clamp(1.0 - noise_cellularF1Lattice(p / 0.2, noiseTex) * 0.2 / 0.09, 0.0, 1.0);
   if (max(gsl_pw, gsl_detailPw) < 0.1) { let gsl_detailOuterPw_10 = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
-    gsl_detailValue_10 = gsl_tmp_2 * gsl_tmp_2 * 0.08 * (1.0 - texture_mask(gsl_pw, 0.075, 0.025, noiseTex));
+    gsl_detailValue_10 = gsl_tmp_5 * gsl_tmp_5 * 0.08 * (1.0 - texture_mask(gsl_pw, 0.075, 0.025, noiseTex));
     gsl_pw = gsl_detailOuterPw_10;
   }
   var gsl_simpleValue_12 = mat4x4<f32>(vec4<f32>(0.81903625, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
@@ -1403,10 +1420,10 @@ fn gsl_heights(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f32,
   }
   let sandMat = gsl_simpleValue_12;
   var gsl_detailValue_11 = 0.0;
-  let gsl_tmp_3 = p / 4.0;
-  let gsl_tmp_4 = clamp(gsl_cellularScan(gsl_tmp_3, 1, noiseTex).f1 * 4.0 / 2.8, 0.0, 1.0);
+  let gsl_tmp_6 = p / 4.0;
+  let gsl_tmp_7 = clamp(gsl_cellularScan(gsl_tmp_6, 1, noiseTex).f1 * 4.0 / 2.8, 0.0, 1.0);
   if (max(gsl_pw, gsl_detailPw) < 2.0) { let gsl_detailOuterPw_11 = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
-    gsl_detailValue_11 = (gsl_tmp_4 * gsl_tmp_4 - 0.578) * 0.24 * (1.0 - texture_mask(gsl_pw, 1.5, 0.5, noiseTex));
+    gsl_detailValue_11 = (gsl_tmp_7 * gsl_tmp_7 - 0.578) * 0.24 * (1.0 - texture_mask(gsl_pw, 1.5, 0.5, noiseTex));
     gsl_pw = gsl_detailOuterPw_11;
   }
   var gsl_simpleValue_13 = mat4x4<f32>(vec4<f32>(0.38729835, 0.5, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));

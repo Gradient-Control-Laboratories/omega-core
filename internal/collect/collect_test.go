@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"gradientcontrol.com/omega/core/internal/source"
-	"gradientcontrol.com/omega/core/parser"
-	"gradientcontrol.com/omega/core/program"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/parser"
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 func parseMockPackage(sources []string) (*parser.Result, error) {
@@ -59,9 +59,12 @@ func TestCollect_Ordering(t *testing.T) {
 		},
 	}
 
-	prog, err := Program([]string{primarySource}, srcMgr, parseMockPackage)
+	prog, diags, err := Program([]string{primarySource}, srcMgr, parseMockPackage)
 	if err != nil {
 		t.Fatalf("Collect failed: %v", err)
+	}
+	if len(diags) != 0 {
+		t.Fatalf("unexpected diagnostics: %+v", diags)
 	}
 
 	// Verify order constraint:
@@ -111,9 +114,12 @@ func TestCollect_PrimaryWithoutReturnsAndErrorPaths(t *testing.T) {
 				{Source: "fn helper() { return 1; }"},
 			},
 		}
-		prog, err := Package(pkg, &source.MockManager{}, parseMockPackage)
+		prog, diags, err := Package(pkg, &source.MockManager{}, parseMockPackage)
 		if err != nil {
 			t.Fatalf("expected primary package without returns to succeed, got: %v", err)
+		}
+		if len(diags) != 0 {
+			t.Fatalf("unexpected diagnostics: %+v", diags)
 		}
 		if len(prog.Returns()) != 0 {
 			t.Fatalf("expected 0 returns, got %d", len(prog.Returns()))
@@ -121,14 +127,26 @@ func TestCollect_PrimaryWithoutReturnsAndErrorPaths(t *testing.T) {
 	})
 
 	t.Run("missing primary sources and empty package errors", func(t *testing.T) {
-		if _, err := Program(nil, &source.MockManager{}, parseMockPackage); err == nil {
+		_, diags, err := Program(nil, &source.MockManager{}, parseMockPackage)
+		if err == nil {
 			t.Fatal("expected error for empty primarySources")
 		}
-		if _, err := Package(nil, &source.MockManager{}, parseMockPackage); err == nil {
+		if len(diags) != 0 {
+			t.Fatalf("unexpected diagnostics: %+v", diags)
+		}
+		_, diags, err = Package(nil, &source.MockManager{}, parseMockPackage)
+		if err == nil {
 			t.Fatal("expected error for nil primaryPkg")
 		}
-		if _, err := Package(&program.Package{}, &source.MockManager{}, parseMockPackage); err == nil {
+		if len(diags) != 0 {
+			t.Fatalf("unexpected diagnostics: %+v", diags)
+		}
+		_, diags, err = Package(&program.Package{}, &source.MockManager{}, parseMockPackage)
+		if err == nil {
 			t.Fatal("expected error for primaryPkg with no files")
+		}
+		if len(diags) != 0 {
+			t.Fatalf("unexpected diagnostics: %+v", diags)
 		}
 	})
 
@@ -139,8 +157,12 @@ func TestCollect_PrimaryWithoutReturnsAndErrorPaths(t *testing.T) {
 				{Imports: []*program.Import{{Path: "dep1"}}},
 			},
 		}
-		if _, err := Package(selfPkg, &source.MockManager{}, parseMockPackage); err == nil || !strings.Contains(err.Error(), "cannot import itself") {
+		_, diags, err := Package(selfPkg, &source.MockManager{}, parseMockPackage)
+		if err == nil || !strings.Contains(err.Error(), "cannot import itself") {
 			t.Fatalf("expected self-import error, got: %v", err)
+		}
+		if len(diags) != 0 {
+			t.Fatalf("unexpected diagnostics: %+v", diags)
 		}
 
 		srcMgr := &source.MockManager{
@@ -149,8 +171,49 @@ func TestCollect_PrimaryWithoutReturnsAndErrorPaths(t *testing.T) {
 				"dep2": {`import "dep1"; return 2.0;`},
 			},
 		}
-		if _, err := Program([]string{`import "dep1"; return 0.0;`}, srcMgr, parseMockPackage); err == nil || !strings.Contains(err.Error(), "cyclic package import") {
+		_, diags, err = Program([]string{`import "dep1"; return 0.0;`}, srcMgr, parseMockPackage)
+		if err == nil || !strings.Contains(err.Error(), "cyclic package import") {
 			t.Fatalf("expected cyclic import error, got: %v", err)
 		}
+		if len(diags) != 0 {
+			t.Fatalf("unexpected diagnostics: %+v", diags)
+		}
 	})
+}
+
+func TestProgramWithDiagnostics_TagsImportedPackages(t *testing.T) {
+	srcMgr := &source.MockManager{
+		PkgSources: map[string][]string{
+			"dep1": {"// Scene Size: 20\nreturn 1.0;"},
+		},
+	}
+	parseWithDiag := func(sources []string) (*parser.Result, error) {
+		res, err := parseMockPackage(sources)
+		if err != nil {
+			return nil, err
+		}
+		if strings.Contains(sources[0], "// Scene Size:") {
+			res.Diagnostics = []program.Diagnostic{{
+				Severity: program.SeverityWarning,
+				LineNum:  1,
+				Column:   1,
+				Message:  "legacy warning",
+			}}
+		}
+		return res, nil
+	}
+
+	_, diags, err := Program([]string{"// Scene Size: 10\nimport \"dep1\"; return 42.0;"}, srcMgr, parseWithDiag)
+	if err != nil {
+		t.Fatalf("Program failed: %v", err)
+	}
+	if len(diags) != 2 {
+		t.Fatalf("expected 2 diagnostics (primary + dep1), got %d: %+v", len(diags), diags)
+	}
+	if diags[0].PackagePath != "" {
+		t.Errorf("expected empty PackagePath for primary diagnostic, got %q", diags[0].PackagePath)
+	}
+	if diags[1].PackagePath != "dep1" {
+		t.Errorf("expected PackagePath 'dep1' for dependency diagnostic, got %q", diags[1].PackagePath)
+	}
 }

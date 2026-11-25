@@ -3,10 +3,11 @@ package property
 import (
 	"fmt"
 	"sort"
+	"strings"
 
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	gsllibs "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
 	"google.golang.org/protobuf/proto"
-	"gradientcontrol.com/omega/core/program"
-	gsllibs "gradientcontrol.com/omega/core/stdlib"
 )
 
 // Expand returns a program in which every property operator reachable from a
@@ -91,6 +92,10 @@ func expand(prog *program.Program, share bool) (*program.Program, error) {
 			continue
 		}
 		if err := applyDeclaredBoxes(pkg); err != nil {
+			return nil, err
+		}
+		// Features first: a feature's size may read its own box.
+		if err := lowerFeatures(pkg); err != nil {
 			return nil, err
 		}
 		// A value's fine detail first, so a value with both is
@@ -821,6 +826,19 @@ func cropFnType(ft *program.FnType, apply string, pkg *program.Package) error {
 			if err := cropAssignments(fn.Assignments, apply, pkg); err != nil {
 				return err
 			}
+			// The crop is written where the name is declared, but a function
+			// body is read in order, and the box may read locals declared
+			// after it. The body is single-assignment and free of effects, so
+			// it is put in an order its reads allow. A library's declaredBox
+			// is dropped before anything reads the body in order, so its
+			// bodies are left as written.
+			if apply == cropToBoxName {
+				ordered, stuck := orderByReads(fn.Assignments)
+				if err := boxCycle(fn.Assignments, stuck); err != nil {
+					return err
+				}
+				fn.Assignments = ordered
+			}
 			for _, nested := range fn.FnTypes {
 				if err := cropFnType(nested, apply, pkg); err != nil {
 					return err
@@ -832,7 +850,8 @@ func cropFnType(ft *program.FnType, apply string, pkg *program.Package) error {
 }
 
 func cropAssignments(assigns []*program.Assignment, apply string, pkg *program.Package) error {
-	for _, a := range assigns {
+	for i := 0; i < len(assigns); i++ {
+		a := assigns[i]
 		if a == nil {
 			continue
 		}
@@ -879,6 +898,175 @@ func cropAssignments(assigns []*program.Assignment, apply string, pkg *program.P
 		}
 	}
 	return nil
+}
+
+// orderByReads is a function body's assignments with each after every
+// assignment of the body it reads, and otherwise in the order written: a body
+// already in such an order comes back as it is. A body whose reads go round in
+// a cycle is left as written, with the indices of the assignments that could
+// not be placed.
+func orderByReads(assigns []*program.Assignment) ([]*program.Assignment, []int) {
+	declaredAt := map[string]int{}
+	for i, a := range assigns {
+		if a == nil {
+			continue
+		}
+		for _, v := range a.Variables {
+			if v != nil {
+				declaredAt[v.Name] = i
+			}
+		}
+	}
+	after := make([]map[int]bool, len(assigns))
+	inOrder := true
+	for i, a := range assigns {
+		if a == nil {
+			continue
+		}
+		reads := map[string]bool{}
+		bodyReads(a.Expression, reads)
+		for name := range reads {
+			if j, ok := declaredAt[name]; ok && j != i {
+				if after[i] == nil {
+					after[i] = map[int]bool{}
+				}
+				after[i][j] = true
+				if j > i {
+					inOrder = false
+				}
+			}
+		}
+	}
+	if inOrder {
+		return assigns, nil
+	}
+	placed := make([]bool, len(assigns))
+	ordered := make([]*program.Assignment, 0, len(assigns))
+	for len(ordered) < len(assigns) {
+		next := -1
+		for i := range assigns {
+			if placed[i] {
+				continue
+			}
+			ready := true
+			for j := range after[i] {
+				if !placed[j] {
+					ready = false
+					break
+				}
+			}
+			if ready {
+				next = i
+				break
+			}
+		}
+		if next < 0 {
+			var stuck []int
+			for i := range assigns {
+				if !placed[i] {
+					stuck = append(stuck, i)
+				}
+			}
+			return assigns, stuck
+		}
+		placed[next] = true
+		ordered = append(ordered, assigns[next])
+	}
+	return ordered, nil
+}
+
+// boxCycle reports a cropped shape among a body's assignments that could not
+// be ordered: its box reads the shape itself, directly or through the locals
+// named, which no order breaks. Any other cycle is left for type analysis.
+func boxCycle(assigns []*program.Assignment, stuck []int) error {
+	for _, a := range assigns {
+		fc := a.GetExpression().GetFnCall()
+		if fc == nil || fc.Reference == nil || fc.Reference.Name != cropToBoxName || len(fc.Arguments) != 3 || len(a.Variables) != 1 {
+			continue
+		}
+		name := a.Variables[0].Name
+		reads := map[string]bool{}
+		bodyReads(fc.Arguments[1], reads)
+		bodyReads(fc.Arguments[2], reads)
+		if reads[name] {
+			return fmt.Errorf("%s.box: the box reads %s, the shape it bounds; a box cannot depend on its shape", name, name)
+		}
+	}
+	if len(stuck) == 0 {
+		return nil
+	}
+	stuckNames := map[string]bool{}
+	for _, i := range stuck {
+		for _, v := range assigns[i].Variables {
+			if v != nil {
+				stuckNames[v.Name] = true
+			}
+		}
+	}
+	for _, i := range stuck {
+		a := assigns[i]
+		fc := a.Expression.GetFnCall()
+		if fc == nil || fc.Reference == nil || fc.Reference.Name != cropToBoxName || len(fc.Arguments) != 3 || len(a.Variables) != 1 {
+			continue
+		}
+		name := a.Variables[0].Name
+		reads := map[string]bool{}
+		bodyReads(fc.Arguments[1], reads)
+		bodyReads(fc.Arguments[2], reads)
+		var through []string
+		for n := range reads {
+			if stuckNames[n] && n != name {
+				through = append(through, n)
+			}
+		}
+		sort.Strings(through)
+		if len(through) == 0 {
+			continue
+		}
+		return fmt.Errorf("%s.box: the box reads %s, which reads %s, the shape it bounds; a box cannot depend on its shape",
+			name, strings.Join(through, ", "), name)
+	}
+	return nil
+}
+
+// bodyReads adds the names an operand reads that a function body could
+// declare: plain references, the local of a member read such as lo.x, and the
+// name a property read or a call is made on.
+func bodyReads(op *program.Operand, out map[string]bool) {
+	if op == nil {
+		return
+	}
+	switch t := op.T.(type) {
+	case *program.Operand_Reference:
+		if t.Reference == nil {
+			return
+		}
+		if t.Reference.Prefix != "" {
+			out[t.Reference.Prefix] = true
+		} else {
+			out[t.Reference.Name] = true
+		}
+	case *program.Operand_PropRef:
+		if t.PropRef != nil && t.PropRef.Reference != nil {
+			bodyReads(&program.Operand{T: &program.Operand_Reference{Reference: t.PropRef.Reference}}, out)
+		}
+	case *program.Operand_Expression:
+		if t.Expression != nil {
+			for _, o := range t.Expression.Operands {
+				bodyReads(o, out)
+			}
+		}
+	case *program.Operand_FnCall:
+		if t.FnCall == nil {
+			return
+		}
+		if t.FnCall.Reference != nil && t.FnCall.Reference.Prefix == "" {
+			out[t.FnCall.Reference.Name] = true
+		}
+		for _, a := range t.FnCall.Arguments {
+			bodyReads(a, out)
+		}
+	}
 }
 
 func isAuto(op *program.Operand) bool {
@@ -1398,7 +1586,7 @@ func assignsDeclareBox(assigns []*program.Assignment) bool {
 // --- operator scanning ------------------------------------------------------
 
 func packageHasOperator(pkg *program.Package) bool {
-	if packageDeclaresBox(pkg) || packageDeclaresSimple(pkg) || packageDeclaresDetail(pkg) {
+	if packageDeclaresBox(pkg) || packageDeclaresSimple(pkg) || packageDeclaresDetail(pkg) || packageDeclaresFeature(pkg) {
 		return true
 	}
 	for _, f := range pkg.Files {
@@ -1512,8 +1700,8 @@ func isOperator(operation program.Operation) bool {
 		operation == program.Operation_SURFACEU || operation == program.Operation_SURFACEV
 }
 
-// sliderNames names a package's slider declarations: those given a .min, .max
-// or .period, which the viewer turns into live controls.
+// sliderNames names a package's slider declarations: those given an @range, which
+// the viewer turns into live controls.
 func sliderNames(pkg *program.Package) map[string]bool {
 	out := map[string]bool{}
 	for _, f := range pkg.Files {
@@ -1528,10 +1716,8 @@ func sliderNames(pkg *program.Package) map[string]bool {
 				if v == nil {
 					continue
 				}
-				for _, prop := range v.Properties {
-					if prop != nil && (prop.Name == "min" || prop.Name == "max" || prop.Name == "period") {
-						out[v.Name] = true
-					}
+				if a.Range != nil {
+					out[v.Name] = true
 				}
 			}
 		}
