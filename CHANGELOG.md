@@ -59,6 +59,21 @@ from `1.0.0` onward).
   their pitch diameter, crests and roots each half a pitch; and `drill.hole` voids close, sized by their own
   field at the mouth. Drawn, a gear's and a thread's field is its profile's, as before. CPU evaluation,
   meshing and export are unchanged.
+- Layered surfaces: a material's height now moves the shape that sets it, before the booleans that
+  use it, by what the material adds over the one the shape inherits. Coats laid as new names over
+  the shape they cover (`coat1 = part; coat1.material = coating.levelled(paint, partMat, build,
+  underSize)`) stack on the part and on each other; a cut taken after them stays flat and shows
+  each coat as a band over what it covers; paint laid over the cut covers it again. Lowered as
+  `Program.DisplacedReturns` (`program.proto` field 14), which the viewer and the CPU lit renderer
+  march; meshing and export keep the undisplaced returns. Example: `examples/coated_oak_stick.gsl`.
+- `material.withBuild(m, thickness)`, `material.build(m)` and `material.relief(m)`: row 2's fourth
+  component, reserved until now, is the part of a material's displacement that is film standing on
+  the surface beneath, so a film's thickness and the marks on it are kept apart.
+- `wood.prepWavelength(prep)`: how far apart a prepared surface's relief is (2 mm for a bandsaw),
+  for a coat laid over the wood to take as `coating.levelled`'s `underSize`.
+- `displacementScale()` builtin: how far the renderer is moving surfaces by their materials'
+  heights where a distance is evaluated (the viewer's displacement knob in its march, 1 in the CPU
+  lit renderer, 0 elsewhere).
 - `gsl fix -stdlib`: migrates removed 2-argument and 4-argument thunk calls to `unionRoundExact` and
   `intersectRoundExact` into field-value calls with `radius = 0`, and prints manual migration
   suggestions for calls to removed `builtin` functions (`sweepLoft`, `sweepLoftScale`,
@@ -142,6 +157,18 @@ from `1.0.0` onward).
 
 ### Changed
 
+- `coating.levelled` (and every coating laid over a base through it: `clearCoat`, `galvanized`, and
+  the `powderCoat`, `wrinkleCoat`, `sandCoat` and `hammertone` overloads) adds the film's `build` to
+  the base's build and levels only the base's relief, where it used to level the base's whole
+  displacement and add no thickness. A coated surface is drawn `build` mm proud of the one beneath.
+- Wood's finishes level a sawn surface's marks by their real spacing, `2 + 2 * noisiness` mm (2 mm
+  for a bandsaw), where they used `1 + 3 * noisiness`; a topcoat over bandsawn wood keeps a little
+  more of the saw's texture.
+- A shape inside a return that sets a material with a height is displaced before the booleans that
+  use it, where the return used to be displaced as a whole by its blended material: a face finish
+  set on each face of a `max` moves that face, and a cut taken after a displaced material no longer
+  moves the cut face. A return that is one shape with its own material, placed by moves or a
+  stand-in, compiles exactly as before.
 - `mechanical/shaft` segments evaluate their 2D section (gear profile, spline, thread, bevel teeth,
   taper, etc.) once and return all four capped/extended distances together as a `vec4` instead of
   being invoked four times per segment in `shaft.body` and `shaft.envelope`. This eliminates 4×
@@ -202,6 +229,9 @@ from `1.0.0` onward).
 - `remap(field, [x, y, z])` with a constant point reads the field at that point in the WGSL too. The viewer
   drew it as the field moved by that point, while CPU evaluation and exports read the point, as the language
   defines it. Such a remap now folds to its value when the field reads nothing but p and constants.
+- Viewer: a part whose relief has faded out on the Detail ladder no longer evaluates the displaced
+  field when its program displaces per return; it marches its undisplaced sample, which is exact,
+  since every height is scaled by the part's weight.
 - Keyed `.github/workflows/check.yml` and `.github/workflows/wheels.yml` concurrency groups on
   `github.event.pull_request.number || github.ref` so `pull_request` `closed` events no longer
   collide with and cancel `push` runs on `main`.

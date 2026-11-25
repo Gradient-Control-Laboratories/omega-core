@@ -132,6 +132,18 @@ type Delegate struct {
 	// displacedFieldSrc is the generated gsl_sdShapeDisplaced, the composite of
 	// each return's own displaced distance; woven in after heightsSrc.
 	displacedFieldSrc string
+	// dispScaleUsed is true when the program reads displacementScale(), so its
+	// var is declared after sdShape (function_call.go).
+	dispScaleUsed bool
+	// inTreeMask marks the returns displaced inside their booleans
+	// (BuildPackageDisplacedReturns), and inTreeChildSrc, inTreeLets and
+	// inTreeSrcs are their distances as gsl_displacedParts writes them, built
+	// in one shared scope as gsl_heights is. A return it marks is not also
+	// moved by its material's height (buildHeights skips it).
+	inTreeMask     []bool
+	inTreeChildSrc string
+	inTreeLets     string
+	inTreeSrcs     []string
 }
 
 // Ensure that Delegate implements the build.Delegate interface.

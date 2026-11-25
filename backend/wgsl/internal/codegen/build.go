@@ -247,7 +247,10 @@ func (d *Delegate) BuildPackageReturns(_ []*program.Operand, expressions []build
 	// displacedComposite). With one return the winner's height is its own, and
 	// the viewer's plain path is already exact; so it is when every displaced
 	// return carries the same height (heightsDiffer).
-	displaced := d.heightsSrc != "" && len(expressions) > 1 && d.heightsDiffer() && d.displacementEvident(d.module.WGSL())
+	// A return displaced inside its booleans has no plain path at all: its
+	// displaced distance is not its distance minus one height.
+	displaced := (d.heightsSrc != "" && len(expressions) > 1 && d.heightsDiffer() && d.displacementEvident(d.module.WGSL())) ||
+		len(d.inTreeMask) > 0
 
 	sdShapeBlock := ir.NewBlock()
 	if d.vanishUsed {
@@ -364,8 +367,16 @@ func (d *Delegate) BuildPackageReturns(_ []*program.Operand, expressions []build
 	for _, decl := range d.foldConstDecls {
 		d.module.AddRuntimeSnippet(decl)
 	}
+	if d.dispScaleUsed {
+		d.module.AddRuntimeSnippet(dispScaleDeclWGSL)
+	}
 	if d.displacedFieldSrc != "" {
-		d.module.AddRuntimeSnippet(d.heightsSrc)
+		if d.heightsSrc != "" {
+			d.module.AddRuntimeSnippet(d.heightsSrc)
+		}
+		if src := d.inTreeFnSrc(suffix.String(), len(expressions)); src != "" {
+			d.module.AddRuntimeSnippet(src)
+		}
 		d.module.AddRuntimeSnippet(d.displacedFieldSrc)
 	}
 

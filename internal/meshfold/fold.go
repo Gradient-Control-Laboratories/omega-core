@@ -177,6 +177,9 @@ func (f *meshFolder) file(file *program.PackageFile) {
 	for _, r := range file.GradientReturns {
 		f.operand(r)
 	}
+	for _, r := range file.DisplacedReturns {
+		f.operand(r)
+	}
 }
 
 func (f *meshFolder) assignment(a *program.Assignment) {

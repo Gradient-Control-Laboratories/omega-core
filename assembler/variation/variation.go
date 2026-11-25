@@ -84,9 +84,10 @@ func PrunePrimary(prog *program.Program) *program.Program {
 	colorReturns := prog.ColorReturns()
 	materialReturns := prog.MaterialReturns()
 	gradientReturns := prog.GradientReturns()
+	displacedReturns := prog.DisplacedReturns()
 	controlRoots := ControlRoots(module)
 
-	deadcodeReturns := make([]*program.Operand, 0, len(returns)+len(colorReturns)+len(materialReturns)+len(gradientReturns)+len(controlRoots))
+	deadcodeReturns := make([]*program.Operand, 0, len(returns)+len(colorReturns)+len(materialReturns)+len(gradientReturns)+len(displacedReturns)+len(controlRoots))
 	deadcodeReturns = append(deadcodeReturns, returns...)
 	for _, c := range colorReturns {
 		if c != nil {
@@ -103,6 +104,11 @@ func PrunePrimary(prog *program.Program) *program.Program {
 			deadcodeReturns = append(deadcodeReturns, g)
 		}
 	}
+	for _, d := range displacedReturns {
+		if d != nil {
+			deadcodeReturns = append(deadcodeReturns, d)
+		}
+	}
 	deadcodeReturns = append(deadcodeReturns, controlRoots...)
 
 	var files []*program.PackageFile
@@ -112,18 +118,19 @@ func PrunePrimary(prog *program.Program) *program.Program {
 			fReturns = deadcodeReturns
 		}
 		files = append(files, &program.PackageFile{
-			Path:            f.Path,
-			Source:          f.Source,
-			Imports:         f.Imports,
-			Assignments:     pruneMeshTypedAssignments(f.Assignments),
-			FnTypes:         f.FnTypes,
-			Returns:         fReturns,
-			ColorReturns:    f.ColorReturns,
-			MaterialReturns: f.MaterialReturns,
-			GradientReturns: f.GradientReturns,
-			MeshImports:     f.MeshImports,
-			StepImports:     f.StepImports,
-			WarpImports:     f.WarpImports,
+			Path:             f.Path,
+			Source:           f.Source,
+			Imports:          f.Imports,
+			Assignments:      pruneMeshTypedAssignments(f.Assignments),
+			FnTypes:          f.FnTypes,
+			Returns:          fReturns,
+			ColorReturns:     f.ColorReturns,
+			MaterialReturns:  f.MaterialReturns,
+			GradientReturns:  f.GradientReturns,
+			DisplacedReturns: f.DisplacedReturns,
+			MeshImports:      f.MeshImports,
+			StepImports:      f.StepImports,
+			WarpImports:      f.WarpImports,
 		})
 	}
 
@@ -152,6 +159,7 @@ func PrunePrimary(prog *program.Program) *program.Program {
 	out.Primary.Files[lastIdx].ColorReturns = colorReturns
 	out.Primary.Files[lastIdx].MaterialReturns = materialReturns
 	out.Primary.Files[lastIdx].GradientReturns = gradientReturns
+	out.Primary.Files[lastIdx].DisplacedReturns = displacedReturns
 	out.MeshSdfSlots, out.GlobalTextures = textures.Extract(out)
 	return out
 }

@@ -102,9 +102,13 @@ against feature size **for films that flow**.
 
 `coating.levelled(coat, baseMaterial, build, underSize)` — a flowed film over a
 prepared surface. One share, `material.filmKeeps(underSize, build)`, governs
-three things at once: the substrate's displacement is cut by it, its lay's
+three things at once: the substrate's relief is cut by it, its lay's
 anisotropy by it, and its lobe's variance by its **square**, variance going as
-amplitude squared.
+amplitude squared. The film's own thickness is not levelled: it is the
+record's build (`material.withBuild`), added to the base's, so a coat over a
+coat keeps both, and a shape that sets the result over the material it
+inherits is drawn that much proud of it (see "Layers" in
+`material_library.md`).
 
 `coating.clearCoat(baseMaterial, baseColor, tint, glossUnits, build,
 underSize)` — a clear urethane, lacquer or clear powder over any substance,

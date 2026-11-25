@@ -60,6 +60,12 @@ type Delegate struct {
 	// displacedReturn marks the returns whose displacement (volume.z) is not
 	// known to be the constant zero, so a renderer knows which surfaces move.
 	displacedReturn []bool
+	// inTreeReturns is each return's distance displaced inside its booleans
+	// (program.DisplacedReturns), hasInTreeReturn marking the returns that
+	// have one. Built only for a renderer that marches displaced surfaces
+	// (pixelSizeInput); see BuildPackageDisplacedReturns.
+	inTreeReturns   []fidget.TreeIndex
+	hasInTreeReturn []bool
 
 	// outputReturnIdx maps each output back to the return it came from, so
 	// per-return data (color, material) can be attached to the flattened

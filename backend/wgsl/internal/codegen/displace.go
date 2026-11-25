@@ -24,11 +24,79 @@ import (
 // gsl_heights, so a value two heights share is computed once. A program with
 // no displaced return keeps its sdShape exactly as before.
 
+//
+// DISPLACEMENT INSIDE THE BOOLEANS. A return whose material comes from a shape
+// inside it — paint on a blank that is then cut, a second coat over the cut —
+// has a displaced distance of its own (program.DisplacedReturns, lowered by
+// property.LowerDisplacedReturns): each such shape moved by its own layer's
+// height before the booleans that use it, so a cut stays a plane. Those
+// distances are built together in gsl_displacedParts and stand in for the
+// return's d_i - h_i in the composite; the heights they carry are scaled by
+// displacementScale(), the var gsl_sdShapeDisplaced sets to gsl_dispK.
+
 const (
 	shapePartsFn     = "gsl_shapeParts"
 	heightsFn        = "gsl_heights"
 	displacedShapeFn = "gsl_sdShapeDisplaced"
+	inTreePartsFn    = "gsl_displacedParts"
+	// dispScaleVar is what displacementScale() reads.
+	dispScaleVar = "gsl_dispScaleK"
 )
+
+// BuildPackageDisplacedReturns implements [build.DisplacedReturnsBuilder]: it
+// lowers each return's displaced distance in one shared scope, for
+// BuildPackageReturns to write as gsl_displacedParts once it knows the
+// distance functions' parameters. A nil expression is a return displaced as a
+// whole by its material's height, or not at all.
+func (d *Delegate) BuildPackageDisplacedReturns(displacedExpressions []build.Expression) error {
+	if !anyExpression(displacedExpressions) {
+		return nil
+	}
+	childSrc, bodyLets, caseSrc := d.codegenFieldCasesShared(inTreePartsFn, displacedExpressions)
+	mask := make([]bool, len(displacedExpressions))
+	for i, e := range displacedExpressions {
+		mask[i] = e != nil
+	}
+	d.inTreeMask = mask
+	d.inTreeChildSrc = childSrc
+	d.inTreeLets = bodyLets
+	d.inTreeSrcs = caseSrc
+	return nil
+}
+
+// inTree reports whether return i is displaced inside its booleans.
+func (d *Delegate) inTree(i int) bool {
+	return i < len(d.inTreeMask) && d.inTreeMask[i]
+}
+
+// inTreeSrc is gsl_displacedParts, given sdShape's parameter list after p and
+// time; empty when no return is displaced inside its booleans.
+func (d *Delegate) inTreeFnSrc(paramSuffix string, n int) string {
+	if len(d.inTreeMask) == 0 {
+		return ""
+	}
+	vals := make([]string, n)
+	for i := range vals {
+		vals[i] = "0.0"
+		if d.inTree(i) && i < len(d.inTreeSrcs) {
+			vals[i] = d.inTreeSrcs[i]
+		}
+	}
+	var sb strings.Builder
+	if d.inTreeChildSrc != "" {
+		sb.WriteString(d.inTreeChildSrc)
+		sb.WriteString("\n\n")
+	}
+	fmt.Fprintf(&sb, "fn %s(p: vec3<f32>, time: f32%s) -> array<f32, %d> {\n", inTreePartsFn, paramSuffix, n)
+	sb.WriteString(d.inTreeLets)
+	fmt.Fprintf(&sb, "  return array<f32, %d>(%s);\n", n, strings.Join(vals, ", "))
+	sb.WriteString("}")
+	return sb.String()
+}
+
+// dispScaleDeclWGSL declares what displacementScale() reads: 0, nothing
+// moved, until gsl_sdShapeDisplaced sets it.
+const dispScaleDeclWGSL = "var<private> " + dispScaleVar + ": f32 = 0.0;"
 
 // The displacement channel's position in a material record: the volume row's
 // third component.
@@ -46,7 +114,9 @@ func (d *Delegate) buildHeights(materialExpressions []build.Expression) error {
 	mask := make([]bool, len(materialExpressions))
 	anyHeight := false
 	for i, me := range materialExpressions {
-		if me == nil {
+		if me == nil || d.inTree(i) {
+			// A return displaced inside its booleans already carries its
+			// heights in its displaced distance.
 			continue
 		}
 		h, err := heightExpression(me)
@@ -221,14 +291,43 @@ func (d *Delegate) displacedComposite(paramSuffix string, n int) (sdShapeSrc, di
 
 	sb.Reset()
 	fmt.Fprintf(&sb, "fn %s(p: vec3<f32>, time: f32, gsl_dispK: f32%s) -> gsl_shape {\n", displacedShapeFn, paramSuffix)
-	fmt.Fprintf(&sb, "  let gsl_d = %s(p, time%s);\n", shapePartsFn, args)
-	fmt.Fprintf(&sb, "  let gsl_h = %s(p, time%s);\n", heightsFn, fieldArgs)
-	sb.WriteString(composite(func(i int) string {
-		if i < len(d.displacedMask) && d.displacedMask[i] {
-			return fmt.Sprintf(" - gsl_h[%d] * gsl_dispK", i)
+	if d.dispScaleUsed {
+		fmt.Fprintf(&sb, "  %s = gsl_dispK;\n", dispScaleVar)
+	}
+	needParts := false
+	for i := 0; i < n; i++ {
+		if !d.inTree(i) {
+			needParts = true
 		}
-		return ""
-	}))
+	}
+	if needParts {
+		fmt.Fprintf(&sb, "  let gsl_d = %s(p, time%s);\n", shapePartsFn, args)
+	}
+	if d.heightsSrc != "" {
+		fmt.Fprintf(&sb, "  let gsl_h = %s(p, time%s);\n", heightsFn, fieldArgs)
+	}
+	if len(d.inTreeMask) > 0 {
+		fmt.Fprintf(&sb, "  let gsl_dd = %s(p, time%s);\n", inTreePartsFn, args)
+	}
+	var cb strings.Builder
+	chain := ""
+	for i := 0; i < n; i++ {
+		dist := fmt.Sprintf("gsl_d[%d]", i)
+		switch {
+		case d.inTree(i):
+			dist = fmt.Sprintf("gsl_dd[%d]", i)
+		case d.heightsSrc != "" && i < len(d.displacedMask) && d.displacedMask[i]:
+			dist = fmt.Sprintf("gsl_d[%d] - gsl_h[%d] * gsl_dispK", i, i)
+		}
+		fmt.Fprintf(&cb, "  let gsl_s%d = gsl_shape(%s, %du);\n", i+1, dist, i+1)
+		if i == 0 {
+			chain = "gsl_s1"
+		} else {
+			chain = fmt.Sprintf("gsl_min(%s, gsl_s%d)", chain, i+1)
+		}
+	}
+	fmt.Fprintf(&cb, "  return %s;\n}", chain)
+	sb.WriteString(cb.String())
 	displacedSrc = sb.String()
 	return sdShapeSrc, displacedSrc
 }

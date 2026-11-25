@@ -487,6 +487,15 @@ message PackageFile {
     // analytic gradients; a nil entry is a return the derivative could not go
     // through.
     repeated Operand      gradientReturns = 13;
+
+    // Lowered displaced distance of each return, parallel to returns on the
+    // primary package's last file: the field a renderer marches when a shape
+    // inside the return sets a material with a height, each such shape moved
+    // by its own height before the booleans that use it. A nil entry is a
+    // return with no such shape, which the renderer moves by its material's
+    // height as a whole, as before. Render only: meshing and export keep the
+    // returns.
+    repeated Operand      displacedReturns = 14;
 }
 
 enum MeshSdfKind {

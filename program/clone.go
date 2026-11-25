@@ -401,20 +401,28 @@ func ClonePackageFile(file *PackageFile) *PackageFile {
 			gradientReturns[i] = CloneOperand(ret)
 		}
 	}
+	var displacedReturns []*Operand
+	if len(file.DisplacedReturns) > 0 {
+		displacedReturns = make([]*Operand, len(file.DisplacedReturns))
+		for i, ret := range file.DisplacedReturns {
+			displacedReturns[i] = CloneOperand(ret)
+		}
+	}
 	return &PackageFile{
-		Path:            file.Path,
-		Source:          file.Source,
-		Imports:         imports,
-		Assignments:     assigns,
-		FnTypes:         fnTypes,
-		Returns:         returns,
-		MeshImports:     file.MeshImports,
-		StepImports:     file.StepImports,
-		WarpImports:     file.WarpImports,
-		ColorReturns:    colorReturns,
-		MaterialReturns: materialReturns,
-		GradientReturns: gradientReturns,
-		Annotations:     file.Annotations,
+		Path:             file.Path,
+		Source:           file.Source,
+		Imports:          imports,
+		Assignments:      assigns,
+		FnTypes:          fnTypes,
+		Returns:          returns,
+		MeshImports:      file.MeshImports,
+		StepImports:      file.StepImports,
+		WarpImports:      file.WarpImports,
+		ColorReturns:     colorReturns,
+		MaterialReturns:  materialReturns,
+		GradientReturns:  gradientReturns,
+		DisplacedReturns: displacedReturns,
+		Annotations:      file.Annotations,
 	}
 }
 
