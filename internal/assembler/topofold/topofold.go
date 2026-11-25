@@ -222,10 +222,10 @@ func foldPackage(
 		if err := folder.foldReturns(&file.MaterialReturns, consts, foldedScope); err != nil {
 			return err
 		}
-		if err := folder.foldReturns(&file.GradientReturns, consts); err != nil {
+		if err := folder.foldReturns(&file.GradientReturns, consts, foldedScope); err != nil {
 			return err
 		}
-		if err := folder.foldReturns(&file.DisplacedReturns, consts); err != nil {
+		if err := folder.foldReturns(&file.DisplacedReturns, consts, foldedScope); err != nil {
 			return err
 		}
 	}
