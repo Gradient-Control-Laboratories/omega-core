@@ -52,13 +52,8 @@ func TestParseFlags_TriStateFixerSelection(t *testing.T) {
 	require.Equal(t, 1, len(cfg.ActiveFixers))
 	assert.Equal(t, "scene", cfg.ActiveFixers[0].Name)
 
-<<<<<<< HEAD
 	// Explicit -omegaimport=true enables only omegaimport
 	cfgOmega, err := config.ParseFlags([]string{"-omegaimport", "a.gsl"})
-=======
-	// Explicit -scene=false disables scene
-	cfgDisabled, err := config.ParseFlags([]string{"-scene=false", "-range=false", "-stdlib=false", "a.gsl"})
->>>>>>> main
 	require.NoError(t, err)
 	require.Equal(t, 1, len(cfgOmega.ActiveFixers))
 	assert.Equal(t, "omegaimport", cfgOmega.ActiveFixers[0].Name)

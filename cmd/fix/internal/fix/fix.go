@@ -17,12 +17,9 @@ type Fixer struct {
 
 var registry = []Fixer{
 	sceneFixer,
-<<<<<<< HEAD
-	omegaImportFixer,
-=======
 	rangeFixer,
 	stdlibFixer,
->>>>>>> main
+	omegaImportFixer,
 }
 
 // All returns a slice of all registered fixers in deterministic execution order.

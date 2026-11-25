@@ -119,11 +119,6 @@ func Parse(sources []string) (*program.Package, []program.Diagnostic, error) {
 			return p, diags, err
 		}
 
-<<<<<<< HEAD
-		impDiags, berr := buildPkgFile(pkgFileScope, source, topLevel)
-		diags = append(diags, impDiags...)
-		if berr != nil {
-=======
 		if topLevel.Duration != nil {
 			if i != 0 {
 				p, err := recordFileError(pkg, pkgFile, source, participle.Errorf(topLevel.Duration.Pos, "@duration directive is only allowed in the first source file"))
@@ -140,8 +135,9 @@ func Parse(sources []string) (*program.Package, []program.Diagnostic, error) {
 
 		pkg.Captions = append(pkg.Captions, takeCaptions(topLevel)...)
 
-		if berr := buildPkgFile(pkgFileScope, topLevel); berr != nil {
->>>>>>> main
+		impDiags, berr := buildPkgFile(pkgFileScope, source, topLevel)
+		diags = append(diags, impDiags...)
+		if berr != nil {
 			p, err := recordFileError(pkg, pkgFile, source, berr)
 			return p, diags, err
 		}
