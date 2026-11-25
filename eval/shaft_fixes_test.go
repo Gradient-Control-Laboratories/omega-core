@@ -203,7 +203,7 @@ func TestShaftFixes_SegmentSectionEvaluatedOnce(t *testing.T) {
 		maxBytes int
 	}{
 		{"shaft_pinion", 45000}, // was 87,263 B before vec4 segment return
-		{"shaft_hobbed", 30000}, // was 50,963 B before vec4 segment return
+		{"shaft_hobbed", 40000}, // was 50,963 B before vec4 segment return; includes .simple stand-in across remap
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

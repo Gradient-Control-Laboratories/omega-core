@@ -206,11 +206,19 @@ fn gsl_remap_21(p: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
   return vec4<f32>(0.254573, 1.0, 1.5, 0.0);
 }
 
+<<<<<<< HEAD
 fn gsl_remap_22(p: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
   let gsl_tmp_1 = p - vec3<f32>(-20.0, -17.5, 8.0);
   let gsl_tmp_2 = clamp(dot(gsl_tmp_1, vec3<f32>(0.0, 1.0, 0.0)), -24.975, 24.975);
   let gsl_tmp_3 = sqrt(625.0 - gsl_tmp_2 * gsl_tmp_2);
   let blockMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.4, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), vec3<f32>(0.0, 1.0, 0.0) * gsl_tmp_3 - vec3<f32>(1.0, 0.0, 0.0) * gsl_tmp_2, fract((dot(gsl_tmp_1, vec3<f32>(1.0, 0.0, 0.0)) - gsl_tmp_3) / 0.3), 0.3, 0.8, noiseTex);
+=======
+fn gsl_remap_23(p: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
+  let gsl_tmp_3 = p - vec3<f32>(-20.0, -17.5, 8.0);
+  let gsl_tmp_4 = clamp(dot(gsl_tmp_3, vec3<f32>(0.0, 1.0, 0.0)), -24.975, 24.975);
+  let gsl_tmp_5 = sqrt(625.0 - gsl_tmp_4 * gsl_tmp_4);
+  let blockMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.4, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), vec3<f32>(0.0, 1.0, 0.0) * gsl_tmp_5 - vec3<f32>(1.0, 0.0, 0.0) * gsl_tmp_4, fract((dot(gsl_tmp_3, vec3<f32>(1.0, 0.0, 0.0)) - gsl_tmp_5) / 0.3), 0.3, 0.8, noiseTex);
+>>>>>>> origin/main
   return blockMat[0];
 }
 
@@ -218,6 +226,7 @@ fn gsl_remap_23(p: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
   return vec4<f32>(0.0, 0.0, 0.0, 0.0);
 }
 
+<<<<<<< HEAD
 fn gsl_remap_24(p: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
   let gsl_tmp_1 = p - vec3<f32>(-20.0, -17.5, 8.0);
   let gsl_tmp_2 = clamp(dot(gsl_tmp_1, vec3<f32>(0.0, 1.0, 0.0)), -24.975, 24.975);
@@ -231,6 +240,21 @@ fn gsl_remap_25(p: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
   let gsl_tmp_2 = clamp(dot(gsl_tmp_1, vec3<f32>(0.0, 1.0, 0.0)), -24.975, 24.975);
   let gsl_tmp_3 = sqrt(625.0 - gsl_tmp_2 * gsl_tmp_2);
   let blockMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.4, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), vec3<f32>(0.0, 1.0, 0.0) * gsl_tmp_3 - vec3<f32>(1.0, 0.0, 0.0) * gsl_tmp_2, fract((dot(gsl_tmp_1, vec3<f32>(1.0, 0.0, 0.0)) - gsl_tmp_3) / 0.3), 0.3, 0.8, noiseTex);
+=======
+fn gsl_remap_25(p: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
+  let gsl_tmp_3 = p - vec3<f32>(-20.0, -17.5, 8.0);
+  let gsl_tmp_4 = clamp(dot(gsl_tmp_3, vec3<f32>(0.0, 1.0, 0.0)), -24.975, 24.975);
+  let gsl_tmp_5 = sqrt(625.0 - gsl_tmp_4 * gsl_tmp_4);
+  let blockMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.4, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), vec3<f32>(0.0, 1.0, 0.0) * gsl_tmp_5 - vec3<f32>(1.0, 0.0, 0.0) * gsl_tmp_4, fract((dot(gsl_tmp_3, vec3<f32>(1.0, 0.0, 0.0)) - gsl_tmp_5) / 0.3), 0.3, 0.8, noiseTex);
+  return blockMat[1];
+}
+
+fn gsl_remap_26(p: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
+  let gsl_tmp_3 = p - vec3<f32>(-20.0, -17.5, 8.0);
+  let gsl_tmp_4 = clamp(dot(gsl_tmp_3, vec3<f32>(0.0, 1.0, 0.0)), -24.975, 24.975);
+  let gsl_tmp_5 = sqrt(625.0 - gsl_tmp_4 * gsl_tmp_4);
+  let blockMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.4, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), vec3<f32>(0.0, 1.0, 0.0) * gsl_tmp_5 - vec3<f32>(1.0, 0.0, 0.0) * gsl_tmp_4, fract((dot(gsl_tmp_3, vec3<f32>(1.0, 0.0, 0.0)) - gsl_tmp_5) / 0.3), 0.3, 0.8, noiseTex);
+>>>>>>> origin/main
   return blockMat[2];
 }
 
@@ -242,11 +266,19 @@ fn gsl_remap_27(p: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
   return vec4<f32>(1.0, 0.0, 0.0, 1.0);
 }
 
+<<<<<<< HEAD
 fn gsl_remap_28(p: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
   let gsl_tmp_1 = p - vec3<f32>(-20.0, -17.5, 8.0);
   let gsl_tmp_2 = clamp(dot(gsl_tmp_1, vec3<f32>(0.0, 1.0, 0.0)), -24.975, 24.975);
   let gsl_tmp_3 = sqrt(625.0 - gsl_tmp_2 * gsl_tmp_2);
   let blockMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.4, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), vec3<f32>(0.0, 1.0, 0.0) * gsl_tmp_3 - vec3<f32>(1.0, 0.0, 0.0) * gsl_tmp_2, fract((dot(gsl_tmp_1, vec3<f32>(1.0, 0.0, 0.0)) - gsl_tmp_3) / 0.3), 0.3, 0.8, noiseTex);
+=======
+fn gsl_remap_29(p: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
+  let gsl_tmp_3 = p - vec3<f32>(-20.0, -17.5, 8.0);
+  let gsl_tmp_4 = clamp(dot(gsl_tmp_3, vec3<f32>(0.0, 1.0, 0.0)), -24.975, 24.975);
+  let gsl_tmp_5 = sqrt(625.0 - gsl_tmp_4 * gsl_tmp_4);
+  let blockMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.4, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), vec3<f32>(0.0, 1.0, 0.0) * gsl_tmp_5 - vec3<f32>(1.0, 0.0, 0.0) * gsl_tmp_4, fract((dot(gsl_tmp_3, vec3<f32>(1.0, 0.0, 0.0)) - gsl_tmp_5) / 0.3), 0.3, 0.8, noiseTex);
+>>>>>>> origin/main
   return blockMat[3];
 }
 
@@ -454,13 +486,13 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f
   let beads = builtin_sphere(p - vec3<f32>(20.0, 25.0, 0.0), 8.0, noiseTex);
   let sand = builtin_sphere(p - vec3<f32>(45.0, 25.0, 0.0), 8.0, noiseTex);
   let knobBlank = builtin_axis(p, vec3<f32>(0.0, 50.0, 0.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex) - 8.0;
-  let gsl_tmp_4 = p - vec3<f32>(0.0, 50.0, 0.0);
-  let gsl_tmp_5 = gsl_tmp_4 - vec3<f32>(0.0, 0.0, 1.0) * dot(gsl_tmp_4, vec3<f32>(0.0, 0.0, 1.0));
-  let gsl_tmp_6 = (atan2(dot(gsl_tmp_5, vec3<f32>(-0.70710737, -0.7071062, 0.0)), dot(gsl_tmp_5, vec3<f32>(-0.7071062, 0.70710737, 0.0))) / 6.2831855 + 0.5) * 50.0;
-  let gsl_tmp_7 = dot(gsl_tmp_4, vec3<f32>(0.0, 0.0, 1.0)) / 1.0;
-  let gsl_tmp_8 = machined_knurlTooth(gsl_tmp_6 + 0.57735 * gsl_tmp_7, noiseTex);
-  let gsl_tmp_9 = machined_knurlTooth(gsl_tmp_6 - 0.57735 * gsl_tmp_7, noiseTex);
-  let knurlHeight = min(gsl_tmp_8, gsl_tmp_9) * 1.0 + 0.25 + 0.0;
+  let gsl_tmp_6 = p - vec3<f32>(0.0, 50.0, 0.0);
+  let gsl_tmp_7 = gsl_tmp_6 - vec3<f32>(0.0, 0.0, 1.0) * dot(gsl_tmp_6, vec3<f32>(0.0, 0.0, 1.0));
+  let gsl_tmp_9 = (atan2(dot(gsl_tmp_7, vec3<f32>(-0.70710737, -0.7071062, 0.0)), dot(gsl_tmp_7, vec3<f32>(-0.7071062, 0.70710737, 0.0))) / 6.2831855 + 0.5) * 50.0;
+  let gsl_tmp_10 = dot(gsl_tmp_6, vec3<f32>(0.0, 0.0, 1.0)) / 1.0;
+  let gsl_tmp_11 = machined_knurlTooth(gsl_tmp_9 + 0.57735 * gsl_tmp_10, noiseTex);
+  let gsl_tmp_12 = machined_knurlTooth(gsl_tmp_9 - 0.57735 * gsl_tmp_10, noiseTex);
+  let knurlHeight = min(gsl_tmp_11, gsl_tmp_12) * 1.0 + 0.25 + 0.0;
   let runOut = clamp((10.5 - abs(p.z)) / 0.5, 0.0, 1.0);
   let knobSide = (knobBlank - knurlHeight * runOut) / 3.2;
   let knobEnds = abs(p.z) - 12.0;
@@ -514,13 +546,13 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_
   if (gsl_colorIdx == 6u) { return vec4<f32>(vec3<f32>(0.9621, 0.9654, 0.9658), 1.0); }
   if (gsl_colorIdx == 7u) {
     let knobBlank = builtin_axis(p, vec3<f32>(0.0, 50.0, 0.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex) - 8.0;
-    let gsl_tmp_4 = p - vec3<f32>(0.0, 50.0, 0.0);
-    let gsl_tmp_5 = gsl_tmp_4 - vec3<f32>(0.0, 0.0, 1.0) * dot(gsl_tmp_4, vec3<f32>(0.0, 0.0, 1.0));
-    let gsl_tmp_6 = (atan2(dot(gsl_tmp_5, vec3<f32>(-0.70710737, -0.7071062, 0.0)), dot(gsl_tmp_5, vec3<f32>(-0.7071062, 0.70710737, 0.0))) / 6.2831855 + 0.5) * 50.0;
-    let gsl_tmp_7 = dot(gsl_tmp_4, vec3<f32>(0.0, 0.0, 1.0)) / 1.0;
-    let gsl_tmp_8 = machined_knurlTooth(gsl_tmp_6 + 0.57735 * gsl_tmp_7, noiseTex);
-    let gsl_tmp_9 = machined_knurlTooth(gsl_tmp_6 - 0.57735 * gsl_tmp_7, noiseTex);
-    let knurlHeight = min(gsl_tmp_8, gsl_tmp_9) * 1.0 + 0.25 + 0.0;
+    let gsl_tmp_6 = p - vec3<f32>(0.0, 50.0, 0.0);
+    let gsl_tmp_7 = gsl_tmp_6 - vec3<f32>(0.0, 0.0, 1.0) * dot(gsl_tmp_6, vec3<f32>(0.0, 0.0, 1.0));
+    let gsl_tmp_9 = (atan2(dot(gsl_tmp_7, vec3<f32>(-0.70710737, -0.7071062, 0.0)), dot(gsl_tmp_7, vec3<f32>(-0.7071062, 0.70710737, 0.0))) / 6.2831855 + 0.5) * 50.0;
+    let gsl_tmp_10 = dot(gsl_tmp_6, vec3<f32>(0.0, 0.0, 1.0)) / 1.0;
+    let gsl_tmp_11 = machined_knurlTooth(gsl_tmp_9 + 0.57735 * gsl_tmp_10, noiseTex);
+    let gsl_tmp_12 = machined_knurlTooth(gsl_tmp_9 - 0.57735 * gsl_tmp_10, noiseTex);
+    let knurlHeight = min(gsl_tmp_11, gsl_tmp_12) * 1.0 + 0.25 + 0.0;
     let runOut = clamp((10.5 - abs(p.z)) / 0.5, 0.0, 1.0);
     let knobSide = (knobBlank - knurlHeight * runOut) / 3.2;
     let knobEnds = abs(p.z) - 12.0;
@@ -563,13 +595,13 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, noiseTex: te
   if (gsl_materialIdx == 6u) { let gsl_m = mat4x4<f32>(vec4<f32>(0.80178374, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)); return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0); }
   if (gsl_materialIdx == 7u) {
     let knobBlank = builtin_axis(p, vec3<f32>(0.0, 50.0, 0.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex) - 8.0;
-    let gsl_tmp_4 = p - vec3<f32>(0.0, 50.0, 0.0);
-    let gsl_tmp_5 = gsl_tmp_4 - vec3<f32>(0.0, 0.0, 1.0) * dot(gsl_tmp_4, vec3<f32>(0.0, 0.0, 1.0));
-    let gsl_tmp_6 = (atan2(dot(gsl_tmp_5, vec3<f32>(-0.70710737, -0.7071062, 0.0)), dot(gsl_tmp_5, vec3<f32>(-0.7071062, 0.70710737, 0.0))) / 6.2831855 + 0.5) * 50.0;
-    let gsl_tmp_7 = dot(gsl_tmp_4, vec3<f32>(0.0, 0.0, 1.0)) / 1.0;
-    let gsl_tmp_8 = machined_knurlTooth(gsl_tmp_6 + 0.57735 * gsl_tmp_7, noiseTex);
-    let gsl_tmp_9 = machined_knurlTooth(gsl_tmp_6 - 0.57735 * gsl_tmp_7, noiseTex);
-    let knurlHeight = min(gsl_tmp_8, gsl_tmp_9) * 1.0 + 0.25 + 0.0;
+    let gsl_tmp_6 = p - vec3<f32>(0.0, 50.0, 0.0);
+    let gsl_tmp_7 = gsl_tmp_6 - vec3<f32>(0.0, 0.0, 1.0) * dot(gsl_tmp_6, vec3<f32>(0.0, 0.0, 1.0));
+    let gsl_tmp_9 = (atan2(dot(gsl_tmp_7, vec3<f32>(-0.70710737, -0.7071062, 0.0)), dot(gsl_tmp_7, vec3<f32>(-0.7071062, 0.70710737, 0.0))) / 6.2831855 + 0.5) * 50.0;
+    let gsl_tmp_10 = dot(gsl_tmp_6, vec3<f32>(0.0, 0.0, 1.0)) / 1.0;
+    let gsl_tmp_11 = machined_knurlTooth(gsl_tmp_9 + 0.57735 * gsl_tmp_10, noiseTex);
+    let gsl_tmp_12 = machined_knurlTooth(gsl_tmp_9 - 0.57735 * gsl_tmp_10, noiseTex);
+    let knurlHeight = min(gsl_tmp_11, gsl_tmp_12) * 1.0 + 0.25 + 0.0;
     let runOut = clamp((10.5 - abs(p.z)) / 0.5, 0.0, 1.0);
     let knobSide = (knobBlank - knurlHeight * runOut) / 3.2;
     let knobEnds = abs(p.z) - 12.0;
@@ -706,13 +738,13 @@ fn gsl_displacedParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> arr
   }
   let gsl__disp__block = gsl_part;
   let knobBlank = builtin_axis(p, vec3<f32>(0.0, 50.0, 0.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex) - 8.0;
-  let gsl_tmp_4 = p - vec3<f32>(0.0, 50.0, 0.0);
-  let gsl_tmp_5 = gsl_tmp_4 - vec3<f32>(0.0, 0.0, 1.0) * dot(gsl_tmp_4, vec3<f32>(0.0, 0.0, 1.0));
-  let gsl_tmp_6 = (atan2(dot(gsl_tmp_5, vec3<f32>(-0.70710737, -0.7071062, 0.0)), dot(gsl_tmp_5, vec3<f32>(-0.7071062, 0.70710737, 0.0))) / 6.2831855 + 0.5) * 50.0;
-  let gsl_tmp_7 = dot(gsl_tmp_4, vec3<f32>(0.0, 0.0, 1.0)) / 1.0;
-  let gsl_tmp_8 = machined_knurlTooth(gsl_tmp_6 + 0.57735 * gsl_tmp_7, noiseTex);
-  let gsl_tmp_9 = machined_knurlTooth(gsl_tmp_6 - 0.57735 * gsl_tmp_7, noiseTex);
-  let knurlHeight = min(gsl_tmp_8, gsl_tmp_9) * 1.0 + 0.25 + 0.0;
+  let gsl_tmp_6 = p - vec3<f32>(0.0, 50.0, 0.0);
+  let gsl_tmp_7 = gsl_tmp_6 - vec3<f32>(0.0, 0.0, 1.0) * dot(gsl_tmp_6, vec3<f32>(0.0, 0.0, 1.0));
+  let gsl_tmp_9 = (atan2(dot(gsl_tmp_7, vec3<f32>(-0.70710737, -0.7071062, 0.0)), dot(gsl_tmp_7, vec3<f32>(-0.7071062, 0.70710737, 0.0))) / 6.2831855 + 0.5) * 50.0;
+  let gsl_tmp_10 = dot(gsl_tmp_6, vec3<f32>(0.0, 0.0, 1.0)) / 1.0;
+  let gsl_tmp_11 = machined_knurlTooth(gsl_tmp_9 + 0.57735 * gsl_tmp_10, noiseTex);
+  let gsl_tmp_12 = machined_knurlTooth(gsl_tmp_9 - 0.57735 * gsl_tmp_10, noiseTex);
+  let knurlHeight = min(gsl_tmp_11, gsl_tmp_12) * 1.0 + 0.25 + 0.0;
   let runOut = clamp((10.5 - abs(p.z)) / 0.5, 0.0, 1.0);
   let gsl__under__knobSide = (knobBlank - knurlHeight * runOut) / 3.2;
   let knobTurnedMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), p - vec3<f32>(0.0, 50.0, 0.0)), fract(dot(p - vec3<f32>(0.0, 50.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0))) / 0.15), 0.15, 0.8, noiseTex);

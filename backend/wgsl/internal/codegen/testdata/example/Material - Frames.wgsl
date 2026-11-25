@@ -196,49 +196,49 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32) -> vec4<f32> {
 }
 fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32) -> gsl_material {
   if (gsl_materialIdx == 1u) {
-    let gsl_tmp_31 = dot(p - vec3<f32>(-15.0, 0.0, -6.0), vec3<f32>(1.0, -0.0, -0.0));
-    let gsl_tmp_32 = dot(p - vec3<f32>(-15.0, 0.0, -6.0), vec3<f32>(-0.0, 1.0, -0.0));
-    let gsl_tmp_33 = dot(p - vec3<f32>(-15.0, 0.0, -6.0), vec3<f32>(1.0, -0.0, -0.0));
-    let gsl_tmp_34 = dot(p - vec3<f32>(-15.0, 0.0, -6.0), vec3<f32>(-0.0, 1.0, -0.0));
-    let gsl_tmp_35 = dot(p - vec3<f32>(-15.0, 0.0, -6.0), vec3<f32>(1.0, -0.0, -0.0));
-    let gsl_tmp_36 = dot(p - vec3<f32>(-15.0, 0.0, -6.0), vec3<f32>(-0.0, 1.0, -0.0));
-    let gsl_m = material_withLay(mat4x4<f32>(vec4<f32>(0.35, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), vec3<f32>((gsl_tmp_31 * (dot(p - vec3<f32>(-15.0, 0.0, -6.0), vec3<f32>(0.0, 0.0, -0.0)) + 0.0) - gsl_tmp_32 * (dot(p - vec3<f32>(-15.0, 0.0, -6.0), vec3<f32>(0.0, 0.0, -0.0)) + 1.0)) / (pow(gsl_tmp_31, 2.0) + pow(gsl_tmp_32, 2.0)), (gsl_tmp_33 * (dot(p - vec3<f32>(-15.0, 0.0, -6.0), vec3<f32>(0.0, 0.0, -0.0)) + 1.0) - gsl_tmp_34 * (dot(p - vec3<f32>(-15.0, 0.0, -6.0), vec3<f32>(0.0, 0.0, -0.0)) + 0.0)) / (pow(gsl_tmp_33, 2.0) + pow(gsl_tmp_34, 2.0)), (gsl_tmp_35 * (dot(p - vec3<f32>(-15.0, 0.0, -6.0), vec3<f32>(0.0, 0.0, -0.0)) + 0.0) - gsl_tmp_36 * (dot(p - vec3<f32>(-15.0, 0.0, -6.0), vec3<f32>(0.0, 0.0, -0.0)) + 0.0)) / (pow(gsl_tmp_35, 2.0) + pow(gsl_tmp_36, 2.0))), 0.8); return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
+    let gsl_tmp_34 = dot(p - vec3<f32>(-15.0, 0.0, -6.0), vec3<f32>(1.0, -0.0, -0.0));
+    let gsl_tmp_35 = dot(p - vec3<f32>(-15.0, 0.0, -6.0), vec3<f32>(-0.0, 1.0, -0.0));
+    let gsl_tmp_36 = dot(p - vec3<f32>(-15.0, 0.0, -6.0), vec3<f32>(1.0, -0.0, -0.0));
+    let gsl_tmp_37 = dot(p - vec3<f32>(-15.0, 0.0, -6.0), vec3<f32>(-0.0, 1.0, -0.0));
+    let gsl_tmp_38 = dot(p - vec3<f32>(-15.0, 0.0, -6.0), vec3<f32>(1.0, -0.0, -0.0));
+    let gsl_tmp_39 = dot(p - vec3<f32>(-15.0, 0.0, -6.0), vec3<f32>(-0.0, 1.0, -0.0));
+    let gsl_m = material_withLay(mat4x4<f32>(vec4<f32>(0.35, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), vec3<f32>((gsl_tmp_34 * (dot(p - vec3<f32>(-15.0, 0.0, -6.0), vec3<f32>(0.0, 0.0, -0.0)) + 0.0) - gsl_tmp_35 * (dot(p - vec3<f32>(-15.0, 0.0, -6.0), vec3<f32>(0.0, 0.0, -0.0)) + 1.0)) / (pow(gsl_tmp_34, 2.0) + pow(gsl_tmp_35, 2.0)), (gsl_tmp_36 * (dot(p - vec3<f32>(-15.0, 0.0, -6.0), vec3<f32>(0.0, 0.0, -0.0)) + 1.0) - gsl_tmp_37 * (dot(p - vec3<f32>(-15.0, 0.0, -6.0), vec3<f32>(0.0, 0.0, -0.0)) + 0.0)) / (pow(gsl_tmp_36, 2.0) + pow(gsl_tmp_37, 2.0)), (gsl_tmp_38 * (dot(p - vec3<f32>(-15.0, 0.0, -6.0), vec3<f32>(0.0, 0.0, -0.0)) + 0.0) - gsl_tmp_39 * (dot(p - vec3<f32>(-15.0, 0.0, -6.0), vec3<f32>(0.0, 0.0, -0.0)) + 0.0)) / (pow(gsl_tmp_38, 2.0) + pow(gsl_tmp_39, 2.0))), 0.8); return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
   }
   if (gsl_materialIdx == 2u) {
-    let gsl_tmp_37 = dot(p - vec3<f32>(-5.0, 0.0, -6.0), vec3<f32>(0.0, 0.0, 12.0));
-    let gsl_tmp_39 = p - vec3<f32>(-5.0, 0.0, -6.0) - vec3<f32>(0.0, 0.0, 12.0) * gsl_tmp_37 / 144.0;
-    let gsl_tmp_38 = dot(p - vec3<f32>(-5.0, 0.0, -6.0), vec3<f32>(0.0, 0.0, 0.0)) + 0.0;
     let gsl_tmp_40 = dot(p - vec3<f32>(-5.0, 0.0, -6.0), vec3<f32>(0.0, 0.0, 12.0));
     let gsl_tmp_42 = p - vec3<f32>(-5.0, 0.0, -6.0) - vec3<f32>(0.0, 0.0, 12.0) * gsl_tmp_40 / 144.0;
     let gsl_tmp_41 = dot(p - vec3<f32>(-5.0, 0.0, -6.0), vec3<f32>(0.0, 0.0, 0.0)) + 0.0;
     let gsl_tmp_43 = dot(p - vec3<f32>(-5.0, 0.0, -6.0), vec3<f32>(0.0, 0.0, 12.0));
     let gsl_tmp_45 = p - vec3<f32>(-5.0, 0.0, -6.0) - vec3<f32>(0.0, 0.0, 12.0) * gsl_tmp_43 / 144.0;
-    let gsl_tmp_44 = dot(p - vec3<f32>(-5.0, 0.0, -6.0), vec3<f32>(0.0, 0.0, 0.0)) + 12.0;
-    let gsl_m = material_withLay(mat4x4<f32>(vec4<f32>(0.35, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), vec3<f32>(select(dot(clamp(gsl_tmp_39 / max(length(gsl_tmp_39), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(1.0, 0.0, 0.0) - (vec3<f32>(0.0, 0.0, 0.0) * gsl_tmp_37 / 144.0 + vec3<f32>(0.0, 0.0, 12.0) * (gsl_tmp_38 * 144.0 - gsl_tmp_37 * 0.0) / 20736.0)), ((gsl_tmp_38 - 0.0) * 12.0 - (gsl_tmp_37 - 72.0) * 0.0) / 144.0, length(p - vec3<f32>(-5.0, 0.0, -6.0) - vec3<f32>(0.0, 0.0, 12.0) * clamp(gsl_tmp_37 / 144.0, 0.0, 1.0)) - 4.0 >= (abs(gsl_tmp_37 - 72.0) - 72.0) / 12.0), select(dot(clamp(gsl_tmp_42 / max(length(gsl_tmp_42), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(0.0, 1.0, 0.0) - (vec3<f32>(0.0, 0.0, 0.0) * gsl_tmp_40 / 144.0 + vec3<f32>(0.0, 0.0, 12.0) * (gsl_tmp_41 * 144.0 - gsl_tmp_40 * 0.0) / 20736.0)), ((gsl_tmp_41 - 0.0) * 12.0 - (gsl_tmp_40 - 72.0) * 0.0) / 144.0, length(p - vec3<f32>(-5.0, 0.0, -6.0) - vec3<f32>(0.0, 0.0, 12.0) * clamp(gsl_tmp_40 / 144.0, 0.0, 1.0)) - 4.0 >= (abs(gsl_tmp_40 - 72.0) - 72.0) / 12.0), select(dot(clamp(gsl_tmp_45 / max(length(gsl_tmp_45), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(0.0, 0.0, 1.0) - (vec3<f32>(0.0, 0.0, 0.0) * gsl_tmp_43 / 144.0 + vec3<f32>(0.0, 0.0, 12.0) * (gsl_tmp_44 * 144.0 - gsl_tmp_43 * 0.0) / 20736.0)), ((gsl_tmp_44 - 0.0) * 12.0 - (gsl_tmp_43 - 72.0) * 0.0) / 144.0, length(p - vec3<f32>(-5.0, 0.0, -6.0) - vec3<f32>(0.0, 0.0, 12.0) * clamp(gsl_tmp_43 / 144.0, 0.0, 1.0)) - 4.0 >= (abs(gsl_tmp_43 - 72.0) - 72.0) / 12.0)), 0.8); return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
+    let gsl_tmp_44 = dot(p - vec3<f32>(-5.0, 0.0, -6.0), vec3<f32>(0.0, 0.0, 0.0)) + 0.0;
+    let gsl_tmp_46 = dot(p - vec3<f32>(-5.0, 0.0, -6.0), vec3<f32>(0.0, 0.0, 12.0));
+    let gsl_tmp_48 = p - vec3<f32>(-5.0, 0.0, -6.0) - vec3<f32>(0.0, 0.0, 12.0) * gsl_tmp_46 / 144.0;
+    let gsl_tmp_47 = dot(p - vec3<f32>(-5.0, 0.0, -6.0), vec3<f32>(0.0, 0.0, 0.0)) + 12.0;
+    let gsl_m = material_withLay(mat4x4<f32>(vec4<f32>(0.35, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), vec3<f32>(select(dot(clamp(gsl_tmp_42 / max(length(gsl_tmp_42), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(1.0, 0.0, 0.0) - (vec3<f32>(0.0, 0.0, 0.0) * gsl_tmp_40 / 144.0 + vec3<f32>(0.0, 0.0, 12.0) * (gsl_tmp_41 * 144.0 - gsl_tmp_40 * 0.0) / 20736.0)), ((gsl_tmp_41 - 0.0) * 12.0 - (gsl_tmp_40 - 72.0) * 0.0) / 144.0, length(p - vec3<f32>(-5.0, 0.0, -6.0) - vec3<f32>(0.0, 0.0, 12.0) * clamp(gsl_tmp_40 / 144.0, 0.0, 1.0)) - 4.0 >= (abs(gsl_tmp_40 - 72.0) - 72.0) / 12.0), select(dot(clamp(gsl_tmp_45 / max(length(gsl_tmp_45), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(0.0, 1.0, 0.0) - (vec3<f32>(0.0, 0.0, 0.0) * gsl_tmp_43 / 144.0 + vec3<f32>(0.0, 0.0, 12.0) * (gsl_tmp_44 * 144.0 - gsl_tmp_43 * 0.0) / 20736.0)), ((gsl_tmp_44 - 0.0) * 12.0 - (gsl_tmp_43 - 72.0) * 0.0) / 144.0, length(p - vec3<f32>(-5.0, 0.0, -6.0) - vec3<f32>(0.0, 0.0, 12.0) * clamp(gsl_tmp_43 / 144.0, 0.0, 1.0)) - 4.0 >= (abs(gsl_tmp_43 - 72.0) - 72.0) / 12.0), select(dot(clamp(gsl_tmp_48 / max(length(gsl_tmp_48), 0.00000000000000000001), vec3<f32>(-1.0), vec3<f32>(1.0)), vec3<f32>(0.0, 0.0, 1.0) - (vec3<f32>(0.0, 0.0, 0.0) * gsl_tmp_46 / 144.0 + vec3<f32>(0.0, 0.0, 12.0) * (gsl_tmp_47 * 144.0 - gsl_tmp_46 * 0.0) / 20736.0)), ((gsl_tmp_47 - 0.0) * 12.0 - (gsl_tmp_46 - 72.0) * 0.0) / 144.0, length(p - vec3<f32>(-5.0, 0.0, -6.0) - vec3<f32>(0.0, 0.0, 12.0) * clamp(gsl_tmp_46 / 144.0, 0.0, 1.0)) - 4.0 >= (abs(gsl_tmp_46 - 72.0) - 72.0) / 12.0)), 0.8); return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
   }
   if (gsl_materialIdx == 3u) {
-    let gsl_tmp_46 = abs(p - vec3<f32>(7.0, 0.0, 0.0)) - vec3<f32>(4.0, 4.0, 4.0);
-    let gsl_tmp_47 = abs(p - vec3<f32>(7.0, 0.0, 0.0)) - vec3<f32>(4.0, 4.0, 4.0);
-    let gsl_tmp_48 = abs(p - vec3<f32>(7.0, 0.0, 0.0)) - vec3<f32>(4.0, 4.0, 4.0);
-    let gsl_m = material_withLay(mat4x4<f32>(vec4<f32>(0.35, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), vec3<f32>(select(select(1.0, 0.0, gsl_tmp_46.y >= gsl_tmp_46.z), 0.0, gsl_tmp_46.x >= max(gsl_tmp_46.y, gsl_tmp_46.z)), select(select(0.0, 0.0, gsl_tmp_47.y >= gsl_tmp_47.z), 1.0, gsl_tmp_47.x >= max(gsl_tmp_47.y, gsl_tmp_47.z)), select(select(0.0, 1.0, gsl_tmp_48.y >= gsl_tmp_48.z), 0.0, gsl_tmp_48.x >= max(gsl_tmp_48.y, gsl_tmp_48.z))), 0.8); return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
+    let gsl_tmp_49 = abs(p - vec3<f32>(7.0, 0.0, 0.0)) - vec3<f32>(4.0, 4.0, 4.0);
+    let gsl_tmp_50 = abs(p - vec3<f32>(7.0, 0.0, 0.0)) - vec3<f32>(4.0, 4.0, 4.0);
+    let gsl_tmp_51 = abs(p - vec3<f32>(7.0, 0.0, 0.0)) - vec3<f32>(4.0, 4.0, 4.0);
+    let gsl_m = material_withLay(mat4x4<f32>(vec4<f32>(0.35, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), vec3<f32>(select(select(1.0, 0.0, gsl_tmp_49.y >= gsl_tmp_49.z), 0.0, gsl_tmp_49.x >= max(gsl_tmp_49.y, gsl_tmp_49.z)), select(select(0.0, 0.0, gsl_tmp_50.y >= gsl_tmp_50.z), 1.0, gsl_tmp_50.x >= max(gsl_tmp_50.y, gsl_tmp_50.z)), select(select(0.0, 1.0, gsl_tmp_51.y >= gsl_tmp_51.z), 0.0, gsl_tmp_51.x >= max(gsl_tmp_51.y, gsl_tmp_51.z))), 0.8); return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
   }
   if (gsl_materialIdx == 4u) {
-    let gsl_tmp_49 = dot(p - vec3<f32>(20.0, 0.0, 0.0), vec3<f32>(1.0, 0.0, 0.0));
-    let gsl_tmp_50 = dot(p - vec3<f32>(20.0, 0.0, 0.0), vec3<f32>(0.0, 1.0, 0.0));
-    let gsl_tmp_51 = dot(p - vec3<f32>(20.0, 0.0, 0.0), vec3<f32>(1.0, 0.0, 0.0));
-    let gsl_tmp_52 = dot(p - vec3<f32>(20.0, 0.0, 0.0), vec3<f32>(0.0, 1.0, 0.0));
     let gsl_tmp_53 = dot(p - vec3<f32>(20.0, 0.0, 0.0), vec3<f32>(1.0, 0.0, 0.0));
     let gsl_tmp_54 = dot(p - vec3<f32>(20.0, 0.0, 0.0), vec3<f32>(0.0, 1.0, 0.0));
-    let gsl_m = material_withLay(mat4x4<f32>(vec4<f32>(0.35, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), vec3<f32>((gsl_tmp_49 * 0.0 - gsl_tmp_50 * 1.0) / (pow(gsl_tmp_49, 2.0) + pow(gsl_tmp_50, 2.0)), (gsl_tmp_51 * 1.0 - gsl_tmp_52 * 0.0) / (pow(gsl_tmp_51, 2.0) + pow(gsl_tmp_52, 2.0)), (gsl_tmp_53 * 0.0 - gsl_tmp_54 * 0.0) / (pow(gsl_tmp_53, 2.0) + pow(gsl_tmp_54, 2.0))), 0.8); return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
+    let gsl_tmp_56 = dot(p - vec3<f32>(20.0, 0.0, 0.0), vec3<f32>(1.0, 0.0, 0.0));
+    let gsl_tmp_57 = dot(p - vec3<f32>(20.0, 0.0, 0.0), vec3<f32>(0.0, 1.0, 0.0));
+    let gsl_tmp_59 = dot(p - vec3<f32>(20.0, 0.0, 0.0), vec3<f32>(1.0, 0.0, 0.0));
+    let gsl_tmp_60 = dot(p - vec3<f32>(20.0, 0.0, 0.0), vec3<f32>(0.0, 1.0, 0.0));
+    let gsl_m = material_withLay(mat4x4<f32>(vec4<f32>(0.35, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), vec3<f32>((gsl_tmp_53 * 0.0 - gsl_tmp_54 * 1.0) / (pow(gsl_tmp_53, 2.0) + pow(gsl_tmp_54, 2.0)), (gsl_tmp_56 * 1.0 - gsl_tmp_57 * 0.0) / (pow(gsl_tmp_56, 2.0) + pow(gsl_tmp_57, 2.0)), (gsl_tmp_59 * 0.0 - gsl_tmp_60 * 0.0) / (pow(gsl_tmp_59, 2.0) + pow(gsl_tmp_60, 2.0))), 0.8); return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
   }
   if (gsl_materialIdx == 5u) {
-    let gsl_tmp_55 = (p - vec3<f32>(33.0, 0.0, 0.0)).z;
-    let gsl_tmp_56 = (p - vec3<f32>(33.0, 0.0, 0.0)).xy;
-    let gsl_tmp_57 = (p - vec3<f32>(33.0, 0.0, 0.0)).z;
-    let gsl_tmp_58 = (p - vec3<f32>(33.0, 0.0, 0.0)).xy;
-    let gsl_tmp_59 = (p - vec3<f32>(33.0, 0.0, 0.0)).z;
-    let gsl_tmp_60 = (p - vec3<f32>(33.0, 0.0, 0.0)).xy;
-    let gsl_m = material_withLay(mat4x4<f32>(vec4<f32>(0.35, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), vec3<f32>(1.0 * (gsl_tmp_55 * dot(clamp(gsl_tmp_56 / max(length(gsl_tmp_56), 0.00000000000000000001), vec2<f32>(-1.0), vec2<f32>(1.0)), vec2<f32>(1.0, 0.0)) - (length(gsl_tmp_56) - 4.0) * 0.0) / (pow(gsl_tmp_55, 2.0) + pow(length(gsl_tmp_56) - 4.0, 2.0)), 1.0 * (gsl_tmp_57 * dot(clamp(gsl_tmp_58 / max(length(gsl_tmp_58), 0.00000000000000000001), vec2<f32>(-1.0), vec2<f32>(1.0)), vec2<f32>(0.0, 1.0)) - (length(gsl_tmp_58) - 4.0) * 0.0) / (pow(gsl_tmp_57, 2.0) + pow(length(gsl_tmp_58) - 4.0, 2.0)), 1.0 * (gsl_tmp_59 * dot(clamp(gsl_tmp_60 / max(length(gsl_tmp_60), 0.00000000000000000001), vec2<f32>(-1.0), vec2<f32>(1.0)), vec2<f32>(0.0, 0.0)) - (length(gsl_tmp_60) - 4.0) * 1.0) / (pow(gsl_tmp_59, 2.0) + pow(length(gsl_tmp_60) - 4.0, 2.0))), 0.8); return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
+    let gsl_tmp_61 = (p - vec3<f32>(33.0, 0.0, 0.0)).z;
+    let gsl_tmp_62 = (p - vec3<f32>(33.0, 0.0, 0.0)).xy;
+    let gsl_tmp_63 = (p - vec3<f32>(33.0, 0.0, 0.0)).z;
+    let gsl_tmp_64 = (p - vec3<f32>(33.0, 0.0, 0.0)).xy;
+    let gsl_tmp_65 = (p - vec3<f32>(33.0, 0.0, 0.0)).z;
+    let gsl_tmp_66 = (p - vec3<f32>(33.0, 0.0, 0.0)).xy;
+    let gsl_m = material_withLay(mat4x4<f32>(vec4<f32>(0.35, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), vec3<f32>(1.0 * (gsl_tmp_61 * dot(clamp(gsl_tmp_62 / max(length(gsl_tmp_62), 0.00000000000000000001), vec2<f32>(-1.0), vec2<f32>(1.0)), vec2<f32>(1.0, 0.0)) - (length(gsl_tmp_62) - 4.0) * 0.0) / (pow(gsl_tmp_61, 2.0) + pow(length(gsl_tmp_62) - 4.0, 2.0)), 1.0 * (gsl_tmp_63 * dot(clamp(gsl_tmp_64 / max(length(gsl_tmp_64), 0.00000000000000000001), vec2<f32>(-1.0), vec2<f32>(1.0)), vec2<f32>(0.0, 1.0)) - (length(gsl_tmp_64) - 4.0) * 0.0) / (pow(gsl_tmp_63, 2.0) + pow(length(gsl_tmp_64) - 4.0, 2.0)), 1.0 * (gsl_tmp_65 * dot(clamp(gsl_tmp_66 / max(length(gsl_tmp_66), 0.00000000000000000001), vec2<f32>(-1.0), vec2<f32>(1.0)), vec2<f32>(0.0, 0.0)) - (length(gsl_tmp_66) - 4.0) * 1.0) / (pow(gsl_tmp_65, 2.0) + pow(length(gsl_tmp_66) - 4.0, 2.0))), 0.8); return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
   }
   return gsl_material(vec4<f32>(0.5, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), 0.0);
 }

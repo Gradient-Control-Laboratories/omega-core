@@ -215,9 +215,19 @@ func assembleWithOptions(primarySources []string, srcMgr source.Manager, o *opti
 	if err = annotation.ValidateReturns(prog); err != nil {
 		return nil, err
 	}
-	// A stand-in MarkParts could not give a part.
-	if err = property.CheckSimple(prog); err != nil {
+	// A stand-in MarkParts could not give a part: a shape's, now that types
+	// tell one, is sized by its box.
+	standIns, err := property.CheckSimple(prog)
+	if err != nil {
 		return nil, err
+	}
+	if standIns {
+		if err = link.References(prog, srcMgr, o.parsePkg); err != nil {
+			return nil, err
+		}
+		if err = types.Analyze(prog); err != nil {
+			return nil, err
+		}
 	}
 
 	// 4. Pre-Lowering Constant Evaluation & Structural AST Lowering

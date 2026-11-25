@@ -34,6 +34,16 @@ func (d *Delegate) BuildFuncCall(
 		}
 		return d.pruneGuard(op, args, info.WGSLReturnType()), nil
 	}
+	// A stand-in's switches read only their four or five arguments, so a call
+	// that also carries module state (the noise tile a noisy part needs) is
+	// switched as well.
+	if isSimplified(info, len(expressions)) {
+		args := make([]wgsl.Expression, len(expressions))
+		for i, e := range expressions {
+			args[i] = e.(wgsl.Expression)
+		}
+		return d.simpleCall(op, args, info.WGSLReturnType()), nil
+	}
 	return d.buildFuncCall(
 		op, info.WgslName(),
 		info.GlobalRefs(), expressions, info.WGSLReturnType())
@@ -64,16 +74,6 @@ func (d *Delegate) buildFuncCall(
 			args[i] = e.(wgsl.Expression)
 		}
 		return d.chooseBranch(fnCallOp, args, returnType), nil
-	}
-	// A stand-in's switches read only their four arguments, so a call that
-	// also carries module state (the noise tile a noisy part needs) is
-	// switched as well.
-	if simplifies(wgslName, len(expressions)) {
-		args := make([]wgsl.Expression, len(expressions))
-		for i, e := range expressions {
-			args[i] = e.(wgsl.Expression)
-		}
-		return d.simpleCall(fnCallOp, args, returnType), nil
 	}
 	if simpleValues(wgslName, len(expressions)) {
 		args := make([]wgsl.Expression, len(expressions))

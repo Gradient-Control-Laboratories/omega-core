@@ -482,8 +482,13 @@ func (r *resolver) simplifiedField(field *program.Operand, stand *program.FnCall
 	if proxy == nil {
 		return field, nil
 	}
-	return call(simplifiedName, field, proxy,
-		program.CloneOperand(stand.Arguments[2]), program.CloneOperand(stand.Arguments[3])), nil
+	args := []*program.Operand{field, proxy,
+		program.CloneOperand(stand.Arguments[2]), program.CloneOperand(stand.Arguments[3])}
+	if len(stand.Arguments) == 5 {
+		// A declared size switches the colour where it switches the shape.
+		args = append(args, program.CloneOperand(stand.Arguments[4]))
+	}
+	return call(simplifiedName, args...), nil
 }
 
 // fieldOf computes an expression's property field, or nil if it references no

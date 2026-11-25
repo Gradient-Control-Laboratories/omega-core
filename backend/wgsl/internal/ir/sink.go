@@ -158,7 +158,19 @@ func SinkStatements(block *Block, liveExtra ...string) {
 				break
 			}
 		}
-		if varIdx >= 0 && varIdx < i-1 {
+		// Never past a statement that reads or writes the var: a stand-in's
+		// switch is two guards assigning one var, and moving it to the second
+		// would leave the first assigning it before it is declared.
+		touched := false
+		for k := varIdx + 1; varIdx >= 0 && k < i && !touched; k++ {
+			for _, id := range append(block.stmts[k].Reads(), block.stmts[k].Writes()...) {
+				if id == assignedVar {
+					touched = true
+					break
+				}
+			}
+		}
+		if varIdx >= 0 && varIdx < i-1 && !touched {
 			vStmt := block.stmts[varIdx]
 			copy(block.stmts[varIdx:i-1], block.stmts[varIdx+1:i])
 			block.stmts[i-1] = vStmt

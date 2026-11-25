@@ -41,6 +41,13 @@ from `1.0.0` onward).
 
 ### Added
 
+- Stand-ins anywhere: `name.simple = proxy` now works on any named shape anywhere in an expression
+  (including intersections and remaps), not only top-level parts, and measures switch size at the
+  point drawn (`gsl_featurePixel`) rather than at the eye's distance to the part's box. When paired
+  with `name.featureSize = size`, the stand-in switches at `size` (using `builtin.simplified`'s
+  5-argument form) even on unbounded shapes or inside library helpers; `gears.gearProfile` and
+  `thread.basicForm`/`sinForm` use `.simple` + `.featureSize` so gear teeth and threads switch to
+  their pitch cylinder in a single pass.
 - Feature pruning: `name.featureSize = size` (mm) marks a value as a geometric feature that the viewer drops
   once it is too small to see, even when its part is large: a hole closes, a bump goes. The size is measured
   against the pixel at the point, from the camera, so it holds inside any rigid placement, and the feature
@@ -228,6 +235,12 @@ from `1.0.0` onward).
 - Keyed `.github/workflows/check.yml` and `.github/workflows/wheels.yml` concurrency groups on
   `github.event.pull_request.number || github.ref` so `pull_request` `closed` events no longer
   collide with and cancel `push` runs on `main`.
+- `--algo marching-cubes` meshes are watertight. Each cell worked out the crossing on each of its edges, and
+  four of a cell's twelve edges run down their axis, so the cell across such an edge read it from the far end and
+  rounded `t = -v0 / (v1 - v0)` differently in float32: the two cells' copies of one vertex differed in the last
+  bit, and the mesh was open along the edge (at depth 9, 2,528 unmatched edges on a sphere, 3,128 on a box with
+  every edge filleted). Every edge is now read up its axis, so a crossing depends on the grid edge alone. Triangle
+  counts, area and volume are unchanged, and `mdc` output is byte-identical.
 - Inlining was quadratic in a program's size: before inlining a local it counted every later use of it, over
   bodies whose calls were already inlined, where it needs only to know whether there are two. It now stops at
   the second. The eight-field exact round of fillet/octahedron-all-edges compiles in 8.9 s, from 35.9 s; the
