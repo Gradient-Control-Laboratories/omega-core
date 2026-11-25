@@ -545,7 +545,9 @@ func TestParsePartialImportsAndAssetImportsOnError(t *testing.T) {
 		src := "@scene(25)\nimport \"math\";\nimport . \"omega\";\nimport bad_unquoted;\nreturn 1;\n"
 		pkg, diags, err := parser2.Parse([]string{src})
 		assert.Error(t, err)
-		assert.Empty(t, diags)
+		if assert.Len(t, diags, 1) {
+			assert.Equal(t, program.SeverityWarning, diags[0].Severity)
+		}
 		assert.NotNil(t, pkg.Scene)
 		if assert.Equal(t, 1, len(pkg.Files)) {
 			file := pkg.Files[0]
