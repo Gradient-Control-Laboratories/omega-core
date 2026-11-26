@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 fn main() {
-    let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let manifest = PathBuf::from(std::env::var_os("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"));
     let workspace_root = manifest
         .ancestors()
         .nth(4)

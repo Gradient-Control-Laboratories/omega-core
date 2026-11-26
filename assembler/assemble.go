@@ -294,12 +294,26 @@ func assembleWithOptions(primarySources []string, srcMgr source.Manager, o *opti
 			si.SetImportSlots(importSlots)
 		}
 		if internaltopofold.HasTopoCall(prog) {
+			var slotResolver meshslots.Resolver
 			if !o.enableSlotFold {
 				if _, err = eval.Fold(prog, newAssemblerParamChecker(prog.Primary)); err != nil {
 					return nil, err
 				}
+				_, slotResolver = meshslots.Assign(prog.Primary, prog.GetImport)
+			} else if len(importSlots) > 0 {
+				slotResolver = func(pkgPath, kind, path string) (int, bool) {
+					for _, imp := range importSlots {
+						if imp.Kind == kind && imp.Path == path && (imp.PkgPath == pkgPath || (pkgPath == "" && imp.PkgPath == prog.Primary.Path)) {
+							return imp.Slot, true
+						}
+					}
+					return 0, false
+				}
 			}
-			if err = internaltopofold.FoldProgram(prog, importSlots, o.geometryResolver); err != nil {
+			evalConst := func(op *program.Operand, pkg *program.Package, pkgPath string) ([]float64, error) {
+				return eval.ConstPkgSlotsAt(op, pkg, pkgPath, prog.GetImport, slotResolver)
+			}
+			if err = internaltopofold.FoldProgram(prog, importSlots, o.geometryResolver, evalConst); err != nil {
 				return nil, err
 			}
 		}

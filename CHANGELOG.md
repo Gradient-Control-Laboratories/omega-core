@@ -238,6 +238,11 @@ from `1.0.0` onward).
 
 ### Fixed
 
+- `topofold` now evaluates general UI-derived constant expressions via a scoped `ConstEvalFunc`
+  fallback (`eval.ConstPkgSlotsAt`) in `assembler`, rejecting non-finite results, and Rust Cargo
+  build scripts (`internal/fidget/internal/rust/build.rs`, `internal/fidget/internal/tape-core/build.rs`,
+  `backend/mesh/manifold/internal/rust/build.rs`) read `CARGO_MANIFEST_DIR` at runtime via
+  `std::env::var_os` instead of compile-time `env!`.
 - `remap(field, [x, y, z])` with a constant point reads the field at that point in the WGSL too. The viewer
   drew it as the field moved by that point, while CPU evaluation and exports read the point, as the language
   defines it. Such a remap now folds to its value when the field reads nothing but p and constants.
