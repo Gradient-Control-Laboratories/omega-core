@@ -252,10 +252,12 @@ func (r *repair) run(stats *Stats) error {
 		if pts, err = r.project(pts); err != nil {
 			return err
 		}
+		r.keepApart(order, pts)
+		before := make([]vec, len(order))
 		touched := make(map[int32]bool)
 		for k, v := range order {
+			before[k] = r.verts[v]
 			r.verts[v] = pts[k]
-			moved[v] = true
 			for _, ti := range r.trisAt(v) {
 				touched[ti] = true
 			}
@@ -267,12 +269,49 @@ func (r *repair) run(stats *Stats) error {
 		if err := r.classify(list, backward); err != nil {
 			return err
 		}
-		back = count()
+		after := count()
+		if len(after) > len(back) {
+			// The pass turned more triangles over than it righted: undo it and stop.
+			for k, v := range order {
+				r.verts[v] = before[k]
+			}
+			if err := r.classify(list, backward); err != nil {
+				return err
+			}
+			break
+		}
+		back = after
+		for _, v := range order {
+			moved[v] = true
+		}
 		stats.Passes = pass
 	}
 	stats.BackwardAfter = len(back)
 	stats.Moved = len(moved)
 	return nil
+}
+
+// keepApart leaves a vertex of order where it is when its new place, as the STL writes it (float32), is another
+// vertex's: two vertices brought to one point, as both sides of a pinch walked onto the same spot of the zero set,
+// would be welded into one and open the mesh.
+func (r *repair) keepApart(order []int32, pts []vec) {
+	key := func(p vec) [3]float32 { return [3]float32{float32(p[0]), float32(p[1]), float32(p[2])} }
+	moving := make(map[int32]bool, len(order))
+	for _, v := range order {
+		moving[v] = true
+	}
+	taken := make(map[[3]float32]bool, len(r.verts))
+	for v, p := range r.verts {
+		if !moving[int32(v)] {
+			taken[key(p)] = true
+		}
+	}
+	for k, v := range order {
+		if taken[key(pts[k])] {
+			pts[k] = r.verts[v]
+		}
+		taken[key(pts[k])] = true
+	}
 }
 
 // qefPlace places each vertex of order from the tangent planes the field gives at it and at each vertex of its

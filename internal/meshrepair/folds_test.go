@@ -114,3 +114,25 @@ func TestFoldsLeavesACleanMeshAlone(t *testing.T) {
 		t.Fatal("a clean sphere came back changed")
 	}
 }
+
+// TestKeepApartLeavesTwoVerticesOffOnePoint checks a vertex whose new place is another vertex's stays where it was:
+// both a vertex sent onto one that is not moving, and the second of two moving vertices sent to the same new point.
+// Welding by position would otherwise join them and open the mesh.
+func TestKeepApartLeavesTwoVerticesOffOnePoint(t *testing.T) {
+	verts, tris := sphereSTL(5, 1)
+	m := weld(writeSTL(verts, tris), len(tris))
+	r := &repair{mesh: m, field: sphereField(5)}
+	free := vec{0.1, 0.2, 5}
+	order := []int32{0, 1, 2}
+	pts := []vec{m.verts[3], free, free} // 0 onto vertex 3, which stays; 1 and 2 onto one new point
+	r.keepApart(order, pts)
+	if pts[0] != m.verts[0] {
+		t.Fatalf("vertex 0 sent onto vertex 3 moved to %v", pts[0])
+	}
+	if pts[1] != free {
+		t.Fatalf("vertex 1, the first sent to a free point, did not move there: %v", pts[1])
+	}
+	if pts[2] != m.verts[2] {
+		t.Fatalf("vertex 2, sent to the point vertex 1 took, moved to %v", pts[2])
+	}
+}
