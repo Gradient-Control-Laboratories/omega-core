@@ -32,22 +32,32 @@ New tests are added only once the owner agrees them.
 
 ## Phase 0: Baseline
 
-- [ ] Task: Build or obtain dylibs that match `origin/main`'s Rust (`marching_cubes.rs` and `tape.rs`
-      have moved since the main checkout's copies), on the owner's go, since it is a Rust build
-- [ ] Task: Run the `eval`, `internal/fidget/...`, `backend/...` and `cmd/...` tests on unchanged
-      `origin/main`, and record what fails there: `TestRun_STL_MarchingCubesIsWatertight` failed and
-      `eval` hit the 10-minute timeout on the stale dylibs, with tight `fract`
-- [ ] Task: List every reader of `displacementScale()` and of the displaced distance (WGSL codegen,
-      `gsl-displace.js`, fidget convert, `litrender.go`, meshers, `eval`), as Phases 2 to 4 change them
-- [ ] Task: Phase Verification & Checkpoint
+- [x] Task: Build dylibs that match `origin/main`'s Rust (2026-11-26, owner's go): `render` and
+      `gpu-eval` built in this worktree, the fidget vendor submodules cloned from the main checkout's
+      module repos; `libmanifold_glue` is the main checkout's, whose sources have not changed
+- [x] Task: Baseline on unchanged `origin/main` (`eval`, `internal/fidget/...`, `backend/...`,
+      `cmd/...`, `-timeout 30m`): 45 packages pass. `eval` takes 634 s, past `go test`'s 10-minute
+      default, which is what the earlier "timeout" was. `gpuparity`'s
+      `TestGpuPrune_TeethLeaveThePitchCylinder` and `TestGpuPrune_ThreadLeavesThePitchCylinder` fail on
+      `origin/main` itself: on the GPU (WGSL), far from the part, the field reads the teeth or thread,
+      not the pitch cylinder. The earlier `TestRun_STL_MarchingCubesIsWatertight` failure was the stale
+      dylib
+- [x] Task: Readers of the displacement builtins. Fidget convert sets `displacementScale()` and
+      `displacementDrawn()` from one field, `dispDrawn`, which only the lit renderer's colour path sets
+      to 1 ([color.go](../../../internal/fidget/convert/color.go)); WGSL codegen reads both from the
+      viewer's uniforms; the stdlib's appearance switches read `displacementDrawn()` (Phase 3). The
+      rest of the 50-odd files only carry `DisplacedReturns` through their passes
+- [x] Task: Phase Verification & Checkpoint
 
 ## Phase 1: Tight `fract`
 
-- [ ] Task: Bring in `blake/tight-fract`: `fract` built as fidget's modulo
+- [x] Task: Bring in `blake/tight-fract`: `fract` built as fidget's modulo
       ([builtin.go](../../../internal/fidget/convert/builtin.go)), and its CHANGELOG entry
-- [ ] Task: Against the Phase 0 baseline, show any test or golden that moves (interval pruning in the
-      meshers and the lit renderer reads the same bounds)
-- [ ] Task: Phase Verification & Checkpoint
+- [x] Task: Against the Phase 0 baseline, show any test or golden that moves (interval pruning in the
+      meshers and the lit renderer reads the same bounds). None moved (2026-11-26, on
+      `blake/tight-fract` with the Phase 0 dylibs): the same 45 packages pass, the same two
+      `gpuparity` tests fail, and no test wrote a file
+- [x] Task: Phase Verification & Checkpoint
 
 ## Phase 2: Build Apart from Relief
 
@@ -69,6 +79,11 @@ New tests are added only once the owner agrees them.
       mesh op and on the server's mesh endpoints, off by default
 - [ ] Task: Section mode: separate build and relief toggles in the viewer's section view, whose
       shaders now show the field as built ([gsl-displace.js](../../../examples/viewer/render/gsl-displace.js))
+- [ ] Task: Decide how `displacementDrawn()` follows the relief flag. Fidget convert sets it and
+      `displacementScale()` from one field (`dispDrawn`, 1 only on the lit renderer's colour path), and
+      the stdlib swaps relief for roughness or a painted depth where it is 0 (`material.hiddenShare`,
+      `texture.reliefRoughness`, `printed`, the painted thread and knurl depth in `thread` and
+      `shaft`). With relief drawn into a mesh or a section, those swaps must turn off
 - [ ] Task: A coated block exports with its volume grown by its area times its build, to the mesher's
       tolerance
 - [ ] Task: Phase Verification & Checkpoint

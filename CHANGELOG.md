@@ -238,6 +238,13 @@ from `1.0.0` onward).
 
 ### Fixed
 
+- **`fract` keeps its interval bounds on the CPU (fidget) path**: it was built as `x - floor(x)`,
+  which interval arithmetic bounds by `[-10, 10]` over `x` in `[100, 110]`, so every periodic
+  surface built on it (turned grooves, face-mill arcs) lost its bounds and certify, interval
+  pruning and the meshers subdivided below the period. It is now fidget's modulo, whose interval is
+  `[0, 1]` wherever the range crosses an integer; values are unchanged. Certifying that a turned
+  25 k5 journal's cusps stay inside the maximum-material envelope over the whole 15 mm seat now
+  takes 43.7 thousand interval evaluations, where 2 million did not decide it.
 - `topofold` now evaluates general UI-derived constant expressions via a scoped `ConstEvalFunc`
   fallback (`eval.ConstPkgSlotsAt`) in `assembler`, rejecting non-finite results, and Rust Cargo
   build scripts (`internal/fidget/internal/rust/build.rs`, `internal/fidget/internal/tape-core/build.rs`,
