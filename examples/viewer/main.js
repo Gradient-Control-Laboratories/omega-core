@@ -514,8 +514,8 @@ async function compileGsl(source) {
     }
 }
 
-// requestStlExport asks the server to mesh the source by algo: "mdc" (the Export panel's Server DC) or
-// "marching-cubes" (Server MC), and to write it as format ("3mf", "glb" or "stl"). Each body the Bodies panel shows
+// requestStlExport asks the server to mesh the source by algo: "mdc" (the Export panel's Server DC), "mdc-repair"
+// (Server DC + repair) or "marching-cubes" (Server MC), and to write it as format ("3mf", "glb" or "stl"). Each body the Bodies panel shows
 // is meshed apart, in the color it shows; an STL of several comes back as a zip of one STL each.
 async function requestStlExport(detail, surfaceBbox, algo, format = "stl") {
     const source = getGslSourceForServer();
@@ -982,6 +982,7 @@ if (host.editable) initExportPanel({
         return requestStlExport(detail, surfaceBbox, algo, format);
     },
     serverMarchingCubes: true,
+    serverFoldRepair: true,
     serverFormats: true,
     onExportPage: exportPage,
     onExportAudio: exportAudio,

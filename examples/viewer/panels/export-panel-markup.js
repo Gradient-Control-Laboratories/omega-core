@@ -36,6 +36,7 @@ export const EXPORT_PANEL_MARKUP = `
             <option value="mc" title="Marching cubes in this browser, with the program's mesh booleans composed by Manifold">Browser MC</option>
             <option value="dc" title="Dual contouring in this browser with fidget: the implicit returns as the server's mesher sees them, without mesh booleans or imported meshes">Browser DC</option>
             <option value="server" title="Dual contouring on the server">Server DC</option>
+            <option value="server-dcr" title="Dual contouring on the server, then the folds it leaves repaired against the field: backward triangles' vertices placed again from the field's tangent planes and walked back onto the surface">Server DC + repair</option>
             <option value="server-mc" title="Marching cubes on the server">Server MC</option>
         </select>
     </div>
