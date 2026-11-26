@@ -7,6 +7,7 @@ import (
 
 	"github.com/Gradient-Control-Laboratories/omega-core/assembler/source"
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/suggest"
 	"github.com/Gradient-Control-Laboratories/omega-core/parser"
 	"github.com/Gradient-Control-Laboratories/omega-core/program"
 	gsllibs "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
@@ -669,7 +670,7 @@ func (l *linker) resolveRef(op *program.Operand, ref *program.Reference, currSco
 			// rather than assumed equal to it: `beam` means `lattice/beam`.
 			pkgPath, isSystem := gsllibs.PathForPrefix(ref.Prefix)
 			if !isSystem {
-				return nil, currScope.Err(op.Start, fmt.Errorf("undefined identifier: %s", ref.Prefix))
+				return nil, currScope.Err(op.Start, suggest.Undefined(currScope, ref.Prefix))
 			}
 
 			// Check program dependencies first
@@ -707,7 +708,7 @@ func (l *linker) resolveRef(op *program.Operand, ref *program.Reference, currSco
 		}
 
 		if prefElem == nil {
-			return nil, currScope.Err(op.Start, fmt.Errorf("undefined identifier: %s", ref.Prefix))
+			return nil, currScope.Err(op.Start, suggest.Undefined(currScope, ref.Prefix))
 		}
 
 		pkgRef, isPkgRef := prefElem.(*scope.PkgRef)
@@ -739,7 +740,7 @@ func (l *linker) resolveRef(op *program.Operand, ref *program.Reference, currSco
 			}
 		}
 		if elem == nil {
-			return nil, currScope.Err(op.Start, fmt.Errorf("name %q not found in package %q", ref.Name, pkgRef.Name()))
+			return nil, currScope.Err(op.Start, suggest.NotInPackage(pkgRef, ref.Name))
 		}
 		return elem, nil
 
@@ -780,7 +781,7 @@ func (l *linker) resolveRef(op *program.Operand, ref *program.Reference, currSco
 	}
 
 	if elem == nil {
-		return nil, currScope.Err(op.Start, fmt.Errorf("undefined identifier: %s", ref.Name))
+		return nil, currScope.Err(op.Start, suggest.Undefined(currScope, ref.Name))
 	}
 	return elem, nil
 }

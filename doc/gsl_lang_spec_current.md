@@ -530,8 +530,8 @@ In the current GSL v1 implementation, the following annotations are supported:
 - **`@duration`**: Top-level directive giving the length of the document's animation, in seconds.
 - **`@caption`**: Top-level directive showing timed text at the bottom of the viewer during an
   animation.
-- **`@range`**: Numeric slider bounds and optional animation periods on variable assignments,
-  function parameters (2 arguments only), or inline expressions.
+- **`@range`**: Numeric slider bounds and optional animation periods on variable assignments
+  and function parameters (2 arguments only). On a value inside an expression it is a parse error.
 - **`@point`**: 3D position controls on 3-component variable assignments, inline expressions,
   or function parameters.
 - **`@direction`**: 3D direction arrow controls (with an optional anchor point) on 3-component
@@ -555,12 +555,14 @@ In the current GSL v1 implementation, the following annotations are supported:
 
 #### Range Annotations (Sliders)
 
-A top-level variable assigned a scalar numeric literal, a function parameter,
-or a scalar numeric literal within an expression can be decorated with a `@range(...)` annotation:
+A top-level variable assigned a scalar numeric literal, or a function parameter,
+can be decorated with a `@range(...)` annotation. On a value inside an expression
+(`r = @range(1, 5) 2.5;`, `sphere(@range(1, 5) 2.0)`) it is a parse error: nothing would
+turn it into a slider, so it is refused rather than ignored.
 - **`@range(min, max)`**: Registers a slider with the given minimum and maximum bounds.
 - **`@range(min, max, period)`**: Registers
   an animated slider oscillating sinusoidally between `min` and `max` over `period` seconds.
-  Allowed only on variable declarations and inline expressions.
+  Allowed only on variable declarations.
 - **Function Parameters**: On function parameters, `@range` requires exactly 2 arguments:
   `@range(min, max)`. A `period` argument is not permitted on parameters and produces a parse error.
   Parameter range annotations serve as suggestions for callers and are ignored during shader emission.

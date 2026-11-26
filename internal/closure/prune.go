@@ -1,13 +1,26 @@
 package closure
 
 import (
+	"errors"
+	"fmt"
+
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
 	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
-func (t *transformer) pruneHigherOrderTemplates(files []*program.PackageFile) {
+func (t *transformer) pruneHigherOrderTemplates(files []*program.PackageFile) error {
 	vanished := t.pruneFunctions(files, func(file *program.PackageFile, fn *program.Function) bool {
 		return t.isHigherOrderTemplate(file, fn)
 	})
+
+	// The document's own code is never pruned, so a call in it that still
+	// names a template just pruned is one no specialization could serve: the
+	// argument for a parameter the template calls is not a function. Left in
+	// place it fails the re-link as "undefined identifier" naming the
+	// template, which the reader can see is defined; say what is wrong.
+	if err := t.danglingTemplateCall(vanished); err != nil {
+		return err
+	}
 
 	// Call sites are specialized only in functions the transform reached, so
 	// an unreached library function still calls the templates just pruned.
@@ -19,6 +32,116 @@ func (t *transformer) pruneHigherOrderTemplates(files []*program.PackageFile) {
 			return !t.processedFns[fn] && t.referencesFnType(file, fn, vanished)
 		})
 	}
+	return nil
+}
+
+// danglingTemplateCall reports the first call in the primary package's
+// top-level code or functions that names one of the pruned templates.
+func (t *transformer) danglingTemplateCall(vanished map[*program.FnType]bool) error {
+	if t.prog.Primary == nil || len(vanished) == 0 {
+		return nil
+	}
+	for _, file := range t.prog.Primary.Files {
+		var found error
+		var walk func(enclosing *program.Function, bound map[string]bool, op *program.Operand)
+		walk = func(enclosing *program.Function, bound map[string]bool, op *program.Operand) {
+			if found != nil || op == nil {
+				return
+			}
+			switch v := op.T.(type) {
+			case *program.Operand_FnCall:
+				fc := v.FnCall
+				if fc == nil {
+					return
+				}
+				if ref := fc.Reference; ref != nil && !(ref.Prefix == "" && bound[ref.Name]) {
+					if _, ft := t.lookupFnTypeInScope(enclosing, file, ref.Prefix, ref.Name); ft != nil && vanished[ft] {
+						found = t.templateCallError(file, op, fc, ft)
+						return
+					}
+				}
+				for _, arg := range fc.Arguments {
+					walk(enclosing, bound, arg)
+				}
+			case *program.Operand_Expression:
+				if v.Expression != nil {
+					for _, sub := range v.Expression.Operands {
+						walk(enclosing, bound, sub)
+					}
+				}
+			}
+		}
+		var walkFn func(fn *program.Function, outer map[string]bool)
+		walkFn = func(fn *program.Function, outer map[string]bool) {
+			bound := make(map[string]bool, len(outer))
+			for name := range outer {
+				bound[name] = true
+			}
+			for _, p := range fn.Parameters {
+				bound[p.Name] = true
+			}
+			for _, a := range fn.Assignments {
+				for _, v := range a.Variables {
+					bound[v.Name] = true
+				}
+			}
+			for _, a := range fn.Assignments {
+				walk(fn, bound, a.Expression)
+			}
+			for _, r := range fn.Returns {
+				walk(fn, bound, r)
+			}
+			for _, nft := range fn.FnTypes {
+				for _, nfg := range nft.Groups {
+					for _, nfn := range nfg.Functions {
+						walkFn(nfn, bound)
+					}
+				}
+			}
+		}
+		for _, a := range file.Assignments {
+			walk(nil, nil, a.Expression)
+		}
+		for _, r := range file.Returns {
+			walk(nil, nil, r)
+		}
+		for _, ft := range file.FnTypes {
+			for _, fg := range ft.Groups {
+				for _, fn := range fg.Functions {
+					walkFn(fn, nil)
+				}
+			}
+		}
+		if found != nil {
+			return found
+		}
+	}
+	return nil
+}
+
+// templateCallError says which parameter of the template takes a function
+// and what the call passed for it instead.
+func (t *transformer) templateCallError(file *program.PackageFile, op *program.Operand, fc *program.FnCall, ft *program.FnType) error {
+	var fn *program.Function
+	for _, fg := range ft.Groups {
+		if int(fg.ParamCount) == len(fc.Arguments) && len(fg.Functions) > 0 {
+			fn = fg.Functions[0]
+		}
+	}
+	msg := fmt.Sprintf("%s takes a function argument, and this call passes none it can use", ft.Name)
+	if fn != nil {
+		for i, p := range fn.Parameters {
+			if i >= len(fc.Arguments) {
+				break
+			}
+			if t.paramIsFunction(file, fn, p.Name, map[*program.Function]bool{}) || t.paramIsFunctionList(file, fn, p.Name) {
+				msg = fmt.Sprintf("%s calls its parameter %s as a function, so a call has to pass a function for it: a function's name, a lambda such as (x) { return x * 2; }, or a blend such as unionRound(2); %s is not one",
+					ft.Name, p.Name, fc.Arguments[i].PrettyPrint(0))
+				break
+			}
+		}
+	}
+	return scope.ErrLoc(t.prog.Primary.Path, file.Path, op.Start, errors.New(msg))
 }
 
 // pruneFunctions removes the top-level functions for which prune reports true
@@ -375,7 +498,13 @@ func (t *transformer) operandDirectlyCallsParam(op *program.Operand, params map[
 	}
 	switch v := op.T.(type) {
 	case *program.Operand_FnCall:
-		if v.FnCall != nil && v.FnCall.Reference != nil && v.FnCall.Reference.Prefix == "" {
+		// A call to a built-in reaches the built-in even where a parameter
+		// has its name, as linking resolves it and as a primitive's call
+		// does: f(length) { return length(p) - length; } calls length() and
+		// reads the parameter. Taking it for a call through the parameter
+		// made f a template that no call could specialize, and pruned it.
+		if v.FnCall != nil && v.FnCall.Reference != nil && v.FnCall.Reference.Prefix == "" &&
+			!program.IsBuiltin(v.FnCall.Reference.Name) {
 			if params[v.FnCall.Reference.Name] {
 				return true
 			}
