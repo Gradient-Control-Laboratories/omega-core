@@ -335,13 +335,7 @@ func writeLibraryEntries(sb *strings.Builder, e libraryEntries) {
 		sb.WriteString("\n")
 	}
 	if len(e.preamble) > 0 {
-		for _, d := range e.preamble {
-			if d.doc != "" {
-				fmt.Fprintf(sb, "- **`%s`** — %s\n", d.signature, d.doc)
-			} else {
-				fmt.Fprintf(sb, "- **`%s`**\n", d.signature)
-			}
-		}
+		writeDecls(sb, e.preamble)
 		sb.WriteString("\n")
 	}
 	for _, s := range e.sections {
@@ -349,13 +343,104 @@ func writeLibraryEntries(sb *strings.Builder, e libraryEntries) {
 			continue
 		}
 		fmt.Fprintf(sb, "#### %s\n\n", s.title)
-		for _, d := range s.decls {
+		writeDecls(sb, s.decls)
+		sb.WriteString("\n")
+	}
+}
+
+// declName is the name a declaration's signature declares: "unionRound" for
+// "unionRound(d1, d2, radius)".
+func declName(signature string) string {
+	if i := strings.Index(signature, "("); i >= 0 {
+		return strings.TrimSpace(signature[:i])
+	}
+	return strings.TrimSpace(signature)
+}
+
+// groupByName gathers a list's overloads under their name, in the order each
+// name first appears.
+func groupByName(decls []declEntry) (order []string, groups map[string][]declEntry) {
+	groups = make(map[string][]declEntry)
+	for _, d := range decls {
+		name := declName(d.signature)
+		if _, seen := groups[name]; !seen {
+			order = append(order, name)
+		}
+		groups[name] = append(groups[name], d)
+	}
+	return order, groups
+}
+
+// writeDecls writes a list of function entries. A name with one form keeps
+// one line; a name with several is one entry, each form below it with its own
+// doc, so no form's doc is lost.
+func writeDecls(sb *strings.Builder, decls []declEntry) {
+	order, groups := groupByName(decls)
+	for _, name := range order {
+		forms := groups[name]
+		if len(forms) == 1 {
+			d := forms[0]
 			if d.doc != "" {
 				fmt.Fprintf(sb, "- **`%s`** — %s\n", d.signature, d.doc)
 			} else {
 				fmt.Fprintf(sb, "- **`%s`**\n", d.signature)
 			}
+			continue
 		}
-		sb.WriteString("\n")
+		fmt.Fprintf(sb, "- **`%s`**\n", name)
+		for _, d := range forms {
+			if d.doc != "" {
+				fmt.Fprintf(sb, "  - `%s` — %s\n", d.signature, d.doc)
+			} else {
+				fmt.Fprintf(sb, "  - `%s`\n", d.signature)
+			}
+		}
 	}
+}
+
+// compactLibraryText renders a library in brief: one line per constant and
+// one per function name, its forms and the first sentence of its doc.
+func compactLibraryText(lib gsllibs.PkgInfo) string {
+	e := extractLibraryEntries(strings.Join(lib.Sources, "\n"))
+	var sb strings.Builder
+	if len(e.constants) > 0 {
+		sb.WriteString("#### Constants\n\n")
+		sb.WriteString(compactEntriesText(libraryEntries{constants: e.constants}))
+	}
+	if len(e.preamble) > 0 {
+		sb.WriteString(compactEntriesText(libraryEntries{preamble: e.preamble}))
+	}
+	for _, s := range e.sections {
+		if len(s.decls) == 0 {
+			continue
+		}
+		fmt.Fprintf(&sb, "#### %s\n\n", s.title)
+		sb.WriteString(compactEntriesText(libraryEntries{preamble: s.decls}))
+	}
+	return sb.String()
+}
+
+// builtinBriefText is the skill index's compact `builtin`: every file sees it
+// without an import, so nearly every program calls it.
+func builtinBriefText() string {
+	for _, lib := range gsllibs.All() {
+		if lib.ImportPath != "builtin" {
+			continue
+		}
+		return "\n---\n\n## **The `builtin` Package, in Brief**\n\n" +
+			"Every file sees these without an import or a prefix. One line per function: its forms " +
+			"and what it does. `gsl skill builtin` has each form's full doc, and `gsl skill NAME` one function's.\n\n" +
+			compactLibraryText(lib)
+	}
+	return ""
+}
+
+// firstSentence returns text up to and including its first full stop that is
+// followed by a space, or all of it when there is none.
+func firstSentence(text string) string {
+	text = strings.TrimSpace(text)
+	if i := strings.Index(text, ". "); i >= 0 {
+		return text[:i+1]
+	}
+	return text
 }

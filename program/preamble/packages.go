@@ -8,20 +8,22 @@ import (
 )
 
 // The full library docs run to hundreds of kilobytes, more than a model should
-// read before writing a line. The skill index carries the language, the
-// built-ins and one line per package; a reader loads a package's full docs
-// (PackageDescriptiveText) once it knows which it needs.
+// read before writing a line. The skill index carries what nearly every
+// program needs and names the rest; a reader loads the rest by name (Lookup)
+// once it knows which it needs.
 
-// GSLSkillIndex returns the GSL author skill with the library docs replaced by
-// a package index: the language description, the primitives and built-ins, how
-// packages are imported and referenced, one line per package, the reserved
-// words and the common pitfalls. includeDomains selects product-specific libraries, as in
+// GSLSkillIndex returns the GSL author skill a model reads first: the language
+// description, the primitives and core built-ins with the specialist groups
+// named, the builtin package in brief, how packages are imported and
+// referenced with one line per package, the rule for reserved words, and the
+// common pitfalls. includeDomains selects product-specific libraries, as in
 // LibrariesDescriptiveText.
 func GSLSkillIndex(includeDomains ...string) string {
 	return GSLDescription +
-		"\n\n" + PrimitiveAndBuiltinDescriptiveText() +
+		"\n\n" + coreBuiltinDescriptiveText() +
+		"\n\n" + builtinBriefText() +
 		"\n\n" + PackageIndexText(includeDomains...) +
-		"\n\n" + ReservedWordsDescriptiveText() +
+		"\n\n" + reservedWordsRuleText() +
 		"\n\n" + CommonPitfalls
 }
 

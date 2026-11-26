@@ -19,7 +19,19 @@ var annotationBuiltins = map[string]bool{
 	"uiSpline":    true,
 }
 
+// PrimitiveAndBuiltinDescriptiveText lists every primitive and built-in, the
+// specialist groups included, then the remap guideline.
 func PrimitiveAndBuiltinDescriptiveText() string {
+	return primitiveAndBuiltinText(false)
+}
+
+// coreBuiltinDescriptiveText is PrimitiveAndBuiltinDescriptiveText for the
+// skill index: the specialist groups are named, not listed.
+func coreBuiltinDescriptiveText() string {
+	return primitiveAndBuiltinText(true)
+}
+
+func primitiveAndBuiltinText(coreOnly bool) string {
 	var sb strings.Builder
 	sb.WriteString("\n---\n\n## **Primitive and Built-in Functions**\n\n")
 	sb.WriteString("The following are the primitive and built-in functions that are available in the GSL (GCL Shape Language).\n")
@@ -33,6 +45,9 @@ func PrimitiveAndBuiltinDescriptiveText() string {
 	sort.Strings(names)
 	for _, name := range names {
 		if annotationBuiltins[name] {
+			continue
+		}
+		if _, grouped := builtinGroupOf[name]; grouped && coreOnly {
 			continue
 		}
 		sb.WriteString(fmt.Sprintf("* **`%s`**: %s\n", name, builtinDescriptions[name]))
@@ -50,6 +65,9 @@ func PrimitiveAndBuiltinDescriptiveText() string {
 			continue
 		}
 		sb.WriteString(fmt.Sprintf("* **`%s`**: %s\n", program.Operation(op).Name(), desc))
+	}
+	if coreOnly {
+		writeBuiltinGroupIndex(&sb)
 	}
 
 	sb.WriteString(`
@@ -115,6 +133,17 @@ Write the remap yourself only when the change is not one of those, such as a war
 A hand-written remap clears the shape's bounding box, so declare one with name.box = [lo, hi] (see Bounding box).
 `)
 	return sb.String()
+}
+
+// reservedWordsRuleText is the skill index's stand-in for the list of
+// reserved words: the rule, since the compiler names the offender and offers
+// another name when one is used.
+func reservedWordsRuleText() string {
+	return "\n---\n\n## **Reserved Words**\n\n" +
+		"The names of the primitives and built-ins above, the implicit `p` and `time`, " +
+		"and keywords and type names from other languages (`f32`, `u8`, `bool`, `async`, `chan`, …) " +
+		"are reserved. The compiler rejects a reserved word as a variable or function name and " +
+		"suggests another; `gsl skill --all` lists every one.\n"
 }
 
 func ReservedWordsDescriptiveText() string {
