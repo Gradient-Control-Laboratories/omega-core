@@ -112,10 +112,8 @@ func (c *sliceCtx) sliceOperand(op *program.Operand) (*MeshPlanNode, error) {
 	}
 
 	target := op
-	if ref := op.GetReference(); ref != nil && ref.Name != "" {
-		if resolved := c.resolveRef(op); isMeshCall(resolved) {
-			target = resolved
-		}
+	if call := c.meshCall(op); call != nil {
+		target = call
 	}
 
 	if fc := target.GetFnCall(); fc != nil {
@@ -155,6 +153,33 @@ func (c *sliceCtx) resolveRef(op *program.Operand) *program.Operand {
 		}
 		op = bound
 	}
+}
+
+// meshCall is the mesh operation (meshUnion, meshIntersect, meshDifference or mesh) op is, looking through the names
+// it is bound to and the declared box's wrappers round them, or nil. A name that declares .box is assembled as
+// shrinkToVanish(cropToBox(shape, lo, hi), lo, hi, solid): the viewer's culling guard round the shape cropped to the
+// box. A mesh operation's parts are meshed within the mesh region, which is that box, so the shape is what to slice.
+func (c *sliceCtx) meshCall(op *program.Operand) *program.Operand {
+	for steps := 0; op != nil && steps < 64; steps++ {
+		if isMeshCall(op) {
+			return op
+		}
+		if ref := op.GetReference(); ref != nil && ref.Name != "" {
+			bound := c.resolveRef(op)
+			if bound == op {
+				return nil
+			}
+			op = bound
+			continue
+		}
+		if fc := op.GetFnCall(); fc != nil && fc.Reference != nil && fc.Reference.Prefix == "" &&
+			(fc.Reference.Name == "shrinkToVanish" || fc.Reference.Name == "cropToBox") && len(fc.Arguments) > 0 {
+			op = fc.Arguments[0]
+			continue
+		}
+		return nil
+	}
+	return nil
 }
 
 func isMeshCall(op *program.Operand) bool {
@@ -243,10 +268,10 @@ func (c *sliceCtx) foldMeshCSG(builtinName string, elements []*program.Operand) 
 	return acc, nil
 }
 
+// combineMeshCSG joins two sides of a mesh boolean into a boolean node. Two field sides stay two leaves, meshed each on
+// its own and composed as meshes: the boolean is the meshes', so a result thinner than a cell (a wall between two
+// nearly coincident faces) comes out of two well-meshed operands rather than one field the mesher cannot resolve.
 func (c *sliceCtx) combineMeshCSG(builtinName string, left, right *MeshPlanNode) (*MeshPlanNode, error) {
-	if isSdfLeaf(left) && isSdfLeaf(right) {
-		return c.mergeSdfLeaves(builtinName, left, right), nil
-	}
 	planOp, err := planOpForBuiltin(builtinName)
 	if err != nil {
 		return nil, err
@@ -308,55 +333,6 @@ func (c *sliceCtx) allocSdfLeaf(expr *program.Operand) *MeshPlanNode {
 		expr: expr,
 	})
 	return node
-}
-
-func (c *sliceCtx) mergeSdfLeaves(builtinName string, left, right *MeshPlanNode) *MeshPlanNode {
-	leftPending := c.findPending(left)
-	rightPending := c.findPending(right)
-	if leftPending == nil || rightPending == nil {
-		op, _ := planOpForBuiltin(builtinName)
-		return &MeshPlanNode{
-			Kind:  MeshPlanKindBool,
-			Op:    op,
-			Left:  left,
-			Right: right,
-		}
-	}
-
-	var combined *program.Operand
-	switch builtinName {
-	case "meshUnion":
-		combined = program.NewExpression(program.Operation_MIN, []*program.Operand{leftPending.expr, rightPending.expr}, nil, nil)
-	case "meshIntersect":
-		combined = program.NewExpression(program.Operation_MAX, []*program.Operand{leftPending.expr, rightPending.expr}, nil, nil)
-	case "meshDifference":
-		negR := program.NewExpression(program.Operation_NEG, []*program.Operand{rightPending.expr}, nil, nil)
-		combined = program.NewExpression(program.Operation_MAX, []*program.Operand{leftPending.expr, negR}, nil, nil)
-	default:
-		combined = leftPending.expr
-	}
-	leftPending.expr = combined
-	c.removePending(rightPending)
-	return left
-}
-
-func (c *sliceCtx) findPending(node *MeshPlanNode) *pendingSdfLeaf {
-	for _, p := range c.pendingLeaves {
-		if p.node == node {
-			return p
-		}
-	}
-	return nil
-}
-
-func (c *sliceCtx) removePending(target *pendingSdfLeaf) {
-	out := c.pendingLeaves[:0]
-	for _, p := range c.pendingLeaves {
-		if p != target {
-			out = append(out, p)
-		}
-	}
-	c.pendingLeaves = out
 }
 
 func (c *sliceCtx) materializeSubtrees() error {

@@ -13,6 +13,8 @@ import (
 	"strings"
 
 	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/meshplan"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/meshslots"
 	"github.com/Gradient-Control-Laboratories/omega-core/assembler/variation"
 	"github.com/Gradient-Control-Laboratories/omega-core/backend/audio"
 	"github.com/Gradient-Control-Laboratories/omega-core/backend/mesh"
@@ -268,7 +270,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 			return regErr
 		}
 		// Each top-level return is its own body: one STL, a zip of <name>.stl for several, or a 3MF object or GLB node each.
-		bodies, meshErr := mesh.MeshBodies(res.Program, meshOpts...)
+		bodies, meshErr := meshProgram(res.Program, primarySourceText, res.Slots, meshDirs, meshOpts)
 		if meshErr != nil {
 			return fmt.Errorf("generating STL mesh: %w", meshErr)
 		}
@@ -509,6 +511,26 @@ func registerMeshes(load func() ([]meshimport.Use, error)) error {
 		return err
 	}
 	return meshimport.Register(uses)
+}
+
+// meshProgram meshes each top-level return of prog. A program whose returns use a mesh boolean (meshUnion,
+// meshIntersect, meshDifference) or place an imported mesh with mesh() is meshed by its mesh plan, as the server's
+// export is: each field part on its own, then composed with Manifold. Any other program is meshed as before, one
+// field per return. A placed mesh's STL is found as importMesh files are, beside the source.
+func meshProgram(prog *program.Program, source string, slots []meshslots.Import, meshDirs []string, opts []mesh.Option) ([]mesh.Body, error) {
+	plan, subtrees, err := meshplan.SliceDocument(prog, "leaf-", source)
+	if err != nil || !mesh.PlanComposes(plan) {
+		return mesh.MeshBodies(prog, opts...)
+	}
+	find := meshimport.Dirs(meshDirs...)
+	assets := func(index int) ([]float32, error) {
+		asset, err := meshimport.Slot(prog, slots, find, index)
+		if err != nil {
+			return nil, err
+		}
+		return asset.Vertices, nil
+	}
+	return mesh.MeshPlanBodies(prog, plan, subtrees, assets, opts...)
 }
 
 // renderPNG is the png target: the program's field raymarched on the CPU by the viewer's lit renderer, from each

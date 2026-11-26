@@ -181,7 +181,7 @@ func TestSliceProgram_HybridCSG(t *testing.T) {
 	}
 }
 
-func TestSliceProgram_AdjacentSDFMerge(t *testing.T) {
+func TestSliceProgram_AdjacentSDFKeptApart(t *testing.T) {
 	res, err := parser.ParsePackage([]string{"return meshUnion(sphere(1.0), cylinder(2.0));"})
 	if err != nil {
 		t.Fatalf("ParsePackage failed: %v", err)
@@ -195,16 +195,18 @@ func TestSliceProgram_AdjacentSDFMerge(t *testing.T) {
 	if plan == nil || plan.Root == nil {
 		t.Fatalf("expected non-nil plan root")
 	}
-	// The adjacent SDF leaves must be collapsed into a single SdfLeaf!
-	if plan.Root.Kind != meshplan.MeshPlanKindSdf {
-		t.Fatalf("expected collapsed sdf leaf root, got kind=%s", plan.Root.Kind)
+	// Two field sides of a mesh boolean stay two leaves under a boolean node, each meshed on its own.
+	if plan.Root.Kind != meshplan.MeshPlanKindBool || plan.Root.Op != meshplan.MeshPlanOpUnion {
+		t.Fatalf("expected bool union root, got %+v", plan.Root)
 	}
-	if len(subtrees) != 1 {
-		t.Fatalf("expected 1 merged subtree, got %d", len(subtrees))
+	if plan.Root.Left == nil || plan.Root.Left.Kind != meshplan.MeshPlanKindSdf {
+		t.Fatalf("expected left sdf child, got %+v", plan.Root.Left)
 	}
-	retExpr := subtrees[0].Return.GetExpression()
-	if retExpr == nil || retExpr.Operation != program.Operation_MIN {
-		t.Fatalf("expected merged return expression to be MIN, got %v", retExpr)
+	if plan.Root.Right == nil || plan.Root.Right.Kind != meshplan.MeshPlanKindSdf {
+		t.Fatalf("expected right sdf child, got %+v", plan.Root.Right)
+	}
+	if len(subtrees) != 2 {
+		t.Fatalf("expected 2 subtrees, got %d", len(subtrees))
 	}
 }
 
