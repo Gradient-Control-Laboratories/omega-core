@@ -41,7 +41,7 @@ func TestRun_GLB_SeveralBodies(t *testing.T) {
 	source := filepath.Join(dir, "pair.gsl")
 	require.NoError(t, os.WriteFile(source, []byte(twoBodies), 0644))
 	var stdout, stderr bytes.Buffer
-	require.NoError(t, cli.Run([]string{"-t", "glb", "--subdivision", "5", "--no-meta", source}, nil, &stdout, &stderr),
+	require.NoError(t, cli.Run([]string{"-t", "glb", "--algo", "mdc", "--subdivision", "5", "--no-meta", source}, nil, &stdout, &stderr),
 		stderr.String())
 	assert.Equal(t, []string{"ball", "blk"}, glbNodeNames(t, filepath.Join(dir, "pair.glb")))
 }
@@ -53,7 +53,30 @@ func TestRun_GLB_OneBodyNamedAfterSource(t *testing.T) {
 	require.NoError(t, os.WriteFile(source, []byte("@scene(40)\nball = length(p) - 5;\nreturn ball;\n"), 0644))
 	out := filepath.Join(dir, "out.glb")
 	var stdout, stderr bytes.Buffer
-	require.NoError(t, cli.Run([]string{"-t", "glb", "--subdivision", "5", "--no-meta", "-o", out, source}, nil, &stdout, &stderr),
+	require.NoError(t, cli.Run([]string{"-t", "glb", "--algo", "mdc", "--subdivision", "5", "--no-meta", "-o", out, source}, nil, &stdout, &stderr),
+		stderr.String())
+	assert.Equal(t, []string{"knob"}, glbNodeNames(t, out))
+}
+
+// TestRun_GLB_SeveralBodies with the folds repaired (mdc-repair).
+func TestRun_GLB_SeveralBodies_MDCRepair(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "pair.gsl")
+	require.NoError(t, os.WriteFile(source, []byte(twoBodies), 0644))
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, cli.Run([]string{"-t", "glb", "--algo", "mdc-repair", "--subdivision", "5", "--no-meta", source}, nil, &stdout, &stderr),
+		stderr.String())
+	assert.Equal(t, []string{"ball", "blk"}, glbNodeNames(t, filepath.Join(dir, "pair.glb")))
+}
+
+// TestRun_GLB_OneBodyNamedAfterSource with the folds repaired (mdc-repair).
+func TestRun_GLB_OneBodyNamedAfterSource_MDCRepair(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "knob.gsl")
+	require.NoError(t, os.WriteFile(source, []byte("@scene(40)\nball = length(p) - 5;\nreturn ball;\n"), 0644))
+	out := filepath.Join(dir, "out.glb")
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, cli.Run([]string{"-t", "glb", "--algo", "mdc-repair", "--subdivision", "5", "--no-meta", "-o", out, source}, nil, &stdout, &stderr),
 		stderr.String())
 	assert.Equal(t, []string{"knob"}, glbNodeNames(t, out))
 }

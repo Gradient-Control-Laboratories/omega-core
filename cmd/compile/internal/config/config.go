@@ -176,7 +176,7 @@ func ParseFlags(args []string) (*Config, error) {
 	// Meshing flags
 	fs.IntVar(&subdivision, "subdivision", 9, "Octree subdivision depth for mesh polygonization")
 	fs.StringVar(&bboxStr, "bbox", "", "Bounding box as minX,minY,minZ,maxX,maxY,maxZ, or auto: the box the field fills (default: the @scene box, or auto without one)")
-	fs.StringVar(&algo, "algo", "mdc", "Meshing algorithm (marching-cubes or mdc)")
+	fs.StringVar(&algo, "algo", "mdc-repair", "Meshing algorithm (mdc-repair, mdc or marching-cubes)")
 	fs.Float64Var(&timeSec, "time", 0.0, "Animation time in seconds")
 	fs.StringVar(&views, "views", "iso", "Cameras for the png target: presets or x,y,z directions, comma-separated")
 	fs.StringVar(&sizeStr, "size", "640x480", "One png panel's size as WxH pixels")

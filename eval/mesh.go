@@ -16,7 +16,7 @@ import (
 // The mesher settings Mesh takes when the caller names none: gsl compile's.
 const (
 	defaultMeshSubdivision = 9
-	defaultMeshAlgorithm   = "mdc"
+	defaultMeshAlgorithm   = "mdc-repair"
 )
 
 // MeshOptions is how Mesh meshes. The zero value is gsl compile's defaults over the box the field fills.
@@ -27,7 +27,7 @@ type MeshOptions struct {
 	// bounded (ReturnBox), else the box the field fills, found by sampling as gsl compile
 	// --bbox auto finds it, with defs applied.
 	Region *[6]float64
-	// Algorithm is "mdc" or "marching-cubes"; "" takes "mdc".
+	// Algorithm is "mdc-repair", "mdc" or "marching-cubes"; "" takes "mdc-repair".
 	Algorithm string
 	// Time is the animation time, in seconds, the field is meshed at.
 	Time float64
