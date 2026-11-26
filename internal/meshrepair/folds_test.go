@@ -136,3 +136,23 @@ func TestKeepApartLeavesTwoVerticesOffOnePoint(t *testing.T) {
 		t.Fatalf("vertex 2, sent to the point vertex 1 took, moved to %v", pts[2])
 	}
 }
+
+// TestFoldsReturnsTheMeshWhenNoPassHelps checks a mesh no pass improves comes back as it was given: a sphere whose
+// every triangle faces in, which moving vertices cannot turn round.
+func TestFoldsReturnsTheMeshWhenNoPassHelps(t *testing.T) {
+	verts, tris := sphereSTL(5, 2)
+	for i := range tris {
+		tris[i][1], tris[i][2] = tris[i][2], tris[i][1]
+	}
+	in := writeSTL(verts, tris)
+	out, stats, err := Folds(in, sphereField(5))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stats.BackwardBefore != len(tris) || stats.BackwardAfter != len(tris) || stats.Passes != 0 || stats.Moved != 0 {
+		t.Fatalf("an inside-out sphere was changed: %+v", stats)
+	}
+	if string(out) != string(in) {
+		t.Fatal("no pass helped, yet the mesh came back changed")
+	}
+}

@@ -28,11 +28,11 @@ type Field func(xs, ys, zs []float32) ([]Sample, error)
 
 // Stats is what Folds did.
 type Stats struct {
-	// Passes is how many times backward triangles were moved.
+	// Passes is the pass the repair ended on, the one that left the fewest backward triangles (0: the mesh as given).
 	Passes int
 	// BackwardBefore and BackwardAfter count the backward triangles in the mesh given and in the mesh returned.
 	BackwardBefore, BackwardAfter int
-	// Moved counts the distinct vertices moved over all passes.
+	// Moved counts the vertices whose place in the mesh returned differs from the mesh given.
 	Moved int
 }
 
@@ -231,7 +231,11 @@ func (r *repair) run(stats *Stats) error {
 	}
 	back := count()
 	stats.BackwardBefore = len(back)
-	moved := make(map[int32]bool)
+	// A pass may turn more triangles over before a later one rights them, so every pass is made and the repair ends
+	// on the one that left the fewest backward: the mesh as given, when none did better.
+	start := slices.Clone(r.verts)
+	best := slices.Clone(r.verts)
+	bestCount, bestPass := len(back), 0
 	for pass := 1; pass <= maxPasses && len(back) > 0; pass++ {
 		var order []int32
 		seen := make(map[int32]bool)
@@ -253,10 +257,8 @@ func (r *repair) run(stats *Stats) error {
 			return err
 		}
 		r.keepApart(order, pts)
-		before := make([]vec, len(order))
 		touched := make(map[int32]bool)
 		for k, v := range order {
-			before[k] = r.verts[v]
 			r.verts[v] = pts[k]
 			for _, ti := range r.trisAt(v) {
 				touched[ti] = true
@@ -269,25 +271,20 @@ func (r *repair) run(stats *Stats) error {
 		if err := r.classify(list, backward); err != nil {
 			return err
 		}
-		after := count()
-		if len(after) > len(back) {
-			// The pass turned more triangles over than it righted: undo it and stop.
-			for k, v := range order {
-				r.verts[v] = before[k]
-			}
-			if err := r.classify(list, backward); err != nil {
-				return err
-			}
-			break
+		back = count()
+		if len(back) < bestCount {
+			bestCount, bestPass = len(back), pass
+			copy(best, r.verts)
 		}
-		back = after
-		for _, v := range order {
-			moved[v] = true
-		}
-		stats.Passes = pass
 	}
-	stats.BackwardAfter = len(back)
-	stats.Moved = len(moved)
+	copy(r.verts, best)
+	stats.Passes = bestPass
+	stats.BackwardAfter = bestCount
+	for v := range r.verts {
+		if r.verts[v] != start[v] {
+			stats.Moved++
+		}
+	}
 	return nil
 }
 
