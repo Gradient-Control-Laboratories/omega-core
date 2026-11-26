@@ -373,7 +373,20 @@ func (s *evalScope) scopePackage() *program.Package {
 
 	files := make([]*program.PackageFile, len(s.pkg.Files))
 	for i, f := range s.pkg.Files {
-		cp := *f
+		cp := &program.PackageFile{
+			Path:             f.Path,
+			Source:           f.Source,
+			Imports:          f.Imports,
+			Returns:          f.Returns,
+			MeshImports:      f.MeshImports,
+			StepImports:      f.StepImports,
+			WarpImports:      f.WarpImports,
+			ColorReturns:     f.ColorReturns,
+			MaterialReturns:  f.MaterialReturns,
+			Annotations:      f.Annotations,
+			GradientReturns:  f.GradientReturns,
+			DisplacedReturns: f.DisplacedReturns,
+		}
 		if i == s.fileIdx {
 			cp.Assignments = activeAssigns
 			cp.FnTypes = activeFnTypes
@@ -400,7 +413,7 @@ func (s *evalScope) scopePackage() *program.Package {
 			cp.Assignments = sibAssigns
 			cp.FnTypes = sibFns
 		}
-		files[i] = &cp
+		files[i] = cp
 	}
 	return &program.Package{
 		Path:  s.pkg.Path,
