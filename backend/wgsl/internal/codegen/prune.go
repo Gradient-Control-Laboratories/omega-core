@@ -65,7 +65,10 @@ func (e *PruneGuardExpr) Codegen(ctx wgsl.CodegenContext) string {
 	d.featureUsed = true
 	block := d.currentScope().Block()
 	size := d.uniqueLocalName("gsl_featureSize")
-	weight := d.uniqueLocalName("gsl_featureWeight")
+	// Not the function's own name: a local of that name shadows the function
+	// for the rest of the block, and the next feature's call would then name
+	// the let, which WGSL cannot call.
+	weight := d.uniqueLocalName("gsl_featureW")
 	drawn := d.uniqueLocalName("gsl_feature")
 	block.Add(ir.NewLetStmt(size, "", e.size.Codegen(ctx), e.size.Reads()))
 	block.Add(ir.NewLetStmt(weight, "", fmt.Sprintf("gsl_featureWeight(%s)", size), []string{size}))

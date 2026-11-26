@@ -241,11 +241,11 @@ fn fastener_gcl_closure_hole(p: vec3<f32>, vector_zero: vec3<f32>, vector_dirZ: 
   let mouth = zTop;
   let mouthDepth = gsl_fastener_gcl_closure_hole_remap(vec3<f32>(0.0, 0.0, mouth - 0.01), vector_zero, vector_dirZ, bored, clear, zTop);
   let gsl_featureSize = -2.0 * mouthDepth;
-  let gsl_featureWeight = gsl_featureWeight(gsl_featureSize);
+  let gsl_featureW = gsl_featureWeight(gsl_featureSize);
   var gsl_feature = 100000.0;
-  if (gsl_featureWeight > 0.0) {
+  if (gsl_featureW > 0.0) {
     let stack = min(min(100000.0, drill_gcl_closure_bore(p, vector_zero, vector_dirZ, bored, 0.0, mouth)), drill_gcl_closure_thru(p, vector_zero, vector_dirZ, clear, mouth));
-    gsl_feature = stack + (1.0 - gsl_featureWeight) * 0.5 * gsl_featureSize;
+    gsl_feature = stack + (1.0 - gsl_featureW) * 0.5 * gsl_featureSize;
   }
   let cutAway = gsl_feature;
   return cutAway;
@@ -285,11 +285,11 @@ fn fastener_gcl_closure_hole_2(p: vec3<f32>, vector_zero: vec3<f32>, vector_dirZ
   let mouth = zTop;
   let mouthDepth = gsl_fastener_gcl_closure_hole_2_remap(vec3<f32>(0.0, 0.0, mouth - 0.01), vector_zero, vector_dirZ, depth, minor, zTop);
   let gsl_featureSize = -2.0 * mouthDepth;
-  let gsl_featureWeight = gsl_featureWeight(gsl_featureSize);
+  let gsl_featureW = gsl_featureWeight(gsl_featureSize);
   var gsl_feature = 100000.0;
-  if (gsl_featureWeight > 0.0) {
+  if (gsl_featureW > 0.0) {
     let stack = min(100000.0, drill_gcl_closure_blind(p, vector_zero, vector_dirZ, minor, depth, mouth));
-    gsl_feature = stack + (1.0 - gsl_featureWeight) * 0.5 * gsl_featureSize;
+    gsl_feature = stack + (1.0 - gsl_featureW) * 0.5 * gsl_featureSize;
   }
   let cutAway = gsl_feature;
   return cutAway;
