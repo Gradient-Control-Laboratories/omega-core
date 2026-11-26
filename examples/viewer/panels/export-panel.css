@@ -61,15 +61,11 @@
     cursor: pointer;
 }
 
-/* Detail with nothing to mesh (Omega Tape): shown, but out of play. */
-.export-detail.disabled,
-#stl-voxel-info.disabled {
-    opacity: 0.5;
-}
-
-.export-detail.disabled input[type="range"],
-.export-detail.disabled #stl-depth-label {
-    cursor: not-allowed;
+/* Detail, the mesher and Clean for a format with nothing to mesh (a tape, the
+ * web page, audio): hidden. The rows set their own display, which [hidden]
+ * alone does not beat. */
+.export-mesh[hidden] {
+    display: none;
 }
 
 /* A button the app shows but cannot run (no mesher it can use): kept so the
