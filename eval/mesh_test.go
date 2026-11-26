@@ -89,7 +89,7 @@ func reach(n glbNode) float64 {
 func TestMeshBall(t *testing.T) {
 	e := eval.New(&source.MockManager{}, nil)
 	var buf bytes.Buffer
-	r, err := e.Mesh(t.Context(), nil, meshBallDoc, "", &buf, eval.MeshOptions{Subdivision: 6})
+	r, err := e.Mesh(t.Context(), nil, meshBallDoc, "", &buf, eval.MeshOptions{Subdivision: 6, Algorithm: "mdc"})
 	require.NoError(t, err)
 
 	require.Len(t, r.Bodies, 1)
@@ -125,7 +125,7 @@ func TestMeshBall(t *testing.T) {
 func TestMeshAppliesDefs(t *testing.T) {
 	e := eval.New(&source.MockManager{}, nil)
 	var buf bytes.Buffer
-	r, err := e.Mesh(t.Context(), nil, meshBallDoc, "r = 10.0;", &buf, eval.MeshOptions{Subdivision: 6})
+	r, err := e.Mesh(t.Context(), nil, meshBallDoc, "r = 10.0;", &buf, eval.MeshOptions{Subdivision: 6, Algorithm: "mdc"})
 	require.NoError(t, err)
 	nodes := readGLBNodes(t, buf.Bytes())
 	require.Len(t, nodes, 1)
@@ -140,7 +140,7 @@ func TestMeshBodiesAndRegion(t *testing.T) {
 	e := eval.New(&source.MockManager{}, nil)
 	region := [6]float64{-20, -20, -20, 20, 20, 20}
 	var buf bytes.Buffer
-	r, err := e.Mesh(t.Context(), nil, doc, "", &buf, eval.MeshOptions{Subdivision: 6, Region: &region})
+	r, err := e.Mesh(t.Context(), nil, doc, "", &buf, eval.MeshOptions{Subdivision: 6, Region: &region, Algorithm: "mdc"})
 	require.NoError(t, err)
 	assert.Equal(t, region, r.Region)
 	require.Len(t, r.Bodies, 2)
@@ -163,4 +163,76 @@ func TestMeshNeedsAReturn(t *testing.T) {
 	var buf bytes.Buffer
 	_, err := e.Mesh(t.Context(), nil, "r = 5.0;\n", "", &buf, eval.MeshOptions{})
 	assert.Error(t, err)
+}
+
+// TestMeshBall with the folds repaired (mdc-repair).
+func TestMeshBall_MDCRepair(t *testing.T) {
+	e := eval.New(&source.MockManager{}, nil)
+	var buf bytes.Buffer
+	r, err := e.Mesh(t.Context(), nil, meshBallDoc, "", &buf, eval.MeshOptions{Subdivision: 6, Algorithm: "mdc-repair"})
+	require.NoError(t, err)
+
+	require.Len(t, r.Bodies, 1)
+	body := r.Bodies[0]
+	assert.Equal(t, "ball", body.Name)
+	assert.Equal(t, 1, body.Index)
+	assert.Equal(t, 0, body.OpenEdges)
+	assert.Equal(t, 0, body.NonManifoldEdges)
+	exact := 4 * math.Pi * 125 / 3
+	assert.True(t, math.Abs(body.VolumeMm3-exact) <= 0.02*exact, "mesh volume %g, want %g within 2%%", body.VolumeMm3, exact)
+	for k := 0; k < 3; k++ {
+		assert.True(t, r.Region[k] < -5 && r.Region[k+3] > 5, "the region used, %v, holds the ball", r.Region)
+	}
+
+	nodes := readGLBNodes(t, buf.Bytes())
+	require.Len(t, nodes, 1)
+	node := nodes[0]
+	assert.Equal(t, "ball", node.name)
+	assert.Equal(t, body.Vertices, len(node.positions)/3)
+	require.Equal(t, len(node.positions), len(node.normals), "a normal per vertex")
+	worst := 1.0
+	for i := 0; i+2 < len(node.positions); i += 3 {
+		px, py, pz := float64(node.positions[i]), float64(node.positions[i+1]), float64(node.positions[i+2])
+		nx, ny, nz := float64(node.normals[i]), float64(node.normals[i+1]), float64(node.normals[i+2])
+		length := math.Sqrt(nx*nx + ny*ny + nz*nz)
+		require.True(t, math.Abs(length-1) < 1e-4, "normal %d has length %g", i/3, length)
+		worst = math.Min(worst, (px*nx+py*ny+pz*nz)/math.Sqrt(px*px+py*py+pz*pz))
+	}
+	assert.True(t, worst > math.Cos(0.5*math.Pi/180), "every normal within half a degree of radial; the worst cosine is %g", worst)
+}
+
+// TestMeshAppliesDefs with the folds repaired (mdc-repair).
+func TestMeshAppliesDefs_MDCRepair(t *testing.T) {
+	e := eval.New(&source.MockManager{}, nil)
+	var buf bytes.Buffer
+	r, err := e.Mesh(t.Context(), nil, meshBallDoc, "r = 10.0;", &buf, eval.MeshOptions{Subdivision: 6, Algorithm: "mdc-repair"})
+	require.NoError(t, err)
+	nodes := readGLBNodes(t, buf.Bytes())
+	require.Len(t, nodes, 1)
+	assert.True(t, math.Abs(reach(nodes[0])-10) < 0.2, "the vertices reach %g, want 10", reach(nodes[0]))
+	exact := 4 * math.Pi * 1000 / 3
+	assert.True(t, math.Abs(r.Bodies[0].VolumeMm3-exact) <= 0.02*exact, "mesh volume %g, want %g", r.Bodies[0].VolumeMm3, exact)
+}
+
+// TestMeshBodiesAndRegion with the folds repaired (mdc-repair).
+func TestMeshBodiesAndRegion_MDCRepair(t *testing.T) {
+	doc := "@scene(40)\nball = length(p - [8, 0, 0]) - 5;\nblk = box([-14, -4, -4], [-4, 4, 4]);\nreturn ball, blk;\n"
+	e := eval.New(&source.MockManager{}, nil)
+	region := [6]float64{-20, -20, -20, 20, 20, 20}
+	var buf bytes.Buffer
+	r, err := e.Mesh(t.Context(), nil, doc, "", &buf, eval.MeshOptions{Subdivision: 6, Region: &region, Algorithm: "mdc-repair"})
+	require.NoError(t, err)
+	assert.Equal(t, region, r.Region)
+	require.Len(t, r.Bodies, 2)
+	assert.Equal(t, "ball", r.Bodies[0].Name)
+	assert.Equal(t, "blk", r.Bodies[1].Name)
+	assert.Equal(t, 2, r.Bodies[1].Index)
+	assert.True(t, math.Abs(r.Bodies[1].VolumeMm3-640) <= 0.03*640, "the block's mesh volume %g, want 640", r.Bodies[1].VolumeMm3)
+	nodes := readGLBNodes(t, buf.Bytes())
+	require.Len(t, nodes, 2)
+	assert.Equal(t, "ball", nodes[0].name)
+	assert.Equal(t, "blk", nodes[1].name)
+	for _, n := range nodes {
+		assert.Equal(t, len(n.positions), len(n.normals), "%s has a normal per vertex", n.name)
+	}
 }

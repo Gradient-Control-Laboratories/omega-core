@@ -994,10 +994,11 @@ export function initExportPanel(hooks) {
     const TAPE_NOT_MESHED = "A tape is the implicit field itself; nothing is meshed";
     const PAGE_NOT_MESHED = "A web page draws the implicit field itself; nothing is meshed";
     const AUDIO_NOT_MESHED = "Audio is the program's sound; nothing is meshed";
-    // The default is dual contouring: the server's where the host has one,
-    // the browser's otherwise, marching cubes only failing both.
+    // The default is dual contouring: the server's with its folds repaired
+    // where the host offers it, the server's plain otherwise, then the
+    // browser's, marching cubes only failing all of them.
     const pickDefaultMesher = () => {
-        const best = ['server', 'dc', 'mc'].map(mesherOption).find((o) => o && !o.disabled);
+        const best = ['server-dcr', 'server', 'dc', 'mc'].map(mesherOption).find((o) => o && !o.disabled);
         if (best) mesherSelect.value = best.value;
     };
     pickDefaultMesher();

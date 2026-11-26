@@ -61,7 +61,7 @@ func PrintUsage(w io.Writer) {
 	fmt.Fprintf(w, "        declared or inferred, when it is bounded; else the @scene box, an edge of\n")
 	fmt.Fprintf(w, "        its size centred on the origin, as the viewer frames it; else auto)\n")
 	fmt.Fprintf(w, "      --algo string\n")
-	fmt.Fprintf(w, "        Meshing algorithm (marching-cubes or mdc) (default \"mdc\")\n")
+	fmt.Fprintf(w, "        Meshing algorithm (mdc-repair, mdc or marching-cubes) (default \"mdc-repair\")\n")
 	fmt.Fprintf(w, "      --time float\n")
 	fmt.Fprintf(w, "        Animation time in seconds (default 0)\n")
 	fmt.Fprintf(w, "      --views string\n")

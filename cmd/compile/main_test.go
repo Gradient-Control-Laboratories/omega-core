@@ -87,7 +87,7 @@ func TestRun_STL(t *testing.T) {
 
 	outPath := filepath.Join(tempDir, "model.stl")
 	var stdout, stderr bytes.Buffer
-	err = cli.Run([]string{"-t", "stl", "--subdivision", "3", "-o", outPath, sourcePath}, nil, &stdout, &stderr)
+	err = cli.Run([]string{"-t", "stl", "--algo", "mdc", "--subdivision", "3", "-o", outPath, sourcePath}, nil, &stdout, &stderr)
 	require.NoError(t, err)
 
 	stlBytes, err := os.ReadFile(outPath)
@@ -155,4 +155,22 @@ func TestRun_InvalidFile(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	err := cli.Run([]string{"nonexistent_xyz.gsl"}, nil, &stdout, &stderr)
 	require.Error(t, err)
+}
+
+// TestRun_STL with the folds repaired (mdc-repair).
+func TestRun_STL_MDCRepair(t *testing.T) {
+	tempDir := t.TempDir()
+	sourcePath := filepath.Join(tempDir, "model.gsl")
+	err := os.WriteFile(sourcePath, []byte("return sqrt(p.x*p.x + p.y*p.y + p.z*p.z) - 1.0;\n"), 0644)
+	require.NoError(t, err)
+
+	outPath := filepath.Join(tempDir, "model.stl")
+	var stdout, stderr bytes.Buffer
+	err = cli.Run([]string{"-t", "stl", "--algo", "mdc-repair", "--subdivision", "3", "-o", outPath, sourcePath}, nil, &stdout, &stderr)
+	require.NoError(t, err)
+
+	stlBytes, err := os.ReadFile(outPath)
+	require.NoError(t, err)
+	// Binary STL must be at least 84 bytes (80 header + 4 triangle count)
+	assert.True(t, len(stlBytes) >= 84)
 }

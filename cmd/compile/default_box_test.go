@@ -23,7 +23,7 @@ func meshBounds(t *testing.T, source string) (int, [6]float64) {
 	require.NoError(t, os.WriteFile(path, []byte(source), 0644))
 	out := filepath.Join(dir, "part.stl")
 	var stdout, stderr bytes.Buffer
-	require.NoError(t, cli.Run([]string{"-t", "stl", "--subdivision", "5", "--no-meta", "-o", out, path}, nil,
+	require.NoError(t, cli.Run([]string{"-t", "stl", "--algo", "mdc", "--subdivision", "5", "--no-meta", "-o", out, path}, nil,
 		&stdout, &stderr), stderr.String())
 	data, err := os.ReadFile(out)
 	require.NoError(t, err)
@@ -90,4 +90,56 @@ func TestRun_Tape_StampsTheReturnedBox(t *testing.T) {
 	for k := range want {
 		assert.True(t, math.Abs(float64(tp.Bbox[k])-want[k]) < 1e-5, "bound %d: %g, want %g", k, tp.Bbox[k], want[k])
 	}
+}
+
+// meshBoundsRepaired is meshBounds with the folds repaired (mdc-repair).
+func meshBoundsRepaired(t *testing.T, source string) (int, [6]float64) {
+	t.Helper()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "part.gsl")
+	require.NoError(t, os.WriteFile(path, []byte(source), 0644))
+	out := filepath.Join(dir, "part.stl")
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, cli.Run([]string{"-t", "stl", "--algo", "mdc-repair", "--subdivision", "5", "--no-meta", "-o", out, path}, nil,
+		&stdout, &stderr), stderr.String())
+	data, err := os.ReadFile(out)
+	require.NoError(t, err)
+	return stlBounds(t, data)
+}
+
+// TestRun_STL_DefaultBoxIsTheScene with the folds repaired (mdc-repair).
+func TestRun_STL_DefaultBoxIsTheScene_MDCRepair(t *testing.T) {
+	n, box := meshBoundsRepaired(t, "@scene(30)\nball = remap(sphere(20), [p.x, p.y, p.z]);\nreturn ball;\n")
+	assert.True(t, n > 0)
+	for k := 0; k < 3; k++ {
+		assert.True(t, math.Abs(box[k]+15) < 0.05, "min %d: %g, want -15", k, box[k])
+		assert.True(t, math.Abs(box[k+3]-15) < 0.05, "max %d: %g, want 15", k, box[k+3])
+	}
+}
+
+// TestRun_STL_DefaultBoxWithoutASceneIsAuto with the folds repaired (mdc-repair).
+func TestRun_STL_DefaultBoxWithoutASceneIsAuto_MDCRepair(t *testing.T) {
+	n, box := meshBoundsRepaired(t, "ball = remap(sphere([100, 0, 0], 5), [p.x, p.y, p.z]);\nreturn ball;\n")
+	assert.True(t, n > 0)
+	want := [6]float64{95, -5, -5, 105, 5, 5}
+	for k := range want {
+		assert.True(t, math.Abs(box[k]-want[k]) < 0.05, "bound %d: %g, want %g", k, box[k], want[k])
+	}
+}
+
+// TestRun_STL_DefaultBoxIsTheReturnedBox with the folds repaired (mdc-repair).
+func TestRun_STL_DefaultBoxIsTheReturnedBox_MDCRepair(t *testing.T) {
+	n, box := meshBoundsRepaired(t, "@scene(30)\nplate = box([0, 0, 0], [40, 30, 5]);\nreturn plate;\n")
+	assert.True(t, n > 0)
+	want := [6]float64{0, 0, 0, 40, 30, 5}
+	for k := range want {
+		assert.True(t, math.Abs(box[k]-want[k]) < 1e-3, "bound %d: %g, want %g", k, box[k], want[k])
+	}
+}
+
+// TestRun_STL_DefaultBoxIsTheDeclaredBox with the folds repaired (mdc-repair).
+func TestRun_STL_DefaultBoxIsTheDeclaredBox_MDCRepair(t *testing.T) {
+	n, box := meshBoundsRepaired(t, "slab = box([-1, -1, 0], [1, 1, 0.0001]);\nslab.box = [[-1, -1, 0], [1, 1, 0.0001]];\nreturn slab;\n")
+	assert.True(t, n > 0)
+	assert.True(t, math.Abs(box[2]) < 1e-5 && math.Abs(box[5]-0.0001) < 1e-5, "z %g..%g, want 0..0.0001", box[2], box[5])
 }

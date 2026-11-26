@@ -111,7 +111,7 @@ func TestCompiler_AllBackends(t *testing.T) {
 	{
 		outPath := filepath.Join(tempDir, "out.stl")
 		var stdout, stderr bytes.Buffer
-		err := cli.Run([]string{"-t", "stl", "--subdivision", "3", "-o", outPath, sourcePath}, nil, &stdout, &stderr)
+		err := cli.Run([]string{"-t", "stl", "--algo", "mdc", "--subdivision", "3", "-o", outPath, sourcePath}, nil, &stdout, &stderr)
 		require.NoError(t, err)
 		data, err := os.ReadFile(outPath)
 		require.NoError(t, err)
@@ -141,4 +141,21 @@ func TestCompiler_AllBackends(t *testing.T) {
 		err = json.Unmarshal(data, &parsed)
 		require.NoError(t, err)
 	}
+}
+
+// TestCompiler_AllBackends' STL mesh with the folds repaired (mdc-repair).
+func TestCompiler_STL_MDCRepair(t *testing.T) {
+	tempDir := t.TempDir()
+	sourcePath := filepath.Join(tempDir, "sphere.gsl")
+	src := `return sqrt(p.x * p.x + p.y * p.y + p.z * p.z) - 1.2;`
+	err := os.WriteFile(sourcePath, []byte(src), 0644)
+	require.NoError(t, err)
+
+	outPath := filepath.Join(tempDir, "out.stl")
+	var stdout, stderr bytes.Buffer
+	err = cli.Run([]string{"-t", "stl", "--algo", "mdc-repair", "--subdivision", "3", "-o", outPath, sourcePath}, nil, &stdout, &stderr)
+	require.NoError(t, err)
+	data, err := os.ReadFile(outPath)
+	require.NoError(t, err)
+	assert.True(t, len(data) >= 84)
 }

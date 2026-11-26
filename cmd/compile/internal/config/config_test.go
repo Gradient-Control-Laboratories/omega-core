@@ -19,7 +19,7 @@ func TestParseFlags_Defaults(t *testing.T) {
 	assert.Equal(t, "foo.json", cfg.ResolveMetaPath())
 	assert.Equal(t, false, cfg.NoMeta)
 	assert.Equal(t, 9, cfg.Subdivision)
-	assert.Equal(t, "mdc", cfg.Algo)
+	assert.Equal(t, "mdc-repair", cfg.Algo)
 	assert.Equal(t, 0.0, cfg.Time)
 	assert.Equal(t, 1, cfg.OptLevel)
 	assert.Equal(t, false, cfg.Standalone)
