@@ -1,11 +1,13 @@
 // The inside of #stl-bounds-panel: the "Export" side panel. export-panel.js
 // injects this at init when the host's #stl-bounds-panel is empty, and drops
-// the meshers and the Omega Tape, Web page and Audio formats the host passes
+// the meshers and the Omega Tape, Omega Tape (JSON), Web page and Audio formats the host passes
 // no handler for (or
 // disables Server DC when `serverExportUnavailable` is set). 3MF is the default
 // format: it is a fifth to a sixth the size of the same triangles as binary STL.
 // GLB is the server's to write, so it is dropped without `serverFormats` and
-// disabled while a browser mesher is picked.
+// disabled while a browser mesher is picked. The rows marked export-mesh
+// (Detail, the mesher, Clean) are the meshing's: a format that is not meshed
+// (a tape, the web page, audio) hides them.
 export const EXPORT_PANEL_MARKUP = `
 <div id="stl-bounds-header">Export <span class="panel-close">&#x2715;</span></div>
 <div class="panel-body">
@@ -16,6 +18,7 @@ export const EXPORT_PANEL_MARKUP = `
             <option value="glb" title="One binary glTF, each body a node in its own color">GLB (color)</option>
             <option value="stl">STL</option>
             <option value="tape" title="The program's implicit field as an omega tape, for fidget; not meshed">Omega Tape</option>
+            <option value="tape-json" title="The same omega tape as indented JSON, to read or diff; not meshed">Omega Tape (JSON)</option>
             <option value="page" title="This viewer and the document as a folder of static web pages, zipped, for any web server; not meshed">Web page (.zip)</option>
             <option value="wav" title="The program's audio from time 0, rendered in this browser as it plays; not meshed">Audio (.wav)</option>
         </select>
@@ -24,13 +27,13 @@ export const EXPORT_PANEL_MARKUP = `
         <label for="export-seconds">Seconds</label>
         <input type="number" id="export-seconds" min="1" max="600" step="1" value="16">
     </div>
-    <div class="field-panel-row export-detail">
+    <div class="field-panel-row export-detail export-mesh">
         <label>Detail</label>
         <input type="range" id="stl-depth" min="3" max="12" value="9" step="1">
         <span id="stl-depth-label">9</span>
     </div>
-    <div id="stl-voxel-info"></div>
-    <div class="field-panel-row export-choice">
+    <div id="stl-voxel-info" class="export-mesh"></div>
+    <div class="field-panel-row export-choice export-mesh">
         <label for="export-mesher">Mesher</label>
         <select id="export-mesher">
             <option value="mc" title="Marching cubes in this browser, with the program's mesh booleans composed by Manifold">Browser MC</option>
@@ -40,7 +43,7 @@ export const EXPORT_PANEL_MARKUP = `
             <option value="server-mc" title="Marching cubes on the server">Server MC</option>
         </select>
     </div>
-    <div class="field-panel-row">
+    <div class="field-panel-row export-mesh">
         <label class="export-clean"><input type="checkbox" id="export-clean"> Clean (Manifold)</label>
     </div>
     <div class="stl-export-buttons">

@@ -14,9 +14,9 @@
 // each body an object in its own color, threemf.js; the default), GLB (one
 // binary glTF, each body a node in its own color; the server writes it, so
 // only for a server mesher with serverFormats), STL (one
-// file, or a zip of one per body), Omega Tape (the implicit field itself) or
-// Web page (the viewer and the document as static pages); Detail, the mesher
-// and Clean do not touch the last two. Mesher is where the meshing runs: Browser MC (above),
+// file, or a zip of one per body), Omega Tape (the implicit field itself, as
+// protobuf or as JSON) or Web page (the viewer and the document as static
+// pages); Detail, the mesher and Clean do not touch the last three. Mesher is where the meshing runs: Browser MC (above),
 // Browser DC (fidget-wasm on the server's tape) or Server DC.
 // Clean rebuilds each body through Manifold before it is written; a body
 // Manifold refuses goes out as meshed, and the notification names it. Every
@@ -87,6 +87,8 @@
 //                           Browser MC export resolves its imports.
 //   onSaveTape()            optional; tape export, the Omega Tape format.
 //                           Without it Omega Tape is not offered.
+//   onSaveTapeJson()        optional; the same tape saved as JSON, the Omega
+//                           Tape (JSON) format. Without it that is not offered.
 //   onExportPage()          optional; the Web page format: the app downloads
 //                           the viewer and the open document as static web
 //                           pages. Without it Web page is not offered.
@@ -855,7 +857,7 @@ let refreshControls = () => {};
 // which both need a tape from the server, when the server cannot make one, and
 // restores them when it can.
 export function setTapesAvailable(on) {
-    for (const [key, selector] of [['dc', '#export-mesher option[value="dc"]'], ['tape', '#export-format option[value="tape"]']]) {
+    for (const [key, selector] of [['dc', '#export-mesher option[value="dc"]'], ['tape', '#export-format option[value="tape"]'], ['tape-json', '#export-format option[value="tape-json"]']]) {
         const option = document.querySelector(selector);
         if (!option) continue;
         if (!tapeTitles.has(key)) tapeTitles.set(key, option.title);
@@ -978,10 +980,12 @@ export function initExportPanel(hooks) {
     if (!deps.onServerExport || !deps.serverMarchingCubes) mesherOption('server-mc').remove();
     if (!deps.onServerExport || !deps.serverFoldRepair) mesherOption('server-dcr').remove();
     if (!deps.onSaveTape) formatSelect.querySelector('option[value="tape"]').remove();
+    if (!deps.onSaveTapeJson) formatSelect.querySelector('option[value="tape-json"]')?.remove();
     if (!deps.onExportPage) formatSelect.querySelector('option[value="page"]')?.remove();
     if (!deps.onExportAudio) formatSelect.querySelector('option[value="wav"]')?.remove();
     setAudioAvailable(audioAvailable);
     const secondsRow = stlBoundsPanel.querySelector('.export-seconds');
+    const meshRows = stlBoundsPanel.querySelectorAll('.export-mesh');
     const secondsInput = document.getElementById('export-seconds');
     // GLB is written by the server, so only an app whose server writes the
     // format (serverFormats) offers it, and only for a server mesher.
@@ -991,9 +995,6 @@ export function initExportPanel(hooks) {
     const GLB_SERVER_ONLY = "GLB is written by the server: pick Server DC or Server MC";
     const SERVER_STL_ONLY = "This app's server export comes back as one STL";
     const SERVER_NOT_CLEANED = "This app's server export is not cleaned";
-    const TAPE_NOT_MESHED = "A tape is the implicit field itself; nothing is meshed";
-    const PAGE_NOT_MESHED = "A web page draws the implicit field itself; nothing is meshed";
-    const AUDIO_NOT_MESHED = "Audio is the program's sound; nothing is meshed";
     // The default is dual contouring: the server's with its folds repaired
     // where the host offers it, the server's plain otherwise, then the
     // browser's, marching cubes only failing all of them.
@@ -1012,13 +1013,13 @@ export function initExportPanel(hooks) {
             glbOption.title = serverWritesGlb ? GLB_TITLE : GLB_SERVER_ONLY;
         }
         if (formatSelect.selectedOptions[0]?.disabled) formatSelect.value = '3mf';
-        // A tape or a web page is not meshed, so Detail, the mesher and Clean
-        // have nothing to do.
+        // A tape, a web page or audio is not meshed, so Detail, the mesher and
+        // Clean have nothing to do: they are hidden.
         const page = formatSelect.value === 'page';
         const wav = formatSelect.value === 'wav';
-        const unmeshed = formatSelect.value === 'tape' || page || wav;
-        const NOT_MESHED = page ? PAGE_NOT_MESHED : wav ? AUDIO_NOT_MESHED : TAPE_NOT_MESHED;
+        const unmeshed = formatSelect.value === 'tape' || formatSelect.value === 'tape-json' || page || wav;
         if (secondsRow) secondsRow.hidden = !wav;
+        for (const row of meshRows) row.hidden = unmeshed;
         const onServer = SERVER_MESHERS.includes(mesherSelect.value);
         // A server export the app downloads itself is STL only, unless the
         // server writes the format (serverFormats); either way it is not cleaned.
@@ -1028,15 +1029,9 @@ export function initExportPanel(hooks) {
         if (stlOnly) formatSelect.value = 'stl';
         if (stlOnly || serverFormatted) cleanBox.checked = false;
         formatSelect.disabled = stlOnly;
-        stlDepthSlider.disabled = unmeshed;
-        stlDepthSlider.closest('.field-panel-row').classList.toggle('disabled', unmeshed);
-        stlDepthSlider.closest('.field-panel-row').title = unmeshed ? NOT_MESHED : '';
-        document.getElementById('stl-voxel-info').classList.toggle('disabled', unmeshed);
-        mesherSelect.disabled = unmeshed;
-        cleanBox.disabled = stlOnly || serverFormatted || unmeshed;
+        cleanBox.disabled = stlOnly || serverFormatted;
         formatSelect.title = stlOnly ? SERVER_STL_ONLY : '';
-        mesherSelect.title = unmeshed ? NOT_MESHED : '';
-        cleanBox.parentElement.title = stlOnly ? SERVER_STL_ONLY : serverFormatted ? SERVER_NOT_CLEANED : unmeshed ? NOT_MESHED
+        cleanBox.parentElement.title = stlOnly ? SERVER_STL_ONLY : serverFormatted ? SERVER_NOT_CLEANED
             : "Rebuild each body through Manifold: weld its vertices, drop degenerate triangles, close it as a 2-manifold";
         const none = unmeshed ? false : !mesherSelect.value || mesherSelect.selectedOptions[0]?.disabled;
         btnExport.classList.toggle('unavailable', none);
@@ -1049,6 +1044,7 @@ export function initExportPanel(hooks) {
     btnExport.addEventListener('click', async () => {
         if (btnExport.classList.contains('unavailable')) return;
         if (formatSelect.value === 'tape') return deps.onSaveTape();
+        if (formatSelect.value === 'tape-json') return deps.onSaveTapeJson();
         if (formatSelect.value === 'page') return deps.onExportPage();
         if (formatSelect.value === 'wav') {
             const seconds = parseFloat(secondsInput.value);

@@ -80,9 +80,10 @@ export async function renderLit(request) {
     };
 }
 
-// tape asks the server for request's document ({ id, clientId, source, appearance }) as an
+// tape asks the server for request's document ({ id, clientId, source, appearance, format }) as an
 // evaluation tape and answers its bytes, as a Uint8Array: every return of the document, and with
-// appearance each return's colour and material fields. The Fidget device draws from it.
+// appearance each return's colour and material fields. The Fidget device draws from it. format is
+// "binary" (the default, protobuf) or "json", the same tape written as JSON text.
 export async function tape(request) {
     const res = await fetch("/api/tape", {
         method: "POST",
