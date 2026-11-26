@@ -99,6 +99,17 @@ type Delegate struct {
 	// ToColorShapesWithPixelSize.
 	dispDrawn float64
 
+	// buildScale and reliefScale are what buildScale() and
+	// displacementScale() build as: how far a layered shape is moved by its
+	// layers' builds and by their relief. 0 unless a renderer or a displaced
+	// mesh (ToDisplacedTreesAtTime) says otherwise.
+	buildScale, reliefScale float64
+
+	// recordInTree keeps each return's layered distance
+	// (program.DisplacedReturns) for the caller; see
+	// BuildPackageDisplacedReturns.
+	recordInTree bool
+
 	// paramRequest names top-level declarations to build as input VARS
 	// rather than baked constants; paramTrees records the var tree built
 	// for each. See SetParamVars.

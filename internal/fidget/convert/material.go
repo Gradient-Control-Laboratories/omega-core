@@ -30,15 +30,19 @@ const (
 const (
 	displacementRow  = 2
 	displacementComp = 2
+	// buildComp is the volume row's fourth component: the part of the height
+	// that is film (material.withBuild).
+	buildComp = 3
 )
 
 // BuildPackageDisplacedReturns implements [build.DisplacedReturnsBuilder]: it
 // records each return's distance displaced inside its booleans, for the lit
-// renderer to march in place of its distance minus its material's height.
-// Meshing and export move no surface, so for them nothing is recorded.
+// renderer to march, or a displaced mesh to mesh, in place of its distance
+// minus its material's height. Plain meshing and export move no surface, so
+// for them nothing is recorded.
 func (cd *colorDelegate) BuildPackageDisplacedReturns(displacedExpressions []build.Expression) error {
 	d := cd.Delegate
-	if !d.pixelSizeInput {
+	if !d.recordInTree {
 		return nil
 	}
 	trees := make([]fidget.TreeIndex, len(displacedExpressions))

@@ -69,7 +69,7 @@ A request names its op and its document, by path ("source") or text ("code"):
   render     out, expr, views, width, height, light,   a PNG at out, as compile -t png draws it; expr defaults
              extent, time                              to the returns, each in its own colour
   mesh       out, region, subdivision, algorithm,      a .glb at out: a node per return, a normal per vertex from
-             time                                      the field's gradient; and each body's counts and volume
+             time, build, relief                       the field's gradient; and each body's counts and volume
   shader     target, outDir                            the field as a library a host's shader calls, in "wgsl" or
                                                        "glsl-es300": gsl_field and gsl_march, a uniform block
                                                        for time and the sliders, and its textures as files
@@ -79,7 +79,9 @@ A request names its op and its document, by path ("source") or text ("code"):
 "region" is [x0, y0, z0, x1, y1, z1] in mm.
 render's "views" is compile's --views ("iso,top,-1,1,0.6"), its size 640 by 480 unless named.
 mesh's "region" defaults to the box the field fills (compile's --bbox auto), "subdivision" to 9 and "algorithm"
-to "mdc" (or "marching-cubes"); the response's "region" is the box that was meshed.
+to "mdc" (or "marching-cubes"); the response's "region" is the box that was meshed. "build" and "relief" mesh each
+surface moved by its materials' builds and relief, as compile's --build and --relief; a region worked out for the
+part is then grown 3 mm, and the normals are the facets' average.
 shader's "code" has no entry point: a host adds its own, binds a buffer of "blockBytes" to "uniformBlock" and
 writes each of "uniforms" and "sliders" at its "offset", and loads each of "textures" from its "path" (raw texels,
 written under "outDir"). "region" is the box to march: the @scene box, or the box the field fills.
@@ -227,6 +229,8 @@ type request struct {
 	Time              float64               `json:"time"`
 	Subdivision       int                   `json:"subdivision"`
 	Algorithm         string                `json:"algorithm"`
+	Build             bool                  `json:"build"`
+	Relief            bool                  `json:"relief"`
 	Target            string                `json:"target"`
 	OutDir            string                `json:"outDir"`
 }
@@ -668,7 +672,8 @@ func meshFile(ctx context.Context, e *eval.Evaluator, code string, req *request)
 	default:
 		return nil, malformedf("algorithm %q: mdc or marching-cubes", req.Algorithm)
 	}
-	opt := eval.MeshOptions{Subdivision: req.Subdivision, Algorithm: req.Algorithm, Time: req.Time}
+	opt := eval.MeshOptions{Subdivision: req.Subdivision, Algorithm: req.Algorithm, Time: req.Time,
+		Build: req.Build, Relief: req.Relief}
 	if req.Region != nil {
 		box, err := checkRegion(*req.Region)
 		if err != nil {

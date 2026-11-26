@@ -836,14 +836,11 @@ type litPixelSize struct {
 // A shape whose material comes from a shape inside it, displaced before the
 // booleans that use it (convert.ColorShape.InTree), is marched on that field
 // instead: its heights are already in it, layer by layer.
+//
+// The renderer draws every build and every relief in full, so the shape moves
+// by build and relief both at 1 (convert.DisplacedTree), which is d - h.
 func litDisplaced(s convert.ColorShape) fidget.TreeIndex {
-	if s.HasInTree {
-		return s.InTree
-	}
-	if !s.HasMaterial || !s.Displaced {
-		return s.Tree
-	}
-	return fidget.Sub(s.Tree, s.Material[litMatVolume][2])
+	return convert.DisplacedTree(s, 1, 1)
 }
 
 // litAppearance looks up the surface colour and material at each point, given

@@ -31,6 +31,11 @@ type MeshOptions struct {
 	Algorithm string
 	// Time is the animation time, in seconds, the field is meshed at.
 	Time float64
+	// Build and Relief mesh each surface moved by its materials' builds and by their relief
+	// (mesh.WithDisplacement). A box worked out for the part is grown by mesh.DisplacementMargin for them; a
+	// Region is meshed as given. Normals are then the facets' average, as the point query that supplies
+	// gradients evaluates the field as built.
+	Build, Relief bool
 }
 
 // MeshBody is one body of a mesh and what its triangles say of it.
@@ -104,10 +109,15 @@ func (e *Evaluator) Mesh(ctx context.Context, manifest map[string]string, code, 
 	for k := range box {
 		box[k] = float32(region[k])
 	}
+	displaced := opt.Build || opt.Relief
+	if displaced && opt.Region == nil {
+		// A box worked out for the part holds its field as built; the displaced surfaces stand out of it.
+		box = mesh.GrowBox(box, mesh.DisplacementMargin)
+	}
 
 	bodies, err := e.meshBodies(ctx, manifest, code, defs, exprs,
 		mesh.WithSubdivision(subdivision), mesh.WithAlgorithm(algorithm), mesh.WithTime(opt.Time), mesh.WithBbox(box),
-		mesh.WithBboxPadCells(padCells))
+		mesh.WithBboxPadCells(padCells), mesh.WithDisplacement(opt.Build, opt.Relief))
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +144,7 @@ func (e *Evaluator) Mesh(ctx context.Context, manifest map[string]string, code, 
 		slot.VolumeMm3 = stats.SignedVolume
 
 		var gradients [][3]float32
-		if opt.Time == 0 && body.Index >= 1 && body.Index <= len(exprs) {
+		if opt.Time == 0 && !displaced && body.Index >= 1 && body.Index <= len(exprs) {
 			points := make([][3]float64, stats.Vertices)
 			for v := range points {
 				points[v] = [3]float64{float64(positions[3*v]), float64(positions[3*v+1]), float64(positions[3*v+2])}

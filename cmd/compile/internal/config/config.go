@@ -59,6 +59,8 @@ type Config struct {
 	Extent     float64
 	Light      bool
 	Algo       string
+	Build      bool // the mesh targets': each surface moved by its materials' builds
+	Relief     bool // and by their relief
 	Time       float64
 	OptLevel   int
 	Standalone bool
@@ -144,6 +146,8 @@ func ParseFlags(args []string) (*Config, error) {
 		subdivision int
 		bboxStr     string
 		algo        string
+		build       bool
+		relief      bool
 		timeSec     float64
 		optLevel    int
 		standalone  bool
@@ -177,6 +181,8 @@ func ParseFlags(args []string) (*Config, error) {
 	fs.IntVar(&subdivision, "subdivision", 9, "Octree subdivision depth for mesh polygonization")
 	fs.StringVar(&bboxStr, "bbox", "", "Bounding box as minX,minY,minZ,maxX,maxY,maxZ, or auto: the box the field fills (default: the @scene box, or auto without one)")
 	fs.StringVar(&algo, "algo", "mdc", "Meshing algorithm (marching-cubes or mdc)")
+	fs.BoolVar(&build, "build", false, "Mesh each surface moved out by its materials' builds")
+	fs.BoolVar(&relief, "relief", false, "Mesh each surface moved by its materials' relief")
 	fs.Float64Var(&timeSec, "time", 0.0, "Animation time in seconds")
 	fs.StringVar(&views, "views", "iso", "Cameras for the png target: presets or x,y,z directions, comma-separated")
 	fs.StringVar(&sizeStr, "size", "640x480", "One png panel's size as WxH pixels")
@@ -262,6 +268,8 @@ func ParseFlags(args []string) (*Config, error) {
 		Extent:      extent,
 		Light:       light,
 		Algo:        algo,
+		Build:       build,
+		Relief:      relief,
 		Time:        timeSec,
 		OptLevel:    optLevel,
 		Standalone:  standalone,

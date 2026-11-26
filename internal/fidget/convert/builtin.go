@@ -61,11 +61,14 @@ func (d *Delegate) BuildBuiltinCall(
 		// Meshing and export move no surface by its material's height; the
 		// lit renderer moves every one by all of it (dispDrawn).
 		return d.BuildValue(op, d.dispDrawn)
-	case program.DisplacementScale, program.BuildScale:
-		// The same weight, asked while marching: the lit renderer moves every
-		// surface by all of its relief and all of its build, meshing and
-		// export by neither.
-		return d.BuildValue(op, d.dispDrawn)
+	case program.DisplacementScale:
+		// How far a layered shape is moved by its relief: all of it in the lit
+		// renderer, none in meshing and export unless a displaced mesh asks
+		// for it (ToDisplacedTreesAtTime).
+		return d.BuildValue(op, d.reliefScale)
+	case program.BuildScale:
+		// The same for the film a coat stands proud by.
+		return d.BuildValue(op, d.buildScale)
 	case "length":
 		return d.builtinLength(op, args[0].(*TreeNode))
 	case "bvhSdf":

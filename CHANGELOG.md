@@ -41,6 +41,17 @@ from `1.0.0` onward).
 
 ### Added
 
+- **Meshes with their coats on (`--build`, `--relief`)**: `gsl compile -t stl|3mf|glb --build --relief`,
+  `gsl eval`'s mesh op (`"build"`, `"relief"`), the server's mesh request (`build`, `relief`) and
+  `mesh.WithDisplacement` mesh each surface moved by its materials' builds (the film a coat stands
+  proud by, which is size) and by their relief (the marks on it, which are texture), as the CPU
+  renderer draws them. Coats laid inside a return move by their layered distance; a return whose
+  own material has a height moves as a whole. A box worked out for the part (its `.box`,
+  `--bbox auto`, its `@scene`) is grown 3 mm for them, since those boxes hold the field as built;
+  a box named outright is meshed as given. Off, the default, the mesh is byte for byte what it was.
+  A 20 mm cube with a 0.1 mm build meshes to 8241.94 mm³ against 8241.89 exact. Relief finer than a
+  cell is not resolved, and on noisy relief (a wood's pores) `mdc` can throw vertices off the
+  surface; `marching-cubes` stays on it. `displacementDrawn()` follows the relief flag.
 - Migrated GSL compiler architecture, language specification/migration, golden verification, and
   stdlib tolerance-table documentation from `omega-release/doc/` into `doc/`, synced
   `doc/gsl_lang_spec_future.md`, extracted `doc/roadmap.md` from `README.md`, and documented Go

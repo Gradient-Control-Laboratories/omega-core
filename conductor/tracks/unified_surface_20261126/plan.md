@@ -84,21 +84,29 @@ New tests are added only once the owner agrees them.
 
 ## Phase 3: Flags for Export and Section Mode (D2)
 
-- [ ] Task: The whole-return split, moved from Phase 2: a return with no layers is displaced by the
-      renderers themselves (`gsl-displace.js`'s `gsl_displaceSample`, `litrender.go`'s
-      `litDisplaced`), and by nothing when meshed; each moves by `buildScale() * build +
-      displacementScale() * relief`, and the mesher learns to displace it at all
-- [ ] Task: Mesh export: separate build and relief flags on `compile -t stl|glb|3mf`, on `gsl eval`'s
-      mesh op and on the server's mesh endpoints, off by default
+- [ ] Task: The whole-return split, moved from Phase 2. Go side done: a return with no layers moves by
+      `build * b + relief * (h - b)` (`convert.DisplacedTree`), which the mesher and `litrender.go`'s
+      `litDisplaced` share; with the scales equal it is `d - s * h` exactly. Left: the viewer's
+      `gsl_displaceSample` and `gsl_sdShapeDisplaced` (with the section toggles below)
+- [x] Task: Mesh export (proposal agreed 2026-11-26): `--build` and `--relief` on
+      `compile -t stl|glb|3mf`, `"build"` and `"relief"` on `gsl eval`'s mesh op and the server's mesh
+      request, `mesh.WithDisplacement`, off by default. `convert.ToDisplacedTreesAtTime` builds each
+      return's layered distance with `buildScale()` and `displacementScale()` at the flags. A box worked
+      out for the part (`.box`, `--bbox auto`, `@scene`) is grown `mesh.DisplacementMargin`, 3 mm (owner's
+      choice): those boxes hold the field as built, and MDC left the coated stick open where its coats
+      crossed the box. A box named outright is meshed as given. `gsl eval` meshes displaced take the
+      facets' normals. Relief is shipped documented (owner's choice): finer than a cell it aliases, and on
+      the oak's noisy relief MDC throws vertices about 11 mm off the surface; `--build --relief` on the
+      whole stick at subdivision 7 did not finish in 45 CPU-minutes. Both are open, with the MDC work (#170)
 - [ ] Task: Section mode: separate build and relief toggles in the viewer's section view, whose
       shaders now show the field as built ([gsl-displace.js](../../../examples/viewer/render/gsl-displace.js))
-- [ ] Task: Decide how `displacementDrawn()` follows the relief flag. Fidget convert sets it and
-      `displacementScale()` from one field (`dispDrawn`, 1 only on the lit renderer's colour path), and
-      the stdlib swaps relief for roughness or a painted depth where it is 0 (`material.hiddenShare`,
-      `texture.reliefRoughness`, `printed`, the painted thread and knurl depth in `thread` and
-      `shaft`). With relief drawn into a mesh or a section, those swaps must turn off
-- [ ] Task: A coated block exports with its volume grown by its area times its build, to the mesher's
-      tolerance
+- [x] Task: `displacementDrawn()` follows the relief flag (owner's choice): convert keeps it apart from
+      `buildScale()` and `displacementScale()`, and a displaced mesh sets it to the relief flag
+- [x] Task: New tests (owner's go), `backend/mesh/displacement_test.go`: a 20 mm cube with a 0.1 mm
+      build, laid as a coat and as its own material, meshes to the offset cube's volume (8241.94 mm³
+      against 8241.89) with `--build` and to the bare cube's with relief alone; with both flags off the
+      mesh is byte for byte the one meshed without the option. The coated oak stick: flags off byte-
+      identical to before; `--build` closed, 327,050 mm³ against 317,136 bare
 - [ ] Task: Phase Verification & Checkpoint
 
 ## Phase 4: A Condition for Evaluation
