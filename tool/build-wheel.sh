@@ -40,6 +40,9 @@ cd "${ROOT_DIR}"
 echo "==> render as a static library (target/static)"
 cargo rustc -p render --release --crate-type staticlib --target-dir "${ROOT_DIR}/target/static" \
   -- --print native-static-libs
+echo "==> manifold glue as a static library (target/static)"
+cargo rustc -p manifold_glue --release --crate-type staticlib --target-dir "${ROOT_DIR}/target/static" \
+  -- --print native-static-libs
 
 mkdir -p "${OUT}"
 "${SCRIPT_DIR}/build-stdlib.sh"
