@@ -347,7 +347,10 @@ func (d *Delegate) BuildBuiltinCall(
 	// keeps that value through the shading that follows the march, so a
 	// layer's colour switch sees the scale its surface was drawn with; meshing,
 	// bounds and probes never set it.
-	if builtin.Name == program.DisplacementScale {
+	//
+	// buildScale() -> f32 reads the same var: the viewer moves a coat's build
+	// by its displacement knob, as it moves the relief.
+	if builtin.Name == program.DisplacementScale || builtin.Name == program.BuildScale {
 		d.dispScaleUsed = true
 		return wgsl.NewOpaqueExpr(op, wgsl.TypeF32, build.PrecedenceHighest, dispScaleVar, dispScaleVar), nil
 	}

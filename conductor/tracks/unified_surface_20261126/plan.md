@@ -61,20 +61,33 @@ New tests are added only once the owner agrees them.
 
 ## Phase 2: Build Apart from Relief
 
-- [ ] Task: Proposal: the builtin that scales build (working name `buildScale()`), with
-      `displacementScale()` scaling relief alone, and what each is in each context (viewer, CPU
-      renderer, meshing, eval)
-- [ ] Task: The displaced distance as
-      `under(v) - buildScale() * incBuild(v) - displacementScale() * incRelief(v)`, in
-      [layers.go](../../../internal/assembler/property/layers.go) and
-      [layers_height.go](../../../internal/assembler/property/layers_height.go), with build and
-      relief read from the same packed surface read (one REMAP, as #162 requires)
-- [ ] Task: WGSL codegen, fidget convert and `litrender.go` follow
-- [ ] Task: With both scales at today's values, every golden is unchanged (check 1)
-- [ ] Task: Phase Verification & Checkpoint
+- [x] Task: Proposal (agreed 2026-11-26): `buildScale()` is new and `displacementScale()` scales
+      relief alone. In the viewer's march both are the displacement knob (the build follows the knob,
+      as it did); in the CPU renderer both are 1; in meshing, export, the section view and eval both
+      are 0 until Phases 3 and 4
+- [x] Task: The displaced distance as
+      `under(v) - buildScale() * incb(v) - displacementScale() * (inc(v) - incb(v))` in
+      [layers.go](../../../internal/assembler/property/layers.go). Each coat's build is read beside
+      its height, and reads at a surface point pack four to a remap, so a coat's pair shares one and
+      *Material - Layered Paint* keeps its two remaps. The layer switch's thickness and "drawn" tests
+      read both scales
+- [x] Task: WGSL codegen and fidget convert lower `buildScale()` as they lower `displacementScale()`.
+      The whole-return split (the renderers' own `d - h` for a return with no layers:
+      `gsl-displace.js`, `litrender.go`) moved to Phase 3, where the scales first differ (owner's
+      choice)
+- [x] Task: With both scales at today's values, every value is unchanged. Two WGSL goldens change in
+      text only, regenerated on the owner's go: *Material - Layered Paint* (+2,401 B) and
+      *Material - Machined* (+5,165 B). `TestSanityCheck`'s exception list gains `buildScale`, the
+      one-line test edit #162 made for `displacementScale` (owner's go). The full suite otherwise
+      matches the Phase 0 baseline
+- [x] Task: Phase Verification & Checkpoint
 
 ## Phase 3: Flags for Export and Section Mode (D2)
 
+- [ ] Task: The whole-return split, moved from Phase 2: a return with no layers is displaced by the
+      renderers themselves (`gsl-displace.js`'s `gsl_displaceSample`, `litrender.go`'s
+      `litDisplaced`), and by nothing when meshed; each moves by `buildScale() * build +
+      displacementScale() * relief`, and the mesher learns to displace it at all
 - [ ] Task: Mesh export: separate build and relief flags on `compile -t stl|glb|3mf`, on `gsl eval`'s
       mesh op and on the server's mesh endpoints, off by default
 - [ ] Task: Section mode: separate build and relief toggles in the viewer's section view, whose

@@ -169,6 +169,15 @@ from `1.0.0` onward).
 
 ### Changed
 
+- **A layer's build and its relief are moved apart (`buildScale`, `displacementScale`)**: a coat's
+  displaced distance is now `under - buildScale() * build - displacementScale() * relief`, where it
+  was `under - displacementScale() * height`. A build is size and a relief is texture, so the export
+  and section flags and the evaluation conditions of the Unified Surface Model track can move one
+  without the other. `buildScale()` is new; `displacementScale()` now scales relief only. Both are
+  the displacement knob in the viewer, 1 in the CPU renderer and 0 elsewhere, so nothing drawn
+  changes. Reads at a surface point pack four to a remap, so a coat's height and build share one and
+  the march evaluates as many remaps as before; the *Material - Layered Paint* and
+  *Material - Machined* WGSL goldens change in text only.
 - `coating.levelled` (and every coating laid over a base through it: `clearCoat`, `galvanized`, and
   the `powderCoat`, `wrinkleCoat`, `sandCoat` and `hammertone` overloads) adds the film's `build` to
   the base's build and levels only the base's relief, where it used to level the base's whole

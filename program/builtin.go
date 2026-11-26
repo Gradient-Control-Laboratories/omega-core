@@ -113,9 +113,13 @@ var builtinsMap = map[string]*BuiltinType{
 	// material is being evaluated for display, 0 to 1; 0 anywhere else.
 	DisplacementDrawn: {Name: DisplacementDrawn, MinArgs: 0, MaxArgs: 0},
 
-	// How far surfaces are being moved by their materials' heights where a
+	// How far surfaces are being moved by their materials' relief where a
 	// distance is being evaluated for display, 0 to 1; 0 anywhere else.
 	DisplacementScale: {Name: DisplacementScale, MinArgs: 0, MaxArgs: 0},
+
+	// How far surfaces are being moved by their materials' builds where a
+	// distance is being evaluated for display, 0 to 1; 0 anywhere else.
+	BuildScale: {Name: BuildScale, MinArgs: 0, MaxArgs: 0},
 
 	"uiPoint":     {Name: "uiPoint", MinArgs: 1, MaxArgs: 1},
 	"uiTransform": {Name: "uiTransform", MinArgs: 1, MaxArgs: 1},

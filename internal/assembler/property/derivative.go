@@ -591,7 +591,7 @@ func (dd *derivDomain) Builtin(name string, args []Value) (Value, error) {
 		return dual{value, call("dot", call(gradient, primals...), ds[0].tangent)}, nil
 	case "fract":
 		return dual{call("fract", ds[0].primal), ds[0].tangent}, nil
-	case program.PixelSize, program.DisplacementDrawn, program.DisplacementScale:
+	case program.PixelSize, program.DisplacementDrawn, program.DisplacementScale, program.BuildScale:
 		// The pixel footprint at the shading point, or the displacement drawn
 		// or being drawn there: a per-pixel constant, not a function of p, so
 		// its tangent is zero.

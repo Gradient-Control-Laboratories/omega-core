@@ -71,11 +71,19 @@ const PixelSize = "pixelSize"
 const DisplacementDrawn = "displacementDrawn"
 
 // DisplacementScale is how far a renderer is moving surfaces by their
-// materials' heights where a distance is being evaluated for display, 0 to 1:
-// the march's displacement knob in the viewer, 1 in the lit renderer, 0 for
-// meshing, export and every other evaluation. The displaced returns
-// (property.LowerDisplacedReturns) scale each layer's height by it.
+// materials' relief (displacement less build) where a distance is being
+// evaluated for display, 0 to 1: the march's displacement knob in the viewer,
+// 1 in the lit renderer, 0 for meshing, export and every other evaluation.
+// The displaced returns (property.LowerDisplacedReturns) scale each layer's
+// relief by it, and its build by BuildScale.
 const DisplacementScale = "displacementScale"
+
+// BuildScale is how far a renderer is moving surfaces by their materials'
+// builds, the film a coat stands proud of the surface beneath by, 0 to 1. A
+// build is size and a relief is texture, so the two are scaled apart: the
+// viewer's march moves both by its displacement knob, the lit renderer by 1,
+// and meshing, export and every other evaluation by 0.
+const BuildScale = "buildScale"
 
 func IsReservedWord(name string) bool {
 	return reservedMap[name]
@@ -177,6 +185,7 @@ var reservedMap = map[string]bool{
 	// --- Built-in Displacement Functions ---
 	DisplacementDrawn: true,
 	DisplacementScale: true,
+	BuildScale:        true,
 
 	// --- Built-in UI Functions ---
 	"uiPoint":     true,
