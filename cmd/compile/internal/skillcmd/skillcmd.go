@@ -16,7 +16,7 @@ import (
 const usage = `Usage of compile skill (gsl skill):
   gsl skill                  the language, the built-ins, how packages are referenced and one line per package
   gsl skill PACKAGE...       those packages' full documentation, by import path or prefix (material/bulk/wood or wood)
-  gsl skill --all            everything: the language and every package in full (about 470 KB)
+  gsl skill --all            everything: the language and every package in full
 
 Flags:
       --all

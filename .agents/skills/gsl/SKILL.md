@@ -1,5 +1,5 @@
 ---
-name: gsl-authoring
+name: gsl
 description: Author and verify GSL (.gsl) geometry files from the command line — evaluate expressions, box shapes, measure certified clearances, prove non-interference, and project points onto surfaces. Use whenever writing or editing .gsl documents and before declaring any spatial relationship (touching, clearing, containing) correct.
 ---
 

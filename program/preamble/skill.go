@@ -7,5 +7,6 @@ func GSLAuthorSkill(includeDomains ...string) string {
 	return GSLDescription +
 		"\n\n" + PrimitiveAndBuiltinDescriptiveText() +
 		"\n\n" + LibrariesDescriptiveText(includeDomains...) +
-		"\n\n" + ReservedWordsDescriptiveText()
+		"\n\n" + ReservedWordsDescriptiveText() +
+		"\n\n" + CommonPitfalls
 }
