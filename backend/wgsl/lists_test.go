@@ -1,4 +1,4 @@
-package assembler_test
+package wgsl_test
 
 import (
 	"strings"
