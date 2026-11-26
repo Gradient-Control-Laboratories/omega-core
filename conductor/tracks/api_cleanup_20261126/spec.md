@@ -1,0 +1,145 @@
+# Specification: GSL API Cleanup
+
+## 1. Why
+
+A review of the GSL API and the documentation `gsl skill` generates for models (2026-11-26) found names
+that say the same thing several ways, leftovers kept beside their replacements, two spinodoid builtins
+that draw one field, and a render API split into eight entry points. The documentation and error
+fixes it called for are in their own pull requests: #172 (doc fixes and a test that builds every
+documentation example), #175 (tiered `gsl skill`, member lookup and search) and #174 (did-you-mean
+errors, the remap point check, inline `@range`, and two ways a function silently vanished). This track
+covers the rest: changes that break existing documents or add features, each its own pull request.
+
+Every decision below was made item by item in that review. Where a name or an interpretation is still
+open, the decision says so (section 9).
+
+## 2. Constraints
+
+- **Breaking changes ship with a rewrite.** A renamed or removed stdlib name gets a `gsl fix` rewrite
+  ([cmd/fix](../../../cmd/fix)) in the same pull request, and keeps an alias for one release where the
+  decision says so.
+- **omega-dm copies stdlib functions.** The omega-dm repository keeps a running list of the stdlib
+  functions it copies into its own libraries. Before any rename or removal lands, its uses and copies are
+  inventoried (plan, phase 0), and each change says how omega-dm follows: update its copies, or pin the
+  old name.
+- **Goldens move only with approval.** Stdlib edits move the example goldens under `testdata/`. A change
+  that moves one shows what moved and why, and the golden is updated only once that is approved.
+
+## 3. Decisions: Names
+
+| #   | Area              | Today                                                                                                                                                                                                  | Decision                                                                                                                                                                                        |
+| :-- | :---------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| N1  | `map` package     | Shares its name with the `map(fn, list)` built-in: `map.checker(...)` and `map(f, xs)` sit side by side                                                                                                | Rename the package (name open, e.g. `domain`); `gsl fix` rewrites `map.` member references                                                                                                      |
+| N2  | `matrix.scale`    | `matrix.scale(s, m)` multiplies a matrix by a number, `matrix.scaling(factors)` builds a scale matrix, `transform.scale(shape, factor)` scales a shape                                                  | Rename `matrix.scale` (name open, e.g. `multiplyScalar`), so "scale" means scaling geometry                                                                                                     |
+| N3  | Axis rotation     | `transform.rotate(shape, origin, direction, angle)`, `map.rotateAxis(v, axisOrigin, axisDir, angle)`, `matrix.rotation(axis_origin, axis_direction, angle)`; `map.rotateXY(v, ang)`                    | One vocabulary: `(…, axisOrigin, axisDirection, angle)` everywhere, `ang` becomes `angle`. Parameter names only; nothing breaks                                                                 |
+| N4  | Lattice size      | The cell size is `sizeIn` (beam), `size` (foam), `cellSize` (lattice, honeycomb), `period` (tpms, spinodoid), `spacing`, `cell`                                                                        | `cellSize` everywhere, except `period` in tpms and spinodoid, where the field's wavelength is the real meaning. Parameter names only                                                             |
+| N5  | Honeycomb names   | `honeycomb.squareHoneycomb`, `hexagonalHoneycomb`, … repeat the package name; `foam.cubic` does not                                                                                                    | Drop the repetition (`honeycomb.square`, `honeycomb.hexagonal`, …); `gsl fix` rewrites                                                                                                          |
+| N6  | Three `bcc`s      | `lattice.bcc`, `beam.bcc`, `foam.bcc`                                                                                                                                                                  | Document in each how it differs (struts, walls, the shared base), or retire `lattice.bcc` if it duplicates `beam.bcc`                                                                           |
+| N7  | Box corners       | `box(pointA, pointB)`, `cropToBox(shape, low, high)`, `extrude(profile, low, high)`, and `.box = [lo, hi]`                                                                                             | `min`, `max` for every pair of box corners. Parameter names only. `min`/`max` already work as parameter names; #174 makes every built-in name work                                              |
+| N8  | Placement words   | `center`, `origin` (cone), `point` (plane), `vertex` (paraboloid)                                                                                                                                      | Keep `origin`, `point` and `vertex` where they are the right geometric word                                                                                                                     |
+| N9  | Centred overloads | `torus` and `octahedron` exist only at the origin; `sphere` has both forms                                                                                                                             | Add `torus(center, majorRadius, minorRadius)` and `octahedron(center, size)`                                                                                                                    |
+| N10 | Boolean names     | Most booleans take `d1, d2`; the exact ones take `field1, field2`. Unions and intersections can be passed as an operator (`unionRound(2)`); differences cannot                                          | One parameter name across all booleans (which one is open). Add difference operator forms (`differenceRound(r)` and the rest), taking a list `[target, tool, …]`: the target minus the rest      |
+
+## 4. Decisions: Removals
+
+| #   | Today                                                                                                                                                                         | Decision                                                                                                                                                   |
+| :-- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R1  | `vector.addVector`, `addScalar`, `subtractVector`, `multiplyComponents`, `divideComponents`, `negate`: no `.gsl` outside the package calls them, and the operators already work per component | Remove; `gsl fix` rewrites a caller to the operator form. `subtractScalarFrom`, `subtractFromScalar`, `multiplyScalar`, `divideByScalar` and `divideScalarBy` are the same kind and were not reviewed (section 9) |
+| R2  | The boolean solver's internals (`edgeProjectFrom`, `edgeSlideFrom`, `edgeVerdict`, `edgeNewtonStep`, `cornerStepFrom`, `cornerVerdict`, `cornerNewtonStep`) carry `///` docs, so they are public API, though only `booleans.gsl` calls them | Drop their `///` docs. No code change; they leave the docs and `gsl skill`                                                                                  |
+| R3  | `map.gsl` documents two functions against lattice's "legacy `planesEven`", which no longer exists                                                                             | Reword the two doc lines                                                                                                                                   |
+| R4  | `program/preamble` filters libraries by a product `Domain`; no library sets one                                                                                               | Remove the filter and its `includeDomains` parameters. Keep `SourceLibraryDescriptiveText` and `PackageSummary`: another repository may call them           |
+
+## 5. Decisions: Matrices
+
+The matrix package writes each operation once per size (`transpose2/3/4`, `identity3/4`, `determinant2/3/4`,
+`inverse2/3/4` and `inverse`, `rotation`/`rotation3`, `scaling`/`scaling3`), with no rule for which size goes
+unsuffixed. Collections now hold any number of elements, so the operations can be written once:
+
+- `transpose`, `multiply`, `identity(n)`, `determinant` and `inverse` work on a matrix of any size.
+- The sized names stay as aliases for one release, then `gsl fix` rewrites them.
+- The constructors (`rotation`, `scaling`, `translation`, `rotationEuler`, `compose`) stay 4x4, with their
+  3x3 variants.
+
+Shown in pure GSL during the review, and constant-folded: a transpose of any shape (a `map` over the rows of a
+`map` over the columns), a product of any compatible sizes (a `map` over b's columns, each a `reduce` of
+`a[k] * x`: 2x3 times 3x2 gives the right 2x2), and a list's length at compile time
+(`reduce(0, (acc, x) { return acc + 1; }, list)`). Not shown: determinant and inverse of any size, which need
+recursion on the size or an unrolled elimination. The plan prototypes them before anything is renamed.
+
+## 6. Decisions: Spinodoids
+
+**Two fields, both everywhere.** `gaborSpinodoid` is hodge's field: the reference, and the expensive one.
+`fastGaborSpinodoid` is the lattice field, built for the GPU. Each is evaluated by both the CPU (fidget) and the
+GPU (WGSL) backends. No other versions exist. In the library, `gabor*` draws hodge's field and `fastGabor*`
+the lattice field.
+
+Today both names bake the lattice table in every backend: WGSL codegen and fidget conversion set `call.Fast =
+true` for either name. Hodge's field exists only on the CPU side
+([program/noise/spinodoid/hodge.go](../../../program/noise/spinodoid/hodge.go) and `spinodoid/hodge.rs` in the
+fidget tape core), parity-tested against `hodge/spinodoid.py` in the el_explorer repository, for a tape reader
+that swaps it in from the payload's arguments. el_explorer is in the same state. The missing piece is a WGSL
+hodge field.
+
+**The table's box is given, not inferred.** A graded field (scale or orientation varying with `p`) bakes a
+bounded kernel table today, whose box comes from the imported geometry's bounds or the `@scene` cube, and falls
+back to a periodic table, which repeats the grading, when neither is known. Decision: the box and the scale are
+specified in the call, never taken from the scene or inferred. The periodic layout of a stationary field
+(constant scale and orientation) and the bounded layout stay; they are how a table is stored, not versions of
+the field. See section 9 on "scale".
+
+## 7. Decisions: Go SDK
+
+**Options are `With…`.** [AGENTS.md](../../../AGENTS.md) says entry points take `With…` functional options.
+Today:
+
+| Package       | Not `With…`                                                                                                                                       | Two names for one option                                                    |
+| :------------ | :------------------------------------------------------------------------------------------------------------------------------------------------ | :-------------------------------------------------------------------------- |
+| `assembler`   | `Parser`, `SourcePaths`, `SourceManager`, `GeometryResolver`, `WarpResolver`, `FoldWarpFieldToZero`, `DisableMeshSlotFolding`, `DisableDeadcodeRemoval`, `ExtractUI`, `ExtractMeshPlan` |                                                                             |
+| `backend/mesh` | `MeshOracles`, `VdbOracles`                                                                                                                      | `Progress`/`WithProgress`, `Subdivision`/`WithSubdivision`, `Bbox`/`WithBbox`, `Algorithm`/`WithAlgorithm`, `Time`/`WithTime` |
+| `backend/tape` | `Bbox`, `MeshOracles`, `VdbOracles`, `LevelSets`                                                                                                 | `Progress`/`WithProgress`                                                   |
+| `backend/wgsl` | `Standalone`                                                                                                                                     |                                                                             |
+
+Decision: every option is named `With…`. A bare name stays for one release, marked `Deprecated`, then goes.
+omega-core's own callers move in the same pull request.
+
+**A CPU fidget render with colour.** The viewer's Fidget device draws a coloured frame in the browser:
+fidget-wgpu, compiled to wasm, renders each return as voxels, merges the images keeping the nearest hit
+tagged with its return, evaluates each return's colour tapes and its sixteen material tapes at its hits, adds
+SSAO, and lights the result with the standard frame's own shading
+([examples/viewer/render/fidget-gpu.js](../../../examples/viewer/render/fidget-gpu.js), over
+[internal/fidget/internal/wgpu-gbuf](../../../internal/fidget/internal/wgpu-gbuf)). Decision: the same on the CPU,
+as an option of the normal render. `LitOptions.Device` is `"trace"` (today's sphere tracer, the default) or
+`"fidget"`: fidget's CPU voxel render per return, the same merge and appearance passes, then `RenderLit`'s Go
+shading, which already matches the viewer. `gsl compile --device fidget` and `/api/render-lit` pass it.
+
+`eval.Render` and `eval.RenderFramed` are fidget's own image render: a PNG and GLSL of the union of the returns,
+with no colour or material, and a debug `log.Printf` of the codegen JSON. Nothing in omega-core outside `eval`
+calls them. They are retired once the fidget device lands and no other repository is found calling them.
+
+## 8. Decisions: The Language Spec
+
+The generated description (`program/preamble`) is the language's source of truth; it is what `gsl skill`, the
+Help panel and the documentation test read. [doc/gsl_lang_spec_current.md](../../../doc/gsl_lang_spec_current.md)
+is hand-written and has drifted from it. What the description lacks moves into it, and the spec is cut down to
+the compiler's internals (passes, lowering, protobufs), pointing at `gsl skill` for the language. `@values` stays
+reserved and undocumented in `gsl skill`: it is designed in
+[doc/gsl_lang_spec_future.md](../../../doc/gsl_lang_spec_future.md) but not built.
+
+## 9. Open
+
+- **Names to choose:** the `map` package's new name (N1), `matrix.scale`'s (N2), and the booleans' parameter
+  name (N10).
+- **Five vector helpers** (R1): `subtractScalarFrom`, `subtractFromScalar`, `multiplyScalar`, `divideByScalar`,
+  `divideScalarBy`. Same question as the six; not reviewed.
+- **"Scale" in the spinodoid decision** (section 6): whether it means the wavelength multiplier the call
+  already takes as a driver, or the table's site spacing.
+- **`RenderLit`'s six wrappers** (`RenderLitSized`, `RenderLitSizedView`, `RenderLitSizedViewRadiance`,
+  `RenderLitLinear`, `RenderLitWithLinear`) beside `RenderLit(prog, LitOptions)`: not decided.
+- **Two messages** left by #174: the `atan2` reserved-word error suggests `atan2_` rather than `atan(y, x)`;
+  and once #174 merges, the docs can say a parameter may take a built-in's name.
+
+## 10. Not in This Track
+
+- The documentation and error fixes: #172, #175, #174.
+- Lists: a vector added to a list of vectors, and `min`/`max` over a single list. A compiler change, its own
+  pull request.
