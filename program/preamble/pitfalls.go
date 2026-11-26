@@ -1,8 +1,8 @@
 package preamble
 
 // CommonPitfalls targets failure modes we've seen models trip on repeatedly.
-// It closes the GSL author skill (GSLSkillIndex, GSLAuthorSkill) and is
-// appended to the chat system message ahead of the user prompt. Kept here —
+// It closes the skill index (GSLSkillIndex) and is appended to the chat
+// system message ahead of the user prompt. Kept here —
 // not in GSLDescription — so it ships only to the model and not to users via
 // the in-app Language Guide (which renders GSLDescription).
 //
