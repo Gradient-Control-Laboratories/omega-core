@@ -1,4 +1,4 @@
-package preamble_test
+package skillcmd
 
 import (
 	"regexp"
