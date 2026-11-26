@@ -80,7 +80,7 @@ func SliceDocument(
 	if len(bodyNames) == 0 {
 		bodyNames = nil
 	}
-	return &MeshExportPlan{Root: root, BodyNames: bodyNames}, ctx.subtrees, nil
+	return &MeshExportPlan{Root: root, BodyNames: bodyNames, MeshOps: ctx.meshOps}, ctx.subtrees, nil
 }
 
 type sliceCtx struct {
@@ -91,6 +91,8 @@ type sliceCtx struct {
 	pendingLeaves []*pendingSdfLeaf
 	subtrees      []SdfSubtree
 	getImport     program.GetImportFunc
+	// meshOps is set once the slicer carves out a mesh placement or a mesh boolean.
+	meshOps bool
 }
 
 type pendingSdfLeaf struct {
@@ -123,8 +125,10 @@ func (c *sliceCtx) sliceOperand(op *program.Operand) (*MeshPlanNode, error) {
 		if fc.Reference != nil && fc.Reference.Prefix == "" {
 			switch fc.Reference.Name {
 			case "meshUnion", "meshIntersect", "meshDifference":
+				c.meshOps = true
 				return c.sliceMeshCSG(target, fc)
 			case "mesh":
+				c.meshOps = true
 				return c.sliceMeshLiteral(target, fc)
 			}
 		}

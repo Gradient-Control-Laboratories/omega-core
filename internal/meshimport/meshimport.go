@@ -149,6 +149,28 @@ func Resolve(prog *program.Program, slots []meshslots.Import, find Finder) ([]Us
 	return uses, nil
 }
 
+// Slot reads the mesh slot index imports, as a mesh(index, ...) placement in a mesh plan reads it: the STL its
+// importMesh declaration names, found by find. slots is the assembler's table for the expression-form imports
+// (assembler.Result.Slots). A slot an importStep fills is an error: only STL files load here.
+func Slot(prog *program.Program, slots []meshslots.Import, find Finder, index int) (*Asset, error) {
+	decl, ok := declarations(prog, slots)[index]
+	if !ok {
+		return nil, fmt.Errorf("mesh(%d): no importMesh declares slot %d", index, index)
+	}
+	if decl.kind != "mesh" {
+		return nil, fmt.Errorf("mesh(%d): slot %d is %s %q; only importMesh .stl files load here",
+			index, index, "import"+strings.ToUpper(decl.kind[:1])+decl.kind[1:], decl.path)
+	}
+	if find == nil {
+		return nil, fmt.Errorf("mesh(%d): importMesh %q: no folder to find it in", index, decl.path)
+	}
+	data, err := find(decl.pkgPath, decl.path)
+	if err != nil {
+		return nil, fmt.Errorf("mesh(%d): importMesh %q: %w", index, decl.path, err)
+	}
+	return parse(decl.path, data)
+}
+
 // declarations maps each slot to the file it imports: numbered declarations
 // in every package, then the expression-form table.
 func declarations(prog *program.Program, slots []meshslots.Import) map[int]declared {

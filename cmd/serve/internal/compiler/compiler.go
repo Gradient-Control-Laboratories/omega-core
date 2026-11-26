@@ -2,6 +2,8 @@ package compiler
 
 import (
 	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/meshplan"
+	"github.com/Gradient-Control-Laboratories/omega-core/assembler/meshslots"
 	"github.com/Gradient-Control-Laboratories/omega-core/assembler/variation"
 	"github.com/Gradient-Control-Laboratories/omega-core/backend/mesh"
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/compile"
@@ -29,23 +31,40 @@ type MeshRequest struct {
 
 // Mesh assembles the GSL source and evaluates a binary STL mesh using the Fidget/Manifold mesh backend.
 func Mesh(req MeshRequest, sourcePaths []string, progressFn compile.ProgressFunc) ([]byte, error) {
-	prog, meshOpts, uses, err := meshSetup(req, sourcePaths, progressFn)
+	job, err := meshSetup(req, sourcePaths, progressFn)
 	if err != nil {
 		return nil, err
 	}
-	return withImportedMeshes(uses, func() ([]byte, error) {
-		return mesh.Mesh(prog, meshOpts...)
+	return withImportedMeshes(job.uses, func() ([]byte, error) {
+		return mesh.Mesh(job.prog, job.opts...)
 	})
 }
 
-// MeshBodies is Mesh with each top-level return meshed as its own body (mesh.MeshBodies).
+// MeshBodies is Mesh with each top-level return meshed as its own body (mesh.MeshBodies). A document whose
+// returns place imported meshes (mesh) or combine parts with mesh booleans (meshUnion, meshIntersect,
+// meshDifference) is meshed by its mesh plan instead, part by part and composed with Manifold
+// (mesh.MeshPlanBodies), as the viewer's browser export composes it.
 func MeshBodies(req MeshRequest, sourcePaths []string, progressFn compile.ProgressFunc) ([]mesh.Body, error) {
-	prog, meshOpts, uses, err := meshSetup(req, sourcePaths, progressFn)
+	job, err := meshSetup(req, sourcePaths, progressFn)
 	if err != nil {
 		return nil, err
 	}
-	return withImportedMeshes(uses, func() ([]mesh.Body, error) {
-		return mesh.MeshBodies(prog, meshOpts...)
+	plan, subtrees, err := meshplan.SliceDocument(job.prog, "leaf-", req.Source)
+	if err != nil || !mesh.PlanComposes(plan) {
+		// A plan the slicer cannot make, or one every body of which is a single field, is meshed as before.
+		return withImportedMeshes(job.uses, func() ([]mesh.Body, error) {
+			return mesh.MeshBodies(job.prog, job.opts...)
+		})
+	}
+	assets := func(index int) ([]float32, error) {
+		asset, err := meshimport.Slot(job.prog, job.slots, req.Meshes, index)
+		if err != nil {
+			return nil, err
+		}
+		return asset.Vertices, nil
+	}
+	return withImportedMeshes(job.uses, func() ([]mesh.Body, error) {
+		return mesh.MeshPlanBodies(job.prog, plan, subtrees, assets, job.opts...)
 	})
 }
 
@@ -67,12 +86,21 @@ func withImportedMeshes[T any](uses []meshimport.Use, meshFn func() (T, error)) 
 	return meshFn()
 }
 
+// meshJob is what meshSetup made of a request: the program, the mesher options, the imported meshes its distance
+// builtins read, and the assembler's table of expression-form imports.
+type meshJob struct {
+	prog  *program.Program
+	opts  []mesh.Option
+	uses  []meshimport.Use
+	slots []meshslots.Import
+}
+
 // meshSetup assembles req's source, resolves the meshes it imports (from
 // req.Meshes), and builds the mesher options it asks for.
-func meshSetup(req MeshRequest, sourcePaths []string, progressFn compile.ProgressFunc) (*program.Program, []mesh.Option, []meshimport.Use, error) {
+func meshSetup(req MeshRequest, sourcePaths []string, progressFn compile.ProgressFunc) (*meshJob, error) {
 	asmRes, err := assembler.Assemble([]string{req.Source}, compile.AssemblerOptions(sourcePaths, progressFn)...)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 	prog := asmRes.Program
 	if len(asmRes.AudioReturns) > 0 {
@@ -81,10 +109,10 @@ func meshSetup(req MeshRequest, sourcePaths []string, progressFn compile.Progres
 	var uses []meshimport.Use
 	if meshimport.References(prog) {
 		if req.Meshes == nil {
-			return nil, nil, nil, compile.ErrNoMeshFolder
+			return nil, compile.ErrNoMeshFolder
 		}
 		if uses, err = meshimport.Resolve(prog, asmRes.Slots, req.Meshes); err != nil {
-			return nil, nil, nil, err
+			return nil, err
 		}
 	}
 
@@ -114,5 +142,5 @@ func meshSetup(req MeshRequest, sourcePaths []string, progressFn compile.Progres
 		}))
 	}
 
-	return prog, meshOpts, uses, nil
+	return &meshJob{prog: prog, opts: meshOpts, uses: uses, slots: asmRes.Slots}, nil
 }
