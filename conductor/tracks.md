@@ -29,5 +29,9 @@
   *Link: [index.md](./tracks/api_cleanup_20261126/index.md)*
 
 ---
+- [ ] **Track: Unified Surface Model (material, coating, tolerance)**
+  *Link: [index.md](./tracks/unified_surface_20261126/index.md)*
+
+---
 - [ ] **Track: Backlog**
   *Link: [index.md](./tracks/backlog_20261110/index.md)*
