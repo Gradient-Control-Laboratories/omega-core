@@ -660,6 +660,37 @@ async function exportPage() {
     }
 }
 
+// The Omega Tape formats: the document's tape as the server makes it, saved as <name>.tape, or with
+// format "json" as <name>.tape.json. Like `compile -t tape` it carries the field alone, without each
+// return's colour and material fields.
+async function saveTape(format) {
+    const source = getGslSourceForServer();
+    if (!source || source.trim() === "") {
+        showNotification(true, "Nothing to export");
+        return false;
+    }
+    const json = format === "json";
+    showNotification(false, json ? "Exporting tape (JSON)..." : "Exporting tape...", true);
+    try {
+        const bytes = await host.tape({ id: `tape-${++tapeCount}`, clientId, source, format });
+        const fileName = (currentExampleName || "model.gsl").replace(/\.gsl$/i, "") + (json ? ".tape.json" : ".tape");
+        const url = URL.createObjectURL(new Blob([bytes], { type: json ? "application/json" : "application/octet-stream" }));
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showNotification(false, `Exported ${fileName}`);
+        return true;
+    } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        showError(`Export failed: ${msg}`, false, true);
+        return false;
+    }
+}
+
 // ── Progress Events from the Host ──
 
 function handleProgressEvent(ev) {
@@ -984,6 +1015,8 @@ if (host.editable) initExportPanel({
     serverMarchingCubes: true,
     serverFoldRepair: true,
     serverFormats: true,
+    onSaveTape: () => saveTape(),
+    onSaveTapeJson: () => saveTape("json"),
     onExportPage: exportPage,
     onExportAudio: exportAudio,
 });

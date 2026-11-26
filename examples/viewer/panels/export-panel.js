@@ -14,9 +14,9 @@
 // each body an object in its own color, threemf.js; the default), GLB (one
 // binary glTF, each body a node in its own color; the server writes it, so
 // only for a server mesher with serverFormats), STL (one
-// file, or a zip of one per body), Omega Tape (the implicit field itself) or
-// Web page (the viewer and the document as static pages); Detail, the mesher
-// and Clean do not touch the last two. Mesher is where the meshing runs: Browser MC (above),
+// file, or a zip of one per body), Omega Tape (the implicit field itself, as
+// protobuf or as JSON) or Web page (the viewer and the document as static
+// pages); Detail, the mesher and Clean do not touch the last three. Mesher is where the meshing runs: Browser MC (above),
 // Browser DC (fidget-wasm on the server's tape) or Server DC.
 // Clean rebuilds each body through Manifold before it is written; a body
 // Manifold refuses goes out as meshed, and the notification names it. Every
@@ -87,6 +87,8 @@
 //                           Browser MC export resolves its imports.
 //   onSaveTape()            optional; tape export, the Omega Tape format.
 //                           Without it Omega Tape is not offered.
+//   onSaveTapeJson()        optional; the same tape saved as JSON, the Omega
+//                           Tape (JSON) format. Without it that is not offered.
 //   onExportPage()          optional; the Web page format: the app downloads
 //                           the viewer and the open document as static web
 //                           pages. Without it Web page is not offered.
@@ -855,7 +857,7 @@ let refreshControls = () => {};
 // which both need a tape from the server, when the server cannot make one, and
 // restores them when it can.
 export function setTapesAvailable(on) {
-    for (const [key, selector] of [['dc', '#export-mesher option[value="dc"]'], ['tape', '#export-format option[value="tape"]']]) {
+    for (const [key, selector] of [['dc', '#export-mesher option[value="dc"]'], ['tape', '#export-format option[value="tape"]'], ['tape-json', '#export-format option[value="tape-json"]']]) {
         const option = document.querySelector(selector);
         if (!option) continue;
         if (!tapeTitles.has(key)) tapeTitles.set(key, option.title);
@@ -978,6 +980,7 @@ export function initExportPanel(hooks) {
     if (!deps.onServerExport || !deps.serverMarchingCubes) mesherOption('server-mc').remove();
     if (!deps.onServerExport || !deps.serverFoldRepair) mesherOption('server-dcr').remove();
     if (!deps.onSaveTape) formatSelect.querySelector('option[value="tape"]').remove();
+    if (!deps.onSaveTapeJson) formatSelect.querySelector('option[value="tape-json"]')?.remove();
     if (!deps.onExportPage) formatSelect.querySelector('option[value="page"]')?.remove();
     if (!deps.onExportAudio) formatSelect.querySelector('option[value="wav"]')?.remove();
     setAudioAvailable(audioAvailable);
@@ -1016,7 +1019,7 @@ export function initExportPanel(hooks) {
         // have nothing to do.
         const page = formatSelect.value === 'page';
         const wav = formatSelect.value === 'wav';
-        const unmeshed = formatSelect.value === 'tape' || page || wav;
+        const unmeshed = formatSelect.value === 'tape' || formatSelect.value === 'tape-json' || page || wav;
         const NOT_MESHED = page ? PAGE_NOT_MESHED : wav ? AUDIO_NOT_MESHED : TAPE_NOT_MESHED;
         if (secondsRow) secondsRow.hidden = !wav;
         const onServer = SERVER_MESHERS.includes(mesherSelect.value);
@@ -1049,6 +1052,7 @@ export function initExportPanel(hooks) {
     btnExport.addEventListener('click', async () => {
         if (btnExport.classList.contains('unavailable')) return;
         if (formatSelect.value === 'tape') return deps.onSaveTape();
+        if (formatSelect.value === 'tape-json') return deps.onSaveTapeJson();
         if (formatSelect.value === 'page') return deps.onExportPage();
         if (formatSelect.value === 'wav') {
             const seconds = parseFloat(secondsInput.value);
