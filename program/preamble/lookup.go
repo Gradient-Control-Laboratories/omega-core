@@ -46,7 +46,7 @@ func Lookup(name string) (string, error) {
 		}
 	}
 	if len(docs) == 0 {
-		return "", fmt.Errorf("no package, built-in group or member named %q: `gsl skill --grep %s` searches names and docs", name, name)
+		return "", fmt.Errorf("no library, built-in group or member named %q: `gsl skill --grep %s` searches names and docs", name, name)
 	}
 	return strings.Join(docs, "\n"), nil
 }
