@@ -138,7 +138,39 @@ reserved and undocumented in `gsl skill`: it is designed in
 - **Two messages** left by #174: the `atan2` reserved-word error suggests `atan2_` rather than `atan(y, x)`;
   and once #174 merges, the docs can say a parameter may take a built-in's name.
 
-## 10. Not in This Track
+## 10. omega-dm Inventory
+
+Taken read-only from omega-dm at `784bf8937` (2026-11-26): its 101 tracked `.gsl` files and its Go imports of
+omega-core. Its running list of copied functions was not found in the repository, so copies, if any, are not
+covered here. Only names this track changes are listed.
+
+**GSL** (all in `common/web/example`):
+
+| Change | omega-dm uses | Follows by |
+| :----- | :------------ | :--------- |
+| N1 `map` package | 12 calls in 9 files: `triangleWave` ×3, `rotateZX` ×3, `checkerXY` ×3, `rotateXY`, `patternRectangularXY`, `patternPolarXY` | The `gsl fix` rewrite, run over its examples |
+| N5 honeycomb names | 7 calls, all in `Honeycomb Lattice Gallery.gsl` | The `gsl fix` rewrite |
+| N6 three `bcc`s | `beam.bcc` and `foam.bcc`, one gallery each; no `lattice.bcc` | Nothing, unless `beam.bcc` or `foam.bcc` changes |
+| N3, N7 parameter names | `transform.rotate`, `map.rotateXY`, called positionally | Nothing |
+| N9 centred `torus` | `torus` ×4 and its own `torus(t)` in `Violin.gsl` | Nothing: the new overload takes three arguments |
+| R1, R2, matrices, spinodoids | No calls | Nothing |
+
+`map.rotateZX`, which omega-dm calls three times, has no `///` doc, so it is missing from `gsl skill`; so are
+`map.rotateYZ` and `map.eulerAngles`. The `map` rename should document them, or say why not.
+
+**Go** (imports of `gradientcontrol.com/omega/core/...`):
+
+| Change | omega-dm uses | Follows by |
+| :----- | :------------ | :--------- |
+| `With…` options | `assembler.SourcePaths` ×13, `SourceManager` ×5, `ExtractMeshPlan` ×5, `GeometryResolver` ×4, `DisableDeadcodeRemoval` ×2, `ExtractUI` ×1; `mesh.Subdivision`, `mesh.Bbox`, `mesh.Algorithm` ×1 each | The deprecated aliases keep it building for a release; it moves within that release |
+| Retire `eval.Render` | One call, `agent/fidget/internal/agent/render.go` | Moves to `RenderLit` with the fidget device before `Render` goes |
+| R4 preamble `Domain` | Passes domains: `GSLAuthorSkill(chatCtx.GSLDomain...)`, and `LibrariesDescriptiveText(domain...)` twice | R4 keeps the variadic parameters, ignored and marked `Deprecated`, or omega-dm drops the arguments first |
+| Kept exports | `SourceLibraryDescriptiveText` ×2, `CommonPitfalls`, `PrimitiveAndBuiltinDescriptiveText`, `ReservedWordsDescriptiveText`, `GSLDescription` | Nothing; R4 keeps them |
+
+omega's chat builds its system message from `preamble.GSLAuthorSkill(...)`, every library in full (about 550 KB),
+then appends `CommonPitfalls`. It does not use the tiered `gsl skill` index (#175).
+
+## 11. Not in This Track
 
 - The documentation and error fixes: #172, #175, #174.
 - Lists: a vector added to a list of vectors, and `min`/`max` over a single list. A compiler change, its own

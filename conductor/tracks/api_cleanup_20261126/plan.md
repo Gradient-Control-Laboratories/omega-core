@@ -20,8 +20,9 @@ golden stops for approval before the golden is updated.
 
 ## Phase 0: Before Anything Breaks
 
-- [ ] Task: Inventory omega-dm
-  - [ ] Every stdlib name omega-dm calls, and every function it has copied, from its running list and its sources
+- [~] Task: Inventory omega-dm ([spec section 10](./spec.md#10-omega-dm-inventory))
+  - [x] Every stdlib name and omega-core Go API this track changes that omega-dm calls
+  - [ ] The functions it has copied: its running list was not found in the repository
   - [ ] For each name a goal below renames or removes: update omega-dm's copy, or pin the old name
 - [ ] Task: Choose the open names (spec section 9): the `map` package's, `matrix.scale`'s, the booleans' parameter
 
