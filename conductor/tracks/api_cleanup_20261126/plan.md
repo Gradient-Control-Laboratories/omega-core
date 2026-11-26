@@ -39,7 +39,7 @@ golden stops for approval before the golden is updated.
 
 - [ ] Goal: The `map` package's new name (N1), with its `gsl fix` rewrite
 - [ ] Goal: Honeycomb names (N5) and the three `bcc`s (N6), with rewrites
-- [ ] Goal: `matrix.scale` (N2) and the vector helpers (R1), with rewrites
+- [ ] Goal: `matrix.scale` (N2), with its rewrite and the lowering updated; hide the lowering targets (R1)
 - [ ] Goal: Centred `torus` and `octahedron` (N9); difference operator forms (N10)
   - [ ] A test per new form; the documentation examples still build
 
