@@ -25,5 +25,9 @@
   *Link: [index.md](./tracks/shaft_modeling_20261118/index.md)*
 
 ---
+- [ ] **Track: GSL API Cleanup**
+  *Link: [index.md](./tracks/api_cleanup_20261126/index.md)*
+
+---
 - [ ] **Track: Backlog**
   *Link: [index.md](./tracks/backlog_20261110/index.md)*
