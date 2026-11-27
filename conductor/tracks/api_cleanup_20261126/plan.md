@@ -36,9 +36,11 @@ golden stops for approval before the golden is updated.
   - [x] The documentation tests pass. Generated WGSL and assembled output keep parameter names, so 33 WGSL
         goldens and the `sphere_gears_text` assembled and rebuild goldens moved; a token-aligned check
         showed every change is one of the renames
-- [ ] Goal: Hide and reword (R2, R3, R4)
-  - [ ] Drop the solver internals' `///`; reword the `planesEven` lines; remove the preamble `Domain` filter
-  - [ ] Check: `gsl skill builtin` no longer lists the internals
+- [x] Goal: Hide and reword (R2, R3, R4)
+  - [x] Drop the solver internals' `///` (now `//`); reword the `planesEven` lines; remove the preamble
+        `Domain` filter and `PkgInfo.Domain`. The four functions keep their variadic argument, ignored and
+        documented as going, so omega-dm's calls still build
+  - [x] Check: `gsl skill builtin` no longer lists the internals
 
 ## Phase 2: Stdlib Renames and Removals
 

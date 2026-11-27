@@ -8,6 +8,13 @@ import (
 	gsllibs "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
 )
 
+// librariesLead opens the library docs, full or indexed.
+const librariesLead = "**Call these rather than writing the same code yourself.** " +
+	"The library's versions are SDF-correct, consistently named, and " +
+	"tested. If you need a helper the library doesn't provide, name it " +
+	"in the library's style (e.g. `cylinderHelical`, not `helicalCyl`) " +
+	"so it composes cleanly with the rest.\n\n"
+
 // LibrariesDescriptiveText scans every embedded GSL library, extracts each
 // top-level declaration along with any leading /// doc block, and emits a
 // markdown section for the AI preamble. Authors get a single source of
@@ -39,27 +46,9 @@ import (
 // Indented declarations (function bodies) and stray `//` lines outside
 // sections are skipped; they're either internal or pure visual structure.
 //
-// includeDomains selects which product-specific libraries to document: a
-// library with a non-empty gsllibs.PkgInfo.Domain only appears when its domain
-// is listed. The general libraries (empty Domain) always appear. Pass no
-// domains for the general set.
-func containsStr(haystack []string, needle string) bool {
-	for _, s := range haystack {
-		if s == needle {
-			return true
-		}
-	}
-	return false
-}
-
-// librariesLead opens the library docs, full or indexed.
-const librariesLead = "**Call these rather than writing the same code yourself.** " +
-	"The library's versions are SDF-correct, consistently named, and " +
-	"tested. If you need a helper the library doesn't provide, name it " +
-	"in the library's style (e.g. `cylinderHelical`, not `helicalCyl`) " +
-	"so it composes cleanly with the rest.\n\n"
-
-func LibrariesDescriptiveText(includeDomains ...string) string {
+// The domains argument is ignored and will be removed: no library sets a
+// domain.
+func LibrariesDescriptiveText(domains ...string) string {
 	var sb strings.Builder
 	sb.WriteString("\n---\n\n## **Library Packages**\n\n")
 	sb.WriteString(librariesLead)
@@ -67,9 +56,6 @@ func LibrariesDescriptiveText(includeDomains ...string) string {
 	sb.WriteString("---\n\n")
 
 	for _, lib := range gsllibs.All() {
-		if lib.Domain != "" && !containsStr(includeDomains, lib.Domain) {
-			continue
-		}
 		entries := extractLibraryEntries(strings.Join(lib.Sources, "\n"))
 		if len(entries.constants) == 0 && len(entries.preamble) == 0 && len(entries.sections) == 0 {
 			continue

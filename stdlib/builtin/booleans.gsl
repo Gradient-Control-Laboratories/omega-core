@@ -702,10 +702,10 @@ intersectRoundExact(a, b, radius, normalA, normalB) {
     radius, neg(normalA), neg(normalB)));
 }
 
-/// The least-norm Newton step toward the edge {field1 = 0, field2 = 0} from
-/// the fields' values v1, v2 and gradients n1, n2 at c: c - Jᵀ(JJᵀ)⁻¹[v1, v2],
-/// J the gradients as rows. Where the faces are parallel there is no edge, and
-/// the guard on the determinant keeps the step finite.
+// The least-norm Newton step toward the edge {field1 = 0, field2 = 0} from
+// the fields' values v1, v2 and gradients n1, n2 at c: c - Jᵀ(JJᵀ)⁻¹[v1, v2],
+// J the gradients as rows. Where the faces are parallel there is no edge, and
+// the guard on the determinant keeps the step finite.
 edgeProjectFrom(v1, v2, n1, n2, c) {
   a = dot(n1, n1);
   b = dot(n1, n2);
@@ -720,8 +720,8 @@ edgeProjectFrom(v1, v2, n1, n2, c) {
   return c - clamp(step, neg(reach), reach);
 }
 
-/// A slide from q along the edge's tangent, the cross product of the fields'
-/// gradients n1, n2, to the foot of p on that line.
+// A slide from q along the edge's tangent, the cross product of the fields'
+// gradients n1, n2, to the foot of p on that line.
 edgeSlideFrom(q, n1, n2) {
   t = cross(n1, n2);
   // No component of the slide is longer than |p - q|; clamped to that, for
@@ -731,11 +731,11 @@ edgeSlideFrom(q, n1, n2) {
   return q + clamp(slide, neg(span), span);
 }
 
-/// Whether p is nearest the edge at the point c the steps reached, and the
-/// distance if so: e = p - c, n1, n2 the gradients at c, sharp the sharp
-/// intersection at p, residual the larger of the fields' magnitudes at c.
-/// p is nearest the edge where e = w1 n1 + w2 n2 with both weights positive;
-/// the field is then |e|, and elsewhere sharp.
+// Whether p is nearest the edge at the point c the steps reached, and the
+// distance if so: e = p - c, n1, n2 the gradients at c, sharp the sharp
+// intersection at p, residual the larger of the fields' magnitudes at c.
+// p is nearest the edge where e = w1 n1 + w2 n2 with both weights positive;
+// the field is then |e|, and elsewhere sharp.
 edgeVerdict(e, n1, n2, sharp, residual) {
   a = dot(n1, n1);
   b = dot(n1, n2);
@@ -768,9 +768,9 @@ edgeProject(a, b, c) {
     remap(a, c), remap(b, c), remap(a.dp, c), remap(b.dp, c), c);
 }
 
-/// One Newton step from c toward the point of the edge {field1 = 0, field2 =
-/// 0} nearest p: edgeProject's step, then a slide along the edge's tangent at
-/// c, the cross product of the fields' gradients there, to the foot of p.
+// One Newton step from c toward the point of the edge {field1 = 0, field2 =
+// 0} nearest p: edgeProject's step, then a slide along the edge's tangent at
+// c, the cross product of the fields' gradients there, to the foot of p.
 edgeNewtonStep(field1, field2, c) {
   n1 = remap(field1.dp, c);
   n2 = remap(field2.dp, c);
@@ -821,12 +821,12 @@ edgeDistance(a, b, iterations) {
     max(abs(remap(a, c)), abs(remap(b, c))));
 }
 
-/// The Newton step toward the corner {field1 = 0, field2 = 0, field3 = 0}
-/// from the fields' values and gradients at c: c - J⁻¹[v1, v2, v3], J the
-/// gradients as rows, whose inverse's columns are the gradients' pairwise cross
-/// products over the determinant. Where the gradients are coplanar there is no
-/// corner, and the guard on the determinant and the trust region keep the step
-/// finite.
+// The Newton step toward the corner {field1 = 0, field2 = 0, field3 = 0}
+// from the fields' values and gradients at c: c - J⁻¹[v1, v2, v3], J the
+// gradients as rows, whose inverse's columns are the gradients' pairwise cross
+// products over the determinant. Where the gradients are coplanar there is no
+// corner, and the guard on the determinant and the trust region keep the step
+// finite.
 cornerStepFrom(v1, v2, v3, n1, n2, n3, c) {
   c23 = cross(n2, n3);
   c31 = cross(n3, n1);
@@ -838,10 +838,10 @@ cornerStepFrom(v1, v2, v3, n1, n2, n3, c) {
   return c - clamp(step, neg(reach), reach);
 }
 
-/// Whether p is nearest the corner at the point c the steps reached, and the
-/// distance if so: p is nearest it where e = p - c = w1 n1 + w2 n2 + w3 n3
-/// with every weight positive, w = J⁻ᵀe; the field is then |e|, and elsewhere
-/// sharp.
+// Whether p is nearest the corner at the point c the steps reached, and the
+// distance if so: p is nearest it where e = p - c = w1 n1 + w2 n2 + w3 n3
+// with every weight positive, w = J⁻ᵀe; the field is then |e|, and elsewhere
+// sharp.
 cornerVerdict(e, n1, n2, n3, sharp, residual) {
   c23 = cross(n2, n3);
   c31 = cross(n3, n1);
@@ -859,8 +859,8 @@ cornerVerdict(e, n1, n2, n3, sharp, residual) {
   return min(w1, w2, w3, sharp) > 0 && solved && cornered ? max(length(e), sharp) : sharp;
 }
 
-/// One Newton step from c toward the corner {field1 = 0, field2 = 0, field3 =
-/// 0}: cornerStepFrom with the fields' values and gradients at c.
+// One Newton step from c toward the corner {field1 = 0, field2 = 0, field3 =
+// 0}: cornerStepFrom with the fields' values and gradients at c.
 cornerNewtonStep(field1, field2, field3, c) {
   return cornerStepFrom(
     remap(field1, c), remap(field2, c), remap(field3, c),

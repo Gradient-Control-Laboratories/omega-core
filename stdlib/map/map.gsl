@@ -134,16 +134,15 @@ triangleDistance(x, period) {
 /// triangleWaveEvenPositive(x, period): the unit-gradient triangle-wave distance
 /// whose zeros land on cell *boundaries* (x = 0, +/-period, ...) and whose peak
 /// (period/2) is at the cell center. Identical to triangleDistance — the named
-/// form documents the phase. "Even" follows the GCL stdlib convention; note this
-/// is the OPPOSITE phase from the lattice package's legacy `planesEven` (which
-/// is center-phased, i.e. the Odd family here). Range [0, period/2].
+/// form documents the phase. "Even" follows the GCL stdlib convention: the walls
+/// sit on the cell boundaries. Range [0, period/2].
 triangleWaveEvenPositive(x, period) {
   return triangleDistance(x, period);
 }
 
 /// triangleWaveOddPositive(x, period): triangle-wave distance phased a half cell
 /// over from Even, so its zeros land on cell *centers* (x = +/-period/2, ...).
-/// Equivalent to the lattice package's legacy `planesEven`. Range [0, period/2].
+/// Range [0, period/2].
 triangleWaveOddPositive(x, period) {
   return triangleDistance(x - period * 0.5, period);
 }

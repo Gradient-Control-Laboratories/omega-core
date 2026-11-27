@@ -99,14 +99,9 @@ func init() {
 
 // PkgInfo is one canonical library package: the import path users write
 // in `import . "<path>";` and the source text of that package's .gsl.
-//
-// Domain marks a product-specific library: it is empty for the general
-// libraries and set for product-specific libraries that should only surface
-// in that product's documentation. See LibrariesDescriptiveText.
 type PkgInfo struct {
 	ImportPath string
 	Sources    []string
-	Domain     string
 }
 
 // All returns every embedded library in the order they should appear in
