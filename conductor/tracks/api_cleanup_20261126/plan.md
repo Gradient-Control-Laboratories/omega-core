@@ -24,6 +24,7 @@ golden stops for approval before the golden is updated.
   - [x] Every stdlib name and omega-core Go API this track changes that omega-dm calls
   - [ ] The functions it has copied: its running list was not found in the repository
   - [ ] For each name a goal below renames or removes: update omega-dm's copy, or pin the old name
+        (follow-up after #178: omega-dm has the notes from omega-core; its own list was not found)
 - [x] Task: Choose the open names: `domain` (N1), `multiplyScalar` (N2), `a, b` (N10)
 
 ## Phase 1: Names That Break Nothing
@@ -52,7 +53,7 @@ golden stops for approval before the golden is updated.
 - [x] Goal: Honeycomb names (N5): the `rectangular` family, `hexagonal`, `triangular`, `octet`, with a rewrite
   - [x] `gsl fix -stdlib` renames members through the package prefix (table in cmd/fix renames.go); no golden
         moved (the functions inline away); three fixtures went through the fixer
-- [ ] Goal: Lattices (N6, spec section 6a)
+- [x] Goal: Lattices (N6, spec section 6a)
   - [x] A `combine` form on every beam lattice that joins struts (bcc, fcc, octet, truncatedOctahedral,
         truncatedCubic, kelvinCell, fluorite, cubicDouble), written out from the fold domain's pieces and their
         mirror images; folded forms unchanged; a test checks each against its folded form. isotruss, reentrant
@@ -91,6 +92,7 @@ golden stops for approval before the golden is updated.
 
 - [x] Task: Settle what "scale" means in the table decision: only the box changes (spec section 6)
 - [ ] Goal: `gaborSpinodoid` is hodge's field and `fastGaborSpinodoid` the lattice field, in every backend
+      (follow-up after #178: needs a GPU parity check)
   - [ ] A WGSL hodge field, checked against the CPU one (`hodge_parity_test.go`'s values)
   - [ ] WGSL codegen and fidget conversion stop forcing `Fast` for `gaborSpinodoid`
   - [ ] Library: `gabor*` over hodge's field, `fastGabor*` over the lattice
@@ -108,7 +110,7 @@ golden stops for approval before the golden is updated.
 - [x] Goal: Deprecate `RenderLitSized`, `RenderLitSizedView` and `RenderLitSizedViewRadiance` for one release;
       omega-core's callers move to `RenderLit(prog, LitOptions)`; `RenderLitLinear` and `RenderLitWithLinear` stay
       (`LitView.Options(width, height, extent, time)` builds the LitOptions a view used to)
-- [ ] Goal: `LitOptions.Device = "fidget"`
+- [ ] Goal: `LitOptions.Device = "fidget"` (follow-up after #178: needs a Rust build)
   - [ ] The cgo layer exposes fidget's CPU voxel render per return: depth, normal, return id
   - [ ] Merge, colour and material tapes at hits, SSAO, then `RenderLit`'s shading; compared with the browser's
         Fidget device on the same frame
