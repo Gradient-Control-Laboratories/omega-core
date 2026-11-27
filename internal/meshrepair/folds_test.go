@@ -186,6 +186,34 @@ func TestKeepNearHoldsAVertexSentPastItsEdges(t *testing.T) {
 	}
 }
 
+// TestFoldsKeepsTheMeshWhenRepairsGrowItsArea checks no pass that makes the mesh's area larger is kept: a pleated
+// sphere of radius 5 repaired against a sphere of radius 5.3, onto which every pass walks the moved vertices out,
+// comes back as it was given. 5.3 is near enough that the moves stay within an edge (keepNear lets them through) and
+// far enough that they add more area than righting the pleats gives back.
+func TestFoldsKeepsTheMeshWhenRepairsGrowItsArea(t *testing.T) {
+	verts, tris := sphereSTL(5, 4)
+	m := weld(writeSTL(verts, tris), len(tris))
+	for _, v := range []int32{40, 400, 900} {
+		w := m.ringOf(v)[0]
+		p := add(m.verts[v], scale(sub(m.verts[w], m.verts[v]), 1.6))
+		m.verts[v] = scale(p, 5/norm(p))
+	}
+	in := m.write(make([]byte, 80))
+	out, stats, err := Folds(in, sphereField(5.3))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stats.BackwardBefore == 0 {
+		t.Fatalf("the pleats made no backward triangle: %+v", stats)
+	}
+	if stats.Passes != 0 || stats.Moved != 0 {
+		t.Fatalf("a pass that grew the area was kept: %+v", stats)
+	}
+	if string(out) != string(in) {
+		t.Fatal("every pass grew the area, yet the mesh came back changed")
+	}
+}
+
 // TestFoldsReturnsTheMeshWhenNoPassHelps checks a mesh no pass improves comes back as it was given: a sphere whose
 // every triangle faces in, which moving vertices cannot turn round.
 func TestFoldsReturnsTheMeshWhenNoPassHelps(t *testing.T) {
