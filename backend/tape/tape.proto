@@ -58,9 +58,7 @@ message Tape {
   // The noiseHash3 oracle needs no payload here: its baked tile is a build-time
   // constant baked into the render lib (the same bytes as the GPU texture), so a
   // noise field serializes as plain MeshOracle leaf ids and the reader registers
-  // the channel oracles from the library-baked tile. (Field 7 is reserved — an
-  // earlier draft embedded the 1 MB tile here.)
-  reserved 7;
+  // the channel oracles from the library-baked tile.
 
   // How each output looks (parallel to `outputs`; may be empty or short): the
   // node indices of its colour and material fields, as the viewer's
@@ -204,8 +202,6 @@ message SpinodoidParams {
   // Seed for both the pool draw and the spatial hash.
   int64 seed = 8;
 
-  reserved 9;
-  reserved "levelBias";
   // True divides by the wavenumber carried at each point (the Python reference's
   // normalize="local"), so lengths stay real under a graded scale; false
   // divides by the wavenumber of `period` ("base").

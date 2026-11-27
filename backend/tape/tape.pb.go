@@ -1368,7 +1368,7 @@ var File_tape_proto protoreflect.FileDescriptor
 const file_tape_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
-	"tape.proto\x12\x04tape\"\xf9\x01\n" +
+	"tape.proto\x12\x04tape\"\xf3\x01\n" +
 	"\x04Tape\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\rR\aversion\x12 \n" +
 	"\x05nodes\x18\x02 \x03(\v2\n" +
@@ -1379,7 +1379,7 @@ const file_tape_proto_rawDesc = "" +
 	"\voutputNames\x18\x06 \x03(\tR\voutputNames\x120\n" +
 	"\n" +
 	"appearance\x18\b \x03(\v2\x10.tape.AppearanceR\n" +
-	"appearanceJ\x04\b\a\x10\b\"\\\n" +
+	"appearance\"\\\n" +
 	"\n" +
 	"Appearance\x12\x14\n" +
 	"\x05color\x18\x01 \x03(\rR\x05color\x12\x1a\n" +
@@ -1411,7 +1411,7 @@ const file_tape_proto_rawDesc = "" +
 	"blockValue\x12\x1e\n" +
 	"\n" +
 	"leafValues\x18\b \x03(\x02R\n" +
-	"leafValues\"\x90\x04\n" +
+	"leafValues\"\xff\x03\n" +
 	"\x0fSpinodoidParams\x12\x12\n" +
 	"\x04fast\x18\x01 \x01(\bR\x04fast\x12\x16\n" +
 	"\x06period\x18\x02 \x01(\x01R\x06period\x12\"\n" +
@@ -1432,8 +1432,7 @@ const file_tape_proto_rawDesc = "" +
 	"\x11driverFingerprint\x18\x0f \x01(\tR\x11driverFingerprint\x12\x1a\n" +
 	"\bperiodic\x18\x10 \x01(\bR\bperiodic\x12\x16\n" +
 	"\x06domain\x18\x11 \x03(\x01R\x06domain\x12\x12\n" +
-	"\x04bias\x18\x12 \x01(\x01R\x04biasJ\x04\b\t\x10\n" +
-	"R\tlevelBias\"\x84\x02\n" +
+	"\x04bias\x18\x12 \x01(\x01R\x04bias\"\x84\x02\n" +
 	"\x04Node\x12 \n" +
 	"\x04axis\x18\x01 \x01(\x0e2\n" +
 	".tape.AxisH\x00R\x04axis\x12\x1c\n" +

@@ -36,7 +36,7 @@ from `1.0.0` onward).
 - **Spinodoid tapes**: each spinodoid leaf loads as the oracle its payload names (`fast` or `reference`).
   `omega_tape.Tape(..., backend=...)` takes `"fast"` or `"reference"`, tape-wide or per payload, to ask
   for the other. `omega_tape.register_reference_gabor_spinodoid` and the no-payload spinodoid path are
-  removed, the tape's `SpinodoidParams.levelBias` field is reserved, and a graded spinodoid bake without a
+  removed, the tape's `SpinodoidParams.levelBias` field is deleted, and a graded spinodoid bake without a
   box is an error rather than a periodic table.
 - **Spinodoid Go and C names**: the fast table is `spinodoid.FastGaborTable` (`FastGaborBake`,
   `FastGaborTableConstants`), `spinodoid.Baked` has `Fast` and `Reference` fields in place of `Table`, and
