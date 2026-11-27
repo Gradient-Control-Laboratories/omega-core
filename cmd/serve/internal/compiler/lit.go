@@ -41,6 +41,9 @@ type LitRequest struct {
 	// BackDim is how bright a surface seen from behind is drawn: 0.25 for the Render panel's Back faces at dim, 1 at
 	// full. Zero is dim.
 	BackDim float64 `json:"backDim,omitempty"`
+	// Device is what finds the hits: "trace" (or empty), the viewer's march, or "fidget", fidget's CPU voxel render
+	// with its ambient occlusion (eval.LitOptions.Device). The fidget device does not draw the Schematic frame.
+	Device string `json:"device,omitempty"`
 	// Meshes finds the STL files the source's importMesh declarations name, as on compile.Request.
 	Meshes meshimport.Finder `json:"-"`
 }
@@ -124,6 +127,17 @@ func litOptions(req LitRequest) (eval.LitOptions, error) {
 		Colors:      req.Colors,
 		ViewerMarch: true,
 		BackDim:     req.BackDim,
+	}
+	switch req.Device {
+	case "", "trace":
+	case "fidget":
+		opts.Device = "fidget"
+		opts.ViewerMarch = false
+		if req.Mode == "simple" {
+			return bad("the fidget device does not draw the Schematic frame")
+		}
+	default:
+		return bad("unknown device %q", req.Device)
 	}
 	switch req.Mode {
 	case "", "standard":

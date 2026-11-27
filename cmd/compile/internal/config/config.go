@@ -51,13 +51,15 @@ type Config struct {
 	HasBbox     bool
 	// AutoBbox: --bbox auto, the box the field fills, worked out from the program (a mesh target's).
 	AutoBbox bool
-	// Views, Width, Height, Extent and Light are the png target's: the cameras, one panel's size in pixels,
-	// the scene's half-size (0 frames the geometry) and the light studio ground.
+	// Views, Width, Height, Extent, Light and Device are the png target's: the cameras, one panel's size in pixels,
+	// the scene's half-size (0 frames the geometry), the light studio ground and what finds the hits, "trace" or
+	// "fidget" (eval.LitOptions.Device).
 	Views      string
 	Width      int
 	Height     int
 	Extent     float64
 	Light      bool
+	Device     string
 	Algo       string
 	Time       float64
 	OptLevel   int
@@ -154,6 +156,7 @@ func ParseFlags(args []string) (*Config, error) {
 		sizeStr     string
 		extent      float64
 		light       bool
+		device      string
 	)
 
 	// Target flag (-t, --target)
@@ -182,6 +185,7 @@ func ParseFlags(args []string) (*Config, error) {
 	fs.StringVar(&sizeStr, "size", "640x480", "One png panel's size as WxH pixels")
 	fs.Float64Var(&extent, "extent", 0, "The png scene's half-size in mm; 0 frames the geometry")
 	fs.BoolVar(&light, "light", false, "A light studio ground for the png target instead of the dark canvas")
+	fs.StringVar(&device, "device", "trace", "What finds the png target's hits: trace (the sphere tracer) or fidget (fidget's voxel render)")
 
 	// Optimization & diagnostics
 	fs.IntVar(&optLevel, "O", 1, "Optimization level (0 = debug, 1 = standard)")
@@ -261,6 +265,7 @@ func ParseFlags(args []string) (*Config, error) {
 		Height:      height,
 		Extent:      extent,
 		Light:       light,
+		Device:      device,
 		Algo:        algo,
 		Time:        timeSec,
 		OptLevel:    optLevel,

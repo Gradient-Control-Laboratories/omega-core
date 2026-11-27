@@ -110,12 +110,15 @@ golden stops for approval before the golden is updated.
 - [x] Goal: Deprecate `RenderLitSized`, `RenderLitSizedView` and `RenderLitSizedViewRadiance` for one release;
       omega-core's callers move to `RenderLit(prog, LitOptions)`; `RenderLitLinear` and `RenderLitWithLinear` stay
       (`LitView.Options(width, height, extent, time)` builds the LitOptions a view used to)
-- [ ] Goal: `LitOptions.Device = "fidget"` (follow-up after #178: needs a Rust build)
-  - [ ] The cgo layer exposes fidget's CPU voxel render per return: depth, normal, return id
-  - [ ] Merge, colour and material tapes at hits, SSAO, then `RenderLit`'s shading; compared with the browser's
+- [x] Goal: `LitOptions.Device = "fidget"` (follow-up after #178: needs a Rust build)
+  - [x] The cgo layer exposes fidget's CPU voxel render per return (depth, normal) and its SSAO
+        (`fidget.RenderVoxels`, `fidget.VoxelSSAO`)
+  - [x] Merge nearest first, then `RenderLit`'s own appearance, glass and shading; checked against the
+        sphere tracer (`TestRenderLitFidgetDeviceMatchesTheTracer`). Not yet compared with the browser's
         Fidget device on the same frame
-  - [ ] `gsl compile --device fidget`; `/api/render-lit` passes `device`
-  - [ ] Then retire `eval.Render` and `eval.RenderFramed`, once no repository calls them
+  - [x] `gsl compile --device fidget`; `/api/render-lit` passes `device`
+  - [x] Remove `eval.Render` and `eval.RenderFramed` (Blake: remove now; omega-dm's one call moves to
+        `RenderLit`), with `RenderGlslResponse`, `RenderInput` and `fidget.RenderPng`
 
 ## Phase 6: The Language Spec
 

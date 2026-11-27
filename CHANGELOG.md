@@ -28,6 +28,9 @@ from `1.0.0` onward).
   baked there and nowhere else. The scene and imported-geometry bounds and the periodic fallback are no
   longer used for spinodoid tables, and the spinodoid builtins take `box` as a 13th argument.
 - **`list` is a builtin**, so a document can no longer declare its own `list` function or variable.
+- **`eval.Render` and `eval.RenderFramed` are removed**, with their `RenderGlslResponse` and `RenderInput`
+  types and `internal/fidget`'s `RenderPng`: they drew an unlit grey PNG of the union of the returns. Draw
+  with `eval.RenderLit` and `LitOptions{Device: "fidget"}` for fidget's render, lit.
 - **Changed Go module path to `github.com/Gradient-Control-Laboratories/omega-core`**: The root
   `go.mod` module declaration and all internal package import paths changed from
   `gradientcontrol.com/omega/core` to `github.com/Gradient-Control-Laboratories/omega-core` so
@@ -57,6 +60,10 @@ from `1.0.0` onward).
 
 ### Added
 
+- **A fidget device for the lit render**: `LitOptions.Device` is `"trace"` (the sphere tracer, the default) or
+  `"fidget"`, fidget's CPU voxel render of each return, merged nearest first, with fidget's ambient occlusion,
+  as the viewer's Fidget device draws in the browser. Colours, materials, glass and lighting are the same
+  for both. `gsl compile -t png --device fidget` and `/api/render-lit`'s `device` field ask for it.
 - **`list(n)` and `list(n, fn)`**: the list `[0, 1, ..., n - 1]`, or `[fn(0), ..., fn(n - 1)]`, with n known when
   the document compiles; a function whose parameter sets a list's length is specialized for each constant
   its calls pass.
@@ -272,6 +279,9 @@ from `1.0.0` onward).
 
 ### Fixed
 
+- **An orthographic lit camera no longer swells every shape**: outside the viewer's march, the lit
+  render's hit tolerance grew with distance as for a perspective camera, so parts far from an
+  orthographic camera drew a few pixels fat; a pixel is now the same size at every distance there.
 - `topofold` now evaluates general UI-derived constant expressions via a scoped `ConstEvalFunc`
   fallback (`eval.ConstPkgSlotsAt`) in `assembler`, rejecting non-finite results, and Rust Cargo
   build scripts (`internal/fidget/internal/rust/build.rs`, `internal/fidget/internal/tape-core/build.rs`,

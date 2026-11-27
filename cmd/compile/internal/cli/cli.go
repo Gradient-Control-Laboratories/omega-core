@@ -73,6 +73,9 @@ func PrintUsage(w io.Writer) {
 	fmt.Fprintf(w, "        The png scene's half-size in mm; 0 frames the geometry (default 0)\n")
 	fmt.Fprintf(w, "      --light\n")
 	fmt.Fprintf(w, "        A light studio ground for png instead of the dark canvas\n")
+	fmt.Fprintf(w, "      --device string\n")
+	fmt.Fprintf(w, "        What finds png's hits: trace (the sphere tracer) or fidget (fidget's voxel render,\n")
+	fmt.Fprintf(w, "        each return merged nearest first, with fidget's ambient occlusion) (default \"trace\")\n")
 	fmt.Fprintf(w, "  -O, --opt-level int\n")
 	fmt.Fprintf(w, "        Optimization level (0 = debug, 1 = standard) (default 1)\n")
 	fmt.Fprintf(w, "      --standalone\n")
@@ -524,7 +527,9 @@ func renderPNG(prog *program.Program, cfg *config.Config) ([]byte, error) {
 	panels := make([][]byte, 0, len(views))
 	for i, v := range views {
 		v.Light = cfg.Light
-		panel, renderErr := eval.RenderLit(prog, v.Options(cfg.Width, cfg.Height, cfg.Extent, cfg.Time))
+		opts := v.Options(cfg.Width, cfg.Height, cfg.Extent, cfg.Time)
+		opts.Device = cfg.Device
+		panel, renderErr := eval.RenderLit(prog, opts)
 		if renderErr != nil {
 			return nil, fmt.Errorf("rendering view %d: %w", i+1, renderErr)
 		}

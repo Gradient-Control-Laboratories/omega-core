@@ -154,7 +154,14 @@ shading, which already matches the viewer. `gsl compile --device fidget` and `/a
 
 `eval.Render` and `eval.RenderFramed` are fidget's own image render: a PNG and GLSL of the union of the returns,
 with no colour or material, and a debug `log.Printf` of the codegen JSON. Nothing in omega-core outside `eval`
-calls them. They are retired once the fidget device lands and no other repository is found calling them.
+calls them. They are removed with the fidget device (Blake, 2026-11-27), though omega-dm's one call has yet to
+move.
+
+Settled while building it (2026-11-27): glass is traced by both CPU devices, from the hits each finds (the
+Color tier turns it off, as in the viewer); fidget's voxel columns span the geometry the frame scan finds,
+padded by one scan cell, inside the scene box, not the whole box, so a camera near the box still puts its
+slices on the parts (the browser spans a sphere about the scene); and the tracer's orthographic hit tolerance
+no longer grows with distance.
 
 ## 8. Decisions: The Language Spec
 
