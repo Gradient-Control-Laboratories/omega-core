@@ -24,6 +24,21 @@ func Validate(name string) error {
 	return nil
 }
 
+// callReplacements names the GSL call to write in place of a reserved name
+// that a reader calls expecting the function from another language.
+var callReplacements = map[string]string{
+	"atan2": "atan(y, x)",
+}
+
+// ValidateCall validates the name of a called function. Renaming does not
+// help a call, so a reserved name with a GSL equivalent names that instead.
+func ValidateCall(name string) error {
+	if alt, ok := callReplacements[name]; ok {
+		return fmt.Errorf("'%s' is a reserved word, not a GSL function; use %s", name, alt)
+	}
+	return Validate(name)
+}
+
 // ValidatePackageName validates an import prefix / package name. Unlike
 // Validate, it permits names that are reserved words, primitives, or builtins
 // — e.g. a package named "map". A package qualifier appears only in

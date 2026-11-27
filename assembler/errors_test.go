@@ -70,6 +70,16 @@ func TestAnnotationCallsAreNotSuggested(t *testing.T) {
 	}
 }
 
+func TestAtan2CallNamesAtan(t *testing.T) {
+	msg := assembleErr(t, "theta = atan2(p.y, p.x);\nreturn length(p) - 1 - 0.1 * theta;")
+	if !strings.Contains(msg, "'atan2' is a reserved word, not a GSL function; use atan(y, x)") {
+		t.Errorf("no atan(y, x) in:\n%s", msg)
+	}
+	if strings.Contains(msg, "atan2_") {
+		t.Errorf("suggested renaming a call:\n%s", msg)
+	}
+}
+
 func TestRemapRejectsATwoComponentPoint(t *testing.T) {
 	msg := assembleErr(t, "return remap(sphere(1), p.xy);")
 	for _, want := range []string{"must be a vec3, not 2 component(s)", "[p.x, p.y, 0]"} {
