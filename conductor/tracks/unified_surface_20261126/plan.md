@@ -173,9 +173,17 @@ New tests are added only once the owner agrees them.
 
 ## Phase 5: Envelopes and the Peak Datum (D1)
 
-- [ ] Task: Proposal: where a material's relief envelope is stored (an appended record row, as
-      [material.gsl](../../../stdlib/material/material.gsl) allows, or an accessor computed from the
-      process) and how a coat combines the envelope beneath it with its `filmKeeps` share
+- [x] Task: Proposal (agreed 2026-11-27, not yet implemented). By D1 every relief is measured down from
+      its peaks, so its outer bound is 0 and the envelope is one number, its depth (>= 0). The depth
+      lives in row 0's fourth component, today "reserved" (default 0, clamped to >= 0, blended with
+      the row): `material.withReliefDepth(m, depth)` and `material.reliefDepth(m)`. The record is not
+      widened, and a record that sets no depth is unchanged. A coat's depth is its `filmKeeps` share
+      of the depth beneath plus its own; `withBuild` keeps the depth of the material it is built
+      from. `max-material` and `min-material` are switched on in this phase, builds at nominal:
+      maximum material is the builds with the relief at 0 (no envelope needed), minimum material the
+      builds with the relief at its depth; Phase 6 moves each build to the end of its spread. The
+      measured/judged tag is documentation: a `///` line on each process and a table in
+      [material_composition.md](../../../doc/material_composition.md)
 - [ ] Task: `machined` declares its envelopes from the process (`[-f^2 / (8 r), 0]` below the cusps for
       turned, faced and face-milled), and interval evaluation over a surface patch checks each one
 - [ ] Task: Audit every library relief for its datum. Any that is not measured from its peaks moves by a
