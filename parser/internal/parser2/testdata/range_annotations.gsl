@@ -25,7 +25,7 @@ width.min = 1.0;
 width.max = 10.0;
 width.period = 2.0;
 
-inlineVal = @range(1.0, 5.0) 2.5;
-inlineAnim = @range(0.0, 10.0, 2.0) 5.0;
+// inlineVal = @range(1.0, 5.0) 2.5;          // ERROR: 13 @range on a value inside an expression makes no slider
+// inlineAnim = @range(0.0, 10.0, 2.0) 5.0;   // ERROR: 14 @range on a value inside an expression makes no slider
 
 return radius + speed + scaleRadius(1.0, 2.0) + width + inlineVal + inlineAnim;

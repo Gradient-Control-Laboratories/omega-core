@@ -246,7 +246,7 @@ func buildFunctionCall(buildScope scope.BuilderScope, fnCall *FunctionCall) (*pr
 	}
 
 	if pkgName == "" {
-		err := identifier2.Validate(fnName)
+		err := identifier2.ValidateCall(fnName)
 		if err != nil {
 			return nil, &participle.ParseError{
 				Pos: pos,
@@ -254,7 +254,7 @@ func buildFunctionCall(buildScope scope.BuilderScope, fnCall *FunctionCall) (*pr
 			}
 		}
 	} else {
-		err := identifier2.Validate(fnName)
+		err := identifier2.ValidateCall(fnName)
 		if err != nil {
 			return nil, &participle.ParseError{
 				Pos: pos,

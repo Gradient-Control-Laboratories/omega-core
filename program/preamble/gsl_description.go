@@ -405,6 +405,7 @@ Use surrounding parentheses when nesting!
   joined(blend) { return blend([sphere(vector.zero, 10), sphere([8, 0, 0], 10)]); }
   fused = joined(unionRound(2));
   ` + "```" + `
+  * A parameter may share a built-in's name. In ` + "`f(length) { return length(p) - length; }`" + ` the call ` + "`length(p)`" + ` is still the built-in and the bare ` + "`length`" + ` is the parameter.
   * The sharp ones are ` + "`min`" + `, ` + "`max`" + ` and ` + "`max(a, -b)`" + ` underneath.
   * **Chamfer by size.** ` + "`Chamfer`" + `'s offset is a setback along each face only at a square edge. To size a chamfer at an edge of any angle, give ` + "`intersectChamferNormalized(a, b, depth)`" + ` the depth, the distance from the edge to the bevel. To chamfer by a setback along each face or by the bevel's width, convert: ` + "`intersectChamferNormalized(a, b, chamferDepthFromWidth(3, na, nb), na, nb)`" + `, with ` + "`na`" + ` and ` + "`nb`" + ` the faces' unit normals at the edge (` + "`normalize(a.dp)`" + `), and ` + "`chamferDepthFromSetback`" + ` likewise. ` + "`intersectChamferSetbacks(a, b, 1, 2, na, nb)`" + ` sets back 1 along ` + "`a`" + `'s face and 2 along ` + "`b`" + `'s. Each has a ` + "`union`" + ` and a ` + "`difference`" + `.
 

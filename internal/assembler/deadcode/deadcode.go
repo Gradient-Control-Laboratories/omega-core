@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/scope"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/suggest"
 	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
@@ -585,7 +586,7 @@ func (v *RemoveVisitor) resolveRef(op *program.Operand, ref *program.Reference) 
 
 		prefElem := v.currScope.NamedElem(ref.Prefix)
 		if prefElem == nil {
-			return nil, v.currScope.Err(op.Start, fmt.Errorf("undefined identifier: %s", ref.Prefix))
+			return nil, v.currScope.Err(op.Start, suggest.Undefined(v.currScope, ref.Prefix))
 		}
 		pkgRef, isPkgRef := prefElem.(*scope.PkgRef)
 		if !isPkgRef {
@@ -594,7 +595,7 @@ func (v *RemoveVisitor) resolveRef(op *program.Operand, ref *program.Reference) 
 
 		elem := pkgRef.NamedElem(ref.Name)
 		if elem == nil {
-			return nil, v.currScope.Err(op.Start, fmt.Errorf("name %q not found in package %q", ref.Name, pkgRef.Name()))
+			return nil, v.currScope.Err(op.Start, suggest.NotInPackage(pkgRef, ref.Name))
 		}
 		return elem, nil
 	} else {
@@ -605,7 +606,7 @@ func (v *RemoveVisitor) resolveRef(op *program.Operand, ref *program.Reference) 
 
 	elem := v.currScope.NamedElem(ref.Name)
 	if elem == nil {
-		return nil, v.currScope.Err(op.Start, fmt.Errorf("undefined identifier: %s", ref.Name))
+		return nil, v.currScope.Err(op.Start, suggest.Undefined(v.currScope, ref.Name))
 	}
 	return elem, nil
 }
