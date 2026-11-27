@@ -194,9 +194,13 @@ New tests are added only once the owner agrees them.
       the whole 15 mm journal seat: relief <= 0 proven in 1 interval evaluation, relief >= -depth
       proven in 1 with 0.1 µm slack (undecided without, touching at every groove bottom). Three WGSL
       goldens move (owner's go): Material - Coated +0.73%, Layered Paint +0.29%, Machined +0.52%.
-      Open (owner thinking): how min-material reads the depth: a `reliefDepthScale()` builtin in the
-      layered distance (a TestSanityCheck exception, ~16 goldens), or a band shifted by the feature's
-      depth in Phase 7's generated claims, min-material staying refused as a field condition
+- [x] Task: The material conditions (decided 2026-11-27, revising the proposal above): `max-material`
+      is switched on, builds on and relief at its peaks, the same surface as `nominal` until Phase 6's
+      spreads. `min-material` stays refused as a field condition: a feature's depth is a constant, so
+      a least-material claim is its band shifted by `material.reliefDepth`, which Phase 7's generated
+      claims do; a claim across surfaces of different depths writes the shift itself. That keeps a
+      `reliefDepthScale()` builtin, a TestSanityCheck exception and ~16 goldens out. Two of this
+      branch's tests updated to match (owner's go)
 - [ ] Task: Audit every library relief for its datum. Any that is not measured from its peaks moves by a
       constant to be. That moves surfaces and goldens, so each is shown first
 - [ ] Task: Tag each process as measured (heights from the process: `machined`) or judged for appearance
@@ -217,7 +221,8 @@ New tests are added only once the owner agrees them.
       `.color`), the zone constructors (`tolerance.band(lo, hi)`, a profile `±t/2`, ISO 286 fits as
       bands on features a package knows), and the eval entry point that proves a shape's zone
 - [ ] Task: The two claims of spec 2.5, generated from `.tolerance`, with a slack for measurement
-      resolution, in the part's frame
+      resolution, in the part's frame; the least-material claim's band shifted by the feature's
+      `material.reliefDepth` (Phase 5's decision: min-material is not a field condition)
 - [ ] Task: The edge rule, with the UGF edge exceptions: where a field is not a true distance at a
       convex edge, the zone there is refused or computed from an exact round, never overstated
 - [ ] Task: D5: remove the condition arguments from `tolerance.shaftDia` / `holeDia` and

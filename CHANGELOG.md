@@ -74,8 +74,10 @@ from `1.0.0` onward).
   moved out by its materials' builds) and `as-made` (by their builds and their relief, as the CPU
   renderer draws them). Eval, Extremum, Certify (with its parameters and over the sliders), Bounds,
   Enclose, Volume, SurfacePoint and Mesh read it; Mesh takes it as its Coatings and Relief flags.
-  Render, describe and shader do not, and `gsl eval` refuses it on them. `max-material` and
-  `min-material` are refused until documents can declare relief envelopes and spreads. A claim
+  Render, describe and shader do not, and `gsl eval` refuses it on them. `max-material` is the
+  builds with each relief at its peaks (the same surface as `nominal` until builds have spreads);
+  `min-material` is refused as a field: a least-material claim shifts its band by the surface's
+  `material.reliefDepth`. A claim
   moves only the shapes inside it: `max(rMax - r, seat)` moves `seat`, so a tolerance claim no
   longer writes the displacement by hand. `convert.ToSurfaceTrees` builds every query's field at a
   condition.

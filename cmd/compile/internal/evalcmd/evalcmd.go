@@ -77,7 +77,9 @@ A request names its op and its document, by path ("source") or text ("code"):
 "defs" are GSL statements in the document's scope; one naming a declared name replaces it ("skin = 1.6;").
 "condition" is the state of the surfaces eval, extremum, certify, bounds, surface, volume and mesh read: "as-built"
 (the default: the field as the document builds it), "nominal" (each surface moved out by its materials' coatings) or
-"as-made" (by their coatings and their relief, as render draws it); mesh then meshes as with "coatings" and "relief".
+"as-made" (by their coatings and their relief, as render draws it) or "max-material" (coatings on, relief at its peaks:
+as nominal until spreads exist); mesh then meshes as with "coatings" and "relief". "min-material" is refused: shift
+the claim's band by the surface's material.reliefDepth.
 "expr" defaults to the union of the document's returns, and eval's "exprs" to each of them.
 "region" is [x0, y0, z0, x1, y1, z1] in mm.
 render's "views" is compile's --views ("iso,top,-1,1,0.6"), its size 640 by 480 unless named.

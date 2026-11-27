@@ -67,6 +67,8 @@ func TestCondition_MovesBuildsAndRelief(t *testing.T) {
 		{eval.AsBuilt, 0.05, 0.05},
 		{eval.Nominal, -0.05, 0.05},
 		{eval.AsMade, -0.05, -0.15},
+		// The most material: builds on, relief at its peaks, as nominal until spreads exist.
+		{eval.MaxMaterial, -0.05, 0.05},
 	} {
 		got := values(t, conditioned(t, c.condition), []string{"coat", "rough"}, points)
 		nearly(t, string(c.condition)+" coat", got[0][0], c.coat, 1e-5)
@@ -205,11 +207,11 @@ func TestCondition_Mesh(t *testing.T) {
 	}
 }
 
-// The maximum and minimum material conditions need envelopes and spreads that
-// documents cannot declare yet, and a name that is no condition is refused.
+// The minimum material condition is a band shifted by a relief depth, not a
+// field, and a name that is no condition is refused.
 func TestCondition_Refused(t *testing.T) {
 	e := eval.New(&source.MockManager{}, nil)
-	for _, c := range []eval.Condition{eval.MaxMaterial, eval.MinMaterial, "as-drawn"} {
+	for _, c := range []eval.Condition{eval.MinMaterial, "as-drawn"} {
 		if err := e.SetCondition(c); err == nil {
 			t.Errorf("%s: accepted", c)
 		}

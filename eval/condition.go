@@ -23,10 +23,15 @@ const (
 	// AsMade moves each surface by its builds and its relief: the part as the
 	// CPU renderer draws it, and as a displaced mesh meshes it.
 	AsMade Condition = "as-made"
-	// MaxMaterial and MinMaterial are the part at its most and least material.
-	// They need each material's relief envelope and each layer's spread, which
-	// documents cannot declare yet, so SetCondition refuses them.
+	// MaxMaterial is the part at its most material: each surface moved by its
+	// builds, its relief at its peaks, 0, since relief is measured down from
+	// them. Until spreads exist (each build at the top of its range) it reads
+	// the field as Nominal does.
 	MaxMaterial Condition = "max-material"
+	// MinMaterial is the part at its least material, each relief at its depth
+	// (material.reliefDepth). A feature's depth is a constant, so a
+	// least-material claim is its band shifted by that depth, which the claims
+	// generated from .tolerance do; SetCondition refuses it as a field.
 	MinMaterial Condition = "min-material"
 )
 
@@ -35,12 +40,12 @@ func ParseCondition(name string) (Condition, error) {
 	switch c := Condition(name); c {
 	case "", AsBuilt:
 		return AsBuilt, nil
-	case Nominal, AsMade:
+	case Nominal, AsMade, MaxMaterial:
 		return c, nil
-	case MaxMaterial, MinMaterial:
-		return "", fmt.Errorf("condition %q needs each material's relief envelope and each layer's spread, which documents cannot declare yet; use as-built, nominal or as-made", name)
+	case MinMaterial:
+		return "", fmt.Errorf("condition %q is not a field: shift the claim's band by the surface's relief depth (material.reliefDepth) and read it at max-material or nominal", name)
 	default:
-		return "", fmt.Errorf("condition %q: one of as-built, nominal or as-made", name)
+		return "", fmt.Errorf("condition %q: one of as-built, nominal, as-made or max-material", name)
 	}
 }
 
@@ -61,7 +66,7 @@ func (e *Evaluator) SetCondition(c Condition) error {
 // surface is where c puts the layered surfaces.
 func (c Condition) surface() convert.Surface {
 	switch c {
-	case Nominal:
+	case Nominal, MaxMaterial:
 		return convert.Surface{Build: 1}
 	case AsMade:
 		return convert.Surface{Build: 1, Relief: 1}

@@ -62,8 +62,8 @@ func TestCondition_Refused(t *testing.T) {
 		req  map[string]any
 		says string
 	}{
-		{map[string]any{"op": "eval", "exprs": []string{"coat"}, "points": [][3]float64{{0, 0, 0}}, "condition": "max-material"}, "envelope"},
-		{map[string]any{"op": "bounds", "condition": "as-drawn"}, "as-built, nominal or as-made"},
+		{map[string]any{"op": "eval", "exprs": []string{"coat"}, "points": [][3]float64{{0, 0, 0}}, "condition": "min-material"}, "relief depth"},
+		{map[string]any{"op": "bounds", "condition": "as-drawn"}, "as-built, nominal, as-made or max-material"},
 		{map[string]any{"op": "describe", "condition": "nominal"}, "describe does not take it"},
 		{map[string]any{"op": "render", "out": "x.png", "condition": "as-made"}, "render does not take it"},
 	} {
