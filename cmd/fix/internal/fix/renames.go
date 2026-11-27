@@ -19,6 +19,9 @@ var renamedMembers = map[string]map[string]string{
 		"triangularHoneycomb":       "triangular",
 		"octetHoneycomb":            "octet",
 	},
+	"matrix": {
+		"scale": "multiplyScalar",
+	},
 }
 
 // renameMembers rewrites references to renamed standard library members,

@@ -66,7 +66,9 @@ golden stops for approval before the golden is updated.
         beam.fluorite is it (the dual of foam.fcc, which sits on the other face-centred lattice of the cell)
   - [x] examples/lattice_duals.gsl pairs each strut lattice with its dual foam; the foam gallery shows the
         Voronoi foams
-- [ ] Goal: `matrix.scale` becomes `multiplyScalar` (N2), with its rewrite and the lowering updated; hide the lowering targets (R1)
+- [x] Goal: `matrix.scale` becomes `multiplyScalar` (N2), with its rewrite and the lowering updated; hide the lowering targets (R1)
+  - [x] `scale` stays as an alias for a release; argument order kept `(s, m)` (`vector.multiplyScalar` is `(v, s)`);
+        lower_test's five routed-name checks follow; no golden moved
 - [ ] Goal: Centred `torus` and `octahedron` (N9); difference operator forms (N10)
   - [ ] A test per new form; the documentation examples still build
 

@@ -88,11 +88,11 @@ transpose4(m) {
 // PRODUCTS
 // =========================================================
 
-/// multiply(a, b) is the matrix product a·b. a is R×K, b is K×C, and the
-/// result is R×C. Each result column is a·(column of b), formed as the linear
-/// combination of a's columns weighted by that column's entries — so no
-/// transpose is needed and any rectangular size works. Conformability (a's
-/// column count == b's row count) is the caller's responsibility.
+// multiply(a, b) is the matrix product a·b. a is R×K, b is K×C, and the
+// result is R×C. Each result column is a·(column of b), formed as the linear
+// combination of a's columns weighted by that column's entries — so no
+// transpose is needed and any rectangular size works. Conformability (a's
+// column count == b's row count) is the caller's responsibility.
 multiply(a, b) {
   return map((bcol) {
     scaled = map((acol, k) { return acol * bcol[k]; }, a);
@@ -110,26 +110,36 @@ outer(u, v) {
 // ELEMENTWISE
 // =========================================================
 
-/// scale(s, m) multiplies every entry of m by the scalar s. (This is scalar
-/// scaling of a matrix; for a scaling-transform matrix see the constructors.)
-scale(s, m) {
+// The elementwise operations below are what the compiler lowers the
+// operators on matrices to (internal/lower): write m * s, -m, a + b, a - b and
+// a * b. They carry no /// docs, so they stay out of gsl skill.
+
+// multiplyScalar(s, m) multiplies every entry of m by the scalar s; m * s and
+// s * m route here.
+multiplyScalar(s, m) {
   return map((col) { return col * s; }, m);
 }
 
-/// negate(m) negates every entry: −m. The unary `-` operator on a matrix
-/// routes here.
+// Deprecated alias of multiplyScalar, kept for a release; gsl fix -stdlib
+// rewrites calls.
+scale(s, m) {
+  return multiplyScalar(s, m);
+}
+
+// negate(m) negates every entry: −m. The unary `-` operator on a matrix
+// routes here.
 negate(m) {
   return map((col) { return col * -1; }, m);
 }
 
-/// plus(a, b) is the elementwise sum of two equally-shaped matrices. The `+`
-/// operator on matrices routes here.
+// plus(a, b) is the elementwise sum of two equally-shaped matrices. The `+`
+// operator on matrices routes here.
 plus(a, b) {
   return map((acol, i) { return acol + b[i]; }, a);
 }
 
-/// minus(a, b) is the elementwise difference a − b. The `-` operator on
-/// matrices routes here.
+// minus(a, b) is the elementwise difference a − b. The `-` operator on
+// matrices routes here.
 minus(a, b) {
   return map((acol, i) { return acol - b[i]; }, a);
 }

@@ -137,8 +137,8 @@ return m1 * s;
 	if !ok {
 		t.Fatalf("expected routed function call, got %T", ret.T)
 	}
-	if fnCall.FnCall.Reference.Prefix != "matrix" || fnCall.FnCall.Reference.Name != "scale" {
-		t.Errorf("expected matrix.scale, got %s.%s", fnCall.FnCall.Reference.Prefix, fnCall.FnCall.Reference.Name)
+	if fnCall.FnCall.Reference.Prefix != "matrix" || fnCall.FnCall.Reference.Name != "multiplyScalar" {
+		t.Errorf("expected matrix.multiplyScalar, got %s.%s", fnCall.FnCall.Reference.Prefix, fnCall.FnCall.Reference.Name)
 	}
 }
 
@@ -583,8 +583,8 @@ func TestLower_ChainedOperations(t *testing.T) {
 					t.Fatalf("expected FnCall, got %T", ret.T)
 				}
 				routed := fc.FnCall.Reference.Prefix + "." + fc.FnCall.Reference.Name
-				if routed != "matrix.scale" {
-					t.Errorf("expected matrix.scale, got %s", routed)
+				if routed != "matrix.multiplyScalar" {
+					t.Errorf("expected matrix.multiplyScalar, got %s", routed)
 				}
 			},
 		},
@@ -597,8 +597,8 @@ func TestLower_ChainedOperations(t *testing.T) {
 					t.Fatalf("expected FnCall, got %T", ret.T)
 				}
 				routed := fc.FnCall.Reference.Prefix + "." + fc.FnCall.Reference.Name
-				if routed != "matrix.scale" {
-					t.Errorf("expected matrix.scale, got %s", routed)
+				if routed != "matrix.multiplyScalar" {
+					t.Errorf("expected matrix.multiplyScalar, got %s", routed)
 				}
 			},
 		},
@@ -776,16 +776,16 @@ return s1 * s2 * M1 * s3 * M2 * s4 * s5 * v1 * s6;
 					t.Fatalf("expected outer FnCall, got %T", ret.T)
 				}
 				routed := fc.FnCall.Reference.Prefix + "." + fc.FnCall.Reference.Name
-				if routed != "matrix.scale" {
-					t.Fatalf("expected outer matrix.scale, got %s", routed)
+				if routed != "matrix.multiplyScalar" {
+					t.Fatalf("expected outer matrix.multiplyScalar, got %s", routed)
 				}
 				inner, ok := fc.FnCall.Arguments[1].T.(*program.Operand_FnCall)
 				if !ok {
 					t.Fatalf("expected inner FnCall, got %T", fc.FnCall.Arguments[1].T)
 				}
 				innerRouted := inner.FnCall.Reference.Prefix + "." + inner.FnCall.Reference.Name
-				if innerRouted != "matrix.scale" {
-					t.Fatalf("expected inner matrix.scale, got %s", innerRouted)
+				if innerRouted != "matrix.multiplyScalar" {
+					t.Fatalf("expected inner matrix.multiplyScalar, got %s", innerRouted)
 				}
 			},
 		},

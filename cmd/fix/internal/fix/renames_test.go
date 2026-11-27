@@ -35,6 +35,11 @@ func TestStdlibFixer_RenamedMembers(t *testing.T) {
 			want: "import . \"lattice/honeycomb\";\nreturn triangular(2);\n",
 		},
 		{
+			name: "matrix.scale",
+			in:   "m = matrix.scale(2, matrix.identity3());\nreturn sphere(m[0][0]);\n",
+			want: "m = matrix.multiplyScalar(2, matrix.identity3());\nreturn sphere(m[0][0]);\n",
+		},
+		{
 			name: "passed as a value",
 			in:   "f = honeycomb.octetHoneycomb;\nreturn f([2, 2]);\n",
 			want: "f = honeycomb.octet;\nreturn f([2, 2]);\n",

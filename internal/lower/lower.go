@@ -241,10 +241,10 @@ func lowerBinaryOp(file *program.PackageFile, op program.Operation, acc, step *p
 			result = program.NewExpression(op, []*program.Operand{acc, step}, start, end)
 		} else if lScal && rMat {
 			ensureImported(file, "matrix", start, end)
-			result = program.NewFnCall("matrix", "scale", []*program.Operand{acc, step}, start, end)
+			result = program.NewFnCall("matrix", "multiplyScalar", []*program.Operand{acc, step}, start, end)
 		} else if lMat && rScal {
 			ensureImported(file, "matrix", start, end)
-			result = program.NewFnCall("matrix", "scale", []*program.Operand{step, acc}, start, end)
+			result = program.NewFnCall("matrix", "multiplyScalar", []*program.Operand{step, acc}, start, end)
 		} else if lMat && rMat {
 			ensureImported(file, "matrix", start, end)
 			result = program.NewFnCall("matrix", "multiply", []*program.Operand{acc, step}, start, end)
@@ -318,7 +318,7 @@ func lowerBinaryOp(file *program.PackageFile, op program.Operation, acc, step *p
 				step,
 			}, step.Start, step.End)
 			inv.Type = program.NewScalarType()
-			result = program.NewFnCall("matrix", "scale", []*program.Operand{inv, acc}, start, end)
+			result = program.NewFnCall("matrix", "multiplyScalar", []*program.Operand{inv, acc}, start, end)
 		} else if lVec && rVec {
 			ensureImported(file, "vector", start, end)
 			result = program.NewFnCall("vector", "divideComponents", []*program.Operand{acc, step}, start, end)

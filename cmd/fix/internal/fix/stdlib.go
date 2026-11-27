@@ -36,6 +36,7 @@ var stdlibFixer = Fixer{
        honeycomb.hexagonalHoneycomb        -> honeycomb.hexagonal
        honeycomb.triangularHoneycomb       -> honeycomb.triangular
        honeycomb.octetHoneycomb            -> honeycomb.octet
+       matrix.scale                        -> matrix.multiplyScalar
    - Rewrites the deprecated lattice.bcc to beam.bcc less the beam radius:
        lattice.bcc(cell, radius, combine) -> (beam.bcc(cell, combine) - radius)
        lattice.bcc(cell, radius)          -> (beam.bcc(cell) - radius)
