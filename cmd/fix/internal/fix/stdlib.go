@@ -36,6 +36,9 @@ var stdlibFixer = Fixer{
        honeycomb.hexagonalHoneycomb        -> honeycomb.hexagonal
        honeycomb.triangularHoneycomb       -> honeycomb.triangular
        honeycomb.octetHoneycomb            -> honeycomb.octet
+   - Rewrites the deprecated lattice.bcc to beam.bcc less the beam radius:
+       lattice.bcc(cell, radius, combine) -> (beam.bcc(cell, combine) - radius)
+       lattice.bcc(cell, radius)          -> (beam.bcc(cell) - radius)
    - Replaces removed 2-argument thunk calls unionRoundExact(a, b) and
      intersectRoundExact(a, b) with value-based calls with radius 0:
        unionRoundExact(() { return a; }, () { return b; })
@@ -81,6 +84,7 @@ func applyStdlibFix(src string) (string, bool, []Note, error) {
 			break
 		}
 		edits := collectRoundExactEdits(curr, res.Package.Files[0])
+		edits = append(edits, collectLatticeBccEdits(curr, res.Package.Files[0])...)
 		if len(edits) == 0 {
 			break
 		}

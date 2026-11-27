@@ -47,7 +47,8 @@ gridXYDiagonalCentered(cellSize, combine) {
 // --- public lattices ---
 
 /// Cubic foam: the three orthogonal wall families of a vec3 `cellSize` cell, with
-/// junctions joined by `combine`. Boundary-phased (walls on cell boundaries).
+/// junctions joined by `combine`. The walls lie on the planes at multiples of
+/// `cellSize`; their cells' edges are beam.cubic's struts.
 cubic(cellSize, combine) {
   return gridXYZ(cellSize, combine);
 }
@@ -59,8 +60,9 @@ cubic(cellSize) {
 
 /// Cubic foam, center-phased: the same three orthogonal wall families spaced by
 /// the vec3 `cellSize`, but with the walls on cell centers (the odd-phase sibling of
-/// cubic, via triangleWaveOddPositive). Migrated from the flat lattice package's
-/// cubicGrid; `combine` joins the plane families.
+/// cubic, via triangleWaveOddPositive): the planes halfway between multiples of
+/// `cellSize`. The dual of beam.cubic, each wall crossed by one strut. `combine`
+/// joins the plane families.
 cubicGrid(cellSize, combine) {
   dx = domain.triangleWaveOddPositive(p.x, cellSize.x);
   dy = domain.triangleWaveOddPositive(p.y, cellSize.y);
@@ -74,8 +76,10 @@ cubicGrid(cellSize) {
 }
 
 /// Body-centered-cubic foam: the three sets of diagonal wall families (one per
-/// coordinate plane), each tiled by translation, then joined. vec3 `cellSize` cell;
-/// `combine` joins the junctions.
+/// coordinate plane), each tiled by translation, then joined: the walls of the
+/// Delaunay tetrahedra of the body-centred points (cell corners and centres),
+/// which hold beam.bcc's struts. Its dual is beam.kelvinCell(cellSize, 0.5).
+/// vec3 `cellSize` cell; `combine` joins the junctions.
 bcc(cellSize, combine) {
   m = domain.patternRepeat(cellSize);
   xy = remap(gridXYDiagonalCentered(cellSize, combine), m);
@@ -90,8 +94,10 @@ bcc(cellSize) {
 }
 
 /// Face-centered-cubic foam: the four {111}-type wall families (three corner
-/// planes plus the cell cap), mirror-folded into the cell. vec3 `cellSize` cell;
-/// `combine` joins the junctions.
+/// planes plus the cell cap), mirror-folded into the cell: the walls of the
+/// Delaunay tetrahedra and octahedra of the face-centred points around the cell
+/// centres and edge midpoints (half a cell from beam.octet's). Its dual is
+/// beam.fluorite. vec3 `cellSize` cell; `combine` joins the junctions.
 fcc(cellSize, combine) {
   h = cellSize * 0.5;
   return remap(combine([
@@ -107,4 +113,123 @@ fcc(cellSize, combine) {
 /// Face-centered-cubic foam with the wall families joined sharply.
 fcc(cellSize) {
   return fcc(cellSize, unionSharp);
+}
+
+// --- Voronoi foams ---
+//
+// The walls of the Voronoi cells of a point lattice, the duals of the beam
+// lattices' bonds. Each sublattice's nearest site gives the signed distance to
+// that site's cell walls, positive only inside its own cell, so the largest
+// over the sublattices is the distance to the nearest wall: no select, which
+// would loosen the CPU mesher's interval bounds.
+
+// One body-centred site's Kelvin cell, folded by symmetry: the signed distance
+// from q (p less the site) to the cell's walls, positive inside.
+kelvinSide(q, h) {
+  a = abs(q);
+  return min((dot(h, h) / 2 - dot(a, h)) / length(h), h.x - a.x, h.y - a.y, h.z - a.z);
+}
+
+// The same with every wall written out, joined by combine.
+kelvinSideWalls(q, h, combine) {
+  n = length(h);
+  c = dot(h, h) / 2;
+  return combine([
+    (c - dot(q, [h.x, h.y, h.z])) / n, (c - dot(q, [-h.x, h.y, h.z])) / n,
+    (c - dot(q, [h.x, -h.y, h.z])) / n, (c - dot(q, [h.x, h.y, -h.z])) / n,
+    (c - dot(q, [-h.x, -h.y, h.z])) / n, (c - dot(q, [-h.x, h.y, -h.z])) / n,
+    (c - dot(q, [h.x, -h.y, -h.z])) / n, (c - dot(q, [-h.x, -h.y, -h.z])) / n,
+    h.x - q.x, h.x + q.x, h.y - q.y, h.y + q.y, h.z - q.z, h.z + q.z
+  ]);
+}
+
+/// Kelvin foam: the walls of the Voronoi cells of the body-centred points (the
+/// cell corners and centres), Kelvin's truncated octahedra for a cubic cell. The
+/// dual of beam.bcc; its cell edges are beam.kelvinCell(cellSize, 0.5). scalar
+/// or vec3 `cellSize`.
+kelvin(cellSize) {
+  size = cellSize * [1, 1, 1];
+  h = size * 0.5;
+  centre = [round(p.x / size.x) * size.x, round(p.y / size.y) * size.y, round(p.z / size.z) * size.z];
+  corner = [(floor(p.x / size.x) + 0.5) * size.x, (floor(p.y / size.y) + 0.5) * size.y, (floor(p.z / size.z) + 0.5) * size.z];
+  return max(kelvinSide(p - centre, h), kelvinSide(p - corner, h));
+}
+
+/// Kelvin foam with the walls joined by `combine`, every wall written out so a
+/// blend reaches each junction. Slower than kelvin(cellSize); with `unionSharp`
+/// it is the same field.
+kelvin(cellSize, combine) {
+  size = cellSize * [1, 1, 1];
+  h = size * 0.5;
+  centre = [round(p.x / size.x) * size.x, round(p.y / size.y) * size.y, round(p.z / size.z) * size.z];
+  corner = [(floor(p.x / size.x) + 0.5) * size.x, (floor(p.y / size.y) + 0.5) * size.y, (floor(p.z / size.z) + 0.5) * size.z];
+  return max(kelvinSideWalls(p - centre, h, combine), kelvinSideWalls(p - corner, h, combine));
+}
+
+// One face-centred site's rhombic dodecahedron, folded by symmetry: the signed
+// distance from q (p less the site) to the cell's walls, positive inside.
+rhombicSide(q, h) {
+  a = abs(q);
+  n1 = [h.x, h.y, 0];
+  n2 = [h.x, 0, h.z];
+  n3 = [0, h.y, h.z];
+  return min(
+    (dot(n1, n1) / 2 - dot(a, n1)) / length(n1),
+    (dot(n2, n2) / 2 - dot(a, n2)) / length(n2),
+    (dot(n3, n3) / 2 - dot(a, n3)) / length(n3));
+}
+
+// The same with every wall written out, joined by combine.
+rhombicSideWalls(q, h, combine) {
+  cxy = (h.x * h.x + h.y * h.y) / 2;
+  cxz = (h.x * h.x + h.z * h.z) / 2;
+  cyz = (h.y * h.y + h.z * h.z) / 2;
+  nxy = length([h.x, h.y, 0]);
+  nxz = length([h.x, 0, h.z]);
+  nyz = length([0, h.y, h.z]);
+  return combine([
+    (cxy - h.x * q.x - h.y * q.y) / nxy, (cxy + h.x * q.x - h.y * q.y) / nxy,
+    (cxy - h.x * q.x + h.y * q.y) / nxy, (cxy + h.x * q.x + h.y * q.y) / nxy,
+    (cxz - h.x * q.x - h.z * q.z) / nxz, (cxz + h.x * q.x - h.z * q.z) / nxz,
+    (cxz - h.x * q.x + h.z * q.z) / nxz, (cxz + h.x * q.x + h.z * q.z) / nxz,
+    (cyz - h.y * q.y - h.z * q.z) / nyz, (cyz + h.y * q.y - h.z * q.z) / nyz,
+    (cyz - h.y * q.y + h.z * q.z) / nyz, (cyz + h.y * q.y + h.z * q.z) / nyz
+  ]);
+}
+
+// The nearest site of the face-centred sublattice offset by o.
+fccSite(o, size) {
+  return [
+    o.x + round((p.x - o.x) / size.x) * size.x,
+    o.y + round((p.y - o.y) / size.y) * size.y,
+    o.z + round((p.z - o.z) / size.z) * size.z
+  ];
+}
+
+/// Rhombic-dodecahedral foam: the walls of the Voronoi cells of the face-centred
+/// points (the cell corners and face centres). The dual of beam.octet, whose
+/// struts are the face-centred points' nearest-neighbour bonds; its cell edges
+/// are beam.fluorite's struts moved half a cell along x. scalar or vec3
+/// `cellSize`.
+rhombicDodecahedral(cellSize) {
+  size = cellSize * [1, 1, 1];
+  h = size * 0.5;
+  return max(
+    rhombicSide(p - fccSite(h, size), h),
+    rhombicSide(p - fccSite([0, 0, h.z], size), h),
+    rhombicSide(p - fccSite([0, h.y, 0], size), h),
+    rhombicSide(p - fccSite([h.x, 0, 0], size), h));
+}
+
+/// Rhombic-dodecahedral foam with the walls joined by `combine`, every wall
+/// written out so a blend reaches each junction. Slower than
+/// rhombicDodecahedral(cellSize); with `unionSharp` it is the same field.
+rhombicDodecahedral(cellSize, combine) {
+  size = cellSize * [1, 1, 1];
+  h = size * 0.5;
+  return max(
+    rhombicSideWalls(p - fccSite(h, size), h, combine),
+    rhombicSideWalls(p - fccSite([0, 0, h.z], size), h, combine),
+    rhombicSideWalls(p - fccSite([0, h.y, 0], size), h, combine),
+    rhombicSideWalls(p - fccSite([h.x, 0, 0], size), h, combine));
 }

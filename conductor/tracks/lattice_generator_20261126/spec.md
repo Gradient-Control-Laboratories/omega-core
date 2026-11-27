@@ -10,9 +10,12 @@ then comes from one definition, and a dual is never missing.
 
 ## 2. Why
 
-The [API cleanup](../api_cleanup_20261126/spec.md) (section 6a) found the hand-built set inconsistent:
-`foam.cubic` is `beam.cubic`'s dual, but `foam.bcc` and `foam.fcc` are the Delaunay walls of the same points as
-`beam.bcc` and `beam.fcc`, and the true duals (Kelvin, rhombic dodecahedra) did not exist. A generator makes the
+The [API cleanup](../api_cleanup_20261126/spec.md) (section 6a) found the hand-built set hard to read: a
+foam and a beam lattice of the same name are sometimes the same complex (`foam.bcc` holds `beam.bcc`'s struts,
+`foam.cubic` holds `beam.cubic`'s) and sometimes neither (`foam.fcc` sits on the other face-centred lattice of the
+cell), duals hide under other names (`beam.fluorite` is the rhombic-dodecahedral strut lattice, the dual of
+`foam.fcc`), and two Voronoi foams were missing until that track added `foam.kelvin` and
+`foam.rhombicDodecahedral`. A generator makes the
 relation explicit: struts are Delaunay edges, walls are Voronoi faces.
 
 ## 3. Cost

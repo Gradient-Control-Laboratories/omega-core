@@ -1,8 +1,11 @@
 package fix
 
 import (
+	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
 // renamedMembers maps a standard library import path to the members that
@@ -88,4 +91,101 @@ func renameMembers(src string) string {
 		return src
 	}
 	return applyNonOverlappingEdits(src, edits)
+}
+
+// simpleOperand is a name, a qualified name or a number: safe to subtract
+// without parentheses.
+var simpleOperand = regexp.MustCompile(`^([A-Za-z_][A-Za-z0-9_.]*|[0-9]+(\.[0-9]*)?([eE][-+]?[0-9]+)?)$`)
+
+// collectLatticeBccEdits rewrites the deprecated lattice.bcc(cellSize,
+// beamRadius[, combine]) to (beam.bcc(cellSize[, combine]) - beamRadius), the
+// same lattice. lattice is reached by its default prefix or by the name the
+// file imports it under.
+func collectLatticeBccEdits(src string, file *program.PackageFile) []textEdit {
+	prefixes := map[string]bool{"lattice": true}
+	for _, imp := range file.Imports {
+		if imp == nil {
+			continue
+		}
+		if imp.Path == "lattice" && imp.Prefix != "" && imp.Prefix != "." {
+			prefixes[imp.Prefix] = true
+		} else if imp.Prefix == "lattice" && imp.Path != "lattice" {
+			delete(prefixes, "lattice")
+		}
+	}
+	text := func(op *program.Operand) (string, bool) {
+		if op == nil || op.Start == nil || op.End == nil {
+			return "", false
+		}
+		s, e := int(op.Start.Offset), int(op.End.Offset)
+		if s < 0 || e > len(src) || s > e {
+			return "", false
+		}
+		return src[s:e], true
+	}
+	var edits []textEdit
+	visitCallsInFile(file, func(op *program.Operand, fc *program.FnCall) {
+		if fc.Reference == nil || fc.Reference.Name != "bcc" || !prefixes[fc.Reference.Prefix] {
+			return
+		}
+		n := len(fc.Arguments)
+		if n != 2 && n != 3 {
+			return
+		}
+		call, ok := text(op)
+		if !ok {
+			return
+		}
+		// An expression argument's span is not its whole text, so split the
+		// call's own text at its top-level commas.
+		parts := callArguments(call)
+		if len(parts) != n {
+			return
+		}
+		radius := parts[1]
+		if !simpleOperand.MatchString(radius) {
+			radius = "(" + radius + ")"
+		}
+		args := parts[0]
+		if n == 3 {
+			args += ", " + parts[2]
+		}
+		edits = append(edits, textEdit{
+			start: int(op.Start.Offset), end: int(op.End.Offset),
+			text: "(beam.bcc(" + args + ") - " + radius + ")",
+		})
+	})
+	return edits
+}
+
+// callArguments splits a call's text, name(a, b, ...), into its trimmed
+// arguments at the top-level commas, or nil if it is not a call.
+func callArguments(call string) []string {
+	open := strings.IndexByte(call, '(')
+	if open < 0 || !strings.HasSuffix(call, ")") {
+		return nil
+	}
+	inner := call[open+1 : len(call)-1]
+	var parts []string
+	depth, start := 0, 0
+	for i := 0; i < len(inner); i++ {
+		switch inner[i] {
+		case '(', '[', '{':
+			depth++
+		case ')', ']', '}':
+			depth--
+		case '"':
+			for i++; i < len(inner) && inner[i] != '"'; i++ {
+				if inner[i] == '\\' {
+					i++
+				}
+			}
+		case ',':
+			if depth == 0 {
+				parts = append(parts, strings.TrimSpace(inner[start:i]))
+				start = i + 1
+			}
+		}
+	}
+	return append(parts, strings.TrimSpace(inner[start:]))
 }

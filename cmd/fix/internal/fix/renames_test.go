@@ -68,3 +68,25 @@ func TestStdlibFixer_RenamedMembersLeftAlone(t *testing.T) {
 		assert.Equal(t, src, got)
 	}
 }
+
+func TestStdlibFixer_DeprecatedLatticeBcc(t *testing.T) {
+	tests := []struct{ in, want string }{
+		{"return lattice.bcc(10, 1);\n", "return (beam.bcc(10) - 1);\n"},
+		{"return lattice.bcc([10, 12, 8], r, unionRound(0.5));\n", "return (beam.bcc([10, 12, 8], unionRound(0.5)) - r);\n"},
+		{"return lattice.bcc(10, r + 0.5) * 2;\n", "return (beam.bcc(10) - (r + 0.5)) * 2;\n"},
+		{"import l \"lattice\";\nreturn l.bcc(10, 1);\n", "import l \"lattice\";\nreturn (beam.bcc(10) - 1);\n"},
+	}
+	for _, tt := range tests {
+		got, changed, err := fix.Apply(tt.in, []fix.Fixer{mustFixer(t, "stdlib")})
+		require.NoError(t, err)
+		assert.True(t, changed)
+		assert.Equal(t, tt.want, got)
+	}
+	// beam.bcc and foam.bcc are not the deprecated one.
+	for _, src := range []string{"return beam.bcc(10) - 1;\n", "return foam.bcc([10, 10, 10]);\n"} {
+		got, changed, err := fix.Apply(src, []fix.Fixer{mustFixer(t, "stdlib")})
+		require.NoError(t, err)
+		assert.False(t, changed)
+		assert.Equal(t, src, got)
+	}
+}

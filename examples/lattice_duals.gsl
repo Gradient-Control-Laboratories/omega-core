@@ -1,0 +1,40 @@
+@scene(200, 20)
+
+// Lattice duals. Each column pairs a strut lattice (front) with the foam that is
+// its dual (back): every wall of the foam is crossed by one strut, and every
+// strut crosses one wall. Struts are bonds between points, walls are the faces
+// of those points' Voronoi cells, and the dual swaps the two. Each lattice is
+// repeated through its own 28 mm cube, grown from its thin field by
+// lattice.solidify, and blended where its parts meet by unionRound(0.5).
+
+bias = 0.6;       // strut and wall half-width (mm)
+r = 14;           // specimen half-size (mm)
+step = 34;        // spacing between specimens (mm)
+s = [12, 12, 12]; // unit-cell size (mm)
+blend = unionRound(0.5);
+
+// Solidify a thin field and clip it to a cube centred at (x, y).
+specimen(field, x, y) {
+  return max(lattice.solidify(field, bias), boxCentered([x, y, 0], [2 * r, 2 * r, 2 * r]));
+}
+
+front = -0.5 * step;
+back = 0.5 * step;
+
+// Left to right: simple cubic, body-centred bonds against Kelvin cells, Kelvin
+// edges against body-centred Delaunay walls, face-centred bonds against rhombic
+// dodecahedra, and fluorite (rhombic-dodecahedral edges) against face-centred
+// Delaunay walls.
+cubicStruts = specimen(beam.cubic(s, blend),             -2 * step, front);
+cubicWalls  = specimen(foam.cubicGrid(s, blend),         -2 * step, back);
+bccStruts   = specimen(beam.bcc(s, blend),               -1 * step, front);
+kelvinWalls = specimen(foam.kelvin(s, blend),            -1 * step, back);
+kelvinEdges = specimen(beam.kelvinCell(s, 0.5, blend),    0,        front);
+bccWalls    = specimen(foam.bcc(s, blend),                0,        back);
+octetStruts = specimen(beam.octet(s, blend),              1 * step, front);
+rhombicWalls = specimen(foam.rhombicDodecahedral(s, blend), 1 * step, back);
+fluoriteStruts = specimen(beam.fluorite(s, blend),        2 * step, front);
+fccWalls    = specimen(foam.fcc(s, blend),                2 * step, back);
+
+return cubicStruts, cubicWalls, bccStruts, kelvinWalls, kelvinEdges, bccWalls,
+  octetStruts, rhombicWalls, fluoriteStruts, fccWalls;

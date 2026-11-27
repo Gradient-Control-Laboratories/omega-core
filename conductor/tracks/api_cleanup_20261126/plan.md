@@ -53,10 +53,19 @@ golden stops for approval before the golden is updated.
   - [x] `gsl fix -stdlib` renames members through the package prefix (table in cmd/fix renames.go); no golden
         moved (the functions inline away); three fixtures went through the fixer
 - [ ] Goal: Lattices (N6, spec section 6a)
-  - [ ] A `combine` form on every beam lattice, struts written out explicitly; folded forms unchanged
-  - [ ] Retire `lattice.bcc` into `beam.bcc(cellSize, combine) - beamRadius`, with a rewrite
-  - [ ] Each beam and foam doc names its complex and its dual
-  - [ ] Kelvin foam, rhombic-dodecahedral foam and strut lattice, built from points
+  - [x] A `combine` form on every beam lattice that joins struts (bcc, fcc, octet, truncatedOctahedral,
+        truncatedCubic, kelvinCell, fluorite, cubicDouble), written out from the fold domain's pieces and their
+        mirror images; folded forms unchanged; a test checks each against its folded form. isotruss, reentrant
+        and cubic already took one; the columns join nothing
+  - [x] Deprecate `lattice.bcc` (kept for a release) into `beam.bcc(cellSize, combine) - beamRadius`, with a
+        `gsl fix -stdlib` rewrite; the blend_lattice fixture went through it
+  - [x] Each beam and foam doc names its complex and its dual (checked numerically: which struts lie in which
+        walls, and which lie on Voronoi edges)
+  - [x] foam.kelvin and foam.rhombicDodecahedral, built from points, each with a combine form; a test checks
+        them against brute-force Voronoi walls. The rhombic-dodecahedral strut lattice already existed:
+        beam.fluorite is it (the dual of foam.fcc, which sits on the other face-centred lattice of the cell)
+  - [x] examples/lattice_duals.gsl pairs each strut lattice with its dual foam; the foam gallery shows the
+        Voronoi foams
 - [ ] Goal: `matrix.scale` becomes `multiplyScalar` (N2), with its rewrite and the lowering updated; hide the lowering targets (R1)
 - [ ] Goal: Centred `torus` and `octahedron` (N9); difference operator forms (N10)
   - [ ] A test per new form; the documentation examples still build
