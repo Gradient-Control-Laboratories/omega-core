@@ -49,7 +49,12 @@ golden stops for approval before the golden is updated.
         `import "map"` gets an error naming `domain`; `rotateYZ`, `rotateZX`, `eulerAngles` documented
   - [x] Fixtures and tests that said `map.` were run through the fixer; 30 WGSL goldens moved
         `map_…` → `domain_…` only (token proof)
-- [ ] Goal: Honeycomb names (N5) and the three `bcc`s (N6), with rewrites
+- [ ] Goal: Honeycomb names (N5): the `rectangular` family, `hexagonal`, `triangular`, `octet`, with a rewrite
+- [ ] Goal: Lattices (N6, spec section 6a)
+  - [ ] A `combine` form on every beam lattice, struts written out explicitly; folded forms unchanged
+  - [ ] Retire `lattice.bcc` into `beam.bcc(cellSize, combine) - beamRadius`, with a rewrite
+  - [ ] Each beam and foam doc names its complex and its dual
+  - [ ] Kelvin foam, rhombic-dodecahedral foam and strut lattice, built from points
 - [ ] Goal: `matrix.scale` becomes `multiplyScalar` (N2), with its rewrite and the lowering updated; hide the lowering targets (R1)
 - [ ] Goal: Centred `torus` and `octahedron` (N9); difference operator forms (N10)
   - [ ] A test per new form; the documentation examples still build

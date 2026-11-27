@@ -33,8 +33,8 @@ open, the decision says so (section 9).
 | N2  | `matrix.scale`    | `matrix.scale(s, m)` multiplies a matrix by a number, `matrix.scaling(factors)` builds a scale matrix, `transform.scale(shape, factor)` scales a shape                                                  | Rename `matrix.scale` to `multiplyScalar`, the name of its twin `vector.multiplyScalar`, so "scale" means scaling geometry. The lowering of `*` and `/` calls it, so the rename updates `internal/lower`; the old name stays as an alias for a release                                                                                                     |
 | N3  | Axis rotation     | `transform.rotate(shape, origin, direction, angle)`, `map.rotateAxis(v, axisOrigin, axisDir, angle)`, `matrix.rotation(axis_origin, axis_direction, angle)`; `map.rotateXY(v, ang)`                    | One vocabulary: `(…, axisOrigin, axisDirection, angle)` everywhere, `ang` becomes `angle`. Parameter names only; nothing breaks                                                                 |
 | N4  | Lattice size      | The cell size is `sizeIn` (beam), `size` (foam), `cellSize` (lattice, honeycomb), `period` (tpms, spinodoid), `spacing`, `cell`                                                                        | `cellSize` everywhere, except `period` in tpms and spinodoid, where the field's wavelength is the real meaning. Parameter names only                                                             |
-| N5  | Honeycomb names   | `honeycomb.squareHoneycomb`, `hexagonalHoneycomb`, … repeat the package name; `foam.cubic` does not                                                                                                    | Drop the repetition (`honeycomb.square`, `honeycomb.hexagonal`, …); `gsl fix` rewrites                                                                                                          |
-| N6  | Three `bcc`s      | `lattice.bcc`, `beam.bcc`, `foam.bcc`                                                                                                                                                                  | Document in each how it differs (struts, walls, the shared base), or retire `lattice.bcc` if it duplicates `beam.bcc`                                                                           |
+| N5  | Honeycomb names   | `honeycomb.squareHoneycomb`, `hexagonalHoneycomb`, … repeat the package name; `foam.cubic` does not                                                                                                    | `rectangular`, `rectangularDiagonal`, `rectangularReinforced`, `hexagonal`, `triangular`, `octet` (`square` is a reserved primitive, and the cells are vec2 rectangles); a hard rename, `gsl fix` rewrites                                                                                                          |
+| N6  | Three `bcc`s      | `lattice.bcc`, `beam.bcc`, `foam.bcc`                                                                                                                                                                  | See section 6a: every beam lattice takes a `combine`, `lattice.bcc` is retired into `beam.bcc`, each doc names its complex, and the missing duals are added                                                                           |
 | N7  | Box corners       | `box(pointA, pointB)`, `cropToBox(shape, low, high)`, `extrude(profile, low, high)`, and `.box = [lo, hi]`                                                                                             | `min`, `max` for every pair of box corners. Parameter names only. `min`/`max` already work as parameter names; #174 makes every built-in name work                                              |
 | N8  | Placement words   | `center`, `origin` (cone), `point` (plane), `vertex` (paraboloid)                                                                                                                                      | Keep `origin`, `point` and `vertex` where they are the right geometric word                                                                                                                     |
 | N9  | Centred overloads | `torus` and `octahedron` exist only at the origin; `sphere` has both forms                                                                                                                             | Add `torus(center, majorRadius, minorRadius)` and `octahedron(center, size)`                                                                                                                    |
@@ -88,6 +88,35 @@ the call, never taken from the scene or inferred. The scale is already explicit 
 `impulses` ([call.go](../../../program/noise/spinodoid/call.go)). The periodic layout of a stationary field
 (constant scale and orientation) and the bounded layout stay; they are how a table is stored, not versions of
 the field.
+
+## 6a. Decisions: Lattices
+
+**What each lattice is.** A beam lattice is the bond struts of a point lattice; a foam is walls.
+
+| Lattice | `beam.X` | `foam.X` | Relation |
+| :------ | :------- | :------- | :------- |
+| cubic | struts through the cell centres | walls on the cell boundaries | duals: each wall is crossed by one strut |
+| bcc | centre-to-corner bonds | the planes x±y, y±z, z±x = n·s: the Delaunay tetrahedra (tetragonal disphenoids) of the BCC points | the same complex, edges and faces; not duals |
+| fcc | corner-to-face-centre bonds | the four {111} families: the Delaunay tetrahedra and octahedra of FCC | the same complex; not duals |
+
+The duals of `beam.bcc` and `beam.fcc` are the Voronoi foams, Kelvin cells (truncated octahedra) and rhombic
+dodecahedra, which `foam` lacks.
+
+**Decisions.**
+
+- Every lattice that joins parts with a boolean takes it as a callback, `combine`. The folded forms stay the
+  default and fast; a mirror fold joins struts sharply where they meet their own images, so a `combine` form
+  writes the struts or walls out explicitly to blend every junction (3 to 4 times the generated operations of
+  the folded form, opt-in).
+- `lattice.bcc(cellSize, beamRadius, combine)` is `beam.bcc(cellSize, combine) - beamRadius`; it is retired and
+  `gsl fix` rewrites it.
+- Each beam and foam doc names its complex and its dual.
+- The missing duals are added: a Kelvin foam (dual of `beam.bcc`), a rhombic-dodecahedral foam (dual of
+  `beam.fcc`) and the rhombic-dodecahedral strut lattice. They are built from points: each sublattice's nearest
+  point, an `abs` fold, a few planes, and `max` over the sublattices (no select, which would hurt fidget's
+  interval bounds). A prototype Kelvin foam generated 34 WGSL operations against `foam.bcc`'s 38.
+- A fully generic generator (any point set, every neighbour, no fold) is written up separately in
+  [lattice_generator_20261126](../lattice_generator_20261126/spec.md), not built here.
 
 ## 7. Decisions: Go SDK
 
