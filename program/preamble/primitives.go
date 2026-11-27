@@ -54,7 +54,7 @@ var primitiveDescriptions = map[pb.Operation]string{
 	pb.Operation_LT:      skipDescription,
 	pb.Operation_COMPARE: skipDescription,
 
-	pb.Operation_REMAP: "Calls the first argument, a function, with a p value equal to the second argument, a vector with x, y, and z components.",
+	pb.Operation_REMAP: "Evaluates the first argument, a field value, with p replaced by the second argument, a vec3.",
 
 	// Internal marker for the .dtime / .dp / .d(var) derivative accessors. Expanded by
 	// the autodiff pass before lowering and never appears as a source word.

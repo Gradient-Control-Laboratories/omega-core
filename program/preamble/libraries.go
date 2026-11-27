@@ -103,7 +103,7 @@ func writeLibrariesIntro(sb *strings.Builder) {
 		"`beam.bcc(10)`, not `lattice.beam.bcc(10)`.\n\n")
 	sb.WriteString("To import a custom or product-specific library, put an `import` " +
 		"line at the top of the file. Two forms:\n\n")
-	sb.WriteString("```gsl\n" +
+	sb.WriteString("```gsl-fragment\n" +
 		"import \"path/to/pkg\";      // qualified: call as `pkg.func(1)` (prefix = last path segment)\n" +
 		"import alias \"path/to/pkg\";  // aliased:   call as `alias.func(1)`\n" +
 		"```\n\n")

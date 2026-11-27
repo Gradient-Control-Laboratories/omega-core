@@ -1,11 +1,6 @@
 package preamble
 
 const GSLDescription = `
----
-name: gsl-author
-description: Expert in GSL (GCL Shape Language) creating Signed Distance Functions (SDFs) and geometric shapes.
----
-
 # Skill: GSL Code Generator
 
 ## **Description**
@@ -38,7 +33,7 @@ where variables are assigned exactly once.
 Re-assigning a variable is not allowed.
 For example,
 
-` + "```gsl" + `
+` + "```gsl-fragment" + `
 // This is allowed
 x = max(1, 2);
 y = max(x, 3);
@@ -64,10 +59,12 @@ Audio signals should be in the range [-1, 1].
 * **Data Types:**
   * **Float (f32):** Standard floating-point numbers used for all calculations,
 but integers are allowed in the source code and are converted to floats.
-  * **Vector:** Ordered collections of 2 or more scalars.
-  * **List:** Ordered collections of 2 or more vectors of the same length.
-Lists are indexed with constant integers and iterated with map and reduce;
-swizzling and arithmetic do not apply to lists of vectors.
+  * **Vector / List:** An ordered collection of 1 or more scalars, or of 1 or more
+vectors of the same length (a list of vectors, such as a matrix written by columns).
+Arithmetic, and functions such as abs, min, length and dot, work element by element
+on collections of any length, and a scalar combines with every element.
+Index with constant integers (` + "`v[4]`" + `), name the first four elements with
+swizzles (` + "`.x`" + ` to ` + "`.w`" + `), and iterate with map and reduce.
 
   * **No Booleans:** Logic uses 1.0 for true and 0.0 for false.
 Numbers are converted to booleans using the following rules:
@@ -91,7 +88,7 @@ review AI-generated GSL.
 A directive at the very top of the first file in a package, before any imports
 or declarations, that sets the viewport's viewing box and grid spacing — both
 in millimeters, same as every other length in the language.
-  ` + "```gsl" + `
+  ` + "```gsl-fragment" + `
   @scene(20)      // 20 mm viewport, grid defaults to size / 10
   @scene(20, 2)   // 20 mm viewport, 2 mm grid
   ` + "```" + `
@@ -116,7 +113,7 @@ the animation clock runs; each animated row gets a play/pause toggle so
 the user can grab the slider manually at any time. For example:
   ` + "```gsl" + `
   @range(0.5, 10.0, 4.0) radius = 5.0;  // animate radius over 4 seconds
-  return remap(sphere(radius), p);
+  return sphere(radius);
   ` + "```" + `
 The ` + "`.min`, `.max` and `.period`" + ` properties older sources used for these limits
 were removed: a source that still sets one does not compile, and
@@ -129,12 +126,18 @@ above; ` + "`@point`" + ` on an ` + "`[x, y, z]`" + ` marks a
 point in the scene, ` + "`@direction`" + ` on an ` + "`[x, y, z]`" + ` a
 direction, drawn from the origin or from ` + "`@direction(anchor)`" + `'s
 point (a ` + "`@point`" + ` variable or a constant),
-` + "`@color`" + ` on an sRGB ` + "`[r, g, b]`" + ` a colour, and
-` + "`@transform`" + ` on a 4x4 matrix a frame. The annotation changes nothing
-about the value. The same annotations on a function's parameters declare what
-kind of argument each takes, so a tool writing a call to the function can give
-each argument its control:
-  ` + "```gsl" + `
+` + "`@color`" + ` on an sRGB ` + "`[r, g, b]`" + ` a colour,
+` + "`@transform`" + ` on a 4x4 matrix a frame, and ` + "`@spline`" + ` on a list of
+4x4 matrices an editable curve: each matrix becomes a ` + "`@transform`" + ` handle,
+and the curve runs through their translations as quadratic Bezier sections,
+so an odd count of three or more chains sections that share endpoints. The
+annotation changes nothing about the value. Each compiles to a call,
+` + "`@point`" + ` to ` + "`uiPoint(...)`" + ` and likewise ` + "`uiDirection`" + `,
+` + "`uiColor`" + `, ` + "`uiTransform`" + ` and ` + "`uiSpline`" + `, which is what
+generated code shows; write the annotation. The same annotations on a
+function's parameters declare what kind of argument each takes, so a tool
+writing a call to the function can give each argument its control:
+  ` + "```gsl-fragment" + `
   powderCoat(@color coatColor, @range(0, 100) glossUnits, @range(0, 1) peel) { ... }
   turned(@point axisOrigin, @direction(axisOrigin) axisDir, @range(0.05, 0.5) feed) { ... }
   ` + "```" + `
@@ -145,6 +148,9 @@ reads off the body rather than asks for. ` + "`@surface`" + ` marks a
 function that takes a surface first and returns the modified one, the
 overload of a surface operator that takes only those slots and bakes the
 operator's other arguments: what the Materials panel wraps a surface with.
+In a library, ` + "`@material`" + ` marks a function that returns a
+` + "`(material, color)`" + ` pair and ` + "`@finish`" + ` a colorless finish preset,
+a constant or a function; the Materials panel lists what they mark.
 
 * **Shape Color (` + "`name.color`" + `):**
 A declaration property that gives a shape an RGB color:
@@ -197,7 +203,7 @@ same way (` + "`glass.clear()`" + `, ` + "`glass.frosted()`" + `,
 through, and parts inside the glass are seen through it.
   ` + "```gsl" + `
   boltMat, boltColor = metal.brass();
-  bolt = cylinderZ(4, 20);
+  bolt = max(cylinderZ(vector.zero, 4), abs(p.z) - 10);
   bolt.material = boltMat;
   bolt.color = boltColor;
   return bolt;
@@ -269,12 +275,12 @@ every measurement use the value itself.
   ` + "```gsl" + `
   hole = length(p.xy) - 0.75;
   hole.featureSize = 1.5;
-  plate = max(box([-20, -20, -3], [20, 20, 3]), neg(hole));
+  plate = max(box([-20, -20, -3], [20, 20, 3]), -hole);
   return plate;
   ` + "```" + `
 
 * **Properties carried out of a function:** a function that builds a shape, sets ` + "`.color`" + `, ` + "`.material`" + ` or ` + "`.simple`" + ` on it and returns it hands those properties to the shape the caller gets, so the caller need not set them again. A property the caller sets on its own name wins.
-  ` + "```gsl" + `
+  ` + "```gsl-fragment" + `
   finished(r) {
     s = sphere(vector.zero, r);
     s.material = material.chrome;
@@ -288,7 +294,7 @@ every measurement use the value itself.
   A function that returns several shapes keeps each one's own (` + "`a, b = pair();`" + `). The function must return a local variable, or a call to another function that carries; returning an expression built from one, such as ` + "`remap(s, q)`" + `, carries nothing out.
 
 * **Function Definition:**
-  ` + "```gsl" + `
+  ` + "```gsl-fragment" + `
   // Named Function
   myFunc(a, b) {
     return a + b;
@@ -335,7 +341,7 @@ accessors, so ` + "`f.second.dp`" + ` is its gradient. Because ` + "`f`" + ` and
 ` + "`f.second`" + ` vanish together exactly where two surfaces meet on the
 boundary, ` + "`length([f, f.second])`" + ` is a distance-to-crease field — the
 usual way to find and shade the edges of a composition.
-  ` + "```gsl" + `
+  ` + "```gsl-fragment" + `
   combined = unionSharp(s, r, t);
   edges = length([combined, combined.second]);   // 0 along the creases
   combined.color = ramp(edges, 0.005, 0.008, color.darkGray, color.white);
@@ -354,7 +360,7 @@ shape and keep its box, use the ` + "`transform`" + ` library (` + "`transform.t
 ` + "`rotateX`" + ` / ` + "`rotateY`" + ` / ` + "`rotateZ`" + `, ` + "`rotate`" + `, ` + "`scale`" + `, ` + "`affine`" + `). An axis
 it cannot bound reads as ` + "`-nothing`" + ` to ` + "`nothing`" + `, and an empty box reads
 with lo > hi. It follows sliders, and works in top-level expressions.
-  ` + "```gsl" + `
+  ` + "```gsl-fragment" + `
   bracket = unionSharp(plate, boss) - 0.5;
   placed = transform.rotateZ(transform.translate(bracket, [40, 0, 0]), pi / 6);
   proxy = box(placed.box[0], placed.box[1]);   // its bounding box, as geometry
@@ -395,7 +401,7 @@ Use surrounding parentheses when nesting!
 
 * **Booleans (CSG):** combine shapes with ` + "`unionSharp`" + `, ` + "`intersectSharp`" + ` and ` + "`differenceSharp`" + `, each taking the shapes as arguments or as one list: ` + "`differenceSharp(plate, holes)`" + `. To blend the seam instead, change the name and add the blend's parameters as the last arguments: ` + "`unionRound(a, b, 2)`" + ` fillets it with radius 2, and ` + "`Lp`" + `, ` + "`Exponential`" + `, ` + "`Chamfer`" + `, ` + "`ChamferRound`" + ` and ` + "`Rvachev`" + ` do likewise (a radius, a width or an offset), each with a matching ` + "`difference`" + `.
   * **A blend is a value.** Leave the shapes out and a blend returns the operator itself, which takes a list of shapes: ` + "`intersectRound(2)`" + `. Hand it to anything that wants a blend. ` + "`boxCentered(vector.zero, [20, 20, 20], intersectRound(2))`" + ` rounds every edge of the box, and ` + "`intersectChamferBlend(a, b, offset, blend)`" + ` takes another blend to combine its chamfer planes. Take one as a parameter of your own function and it works with any blend; call it through the parameter's name:
-  ` + "```gsl" + `
+  ` + "```gsl-fragment" + `
   joined(blend) { return blend([sphere(vector.zero, 10), sphere([8, 0, 0], 10)]); }
   fused = joined(unionRound(2));
   ` + "```" + `
@@ -410,7 +416,7 @@ Use surrounding parentheses when nesting!
 | 2            | ` + "`!, +, -`" + `                         | Unary logical NOT, unary plus/minus                                |
 | 3            | ` + "`*, /, %`" + `                         | Multiplication, division, modulo                                   |
 | 4            | ` + "`+, -`" + `                            | Addition, subtraction                                              |
-| 5            | ` + "`<, <=, >, >=`" + `                    | Relational comparison                                              |
+| 5            | ` + "`<, <=, >, >=, <=>`" + `               | Relational comparison, spaceship                                   |
 | 6            | ` + "`==, !=`" + `                          | Equality                                                           |
 | 7            | ` + "`&&`" + `                              | Logical AND                                                        |
 | 8            | ` + "`\\|\\|`" + `                          | Logical OR                                                         |
@@ -458,5 +464,5 @@ body = unionSharp(drilled, ribOnPlate);
 return body;
 ` + "```" + `
 
-**Prefer the library.** Combine shapes with ` + "`unionSharp`" + `, ` + "`intersectSharp`" + ` and ` + "`differenceSharp`" + ` rather than ` + "`min`" + `, ` + "`max`" + ` and ` + "`max(a, neg(b))`" + `, and move them with ` + "`transform.translate`" + `, ` + "`rotateX`" + ` / ` + "`rotateY`" + ` / ` + "`rotateZ`" + `, ` + "`rotate`" + `, ` + "`scale`" + ` and ` + "`affine`" + ` rather than ` + "`remap`" + `. Each gives the same field as the hand-written form, says what you mean, and keeps the shape's bounding box. Write ` + "`min`" + `, ` + "`max`" + ` or ` + "`remap`" + ` yourself only for something the library has no function for.
+**Prefer the library.** Combine shapes with ` + "`unionSharp`" + `, ` + "`intersectSharp`" + ` and ` + "`differenceSharp`" + ` rather than ` + "`min`" + `, ` + "`max`" + ` and ` + "`max(a, -b)`" + `, and move them with ` + "`transform.translate`" + `, ` + "`rotateX`" + ` / ` + "`rotateY`" + ` / ` + "`rotateZ`" + `, ` + "`rotate`" + `, ` + "`scale`" + ` and ` + "`affine`" + ` rather than ` + "`remap`" + `. Each gives the same field as the hand-written form, says what you mean, and keeps the shape's bounding box. Write ` + "`min`" + `, ` + "`max`" + ` or ` + "`remap`" + ` yourself only for something the library has no function for.
 `

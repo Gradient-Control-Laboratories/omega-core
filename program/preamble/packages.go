@@ -14,14 +14,15 @@ import (
 
 // GSLSkillIndex returns the GSL author skill with the library docs replaced by
 // a package index: the language description, the primitives and built-ins, how
-// packages are imported and referenced, one line per package, and the reserved
-// words. includeDomains selects product-specific libraries, as in
+// packages are imported and referenced, one line per package, the reserved
+// words and the common pitfalls. includeDomains selects product-specific libraries, as in
 // LibrariesDescriptiveText.
 func GSLSkillIndex(includeDomains ...string) string {
 	return GSLDescription +
 		"\n\n" + PrimitiveAndBuiltinDescriptiveText() +
 		"\n\n" + PackageIndexText(includeDomains...) +
-		"\n\n" + ReservedWordsDescriptiveText()
+		"\n\n" + ReservedWordsDescriptiveText() +
+		"\n\n" + CommonPitfalls
 }
 
 // PackageIndexText lists every embedded library on one line: its import path,

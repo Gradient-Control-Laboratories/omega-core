@@ -8,6 +8,17 @@ import (
 	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
+// annotationBuiltins are the calls the control annotations compile to
+// (@point to uiPoint, and so on). The language description teaches the
+// annotations and names these once, so the built-in list leaves them out.
+var annotationBuiltins = map[string]bool{
+	"uiPoint":     true,
+	"uiTransform": true,
+	"uiColor":     true,
+	"uiDirection": true,
+	"uiSpline":    true,
+}
+
 func PrimitiveAndBuiltinDescriptiveText() string {
 	var sb strings.Builder
 	sb.WriteString("\n---\n\n## **Primitive and Built-in Functions**\n\n")
@@ -21,6 +32,9 @@ func PrimitiveAndBuiltinDescriptiveText() string {
 	}
 	sort.Strings(names)
 	for _, name := range names {
+		if annotationBuiltins[name] {
+			continue
+		}
 		sb.WriteString(fmt.Sprintf("* **`%s`**: %s\n", name, builtinDescriptions[name]))
 	}
 
@@ -49,9 +63,9 @@ The first argument can be any expression that evaluates to a signed distance fun
 If you want to pass a function as the first argument, then you must pass a function call instead.
 For example,
 
-` + "```gsl" + `
+` + "```gsl-fragment" + `
 // Given
-myShape = calcShape()
+myShape = calcShape();
 
 // This is allowed
 x = remap(myShape, [1, 2, 3]);
@@ -78,7 +92,7 @@ The result of evaluating the second argument becomes the p value used when evalu
 For example, a box centered at the origin can be moved with transform.translate,
 which is a remap whose second argument is p minus the offset:
 
-` + "```gsl\ntransform.translate(boxCentered(vector.zero, [10, 20, 30]), [1, 2, 3])\n```" + `
+` + "```gsl-fragment\ntransform.translate(boxCentered(vector.zero, [10, 20, 30]), [1, 2, 3])\n```" + `
 
 This would translate the box 1 mm in the positive x direction,
 2 mm in the positive y direction, and 3 mm in the positive z direction.
@@ -86,7 +100,7 @@ transform.rotateX, rotateY and rotateZ turn a shape about an axis through the or
 
 Another example is to assign an expression to a variable and then reuse it to produce identical shapes in different places and orientations:
 
-` + "```gsl\n" + `
+` + "```gsl-fragment\n" + `
 baseShape = boxCentered(vector.zero, [10, 20, 30]);
 
 shape1 = transform.translate(baseShape, [1, 2, 3]);
