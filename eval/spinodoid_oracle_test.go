@@ -175,5 +175,5 @@ const gaborSpinodoidDoc = "import \"lattice/spinodoid\";\nfield = spinodoid.gabo
 // The fastGaborSpinodoid builtin spelled out: spinodoid.gabor's arguments,
 // with the Cartesian poles and an identity frame.
 const fastSpinodoidDoc = `poles = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
-field = fastGaborSpinodoid(p, 6, [pi / 2, pi / 2, pi / 2], poles, 3, 8, 4096, 0, 0, 1, 1, poles);
+field = fastGaborSpinodoid(p, 6, [pi / 2, pi / 2, pi / 2], poles, 3, 8, 4096, 0, 0, 1, 1, poles, [[0, 0, 0], [0, 0, 0]]);
 return field;`
