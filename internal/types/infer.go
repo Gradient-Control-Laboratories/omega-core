@@ -449,9 +449,23 @@ func inferOperandType(op *program.Operand, env *TypeEnv, file *program.PackageFi
 		case program.Operation_REMAP:
 			// Invariant: parser primitive validation guarantees at least 2 operands (target shape + coordinate mappings).
 			for i := 1; i < len(expr.Operands); i++ {
-				_, err := inferSingleType(expr.Operands[i], env, file, pa)
+				pt, err := inferSingleType(expr.Operands[i], env, file, pa)
 				if err != nil {
 					return nil, err
+				}
+				// The point a shape is evaluated at is a vec3. Code generation
+				// rejects anything else too, but only after assembly, with the
+				// operand dumped; say it here, where a 2D point is the usual slip.
+				if i == 1 && pt != nil && (pt.Kind == program.TypeKind_SCALAR || (pt.Kind == program.TypeKind_LIST && pt.Size != 3)) {
+					size := int(pt.Size)
+					if pt.Kind == program.TypeKind_SCALAR {
+						size = 1
+					}
+					hint := ""
+					if size == 2 {
+						hint = ": write [p.x, p.y, 0] to evaluate at a point in the XY plane"
+					}
+					return nil, fmt.Errorf("remap's second argument is the point the shape is evaluated at and must be a vec3, not %d component(s)%s", size, hint)
 				}
 			}
 			t, err := inferOperandType(expr.Operands[0], env, file, pa)

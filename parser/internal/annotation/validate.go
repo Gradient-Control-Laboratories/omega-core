@@ -6,8 +6,9 @@ import "fmt"
 func ValidateTarget(name string, target Target) error {
 	switch name {
 	case Range:
-		// @range is permitted on variable assignments, parameters, and inline expressions.
-		if target == TargetAssignment || target == TargetParameter || target == TargetExpression {
+		// @range is permitted on variable assignments and parameters. On a
+		// value inside an expression it would make no slider.
+		if target == TargetAssignment || target == TargetParameter {
 			return nil
 		}
 		return fmt.Errorf("@%s annotation cannot be applied to %s", name, target)

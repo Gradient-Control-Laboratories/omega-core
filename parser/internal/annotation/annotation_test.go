@@ -78,7 +78,7 @@ func TestTargetValidation(t *testing.T) {
 		// Range
 		{annotation.Range, annotation.TargetAssignment, false},
 		{annotation.Range, annotation.TargetParameter, false},
-		{annotation.Range, annotation.TargetExpression, false},
+		{annotation.Range, annotation.TargetExpression, true},
 
 		// Values
 		{annotation.Values, annotation.TargetAssignment, false},
