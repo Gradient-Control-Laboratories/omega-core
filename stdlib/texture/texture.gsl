@@ -22,7 +22,7 @@ import "noise";
 import "color";
 import "material";
 import "ease";
-import "map";
+import "domain";
 
 /// mask(field, edge, width): a soft 0..1 threshold of `field` centered at
 /// `edge` with transition half-width `width` (ease.quadratic — smoothstep —
@@ -344,7 +344,7 @@ tiles(x, y, sizeU, sizeV, joint, bond) {
 /// the point, and the distance from the point to the cell's edge, positive
 /// inside.
 hexCells(x, y, across) {
-  cellP = remap(map.patternTriangularXY(across), [x, y, 0]);
+  cellP = remap(domain.patternTriangularXY(across), [x, y, 0]);
   q = [cellP.x, cellP.y];
   reach = max(abs(dot(q, [1, 0])), max(abs(dot(q, [0.5, 0.8660254])), abs(dot(q, [-0.5, 0.8660254]))));
   return cellP, 0.5 * across - reach;

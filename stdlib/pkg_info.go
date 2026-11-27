@@ -24,7 +24,7 @@ import (
 // material/bulk/metal) while excluding '_'-prefixed helper directories such as
 // text/_tools/ so offline font generation assets do not bloat compiled binaries.
 //
-//go:embed builtin color draft ease lattice map material matrix mechanical noise synth text texture transform vector
+//go:embed builtin color domain draft ease lattice material matrix mechanical noise synth text texture transform vector
 var stdlibFS embed.FS
 
 // curatedImportPaths defines the canonical order in which standard library
@@ -32,7 +32,7 @@ var stdlibFS embed.FS
 // an existing top-level category only requires adding its ImportPath here.
 var curatedImportPaths = []string{
 	"builtin",
-	"map",
+	"domain",
 	"transform",
 	"draft",
 	"lattice",
@@ -168,6 +168,20 @@ func indexByPrefix(libs []PkgInfo) (map[string]string, error) {
 		byPrefix[prefix] = lib.ImportPath
 	}
 	return byPrefix, nil
+}
+
+// renamedPaths maps a standard library import path that was renamed to the
+// path it has now, so an old document's error can name the new one.
+var renamedPaths = map[string]string{
+	"map": "domain",
+}
+
+// RenamedPath returns the current import path of a standard library that
+// used to be imported, or referenced by prefix, as old, and whether there is
+// one.
+func RenamedPath(old string) (string, bool) {
+	p, ok := renamedPaths[old]
+	return p, ok
 }
 
 // PathForPrefix returns the import path of the standard library that `prefix`

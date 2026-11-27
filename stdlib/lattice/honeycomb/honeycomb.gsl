@@ -23,7 +23,7 @@
 //
 // Doc convention follows builtin/base.gsl: `///` lines are public docs.
 
-import "map";
+import "domain";
 
 // --- internal helpers ---
 
@@ -57,8 +57,8 @@ triStar(point, sx, sy, combine) {
 /// Square honeycomb in the XY plane: two orthogonal plane families spaced by
 /// the vec2 `cellSize` (z ignored), joined by `combine`.
 squareHoneycomb(cellSize, combine) {
-  dx = map.triangleWaveOddPositive(p.x, cellSize.x);
-  dy = map.triangleWaveOddPositive(p.y, cellSize.y);
+  dx = domain.triangleWaveOddPositive(p.x, cellSize.x);
+  dy = domain.triangleWaveOddPositive(p.y, cellSize.y);
   return combine([dx, dy]);
 }
 
@@ -72,8 +72,8 @@ squareHoneycomb(cellSize) {
 /// for any aspect ratio. The diagonal coordinates are unit-speed, so the field
 /// stays a true distance.
 squareDiagonalHoneycomb(cellSize, combine) {
-  distPos = map.triangleDistance((p.x + p.y) / sqrt2, cellSize.x);
-  distNeg = map.triangleDistance((p.x - p.y) / sqrt2, cellSize.y);
+  distPos = domain.triangleDistance((p.x + p.y) / sqrt2, cellSize.x);
+  distNeg = domain.triangleDistance((p.x - p.y) / sqrt2, cellSize.y);
   return combine([distPos, distNeg]);
 }
 
@@ -86,8 +86,8 @@ squareDiagonalHoneycomb(cellSize) {
 /// is the diagonal angle as a fraction of pi (0.25 = 45 degrees); `combine`
 /// joins both the grid and the diagonal.
 squareHoneycombReinforced(cellSize, rotation, combine) {
-  squareGrid = combine([map.triangleWaveOddPositive(p.x, cellSize.x), map.triangleWaveOddPositive(p.y, cellSize.y)]);
-  prep = [map.repeatCentered(p.x, cellSize.x), map.repeatCentered(p.y, cellSize.y)];
+  squareGrid = combine([domain.triangleWaveOddPositive(p.x, cellSize.x), domain.triangleWaveOddPositive(p.y, cellSize.y)]);
+  prep = [domain.repeatCentered(p.x, cellSize.x), domain.repeatCentered(p.y, cellSize.y)];
   angle = pi * rotation;
   diagonal = abs(dot(prep, normalize([cos(angle), sin(angle)])));
   return combine([squareGrid, diagonal]);
@@ -105,8 +105,8 @@ squareHoneycombReinforced(cellSize, rotation) {
 /// cell). `rotation` and `rotation2` are the diagonal angles as fractions of pi;
 /// `combine` joins the grid and both diagonals.
 squareHoneycombReinforced(cellSize, rotation, rotation2, combine) {
-  squareGrid = combine([map.triangleWaveOddPositive(p.x, cellSize.x), map.triangleWaveOddPositive(p.y, cellSize.y)]);
-  prep = [map.repeatCentered(p.x, cellSize.x), map.repeatCentered(p.y, cellSize.y)];
+  squareGrid = combine([domain.triangleWaveOddPositive(p.x, cellSize.x), domain.triangleWaveOddPositive(p.y, cellSize.y)]);
+  prep = [domain.repeatCentered(p.x, cellSize.x), domain.repeatCentered(p.y, cellSize.y)];
   a1 = pi * rotation;
   a2 = pi * rotation2;
   diag1 = abs(dot(prep, normalize([cos(a1), sin(a1)])));
@@ -119,11 +119,11 @@ squareHoneycombReinforced(cellSize, rotation, rotation2, combine) {
 /// rotated grid. vec2 `cellSize`, z ignored.
 octetHoneycomb(cellSize, combine) {
   sq = squareHoneycomb(cellSize, combine);
-  planeGrid = combine([map.triangleWaveEvenPositive(p.x, cellSize.x), map.triangleWaveEvenPositive(p.y, cellSize.y)]);
+  planeGrid = combine([domain.triangleWaveEvenPositive(p.x, cellSize.x), domain.triangleWaveEvenPositive(p.y, cellSize.y)]);
   diagPeriod = length(cellSize) * 0.5;
   u = (p.x + p.y) / sqrt2;
   v = (p.x - p.y) / sqrt2;
-  diagGrid = combine([map.triangleWaveEvenPositive(u, diagPeriod), map.triangleWaveEvenPositive(v, diagPeriod)]);
+  diagGrid = combine([domain.triangleWaveEvenPositive(u, diagPeriod), domain.triangleWaveEvenPositive(v, diagPeriod)]);
   return combine([sq, planeGrid, diagGrid]);
 }
 
@@ -143,8 +143,8 @@ hexagonalHoneycomb(cellSize, setback, combine) {
   quarterX = sx * 0.25;
   starCenter = [0, (1 - setback) * halfY];
   transition = [halfX, setback * halfY];
-  fx = abs(map.repeatCentered(p.x, sx));
-  fy = abs(map.repeatCentered(p.y, sy));
+  fx = abs(domain.repeatCentered(p.x, sx));
+  fy = abs(domain.repeatCentered(p.y, sy));
   resultA = hexStar([fx, fy], starCenter, transition, sy, combine);
   resultB = hexStar([fx - halfX, halfY - fy], starCenter, transition, sy, combine);
   return fx < quarterX ? resultA : resultB;
@@ -168,8 +168,8 @@ triangularHoneycomb(cellSize, combine) {
   halfX = sx * 0.5;
   halfY = sy * 0.5;
   quarterY = sy * 0.25;
-  fx = abs(map.repeatCentered(p.x, sx));
-  fy = abs(map.repeatCentered(p.y, sy));
+  fx = abs(domain.repeatCentered(p.x, sx));
+  fy = abs(domain.repeatCentered(p.y, sy));
   resultA = triStar([fx, fy], sx, sy, combine);
   resultB = triStar([fx - halfX, fy - halfY], sx, sy, combine);
   return fy < quarterY ? resultA : resultB;
@@ -188,13 +188,13 @@ triangularHoneycomb(cellSize) {
 /// plane family independently for anisotropic reinforcement — pass 0 for a uniform
 /// thin grid. vec2 `cellSize`.
 cubicBaldwinReinforced(cellSize, radius, biasX, biasY, biasU, biasV) {
-  sq = unionRound([map.triangleWaveOddPositive(p.x, cellSize.x), map.triangleWaveOddPositive(p.y, cellSize.y)], radius);
-  planeX = map.triangleWaveEvenPositive(p.x, cellSize.x) - biasX * 0.5;
-  planeY = map.triangleWaveEvenPositive(p.y, cellSize.y) - biasY * 0.5;
+  sq = unionRound([domain.triangleWaveOddPositive(p.x, cellSize.x), domain.triangleWaveOddPositive(p.y, cellSize.y)], radius);
+  planeX = domain.triangleWaveEvenPositive(p.x, cellSize.x) - biasX * 0.5;
+  planeY = domain.triangleWaveEvenPositive(p.y, cellSize.y) - biasY * 0.5;
   axisGrid = unionRound([planeX, planeY], radius);
   diag = length([cellSize.x, cellSize.y]);
-  planeU = map.triangleWaveEvenPositive((p.x + p.y) / sqrt2, diag) - biasU * 0.5;
-  planeV = map.triangleWaveEvenPositive((p.x - p.y) / sqrt2, diag) - biasV * 0.5;
+  planeU = domain.triangleWaveEvenPositive((p.x + p.y) / sqrt2, diag) - biasU * 0.5;
+  planeV = domain.triangleWaveEvenPositive((p.x - p.y) / sqrt2, diag) - biasV * 0.5;
   diagGrid = unionRound([planeU, planeV], radius);
   grid = unionRound([sq, axisGrid], radius);
   return unionRound([grid, diagGrid], radius);

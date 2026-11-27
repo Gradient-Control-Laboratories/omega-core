@@ -358,7 +358,7 @@ fn texture_paintMaterial(field: f32, edge: f32, width: f32, matA: mat4x4<f32>, m
   return material_blend(matA, matB, texture_mask(field, edge, width, noiseTex), noiseTex);
 }
 
-fn map_rotateZX(v: vec3<f32>, angle: f32, noiseTex: texture_3d<f32>) -> vec3<f32> {
+fn domain_rotateZX(v: vec3<f32>, angle: f32, noiseTex: texture_3d<f32>) -> vec3<f32> {
   let ca = cos(angle);
   let sa = sin(angle);
   return vec3<f32>(v.x * ca - v.z * sa, v.y, v.z * ca + v.x * sa);
@@ -562,7 +562,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_14_28: f32, gsl_param_15_28: f32, 
   let vector_zero = vec3<f32>(0.0, 0.0, 0.0);
   let unionTop = select(-length(vec2<f32>((gsl_tmp_3 + gsl_tmp_4) / 1.847759, (gsl_tmp_3 - gsl_tmp_4) / 0.76536685)), min(gsl_tmp_3, gsl_tmp_4), max(gsl_remap_2(p - vec3<f32>(0.70710677, 0.0, 0.70710677) * gsl_tmp_4, gsl_param_14_28, gsl_param_15_28, gsl_param_16_28, gsl_param_17_28, gsl_param_37_29, vector_zero, noiseTex) - 0.0, gsl_remap_3(p - vector_dirZ * gsl_tmp_3, gsl_param_14_28, gsl_param_15_28, gsl_param_16_28, gsl_param_17_28, gsl_param_37_29, vector_zero, vector_dirZ, noiseTex) - 0.0) > 0.0) + 0.0;
   let clevisAng = gsl_param_37_29;
-  let clevisRot = map_rotateZX(p, radians(clevisAng), noiseTex);
+  let clevisRot = domain_rotateZX(p, radians(clevisAng), noiseTex);
   let gsl_result = arcShape(clevisRot, vector_zero, noiseTex);
   let horizPlane = gsl_result.v_2;
   let frontPlane = planeXY(p, vec2<f32>(5.9, 1.5), v0, noiseTex) - 1.2;

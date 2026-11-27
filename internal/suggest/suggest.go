@@ -27,6 +27,9 @@ var annotationCalls = map[string]bool{
 // identifier: name", followed by up to three close names visible from s.
 func Undefined(s scope.Scope, name string) error {
 	msg := "undefined identifier: " + name
+	if renamed, ok := gsllibs.RenamedPath(name); ok {
+		return fmt.Errorf("%s; the %s package was renamed %s, and `gsl fix` rewrites the references", msg, name, renamed)
+	}
 	cands := visible(s)
 	return fmt.Errorf("%s%s", msg, list(closest(name, keys(cands)), func(c string) string {
 		return describe(c, "", cands[c])

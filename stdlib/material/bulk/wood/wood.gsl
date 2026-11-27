@@ -171,7 +171,7 @@
 // Doc convention follows builtin/base.gsl: `///` lines are public docs.
 
 import "noise";
-import "map";
+import "domain";
 import "color";
 import "material";
 import "texture";
@@ -368,7 +368,7 @@ knotTime(local, ringWidth, spacing, branchRate, seed, style) {
 // while inside a function of its own the shader would compute the knots
 // either way.
 stemGrowthAt(axisOrigin, axisDirection, ringWidth) {
-  local = map.axisAt(axisOrigin, axisDirection);
+  local = domain.axisAt(axisOrigin, axisDirection);
   radius = length(local.xy);
   around = local.xy / max(radius, 0.001) * 40;
   wobble = remap(noise.fbm2(60, 0.5, 2.0), [around.x, around.y, local.z * 0.25]);
@@ -381,7 +381,7 @@ stemGrowthAt(axisOrigin, axisDirection, ringWidth) {
 // by the power smooth-minimum.
 knottedGrowthAt(axisOrigin, axisDirection, ringWidth, knotSpacing, knotStyle) {
   stemTime = stemGrowthAt(axisOrigin, axisDirection, ringWidth).x;
-  branchTime = knotTime(map.axisAt(axisOrigin, axisDirection), ringWidth, max(knotSpacing, 1), 0.45, 7, knotStyle);
+  branchTime = knotTime(domain.axisAt(axisOrigin, axisDirection), ringWidth, max(knotSpacing, 1), 0.45, 7, knotStyle);
   return [powerSmoothMin(max(stemTime, 0.001), branchTime, 4), texture.mask(stemTime - branchTime * 1.15, 0, 0.6)];
 }
 
@@ -491,7 +491,7 @@ solidWood(@point axisOrigin, @direction(axisOrigin) axisDirection, ringWidth, la
 }
 
 solidWood(@point axisOrigin, @direction(axisOrigin) axisDirection, ringWidth, latewoodFraction, latewoodSoftness, @color earlyColor, @color lateColor, poreSize, ringPorosity, @color poreColor, rayStrength, raySize, knotSpacing, knotStyle, @color knotColor, heartRings, @color sapColor, resinCanals, streak, @color streakColor, ringVariation, bandStrength, bandSpacing, poreZone, sapTransition, @color lineColor, lineStrength) {
-  local = map.axisAt(axisOrigin, axisDirection);
+  local = domain.axisAt(axisOrigin, axisDirection);
   radius = length(local.xy);
   grown = knotSpacing > 0 ? knottedGrowthAt(axisOrigin, axisDirection, ringWidth, knotSpacing, knotStyle) : stemGrowthAt(axisOrigin, axisDirection, ringWidth);
   inKnot = grown.y;
@@ -638,7 +638,7 @@ wornProfile(progress) {
 // relief, adds to the height, which is render-only displacement.
 weatheredSurface(axisOrigin, axisDirection, ringWidth, knotSpacing, knotStyle, relief, rough, amount, poreHeight) {
   ringIndex, progress = ringAt((knotSpacing > 0 ? knottedGrowthAt(axisOrigin, axisDirection, ringWidth, knotSpacing, knotStyle) : stemGrowthAt(axisOrigin, axisDirection, ringWidth)).x, 3);
-  return weatheredSurfaceAt(map.axisAt(axisOrigin, axisDirection), progress, ringWidth, relief, rough, amount, poreHeight);
+  return weatheredSurfaceAt(domain.axisAt(axisOrigin, axisDirection), progress, ringWidth, relief, rough, amount, poreHeight);
 }
 
 // The same at `local`, the point in the stem's frame, `progress` through its
@@ -656,7 +656,7 @@ weatheredSurfaceAt(local, progress, ringWidth, relief, rough, amount, poreHeight
 
 // The weathered colour, from the fresh wood's.
 weatheredColor(axisOrigin, axisDirection, freshColor, amount) {
-  checks = woodChecks(map.axisAt(axisOrigin, axisDirection)) * amount;
+  checks = woodChecks(domain.axisAt(axisOrigin, axisDirection)) * amount;
   freshLab = color.rgb2oklab(freshColor);
   return color.oklab2rgb(freshLab + (color.rgb2oklab([0.60, 0.58, 0.54]) - freshLab) * (0.375 * amount) - [0.25 * checks, 0, 0]);
 }
@@ -669,7 +669,7 @@ weatheredColor(axisOrigin, axisDirection, freshColor, amount) {
 // function of its own.
 poreSurface(axisOrigin, axisDirection, ringWidth, knotSpacing, knotStyle, poreSize, ringPorosity, poreZone) {
   ringIndex, progress = ringAt((knotSpacing > 0 ? knottedGrowthAt(axisOrigin, axisDirection, ringWidth, knotSpacing, knotStyle) : stemGrowthAt(axisOrigin, axisDirection, ringWidth)).x, 3);
-  return poreSurfaceAt(map.axisAt(axisOrigin, axisDirection), progress, ringWidth, poreSize, ringPorosity, poreZone);
+  return poreSurfaceAt(domain.axisAt(axisOrigin, axisDirection), progress, ringWidth, poreSize, ringPorosity, poreZone);
 }
 
 // The same at `local`, the point in the stem's frame, `progress` through its
@@ -2377,7 +2377,7 @@ finishedColor(raw, aging, char, stainGain, uptake, wetting, coatTint) {
 // coarse surface; see prepCoarseness. The topcoat's tint yellows with the
 // look's age by its yellowing, toward [1, 0.9, 0.7] of itself. Judged.
 colorFromRowsFinished(rings, early, late, pore, knot, sap, streak, surface, age, bands, boundary, weeks, uptake, axisOrigin, axisDirection, look, knotSpacing, knotStyle, barkRadius, normal, prep, stain, topcoat) {
-  local = map.axisAt(axisOrigin, axisDirection);
+  local = domain.axisAt(axisOrigin, axisDirection);
   knots = knotSpacing < 0 ? surface.z : knotSpacing;
   // No bark, no sapwood: the boundary a million rings out. Added rather than
   // chosen, so a backend that picks arithmetically adds an exact 0 to the
@@ -2490,7 +2490,7 @@ speciesMaterial(number, @point axisOrigin, @direction(axisOrigin) axisDirection,
   sheen = coatSheen + (0.85 - coatSheen) * charred;
   // The point's place through its ring, once for the pores, the torched relief
   // and the weathering.
-  local = map.axisAt(axisOrigin, axisDirection);
+  local = domain.axisAt(axisOrigin, axisDirection);
   ringIndex, progress = ringAt((knots > 0 ? knottedGrowthAt(axisOrigin, axisDirection, rings.x, knots, knotStyle) : stemGrowthAt(axisOrigin, axisDirection, rings.x)).x, 3);
   // Where the number varies both sides of the choice are computed, so the pore
   // surface takes at least the 0.25 mm it is chosen for; see speciesMaterial.
@@ -2975,7 +2975,7 @@ speciesDecay(number, axisOrigin, axisDirection, knotSpacing, barkRadius, spaltin
   knots = knotSpacing < 0 ? surface.z : knotSpacing;
   grown = (knots > 0 ? knottedGrowthAt(axisOrigin, axisDirection, rings.x, knots, speciesKnotStyle(number)) : stemGrowthAt(axisOrigin, axisDirection, rings.x)).x;
   heartRings = barkRadius / rings.x - sap.w + (barkRadius > 0 ? 0 : 1000000);
-  local = map.axisAt(axisOrigin, axisDirection);
+  local = domain.axisAt(axisOrigin, axisDirection);
   // One fine noise, 6 mm across the grain and 30 along, for the zone lines'
   // wandering and the mold's and the stains' ragged edges.
   fine = noise.gradientLattice([local.x / 6 + 41, local.y / 6 + 3, local.z / 30]);

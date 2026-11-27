@@ -20,7 +20,7 @@
 //
 // Doc convention follows builtin/base.gsl: `///` lines are public docs.
 
-import "map";
+import "domain";
 
 // --- internal: plane-family grids ---
 
@@ -28,9 +28,9 @@ import "map";
 // the vec3 `cellSize`. GCL GridXYZ (UnionEuclideanVec of TriangleWaveEvenPositive).
 gridXYZ(cellSize, combine) {
   return combine([
-    map.triangleWaveEvenPositive(p.x, cellSize.x),
-    map.triangleWaveEvenPositive(p.y, cellSize.y),
-    map.triangleWaveEvenPositive(p.z, cellSize.z)
+    domain.triangleWaveEvenPositive(p.x, cellSize.x),
+    domain.triangleWaveEvenPositive(p.y, cellSize.y),
+    domain.triangleWaveEvenPositive(p.z, cellSize.z)
   ]);
 }
 
@@ -62,9 +62,9 @@ cubic(cellSize) {
 /// cubic, via triangleWaveOddPositive). Migrated from the flat lattice package's
 /// cubicGrid; `combine` joins the plane families.
 cubicGrid(cellSize, combine) {
-  dx = map.triangleWaveOddPositive(p.x, cellSize.x);
-  dy = map.triangleWaveOddPositive(p.y, cellSize.y);
-  dz = map.triangleWaveOddPositive(p.z, cellSize.z);
+  dx = domain.triangleWaveOddPositive(p.x, cellSize.x);
+  dy = domain.triangleWaveOddPositive(p.y, cellSize.y);
+  dz = domain.triangleWaveOddPositive(p.z, cellSize.z);
   return combine([dx, dy, dz]);
 }
 
@@ -77,7 +77,7 @@ cubicGrid(cellSize) {
 /// coordinate plane), each tiled by translation, then joined. vec3 `cellSize` cell;
 /// `combine` joins the junctions.
 bcc(cellSize, combine) {
-  m = map.patternRepeat(cellSize);
+  m = domain.patternRepeat(cellSize);
   xy = remap(gridXYDiagonalCentered(cellSize, combine), m);
   yz = remap(gridXYDiagonalCentered([cellSize.y, cellSize.z, 0], combine), [m.y, m.z, m.x]);
   zx = remap(gridXYDiagonalCentered([cellSize.z, cellSize.x, 0], combine), [m.z, m.x, m.y]);
@@ -101,7 +101,7 @@ fcc(cellSize, combine) {
       abs(plane([0, 0, 0], [-1, -1, 1]))
     ]),
     abs(plane([0, h.y, h.z], [1, 1, 1]))
-  ]), map.patternRepeatMirror(cellSize));
+  ]), domain.patternRepeatMirror(cellSize));
 }
 
 /// Face-centered-cubic foam with the wall families joined sharply.

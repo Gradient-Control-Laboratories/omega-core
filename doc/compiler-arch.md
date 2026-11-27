@@ -85,7 +85,7 @@ flowchart TD
    Syntax errors and lexical issues are returned as joined Go `error` values.
 3. **Standard Library Pre-Registration**:
    During initialization (`init()`), the standard packages (`"color"`, `"ease"`, `"gears"`,
-   `"lattice"`, `"map"`, `"matrix"`, `"noise"`, `"text"`, `"vector"`) are parsed and registered
+   `"lattice"`, `"domain"`, `"matrix"`, `"noise"`, `"text"`, `"vector"`) are parsed and registered
    in the global package registry.
 
 ---

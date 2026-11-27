@@ -12,6 +12,11 @@ from `1.0.0` onward).
 
 ### Breaking
 
+- **The `map` package is renamed `domain`**: `map.rotateXY(...)` is now `domain.rotateXY(...)` and
+  `import "map";` is `import "domain";`, so the package no longer shares its name with the
+  `map(fn, list)` primitive. A document that still says `map.` gets an error naming `domain`, and
+  `gsl fix -domain` rewrites the references and imports. `rotateYZ`, `rotateZX` and `eulerAngles`
+  are now documented.
 - **Changed Go module path to `github.com/Gradient-Control-Laboratories/omega-core`**: The root
   `go.mod` module declaration and all internal package import paths changed from
   `gradientcontrol.com/omega/core` to `github.com/Gradient-Control-Laboratories/omega-core` so

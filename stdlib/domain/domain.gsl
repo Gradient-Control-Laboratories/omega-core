@@ -3,17 +3,14 @@
 /// patterns.
 
 
-// Map Library (map)
+// Domain Library (domain)
 //
 // Domain transforms — functions that map points and directions through space.
 // These pair with `remap`, GSL's domain-remapping primitive: to evaluate a
-// shape under a transform you sample it at the mapped point.
-//
-// The package name reuses the word `map`. That is intentional and unambiguous:
-// `map(fn, list)` is the iteration primitive (bare, in call position) while
-// `map.rotateXY(...)` is a package-qualified call. The parser keys the
-// primitive check off the member name, not the prefix, so the two never
-// collide. Call qualified: `map.rotateXY(v, angle)`.
+// shape under a transform you sample it at the mapped point. Call qualified:
+// `domain.rotateXY(v, angle)`. The package was named `map` until it was
+// renamed for sharing its name with the `map(fn, list)` primitive; `gsl fix`
+// rewrites the old references.
 //
 // Uses builtin's shared constants (tau, pi) rather than redefining them.
 // builtin is implicitly dot-imported into every file, so nothing declares it.
@@ -149,7 +146,7 @@ triangleWaveOddPositive(x, period) {
 
 /// Checkerboard parity on a 3D grid of cell size `cellSize`: +1 or -1 by
 /// whether the cell's (x+y+z) integer-coordinate sum is even or odd. Signed,
-/// so it works directly as a GSL boolean (`map.checker(2) ? colorA : colorB`)
+/// so it works directly as a GSL boolean (`domain.checker(2) ? colorA : colorB`)
 /// per the "<=0 is false" convention — no threshold/mask needed for a sharp
 /// 2-way board.
 checker(cellSize) {
@@ -178,18 +175,25 @@ rotateXY(v, angle) {
   return [v.x * ca + v.y * sa, -v.x * sa + v.y * ca, v.z];
 }
 
+/// Rotate 3D vector v by `angle` radians around the X axis (YZ plane
+/// rotation), in the same sense as rotateXY. v.x passes through unchanged.
 rotateYZ(v, angle) {
   ca = cos(angle);
   sa = sin(angle);
   return [v.x, v.y * ca + v.z * sa, -v.y * sa + v.z * ca];
 }
 
+/// Rotate 3D vector v by `angle` radians around the Y axis (ZX plane
+/// rotation), in the same sense as rotateXY. v.y passes through unchanged.
 rotateZX(v, angle) {
   ca = cos(angle);
   sa = sin(angle);
   return [v.x * ca - v.z * sa, v.y, v.z * ca + v.x * sa];
 }
 
+/// Rotate 3D vector v by the Euler angles `angles`, applied in order:
+/// rotateYZ by angles.x, then rotateZX by angles.y, then rotateXY by angles.z.
+/// matrix.rotationEuler3 builds the same rotation as a matrix.
 eulerAngles(v, angles) {
   return rotateXY(rotateZX(rotateYZ(v, angles.x), angles.y), angles.z);
 }
@@ -222,7 +226,7 @@ remapCylindrical(circumference) {
 /// +x. A negative curvature curls them toward -x, and 0 is no bend. v.y passes
 /// through unchanged. To bow a plate about a point `origin` on it:
 ///
-///   bowed = remap(plate, map.bendXZ(p - origin, 1 / 400) + origin);
+///   bowed = remap(plate, domain.bendXZ(p - origin, 1 / 400) + origin);
 ///
 /// Lengths along z are kept on the plane itself. Off it they change by
 /// 1 - curvature * x: stretched on the outside of the bend and squeezed on the
@@ -246,7 +250,7 @@ bendXZ(v, curvature) {
 /// axis aligned to `axis` — for a hole, the direction the drill enters, which
 /// is the outward normal of the face it goes into. Pass it to remap:
 ///
-///   remap(drill.hole([drill.thru(6.6)], 0), map.axisAt(faceCenter, faceNormal))
+///   remap(drill.hole([drill.thru(6.6)], 0), domain.axisAt(faceCenter, faceNormal))
 ///
 /// It takes a DIRECTION, where rotateAxis and matrix.rotation take an axis AND
 /// an angle. Nothing else here aligns a datum to a direction, which is the

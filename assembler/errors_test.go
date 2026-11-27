@@ -150,3 +150,16 @@ func TestFunctionParameterGivenABlend(t *testing.T) {
 		t.Errorf("%v", err)
 	}
 }
+
+// A document from before the map package became domain names the new package.
+func TestRenamedPackageNamesItsNewName(t *testing.T) {
+	for _, c := range []struct{ src, want string }{
+		{"return remap(sphere(1), map.rotateXY(p, 1));", "the map package was renamed domain, and `gsl fix` rewrites the references"},
+		{"import \"map\";\nreturn remap(sphere(1), map.rotateXY(p, 1));", "the package was renamed domain, and `gsl fix` rewrites the import"},
+	} {
+		msg := assembleErr(t, c.src)
+		if !strings.Contains(msg, c.want) {
+			t.Errorf("missing %q in:\n%s", c.want, msg)
+		}
+	}
+}

@@ -163,7 +163,7 @@ arcTwoPointTangentExtendedXY(pointA, pointB, tangentA) {
   // opening symmetrically. Rotate p so the arc bisector aligns with +Y.
   halfAngleSinCos = [sin(abs(halfSweep)), cos(halfSweep)];
   // Z rotation carrying the bisector direction onto +Y (angle pi/2 - bisectorAngle),
-  // inlined (map.rotateXY) so builtin does not import map.
+  // inlined (domain.rotateXY) so builtin does not import domain.
   cosBisector = cos(bisectorAngle);
   sinBisector = sin(bisectorAngle);
   relativeX = p.x - center.x;

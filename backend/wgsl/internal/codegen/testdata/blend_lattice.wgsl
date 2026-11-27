@@ -100,7 +100,7 @@ fn builtin_gcl_closure_boxCentered(p: vec3<f32>, center: vec3<f32>, size: vec3<f
   return solid;
 }
 
-fn map_repeatCentered(x: vec3<f32>, period: vec3<f32>) -> vec3<f32> {
+fn domain_repeatCentered(x: vec3<f32>, period: vec3<f32>) -> vec3<f32> {
   let half = period * 0.5;
   return gsl_floored_vec3((gsl_floored_vec3((x + half), period) + period), period) - half;
 }
@@ -115,8 +115,8 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
   let gsl_tmp_2 = vec3<f32>(gsl_floored((gsl_floored((p.x + 2.0), 4.0) + 4.0), 4.0) - 2.0, gsl_floored((gsl_floored((p.y + 2.0), 4.0) + 4.0), 4.0) - 2.0, gsl_floored((gsl_floored((p.z + 2.0), 4.0) + 4.0), 4.0) - 2.0);
   let sharp = builtin_unionSharp(vec4<f32>(length(gsl_tmp_2 - normalize(vec3<f32>(1.0, 1.0, 0.0) + vector_dirZ) * clamp(dot(gsl_tmp_2, normalize(vec3<f32>(1.0, 1.0, 0.0) + vector_dirZ)), -3.4641016, 3.4641016)) - 0.3, length(gsl_tmp_2 - normalize(vec3<f32>(-1.0, -0.0, -0.0) + vector_dirY + vector_dirZ) * clamp(dot(gsl_tmp_2, normalize(vec3<f32>(-1.0, -0.0, -0.0) + vector_dirY + vector_dirZ)), -3.4641016, 3.4641016)) - 0.3, length(gsl_tmp_2 - normalize(vec3<f32>(1.0, -1.0, 0.0) + vector_dirZ) * clamp(dot(gsl_tmp_2, normalize(vec3<f32>(1.0, -1.0, 0.0) + vector_dirZ)), -3.4641016, 3.4641016)) - 0.3, length(gsl_tmp_2 - normalize(vec3<f32>(1.0, 1.0, 0.0) - vector_dirZ) * clamp(dot(gsl_tmp_2, normalize(vec3<f32>(1.0, 1.0, 0.0) - vector_dirZ)), -3.4641016, 3.4641016)) - 0.3));
   let vector_dirX = vec3<f32>(1.0, 0.0, 0.0);
-  let truss = builtin_gcl_closure_unionRound_2(vec2<f32>(gsl_remap(map_repeatCentered(p, vec3<f32>(4.0, 4.0, 4.0)), vector_dirX, vector_dirY, vector_dirZ), gsl_remap_2(abs(map_repeatCentered(p, vec3<f32>(4.0, 4.0, 4.0))), vector_dirX, vector_dirY, vector_dirZ)));
-  let folded = builtin_gcl_closure_unionRound_3(vec2<f32>(gsl_remap_3(abs(map_repeatCentered(p, vec3<f32>(4.0, 4.0, 4.0))), vector_dirX, vector_dirY, vector_dirZ), builtin_lineSegment(map_repeatCentered(p, vec3<f32>(4.0, 4.0, 4.0)), vec3<f32>(0.0, 0.0, -1.6), vec3<f32>(0.0, 0.0, 1.6))));
+  let truss = builtin_gcl_closure_unionRound_2(vec2<f32>(gsl_remap(domain_repeatCentered(p, vec3<f32>(4.0, 4.0, 4.0)), vector_dirX, vector_dirY, vector_dirZ), gsl_remap_2(abs(domain_repeatCentered(p, vec3<f32>(4.0, 4.0, 4.0))), vector_dirX, vector_dirY, vector_dirZ)));
+  let folded = builtin_gcl_closure_unionRound_3(vec2<f32>(gsl_remap_3(abs(domain_repeatCentered(p, vec3<f32>(4.0, 4.0, 4.0))), vector_dirX, vector_dirY, vector_dirZ), builtin_lineSegment(domain_repeatCentered(p, vec3<f32>(4.0, 4.0, 4.0)), vec3<f32>(0.0, 0.0, -1.6), vec3<f32>(0.0, 0.0, 1.6))));
   let gsl_s1 = gsl_shape(builtin_intersectSharp_2(vec2<f32>(block, builtin_unionSharp(vec4<f32>(filleted, sharp, truss, folded)))), 1u);
   return gsl_s1;
 }

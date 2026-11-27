@@ -2,7 +2,7 @@ fn gsl_floored(a: f32, n: f32) -> f32 {
   return a - n * floor(a / n);
 }
 
-fn map_patternPolarXY(p: vec3<f32>, count: f32) -> vec3<f32> {
+fn domain_patternPolarXY(p: vec3<f32>, count: f32) -> vec3<f32> {
   let rad = length(p.xy);
   let ang = atan2(p.y, p.x);
   let wedge = 6.2831855 / count;
@@ -210,7 +210,7 @@ fn gsl_remap_40(p: vec3<f32>) -> f32 {
 }
 
 fn gsl_remap_41(p: vec3<f32>) -> f32 {
-  return max(min(max(max(length(p.xy) - 4.75, -p.z), length(vec3<f32>(p.x, p.y, p.z - -4.3)) - 8.0), max(max(max(length(p.xy) - 2.5, -10.0 - p.z), p.z - 1.85), (length(p.xy) - 2.5 + -p.z - 10.0 + 0.75) * 0.7071)), -drill_prismVoid(p, 3.3770761, max(length(p.xy) - 2.25, -gsl_remap_40(map_patternPolarXY(p, 6.0))), 1.91));
+  return max(min(max(max(length(p.xy) - 4.75, -p.z), length(vec3<f32>(p.x, p.y, p.z - -4.3)) - 8.0), max(max(max(length(p.xy) - 2.5, -10.0 - p.z), p.z - 1.85), (length(p.xy) - 2.5 + -p.z - 10.0 + 0.75) * 0.7071)), -drill_prismVoid(p, 3.3770761, max(length(p.xy) - 2.25, -gsl_remap_40(domain_patternPolarXY(p, 6.0))), 1.91));
 }
 
 fn gsl_remap_42(p: vec3<f32>) -> f32 {
@@ -387,7 +387,7 @@ fn gsl_drill_torxXY_remap(p: vec3<f32>, filletR: f32, major: f32, minor: f32) ->
 }
 
 fn drill_torxXY_2(p: vec3<f32>, major: f32, minor: f32, filletR: f32) -> f32 {
-  let bites = gsl_drill_torxXY_remap(map_patternPolarXY(p, 6.0), filletR, major, minor);
+  let bites = gsl_drill_torxXY_remap(domain_patternPolarXY(p, 6.0), filletR, major, minor);
   return max(length(p.xy) - major / 2.0, -bites);
 }
 
@@ -458,7 +458,7 @@ fn driver_screwdriverHandle(p: vec3<f32>, zBase: f32, dia: f32, len: f32) -> f32
   let r = dia / 2.0;
   let top = zBase + len;
   let body = max(max(max(length(p.xy) - r, zBase - p.z), (length(p.xy) - 0.55 * r - (p.z - zBase) * 0.8) * 0.7808688), min(p.z - (top - r), length(vec3<f32>(p.x, p.y, p.z - (top - r))) - r));
-  let form = max(body, -gsl_driver_screwdriverHandle_remap(map_patternPolarXY(p, 6.0), dia, len, zBase));
+  let form = max(body, -gsl_driver_screwdriverHandle_remap(domain_patternPolarXY(p, 6.0), dia, len, zBase));
   return form;
 }
 

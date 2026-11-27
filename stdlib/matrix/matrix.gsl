@@ -215,12 +215,12 @@ scaling3(factors) {
 // by the canvas's lightweight const-evaluator (simple-assignment locals + a
 // literal), so a matrix built this way works in mesh(index, M). The closed
 // form R = R_XY(a.z)·R_ZX(a.y)·R_YZ(a.x) was verified numerically to match
-// map.eulerAngles to machine epsilon.
+// domain.eulerAngles to machine epsilon.
 
 /// rotationEuler3(angles) is the 3×3 rotation for the vec3 of euler angles
-/// `angles`, matching map.eulerAngles:
-///   map.eulerAngles(v, a) = map.rotateXY(map.rotateZX(map.rotateYZ(v, a.x), a.y), a.z).
-/// So vector.multiplyVector(rotationEuler3(a), v) == map.eulerAngles(v, a).
+/// `angles`, matching domain.eulerAngles:
+///   domain.eulerAngles(v, a) = domain.rotateXY(domain.rotateZX(domain.rotateYZ(v, a.x), a.y), a.z).
+/// So vector.multiplyVector(rotationEuler3(a), v) == domain.eulerAngles(v, a).
 rotationEuler3(angles) {
   cx = cos(angles.x);
   sx = sin(angles.x);
@@ -234,7 +234,7 @@ rotationEuler3(angles) {
 }
 
 /// rotationEuler(angles) is the 4×4 homogeneous rotation for the euler vec3
-/// `angles` (about the origin), matching map.eulerAngles.
+/// `angles` (about the origin), matching domain.eulerAngles.
 rotationEuler(angles) {
   cx = cos(angles.x);
   sx = sin(angles.x);
@@ -249,13 +249,13 @@ rotationEuler(angles) {
 }
 
 /// rotation(spin, orient) builds the 4×4 rotation matrix Rz(spin)·R(orient):
-/// the base euler orientation `orient` (vec3, map.eulerAngles convention)
+/// the base euler orientation `orient` (vec3, domain.eulerAngles convention)
 /// first, then a spin by `spin` radians about +Z. A real matrix product (not an
 /// euler-vector sum), closed form from scalars, so it is valid in BOTH the full
 /// build and the canvas evaluator. Pass it to mesh(index, position, rotation) to
 /// place a part: that overload drops the translation into the 4th column.
 rotation(spin, orient) {
-  // R(orient) entries e_{row,col}, map.eulerAngles convention.
+  // R(orient) entries e_{row,col}, domain.eulerAngles convention.
   cx = cos(orient.x);
   sx = sin(orient.x);
   cy = cos(orient.y);
@@ -288,7 +288,7 @@ rotation(spin, orient) {
 }
 
 /// compose(position, euler) builds the 4×4 homogeneous placement T·R: rotate
-/// by the euler vec3 `euler` (map.eulerAngles convention) about the origin,
+/// by the euler vec3 `euler` (domain.eulerAngles convention) about the origin,
 /// then translate to the vec3 `position`. Closed form from scalars, so it folds
 /// in the canvas evaluator and compiles on every backend. Pass it to
 /// mesh(index, M) to place a part rigidly (no scale).
@@ -299,7 +299,7 @@ compose(position, euler) {
   sy = sin(euler.y);
   cz = cos(euler.z);
   sz = sin(euler.z);
-  // R columns (closed form, map.eulerAngles convention):
+  // R columns (closed form, domain.eulerAngles convention):
   r00 = cz * cy;
   r10 = -sz * cy;
   r20 = sy;
@@ -317,7 +317,7 @@ compose(position, euler) {
 
 /// compose(position, euler, scale) builds the 4×4 homogeneous placement
 /// T·R·S: scale by the per-axis vec3 `scale`, rotate by the euler vec3 `euler`
-/// (map.eulerAngles convention), then translate to the vec3 `position`. It
+/// (domain.eulerAngles convention), then translate to the vec3 `position`. It
 /// takes the rigid T·R from the two-argument compose and scales each rotation
 /// column by the matching component of `scale` — right-multiplication by the
 /// diagonal scale matrix — so the two forms stay in lockstep.

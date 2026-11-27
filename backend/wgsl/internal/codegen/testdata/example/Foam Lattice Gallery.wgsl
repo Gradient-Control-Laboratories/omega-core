@@ -6,19 +6,19 @@ fn gsl_floored_vec3(a: vec3<f32>, n: vec3<f32>) -> vec3<f32> {
   return a - n * floor(a / n);
 }
 
-fn map_triangleWave(x: f32, period: f32) -> f32 {
+fn domain_triangleWave(x: f32, period: f32) -> f32 {
   let half = period * 0.5;
   let twoPeriod = period * 2.0;
   let u = gsl_floored((gsl_floored((x + half), twoPeriod) + twoPeriod), twoPeriod);
   return half - abs(u - period);
 }
 
-fn map_triangleDistance(x: f32, period: f32) -> f32 {
-  return abs(map_triangleWave(x, period));
+fn domain_triangleDistance(x: f32, period: f32) -> f32 {
+  return abs(domain_triangleWave(x, period));
 }
 
-fn map_triangleWaveEvenPositive(x: f32, period: f32) -> f32 {
-  return map_triangleDistance(x, period);
+fn domain_triangleWaveEvenPositive(x: f32, period: f32) -> f32 {
+  return domain_triangleDistance(x, period);
 }
 
 fn builtin_intersectSharp(fields: vec3<f32>) -> f32 {
@@ -55,15 +55,15 @@ fn builtin_boxCentered(p: vec3<f32>, center: vec3<f32>, size: vec3<f32>) -> f32 
   return builtin_gcl_closure_boxCentered(p, center, size);
 }
 
-fn map_triangleWaveOddPositive(x: f32, period: f32) -> f32 {
-  return map_triangleDistance(x - period * 0.5, period);
+fn domain_triangleWaveOddPositive(x: f32, period: f32) -> f32 {
+  return domain_triangleDistance(x - period * 0.5, period);
 }
 
 fn builtin_gcl_closure_unionRound_2(fields: vec3<f32>) -> f32 {
   return builtin_unionRound(fields, 0.5);
 }
 
-fn map_repeatCentered(x: vec3<f32>, period: vec3<f32>) -> vec3<f32> {
+fn domain_repeatCentered(x: vec3<f32>, period: vec3<f32>) -> vec3<f32> {
   let half = period * 0.5;
   return gsl_floored_vec3((gsl_floored_vec3((x + half), period) + period), period) - half;
 }
@@ -128,7 +128,7 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
   if (gsl_vanishView.w <= 0.0 || gsl_partBox <= gsl_vanishView.w) {
     let gsl_partVanish = gsl_vanish(gsl_partLo, gsl_partHi);
     gsl_part = 1e10;
-    if (gsl_partVanish.x > 0.0) { gsl_part = specimen(p, builtin_gcl_closure_unionRound(vec3<f32>(map_triangleWaveEvenPositive(p.x, 12.0), map_triangleWaveEvenPositive(p.y, 12.0), map_triangleWaveEvenPositive(p.z, 12.0))), -51.0) + gsl_partVanish.y; }
+    if (gsl_partVanish.x > 0.0) { gsl_part = specimen(p, builtin_gcl_closure_unionRound(vec3<f32>(domain_triangleWaveEvenPositive(p.x, 12.0), domain_triangleWaveEvenPositive(p.y, 12.0), domain_triangleWaveEvenPositive(p.z, 12.0))), -51.0) + gsl_partVanish.y; }
     if (abs(gsl_part) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part), gsl_partVanish.zw); }
   }
   let cub = gsl_part;
@@ -139,7 +139,7 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_2 <= gsl_vanishView.w) {
     let gsl_partVanish_2 = gsl_vanish(gsl_partLo_2, gsl_partHi_2);
     gsl_part_2 = 1e10;
-    if (gsl_partVanish_2.x > 0.0) { gsl_part_2 = specimen(p, builtin_gcl_closure_unionRound_2(vec3<f32>(map_triangleWaveOddPositive(p.x, 12.0), map_triangleWaveOddPositive(p.y, 12.0), map_triangleWaveOddPositive(p.z, 12.0))), -17.0) + gsl_partVanish_2.y; }
+    if (gsl_partVanish_2.x > 0.0) { gsl_part_2 = specimen(p, builtin_gcl_closure_unionRound_2(vec3<f32>(domain_triangleWaveOddPositive(p.x, 12.0), domain_triangleWaveOddPositive(p.y, 12.0), domain_triangleWaveOddPositive(p.z, 12.0))), -17.0) + gsl_partVanish_2.y; }
     if (abs(gsl_part_2) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_2), gsl_partVanish_2.zw); }
   }
   let cgr = gsl_part_2;
@@ -147,7 +147,7 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
   let gsl_partHi_3 = vec3<f32>(31.0, 14.0, 14.0);
   let gsl_partBox_3 = gsl_boxDistance(p, gsl_partLo_3, gsl_partHi_3);
   var gsl_part_3 = gsl_partBox_3;
-  let gsl_tmp_1 = map_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0));
+  let gsl_tmp_1 = domain_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0));
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_3 <= gsl_vanishView.w) {
     let gsl_partVanish_3 = gsl_vanish(gsl_partLo_3, gsl_partHi_3);
     gsl_part_3 = 1e10;
@@ -162,7 +162,7 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_4 <= gsl_vanishView.w) {
     let gsl_partVanish_4 = gsl_vanish(gsl_partLo_4, gsl_partHi_4);
     gsl_part_4 = 1e10;
-    if (gsl_partVanish_4.x > 0.0) { gsl_part_4 = specimen(p, gsl_remap_2(abs(map_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0)))), 51.0) + gsl_partVanish_4.y; }
+    if (gsl_partVanish_4.x > 0.0) { gsl_part_4 = specimen(p, gsl_remap_2(abs(domain_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0)))), 51.0) + gsl_partVanish_4.y; }
     if (abs(gsl_part_4) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_4), gsl_partVanish_4.zw); }
   }
   let fcc = gsl_part_4;

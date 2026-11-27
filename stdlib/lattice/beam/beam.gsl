@@ -11,9 +11,9 @@
 //
 // Translated from the Gradient Control Labs script-editor stdlib (GCL v1). The
 // cubic-symmetry lattices fold the cell into its positive octant and reflect a
-// representative set of struts (remap through map.patternRepeatMirror, GCL
+// representative set of struts (remap through domain.patternRepeatMirror, GCL
 // LineSegmentRepeatMirror); a few tile by plain translation
-// (map.patternRepeat, GCL LineSegmentRepeat).
+// (domain.patternRepeat, GCL LineSegmentRepeat).
 //
 // NOTE: the symmetry remap must wrap the struts inline (in the same scope) — a
 // list of struts passed through a helper is evaluated at the original point, and
@@ -24,7 +24,7 @@
 //
 // Doc convention follows builtin/base.gsl: `///` lines are public docs.
 
-import "map";
+import "domain";
 
 // --- public lattices ---
 
@@ -40,7 +40,7 @@ octet(cellSize) {
     lineSegment(h, [0, 0, h.z]),
     lineSegment(h, [0, h.y, 0]),
     lineSegment(h, [h.x, 0, 0])
-  ]), map.patternRepeatMirror(size));
+  ]), domain.patternRepeatMirror(size));
 }
 
 /// Truncated-octahedral (Kelvin-adjacent) strut lattice. scalar or vec3 `size` cell.
@@ -60,7 +60,7 @@ truncatedOctahedral(cellSize) {
     lineSegment([-sixth.x, h.y, 0], [sixth.x, h.y, 0]),
     lineSegment([-sixth.x, sixth.y, h.z], [sixth.x, sixth.y, h.z]),
     lineSegment([sixth.x, -sixth.y, h.z], [sixth.x, sixth.y, h.z])
-  ]), map.patternRepeatMirror(size));
+  ]), domain.patternRepeatMirror(size));
 }
 
 /// Body-centered-cubic strut lattice: the cell-center-to-corner diagonal,
@@ -69,7 +69,7 @@ truncatedOctahedral(cellSize) {
 bcc(cellSize) {
   size = cellSize * [1, 1, 1];
   h = size * 0.5;
-  return remap(lineSegment(h, -h), map.patternRepeatMirror(size));
+  return remap(lineSegment(h, -h), domain.patternRepeatMirror(size));
 }
 
 /// Face-centered-cubic strut lattice: cell corner to the three near face
@@ -81,7 +81,7 @@ fcc(cellSize) {
     lineSegment(h, [0, 0, h.z]),
     lineSegment(h, [0, h.y, 0]),
     lineSegment(h, [h.x, 0, 0])
-  ]), map.patternRepeatMirror(size));
+  ]), domain.patternRepeatMirror(size));
 }
 
 /// Truncated-cubic strut lattice. `setback` in [0, 1] pulls the strut endpoints
@@ -97,7 +97,7 @@ truncatedCubic(cellSize, setback) {
     lineSegment([s * h.x, h.y, h.z], [0, h.y, h.z]),
     lineSegment([h.x, s * h.y, h.z], [h.x, 0, h.z]),
     lineSegment([h.x, h.y, s * h.z], [h.x, h.y, 0])
-  ]), map.patternRepeatMirror(size));
+  ]), domain.patternRepeatMirror(size));
 }
 
 /// Kelvin cell (tetrakaidecahedron) strut lattice. `setback` in [0, 1] sets the
@@ -112,7 +112,7 @@ kelvinCell(cellSize, setback) {
     lineSegment([h.x, 0, setback * h.z], [setback * h.x, 0, h.z]),
     lineSegment([h.x, setback * h.y, 0], [setback * h.x, h.y, 0]),
     lineSegment([h.x, setback * h.y, 0], [h.x, 0, setback * h.z])
-  ]), map.patternRepeatMirror(size));
+  ]), domain.patternRepeatMirror(size));
 }
 
 /// Fluorite (CaF2-type) strut lattice. scalar or vec3 `size` cell.
@@ -125,7 +125,7 @@ fluorite(cellSize) {
     lineSegment(q, [0, h.y, 0]),
     lineSegment([h.x, 0, 0], q),
     lineSegment(h, q)
-  ]), map.patternRepeatMirror(size));
+  ]), domain.patternRepeatMirror(size));
 }
 
 /// Isotruss: orthogonal axis struts (translational) plus corner-to-face
@@ -137,13 +137,13 @@ isotruss(cellSize, combine) {
     lineSegment([-h.x, 0, 0], [h.x, 0, 0]),
     lineSegment([0, -h.y, 0], [0, h.y, 0]),
     lineSegment([0, 0, -h.z], [0, 0, h.z])
-  ]), map.patternRepeat(size));
+  ]), domain.patternRepeat(size));
   diags = remap(unionSharp([
     lineSegment(h, [0, h.y, h.z]),
     lineSegment(h, [h.x, 0, h.z]),
     lineSegment(h, [h.x, h.y, 0]),
     lineSegment(h, [0, 0, 0])
-  ]), map.patternRepeatMirror(size));
+  ]), domain.patternRepeatMirror(size));
   return combine([axes, diags]);
 }
 
@@ -168,8 +168,8 @@ reentrant(cellSize, setback, combine) {
     lineSegment([h.x, h.y, recessedZ], [0, h.y, setbackZ]),
     lineSegment([h.x, h.y, recessedZ], [h.x, 0, setbackZ]),
     lineSegment([h.x, h.y, recessedZ], [h.x, h.y, 0])
-  ]), map.patternRepeatMirror(size));
-  column = remap(lineSegment([0, 0, -recessedZ], [0, 0, recessedZ]), map.patternRepeat(size));
+  ]), domain.patternRepeatMirror(size));
+  column = remap(lineSegment([0, 0, -recessedZ], [0, 0, recessedZ]), domain.patternRepeat(size));
   return combine([walls, column]);
 }
 
@@ -188,7 +188,7 @@ cubic(cellSize, combine) {
     lineSegment([-h.x, 0, 0], [h.x, 0, 0]),
     lineSegment([0, -h.y, 0], [0, h.y, 0]),
     lineSegment([0, 0, -h.z], [0, 0, h.z])
-  ]), map.patternRepeat(size));
+  ]), domain.patternRepeat(size));
 }
 
 /// Simple cubic lattice with the three struts joined sharply.
@@ -201,21 +201,21 @@ cubic(cellSize) {
 /// axis; lattice.solidify turns it into cylinders. z passes through, so the
 /// columns run the full height.
 columnRectangular(cellSize) {
-  o = map.patternRepeatXY(cellSize);
+  o = domain.patternRepeatXY(cellSize);
   return length(o.xy);
 }
 
 /// Infinite vertical columns on a triangular (6-neighbor close-packed) lattice
 /// with nearest-neighbor `cellSize`.
 columnTriangular(cellSize) {
-  o = map.patternTriangularXY(cellSize);
+  o = domain.patternTriangularXY(cellSize);
   return length(o.xy);
 }
 
 /// Infinite vertical columns on a hexagonal (honeycomb, 3-neighbor) lattice with
 /// bond length `cellSize`.
 columnHexagonal(cellSize) {
-  o = map.patternHexagonalXY(cellSize);
+  o = domain.patternHexagonalXY(cellSize);
   return length(o.xy);
 }
 
@@ -228,11 +228,11 @@ cubicDouble(cellSize) {
     lineSegment([-h.x, 0, 0], [h.x, 0, 0]),
     lineSegment([0, -h.y, 0], [0, h.y, 0]),
     lineSegment([0, 0, -h.z], [0, 0, h.z])
-  ]), map.patternRepeat(size));
+  ]), domain.patternRepeat(size));
   diags = remap(unionSharp([
     lineSegment(h, [0, h.y, h.z]),
     lineSegment(h, [h.x, 0, h.z]),
     lineSegment(h, [h.x, h.y, 0])
-  ]), map.patternRepeatMirror(size));
+  ]), domain.patternRepeatMirror(size));
   return min(axes, diags);
 }

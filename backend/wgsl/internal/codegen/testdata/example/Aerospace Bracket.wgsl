@@ -92,7 +92,7 @@ fn builtin_cylinderZ(p: vec3<f32>, vector_dirZ: vec3<f32>, center: vec3<f32>, ra
   return builtin_cylinder(p, center, vector_dirZ, radius);
 }
 
-fn map_rotateZX(v: vec3<f32>, angle: f32) -> vec3<f32> {
+fn domain_rotateZX(v: vec3<f32>, angle: f32) -> vec3<f32> {
   let ca = cos(angle);
   let sa = sin(angle);
   return vec3<f32>(v.x * ca - v.z * sa, v.y, v.z * ca + v.x * sa);
@@ -144,7 +144,7 @@ fn sdShape(p: vec3<f32>, time: f32, gsl_param_7_28: f32, gsl_param_8_28: f32, gs
   let vector_zero = vec3<f32>(0.0, 0.0, 0.0);
   let unionTop = select(-length(vec2<f32>((gsl_tmp_3 + gsl_tmp_4) / 1.847759, (gsl_tmp_3 - gsl_tmp_4) / 0.76536685)), min(gsl_tmp_3, gsl_tmp_4), max(gsl_remap_2(p - vec3<f32>(0.70710677, 0.0, 0.70710677) * gsl_tmp_4, gsl_param_7_28, gsl_param_8_28, gsl_param_9_28, gsl_param_10_28, gsl_param_30_29, vector_zero) - 0.0, gsl_remap_3(p - vector_dirZ * gsl_tmp_3, gsl_param_7_28, gsl_param_8_28, gsl_param_9_28, gsl_param_10_28, gsl_param_30_29, vector_zero, vector_dirZ) - 0.0) > 0.0) + 0.0;
   let clevisAng = gsl_param_30_29;
-  let clevisRot = map_rotateZX(p, radians(clevisAng));
+  let clevisRot = domain_rotateZX(p, radians(clevisAng));
   let gsl_result = arcShape(clevisRot, vector_zero);
   let horizPlane = gsl_result.v_2;
   let frontPlane = planeXY(p, vec2<f32>(5.9, 1.5), v0) - 1.2;

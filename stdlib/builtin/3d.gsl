@@ -80,7 +80,7 @@ axis(center, direction) {
 // compiled (property/carry.go) — so they are written in these helpers, never
 // as locals of a primitive, which would outlive the erasure.
 
-// The orthonormal pair perpendicular to `direction` that map.axisAt uses (Duff
+// The orthonormal pair perpendicular to `direction` that domain.axisAt uses (Duff
 // et al., "Building an Orthonormal Basis, Revisited"): well conditioned at
 // every axis, and right-handed with it, so an angle measured in it runs
 // counterclockwise seen from the tip of `direction`. Written out rather than

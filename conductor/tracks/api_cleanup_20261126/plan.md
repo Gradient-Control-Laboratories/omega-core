@@ -44,7 +44,11 @@ golden stops for approval before the golden is updated.
 
 ## Phase 2: Stdlib Renames and Removals
 
-- [ ] Goal: Rename the `map` package to `domain` (N1), with its `gsl fix` rewrite
+- [x] Goal: Rename the `map` package to `domain` (N1), with its `gsl fix` rewrite
+  - [x] A hard rename (no alias): `gsl fix -domain` rewrites references and imports; an old `map.` or
+        `import "map"` gets an error naming `domain`; `rotateYZ`, `rotateZX`, `eulerAngles` documented
+  - [x] Fixtures and tests that said `map.` were run through the fixer; 30 WGSL goldens moved
+        `map_…` → `domain_…` only (token proof)
 - [ ] Goal: Honeycomb names (N5) and the three `bcc`s (N6), with rewrites
 - [ ] Goal: `matrix.scale` becomes `multiplyScalar` (N2), with its rewrite and the lowering updated; hide the lowering targets (R1)
 - [ ] Goal: Centred `torus` and `octahedron` (N9); difference operator forms (N10)

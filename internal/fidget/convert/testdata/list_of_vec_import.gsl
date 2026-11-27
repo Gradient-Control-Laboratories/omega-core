@@ -1,5 +1,5 @@
 import "omega";
-import "map";
+import "domain";
 
 // The motivating list-of-vectors user story: map each angle to a rotated
 // placement vector, then map the placements to shapes and union them.
@@ -13,7 +13,7 @@ angles = map((value, index) {
 
 // Each result is a vector, so radials is a list of vectors.
 radials = map(
-  (ang, index) { return map.rotateXY(dirX * partPlacementShift, ang); },
+  (ang, index) { return domain.rotateXY(dirX * partPlacementShift, ang); },
   angles
 );
 

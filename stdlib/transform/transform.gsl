@@ -10,7 +10,7 @@
 //
 // Each takes the shape as a value — transform.translate(sphere(1), [2, 0, 0])
 // — and returns the moved shape. Rotations turn the shape counterclockwise,
-// looking down the axis toward the origin, the same sense as map.rotateXY and
+// looking down the axis toward the origin, the same sense as domain.rotateXY and
 // friends applied to the coordinate.
 //
 // Each is one remap whose coordinate reads only p, its own parameters and
@@ -40,7 +40,7 @@ rotateZ(shape, angle) {
 
 /// The shape turned by `angle` radians about the line through `axisOrigin` along
 /// `axisDirection`, which need not be normalized: Rodrigues' formula turning the
-/// point back by `angle`, as map.rotateAxis(p, origin, direction, -angle).
+/// point back by `angle`, as domain.rotateAxis(p, origin, direction, -angle).
 rotate(shape, axisOrigin, axisDirection, angle) {
   return remap(shape, axisOrigin + (p - axisOrigin) * cos(angle) - cross(normalize(axisDirection), p - axisOrigin) * sin(angle) + normalize(axisDirection) * dot(normalize(axisDirection), p - axisOrigin) * (1 - cos(angle)));
 }
