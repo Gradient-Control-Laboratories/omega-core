@@ -51,6 +51,9 @@ const (
 	qefWeight        = 0.1
 	projectMaxIters  = 20
 	projectTolerance = 1e-5
+	// needleFraction is the shortest a vertex's move may make one of its edges, as a fraction of both the edge's
+	// length and the vertex's mean edge as the mesher made them (keepApart).
+	needleFraction = 0.01
 )
 
 type vec [3]float64
@@ -180,6 +183,9 @@ func (m *mesh) write(header []byte) []byte {
 type repair struct {
 	*mesh
 	field Field
+	// given is the vertices' places as the mesher made them, which keepApart's needle test measures edges by (the
+	// places now, when it is nil).
+	given []vec
 }
 
 func (r *repair) samples(pts []vec) ([]Sample, error) {
@@ -259,6 +265,7 @@ func (r *repair) run(stats *Stats) error {
 	}
 	startArea := area()
 	start := slices.Clone(r.verts)
+	r.given = start
 	best := slices.Clone(r.verts)
 	bestCount, bestPass := len(back), 0
 	for pass := 1; pass <= maxPasses && len(back) > 0; pass++ {
@@ -339,12 +346,53 @@ func (r *repair) keepNear(order []int32, pts []vec) {
 // would be welded into one and open the mesh. A vertex kept where it is holds that place first, ahead of any vertex
 // sent there (one already on the zero set is often sent back to the very point a neighbour's walk ends on), and a
 // vertex sent to a point another moving vertex earlier in order took is kept where it is too; keeping it may free or
-// take a place, so the rounds repeat until none changes. They end: the mesher's places are all distinct, so with every
-// vertex kept no two share a point.
+// take a place, so the rounds repeat until none changes. A vertex is kept where it is, too, when its new place would
+// make one of its edges a needle: shorter than needleFraction of both the edge's length and the vertex's mean edge as
+// the mesher made them (lengths as given, not as the last pass left them, so a needle cannot be made a step at a
+// time; the mean so that an edge the mesher made short does not hold its vertex), measured to the neighbour's place
+// in the same round: where it stays, or the new place it took earlier in order (a neighbour later in order checks the
+// edge on its own turn, so of two sent to nearly one point the first moves, as with one point). Both sides of a pinch
+// walked to nearly one spot of the zero set leave triangles a millionth of their size, which the next weld or measure
+// may treat as one point. The rounds end: the mesher's places are all distinct, and with every vertex kept every edge
+// is as a passed round left it, so no two share a point and none is a new needle.
 func (r *repair) keepApart(order []int32, pts []vec) {
 	moving := make(map[int32]bool, len(order))
-	for _, v := range order {
+	slot := make(map[int32]int, len(order))
+	for k, v := range order {
 		moving[v] = true
+		slot[v] = k
+	}
+	at := func(u int32) vec {
+		if k, ok := slot[u]; ok {
+			return pts[k]
+		}
+		return r.verts[u]
+	}
+	given := r.given
+	if given == nil {
+		given = r.verts
+	}
+	needle := func(k int, v int32) bool {
+		ring := r.ringOf(v)
+		if len(ring) == 0 {
+			return false
+		}
+		var mean float64
+		for _, u := range ring {
+			mean += norm(sub(given[u], given[v]))
+		}
+		mean /= float64(len(ring))
+		for _, u := range ring {
+			if j, ok := slot[u]; ok && j > k && pts[j] != r.verts[u] {
+				continue // a neighbour later in order, still sent somewhere, checks this edge on its own turn
+			}
+			was := norm(sub(given[u], given[v]))
+			now := norm(sub(at(u), pts[k]))
+			if now < needleFraction*was && now < needleFraction*mean {
+				return true
+			}
+		}
+		return false
 	}
 	fixed := make(map[[3]float32]bool, len(r.verts))
 	for v, p := range r.verts {
@@ -364,13 +412,13 @@ func (r *repair) keepApart(order []int32, pts []vec) {
 			if pts[k] == r.verts[v] {
 				continue
 			}
-			at := key32(pts[k])
-			if fixed[at] || taken[at] {
+			place := key32(pts[k])
+			if fixed[place] || taken[place] || needle(k, v) {
 				pts[k] = r.verts[v]
 				changed = true
 				continue
 			}
-			taken[at] = true
+			taken[place] = true
 		}
 	}
 }
