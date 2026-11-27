@@ -139,9 +139,32 @@ New tests are added only once the owner agrees them.
       only the shapes inside a claim (`max(rMax - r, seat)` moves `seat`); a query that is one bare
       shape moves as a whole (`convert.DisplacedTree`). The interval, gradient and parameter evaluators
       each get a displaced variant through one helper
-- [ ] Task: `certify`, `eval`, `bounds`, `volume` and `mesh` read #162's displaced distance at that
-      condition, so the journal experiment no longer writes the displacement by hand
-- [ ] Task: The journal claims of spec section 4, posed through the condition, decide as recorded
+- [x] Task: `certify`, `eval`, `bounds`, `volume` and `mesh` read #162's displaced distance at that
+      condition, so the journal experiment no longer writes the displacement by hand (2026-11-27).
+      `eval.Condition`, `ParseCondition`, `Evaluator.SetCondition`; `gsl eval`'s `"condition"`, set per
+      request on the session's evaluator, refused (exit 2) on describe, render and shader.
+      `convert.ToSurfaceTrees` is the one helper: a colour/material build with `recordInTree` and both
+      scales at the condition, each scalar return `DisplacedTree`, vector returns grouped as
+      `ToTreeGroups`, params bound as `ToTreesWithParams`; `eval`'s `scalarTrees` / `groupTrees` /
+      `paramTrees` take it only when the condition moves a surface, so as-built is the old path
+      exactly. Enclose takes the condition too (it reads the field; `gsl eval`'s bounds op is
+      Enclose). Mesh ORs the condition into its Coatings and Relief flags. `displacementDrawn()` is
+      the relief scale, as for a displaced mesh. Found and fixed on the owner's go: a coated shape
+      returned bare beside a return that layers it was moved by its layer's shading switch (height 0
+      within 1 µm of the solid beneath and inside it), leaving a positive shell inside the coat in
+      queries, displaced meshes and the viewer; `analyzeLayers` now gives such a return its layered
+      distance (second pass over the whole returns; no golden moves). New tests (owner's go):
+      `eval/condition_test.go`, `cmd/compile/internal/evalcmd/condition_test.go`
+- [ ] Task: The journal claims of spec section 4, posed through the condition, decide as recorded.
+      Run 2026-11-27 (`as-made`, the seat carrying `machined.turned`, plating a coat laid with
+      `material.withBuild(fMat, build)`): A proven 169 (as recorded), B disproven 5,305 (5,145),
+      no-slack envelope undecided (as recorded), 0.1 µm slack proven 5,257, C disproven 2,345 (2,217),
+      whole seat in the profile plane proven 43,689 (as recorded). D (5 µm zinc, machined 5 µm under)
+      is undecided at the 200 k budget (worst lower bound -1.6 µm), where the hand-written field proves
+      it in 5,257. Values agree with the hand-written field at every point checked; relief alone
+      through the condition proves in 9 and build alone (nominal) in 32,425, so the loss is a coat over
+      relief: the layer's increment reads the relief twice (coat height less the height beneath), and
+      interval arithmetic takes the two as independent
 - [ ] Task: Phase Verification & Checkpoint
 
 ## Phase 5: Envelopes and the Peak Datum (D1)

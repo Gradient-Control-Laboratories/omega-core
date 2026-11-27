@@ -93,7 +93,7 @@ func (e *Evaluator) VolumeWithin(ctx context.Context, manifest map[string]string
 			for i, node := range batch {
 				boxes[i] = node.box
 			}
-			intervals, err := EvalInterval(prog, boxes)
+			intervals, err := evalInterval(prog, e.surface, boxes)
 			if err != nil {
 				return result, err
 			}

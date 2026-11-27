@@ -100,6 +100,24 @@ func ToTreesWithParams(
 	if len(d.outputs) == 0 {
 		return errors.New("no outputs")
 	}
+	if err := d.bindParams(params); err != nil {
+		return err
+	}
+	treeIndices := make([]fidget.TreeIndex, 0, len(d.outputs))
+	for _, node := range d.outputs {
+		if len(node.Trees()) != 1 {
+			return build.ErrLoc(d.GetScope(), node.Start(),
+				fmt.Errorf("expected numeric return values, got %s", node.Type().String()))
+		}
+		treeIndices = append(treeIndices, node.Trees()[0])
+	}
+	return f(treeIndices, d.paramTrees)
+}
+
+// bindParams checks, after the build, that every requested parameter resolved:
+// one that was seen but is not a slider-style literal is an error, and one never
+// seen is bound to a free var.
+func (d *Delegate) bindParams(params []string) error {
 	for _, name := range params {
 		if _, ok := d.paramTrees[name]; ok {
 			continue
@@ -119,15 +137,7 @@ func ToTreesWithParams(
 		// see Evaluator.CertifyParams.
 		d.paramTrees[name] = fidget.NewInput(name, 0)
 	}
-	treeIndices := make([]fidget.TreeIndex, 0, len(d.outputs))
-	for _, node := range d.outputs {
-		if len(node.Trees()) != 1 {
-			return build.ErrLoc(d.GetScope(), node.Start(),
-				fmt.Errorf("expected numeric return values, got %s", node.Type().String()))
-		}
-		treeIndices = append(treeIndices, node.Trees()[0])
-	}
-	return f(treeIndices, d.paramTrees)
+	return nil
 }
 
 // IsParameter implements eval.ParameterChecker. A requested parameter's

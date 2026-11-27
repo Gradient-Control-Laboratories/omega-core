@@ -46,7 +46,9 @@ import (
 //
 // A return that is one such shape with nothing displaced inside it is left to
 // the renderer as before (its DisplacedReturns entry is nil), so a document
-// that sets its materials on its returns compiles exactly as it did.
+// that sets its materials on its returns compiles exactly as it did, unless
+// another return moves that shape inside its booleans: then the shape shades
+// by its layer, and the return is moved by its displaced distance as well.
 
 const (
 	// The synthetic declarations: a shape's displaced distance, the distance
@@ -166,12 +168,28 @@ func analyzeLayers(prog *program.Program) *layers {
 	last := pkg.Files[len(pkg.Files)-1]
 	l.returns = make([]*program.Operand, len(last.Returns))
 	any := false
+	var whole []int
 	for i, ret := range last.Returns {
-		if !l.containsOp(ret) || l.wholeReturn(ret) {
+		if !l.containsOp(ret) {
+			continue
+		}
+		if _, ok := l.wholeShape(ret); ok {
+			whole = append(whole, i)
 			continue
 		}
 		l.returns[i] = l.subst(ret)
 		any = true
+	}
+	// A whole return whose shape another return moves inside its booleans
+	// shades by that shape's layer switch: near and inside the solid beneath
+	// the layer, its material is the one beneath, whose height is not the
+	// shape's. Moved as a whole by that material, its surface would stand
+	// where the switch flips, so it is moved by its displaced distance too.
+	for _, i := range whole {
+		if name, _ := l.wholeShape(last.Returns[i]); l.inTree[name] {
+			l.returns[i] = l.subst(last.Returns[i])
+			any = true
+		}
 	}
 	if !any {
 		return nil
@@ -179,11 +197,11 @@ func analyzeLayers(prog *program.Program) *layers {
 	return l
 }
 
-// wholeReturn reports whether ret is one displacing shape with nothing moved
-// inside it, placed by nothing but moves (remap, a transform, a part's
+// wholeShape reports whether ret is one displacing shape, name, with nothing
+// moved inside it, placed by nothing but moves (remap, a transform, a part's
 // stand-in): moving that shape before the moves is moving the return after
 // them, which the renderer does as a whole exactly as before.
-func (l *layers) wholeReturn(ret *program.Operand) bool {
+func (l *layers) wholeShape(ret *program.Operand) (name string, ok bool) {
 	op := l.plain.unwrapRemaps(ret)
 	for depth := 0; op != nil && depth < 64; depth++ {
 		if stand := simplifiedCall(op); stand != nil {
@@ -194,26 +212,26 @@ func (l *layers) wholeReturn(ret *program.Operand) bool {
 		case *program.Operand_Reference:
 			name := t.Reference.Name
 			if t.Reference.Prefix != "" {
-				return false
+				return "", false
 			}
 			if l.displacing[name] {
-				return !l.containsOp(l.decls[name])
+				return name, !l.containsOp(l.decls[name])
 			}
 			body, ok := l.plain.decls[name]
 			if !ok {
-				return false
+				return "", false
 			}
 			op = body
 		case *program.Operand_Expression:
 			if t.Expression.Operation != program.Operation_REMAP || len(t.Expression.Operands) == 0 {
-				return false
+				return "", false
 			}
 			op = t.Expression.Operands[0]
 		default:
-			return false
+			return "", false
 		}
 	}
-	return false
+	return "", false
 }
 
 // contains reports whether a declaration has a moving surface in it: it sets

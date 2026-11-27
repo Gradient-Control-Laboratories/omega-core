@@ -75,6 +75,9 @@ A request names its op and its document, by path ("source") or text ("code"):
                                                        for time and the sliders, and its textures as files
 
 "defs" are GSL statements in the document's scope; one naming a declared name replaces it ("skin = 1.6;").
+"condition" is the state of the surfaces eval, extremum, certify, bounds, surface, volume and mesh read: "as-built"
+(the default: the field as the document builds it), "nominal" (each surface moved out by its materials' coatings) or
+"as-made" (by their coatings and their relief, as render draws it); mesh then meshes as with "coatings" and "relief".
 "expr" defaults to the union of the document's returns, and eval's "exprs" to each of them.
 "region" is [x0, y0, z0, x1, y1, z1] in mm.
 render's "views" is compile's --views ("iso,top,-1,1,0.6"), its size 640 by 480 unless named.
@@ -231,6 +234,7 @@ type request struct {
 	Algorithm         string                `json:"algorithm"`
 	Coatings          bool                  `json:"coatings"`
 	Relief            bool                  `json:"relief"`
+	Condition         string                `json:"condition"`
 	Target            string                `json:"target"`
 	OutDir            string                `json:"outDir"`
 }
@@ -289,11 +293,22 @@ func (s *server) dispatch(ctx context.Context, req *request) (map[string]any, er
 	if req.Op != "eval" && len(req.Exprs) > 0 {
 		return nil, malformedf("exprs is eval's; %s takes one expr", req.Op)
 	}
+	condition, err := eval.ParseCondition(req.Condition)
+	if err != nil {
+		return nil, malformed{err.Error()}
+	}
+	if condition != eval.AsBuilt && (req.Op == "describe" || req.Op == "render" || req.Op == "shader") {
+		return nil, malformedf("condition is for the field queries; %s does not take it", req.Op)
+	}
 	code, paths, docDir, err := s.document(req)
 	if err != nil {
 		return nil, err
 	}
 	e := s.evaluator(paths, docDir)
+	// A session's evaluator serves every request on its paths, so each request sets its own condition.
+	if err := e.SetCondition(condition); err != nil {
+		return nil, malformed{err.Error()}
+	}
 	switch req.Op {
 	case "eval":
 		return evalPoints(ctx, e, code, req)

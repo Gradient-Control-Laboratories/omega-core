@@ -85,7 +85,7 @@ func (e *Evaluator) Certify(ctx context.Context, manifest map[string]string, cod
 		return nil, err
 	}
 	evalRow := func(boxes [][6]float32) ([]IntervalSample, error) {
-		ivals, err := EvalInterval(prog, boxes)
+		ivals, err := evalInterval(prog, e.surface, boxes)
 		if err != nil {
 			return nil, err
 		}
@@ -168,7 +168,7 @@ func (e *Evaluator) CertifyParams(ctx context.Context, manifest map[string]strin
 		ranges[i] = params[n]
 	}
 	evalBoxes := func(spatial [][6]float32, bounds [][][2]float64) ([]IntervalSample, error) {
-		return EvalIntervalParamBoxes(prog, names, spatial, bounds)
+		return evalIntervalParamBoxes(prog, e.surface, names, spatial, bounds)
 	}
 	result, err := e.certifySearchParams(ctx, expr, region, threshold, tolerance, floor, names, ranges, evalBoxes)
 	if err != nil {

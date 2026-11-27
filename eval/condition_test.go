@@ -1,0 +1,190 @@
+//go:build cgo
+
+package eval_test
+
+import (
+	"io"
+	"math"
+	"strings"
+	"testing"
+
+	"github.com/Gradient-Control-Laboratories/omega-core/eval"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/test/require"
+)
+
+// coated is a 20 mm cube under a coat t mm thick (a slider, 0.1 as written),
+// and rough a 20 mm cube from x = 20 to 40 whose material has 0.2 mm of relief
+// and no build.
+const coated = `
+@range(0.05, 0.2) t = 0.1;
+blank = boxCentered(vector.zero, [20.0, 20.0, 20.0]);
+blank.material = material.make(0.5, 0, 1.5);
+coat = blank;
+coat.material = material.withBuild(material.make(0.3, 0, 1.5), t);
+rough = boxCentered([30.0, 0, 0], [20.0, 20.0, 20.0]);
+rough.material = material.withDisplacement(material.make(0.5, 0, 1.5), 0.2);
+return coat, rough;
+`
+
+// conditioned is an evaluator that reads its fields at c.
+func conditioned(t *testing.T, c eval.Condition) *eval.Evaluator {
+	t.Helper()
+	e := eval.New(&source.MockManager{}, nil)
+	require.NoError(t, e.SetCondition(c))
+	return e
+}
+
+// values is each expression's value at each point.
+func values(t *testing.T, e *eval.Evaluator, exprs []string, points [][3]float64) [][]float64 {
+	t.Helper()
+	groups, err := e.EvalGsl(t.Context(), nil, coated, "", exprs, points)
+	require.NoError(t, err)
+	out := make([][]float64, len(groups))
+	for i, g := range groups {
+		for _, s := range g.Samples[0] {
+			out[i] = append(out[i], float64(s.Value))
+		}
+	}
+	return out
+}
+
+func nearly(t *testing.T, what string, got, want, tol float64) {
+	t.Helper()
+	if math.Abs(got-want) > tol {
+		t.Errorf("%s: %g, want %g within %g", what, got, want, tol)
+	}
+}
+
+// As built nothing moves; nominal moves the coat out by its build and leaves
+// relief alone; as made moves both.
+func TestCondition_MovesBuildsAndRelief(t *testing.T) {
+	points := [][3]float64{{10.05, 0, 0}, {40.05, 0, 0}}
+	for _, c := range []struct {
+		condition   eval.Condition
+		coat, rough float64
+	}{
+		{eval.AsBuilt, 0.05, 0.05},
+		{eval.Nominal, -0.05, 0.05},
+		{eval.AsMade, -0.05, -0.15},
+	} {
+		got := values(t, conditioned(t, c.condition), []string{"coat", "rough"}, points)
+		nearly(t, string(c.condition)+" coat", got[0][0], c.coat, 1e-5)
+		nearly(t, string(c.condition)+" rough", got[1][1], c.rough, 1e-5)
+	}
+}
+
+// A shape returned bare beside a return that moves it inside its booleans is
+// moved by its own build everywhere, inside the blank and just above it too,
+// not by the material its layer shows there.
+func TestCondition_BareReturnBesideItsLayer(t *testing.T) {
+	got := values(t, conditioned(t, eval.Nominal), []string{"coat", "max(coat, 9.95 - length(p))"},
+		[][3]float64{{9.9, 0, 0}, {10.0005, 0, 0}})
+	nearly(t, "coat inside the blank", got[0][0], -0.2, 1e-5)
+	nearly(t, "coat just above the blank", got[0][1], -0.0995, 1e-5)
+}
+
+// A claim that holds as built fails nominal once the coat is on, and a claim
+// over the coat's thickness names the thicknesses it fails for.
+func TestCondition_Certify(t *testing.T) {
+	near := [6]float64{10.02, -1, -1, 10.08, 1, 1}
+	r, err := conditioned(t, eval.AsBuilt).Certify(t.Context(), nil, coated, "", "coat", near, 0, 0)
+	require.NoError(t, err)
+	require.True(t, r.Proven, "as built: %+v", r)
+	r, err = conditioned(t, eval.Nominal).Certify(t.Context(), nil, coated, "", "coat", near, 0, 0)
+	require.NoError(t, err)
+	require.True(t, r.Disproven, "nominal: %+v", r)
+
+	nominal := conditioned(t, eval.Nominal)
+	thickness := map[string][2]float64{"t": {0.05, 0.2}}
+	r, err = nominal.CertifyParams(t.Context(), nil, coated, "", "coat", [6]float64{10.3, -1, -1, 10.4, 1, 1}, 0, 0, thickness)
+	require.NoError(t, err)
+	require.True(t, r.Proven, "clear of every coat: %+v", r)
+	r, err = nominal.CertifyParams(t.Context(), nil, coated, "", "coat", [6]float64{10.15, -1, -1, 10.18, 1, 1}, 0, 0, thickness)
+	require.NoError(t, err)
+	require.True(t, r.Disproven, "inside the thick coats: %+v", r)
+	if lo := r.CounterParams["t"][0]; lo < 0.15 {
+		t.Errorf("fails only for coats past 0.15 mm, named from %g", lo)
+	}
+}
+
+// The proven box, a surface point and the extremum see the coat's build.
+func TestCondition_EncloseSurfaceExtremum(t *testing.T) {
+	region := [6]float64{-12, -12, -12, 12, 12, 12}
+	for _, c := range []struct {
+		condition eval.Condition
+		face      float64
+	}{
+		{eval.AsBuilt, 10},
+		{eval.Nominal, 10.1},
+	} {
+		e := conditioned(t, c.condition)
+		b, err := e.Enclose(t.Context(), nil, coated, "", "coat", region, 32)
+		require.NoError(t, err)
+		require.True(t, b.Proven, "%s: %+v", c.condition, b)
+		nearly(t, string(c.condition)+" proven box", b.BboxMax[0], c.face, 0.01)
+
+		s, err := e.SurfacePoint(t.Context(), nil, coated, "", "coat", [][3]float64{{12, 0, 0}}, 0, 0)
+		require.NoError(t, err)
+		nearly(t, string(c.condition)+" surface point", s[0].Point[0], c.face, 1e-3)
+
+		// The least value, -face at the centre, lies between the bound and the least value sampled.
+		x, err := e.Extremum(t.Context(), nil, coated, "", "coat", [6]float64{-11, -11, -11, 11, 11, 11}, "min", 0, 1)
+		require.NoError(t, err)
+		if x.MinLower > -c.face || x.Min < -c.face {
+			t.Errorf("%s: least value %g not in [%g, %g]", c.condition, -c.face, x.MinLower, x.Min)
+		}
+		if c.condition == eval.Nominal && x.Min >= -10 {
+			t.Errorf("nominal: least value sampled %g, no lower than the bare cube's -10", x.Min)
+		}
+	}
+}
+
+// The volume nominal brackets the cube offset by its build, a^3 + 6 a^2 b +
+// 3 pi a b^2 + 4/3 pi b^3, and not the bare cube.
+func TestCondition_Volume(t *testing.T) {
+	const a, b = 20.0, 0.1
+	built := a*a*a + 6*a*a*b + 3*math.Pi*a*b*b + 4.0/3.0*math.Pi*b*b*b
+	v, err := conditioned(t, eval.Nominal).VolumeOf(t.Context(), nil, coated, "", "coat", [6]float64{-11, -11, -11, 11, 11, 11}, 0.01)
+	require.NoError(t, err)
+	if v.Lower > built || v.Upper < built || v.Lower <= a*a*a {
+		t.Errorf("%+v does not bracket %g above the bare %g", v, built, a*a*a)
+	}
+}
+
+// Mesh meshes at the condition as its Coatings and Relief flags mesh.
+func TestCondition_Mesh(t *testing.T) {
+	const a, b = 20.0, 0.1
+	built := a*a*a + 6*a*a*b + 3*math.Pi*a*b*b + 4.0/3.0*math.Pi*b*b*b
+	doc := strings.Replace(coated, "return coat, rough;", "return coat;", 1)
+	box := [6]float64{-11, -11, -11, 11, 11, 11}
+	for _, c := range []struct {
+		condition eval.Condition
+		volume    float64
+	}{
+		{eval.AsBuilt, a * a * a},
+		{eval.Nominal, built},
+	} {
+		r, err := conditioned(t, c.condition).Mesh(t.Context(), nil, doc, "", io.Discard,
+			eval.MeshOptions{Subdivision: 8, Algorithm: "mdc", Region: &box})
+		require.NoError(t, err)
+		require.Equal(t, 1, len(r.Bodies))
+		if rel := math.Abs(r.Bodies[0].VolumeMm3-c.volume) / c.volume; rel > 1e-4 {
+			t.Errorf("%s: meshed volume %.3f, want %.3f", c.condition, r.Bodies[0].VolumeMm3, c.volume)
+		}
+	}
+}
+
+// The maximum and minimum material conditions need envelopes and spreads that
+// documents cannot declare yet, and a name that is no condition is refused.
+func TestCondition_Refused(t *testing.T) {
+	e := eval.New(&source.MockManager{}, nil)
+	for _, c := range []eval.Condition{eval.MaxMaterial, eval.MinMaterial, "as-drawn"} {
+		if err := e.SetCondition(c); err == nil {
+			t.Errorf("%s: accepted", c)
+		}
+	}
+	c, err := eval.ParseCondition("")
+	require.NoError(t, err)
+	require.Equal(t, eval.AsBuilt, c)
+}

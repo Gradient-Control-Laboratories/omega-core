@@ -232,29 +232,35 @@ func toColorShapes(
 			return build.ErrLoc(d.GetScope(), node.Start(),
 				fmt.Errorf("expected numeric return values, got %s", node.Type().String()))
 		}
-		shape := ColorShape{Tree: trees[0]}
-		if i < len(d.outputNames) {
-			shape.Name = d.outputNames[i]
-		}
-		if i < len(d.outputReturnIdx) {
-			r := d.outputReturnIdx[i]
-			if r < len(d.hasColorReturn) && d.hasColorReturn[r] {
-				shape.Color = d.colorReturns[r]
-				shape.HasColor = true
-			}
-			if r < len(d.hasMaterialReturn) && d.hasMaterialReturn[r] {
-				shape.Material = d.materialReturns[r]
-				shape.HasMaterial = true
-				shape.Displaced = d.displacedReturn[r]
-			}
-			if r < len(d.hasInTreeReturn) && d.hasInTreeReturn[r] {
-				shape.InTree = d.inTreeReturns[r]
-				shape.HasInTree = true
-			}
-		}
-		shapes = append(shapes, shape)
+		shapes = append(shapes, d.colorShape(i, trees[0]))
 	}
 	return f(shapes, d)
+}
+
+// colorShape is output i, whose distance is tree, with what the build recorded
+// for its return: name, color, material and layered distance.
+func (d *Delegate) colorShape(i int, tree fidget.TreeIndex) ColorShape {
+	shape := ColorShape{Tree: tree}
+	if i < len(d.outputNames) {
+		shape.Name = d.outputNames[i]
+	}
+	if i < len(d.outputReturnIdx) {
+		r := d.outputReturnIdx[i]
+		if r < len(d.hasColorReturn) && d.hasColorReturn[r] {
+			shape.Color = d.colorReturns[r]
+			shape.HasColor = true
+		}
+		if r < len(d.hasMaterialReturn) && d.hasMaterialReturn[r] {
+			shape.Material = d.materialReturns[r]
+			shape.HasMaterial = true
+			shape.Displaced = d.displacedReturn[r]
+		}
+		if r < len(d.hasInTreeReturn) && d.hasInTreeReturn[r] {
+			shape.InTree = d.inTreeReturns[r]
+			shape.HasInTree = true
+		}
+	}
+	return shape
 }
 
 // colorTrees flattens a lowered color expression to its component trees. A

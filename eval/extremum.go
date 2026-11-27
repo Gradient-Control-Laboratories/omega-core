@@ -8,6 +8,7 @@ import (
 	"math"
 	"sort"
 
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget/convert"
 	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
@@ -89,7 +90,7 @@ func (e *Evaluator) Extremum(ctx context.Context, manifest map[string]string, co
 
 	result := &ExtremumResult{Mode: mode, Lipschitz: lipschitz, Tolerance: reportedTolerance}
 	if mode == "min" || mode == "both" {
-		pass, err := bbMinimize(ctx, prog, region, false, lipschitz, tolerance, absFloor)
+		pass, err := bbMinimize(ctx, prog, e.surface, region, false, lipschitz, tolerance, absFloor)
 		if err != nil {
 			return nil, err
 		}
@@ -102,7 +103,7 @@ func (e *Evaluator) Extremum(ctx context.Context, manifest map[string]string, co
 	if mode == "max" || mode == "both" {
 		// The supremum of f is -(infimum of -f); the negation happens on the
 		// sampled values, so one compiled query serves both passes.
-		pass, err := bbMinimize(ctx, prog, region, true, lipschitz, tolerance, absFloor)
+		pass, err := bbMinimize(ctx, prog, e.surface, region, true, lipschitz, tolerance, absFloor)
 		if err != nil {
 			return nil, err
 		}
@@ -141,8 +142,9 @@ type bbPass struct {
 // caller's exact convergence contract; tolerance <= 0 selects the adaptive
 // default max(absFloor, bbRelTolerance*|incumbent|). The certificate tracks
 // every cell ever discarded unpruned (pool overflow), so the reported lower
-// bound stays sound even when the search is cut short.
-func bbMinimize(ctx context.Context, prog *program.Program, region [6]float64, negate bool, lipschitz, tolerance, absFloor float64) (*bbPass, error) {
+// bound stays sound even when the search is cut short. The surfaces stand at s
+// (Evaluator.SetCondition).
+func bbMinimize(ctx context.Context, prog *program.Program, s convert.Surface, region [6]float64, negate bool, lipschitz, tolerance, absFloor float64) (*bbPass, error) {
 	pass := &bbPass{value: math.Inf(1), lower: math.Inf(-1)}
 	// droppedFloor is the least bound among cells discarded unexplored; the
 	// final lower bound may never rise above it.
@@ -157,7 +159,7 @@ func bbMinimize(ctx context.Context, prog *program.Program, region [6]float64, n
 			ys[i] = float32(c.center[1])
 			zs[i] = float32(c.center[2])
 		}
-		results, err := EvalGrad(prog, xs, ys, zs)
+		results, err := evalGrad(prog, s, xs, ys, zs)
 		if err != nil {
 			return err
 		}

@@ -109,7 +109,10 @@ func (e *Evaluator) Mesh(ctx context.Context, manifest map[string]string, code, 
 	for k := range box {
 		box[k] = float32(region[k])
 	}
-	displaced := opt.Coatings || opt.Relief
+	// The evaluator's condition (SetCondition) switches the flags on as well: nominal the coatings, as-made both.
+	coatings := opt.Coatings || e.surface.Build != 0
+	relief := opt.Relief || e.surface.Relief != 0
+	displaced := coatings || relief
 	if displaced && opt.Region == nil {
 		// A box worked out for the part holds its field as built; the displaced surfaces stand out of it.
 		box = mesh.GrowBox(box, mesh.DisplacementMargin)
@@ -117,7 +120,7 @@ func (e *Evaluator) Mesh(ctx context.Context, manifest map[string]string, code, 
 
 	bodies, err := e.meshBodies(ctx, manifest, code, defs, exprs,
 		mesh.WithSubdivision(subdivision), mesh.WithAlgorithm(algorithm), mesh.WithTime(opt.Time), mesh.WithBbox(box),
-		mesh.WithBboxPadCells(padCells), mesh.WithDisplacement(opt.Coatings, opt.Relief))
+		mesh.WithBboxPadCells(padCells), mesh.WithDisplacement(coatings, relief))
 	if err != nil {
 		return nil, err
 	}

@@ -69,6 +69,16 @@ from `1.0.0` onward).
   nothing is drawn in front of the section and what lies behind it shows whole. The Model opacity
   slider is gone; the slider that was Section, the opacity of the section's background over the
   model behind it, is now labelled Model.
+- **Field queries at a condition (`Evaluator.SetCondition`, `gsl eval`'s `"condition"`)**: `as-built`
+  (the default, the field as the document builds it, exactly as before), `nominal` (each surface
+  moved out by its materials' builds) and `as-made` (by their builds and their relief, as the CPU
+  renderer draws them). Eval, Extremum, Certify (with its parameters and over the sliders), Bounds,
+  Enclose, Volume, SurfacePoint and Mesh read it; Mesh takes it as its Coatings and Relief flags.
+  Render, describe and shader do not, and `gsl eval` refuses it on them. `max-material` and
+  `min-material` are refused until documents can declare relief envelopes and spreads. A claim
+  moves only the shapes inside it: `max(rMax - r, seat)` moves `seat`, so a tolerance claim no
+  longer writes the displacement by hand. `convert.ToSurfaceTrees` builds every query's field at a
+  condition.
 - Migrated GSL compiler architecture, language specification/migration, golden verification, and
   stdlib tolerance-table documentation from `omega-release/doc/` into `doc/`, synced
   `doc/gsl_lang_spec_future.md`, extracted `doc/roadmap.md` from `README.md`, and documented Go
@@ -282,6 +292,12 @@ from `1.0.0` onward).
   `[0, 1]` wherever the range crosses an integer; values are unchanged. Certifying that a turned
   25 k5 journal's cusps stay inside the maximum-material envelope over the whole 15 mm seat now
   takes 43.7 thousand interval evaluations, where 2 million did not decide it.
+- **A coated shape returned bare beside a return that layers it moves by its own build**: with
+  `return coat, max(coat, …);` the bare `coat` was moved as a whole by its material, but that
+  material is its layer's shading switch, the material beneath within 1 µm of the solid beneath and
+  inside it, whose height is not the coat's; the displaced surface stood where the switch flipped,
+  leaving a thin shell outside the field inside the coat. Such a return now moves by its layered
+  distance, in the viewer, displaced meshes and the field queries alike.
 - `topofold` now evaluates general UI-derived constant expressions via a scoped `ConstEvalFunc`
   fallback (`eval.ConstPkgSlotsAt`) in `assembler`, rejecting non-finite results, and Rust Cargo
   build scripts (`internal/fidget/internal/rust/build.rs`, `internal/fidget/internal/tape-core/build.rs`,
