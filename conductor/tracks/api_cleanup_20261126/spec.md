@@ -133,8 +133,6 @@ reserved and undocumented in `gsl skill`: it is designed in
   already takes as a driver, or the table's site spacing.
 - **`RenderLit`'s six wrappers** (`RenderLitSized`, `RenderLitSizedView`, `RenderLitSizedViewRadiance`,
   `RenderLitLinear`, `RenderLitWithLinear`) beside `RenderLit(prog, LitOptions)`: not decided.
-- **Two messages** left by #174: the `atan2` reserved-word error suggests `atan2_` rather than `atan(y, x)`;
-  and once #174 merges, the docs can say a parameter may take a built-in's name.
 
 ## 10. omega-dm Inventory
 
