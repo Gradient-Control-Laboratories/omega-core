@@ -245,7 +245,9 @@ func (r *repair) run(stats *Stats) error {
 	stats.BackwardBefore = len(back)
 	// A pass may turn more triangles over before a later one rights them, so every pass is made and the repair ends
 	// on the one that left the fewest backward among those that leave the mesh's area no larger than it was given (a
-	// fold is area the surface does not have, so righting it gives area back): the mesh as given, when none did better.
+	// fold is area the surface does not have, so righting it gives area back) and no two vertices at one float32 point
+	// (keepApart's to prevent; checked again, since a pair welded into one opens the mesh): the mesh as given, when none
+	// did better.
 	area := func() float64 {
 		var sum float64
 		for _, ti := range r.live {
@@ -296,7 +298,7 @@ func (r *repair) run(stats *Stats) error {
 			return err
 		}
 		back = count()
-		if len(back) < bestCount && area() <= startArea {
+		if len(back) < bestCount && area() <= startArea && r.apart() {
 			bestCount, bestPass = len(back), pass
 			copy(best, r.verts)
 		}
@@ -334,25 +336,59 @@ func (r *repair) keepNear(order []int32, pts []vec) {
 
 // keepApart leaves a vertex of order where it is when its new place, as the STL writes it (float32), is another
 // vertex's: two vertices brought to one point, as both sides of a pinch walked onto the same spot of the zero set,
-// would be welded into one and open the mesh.
+// would be welded into one and open the mesh. A vertex kept where it is holds that place first, ahead of any vertex
+// sent there (one already on the zero set is often sent back to the very point a neighbour's walk ends on), and a
+// vertex sent to a point another moving vertex earlier in order took is kept where it is too; keeping it may free or
+// take a place, so the rounds repeat until none changes. They end: the mesher's places are all distinct, so with every
+// vertex kept no two share a point.
 func (r *repair) keepApart(order []int32, pts []vec) {
-	key := func(p vec) [3]float32 { return [3]float32{float32(p[0]), float32(p[1]), float32(p[2])} }
 	moving := make(map[int32]bool, len(order))
 	for _, v := range order {
 		moving[v] = true
 	}
-	taken := make(map[[3]float32]bool, len(r.verts))
+	fixed := make(map[[3]float32]bool, len(r.verts))
 	for v, p := range r.verts {
 		if !moving[int32(v)] {
-			taken[key(p)] = true
+			fixed[key32(p)] = true
 		}
 	}
-	for k, v := range order {
-		if taken[key(pts[k])] {
-			pts[k] = r.verts[v]
+	for changed := true; changed; {
+		changed = false
+		taken := make(map[[3]float32]bool, len(order))
+		for k, v := range order {
+			if pts[k] == r.verts[v] {
+				taken[key32(pts[k])] = true
+			}
 		}
-		taken[key(pts[k])] = true
+		for k, v := range order {
+			if pts[k] == r.verts[v] {
+				continue
+			}
+			at := key32(pts[k])
+			if fixed[at] || taken[at] {
+				pts[k] = r.verts[v]
+				changed = true
+				continue
+			}
+			taken[at] = true
+		}
 	}
+}
+
+// key32 is p as the STL writes it, which is how the mesh's vertices are welded.
+func key32(p vec) [3]float32 { return [3]float32{float32(p[0]), float32(p[1]), float32(p[2])} }
+
+// apart reports whether no two vertices are at one point as the STL writes them: welded, they would be one vertex.
+func (m *mesh) apart() bool {
+	seen := make(map[[3]float32]bool, len(m.verts))
+	for _, p := range m.verts {
+		at := key32(p)
+		if seen[at] {
+			return false
+		}
+		seen[at] = true
+	}
+	return true
 }
 
 // qefPlace places each vertex of order from the tangent planes the field gives at it and at each vertex of its

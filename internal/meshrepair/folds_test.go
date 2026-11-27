@@ -137,6 +137,40 @@ func TestKeepApartLeavesTwoVerticesOffOnePoint(t *testing.T) {
 	}
 }
 
+// TestKeepApartLeavesNoTwoVerticesOnOnePoint checks a vertex kept where it is holds its place ahead of one sent
+// there: vertex 0 sent onto vertex 1's place while vertex 1, also moving, is sent back to where it is (as one already
+// on the zero set is, when a neighbour's walk ends on the same point). And a chain: vertex 2 and vertex 3 sent to one
+// free point, vertex 3 kept where it is, and vertex 4 sent to vertex 3's place, which keeping vertex 3 takes. No two
+// may end on one point.
+func TestKeepApartLeavesNoTwoVerticesOnOnePoint(t *testing.T) {
+	verts, tris := sphereSTL(5, 1)
+	m := weld(writeSTL(verts, tris), len(tris))
+	r := &repair{mesh: m, field: sphereField(5)}
+	free := vec{0.1, 0.2, 5}
+	order := []int32{0, 1, 2, 3, 4}
+	pts := []vec{m.verts[1], m.verts[1], free, free, m.verts[3]}
+	r.keepApart(order, pts)
+	want := []vec{m.verts[0], m.verts[1], free, m.verts[3], m.verts[4]}
+	for k := range order {
+		if pts[k] != want[k] {
+			t.Fatalf("vertex %d ended at %v, want %v", order[k], pts[k], want[k])
+		}
+	}
+	seen := make(map[[3]float32]int32)
+	for v := range m.verts {
+		p := m.verts[v]
+		for k, u := range order {
+			if u == int32(v) {
+				p = pts[k]
+			}
+		}
+		if other, ok := seen[key32(p)]; ok {
+			t.Fatalf("vertices %d and %d end on one point %v", other, v, p)
+		}
+		seen[key32(p)] = int32(v)
+	}
+}
+
 // TestFoldsLeavesTrianglesOffTheZeroSetAlone checks a triangle where the field jumps across zero is not taken for a
 // fold: a sphere whose field, over its top cap, is -8 with a gradient pointing in, as a face cut by a choice between
 // branches reads, comes back as it was given.
