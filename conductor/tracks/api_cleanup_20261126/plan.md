@@ -24,12 +24,12 @@ golden stops for approval before the golden is updated.
   - [x] Every stdlib name and omega-core Go API this track changes that omega-dm calls
   - [ ] The functions it has copied: its running list was not found in the repository
   - [ ] For each name a goal below renames or removes: update omega-dm's copy, or pin the old name
-- [ ] Task: Choose the open names (spec section 9): the `map` package's, `matrix.scale`'s, the booleans' parameter
+- [x] Task: Choose the open names: `domain` (N1), `multiplyScalar` (N2), `a, b` (N10)
 
 ## Phase 1: Names That Break Nothing
 
 - [ ] Goal: Parameter names (N3, N4, N7, N10's parameter half)
-  - [ ] One axis-rotation vocabulary; `cellSize`; `min`/`max` box corners; one boolean parameter name
+  - [ ] One axis-rotation vocabulary; `cellSize`; `min`/`max` box corners; `a, b` for every boolean
   - [ ] `TestPackageDocsListEveryDocumentedMember` and the documentation test still pass; no golden moves
 - [ ] Goal: Hide and reword (R2, R3, R4)
   - [ ] Drop the solver internals' `///`; reword the `planesEven` lines; remove the preamble `Domain` filter
@@ -37,9 +37,9 @@ golden stops for approval before the golden is updated.
 
 ## Phase 2: Stdlib Renames and Removals
 
-- [ ] Goal: The `map` package's new name (N1), with its `gsl fix` rewrite
+- [ ] Goal: Rename the `map` package to `domain` (N1), with its `gsl fix` rewrite
 - [ ] Goal: Honeycomb names (N5) and the three `bcc`s (N6), with rewrites
-- [ ] Goal: `matrix.scale` (N2), with its rewrite and the lowering updated; hide the lowering targets (R1)
+- [ ] Goal: `matrix.scale` becomes `multiplyScalar` (N2), with its rewrite and the lowering updated; hide the lowering targets (R1)
 - [ ] Goal: Centred `torus` and `octahedron` (N9); difference operator forms (N10)
   - [ ] A test per new form; the documentation examples still build
 
@@ -52,12 +52,12 @@ golden stops for approval before the golden is updated.
 
 ## Phase 4: Spinodoids
 
-- [ ] Task: Settle what "scale" means in the table decision (spec section 9)
+- [x] Task: Settle what "scale" means in the table decision: only the box changes (spec section 6)
 - [ ] Goal: `gaborSpinodoid` is hodge's field and `fastGaborSpinodoid` the lattice field, in every backend
   - [ ] A WGSL hodge field, checked against the CPU one (`hodge_parity_test.go`'s values)
   - [ ] WGSL codegen and fidget conversion stop forcing `Fast` for `gaborSpinodoid`
   - [ ] Library: `gabor*` over hodge's field, `fastGabor*` over the lattice
-- [ ] Goal: A graded field's table box and scale come from the call
+- [ ] Goal: A graded field's table box comes from the call
   - [ ] Remove the `@scene` and geometry fallback (`SceneDomain`) and the periodic fallback for graded fields
   - [ ] A graded call with no box is an error naming the argument
 
@@ -65,6 +65,8 @@ golden stops for approval before the golden is updated.
 
 - [ ] Goal: `With…` options (spec section 7's table); bare names marked `Deprecated` for one release; omega-core's
       callers move
+- [ ] Goal: Deprecate `RenderLitSized`, `RenderLitSizedView` and `RenderLitSizedViewRadiance` for one release;
+      omega-core's callers move to `RenderLit(prog, LitOptions)`; `RenderLitLinear` and `RenderLitWithLinear` stay
 - [ ] Goal: `LitOptions.Device = "fidget"`
   - [ ] The cgo layer exposes fidget's CPU voxel render per return: depth, normal, return id
   - [ ] Merge, colour and material tapes at hits, SSAO, then `RenderLit`'s shading; compared with the browser's

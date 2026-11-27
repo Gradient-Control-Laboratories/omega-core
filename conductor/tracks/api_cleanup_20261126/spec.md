@@ -29,8 +29,8 @@ open, the decision says so (section 9).
 
 | #   | Area              | Today                                                                                                                                                                                                  | Decision                                                                                                                                                                                        |
 | :-- | :---------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| N1  | `map` package     | Shares its name with the `map(fn, list)` built-in: `map.checker(...)` and `map(f, xs)` sit side by side                                                                                                | Rename the package (name open, e.g. `domain`); `gsl fix` rewrites `map.` member references                                                                                                      |
-| N2  | `matrix.scale`    | `matrix.scale(s, m)` multiplies a matrix by a number, `matrix.scaling(factors)` builds a scale matrix, `transform.scale(shape, factor)` scales a shape                                                  | Rename `matrix.scale` (name open, e.g. `multiplyScalar`), so "scale" means scaling geometry. The lowering of `*` and `/` calls it, so the rename updates `internal/lower`; the old name stays as an alias for a release                                                                                                     |
+| N1  | `map` package     | Shares its name with the `map(fn, list)` built-in: `map.checker(...)` and `map(f, xs)` sit side by side                                                                                                | Rename the package to `domain`, the SDF term for these operations; `gsl fix` rewrites `map.` member references                                                                                                      |
+| N2  | `matrix.scale`    | `matrix.scale(s, m)` multiplies a matrix by a number, `matrix.scaling(factors)` builds a scale matrix, `transform.scale(shape, factor)` scales a shape                                                  | Rename `matrix.scale` to `multiplyScalar`, the name of its twin `vector.multiplyScalar`, so "scale" means scaling geometry. The lowering of `*` and `/` calls it, so the rename updates `internal/lower`; the old name stays as an alias for a release                                                                                                     |
 | N3  | Axis rotation     | `transform.rotate(shape, origin, direction, angle)`, `map.rotateAxis(v, axisOrigin, axisDir, angle)`, `matrix.rotation(axis_origin, axis_direction, angle)`; `map.rotateXY(v, ang)`                    | One vocabulary: `(…, axisOrigin, axisDirection, angle)` everywhere, `ang` becomes `angle`. Parameter names only; nothing breaks                                                                 |
 | N4  | Lattice size      | The cell size is `sizeIn` (beam), `size` (foam), `cellSize` (lattice, honeycomb), `period` (tpms, spinodoid), `spacing`, `cell`                                                                        | `cellSize` everywhere, except `period` in tpms and spinodoid, where the field's wavelength is the real meaning. Parameter names only                                                             |
 | N5  | Honeycomb names   | `honeycomb.squareHoneycomb`, `hexagonalHoneycomb`, … repeat the package name; `foam.cubic` does not                                                                                                    | Drop the repetition (`honeycomb.square`, `honeycomb.hexagonal`, …); `gsl fix` rewrites                                                                                                          |
@@ -38,7 +38,7 @@ open, the decision says so (section 9).
 | N7  | Box corners       | `box(pointA, pointB)`, `cropToBox(shape, low, high)`, `extrude(profile, low, high)`, and `.box = [lo, hi]`                                                                                             | `min`, `max` for every pair of box corners. Parameter names only. `min`/`max` already work as parameter names; #174 makes every built-in name work                                              |
 | N8  | Placement words   | `center`, `origin` (cone), `point` (plane), `vertex` (paraboloid)                                                                                                                                      | Keep `origin`, `point` and `vertex` where they are the right geometric word                                                                                                                     |
 | N9  | Centred overloads | `torus` and `octahedron` exist only at the origin; `sphere` has both forms                                                                                                                             | Add `torus(center, majorRadius, minorRadius)` and `octahedron(center, size)`                                                                                                                    |
-| N10 | Boolean names     | Most booleans take `d1, d2`; the exact ones take `field1, field2`. Unions and intersections can be passed as an operator (`unionRound(2)`); differences cannot                                          | One parameter name across all booleans (which one is open). Add difference operator forms (`differenceRound(r)` and the rest), taking a list `[target, tool, …]`: the target minus the rest      |
+| N10 | Boolean names     | Most booleans take `d1, d2`; the exact ones take `field1, field2`. Unions and intersections can be passed as an operator (`unionRound(2)`); differences cannot                                          | `a, b` across all booleans, as the docs already write them. Add difference operator forms (`differenceRound(r)` and the rest), taking a list `[target, tool, …]`: the target minus the rest      |
 
 ## 4. Decisions: Removals
 
@@ -82,10 +82,12 @@ hodge field.
 
 **The table's box is given, not inferred.** A graded field (scale or orientation varying with `p`) bakes a
 bounded kernel table today, whose box comes from the imported geometry's bounds or the `@scene` cube, and falls
-back to a periodic table, which repeats the grading, when neither is known. Decision: the box and the scale are
-specified in the call, never taken from the scene or inferred. The periodic layout of a stationary field
+back to a periodic table, which repeats the grading, when neither is known. Decision: the box is specified in
+the call, never taken from the scene or inferred. The scale is already explicit and stays as it is: the call's
+`scale` argument multiplies the wavelength, and the site spacing follows from `period`, `packetWidth` and
+`impulses` ([call.go](../../../program/noise/spinodoid/call.go)). The periodic layout of a stationary field
 (constant scale and orientation) and the bounded layout stay; they are how a table is stored, not versions of
-the field. See section 9 on "scale".
+the field.
 
 ## 7. Decisions: Go SDK
 
@@ -101,6 +103,12 @@ Today:
 
 Decision: every option is named `With…`. A bare name stays for one release, marked `Deprecated`, then goes.
 omega-core's own callers move in the same pull request.
+
+**`RenderLit(prog, LitOptions)` is the entry point.** Three wrappers only fill in `LitOptions` from positional
+arguments: `RenderLitSized`, `RenderLitSizedView` and `RenderLitSizedViewRadiance`. Decision: mark them
+`Deprecated` for one release, then remove them; omega-core's callers (`gsl compile`, `eval/render_gsl.go`,
+`tool/materialswatch`) move to `RenderLit` in the same pull request. `RenderLitLinear` and `RenderLitWithLinear`
+stay: they return the linear image, not only the PNG.
 
 **A CPU fidget render with colour.** The viewer's Fidget device draws a coloured frame in the browser:
 fidget-wgpu, compiled to wasm, renders each return as voxels, merges the images keeping the nearest hit
@@ -127,12 +135,8 @@ reserved and undocumented in `gsl skill`: it is designed in
 
 ## 9. Open
 
-- **Names to choose:** the `map` package's new name (N1), `matrix.scale`'s (N2), and the booleans' parameter
-  name (N10).
-- **"Scale" in the spinodoid decision** (section 6): whether it means the wavelength multiplier the call
-  already takes as a driver, or the table's site spacing.
-- **`RenderLit`'s six wrappers** (`RenderLitSized`, `RenderLitSizedView`, `RenderLitSizedViewRadiance`,
-  `RenderLitLinear`, `RenderLitWithLinear`) beside `RenderLit(prog, LitOptions)`: not decided.
+Nothing. The names (N1 `domain`, N2 `multiplyScalar`, N10 `a, b`), the spinodoid's scale (section 6) and the
+`RenderLit` wrappers (section 7) were settled on 2026-11-26.
 
 ## 10. omega-dm Inventory
 
