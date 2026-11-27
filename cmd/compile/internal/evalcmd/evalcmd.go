@@ -79,7 +79,7 @@ A request names its op and its document, by path ("source") or text ("code"):
 "region" is [x0, y0, z0, x1, y1, z1] in mm.
 render's "views" is compile's --views ("iso,top,-1,1,0.6"), its size 640 by 480 unless named.
 mesh's "region" defaults to the box the field fills (compile's --bbox auto), "subdivision" to 9 and "algorithm"
-to "mdc" (or "marching-cubes"); the response's "region" is the box that was meshed.
+to "mdc-repair" (or "mdc", "marching-cubes"); the response's "region" is the box that was meshed.
 shader's "code" has no entry point: a host adds its own, binds a buffer of "blockBytes" to "uniformBlock" and
 writes each of "uniforms" and "sliders" at its "offset", and loads each of "textures" from its "path" (raw texels,
 written under "outDir"). "region" is the box to march: the @scene box, or the box the field fills.
@@ -664,9 +664,9 @@ func meshFile(ctx context.Context, e *eval.Evaluator, code string, req *request)
 		return nil, malformedf("subdivision %d: zero for the default, or more", req.Subdivision)
 	}
 	switch req.Algorithm {
-	case "", "mdc", "marching-cubes":
+	case "", "mdc-repair", "mdc", "marching-cubes":
 	default:
-		return nil, malformedf("algorithm %q: mdc or marching-cubes", req.Algorithm)
+		return nil, malformedf("algorithm %q: mdc-repair, mdc or marching-cubes", req.Algorithm)
 	}
 	opt := eval.MeshOptions{Subdivision: req.Subdivision, Algorithm: req.Algorithm, Time: req.Time}
 	if req.Region != nil {

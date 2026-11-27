@@ -4,7 +4,13 @@ import (
 	"fmt"
 	"log"
 	gotime "time"
+
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/meshrepair"
 )
+
+// AlgorithmMDCRepair is Manifold Dual Contouring followed by a repair of the folds it leaves (meshrepair.Folds),
+// guided by the field just meshed.
+const AlgorithmMDCRepair = "mdc-repair"
 
 // PadBbox grows bbox by cells of an octree of depth subdivisionLevel over it, on every axis: room for a surface lying
 // on the box to fall inside the mesher's cells. The room is the mesh's own cells, so it halves with each level. An
@@ -31,7 +37,8 @@ func PadBbox(bbox [6]float32, subdivisionLevel, cells int) [6]float32 {
 }
 
 // GenerateSTL meshes the union of treeIndices into binary STL bytes using
-// either "marching-cubes" or Manifold Dual Contouring ("mdc").
+// either "marching-cubes" or Manifold Dual Contouring ("mdc"), or MDC with
+// its folds repaired against the union's field (AlgorithmMDCRepair).
 // It assumes the caller holds fidget.Lock().
 func GenerateSTL(
 	treeIndices []TreeIndex,
@@ -90,7 +97,8 @@ func GenerateSTL(
 				phaseStart = gotime.Now()
 			} else if completed == 4 {
 				log.Printf("mdc phase 3 done in %s", elapsed.Round(gotime.Millisecond))
-				if progressFn != nil {
+				// With a repair to come, Done waits for it.
+				if progressFn != nil && algorithm != AlgorithmMDCRepair {
 					progressFn(completed, total, "Done")
 				}
 			}
@@ -98,6 +106,34 @@ func GenerateSTL(
 		stlBytes, err = MeshStl(canvasIndex, subdivisionLevel, bbox, dualFn)
 		if err != nil {
 			return nil, fmt.Errorf("manifold dual-contouring failed to generate stl: %v", err)
+		}
+		if algorithm == AlgorithmMDCRepair {
+			if progressFn != nil {
+				progressFn(0, 0, "Repairing folds...")
+			}
+			start := gotime.Now()
+			field := func(xs, ys, zs []float32) ([]meshrepair.Sample, error) {
+				grads, err := EvalGrad(canvasIndex, xs, ys, zs)
+				if err != nil {
+					return nil, err
+				}
+				out := make([]meshrepair.Sample, len(grads))
+				for i, g := range grads {
+					out[i] = meshrepair.Sample{Value: g.Value, Dx: g.Dx, Dy: g.Dy, Dz: g.Dz}
+				}
+				return out, nil
+			}
+			repaired, stats, err := meshrepair.Folds(stlBytes, field)
+			if err != nil {
+				return nil, err
+			}
+			log.Printf("mdc fold repair: backward triangles %d -> %d in %d passes (%d vertices moved), %s",
+				stats.BackwardBefore, stats.BackwardAfter, stats.Passes, stats.Moved,
+				gotime.Since(start).Round(gotime.Millisecond))
+			stlBytes = repaired
+			if progressFn != nil {
+				progressFn(4, 0, "Done")
+			}
 		}
 	}
 	return stlBytes, nil

@@ -43,7 +43,8 @@
 //                           server-side export. bodyBoxes maps each visible body's return
 //                           index to its measured box (see measureBodyBoxes),
 //                           or is null when they could not be measured. algo is
-//                           the mesher picked: "mdc" (Server DC) or
+//                           the mesher picked: "mdc" (Server DC),
+//                           "mdc-repair" (Server DC + repair) or
 //                           "marching-cubes" (Server MC). format is the
 //                           format picked ("3mf", "glb" or "stl"), for an
 //                           app with serverFormats.
@@ -52,6 +53,10 @@
 //   serverMarchingCubes     optional; true when onServerExport meshes by the
 //                           algo it is given, so Server MC is offered beside
 //                           Server DC. Without it Server MC is not offered.
+//   serverFoldRepair        optional; true when onServerExport's server
+//                           meshes by "mdc-repair", so Server DC + repair is
+//                           offered. Without it Server DC + repair is not
+//                           offered.
 //                           surfaceBbox is the measured bound on
 //                           the implicit surface as [xmin,ymin,zmin,xmax,ymax,
 //                           zmax], or null when it could not be measured.
@@ -959,6 +964,7 @@ export function initExportPanel(hooks) {
     // onServerExport. One the host keeps disabled via serverExportUnavailable
     // or that the server cannot run now (Browser DC without fidget) stays, disabled.
     const mesherOption = (value) => mesherSelect.querySelector(`option[value="${value}"]`);
+    const SERVER_MESHERS = ['server', 'server-dcr', 'server-mc'];
     if (!deps.getSdfContext) mesherOption('mc').remove();
     if (!deps.getTape) mesherOption('dc').remove();
     if (!deps.onServerExport) {
@@ -970,6 +976,7 @@ export function initExportPanel(hooks) {
         }
     }
     if (!deps.onServerExport || !deps.serverMarchingCubes) mesherOption('server-mc').remove();
+    if (!deps.onServerExport || !deps.serverFoldRepair) mesherOption('server-dcr').remove();
     if (!deps.onSaveTape) formatSelect.querySelector('option[value="tape"]').remove();
     if (!deps.onExportPage) formatSelect.querySelector('option[value="page"]')?.remove();
     if (!deps.onExportAudio) formatSelect.querySelector('option[value="wav"]')?.remove();
@@ -987,17 +994,18 @@ export function initExportPanel(hooks) {
     const TAPE_NOT_MESHED = "A tape is the implicit field itself; nothing is meshed";
     const PAGE_NOT_MESHED = "A web page draws the implicit field itself; nothing is meshed";
     const AUDIO_NOT_MESHED = "Audio is the program's sound; nothing is meshed";
-    // The default is dual contouring: the server's where the host has one,
-    // the browser's otherwise, marching cubes only failing both.
+    // The default is dual contouring: the server's with its folds repaired
+    // where the host offers it, the server's plain otherwise, then the
+    // browser's, marching cubes only failing all of them.
     const pickDefaultMesher = () => {
-        const best = ['server', 'dc', 'mc'].map(mesherOption).find((o) => o && !o.disabled);
+        const best = ['server-dcr', 'server', 'dc', 'mc'].map(mesherOption).find((o) => o && !o.disabled);
         if (best) mesherSelect.value = best.value;
     };
     pickDefaultMesher();
     refreshControls = () => {
         // A mesher or format that became unavailable gives way to the default.
         if (mesherSelect.selectedOptions[0]?.disabled) pickDefaultMesher();
-        const serverMesher = mesherSelect.value === 'server' || mesherSelect.value === 'server-mc';
+        const serverMesher = SERVER_MESHERS.includes(mesherSelect.value);
         if (glbOption?.isConnected) {
             const serverWritesGlb = serverMesher && !deps.serverResults;
             glbOption.disabled = !serverWritesGlb;
@@ -1011,7 +1019,7 @@ export function initExportPanel(hooks) {
         const unmeshed = formatSelect.value === 'tape' || page || wav;
         const NOT_MESHED = page ? PAGE_NOT_MESHED : wav ? AUDIO_NOT_MESHED : TAPE_NOT_MESHED;
         if (secondsRow) secondsRow.hidden = !wav;
-        const onServer = mesherSelect.value === 'server' || mesherSelect.value === 'server-mc';
+        const onServer = SERVER_MESHERS.includes(mesherSelect.value);
         // A server export the app downloads itself is STL only, unless the
         // server writes the format (serverFormats); either way it is not cleaned.
         const serverDirect = !unmeshed && onServer && !deps.serverResults;
@@ -1055,6 +1063,7 @@ export function initExportPanel(hooks) {
             case 'mc': return exportBrowserMc(options);
             case 'dc': return exportBrowserDc(options);
             case 'server': return exportServer(options, 'mdc');
+            case 'server-dcr': return exportServer(options, 'mdc-repair');
             case 'server-mc': return exportServer(options, 'marching-cubes');
         }
     });
@@ -1092,12 +1101,12 @@ export function initExportPanel(hooks) {
         }
     }
 
-    // Server DC and Server MC: the server meshes by algo ("mdc" or
-    // "marching-cubes"), and the reply comes back on canvas/stl. The app
-    // downloads an STL reply itself; one to be cleaned or written as 3MF the
-    // app hands to claimServerStl.
+    // Server DC, Server DC + repair and Server MC: the server meshes by algo
+    // ("mdc", "mdc-repair" or "marching-cubes"), and the reply comes back on
+    // canvas/stl. The app downloads an STL reply itself; one to be cleaned or
+    // written as 3MF the app hands to claimServerStl.
     async function exportServer(options, algo) {
-        const mode = algo === 'mdc' ? 'server-dc' : 'server-mc';
+        const mode = { 'mdc': 'server-dc', 'mdc-repair': 'server-dcr' }[algo] || 'server-mc';
         deps.track?.("mesh_export", { mode, resolution: 1 << currentDetail() });
         // The export bar shows the export from here to the server's reply.
         if (deps.serverResults) {

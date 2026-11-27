@@ -14,7 +14,7 @@ import (
 // body's triangles say: closed, and the volume of the ball at the radius the defs set.
 func TestMesh_WritesAGLBAndReportsItsBodies(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "parts", "ball.glb")
-	r, code := ask(t, document(t, ball), map[string]any{"op": "mesh", "out": out, "defs": "r = 5.0;", "subdivision": 6})
+	r, code := ask(t, document(t, ball), map[string]any{"op": "mesh", "out": out, "defs": "r = 5.0;", "subdivision": 6, "algorithm": "mdc"})
 	require.Equal(t, 0, code, r)
 	assert.Equal(t, out, r["out"])
 
@@ -77,4 +77,32 @@ func TestMesh_MalformedRequests(t *testing.T) {
 	}
 	_, err := os.Stat(out)
 	assert.True(t, os.IsNotExist(err), "no file from a malformed request")
+}
+
+// TestMesh_WritesAGLBAndReportsItsBodies with the folds repaired (mdc-repair).
+func TestMesh_WritesAGLBAndReportsItsBodies_MDCRepair(t *testing.T) {
+	out := filepath.Join(t.TempDir(), "parts", "ball.glb")
+	r, code := ask(t, document(t, ball), map[string]any{"op": "mesh", "out": out, "defs": "r = 5.0;", "subdivision": 6, "algorithm": "mdc-repair"})
+	require.Equal(t, 0, code, r)
+	assert.Equal(t, out, r["out"])
+
+	region := r["region"].([]any)
+	require.Len(t, region, 6)
+	assert.True(t, number(t, region[0]) < -5 && number(t, region[3]) > 5, "the region %v holds the ball", region)
+
+	bodies := r["bodies"].([]any)
+	require.Len(t, bodies, 1)
+	body := bodies[0].(map[string]any)
+	assert.Equal(t, "ball", body["name"])
+	assert.Equal(t, 1.0, body["index"])
+	assert.Equal(t, 0.0, body["openEdges"])
+	assert.Equal(t, 0.0, body["nonManifoldEdges"])
+	assert.True(t, number(t, body["vertices"]) > 100 && number(t, body["triangles"]) > 100, "%v has a mesh", body)
+	exact := 4.0 / 3 * math.Pi * 125
+	near(t, exact, body["volumeMm3"], 0.02*exact)
+
+	data, err := os.ReadFile(out)
+	require.NoError(t, err)
+	require.True(t, len(data) > 20, "a file was written")
+	assert.Equal(t, "glTF", string(data[0:4]))
 }
