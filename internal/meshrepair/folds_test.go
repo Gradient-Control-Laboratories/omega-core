@@ -137,6 +137,103 @@ func TestKeepApartLeavesTwoVerticesOffOnePoint(t *testing.T) {
 	}
 }
 
+// TestKeepApartLeavesNoTwoVerticesOnOnePoint checks a vertex kept where it is holds its place ahead of one sent
+// there: vertex 0 sent onto vertex 1's place while vertex 1, also moving, is sent back to where it is (as one already
+// on the zero set is, when a neighbour's walk ends on the same point). And a chain: vertex 2 and vertex 3 sent to one
+// free point, vertex 3 kept where it is, and vertex 4 sent to vertex 3's place, which keeping vertex 3 takes. No two
+// may end on one point.
+func TestKeepApartLeavesNoTwoVerticesOnOnePoint(t *testing.T) {
+	verts, tris := sphereSTL(5, 1)
+	m := weld(writeSTL(verts, tris), len(tris))
+	r := &repair{mesh: m, field: sphereField(5)}
+	free := vec{0.1, 0.2, 5}
+	order := []int32{0, 1, 2, 3, 4}
+	pts := []vec{m.verts[1], m.verts[1], free, free, m.verts[3]}
+	r.keepApart(order, pts)
+	want := []vec{m.verts[0], m.verts[1], free, m.verts[3], m.verts[4]}
+	for k := range order {
+		if pts[k] != want[k] {
+			t.Fatalf("vertex %d ended at %v, want %v", order[k], pts[k], want[k])
+		}
+	}
+	seen := make(map[[3]float32]int32)
+	for v := range m.verts {
+		p := m.verts[v]
+		for k, u := range order {
+			if u == int32(v) {
+				p = pts[k]
+			}
+		}
+		if other, ok := seen[key32(p)]; ok {
+			t.Fatalf("vertices %d and %d end on one point %v", other, v, p)
+		}
+		seen[key32(p)] = int32(v)
+	}
+}
+
+// TestKeepApartHoldsAVertexSentOntoANeighbour checks a vertex whose new place would leave one of its edges a needle
+// (here a ten-thousandth of an edge from a neighbour that stays) is kept where it is, and one sent half an edge
+// toward a neighbour moves. And two moving neighbours sent to nearly one point (a thousandth of an edge apart, as
+// both sides of a pinch are): the first in order moves, the second is kept.
+func TestKeepApartHoldsAVertexSentOntoANeighbour(t *testing.T) {
+	verts, tris := sphereSTL(5, 2)
+	m := weld(writeSTL(verts, tris), len(tris))
+	r := &repair{mesh: m, field: sphereField(5)}
+	u := m.ringOf(0)[0]
+	edge := norm(sub(m.verts[u], m.verts[0]))
+	onto := add(m.verts[u], vec{0, 0, 1e-4 * edge})
+	// another vertex, apart from vertex 0 and its ring, to send half an edge toward one of its own neighbours
+	near := map[int32]bool{0: true}
+	for _, x := range m.ringOf(0) {
+		near[x] = true
+	}
+	other := int32(-1)
+	for v := int32(1); int(v) < len(m.verts) && other < 0; v++ {
+		if near[v] {
+			continue
+		}
+		clear := true
+		for _, x := range m.ringOf(v) {
+			if near[x] {
+				clear = false
+			}
+		}
+		if clear {
+			other = v
+		}
+	}
+	if other < 0 {
+		t.Fatal("the sphere has no vertex apart from vertex 0's ring")
+	}
+	w := m.ringOf(other)[0]
+	half := add(m.verts[other], scale(sub(m.verts[w], m.verts[other]), 0.5))
+	order := []int32{0, other}
+	pts := []vec{onto, half}
+	r.keepApart(order, pts)
+	if pts[0] != m.verts[0] {
+		t.Fatalf("vertex 0, sent a ten-thousandth of an edge from vertex %d, moved to %v", u, pts[0])
+	}
+	if pts[1] != half {
+		t.Fatalf("vertex %d, sent half an edge toward vertex %d, did not move there: %v", other, w, pts[1])
+	}
+	a, b := int32(0), m.ringOf(0)[0]
+	spot := scale(add(m.verts[a], m.verts[b]), 0.5)
+	gap := 1e-3 * norm(sub(m.verts[b], m.verts[a]))
+	order = []int32{a, b}
+	if b < a {
+		order = []int32{b, a}
+	}
+	pts = []vec{spot, add(spot, vec{gap, 0, 0})}
+	first := pts[0]
+	r.keepApart(order, pts)
+	if pts[0] != first {
+		t.Fatalf("vertex %d, the first of two neighbours sent to nearly one point, did not move: %v", order[0], pts[0])
+	}
+	if pts[1] != m.verts[order[1]] {
+		t.Fatalf("vertex %d, sent a thousandth of an edge from its moved neighbour, moved to %v", order[1], pts[1])
+	}
+}
+
 // TestFoldsLeavesTrianglesOffTheZeroSetAlone checks a triangle where the field jumps across zero is not taken for a
 // fold: a sphere whose field, over its top cap, is -8 with a gradient pointing in, as a face cut by a choice between
 // branches reads, comes back as it was given.
