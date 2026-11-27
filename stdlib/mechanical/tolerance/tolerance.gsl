@@ -128,3 +128,22 @@ shaftDia(nominal, zone, condition) {
 holeDia(nominal, zone, condition) {
   return nominal + (condition < 1.5 ? holeLower(nominal, zone) : holeUpper(nominal, zone));
 }
+
+// ===========================================================================
+// Working tolerances
+// ===========================================================================
+
+/// limits(lo, hi): a working tolerance, the offsets [lo, hi] mm from a
+/// value that what is made may take: set on the scalar an operation uses,
+/// `zinc.tolerance = tolerance.limits(-0.0015, 0.0015);`, and read back as
+/// `zinc.tolerance`. Either limit may vary over the part (a field of p), as
+/// a plating builds heavier at edges. eval's certify over tolerances ranges
+/// each such value between its limits.
+limits(lo, hi) {
+  return [lo, hi];
+}
+
+/// symmetric(w): limits(-w, w), a working tolerance of ±w mm.
+symmetric(w) {
+  return [0.0 - w, w];
+}

@@ -58,7 +58,7 @@ A request names its op and its document, by path ("source") or text ("code"):
   eval       exprs, points                            values and gradients at each point
   extremum   expr, region, mode, tolerance, lipschitz  min and/or max; the bound assumes the Lipschitz constant
   certify    expr, region, threshold, tolerance,      a sound proof that expr >= threshold over the region
-             params | overSliders                     (and over the parameter ranges)
+             params | overSliders | overTolerances    (and over the parameter ranges, or every x.tolerance)
   bounds     expr, region, resolution                 a box proven to hold all of expr < 0 ("proven"); else a
                                                       fit on a grid that can miss thin walls, and "reason"
   surface    expr, points, maxIters, tolerance        each point moved onto expr = 0
@@ -221,6 +221,7 @@ type request struct {
 	Threshold         *float64              `json:"threshold"`
 	Params            map[string][2]float64 `json:"params"`
 	OverSliders       bool                  `json:"overSliders"`
+	OverTolerances    bool                  `json:"overTolerances"`
 	Resolution        int                   `json:"resolution"`
 	MaxIters          int                   `json:"maxIters"`
 	RelativeTolerance float64               `json:"relativeTolerance"`
@@ -482,6 +483,9 @@ func certify(ctx context.Context, e *eval.Evaluator, code string, req *request) 
 	if req.OverSliders && len(req.Params) > 0 {
 		return nil, malformedf("certify over the document's sliders (overSliders) or over params, not both")
 	}
+	if req.OverTolerances && (req.OverSliders || len(req.Params) > 0) {
+		return nil, malformedf("certify over the document's tolerances (overTolerances) alone, not with overSliders or params")
+	}
 	if err := nonNegative("tolerance", req.Tolerance); err != nil {
 		return nil, err
 	}
@@ -495,6 +499,8 @@ func certify(ctx context.Context, e *eval.Evaluator, code string, req *request) 
 	}
 	var r *eval.CertifyResult
 	switch {
+	case req.OverTolerances:
+		r, err = e.CertifyOverTolerances(ctx, nil, code, req.Defs, x, box, *req.Threshold, req.Tolerance)
 	case req.OverSliders:
 		r, err = e.CertifyOverSliders(ctx, nil, code, req.Defs, x, box, *req.Threshold, req.Tolerance)
 	case len(req.Params) > 0:

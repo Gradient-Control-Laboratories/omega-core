@@ -646,6 +646,18 @@ func (v *linkVisitor) VisitPropRef(op *program.Operand, pr *program.PropertyRef)
 				break
 			}
 		}
+		// x.tolerance reads what was assigned to it, the offsets [lo, hi]
+		// from x's value: the read is that expression, linked where it is read.
+		if pr.Property == "tolerance" && hasProp {
+			for _, p := range vr.Var.Properties {
+				if p.Name == "tolerance" && p.Expression != nil {
+					read := program.CloneOperand(p.Expression)
+					op.T = read.T
+					_, err := program.VisitOperand(op, v)
+					return nil, err
+				}
+			}
+		}
 		if !hasProp {
 			return nil, v.currScope.Err(op.Start, fmt.Errorf("variable %q has no property %q", pr.Reference.Name, pr.Property))
 		}

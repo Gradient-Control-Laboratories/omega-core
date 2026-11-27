@@ -235,15 +235,28 @@ New tests are added only once the owner agrees them.
 
 ## Phase 6: Tolerances on What Is Made (D3, D8)
 
-- [ ] Task: Proposal: the `.tolerance` property on a scalar declaration (its assembler pass beside
-      `.material` and `.color`); `tolerance.limits(lo, hi)` and `tolerance.symmetric(w)`; readable
-      `.min`, `.max` and bias; limits as a field of p; how certify reads the toleranced declarations
-      (a `CertifyOverTolerances` and `gsl eval`'s `"overTolerances"`, each declaration ranged over its
-      limits, design sliders at their values)
-- [ ] Task: The plated journal and the H7/g6 plated bore, posed with `.tolerance` on their working
-      dimensions: certify proves and disproves as the ranged-slider runs did (journal: zinc 4 to 6 µm
-      proven 6.5 µm under, disproven 5 µm under with the failing builds named; bore: clearance
-      disproven at 3.2 µm at the worst corner)
+- [x] Task: Proposal (agreed and built 2026-11-27): `x.tolerance = tolerance.limits(lo, hi)` (or
+      `tolerance.symmetric(w)`, both in the `tolerance` package) on a scalar declaration, offsets from
+      its value, limits constant or a field of p; registered as an assignable property
+      (`propval`, `scope`) and readable as `.box` is: the linker reads `x.tolerance` as the expression
+      assigned to it, so `x.tolerance` reads `[lo, hi]` and `x + x.tolerance[0]` the least value.
+      `eval.TolerancedNames`; `CertifyOverTolerances` and `gsl eval`'s `"overTolerances"` (alone, not
+      with `overSliders` or `params`): each toleranced declaration is rewritten in place as
+      `value + lo + (hi - lo) * u / w`, `u` a slider over `[0, w]`, `w` the tolerance's width at the
+      region's centre, and certify ranges the units with `CertifyParams`; results name each
+      tolerance's failing share, 0 at its low limit to 1 at its high. Sound for limits that vary
+      over the part (pointwise claims), and for declarations that are not literals. A first cut ranged
+      `u` over `[0, 1]`: certify resolves a parameter by its leverage and never coarsens one below 1,
+      so a unit whose leverage was a micrometre-wide tolerance split ten thousand times finer than
+      needed and the journal went undecided; scaling the unit by the width fixed it
+- [x] Task: The plated journal and the H7/g6 plated bore, posed with `.tolerance` on their working
+      dimensions: certify proves and disproves as the ranged-slider runs did, count for count (journal
+      5 µm under disproven in 93,100, zinc share 0.875 to 0.94, 5.75 to 5.88 µm; 6.5 µm under proven in
+      272,468; bore clearance at 3.2 µm disproven in 213,126 at boreR's low limit, zinc's and shaftR's
+      high). The parser's list of assignable properties gains `tolerance`, and its fixture
+      (`parser2/testdata/property.gsl`) with it (owner's go). Tests (owner's go): eval's
+      `TestTolerance_ReadsItsLimits`, `_CertifyFindsTheWorstCorner`, `_CertifyProvesThePlatedJournal`,
+      `_CertifyNeedsATolerance`; evalcmd's `TestCertify_OverTolerances`
 - [ ] Task: Phase Verification & Checkpoint
 
 ## Phase 7: Propagation, Display and Requirements (D4, D5, D8)

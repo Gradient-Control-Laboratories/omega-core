@@ -73,3 +73,32 @@ func TestCondition_Refused(t *testing.T) {
 		assert.Contains(t, r["error"].(string), c.says)
 	}
 }
+
+// toleranced is plated with its coat's thickness a working tolerance, 0.1 ± 0.02 mm.
+var toleranced = strings.NewReplacer(
+	"coat = blank;", "thick = 0.1;\nthick.tolerance = tolerance.symmetric(0.02);\ncoat = blank;",
+	"material.withBuild(material.make(0.3, 0, 1.5), 0.1);", "material.withBuild(material.make(0.3, 0, 1.5), thick);",
+).Replace(plated)
+
+// certify over the document's tolerances: clear of the thickest coat it is
+// proven, inside it disproven, the failing thicknesses named as shares of the
+// tolerance.
+func TestCertify_OverTolerances(t *testing.T) {
+	source := document(t, toleranced)
+	r, code := ask(t, source, map[string]any{"op": "certify", "region": []float64{10.13, -1, -1, 10.14, 1, 1},
+		"threshold": 0, "condition": "nominal", "overTolerances": true})
+	require.Equal(t, 0, code, r)
+	assert.Equal(t, "proven", r["verdict"])
+
+	r, code = ask(t, source, map[string]any{"op": "certify", "region": []float64{10.105, -1, -1, 10.11, 1, 1},
+		"threshold": 0, "condition": "nominal", "overTolerances": true})
+	require.Equal(t, 0, code, r)
+	assert.Equal(t, "disproven", r["verdict"])
+	share := r["counterParams"].(map[string]any)["thick"].([]any)
+	assert.True(t, number(t, share[0]) >= 0.5, "fails only for coats past 0.11 mm: %v", share)
+
+	r, code = ask(t, source, map[string]any{"op": "certify", "region": []float64{10.13, -1, -1, 10.14, 1, 1},
+		"threshold": 0, "overTolerances": true, "overSliders": true})
+	assert.Equal(t, 2, code, r)
+	assert.Contains(t, r["error"].(string), "overTolerances")
+}

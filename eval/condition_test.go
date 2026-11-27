@@ -277,3 +277,61 @@ func TestDerivative_ThroughAMaterialRecord(t *testing.T) {
 	nearly(t, "d/dx", float64(groups[0].Samples[0][0].Value), 0, 1e-7)
 	nearly(t, "d/dz", float64(groups[0].Samples[2][0].Value), 0.001*math.Cos(0.5), 1e-7)
 }
+
+// fitToleranced is fit with working tolerances on its three dimensions.
+var fitToleranced = strings.NewReplacer(
+	"boreR = 12.51175;", "boreR = 12.51175;\nboreR.tolerance = tolerance.symmetric(0.003);",
+	"zinc = 0.0065;", "zinc = 0.0065;\nzinc.tolerance = tolerance.limits(-0.0015, 0.0015);",
+	"shaftR = 12.49325;", "shaftR = 12.49325;\nshaftR.tolerance = tolerance.symmetric(0.0016);",
+).Replace(fit)
+
+// A working tolerance reads back as the offsets it was set to.
+func TestTolerance_ReadsItsLimits(t *testing.T) {
+	groups, err := eval.New(&source.MockManager{}, nil).EvalGsl(t.Context(), nil, fitToleranced, "", []string{"zinc.tolerance", "boreR + boreR.tolerance[0]"}, [][3]float64{{0, 0, 0}})
+	require.NoError(t, err)
+	nearly(t, "zinc low", float64(groups[0].Samples[0][0].Value), -0.0015, 1e-9)
+	nearly(t, "zinc high", float64(groups[0].Samples[1][0].Value), 0.0015, 1e-9)
+	nearly(t, "the bore's least radius", float64(groups[1].Samples[0][0].Value), 12.50875, 1e-6)
+}
+
+// Certified over its tolerances as made, the plated bore's clearance to the
+// shaft falls below 3.2 µm, at the corner where the bore is bored smallest
+// and the zinc and the shaft run largest.
+func TestTolerance_CertifyFindsTheWorstCorner(t *testing.T) {
+	gap := [6]float64{12.48, -0.2, -5, 12.53, 0.2, 5}
+	r, err := conditioned(t, eval.AsMade).CertifyOverTolerances(t.Context(), nil, fitToleranced, "", "max(plated, shaft)", gap, 0.0032, 0)
+	require.NoError(t, err)
+	require.True(t, r.Disproven, "%+v", r)
+	if r.CounterParams["boreR"][1] > 0.1 || r.CounterParams["zinc"][0] < 0.9 || r.CounterParams["shaftR"][0] < 0.9 {
+		t.Errorf("disproven away from the worst corner: %+v", r.CounterParams)
+	}
+}
+
+// The journal, its 5 ± 1 µm of zinc a working tolerance: machined 6.5 µm
+// under, every zinc keeps it inside its envelope; 5 µm under, the thickest
+// do not.
+func TestTolerance_CertifyProvesThePlatedJournal(t *testing.T) {
+	doc := strings.NewReplacer(
+		"seat = r - (rMax - 0.005);", "seat = r - (rMax - cut);",
+		"plated.material = material.withBuild(fMat, 0.005);", "zinc = 0.005;\nzinc.tolerance = tolerance.symmetric(0.001);\nplated.material = material.withBuild(fMat, zinc);",
+	).Replace("cut = 0.0065;\n" + journal)
+	patch := [6]float64{12.495, -0.05, 0, 12.512, 0.05, 0.5}
+	asMade := conditioned(t, eval.AsMade)
+	r, err := asMade.CertifyOverTolerances(t.Context(), nil, doc, "", "envelope", patch, -0.0001, 0)
+	require.NoError(t, err)
+	require.True(t, r.Proven, "6.5 µm under: %+v", r)
+	r, err = asMade.CertifyOverTolerances(t.Context(), nil, doc, "cut = 0.005;", "envelope", patch, -0.0001, 0)
+	require.NoError(t, err)
+	require.True(t, r.Disproven, "5 µm under: %+v", r)
+	if r.CounterParams["zinc"][0] < 0.5 {
+		t.Errorf("fails for zinc thinner than 5.1 µm: %+v", r.CounterParams)
+	}
+}
+
+// A document that declares no tolerance has none to certify over.
+func TestTolerance_CertifyNeedsATolerance(t *testing.T) {
+	_, err := eval.New(&source.MockManager{}, nil).CertifyOverTolerances(t.Context(), nil, fit, "", "plated", [6]float64{-1, -1, -1, 1, 1, 1}, 0, 0)
+	if err == nil || !strings.Contains(err.Error(), "declares no tolerances") {
+		t.Errorf("got %v", err)
+	}
+}

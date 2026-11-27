@@ -81,6 +81,13 @@ from `1.0.0` onward).
   moves only the shapes inside it: `max(rMax - r, seat)` moves `seat`, so a tolerance claim no
   longer writes the displacement by hand. `convert.ToSurfaceTrees` builds every query's field at a
   condition.
+- **Working tolerances (`x.tolerance`, `tolerance.limits`, `tolerance.symmetric`)**: a scalar a part is
+  made from carries the offsets its value may take, `zinc.tolerance = tolerance.limits(-0.0015, 0.0015);`,
+  constant or varying over the part, and reads them back as `zinc.tolerance`. `eval`'s
+  `CertifyOverTolerances` and `gsl eval`'s certify `"overTolerances"` prove a claim for every value
+  each toleranced declaration takes between its limits, and a disproof names each one's failing share
+  of its tolerance. The parse error for an unknown property lists `tolerance` among those that may be
+  assigned.
 - **Relief depth (`material.reliefDepth`, `material.withReliefDepth`)**: a material declares how far
   its relief reaches below its peaks, in row 0's fourth component (until now reserved, 0 for every
   record that sets none). Relief is measured down from the peaks, so the depth is its whole
