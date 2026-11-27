@@ -20,7 +20,25 @@ var renamedMembers = map[string]map[string]string{
 		"octetHoneycomb":            "octet",
 	},
 	"matrix": {
-		"scale": "multiplyScalar",
+		"scale":        "multiplyScalar",
+		"transpose2":   "transpose",
+		"transpose3":   "transpose",
+		"transpose4":   "transpose",
+		"determinant2": "determinant",
+		"determinant3": "determinant",
+		"determinant4": "determinant",
+		"inverse2":     "inverse",
+		"inverse3":     "inverse",
+		"inverse4":     "inverse",
+	},
+}
+
+// renamedCalls maps a standard library import path to the zero-argument calls
+// that became calls with an argument, old name to the new call's text.
+var renamedCalls = map[string]map[string]string{
+	"matrix": {
+		"identity3": "identity(3)",
+		"identity4": "identity(4)",
 	},
 }
 
@@ -74,18 +92,24 @@ func renameMembers(src string) string {
 			if b, ok := bound[prefix]; ok && b != path {
 				continue
 			}
+			calls := renamedCalls[path]
 			for i, t := range toks {
 				newName, ok := members[t.text]
+				end := t.end
+				// A renamed call takes its empty argument list with it.
+				if call, isCall := calls[t.text]; isCall && i+2 < len(toks) && toks[i+1].text == "(" && toks[i+2].text == ")" {
+					newName, ok, end = call, true, toks[i+2].end
+				}
 				if t.kind != tokIdent || !ok {
 					continue
 				}
 				afterDot := i >= 1 && toks[i-1].kind == tokDot && toks[i-1].end == t.start
 				switch {
 				case prefix == "" && !afterDot:
-					edits = append(edits, textEdit{start: t.start, end: t.end, text: newName})
+					edits = append(edits, textEdit{start: t.start, end: end, text: newName})
 				case prefix != "" && afterDot && i >= 2 && toks[i-2].kind == tokIdent &&
 					toks[i-2].text == prefix && toks[i-2].end == toks[i-1].start:
-					edits = append(edits, textEdit{start: t.start, end: t.end, text: newName})
+					edits = append(edits, textEdit{start: t.start, end: end, text: newName})
 				}
 			}
 		}

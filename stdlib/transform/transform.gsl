@@ -56,5 +56,5 @@ scale(shape, factor) {
 /// distance is scaled by m's smallest scale, which keeps it a bound when m
 /// stretches unevenly.
 affine(shape, m) {
-  return remap(shape, vector.multiplyPoint(matrix.inverse(m), p)) * matrix.minScale(m);
+  return remap(shape, vector.multiplyPoint(matrix.inverseAffine(m), p)) * matrix.minScale(m);
 }

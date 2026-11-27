@@ -48,7 +48,7 @@ multiply(m, v) {
 /// multiplyPoint(m, point) applies the 4×4 homogeneous transform m to a vec3
 /// POINT — i.e. with w = 1, so translation is included — and returns the vec3
 /// result. To map a world point into a shape's local frame, pass
-/// matrix.inverse(transform): `remap(shape(), vector.multiplyPoint(inv, p))`.
+/// matrix.inverseAffine(transform): `remap(shape(), vector.multiplyPoint(inv, p))`.
 multiplyPoint(m, point) {
   h = multiply(m, [point[0], point[1], point[2], 1]);
   return [h[0], h[1], h[2]];

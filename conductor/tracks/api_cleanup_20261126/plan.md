@@ -75,10 +75,17 @@ golden stops for approval before the golden is updated.
 
 ## Phase 3: Matrices
 
-- [ ] Task: Prototype `determinant` and `inverse` of any size in GSL; check them against the sized versions
-      on 2x2, 3x3 and 4x4 and that they constant-fold
-- [ ] Goal: Generic `transpose`, `multiply`, `identity(n)`, `determinant`, `inverse`; sized names as aliases
+- [x] Task: Prototype `determinant` and `inverse` of any size in GSL; check them against the sized versions
+      on 2x2, 3x3 and 4x4 and that they constant-fold (pivoted elimination; a zero pivot made the unpivoted
+      form NaN)
+- [x] Goal: Generic `transpose`, `multiply`, `identity(n)`, `determinant`, `inverse`; sized names as aliases
       for one release; constructors unchanged
+  - [x] `list(n)` / `list(n, fn)` builtin (n constant, specialized through parameters: internal/assembler/listlen)
+        so `identity(n)` can be written
+  - [x] A function reducing over a list parameter with a callback that indexes by the element index is
+        specialized per list size and unrolled (internal/assembler/listsize), so run-time matrices work
+  - [x] The affine 4x4 inverse is `inverseAffine`; the stdlib's callers use it; sized names deprecated with
+        `gsl fix -stdlib` rewrites (`identity3()` becomes `identity(3)`)
 
 ## Phase 4: Spinodoids
 

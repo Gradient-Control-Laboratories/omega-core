@@ -37,7 +37,12 @@ func TestStdlibFixer_RenamedMembers(t *testing.T) {
 		{
 			name: "matrix.scale",
 			in:   "m = matrix.scale(2, matrix.identity3());\nreturn sphere(m[0][0]);\n",
-			want: "m = matrix.multiplyScalar(2, matrix.identity3());\nreturn sphere(m[0][0]);\n",
+			want: "m = matrix.multiplyScalar(2, matrix.identity(3));\nreturn sphere(m[0][0]);\n",
+		},
+		{
+			name: "sized matrix names",
+			in:   "a = matrix.identity3();\nb = matrix.transpose4(matrix.identity4());\nreturn sphere(matrix.determinant3(a) + matrix.inverse2([[2, 0], [0, 2]])[0][0] + b[0][0]);\n",
+			want: "a = matrix.identity(3);\nb = matrix.transpose(matrix.identity(4));\nreturn sphere(matrix.determinant(a) + matrix.inverse([[2, 0], [0, 2]])[0][0] + b[0][0]);\n",
 		},
 		{
 			name: "passed as a value",
