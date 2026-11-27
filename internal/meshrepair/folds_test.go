@@ -114,3 +114,219 @@ func TestFoldsLeavesACleanMeshAlone(t *testing.T) {
 		t.Fatal("a clean sphere came back changed")
 	}
 }
+
+// TestKeepApartLeavesTwoVerticesOffOnePoint checks a vertex whose new place is another vertex's stays where it was:
+// both a vertex sent onto one that is not moving, and the second of two moving vertices sent to the same new point.
+// Welding by position would otherwise join them and open the mesh.
+func TestKeepApartLeavesTwoVerticesOffOnePoint(t *testing.T) {
+	verts, tris := sphereSTL(5, 1)
+	m := weld(writeSTL(verts, tris), len(tris))
+	r := &repair{mesh: m, field: sphereField(5)}
+	free := vec{0.1, 0.2, 5}
+	order := []int32{0, 1, 2}
+	pts := []vec{m.verts[3], free, free} // 0 onto vertex 3, which stays; 1 and 2 onto one new point
+	r.keepApart(order, pts)
+	if pts[0] != m.verts[0] {
+		t.Fatalf("vertex 0 sent onto vertex 3 moved to %v", pts[0])
+	}
+	if pts[1] != free {
+		t.Fatalf("vertex 1, the first sent to a free point, did not move there: %v", pts[1])
+	}
+	if pts[2] != m.verts[2] {
+		t.Fatalf("vertex 2, sent to the point vertex 1 took, moved to %v", pts[2])
+	}
+}
+
+// TestKeepApartLeavesNoTwoVerticesOnOnePoint checks a vertex kept where it is holds its place ahead of one sent
+// there: vertex 0 sent onto vertex 1's place while vertex 1, also moving, is sent back to where it is (as one already
+// on the zero set is, when a neighbour's walk ends on the same point). And a chain: vertex 2 and vertex 3 sent to one
+// free point, vertex 3 kept where it is, and vertex 4 sent to vertex 3's place, which keeping vertex 3 takes. No two
+// may end on one point.
+func TestKeepApartLeavesNoTwoVerticesOnOnePoint(t *testing.T) {
+	verts, tris := sphereSTL(5, 1)
+	m := weld(writeSTL(verts, tris), len(tris))
+	r := &repair{mesh: m, field: sphereField(5)}
+	free := vec{0.1, 0.2, 5}
+	order := []int32{0, 1, 2, 3, 4}
+	pts := []vec{m.verts[1], m.verts[1], free, free, m.verts[3]}
+	r.keepApart(order, pts)
+	want := []vec{m.verts[0], m.verts[1], free, m.verts[3], m.verts[4]}
+	for k := range order {
+		if pts[k] != want[k] {
+			t.Fatalf("vertex %d ended at %v, want %v", order[k], pts[k], want[k])
+		}
+	}
+	seen := make(map[[3]float32]int32)
+	for v := range m.verts {
+		p := m.verts[v]
+		for k, u := range order {
+			if u == int32(v) {
+				p = pts[k]
+			}
+		}
+		if other, ok := seen[key32(p)]; ok {
+			t.Fatalf("vertices %d and %d end on one point %v", other, v, p)
+		}
+		seen[key32(p)] = int32(v)
+	}
+}
+
+// TestKeepApartHoldsAVertexSentOntoANeighbour checks a vertex whose new place would leave one of its edges a needle
+// (here a ten-thousandth of an edge from a neighbour that stays) is kept where it is, and one sent half an edge
+// toward a neighbour moves. And two moving neighbours sent to nearly one point (a thousandth of an edge apart, as
+// both sides of a pinch are): the first in order moves, the second is kept.
+func TestKeepApartHoldsAVertexSentOntoANeighbour(t *testing.T) {
+	verts, tris := sphereSTL(5, 2)
+	m := weld(writeSTL(verts, tris), len(tris))
+	r := &repair{mesh: m, field: sphereField(5)}
+	u := m.ringOf(0)[0]
+	edge := norm(sub(m.verts[u], m.verts[0]))
+	onto := add(m.verts[u], vec{0, 0, 1e-4 * edge})
+	// another vertex, apart from vertex 0 and its ring, to send half an edge toward one of its own neighbours
+	near := map[int32]bool{0: true}
+	for _, x := range m.ringOf(0) {
+		near[x] = true
+	}
+	other := int32(-1)
+	for v := int32(1); int(v) < len(m.verts) && other < 0; v++ {
+		if near[v] {
+			continue
+		}
+		clear := true
+		for _, x := range m.ringOf(v) {
+			if near[x] {
+				clear = false
+			}
+		}
+		if clear {
+			other = v
+		}
+	}
+	if other < 0 {
+		t.Fatal("the sphere has no vertex apart from vertex 0's ring")
+	}
+	w := m.ringOf(other)[0]
+	half := add(m.verts[other], scale(sub(m.verts[w], m.verts[other]), 0.5))
+	order := []int32{0, other}
+	pts := []vec{onto, half}
+	r.keepApart(order, pts)
+	if pts[0] != m.verts[0] {
+		t.Fatalf("vertex 0, sent a ten-thousandth of an edge from vertex %d, moved to %v", u, pts[0])
+	}
+	if pts[1] != half {
+		t.Fatalf("vertex %d, sent half an edge toward vertex %d, did not move there: %v", other, w, pts[1])
+	}
+	a, b := int32(0), m.ringOf(0)[0]
+	spot := scale(add(m.verts[a], m.verts[b]), 0.5)
+	gap := 1e-3 * norm(sub(m.verts[b], m.verts[a]))
+	order = []int32{a, b}
+	if b < a {
+		order = []int32{b, a}
+	}
+	pts = []vec{spot, add(spot, vec{gap, 0, 0})}
+	first := pts[0]
+	r.keepApart(order, pts)
+	if pts[0] != first {
+		t.Fatalf("vertex %d, the first of two neighbours sent to nearly one point, did not move: %v", order[0], pts[0])
+	}
+	if pts[1] != m.verts[order[1]] {
+		t.Fatalf("vertex %d, sent a thousandth of an edge from its moved neighbour, moved to %v", order[1], pts[1])
+	}
+}
+
+// TestFoldsLeavesTrianglesOffTheZeroSetAlone checks a triangle where the field jumps across zero is not taken for a
+// fold: a sphere whose field, over its top cap, is -8 with a gradient pointing in, as a face cut by a choice between
+// branches reads, comes back as it was given.
+func TestFoldsLeavesTrianglesOffTheZeroSetAlone(t *testing.T) {
+	const r = 5.0
+	verts, tris := sphereSTL(r, 3)
+	in := writeSTL(verts, tris)
+	sphere := sphereField(r)
+	field := func(xs, ys, zs []float32) ([]Sample, error) {
+		out, err := sphere(xs, ys, zs)
+		for i := range out {
+			if zs[i] > 4 {
+				out[i] = Sample{Value: -8, Dx: -out[i].Dx, Dy: -out[i].Dy, Dz: -out[i].Dz}
+			}
+		}
+		return out, err
+	}
+	out, stats, err := Folds(in, field)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stats.BackwardBefore != 0 || stats.Passes != 0 || stats.Moved != 0 {
+		t.Fatalf("triangles off the zero set were taken for folds: %+v", stats)
+	}
+	if string(out) != string(in) {
+		t.Fatal("a sphere with triangles off the zero set came back changed")
+	}
+}
+
+// TestKeepNearHoldsAVertexSentPastItsEdges checks a vertex whose new place is farther than its edges' mean length
+// stays where it was, and one sent less far moves.
+func TestKeepNearHoldsAVertexSentPastItsEdges(t *testing.T) {
+	verts, tris := sphereSTL(5, 2)
+	m := weld(writeSTL(verts, tris), len(tris))
+	r := &repair{mesh: m, field: sphereField(5)}
+	edge := norm(sub(m.verts[m.ringOf(0)[0]], m.verts[0]))
+	near := add(m.verts[0], vec{0, 0.2 * edge, 0})
+	far := add(m.verts[1], vec{0, 3 * edge, 0})
+	order := []int32{0, 1}
+	pts := []vec{near, far}
+	r.keepNear(order, pts)
+	if pts[0] != near {
+		t.Fatalf("vertex 0, sent a fifth of an edge, did not move there: %v", pts[0])
+	}
+	if pts[1] != m.verts[1] {
+		t.Fatalf("vertex 1, sent three edges, moved to %v", pts[1])
+	}
+}
+
+// TestFoldsKeepsTheMeshWhenRepairsGrowItsArea checks no pass that makes the mesh's area larger is kept: a pleated
+// sphere of radius 5 repaired against a sphere of radius 5.3, onto which every pass walks the moved vertices out,
+// comes back as it was given. 5.3 is near enough that the moves stay within an edge (keepNear lets them through) and
+// far enough that they add more area than righting the pleats gives back.
+func TestFoldsKeepsTheMeshWhenRepairsGrowItsArea(t *testing.T) {
+	verts, tris := sphereSTL(5, 4)
+	m := weld(writeSTL(verts, tris), len(tris))
+	for _, v := range []int32{40, 400, 900} {
+		w := m.ringOf(v)[0]
+		p := add(m.verts[v], scale(sub(m.verts[w], m.verts[v]), 1.6))
+		m.verts[v] = scale(p, 5/norm(p))
+	}
+	in := m.write(make([]byte, 80))
+	out, stats, err := Folds(in, sphereField(5.3))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stats.BackwardBefore == 0 {
+		t.Fatalf("the pleats made no backward triangle: %+v", stats)
+	}
+	if stats.Passes != 0 || stats.Moved != 0 {
+		t.Fatalf("a pass that grew the area was kept: %+v", stats)
+	}
+	if string(out) != string(in) {
+		t.Fatal("every pass grew the area, yet the mesh came back changed")
+	}
+}
+
+// TestFoldsReturnsTheMeshWhenNoPassHelps checks a mesh no pass improves comes back as it was given: a sphere whose
+// every triangle faces in, which moving vertices cannot turn round.
+func TestFoldsReturnsTheMeshWhenNoPassHelps(t *testing.T) {
+	verts, tris := sphereSTL(5, 2)
+	for i := range tris {
+		tris[i][1], tris[i][2] = tris[i][2], tris[i][1]
+	}
+	in := writeSTL(verts, tris)
+	out, stats, err := Folds(in, sphereField(5))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stats.BackwardBefore != len(tris) || stats.BackwardAfter != len(tris) || stats.Passes != 0 || stats.Moved != 0 {
+		t.Fatalf("an inside-out sphere was changed: %+v", stats)
+	}
+	if string(out) != string(in) {
+		t.Fatal("no pass helped, yet the mesh came back changed")
+	}
+}
