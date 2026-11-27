@@ -33,5 +33,15 @@
   *Link: [index.md](./tracks/unified_surface_20261126/index.md)*
 
 ---
+- [ ] **Track: Datums and Setups** (proposed 2026-11-27, no plan yet)
+  Where a part is located for each operation, and the working tolerances that follow from it
+  (tolerance charting's setup capability). Follows the Unified Surface Model's D8.
+
+---
+- [ ] **Track: Assembly Variation** (proposed 2026-11-27, no plan yet)
+  Mates, datum reference frames and floating zones in assembly claims, each part ranged over its
+  tolerances. Follows the Unified Surface Model's D8.
+
+---
 - [ ] **Track: Backlog**
   *Link: [index.md](./tracks/backlog_20261110/index.md)*

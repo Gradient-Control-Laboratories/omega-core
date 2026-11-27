@@ -233,28 +233,36 @@ New tests are added only once the owner agrees them.
       writes its add as `withDisplacement(finish, displacement(finish) + relief)`, the same value as
       `addDisplacement`, which keeps `TestShaftKnurl_FinishedBody`'s check on the shader text as it is
 
-## Phase 6: Spreads as Parameters (D3)
+## Phase 6: Tolerances on What Is Made (D3, D8)
 
-- [ ] Task: Proposal: how a document names a layer's spread (a coat's build, a machined size) as a
-      ranged parameter, and how the condition reads its ends
-- [ ] Task: `CertifyParams` / `CertifyOverSliders` prove a claim over every spread at once: the plated
-      journal proven for builds in [4, 6] µm machined 6 µm under, and disproven machined 4 µm under
+- [ ] Task: Proposal: the `.tolerance` property on a scalar declaration (its assembler pass beside
+      `.material` and `.color`); `tolerance.limits(lo, hi)` and `tolerance.symmetric(w)`; readable
+      `.min`, `.max` and bias; limits as a field of p; how certify reads the toleranced declarations
+      (a `CertifyOverTolerances` and `gsl eval`'s `"overTolerances"`, each declaration ranged over its
+      limits, design sliders at their values)
+- [ ] Task: The plated journal and the H7/g6 plated bore, posed with `.tolerance` on their working
+      dimensions: certify proves and disproves as the ranged-slider runs did (journal: zinc 4 to 6 µm
+      proven 6.5 µm under, disproven 5 µm under with the failing builds named; bore: clearance
+      disproven at 3.2 µm at the worst corner)
 - [ ] Task: Phase Verification & Checkpoint
 
-## Phase 7: `.tolerance` and Zones (D4, D5)
+## Phase 7: Propagation, Display and Requirements (D4, D5, D8)
 
-- [ ] Task: Proposal: the `.tolerance` property (its assembler pass, alongside `.material` and
-      `.color`), the zone constructors (`tolerance.band(lo, hi)`, a profile `±t/2`, ISO 286 fits as
-      bands on features a package knows), and the eval entry point that proves a shape's zone
-- [ ] Task: The two claims of spec 2.5, generated from `.tolerance`, with a slack for measurement
-      resolution, in the part's frame; the least-material claim's band shifted by the feature's
-      `material.reliefDepth` (Phase 5's decision: min-material is not a field condition)
+- [ ] Task: Proposal: `shape.tolerance`, a per-point field from first-order propagation over the
+      toleranced declarations (worst case the sum of `abs(shape.d(x))` times each half-width, bias the
+      sum of `shape.d(x)` times each midpoint), read at a condition; how a document reads it and
+      what eval returns
+- [ ] Task: The viewer draws a shape's min and max surfaces (D minus its tolerance's max and min); the
+      Section panel gets a Min / Max toggle beside Coatings and Relief
+- [ ] Task: Requirements as claims: ISO 286 and profile constructors (`tolerance.shaftDia` and
+      `holeDia` as bands) used inside a certify claim, with a slack for measurement resolution; the
+      least-material claim's band shifted by the surface's `material.reliefDepth`
 - [ ] Task: The edge rule, with the UGF edge exceptions: where a field is not a true distance at a
-      convex edge, the zone there is refused or computed from an exact round, never overstated
+      convex edge, a requirement there is refused or computed from an exact round, never overstated
 - [ ] Task: D5: remove the condition arguments from `tolerance.shaftDia` / `holeDia` and
-      `bearing.seatDia` / `housingDia`; a `gsl fix -stdlib` rewrite to nominal plus `.tolerance`;
-      `examples/shaft_bearings.gsl` migrated (its seats move from maximum material to nominal, 5.5 µm on
-      the radius, so its goldens move and are shown first); a CHANGELOG `Breaking` entry
+      `bearing.seatDia` / `housingDia`; callers draw the size they make, its `.tolerance` on the
+      scalar; a `gsl fix -stdlib` rewrite; `examples/shaft_bearings.gsl` migrated (goldens shown
+      first); a CHANGELOG `Breaking` entry
 - [ ] Task: Phase Verification & Checkpoint
 
 ## Phase 8: `.dp` Through Material Records
