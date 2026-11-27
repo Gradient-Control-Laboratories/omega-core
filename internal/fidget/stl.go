@@ -123,14 +123,17 @@ func GenerateSTL(
 				}
 				return out, nil
 			}
+			// A repair that cannot evaluate the field (the gradient's JIT can fail on a tape it can still mesh) leaves
+			// the mesh as dual contouring made it.
 			repaired, stats, err := meshrepair.Folds(stlBytes, field)
 			if err != nil {
-				return nil, err
+				log.Printf("mdc fold repair: not made, the mesh is left as dual contouring made it: %v", err)
+			} else {
+				log.Printf("mdc fold repair: backward triangles %d -> %d in %d passes (%d vertices moved), %s",
+					stats.BackwardBefore, stats.BackwardAfter, stats.Passes, stats.Moved,
+					gotime.Since(start).Round(gotime.Millisecond))
+				stlBytes = repaired
 			}
-			log.Printf("mdc fold repair: backward triangles %d -> %d in %d passes (%d vertices moved), %s",
-				stats.BackwardBefore, stats.BackwardAfter, stats.Passes, stats.Moved,
-				gotime.Since(start).Round(gotime.Millisecond))
-			stlBytes = repaired
 			if progressFn != nil {
 				progressFn(4, 0, "Done")
 			}

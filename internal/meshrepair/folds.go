@@ -3,9 +3,13 @@
 // A fold is a pleat: a few triangles turned over against the surface, the mesh still closed and oriented, most of
 // them crossing no other triangle. They come from the dual quads' triangulation and from vertices the octree's QEF
 // placed past a neighbour, and they show as area the surface does not have. The repair finds them by the field: a
-// triangle whose normal points against the field's gradient at its centroid is backward. Each vertex of a backward
+// triangle whose normal points against the field's gradient at its centroid is backward. A triangle whose centroid
+// the field puts farther from its zero set than the triangle's longest edge is not on the zero set at all (the mesher
+// put it where the field jumps across zero, as at a face cut by a choice between branches), so the field's gradient
+// says nothing about it and it is never backward. Each vertex of a backward
 // triangle is placed again, from the tangent planes the field gives at it and at its 1-ring (a QEF, held toward the
-// ring's mean so a flat neighbourhood has an answer), and walked back onto the zero set by Newton steps. That repeats
+// ring's mean so a flat neighbourhood has an answer), and walked back onto the zero set by Newton steps; a vertex
+// whose new place is farther than its edges' mean length stays where it was. That repeats
 // over the triangles the moves touched until none is backward, or for a fixed number of passes.
 //
 // Only vertex positions change: the triangles, their order and the welding stay as the mesher made them.
@@ -193,7 +197,8 @@ func (r *repair) samples(pts []vec) ([]Sample, error) {
 
 func gradient(s Sample) vec { return vec{float64(s.Dx), float64(s.Dy), float64(s.Dz)} }
 
-// classify marks each of list backward or not: its normal against the field's gradient at its centroid.
+// classify marks each of list backward or not: its normal against the field's gradient at its centroid. A triangle
+// whose centroid has a value larger in size than its longest edge is off the zero set and not backward.
 func (r *repair) classify(list []int32, backward []bool) error {
 	if len(list) == 0 {
 		return nil
@@ -209,8 +214,13 @@ func (r *repair) classify(list []int32, backward []bool) error {
 	}
 	for k, ti := range list {
 		t := r.tris[ti]
-		a := r.verts[t[0]]
-		nrm := cross(sub(r.verts[t[1]], a), sub(r.verts[t[2]], a))
+		a, b, c := r.verts[t[0]], r.verts[t[1]], r.verts[t[2]]
+		longest := max(norm(sub(b, a)), norm(sub(c, b)), norm(sub(a, c)))
+		if !(math.Abs(float64(s[k].Value)) <= longest) {
+			backward[ti] = false
+			continue
+		}
+		nrm := cross(sub(b, a), sub(c, a))
 		backward[ti] = dot(nrm, gradient(s[k])) < 0
 	}
 	return nil
@@ -256,6 +266,7 @@ func (r *repair) run(stats *Stats) error {
 		if pts, err = r.project(pts); err != nil {
 			return err
 		}
+		r.keepNear(order, pts)
 		r.keepApart(order, pts)
 		touched := make(map[int32]bool)
 		for k, v := range order {
@@ -286,6 +297,26 @@ func (r *repair) run(stats *Stats) error {
 		}
 	}
 	return nil
+}
+
+// keepNear leaves a vertex of order where it is when its new place is farther from it than the mean length of its
+// edges (to its 1-ring): a fold is a vertex placed past a neighbour, so its repair moves it about an edge, and a longer
+// move is the walk onto the zero set gone somewhere the mesh around it does not reach, which stretches its triangles.
+func (r *repair) keepNear(order []int32, pts []vec) {
+	for k, v := range order {
+		ring := r.ringOf(v)
+		if len(ring) == 0 {
+			pts[k] = r.verts[v]
+			continue
+		}
+		var sum float64
+		for _, u := range ring {
+			sum += norm(sub(r.verts[u], r.verts[v]))
+		}
+		if !(norm(sub(pts[k], r.verts[v])) <= sum/float64(len(ring))) {
+			pts[k] = r.verts[v]
+		}
+	}
 }
 
 // keepApart leaves a vertex of order where it is when its new place, as the STL writes it (float32), is another
