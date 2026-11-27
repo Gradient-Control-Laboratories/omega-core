@@ -228,6 +228,9 @@ const fieldExternalU = uniform(1.0); // on by default — show external (dist>0)
 // 0 the field as built. Off by default, so the section shows what it always has.
 const fieldBuildU = uniform(0.0);
 const fieldReliefU = uniform(0.0);
+// The section panel's Color toggle: 1 shows the cut faces in each shape's color
+// (inside a solid, its color field; outside, the background) instead of contours.
+const fieldColorU = uniform(0.0);
 const bgColorU = uniform(new THREE.Vector3(BG_COLOR.r, BG_COLOR.g, BG_COLOR.b));
 let currentWGSL = "";
 let currentShapeCount = 0;
@@ -823,6 +826,19 @@ function updateShader(wgslCode, shapeCount = 1, shapeNames = [], meshSdfBindings
   const sectionField = gsl_sectionShape
     ? `gsl_sectionShape(hitPoint, time, fieldRelief, fieldBuild${extraArgsWGSL})`
     : "sdShape(hitPoint, time)";
+  // The color of a cut face: the program's color field where it authors one
+  // (gsl_colorField, whose call injectExtraArgs completes), else the shape's
+  // palette color, as shading chooses. Both are sRGB and the render targets
+  // are linear (the composite encodes to sRGB at the canvas), so it is decoded
+  // with the exact transfer function shading uses (gsl_srgbToLinear); written
+  // as it is, it was encoded twice and showed washed out.
+  const cutSrgbWGSL = wgslCode.includes("fn gsl_colorField(")
+    ? `let cut_cf = gsl_colorField(hitPoint, time, cut.shapeIndex);
+                let cutSrgb = select(gsl_shapeColor(cut.shapeIndex, ${colorArgsWGSL.join(", ")}), cut_cf.rgb, cut_cf.a > 0.5);`
+    : `let cutSrgb = gsl_shapeColor(cut.shapeIndex, ${colorArgsWGSL.join(", ")});`;
+  const cutColorWGSL = `${cutSrgbWGSL}
+                let cutRGB = select(pow((cutSrgb + vec3<f32>(0.055)) / 1.055, vec3<f32>(2.4)), cutSrgb / 12.92,
+                    cutSrgb <= vec3<f32>(0.04045));`;
   // The Color tier's frame: the standard one as if the program authored no
   // material. Its pipeline compiles only once the tier is drawn.
   const { wgslFragmentShader: colorFragment } =
@@ -931,6 +947,7 @@ function updateShader(wgslCode, shapeCount = 1, shapeNames = [], meshSdfBindings
             fieldExternal: f32,
             fieldBuild: f32,
             fieldRelief: f32,
+            fieldColor: f32,
             bgColor: vec3<f32>,
             ${colorParamsWGSL.join(", ")},
             ${visParamsWGSL.join(", ")}${extraParamsWGSL}
@@ -954,6 +971,18 @@ function updateShader(wgslCode, shapeCount = 1, shapeNames = [], meshSdfBindings
             gsl_pw = pixelScale * mix(t, 1.0, camOrtho);
             let clipPos = projViewZUp * vec4<f32>(hitPoint, 1.0);
             let depth01 = clipPos.z / clipPos.w;
+
+            if (fieldColor > 0.5) {
+                // Color mode: the cut faces in each shape's color, the background
+                // elsewhere, with no contours. Alpha carries depth, as in union mode.
+                gsl_fieldFilterIdx = 0u;
+                let cut = ${sectionField};
+                if (cut.shapeIndex == 0u || cut.distance > 0.0) {
+                    return vec4<f32>(bgColor, depth01);
+                }
+                ${cutColorWGSL}
+                return vec4<f32>(cutRGB, depth01);
+            }
 
             if (fieldUnion > 0.5) {
                 // Union mode: take the SDF union, draw with opaque gray background.
@@ -1020,6 +1049,7 @@ function updateShader(wgslCode, shapeCount = 1, shapeNames = [], meshSdfBindings
     fieldExternal: fieldExternalU,
     fieldBuild: fieldBuildU,
     fieldRelief: fieldReliefU,
+    fieldColor: fieldColorU,
     bgColor: bgColorU,
     ...colorUniforms,
     ...visUniforms,
@@ -1697,6 +1727,7 @@ function initComposite() {
             fieldRGBA: vec4<f32>,
             fieldOn: f32,
             fieldUnion: f32,
+            fieldColor: f32,
             modelOpacity: f32,
             sectionOpacity: f32,
             camPosZUp: vec3<f32>,
@@ -1834,6 +1865,18 @@ function initComposite() {
                 if (ptOn && !centerIsAxis && (shapeVisible || !shapeHit)) {
                     result = vec4(mix(effectiveBgRGB, ptColor, coverage * select(1.0, modelOpacity, shapeHit)), 1.0);
                 }
+            } else if (fieldColor > 0.5 && isLine > 0.5) {
+                // Color mode, a cut face: the section clips the model on the camera's
+                // side of the plane, so what shows here is the cut itself, in full color.
+                // (Off the cut the model still blends at modelOpacity: the march does
+                // not clip, so what lies behind the plane there is not known here.)
+                result = vec4(fieldRGB, 1.0);
+            } else if (fieldColor > 0.5 && modelOpacity <= 0.0) {
+                // Color mode with the model slider at zero: off the cut, what lies
+                // behind the plane as it is, without the section's background veil
+                // lightening it: the model where it is behind the plane, else the
+                // scene. The model in front of the plane is hidden.
+                result = vec4(select(effectiveBgRGB, shapeRGB, modelBelowPlane), 1.0);
             } else if (modelBelowPlane) {
                 // Model is behind the plane — composite section over 100% opaque model
                 result = vec4(mix(shapeRGB, sectionRGBA.rgb, sectionRGBA.a), 1.0);
@@ -1865,6 +1908,7 @@ function initComposite() {
     fieldRGBA: centerFieldSample,
     fieldOn: fieldEnabledU,
     fieldUnion: fieldUnionU,
+    fieldColor: fieldColorU,
     modelOpacity: modelOpacityU,
     sectionOpacity: sectionOpacityU,
     camPosZUp: camPosZUpU,
@@ -2311,6 +2355,13 @@ export function setFieldBuild(enabled) {
 
 export function setFieldRelief(enabled) {
   fieldReliefU.value = enabled ? 1.0 : 0.0;
+  scheduleRender();
+}
+
+// setFieldColor shows the section's cut faces in each shape's color in place
+// of the field's contours.
+export function setFieldColor(enabled) {
+  fieldColorU.value = enabled ? 1.0 : 0.0;
   scheduleRender();
 }
 

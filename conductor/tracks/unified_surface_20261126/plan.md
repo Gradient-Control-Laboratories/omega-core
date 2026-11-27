@@ -117,8 +117,17 @@ New tests are added only once the owner agrees them.
 
 ## Phase 4: A Condition for Evaluation
 
-- [ ] Task: Proposal: an `eval` option (`With...`) naming the condition (display, nominal, maximum
-      material, minimum material; spec 2.3) and the matching request field in `gsl eval`
+- [x] Task: Proposal (agreed 2026-11-26, not yet implemented): named conditions on the evaluator,
+      `e.SetCondition(c)` (the `SetCertifyBudget` pattern), and a `"condition"` field on `gsl eval`
+      requests: `as-built` (default: build 0, relief 0, today's behaviour), `nominal` (build 1,
+      relief 0) and `as-made` (build 1, relief 1, what the CPU renderer draws). Maximum and minimum
+      material are refused with an error until Phases 5 and 6 give them envelopes and spreads. Every
+      query that reads the field takes it: `eval`, `extremum`, `certify` (point, params, sliders),
+      `bounds`, `volume`, `surface` and `mesh` (onto Phase 3's flags); `render`, `describe` and `shader`
+      do not. Queries are assembled with their expressions as returns, so #162's lowering already moves
+      only the shapes inside a claim (`max(rMax - r, seat)` moves `seat`); a query that is one bare
+      shape moves as a whole (`convert.DisplacedTree`). The interval, gradient and parameter evaluators
+      each get a displaced variant through one helper
 - [ ] Task: `certify`, `eval`, `bounds`, `volume` and `mesh` read #162's displaced distance at that
       condition, so the journal experiment no longer writes the displacement by hand
 - [ ] Task: The journal claims of spec section 4, posed through the condition, decide as recorded

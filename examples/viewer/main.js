@@ -22,6 +22,7 @@ import {
     setFieldExternal,
     setFieldBuild,
     setFieldRelief,
+    setFieldColor,
     setShapeVisible,
     setSlotVisible,
     setMeshShapeVisible,
@@ -1374,6 +1375,17 @@ document.getElementById("field-build").addEventListener("change", (e) => {
 
 document.getElementById("field-relief").addEventListener("change", (e) => {
     setFieldRelief(e.target.checked);
+});
+
+// Color shows the cut faces in each shape's color, so the controls that shape
+// the contours (interval, fade, union, external) are out of play while it is on.
+document.getElementById("field-color").addEventListener("change", (e) => {
+    const on = e.target.checked;
+    setFieldColor(on);
+    for (const row of document.querySelectorAll("#field-panel .field-contour-control")) {
+        row.classList.toggle("disabled", on);
+        for (const input of row.querySelectorAll("input")) input.disabled = on;
+    }
 });
 
 function updateFieldNormal() {
