@@ -183,7 +183,21 @@ func (s *specializer) indexed(x *program.Expression, path string, host *program.
 		return nil, false
 	}
 	cb := s.callback(fnOp, path, host)
-	return coll, cb != nil && len(cb.Parameters) >= 3 && s.indexParamsOf(cb, path)[2]
+	if cb == nil || len(cb.Parameters) < 3 || !s.indexParamsOf(cb, path)[2] {
+		return coll, false
+	}
+	// Only a fold that carries an aggregate (a matrix, or a list of lists or
+	// matrices) needs it: indexing a loop-carried aggregate by the counter is
+	// what the backends cannot do. A fold of a number or a short vector that
+	// indexes its collection by the counter, as the profile sweeps do, keeps
+	// its loop.
+	init := x.Operands[0]
+	if init == fnOp || init == coll {
+		init = x.Operands[len(x.Operands)-1]
+	}
+	t := typeOf(init, host)
+	aggregate := t != nil && (t.IsMatrix() || (t.IsList() && t.ElemType != nil && (t.ElemType.IsList() || t.ElemType.IsMatrix())))
+	return coll, aggregate
 }
 
 // needsSizes reports whether fn reduces over one of its parameters with an

@@ -589,7 +589,8 @@ eliminateBelow(a, k) {
 /// determinant(m) is the determinant of a square matrix of any size.
 determinant(m) {
   u = reduce(m, (a, col, k) { return eliminateBelow(a, k); }, m);
-  return reduce(1, (acc, col, k) { return acc * col[k]; }, u);
+  diagonal = map((col, k) { return col[k]; }, u);
+  return reduce(1, (acc, x) { return acc * x; }, diagonal);
 }
 
 // m after the row operations that make pivot column pk a unit column at row
