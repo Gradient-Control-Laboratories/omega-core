@@ -155,16 +155,20 @@ New tests are added only once the owner agrees them.
       queries, displaced meshes and the viewer; `analyzeLayers` now gives such a return its layered
       distance (second pass over the whole returns; no golden moves). New tests (owner's go):
       `eval/condition_test.go`, `cmd/compile/internal/evalcmd/condition_test.go`
-- [ ] Task: The journal claims of spec section 4, posed through the condition, decide as recorded.
-      Run 2026-11-27 (`as-made`, the seat carrying `machined.turned`, plating a coat laid with
+- [x] Task: The journal claims of spec section 4, posed through the condition, decide as recorded
+      (2026-11-27; `as-made`, the seat carrying `machined.turned`, plating a coat laid with
       `material.withBuild(fMat, build)`): A proven 169 (as recorded), B disproven 5,305 (5,145),
-      no-slack envelope undecided (as recorded), 0.1 µm slack proven 5,257, C disproven 2,345 (2,217),
-      whole seat in the profile plane proven 43,689 (as recorded). D (5 µm zinc, machined 5 µm under)
-      is undecided at the 200 k budget (worst lower bound -1.6 µm), where the hand-written field proves
-      it in 5,257. Values agree with the hand-written field at every point checked; relief alone
-      through the condition proves in 9 and build alone (nominal) in 32,425, so the loss is a coat over
-      relief: the layer's increment reads the relief twice (coat height less the height beneath), and
-      interval arithmetic takes the two as independent
+      no-slack envelope undecided (as recorded), 0.1 µm slack proven 5,257, C disproven 2,217 (as
+      recorded), D proven 5,257 (the hand-written field's count on this build), D's least-material
+      claim proven 169, whole seat in the profile plane proven 43,689 (as recorded). D was first
+      undecided at the 200 k budget: a coat laid on a shape with its own finish was moved by the
+      increment, `disp(seat) - (h(coat) - h(seat))`, which reads the relief once at p and twice at the
+      closest point; the three cancel in value but interval arithmetic takes them as independent (the
+      drawn height's interval 12.8 µm wide over a box where the true range is 3.1 µm). Fixed on the
+      owner's choice: such a chain telescopes as an alias chain on an undisplaced shape already did
+      (`finishRoot`): the coat is the finished shape's own distance less the top coat's height, read
+      once at its closest point. Values unchanged at every point checked, on and off the surface; no
+      golden moves. Test (owner's go): `TestCondition_PlatingOverTurningProves`
 - [ ] Task: Phase Verification & Checkpoint
 
 ## Phase 5: Envelopes and the Peak Datum (D1)

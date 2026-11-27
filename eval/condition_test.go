@@ -108,6 +108,36 @@ func TestCondition_Certify(t *testing.T) {
 	}
 }
 
+// journal is a 25 k5 journal, its seat turned (0.1 mm feed, 0.4 mm nose, cusps
+// 3.14 µm deep) and machined 5 µm under its maximum-material size, then plated
+// 5 µm over the turning.
+const journal = `
+rMax = tolerance.shaftDia(25.0, tolerance.k5, tolerance.maxMaterial) / 2.0;
+steelMat, steelColor = metal.steel();
+fMat, fColor, fHeight, fSlope = machined.turned(steelMat, steelColor, [0, 0, 0], [0, 0, 1], 0.1, 0.4);
+r = sqrt(p.x * p.x + p.y * p.y);
+seat = r - (rMax - 0.005);
+seat.material = fMat;
+plated = seat;
+plated.material = material.withBuild(fMat, 0.005);
+envelope = max(rMax - r, plated);
+return plated;
+`
+
+// As made, the plated journal stays inside its maximum-material envelope, and
+// the proof costs what the field written out by hand costs: the plating over
+// the turning reads the turning's relief once, not once beneath it and twice
+// in its increment.
+func TestCondition_PlatingOverTurningProves(t *testing.T) {
+	patch := [6]float64{12.495, -0.05, 0, 12.512, 0.05, 0.5}
+	r, err := conditioned(t, eval.AsMade).Certify(t.Context(), nil, journal, "", "envelope", patch, -0.0001, 0)
+	require.NoError(t, err)
+	require.True(t, r.Proven, "%+v", r)
+	if r.Evals > 20000 {
+		t.Errorf("proven in %d interval evaluations; written out by hand it takes about 5,000", r.Evals)
+	}
+}
+
 // The proven box, a surface point and the extremum see the coat's build.
 func TestCondition_EncloseSurfaceExtremum(t *testing.T) {
 	region := [6]float64{-12, -12, -12, 12, 12, 12}

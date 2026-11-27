@@ -298,6 +298,12 @@ from `1.0.0` onward).
   inside it, whose height is not the coat's; the displaced surface stood where the switch flipped,
   leaving a thin shell outside the field inside the coat. Such a return now moves by its layered
   distance, in the viewer, displaced meshes and the field queries alike.
+- **A coat over a shape with its own finish keeps its interval bounds**: plating laid on a turned seat
+  (`plated = seat; seat.material = turned;`) was moved by its increment over the seat, which reads the
+  turning's relief three times, so interval bounds on it were four times the groove depth and a
+  5 µm plating claim certify proves in 5 thousand evaluations went undecided at 200 thousand. The
+  chain now telescopes as a chain on an undisplaced shape does: the seat's own distance less the
+  top coat's height, read once. Values are unchanged.
 - `topofold` now evaluates general UI-derived constant expressions via a scoped `ConstEvalFunc`
   fallback (`eval.ConstPkgSlotsAt`) in `assembler`, rejecting non-finite results, and Rust Cargo
   build scripts (`internal/fidget/internal/rust/build.rs`, `internal/fidget/internal/tape-core/build.rs`,

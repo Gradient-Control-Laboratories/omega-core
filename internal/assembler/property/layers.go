@@ -389,8 +389,47 @@ func (l *layers) emit(name string) {
 	inc, incb := l.increment(name)
 	l.declare(layerIncBuildPrefix+name, incb)
 	l.declare(layerIncPrefix+name, inc)
+	// A chain of coats laid down to a shape with its own finish (a seat whose
+	// material is turned) telescopes too: the top coat's height holds the
+	// finish's relief, so its surface is the finished shape's own distance less
+	// that one height. Moving it by the increment instead would read the relief
+	// three times, once beneath and twice in the increment, which cancel in
+	// value but not in interval bounds. The increment is kept for the switch.
+	if root, ok := l.finishRoot(name); ok {
+		if at := l.surface(name); at != nil {
+			l.declare(layerTopPrefix+name, l.readAt(at, height(program.CloneOperand(l.mats[name]))))
+			l.declare(layerTopBuildPrefix+name, l.readAt(at, build(program.CloneOperand(l.mats[name]))))
+			l.declare(layerDispPrefix+name, moved(program.CloneOperand(root),
+				ref(layerTopBuildPrefix+name), ref(layerTopPrefix+name)))
+			return
+		}
+	}
 	l.declare(layerDispPrefix+name, moved(ref(layerUnderPrefix+name),
 		ref(layerIncBuildPrefix+name), ref(layerIncPrefix+name)))
+}
+
+// finishRoot is, for a coat laid on a coat ... laid on a shape whose material
+// is set on its own expression, that shape's undisplaced expression: every
+// link a bare name of a displacing shape, down to one that is not a bare name.
+func (l *layers) finishRoot(name string) (*program.Operand, bool) {
+	cur := name
+	for depth := 0; depth < 64; depth++ {
+		beneath := aliasOf(l.decls[cur])
+		if beneath == "" {
+			if cur == name {
+				return nil, false
+			}
+			return l.decls[cur], true
+		}
+		if !l.displacing[beneath] {
+			return nil, false
+		}
+		if _, ok := l.decls[beneath]; !ok {
+			return nil, false
+		}
+		cur = beneath
+	}
+	return nil, false
 }
 
 // moved is a distance moved out by a layer whose height is h, b of it build:
