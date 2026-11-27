@@ -902,13 +902,13 @@ return s1 * s2 * M1 * s3 * M2 * s4 * s5 * v1;
 		},
 		{
 			name:        "matrix_vector_add",
-			src:         "M = [[1.0, 0.0], [0.0, 1.0]]; v = [1.0, 2.0]; return M + v;",
-			errContains: "cannot add matrix and vector at operand 2",
+			src:         "M = [[1.0, 0.0], [0.0, 1.0]]; v = [1.0, 2.0, 3.0]; return M + v;",
+			errContains: "cannot add a vector of length 3 and a list of vectors of length 2 at operand 2",
 		},
 		{
 			name:        "matrix_vector_sub",
-			src:         "M = [[1.0, 0.0], [0.0, 1.0]]; v = [1.0, 2.0]; return M - v;",
-			errContains: "cannot subtract matrix and vector at operand 2",
+			src:         "M = [[1.0, 0.0], [0.0, 1.0]]; v = [1.0, 2.0, 3.0]; return M - v;",
+			errContains: "cannot subtract a vector of length 3 and a list of vectors of length 2 at operand 2",
 		},
 		{
 			name:        "scalar_matrix_div",

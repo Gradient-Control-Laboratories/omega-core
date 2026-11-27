@@ -273,6 +273,18 @@ func buildPrimitiveCall(
 	primFunc *program.PrimitiveFunc, arguments []*program.Operand, pos, endPos lexer.Position,
 ) (*program.Operand, error) {
 
+	// min(list) and max(list) fold one collection: the smallest or largest
+	// element, per component for a list of vectors. The builtin package's
+	// unionSharp and intersectSharp are that fold, named with the package so a
+	// document's own function of that name cannot stand in for it.
+	if len(arguments) == 1 && (primFunc.Op == program.Operation_MIN || primFunc.Op == program.Operation_MAX) {
+		fold := "unionSharp"
+		if primFunc.Op == program.Operation_MAX {
+			fold = "intersectSharp"
+		}
+		return program.NewFnCall("builtin", fold, arguments, posToLocation(pos), posToLocation(endPos)), nil
+	}
+
 	if len(arguments) < primFunc.MinArgs || len(arguments) > primFunc.MaxArgs {
 
 		var expectedMsg string
