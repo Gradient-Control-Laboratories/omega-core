@@ -5,7 +5,7 @@
 // Beam Lattice Library (lattice/beam)
 //
 // Periodic strut lattices — 3D networks of infinitely thin beams that tile a
-// scalar or vec3 `size` cell. Each returns the unsigned distance field to the strut
+// scalar or vec3 `cellSize`. Each returns the unsigned distance field to the strut
 // skeleton; give the beams width with `lattice.solidify(field, bias)`, then
 // intersect with a body to infill it.
 //
@@ -29,7 +29,7 @@ import "domain";
 // --- public lattices ---
 
 /// Octet truss: the stretch-dominated FCC strut lattice (cell corners to face
-/// centers). scalar or vec3 `size` cell.
+/// centers). scalar or vec3 `cellSize`.
 octet(cellSize) {
   size = cellSize * [1, 1, 1];
   h = size * 0.5;
@@ -43,7 +43,7 @@ octet(cellSize) {
   ]), domain.patternRepeatMirror(size));
 }
 
-/// Truncated-octahedral (Kelvin-adjacent) strut lattice. scalar or vec3 `size` cell.
+/// Truncated-octahedral (Kelvin-adjacent) strut lattice. scalar or vec3 `cellSize`.
 truncatedOctahedral(cellSize) {
   size = cellSize * [1, 1, 1];
   h = size * 0.5;
@@ -64,7 +64,7 @@ truncatedOctahedral(cellSize) {
 }
 
 /// Body-centered-cubic strut lattice: the cell-center-to-corner diagonal,
-/// mirrored to all eight corners. scalar or vec3 `size` cell. (The new GCL-derived BCC;
+/// mirrored to all eight corners. scalar or vec3 `cellSize`. (The new GCL-derived BCC;
 /// the legacy lattice.bcc remains for substitution.)
 bcc(cellSize) {
   size = cellSize * [1, 1, 1];
@@ -73,7 +73,7 @@ bcc(cellSize) {
 }
 
 /// Face-centered-cubic strut lattice: cell corner to the three near face
-/// centers, mirrored. scalar or vec3 `size` cell.
+/// centers, mirrored. scalar or vec3 `cellSize`.
 fcc(cellSize) {
   size = cellSize * [1, 1, 1];
   h = size * 0.5;
@@ -85,7 +85,7 @@ fcc(cellSize) {
 }
 
 /// Truncated-cubic strut lattice. `setback` in [0, 1] pulls the strut endpoints
-/// in from the cell edges (truncating the corners). scalar or vec3 `size` cell.
+/// in from the cell edges (truncating the corners). scalar or vec3 `cellSize`.
 truncatedCubic(cellSize, setback) {
   size = cellSize * [1, 1, 1];
   h = size * 0.5;
@@ -101,7 +101,7 @@ truncatedCubic(cellSize, setback) {
 }
 
 /// Kelvin cell (tetrakaidecahedron) strut lattice. `setback` in [0, 1] sets the
-/// hexagon/square truncation. scalar or vec3 `size` cell.
+/// hexagon/square truncation. scalar or vec3 `cellSize`.
 kelvinCell(cellSize, setback) {
   size = cellSize * [1, 1, 1];
   h = size * 0.5;
@@ -115,7 +115,7 @@ kelvinCell(cellSize, setback) {
   ]), domain.patternRepeatMirror(size));
 }
 
-/// Fluorite (CaF2-type) strut lattice. scalar or vec3 `size` cell.
+/// Fluorite (CaF2-type) strut lattice. scalar or vec3 `cellSize`.
 fluorite(cellSize) {
   size = cellSize * [1, 1, 1];
   h = size * 0.5;
@@ -129,7 +129,7 @@ fluorite(cellSize) {
 }
 
 /// Isotruss: orthogonal axis struts (translational) plus corner-to-face
-/// diagonals (mirrored). scalar or vec3 `size` cell.
+/// diagonals (mirrored). scalar or vec3 `cellSize`.
 isotruss(cellSize, combine) {
   size = cellSize * [1, 1, 1];
   h = size * 0.5;
@@ -154,7 +154,7 @@ isotruss(cellSize) {
 }
 
 /// Re-entrant (auxetic) strut lattice — inward-folded cell walls plus a central
-/// Z column. `setback` in [0, 1] sets the fold depth. scalar or vec3 `size` cell.
+/// Z column. `setback` in [0, 1] sets the fold depth. scalar or vec3 `cellSize`.
 reentrant(cellSize, setback, combine) {
   size = cellSize * [1, 1, 1];
   h = size * 0.5;
@@ -180,7 +180,7 @@ reentrant(cellSize, setback) {
 }
 
 /// Simple cubic lattice: three orthogonal axis struts per cell, joined by
-/// `combine`, tiled across the scalar or vec3 `size` grid.
+/// `combine`, tiled across the scalar or vec3 `cellSize` grid.
 cubic(cellSize, combine) {
   size = cellSize * [1, 1, 1];
   h = size * 0.5;
@@ -220,7 +220,7 @@ columnHexagonal(cellSize) {
 }
 
 /// Double cubic: orthogonal axis struts (translational) plus corner-to-face
-/// diagonals (mirrored) — a stiffer cubic variant. scalar or vec3 `size` cell.
+/// diagonals (mirrored) — a stiffer cubic variant. scalar or vec3 `cellSize`.
 cubicDouble(cellSize) {
   size = cellSize * [1, 1, 1];
   h = size * 0.5;

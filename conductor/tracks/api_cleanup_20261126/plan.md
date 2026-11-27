@@ -49,7 +49,9 @@ golden stops for approval before the golden is updated.
         `import "map"` gets an error naming `domain`; `rotateYZ`, `rotateZX`, `eulerAngles` documented
   - [x] Fixtures and tests that said `map.` were run through the fixer; 30 WGSL goldens moved
         `map_…` → `domain_…` only (token proof)
-- [ ] Goal: Honeycomb names (N5): the `rectangular` family, `hexagonal`, `triangular`, `octet`, with a rewrite
+- [x] Goal: Honeycomb names (N5): the `rectangular` family, `hexagonal`, `triangular`, `octet`, with a rewrite
+  - [x] `gsl fix -stdlib` renames members through the package prefix (table in cmd/fix renames.go); no golden
+        moved (the functions inline away); three fixtures went through the fixer
 - [ ] Goal: Lattices (N6, spec section 6a)
   - [ ] A `combine` form on every beam lattice, struts written out explicitly; folded forms unchanged
   - [ ] Retire `lattice.bcc` into `beam.bcc(cellSize, combine) - beamRadius`, with a rewrite

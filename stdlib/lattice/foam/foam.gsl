@@ -5,7 +5,7 @@
 // Foam Lattice Library (lattice/foam)
 //
 // Periodic wall (plate) lattices — space-filling networks of infinitely thin
-// surfaces that tile a vec3 `size` cell. Each returns the unsigned distance to
+// surfaces that tile a vec3 `cellSize` cell. Each returns the unsigned distance to
 // the wall skeleton; give the walls thickness with
 // `lattice.thicken(field, thickness)`, then intersect with a body to infill it.
 //
