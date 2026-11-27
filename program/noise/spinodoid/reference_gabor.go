@@ -10,16 +10,14 @@ import (
 // envelope, its SplitMix64 hash, and its drivers read once at every kernel
 // centre. A point agrees with the Python reference to rounding (reference_gabor_parity_test),
 // so a part baked from this is a part the Python reference can rebuild from the
-// same arguments — which is the whole reason to pay for it. The lattice form
-// beside it (kernels.go) is the same model, cheaper, and a different
-// realization.
+// same arguments. The fast spinodoid beside it (fast_gabor.go) is the same
+// model, cheaper, and a different field pointwise.
 //
-// It shares Params, Level, the pool and the domain rules with the lattice
-// baker, but not its layout. A stationary field is the periodic window the Python reference's
-// own grid describes, 32^3 cells about the world origin. A driven field with a
-// Domain is baked over the cells covering it, hashed on true cell indices, so
-// it is the reference field everywhere inside it; one without a Domain falls back to
-// the periodic window, and its drivers repeat with it.
+// It shares Params, Level, the pool and the domain rules with the fast
+// baker, but not its layout. A stationary field is the periodic window of
+// 32^3 cells about the world origin. A driven field is baked over the cells
+// covering its Domain, hashed on true cell indices, so it is the reference
+// field everywhere inside it; a driven field without a Domain is an error.
 
 // ReferenceGaborTableCells is the table's edge in kernel cells: 32^3 cells, about 116
 // wavelengths at the default packet width, before the field repeats.
@@ -102,13 +100,16 @@ type ReferenceGaborTable struct {
 // sites, and a one-cell pad rather than a Reach, because a query reads exactly
 // the 27 cells around its own (the Python reference's _GABOR_OFFSETS).
 //
-// Unlike the lattice's, a bounded reference table hashes the TRUE cell index --
+// Unlike the fast one's, a bounded reference table hashes the TRUE cell index --
 // the Python reference's realization IS the hash of the true cell, so wrapping it to keep a
 // world-anchored realization (as the lattice does) would stop the field being
 // the Python reference's. The consequence is the right one: inside the domain this table is
 // the Python reference's everywhere, with nothing repeating.
 func newReferenceGaborLayout(c ReferenceGaborConstants, domain *[6]float64, periodic bool) (Layout, error) {
-	if periodic || domain == nil {
+	if !periodic && domain == nil {
+		return Layout{}, errNoBox
+	}
+	if periodic {
 		return Layout{
 			Origin:   [3]int{referenceGaborTableOrigin, referenceGaborTableOrigin, referenceGaborTableOrigin},
 			Size:     [3]int{ReferenceGaborTableCells, ReferenceGaborTableCells, ReferenceGaborTableCells},
@@ -257,6 +258,33 @@ func (t *ReferenceGaborTable) Flat() []float64 {
 	for _, k := range t.Kernels {
 		out = append(out, k.Jitter[0], k.Jitter[1], k.Jitter[2],
 			k.Dir[0], k.Dir[1], k.Dir[2], k.Beta, k.Gamma)
+	}
+	return out
+}
+
+// ReferenceGaborGPUTexelsPerKernel is how many RGBA texels a kernel takes in
+// the GPU layout (GPUTexels).
+const ReferenceGaborGPUTexelsPerKernel = 2
+
+// Rows is how many GPUWidth-wide rows the table's GPU layout takes.
+func (t *ReferenceGaborTable) Rows() int {
+	n := len(t.Kernels) * ReferenceGaborGPUTexelsPerKernel
+	return (n + GPUWidth - 1) / GPUWidth
+}
+
+// GPUTexels packs the table as GPUWidth x t.Rows() RGBA float32 texels, row
+// by row: kernel i of the table (Kernels order) at texels 2i and 2i+1, the
+// first its jitter and phase, the second its wave vector (direction times
+// wavenumber) and wavenumber. The WGSL reference spinodoid reads them in that
+// layout (backend/wgsl/internal/codegen/spinodoid.go).
+func (t *ReferenceGaborTable) GPUTexels() []float32 {
+	out := make([]float32, GPUWidth*t.Rows()*4)
+	for i, k := range t.Kernels {
+		o := i * ReferenceGaborGPUTexelsPerKernel * 4
+		out[o], out[o+1], out[o+2], out[o+3] =
+			float32(k.Jitter[0]), float32(k.Jitter[1]), float32(k.Jitter[2]), float32(k.Gamma)
+		out[o+4], out[o+5], out[o+6], out[o+7] =
+			float32(k.Beta*k.Dir[0]), float32(k.Beta*k.Dir[1]), float32(k.Beta*k.Dir[2]), float32(k.Beta)
 	}
 	return out
 }

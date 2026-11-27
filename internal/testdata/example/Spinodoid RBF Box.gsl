@@ -30,7 +30,7 @@ bumps = map((center, i) { return bump(center, weights[i]); }, points);
 refine = clamp(reduce(1, (sum, b) { return sum + b; }, bumps), 0.4, 1.4);
 
 upright = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
-isotropic = spinodoid.gaborGraded(6, [pi / 2, pi / 2, pi / 2], refine, upright, [[-15, -15, -15], [15, 15, 15]]);
+isotropic = spinodoid.fastGaborGraded(6, [pi / 2, pi / 2, pi / 2], refine, upright, [[-15, -15, -15], [15, 15, 15]]);
 specimen = max(block, lattice.solidify(isotropic, 0, 0.6));
 
 // A second body showing the control points: their union, offset to small balls.

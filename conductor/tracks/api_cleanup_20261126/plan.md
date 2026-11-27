@@ -91,11 +91,20 @@ golden stops for approval before the golden is updated.
 ## Phase 4: Spinodoids
 
 - [x] Task: Settle what "scale" means in the table decision: only the box changes (spec section 6)
-- [ ] Goal: `gaborSpinodoid` is the reference field and `fastGaborSpinodoid` the fast lattice field, in every backend
-      (follow-up after #178: needs a GPU parity check)
-  - [ ] A WGSL reference field, checked against the CPU one (the reference parity test's values)
-  - [ ] WGSL codegen and fidget conversion stop forcing `Fast` for `gaborSpinodoid`
-  - [ ] Library: `gabor*` over the reference field, `fastGabor*` over the lattice
+- [x] Goal: `gaborSpinodoid` is the reference field and `fastGaborSpinodoid` the fast field, in every backend,
+      each its own oracle (follow-up PR after #178)
+  - [x] A WGSL reference field (gsl_spinodoidRef / gsl_spinodoidRefGrad) over the reference table packed
+        two texels a kernel, checked on the GPU against the Go reference table (backend/wgsl
+        spinodoid_gpu_test.go, through gpu-eval's new `--texture2d`)
+  - [x] WGSL codegen and fidget conversion take the kind from the builtin's name; each kind has its own
+        slots, leaf ids and table cache
+  - [x] Library: `gabor*` over the reference field, `fastGabor*` over the fast one; the two examples that used
+        `gaborGraded` call `fastGaborGraded`, so they render as before
+  - [x] Names: the fast implementation is `fastGabor*` (`FastGaborTable`, `fast_gabor.go`, tape-core
+        `spinodoid::fast_gabor`, `register_fast_gabor_spinodoid`), mirroring `referenceGabor*`
+  - [x] Tape reader: each payload loads as the oracle it names; `backend` (`fast` / `reference`, tape-wide or
+        per payload) asks for the other. The no-payload registration path, the retired `levelBias` field
+        and the no-box periodic fallback are gone
 - [x] Goal: A graded field's table box comes from the call
   - [x] Graded forms take `box`, [min, max] in the field's own coordinates; the builtins take it as a 13th
         argument (stationary forms pass an ignored zero box). The converter bakes over it: no scene or

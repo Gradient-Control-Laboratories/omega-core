@@ -25,10 +25,12 @@ type Delegate struct {
 	// list of tree indices that are outputs
 	outputs []*TreeNode
 
-	// spinodoid oracle slots registered this build, by table and leveling
-	// (see builtinGaborSpinodoid).
-	spinodoidSlots    map[string]uint32
-	spinodoidNextSlot uint32
+	// spinodoid oracle slots registered this build, by kind, table and
+	// leveling (see builtinGaborSpinodoid). The fast and the reference
+	// spinodoid number their slots separately: each has its own id block.
+	spinodoidSlots             map[string]uint32
+	fastSpinodoidNextSlot      uint32
+	referenceSpinodoidNextSlot uint32
 
 	// spinodoid tables baked this build, by spinodoid.Call key.
 	spinodoidBakes map[string]bakedSpinodoidSlot

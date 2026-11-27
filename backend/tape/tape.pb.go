@@ -754,20 +754,17 @@ func (x *VdbLevelSet) GetLeafValues() []float32 {
 // normalize=...)` argument for argument, in the Python reference's own units.
 type SpinodoidParams struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Which of the two fields this leaf is. False is the Python reference's `spinodoid_gabor`
-	// exactly — jittered kernels, untapered envelope — and is what a consumer
-	// that has to agree with the Python reference wants. True is omega's cheaper lattice form
-	// (`fastGaborSpinodoid`): the same model and the same density, kernels on a
-	// regular lattice with tapered envelopes, a different realization. The two
-	// measure alike and are not the same field pointwise, so this is not a hint.
+	// Which of the two spinodoid oracles this leaf is. True is the fast one
+	// (`fastGaborSpinodoid`: kernels on a regular lattice, tapered envelopes);
+	// false is the reference (`gaborSpinodoid`: jittered kernels, untapered
+	// envelope). The two measure alike and are different fields pointwise, so a
+	// reader rebuilds this leaf as the oracle it names unless it is asked for
+	// the other.
 	Fast bool `protobuf:"varint,1,opt,name=fast,proto3" json:"fast,omitempty"`
 	// Reference wavelength, in the tape's length units. `scale` multiplies it.
 	Period float64 `protobuf:"fixed64,2,opt,name=period,proto3" json:"period,omitempty"`
-	// Cone half-angles of the direction ODF, one per pole, in **RADIANS**
-	// ([pi/2, pi/2, pi/2] is isotropic), as the Python reference takes them (`theta`). The unit
-	// is in the field name because the field was
-	// once in degrees and the Python reference was too: a stale degree value cannot pass as
-	// this one.
+	// Cone half-angles of the direction ODF, one per pole, in radians
+	// ([pi/2, pi/2, pi/2] is isotropic).
 	ThetaRadians []float64 `protobuf:"fixed64,3,rep,packed,name=thetaRadians,proto3" json:"thetaRadians,omitempty"`
 	// Cone axes, flat xyz, three per entry in `thetaRadians`. Empty means the
 	// Cartesian axes (the paper's poles).
@@ -780,12 +777,6 @@ type SpinodoidParams struct {
 	Pool uint32 `protobuf:"varint,7,opt,name=pool,proto3" json:"pool,omitempty"`
 	// Seed for both the pool draw and the spatial hash.
 	Seed int64 `protobuf:"varint,8,opt,name=seed,proto3" json:"seed,omitempty"`
-	// DEPRECATED, never written: the old quantile form of `bias`, where 0.5 was
-	// the median. A reader refuses a tape that sets it, since read as a bias it
-	// would be a different lattice. Regenerate such a tape.
-	//
-	// Deprecated: Marked as deprecated in tape.proto.
-	LevelBias float64 `protobuf:"fixed64,9,opt,name=levelBias,proto3" json:"levelBias,omitempty"`
 	// True divides by the wavenumber carried at each point (the Python reference's
 	// normalize="local"), so lengths stay real under a graded scale; false
 	// divides by the wavenumber of `period` ("base").
@@ -909,14 +900,6 @@ func (x *SpinodoidParams) GetPool() uint32 {
 func (x *SpinodoidParams) GetSeed() int64 {
 	if x != nil {
 		return x.Seed
-	}
-	return 0
-}
-
-// Deprecated: Marked as deprecated in tape.proto.
-func (x *SpinodoidParams) GetLevelBias() float64 {
-	if x != nil {
-		return x.LevelBias
 	}
 	return 0
 }
@@ -1428,7 +1411,7 @@ const file_tape_proto_rawDesc = "" +
 	"blockValue\x12\x1e\n" +
 	"\n" +
 	"leafValues\x18\b \x03(\x02R\n" +
-	"leafValues\"\xa1\x04\n" +
+	"leafValues\"\x90\x04\n" +
 	"\x0fSpinodoidParams\x12\x12\n" +
 	"\x04fast\x18\x01 \x01(\bR\x04fast\x12\x16\n" +
 	"\x06period\x18\x02 \x01(\x01R\x06period\x12\"\n" +
@@ -1437,8 +1420,7 @@ const file_tape_proto_rawDesc = "" +
 	"\vpacketWidth\x18\x05 \x01(\x01R\vpacketWidth\x12\x1a\n" +
 	"\bimpulses\x18\x06 \x01(\rR\bimpulses\x12\x12\n" +
 	"\x04pool\x18\a \x01(\rR\x04pool\x12\x12\n" +
-	"\x04seed\x18\b \x01(\x03R\x04seed\x12 \n" +
-	"\tlevelBias\x18\t \x01(\x01B\x02\x18\x01R\tlevelBias\x12&\n" +
+	"\x04seed\x18\b \x01(\x03R\x04seed\x12&\n" +
 	"\x0elocalNormalize\x18\n" +
 	" \x01(\bR\x0elocalNormalize\x12\x14\n" +
 	"\x05scale\x18\v \x03(\x01R\x05scale\x12 \n" +
@@ -1450,7 +1432,8 @@ const file_tape_proto_rawDesc = "" +
 	"\x11driverFingerprint\x18\x0f \x01(\tR\x11driverFingerprint\x12\x1a\n" +
 	"\bperiodic\x18\x10 \x01(\bR\bperiodic\x12\x16\n" +
 	"\x06domain\x18\x11 \x03(\x01R\x06domain\x12\x12\n" +
-	"\x04bias\x18\x12 \x01(\x01R\x04bias\"\x84\x02\n" +
+	"\x04bias\x18\x12 \x01(\x01R\x04biasJ\x04\b\t\x10\n" +
+	"R\tlevelBias\"\x84\x02\n" +
 	"\x04Node\x12 \n" +
 	"\x04axis\x18\x01 \x01(\x0e2\n" +
 	".tape.AxisH\x00R\x04axis\x12\x1c\n" +

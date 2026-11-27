@@ -74,11 +74,11 @@ field: jittered kernels, the definition the other is measured against, and the e
 CPU (fidget) and the GPU (WGSL) backends. No other versions exist. In the library, `gabor*` draws the reference
 field and `fastGabor*` the fast one.
 
-Today both names bake the lattice table in every backend: WGSL codegen and fidget conversion set `call.Fast =
-true` for either name. The reference field exists only on the CPU side (the Go baker in
-[program/noise/spinodoid](../../../program/noise/spinodoid) and its Rust port in the fidget tape core),
-parity-tested against the Python reference implementation, for a tape reader that swaps it in from the
-payload's arguments. el_explorer is in the same state. The missing piece is a WGSL reference field.
+Each is its own oracle in every backend, with its own table, slots and leaf ids: WGSL codegen and fidget
+conversion take the kind from the builtin's name. The reference table is baked in Go
+([program/noise/spinodoid](../../../program/noise/spinodoid)), parity-tested against the Python reference
+implementation, and evaluated by its Rust port in the fidget tape core and by `gsl_spinodoidRef` in WGSL. A
+tape names which oracle each leaf is, and a reader loads it as that one unless it asks for the other.
 
 **The table's box is given, not inferred.** A graded field (scale or orientation varying with `p`) bakes a
 bounded kernel table today, whose box comes from the imported geometry's bounds or the `@scene` cube, and falls

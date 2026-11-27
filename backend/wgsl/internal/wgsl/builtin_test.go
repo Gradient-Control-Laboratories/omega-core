@@ -42,8 +42,8 @@ func TestSanityCheck(t *testing.T) {
 			// worleyWall / worleyWallFeature lower to gsl_cellularWallScan,
 			// beside it in codegen/cellular.go.
 			name == program.WorleyWall || name == program.WorleyWallFeature ||
-			// gaborSpinodoid lowers to the gsl_spinodoid helper in
-			// codegen/spinodoid.go.
+			// The spinodoid builtins lower to the gsl_spinodoid (fast) and
+			// gsl_spinodoidRef (reference) helpers in codegen/spinodoid.go.
 			program.IsGaborSpinodoid(name) ||
 			// erfinv takes only a constant and is folded by the compiler, so
 			// it never reaches codegen (a density's spinodoid level, mostly).

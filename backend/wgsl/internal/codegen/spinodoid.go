@@ -9,8 +9,9 @@ import (
 	"github.com/Gradient-Control-Laboratories/omega-core/program/noise/spinodoid"
 )
 
-// The spinodoid in the preview (lattice Gabor; see common/noise/spinodoid).
-// Its tables are baked by the fidget agent (only fidget evaluates the scale
+// The two spinodoids in the preview, the fast one (gsl_spinodoid) and the
+// reference (gsl_spinodoidRef); see program/noise/spinodoid. Their tables are
+// baked by the fidget agent (only fidget evaluates the scale
 // and orientation drivers) and bound here as ONE texture, every table a band
 // of rows. Four metadata texels per slot in row zero describe its origin,
 // dimensions, domain, and data offset; the data bands have variable lengths.
@@ -144,8 +145,92 @@ var spinodoidGradWGSL = "fn gsl_spinodoidGrad(" + spinodoidParamsWGSL + ") -> ve
   return gphi / b - num * gb / (b * b);
 }`
 
-// BuildSpinodoidCall lowers gaborSpinodoid / gaborSpinodoidGradient to
-// gsl_spinodoid over the call's table band.
+// spinodoidRefLoopWGSL visits the reference spinodoid's kernels around q: the
+// impulses kernels of each of the 27 cells about q's own (floor(q / cell)),
+// as program/noise/spinodoid's ReferenceGaborTable.Sample does. A kernel is
+// two texels (ReferenceGaborTable.GPUTexels): jitter and phase, then the wave
+// vector and the wavenumber. BODY sees the kernel's offset r, its untapered
+// envelope env, its wave vector kv, its wavenumber beta and its phase.
+func spinodoidRefLoopWGSL(body string) string {
+	return fmt.Sprintf(`  let pi = 3.141592653589793;
+  let a2 = a * a;
+  let home = vec3<i32>(floor(q / cell));
+  for (var i = -1; i <= 1; i++) {
+    for (var j = -1; j <= 1; j++) {
+      for (var k = -1; k <= 1; k++) {
+        let c = home + vec3<i32>(i, j, k);
+        var w = c - origin;
+        if (periodic) { w = ((w %% size) + size) %% size; }
+        if (any(w < vec3<i32>(0)) || any(w >= size)) { continue; }
+        let first = ((w.z * size.y + w.y) * size.x + w.x) * impulses;
+        for (var n = 0; n < impulses; n++) {
+          let index = (first + n) * %[2]d;
+          let t0 = textureLoad(tex, vec2<i32>(index %% %[1]d, row + index / %[1]d), 0);
+          let t1 = textureLoad(tex, vec2<i32>((index + 1) %% %[1]d, row + (index + 1) / %[1]d), 0);
+          let r = q - (vec3<f32>(c) + t0.xyz) * cell;
+          let env = exp(-pi * a2 * dot(r, r));
+          let kv = t1.xyz;
+          let beta = t1.w;
+          let phase = dot(r, kv) + t0.w;
+%[3]s
+        }
+      }
+    }
+  }
+`, spinodoid.GPUWidth, spinodoid.ReferenceGaborGPUTexelsPerKernel, body)
+}
+
+const spinodoidRefParamsWGSL = "q: vec3<f32>, tex: texture_2d<f32>, slot: i32, cell: f32, impulses: i32, a: f32, sigma: f32, baseBeta: f32, level: f32, localNorm: bool"
+
+// spinodoidRefWGSL is the reference spinodoid's pseudo-distance, for
+// gaborSpinodoid.
+var spinodoidRefWGSL = "fn gsl_spinodoidRef(" + spinodoidRefParamsWGSL + ") -> f32 {\n" +
+	spinodoidHeaderWGSL("length(outsideDelta)") +
+	"  var acc = 0.0;\n  var wAcc = 0.0;\n  var bwAcc = 0.0;\n" +
+	spinodoidRefLoopWGSL(`          acc += env * cos(phase);
+          if (localNorm) {
+            let e2 = env * env;
+            wAcc += e2;
+            bwAcc += e2 * beta;
+          }`) +
+	`  var b = baseBeta;
+  if (localNorm && wAcc > 0.0 && bwAcc > 0.0) {
+    b = bwAcc / wAcc;
+  }
+  return (acc / sigma - level) / b;
+}`
+
+// spinodoidRefGradWGSL is the reference spinodoid's analytic gradient, for
+// gaborSpinodoidGradient.
+var spinodoidRefGradWGSL = "fn gsl_spinodoidRefGrad(" + spinodoidRefParamsWGSL + ") -> vec3<f32> {\n" +
+	spinodoidHeaderWGSL("normalize(outsideDelta)") +
+	"  var acc = 0.0;\n  var gAcc = vec3<f32>(0.0);\n  var wAcc = 0.0;\n  var bwAcc = 0.0;\n  var gw = vec3<f32>(0.0);\n  var gbw = vec3<f32>(0.0);\n" +
+	spinodoidRefLoopWGSL(`          let genv = -2.0 * pi * a2 * env * r;
+          let s = sin(phase);
+          let co = cos(phase);
+          acc += env * co;
+          gAcc += genv * co - env * s * kv;
+          let e2 = env * env;
+          wAcc += e2;
+          bwAcc += e2 * beta;
+          let dw = 2.0 * env * genv;
+          gw += dw;
+          gbw += dw * beta;`) +
+	`  let phi = acc / sigma;
+  let gphi = gAcc / sigma;
+  var b = baseBeta;
+  var gb = vec3<f32>(0.0);
+  if (localNorm && wAcc > 0.0 && bwAcc > 0.0) {
+    b = bwAcc / wAcc;
+    gb = (gbw - b * gw) / wAcc;
+  }
+  let num = phi - level;
+  return gphi / b - num * gb / (b * b);
+}`
+
+// BuildSpinodoidCall lowers the four spinodoid builtins over the call's table
+// band: the fast pair to gsl_spinodoid / gsl_spinodoidGrad, the reference
+// pair to gsl_spinodoidRef / gsl_spinodoidRefGrad. Each is its own table.
 func (d *Delegate) BuildSpinodoidCall(
 	op *program.Operand, fnCall *program.FnCall, args []build.Expression,
 ) (build.Expression, error) {
@@ -224,7 +309,7 @@ func (d *Delegate) BuildSpinodoidCall(
 	if !(call.Period > 0) || !(call.PacketWidth > 0) {
 		return nil, fmt.Errorf("%s: period and packetWidth must be > 0", name)
 	}
-	consts := spinodoid.TableConstants(call.Period, call.PacketWidth, call.Impulses)
+	consts := spinodoid.FastGaborTableConstants(call.Period, call.PacketWidth, call.Impulses)
 	// A constant scale other than 1 sets every kernel's wavenumber; that, not
 	// the period's, is then the one to divide by.
 	baseBeta := consts.BaseBeta
@@ -234,10 +319,9 @@ func (d *Delegate) BuildSpinodoidCall(
 		}
 	}
 
-	// gaborSpinodoid and fastGaborSpinodoid are both the lattice field, here
-	// and in the fidget bake, so the key it asks the baker for is the lattice
-	// one.
-	call.Fast = true
+	// The call names one of the two spinodoids, and the key asks the baker
+	// for that one's table.
+	call.Fast = program.IsFastGaborSpinodoid(name)
 	key := call.Key()
 	slot, ok := d.spinodoidSlotByKey[key]
 	if !ok {
@@ -252,11 +336,29 @@ func (d *Delegate) BuildSpinodoidCall(
 		d.spinodoidSlots = append(d.spinodoidSlots, key)
 	}
 	q := args[0].(wgsl.Expression)
-	fn := "gsl_spinodoid"
+	gradient := program.IsGaborSpinodoidGradient(name)
 	var outType wgsl.TypeInfo = wgsl.TypeF32
-	if program.IsGaborSpinodoidGradient(name) {
-		fn = "gsl_spinodoidGrad"
+	if gradient {
 		outType = wgsl.TypeVec3
+	}
+	if !call.Fast {
+		rc := spinodoid.ReferenceGaborTableConstants(call.Period, call.PacketWidth, call.Impulses)
+		fn := "gsl_spinodoidRef"
+		if gradient {
+			fn = "gsl_spinodoidRefGrad"
+			d.spinodoidRefGradEmitted = true
+		} else {
+			d.spinodoidRefEmitted = true
+		}
+		tableArgs := fmt.Sprintf("%s, %d, %s, %d, %s, %s, %s, %s, %t",
+			spinodoidTexName, slot,
+			wgsl.CodegenValue(rc.CellSize), call.Impulses, wgsl.CodegenValue(rc.A),
+			wgsl.CodegenValue(rc.Sigma), wgsl.CodegenValue(baseBeta), wgsl.CodegenValue(level), weighLocally)
+		return NewSpinodoidExpr(op, outType, fn, q, tableArgs), nil
+	}
+	fn := "gsl_spinodoid"
+	if gradient {
+		fn = "gsl_spinodoidGrad"
 		d.spinodoidGradEmitted = true
 	} else {
 		d.spinodoidEmitted = true

@@ -11,7 +11,7 @@ import (
 const MaxTableSites = 1 << 20
 
 // Layout describes the actual world-space kernel centres stored in a table.
-// Stationary and legacy headerless tables are periodic. Bounded driven tables
+// Stationary tables are periodic. Driven tables are bounded: they
 // cover Bounds, with enough extra sites for every kernel reaching that domain,
 // and never wrap drivers.
 type Layout struct {
@@ -72,9 +72,12 @@ func (l Layout) index(x, y, z int64) (int, bool) {
 	return (local[2]*l.Size[1]+local[1])*l.Size[0] + local[0], true
 }
 
-func NewLayout(c Constants, domain *[6]float64, periodic bool) (Layout, error) {
-	if periodic || domain == nil {
-		return Layout{Origin: [3]int{tableOrigin, tableOrigin, tableOrigin}, Size: [3]int{TableSites, TableSites, TableSites}, Periodic: true}, nil
+func NewLayout(c FastGaborConstants, domain *[6]float64, periodic bool) (Layout, error) {
+	if !periodic && domain == nil {
+		return Layout{}, errNoBox
+	}
+	if periodic {
+		return Layout{Origin: [3]int{fastGaborTableOrigin, fastGaborTableOrigin, fastGaborTableOrigin}, Size: [3]int{FastGaborTableSites, FastGaborTableSites, FastGaborTableSites}, Periodic: true}, nil
 	}
 	l := Layout{Bounds: *domain}
 	count := 1
@@ -98,17 +101,5 @@ func NewLayout(c Constants, domain *[6]float64, periodic bool) (Layout, error) {
 	return l, nil
 }
 
-// SceneDomain reads the canvas's geometry domain or falls back to the authored
-// scene cube. A caller without either retains the legacy periodic table: an
-// arbitrary headerless analytical shape has no known finite sampling domain.
-func SceneDomain(bounds []float64, sceneSize float64) *[6]float64 {
-	if len(bounds) == 6 {
-		domain := [6]float64(bounds)
-		return &domain
-	}
-	if sceneSize > 0 && !math.IsInf(sceneSize, 0) {
-		half := sceneSize / 2
-		return &[6]float64{-half, -half, -half, half, half, half}
-	}
-	return nil
-}
+// errNoBox is what either baker says to a graded field without a box.
+var errNoBox = fmt.Errorf("a graded spinodoid needs a box: the region its drivers are baked over")

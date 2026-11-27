@@ -99,7 +99,7 @@ fn apply_binary(op: i32, l: Tree, r: Tree) -> Result<Tree, String> {
 pub struct OracleUse {
     /// The leaf id, as `Tree::mesh_oracle` carries it.
     pub id: u32,
-    /// "noise", "cellular", "spinodoid", "referenceGaborSpinodoid", "mesh" (a payload
+    /// "noise", "cellular", "fastGaborSpinodoid", "referenceGaborSpinodoid", "mesh" (a payload
     /// the tape carries) or "unknown".
     pub kind: &'static str,
     /// True when [`decode`] resolves this id by itself — a library-baked tile,
@@ -139,8 +139,8 @@ pub fn oracle_uses(tape: &tape_proto::Tape) -> Vec<OracleUse> {
             ("cellular", true, None)
         } else if let Some((slot, _)) = crate::spinodoid::reference_gabor::leaf_of_id(*id) {
             ("referenceGaborSpinodoid", false, Some(slot))
-        } else if let Some((slot, _)) = crate::spinodoid::leaf_of_id(*id) {
-            ("spinodoid", false, Some(slot))
+        } else if let Some((slot, _)) = crate::spinodoid::fast_gabor::leaf_of_id(*id) {
+            ("fastGaborSpinodoid", false, Some(slot))
         } else if tape.oracles.iter().any(|o| o.asset_id == bare) {
             ("mesh", true, None)
         } else {

@@ -1,5 +1,5 @@
-//! the reference Gabor spinodoid (the Python reference's spinodoid.py, spinodoid_gabor) as
-//! fidget oracles over a kernel table the host bakes.
+//! The reference spinodoid (gaborSpinodoid; the Python reference's spinodoid.py,
+//! spinodoid_gabor) as fidget oracles over a kernel table the host bakes.
 //!
 //! The Python reference generates kernels on demand from an integer hash and a numpy-drawn
 //! direction pool, and samples its scale and orientation drivers at each kernel
@@ -14,11 +14,11 @@
 //! unwrapped cell, so the wrap is seamless. A bounded one, which the Go baker
 //! makes for a driven field over a known domain, holds the cells covering that
 //! domain, hashed on their true indices, and reads as the distance to the
-//! domain outside it, as the lattice table beside it (super) does.
+//! domain outside it, as the fast table beside it (super::fast_gabor) does.
 //!
-//! Its own slots and oracle-leaf block are separate from the lattice's. omega's
-//! builds bind only the lattice; these are registered by a tape reader
-//! (tape.rs register_reference_gabor_spinodoid). The parent's interval helpers are shared.
+//! Its own slots and oracle-leaf block are separate from the fast one's: omega
+//! binds these for gaborSpinodoid, and a tape reader binds them from a
+//! payload (tape.rs). The parent's interval helpers are shared.
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -36,7 +36,7 @@ use fidget_core::{
 use super::{component, distance_envelope, next_down, next_up, MAX_SLOTS};
 
 /// Reserved fidget mesh-oracle id block for the reference tables, one 0x1000 step
-/// above the lattice's (super::SPINODOID_ORACLE_ID_BASE) and clear of the
+/// above the fast one's (super::fast_gabor::FAST_GABOR_ORACLE_ID_BASE) and clear of the
 /// noise tile's and the cellular oracles' blocks.
 pub const REFERENCE_GABOR_ORACLE_ID_BASE: u32 = 0xE0_5B2_000;
 
@@ -172,7 +172,7 @@ impl Table {
     }
 
     /// Distance to the finite domain and its outward unit gradient, the same
-    /// conservative extension the lattice table carries: a ray marcher can
+    /// conservative extension the fast table carries: a ray marcher can
     /// reach the part instead of stepping over it.
     pub fn outside(&self, q: [f64; 3]) -> (f64, [f64; 3]) {
         let mut delta = [0.0; 3];

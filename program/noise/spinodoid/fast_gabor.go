@@ -1,6 +1,7 @@
-// Package spinodoid bakes a lattice Gabor spinodoid for omega's backends.
+// Package spinodoid bakes the two Gabor spinodoids for omega's backends: the
+// reference (reference_gabor.go) and the fast one (this file).
 //
-// It began as an exact port of the Python reference's spinodoid_gabor (the Python reference's
+// The fast spinodoid began as an exact port of the Python reference's spinodoid_gabor (the Python reference's
 // spinodoid.py) and keeps its statistical model: wave packets of one
 // wavelength under a Gaussian envelope of fixed physical size, directions
 // drawn from the Python reference's cone orientation distribution (the same numpy-drawn
@@ -31,14 +32,14 @@ import (
 	"math"
 )
 
-// TableSites is the table's edge in lattice sites. At the Python reference's density (8
+// FastGaborTableSites is the table's edge in lattice sites. At the Python reference's density (8
 // kernels per cutoff cell) that is 32 cutoff cells, about 116 wavelengths at
 // the default packet width, before the field repeats.
-const TableSites = 64
+const FastGaborTableSites = 64
 
-// tableOrigin is the lowest site index the table holds on each axis, centring
+// fastGaborTableOrigin is the lowest site index the table holds on each axis, centring
 // it on the world origin.
-const tableOrigin = -TableSites / 2
+const fastGaborTableOrigin = -FastGaborTableSites / 2
 
 const (
 	// envelopeCutoff is the Python reference's: the envelope value at the kernel's reach R.
@@ -80,8 +81,8 @@ type Params struct {
 	Periodic bool
 }
 
-// Site is one lattice site's kernel. Its centre is its index times Spacing.
-type Site struct {
+// FastGaborSite is one lattice site's kernel. Its centre is its index times Spacing.
+type FastGaborSite struct {
 	// Dir is the unit wave direction, after Orientation.
 	Dir [3]float64
 	// Beta is the wavenumber 2 pi / (Period * scale).
@@ -90,17 +91,17 @@ type Site struct {
 	Gamma float64
 }
 
-// Table is a baked spinodoid.
-type Table struct {
-	Constants
+// FastGaborTable is a baked spinodoid.
+type FastGaborTable struct {
+	FastGaborConstants
 	Layout
 	// Sites are indexed (z*Size[1] + y)*Size[0] + x, for local site
 	// (x, y, z); world centre is (local + Origin) * Spacing.
-	Sites []Site
+	Sites []FastGaborSite
 }
 
-// Bake builds the table for p.
-func Bake(p Params) (*Table, error) {
+// FastGaborBake builds the table for p.
+func FastGaborBake(p Params) (*FastGaborTable, error) {
 	if !(p.Period > 0) {
 		return nil, fmt.Errorf("period must be > 0, got %v", p.Period)
 	}
@@ -131,12 +132,12 @@ func Bake(p Params) (*Table, error) {
 		return nil, err
 	}
 
-	constants := TableConstants(p.Period, p.PacketWidth, p.Impulses)
+	constants := FastGaborTableConstants(p.Period, p.PacketWidth, p.Impulses)
 	layout, err := NewLayout(constants, p.Domain, p.Periodic || (p.Scale == nil && p.Orientation == nil))
 	if err != nil {
 		return nil, err
 	}
-	t := &Table{Constants: constants, Layout: layout, Sites: make([]Site, layout.Count())}
+	t := &FastGaborTable{FastGaborConstants: constants, Layout: layout, Sites: make([]FastGaborSite, layout.Count())}
 	n := len(t.Sites)
 	centers := make([][3]float64, n)
 	dirs := make([][3]float64, n)
@@ -150,7 +151,7 @@ func Bake(p Params) (*Table, error) {
 					centers[i][a] = float64(site[a]) * t.Spacing
 					// Preserve the original world-anchored random realization.
 					// Only the driver sampling gains an unwrapped domain.
-					randomSite[a] = int64(tableOrigin + wrapSite(site[a]))
+					randomSite[a] = int64(fastGaborTableOrigin + wrapSite(site[a]))
 				}
 				idx := int64(cellUniform(randomSite, 0, p.Seed) * float64(len(baseDirs)))
 				idx = min(max(idx, 0), int64(len(baseDirs)-1))
@@ -199,9 +200,9 @@ func Bake(p Params) (*Table, error) {
 
 // wrapSite maps an unwrapped site index to the table's [0, TableSites).
 func wrapSite(c int64) int {
-	m := (c - tableOrigin) % TableSites
+	m := (c - fastGaborTableOrigin) % FastGaborTableSites
 	if m < 0 {
-		m += TableSites
+		m += FastGaborTableSites
 	}
 	return int(m)
 }
@@ -209,7 +210,7 @@ func wrapSite(c int64) int {
 // Sample is the kernel sum at q, divided by Sigma (unit variance), and beta,
 // the envelope-energy-weighted wavenumber the field carries there
 // (BaseBeta where no kernel reaches), with both gradients.
-func (t *Table) Sample(q [3]float64) (field float64, grad [3]float64, beta float64, gbeta [3]float64) {
+func (t *FastGaborTable) Sample(q [3]float64) (field float64, grad [3]float64, beta float64, gbeta [3]float64) {
 	if !t.Contains(q) {
 		d, g := t.Outside(q)
 		for a := range 3 {
@@ -301,7 +302,7 @@ func CheckBias(bias float64) error {
 
 // Distance is the field leveled at level and divided by the local wavenumber
 // (local true) or by BaseBeta, with its gradient. Negative in the solid phase.
-func (t *Table) Distance(q [3]float64, level float64, local bool) (float64, [3]float64) {
+func (t *FastGaborTable) Distance(q [3]float64, level float64, local bool) (float64, [3]float64) {
 	if !t.Contains(q) {
 		return t.Outside(q)
 	}
@@ -317,13 +318,13 @@ func (t *Table) Distance(q [3]float64, level float64, local bool) (float64, [3]f
 	return num / beta, g
 }
 
-// SiteStride is how many float64s Flat writes per site.
-const SiteStride = 5
+// FastGaborSiteStride is how many float64s Flat writes per site.
+const FastGaborSiteStride = 5
 
 // Flat is the table's sites as consecutive float64s, SiteStride per site in
 // Sites order: direction xyz, wavenumber, phase.
-func (t *Table) Flat() []float64 {
-	out := make([]float64, 0, len(t.Sites)*SiteStride)
+func (t *FastGaborTable) Flat() []float64 {
+	out := make([]float64, 0, len(t.Sites)*FastGaborSiteStride)
 	for _, s := range t.Sites {
 		out = append(out, s.Dir[0], s.Dir[1], s.Dir[2], s.Beta, s.Gamma)
 	}

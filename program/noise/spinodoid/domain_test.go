@@ -18,7 +18,7 @@ func TestGradedDomainContinuesPastFormerWrapBoundary(t *testing.T) {
 		}
 		return out, nil
 	}
-	table, err := Bake(p)
+	table, err := FastGaborBake(p)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -45,16 +45,16 @@ func TestTranslatedRectangularDomainPreservesStationaryRealization(t *testing.T)
 		}
 		return out, nil
 	}
-	bounded, err := Bake(p)
+	bounded, err := FastGaborBake(p)
 	if err != nil {
 		t.Fatal(err)
 	}
 	p.Scale, p.Domain = nil, nil
-	stationary, err := Bake(p)
+	stationary, err := FastGaborBake(p)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if bounded.Origin[0] <= 0 || bounded.Size[0] <= TableSites || bounded.Size[1] >= TableSites || bounded.Size[2] >= TableSites {
+	if bounded.Origin[0] <= 0 || bounded.Size[0] <= FastGaborTableSites || bounded.Size[1] >= FastGaborTableSites || bounded.Size[2] >= FastGaborTableSites {
 		t.Fatalf("expected shifted rectangular table, got %+v", bounded.Layout)
 	}
 	for _, q := range [][3]float64{{981.5, 0, 0}, {1100.25, 20.1, 10.2}, {1259.5, 39, 29}} {
@@ -93,7 +93,7 @@ func TestRectangularTexturePackingAndLimits(t *testing.T) {
 		}
 		return out, nil
 	}
-	table, err := Bake(p)
+	table, err := FastGaborBake(p)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,18 +113,18 @@ func TestRectangularTexturePackingAndLimits(t *testing.T) {
 		}
 	}
 	huge := [6]float64{-10000, -10000, -10000, 10000, 10000, 10000}
-	if _, err := NewLayout(table.Constants, &huge, false); err == nil {
+	if _, err := NewLayout(table.FastGaborConstants, &huge, false); err == nil {
 		t.Fatal("unbounded allocation accepted")
 	}
 	bad := [6]float64{0, 0, 0, math.Inf(1), 1, 1}
-	if _, err := NewLayout(table.Constants, &bad, false); err == nil {
+	if _, err := NewLayout(table.FastGaborConstants, &bad, false); err == nil {
 		t.Fatal("nonfinite bounds accepted")
 	}
 }
 
-func TestConstantAndHeaderlessTablesKeepLegacyPeriodicity(t *testing.T) {
+func TestStationaryTablesArePeriodicAndGradedOnesNeedABox(t *testing.T) {
 	p := domainParams([6]float64{1000, 1000, 1000, 1001, 1001, 1001})
-	table, err := Bake(p)
+	table, err := FastGaborBake(p)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,11 +139,10 @@ func TestConstantAndHeaderlessTablesKeepLegacyPeriodicity(t *testing.T) {
 		}
 		return out, nil
 	}
-	table, err = Bake(p)
-	if err != nil {
-		t.Fatal(err)
+	if _, err := FastGaborBake(p); err == nil {
+		t.Fatal("a graded fast table without a box baked")
 	}
-	if !table.Periodic {
-		t.Fatal("headerless compatibility domain must remain periodic")
+	if _, err := ReferenceGaborBake(p); err == nil {
+		t.Fatal("a graded reference table without a box baked")
 	}
 }

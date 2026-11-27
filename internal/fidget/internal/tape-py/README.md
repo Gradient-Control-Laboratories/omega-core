@@ -119,7 +119,7 @@ lists the ids:
 ```python
 omega_tape.tape_oracle_payloads(b)   # [(1, "bvh"), (2, "bvh"), (0xe05b1000, "spinodoid")]
 omega_tape.Tape(b, oracles={2: "vdb"}, resolution={2: 256},
-                backend={0xE05B1000: "manufacturing"})
+                backend={0xE05B1000: "reference"})
 ```
 
 A key must be a payload in the tape, and of a kind the setting applies to: a
@@ -140,56 +140,24 @@ into the render lib (the same bytes the GPU path uses), so a noise field
 serializes as plain oracle leaf ids and `Tape(...)` registers the channel
 oracles from the library-baked tile automatically.
 
-### Spinodoid oracles: baked on load, as the backend you choose
+### Spinodoid oracles: baked on load
 
-A spinodoid leaf carries only an id, but the tape carries the field's
-*arguments* beside it (`tape.proto`'s `SpinodoidParams`), and `Tape(...)` bakes
-the kernel table from them on load, with the same bake `omega-core`'s Go side uses
-(tape-core `spinodoid/bake.rs`, pinned to it). The same arguments describe two
-fields, and `backend` picks which one every spinodoid in the tape is rebuilt
-as, whatever the payload's `fast` flag says:
+There are two spinodoid oracles, the fast one (`fastGaborSpinodoid`) and the
+reference (`gaborSpinodoid`). A spinodoid leaf carries only an id, but the tape
+carries the field's *arguments* beside it (`tape.proto`'s `SpinodoidParams`),
+including which of the two it is, and `Tape(...)` bakes that oracle's kernel
+table from them on load, with the same bake `omega-core`'s Go side uses (tape-core
+`spinodoid/bake.rs`, pinned to it). The same arguments describe both, so
+`backend` can ask for the other, for every spinodoid or per payload:
 
 ```python
-field = omega_tape.Tape(blob)                           # "fast": omega-core's lattice,
-                                                        #   what the viewer draws
-field = omega_tape.Tape(blob, backend="manufacturing")  # the Python reference's spinodoid_gabor
+field = omega_tape.Tape(blob)                       # each payload as the oracle it names
+field = omega_tape.Tape(blob, backend="reference")  # every spinodoid as the reference
+field = omega_tape.Tape(blob, backend="fast")       # every spinodoid as the fast one
 ```
 
 Field drivers (a graded scale or orientation) travel as nodes of the tape and
 are read at every kernel centre, as `omega-core`'s bake reads them.
-
-A tape whose spinodoid leaf has no payload still needs its table handed over
-before it loads. `tape_oracle_uses` says what a tape needs:
-
-```python
-import numpy as np, omega_tape
-
-blob = open("field.tape", "rb").read()
-for oid, kind, self_contained, slot in omega_tape.tape_oracle_uses(blob):
-    print(f"{oid:#x} {kind} self_contained={self_contained} slot={slot}")
-# 0xe05b2000 referenceGaborSpinodoid self_contained=False slot=0   (no payload)
-
-omega_tape.register_reference_gabor_spinodoid(
-    slot=0,
-    kernels=K,                      # (cells*impulses, 8) float64, see below
-    origin=[-16, -16, -16], size=[32, 32, 32],
-    bounds=[0, 0, 0, 0, 0, 0], periodic=True,
-    impulses=8, cell_size=7.2644,
-    a=a0, sigma=sigma, base_beta=2 * np.pi / period,
-    level=bias, local=True,         # the payload's bias is the threshold; 0 is the median
-)
-field = omega_tape.Tape(blob)       # now it loads
-```
-
-`kernels` is row-major over `size` from `origin`, `impulses` rows per cell, each
-row `[jitter x, jitter y, jitter z, dir x, dir y, dir z, beta, gamma]`, with a
-kernel centre at `(cell + jitter) * cell_size`. The Python reference's own `_gabor_kernels`
-produces exactly these, and `omega-core`'s `ReferenceGaborBake` is pinned to it (bit-exact on
-the direction pool, 2e-14 on the field —
-`program/noise/spinodoid/reference_gabor_parity_test.go`). A `periodic=True` table must be
-the Python reference's 32-cubed window; a bounded one is located by `bounds` and reads as a
-conservative distance-to-domain outside it. A tape with a payload ignores this:
-its baked table replaces a registered one.
 
 Loading **fails** if any referenced oracle is unregistered, and that is new
 behavior worth knowing about. fidget reads an unregistered leaf as zero on
@@ -248,8 +216,7 @@ transform is applied on `eval`). For the Walk-on-Spheres / Walk-on-Stars stack:
 drops in directly as a distance/boundary/source oracle — no mesh required.
 Oracle (`bvhSdf`/`vdbSdf`) payloads are embedded in the tape and auto-registered
 on load, so even mesh-referencing tapes are read with a bare `Tape(bytes)`, and
-so are spinodoid tapes `omega-core` writes, which carry their payload; pass
-`backend="manufacturing"` for the reference field.
+so are spinodoid tapes `omega-core` writes, which carry their payload.
 
 ### Making it a native hodge feature
 
@@ -267,7 +234,7 @@ To wrap it natively, hodge would:
    distance/normal interface hodge's solvers expect (per the mapping above).
 
 Mesh, noise and spinodoid oracles need no external asset registry or manual
-registration; step 2 chooses the spinodoid's `backend`.
+registration.
 
 ## Notes / follow-ups
 

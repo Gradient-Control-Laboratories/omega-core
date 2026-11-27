@@ -57,8 +57,12 @@ type Delegate struct {
 	spinodoidUsed        bool
 	spinodoidEmitted     bool
 	spinodoidGradEmitted bool
-	spinodoidSlots       []string
-	spinodoidSlotByKey   map[string]int
+	// spinodoidRefEmitted and spinodoidRefGradEmitted are the same for the
+	// reference spinodoid's helpers.
+	spinodoidRefEmitted     bool
+	spinodoidRefGradEmitted bool
+	spinodoidSlots          []string
+	spinodoidSlotByKey      map[string]int
 	// warpUsed is true when the program (or an import) calls warpField, so the
 	// displacement texture is threaded into the shader functions.
 	warpUsed bool

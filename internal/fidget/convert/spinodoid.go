@@ -13,15 +13,13 @@ import (
 	"github.com/Gradient-Control-Laboratories/omega-core/program/noise/spinodoid"
 )
 
-// builtinGaborSpinodoid lowers gaborSpinodoid / gaborSpinodoidGradient and
-// their fastGaborSpinodoid aliases to the spinodoid oracle leaves over a
-// lattice kernel table baked here, in the fidget agent: the drivers are fields
+// builtinGaborSpinodoid lowers the four spinodoid builtins to oracle leaves
+// over a kernel table baked here, in the fidget agent: the drivers are fields
 // of p, and this is where a field can be evaluated at the kernel centres, once
-// each, as the Python reference samples them.
-//
-// Both names are the lattice field, here as in the preview, so a part meshes
-// as it renders. A tape marks every leaf fast; a reader that wants the Python reference's
-// field swaps it in from the payload's arguments.
+// each. gaborSpinodoid and its gradient read the reference spinodoid's table,
+// fastGaborSpinodoid and its gradient the fast one's, each over its own slots,
+// as the preview does, so a part meshes as it renders. A tape names which of
+// the two each leaf is.
 //
 // Every argument but q, scale and orientation must be a constant by now
 // (inlining has folded the library wrapper's parameters into the call); they
@@ -206,55 +204,83 @@ func (d *Delegate) builtinGaborSpinodoid(
 		}
 		p.Domain = &domain
 	}
-	layout, err := spinodoid.NewLayout(spinodoid.TableConstants(p.Period, p.PacketWidth, p.Impulses), p.Domain, p.Periodic)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", name, err)
+	// The call names one of the two spinodoids, and each is its own oracle:
+	// its own table, its own slots and leaf ids.
+	fast := program.IsFastGaborSpinodoid(name)
+	var key string
+	if fast {
+		layout, err := spinodoid.NewLayout(spinodoid.FastGaborTableConstants(p.Period, p.PacketWidth, p.Impulses), p.Domain, p.Periodic)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", name, err)
+		}
+		key = fmt.Sprintf("domain-v2|%v|%v|%v|%v|%d|%d|%d|%v|%v|%s|%v", p.Period, p.Theta, p.Poles,
+			p.PacketWidth, p.Impulses, p.Pool, p.Seed, scale, rot, fingerprint, layout)
+	} else {
+		key = fmt.Sprintf("reference-v1|%v|%v|%v|%v|%d|%d|%d|%v|%v|%s|%v|%v", p.Period, p.Theta, p.Poles,
+			p.PacketWidth, p.Impulses, p.Pool, p.Seed, scale, rot, fingerprint, p.Periodic, p.Domain)
 	}
-	key := fmt.Sprintf("domain-v2|%v|%v|%v|%v|%d|%d|%d|%v|%v|%s|%v", p.Period, p.Theta, p.Poles,
-		p.PacketWidth, p.Impulses, p.Pool, p.Seed, scale, rot, fingerprint, layout)
-	table, err := bakeSpinodoid(key, p)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %v", name, err)
-	}
+	baked := bakedSpinodoidSlot{params: p, cacheKey: key, level: level, local: local}
 	contentSum := sha256.Sum256([]byte(key))
+	baked.contentID = hex.EncodeToString(contentSum[:16])
 
 	// Record the bake under the call's cross-backend key, for a WGSL preview
 	// asking which table each of its calls reads (see BakeSpinodoids).
 	callKey := spinodoid.Call{
 		Period: p.Period, Theta: p.Theta, Poles: poles, PacketWidth: p.PacketWidth,
 		Impulses: p.Impulses, Pool: p.Pool, Seed: p.Seed, Bias: bias, Local: local,
-		Fast:  true,
+		Fast:  fast,
 		Chain: build.KeyedCallSite(d.GetScope(), op),
 	}.Key()
 	if d.spinodoidBakes == nil {
 		d.spinodoidBakes = map[string]bakedSpinodoidSlot{}
 	}
+	if d.spinodoidSlots == nil {
+		d.spinodoidSlots = map[string]uint32{}
+	}
 
-	slotKey := fmt.Sprintf("%p/%v/%v", table, level, local)
-	slot, ok := d.spinodoidSlots[slotKey]
-	if !ok {
-		if d.spinodoidSlots == nil {
-			d.spinodoidSlots = map[string]uint32{}
-		}
-		slot = d.spinodoidNextSlot
-		d.spinodoidNextSlot++
-		if err := fidget.RegisterSpinodoid(slot, table, level, local); err != nil {
+	tree := fidget.FastGaborSpinodoidTree
+	if fast {
+		table, err := bakeFastGaborSpinodoid(key, p)
+		if err != nil {
 			return nil, fmt.Errorf("%s: %v", name, err)
 		}
-		d.spinodoidSlots[slotKey] = slot
-		d.recordSpinodoidOracle(fidget.SpinodoidOracleID(slot, fidget.SpinodoidDistance),
-			p, poles, bias, local, scale, scaleIsField, rot, rotIsField, fingerprint, driverTape)
+		baked.fast = table
+		slotKey := fmt.Sprintf("fast/%p/%v/%v", table, level, local)
+		slot, ok := d.spinodoidSlots[slotKey]
+		if !ok {
+			slot = d.fastSpinodoidNextSlot
+			d.fastSpinodoidNextSlot++
+			if err := fidget.RegisterFastGaborSpinodoid(slot, table, level, local); err != nil {
+				return nil, fmt.Errorf("%s: %v", name, err)
+			}
+			d.spinodoidSlots[slotKey] = slot
+			d.recordSpinodoidOracle(fidget.FastGaborSpinodoidOracleID(slot, fidget.SpinodoidDistance), true,
+				p, poles, bias, local, scale, scaleIsField, rot, rotIsField, fingerprint, driverTape)
+		}
+		baked.slot = slot
+	} else {
+		table, err := bakeReferenceGaborSpinodoid(key, p)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %v", name, err)
+		}
+		baked.reference = table
+		slotKey := fmt.Sprintf("reference/%p/%v/%v", table, level, local)
+		slot, ok := d.spinodoidSlots[slotKey]
+		if !ok {
+			slot = d.referenceSpinodoidNextSlot
+			d.referenceSpinodoidNextSlot++
+			if err := fidget.RegisterReferenceGaborSpinodoid(slot, table, level, local); err != nil {
+				return nil, fmt.Errorf("%s: %v", name, err)
+			}
+			d.spinodoidSlots[slotKey] = slot
+			d.recordSpinodoidOracle(fidget.ReferenceGaborSpinodoidOracleID(slot, fidget.SpinodoidDistance), false,
+				p, poles, bias, local, scale, scaleIsField, rot, rotIsField, fingerprint, driverTape)
+		}
+		baked.slot = slot
+		tree = fidget.ReferenceGaborSpinodoidTree
 	}
-	d.spinodoidBakes[callKey] = bakedSpinodoidSlot{
-		table:     table,
-		contentID: hex.EncodeToString(contentSum[:16]),
-		params:    p,
-		cacheKey:  key,
-		slot:      slot,
-		level:     level,
-		local:     local,
-	}
-	return d.spinodoidLeaves(op, name, slot, q, fidget.SpinodoidTree)
+	d.spinodoidBakes[callKey] = baked
+	return d.spinodoidLeaves(op, name, baked.slot, q, tree)
 }
 
 // spinodoidLeaves builds the oracle leaves for one call: the distance, or the
@@ -362,28 +388,39 @@ func evalRotationDriver(trees []fidget.TreeIndex) func([][3]float64) ([][3][3]fl
 }
 
 // Tables are kept across builds by their key (parameters plus a fingerprint
-// of any field driver). A handful is plenty: each is ~16 MB.
+// of any field driver), one cache per spinodoid. A handful is plenty: each is
+// ~16 MB.
 const spinodoidCacheSize = 4
 
 var (
-	spinodoidCacheMu sync.Mutex
-	spinodoidCache   = map[string]*spinodoid.Table{}
+	spinodoidCacheMu        sync.Mutex
+	fastSpinodoidCache      = map[string]*spinodoid.FastGaborTable{}
+	referenceSpinodoidCache = map[string]*spinodoid.ReferenceGaborTable{}
 )
 
-func bakeSpinodoid(key string, p spinodoid.Params) (*spinodoid.Table, error) {
+func bakeFastGaborSpinodoid(key string, p spinodoid.Params) (*spinodoid.FastGaborTable, error) {
+	return cachedBake(fastSpinodoidCache, key, p, spinodoid.FastGaborBake)
+}
+
+func bakeReferenceGaborSpinodoid(key string, p spinodoid.Params) (*spinodoid.ReferenceGaborTable, error) {
+	return cachedBake(referenceSpinodoidCache, key, p, spinodoid.ReferenceGaborBake)
+}
+
+func cachedBake[T any](cache map[string]*T, key string, p spinodoid.Params,
+	bake func(spinodoid.Params) (*T, error)) (*T, error) {
 	spinodoidCacheMu.Lock()
 	defer spinodoidCacheMu.Unlock()
-	if t, ok := spinodoidCache[key]; ok {
+	if t, ok := cache[key]; ok {
 		return t, nil
 	}
-	t, err := spinodoid.Bake(p)
+	t, err := bake(p)
 	if err != nil {
 		return nil, err
 	}
-	if len(spinodoidCache) >= spinodoidCacheSize {
-		clear(spinodoidCache)
+	if len(cache) >= spinodoidCacheSize {
+		clear(cache)
 	}
-	spinodoidCache[key] = t
+	cache[key] = t
 	return t, nil
 }
 
@@ -391,12 +428,12 @@ func bakeSpinodoid(key string, p spinodoid.Params) (*spinodoid.Table, error) {
 // for a tape export to carry. A constant driver travels as its value; a field
 // driver leaves the value nil and travels as its trees, serialized in
 // driverTape (the same bytes the fingerprint hashes).
-func (d *Delegate) recordSpinodoidOracle(assetID uint32, p spinodoid.Params,
+func (d *Delegate) recordSpinodoidOracle(assetID uint32, fast bool, p spinodoid.Params,
 	poles []float64, bias float64, local bool,
 	scale float64, scaleIsField bool, rot [3][3]float64, rotIsField bool,
 	fingerprint string, driverTape []byte) {
 	o := spinodoid.Oracle{
-		AssetID: assetID, Fast: true,
+		AssetID: assetID, Fast: fast,
 		Period: p.Period, Theta: p.Theta, Poles: poles,
 		PacketWidth: p.PacketWidth, Impulses: uint32(p.Impulses), Pool: uint32(p.Pool),
 		Seed: p.Seed, Bias: bias, LocalNormalize: local,
@@ -430,15 +467,19 @@ func (d *Delegate) BakedSpinodoids() map[string]spinodoid.Baked {
 	out := make(map[string]spinodoid.Baked, len(d.spinodoidBakes))
 	for k, v := range d.spinodoidBakes {
 		out[k] = spinodoid.Baked{
-			Table:     v.table,
+			Fast:      v.fast,
+			Reference: v.reference,
 			ContentID: v.contentID,
 		}
 	}
 	return out
 }
 
+// bakedSpinodoidSlot is one call's bake: exactly one of fast and reference is
+// set, the table of the spinodoid the call named.
 type bakedSpinodoidSlot struct {
-	table     *spinodoid.Table
+	fast      *spinodoid.FastGaborTable
+	reference *spinodoid.ReferenceGaborTable
 	contentID string
 	params    spinodoid.Params
 	cacheKey  string

@@ -1,6 +1,6 @@
-//! The spinodoid bakes, from a field's arguments: the lattice table (super)
-//! and the reference manufacturing table (super::reference_gabor), each the Go baker's exactly
-//! (common/noise/spinodoid: kernels.go Bake and reference_gabor.go ReferenceGaborBake, with the
+//! The spinodoid bakes, from a field's arguments: the fast table (super::fast_gabor)
+//! and the reference table (super::reference_gabor), each the Go baker's exactly
+//! (common/noise/spinodoid: fast_gabor.go FastGaborBake and reference_gabor.go ReferenceGaborBake, with the
 //! hash, pool and layouts they share). This is what lets a tape reader rebuild
 //! a spinodoid from the arguments the tape carries, rather than being handed a
 //! table.
@@ -209,8 +209,8 @@ fn check_domain_axis(lo: f64, hi: f64) -> Result<(), String> {
 const DOMAIN_TOO_LARGE: &str =
     "graded spinodoid domain is too large; reduce the scene/domain extent or increase the base period";
 
-/// The scalar constants of a lattice table: common/noise/spinodoid.Constants.
-struct LatticeConstants {
+/// The scalar constants of a fast table: program/noise/spinodoid.FastGaborConstants.
+struct FastGaborConstants {
     reach: f64,
     spacing: f64,
     a: f64,
@@ -220,7 +220,7 @@ struct LatticeConstants {
 
 /// common/noise/spinodoid.TableConstants: Sigma from the kernel density and
 /// the tapered kernel's energy, by Simpson's rule.
-fn lattice_constants(period: f64, packet_width: f64, impulses: usize) -> LatticeConstants {
+fn fast_gabor_constants(period: f64, packet_width: f64, impulses: usize) -> FastGaborConstants {
     let a = 1.0 / (packet_width * period);
     let reach = (-ENVELOPE_CUTOFF.ln() / PI).sqrt() / a;
     let spacing = reach / (impulses as f64).cbrt();
@@ -237,7 +237,7 @@ fn lattice_constants(period: f64, packet_width: f64, impulses: usize) -> Lattice
         sum += w * f(i as f64 * dr);
     }
     let energy = sum * dr / 3.0;
-    LatticeConstants {
+    FastGaborConstants {
         reach,
         spacing,
         a,
@@ -247,11 +247,11 @@ fn lattice_constants(period: f64, packet_width: f64, impulses: usize) -> Lattice
 }
 
 /// common/noise/spinodoid.NewLayout.
-fn lattice_layout(c: &LatticeConstants, domain: Option<[f64; 6]>, periodic: bool) -> Result<Layout, String> {
-    let domain = match domain {
-        Some(d) if !periodic => d,
-        _ => return Ok(Layout::periodic(super::TABLE_SITES)),
-    };
+fn fast_gabor_layout(c: &FastGaborConstants, domain: Option<[f64; 6]>, periodic: bool) -> Result<Layout, String> {
+    if periodic {
+        return Ok(Layout::periodic(super::fast_gabor::TABLE_SITES));
+    }
+    let domain = domain.ok_or("a graded spinodoid needs a box: the region its drivers are baked over")?;
     let mut l = Layout {
         origin: [0; 3],
         size: [0; 3],
@@ -334,13 +334,13 @@ fn apply_drivers(
 }
 
 fn wrap_site(c: i64) -> i64 {
-    (c + super::TABLE_SITES / 2).rem_euclid(super::TABLE_SITES)
+    (c + super::fast_gabor::TABLE_SITES / 2).rem_euclid(super::fast_gabor::TABLE_SITES)
 }
 
-/// The lattice table for `p`, leveled at `level`: common/noise/spinodoid.Bake.
-pub fn lattice(p: &Params, level: f64, local: bool) -> Result<super::Table, String> {
-    let (sites, layout, c) = lattice_sites(p)?;
-    super::Table::new(
+/// The fast table for `p`, leveled at `level`: program/noise/spinodoid.FastGaborBake.
+pub fn fast_gabor_table(p: &Params, level: f64, local: bool) -> Result<super::fast_gabor::Table, String> {
+    let (sites, layout, c) = fast_gabor_sites(p)?;
+    super::fast_gabor::Table::new(
         sites,
         layout.origin,
         layout.size,
@@ -356,16 +356,16 @@ pub fn lattice(p: &Params, level: f64, local: bool) -> Result<super::Table, Stri
     )
 }
 
-/// The lattice table's sites, in Go's Flat order, and what locates them.
-fn lattice_sites(p: &Params) -> Result<(Vec<f64>, Layout, LatticeConstants), String> {
+/// The fast table's sites, in Go's Flat order, and what locates them.
+fn fast_gabor_sites(p: &Params) -> Result<(Vec<f64>, Layout, FastGaborConstants), String> {
     let base_dirs = pool_directions(p)?;
-    let c = lattice_constants(p.period, p.packet_width, p.impulses);
-    let layout = lattice_layout(&c, p.domain, p.periodic || (p.scale.is_none() && p.orientation.is_none()))?;
+    let c = fast_gabor_constants(p.period, p.packet_width, p.impulses);
+    let layout = fast_gabor_layout(&c, p.domain, p.periodic || (p.scale.is_none() && p.orientation.is_none()))?;
     let n = layout.count();
     let mut centers = vec![[0.0; 3]; n];
     let mut dirs = vec![[0.0; 3]; n];
     let mut gammas = vec![0.0; n];
-    let origin = -super::TABLE_SITES / 2;
+    let origin = -super::fast_gabor::TABLE_SITES / 2;
     for z in 0..layout.size[2] {
         for y in 0..layout.size[1] {
             for x in 0..layout.size[0] {
@@ -390,7 +390,7 @@ fn lattice_sites(p: &Params) -> Result<(Vec<f64>, Layout, LatticeConstants), Str
         }
     }
     let finished = apply_drivers(p, &centers, &dirs, true)?;
-    let mut sites = Vec::with_capacity(n * super::SITE_STRIDE);
+    let mut sites = Vec::with_capacity(n * super::fast_gabor::SITE_STRIDE);
     for (i, (dir, beta)) in finished.into_iter().enumerate() {
         sites.extend_from_slice(&[dir[0], dir[1], dir[2], beta, gammas[i]]);
     }
@@ -420,10 +420,10 @@ fn reference_gabor_constants(period: f64, packet_width: f64, impulses: usize) ->
 /// common/noise/spinodoid's newReferenceGaborLayout: cells rather than sites, a
 /// one-cell pad, and true cell indices (no wrap) when bounded.
 fn reference_gabor_layout(c: &ReferenceGaborConstants, domain: Option<[f64; 6]>, periodic: bool) -> Result<Layout, String> {
-    let domain = match domain {
-        Some(d) if !periodic => d,
-        _ => return Ok(Layout::periodic(super::reference_gabor::TABLE_CELLS)),
-    };
+    if periodic {
+        return Ok(Layout::periodic(super::reference_gabor::TABLE_CELLS));
+    }
+    let domain = domain.ok_or("a graded spinodoid needs a box: the region its drivers are baked over")?;
     let mut l = Layout {
         origin: [0; 3],
         size: [0; 3],
@@ -445,10 +445,10 @@ fn reference_gabor_layout(c: &ReferenceGaborConstants, domain: Option<[f64; 6]>,
     Ok(l)
 }
 
-/// the reference manufacturing table for `p`, leveled at `level`:
+/// the reference table for `p`, leveled at `level`:
 /// common/noise/spinodoid.ReferenceGaborBake.
-pub fn manufacturing(p: &Params, level: f64, local: bool) -> Result<super::reference_gabor::Table, String> {
-    let (kernels, layout, c) = manufacturing_kernels(p)?;
+pub fn reference_gabor_table(p: &Params, level: f64, local: bool) -> Result<super::reference_gabor::Table, String> {
+    let (kernels, layout, c) = reference_gabor_kernels(p)?;
     super::reference_gabor::Table::new(
         kernels,
         layout.origin,
@@ -466,7 +466,7 @@ pub fn manufacturing(p: &Params, level: f64, local: bool) -> Result<super::refer
 }
 
 /// the reference table's kernels, in Go's Flat order, and what locates them.
-fn manufacturing_kernels(p: &Params) -> Result<(Vec<f64>, Layout, ReferenceGaborConstants), String> {
+fn reference_gabor_kernels(p: &Params) -> Result<(Vec<f64>, Layout, ReferenceGaborConstants), String> {
     let base_dirs = pool_directions(p)?;
     let c = reference_gabor_constants(p.period, p.packet_width, p.impulses);
     let layout = reference_gabor_layout(&c, p.domain, p.periodic || (p.scale.is_none() && p.orientation.is_none()))?;
@@ -563,11 +563,11 @@ mod tests {
     }
 
     struct Reference {
-        lattice_fnv: u64,
-        lattice_size: [usize; 3],
-        lattice_origin: [i64; 3],
+        fast_gabor_fnv: u64,
+        fast_gabor_size: [usize; 3],
+        fast_gabor_origin: [i64; 3],
         /// reach, spacing, a, sigma, base_beta
-        lattice_consts: [u64; 5],
+        fast_gabor_consts: [u64; 5],
         reference_gabor_fnv: u64,
         reference_gabor_size: [usize; 3],
         reference_gabor_origin: [i64; 3],
@@ -586,18 +586,18 @@ mod tests {
     /// is not the bake's (Go fuses `1 + 0.004 x` into an FMA on arm64, and its
     /// cos/sin are its own), so there the distances carry the comparison.
     fn check(p: &Params, r: &Reference, distances: &[(f64, f64)], driven: bool) {
-        let (sites, layout, c) = lattice_sites(p).expect("lattice");
-        assert_eq!(layout.size, r.lattice_size);
-        assert_eq!(layout.origin, r.lattice_origin);
-        assert!(driven || fnv(&sites) == r.lattice_fnv, "lattice sites are not Go's bit for bit");
+        let (sites, layout, c) = fast_gabor_sites(p).expect("lattice");
+        assert_eq!(layout.size, r.fast_gabor_size);
+        assert_eq!(layout.origin, r.fast_gabor_origin);
+        assert!(driven || fnv(&sites) == r.fast_gabor_fnv, "lattice sites are not Go's bit for bit");
         for (got, (bits, what)) in [c.reach, c.spacing, c.a, c.sigma, c.base_beta]
             .into_iter()
-            .zip(r.lattice_consts.iter().zip(["reach", "spacing", "a", "sigma", "base_beta"]))
+            .zip(r.fast_gabor_consts.iter().zip(["reach", "spacing", "a", "sigma", "base_beta"]))
         {
             close_bits(got, *bits, what);
         }
 
-        let (kernels, layout, c) = manufacturing_kernels(p).expect("manufacturing");
+        let (kernels, layout, c) = reference_gabor_kernels(p).expect("reference table");
         assert_eq!(layout.size, r.reference_gabor_size);
         assert_eq!(layout.origin, r.reference_gabor_origin);
         assert!(driven || fnv(&kernels) == r.reference_gabor_fnv, "reference kernels are not Go's bit for bit");
@@ -608,8 +608,8 @@ mod tests {
             close_bits(got, *bits, what);
         }
 
-        let lt = lattice(p, r.level, true).expect("lattice table");
-        let ht = manufacturing(p, r.level, true).expect("reference table");
+        let lt = fast_gabor_table(p, r.level, true).expect("fast table");
+        let ht = reference_gabor_table(p, r.level, true).expect("reference table");
         // Summation order in the evaluators leaves ~5e-15.
         for (q, &(want_l, want_h)) in POINTS.iter().zip(distances) {
             let (got_l, _) = lt.eval(*q);
@@ -635,10 +635,10 @@ mod tests {
             periodic: true,
         };
         let r = Reference {
-            lattice_fnv: 0x78b8d0d05b216866,
-            lattice_size: [64; 3],
-            lattice_origin: [-32; 3],
-            lattice_consts: [
+            fast_gabor_fnv: 0x78b8d0d05b216866,
+            fast_gabor_size: [64; 3],
+            fast_gabor_origin: [-32; 3],
+            fast_gabor_consts: [
                 0x4035cb0d340ae5ee,
                 0x4025cb0d340ae5ee,
                 0x3fac71c71c71c71c,
@@ -683,10 +683,10 @@ mod tests {
             periodic: true,
         };
         let r = Reference {
-            lattice_fnv: 0xedd6f1cb72b6cc18,
-            lattice_size: [64; 3],
-            lattice_origin: [-32; 3],
-            lattice_consts: [
+            fast_gabor_fnv: 0xedd6f1cb72b6cc18,
+            fast_gabor_size: [64; 3],
+            fast_gabor_origin: [-32; 3],
+            fast_gabor_consts: [
                 0x402836f239d3385d,
                 0x401aa6d2b7e30e85,
                 0x3fb999999999999a,
@@ -731,10 +731,10 @@ mod tests {
             periodic: false,
         };
         let r = Reference {
-            lattice_fnv: 0x9a97bd75f299641a,
-            lattice_size: [9; 3],
-            lattice_origin: [-4; 3],
-            lattice_consts: [
+            fast_gabor_fnv: 0x9a97bd75f299641a,
+            fast_gabor_size: [9; 3],
+            fast_gabor_origin: [-4; 3],
+            fast_gabor_consts: [
                 0x4035cb0d340ae5ee,
                 0x4025cb0d340ae5ee,
                 0x3fac71c71c71c71c,

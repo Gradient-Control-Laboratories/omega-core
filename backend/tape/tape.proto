@@ -176,22 +176,19 @@ enum OracleKind {
 // packet_width=..., impulses_per_cell=..., n_pool=..., seed=...,
 // normalize=...)` argument for argument, in the Python reference's own units.
 message SpinodoidParams {
-  // Which of the two fields this leaf is. False is the Python reference's `spinodoid_gabor`
-  // exactly — jittered kernels, untapered envelope — and is what a consumer
-  // that has to agree with the Python reference wants. True is omega's cheaper lattice form
-  // (`fastGaborSpinodoid`): the same model and the same density, kernels on a
-  // regular lattice with tapered envelopes, a different realization. The two
-  // measure alike and are not the same field pointwise, so this is not a hint.
+  // Which of the two spinodoid oracles this leaf is. True is the fast one
+  // (`fastGaborSpinodoid`: kernels on a regular lattice, tapered envelopes);
+  // false is the reference (`gaborSpinodoid`: jittered kernels, untapered
+  // envelope). The two measure alike and are different fields pointwise, so a
+  // reader rebuilds this leaf as the oracle it names unless it is asked for
+  // the other.
   bool fast = 1;
 
   // Reference wavelength, in the tape's length units. `scale` multiplies it.
   double period = 2;
 
-  // Cone half-angles of the direction ODF, one per pole, in **RADIANS**
-  // ([pi/2, pi/2, pi/2] is isotropic), as the Python reference takes them (`theta`). The unit
-  // is in the field name because the field was
-  // once in degrees and the Python reference was too: a stale degree value cannot pass as
-  // this one.
+  // Cone half-angles of the direction ODF, one per pole, in radians
+  // ([pi/2, pi/2, pi/2] is isotropic).
   repeated double thetaRadians = 3;
 
   // Cone axes, flat xyz, three per entry in `thetaRadians`. Empty means the
@@ -207,10 +204,8 @@ message SpinodoidParams {
   // Seed for both the pool draw and the spatial hash.
   int64 seed = 8;
 
-  // DEPRECATED, never written: the old quantile form of `bias`, where 0.5 was
-  // the median. A reader refuses a tape that sets it, since read as a bias it
-  // would be a different lattice. Regenerate such a tape.
-  double levelBias = 9 [deprecated = true];
+  reserved 9;
+  reserved "levelBias";
   // True divides by the wavenumber carried at each point (the Python reference's
   // normalize="local"), so lengths stay real under a graded scale; false
   // divides by the wavenumber of `period` ("base").

@@ -28,6 +28,20 @@ from `1.0.0` onward).
   baked there and nowhere else. The scene and imported-geometry bounds and the periodic fallback are no
   longer used for spinodoid tables, and the spinodoid builtins take `box` as a 13th argument.
 - **`list` is a builtin**, so a document can no longer declare its own `list` function or variable.
+- **`gaborSpinodoid` is the reference spinodoid everywhere**: the `gabor*` library forms now evaluate the
+  reference field (jittered kernels, untapered envelopes) in the preview, meshing, export and the oracle,
+  where every backend used to evaluate the fast field for both names. It is several times slower to
+  evaluate than `fastGabor*`, and a different field pointwise; a document that wants the field it rendered
+  before calls the `fastGabor*` form with the same arguments.
+- **Spinodoid tapes**: each spinodoid leaf loads as the oracle its payload names (`fast` or `reference`).
+  `omega_tape.Tape(..., backend=...)` takes `"fast"` or `"reference"`, tape-wide or per payload, to ask
+  for the other. `omega_tape.register_reference_gabor_spinodoid` and the no-payload spinodoid path are
+  removed, the tape's `SpinodoidParams.levelBias` field is reserved, and a graded spinodoid bake without a
+  box is an error rather than a periodic table.
+- **Spinodoid Go and C names**: the fast table is `spinodoid.FastGaborTable` (`FastGaborBake`,
+  `FastGaborTableConstants`), `spinodoid.Baked` has `Fast` and `Reference` fields in place of `Table`, and
+  the fidget wrappers and C exports are `RegisterFastGaborSpinodoid` / `register_fast_gabor_spinodoid` and
+  likewise. `Baked.GPUTable` packs either kind for a preview.
 - **Changed Go module path to `github.com/Gradient-Control-Laboratories/omega-core`**: The root
   `go.mod` module declaration and all internal package import paths changed from
   `gradientcontrol.com/omega/core` to `github.com/Gradient-Control-Laboratories/omega-core` so

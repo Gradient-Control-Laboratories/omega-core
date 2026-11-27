@@ -88,7 +88,7 @@ return specimen;
 	for _, b := range bakes {
 		baked = b
 	}
-	table := baked.Table
+	table := baked.Fast
 	if table.Periodic {
 		t.Fatalf("material changed the imported grading domain: %+v", table.Layout)
 	}
@@ -141,7 +141,7 @@ return specimen;
 		t.Fatal(err)
 	}
 	for _, next := range changed {
-		if next.ContentID == baked.ContentID || next.Table == table {
+		if next.ContentID == baked.ContentID || next.Fast == table {
 			t.Fatal("a changed box reused the old table")
 		}
 	}
@@ -153,14 +153,14 @@ upright = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
 return fastGaborSpinodoid(p + [0, 200, 0], 2, [pi / 2, pi / 2, pi / 2], upright, 3, 8, 4096, 0, 0, 1, 1 + 0.001 * p.y, upright, [[-10, 190, -10], [10, 210, 10]]);
 `
 	prog, baked := bakeSingleSpinodoidForDomainTest(t, src)
-	if baked.Table.Periodic || !baked.Table.Contains([3]float64{0, 200, 0}) || baked.Table.Contains([3]float64{}) {
-		t.Fatalf("translated query did not get a translated finite domain: %+v", baked.Table.Layout)
+	if baked.Fast.Periodic || !baked.Fast.Contains([3]float64{0, 200, 0}) || baked.Fast.Contains([3]float64{}) {
+		t.Fatalf("translated query did not get a translated finite domain: %+v", baked.Fast.Layout)
 	}
-	_, _, beta, _ := baked.Table.Sample([3]float64{0, 200, 0})
-	if scale := baked.Table.BaseBeta / beta; math.Abs(scale-1.2) > 0.002 {
+	_, _, beta, _ := baked.Fast.Sample([3]float64{0, 200, 0})
+	if scale := baked.Fast.BaseBeta / beta; math.Abs(scale-1.2) > 0.002 {
 		t.Fatalf("translated kernel centres got scale %g, want 1.2", scale)
 	}
-	want, _ := baked.Table.Distance([3]float64{0, 200, 0}, 0, true)
+	want, _ := baked.Fast.Distance([3]float64{0, 200, 0}, 0, true)
 	assertSpinodoidProgramValue(t, prog, want)
 }
 
@@ -174,10 +174,10 @@ field = spinodoid.fastGaborGraded(2, [pi / 2, pi / 2, pi / 2], 1 + 0.001 * p.y, 
 return remap(field, p + [0, 200, 0]);
 `
 	prog, baked := bakeSingleSpinodoidForDomainTest(t, src)
-	if baked.Table.Periodic || !baked.Table.Contains([3]float64{0, 200, 0}) || baked.Table.Contains([3]float64{}) {
-		t.Fatalf("outer remap did not bake over the field's box: %+v", baked.Table.Layout)
+	if baked.Fast.Periodic || !baked.Fast.Contains([3]float64{0, 200, 0}) || baked.Fast.Contains([3]float64{}) {
+		t.Fatalf("outer remap did not bake over the field's box: %+v", baked.Fast.Layout)
 	}
-	want, _ := baked.Table.Distance([3]float64{0, 200, 0}, 0, true)
+	want, _ := baked.Fast.Distance([3]float64{0, 200, 0}, 0, true)
 	assertSpinodoidProgramValue(t, prog, want)
 }
 

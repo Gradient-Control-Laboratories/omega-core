@@ -24,19 +24,19 @@ const WorleyFarCell = "worleyFarCell"
 const WorleyWall = "worleyWall"
 const WorleyWallFeature = "worleyWallFeature"
 
-// The Gabor spinodoid (the Python reference's spinodoid.py, spinodoid_gabor) as one
-// oracle over a kernel table baked in Go (common/noise/spinodoid), and its
-// analytic gradient, which carries the field's derivative the way
-// WorleyFeature carries WorleyF1's.
+// The two Gabor spinodoids, each its own oracle over a kernel table baked in
+// Go (program/noise/spinodoid), each with its analytic gradient, which
+// carries the field's derivative the way WorleyFeature carries WorleyF1's.
+//
+// The reference spinodoid: kernels jittered inside the cells of a grid,
+// untapered envelopes (reference_gabor.go). The expensive one.
 const GaborSpinodoid = "gaborSpinodoid"
 const GaborSpinodoidGradient = "gaborSpinodoidGradient"
 
-// The lattice spinodoid: the same field family and the same arguments, with
-// the kernels on a lattice and their envelopes tapered, which makes it cheap
-// enough to ray-march. It is a different realization than the Python reference's, so a part
-// built from it is not one the Python reference can rebuild — which is the whole difference
-// between the two. Every preview renders this one whichever the document
-// names; naming it here asks for it in the bake as well.
+// The fast spinodoid: the same field family and the same arguments, with the
+// kernels on a lattice and their envelopes tapered, several times cheaper to
+// evaluate (fast_gabor.go). It measures like the reference and is a
+// different field pointwise.
 const FastGaborSpinodoid = "fastGaborSpinodoid"
 const FastGaborSpinodoidGradient = "fastGaborSpinodoidGradient"
 
@@ -46,8 +46,7 @@ const FastGaborSpinodoidGradient = "fastGaborSpinodoidGradient"
 // coordinates, a graded field's table covers; a stationary field ignores it.
 const GaborSpinodoidArgs = 13
 
-// IsGaborSpinodoid reports whether name is one of the four spinodoid builtins,
-// and FastSpinodoid whether it is one of the lattice pair.
+// IsGaborSpinodoid reports whether name is one of the four spinodoid builtins.
 func IsGaborSpinodoid(name string) bool {
 	switch name {
 	case GaborSpinodoid, GaborSpinodoidGradient, FastGaborSpinodoid, FastGaborSpinodoidGradient:
@@ -56,7 +55,8 @@ func IsGaborSpinodoid(name string) bool {
 	return false
 }
 
-// IsFastGaborSpinodoid reports whether name asks for the lattice field.
+// IsFastGaborSpinodoid reports whether name asks for the fast spinodoid rather
+// than the reference.
 func IsFastGaborSpinodoid(name string) bool {
 	return name == FastGaborSpinodoid || name == FastGaborSpinodoidGradient
 }

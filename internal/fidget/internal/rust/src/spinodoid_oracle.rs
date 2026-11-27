@@ -1,10 +1,10 @@
 //! C ABI for the Gabor spinodoid oracles (the gaborSpinodoid /
 //! fastGaborSpinodoid builtins and their gradients).
 //!
-//! The tables and the oracles live in tape-core (spinodoid.rs for the lattice
-//! field, spinodoid/reference_gabor.rs for the Python reference's, each with its own slots); this file is
-//! the entry point the Go side calls and the tree builder that pushes onto
-//! TREES. Mirrors cellular_oracle.rs.
+//! The tables and the oracles live in tape-core (spinodoid/fast_gabor.rs for
+//! the fast spinodoid, spinodoid/reference_gabor.rs for the reference, each
+//! with its own slots); this file is the entry point the Go side calls and the
+//! tree builder that pushes onto TREES. Mirrors cellular_oracle.rs.
 
 use std::os::raw::{c_int, c_ulong};
 
@@ -19,7 +19,7 @@ use tape_core::spinodoid;
 /// `sites` must point to `len` valid f64s.
 #[no_mangle]
 #[allow(clippy::too_many_arguments)]
-pub unsafe extern "C" fn register_spinodoid(
+pub unsafe extern "C" fn register_fast_gabor_spinodoid(
     slot: u32,
     sites: *const f64,
     len: usize,
@@ -48,7 +48,7 @@ pub unsafe extern "C" fn register_spinodoid(
     let bounds: [f64; 6] = unsafe { std::slice::from_raw_parts(bounds, 6) }
         .try_into()
         .unwrap();
-    let table = match spinodoid::Table::new(
+    let table = match spinodoid::fast_gabor::Table::new(
         data,
         origin,
         size.map(|s| s as usize),
@@ -65,7 +65,7 @@ pub unsafe extern "C" fn register_spinodoid(
         Ok(t) => t,
         Err(_) => return -2,
     };
-    if spinodoid::register(slot, table).is_err() {
+    if spinodoid::fast_gabor::register(slot, table).is_err() {
         return -2;
     }
     0
@@ -76,15 +76,15 @@ pub unsafe extern "C" fn register_spinodoid(
 /// remaps those to the query point. Returns the TREES index, or u64::MAX when
 /// the slot holds no table.
 #[no_mangle]
-pub extern "C" fn tree_spinodoid(slot: u32, comp: u32) -> c_ulong {
-    if !spinodoid::has(slot) || comp >= spinodoid::component::COUNT {
+pub extern "C" fn tree_fast_gabor_spinodoid(slot: u32, comp: u32) -> c_ulong {
+    if !spinodoid::fast_gabor::has(slot) || comp >= spinodoid::component::COUNT {
         return u64::MAX;
     }
     // Keep Var::X/Y/Z in the tape so the octree hands interval() real boxes;
     // the same trick as tree_cellular.
     let (x, y, z) = Tree::axes();
     let zero_via_axes = (x.clone() - x) + (y.clone() - y) + (z.clone() - z);
-    let tree = Tree::mesh_oracle(spinodoid::oracle_id(slot, comp)) + zero_via_axes;
+    let tree = Tree::mesh_oracle(spinodoid::fast_gabor::oracle_id(slot, comp)) + zero_via_axes;
     let mut trees = crate::TREES.lock().unwrap();
     trees.push(tree);
     (trees.len() - 1) as c_ulong
@@ -96,7 +96,7 @@ pub extern "C" fn tree_spinodoid(slot: u32, comp: u32) -> c_ulong {
 /// stationary field is `periodic` over the reference field's own 32-cubed window; a driven
 /// one is bounded by `bounds` and hashed on true cell indices, so it is
 /// the reference field everywhere inside the domain. Its slots are its own,
-/// separate from the lattice's. Same returns as register_spinodoid.
+/// separate from the fast one's. Same returns as register_fast_gabor_spinodoid.
 ///
 /// # Safety
 /// `kernels` must point to `len` valid f64s.
@@ -154,7 +154,7 @@ pub unsafe extern "C" fn register_reference_gabor_spinodoid(
     0
 }
 
-/// tree_spinodoid for a reference table: the same leaf shape over the reference field's own
+/// tree_fast_gabor_spinodoid for a reference table: the same leaf shape over the reference field's own
 /// slots and oracle ids.
 #[no_mangle]
 pub extern "C" fn tree_reference_gabor_spinodoid(slot: u32, comp: u32) -> c_ulong {
@@ -176,14 +176,14 @@ pub extern "C" fn tree_reference_gabor_spinodoid(slot: u32, comp: u32) -> c_ulon
 /// mirrored in Go so there is one definition of the id layout.
 /// Returns u32::MAX for an out-of-range component.
 #[no_mangle]
-pub extern "C" fn spinodoid_oracle_id(slot: u32, comp: u32) -> u32 {
+pub extern "C" fn fast_gabor_spinodoid_oracle_id(slot: u32, comp: u32) -> u32 {
     if comp >= spinodoid::component::COUNT {
         return u32::MAX;
     }
-    spinodoid::oracle_id(slot, comp)
+    spinodoid::fast_gabor::oracle_id(slot, comp)
 }
 
-/// spinodoid_oracle_id for the reference field's slots, which are their own id space.
+/// fast_gabor_spinodoid_oracle_id for the reference slots, which are their own id space.
 #[no_mangle]
 pub extern "C" fn reference_gabor_spinodoid_oracle_id(slot: u32, comp: u32) -> u32 {
     if comp >= spinodoid::component::COUNT {
