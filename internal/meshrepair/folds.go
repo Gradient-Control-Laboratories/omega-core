@@ -10,7 +10,8 @@
 // triangle is placed again, from the tangent planes the field gives at it and at its 1-ring (a QEF, held toward the
 // ring's mean so a flat neighbourhood has an answer), and walked back onto the zero set by Newton steps; a vertex
 // whose new place is farther than its edges' mean length stays where it was. That repeats
-// over the triangles the moves touched until none is backward, or for a fixed number of passes.
+// over the triangles the moves touched until none is backward, or for a fixed number of passes, and the repair ends on
+// the pass that left the fewest backward without making the mesh's area larger.
 //
 // Only vertex positions change: the triangles, their order and the welding stay as the mesher made them.
 package meshrepair
@@ -32,7 +33,8 @@ type Field func(xs, ys, zs []float32) ([]Sample, error)
 
 // Stats is what Folds did.
 type Stats struct {
-	// Passes is the pass the repair ended on, the one that left the fewest backward triangles (0: the mesh as given).
+	// Passes is the pass the repair ended on, the one that left the fewest backward triangles without making the mesh's
+	// area larger (0: the mesh as given).
 	Passes int
 	// BackwardBefore and BackwardAfter count the backward triangles in the mesh given and in the mesh returned.
 	BackwardBefore, BackwardAfter int
@@ -242,7 +244,18 @@ func (r *repair) run(stats *Stats) error {
 	back := count()
 	stats.BackwardBefore = len(back)
 	// A pass may turn more triangles over before a later one rights them, so every pass is made and the repair ends
-	// on the one that left the fewest backward: the mesh as given, when none did better.
+	// on the one that left the fewest backward among those that leave the mesh's area no larger than it was given (a
+	// fold is area the surface does not have, so righting it gives area back): the mesh as given, when none did better.
+	area := func() float64 {
+		var sum float64
+		for _, ti := range r.live {
+			t := r.tris[ti]
+			a := r.verts[t[0]]
+			sum += norm(cross(sub(r.verts[t[1]], a), sub(r.verts[t[2]], a)))
+		}
+		return sum / 2
+	}
+	startArea := area()
 	start := slices.Clone(r.verts)
 	best := slices.Clone(r.verts)
 	bestCount, bestPass := len(back), 0
@@ -283,7 +296,7 @@ func (r *repair) run(stats *Stats) error {
 			return err
 		}
 		back = count()
-		if len(back) < bestCount {
+		if len(back) < bestCount && area() <= startArea {
 			bestCount, bestPass = len(back), pass
 			copy(best, r.verts)
 		}
