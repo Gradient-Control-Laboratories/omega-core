@@ -30,9 +30,9 @@ fn gsl_remap_3(p: vec3<f32>, gsl_param_7_28: f32, gsl_param_8_28: f32, gsl_param
   return gsl_tmp_2;
 }
 
-fn builtin_intersectChamfer(d1: f32, d2: f32, offset: f32) -> f32 {
-  let face = max(d1, d2);
-  let edge = (d1 + d2 + offset) / 1.4142135;
+fn builtin_intersectChamfer(a: f32, b: f32, offset: f32) -> f32 {
+  let face = max(a, b);
+  let edge = (a + b + offset) / 1.4142135;
   return max(face, edge);
 }
 
@@ -92,9 +92,9 @@ fn builtin_cylinderZ(p: vec3<f32>, vector_dirZ: vec3<f32>, center: vec3<f32>, ra
   return builtin_cylinder(p, center, vector_dirZ, radius);
 }
 
-fn map_rotateZX(v: vec3<f32>, ang: f32) -> vec3<f32> {
-  let ca = cos(ang);
-  let sa = sin(ang);
+fn map_rotateZX(v: vec3<f32>, angle: f32) -> vec3<f32> {
+  let ca = cos(angle);
+  let sa = sin(angle);
   return vec3<f32>(v.x * ca - v.z * sa, v.y, v.z * ca + v.x * sa);
 }
 

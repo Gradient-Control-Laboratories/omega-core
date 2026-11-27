@@ -30,8 +30,8 @@ import "map";
 
 /// Octet truss: the stretch-dominated FCC strut lattice (cell corners to face
 /// centers). scalar or vec3 `size` cell.
-octet(sizeIn) {
-  size = sizeIn * [1, 1, 1];
+octet(cellSize) {
+  size = cellSize * [1, 1, 1];
   h = size * 0.5;
   return remap(unionSharp([
     lineSegment([0, h.y, 0], [0, 0, h.z]),
@@ -44,8 +44,8 @@ octet(sizeIn) {
 }
 
 /// Truncated-octahedral (Kelvin-adjacent) strut lattice. scalar or vec3 `size` cell.
-truncatedOctahedral(sizeIn) {
-  size = sizeIn * [1, 1, 1];
+truncatedOctahedral(cellSize) {
+  size = cellSize * [1, 1, 1];
   h = size * 0.5;
   q = size * 0.25;
   third = size * (1.0 / 3.0);
@@ -66,16 +66,16 @@ truncatedOctahedral(sizeIn) {
 /// Body-centered-cubic strut lattice: the cell-center-to-corner diagonal,
 /// mirrored to all eight corners. scalar or vec3 `size` cell. (The new GCL-derived BCC;
 /// the legacy lattice.bcc remains for substitution.)
-bcc(sizeIn) {
-  size = sizeIn * [1, 1, 1];
+bcc(cellSize) {
+  size = cellSize * [1, 1, 1];
   h = size * 0.5;
   return remap(lineSegment(h, -h), map.patternRepeatMirror(size));
 }
 
 /// Face-centered-cubic strut lattice: cell corner to the three near face
 /// centers, mirrored. scalar or vec3 `size` cell.
-fcc(sizeIn) {
-  size = sizeIn * [1, 1, 1];
+fcc(cellSize) {
+  size = cellSize * [1, 1, 1];
   h = size * 0.5;
   return remap(unionSharp([
     lineSegment(h, [0, 0, h.z]),
@@ -86,8 +86,8 @@ fcc(sizeIn) {
 
 /// Truncated-cubic strut lattice. `setback` in [0, 1] pulls the strut endpoints
 /// in from the cell edges (truncating the corners). scalar or vec3 `size` cell.
-truncatedCubic(sizeIn, setback) {
-  size = sizeIn * [1, 1, 1];
+truncatedCubic(cellSize, setback) {
+  size = cellSize * [1, 1, 1];
   h = size * 0.5;
   s = 1 - setback;
   return remap(unionSharp([
@@ -102,8 +102,8 @@ truncatedCubic(sizeIn, setback) {
 
 /// Kelvin cell (tetrakaidecahedron) strut lattice. `setback` in [0, 1] sets the
 /// hexagon/square truncation. scalar or vec3 `size` cell.
-kelvinCell(sizeIn, setback) {
-  size = sizeIn * [1, 1, 1];
+kelvinCell(cellSize, setback) {
+  size = cellSize * [1, 1, 1];
   h = size * 0.5;
   return remap(unionSharp([
     lineSegment([0, h.y, setback * h.z], [0, setback * h.y, h.z]),
@@ -116,8 +116,8 @@ kelvinCell(sizeIn, setback) {
 }
 
 /// Fluorite (CaF2-type) strut lattice. scalar or vec3 `size` cell.
-fluorite(sizeIn) {
-  size = sizeIn * [1, 1, 1];
+fluorite(cellSize) {
+  size = cellSize * [1, 1, 1];
   h = size * 0.5;
   q = size * 0.25;
   return remap(unionSharp([
@@ -130,8 +130,8 @@ fluorite(sizeIn) {
 
 /// Isotruss: orthogonal axis struts (translational) plus corner-to-face
 /// diagonals (mirrored). scalar or vec3 `size` cell.
-isotruss(sizeIn, combine) {
-  size = sizeIn * [1, 1, 1];
+isotruss(cellSize, combine) {
+  size = cellSize * [1, 1, 1];
   h = size * 0.5;
   axes = remap(unionSharp([
     lineSegment([-h.x, 0, 0], [h.x, 0, 0]),
@@ -148,15 +148,15 @@ isotruss(sizeIn, combine) {
 }
 
 /// As isotruss, with its strut families unioned sharply. Pass a blend to
-/// `isotruss(sizeIn, combine)` to fillet where they meet.
-isotruss(sizeIn) {
-  return isotruss(sizeIn, unionSharp);
+/// `isotruss(cellSize, combine)` to fillet where they meet.
+isotruss(cellSize) {
+  return isotruss(cellSize, unionSharp);
 }
 
 /// Re-entrant (auxetic) strut lattice — inward-folded cell walls plus a central
 /// Z column. `setback` in [0, 1] sets the fold depth. scalar or vec3 `size` cell.
-reentrant(sizeIn, setback, combine) {
-  size = sizeIn * [1, 1, 1];
+reentrant(cellSize, setback, combine) {
+  size = cellSize * [1, 1, 1];
   h = size * 0.5;
   setbackZ = setback * h.z;
   recessedZ = 0.8 * h.z;
@@ -174,15 +174,15 @@ reentrant(sizeIn, setback, combine) {
 }
 
 /// As reentrant, with its strut families unioned sharply. Pass a blend to
-/// `reentrant(sizeIn, setback, combine)` to fillet where they meet.
-reentrant(sizeIn, setback) {
-  return reentrant(sizeIn, setback, unionSharp);
+/// `reentrant(cellSize, setback, combine)` to fillet where they meet.
+reentrant(cellSize, setback) {
+  return reentrant(cellSize, setback, unionSharp);
 }
 
 /// Simple cubic lattice: three orthogonal axis struts per cell, joined by
 /// `combine`, tiled across the scalar or vec3 `size` grid.
-cubic(sizeIn, combine) {
-  size = sizeIn * [1, 1, 1];
+cubic(cellSize, combine) {
+  size = cellSize * [1, 1, 1];
   h = size * 0.5;
   return remap(combine([
     lineSegment([-h.x, 0, 0], [h.x, 0, 0]),
@@ -192,37 +192,37 @@ cubic(sizeIn, combine) {
 }
 
 /// Simple cubic lattice with the three struts joined sharply.
-cubic(sizeIn) {
-  return cubic(sizeIn, unionSharp);
+cubic(cellSize) {
+  return cubic(cellSize, unionSharp);
 }
 
 /// Grid of infinite vertical columns (z cylinders) on a rectangular XY lattice
-/// `cell` ([cellX, cellY]). The thin field is the distance to the nearest column
+/// `cellSize` ([cellX, cellY]). The thin field is the distance to the nearest column
 /// axis; lattice.solidify turns it into cylinders. z passes through, so the
 /// columns run the full height.
-columnRectangular(cell) {
-  o = map.patternRepeatXY(cell);
+columnRectangular(cellSize) {
+  o = map.patternRepeatXY(cellSize);
   return length(o.xy);
 }
 
 /// Infinite vertical columns on a triangular (6-neighbor close-packed) lattice
-/// with nearest-neighbor `spacing`.
-columnTriangular(spacing) {
-  o = map.patternTriangularXY(spacing);
+/// with nearest-neighbor `cellSize`.
+columnTriangular(cellSize) {
+  o = map.patternTriangularXY(cellSize);
   return length(o.xy);
 }
 
 /// Infinite vertical columns on a hexagonal (honeycomb, 3-neighbor) lattice with
-/// bond length `spacing`.
-columnHexagonal(spacing) {
-  o = map.patternHexagonalXY(spacing);
+/// bond length `cellSize`.
+columnHexagonal(cellSize) {
+  o = map.patternHexagonalXY(cellSize);
   return length(o.xy);
 }
 
 /// Double cubic: orthogonal axis struts (translational) plus corner-to-face
 /// diagonals (mirrored) — a stiffer cubic variant. scalar or vec3 `size` cell.
-cubicDouble(sizeIn) {
-  size = sizeIn * [1, 1, 1];
+cubicDouble(cellSize) {
+  size = cellSize * [1, 1, 1];
   h = size * 0.5;
   axes = remap(unionSharp([
     lineSegment([-h.x, 0, 0], [h.x, 0, 0]),

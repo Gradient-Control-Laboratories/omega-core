@@ -367,8 +367,8 @@ knotTime(local, ringWidth, spacing, branchRate, seed, style) {
 // compiler inlines, a fixed knotSpacing settles it when the shader is built,
 // while inside a function of its own the shader would compute the knots
 // either way.
-stemGrowthAt(axisOrigin, axisDir, ringWidth) {
-  local = map.axisAt(axisOrigin, axisDir);
+stemGrowthAt(axisOrigin, axisDirection, ringWidth) {
+  local = map.axisAt(axisOrigin, axisDirection);
   radius = length(local.xy);
   around = local.xy / max(radius, 0.001) * 40;
   wobble = remap(noise.fbm2(60, 0.5, 2.0), [around.x, around.y, local.z * 0.25]);
@@ -379,9 +379,9 @@ stemGrowthAt(axisOrigin, axisDir, ringWidth) {
 // The same with knots, whorls every knotSpacing mm in the knot style
 // knotStyle (see whorlTime): the branches' growth time merged into the stem's
 // by the power smooth-minimum.
-knottedGrowthAt(axisOrigin, axisDir, ringWidth, knotSpacing, knotStyle) {
-  stemTime = stemGrowthAt(axisOrigin, axisDir, ringWidth).x;
-  branchTime = knotTime(map.axisAt(axisOrigin, axisDir), ringWidth, max(knotSpacing, 1), 0.45, 7, knotStyle);
+knottedGrowthAt(axisOrigin, axisDirection, ringWidth, knotSpacing, knotStyle) {
+  stemTime = stemGrowthAt(axisOrigin, axisDirection, ringWidth).x;
+  branchTime = knotTime(map.axisAt(axisOrigin, axisDirection), ringWidth, max(knotSpacing, 1), 0.45, 7, knotStyle);
   return [powerSmoothMin(max(stemTime, 0.001), branchTime, 4), texture.mask(stemTime - branchTime * 1.15, 0, 0.6)];
 }
 
@@ -486,14 +486,14 @@ resinCanal(local, share) {
   return held * (1 - texture.mask(across, 0.06, 0.02)) * texture.fadeDetail(0.12);
 }
 
-solidWood(@point axisOrigin, @direction(axisOrigin) axisDir, ringWidth, latewoodFraction, latewoodSoftness, @color earlyColor, @color lateColor, poreSize, ringPorosity, @color poreColor, rayStrength, knotSpacing, @color knotColor) {
-  return solidWood(axisOrigin, axisDir, ringWidth, latewoodFraction, latewoodSoftness, earlyColor, lateColor, poreSize, ringPorosity, poreColor, rayStrength, 1, knotSpacing, [4, 0, 0.7, 0], knotColor, 1000000, earlyColor, 0, 0, earlyColor, 0, 0, 1, 0, 0.3, earlyColor, 0);
+solidWood(@point axisOrigin, @direction(axisOrigin) axisDirection, ringWidth, latewoodFraction, latewoodSoftness, @color earlyColor, @color lateColor, poreSize, ringPorosity, @color poreColor, rayStrength, knotSpacing, @color knotColor) {
+  return solidWood(axisOrigin, axisDirection, ringWidth, latewoodFraction, latewoodSoftness, earlyColor, lateColor, poreSize, ringPorosity, poreColor, rayStrength, 1, knotSpacing, [4, 0, 0.7, 0], knotColor, 1000000, earlyColor, 0, 0, earlyColor, 0, 0, 1, 0, 0.3, earlyColor, 0);
 }
 
-solidWood(@point axisOrigin, @direction(axisOrigin) axisDir, ringWidth, latewoodFraction, latewoodSoftness, @color earlyColor, @color lateColor, poreSize, ringPorosity, @color poreColor, rayStrength, raySize, knotSpacing, knotStyle, @color knotColor, heartRings, @color sapColor, resinCanals, streak, @color streakColor, ringVariation, bandStrength, bandSpacing, poreZone, sapTransition, @color lineColor, lineStrength) {
-  local = map.axisAt(axisOrigin, axisDir);
+solidWood(@point axisOrigin, @direction(axisOrigin) axisDirection, ringWidth, latewoodFraction, latewoodSoftness, @color earlyColor, @color lateColor, poreSize, ringPorosity, @color poreColor, rayStrength, raySize, knotSpacing, knotStyle, @color knotColor, heartRings, @color sapColor, resinCanals, streak, @color streakColor, ringVariation, bandStrength, bandSpacing, poreZone, sapTransition, @color lineColor, lineStrength) {
+  local = map.axisAt(axisOrigin, axisDirection);
   radius = length(local.xy);
-  grown = knotSpacing > 0 ? knottedGrowthAt(axisOrigin, axisDir, ringWidth, knotSpacing, knotStyle) : stemGrowthAt(axisOrigin, axisDir, ringWidth);
+  grown = knotSpacing > 0 ? knottedGrowthAt(axisOrigin, axisDirection, ringWidth, knotSpacing, knotStyle) : stemGrowthAt(axisOrigin, axisDirection, ringWidth);
   inKnot = grown.y;
 
   ringIndex, progress = ringAt(grown.x, 3);
@@ -636,9 +636,9 @@ wornProfile(progress) {
 
 // The weathered surface, [roughness, height]; poreHeight, the open pores'
 // relief, adds to the height, which is render-only displacement.
-weatheredSurface(axisOrigin, axisDir, ringWidth, knotSpacing, knotStyle, relief, rough, amount, poreHeight) {
-  ringIndex, progress = ringAt((knotSpacing > 0 ? knottedGrowthAt(axisOrigin, axisDir, ringWidth, knotSpacing, knotStyle) : stemGrowthAt(axisOrigin, axisDir, ringWidth)).x, 3);
-  return weatheredSurfaceAt(map.axisAt(axisOrigin, axisDir), progress, ringWidth, relief, rough, amount, poreHeight);
+weatheredSurface(axisOrigin, axisDirection, ringWidth, knotSpacing, knotStyle, relief, rough, amount, poreHeight) {
+  ringIndex, progress = ringAt((knotSpacing > 0 ? knottedGrowthAt(axisOrigin, axisDirection, ringWidth, knotSpacing, knotStyle) : stemGrowthAt(axisOrigin, axisDirection, ringWidth)).x, 3);
+  return weatheredSurfaceAt(map.axisAt(axisOrigin, axisDirection), progress, ringWidth, relief, rough, amount, poreHeight);
 }
 
 // The same at `local`, the point in the stem's frame, `progress` through its
@@ -655,8 +655,8 @@ weatheredSurfaceAt(local, progress, ringWidth, relief, rough, amount, poreHeight
 }
 
 // The weathered colour, from the fresh wood's.
-weatheredColor(axisOrigin, axisDir, freshColor, amount) {
-  checks = woodChecks(map.axisAt(axisOrigin, axisDir)) * amount;
+weatheredColor(axisOrigin, axisDirection, freshColor, amount) {
+  checks = woodChecks(map.axisAt(axisOrigin, axisDirection)) * amount;
   freshLab = color.rgb2oklab(freshColor);
   return color.oklab2rgb(freshLab + (color.rgb2oklab([0.60, 0.58, 0.54]) - freshLab) * (0.375 * amount) - [0.25 * checks, 0, 0]);
 }
@@ -667,9 +667,9 @@ weatheredColor(axisOrigin, axisDir, freshColor, amount) {
 // point lies in a pore, with the colour's soft rim. Too small to resolve, both
 // fade out. One value rather than two returns, so the compiler keeps this a
 // function of its own.
-poreSurface(axisOrigin, axisDir, ringWidth, knotSpacing, knotStyle, poreSize, ringPorosity, poreZone) {
-  ringIndex, progress = ringAt((knotSpacing > 0 ? knottedGrowthAt(axisOrigin, axisDir, ringWidth, knotSpacing, knotStyle) : stemGrowthAt(axisOrigin, axisDir, ringWidth)).x, 3);
-  return poreSurfaceAt(map.axisAt(axisOrigin, axisDir), progress, ringWidth, poreSize, ringPorosity, poreZone);
+poreSurface(axisOrigin, axisDirection, ringWidth, knotSpacing, knotStyle, poreSize, ringPorosity, poreZone) {
+  ringIndex, progress = ringAt((knotSpacing > 0 ? knottedGrowthAt(axisOrigin, axisDirection, ringWidth, knotSpacing, knotStyle) : stemGrowthAt(axisOrigin, axisDirection, ringWidth)).x, 3);
+  return poreSurfaceAt(map.axisAt(axisOrigin, axisDirection), progress, ringWidth, poreSize, ringPorosity, poreZone);
 }
 
 // The same at `local`, the point in the stem's frame, `progress` through its
@@ -1169,7 +1169,7 @@ hiddenSlopeFinish(rough, normal, grain, feed, slopes) {
 }
 
 // ===========================================================================
-// Species. Each takes the stem through axisOrigin along axisDir and returns
+// Species. Each takes the stem through axisOrigin along axisDirection and returns
 // material, color; each also takes a look, [oil, age, weather], in place of
 // defaultLook. Colors are raw sanded wood, finished by the look's oil.
 //
@@ -1685,7 +1685,7 @@ darkPoplarData = [
 
 // Poplar at the far end of its mineral stain, mineral 1: the ground gone
 // greenish grey and the purple-black streaks at full strength. Not a species
-// of its own; see poplar(axisOrigin, axisDir, look, mineral). Judged.
+// of its own; see poplar(axisOrigin, axisDirection, look, mineral). Judged.
 mineralPoplarData = [
   [4, 0.45, 0.45, 0.1],     // rings: width mm, latewood share, softness, variation
   [0.62, 0.63, 0.52, 0.12], // earlywood colour; pore size mm
@@ -2230,54 +2230,54 @@ speciesStainRow(number) {
   return pickSpecies(number, stainUptake[0], stainUptake[1], stainUptake[2], stainUptake[3], stainUptake[4], stainUptake[5], stainUptake[6], stainUptake[7], stainUptake[8], stainUptake[9], stainUptake[10], stainUptake[11], stainUptake[12], stainUptake[13], stainUptake[14], stainUptake[15], stainUptake[16], stainUptake[17], stainUptake[18], stainUptake[19], stainUptake[20], stainUptake[21], stainUptake[22], stainUptake[23], stainUptake[24], stainUptake[25], stainUptake[26], stainUptake[27], stainUptake[28], stainUptake[29], stainUptake[30], stainUptake[31], stainUptake[32], stainUptake[33], stainUptake[34], stainUptake[35], stainUptake[36], stainUptake[37], stainUptake[38], stainUptake[39], stainUptake[40], stainUptake[41], stainUptake[42], stainUptake[43], stainUptake[44], stainUptake[45], stainUptake[46], stainUptake[47], stainUptake[48]);
 }
 
-/// species(number, axisOrigin, axisDir, look): the species numbered `number`,
+/// species(number, axisOrigin, axisDirection, look): the species numbered `number`,
 /// one of the species numbers above, whiteOakNumber to lacewoodNumber. Returns
 /// material, color. When the number, the stem
 /// or the look varies from point to point, use speciesMaterial and
 /// speciesColor instead, one for each property: this one then computes both
 /// wherever either is asked for.
-species(number, @point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return speciesMaterial(number, axisOrigin, axisDir, look, -1), speciesColor(number, axisOrigin, axisDir, look, -1, -1);
+species(number, @point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return speciesMaterial(number, axisOrigin, axisDirection, look, -1), speciesColor(number, axisOrigin, axisDirection, look, -1, -1);
 }
 
 // The same with the knots' whorl spacing in mm, or -1 for the species' own.
-species(number, @point axisOrigin, @direction(axisOrigin) axisDir, look, knotSpacing) {
-  return speciesMaterial(number, axisOrigin, axisDir, look, knotSpacing), speciesColor(number, axisOrigin, axisDir, look, knotSpacing, -1);
+species(number, @point axisOrigin, @direction(axisOrigin) axisDirection, look, knotSpacing) {
+  return speciesMaterial(number, axisOrigin, axisDirection, look, knotSpacing), speciesColor(number, axisOrigin, axisDirection, look, knotSpacing, -1);
 }
 
 // The same with the stem's radius to the bark in mm too, 0 or less for no
 // sapwood: the paler sapwood is the species' own number of rings in from the
 // bark, so a narrow stem of a wide-sapwood species can be sapwood throughout.
-species(number, @point axisOrigin, @direction(axisOrigin) axisDir, look, knotSpacing, barkRadius) {
-  return speciesMaterial(number, axisOrigin, axisDir, look, knotSpacing), speciesColor(number, axisOrigin, axisDir, look, knotSpacing, barkRadius);
+species(number, @point axisOrigin, @direction(axisOrigin) axisDirection, look, knotSpacing, barkRadius) {
+  return speciesMaterial(number, axisOrigin, axisDirection, look, knotSpacing), speciesColor(number, axisOrigin, axisDirection, look, knotSpacing, barkRadius);
 }
 
-/// species(number, axisOrigin, axisDir, look, knotSpacing, barkRadius, decay):
+/// species(number, axisOrigin, axisDirection, look, knotSpacing, barkRadius, decay):
 /// the same, spalted and worm-eaten as the decay record `decay` says; see
 /// decay.
-species(number, @point axisOrigin, @direction(axisOrigin) axisDir, look, knotSpacing, barkRadius, decay) {
-  return speciesMaterial(number, axisOrigin, axisDir, look, knotSpacing, barkRadius, decay), speciesColor(number, axisOrigin, axisDir, look, knotSpacing, barkRadius, decay);
+species(number, @point axisOrigin, @direction(axisOrigin) axisDirection, look, knotSpacing, barkRadius, decay) {
+  return speciesMaterial(number, axisOrigin, axisDirection, look, knotSpacing, barkRadius, decay), speciesColor(number, axisOrigin, axisDirection, look, knotSpacing, barkRadius, decay);
 }
 
-/// species(number, axisOrigin, axisDir, look, knotSpacing, barkRadius, normal,
+/// species(number, axisOrigin, axisDirection, look, knotSpacing, barkRadius, normal,
 /// prep, stain, topcoat): the species finished, as material, color; see
 /// Finishes. `normal` is the surface's, a shape's gradient (`shape.dp`).
-species(number, @point axisOrigin, @direction(axisOrigin) axisDir, look, knotSpacing, barkRadius, normal, prep, stain, topcoat) {
-  return speciesMaterial(number, axisOrigin, axisDir, look, knotSpacing, normal, prep, topcoat), speciesColor(number, axisOrigin, axisDir, look, knotSpacing, barkRadius, normal, prep, stain, topcoat);
+species(number, @point axisOrigin, @direction(axisOrigin) axisDirection, look, knotSpacing, barkRadius, normal, prep, stain, topcoat) {
+  return speciesMaterial(number, axisOrigin, axisDirection, look, knotSpacing, normal, prep, topcoat), speciesColor(number, axisOrigin, axisDirection, look, knotSpacing, barkRadius, normal, prep, stain, topcoat);
 }
 
-/// species(number, axisOrigin, axisDir, look, knotSpacing, barkRadius, normal,
+/// species(number, axisOrigin, axisDirection, look, knotSpacing, barkRadius, normal,
 /// prep, stain, topcoat, spalting, wormholes): the species finished, spalted
 /// and worm-eaten, as material, color; see Spalting and worm holes.
-species(number, @point axisOrigin, @direction(axisOrigin) axisDir, look, knotSpacing, barkRadius, normal, prep, stain, topcoat, spalting, wormholes) {
-  return speciesMaterial(number, axisOrigin, axisDir, look, knotSpacing, barkRadius, normal, prep, topcoat, spalting, wormholes), speciesColor(number, axisOrigin, axisDir, look, knotSpacing, barkRadius, normal, prep, stain, topcoat, spalting, wormholes);
+species(number, @point axisOrigin, @direction(axisOrigin) axisDirection, look, knotSpacing, barkRadius, normal, prep, stain, topcoat, spalting, wormholes) {
+  return speciesMaterial(number, axisOrigin, axisDirection, look, knotSpacing, barkRadius, normal, prep, topcoat, spalting, wormholes), speciesColor(number, axisOrigin, axisDirection, look, knotSpacing, barkRadius, normal, prep, stain, topcoat, spalting, wormholes);
 }
 
-/// species(number, axisOrigin, axisDir, look, knotSpacing, barkRadius, normal,
+/// species(number, axisOrigin, axisDirection, look, knotSpacing, barkRadius, normal,
 /// prep, stain, topcoat, spalting, wormholes, fungi, insects): the same, by
 /// the fungi and insects of the records given.
-species(number, @point axisOrigin, @direction(axisOrigin) axisDir, look, knotSpacing, barkRadius, normal, prep, stain, topcoat, spalting, wormholes, fungi, insects) {
-  return speciesMaterial(number, axisOrigin, axisDir, look, knotSpacing, barkRadius, normal, prep, topcoat, spalting, wormholes, fungi, insects), speciesColor(number, axisOrigin, axisDir, look, knotSpacing, barkRadius, normal, prep, stain, topcoat, spalting, wormholes, fungi, insects);
+species(number, @point axisOrigin, @direction(axisOrigin) axisDirection, look, knotSpacing, barkRadius, normal, prep, stain, topcoat, spalting, wormholes, fungi, insects) {
+  return speciesMaterial(number, axisOrigin, axisDirection, look, knotSpacing, barkRadius, normal, prep, topcoat, spalting, wormholes, fungi, insects), speciesColor(number, axisOrigin, axisDirection, look, knotSpacing, barkRadius, normal, prep, stain, topcoat, spalting, wormholes, fungi, insects);
 }
 
 /// sapwoodDepth(number): how deep the sapwood of species `number` runs in from
@@ -2286,28 +2286,28 @@ sapwoodDepth(number) {
   return speciesSapwood(number).w * speciesRings(number).x;
 }
 
-/// speciesColor(number, axisOrigin, axisDir, look): the colour of the species
+/// speciesColor(number, axisOrigin, axisDirection, look): the colour of the species
 /// numbered `number`; see species. The number may vary from point to point, so
 /// one shape can hold many species: the wood is computed once at a point,
 /// whichever species it is, where a shape per species computes every species
 /// everywhere.
-speciesColor(number, @point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return speciesColor(number, axisOrigin, axisDir, look, -1, -1);
+speciesColor(number, @point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return speciesColor(number, axisOrigin, axisDirection, look, -1, -1);
 }
 
 // The same with the knots' whorl spacing in mm, -1 for the species' own, and
 // the stem's radius to the bark in mm, 0 or less for no sapwood: the sapwood
 // is the species' own number of rings in from the bark.
-speciesColor(number, @point axisOrigin, @direction(axisOrigin) axisDir, look, knotSpacing, barkRadius) {
-  return colorFromRows(speciesRings(number), speciesEarlywood(number), speciesLatewood(number), speciesPoreRow(number), speciesKnotRow(number), speciesSapwood(number), speciesStreakRow(number), speciesSurfaceRow(number), speciesAgeRow(number), speciesBandRow(number), speciesBoundaryRow(number), speciesWeeksRow(number), axisOrigin, axisDir, look, knotSpacing, speciesKnotStyle(number), barkRadius);
+speciesColor(number, @point axisOrigin, @direction(axisOrigin) axisDirection, look, knotSpacing, barkRadius) {
+  return colorFromRows(speciesRings(number), speciesEarlywood(number), speciesLatewood(number), speciesPoreRow(number), speciesKnotRow(number), speciesSapwood(number), speciesStreakRow(number), speciesSurfaceRow(number), speciesAgeRow(number), speciesBandRow(number), speciesBoundaryRow(number), speciesWeeksRow(number), axisOrigin, axisDirection, look, knotSpacing, speciesKnotStyle(number), barkRadius);
 }
 
-/// speciesColor(number, axisOrigin, axisDir, look, knotSpacing, barkRadius,
+/// speciesColor(number, axisOrigin, axisDirection, look, knotSpacing, barkRadius,
 /// normal, prep, stain, topcoat): the colour of the species finished; see
 /// Finishes and colorFromRowsFinished. `normal` is the surface's, a shape's
 /// gradient (`shape.dp`); the look's oil is not used.
-speciesColor(number, @point axisOrigin, @direction(axisOrigin) axisDir, look, knotSpacing, barkRadius, normal, prep, stain, topcoat) {
-  return colorFromRowsFinished(speciesRings(number), speciesEarlywood(number), speciesLatewood(number), speciesPoreRow(number), speciesKnotRow(number), speciesSapwood(number), speciesStreakRow(number), speciesSurfaceRow(number), speciesAgeRow(number), speciesBandRow(number), speciesBoundaryRow(number), speciesWeeksRow(number), speciesStainRow(number), axisOrigin, axisDir, look, knotSpacing, speciesKnotStyle(number), barkRadius, normal, prep, stain, topcoat);
+speciesColor(number, @point axisOrigin, @direction(axisOrigin) axisDirection, look, knotSpacing, barkRadius, normal, prep, stain, topcoat) {
+  return colorFromRowsFinished(speciesRings(number), speciesEarlywood(number), speciesLatewood(number), speciesPoreRow(number), speciesKnotRow(number), speciesSapwood(number), speciesStreakRow(number), speciesSurfaceRow(number), speciesAgeRow(number), speciesBandRow(number), speciesBoundaryRow(number), speciesWeeksRow(number), speciesStainRow(number), axisOrigin, axisDirection, look, knotSpacing, speciesKnotStyle(number), barkRadius, normal, prep, stain, topcoat);
 }
 
 // The colour of a species given its twelve rows rather than its number, so a
@@ -2319,7 +2319,7 @@ speciesColor(number, @point axisOrigin, @direction(axisOrigin) axisDir, look, kn
 // before it browns. On the age scale, where 0.5 is about six months, the
 // quick stage has a time constant of a week: 1 - (1 - age)^37, 95% done by
 // three weeks (age 0.08). The sapwood takes only the slow stage.
-colorFromRows(rings, early, late, pore, knot, sap, streak, surface, age, bands, boundary, weeks, axisOrigin, axisDir, look, knotSpacing, knotStyle, barkRadius) {
+colorFromRows(rings, early, late, pore, knot, sap, streak, surface, age, bands, boundary, weeks, axisOrigin, axisDirection, look, knotSpacing, knotStyle, barkRadius) {
   oil = look.x;
   knots = knotSpacing < 0 ? surface.z : knotSpacing;
   // No bark, no sapwood: the boundary a million rings out. Added rather than
@@ -2331,9 +2331,9 @@ colorFromRows(rings, early, late, pore, knot, sap, streak, surface, age, bands, 
   // The weeks stage is the heartwood's extractives reacting; sapwood, which
   // has none, takes only the slow change light makes.
   sapAging = [1, 1, 1] + (age.xyz - [1, 1, 1]) * aged;
-  fresh = solidWood(axisOrigin, axisDir, rings.x, rings.y, rings.z, finish(early.xyz, oil, aging), finish(late.xyz, oil, aging), early.w, late.w, finish(pore.xyz, oil, aging), pore.w, knot.w, knots, knotStyle, finish(knot.xyz, oil, aging), heartRings, finish(sap.xyz, oil, sapAging), surface.w, streak.w, finish(streak.xyz, oil, aging), rings.w, bands.x, bands.y, bands.z, bands.w, finish(boundary.xyz, oil, aging), boundary.w);
+  fresh = solidWood(axisOrigin, axisDirection, rings.x, rings.y, rings.z, finish(early.xyz, oil, aging), finish(late.xyz, oil, aging), early.w, late.w, finish(pore.xyz, oil, aging), pore.w, knot.w, knots, knotStyle, finish(knot.xyz, oil, aging), heartRings, finish(sap.xyz, oil, sapAging), surface.w, streak.w, finish(streak.xyz, oil, aging), rings.w, bands.x, bands.y, bands.z, bands.w, finish(boundary.xyz, oil, aging), boundary.w);
   stand = woodStandIn(finish(early.xyz, oil, aging), finish(late.xyz, oil, aging), rings.y, look.z);
-  wood = look.z > 0 ? weatheredColor(axisOrigin, axisDir, fresh, look.z) : fresh;
+  wood = look.z > 0 ? weatheredColor(axisOrigin, axisDirection, fresh, look.z) : fresh;
   wood.simple = stand;
   return wood;
 }
@@ -2376,8 +2376,8 @@ finishedColor(raw, aging, char, stainGain, uptake, wetting, coatTint) {
 // that colour unwetted, over the maple's. A pigment takes more on a
 // coarse surface; see prepCoarseness. The topcoat's tint yellows with the
 // look's age by its yellowing, toward [1, 0.9, 0.7] of itself. Judged.
-colorFromRowsFinished(rings, early, late, pore, knot, sap, streak, surface, age, bands, boundary, weeks, uptake, axisOrigin, axisDir, look, knotSpacing, knotStyle, barkRadius, normal, prep, stain, topcoat) {
-  local = map.axisAt(axisOrigin, axisDir);
+colorFromRowsFinished(rings, early, late, pore, knot, sap, streak, surface, age, bands, boundary, weeks, uptake, axisOrigin, axisDirection, look, knotSpacing, knotStyle, barkRadius, normal, prep, stain, topcoat) {
+  local = map.axisAt(axisOrigin, axisDirection);
   knots = knotSpacing < 0 ? surface.z : knotSpacing;
   // No bark, no sapwood: the boundary a million rings out. Added rather than
   // chosen, so a backend that picks arithmetically adds an exact 0 to the
@@ -2389,7 +2389,7 @@ colorFromRowsFinished(rings, early, late, pore, knot, sap, streak, surface, age,
   // has none, takes only the slow change light makes.
   sapAging = [1, 1, 1] + (age.xyz - [1, 1, 1]) * aged;
   n = normal / max(length(normal), 0.000001);
-  endGrain = dot(n, axisDir) / max(length(axisDir), 0.000001);
+  endGrain = dot(n, axisDirection) / max(length(axisDirection), 0.000001);
   blotch = texture.mask(noise.gradientLattice([local.x / 6, local.y / 6, local.z / 40]), 0.1, 0.25);
   stainLook = stain[0];
   stainKind = stain[1];
@@ -2409,14 +2409,14 @@ colorFromRowsFinished(rings, early, late, pore, knot, sap, streak, surface, age,
   earlyChar = 1.4 * charDepth;
   lateChar = 0.6 * charDepth;
   stainGain = min([pow(chip.x, 1 / 1.403), pow(chip.y, 1 / 1.403), pow(chip.z, 1 / 1.403)] / color.linearize([0.79, 0.67, 0.53]), [1, 1, 1]);
-  fresh = solidWood(axisOrigin, axisDir, rings.x, rings.y, rings.z, finishedColor(early.xyz, aging, earlyChar, stainGain, earlyTaken, wetting, tint), finishedColor(late.xyz, aging, lateChar, stainGain, taken * uptake.y, wetting, tint), early.w, late.w, finishedColor(pore.xyz, aging, earlyChar, stainGain, poreTaken, wetting, tint), pore.w, knot.w, knots, knotStyle, finishedColor(knot.xyz, aging, lateChar, stainGain, earlyTaken, wetting, tint), heartRings, finishedColor(sap.xyz, sapAging, earlyChar, stainGain, earlyTaken, wetting, tint), surface.w, streak.w, finishedColor(streak.xyz, aging, earlyChar, stainGain, earlyTaken, wetting, tint), rings.w, bands.x, bands.y, bands.z, bands.w, finishedColor(boundary.xyz, aging, earlyChar, stainGain, earlyTaken, wetting, tint), boundary.w);
+  fresh = solidWood(axisOrigin, axisDirection, rings.x, rings.y, rings.z, finishedColor(early.xyz, aging, earlyChar, stainGain, earlyTaken, wetting, tint), finishedColor(late.xyz, aging, lateChar, stainGain, taken * uptake.y, wetting, tint), early.w, late.w, finishedColor(pore.xyz, aging, earlyChar, stainGain, poreTaken, wetting, tint), pore.w, knot.w, knots, knotStyle, finishedColor(knot.xyz, aging, lateChar, stainGain, earlyTaken, wetting, tint), heartRings, finishedColor(sap.xyz, sapAging, earlyChar, stainGain, earlyTaken, wetting, tint), surface.w, streak.w, finishedColor(streak.xyz, aging, earlyChar, stainGain, earlyTaken, wetting, tint), rings.w, bands.x, bands.y, bands.z, bands.w, finishedColor(boundary.xyz, aging, earlyChar, stainGain, earlyTaken, wetting, tint), boundary.w);
   stand = woodStandIn(finishedColor(early.xyz, aging, earlyChar, stainGain, earlyTaken, wetting, tint), finishedColor(late.xyz, aging, lateChar, stainGain, taken * uptake.y, wetting, tint), rings.y, look.z);
-  wood = look.z > 0 ? weatheredColor(axisOrigin, axisDir, fresh, look.z) : fresh;
+  wood = look.z > 0 ? weatheredColor(axisOrigin, axisDirection, fresh, look.z) : fresh;
   wood.simple = stand;
   return wood;
 }
 
-/// speciesMaterial(number, axisOrigin, axisDir, look): the material of the
+/// speciesMaterial(number, axisOrigin, axisDirection, look): the material of the
 /// species numbered `number`; see species and speciesColor. Its sheen is the
 /// wood's sanded fine, rising with the look's oil (oiledRoughness). Open-pored
 /// wood, pores 0.25 mm across or more, has its pores sunk as grooves with a matte
@@ -2426,11 +2426,11 @@ colorFromRowsFinished(rings, early, late, pore, knot, sap, streak, surface, age,
 /// two materials, which a shader cannot do as it runs. Fixed numbers fold, so
 /// close-pored fresh wood keeps the growth model out of the material, which
 /// stays one uniform finish.
-speciesMaterial(number, @point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return speciesMaterial(number, axisOrigin, axisDir, look, -1);
+speciesMaterial(number, @point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return speciesMaterial(number, axisOrigin, axisDirection, look, -1);
 }
 
-speciesMaterial(number, @point axisOrigin, @direction(axisOrigin) axisDir, look, knotSpacing) {
+speciesMaterial(number, @point axisOrigin, @direction(axisOrigin) axisDirection, look, knotSpacing) {
   rings = speciesRings(number);
   early = speciesEarlywood(number);
   late = speciesLatewood(number);
@@ -2445,11 +2445,11 @@ speciesMaterial(number, @point axisOrigin, @direction(axisOrigin) axisDir, look,
   // Fine detail (name.detail): the pores' search is made only where they can
   // show, and they fade out by then.
   poreRelief = [0, 0];
-  poreRelief.detail = poreSize >= 0.25 ? (1 - clamp(look.x, 0, 1)) * poreSurface(axisOrigin, axisDir, rings.x, knots, knotStyle, max(poreSize, 0.25), late.w, bands.z) : [0, 0];
+  poreRelief.detail = poreSize >= 0.25 ? (1 - clamp(look.x, 0, 1)) * poreSurface(axisOrigin, axisDirection, rings.x, knots, knotStyle, max(poreSize, 0.25), late.w, bands.z) : [0, 0];
   poreRelief.detailSize = 0.56 * max(poreSize, 0.25);
   sheen = oiledRoughness(surface.x, look.x);
   poreRough = sheen + (0.9 - sheen) * poreRelief.y;
-  finished = look.z > 0 ? weatheredSurface(axisOrigin, axisDir, rings.x, knots, knotStyle, surface.y, poreRough, look.z, poreRelief.x) : [poreRough, poreRelief.x];
+  finished = look.z > 0 ? weatheredSurface(axisOrigin, axisDirection, rings.x, knots, knotStyle, surface.y, poreRough, look.z, poreRelief.x) : [poreRough, poreRelief.x];
   // The pores' grooves too small to see, or not drawn, widen the lobe as
   // poreSlopes says, by the ring's average cover and every way, as on end
   // grain, since there is no normal here to lay them by; the oil fills them as
@@ -2465,12 +2465,12 @@ speciesMaterial(number, @point axisOrigin, @direction(axisOrigin) axisDir, look,
   return surfaceMat;
 }
 
-/// speciesMaterial(number, axisOrigin, axisDir, look, knotSpacing, normal,
+/// speciesMaterial(number, axisOrigin, axisDirection, look, knotSpacing, normal,
 /// prep, topcoat): the material of the species finished: the prepared
 /// surface's relief, the open pores' grooves, both levelled by a film, and the
 /// topcoat's sheen; see Finishes. `normal` is the surface's, a shape's
 /// gradient (`shape.dp`); the look's oil is not used.
-speciesMaterial(number, @point axisOrigin, @direction(axisOrigin) axisDir, look, knotSpacing, normal, prep, topcoat) {
+speciesMaterial(number, @point axisOrigin, @direction(axisOrigin) axisDirection, look, knotSpacing, normal, prep, topcoat) {
   rings = speciesRings(number);
   early = speciesEarlywood(number);
   late = speciesLatewood(number);
@@ -2490,8 +2490,8 @@ speciesMaterial(number, @point axisOrigin, @direction(axisOrigin) axisDir, look,
   sheen = coatSheen + (0.85 - coatSheen) * charred;
   // The point's place through its ring, once for the pores, the torched relief
   // and the weathering.
-  local = map.axisAt(axisOrigin, axisDir);
-  ringIndex, progress = ringAt((knots > 0 ? knottedGrowthAt(axisOrigin, axisDir, rings.x, knots, knotStyle) : stemGrowthAt(axisOrigin, axisDir, rings.x)).x, 3);
+  local = map.axisAt(axisOrigin, axisDirection);
+  ringIndex, progress = ringAt((knots > 0 ? knottedGrowthAt(axisOrigin, axisDirection, rings.x, knots, knotStyle) : stemGrowthAt(axisOrigin, axisDirection, rings.x)).x, 3);
   // Where the number varies both sides of the choice are computed, so the pore
   // surface takes at least the 0.25 mm it is chosen for; see speciesMaterial.
   poreRelief = [0, 0];
@@ -2504,7 +2504,7 @@ speciesMaterial(number, @point axisOrigin, @direction(axisOrigin) axisDir, look,
   relief = poreRelief.x * material.filmKeeps(max(poreSize, 0.01), build) + prepHeight(prep, normal, local, progress, rings.x, build);
   finished = look.z > 0 ? weatheredSurfaceAt(local, progress, rings.x, surface.y, poreRough, look.z, relief) : [poreRough, relief];
   // The relief too small to see, or not drawn, streaks the lobe by its slopes.
-  grainDir = normalize(axisDir);
+  grainDir = normalize(axisDirection);
   unit = normal / max(length(normal), 0.000001);
   grainIn = 1 - dot(grainDir, unit) * dot(grainDir, unit);
   sizeShare = poreSizeShare(progress, late.w, poreZoneShare(bands.z, rings.x));
@@ -2968,14 +2968,14 @@ wormAt(local, barkRadius, heartRadius, amount, pins, grubs, fine) {
 // [bleach, line, mold, pigment] (see spaltAt) and [cover, height, streak,
 // frass] (see wormAt), for the insects of record `insects`. There is no wood
 // past the bark, so none there; a barkRadius of 0 has no bark.
-speciesDecay(number, axisOrigin, axisDir, knotSpacing, barkRadius, spalting, wormholes, insects) {
+speciesDecay(number, axisOrigin, axisDirection, knotSpacing, barkRadius, spalting, wormholes, insects) {
   rings = speciesRings(number);
   sap = speciesSapwood(number);
   surface = speciesSurfaceRow(number);
   knots = knotSpacing < 0 ? surface.z : knotSpacing;
-  grown = (knots > 0 ? knottedGrowthAt(axisOrigin, axisDir, rings.x, knots, speciesKnotStyle(number)) : stemGrowthAt(axisOrigin, axisDir, rings.x)).x;
+  grown = (knots > 0 ? knottedGrowthAt(axisOrigin, axisDirection, rings.x, knots, speciesKnotStyle(number)) : stemGrowthAt(axisOrigin, axisDirection, rings.x)).x;
   heartRings = barkRadius / rings.x - sap.w + (barkRadius > 0 ? 0 : 1000000);
-  local = map.axisAt(axisOrigin, axisDir);
+  local = map.axisAt(axisOrigin, axisDirection);
   // One fine noise, 6 mm across the grain and 30 along, for the zone lines'
   // wandering and the mold's and the stains' ragged edges.
   fine = noise.gradientLattice([local.x / 6 + 41, local.y / 6 + 3, local.z / 30]);
@@ -2988,13 +2988,13 @@ speciesDecay(number, axisOrigin, axisDir, knotSpacing, barkRadius, spalting, wor
 // The decay's colours, finished as the wood is (see colorFromRowsFinished),
 // as rows: bleached wood, a zone line and mold, from the fungi record, and a
 // pinhole's streak, from the insects record.
-decayTones(number, axisDir, look, normal, prep, stain, topcoat, fungi, insects) {
+decayTones(number, axisDirection, look, normal, prep, stain, topcoat, fungi, insects) {
   aged = clamp(look.y, 0, 1);
   age = speciesAgeRow(number);
   aging = [1, 1, 1] + (age.xyz - [1, 1, 1]) * aged;
   uptake = speciesStainRow(number);
   n = normal / max(length(normal), 0.000001);
-  endGrain = dot(n, axisDir) / max(length(axisDir), 0.000001);
+  endGrain = dot(n, axisDirection) / max(length(axisDirection), 0.000001);
   stainLook = stain[0];
   stainKind = stain[1];
   coatLook = topcoat[0];
@@ -3016,47 +3016,47 @@ decayTones(number, axisDir, look, normal, prep, stain, topcoat, fungi, insects) 
   return [[bleached.x, bleached.y, bleached.z, bleaching.w], [line.x, line.y, line.z, lines.w], [mold.x, mold.y, mold.z, molding.w], [streak.x, streak.y, streak.z, streaking.w]];
 }
 
-/// speciesColor(number, axisOrigin, axisDir, look, knotSpacing, barkRadius,
+/// speciesColor(number, axisOrigin, axisDirection, look, knotSpacing, barkRadius,
 /// normal, prep, stain, topcoat, spalting, wormholes): the finished colour
 /// with spalting and worm holes, each 0 to 1: up to 0.5 through the sapwood,
 /// then on in from the heartwood's edge toward the pith, by the species' own
 /// fungi and insects (speciesFungi, speciesInsects); see Spalting and worm
 /// holes. The worms bore in from the bark, so barkRadius must be given. Both
 /// are weathered with the wood.
-speciesColor(number, @point axisOrigin, @direction(axisOrigin) axisDir, look, knotSpacing, barkRadius, normal, prep, stain, topcoat, spalting, wormholes) {
-  return speciesColor(number, axisOrigin, axisDir, look, knotSpacing, barkRadius, normal, prep, stain, topcoat, spalting, wormholes, speciesFungi(number), speciesInsects(number));
+speciesColor(number, @point axisOrigin, @direction(axisOrigin) axisDirection, look, knotSpacing, barkRadius, normal, prep, stain, topcoat, spalting, wormholes) {
+  return speciesColor(number, axisOrigin, axisDirection, look, knotSpacing, barkRadius, normal, prep, stain, topcoat, spalting, wormholes, speciesFungi(number), speciesInsects(number));
 }
 
-/// speciesColor(number, axisOrigin, axisDir, look, knotSpacing, barkRadius,
+/// speciesColor(number, axisOrigin, axisDirection, look, knotSpacing, barkRadius,
 /// normal, prep, stain, topcoat, spalting, wormholes, fungi, insects): the
 /// same, by the fungi and insects of the records given.
-speciesColor(number, @point axisOrigin, @direction(axisOrigin) axisDir, look, knotSpacing, barkRadius, normal, prep, stain, topcoat, spalting, wormholes, fungi, insects) {
-  sound = speciesColor(number, axisOrigin, axisDir, [look.x, look.y, 0], knotSpacing, barkRadius, normal, prep, stain, topcoat);
-  decay = speciesDecay(number, axisOrigin, axisDir, knotSpacing, barkRadius, spalting, wormholes, insects);
+speciesColor(number, @point axisOrigin, @direction(axisOrigin) axisDirection, look, knotSpacing, barkRadius, normal, prep, stain, topcoat, spalting, wormholes, fungi, insects) {
+  sound = speciesColor(number, axisOrigin, axisDirection, [look.x, look.y, 0], knotSpacing, barkRadius, normal, prep, stain, topcoat);
+  decay = speciesDecay(number, axisOrigin, axisDirection, knotSpacing, barkRadius, spalting, wormholes, insects);
   spalt = decay[0];
   worm = decay[1];
-  tones = decayTones(number, axisDir, look, normal, prep, stain, topcoat, fungi, insects);
+  tones = decayTones(number, axisDirection, look, normal, prep, stain, topcoat, fungi, insects);
   decayed = decayedColor(sound, spalt, worm, tones, fungi);
-  wood = look.z > 0 ? weatheredColor(axisOrigin, axisDir, decayed, look.z) : decayed;
+  wood = look.z > 0 ? weatheredColor(axisOrigin, axisDirection, decayed, look.z) : decayed;
   // Stand-in: the finished wood's, decayed on average (see decayedStandColor)
   // and greyed as the wood is.
-  wood.simple = weatheredStandIn(decayedStandColor(finishedStandColor(number, axisDir, look, normal, prep, stain, topcoat), spalting, wormholes, insects, tones, fungi), look.z);
+  wood.simple = weatheredStandIn(decayedStandColor(finishedStandColor(number, axisDirection, look, normal, prep, stain, topcoat), spalting, wormholes, insects, tones, fungi), look.z);
   return wood;
 }
 
-/// speciesColor(number, axisOrigin, axisDir, look, knotSpacing, barkRadius,
+/// speciesColor(number, axisOrigin, axisDirection, look, knotSpacing, barkRadius,
 /// decay): the colour of the species under the look's oil, spalted and
 /// worm-eaten as the decay record `decay` says; see decay. The worms bore in
 /// from the bark, so barkRadius must be given.
-speciesColor(number, @point axisOrigin, @direction(axisOrigin) axisDir, look, knotSpacing, barkRadius, decay) {
+speciesColor(number, @point axisOrigin, @direction(axisOrigin) axisDirection, look, knotSpacing, barkRadius, decay) {
   head = decay[0];
   fungi = decayFungi(number, decay);
   insects = decayInsects(number, decay);
-  sound = speciesColor(number, axisOrigin, axisDir, [look.x, look.y, 0], knotSpacing, barkRadius);
-  rot = speciesDecay(number, axisOrigin, axisDir, knotSpacing, barkRadius, head.x, head.y, insects);
+  sound = speciesColor(number, axisOrigin, axisDirection, [look.x, look.y, 0], knotSpacing, barkRadius);
+  rot = speciesDecay(number, axisOrigin, axisDirection, knotSpacing, barkRadius, head.x, head.y, insects);
   tones = oiledDecayTones(number, look, fungi, insects);
   decayed = decayedColor(sound, rot[0], rot[1], tones, fungi);
-  wood = look.z > 0 ? weatheredColor(axisOrigin, axisDir, decayed, look.z) : decayed;
+  wood = look.z > 0 ? weatheredColor(axisOrigin, axisDirection, decayed, look.z) : decayed;
   // Stand-in: the oiled wood's, decayed on average and greyed as the wood is.
   wood.simple = weatheredStandIn(decayedStandColor(oiledStandColor(number, look), head.x, head.y, insects, tones, fungi), look.z);
   return wood;
@@ -3106,43 +3106,43 @@ decayedColor(sound, spalt, worm, tones, fungi) {
   return color.oklab2rgb(holedLab);
 }
 
-/// speciesMaterial(number, axisOrigin, axisDir, look, knotSpacing,
+/// speciesMaterial(number, axisOrigin, axisDirection, look, knotSpacing,
 /// barkRadius, normal, prep, topcoat, spalting, wormholes): the finished
 /// material with spalting and worm holes, by the species' own fungi and
 /// insects; see speciesColor with them. White-rotted wood is soft: it sands
 /// 0.05 mm lower than the sound wood around it, and bare it is matte, up to
 /// roughness 0.8, which an oil or a film mostly takes up. A hole is a pit,
 /// matte at 0.9. Judged.
-speciesMaterial(number, @point axisOrigin, @direction(axisOrigin) axisDir, look, knotSpacing, barkRadius, normal, prep, topcoat, spalting, wormholes) {
-  return speciesMaterial(number, axisOrigin, axisDir, look, knotSpacing, barkRadius, normal, prep, topcoat, spalting, wormholes, speciesFungi(number), speciesInsects(number));
+speciesMaterial(number, @point axisOrigin, @direction(axisOrigin) axisDirection, look, knotSpacing, barkRadius, normal, prep, topcoat, spalting, wormholes) {
+  return speciesMaterial(number, axisOrigin, axisDirection, look, knotSpacing, barkRadius, normal, prep, topcoat, spalting, wormholes, speciesFungi(number), speciesInsects(number));
 }
 
-/// speciesMaterial(number, axisOrigin, axisDir, look, knotSpacing,
+/// speciesMaterial(number, axisOrigin, axisDirection, look, knotSpacing,
 /// barkRadius, normal, prep, topcoat, spalting, wormholes, fungi, insects):
 /// the same, by the fungi and insects of the records given.
-speciesMaterial(number, @point axisOrigin, @direction(axisOrigin) axisDir, look, knotSpacing, barkRadius, normal, prep, topcoat, spalting, wormholes, fungi, insects) {
-  sound = speciesMaterial(number, axisOrigin, axisDir, look, knotSpacing, normal, prep, topcoat);
-  decay = speciesDecay(number, axisOrigin, axisDir, knotSpacing, barkRadius, spalting, wormholes, insects);
+speciesMaterial(number, @point axisOrigin, @direction(axisOrigin) axisDirection, look, knotSpacing, barkRadius, normal, prep, topcoat, spalting, wormholes, fungi, insects) {
+  sound = speciesMaterial(number, axisOrigin, axisDirection, look, knotSpacing, normal, prep, topcoat);
+  decay = speciesDecay(number, axisOrigin, axisDirection, knotSpacing, barkRadius, spalting, wormholes, insects);
   coatFilm = topcoat[1];
   bare = coatFilm.x < 0.5 ? 1 : 0.3;
   decayed = decayedMaterial(sound, decay[0], decay[1], fungi, bare);
   // Stand-in: the finished wood's, softened by the average spalting; the
   // holes, under 0.011 of the wood, are left out (see spaltStand).
-  decayed.simple = decayedMaterial(finishedStandMaterial(number, axisDir, look, normal, prep, topcoat), spaltStand(spalting), [0, 0, 0, 0], fungi, bare);
+  decayed.simple = decayedMaterial(finishedStandMaterial(number, axisDirection, look, normal, prep, topcoat), spaltStand(spalting), [0, 0, 0, 0], fungi, bare);
   return decayed;
 }
 
-/// speciesMaterial(number, axisOrigin, axisDir, look, knotSpacing, barkRadius,
+/// speciesMaterial(number, axisOrigin, axisDirection, look, knotSpacing, barkRadius,
 /// decay): the material of the species under the look's oil, spalted and
 /// worm-eaten as the decay record `decay` says; see speciesMaterial with
 /// spalting and wormholes. The oil takes up the white-rotted wood's mattness
 /// as it does under a finish, 0.3 of it left at oil 1.
-speciesMaterial(number, @point axisOrigin, @direction(axisOrigin) axisDir, look, knotSpacing, barkRadius, decay) {
+speciesMaterial(number, @point axisOrigin, @direction(axisOrigin) axisDirection, look, knotSpacing, barkRadius, decay) {
   head = decay[0];
   fungi = decayFungi(number, decay);
   insects = decayInsects(number, decay);
-  sound = speciesMaterial(number, axisOrigin, axisDir, look, knotSpacing);
-  rot = speciesDecay(number, axisOrigin, axisDir, knotSpacing, barkRadius, head.x, head.y, insects);
+  sound = speciesMaterial(number, axisOrigin, axisDirection, look, knotSpacing);
+  rot = speciesDecay(number, axisOrigin, axisDirection, knotSpacing, barkRadius, head.x, head.y, insects);
   bare = 1 - 0.7 * clamp(look.x, 0, 1);
   decayed = decayedMaterial(sound, rot[0], rot[1], fungi, bare);
   // Stand-in: the oiled wood's, softened by the average spalting.
@@ -3217,7 +3217,7 @@ oiledStandColor(number, look) {
 // The stand-in of the species' finished colour, as colorFromRowsFinished
 // declares it, with the stain taken as decayTones takes it, its blotches
 // averaged out.
-finishedStandColor(number, axisDir, look, normal, prep, stain, topcoat) {
+finishedStandColor(number, axisDirection, look, normal, prep, stain, topcoat) {
   rings = speciesRings(number);
   early = speciesEarlywood(number);
   late = speciesLatewood(number);
@@ -3227,7 +3227,7 @@ finishedStandColor(number, axisDir, look, normal, prep, stain, topcoat) {
   aged = clamp(look.y, 0, 1);
   aging = ([1, 1, 1] + (weeks.xyz - [1, 1, 1]) * (1 - pow(1 - aged, 37))) * ([1, 1, 1] + (age.xyz - [1, 1, 1]) * aged);
   n = normal / max(length(normal), 0.000001);
-  endGrain = dot(n, axisDir) / max(length(axisDir), 0.000001);
+  endGrain = dot(n, axisDirection) / max(length(axisDirection), 0.000001);
   stainLook = stain[0];
   stainKind = stain[1];
   coatLook = topcoat[0];
@@ -3256,7 +3256,7 @@ oiledStandMaterial(number, look) {
 // The stand-in of the species' finished material, as speciesMaterial with a
 // prep and topcoat declares it: the topcoat's sheen, the pores and the relief
 // too small to see.
-finishedStandMaterial(number, axisDir, look, normal, prep, topcoat) {
+finishedStandMaterial(number, axisDirection, look, normal, prep, topcoat) {
   rings = speciesRings(number);
   early = speciesEarlywood(number);
   poreSize = early.w;
@@ -3268,284 +3268,284 @@ finishedStandMaterial(number, axisDir, look, normal, prep, topcoat) {
   charred = kind < 0.5 ? (prepHead.x > 4.5 ? min(prepHead.y, 1) : 0) : 0;
   coatSheen = material.roughnessFromGloss(coatLook.w);
   sheen = coatSheen + (0.85 - coatSheen) * charred;
-  grainDir = normalize(axisDir);
+  grainDir = normalize(axisDirection);
   unit = normal / max(length(normal), 0.000001);
   grainIn = 1 - dot(grainDir, unit) * dot(grainDir, unit);
   feed = prep[1];
   return hiddenSlopeFinish(sheen, normal, grainDir, feed.xyz, prepSlopes(prep, normal, grainIn, rings.x, build, 1) + poreSlopes(poreSize, [1, 1], grainIn, build, 1));
 }
 
-/// whiteOak(axisOrigin, axisDir, look): white oak, ring-porous: a row of big
+/// whiteOak(axisOrigin, axisDirection, look): white oak, ring-porous: a row of big
 /// pores after each ring boundary, 1.5 mm rings, and broad rays that show as
 /// dashes on flat-sawn faces and flecks on quarter-sawn ones. Measured from
 /// Mokume's Japanese white oak (nara, Quercus crispula).
-whiteOak(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(whiteOakNumber, axisOrigin, axisDir, look);
+whiteOak(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(whiteOakNumber, axisOrigin, axisDirection, look);
 }
-whiteOak(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return whiteOak(axisOrigin, axisDir, defaultLook);
+whiteOak(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return whiteOak(axisOrigin, axisDirection, defaultLook);
 }
 
-/// redOak(axisOrigin, axisDir, look): red oak, ring-porous like white oak but
+/// redOak(axisOrigin, axisDirection, look): red oak, ring-porous like white oak but
 /// paler, with open pores that read darker and rays a little smaller.
-redOak(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(redOakNumber, axisOrigin, axisDir, look);
+redOak(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(redOakNumber, axisOrigin, axisDirection, look);
 }
-redOak(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return redOak(axisOrigin, axisDir, defaultLook);
+redOak(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return redOak(axisOrigin, axisDirection, defaultLook);
 }
 
-/// liveOak(axisOrigin, axisDir, look): live oak, the evergreen oak: dense,
+/// liveOak(axisOrigin, axisDirection, look): live oak, the evergreen oak: dense,
 /// diffuse-porous rather than ring-porous, tan, with oak's broad rays. The
 /// ring width and pores are judged, not measured.
-liveOak(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(liveOakNumber, axisOrigin, axisDir, look);
+liveOak(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(liveOakNumber, axisOrigin, axisDirection, look);
 }
-liveOak(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return liveOak(axisOrigin, axisDir, defaultLook);
+liveOak(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return liveOak(axisOrigin, axisDirection, defaultLook);
 }
 
-/// japaneseElm(axisOrigin, axisDir, look): Japanese elm (harunire, nire),
+/// japaneseElm(axisOrigin, axisDirection, look): Japanese elm (harunire, nire),
 /// ring-porous: wide 4.5 mm rings, each opening with a narrow row of big
 /// pores, then latewood crossed by elm's wavy pale bands. Measured from
 /// Mokume's cubes.
-japaneseElm(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(japaneseElmNumber, axisOrigin, axisDir, look);
+japaneseElm(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(japaneseElmNumber, axisOrigin, axisDirection, look);
 }
-japaneseElm(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return japaneseElm(axisOrigin, axisDir, defaultLook);
+japaneseElm(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return japaneseElm(axisOrigin, axisDirection, defaultLook);
 }
 
-/// walnut(axisOrigin, axisDir, look): black walnut, semi-ring-porous: 3.3 mm
+/// walnut(axisOrigin, axisDirection, look): black walnut, semi-ring-porous: 3.3 mm
 /// rings, medium pores, 0.16 mm across, scattered through each ring, and a
 /// grey-brown that a finish turns deep brown.
-walnut(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(walnutNumber, axisOrigin, axisDir, look);
+walnut(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(walnutNumber, axisOrigin, axisDirection, look);
 }
-walnut(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return walnut(axisOrigin, axisDir, defaultLook);
+walnut(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return walnut(axisOrigin, axisDirection, defaultLook);
 }
 
-/// cherry(axisOrigin, axisDir, look): black cherry, diffuse-porous: 2.8 mm
+/// cherry(axisOrigin, axisDirection, look): black cherry, diffuse-porous: 2.8 mm
 /// rings that hardly change colour, fine pores throughout, small rays, and
 /// dark red-brown gum streaks. The streaks are judged.
-cherry(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(cherryNumber, axisOrigin, axisDir, look);
+cherry(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(cherryNumber, axisOrigin, axisDirection, look);
 }
-cherry(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return cherry(axisOrigin, axisDir, defaultLook);
+cherry(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return cherry(axisOrigin, axisDirection, defaultLook);
 }
 
-/// sugarMaple(axisOrigin, axisDir, look): sugar maple, the hard maple: a warm
+/// sugarMaple(axisOrigin, axisDirection, look): sugar maple, the hard maple: a warm
 /// cream, diffuse-porous, 2 mm rings, pores too fine to see, and fine rays. The
 /// colour is The Wood Database's; the structure is Mokume's maple.
-sugarMaple(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(sugarMapleNumber, axisOrigin, axisDir, look);
+sugarMaple(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(sugarMapleNumber, axisOrigin, axisDirection, look);
 }
-sugarMaple(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return sugarMaple(axisOrigin, axisDir, defaultLook);
+sugarMaple(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return sugarMaple(axisOrigin, axisDirection, defaultLook);
 }
 
-/// norwayMaple(axisOrigin, axisDir, look): a soft maple with a Norway maple's
+/// norwayMaple(axisOrigin, axisDirection, look): a soft maple with a Norway maple's
 /// greyer, pinker pale: diffuse-porous, 2 mm rings, pores too fine to see, and
 /// fine rays. Measured from Mokume's maple cubes (Acer spp.).
-norwayMaple(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(norwayMapleNumber, axisOrigin, axisDir, look);
+norwayMaple(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(norwayMapleNumber, axisOrigin, axisDirection, look);
 }
-norwayMaple(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return norwayMaple(axisOrigin, axisDir, defaultLook);
+norwayMaple(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return norwayMaple(axisOrigin, axisDirection, defaultLook);
 }
 
-/// beech(axisOrigin, axisDir, look): beech, diffuse-porous: pale, 2.7 mm rings,
+/// beech(axisOrigin, axisDirection, look): beech, diffuse-porous: pale, 2.7 mm rings,
 /// pores too fine to see, and rays that fleck every face.
-beech(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(beechNumber, axisOrigin, axisDir, look);
+beech(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(beechNumber, axisOrigin, axisDirection, look);
 }
-beech(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return beech(axisOrigin, axisDir, defaultLook);
+beech(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return beech(axisOrigin, axisDirection, defaultLook);
 }
 
-/// rosewood(axisOrigin, axisDir, look): East Indian rosewood: purple-brown
+/// rosewood(axisOrigin, axisDirection, look): East Indian rosewood: purple-brown
 /// with darker streaks along the grain and open pores.
-rosewood(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(rosewoodNumber, axisOrigin, axisDir, look);
+rosewood(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(rosewoodNumber, axisOrigin, axisDirection, look);
 }
-rosewood(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return rosewood(axisOrigin, axisDir, defaultLook);
+rosewood(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return rosewood(axisOrigin, axisDirection, defaultLook);
 }
 
-/// macassarEbony(axisOrigin, axisDir, look): Macassar ebony: bold near-black
+/// macassarEbony(axisOrigin, axisDirection, look): Macassar ebony: bold near-black
 /// streaks over a tan-brown ground, following the rings loosely.
-macassarEbony(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(macassarEbonyNumber, axisOrigin, axisDir, look);
+macassarEbony(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(macassarEbonyNumber, axisOrigin, axisDirection, look);
 }
-macassarEbony(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return macassarEbony(axisOrigin, axisDir, defaultLook);
+macassarEbony(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return macassarEbony(axisOrigin, axisDirection, defaultLook);
 }
 
-/// ebony(axisOrigin, axisDir, look): Gaboon ebony: near black, with rings you
+/// ebony(axisOrigin, axisDirection, look): Gaboon ebony: near black, with rings you
 /// cannot see, fine pores and the odd faint brown streak. It polishes glossy.
-ebony(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(ebonyNumber, axisOrigin, axisDir, look);
+ebony(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(ebonyNumber, axisOrigin, axisDirection, look);
 }
-ebony(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return ebony(axisOrigin, axisDir, defaultLook);
+ebony(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return ebony(axisOrigin, axisDirection, defaultLook);
 }
 
-/// yew(axisOrigin, axisDir, look): English yew, a softwood without resin
+/// yew(axisOrigin, axisDirection, look): English yew, a softwood without resin
 /// canals: tight 1.5 mm rings with a crisp dark latewood line, orange-brown
 /// heartwood, cream sapwood 12 rings deep in a stem 78 mm to the bark, and
 /// knots, a branch every 120 mm or so along the stem. The ring width and the
 /// sapwood are judged, and so are the knots, from yew's irregular clustered
 /// branching.
-yew(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(yewNumber, axisOrigin, axisDir, look, -1, 78);
+yew(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(yewNumber, axisOrigin, axisDirection, look, -1, 78);
 }
-yew(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return yew(axisOrigin, axisDir, defaultLook);
+yew(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return yew(axisOrigin, axisDirection, defaultLook);
 }
 
-/// douglasFir(axisOrigin, axisDir, look): Douglas fir: pale earlywood ending
+/// douglasFir(axisOrigin, axisDirection, look): Douglas fir: pale earlywood ending
 /// abruptly in a broad orange latewood band, no pores, and resin canals, fine
 /// dark dots and lines in the latewood. The ring width is judged.
-douglasFir(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(douglasFirNumber, axisOrigin, axisDir, look);
+douglasFir(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(douglasFirNumber, axisOrigin, axisDirection, look);
 }
-douglasFir(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return douglasFir(axisOrigin, axisDir, defaultLook);
+douglasFir(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return douglasFir(axisOrigin, axisDirection, defaultLook);
 }
 
-/// pine(axisOrigin, axisDir, knotScale, look): eastern white pine, a soft pine:
+/// pine(axisOrigin, axisDirection, knotScale, look): eastern white pine, a soft pine:
 /// pale, 4 mm rings that darken gradually into a faint latewood, no pores, and
 /// knots: whorls of branches from the pith every knotScale mm along the stem,
 /// with the rings bending around each branch. The colour is measured; the ring
 /// width is judged.
-pine(@point axisOrigin, @direction(axisOrigin) axisDir, knotScale, look) {
-  return species(pineNumber, axisOrigin, axisDir, look, knotScale);
+pine(@point axisOrigin, @direction(axisOrigin) axisDirection, knotScale, look) {
+  return species(pineNumber, axisOrigin, axisDirection, look, knotScale);
 }
-pine(@point axisOrigin, @direction(axisOrigin) axisDir, knotScale) {
-  return pine(axisOrigin, axisDir, knotScale, defaultLook);
+pine(@point axisOrigin, @direction(axisOrigin) axisDirection, knotScale) {
+  return pine(axisOrigin, axisDirection, knotScale, defaultLook);
 }
 
-/// chestnut(axisOrigin, axisDir, look): Japanese chestnut (kuri): ring-porous,
+/// chestnut(axisOrigin, axisDirection, look): Japanese chestnut (kuri): ring-porous,
 /// a row of big pores opening each 3.5 mm ring, pale grey-tan, few rays.
 /// Measured from Mokume's cubes; its aging is judged from its nearest measured
 /// relative.
-chestnut(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(chestnutNumber, axisOrigin, axisDir, look);
+chestnut(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(chestnutNumber, axisOrigin, axisDirection, look);
 }
-chestnut(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return chestnut(axisOrigin, axisDir, defaultLook);
+chestnut(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return chestnut(axisOrigin, axisDirection, defaultLook);
 }
 
-/// japaneseWalnut(axisOrigin, axisDir, look): Japanese walnut (kurumi):
+/// japaneseWalnut(axisOrigin, axisDirection, look): Japanese walnut (kurumi):
 /// semi-ring-porous like black walnut but paler and greyer, with wide 8.8 mm
 /// rings. Measured from Mokume's cubes; its aging is judged from its nearest
 /// measured relative.
-japaneseWalnut(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(japaneseWalnutNumber, axisOrigin, axisDir, look);
+japaneseWalnut(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(japaneseWalnutNumber, axisOrigin, axisDirection, look);
 }
-japaneseWalnut(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return japaneseWalnut(axisOrigin, axisDir, defaultLook);
+japaneseWalnut(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return japaneseWalnut(axisOrigin, axisDirection, defaultLook);
 }
 
-/// keyaki(axisOrigin, axisDir, look): Keyaki (zelkova): ring-porous and
+/// keyaki(axisOrigin, axisDirection, look): Keyaki (zelkova): ring-porous and
 /// golden, with strong figure on the face. Measured from Mokume's cubes; its
 /// aging is judged from its nearest measured relative.
-keyaki(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(keyakiNumber, axisOrigin, axisDir, look);
+keyaki(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(keyakiNumber, axisOrigin, axisDirection, look);
 }
-keyaki(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return keyaki(axisOrigin, axisDir, defaultLook);
+keyaki(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return keyaki(axisOrigin, axisDirection, defaultLook);
 }
 
-/// cherryBirch(axisOrigin, axisDir, look): Japanese cherry birch (mizume):
+/// cherryBirch(axisOrigin, axisDirection, look): Japanese cherry birch (mizume):
 /// diffuse-porous, fine and even, pale pinkish brown. Measured from Mokume's
 /// cubes; its aging is judged from its nearest measured relative.
-cherryBirch(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(cherryBirchNumber, axisOrigin, axisDir, look);
+cherryBirch(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(cherryBirchNumber, axisOrigin, axisDirection, look);
 }
-cherryBirch(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return cherryBirch(axisOrigin, axisDir, defaultLook);
+cherryBirch(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return cherryBirch(axisOrigin, axisDirection, defaultLook);
 }
 
-/// sycamore(axisOrigin, axisDir, look): American sycamore (platanus):
+/// sycamore(axisOrigin, axisDirection, look): American sycamore (platanus):
 /// diffuse-porous, pale, with rays that fleck every face, the lacewood look.
 /// Measured from Mokume's cubes; its aging is judged from its nearest measured
 /// relative.
-sycamore(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(sycamoreNumber, axisOrigin, axisDir, look);
+sycamore(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(sycamoreNumber, axisOrigin, axisDirection, look);
 }
-sycamore(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return sycamore(axisOrigin, axisDir, defaultLook);
+sycamore(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return sycamore(axisOrigin, axisDirection, defaultLook);
 }
 
-/// sakura(axisOrigin, axisDir, look): Sakura, Japanese cherry: diffuse-porous,
+/// sakura(axisOrigin, axisDirection, look): Sakura, Japanese cherry: diffuse-porous,
 /// warm brown, 4.9 mm rings. Measured from Mokume's cubes; its aging is judged
 /// from its nearest measured relative.
-sakura(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(sakuraNumber, axisOrigin, axisDir, look);
+sakura(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(sakuraNumber, axisOrigin, axisDirection, look);
 }
-sakura(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return sakura(axisOrigin, axisDir, defaultLook);
+sakura(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return sakura(axisOrigin, axisDirection, defaultLook);
 }
 
-/// horseChestnut(axisOrigin, axisDir, look): Japanese horse chestnut
+/// horseChestnut(axisOrigin, axisDirection, look): Japanese horse chestnut
 /// (tochinoki): very pale and fine, pores too small to see. Measured from
 /// Mokume's cubes; its aging is judged from its nearest measured relative.
-horseChestnut(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(horseChestnutNumber, axisOrigin, axisDir, look);
+horseChestnut(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(horseChestnutNumber, axisOrigin, axisDirection, look);
 }
-horseChestnut(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return horseChestnut(axisOrigin, axisDir, defaultLook);
+horseChestnut(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return horseChestnut(axisOrigin, axisDirection, defaultLook);
 }
 
-/// hinoki(axisOrigin, axisDir, look): Hinoki, Japanese cypress: a pale
+/// hinoki(axisOrigin, axisDirection, look): Hinoki, Japanese cypress: a pale
 /// softwood with thin crisp latewood lines and scattered knots. Measured
 /// from Mokume's cubes; its aging is judged from its nearest measured
 /// relative.
-hinoki(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(hinokiNumber, axisOrigin, axisDir, look);
+hinoki(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(hinokiNumber, axisOrigin, axisDirection, look);
 }
-hinoki(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return hinoki(axisOrigin, axisDir, defaultLook);
+hinoki(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return hinoki(axisOrigin, axisDirection, defaultLook);
 }
 
-/// sugi(axisOrigin, axisDir, look): Sugi, Japanese cedar: a softwood with
+/// sugi(axisOrigin, axisDirection, look): Sugi, Japanese cedar: a softwood with
 /// pinkish-red heartwood, pale sapwood 15 rings deep in a stem 168 mm to the
 /// bark with a pink ring at its boundary, wide rings and knots in loose whorls.
 /// Measured from Mokume's cubes; its aging is judged from its nearest measured
 /// relative.
-sugi(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(sugiNumber, axisOrigin, axisDir, look, -1, 168);
+sugi(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(sugiNumber, axisOrigin, axisDirection, look, -1, 168);
 }
-sugi(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return sugi(axisOrigin, axisDir, defaultLook);
+sugi(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return sugi(axisOrigin, axisDirection, defaultLook);
 }
 
-/// ginkgo(axisOrigin, axisDir, look): Ginkgo (icho): plain pale yellow, faint
+/// ginkgo(axisOrigin, axisDirection, look): Ginkgo (icho): plain pale yellow, faint
 /// rings, no pores. Measured from Mokume's cubes; its aging is judged from its
 /// nearest measured relative.
-ginkgo(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(ginkgoNumber, axisOrigin, axisDir, look);
+ginkgo(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(ginkgoNumber, axisOrigin, axisDirection, look);
 }
-ginkgo(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return ginkgo(axisOrigin, axisDir, defaultLook);
+ginkgo(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return ginkgo(axisOrigin, axisDirection, defaultLook);
 }
 
-/// poplar(axisOrigin, axisDir, look): Yellow poplar: pale creamy yellow,
+/// poplar(axisOrigin, axisDirection, look): Yellow poplar: pale creamy yellow,
 /// diffuse-porous, rings barely there, and faint greenish heartwood streaks.
 /// The colour is The Wood Database's; the structure and aging are judged.
-poplar(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(poplarNumber, axisOrigin, axisDir, look);
+poplar(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(poplarNumber, axisOrigin, axisDirection, look);
 }
 
-/// poplar(axisOrigin, axisDir, look, mineral): poplar with `mineral` of the
+/// poplar(axisOrigin, axisDirection, look, mineral): poplar with `mineral` of the
 /// mineral stain it takes up from the soil, 0 to 1: 0 is plain poplar, 0.5
 /// darkPoplar, the olive-cream heartwood streaked purple-grey, and 1 the
 /// heaviest, greenish grey with purple-black streaks. Returns material, color.
-poplar(@point axisOrigin, @direction(axisOrigin) axisDir, look, mineral) {
-  return speciesMaterial(poplarNumber, axisOrigin, axisDir, look, -1), poplarColor(axisOrigin, axisDir, look, mineral);
+poplar(@point axisOrigin, @direction(axisOrigin) axisDirection, look, mineral) {
+  return speciesMaterial(poplarNumber, axisOrigin, axisDirection, look, -1), poplarColor(axisOrigin, axisDirection, look, mineral);
 }
 
 // Row i of poplar with `mineral` of stain: plain poplar's rows blended toward
@@ -3555,282 +3555,282 @@ mineralRow(i, mineral) {
   return t < 1 ? poplarData[i] + (darkPoplarData[i] - poplarData[i]) * t : darkPoplarData[i] + (mineralPoplarData[i] - darkPoplarData[i]) * (t - 1);
 }
 
-/// poplarColor(axisOrigin, axisDir, look, mineral): the colour alone of poplar
+/// poplarColor(axisOrigin, axisDirection, look, mineral): the colour alone of poplar
 /// with `mineral` of stain; see poplar. Use it, with
 /// speciesMaterial(poplarNumber, ...), where the mineral or the look varies
 /// from point to point.
-poplarColor(@point axisOrigin, @direction(axisOrigin) axisDir, look, mineral) {
-  return colorFromRows(mineralRow(0, mineral), mineralRow(1, mineral), mineralRow(2, mineral), mineralRow(3, mineral), mineralRow(4, mineral), mineralRow(5, mineral), mineralRow(6, mineral), mineralRow(7, mineral), mineralRow(8, mineral), mineralRow(9, mineral), mineralRow(10, mineral), mineralRow(11, mineral), axisOrigin, axisDir, look, -1, speciesKnotStyle(poplarNumber), -1);
+poplarColor(@point axisOrigin, @direction(axisOrigin) axisDirection, look, mineral) {
+  return colorFromRows(mineralRow(0, mineral), mineralRow(1, mineral), mineralRow(2, mineral), mineralRow(3, mineral), mineralRow(4, mineral), mineralRow(5, mineral), mineralRow(6, mineral), mineralRow(7, mineral), mineralRow(8, mineral), mineralRow(9, mineral), mineralRow(10, mineral), mineralRow(11, mineral), axisOrigin, axisDirection, look, -1, speciesKnotStyle(poplarNumber), -1);
 }
 
-/// poplarColor(axisOrigin, axisDir, look, mineral, normal, prep, stain,
+/// poplarColor(axisOrigin, axisDirection, look, mineral, normal, prep, stain,
 /// topcoat): the same finished; see Finishes.
-poplarColor(@point axisOrigin, @direction(axisOrigin) axisDir, look, mineral, normal, prep, stain, topcoat) {
-  return colorFromRowsFinished(mineralRow(0, mineral), mineralRow(1, mineral), mineralRow(2, mineral), mineralRow(3, mineral), mineralRow(4, mineral), mineralRow(5, mineral), mineralRow(6, mineral), mineralRow(7, mineral), mineralRow(8, mineral), mineralRow(9, mineral), mineralRow(10, mineral), mineralRow(11, mineral), speciesStainRow(poplarNumber), axisOrigin, axisDir, look, -1, speciesKnotStyle(poplarNumber), -1, normal, prep, stain, topcoat);
+poplarColor(@point axisOrigin, @direction(axisOrigin) axisDirection, look, mineral, normal, prep, stain, topcoat) {
+  return colorFromRowsFinished(mineralRow(0, mineral), mineralRow(1, mineral), mineralRow(2, mineral), mineralRow(3, mineral), mineralRow(4, mineral), mineralRow(5, mineral), mineralRow(6, mineral), mineralRow(7, mineral), mineralRow(8, mineral), mineralRow(9, mineral), mineralRow(10, mineral), mineralRow(11, mineral), speciesStainRow(poplarNumber), axisOrigin, axisDirection, look, -1, speciesKnotStyle(poplarNumber), -1, normal, prep, stain, topcoat);
 }
-poplar(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return poplar(axisOrigin, axisDir, defaultLook);
+poplar(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return poplar(axisOrigin, axisDirection, defaultLook);
 }
 
-/// darkPoplar(axisOrigin, axisDir, look): mineral-stained poplar, the same as
+/// darkPoplar(axisOrigin, axisDirection, look): mineral-stained poplar, the same as
 /// poplar with mineral 0.5: poplar's olive-cream heartwood heavily streaked
 /// with purple-grey mineral stain. The colours are judged from The Wood
 /// Database's rainbow poplar; the structure and aging are poplar's.
-darkPoplar(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(darkPoplarNumber, axisOrigin, axisDir, look);
+darkPoplar(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(darkPoplarNumber, axisOrigin, axisDirection, look);
 }
-darkPoplar(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return darkPoplar(axisOrigin, axisDir, defaultLook);
+darkPoplar(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return darkPoplar(axisOrigin, axisDirection, defaultLook);
 }
 
-/// butternut(axisOrigin, axisDir, look): Butternut: the pale walnut,
+/// butternut(axisOrigin, axisDirection, look): Butternut: the pale walnut,
 /// semi-ring-porous with open pores, light tan. The colour is The Wood
 /// Database's; the structure and aging are judged.
-butternut(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(butternutNumber, axisOrigin, axisDir, look);
+butternut(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(butternutNumber, axisOrigin, axisDirection, look);
 }
-butternut(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return butternut(axisOrigin, axisDir, defaultLook);
+butternut(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return butternut(axisOrigin, axisDirection, defaultLook);
 }
 
-/// englishWalnut(axisOrigin, axisDir, look): English walnut: greyer and
+/// englishWalnut(axisOrigin, axisDirection, look): English walnut: greyer and
 /// lighter than black walnut, semi-ring-porous, with darker streaks. The
 /// colour is The Wood Database's; the structure and aging are judged.
-englishWalnut(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(englishWalnutNumber, axisOrigin, axisDir, look);
+englishWalnut(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(englishWalnutNumber, axisOrigin, axisDirection, look);
 }
-englishWalnut(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return englishWalnut(axisOrigin, axisDir, defaultLook);
+englishWalnut(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return englishWalnut(axisOrigin, axisDirection, defaultLook);
 }
 
-/// honeyLocust(axisOrigin, axisDir, look): Honey locust: ring-porous, light
+/// honeyLocust(axisOrigin, axisDirection, look): Honey locust: ring-porous, light
 /// reddish tan with big earlywood pores. The colour is The Wood Database's;
 /// the structure and aging are judged.
-honeyLocust(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(honeyLocustNumber, axisOrigin, axisDir, look);
+honeyLocust(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(honeyLocustNumber, axisOrigin, axisDirection, look);
 }
-honeyLocust(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return honeyLocust(axisOrigin, axisDir, defaultLook);
+honeyLocust(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return honeyLocust(axisOrigin, axisDirection, defaultLook);
 }
 
-/// hickory(axisOrigin, axisDir, look): Hickory: ring-porous, brown heartwood
+/// hickory(axisOrigin, axisDirection, look): Hickory: ring-porous, brown heartwood
 /// inside cream sapwood 17 rings deep in a stem 140 mm to the bark, the
 /// calico look. The colour is The Wood Database's; the structure and aging are
 /// judged.
-hickory(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(hickoryNumber, axisOrigin, axisDir, look, -1, 140);
+hickory(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(hickoryNumber, axisOrigin, axisDirection, look, -1, 140);
 }
-hickory(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return hickory(axisOrigin, axisDir, defaultLook);
+hickory(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return hickory(axisOrigin, axisDirection, defaultLook);
 }
 
-/// teak(axisOrigin, axisDir, look): Teak: golden olive-brown and oily,
+/// teak(axisOrigin, axisDirection, look): Teak: golden olive-brown and oily,
 /// semi-ring-porous, with dark streaks. The colour is The Wood Database's; the
 /// structure and aging are judged.
-teak(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(teakNumber, axisOrigin, axisDir, look);
+teak(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(teakNumber, axisOrigin, axisDirection, look);
 }
-teak(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return teak(axisOrigin, axisDir, defaultLook);
+teak(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return teak(axisOrigin, axisDirection, defaultLook);
 }
 
-/// padauk(axisOrigin, axisDir, look): Padauk: vivid orange-red with large open
+/// padauk(axisOrigin, axisDirection, look): Padauk: vivid orange-red with large open
 /// pores; light turns it brown. The colour is The Wood Database's; the
 /// structure and aging are judged.
-padauk(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(padaukNumber, axisOrigin, axisDir, look);
+padauk(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(padaukNumber, axisOrigin, axisDirection, look);
 }
-padauk(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return padauk(axisOrigin, axisDir, defaultLook);
+padauk(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return padauk(axisOrigin, axisDirection, defaultLook);
 }
 
-/// mahogany(axisOrigin, axisDir, look): Mahogany: warm reddish brown,
+/// mahogany(axisOrigin, axisDirection, look): Mahogany: warm reddish brown,
 /// diffuse-porous with medium pores and a ribbon of streaks. The colour is The
 /// Wood Database's; the structure and aging are judged.
-mahogany(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(mahoganyNumber, axisOrigin, axisDir, look);
+mahogany(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(mahoganyNumber, axisOrigin, axisDirection, look);
 }
-mahogany(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return mahogany(axisOrigin, axisDir, defaultLook);
+mahogany(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return mahogany(axisOrigin, axisDirection, defaultLook);
 }
 
-/// americanElm(axisOrigin, axisDir, look): American elm: ring-porous, light
+/// americanElm(axisOrigin, axisDirection, look): American elm: ring-porous, light
 /// tan, a narrow row of big pores opening each ring and latewood crossed by
 /// wavy pale bands, the feathery figure on flat-sawn faces. The heartwood and
 /// sapwood colours are measured side by side on The Wood Database's sample; the
 /// structure is judged from its end grain.
-americanElm(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(americanElmNumber, axisOrigin, axisDir, look);
+americanElm(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(americanElmNumber, axisOrigin, axisDirection, look);
 }
-americanElm(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return americanElm(axisOrigin, axisDir, defaultLook);
+americanElm(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return americanElm(axisOrigin, axisDirection, defaultLook);
 }
 
-/// dutchElm(axisOrigin, axisDir, look): Dutch elm: the European elm hybrid,
+/// dutchElm(axisOrigin, axisDirection, look): Dutch elm: the European elm hybrid,
 /// reddish brown, with elm's pore row and wavy latewood bands. The colour is
 /// The Wood Database's sample of wych elm, one of its parents; the sapwood is
 /// American elm's measured difference; the structure is judged.
-dutchElm(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(dutchElmNumber, axisOrigin, axisDir, look);
+dutchElm(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(dutchElmNumber, axisOrigin, axisDirection, look);
 }
-dutchElm(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return dutchElm(axisOrigin, axisDir, defaultLook);
+dutchElm(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return dutchElm(axisOrigin, axisDirection, defaultLook);
 }
 
-/// chineseElm(axisOrigin, axisDir, look): Chinese elm (lacebark elm): the
+/// chineseElm(axisOrigin, axisDirection, look): Chinese elm (lacebark elm): the
 /// hardest elm, reddish tan, ring- to semi-ring-porous with fine wavy latewood
 /// bands. The colour is from a dealer's photograph, estimated back to
 /// unfinished; the sapwood, off-white, and the structure are judged.
-chineseElm(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(chineseElmNumber, axisOrigin, axisDir, look);
+chineseElm(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(chineseElmNumber, axisOrigin, axisDirection, look);
 }
-chineseElm(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return chineseElm(axisOrigin, axisDir, defaultLook);
+chineseElm(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return chineseElm(axisOrigin, axisDirection, defaultLook);
 }
 
-/// whiteAsh(axisOrigin, axisDir, look): White ash: ring-porous like oak, light
+/// whiteAsh(axisOrigin, axisDirection, look): White ash: ring-porous like oak, light
 /// brown, big earlywood pores two to four rows deep, fine rays and faint pale
 /// bands around the latewood pores. The colour is The Wood Database's; the
 /// structure and aging are judged.
-whiteAsh(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(whiteAshNumber, axisOrigin, axisDir, look);
+whiteAsh(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(whiteAshNumber, axisOrigin, axisDirection, look);
 }
-whiteAsh(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return whiteAsh(axisOrigin, axisDir, defaultLook);
+whiteAsh(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return whiteAsh(axisOrigin, axisDirection, defaultLook);
 }
 
-/// europeanAsh(axisOrigin, axisDir, look): European ash: white ash's structure
+/// europeanAsh(axisOrigin, axisDirection, look): European ash: white ash's structure
 /// in a paler, pinker cream. The colour is The Wood Database's.
-europeanAsh(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(europeanAshNumber, axisOrigin, axisDir, look);
+europeanAsh(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(europeanAshNumber, axisOrigin, axisDirection, look);
 }
-europeanAsh(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return europeanAsh(axisOrigin, axisDir, defaultLook);
+europeanAsh(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return europeanAsh(axisOrigin, axisDirection, defaultLook);
 }
 
-/// oliveAsh(axisOrigin, axisDir, look): Olive ash: European ash with the dark
+/// oliveAsh(axisOrigin, axisDirection, look): Olive ash: European ash with the dark
 /// brown streaks of its false heartwood. The ground and streak colours are The
 /// Wood Database's.
-oliveAsh(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(oliveAshNumber, axisOrigin, axisDir, look);
+oliveAsh(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(oliveAshNumber, axisOrigin, axisDirection, look);
 }
-oliveAsh(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return oliveAsh(axisOrigin, axisDir, defaultLook);
+oliveAsh(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return oliveAsh(axisOrigin, axisDirection, defaultLook);
 }
 
-/// osageOrange(axisOrigin, axisDir, look): Osage orange: bright golden yellow,
+/// osageOrange(axisOrigin, axisDirection, look): Osage orange: bright golden yellow,
 /// ring-porous with pores plugged by tyloses, so they read pale, and strong
 /// pale bands across the dark latewood. It browns quickly in light. The colour
 /// is The Wood Database's; the aging is judged.
-osageOrange(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(osageOrangeNumber, axisOrigin, axisDir, look);
+osageOrange(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(osageOrangeNumber, axisOrigin, axisDirection, look);
 }
-osageOrange(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return osageOrange(axisOrigin, axisDir, defaultLook);
+osageOrange(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return osageOrange(axisOrigin, axisDirection, defaultLook);
 }
 
-/// europeanSycamore(axisOrigin, axisDir, look): European sycamore (sycamore
+/// europeanSycamore(axisOrigin, axisDirection, look): European sycamore (sycamore
 /// maple): a pale diffuse-porous maple, fine and even. The colour is The Wood
 /// Database's sample, which is warmer than the near-white of fresh stock.
-europeanSycamore(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(europeanSycamoreNumber, axisOrigin, axisDir, look);
+europeanSycamore(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(europeanSycamoreNumber, axisOrigin, axisDirection, look);
 }
-europeanSycamore(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return europeanSycamore(axisOrigin, axisDir, defaultLook);
+europeanSycamore(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return europeanSycamore(axisOrigin, axisDirection, defaultLook);
 }
 
-/// purpleheart(axisOrigin, axisDir, look): Purpleheart: vivid purple,
+/// purpleheart(axisOrigin, axisDirection, look): Purpleheart: vivid purple,
 /// diffuse-porous, turning dark brown with light. The colour and the aging are
 /// The Wood Database's fresh and aged samples; the structure is judged.
-purpleheart(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(purpleheartNumber, axisOrigin, axisDir, look);
+purpleheart(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(purpleheartNumber, axisOrigin, axisDirection, look);
 }
-purpleheart(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return purpleheart(axisOrigin, axisDir, defaultLook);
+purpleheart(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return purpleheart(axisOrigin, axisDirection, defaultLook);
 }
 
-/// zebrawood(axisOrigin, axisDir, look): Zebrawood: light gold with narrow dark
+/// zebrawood(axisOrigin, axisDirection, look): Zebrawood: light gold with narrow dark
 /// brown stripes, the rings' latewood, sharp and uneven. The two colours are
 /// The Wood Database's light and dark stripes; the structure is judged.
-zebrawood(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(zebrawoodNumber, axisOrigin, axisDir, look);
+zebrawood(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(zebrawoodNumber, axisOrigin, axisDirection, look);
 }
-zebrawood(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return zebrawood(axisOrigin, axisDir, defaultLook);
+zebrawood(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return zebrawood(axisOrigin, axisDirection, defaultLook);
 }
 
-/// lacewood(axisOrigin, axisDir, look): Brazilian lacewood: reddish brown with
+/// lacewood(axisOrigin, axisDirection, look): Brazilian lacewood: reddish brown with
 /// very wide pale rays that make the lace on quarter-sawn faces. The colour is
 /// The Wood Database's; the rays are judged.
-lacewood(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(lacewoodNumber, axisOrigin, axisDir, look);
+lacewood(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(lacewoodNumber, axisOrigin, axisDirection, look);
 }
-lacewood(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return lacewood(axisOrigin, axisDir, defaultLook);
+lacewood(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return lacewood(axisOrigin, axisDirection, defaultLook);
 }
 
-/// spruce(axisOrigin, axisDir, look): Sitka spruce: a pale cream softwood,
+/// spruce(axisOrigin, axisDirection, look): Sitka spruce: a pale cream softwood,
 /// tight 1.2 mm rings darkening gradually into a narrow latewood, sparse resin
 /// canals, sapwood that shades into the heartwood, and small knots; light
 /// yellows it.
-spruce(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(spruceNumber, axisOrigin, axisDir, look);
+spruce(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(spruceNumber, axisOrigin, axisDirection, look);
 }
-spruce(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return spruce(axisOrigin, axisDir, defaultLook);
+spruce(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return spruce(axisOrigin, axisDirection, defaultLook);
 }
 
-/// westernRedCedar(axisOrigin, axisDir, look): Western red cedar: a soft,
+/// westernRedCedar(axisOrigin, axisDirection, look): Western red cedar: a soft,
 /// light brown to reddish-brown softwood with abrupt dark latewood lines,
 /// darker streaks, nearly white narrow sapwood, no resin canals, and knots; it
 /// darkens in light.
-westernRedCedar(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(westernRedCedarNumber, axisOrigin, axisDir, look);
+westernRedCedar(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(westernRedCedarNumber, axisOrigin, axisDirection, look);
 }
-westernRedCedar(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return westernRedCedar(axisOrigin, axisDir, defaultLook);
+westernRedCedar(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return westernRedCedar(axisOrigin, axisDirection, defaultLook);
 }
 
-/// aromaticCedar(axisOrigin, axisDir, look): Aromatic cedar: purple-red
+/// aromaticCedar(axisOrigin, axisDirection, look): Aromatic cedar: purple-red
 /// heartwood with pale yellow sapwood in streaks, fine even texture, gradual
 /// rings, no resin canals and many small knots; light fades it to a reddish
 /// brown within weeks.
-aromaticCedar(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(aromaticCedarNumber, axisOrigin, axisDir, look);
+aromaticCedar(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(aromaticCedarNumber, axisOrigin, axisDirection, look);
 }
-aromaticCedar(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return aromaticCedar(axisOrigin, axisDir, defaultLook);
+aromaticCedar(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return aromaticCedar(axisOrigin, axisDirection, defaultLook);
 }
 
-/// holly(axisOrigin, axisDir, look): American holly: the whitest wood, ivory
+/// holly(axisOrigin, axisDirection, look): American holly: the whitest wood, ivory
 /// white and diffuse-porous with rings barely there, fine pores and rays that
 /// range from fine to wide; light yellows it slightly.
-holly(@point axisOrigin, @direction(axisOrigin) axisDir, look) {
-  return species(hollyNumber, axisOrigin, axisDir, look);
+holly(@point axisOrigin, @direction(axisOrigin) axisDirection, look) {
+  return species(hollyNumber, axisOrigin, axisDirection, look);
 }
-holly(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return holly(axisOrigin, axisDir, defaultLook);
+holly(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return holly(axisOrigin, axisDirection, defaultLook);
 }
 
-/// weatheredOak(axisOrigin, axisDir): oak left out in the weather for years:
+/// weatheredOak(axisOrigin, axisDirection): oak left out in the weather for years:
 /// silver grey over the grain, the softer earlywood worn back so the latewood
 /// stands proud by about 0.4 mm, and drying checks opening along the grain.
 /// The relief is render-only displacement. Returns material, color.
-weatheredOak(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return whiteOak(axisOrigin, axisDir, [0.3, 0, 1]);
+weatheredOak(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return whiteOak(axisOrigin, axisDirection, [0.3, 0, 1]);
 }
 
-/// weatheredWalnut(axisOrigin, axisDir): weathered walnut, the soft latewood
+/// weatheredWalnut(axisOrigin, axisDirection): weathered walnut, the soft latewood
 /// standing only about 0.25 mm proud. Returns material, color.
-weatheredWalnut(@point axisOrigin, @direction(axisOrigin) axisDir) {
-  return walnut(axisOrigin, axisDir, [0.3, 0, 1]);
+weatheredWalnut(@point axisOrigin, @direction(axisOrigin) axisDirection) {
+  return walnut(axisOrigin, axisDirection, [0.3, 0, 1]);
 }
 
-/// weatheredPine(axisOrigin, axisDir, knotScale): weathered pine, the hard
+/// weatheredPine(axisOrigin, axisDirection, knotScale): weathered pine, the hard
 /// latewood bands standing about 0.8 mm proud as they do on an old deck or
 /// fence board, with the knots of pine(). Returns material, color.
-weatheredPine(@point axisOrigin, @direction(axisOrigin) axisDir, knotScale) {
-  return pine(axisOrigin, axisDir, knotScale, [0.3, 0, 1]);
+weatheredPine(@point axisOrigin, @direction(axisOrigin) axisDirection, knotScale) {
+  return pine(axisOrigin, axisDirection, knotScale, [0.3, 0, 1]);
 }
 
 // ===========================================================================

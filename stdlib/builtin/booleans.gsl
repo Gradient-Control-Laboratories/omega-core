@@ -3,13 +3,13 @@
 // =========================================================
 
 /// Sharp CSG intersection of two SDFs (logical AND of solid regions).
-intersectSharp(d1, d2) {
-  return max(d1, d2);
+intersectSharp(a, b) {
+  return max(a, b);
 }
 
 /// Sharp CSG intersection of three SDFs.
-intersectSharp(d1, d2, d3) {
-  return max(d1, d2, d3);
+intersectSharp(a, b, c) {
+  return max(a, b, c);
 }
 
 /// Sharp CSG intersection of N SDFs. Pass [d1, d2, ...] as one
@@ -23,13 +23,13 @@ intersectSharp(fields) {
 }
 
 /// Sharp CSG union of two SDFs (logical OR of solid regions).
-unionSharp(d1, d2) {
-  return min(d1, d2);
+unionSharp(a, b) {
+  return min(a, b);
 }
 
 /// Sharp CSG union of three SDFs.
-unionSharp(d1, d2, d3) {
-  return min(d1, d2, d3);
+unionSharp(a, b, c) {
+  return min(a, b, c);
 }
 
 /// Sharp CSG union of N SDFs.
@@ -78,19 +78,19 @@ nested(fields) {
 //
 // From hg_sdf's fOpIntersectionRound (Mercury Demogroup, https://mercury.sexy/hg_sdf/): the quarter-circle
 // join of two fields. The three-field and N-field forms below extend it to more fields.
-intersectRound(d1, d2, radius) {
-  inset1 = max(d1 + radius, 0);
-  inset2 = max(d2 + radius, 0);
-  return min(neg(radius), max(d1, d2)) + length([inset1, inset2]);
+intersectRound(a, b, radius) {
+  inset1 = max(a + radius, 0);
+  inset2 = max(b + radius, 0);
+  return min(neg(radius), max(a, b)) + length([inset1, inset2]);
 }
 
 /// Round CSG intersection of three SDFs with fillet `radius`. Fillets
 /// all three pairwise edges.
-intersectRound(d1, d2, d3, radius) {
-  inset1 = max(d1 + radius, 0);
-  inset2 = max(d2 + radius, 0);
-  inset3 = max(d3 + radius, 0);
-  return min(neg(radius), max(d1, d2, d3)) + length([inset1, inset2, inset3]);
+intersectRound(a, b, c, radius) {
+  inset1 = max(a + radius, 0);
+  inset2 = max(b + radius, 0);
+  inset3 = max(c + radius, 0);
+  return min(neg(radius), max(a, b, c)) + length([inset1, inset2, inset3]);
 }
 
 /// Round CSG intersection of N SDFs.
@@ -127,13 +127,13 @@ intersectRound(radius) {
 /// arc of about that radius.
 //
 // The same as hg_sdf's fOpUnionRound (https://mercury.sexy/hg_sdf/).
-unionRound(d1, d2, radius) {
-  return neg(intersectRound(neg(d1), neg(d2), radius));
+unionRound(a, b, radius) {
+  return neg(intersectRound(neg(a), neg(b), radius));
 }
 
 /// Round CSG union of three SDFs with fillet `radius`.
-unionRound(d1, d2, d3, radius) {
-  return neg(intersectRound(neg(d1), neg(d2), neg(d3), radius));
+unionRound(a, b, c, radius) {
+  return neg(intersectRound(neg(a), neg(b), neg(c), radius));
 }
 
 /// Round CSG union of N SDFs.
@@ -178,13 +178,13 @@ intersectLp(fields, width, exponent) {
 }
 
 /// Lp-norm blend intersection of two SDFs (see the list form).
-intersectLp(d1, d2, width, exponent) {
-  return intersectLp([d1, d2], width, exponent);
+intersectLp(a, b, width, exponent) {
+  return intersectLp([a, b], width, exponent);
 }
 
 /// Lp-norm blend intersection of three SDFs (see the list form).
-intersectLp(d1, d2, d3, width, exponent) {
-  return intersectLp([d1, d2, d3], width, exponent);
+intersectLp(a, b, c, width, exponent) {
+  return intersectLp([a, b, c], width, exponent);
 }
 
 /// Partial application of intersectLp: binds the blend width and exponent and
@@ -204,13 +204,13 @@ unionLp(fields, width, exponent) {
 }
 
 /// Lp-norm blend union of two SDFs (see the list form).
-unionLp(d1, d2, width, exponent) {
-  return unionLp([d1, d2], width, exponent);
+unionLp(a, b, width, exponent) {
+  return unionLp([a, b], width, exponent);
 }
 
 /// Lp-norm blend union of three SDFs (see the list form).
-unionLp(d1, d2, d3, width, exponent) {
-  return unionLp([d1, d2, d3], width, exponent);
+unionLp(a, b, c, width, exponent) {
+  return unionLp([a, b, c], width, exponent);
 }
 
 /// Partial application of unionLp: binds the blend width and exponent and
@@ -243,13 +243,13 @@ intersectExponential(fields, width) {
 }
 
 /// Exponential blend intersection of two SDFs (see the list form).
-intersectExponential(d1, d2, width) {
-  return intersectExponential([d1, d2], width);
+intersectExponential(a, b, width) {
+  return intersectExponential([a, b], width);
 }
 
 /// Exponential blend intersection of three SDFs (see the list form).
-intersectExponential(d1, d2, d3, width) {
-  return intersectExponential([d1, d2, d3], width);
+intersectExponential(a, b, c, width) {
+  return intersectExponential([a, b, c], width);
 }
 
 /// Partial application of intersectExponential: binds the blend width and
@@ -270,13 +270,13 @@ unionExponential(fields, width) {
 }
 
 /// Exponential blend union of two SDFs (see the list form).
-unionExponential(d1, d2, width) {
-  return unionExponential([d1, d2], width);
+unionExponential(a, b, width) {
+  return unionExponential([a, b], width);
 }
 
 /// Exponential blend union of three SDFs (see the list form).
-unionExponential(d1, d2, d3, width) {
-  return unionExponential([d1, d2, d3], width);
+unionExponential(a, b, c, width) {
+  return unionExponential([a, b, c], width);
 }
 
 /// Partial application of unionExponential: binds the blend width and returns
@@ -340,7 +340,7 @@ unionChamferVertices(fields, offset) {
   return neg(intersectChamferVertices(negated, offset));
 }
 
-/// Chamfered CSG intersection: the bevel (d1 + d2 + offset) / sqrt2 replaces
+/// Chamfered CSG intersection: the bevel (a + b + offset) / sqrt2 replaces
 /// the sharp intersection edge. `offset` is added before dividing, so it is a
 /// setback along each face, and the bevel is at 45°, only where the faces meet
 /// at a right angle; the plane's gradient has length sqrt(1 + normal1·normal2),
@@ -351,20 +351,20 @@ unionChamferVertices(fields, offset) {
 //
 // The same bevel as hg_sdf's fOpIntersectionChamfer (https://mercury.sexy/hg_sdf/). The three-field and
 // N-field forms below add the vertex plane.
-intersectChamfer(d1, d2, offset) {
-  face = max(d1, d2);
-  edge = (d1 + d2 + offset) / sqrt2;
+intersectChamfer(a, b, offset) {
+  face = max(a, b);
+  edge = (a + b + offset) / sqrt2;
   return max(face, edge);
 }
 
 /// Chamfered CSG intersection of three SDFs. Chamfers all three pairwise
 /// edges and the three-way vertex where they meet.
-intersectChamfer(d1, d2, d3, offset) {
-  face = max(d1, d2, d3);
-  total = d1 + d2 + d3;
+intersectChamfer(a, b, c, offset) {
+  face = max(a, b, c);
+  total = a + b + c;
   // The strongest edge is between the two nearest faces: the two largest
   // d's, whose sum is the total minus the smallest.
-  edge = (total - min(d1, d2, d3) + offset) / sqrt2;
+  edge = (total - min(a, b, c) + offset) / sqrt2;
   corner = (total + offset) / sqrt3;
   return max(face, edge, corner);
 }
@@ -387,13 +387,13 @@ intersectChamfer(offset) {
 /// Chamfered CSG union with the bevel at `offset`, as for intersectChamfer.
 //
 // The same as hg_sdf's fOpUnionChamfer (https://mercury.sexy/hg_sdf/).
-unionChamfer(d1, d2, offset) {
-  return neg(intersectChamfer(neg(d1), neg(d2), offset));
+unionChamfer(a, b, offset) {
+  return neg(intersectChamfer(neg(a), neg(b), offset));
 }
 
 /// Chamfered CSG union of three SDFs.
-unionChamfer(d1, d2, d3, offset) {
-  return neg(intersectChamfer(neg(d1), neg(d2), neg(d3), offset));
+unionChamfer(a, b, c, offset) {
+  return neg(intersectChamfer(neg(a), neg(b), neg(c), offset));
 }
 
 /// Chamfered CSG union of N SDFs. `offset` is a scalar, or
@@ -420,14 +420,14 @@ differenceChamfer(target, tool, offset) {
 
 /// Chamfered CSG intersection by depth: the bevel is the plane `depth` in from
 /// the edge, square to the bisector of the angle between the faces, and its
-/// field has unit gradient at an edge of any angle. (d1 + d2) / |normal1 +
-/// normal2| is the signed distance to the plane through the edge square to that
-/// bisector, normal1 and normal2 being the two faces' outward unit normals at
+/// field has unit gradient at an edge of any angle. (a + b) / |normalA +
+/// normalB| is the signed distance to the plane through the edge square to that
+/// bisector, normalA and normalB being the two faces' outward unit normals at
 /// the edge, and the bevel is that field offset by `depth`.
 ///
 /// intersectChamfer's bevel is the same plane, but its parameter is added to
-/// d1 + d2 before dividing (by sqrt2), so it is the depth times |normal1 +
-/// normal2|, a setback along each face only at a square edge. To chamfer by a
+/// a + b before dividing (by sqrt2), so it is the depth times |normalA +
+/// normalB|, a setback along each face only at a square edge. To chamfer by a
 /// setback along each face or by the bevel's width, convert with
 /// chamferDepthFromSetback or chamferDepthFromWidth.
 ///
@@ -435,46 +435,46 @@ differenceChamfer(target, tool, offset) {
 /// analytic; the three-argument form takes them from the fields' gradients.
 /// Faces that face opposite ways have no edge to chamfer, and the guard on the
 /// divisor keeps the result finite there.
-intersectChamferNormalized(d1, d2, depth, normal1, normal2) {
-  face = max(d1, d2);
-  edge = (d1 + d2) / max(length(normal1 + normal2), 0.000001) + depth;
+intersectChamferNormalized(a, b, depth, normalA, normalB) {
+  face = max(a, b);
+  edge = (a + b) / max(length(normalA + normalB), 0.000001) + depth;
   return max(face, edge);
 }
 
 /// intersectChamferNormalized taking each face's normal from its own field's
 /// gradient.
-intersectChamferNormalized(d1, d2, depth) {
-  return intersectChamferNormalized(d1, d2, depth, d1.dp, d2.dp);
+intersectChamferNormalized(a, b, depth) {
+  return intersectChamferNormalized(a, b, depth, a.dp, b.dp);
 }
 
 /// The depth of a chamfer whose bevel meets each face `setback` from the edge,
 /// for the Normalized chamfers. With φ the angle between the faces, through the
-/// material, the depth is setback·cos(φ/2), and cos(φ/2) is |normal1 −
-/// normal2| / 2, the faces' outward unit normals at the edge: pass the same
-/// normals as to the chamfer (d1.dp and d2.dp for its three-argument form).
-chamferDepthFromSetback(setback, normal1, normal2) {
-  return setback * length(normal1 - normal2) / 2;
+/// material, the depth is setback·cos(φ/2), and cos(φ/2) is |normalA −
+/// normalB| / 2, the faces' outward unit normals at the edge: pass the same
+/// normals as to the chamfer (a.dp and b.dp for its three-argument form).
+chamferDepthFromSetback(setback, normalA, normalB) {
+  return setback * length(normalA - normalB) / 2;
 }
 
 /// The depth of a chamfer whose bevel is `width` across, edge to edge, for the
 /// Normalized chamfers: width/2 · cot(φ/2), with φ the angle between the faces
-/// through the material. cot(φ/2) is |normal1 − normal2| / |normal1 + normal2|,
+/// through the material. cot(φ/2) is |normalA − normalB| / |normalA + normalB|,
 /// the faces' outward unit normals at the edge, as for chamferDepthFromSetback.
-chamferDepthFromWidth(width, normal1, normal2) {
-  return width / 2 * length(normal1 - normal2) / max(length(normal1 + normal2), 0.000001);
+chamferDepthFromWidth(width, normalA, normalB) {
+  return width / 2 * length(normalA - normalB) / max(length(normalA + normalB), 0.000001);
 }
 
 /// Union counterpart of intersectChamferNormalized: unionChamfer's surface,
 /// with unit gradient at an edge of any angle. The normals are each solid's
 /// outward ones, as for the intersection.
-unionChamferNormalized(d1, d2, depth, normal1, normal2) {
-  return neg(intersectChamferNormalized(neg(d1), neg(d2), depth, neg(normal1), neg(normal2)));
+unionChamferNormalized(a, b, depth, normalA, normalB) {
+  return neg(intersectChamferNormalized(neg(a), neg(b), depth, neg(normalA), neg(normalB)));
 }
 
 /// unionChamferNormalized taking each face's normal from its own field's
 /// gradient.
-unionChamferNormalized(d1, d2, depth) {
-  return unionChamferNormalized(d1, d2, depth, d1.dp, d2.dp);
+unionChamferNormalized(a, b, depth) {
+  return unionChamferNormalized(a, b, depth, a.dp, b.dp);
 }
 
 /// Difference counterpart of intersectChamferNormalized: target minus tool,
@@ -491,26 +491,26 @@ differenceChamferNormalized(target, tool, depth) {
 }
 
 /// Chamfered CSG intersection by two setbacks: the bevel meets the first face
-/// `setback1` from the edge and the second `setback2` from it, and its field has
+/// `setbackA` from the edge and the second `setbackB` from it, and its field has
 /// unit gradient. With φ the angle between the faces through the material, a
-/// point on the first face `setback1` from the edge is setback1·sinφ inside the
-/// second, so the bevel is the plane setback1·d1 + setback2·d2 + setback1·
-/// setback2·sinφ = 0, divided by the length of its gradient, setback1·normal1 +
-/// setback2·normal2. sinφ is taken from the normals' dot product. Equal
+/// point on the first face `setbackA` from the edge is setbackA·sinφ inside the
+/// second, so the bevel is the plane setbackA·a + setbackB·b + setbackA·
+/// setbackB·sinφ = 0, divided by the length of its gradient, setbackA·normalA +
+/// setbackB·normalB. sinφ is taken from the normals' dot product. Equal
 /// setbacks give intersectChamferNormalized at chamferDepthFromSetback's depth.
-intersectChamferSetbacks(d1, d2, setback1, setback2, normal1, normal2) {
-  face = max(d1, d2);
-  cosine = dot(normal1, normal2);
+intersectChamferSetbacks(a, b, setbackA, setbackB, normalA, normalB) {
+  face = max(a, b);
+  cosine = dot(normalA, normalB);
   sine = sqrt(max(1 - cosine * cosine, 0));
-  edge = (setback1 * d1 + setback2 * d2 + setback1 * setback2 * sine) / max(length(normal1 * setback1 + normal2 * setback2), 0.000001);
+  edge = (setbackA * a + setbackB * b + setbackA * setbackB * sine) / max(length(normalA * setbackA + normalB * setbackB), 0.000001);
   return max(face, edge);
 }
 
-/// Union counterpart of intersectChamferSetbacks: `setback1` along the first
-/// solid's face, `setback2` along the second's. The normals are each solid's
+/// Union counterpart of intersectChamferSetbacks: `setbackA` along the first
+/// solid's face, `setbackB` along the second's. The normals are each solid's
 /// outward ones, as for the intersection.
-unionChamferSetbacks(d1, d2, setback1, setback2, normal1, normal2) {
-  return neg(intersectChamferSetbacks(neg(d1), neg(d2), setback1, setback2, neg(normal1), neg(normal2)));
+unionChamferSetbacks(a, b, setbackA, setbackB, normalA, normalB) {
+  return neg(intersectChamferSetbacks(neg(a), neg(b), setbackA, setbackB, neg(normalA), neg(normalB)));
 }
 
 /// Difference counterpart of intersectChamferSetbacks: target minus tool,
@@ -525,13 +525,13 @@ differenceChamferSetbacks(target, tool, targetSetback, toolSetback, targetNormal
 /// of `radius`: intersectChamferBlend with intersectRound(radius). A
 /// bevel that fades into a fillet rather than ending in a hard line.
 /// Radius 0 gives intersectChamfer's surface.
-intersectChamferRound(d1, d2, offset, radius) {
-  return intersectChamferBlend(d1, d2, offset, intersectRound(radius));
+intersectChamferRound(a, b, offset, radius) {
+  return intersectChamferBlend(a, b, offset, intersectRound(radius));
 }
 
 /// Chamfered + rounded intersection of three SDFs.
-intersectChamferRound(d1, d2, d3, offset, radius) {
-  return intersectChamferBlend(d1, d2, d3, offset, intersectRound(radius));
+intersectChamferRound(a, b, c, offset, radius) {
+  return intersectChamferBlend(a, b, c, offset, intersectRound(radius));
 }
 
 /// Chamfered + rounded CSG intersection of N SDFs. `offset` is a scalar, or
@@ -551,13 +551,13 @@ intersectChamferRound(offset, radius) {
 
 /// Chamfered union whose chamfer planes are joined by a round fillet of
 /// `radius`: unionChamferBlend with unionRound(radius).
-unionChamferRound(d1, d2, offset, radius) {
-  return unionChamferBlend(d1, d2, offset, unionRound(radius));
+unionChamferRound(a, b, offset, radius) {
+  return unionChamferBlend(a, b, offset, unionRound(radius));
 }
 
 /// Chamfered + rounded union of three SDFs.
-unionChamferRound(d1, d2, d3, offset, radius) {
-  return unionChamferBlend(d1, d2, d3, offset, unionRound(radius));
+unionChamferRound(a, b, c, offset, radius) {
+  return unionChamferBlend(a, b, c, offset, unionRound(radius));
 }
 
 /// Chamfered + rounded CSG union of N SDFs (see intersectChamferRound for the
@@ -584,18 +584,18 @@ differenceChamferRound(target, tool, offset, radius) {
 /// such as intersectRound(radius), intersectLp(width, exponent) or
 /// intersectExponential(width);
 /// its width is used as given. intersectSharp gives back intersectChamfer.
-intersectChamferBlend(d1, d2, offset, blend) {
-  face = max(d1, d2);
-  edge = (d1 + d2 + offset) / sqrt2;
+intersectChamferBlend(a, b, offset, blend) {
+  face = max(a, b);
+  edge = (a + b + offset) / sqrt2;
   return blend([face, edge]);
 }
 
 /// Chamfered intersection of three SDFs with its chamfer planes combined by
 /// `blend`.
-intersectChamferBlend(d1, d2, d3, offset, blend) {
-  face = max(d1, d2, d3);
-  total = d1 + d2 + d3;
-  edge = (total - min(d1, d2, d3) + offset) / sqrt2;
+intersectChamferBlend(a, b, c, offset, blend) {
+  face = max(a, b, c);
+  total = a + b + c;
+  edge = (total - min(a, b, c) + offset) / sqrt2;
   corner = (total + offset) / sqrt3;
   return blend([face, edge, corner]);
 }
@@ -620,17 +620,17 @@ intersectChamferBlend(offset, blend) {
 /// Chamfered union whose chamfer planes are combined by `blend`, a union
 /// operator over a list such as unionRound(radius), unionLp(width, exponent) or
 /// unionExponential(width). unionSharp gives back unionChamfer.
-unionChamferBlend(d1, d2, offset, blend) {
-  face = min(d1, d2);
-  edge = (d1 + d2 - offset) / sqrt2;
+unionChamferBlend(a, b, offset, blend) {
+  face = min(a, b);
+  edge = (a + b - offset) / sqrt2;
   return blend([face, edge]);
 }
 
 /// Chamfered union of three SDFs with its chamfer planes combined by `blend`.
-unionChamferBlend(d1, d2, d3, offset, blend) {
-  face = min(d1, d2, d3);
-  total = d1 + d2 + d3;
-  edge = (total - max(d1, d2, d3) - offset) / sqrt2;
+unionChamferBlend(a, b, c, offset, blend) {
+  face = min(a, b, c);
+  total = a + b + c;
+  edge = (total - max(a, b, c) - offset) / sqrt2;
   corner = (total - offset) / sqrt3;
   return blend([face, edge, corner]);
 }
@@ -672,34 +672,34 @@ remapEdges(fields, profile) {
 }
 
 /// Exact rounded union of two fields with fillet `radius`, in one step from the
-/// faces' tangent planes at p, whose normals are handed in as normal1, normal2: the fields are grown by the radius, their
+/// faces' tangent planes at p, whose normals are handed in as normalA, normalB: the fields are grown by the radius, their
 /// union's distance is taken near the seam from those planes, and it is shrunk
 /// back by the radius. Exact where the faces are flat, at any angle between
 /// them; on curved faces use the forms that take a step count. At radius 0 the
 /// zero set is the sharp union and the field is its exact distance.
-unionRoundExact(field1, field2, radius, normal1, normal2) {
-  d1 = field1 - radius;
-  d2 = field2 - radius;
-  sumScale = length(normal1 + normal2);
-  diffScale = length(normal1 - normal2);
+unionRoundExact(a, b, radius, normalA, normalB) {
+  d1 = a - radius;
+  d2 = b - radius;
+  sumScale = length(normalA + normalB);
+  diffScale = length(normalA - normalB);
   sum = (d1 + d2) / sumScale;
   diff = (d1 - d2) / diffScale;
   sharp = min(d1, d2);
-  field1OnSurface2 = remap(field1, p - d2 * normal2) - radius;
-  field2OnSurface1 = remap(field2, p - d1 * normal1) - radius;
+  field1OnSurface2 = remap(a, p - d2 * normalB) - radius;
+  field2OnSurface1 = remap(b, p - d1 * normalA) - radius;
 
   return (max(field1OnSurface2, field2OnSurface1) > 0 ? sharp : -length([sum, diff])) + radius;
 }
 
 /// Exact rounded intersection of two fields with fillet `radius`, in one step
-/// from the faces' tangent planes, whose normals are handed in as normal1,
-/// normal2: the De Morgan dual of the five-argument
+/// from the faces' tangent planes, whose normals are handed in as normalA,
+/// normalB: the De Morgan dual of the five-argument
 /// unionRoundExact, which negates the normals along with the fields.
-intersectRoundExact(field1, field2, radius, normal1, normal2) {
+intersectRoundExact(a, b, radius, normalA, normalB) {
   return neg(unionRoundExact(
-    neg(field1),
-    neg(field2),
-    radius, neg(normal1), neg(normal2)));
+    neg(a),
+    neg(b),
+    radius, neg(normalA), neg(normalB)));
 }
 
 /// The least-norm Newton step toward the edge {field1 = 0, field2 = 0} from
@@ -761,11 +761,11 @@ edgeVerdict(e, n1, n2, sharp, residual) {
 }
 
 /// The point nearest c on both fields' tangent planes at c: one Newton step
-/// from c toward the edge {field1 = 0, field2 = 0}, edgeProjectFrom with the
+/// from c toward the edge {a = 0, b = 0}, edgeProjectFrom with the
 /// fields' values and gradients at c.
-edgeProject(field1, field2, c) {
+edgeProject(a, b, c) {
   return edgeProjectFrom(
-    remap(field1, c), remap(field2, c), remap(field1.dp, c), remap(field2.dp, c), c);
+    remap(a, c), remap(b, c), remap(a.dp, c), remap(b.dp, c), c);
 }
 
 /// One Newton step from c toward the point of the edge {field1 = 0, field2 =
@@ -779,8 +779,8 @@ edgeNewtonStep(field1, field2, c) {
 }
 
 /// Exact distance to the sharp intersection of two fields  whose faces may be curved: outside the intersection and
-/// nearest its edge, the distance to the point c of the edge {field1 = 0,
-/// field2 = 0} nearest p, found by `iterations` Newton steps from p (1 to 8).
+/// nearest its edge, the distance to the point c of the edge {a = 0,
+/// b = 0} nearest p, found by `iterations` Newton steps from p (1 to 8).
 /// Each step moves to the nearest point of both fields' tangent planes, then
 /// slides along the edge to the foot of p; the last step only projects. Near
 /// the edge, one step gives the five-argument exact rounds' distance, off by 7%
@@ -793,32 +793,32 @@ edgeNewtonStep(field1, field2, c) {
 /// step evaluates both fields and their gradients at a new point, so the field
 /// costs about iterations + 1 times the sharp one. The exact rounds that take a
 /// step count are built on it.
-edgeDistance(field1, field2, iterations) {
+edgeDistance(a, b, iterations) {
   // Start a hair off p: where every point of the edge is equally near (on the
   // axis of a circular edge), a gradient at p may be undefined and no step
   // would pick a direction; from beside p the steps reach one of those points.
   s0 = p + [0.0001, 0.00007, 0.00003];
-  s1 = edgeNewtonStep(field1, field2, s0);
-  s2 = edgeNewtonStep(field1, field2, s1);
-  s3 = edgeNewtonStep(field1, field2, s2);
-  s4 = edgeNewtonStep(field1, field2, s3);
-  s5 = edgeNewtonStep(field1, field2, s4);
-  s6 = edgeNewtonStep(field1, field2, s5);
-  s7 = edgeNewtonStep(field1, field2, s6);
-  c = iterations >= 8 ? edgeProject(field1, field2, s7)
-    : iterations >= 7 ? edgeProject(field1, field2, s6)
-    : iterations >= 6 ? edgeProject(field1, field2, s5)
-    : iterations >= 5 ? edgeProject(field1, field2, s4)
-    : iterations >= 4 ? edgeProject(field1, field2, s3)
-    : iterations >= 3 ? edgeProject(field1, field2, s2)
-    : iterations >= 2 ? edgeProject(field1, field2, s1)
-    : edgeProject(field1, field2, s0);
+  s1 = edgeNewtonStep(a, b, s0);
+  s2 = edgeNewtonStep(a, b, s1);
+  s3 = edgeNewtonStep(a, b, s2);
+  s4 = edgeNewtonStep(a, b, s3);
+  s5 = edgeNewtonStep(a, b, s4);
+  s6 = edgeNewtonStep(a, b, s5);
+  s7 = edgeNewtonStep(a, b, s6);
+  c = iterations >= 8 ? edgeProject(a, b, s7)
+    : iterations >= 7 ? edgeProject(a, b, s6)
+    : iterations >= 6 ? edgeProject(a, b, s5)
+    : iterations >= 5 ? edgeProject(a, b, s4)
+    : iterations >= 4 ? edgeProject(a, b, s3)
+    : iterations >= 3 ? edgeProject(a, b, s2)
+    : iterations >= 2 ? edgeProject(a, b, s1)
+    : edgeProject(a, b, s0);
   return edgeVerdict(
     p - c,
-    remap(field1.dp, c),
-    remap(field2.dp, c),
-    max(field1, field2),
-    max(abs(remap(field1, c)), abs(remap(field2, c))));
+    remap(a.dp, c),
+    remap(b.dp, c),
+    max(a, b),
+    max(abs(remap(a, c)), abs(remap(b, c))));
 }
 
 /// The Newton step toward the corner {field1 = 0, field2 = 0, field3 = 0}
@@ -909,12 +909,12 @@ cornerDistance(field1, field2, field3, iterations) {
 /// point of it nearest p touches at most three faces, so one of them is the
 /// distance itself. Where it is not convex this holds near its edges and
 /// corner, as for two fields. Pass `iterations` as a constant.
-intersectDistance(field1, field2, field3, iterations) {
+intersectDistance(a, b, c, iterations) {
   return max(
-    edgeDistance(field1, field2, iterations),
-    edgeDistance(field1, field3, iterations),
-    edgeDistance(field2, field3, iterations),
-    cornerDistance(field1, field2, field3, iterations));
+    edgeDistance(a, b, iterations),
+    edgeDistance(a, c, iterations),
+    edgeDistance(b, c, iterations),
+    cornerDistance(a, b, c, iterations));
 }
 
 /// Exact distance to the sharp intersection of a list of fields, each first
@@ -962,10 +962,10 @@ intersectDistance(fields, iterations) {
 /// step count as a constant; three are exact to 1e-6 mm where the edge is a
 /// circle, five on a saddle. At radius 0 the field is the sharp intersection's
 /// exact distance.
-intersectRoundExactSteps(field1, field2, radius, steps) {
+intersectRoundExactSteps(a, b, radius, steps) {
   return edgeDistance(
-    field1 + radius,
-    field2 + radius,
+    a + radius,
+    b + radius,
     steps) - radius;
 }
 
@@ -975,11 +975,11 @@ intersectRoundExactSteps(field1, field2, radius, steps) {
 /// are shrunk by the radius, the exact distance to their intersection is found
 /// (intersectDistance, `steps` Newton steps for each edge and the corner), and
 /// it is grown back by the radius.
-intersectRoundExactSteps(field1, field2, field3, radius, steps) {
+intersectRoundExactSteps(a, b, c, radius, steps) {
   return intersectDistance(
-    field1 + radius,
-    field2 + radius,
-    field3 + radius,
+    a + radius,
+    b + radius,
+    c + radius,
     steps) - radius;
 }
 
@@ -1000,14 +1000,14 @@ intersectRoundExactSteps(radius, steps) {
   return (fields) { return intersectRoundExactSteps(fields, radius, steps); };
 }
 
-/// intersectRoundExactSteps(field1, field2, radius, 4).
-intersectRoundExact(field1, field2, radius) {
-  return intersectRoundExactSteps(field1, field2, radius, 4);
+/// intersectRoundExactSteps(a, b, radius, 4).
+intersectRoundExact(a, b, radius) {
+  return intersectRoundExactSteps(a, b, radius, 4);
 }
 
-/// intersectRoundExactSteps(field1, field2, field3, radius, 4).
-intersectRoundExact(field1, field2, field3, radius) {
-  return intersectRoundExactSteps(field1, field2, field3, radius, 4);
+/// intersectRoundExactSteps(a, b, c, radius, 4).
+intersectRoundExact(a, b, c, radius) {
+  return intersectRoundExactSteps(a, b, c, radius, 4);
 }
 
 /// intersectRoundExactSteps(fields, radius, 4).
@@ -1027,14 +1027,14 @@ intersectRoundExact(radius) {
 /// be curved: the De Morgan dual of intersectRoundExactSteps, so the fillet is
 /// the surface a ball of that radius sweeps rolling along the seam, touching
 /// both solids from outside.
-unionRoundExactSteps(field1, field2, radius, steps) {
-  return neg(intersectRoundExactSteps(neg(field1), neg(field2), radius, steps));
+unionRoundExactSteps(a, b, radius, steps) {
+  return neg(intersectRoundExactSteps(neg(a), neg(b), radius, steps));
 }
 
 /// Exact rounded union of three fields: the De Morgan dual of the three-field
 /// intersectRoundExactSteps.
-unionRoundExactSteps(field1, field2, field3, radius, steps) {
-  return neg(intersectRoundExactSteps(neg(field1), neg(field2), neg(field3), radius, steps));
+unionRoundExactSteps(a, b, c, radius, steps) {
+  return neg(intersectRoundExactSteps(neg(a), neg(b), neg(c), radius, steps));
 }
 
 /// Exact rounded union of a list of fields: the De Morgan dual of the list
@@ -1050,14 +1050,14 @@ unionRoundExactSteps(radius, steps) {
   return (fields) { return unionRoundExactSteps(fields, radius, steps); };
 }
 
-/// unionRoundExactSteps(field1, field2, radius, 4).
-unionRoundExact(field1, field2, radius) {
-  return unionRoundExactSteps(field1, field2, radius, 4);
+/// unionRoundExactSteps(a, b, radius, 4).
+unionRoundExact(a, b, radius) {
+  return unionRoundExactSteps(a, b, radius, 4);
 }
 
-/// unionRoundExactSteps(field1, field2, field3, radius, 4).
-unionRoundExact(field1, field2, field3, radius) {
-  return unionRoundExactSteps(field1, field2, field3, radius, 4);
+/// unionRoundExactSteps(a, b, c, radius, 4).
+unionRoundExact(a, b, c, radius) {
+  return unionRoundExactSteps(a, b, c, radius, 4);
 }
 
 /// unionRoundExactSteps(fields, radius, 4).
@@ -1093,26 +1093,26 @@ chamferRatio(a, b) {
   return a * b / max(b * b, 0.000000000001);
 }
 
-// The point of the edge {field1 = 0, field2 = 0} nearest p: `iterations` (1 to 8)
+// The point of the edge {a = 0, b = 0} nearest p: `iterations` (1 to 8)
 // of edgeDistance's Newton steps, started a hair off `seed`, the last only
 // projecting. Pass `iterations` as a constant.
-chamferEdgePoint(field1, field2, iterations, seed) {
+chamferEdgePoint(a, b, iterations, seed) {
   s0 = seed + [0.0001, 0.00007, 0.00003];
-  s1 = edgeNewtonStep(field1, field2, s0);
-  s2 = edgeNewtonStep(field1, field2, s1);
-  s3 = edgeNewtonStep(field1, field2, s2);
-  s4 = edgeNewtonStep(field1, field2, s3);
-  s5 = edgeNewtonStep(field1, field2, s4);
-  s6 = edgeNewtonStep(field1, field2, s5);
-  s7 = edgeNewtonStep(field1, field2, s6);
-  return iterations >= 8 ? edgeProject(field1, field2, s7)
-    : iterations >= 7 ? edgeProject(field1, field2, s6)
-    : iterations >= 6 ? edgeProject(field1, field2, s5)
-    : iterations >= 5 ? edgeProject(field1, field2, s4)
-    : iterations >= 4 ? edgeProject(field1, field2, s3)
-    : iterations >= 3 ? edgeProject(field1, field2, s2)
-    : iterations >= 2 ? edgeProject(field1, field2, s1)
-    : edgeProject(field1, field2, s0);
+  s1 = edgeNewtonStep(a, b, s0);
+  s2 = edgeNewtonStep(a, b, s1);
+  s3 = edgeNewtonStep(a, b, s2);
+  s4 = edgeNewtonStep(a, b, s3);
+  s5 = edgeNewtonStep(a, b, s4);
+  s6 = edgeNewtonStep(a, b, s5);
+  s7 = edgeNewtonStep(a, b, s6);
+  return iterations >= 8 ? edgeProject(a, b, s7)
+    : iterations >= 7 ? edgeProject(a, b, s6)
+    : iterations >= 6 ? edgeProject(a, b, s5)
+    : iterations >= 5 ? edgeProject(a, b, s4)
+    : iterations >= 4 ? edgeProject(a, b, s3)
+    : iterations >= 3 ? edgeProject(a, b, s2)
+    : iterations >= 2 ? edgeProject(a, b, s1)
+    : edgeProject(a, b, s0);
 }
 
 // The point of `face` at the straight-line distance d from the edge point c, in
@@ -1147,20 +1147,20 @@ chamferLinePoint(face, start, along, s0) {
 // plane at c (but for face 1's own bend at the start and a quarter of the setback),
 // and nothing where the steps missed the edge (c on neither face, as exact round
 // requires) or the frame degenerates.
-chamferCut(field1, field2, c, n1, start, end) {
+chamferCut(a, b, c, n1, start, end) {
   along = chamferUnit(end - start);
   e = c - start;
   m = chamferUnit(e - along * dot(e, along));
   side = dot(p - start, m) - (1 - length(m)) * 1000;
-  missed = 1000 * max(max(abs(remap(field1, c)), abs(remap(field2, c))) - 0.001, 0);
+  missed = 1000 * max(max(abs(remap(a, c)), abs(remap(b, c))) - 0.001, 0);
   reach = max(length(start - c), length(end - c)) * 1.05 - missed - length(p - c);
   face1Side = abs(dot(start - c, n1)) + length(start - c) / 4 - dot(p - c, n1);
   return min(side, reach, face1Side);
 }
 
 /// Chamfered intersection of two fields whose faces may be curved, by two
-/// setbacks: the chamfer meets face 1 `setback1` from the edge and face 2
-/// `setback2` from it, each a straight-line distance in the plane normal to the
+/// setbacks: the chamfer meets face 1 `setbackA` from the edge and face 2
+/// `setbackB` from it, each a straight-line distance in the plane normal to the
 /// edge, and is flat. `steps` (1 to 8, a constant) Newton steps find the nearest
 /// point of the edge, as for intersectRoundExactSteps; four or five suffice where
 /// the edge is a circle. `seed` is where the steps start: p, or a point that
@@ -1169,30 +1169,30 @@ chamferCut(field1, field2, c, n1, start, end) {
 /// edge's normal plane. Each step evaluates both fields and their gradients, so it
 /// costs several times intersectChamferSetbacks, which is exact where both faces
 /// are straight in section.
-intersectChamferSetbacksSteps(field1, field2, setback1, setback2, steps, seed) {
-  c = chamferEdgePoint(field1, field2, steps, seed);
-  n1 = chamferUnit(remap(field1.dp, c));
-  n2 = chamferUnit(remap(field2.dp, c));
-  start = chamferChordPoint(field1, c, chamferUnit(n1 * dot(n1, n2) - n2), neg(n1), setback1);
-  end = chamferChordPoint(field2, c, chamferUnit(n2 * dot(n1, n2) - n1), neg(n2), setback2);
-  return max(field1, field2, chamferCut(field1, field2, c, n1, start, end));
+intersectChamferSetbacksSteps(a, b, setbackA, setbackB, steps, seed) {
+  c = chamferEdgePoint(a, b, steps, seed);
+  n1 = chamferUnit(remap(a.dp, c));
+  n2 = chamferUnit(remap(b.dp, c));
+  start = chamferChordPoint(a, c, chamferUnit(n1 * dot(n1, n2) - n2), neg(n1), setbackA);
+  end = chamferChordPoint(b, c, chamferUnit(n2 * dot(n1, n2) - n1), neg(n2), setbackB);
+  return max(a, b, chamferCut(a, b, c, n1, start, end));
 }
 
 /// intersectChamferSetbacksSteps with the steps started from p.
-intersectChamferSetbacksSteps(field1, field2, setback1, setback2, steps) {
-  return intersectChamferSetbacksSteps(field1, field2, setback1, setback2, steps, p);
+intersectChamferSetbacksSteps(a, b, setbackA, setbackB, steps) {
+  return intersectChamferSetbacksSteps(a, b, setbackA, setbackB, steps, p);
 }
 
 /// Union counterpart of intersectChamferSetbacksSteps, by De Morgan: the chamfer
-/// fills the groove, meeting solid 1's face `setback1` from the seam and solid
-/// 2's `setback2` from it.
-unionChamferSetbacksSteps(field1, field2, setback1, setback2, steps, seed) {
-  return neg(intersectChamferSetbacksSteps(neg(field1), neg(field2), setback1, setback2, steps, seed));
+/// fills the groove, meeting solid 1's face `setbackA` from the seam and solid
+/// 2's `setbackB` from it.
+unionChamferSetbacksSteps(a, b, setbackA, setbackB, steps, seed) {
+  return neg(intersectChamferSetbacksSteps(neg(a), neg(b), setbackA, setbackB, steps, seed));
 }
 
 /// unionChamferSetbacksSteps with the steps started from p.
-unionChamferSetbacksSteps(field1, field2, setback1, setback2, steps) {
-  return unionChamferSetbacksSteps(field1, field2, setback1, setback2, steps, p);
+unionChamferSetbacksSteps(a, b, setbackA, setbackB, steps) {
+  return unionChamferSetbacksSteps(a, b, setbackA, setbackB, steps, p);
 }
 
 /// Difference counterpart of intersectChamferSetbacksSteps: target minus tool,
@@ -1212,32 +1212,32 @@ differenceChamferSetbacksSteps(target, tool, targetSetback, toolSetback, steps) 
 /// `angle` to face 1, measured from the direction back toward the edge and
 /// turned into the solid, until it meets face 2. `steps` and `seed` as for
 /// intersectChamferSetbacksSteps.
-intersectChamferAngleSteps(field1, field2, distance, angle, steps, seed) {
-  c = chamferEdgePoint(field1, field2, steps, seed);
-  n1 = chamferUnit(remap(field1.dp, c));
-  n2 = chamferUnit(remap(field2.dp, c));
-  start = chamferChordPoint(field1, c, chamferUnit(n1 * dot(n1, n2) - n2), neg(n1), distance);
+intersectChamferAngleSteps(a, b, distance, angle, steps, seed) {
+  c = chamferEdgePoint(a, b, steps, seed);
+  n1 = chamferUnit(remap(a.dp, c));
+  n2 = chamferUnit(remap(b.dp, c));
+  start = chamferChordPoint(a, c, chamferUnit(n1 * dot(n1, n2) - n2), neg(n1), distance);
   back = chamferUnit(c - start);
   into = chamferUnit(neg(n1) - back * dot(neg(n1), back));
-  end = chamferLinePoint(field2, start, back * cos(angle) + into * sin(angle), distance);
-  return max(field1, field2, chamferCut(field1, field2, c, n1, start, end));
+  end = chamferLinePoint(b, start, back * cos(angle) + into * sin(angle), distance);
+  return max(a, b, chamferCut(a, b, c, n1, start, end));
 }
 
 /// intersectChamferAngleSteps with the steps started from p.
-intersectChamferAngleSteps(field1, field2, distance, angle, steps) {
-  return intersectChamferAngleSteps(field1, field2, distance, angle, steps, p);
+intersectChamferAngleSteps(a, b, distance, angle, steps) {
+  return intersectChamferAngleSteps(a, b, distance, angle, steps, p);
 }
 
 /// Union counterpart of intersectChamferAngleSteps, by De Morgan: the chamfer
 /// starts on solid 1's face `distance` from the seam and fills the groove at
 /// `angle` to that face, turned away from solid 1.
-unionChamferAngleSteps(field1, field2, distance, angle, steps, seed) {
-  return neg(intersectChamferAngleSteps(neg(field1), neg(field2), distance, angle, steps, seed));
+unionChamferAngleSteps(a, b, distance, angle, steps, seed) {
+  return neg(intersectChamferAngleSteps(neg(a), neg(b), distance, angle, steps, seed));
 }
 
 /// unionChamferAngleSteps with the steps started from p.
-unionChamferAngleSteps(field1, field2, distance, angle, steps) {
-  return unionChamferAngleSteps(field1, field2, distance, angle, steps, p);
+unionChamferAngleSteps(a, b, distance, angle, steps) {
+  return unionChamferAngleSteps(a, b, distance, angle, steps, p);
 }
 
 /// Difference counterpart of intersectChamferAngleSteps: target minus tool, the
@@ -1276,13 +1276,13 @@ intersectRvachev(fields, band) {
 }
 
 /// Rvachev R0 intersection of two SDFs (see the list form).
-intersectRvachev(d1, d2, band) {
-  return intersectRvachev([d1, d2], band);
+intersectRvachev(a, b, band) {
+  return intersectRvachev([a, b], band);
 }
 
 /// Rvachev R0 intersection of three SDFs (see the list form).
-intersectRvachev(d1, d2, d3, band) {
-  return intersectRvachev([d1, d2, d3], band);
+intersectRvachev(a, b, c, band) {
+  return intersectRvachev([a, b, c], band);
 }
 
 /// Partial application of intersectRvachev: binds the blend width and returns
@@ -1298,13 +1298,13 @@ unionRvachev(fields, band) {
 }
 
 /// Rvachev R0 union of two SDFs (see the list form).
-unionRvachev(d1, d2, band) {
-  return unionRvachev([d1, d2], band);
+unionRvachev(a, b, band) {
+  return unionRvachev([a, b], band);
 }
 
 /// Rvachev R0 union of three SDFs (see the list form).
-unionRvachev(d1, d2, d3, band) {
-  return unionRvachev([d1, d2, d3], band);
+unionRvachev(a, b, c, band) {
+  return unionRvachev([a, b, c], band);
 }
 
 /// Partial application of unionRvachev: binds the blend width and returns the

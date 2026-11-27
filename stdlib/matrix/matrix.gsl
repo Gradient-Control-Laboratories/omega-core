@@ -149,11 +149,11 @@ identity4() {
 }
 
 /// rotation3(direction, angle) is the 3×3 rotation by `angle` radians about
-/// `direction` (normalized internally), via Rodrigues' formula. Use this to
+/// `axisDirection` (normalized internally), via Rodrigues' formula. Use this to
 /// rotate directions/normals; to rotate points about an arbitrary line use
 /// the 4×4 rotation below.
-rotation3(direction, angle) {
-  a = normalize(direction);
+rotation3(axisDirection, angle) {
+  a = normalize(axisDirection);
   x = a[0];
   y = a[1];
   z = a[2];
@@ -165,16 +165,16 @@ rotation3(direction, angle) {
           [t * x * z + s * y, t * y * z - s * x, t * z * z + c]];
 }
 
-/// rotation(axis_origin, axis_direction, angle) is the 4×4 affine transform
-/// that rotates by `angle` radians about the line through `axis_origin` with
-/// direction `axis_direction`. Points on that line are fixed. Apply it to
+/// rotation(axisOrigin, axisDirection, angle) is the 4×4 affine transform
+/// that rotates by `angle` radians about the line through `axisOrigin` with
+/// direction `axisDirection`. Points on that line are fixed. Apply it to
 /// points with vector.transformPoint.
-rotation(axis_origin, axis_direction, angle) {
-  r = rotation3(axis_direction, angle);
+rotation(axisOrigin, axisDirection, angle) {
+  r = rotation3(axisDirection, angle);
   rc0 = r[0];
   rc1 = r[1];
   rc2 = r[2];
-  o = axis_origin;
+  o = axisOrigin;
   // Translation that keeps the axis fixed: t = o − R·o (R·o is the linear
   // combination of R's columns weighted by o's components).
   ro = rc0 * o[0] + rc1 * o[1] + rc2 * o[2];

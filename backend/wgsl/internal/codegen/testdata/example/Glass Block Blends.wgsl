@@ -14,9 +14,9 @@ fn builtin_gcl_closure_intersectLp(width: f32, exponent: f32, fields: vec3<f32>,
   return builtin_intersectLp(fields, width, exponent, noiseTex);
 }
 
-fn builtin_cropToBox(p: vec3<f32>, shape: f32, low: vec3<f32>, high: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
-  let lowCorner = min(low, high) - 0.01;
-  let highCorner = max(low, high) + 0.01;
+fn builtin_cropToBox(p: vec3<f32>, shape: f32, gsl_var_min: vec3<f32>, gsl_var_max: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
+  let lowCorner = min(gsl_var_min, gsl_var_max) - 0.01;
+  let highCorner = max(gsl_var_min, gsl_var_max) + 0.01;
   let d = abs(p - (lowCorner + highCorner) * 0.5) - (highCorner - lowCorner) * 0.5;
   let outside = length(vec3<f32>(max(d.x, 0.0), max(d.y, 0.0), max(d.z, 0.0)));
   let inside = min(max(d.x, max(d.y, d.z)), 0.0);

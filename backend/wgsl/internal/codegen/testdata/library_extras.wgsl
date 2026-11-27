@@ -77,10 +77,10 @@ fn builtin_gcl_closure_boxCentered(p: vec3<f32>, center: vec3<f32>, size: vec3<f
   return solid;
 }
 
-fn map_rotateAxis(v: vec3<f32>, axisOrigin: vec3<f32>, axisDir: vec3<f32>, angle: f32) -> vec3<f32> {
+fn map_rotateAxis(v: vec3<f32>, axisOrigin: vec3<f32>, axisDirection: vec3<f32>, angle: f32) -> vec3<f32> {
   let rel = v - axisOrigin;
   let ca = cos(angle);
-  let kn = normalize(axisDir);
+  let kn = normalize(axisDirection);
   let sa = sin(angle);
   return axisOrigin + rel * ca + cross(kn, rel) * sa + kn * dot(kn, rel) * (1.0 - ca);
 }

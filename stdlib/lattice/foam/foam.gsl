@@ -25,75 +25,75 @@ import "map";
 // --- internal: plane-family grids ---
 
 // Rounded union of the three orthogonal triangle-wave plane families spaced by
-// the vec3 `size`. GCL GridXYZ (UnionEuclideanVec of TriangleWaveEvenPositive).
-gridXYZ(size, combine) {
+// the vec3 `cellSize`. GCL GridXYZ (UnionEuclideanVec of TriangleWaveEvenPositive).
+gridXYZ(cellSize, combine) {
   return combine([
-    map.triangleWaveEvenPositive(p.x, size.x),
-    map.triangleWaveEvenPositive(p.y, size.y),
-    map.triangleWaveEvenPositive(p.z, size.z)
+    map.triangleWaveEvenPositive(p.x, cellSize.x),
+    map.triangleWaveEvenPositive(p.y, cellSize.y),
+    map.triangleWaveEvenPositive(p.z, cellSize.z)
   ]);
 }
 
 // The two in-plane diagonal wall families of a cell (normals along the XY
-// diagonals of `size`), joined by `combine`. GCL GridXYDiagonalCentered.
+// diagonals of `cellSize`), joined by `combine`. GCL GridXYDiagonalCentered.
 // Remap through a repeat pattern to tile. Uses plane(center, normal).
-gridXYDiagonalCentered(size, combine) {
+gridXYDiagonalCentered(cellSize, combine) {
   return combine([
-    abs(plane([0, 0, 0], [size.y, size.x, 0])),
-    abs(plane([0, 0, 0], [size.y, -size.x, 0]))
+    abs(plane([0, 0, 0], [cellSize.y, cellSize.x, 0])),
+    abs(plane([0, 0, 0], [cellSize.y, -cellSize.x, 0]))
   ]);
 }
 
 // --- public lattices ---
 
-/// Cubic foam: the three orthogonal wall families of a vec3 `size` cell, with
+/// Cubic foam: the three orthogonal wall families of a vec3 `cellSize` cell, with
 /// junctions joined by `combine`. Boundary-phased (walls on cell boundaries).
-cubic(size, combine) {
-  return gridXYZ(size, combine);
+cubic(cellSize, combine) {
+  return gridXYZ(cellSize, combine);
 }
 
 /// Cubic foam with the three wall families joined sharply.
-cubic(size) {
-  return cubic(size, unionSharp);
+cubic(cellSize) {
+  return cubic(cellSize, unionSharp);
 }
 
 /// Cubic foam, center-phased: the same three orthogonal wall families spaced by
-/// the vec3 `size`, but with the walls on cell centers (the odd-phase sibling of
+/// the vec3 `cellSize`, but with the walls on cell centers (the odd-phase sibling of
 /// cubic, via triangleWaveOddPositive). Migrated from the flat lattice package's
 /// cubicGrid; `combine` joins the plane families.
-cubicGrid(size, combine) {
-  dx = map.triangleWaveOddPositive(p.x, size.x);
-  dy = map.triangleWaveOddPositive(p.y, size.y);
-  dz = map.triangleWaveOddPositive(p.z, size.z);
+cubicGrid(cellSize, combine) {
+  dx = map.triangleWaveOddPositive(p.x, cellSize.x);
+  dy = map.triangleWaveOddPositive(p.y, cellSize.y);
+  dz = map.triangleWaveOddPositive(p.z, cellSize.z);
   return combine([dx, dy, dz]);
 }
 
 /// Center-phased cubic foam with the three wall families joined sharply.
-cubicGrid(size) {
-  return cubicGrid(size, unionSharp);
+cubicGrid(cellSize) {
+  return cubicGrid(cellSize, unionSharp);
 }
 
 /// Body-centered-cubic foam: the three sets of diagonal wall families (one per
-/// coordinate plane), each tiled by translation, then joined. vec3 `size` cell;
+/// coordinate plane), each tiled by translation, then joined. vec3 `cellSize` cell;
 /// `combine` joins the junctions.
-bcc(size, combine) {
-  m = map.patternRepeat(size);
-  xy = remap(gridXYDiagonalCentered(size, combine), m);
-  yz = remap(gridXYDiagonalCentered([size.y, size.z, 0], combine), [m.y, m.z, m.x]);
-  zx = remap(gridXYDiagonalCentered([size.z, size.x, 0], combine), [m.z, m.x, m.y]);
+bcc(cellSize, combine) {
+  m = map.patternRepeat(cellSize);
+  xy = remap(gridXYDiagonalCentered(cellSize, combine), m);
+  yz = remap(gridXYDiagonalCentered([cellSize.y, cellSize.z, 0], combine), [m.y, m.z, m.x]);
+  zx = remap(gridXYDiagonalCentered([cellSize.z, cellSize.x, 0], combine), [m.z, m.x, m.y]);
   return combine([xy, yz, zx]);
 }
 
 /// Body-centered-cubic foam with the wall families joined sharply.
-bcc(size) {
-  return bcc(size, unionSharp);
+bcc(cellSize) {
+  return bcc(cellSize, unionSharp);
 }
 
 /// Face-centered-cubic foam: the four {111}-type wall families (three corner
-/// planes plus the cell cap), mirror-folded into the cell. vec3 `size` cell;
+/// planes plus the cell cap), mirror-folded into the cell. vec3 `cellSize` cell;
 /// `combine` joins the junctions.
-fcc(size, combine) {
-  h = size * 0.5;
+fcc(cellSize, combine) {
+  h = cellSize * 0.5;
   return remap(combine([
     combine([
       abs(plane([0, 0, 0], [1, -1, -1])),
@@ -101,10 +101,10 @@ fcc(size, combine) {
       abs(plane([0, 0, 0], [-1, -1, 1]))
     ]),
     abs(plane([0, h.y, h.z], [1, 1, 1]))
-  ]), map.patternRepeatMirror(size));
+  ]), map.patternRepeatMirror(cellSize));
 }
 
 /// Face-centered-cubic foam with the wall families joined sharply.
-fcc(size) {
-  return fcc(size, unionSharp);
+fcc(cellSize) {
+  return fcc(cellSize, unionSharp);
 }

@@ -38,11 +38,11 @@ rotateZ(shape, angle) {
   return remap(shape, [p.x * cos(angle) + p.y * sin(angle), -p.x * sin(angle) + p.y * cos(angle), p.z]);
 }
 
-/// The shape turned by `angle` radians about the line through `origin` along
-/// `direction`, which need not be normalized: Rodrigues' formula turning the
+/// The shape turned by `angle` radians about the line through `axisOrigin` along
+/// `axisDirection`, which need not be normalized: Rodrigues' formula turning the
 /// point back by `angle`, as map.rotateAxis(p, origin, direction, -angle).
-rotate(shape, origin, direction, angle) {
-  return remap(shape, origin + (p - origin) * cos(angle) - cross(normalize(direction), p - origin) * sin(angle) + normalize(direction) * dot(normalize(direction), p - origin) * (1 - cos(angle)));
+rotate(shape, axisOrigin, axisDirection, angle) {
+  return remap(shape, axisOrigin + (p - axisOrigin) * cos(angle) - cross(normalize(axisDirection), p - axisOrigin) * sin(angle) + normalize(axisDirection) * dot(normalize(axisDirection), p - axisOrigin) * (1 - cos(angle)));
 }
 
 /// The shape scaled by `factor` about the origin. The factor must be positive;

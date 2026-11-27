@@ -288,11 +288,11 @@ bands(size, @direction direction, profile, @range(0, 2) distortion, @range(1, 6)
   return fadeTo(waveProfile(phase, profile), 0.5, size);
 }
 
-/// rings(size, axisOrigin, axisDir, profile, distortion, detail): rings
-/// `size` mm apart about an axis through `axisOrigin` along `axisDir`, as
+/// rings(size, axisOrigin, axisDirection, profile, distortion, detail): rings
+/// `size` mm apart about an axis through `axisOrigin` along `axisDirection`, as
 /// bands are about a direction: growth rings, turned rings, agate.
-rings(size, @point axisOrigin, @direction(axisOrigin) axisDir, profile, @range(0, 2) distortion, @range(1, 6) detail) {
-  a = normalize(axisDir);
+rings(size, @point axisOrigin, @direction(axisOrigin) axisDirection, profile, @range(0, 2) distortion, @range(1, 6) detail) {
+  a = normalize(axisDirection);
   q = p - axisOrigin;
   phase = length(q - a * dot(q, a)) / size + distortion * noise.fbm(4 * size, detail, 0.5, 2);
   return fadeTo(waveProfile(phase, profile), 0.5, size);

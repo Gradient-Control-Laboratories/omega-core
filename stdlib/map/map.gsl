@@ -13,7 +13,7 @@
 // `map(fn, list)` is the iteration primitive (bare, in call position) while
 // `map.rotateXY(...)` is a package-qualified call. The parser keys the
 // primitive check off the member name, not the prefix, so the two never
-// collide. Call qualified: `map.rotateXY(v, ang)`.
+// collide. Call qualified: `map.rotateXY(v, angle)`.
 //
 // Uses builtin's shared constants (tau, pi) rather than redefining them.
 // builtin is implicitly dot-imported into every file, so nothing declares it.
@@ -171,23 +171,23 @@ checkerXY(cellSize) {
   return 1 - 2 * s;
 }
 
-/// Rotate 3D vector v by `ang` radians around the Z axis (XY plane
+/// Rotate 3D vector v by `angle` radians around the Z axis (XY plane
 /// rotation). v.z passes through unchanged.
-rotateXY(v, ang) {
-  ca = cos(ang);
-  sa = sin(ang);
+rotateXY(v, angle) {
+  ca = cos(angle);
+  sa = sin(angle);
   return [v.x * ca + v.y * sa, -v.x * sa + v.y * ca, v.z];
 }
 
-rotateYZ(v, ang) {
-  ca = cos(ang);
-  sa = sin(ang);
+rotateYZ(v, angle) {
+  ca = cos(angle);
+  sa = sin(angle);
   return [v.x, v.y * ca + v.z * sa, -v.y * sa + v.z * ca];
 }
 
-rotateZX(v, ang) {
-  ca = cos(ang);
-  sa = sin(ang);
+rotateZX(v, angle) {
+  ca = cos(angle);
+  sa = sin(angle);
   return [v.x * ca - v.z * sa, v.y, v.z * ca + v.x * sa];
 }
 
@@ -196,10 +196,10 @@ eulerAngles(v, angles) {
 }
 
 /// Rotate vector `v` by `angle` radians about the line through `axisOrigin` with
-/// direction `axisDir` (Rodrigues' formula). `axisDir` need not be normalized.
+/// direction `axisDirection` (Rodrigues' formula). `axisDirection` need not be normalized.
 /// The arbitrary-axis counterpart to rotateXY / rotateYZ / rotateZX.
-rotateAxis(v, axisOrigin, axisDir, angle) {
-  kn = normalize(axisDir);
+rotateAxis(v, axisOrigin, axisDirection, angle) {
+  kn = normalize(axisDirection);
   rel = v - axisOrigin;
   ca = cos(angle);
   sa = sin(angle);

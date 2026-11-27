@@ -2,8 +2,8 @@ fn builtin_intersectSharp(fields: array<f32, 6>) -> f32 {
   return max(max(max(max(max(fields[0], fields[1]), fields[2]), fields[3]), fields[4]), fields[5]);
 }
 
-fn builtin_unionSharp(d1: f32, d2: f32, d3: f32) -> f32 {
-  return min(min(d1, d2), d3);
+fn builtin_unionSharp(a: f32, b: f32, c: f32) -> f32 {
+  return min(min(a, b), c);
 }
 
 fn builtin_linearMap(gsl_var_value: f32, inMin: f32, inMax: f32, outMin: vec3<f32>, outMax: vec3<f32>) -> vec3<f32> {

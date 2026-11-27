@@ -349,7 +349,7 @@ func writeLibraryEntries(sb *strings.Builder, e libraryEntries) {
 }
 
 // declName is the name a declaration's signature declares: "unionRound" for
-// "unionRound(d1, d2, radius)".
+// "unionRound(a, b, radius)".
 func declName(signature string) string {
 	if i := strings.Index(signature, "("); i >= 0 {
 		return strings.TrimSpace(signature[:i])

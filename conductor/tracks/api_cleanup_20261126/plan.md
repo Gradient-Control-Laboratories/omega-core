@@ -28,9 +28,14 @@ golden stops for approval before the golden is updated.
 
 ## Phase 1: Names That Break Nothing
 
-- [ ] Goal: Parameter names (N3, N4, N7, N10's parameter half)
-  - [ ] One axis-rotation vocabulary; `cellSize`; `min`/`max` box corners; `a, b` for every boolean
-  - [ ] `TestPackageDocsListEveryDocumentedMember` and the documentation test still pass; no golden moves
+- [x] Goal: Parameter names (N3, N4, N7, N10's parameter half)
+  - [x] One axis-rotation vocabulary (`axisDirection` for every `axisDir` in the stdlib); `cellSize`; `min`/`max`
+        box corners; `a, b, c` with `normalA/B` and `setbackA/B` for unions, intersections and the exact
+        helpers. Differences keep `target`/`tool`; the solver internals and `cornerDistance` (whose body
+        names its corner `c`) keep their names
+  - [x] The documentation tests pass. Generated WGSL and assembled output keep parameter names, so 33 WGSL
+        goldens and the `sphere_gears_text` assembled and rebuild goldens moved; a token-aligned check
+        showed every change is one of the renames
 - [ ] Goal: Hide and reword (R2, R3, R4)
   - [ ] Drop the solver internals' `///`; reword the `planesEven` lines; remove the preamble `Domain` filter
   - [ ] Check: `gsl skill builtin` no longer lists the internals

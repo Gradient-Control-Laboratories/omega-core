@@ -74,9 +74,9 @@ fn map_triangleWave(x: f32, period: f32, noiseTex: texture_3d<f32>) -> f32 {
   return half - abs(u - period);
 }
 
-fn map_rotateZX(v: vec3<f32>, ang: f32, noiseTex: texture_3d<f32>) -> vec3<f32> {
-  let ca = cos(ang);
-  let sa = sin(ang);
+fn map_rotateZX(v: vec3<f32>, angle: f32, noiseTex: texture_3d<f32>) -> vec3<f32> {
+  let ca = cos(angle);
+  let sa = sin(angle);
   return vec3<f32>(v.x * ca - v.z * sa, v.y, v.z * ca + v.x * sa);
 }
 

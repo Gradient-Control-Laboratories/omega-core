@@ -3,21 +3,21 @@ fn vector_multiplyVector(m: mat4x4<f32>, dir: vec3<f32>) -> vec3<f32> {
   return vec3<f32>(h.x, h.y, h.z);
 }
 
-fn map_rotateYZ(v: vec3<f32>, ang: f32) -> vec3<f32> {
-  let ca = cos(ang);
-  let sa = sin(ang);
+fn map_rotateYZ(v: vec3<f32>, angle: f32) -> vec3<f32> {
+  let ca = cos(angle);
+  let sa = sin(angle);
   return vec3<f32>(v.x, v.y * ca + v.z * sa, -v.y * sa + v.z * ca);
 }
 
-fn map_rotateZX(v: vec3<f32>, ang: f32) -> vec3<f32> {
-  let ca = cos(ang);
-  let sa = sin(ang);
+fn map_rotateZX(v: vec3<f32>, angle: f32) -> vec3<f32> {
+  let ca = cos(angle);
+  let sa = sin(angle);
   return vec3<f32>(v.x * ca - v.z * sa, v.y, v.z * ca + v.x * sa);
 }
 
-fn map_rotateXY(v: vec3<f32>, ang: f32) -> vec3<f32> {
-  let ca = cos(ang);
-  let sa = sin(ang);
+fn map_rotateXY(v: vec3<f32>, angle: f32) -> vec3<f32> {
+  let ca = cos(angle);
+  let sa = sin(angle);
   return vec3<f32>(v.x * ca + v.y * sa, -v.x * sa + v.y * ca, v.z);
 }
 

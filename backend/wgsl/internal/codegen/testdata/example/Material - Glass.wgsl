@@ -43,9 +43,9 @@ fn builtin_gcl_closure_boxCentered(p: vec3<f32>, center: vec3<f32>, size: vec3<f
   return solid;
 }
 
-fn builtin_gcl_closure_box(p: vec3<f32>, pointA: vec3<f32>, pointB: vec3<f32>) -> f32 {
-  let center = (pointA + pointB) * 0.5;
-  let size = abs(pointB - pointA);
+fn builtin_gcl_closure_box(p: vec3<f32>, gsl_var_min: vec3<f32>, gsl_var_max: vec3<f32>) -> f32 {
+  let center = (gsl_var_min + gsl_var_max) * 0.5;
+  let size = abs(gsl_var_max - gsl_var_min);
   return builtin_gcl_closure_boxCentered(p, center, size);
 }
 

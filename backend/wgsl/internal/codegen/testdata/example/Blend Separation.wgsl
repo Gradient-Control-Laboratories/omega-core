@@ -2,14 +2,14 @@ fn builtin_plane(p: vec3<f32>, point: vec3<f32>, normal: vec3<f32>) -> f32 {
   return dot(p - point, normalize(normal));
 }
 
-fn builtin_intersectRound(d1: f32, d2: f32, radius: f32) -> f32 {
-  let inset1 = max(d1 + radius, 0.0);
-  let inset2 = max(d2 + radius, 0.0);
-  return min(-radius, max(d1, d2)) + length(vec2<f32>(inset1, inset2));
+fn builtin_intersectRound(a: f32, b: f32, radius: f32) -> f32 {
+  let inset1 = max(a + radius, 0.0);
+  let inset2 = max(b + radius, 0.0);
+  return min(-radius, max(a, b)) + length(vec2<f32>(inset1, inset2));
 }
 
-fn builtin_unionSharp(d1: f32, d2: f32) -> f32 {
-  return min(d1, d2);
+fn builtin_unionSharp(a: f32, b: f32) -> f32 {
+  return min(a, b);
 }
 
 fn sdShape(p: vec3<f32>, time: f32, gsl_param_3_28: f32) -> gsl_shape {

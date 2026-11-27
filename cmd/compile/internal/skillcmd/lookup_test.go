@@ -10,7 +10,7 @@ func TestNamesAreLookedUp(t *testing.T) {
 	if code != exitPrinted || errOut != "" {
 		t.Fatalf("exit %d, stderr %q", code, errOut)
 	}
-	for _, w := range []string{"`rotate(shape, origin, direction, angle)`", "### `builtin/mesh`"} {
+	for _, w := range []string{"`rotate(shape, axisOrigin, axisDirection, angle)`", "### `builtin/mesh`"} {
 		if !strings.Contains(out, w) {
 			t.Errorf("output lacks %q", w)
 		}

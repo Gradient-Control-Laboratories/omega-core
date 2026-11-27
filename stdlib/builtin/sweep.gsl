@@ -3,16 +3,16 @@
 // =========================================================
 
 /// A profile extruded along Z: `profile`, a 2D field in the XY plane such as
-/// profileXY's, kept between the planes z = `low` and z = `high`, using
+/// profileXY's, kept between the planes z = `min` and z = `max`, using
 /// `blend` to combine the profile with the two caps — pass
 /// `intersectRound(radius)` to round both rims, or any other operator taking
 /// a list of fields, as on cylinderCapped. Its box is the profile's between
 /// the two planes. Its frame: .u the profile's own, the distance along its
 /// loop where it has one, and .v the height z, both in mm, on the sides and
 /// the caps alike.
-extrude(profile, low, high, blend) {
-  middle = (low + high) / 2;
-  halfHeight = abs(high - low) / 2;
+extrude(profile, min, max, blend) {
+  middle = (min + max) / 2;
+  halfHeight = abs(max - min) / 2;
   form = blend([profile, abs(p.z - middle) - halfHeight]);
   form.v = extrudeV();
   return form;
@@ -23,10 +23,10 @@ extrudeV() {
   return p.z;
 }
 
-/// A profile extruded along Z between z = `low` and z = `high`, with sharp
+/// A profile extruded along Z between z = `min` and z = `max`, with sharp
 /// rims. An exact profile gives an exact solid: the caps are square to it.
-extrude(profile, low, high) {
-  form = extrude(profile, low, high, intersectRound(0));
+extrude(profile, min, max) {
+  form = extrude(profile, min, max, intersectRound(0));
   form.v = extrudeV();
   return form;
 }

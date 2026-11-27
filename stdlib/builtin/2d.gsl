@@ -33,16 +33,16 @@ rectangleXYCentered(center, size) {
 /// Axis-aligned rectangle in the XY plane defined by two opposite corners,
 /// using `blend` to combine the two slab fields — pass `intersectRound(radius)`
 /// to round every corner, or any other operator taking a list of fields.
-rectangleXY(pointA, pointB, blend) {
-  center = (pointA + pointB) * 0.5;
-  size = abs(pointB - pointA);
+rectangleXY(min, max, blend) {
+  center = (min + max) * 0.5;
+  size = abs(max - min);
   return rectangleXYCentered(center, size, blend);
 }
 
 /// Axis-aligned rectangle in the XY plane defined by two opposite
 /// corners.
-rectangleXY(pointA, pointB) {
-  return rectangleXY(pointA, pointB, intersectRound(0));
+rectangleXY(min, max) {
+  return rectangleXY(min, max, intersectRound(0));
 }
 
 /// Quadrilateral in the XY plane with corners corner0..corner3 given in consistent
