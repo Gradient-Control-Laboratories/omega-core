@@ -15,7 +15,8 @@ import { wgslFn } from "three/tsl";
 import { GSL_SHAPE_STRUCT_WGSL, GSL_MIN_WGSL } from "./gsl-host.js";
 import { GSL_SHADING_WGSL, GSL_MATERIAL_STRUCT_WGSL, GSL_MATERIAL_DEFAULT_WGSL, partDetailWGSL, hasParts, hasSimpleValues, partDetailSetupWGSL } from "./gsl-shading.js";
 import { GSL_SECONDARY_HIT_STRUCT_WGSL, marchSecondaryWGSL, shadeGlassWGSL } from "./gsl-glass.js";
-import { displaceSampleWGSL, sdDisplacedWGSL, sectionShapeWGSL, renameToDisplaced, GSL_DISPLACE_STATE_WGSL } from "./gsl-displace.js";
+import { displaceSampleWGSL, sdDisplacedWGSL, sectionShapeWGSL, renameToDisplaced, GSL_DISPLACE_STATE_WGSL,
+         GSL_CLIP_STATE_WGSL, clipSdShapeWGSL, clipSetupWGSL } from "./gsl-displace.js";
 import { visArrayDeclWGSL, visAssignWGSL, isShapeVisibleWGSL } from "./gsl-visibility.js";
 import { traceSampleWGSL, GSL_TRACE_STATE_WGSL } from "./gsl-trace.js";
 import { simpleFragmentWGSL } from "./gsl-simple.js";
@@ -31,6 +32,8 @@ export const gsl_secondaryHit = new THREE.CodeNode(GSL_SECONDARY_HIT_STRUCT_WGSL
 // The displacement scale, per fragment invocation: gsl_sdDisplaced stands in
 // for sdShape at call sites that cannot grow an argument.
 export const gsl_displaceState = new THREE.CodeNode(GSL_DISPLACE_STATE_WGSL, [], "wgsl");
+// The section clip's state and gsl_clipShape (gsl-displace.js).
+export const gsl_clipState = new THREE.CodeNode(GSL_CLIP_STATE_WGSL, [gsl_shape], "wgsl");
 
 // The progressive pass's random-number state.
 export const gsl_traceState = new THREE.CodeNode(GSL_TRACE_STATE_WGSL, [], "wgsl");
@@ -141,7 +144,9 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
 
   // pixelWidthNode declares gsl_pw, which a program's pixelSize() reads,
   // in every shader that carries the program.
-  const sdShape = wgslFn(wgslCode, [gsl_shape, gsl_min, gsl_material, pixelWidthNode]);
+  // sdShape is clipped at the section plane where a fragment turns the clip on
+  // (clipSdShapeWGSL); everywhere else it is the compiled field.
+  const sdShape = wgslFn(clipSdShapeWGSL(wgslCode), [gsl_shape, gsl_min, gsl_material, pixelWidthNode, gsl_clipState]);
 
   // The detail ladder (gsl-shading.js), for a program with parts: the
   // fragments hand the part guards the camera and the rungs, and displacement
@@ -186,7 +191,7 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
     : null;
   const gsl_sdDisplaced = displaceActive
     ? wgslFn(injectExtraArgs(sdDisplacedWGSL({ extraParamsWGSL, extraArgsWGSL })),
-             [sdShape, gsl_shape, gsl_displaceSample])
+             [sdShape, gsl_shape, gsl_displaceSample, gsl_clipState])
     : null;
   // The section view's field: sdShape, its surfaces moved by their relief
   // and builds as the section panel's toggles say (gsl-displace.js). Without
@@ -362,6 +367,7 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
             ${partDetailSetupWGSL(wgslCode)}
             gsl_envA = envA; gsl_envB = envB; gsl_envC = envC;
             gsl_pwScale = surfaceKnobs.z;
+            ${clipSetupWGSL({ active: "fieldActive", normal: "fieldNormal", height: "fieldHeight", camera: "camPosZUp" })}
 
             ${displaceActive ? "gsl_dispScale = surfaceKnobs.x;" : ""}
 
@@ -688,8 +694,8 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
         }
     `),
     fieldInfo.active
-      ? [sdShape, gsl_material, gsl_calcNormal, gsl_shapeColor, gsl_shadeSurface, ...glassDeps, ...displaceDeps, ...partDetailDeps, gsl_isShapeVisible, wgslFn(fieldInfo.rampWGSL)]
-      : [sdShape, gsl_material, gsl_calcNormal, gsl_shapeColor, gsl_shadeSurface, ...glassDeps, ...displaceDeps, ...partDetailDeps, gsl_isShapeVisible],
+      ? [sdShape, gsl_material, gsl_calcNormal, gsl_shapeColor, gsl_shadeSurface, ...glassDeps, ...displaceDeps, ...partDetailDeps, gsl_isShapeVisible, gsl_clipState, wgslFn(fieldInfo.rampWGSL)]
+      : [sdShape, gsl_material, gsl_calcNormal, gsl_shapeColor, gsl_shadeSurface, ...glassDeps, ...displaceDeps, ...partDetailDeps, gsl_isShapeVisible, gsl_clipState],
   );
 
   // The progressive pass: one path per pixel, added to the previous sum.

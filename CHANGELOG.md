@@ -59,12 +59,14 @@ from `1.0.0` onward).
   so nothing drawn changes); `gsl_heights` reads each return's volume row once and returns its
   height and build. Sixteen WGSL goldens change in text (0.5 to 3.6%), none in which programs get
   the per-return composite.
-- **Section view Color option**: the Section panel's controls are reordered (Direction, Offset,
-  Model, Section, then Color, Build and Relief, then the contour controls), and Color shows the cut
-  faces in each shape's color field (decoded from sRGB, as shading decodes it) in place of the
-  contours, which it takes out of play. The cut clips the model in front of the plane. With the
-  Model slider at zero, off the cut the model behind the plane and the scene show without the
-  section's background veil.
+- **Section view Color option, and a clipped section**: the Section panel's controls are reordered
+  (Direction, Offset, Model, then Color, Build and Relief, then the contour controls), and Color
+  shows the cut faces in each shape's color field (decoded from sRGB, as shading decodes it) in
+  place of the contours, which it takes out of play. While the section is open the viewer's field
+  is clipped at the plane (sdShape wraps the compiled field, renamed gsl_sdShapeUnclipped), so
+  nothing is drawn in front of the section and what lies behind it shows whole. The Model opacity
+  slider is gone; the slider that was Section, the opacity of the section's background over the
+  model behind it, is now labelled Model.
 - Migrated GSL compiler architecture, language specification/migration, golden verification, and
   stdlib tolerance-table documentation from `omega-release/doc/` into `doc/`, synced
   `doc/gsl_lang_spec_future.md`, extracted `doc/roadmap.md` from `README.md`, and documented Go

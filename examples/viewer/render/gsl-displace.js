@@ -119,6 +119,60 @@ fn gsl_displaceSample(p: vec3<f32>, sd: gsl_shape, time: f32${extraParamsWGSL}) 
 `;
 }
 
+// THE SECTION CLIP. With the Section panel open, the model on the camera's
+// side of the section plane is cut away, so the march must not see it: rays pass through that half and find what lies behind it, and the cut
+// faces stand where the plane enters each solid. The clip is in the field, so
+// every march, normal and AO tap sees it: the compiled sdShape is renamed
+// gsl_sdShapeUnclipped and a wrapper of the same signature clips it
+// (clipSdShapeWGSL), and gsl_sdDisplaced clips its displaced result the same
+// way. The state is private: a fragment that clips sets it at entry from its
+// uniforms; every other shader, the section pass among them, leaves it off and
+// samples the whole field.
+//
+//   gsl_clipOn     1 while clipping
+//   gsl_clipPlane  (n, w) with n unit and dot(n, p) + w > 0 on the cut-away side
+export const GSL_CLIP_STATE_WGSL = `var<private> gsl_clipOn: f32 = 0.0;
+var<private> gsl_clipPlane: vec4<f32> = vec4<f32>(0.0, 0.0, 1.0, 0.0);
+fn gsl_clipShape(p: vec3<f32>, s: gsl_shape) -> gsl_shape {
+    if (gsl_clipOn == 0.0) { return s; }
+    return gsl_shape(max(s.distance, dot(gsl_clipPlane.xyz, p) + gsl_clipPlane.w), s.shapeIndex);
+}`;
+
+// clipSetupWGSL is the statement a fragment runs at entry to clip: on while
+// the section is active, cutting away the side of the plane
+// dot(normal, p) = height the camera is on. Nothing is drawn in front of the
+// section.
+export function clipSetupWGSL({ active, normal, height, camera }) {
+  return `gsl_clipOn = select(0.0, 1.0, ${active} > 0.5);
+            {
+                let clipLen = max(length(${normal}), 1e-6);
+                let clipSide = select(-1.0, 1.0, dot(${normal}, ${camera}) >= ${height});
+                gsl_clipPlane = vec4<f32>(${normal} / clipLen, -${height} / clipLen) * clipSide;
+            }`;
+}
+
+// clipSdShapeWGSL rewrites the compiled module so sdShape is clipped: the
+// compiled function is renamed gsl_sdShapeUnclipped and a wrapper with its
+// signature returns it through gsl_clipShape. A module without sdShape is
+// returned as it is.
+export function clipSdShapeWGSL(wgslCode) {
+  const m = wgslCode.match(/\bfn sdShape\(([^)]*)\)\s*->\s*gsl_shape/);
+  if (!m) return wgslCode;
+  const params = m[1];
+  const args = params
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s !== "")
+    .map((s) => s.split(":")[0].trim())
+    .join(", ");
+  return wgslCode.replace(/\bfn sdShape\(/, "fn gsl_sdShapeUnclipped(") + `
+
+fn sdShape(${params}) -> gsl_shape {
+    return gsl_clipShape(p, gsl_sdShapeUnclipped(${args}));
+}
+`;
+}
+
 // sectionShapeWGSL returns the source of
 //
 //   fn gsl_sectionShape(p: vec3<f32>, time: f32, wRelief: f32, wBuild: f32, <suffix>) -> gsl_shape
@@ -162,7 +216,7 @@ export function sdDisplacedWGSL({ extraParamsWGSL, extraArgsWGSL }) {
   return `
 fn gsl_sdDisplaced(p: vec3<f32>, time: f32${extraParamsWGSL}) -> gsl_shape {
     let sd = sdShape(p, time);
-    return gsl_displaceSample(p, sd, time${extraArgsWGSL});
+    return gsl_clipShape(p, gsl_displaceSample(p, sd, time${extraArgsWGSL}));
 }
 `;
 }

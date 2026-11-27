@@ -16,7 +16,6 @@ import {
     setFieldNormal,
     setFieldInterval,
     setFieldFade,
-    setModelOpacity,
     setSectionOpacity,
     setFieldUnion,
     setFieldExternal,
@@ -1149,18 +1148,14 @@ eventManager.addListener("canvas/update-audio", (event) => {
 const fieldPanel = document.getElementById("field-panel");
 const fieldHeightSlider = document.getElementById("field-height");
 const fieldHeightLabel = document.getElementById("field-height-label");
-const fieldModelSlider = document.getElementById("field-model");
-const fieldModelLabel = document.getElementById("field-model-label");
 
 document.getElementById("field-panel-header").addEventListener("click", (e) => {
     if (e.target.classList.contains("panel-close")) {
         fieldPanel.classList.remove("open");
         setFieldEnabled(false);
-        setModelOpacity(1.0);
     } else if (!fieldPanel.classList.contains("open")) {
         fieldPanel.classList.add("open");
         setFieldEnabled(true);
-        setModelOpacity(parseFloat(fieldModelSlider.value));
     }
 });
 
@@ -1285,41 +1280,6 @@ fieldFadeLabel.addEventListener("blur", () => {
     if (fieldFadeLabel.contentEditable === "true") {
         commitFieldFade(fieldFadeLabel.textContent);
         fieldFadeLabel.contentEditable = "false";
-    }
-});
-
-fieldModelSlider.addEventListener("input", (e) => {
-    const value = parseFloat(e.target.value);
-    fieldModelLabel.textContent = value.toFixed(2);
-    setModelOpacity(value);
-});
-
-function commitFieldModel(text) {
-    const value = parseFloat(text);
-    if (isNaN(value)) return;
-    const clamped = Math.min(Math.max(value, 0), 1);
-    fieldModelSlider.value = clamped;
-    fieldModelLabel.textContent = clamped.toFixed(2);
-    setModelOpacity(clamped);
-}
-
-fieldModelLabel.addEventListener("mousedown", () => { fieldModelLabel.contentEditable = "true"; });
-fieldModelLabel.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-        e.preventDefault();
-        commitFieldModel(fieldModelLabel.textContent);
-        fieldModelLabel.contentEditable = "false";
-        fieldModelLabel.blur();
-    } else if (e.key === "Escape") {
-        fieldModelLabel.textContent = parseFloat(fieldModelSlider.value).toFixed(2);
-        fieldModelLabel.contentEditable = "false";
-        fieldModelLabel.blur();
-    }
-});
-fieldModelLabel.addEventListener("blur", () => {
-    if (fieldModelLabel.contentEditable === "true") {
-        commitFieldModel(fieldModelLabel.textContent);
-        fieldModelLabel.contentEditable = "false";
     }
 });
 

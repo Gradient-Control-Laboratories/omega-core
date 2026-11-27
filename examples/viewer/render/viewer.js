@@ -219,7 +219,6 @@ const fieldHeightU = uniform(0.0);
 const fieldNormalU = uniform(new THREE.Vector3(0, 0, 1));
 const fieldIntervalU = uniform(0.25); // matches the panel default
 const fieldFadeU = uniform(5.0); // matches the panel default (half of fade max)
-const modelOpacityU = uniform(1.0);
 const sectionOpacityU = uniform(0.25);
 const fieldUnionU = uniform(0.0); // off by default — draw each shape's field independently
 const fieldExternalU = uniform(1.0); // on by default — show external (dist>0) interval curves
@@ -1728,7 +1727,6 @@ function initComposite() {
             fieldOn: f32,
             fieldUnion: f32,
             fieldColor: f32,
-            modelOpacity: f32,
             sectionOpacity: f32,
             camPosZUp: vec3<f32>,
             fieldNormal: vec3<f32>,
@@ -1855,36 +1853,28 @@ function initComposite() {
             // Compute scene result before box overlay
             var result: vec4<f32>;
 
-            // No active plane: draw model at modelOpacity (or axis at 0.5) over background
+            // No active plane: draw the model (or the axis at 0.5) over the background
             if (!fieldHit) {
-                let op = select(axisOpacity, modelOpacity, shapeHit);
+                let op = select(axisOpacity, 1.0, shapeHit);
                 let behind = select(effectiveBgRGB, effectiveBgFlat, shapeHit);
                 result = vec4(select(effectiveBgRGB, mix(behind, shapeRGB, op), shapeVisible), 1.0);
                 // Over the background, blend by coverage, unless the standard
                 // frame's hit is hidden behind a mesh or the grid.
                 if (ptOn && !centerIsAxis && (shapeVisible || !shapeHit)) {
-                    result = vec4(mix(effectiveBgRGB, ptColor, coverage * select(1.0, modelOpacity, shapeHit)), 1.0);
+                    result = vec4(mix(effectiveBgRGB, ptColor, coverage), 1.0);
                 }
             } else if (fieldColor > 0.5 && isLine > 0.5) {
-                // Color mode, a cut face: the section clips the model on the camera's
-                // side of the plane, so what shows here is the cut itself, in full color.
-                // (Off the cut the model still blends at modelOpacity: the march does
-                // not clip, so what lies behind the plane there is not known here.)
+                // Color mode, a cut face: the cut itself, in full color.
                 result = vec4(fieldRGB, 1.0);
-            } else if (fieldColor > 0.5 && modelOpacity <= 0.0) {
-                // Color mode with the model slider at zero: off the cut, what lies
-                // behind the plane as it is, without the section's background veil
-                // lightening it: the model where it is behind the plane, else the
-                // scene. The model in front of the plane is hidden.
-                result = vec4(select(effectiveBgRGB, shapeRGB, modelBelowPlane), 1.0);
             } else if (modelBelowPlane) {
                 // Model is behind the plane — composite section over 100% opaque model
                 result = vec4(mix(shapeRGB, sectionRGBA.rgb, sectionRGBA.a), 1.0);
             } else {
-                // Model is in front of the plane (or no model) — composite section over background,
-                // then model at modelOpacity on top
+                // No model behind the plane: the section over the background. Nothing is
+                // drawn in front of the section (the shape passes clip the model there;
+                // a tier that does not clip, the Simple one, drops it here), only the axis.
                 let behindModel = mix(effectiveBgRGB, sectionRGBA.rgb, sectionRGBA.a);
-                let op = select(axisOpacity, modelOpacity, shapeHit);
+                let op = select(axisOpacity, 0.0, shapeHit);
                 let behindShape = select(behindModel, mix(effectiveBgFlat, sectionRGBA.rgb, sectionRGBA.a), shapeHit);
                 result = vec4(select(behindModel, mix(behindShape, shapeRGB, op), shapeVisible), 1.0);
             }
@@ -1909,7 +1899,6 @@ function initComposite() {
     fieldOn: fieldEnabledU,
     fieldUnion: fieldUnionU,
     fieldColor: fieldColorU,
-    modelOpacity: modelOpacityU,
     sectionOpacity: sectionOpacityU,
     camPosZUp: camPosZUpU,
     fieldNormal: fieldNormalU,
@@ -2468,10 +2457,6 @@ export function setSectionOpacity(opacity) {
   scheduleRender();
 }
 
-export function setModelOpacity(opacity) {
-  modelOpacityU.value = opacity;
-  scheduleRender();
-}
 
 export function captureScene() {
   if (renderDisabled) return null;
