@@ -62,14 +62,14 @@ func PrintUsage(w io.Writer) {
 	fmt.Fprintf(w, "        its size centred on the origin, as the viewer frames it; else auto)\n")
 	fmt.Fprintf(w, "      --algo string\n")
 	fmt.Fprintf(w, "        Meshing algorithm (marching-cubes or mdc) (default \"mdc\")\n")
-	fmt.Fprintf(w, "      --build\n")
-	fmt.Fprintf(w, "        Mesh each surface moved out by its materials' builds, the film each coat stands proud by\n")
-	fmt.Fprintf(w, "        (material.withBuild), as the CPU renderer draws it\n")
+	fmt.Fprintf(w, "      --coatings\n")
+	fmt.Fprintf(w, "        Mesh each surface moved out by its materials' coatings, the film each coat stands proud by\n")
+	fmt.Fprintf(w, "        (its build, material.withBuild), as the CPU renderer draws it\n")
 	fmt.Fprintf(w, "      --relief\n")
 	fmt.Fprintf(w, "        Mesh each surface moved by its materials' relief, the marks on it; relief finer than a\n")
 	fmt.Fprintf(w, "        cell of the mesh is not resolved, and on noisy relief mdc can throw vertices off the\n")
 	fmt.Fprintf(w, "        surface (marching-cubes stays on it)\n")
-	fmt.Fprintf(w, "        With --build or --relief, a box worked out for the part (its .box, auto, @scene) is grown\n")
+	fmt.Fprintf(w, "        With --coatings or --relief, a box worked out for the part (its .box, auto, @scene) is grown\n")
 	fmt.Fprintf(w, "        3 mm; a box named with --bbox is meshed as given\n")
 	fmt.Fprintf(w, "      --time float\n")
 	fmt.Fprintf(w, "        Animation time in seconds (default 0)\n")
@@ -224,7 +224,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 			mesh.WithSubdivision(cfg.Subdivision),
 			mesh.WithAlgorithm(cfg.Algo),
 			mesh.WithTime(cfg.Time),
-			mesh.WithDisplacement(cfg.Build, cfg.Relief),
+			mesh.WithDisplacement(cfg.Coatings, cfg.Relief),
 		}
 		declared, hasDeclared := [6]float32{}, false
 		if !cfg.HasBbox && !cfg.AutoBbox && len(sourceTexts) == 1 {
@@ -237,7 +237,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		// A box worked out for the part holds its field as built; a displaced mesh moves surfaces out of it, so it is
 		// grown by the most a material's height should move one. A box named with --bbox is meshed as given.
 		derived := func(box [6]float32) [6]float32 {
-			if !cfg.Build && !cfg.Relief {
+			if !cfg.Coatings && !cfg.Relief {
 				return box
 			}
 			if cfg.Verbose {

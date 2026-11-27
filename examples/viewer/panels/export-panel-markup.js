@@ -39,6 +39,10 @@ export const EXPORT_PANEL_MARKUP = `
             <option value="server-mc" title="Marching cubes on the server">Server MC</option>
         </select>
     </div>
+    <div class="field-panel-row export-displace">
+        <label class="export-coatings" title="Mesh each surface moved out by its materials' coatings, the film each coat stands proud by"><input type="checkbox" id="export-coatings"> Coatings</label>
+        <label class="export-relief" title="Mesh each surface moved by its materials' relief, the marks on it; relief finer than a cell is not resolved"><input type="checkbox" id="export-relief"> Relief</label>
+    </div>
     <div class="field-panel-row">
         <label class="export-clean"><input type="checkbox" id="export-clean"> Clean (Manifold)</label>
     </div>

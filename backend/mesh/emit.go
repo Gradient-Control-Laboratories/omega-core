@@ -54,9 +54,9 @@ type options struct {
 	progressFn  progress.Callback
 	// bodies, when set, is the 1-based returns MeshBodies meshes (WithBodies).
 	bodies map[int]bool
-	// build and relief move each surface by its materials' builds and their
-	// relief (WithDisplacement).
-	build, relief bool
+	// coatings and relief move each surface by its materials' coatings (their
+	// builds) and their relief (WithDisplacement).
+	coatings, relief bool
 }
 
 // DisplacementMargin is how far, in mm, a box worked out for a part (its
@@ -73,16 +73,16 @@ func GrowBox(box [6]float32, mm float32) [6]float32 {
 }
 
 // WithDisplacement meshes each surface moved by its materials' heights, as
-// the CPU renderer draws it: build by the film each coat stands proud by
-// (material.withBuild), which is size, and relief by the marks on it, which
-// are texture. Both off, the default, meshes the field as built, exactly as
+// the CPU renderer draws it: coatings by the film each coat stands proud by
+// (its build, material.withBuild), which is size, and relief by the marks on
+// it, which are texture. Both off, the default, meshes the field as built, exactly as
 // before. Relief finer than a cell of the mesh's octree is not resolved: it
 // aliases, so it is for relief coarser than the cells. On noisy relief (a
 // wood's pores) MDC can place vertices well outside their cells; marching
 // cubes stays bounded on the same field.
-func WithDisplacement(build, relief bool) Option {
+func WithDisplacement(coatings, relief bool) Option {
 	return func(o *options) {
-		o.build, o.relief = build, relief
+		o.coatings, o.relief = coatings, relief
 	}
 }
 
@@ -311,8 +311,8 @@ func Mesh(prog *program.Program, opts ...Option) ([]byte, error) {
 			o.algo, internalProgress)
 		return err
 	}
-	if o.build || o.relief {
-		err = convert.ToDisplacedTreesAtTime(prog, o.time, scale(o.build), scale(o.relief), generate)
+	if o.coatings || o.relief {
+		err = convert.ToDisplacedTreesAtTime(prog, o.time, scale(o.coatings), scale(o.relief), generate)
 	} else {
 		err = convert.ToTreesAtTime(prog, o.time, generate)
 	}

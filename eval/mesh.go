@@ -31,11 +31,11 @@ type MeshOptions struct {
 	Algorithm string
 	// Time is the animation time, in seconds, the field is meshed at.
 	Time float64
-	// Build and Relief mesh each surface moved by its materials' builds and by their relief
+	// Coatings and Relief mesh each surface moved by its materials' coatings (builds) and by their relief
 	// (mesh.WithDisplacement). A box worked out for the part is grown by mesh.DisplacementMargin for them; a
 	// Region is meshed as given. Normals are then the facets' average, as the point query that supplies
 	// gradients evaluates the field as built.
-	Build, Relief bool
+	Coatings, Relief bool
 }
 
 // MeshBody is one body of a mesh and what its triangles say of it.
@@ -109,7 +109,7 @@ func (e *Evaluator) Mesh(ctx context.Context, manifest map[string]string, code, 
 	for k := range box {
 		box[k] = float32(region[k])
 	}
-	displaced := opt.Build || opt.Relief
+	displaced := opt.Coatings || opt.Relief
 	if displaced && opt.Region == nil {
 		// A box worked out for the part holds its field as built; the displaced surfaces stand out of it.
 		box = mesh.GrowBox(box, mesh.DisplacementMargin)
@@ -117,7 +117,7 @@ func (e *Evaluator) Mesh(ctx context.Context, manifest map[string]string, code, 
 
 	bodies, err := e.meshBodies(ctx, manifest, code, defs, exprs,
 		mesh.WithSubdivision(subdivision), mesh.WithAlgorithm(algorithm), mesh.WithTime(opt.Time), mesh.WithBbox(box),
-		mesh.WithBboxPadCells(padCells), mesh.WithDisplacement(opt.Build, opt.Relief))
+		mesh.WithBboxPadCells(padCells), mesh.WithDisplacement(opt.Coatings, opt.Relief))
 	if err != nil {
 		return nil, err
 	}

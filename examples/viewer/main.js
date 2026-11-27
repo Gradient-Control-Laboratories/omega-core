@@ -19,7 +19,7 @@ import {
     setSectionOpacity,
     setFieldUnion,
     setFieldExternal,
-    setFieldBuild,
+    setFieldCoatings,
     setFieldRelief,
     setFieldColor,
     setShapeVisible,
@@ -519,7 +519,12 @@ async function compileGsl(source) {
 // requestStlExport asks the server to mesh the source by algo: "mdc" (the Export panel's Server DC) or
 // "marching-cubes" (Server MC), and to write it as format ("3mf", "glb" or "stl"). Each body the Bodies panel shows
 // is meshed apart, in the color it shows; an STL of several comes back as a zip of one STL each.
-async function requestStlExport(detail, surfaceBbox, algo, format = "stl") {
+// DISPLACE_MARGIN is how far, in mm, a measured box is grown for an export with
+// coatings or relief on: the box holds the field as built, and a material's
+// height moves a surface out of it (mesh.DisplacementMargin on the server).
+const DISPLACE_MARGIN = 3;
+
+async function requestStlExport(detail, surfaceBbox, algo, format = "stl", displace = {}) {
     const source = getGslSourceForServer();
     if (!source || source.trim() === "") {
         showNotification(true, "No code to export");
@@ -529,9 +534,13 @@ async function requestStlExport(detail, surfaceBbox, algo, format = "stl") {
     const reqId = `mesh-${Date.now()}`;
     const subdivision = detail ?? 9;
     const ext = getWorldExtent();
-    const bbox = Array.isArray(surfaceBbox) && surfaceBbox.length === 6
+    const coatings = !!displace.coatings;
+    const relief = !!displace.relief;
+    const measured = Array.isArray(surfaceBbox) && surfaceBbox.length === 6
         ? surfaceBbox
         : [-ext, -ext, -ext, ext, ext, ext];
+    const grow = coatings || relief ? DISPLACE_MARGIN : 0;
+    const bbox = measured.map((v, i) => (i < 3 ? v - grow : v + grow));
 
     // The bodies shown, by 1-based return index, with their chips' colors; no list when the panel lists none.
     const visible = getVisibleBodies();
@@ -553,6 +562,8 @@ async function requestStlExport(detail, surfaceBbox, algo, format = "stl") {
             format,
             bodies,
             colors,
+            coatings,
+            relief,
         });
 
         stopErrorTimer();
@@ -980,8 +991,8 @@ if (host.editable) initExportPanel({
     getWorldExtent,
     getSource: getGslSourceForServer,
     clearError,
-    onServerExport: (detail, surfaceBbox, _bodyBoxes, algo, format) => {
-        return requestStlExport(detail, surfaceBbox, algo, format);
+    onServerExport: (detail, surfaceBbox, _bodyBoxes, algo, format, displace) => {
+        return requestStlExport(detail, surfaceBbox, algo, format, displace);
     },
     serverMarchingCubes: true,
     serverFormats: true,
@@ -1329,8 +1340,8 @@ document.getElementById("field-external").addEventListener("change", (e) => {
     setFieldExternal(e.target.checked);
 });
 
-document.getElementById("field-build").addEventListener("change", (e) => {
-    setFieldBuild(e.target.checked);
+document.getElementById("field-coatings").addEventListener("change", (e) => {
+    setFieldCoatings(e.target.checked);
 });
 
 document.getElementById("field-relief").addEventListener("change", (e) => {

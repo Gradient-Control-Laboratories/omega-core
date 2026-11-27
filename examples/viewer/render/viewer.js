@@ -222,8 +222,8 @@ const fieldFadeU = uniform(5.0); // matches the panel default (half of fade max)
 const sectionOpacityU = uniform(0.25);
 const fieldUnionU = uniform(0.0); // off by default — draw each shape's field independently
 const fieldExternalU = uniform(1.0); // on by default — show external (dist>0) interval curves
-// The section panel's Build and Relief toggles: 1 draws the section's field
-// with its surfaces moved by their materials' builds / relief (gsl_sectionShape),
+// The section panel's Coatings and Relief toggles: 1 draws the section's field
+// with its surfaces moved by their materials' coatings (builds) / relief (gsl_sectionShape),
 // 0 the field as built. Off by default, so the section shows what it always has.
 const fieldBuildU = uniform(0.0);
 const fieldReliefU = uniform(0.0);
@@ -2334,10 +2334,10 @@ export function setFieldExternal(enabled) {
   scheduleRender();
 }
 
-// setFieldBuild and setFieldRelief move the section's surfaces by their
-// materials' builds and relief (gsl_sectionShape); off, the section draws the
-// field as built.
-export function setFieldBuild(enabled) {
+// setFieldCoatings and setFieldRelief move the section's surfaces by their
+// materials' coatings (builds) and relief (gsl_sectionShape); off, the section
+// draws the field as built.
+export function setFieldCoatings(enabled) {
   fieldBuildU.value = enabled ? 1.0 : 0.0;
   scheduleRender();
 }

@@ -393,7 +393,25 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
             let tMax = max(t1, t2);
             let tEntry = max(max(tMin.x, tMin.y), tMin.z);
             let tExit = min(min(tMax.x, tMax.y), tMax.z);
-            let boxHit = tEntry <= tExit && tExit > 0.0;
+            // The section clip (gsl-displace.js) cuts away the side of the plane the
+            // camera is on, so nothing this ray can hit lies before the plane: it
+            // starts there, and a ray that never reaches the plane hits nothing.
+            // Marching from the camera instead, a ray grazing the plane crawls
+            // through the clipped solids by its small height above it and runs
+            // out of steps there, drawing their ghosts beyond the horizon.
+            var tClip = 0.0;
+            var clipMiss = false;
+            if (gsl_clipOn > 0.0) {
+                let clipDen = dot(gsl_clipPlane.xyz, rayDir);
+                let clipS0 = dot(gsl_clipPlane.xyz, rayOrigin) + gsl_clipPlane.w;
+                if (clipDen >= -1e-6) {
+                    clipMiss = true;
+                } else {
+                    tClip = max(clipS0, 0.0) / -clipDen;
+                }
+            }
+            let tStart = max(tEntry, tClip);
+            let boxHit = tStart <= tExit && tExit > 0.0 && !clipMiss;
 
             // Gradient-corrected sphere tracing (Quilez): divide SDF by its
             // tet gradient magnitude to recover the true distance even when the
@@ -412,7 +430,7 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
             let maxMarchSteps = u32(clamp(256.0 * boxPathScale, 256.0, 1024.0) * renderKnobs.y);
             // The AO loop runs 5 taps, or none when a draft frame turns it off.
             let aoTaps = select(0, 5, renderKnobs.x > 0.5);
-            var t = max(tEntry, 0.0);
+            var t = max(tStart, 0.0);
             var prev_t = t;
             var hitPos = vec3<f32>(0.0);
             var hitSd : gsl_shape;

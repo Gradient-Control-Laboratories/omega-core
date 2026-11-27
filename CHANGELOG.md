@@ -41,26 +41,28 @@ from `1.0.0` onward).
 
 ### Added
 
-- **Meshes with their coats on (`--build`, `--relief`)**: `gsl compile -t stl|3mf|glb --build --relief`,
-  `gsl eval`'s mesh op (`"build"`, `"relief"`), the server's mesh request (`build`, `relief`) and
-  `mesh.WithDisplacement` mesh each surface moved by its materials' builds (the film a coat stands
-  proud by, which is size) and by their relief (the marks on it, which are texture), as the CPU
+- **Meshes with their coats on (`--coatings`, `--relief`)**: `gsl compile -t stl|3mf|glb --coatings --relief`,
+  `gsl eval`'s mesh op (`"coatings"`, `"relief"`), the server's mesh request (`coatings`, `relief`), the
+  viewer's Export panel (Coatings and Relief, for the server meshers) and `mesh.WithDisplacement`
+  mesh each surface moved by its materials' coatings (the film a coat stands proud by, its build,
+  which is size) and by their relief (the marks on it, which are texture), as the CPU
   renderer draws them. Coats laid inside a return move by their layered distance; a return whose
   own material has a height moves as a whole. A box worked out for the part (its `.box`,
   `--bbox auto`, its `@scene`) is grown 3 mm for them, since those boxes hold the field as built;
-  a box named outright is meshed as given. Off, the default, the mesh is byte for byte what it was.
+  a box named outright is meshed as given, and the Export panel grows the box it measures by the
+  same 3 mm. Off, the default, the mesh is byte for byte what it was.
   A 20 mm cube with a 0.1 mm build meshes to 8241.94 mm³ against 8241.89 exact. Relief finer than a
   cell is not resolved, and on noisy relief (a wood's pores) `mdc` can throw vertices off the
   surface; `marching-cubes` stays on it. `displacementDrawn()` follows the relief flag.
-- **Section view Build and Relief toggles**: the viewer's Section panel draws its field with each
-  surface moved by its materials' builds and relief (`gsl_sectionShape`), off by default, so the
+- **Section view Coatings and Relief toggles**: the viewer's Section panel draws its field with each
+  surface moved by its materials' coatings (builds) and relief (`gsl_sectionShape`), off by default, so the
   section shows the field as built as it always has. `buildScale()` has its own WGSL var, and
   `gsl_sdShapeDisplaced` takes a relief scale and a build scale (the march passes its knob to both,
   so nothing drawn changes); `gsl_heights` reads each return's volume row once and returns its
   height and build. Sixteen WGSL goldens change in text (0.5 to 3.6%), none in which programs get
   the per-return composite.
 - **Section view Color option, and a clipped section**: the Section panel's controls are reordered
-  (Direction, Offset, Model, then Color, Build and Relief, then the contour controls), and Color
+  (Direction, Offset, Model, then Color, Coatings and Relief, then the contour controls), and Color
   shows the cut faces in each shape's color field (decoded from sRGB, as shading decodes it) in
   place of the contours, which it takes out of play. While the section is open the viewer's field
   is clipped at the plane (sdShape wraps the compiled field, renamed gsl_sdShapeUnclipped), so
