@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"path/filepath"
 	"sync"
@@ -73,6 +74,11 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("GET /docs/gsl_description.md", serveDoc(func() string { return preamble.GSLDescription }))
 	s.mux.HandleFunc("GET /docs/gsl_libraries.md", serveDoc(func() string { return preamble.LibrariesDescriptiveText() }))
 
+	// The same reference for a model, as `gsl skill` prints it: the index,
+	// then whatever it names, by name or by search.
+	s.mux.HandleFunc("GET /docs/skill", handleSkill)
+	s.mux.HandleFunc("GET /docs/skill/{name...}", handleSkill)
+
 	assetsDir := filepath.Join(s.cfg.ExamplesDir, "assets")
 	s.mux.Handle("GET /assets/", noCacheMiddleware(http.StripPrefix("/assets/", http.FileServer(http.Dir(assetsDir)))))
 	s.mux.Handle("GET /", noCacheMiddleware(http.FileServer(http.Dir(s.cfg.ViewerDir))))
@@ -85,6 +91,50 @@ func serveDoc(text func() string) http.HandlerFunc {
 		w.Header().Set("Cache-Control", "no-cache")
 		_, _ = w.Write([]byte(text()))
 	}
+}
+
+// skillFooter tells a reader of the served index how to read further.
+const skillFooter = `
+---
+
+## **Reading Further**
+
+The index above names each package and built-in group. Read one in full at ` + "`/docs/skill/NAME`" + `: a
+package by import path or prefix (` + "`/docs/skill/material/bulk/wood`" + `, ` + "`/docs/skill/wood`" + `), a built-in group
+(` + "`/docs/skill/builtin/mesh`" + `), a built-in, or a member (` + "`/docs/skill/transform.rotate`" + `, ` + "`/docs/skill/unionRound`" + `).
+` + "`/docs/skill?member=NAME`" + ` is the same lookup, and ` + "`/docs/skill?grep=TEXT`" + ` finds functions by what their docs say.
+`
+
+// handleSkill serves the GSL author skill: the index at /docs/skill, a name's
+// documentation at /docs/skill/NAME or ?member=NAME, and a search at
+// ?grep=TEXT. An unknown name or a search that matches nothing is a 404 whose
+// body says so.
+func handleSkill(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	if m := r.URL.Query().Get("member"); m != "" {
+		name = m
+	}
+	var text string
+	switch grep := r.URL.Query().Get("grep"); {
+	case grep != "":
+		text = preamble.Grep(grep)
+		if text == "" {
+			http.Error(w, fmt.Sprintf("no built-in or member mentions %q", grep), http.StatusNotFound)
+			return
+		}
+	case name != "":
+		doc, err := preamble.Lookup(name)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		text = doc
+	default:
+		text = preamble.GSLSkillIndex() + skillFooter
+	}
+	w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-cache")
+	_, _ = w.Write([]byte(text))
 }
 
 func noCacheMiddleware(next http.Handler) http.Handler {
