@@ -66,6 +66,9 @@ type Delegate struct {
 	// (pixelSizeInput); see BuildPackageDisplacedReturns.
 	inTreeReturns   []fidget.TreeIndex
 	hasInTreeReturn []bool
+	// inTreeAll is every component tree of each displaced return, a vector
+	// one (a query's .dp) included, in order; nil where there is none.
+	inTreeAll [][]fidget.TreeIndex
 
 	// outputReturnIdx maps each output back to the return it came from, so
 	// per-return data (color, material) can be attached to the flattened

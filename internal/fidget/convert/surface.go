@@ -65,6 +65,9 @@ func ToSurfaceTrees(
 
 	var treeIndices []fidget.TreeIndex
 	var groups []ReturnGroup
+	// used counts the component trees of each vector displaced return already
+	// handed to its outputs, when the return arrived as several.
+	used := map[int]int{}
 	for i, node := range d.outputs {
 		typeName := "num"
 		if ft := node.FidgetType(); ft != nil {
@@ -75,8 +78,17 @@ func ToSurfaceTrees(
 			return build.ErrLoc(d.GetScope(), node.Start(),
 				fmt.Errorf("expected numeric return values, got %s", typeName))
 		}
-		if len(trees) == 1 {
+		if len(trees) == 1 && !d.vectorDisplaced(i) {
 			trees = []fidget.TreeIndex{DisplacedTree(d.colorShape(i, trees[0]), s.Build, s.Relief)}
+		} else if all := d.displacedComponents(i); all != nil {
+			// A vector return with a displaced form (a query's .dp of a
+			// layered shape): its components as the coats draw it.
+			r := d.outputReturnIdx[i]
+			at := used[r]
+			if at+len(trees) <= len(all) {
+				trees = append([]fidget.TreeIndex(nil), all[at:at+len(trees)]...)
+				used[r] = at + len(trees)
+			}
 		}
 		treeIndices = append(treeIndices, trees...)
 		groups = append(groups, ReturnGroup{TypeName: typeName, Count: len(trees)})
@@ -85,4 +97,23 @@ func ToSurfaceTrees(
 		return f(treeIndices, groups, nil)
 	}
 	return f(treeIndices, groups, d.paramTrees)
+}
+
+// displacedComponents is the component trees of output i's return's displaced
+// form when that return is a vector, else nil.
+func (d *Delegate) displacedComponents(i int) []fidget.TreeIndex {
+	if i >= len(d.outputReturnIdx) {
+		return nil
+	}
+	r := d.outputReturnIdx[i]
+	if r >= len(d.inTreeAll) || len(d.inTreeAll[r]) < 2 {
+		return nil
+	}
+	return d.inTreeAll[r]
+}
+
+// vectorDisplaced reports whether output i comes from a vector return with a
+// displaced form, one of whose components it is.
+func (d *Delegate) vectorDisplaced(i int) bool {
+	return d.displacedComponents(i) != nil
 }

@@ -220,3 +220,60 @@ func TestCondition_Refused(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, eval.AsBuilt, c)
 }
+
+// fit is a block with a 25 mm bore, zinc plated, beside a shaft: the bore's
+// radius as bored, the zinc's thickness and the shaft's radius are working
+// dimensions a tolerance would range.
+const fit = `
+boreR = 12.51175;
+zinc = 0.0065;
+shaftR = 12.49325;
+steelMat, steelColor = metal.steel();
+block = boxCentered([0, 0, 0], [40.0, 40.0, 20.0]);
+holed = max(block, 0.0 - (length(p.xy) - boreR));
+holed.material = steelMat;
+plated = holed;
+plated.material = material.withBuild(steelMat, zinc);
+shaft = max(length(p.xy) - shaftR, abs(p.z) - 15.0);
+return plated, shaft;
+`
+
+// A query's derivative is taken of the field its condition reads: as made the
+// plated surface moves out by its zinc on every face, as built not at all,
+// and the bore's radius moves only the bore.
+func TestCondition_DerivativesSeeTheCoats(t *testing.T) {
+	points := [][3]float64{{12.505, 0, 0}, {20.01, 0, 0}, {0, 20.01, 5}, {13, 0, 10.01}}
+	for _, c := range []struct {
+		condition eval.Condition
+		zinc      float64
+	}{
+		{eval.AsBuilt, 0},
+		{eval.AsMade, -1},
+	} {
+		groups, err := conditioned(t, c.condition).EvalGsl(t.Context(), nil, fit, "", []string{"plated.d(zinc)", "plated.d(boreR)", "plated.dp"}, points)
+		require.NoError(t, err)
+		for i := range points {
+			nearly(t, string(c.condition)+" d(zinc)", float64(groups[0].Samples[0][i].Value), c.zinc, 1e-5)
+		}
+		for i, want := range []float64{1, 0, 0, 0} {
+			nearly(t, string(c.condition)+" d(boreR)", float64(groups[1].Samples[0][i].Value), want, 1e-5)
+		}
+		// The gradient points out of the solid: into the bore at the first
+		// point, along +x at the second, +y and +z at the others.
+		for i, want := range [][3]float64{{-1, 0, 0}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}} {
+			for k := 0; k < 3; k++ {
+				nearly(t, string(c.condition)+" dp", float64(groups[2].Samples[k][i].Value), want[k], 1e-5)
+			}
+		}
+	}
+}
+
+// The gradient of a value read from a material whose rows only partly vary.
+func TestDerivative_ThroughAMaterialRecord(t *testing.T) {
+	doc := fit + "\nwavy = material.withDisplacement(steelMat, 0.001 * sin(p.z));\n"
+	groups, err := eval.New(&source.MockManager{}, nil).EvalGsl(t.Context(), nil, doc, "", []string{"material.displacement(wavy).dp"}, [][3]float64{{0, 0, 0.5}})
+	require.NoError(t, err)
+	require.Equal(t, 3, len(groups[0].Samples))
+	nearly(t, "d/dx", float64(groups[0].Samples[0][0].Value), 0, 1e-7)
+	nearly(t, "d/dz", float64(groups[0].Samples[2][0].Value), 0.001*math.Cos(0.5), 1e-7)
+}

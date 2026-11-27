@@ -236,7 +236,10 @@ func (e *Evaluator) assembleQuery(ctx context.Context, manifest map[string]strin
 		}
 	}
 
-	res, err := assembler.Assemble([]string{gslSource}, e.assembleOptions...)
+	// The query's expressions are its returns, so a .d or .dp in one is taken
+	// of the field the condition reads: of the coated field where a shape in
+	// it is layered.
+	res, err := assembler.Assemble([]string{gslSource}, append(append([]assembler.Option(nil), e.assembleOptions...), assembler.WithConditionDerivatives())...)
 	if err != nil {
 		return nil, "", nil, fmt.Errorf("failed to assemble query: %w", err)
 	}

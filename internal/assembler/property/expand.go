@@ -21,7 +21,7 @@ import (
 // context — is left in place; the build pass reports a clear, located error if
 // such a function is actually used.
 func Expand(prog *program.Program) (*program.Program, error) {
-	return expand(prog, false)
+	return expand(prog, false, false)
 }
 
 // ExpandShared is Expand for a compiler pipeline: each expansion comes back
@@ -30,10 +30,19 @@ func Expand(prog *program.Program) (*program.Program, error) {
 // tree. The value computed is the same; Expand keeps the inline spelling that
 // reads as one expression.
 func ExpandShared(prog *program.Program) (*program.Program, error) {
-	return expand(prog, true)
+	return expand(prog, true, false)
 }
 
-func expand(prog *program.Program, share bool) (*program.Program, error) {
+// ExpandSharedKeepingReturnDerivatives is ExpandShared for a query, whose
+// expressions are its returns: a .d(var) or .dp written in a return of the
+// primary package is left as its DERIV operation, for LowerReturnProperties to
+// take once the layers are known, of the plain return and of its displaced
+// distance, so that read at a condition the derivative is the coated field's.
+func ExpandSharedKeepingReturnDerivatives(prog *program.Program) (*program.Program, error) {
+	return expand(prog, true, true)
+}
+
+func expand(prog *program.Program, share, keepReturnDerivs bool) (*program.Program, error) {
 	if prog == nil {
 		return nil, nil
 	}
@@ -109,10 +118,12 @@ func expand(prog *program.Program, share bool) (*program.Program, error) {
 	}
 
 	exp := &expansion{
-		getImport: getImport,
-		share:     share,
-		deps:      cloned.Dependencies,
-		scopes:    map[*program.Package]*pkgScope{},
+		getImport:        getImport,
+		share:            share,
+		keepReturnDerivs: keepReturnDerivs,
+		primary:          cloned.Primary,
+		deps:             cloned.Dependencies,
+		scopes:           map[*program.Package]*pkgScope{},
 	}
 	if err := exp.rewritePackage(cloned.Primary); err != nil {
 		return nil, err
@@ -141,8 +152,12 @@ func expand(prog *program.Program, share bool) (*program.Program, error) {
 type expansion struct {
 	getImport program.GetImportFunc
 	share     bool
-	deps      []*program.Package
-	scopes    map[*program.Package]*pkgScope
+	// keepReturnDerivs leaves the DERIVs in the primary package's returns
+	// (ExpandSharedKeepingReturnDerivatives); primary is that package.
+	keepReturnDerivs bool
+	primary          *program.Package
+	deps             []*program.Package
+	scopes           map[*program.Package]*pkgScope
 }
 
 // pkgScope is a package's namespace as the pass reads it: its own declarations
@@ -328,6 +343,7 @@ func (exp *expansion) rewritePackage(pkg *program.Package) error {
 			}
 		}
 
+		r.keepDeriv = exp.keepReturnDerivs && pkg == exp.primary
 		for i, ret := range f.Returns {
 			rewritten, err := r.rewrite(ret)
 			if err != nil {
@@ -335,6 +351,7 @@ func (exp *expansion) rewritePackage(pkg *program.Package) error {
 			}
 			f.Returns[i] = rewritten
 		}
+		r.keepDeriv = false
 	}
 
 	return nil
@@ -653,12 +670,20 @@ type rewriter struct {
 	// pending holds shared locals a companion body's share produced for the
 	// statement being rewritten; rewriteAssignments places them before it.
 	pending []*program.Assignment
+	// keepDeriv leaves a DERIV as it is, rewriting its operands only: set while
+	// the primary package's returns are rewritten for a query.
+	keepDeriv bool
 }
 
 // expandOperator returns (expansion, true, err) if expr is a property operator.
 func (r *rewriter) expandOperator(expr *program.Expression) (*program.Operand, bool, error) {
 	switch expr.Operation {
 	case program.Operation_DERIV:
+		if r.keepDeriv {
+			// Left for LowerReturnProperties (keepReturnDerivs): its operands
+			// are still rewritten.
+			return nil, false, nil
+		}
 		op, err := r.deriv.expandDeriv(expr.Operands)
 		return op, true, err
 	case program.Operation_SECONDCLOSEST:

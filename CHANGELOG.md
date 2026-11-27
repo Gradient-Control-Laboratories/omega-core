@@ -311,6 +311,15 @@ from `1.0.0` onward).
   `[0, 1]` wherever the range crosses an integer; values are unchanged. Certifying that a turned
   25 k5 journal's cusps stay inside the maximum-material envelope over the whole 15 mm seat now
   takes 43.7 thousand interval evaluations, where 2 million did not decide it.
+- **`.dp` through a material record**: differentiating a value read from a material whose rows
+  only partly vary (`material.displacement(m).dp`) failed with "collection elements must be all
+  scalars or all vectors", since a constant row's derivative was a scalar 0 beside vector rows. A
+  zero tangent now takes its row's shape.
+- **A query's derivatives see the coats** (`assembler.WithConditionDerivatives`, which `eval`
+  sets): a `.d(var)` or `.dp` in a query's expressions was taken of each shape as built, so
+  `plated.d(zinc)` read 0 at every condition. It is now taken of the field the condition reads:
+  as made, the plated surface's derivative with respect to its zinc thickness is -1. Documents keep
+  their derivatives as built.
 - **A coated shape returned bare beside a return that layers it moves by its own build**: with
   `return coat, max(coat, …);` the bare `coat` was moved as a whole by its material, but that
   material is its layer's shading switch, the material beneath within 1 µm of the solid beneath and

@@ -25,6 +25,7 @@ type options struct {
 	variants              map[string]string
 	progressFn            progress.Callback
 	analyticGradient      bool
+	conditionDerivatives  bool
 }
 
 // Parser supplies a custom package parser (such as parser.CachingParser.ParsePackage)
@@ -130,6 +131,17 @@ type GradientNote struct {
 func WithAnalyticGradient() Option {
 	return func(o *options) {
 		o.analyticGradient = true
+	}
+}
+
+// WithConditionDerivatives has a .d(var) or .dp written in a return taken of the
+// field a condition reads (eval.Evaluator.SetCondition): of the return as built,
+// and of its displaced distance, the coats on (Program.DisplacedReturns), where
+// a shape inside it is layered. For queries, whose expressions are their
+// returns; documents keep the default, every derivative taken as built.
+func WithConditionDerivatives() Option {
+	return func(o *options) {
+		o.conditionDerivatives = true
 	}
 }
 

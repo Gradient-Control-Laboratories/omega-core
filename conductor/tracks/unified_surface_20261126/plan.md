@@ -259,9 +259,29 @@ New tests are added only once the owner agrees them.
 
 ## Phase 8: `.dp` Through Material Records
 
-- [ ] Task: Find why `.dp` fails through a material record ("collection elements must be all scalars
-      or all vectors") and fix it, so the gradient of the surface as made can be taken
-- [ ] Task: Phase Verification & Checkpoint
+- [x] Task: Find why `.dp` fails through a material record ("collection elements must be all scalars
+      or all vectors") and fix it, so the gradient of the surface as made can be taken (2026-11-27,
+      brought forward ahead of Phases 6-7 on the owner's choice, since tolerance propagation rests on
+      it). Cause: a constant row of a record differentiates to the scalar 0 beside vector tangents,
+      and the collection mixes them; `derivDomain.Collect` now writes a zero tangent as 0 times its
+      element where tangents are mixed. `material.displacement(m).dp` gives 0.001 cos(0.5) for
+      0.001 sin(z) at z = 0.5. No golden moves
+- [x] Task: Derivatives of the surface as made (added 2026-11-27, owner's choice: queries only).
+      `.d(var)` and `.dp` were expanded against each declaration's plain body before the layer pass
+      built the coats, so `plated.d(zinc)` was 0 at every condition. `assembler.WithConditionDerivatives`
+      (set by eval's queries) keeps a return's DERIV unexpanded (`ExpandSharedKeepingReturnDerivatives`);
+      the layer pass carries it into the displaced return (`DERIV(gsl__disp__plated, zinc)`), and
+      `LowerReturnProperties` expands the plain returns' before colour and material and the
+      displaced returns' after the layers attach. Convert reads a vector displaced return (a `.dp`).
+      In-document uses (exact rounds) keep the as-built gradient. On the plated H7 bore: `.d(zinc)` -1
+      on every face as made, 0 as built; `.d(boreR)` 1 on the bore and 0 elsewhere. No golden moves.
+      The deferred expansion shares nodes as ExpandShared does (a first cut did not, and the
+      gradient of eight nested remaps stopped compiling: `TestAPropertyOfADeeplyRemappedField...`,
+      back to 72 to 90 ms). Tests (owner's go): `TestCondition_DerivativesSeeTheCoats`,
+      `TestDerivative_ThroughAMaterialRecord`
+- [x] Task: Phase Verification & Checkpoint (2026-11-27): backend, internal/assembler, cmd, eval,
+      stdlib, program, parser, assembler and internal/fidget pass but for gpuparity's two tests that
+      fail on origin/main itself; eval rerun after the sharing fix 596 s; lint clean
 
 ## Phase 9 (optional): Interval-Gradient Search
 
