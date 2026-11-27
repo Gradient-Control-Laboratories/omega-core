@@ -6,12 +6,12 @@ import (
 	"strings"
 )
 
-// Constants are a table's scalar constants, which depend only on the period,
+// FastGaborConstants are a table's scalar constants, which depend only on the period,
 // packet width and kernel density; a backend that cannot bake (WGSL) computes
 // them at codegen from the call's constant arguments, so only the sites
 // themselves have to be shipped.
-type Constants struct {
-	// Reach is the kernel's support radius R: hodge's cutoff radius, where
+type FastGaborConstants struct {
+	// Reach is the kernel's support radius R: the Python reference's cutoff radius, where
 	// the untapered envelope falls to 0.01.
 	Reach float64
 	// Spacing is the lattice spacing, Reach / cbrt(impulses).
@@ -25,10 +25,10 @@ type Constants struct {
 	BaseBeta float64
 }
 
-// TableConstants computes a table's constants. Sigma comes from the kernel
+// FastGaborTableConstants computes a table's constants. Sigma comes from the kernel
 // density and the tapered kernel's energy: a sum of kernels k with random
 // phases has variance (1 / (2 h^3)) * integral of k^2 over space.
-func TableConstants(period, packetWidth float64, impulses int) Constants {
+func FastGaborTableConstants(period, packetWidth float64, impulses int) FastGaborConstants {
 	a := 1.0 / (packetWidth * period)
 	reach := math.Sqrt(-math.Log(envelopeCutoff)/pi) / a
 	spacing := reach / math.Cbrt(float64(impulses))
@@ -49,7 +49,7 @@ func TableConstants(period, packetWidth float64, impulses int) Constants {
 		sum += w * f(float64(i)*dr)
 	}
 	energy := sum * dr / 3
-	return Constants{
+	return FastGaborConstants{
 		Reach:    reach,
 		Spacing:  spacing,
 		A:        a,
@@ -75,10 +75,10 @@ type Call struct {
 	Seed        int64
 	Bias        float64
 	Local       bool
-	// Fast is true for the lattice table (kernels.go), false for hodge's
-	// (hodge.go). The two are different fields from the same arguments, so the
-	// kind is part of the key. Every omega backend binds the lattice, for
-	// gaborSpinodoid and fastGaborSpinodoid alike, so both set it.
+	// Fast is true for the fast spinodoid's table (fast_gabor.go), false for
+	// the reference's (reference_gabor.go): the one the call named. The two
+	// are different fields from the same arguments, so the kind is part of
+	// the key.
 	Fast  bool
 	Chain string
 }
@@ -108,8 +108,8 @@ func (c Call) Key() string {
 // direction times the wavenumber (the shader takes the wavenumber back as its
 // length, and only when a scale driver makes it vary), and the phase.
 const (
-	GPUWidth        = TableSites * TableSites
-	GPURows         = TableSites
+	GPUWidth        = FastGaborTableSites * FastGaborTableSites
+	GPURows         = FastGaborTableSites
 	GPUMaxRows      = 8192
 	GPUHeaderTexels = 4
 )
@@ -132,7 +132,7 @@ type BakedTable struct {
 
 // GPUTexels packs the table as GPUWidth x table.Rows() RGBA float32 texels, row by
 // row.
-func (t *Table) GPUTexels() []float32 {
+func (t *FastGaborTable) GPUTexels() []float32 {
 	out := make([]float32, GPUWidth*t.Rows()*4)
 	for z := range t.Size[2] {
 		for y := range t.Size[1] {

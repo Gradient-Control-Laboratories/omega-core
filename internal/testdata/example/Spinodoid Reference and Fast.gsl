@@ -1,0 +1,18 @@
+// Scene Size: 70
+// Scene Grid: 10
+import "lattice";
+import "lattice/spinodoid";
+
+// The two spinodoids from the same arguments, side by side: an isotropic thin
+// wall, 0.6 mm thick, in two 30 mm blocks. On the left the reference
+// (spinodoid.gabor: jittered kernels), on the right the fast one
+// (spinodoid.fastGabor: kernels on a lattice). They measure alike and place
+// individual cells differently; the reference is several times slower to
+// evaluate.
+isotropic = [pi / 2, pi / 2, pi / 2];
+referenceBlock = box([-32, -15, -15], [-2, 15, 15]);
+fastBlock = box([2, -15, -15], [32, 15, 15]);
+reference = max(referenceBlock, lattice.solidify(spinodoid.gabor(6, isotropic), 0, 0.6));
+fast = max(fastBlock, lattice.solidify(spinodoid.fastGabor(6, isotropic), 0, 0.6));
+
+return reference, fast;

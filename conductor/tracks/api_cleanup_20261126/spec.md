@@ -33,8 +33,8 @@ open, the decision says so (section 9).
 | N2  | `matrix.scale`    | `matrix.scale(s, m)` multiplies a matrix by a number, `matrix.scaling(factors)` builds a scale matrix, `transform.scale(shape, factor)` scales a shape                                                  | Rename `matrix.scale` to `multiplyScalar`, the name of its twin `vector.multiplyScalar`, so "scale" means scaling geometry. The lowering of `*` and `/` calls it, so the rename updates `internal/lower`; the old name stays as an alias for a release                                                                                                     |
 | N3  | Axis rotation     | `transform.rotate(shape, origin, direction, angle)`, `map.rotateAxis(v, axisOrigin, axisDir, angle)`, `matrix.rotation(axis_origin, axis_direction, angle)`; `map.rotateXY(v, ang)`                    | One vocabulary: `(…, axisOrigin, axisDirection, angle)` everywhere, `ang` becomes `angle`. Parameter names only; nothing breaks                                                                 |
 | N4  | Lattice size      | The cell size is `sizeIn` (beam), `size` (foam), `cellSize` (lattice, honeycomb), `period` (tpms, spinodoid), `spacing`, `cell`                                                                        | `cellSize` everywhere, except `period` in tpms and spinodoid, where the field's wavelength is the real meaning. Parameter names only                                                             |
-| N5  | Honeycomb names   | `honeycomb.squareHoneycomb`, `hexagonalHoneycomb`, … repeat the package name; `foam.cubic` does not                                                                                                    | Drop the repetition (`honeycomb.square`, `honeycomb.hexagonal`, …); `gsl fix` rewrites                                                                                                          |
-| N6  | Three `bcc`s      | `lattice.bcc`, `beam.bcc`, `foam.bcc`                                                                                                                                                                  | Document in each how it differs (struts, walls, the shared base), or retire `lattice.bcc` if it duplicates `beam.bcc`                                                                           |
+| N5  | Honeycomb names   | `honeycomb.squareHoneycomb`, `hexagonalHoneycomb`, … repeat the package name; `foam.cubic` does not                                                                                                    | `rectangular`, `rectangularDiagonal`, `rectangularReinforced`, `hexagonal`, `triangular`, `octet` (`square` is a reserved primitive, and the cells are vec2 rectangles); a hard rename, `gsl fix` rewrites                                                                                                          |
+| N6  | Three `bcc`s      | `lattice.bcc`, `beam.bcc`, `foam.bcc`                                                                                                                                                                  | See section 6a: every beam lattice takes a `combine`, `lattice.bcc` is deprecated into `beam.bcc`, each doc names its complex, and the missing duals are added                                                                           |
 | N7  | Box corners       | `box(pointA, pointB)`, `cropToBox(shape, low, high)`, `extrude(profile, low, high)`, and `.box = [lo, hi]`                                                                                             | `min`, `max` for every pair of box corners. Parameter names only. `min`/`max` already work as parameter names; #174 makes every built-in name work                                              |
 | N8  | Placement words   | `center`, `origin` (cone), `point` (plane), `vertex` (paraboloid)                                                                                                                                      | Keep `origin`, `point` and `vertex` where they are the right geometric word                                                                                                                     |
 | N9  | Centred overloads | `torus` and `octahedron` exist only at the origin; `sphere` has both forms                                                                                                                             | Add `torus(center, majorRadius, minorRadius)` and `octahedron(center, size)`                                                                                                                    |
@@ -68,17 +68,17 @@ recursion on the size or an unrolled elimination. The plan prototypes them befor
 
 ## 6. Decisions: Spinodoids
 
-**Two fields, both everywhere.** `gaborSpinodoid` is hodge's field: the reference, and the expensive one.
-`fastGaborSpinodoid` is the lattice field, built for the GPU. Each is evaluated by both the CPU (fidget) and the
-GPU (WGSL) backends. No other versions exist. In the library, `gabor*` draws hodge's field and `fastGabor*`
-the lattice field.
+**Two versions, both everywhere.** The spinodoid has exactly two algorithms. `gaborSpinodoid` is the reference
+field: jittered kernels, the definition the other is measured against, and the expensive one.
+`fastGaborSpinodoid` is the fast version: the lattice field, built for the GPU. Each is evaluated by both the
+CPU (fidget) and the GPU (WGSL) backends. No other versions exist. In the library, `gabor*` draws the reference
+field and `fastGabor*` the fast one.
 
-Today both names bake the lattice table in every backend: WGSL codegen and fidget conversion set `call.Fast =
-true` for either name. Hodge's field exists only on the CPU side
-([program/noise/spinodoid/hodge.go](../../../program/noise/spinodoid/hodge.go) and `spinodoid/hodge.rs` in the
-fidget tape core), parity-tested against `hodge/spinodoid.py` in the el_explorer repository, for a tape reader
-that swaps it in from the payload's arguments. el_explorer is in the same state. The missing piece is a WGSL
-hodge field.
+Each is its own oracle in every backend, with its own table, slots and leaf ids: WGSL codegen and fidget
+conversion take the kind from the builtin's name. The reference table is baked in Go
+([program/noise/spinodoid](../../../program/noise/spinodoid)), parity-tested against the Python reference
+implementation, and evaluated by its Rust port in the fidget tape core and by `gsl_spinodoidRef` in WGSL. A
+tape names which oracle each leaf is, and a reader loads it as that one unless it asks for the other.
 
 **The table's box is given, not inferred.** A graded field (scale or orientation varying with `p`) bakes a
 bounded kernel table today, whose box comes from the imported geometry's bounds or the `@scene` cube, and falls
@@ -88,6 +88,38 @@ the call, never taken from the scene or inferred. The scale is already explicit 
 `impulses` ([call.go](../../../program/noise/spinodoid/call.go)). The periodic layout of a stationary field
 (constant scale and orientation) and the bounded layout stay; they are how a table is stored, not versions of
 the field.
+
+## 6a. Decisions: Lattices
+
+**What each lattice is.** A beam lattice is the bond struts of a point lattice; a foam is walls.
+
+| Lattice | `beam.X` | `foam.X` | Relation |
+| :------ | :------- | :------- | :------- |
+| cubic | struts on the lines through the cell centres | walls on the planes through the cell centres, which hold the struts | the same complex; the dual is `foam.cubicGrid`, whose walls lie halfway between |
+| bcc | centre-to-corner bonds | the planes x±y, y±z, z±x = n·s: the Delaunay tetrahedra (tetragonal disphenoids) of the BCC points | the same complex, edges and faces; not duals |
+| fcc | corner-to-face-centre bonds (`octet`: all nearest bonds) | the four {111} families: the Delaunay tetrahedra and octahedra of the *other* face-centred lattice of the cell (centres and edge midpoints) | neither; `foam.fcc`'s dual is `beam.fluorite`, and `octet`'s is the rhombic-dodecahedral foam |
+
+The duals of `beam.bcc` and `beam.octet` are the Voronoi foams, Kelvin cells (truncated octahedra) and rhombic
+dodecahedra, which `foam` lacked. Checked numerically: which struts lie in which walls, which struts lie on
+Voronoi edges, and the foams against brute-force Voronoi walls.
+
+**Decisions.**
+
+- Every lattice that joins parts with a boolean takes it as a callback, `combine`. The folded forms stay the
+  default and fast; a mirror fold joins struts sharply where they meet their own images, so a `combine` form
+  writes the struts or walls out explicitly to blend every junction (3 to 4 times the generated operations of
+  the folded form, opt-in).
+- `lattice.bcc(cellSize, beamRadius, combine)` is `beam.bcc(cellSize, combine) - beamRadius`; it is deprecated for
+  a release (its body unchanged, so old documents render the same) and `gsl fix -stdlib` rewrites it.
+- Each beam and foam doc names its complex and its dual.
+- The missing duals are added: a Kelvin foam (dual of `beam.bcc`) and a rhombic-dodecahedral foam (dual of
+  `beam.octet`). The rhombic-dodecahedral strut lattice already existed as `beam.fluorite`, the dual of
+  `foam.fcc` (which sits on the cell's other face-centred lattice, the centres and edge midpoints). For cubic,
+  `foam.cubic` holds `beam.cubic`'s struts and `foam.cubicGrid` is its dual. They are built from points: each sublattice's nearest
+  point, an `abs` fold, a few planes, and `max` over the sublattices (no select, which would hurt fidget's
+  interval bounds). A prototype Kelvin foam generated 34 WGSL operations against `foam.bcc`'s 38.
+- A fully generic generator (any point set, every neighbour, no fold) is written up separately in
+  [lattice_generator_20261126](../lattice_generator_20261126/spec.md), not built here.
 
 ## 7. Decisions: Go SDK
 
@@ -135,8 +167,13 @@ reserved and undocumented in `gsl skill`: it is designed in
 
 ## 9. Open
 
-Nothing. The names (N1 `domain`, N2 `multiplyScalar`, N10 `a, b`), the spinodoid's scale (section 6) and the
-`RenderLit` wrappers (section 7) were settled on 2026-11-26.
+- **Chamfer-blend list forms (found 2026-11-27).** Under a non-sharp blend, `intersectChamferRound` and
+  `intersectChamferBlend` on a list differ from their two- and three-field forms: the list form blends every
+  edge plane and the vertex planes, the field forms only the binding ones, so the same shapes round
+  differently. Sharp blends agree. The new difference list forms inherit it. Not decided: which is right.
+
+Settled on 2026-11-26: the names (N1 `domain`, N2 `multiplyScalar`, N10 `a, b`), the spinodoid's scale (section 6) and the
+`RenderLit` wrappers (section 7).
 
 ## 10. omega-dm Inventory
 

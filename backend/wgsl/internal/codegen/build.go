@@ -346,6 +346,12 @@ func (d *Delegate) BuildPackageReturns(_ []*program.Operand, expressions []build
 	if d.spinodoidGradEmitted {
 		d.module.AddRuntimeSnippet(spinodoidGradWGSL)
 	}
+	if d.spinodoidRefEmitted {
+		d.module.AddRuntimeSnippet(spinodoidRefWGSL)
+	}
+	if d.spinodoidRefGradEmitted {
+		d.module.AddRuntimeSnippet(spinodoidRefGradWGSL)
+	}
 	if d.vanishUsed || d.featureUsed || d.simpleUsed {
 		d.module.AddRuntimeSnippet(vanishWGSL)
 	}

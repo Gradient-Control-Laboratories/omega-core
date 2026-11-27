@@ -1,6 +1,6 @@
 package spinodoid
 
-// hodge's stateless kernel hash (spinodoid.py _splitmix64 / _cell_uniform):
+// The Python reference's stateless kernel hash (spinodoid.py _splitmix64 / _cell_uniform):
 // a SplitMix64 finalizer over a key mixed from the integer cell, a stream id
 // and the seed. Integer-only, so it lives here rather than in any backend; the
 // backends read its output from the baked kernel table.

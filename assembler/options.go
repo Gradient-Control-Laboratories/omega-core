@@ -27,16 +27,23 @@ type options struct {
 	analyticGradient      bool
 }
 
-// Parser supplies a custom package parser (such as parser.CachingParser.ParsePackage)
+// WithParser supplies a custom package parser (such as parser.CachingParser.ParsePackage)
 // to use when parsing primary and imported packages during assembly.
-func Parser(parsePkg ParsePackageFunc) Option {
+func WithParser(parsePkg ParsePackageFunc) Option {
 	return func(o *options) {
 		o.parsePkg = parsePkg
 	}
 }
 
-// SourcePaths adds local directory root paths used to resolve imported packages and assets.
-func SourcePaths(paths ...string) Option {
+// Parser is WithParser.
+//
+// Deprecated: use WithParser; Parser will be removed after a release.
+func Parser(parsePkg ParsePackageFunc) Option {
+	return WithParser(parsePkg)
+}
+
+// WithSourcePaths adds local directory root paths used to resolve imported packages and assets.
+func WithSourcePaths(paths ...string) Option {
 	return func(o *options) {
 		if len(paths) > 0 {
 			o.managers = append(o.managers, internalsource.NewLocalManager(paths...))
@@ -44,8 +51,15 @@ func SourcePaths(paths ...string) Option {
 	}
 }
 
-// SourceManager adds a custom source manager used to resolve imported packages and assets.
-func SourceManager(mgr source.Manager) Option {
+// SourcePaths is WithSourcePaths.
+//
+// Deprecated: use WithSourcePaths; SourcePaths will be removed after a release.
+func SourcePaths(paths ...string) Option {
+	return WithSourcePaths(paths...)
+}
+
+// WithSourceManager adds a custom source manager used to resolve imported packages and assets.
+func WithSourceManager(mgr source.Manager) Option {
 	return func(o *options) {
 		if mgr != nil {
 			o.managers = append(o.managers, mgr)
@@ -53,56 +67,112 @@ func SourceManager(mgr source.Manager) Option {
 	}
 }
 
-// GeometryResolver supplies a topology geometry resolver for folding STEP topology builtins.
-func GeometryResolver(r topofold.GeometryResolver) Option {
+// SourceManager is WithSourceManager.
+//
+// Deprecated: use WithSourceManager; SourceManager will be removed after a release.
+func SourceManager(mgr source.Manager) Option {
+	return WithSourceManager(mgr)
+}
+
+// WithGeometryResolver supplies a topology geometry resolver for folding STEP topology builtins.
+func WithGeometryResolver(r topofold.GeometryResolver) Option {
 	return func(o *options) {
 		o.geometryResolver = r
 	}
 }
 
-// WarpResolver supplies a warp simulation resolver for baking and folding warped mesh assets.
-func WarpResolver(r warpfold.WarpResolver) Option {
+// GeometryResolver is WithGeometryResolver.
+//
+// Deprecated: use WithGeometryResolver; GeometryResolver will be removed after a release.
+func GeometryResolver(r topofold.GeometryResolver) Option {
+	return WithGeometryResolver(r)
+}
+
+// WithWarpResolver supplies a warp simulation resolver for baking and folding warped mesh assets.
+func WithWarpResolver(r warpfold.WarpResolver) Option {
 	return func(o *options) {
 		o.warpResolver = r
 	}
 }
 
-// FoldWarpFieldToZero replaces every warpField(...) call across the program with [0, 0, 0]
+// WarpResolver is WithWarpResolver.
+//
+// Deprecated: use WithWarpResolver; WarpResolver will be removed after a release.
+func WarpResolver(r warpfold.WarpResolver) Option {
+	return WithWarpResolver(r)
+}
+
+// WithFoldWarpFieldToZero replaces every warpField(...) call across the program with [0, 0, 0]
 // during Step 5 domain folding for backends that do not sample live warp textures.
-func FoldWarpFieldToZero() Option {
+func WithFoldWarpFieldToZero() Option {
 	return func(o *options) {
 		o.foldWarpFieldToZero = true
 	}
 }
 
-// DisableMeshSlotFolding disables the automatic mesh slot assignment and folding pass.
-func DisableMeshSlotFolding() Option {
+// FoldWarpFieldToZero is WithFoldWarpFieldToZero.
+//
+// Deprecated: use WithFoldWarpFieldToZero; FoldWarpFieldToZero will be removed after a release.
+func FoldWarpFieldToZero() Option {
+	return WithFoldWarpFieldToZero()
+}
+
+// WithDisableMeshSlotFolding disables the automatic mesh slot assignment and folding pass.
+func WithDisableMeshSlotFolding() Option {
 	return func(o *options) {
 		o.enableSlotFold = false
 	}
 }
 
-// DisableDeadcodeRemoval disables dead code removal during assembly.
-func DisableDeadcodeRemoval() Option {
+// DisableMeshSlotFolding is WithDisableMeshSlotFolding.
+//
+// Deprecated: use WithDisableMeshSlotFolding; DisableMeshSlotFolding will be removed after a release.
+func DisableMeshSlotFolding() Option {
+	return WithDisableMeshSlotFolding()
+}
+
+// WithDisableDeadcodeRemoval disables dead code removal during assembly.
+func WithDisableDeadcodeRemoval() Option {
 	return func(o *options) {
 		o.enableDeadcodeRemoval = false
 	}
 }
 
-// ExtractUI enables extraction of sliders, UI controls, and scene metadata into the Result.
-func ExtractUI() Option {
+// DisableDeadcodeRemoval is WithDisableDeadcodeRemoval.
+//
+// Deprecated: use WithDisableDeadcodeRemoval; DisableDeadcodeRemoval will be removed after a release.
+func DisableDeadcodeRemoval() Option {
+	return WithDisableDeadcodeRemoval()
+}
+
+// WithExtractUI enables extraction of sliders, UI controls, and scene metadata into the Result.
+func WithExtractUI() Option {
 	return func(o *options) {
 		o.extractUI = true
 	}
 }
 
-// ExtractMeshPlan configures the assembler to partition geometry into a MeshExportPlan
+// ExtractUI is WithExtractUI.
+//
+// Deprecated: use WithExtractUI; ExtractUI will be removed after a release.
+func ExtractUI() Option {
+	return WithExtractUI()
+}
+
+// WithExtractMeshPlan configures the assembler to partition geometry into a MeshExportPlan
 // and analytical SdfSubtrees as Step 8. If idPrefix is empty, it defaults to "leaf-".
-func ExtractMeshPlan(idPrefix string) Option {
+func WithExtractMeshPlan(idPrefix string) Option {
 	return func(o *options) {
 		o.extractMeshPlan = true
 		o.meshPlanIdPrefix = idPrefix
 	}
+}
+
+// ExtractMeshPlan is WithExtractMeshPlan.
+//
+// Deprecated: use WithExtractMeshPlan; ExtractMeshPlan will be removed after a release.
+func ExtractMeshPlan(idPrefix string) Option {
+	return WithExtractMeshPlan(idPrefix)
 }
 
 // WithVariants configures the assembler to compile and slice the named

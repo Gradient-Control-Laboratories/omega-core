@@ -13,7 +13,7 @@
 // Floor: the z = 0 plane with a two-tone checkerboard, 40 mm squares.
 flr = p.z;
 period = 40;
-checkerboard = map.triangleWave(p.x, period) * map.triangleWave(p.y, period);
+checkerboard = domain.triangleWave(p.x, period) * domain.triangleWave(p.y, period);
 flr.color = checkerboard ? color.gray : color.lightGray ;
 
 // Ball of radius 100 colored by the distance between noise cells (20 mm
@@ -26,7 +26,7 @@ ball.color = color.viridis(cellular / cellSize * 1.2);
 
 // Roughen the ball with the same noise, spin it, and lift it by height.
 ballSpike = ball + cellular * 0.2;
-ballRot = remap(ballSpike, map.rotateZX(p, time * 0.5));
+ballRot = remap(ballSpike, domain.rotateZX(p, time * 0.5));
 ballTrans = transform.translate(ballRot, height * vector.dirZ);
 
 // A smaller ball to the side; both balls and the floor blend with radius ballrad.

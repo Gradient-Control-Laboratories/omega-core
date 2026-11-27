@@ -1,24 +1,24 @@
-//! hodge's Gabor spinodoid (hodge-release spinodoid.py, spinodoid_gabor) as
-//! fidget oracles over a kernel table the host bakes.
+//! The reference spinodoid (gaborSpinodoid; the Python reference's spinodoid.py,
+//! spinodoid_gabor) as fidget oracles over a kernel table the host bakes.
 //!
-//! hodge generates kernels on demand from an integer hash and a numpy-drawn
+//! The Python reference generates kernels on demand from an integer hash and a numpy-drawn
 //! direction pool, and samples its scale and orientation drivers at each kernel
-//! centre. The Go baker (common/noise/spinodoid, hodge.go) reproduces all of
+//! centre. The Go baker (common/noise/spinodoid, reference_gabor.go) reproduces all of
 //! that exactly and hands the result here as a table: per kernel its jitter
 //! inside the cell, its wave direction, wavenumber and phase. What is left is
 //! float work, done in f64 so a point matches the Go reference's Sample -- and
-//! so a part this builds is one hodge can rebuild.
+//! so a part this builds is one the Python reference can rebuild.
 //!
 //! A periodic table holds the cells [-TABLE_CELLS/2, TABLE_CELLS/2)^3 and wraps
 //! outside them; a lookup rebuilds each kernel's centre from the query's
 //! unwrapped cell, so the wrap is seamless. A bounded one, which the Go baker
 //! makes for a driven field over a known domain, holds the cells covering that
 //! domain, hashed on their true indices, and reads as the distance to the
-//! domain outside it, as the lattice table beside it (super) does.
+//! domain outside it, as the fast table beside it (super::fast_gabor) does.
 //!
-//! Its own slots and oracle-leaf block are separate from the lattice's. omega's
-//! builds bind only the lattice; these are registered by a tape reader
-//! (tape.rs register_hodge_spinodoid). The parent's interval helpers are shared.
+//! Its own slots and oracle-leaf block are separate from the fast one's: omega
+//! binds these for gaborSpinodoid, and a tape reader binds them from a
+//! payload (tape.rs). The parent's interval helpers are shared.
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -35,12 +35,12 @@ use fidget_core::{
 
 use super::{component, distance_envelope, next_down, next_up, MAX_SLOTS};
 
-/// Reserved fidget mesh-oracle id block for hodge's tables, one 0x1000 step
-/// above the lattice's (super::SPINODOID_ORACLE_ID_BASE) and clear of the
+/// Reserved fidget mesh-oracle id block for the reference tables, one 0x1000 step
+/// above the fast one's (super::fast_gabor::FAST_GABOR_ORACLE_ID_BASE) and clear of the
 /// noise tile's and the cellular oracles' blocks.
-pub const HODGE_ORACLE_ID_BASE: u32 = 0xE0_5B2_000;
+pub const REFERENCE_GABOR_ORACLE_ID_BASE: u32 = 0xE0_5B2_000;
 
-/// The table's edge in kernel cells; common/noise/spinodoid.HodgeTableCells.
+/// The table's edge in kernel cells; common/noise/spinodoid.ReferenceGaborTableCells.
 pub const TABLE_CELLS: i64 = 32;
 const TABLE_ORIGIN: i64 = -TABLE_CELLS / 2;
 
@@ -89,28 +89,28 @@ impl Table {
             .try_fold(1usize, |n, &s| if s == 0 { None } else { n.checked_mul(s) })
         {
             Some(n) => n,
-            None => return Err("hodge spinodoid table has an empty or overflowing size".into()),
+            None => return Err("reference spinodoid table has an empty or overflowing size".into()),
         };
         if impulses == 0 || kernels.len() != cells * impulses * KERNEL_STRIDE {
             return Err(format!(
-                "hodge spinodoid table has {} values, want {} cells x {} impulses x {}",
+                "reference spinodoid table has {} values, want {} cells x {} impulses x {}",
                 kernels.len(),
                 cells,
                 impulses,
                 KERNEL_STRIDE
             ));
         }
-        // A periodic table is hodge's own window and nothing else; a bounded
+        // A periodic table is the reference field's own window and nothing else; a bounded
         // one must say where it is.
         if periodic && (size != [TABLE_CELLS as usize; 3] || origin != [TABLE_ORIGIN; 3]) {
-            return Err("a periodic hodge spinodoid table must be the 32-cubed window".into());
+            return Err("a periodic reference spinodoid table must be the 32-cubed window".into());
         }
         if !periodic
             && (0..3).any(|a| {
                 !bounds[a].is_finite() || !bounds[a + 3].is_finite() || bounds[a] >= bounds[a + 3]
             })
         {
-            return Err("invalid hodge spinodoid domain bounds".into());
+            return Err("invalid reference spinodoid domain bounds".into());
         }
         if !(cell_size > 0.0 && a > 0.0 && sigma > 0.0 && base_beta > 0.0) {
             return Err("spinodoid table constants must be positive".into());
@@ -146,7 +146,7 @@ impl Table {
 
     /// The kernels of the unwrapped cell c, or None where a bounded table does
     /// not hold it. A periodic table wraps, which is what makes a stationary
-    /// field tile; a bounded one hashed the true cell index, so it is hodge's
+    /// field tile; a bounded one hashed the true cell index, so it is the Python reference's
     /// everywhere inside its domain and holds nothing outside it.
     fn cell(&self, c: [i64; 3]) -> Option<&[f64]> {
         let mut local = [0usize; 3];
@@ -172,7 +172,7 @@ impl Table {
     }
 
     /// Distance to the finite domain and its outward unit gradient, the same
-    /// conservative extension the lattice table carries: a ray marcher can
+    /// conservative extension the fast table carries: a ray marcher can
     /// reach the part instead of stepping over it.
     pub fn outside(&self, q: [f64; 3]) -> (f64, [f64; 3]) {
         let mut delta = [0.0; 3];
@@ -209,7 +209,7 @@ impl Table {
     ///
     /// d = (phi - level) / beta, with phi the unit-variance kernel sum and beta
     /// the envelope-energy-weighted wavenumber (local) or the base one. The
-    /// neighbourhood is hodge's: the 27 cells around floor(q / cell), last axis
+    /// neighbourhood is the Python reference's: the 27 cells around floor(q / cell), last axis
     /// fastest.
     pub fn eval(&self, q: [f64; 3]) -> (f64, [f64; 3]) {
         if !self.contains(q) {
@@ -358,7 +358,7 @@ impl Table {
             b_lo = self.base_beta;
             b_hi = self.base_beta;
         } else {
-            // Where no kernel's energy registers, hodge falls back to the base
+            // Where no kernel's energy registers, the Python reference falls back to the base
             // wavenumber.
             b_lo = b_lo.min(self.base_beta);
             b_hi = b_hi.max(self.base_beta);
@@ -405,12 +405,12 @@ fn eval_memo(table: &Arc<Table>, x: f32, y: f32, z: f32) -> (f64, [f64; 3]) {
     })
 }
 
-struct HodgeOracle {
+struct ReferenceGaborOracle {
     table: Arc<Table>,
     comp: u32,
 }
 
-impl MeshOracleTrait for HodgeOracle {
+impl MeshOracleTrait for ReferenceGaborOracle {
     fn point(&self, x: f32, y: f32, z: f32) -> f32 {
         let (d, g) = eval_memo(&self.table, x, y, z);
         match self.comp {
@@ -499,28 +499,28 @@ fn tables() -> &'static Mutex<HashMap<u32, Arc<Table>>> {
 
 /// The oracle leaf id for one component of the table in `slot`.
 pub fn oracle_id(slot: u32, comp: u32) -> u32 {
-    HODGE_ORACLE_ID_BASE + slot * component::COUNT + comp
+    REFERENCE_GABOR_ORACLE_ID_BASE + slot * component::COUNT + comp
 }
 
-/// The (slot, component) a hodge spinodoid leaf id names, or None if the id is
+/// The (slot, component) a reference spinodoid leaf id names, or None if the id is
 /// not one of ours — the inverse of [`oracle_id`], for a caller inspecting a
 /// tape's oracle leaves.
 pub fn leaf_of_id(id: u32) -> Option<(u32, u32)> {
-    let off = id.wrapping_sub(HODGE_ORACLE_ID_BASE);
+    let off = id.wrapping_sub(REFERENCE_GABOR_ORACLE_ID_BASE);
     (off < MAX_SLOTS * component::COUNT).then(|| (off / component::COUNT, off % component::COUNT))
 }
 
-/// Install a hodge table in `slot` and register its component oracles. Re-registering
+/// Install a reference table in `slot` and register its component oracles. Re-registering
 /// a slot replaces it; live trees keep the table they were built against.
 pub fn register(slot: u32, table: Table) -> Result<(), String> {
     if slot >= MAX_SLOTS {
-        return Err(format!("hodge spinodoid slot {} out of range", slot));
+        return Err(format!("reference spinodoid slot {} out of range", slot));
     }
     let table = Arc::new(table);
     for comp in 0..component::COUNT {
         mesh_oracle::register(
             oracle_id(slot, comp),
-            Arc::new(HodgeOracle {
+            Arc::new(ReferenceGaborOracle {
                 table: table.clone(),
                 comp,
             }),
@@ -538,7 +538,7 @@ pub fn register_leaves(first_id: u32, table: Table) {
     for comp in 0..component::COUNT {
         mesh_oracle::register(
             first_id + comp,
-            Arc::new(HodgeOracle {
+            Arc::new(ReferenceGaborOracle {
                 table: table.clone(),
                 comp,
             }),

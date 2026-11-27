@@ -125,7 +125,7 @@ planeXY(p1, p2) {
 rearPlane = planeXY(v1, v2) - quadOffset;
 frontPlane = planeXY(v3, v0) - quadOffset;
 
-clevisRot = map.rotateZX(p, radians(clevisAng));
+clevisRot = domain.rotateZX(p, radians(clevisAng));
 clevisShape, horizPlane = remap(arcShape(), clevisRot);
 eyeDraft = remap(plane(pt2, [0, -1, sqrt3]), clevisRot);
 eyeSpan = remap((clevisGap * 0.25 + pt2.x * 0.5) - abs(p.x), clevisRot);

@@ -1,6 +1,7 @@
 package mesh_test
 
 import (
+	"fmt"
 	"math"
 	"testing"
 
@@ -16,10 +17,11 @@ import (
 
 // This follows the imported, graded, powder-bed-material project pipeline.
 // Remaps inside the material's noise libraries must not switch the unrelated
-// geometry's driven spinodoid back to the old repeating table.
+// geometry's driven spinodoid back to a repeating table, and the table covers
+// the box the call names, not the larger authored scene cube.
 func TestImportedGradedSpinodoidWithPrintedMaterialKeepsFiniteDomain(t *testing.T) {
 	const assetID = 0
-	const src = `// Scene Size: 600 mm
+	const srcTemplate = `// Scene Size: 600 mm
 import "lattice";
 import "lattice/spinodoid";
 import "material/process/printed";
@@ -33,30 +35,30 @@ t = clamp(dot(p - loEnd, span) / dot(span, span), 0, 1);
 refineLine = mix(0.1, 4, t);
 refinePoints = 0;
 upright = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
-isotropic = spinodoid.fastGaborGraded(2, [pi / 2, pi / 2, pi / 2], refinePoints + refineLine, upright);
+isotropic = spinodoid.fastGaborGraded(2, [pi / 2, pi / 2, pi / 2], refinePoints + refineLine, upright, %s);
 specimen = intersectRound(body, lattice.solidify(isotropic, 0, 0.6), 0.1);
 slsMat, slsColor, slsHeight, slsSlope = printed.powderBed([0.86, 0.85, 0.81], 0.06);
 specimen.color = slsColor;
 specimen.material = slsMat;
 return specimen;
 `
-	res, err := assembler.Assemble([]string{src})
-	if err != nil {
-		t.Fatal(err)
+	build := func(box string) *program.Program {
+		res, err := assembler.Assemble([]string{fmt.Sprintf(srcTemplate, box)})
+		if err != nil {
+			t.Fatal(err)
+		}
+		prog, err := meshfold.FoldProgramMeshIndices(res.Program, func(_, kind, path string) (int, bool) {
+			return assetID, kind == "mesh" && path == "part.stl"
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return prog
 	}
-	prog, err := meshfold.FoldProgramMeshIndices(res.Program, func(_, kind, path string) (int, bool) {
-		return assetID, kind == "mesh" && path == "part.stl"
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	// Canvas supplies these imported bounds before preview/export diverge;
-	// the larger authored scene cube must not replace them during conversion.
+	// The box around the imported part, as the call names it.
 	domain := []float64{-66, -19, -18, 76, 294, 53}
-	if prog.Primary.Scene == nil {
-		prog.Primary.Scene = &program.Scene{Size: 600}
-	}
-	prog.Primary.Scene.SpinodoidBounds = append([]float64(nil), domain...)
+	prog := build("[[-66, -19, -18], [76, 294, 53]]")
+	var err error
 
 	// A small, deterministic mesh substitutes for a user's private STL. Its
 	// coarse VDB is enough: the sample points are well inside the solid.
@@ -86,7 +88,7 @@ return specimen;
 	for _, b := range bakes {
 		baked = b
 	}
-	table := baked.Table
+	table := baked.Fast
 	if table.Periodic {
 		t.Fatalf("material changed the imported grading domain: %+v", table.Layout)
 	}
@@ -132,16 +134,15 @@ return specimen;
 		t.Fatal(err)
 	}
 
-	// The driver source is unchanged, but a different imported domain needs
-	// different bytes and a new cache/content identity.
-	prog.Primary.Scene.SpinodoidBounds[4] += 20
-	changed, err := mesh.BakeSpinodoids(prog)
+	// The driver source is unchanged, but a different box needs different
+	// bytes and a new cache/content identity.
+	changed, err := mesh.BakeSpinodoids(build("[[-66, -19, -18], [76, 314, 53]]"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, next := range changed {
-		if next.ContentID == baked.ContentID || next.Table == table {
-			t.Fatal("changed imported bounds reused the old table")
+		if next.ContentID == baked.ContentID || next.Fast == table {
+			t.Fatal("a changed box reused the old table")
 		}
 	}
 }
@@ -149,32 +150,34 @@ return specimen;
 func TestDirectSpinodoidQueryUsesTransformedFiniteDomain(t *testing.T) {
 	const src = `// Scene Size: 20
 upright = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
-return fastGaborSpinodoid(p + [0, 200, 0], 2, [pi / 2, pi / 2, pi / 2], upright, 3, 8, 4096, 0, 0, 1, 1 + 0.001 * p.y, upright);
+return fastGaborSpinodoid(p + [0, 200, 0], 2, [pi / 2, pi / 2, pi / 2], upright, 3, 8, 4096, 0, 0, 1, 1 + 0.001 * p.y, upright, [[-10, 190, -10], [10, 210, 10]]);
 `
 	prog, baked := bakeSingleSpinodoidForDomainTest(t, src)
-	if baked.Table.Periodic || !baked.Table.Contains([3]float64{0, 200, 0}) || baked.Table.Contains([3]float64{}) {
-		t.Fatalf("translated query did not get a translated finite domain: %+v", baked.Table.Layout)
+	if baked.Fast.Periodic || !baked.Fast.Contains([3]float64{0, 200, 0}) || baked.Fast.Contains([3]float64{}) {
+		t.Fatalf("translated query did not get a translated finite domain: %+v", baked.Fast.Layout)
 	}
-	_, _, beta, _ := baked.Table.Sample([3]float64{0, 200, 0})
-	if scale := baked.Table.BaseBeta / beta; math.Abs(scale-1.2) > 0.002 {
+	_, _, beta, _ := baked.Fast.Sample([3]float64{0, 200, 0})
+	if scale := baked.Fast.BaseBeta / beta; math.Abs(scale-1.2) > 0.002 {
 		t.Fatalf("translated kernel centres got scale %g, want 1.2", scale)
 	}
-	want, _ := baked.Table.Distance([3]float64{0, 200, 0}, 0, true)
+	want, _ := baked.Fast.Distance([3]float64{0, 200, 0}, 0, true)
 	assertSpinodoidProgramValue(t, prog, want)
 }
 
-func TestOuterRemappedSpinodoidPreservesLegacyField(t *testing.T) {
+// A field evaluated through an outer remap is baked over the box it names in
+// its own coordinates, the region the remap sends it to, not a repeating table.
+func TestOuterRemappedSpinodoidUsesItsBox(t *testing.T) {
 	const src = `// Scene Size: 20
 import "lattice/spinodoid";
 upright = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
-field = spinodoid.fastGaborGraded(2, [pi / 2, pi / 2, pi / 2], 1 + 0.001 * p.y, upright);
+field = spinodoid.fastGaborGraded(2, [pi / 2, pi / 2, pi / 2], 1 + 0.001 * p.y, upright, [[-10, 190, -10], [10, 210, 10]]);
 return remap(field, p + [0, 200, 0]);
 `
 	prog, baked := bakeSingleSpinodoidForDomainTest(t, src)
-	if !baked.Table.Periodic {
-		t.Fatal("outer remap retained a finite table that clips the transformed query")
+	if baked.Fast.Periodic || !baked.Fast.Contains([3]float64{0, 200, 0}) || baked.Fast.Contains([3]float64{}) {
+		t.Fatalf("outer remap did not bake over the field's box: %+v", baked.Fast.Layout)
 	}
-	want, _ := baked.Table.Distance([3]float64{0, 200, 0}, 0, true)
+	want, _ := baked.Fast.Distance([3]float64{0, 200, 0}, 0, true)
 	assertSpinodoidProgramValue(t, prog, want)
 }
 

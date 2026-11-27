@@ -30,6 +30,9 @@ func TestSanityCheck(t *testing.T) {
 		// builtins are folded there: the warp is baked into geometry, so by the
 		// time a module reaches any backend the warped forms are gone.
 		if name == "mesh" || name == "importStep" || name == "importMesh" || name == "importWarp" || name == "bvhSdf" || name == "vdbSdf" || name == "meshDifference" || name == program.NoiseHash3 || name == program.PixelSize || name == program.DisplacementDrawn || name == program.DisplacementScale ||
+			// list(n[, fn]) is expanded into a literal list by the assembler
+			// (internal/assembler/listlen) before typing, so no backend sees it.
+			name == "list" ||
 			// The worley* builtins lower to the gsl_cellularScan helper in
 			// codegen/cellular.go, not to a wgslBuiltins alias.
 			name == program.WorleyF1 || name == program.WorleyF2 ||
@@ -39,8 +42,8 @@ func TestSanityCheck(t *testing.T) {
 			// worleyWall / worleyWallFeature lower to gsl_cellularWallScan,
 			// beside it in codegen/cellular.go.
 			name == program.WorleyWall || name == program.WorleyWallFeature ||
-			// gaborSpinodoid lowers to the gsl_spinodoid helper in
-			// codegen/spinodoid.go.
+			// The spinodoid builtins lower to the gsl_spinodoid (fast) and
+			// gsl_spinodoidRef (reference) helpers in codegen/spinodoid.go.
 			program.IsGaborSpinodoid(name) ||
 			// erfinv takes only a constant and is folded by the compiler, so
 			// it never reaches codegen (a density's spinodoid level, mostly).

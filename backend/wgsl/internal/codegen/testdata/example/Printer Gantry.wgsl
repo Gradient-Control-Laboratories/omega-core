@@ -1,11 +1,11 @@
-fn builtin_gcl_closure_box(p: vec3<f32>, pointA: vec3<f32>, pointB: vec3<f32>) -> f32 {
-  let center = (pointA + pointB) * 0.5;
-  let size = abs(pointB - pointA);
+fn builtin_gcl_closure_box(p: vec3<f32>, gsl_var_min: vec3<f32>, gsl_var_max: vec3<f32>) -> f32 {
+  let center = (gsl_var_min + gsl_var_max) * 0.5;
+  let size = abs(gsl_var_max - gsl_var_min);
   return builtin_gcl_closure_boxCentered(p, center, size);
 }
 
-fn builtin_box(p: vec3<f32>, pointA: vec3<f32>, pointB: vec3<f32>) -> f32 {
-  return builtin_gcl_closure_box(p, pointA, pointB);
+fn builtin_box(p: vec3<f32>, gsl_var_min: vec3<f32>, gsl_var_max: vec3<f32>) -> f32 {
+  return builtin_gcl_closure_box(p, gsl_var_min, gsl_var_max);
 }
 
 fn drill_prismVoid(p: vec3<f32>, zTop: f32, section: f32, depth: f32) -> f32 {

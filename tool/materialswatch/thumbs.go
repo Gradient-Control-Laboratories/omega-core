@@ -72,12 +72,12 @@ func writeThumbs(outDir string, operators map[string]*Operator, extent float64, 
 			return fmt.Errorf("%s: assemble: %w", key, err)
 		}
 		for suffix, size := range map[string]int{".png": thumbSize, ".large.png": thumbLargeSize} {
-			png, err := eval.RenderLitSizedView(res.Program, size, size, extent*thumbRadius, 0, eval.LitView{
+			png, err := eval.RenderLit(res.Program, eval.LitView{
 				Light:        light,
 				NoAxes:       true,
 				Environment:  env,
 				GlassSamples: swatchGlassSamples,
-			})
+			}.Options(size, size, extent*thumbRadius, 0))
 			if err != nil {
 				return fmt.Errorf("%s: %w", key, err)
 			}

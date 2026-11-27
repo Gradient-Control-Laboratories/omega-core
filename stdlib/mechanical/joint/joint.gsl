@@ -61,7 +61,7 @@
 socketHead = 1.0;
 flatHead = 2.0;
 
-/// A CYLINDRICAL interface: an axis through `seatPoint` along `axisDir`, of
+/// A CYLINDRICAL interface: an axis through `seatPoint` along `axisDirection`, of
 /// nominal diameter `nominalDia`, at ISO 273 clearance `fit`. For a screwed
 /// joint the seat is where the head bears and the axis runs the way the shank
 /// does, as in fastener. START HERE: declare each interface once, at top level,
@@ -71,8 +71,8 @@ flatHead = 2.0;
 ///
 ///   bolt = joint.cylindrical([8.0, 26.75, -4.5], vector.dirZ, 3.0, fastener.fitMedium);
 ///   screw, plate, drum = joint.insert(bolt, joint.socketHead, plateBody, drumBody, 12.0);
-cylindrical(seatPoint, axisDir, nominalDia, fit) {
-  u = normalize(axisDir);
+cylindrical(seatPoint, axisDirection, nominalDia, fit) {
+  u = normalize(axisDirection);
   return [[seatPoint.x, seatPoint.y, seatPoint.z, nominalDia], [u.x, u.y, u.z, fit]];
 }
 
@@ -167,15 +167,15 @@ below(face) {
 }
 
 /// A PRISMATIC interface: joint.slide's channel as one value — along
-/// `axisDir` through `point`, `width` by `height` in section with `upDir` up,
+/// `axisDirection` through `point`, `width` by `height` in section with `upDir` up,
 /// at running `clearance`. joint.channel and joint.envelope are joint.slide's
 /// two returns:
 ///
 ///   guide = joint.prismatic([0.0, 17.5, -4.0], vector.dirX, vector.dirZ, 6.0, 5.0, 0.3);
 ///   plate = max(plateBlank, neg(joint.channel(guide)));
 ///   rail = max(railBlank, joint.envelope(guide));
-prismatic(point, axisDir, upDir, width, height, clearance) {
-  return [[point.x, point.y, point.z, width], [axisDir.x, axisDir.y, axisDir.z, height],
+prismatic(point, axisDirection, upDir, width, height, clearance) {
+  return [[point.x, point.y, point.z, width], [axisDirection.x, axisDirection.y, axisDirection.z, height],
           [upDir.x, upDir.y, upDir.z, clearance]];
 }
 
@@ -328,8 +328,8 @@ planar(point, normal) {
   return neg(d), d;
 }
 
-/// A PRISMATIC interface: a straight channel along `axisDir` through `point`,
-/// `width` across (along the cross of `upDir` and `axisDir`) and `height` along
+/// A PRISMATIC interface: a straight channel along `axisDirection` through `point`,
+/// `width` across (along the cross of `upDir` and `axisDirection`) and `height` along
 /// `upDir`, for a part `width` by `height` in section to run in at `clearance`
 /// all round. Returns the channel to cut from the guide, then the envelope the
 /// running part's section fits in, both unbounded along the axis:
@@ -340,9 +340,9 @@ planar(point, normal) {
 ///
 /// The clearance is the running clearance the design declares — the play the
 /// part has in its guide — not an ISO 286 fit.
-slide(point, axisDir, upDir, width, height, clearance) {
+slide(point, axisDirection, upDir, width, height, clearance) {
   q = p - point;
-  across = normalize(cross(upDir, axisDir));
+  across = normalize(cross(upDir, axisDirection));
   u = abs(dot(q, across));
   v = abs(dot(q, upDir));
   channel = max(u - (width / 2.0 + clearance), v - (height / 2.0 + clearance));

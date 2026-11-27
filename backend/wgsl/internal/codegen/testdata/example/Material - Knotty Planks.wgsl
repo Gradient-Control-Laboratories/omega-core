@@ -23,7 +23,7 @@ fn builtin_gcl_closure_boxCentered(p: vec3<f32>, center: vec3<f32>, size: vec3<f
   return solid;
 }
 
-fn map_axisAt(p: vec3<f32>, point: vec3<f32>, axis: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
+fn domain_axisAt(p: vec3<f32>, point: vec3<f32>, axis: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
   let d = p - point;
   let n = normalize(axis);
   let sz = sign(n.z);
@@ -245,20 +245,20 @@ fn wood_finishedColor(raw: vec3<f32>, aging: vec3<f32>, char: f32, stainGain: ve
   return color_gammaEncode(min((c + (wet - c) * wetting) * coatTint, vec3<f32>(1.0, 1.0, 1.0)), noiseTex);
 }
 
-fn gsl_wood_stemGrowthAt_remap(p: vec3<f32>, axisDir: vec3<f32>, axisOrigin: vec3<f32>, ringWidth: f32, noiseTex: texture_3d<f32>) -> f32 {
+fn gsl_wood_stemGrowthAt_remap(p: vec3<f32>, axisDirection: vec3<f32>, axisOrigin: vec3<f32>, ringWidth: f32, noiseTex: texture_3d<f32>) -> f32 {
   return noise_gradientLattice(p / 60.0, noiseTex) + 0.5 * noise_gradientLattice(p / 30.0, noiseTex);
 }
 
-fn gsl_wood_stemGrowthAt_remap_2(p: vec3<f32>, axisDir: vec3<f32>, axisOrigin: vec3<f32>, ringWidth: f32, noiseTex: texture_3d<f32>) -> f32 {
+fn gsl_wood_stemGrowthAt_remap_2(p: vec3<f32>, axisDirection: vec3<f32>, axisOrigin: vec3<f32>, ringWidth: f32, noiseTex: texture_3d<f32>) -> f32 {
   return noise_gradientLattice(p / 25.0, noiseTex);
 }
 
-fn wood_stemGrowthAt(p: vec3<f32>, axisOrigin: vec3<f32>, axisDir: vec3<f32>, ringWidth: f32, noiseTex: texture_3d<f32>) -> vec2<f32> {
-  let local = map_axisAt(p, axisOrigin, axisDir, noiseTex);
+fn wood_stemGrowthAt(p: vec3<f32>, axisOrigin: vec3<f32>, axisDirection: vec3<f32>, ringWidth: f32, noiseTex: texture_3d<f32>) -> vec2<f32> {
+  let local = domain_axisAt(p, axisOrigin, axisDirection, noiseTex);
   let radius = length(local.xy);
   let around = local.xy / max(radius, 0.001) * 40.0;
-  let wobble = gsl_wood_stemGrowthAt_remap(vec3<f32>(around.x, around.y, local.z * 0.25), axisDir, axisOrigin, ringWidth, noiseTex);
-  let drift = gsl_wood_stemGrowthAt_remap_2(vec3<f32>(local.x, local.y, local.z * 0.2), axisDir, axisOrigin, ringWidth, noiseTex);
+  let wobble = gsl_wood_stemGrowthAt_remap(vec3<f32>(around.x, around.y, local.z * 0.25), axisDirection, axisOrigin, ringWidth, noiseTex);
+  let drift = gsl_wood_stemGrowthAt_remap_2(vec3<f32>(local.x, local.y, local.z * 0.2), axisDirection, axisOrigin, ringWidth, noiseTex);
   return vec2<f32>(radius * (1.0 + 0.08 * wobble) / ringWidth + 0.3 * drift, 0.0);
 }
 
@@ -369,9 +369,9 @@ fn wood_powerSmoothMin(a: f32, b: f32, k: f32, noiseTex: texture_3d<f32>) -> f32
   return a * b / pow(pow(a, k) + pow(b, k), 1.0 / k);
 }
 
-fn wood_knottedGrowthAt(p: vec3<f32>, axisOrigin: vec3<f32>, axisDir: vec3<f32>, ringWidth: f32, knotSpacing: f32, knotStyle: vec4<f32>, noiseTex: texture_3d<f32>) -> vec2<f32> {
-  let stemTime = wood_stemGrowthAt(p, axisOrigin, axisDir, ringWidth, noiseTex).x;
-  let branchTime = wood_knotTime(map_axisAt(p, axisOrigin, axisDir, noiseTex), ringWidth, max(knotSpacing, 1.0), 0.45, 7.0, knotStyle, noiseTex);
+fn wood_knottedGrowthAt(p: vec3<f32>, axisOrigin: vec3<f32>, axisDirection: vec3<f32>, ringWidth: f32, knotSpacing: f32, knotStyle: vec4<f32>, noiseTex: texture_3d<f32>) -> vec2<f32> {
+  let stemTime = wood_stemGrowthAt(p, axisOrigin, axisDirection, ringWidth, noiseTex).x;
+  let branchTime = wood_knotTime(domain_axisAt(p, axisOrigin, axisDirection, noiseTex), ringWidth, max(knotSpacing, 1.0), 0.45, 7.0, knotStyle, noiseTex);
   return vec2<f32>(wood_powerSmoothMin(max(stemTime, 0.001), branchTime, 4.0, noiseTex), texture_mask(stemTime - branchTime * 1.15, 0.0, 0.6, noiseTex));
 }
 
@@ -465,9 +465,9 @@ fn wood_resinCanal(local: vec3<f32>, share: f32, noiseTex: texture_3d<f32>) -> f
   return held * (1.0 - texture_mask(across, 0.06, 0.02, noiseTex)) * (1.0 - texture_mask(gsl_pw, 0.045, 0.015, noiseTex));
 }
 
-fn wood_solidWood(p: vec3<f32>, axisOrigin: vec3<f32>, axisDir: vec3<f32>, ringWidth: f32, latewoodFraction: f32, latewoodSoftness: f32, earlyColor: vec3<f32>, lateColor: vec3<f32>, poreSize: f32, ringPorosity: f32, poreColor: vec3<f32>, rayStrength: f32, raySize: f32, knotSpacing: f32, knotStyle: vec4<f32>, knotColor: vec3<f32>, heartRings: f32, sapColor: vec3<f32>, resinCanals: f32, streak: f32, streakColor: vec3<f32>, ringVariation: f32, bandStrength: f32, bandSpacing: f32, poreZone: f32, sapTransition: f32, lineColor: vec3<f32>, lineStrength: f32, noiseTex: texture_3d<f32>) -> vec3<f32> {
+fn wood_solidWood(p: vec3<f32>, axisOrigin: vec3<f32>, axisDirection: vec3<f32>, ringWidth: f32, latewoodFraction: f32, latewoodSoftness: f32, earlyColor: vec3<f32>, lateColor: vec3<f32>, poreSize: f32, ringPorosity: f32, poreColor: vec3<f32>, rayStrength: f32, raySize: f32, knotSpacing: f32, knotStyle: vec4<f32>, knotColor: vec3<f32>, heartRings: f32, sapColor: vec3<f32>, resinCanals: f32, streak: f32, streakColor: vec3<f32>, ringVariation: f32, bandStrength: f32, bandSpacing: f32, poreZone: f32, sapTransition: f32, lineColor: vec3<f32>, lineStrength: f32, noiseTex: texture_3d<f32>) -> vec3<f32> {
   let earlyLab = color_rgb2oklab(earlyColor, noiseTex);
-  let grown = select(wood_stemGrowthAt(p, axisOrigin, axisDir, ringWidth, noiseTex), wood_knottedGrowthAt(p, axisOrigin, axisDir, ringWidth, knotSpacing, knotStyle, noiseTex), knotSpacing > 0.0);
+  let grown = select(wood_stemGrowthAt(p, axisOrigin, axisDirection, ringWidth, noiseTex), wood_knottedGrowthAt(p, axisOrigin, axisDirection, ringWidth, knotSpacing, knotStyle, noiseTex), knotSpacing > 0.0);
   let gsl_result = wood_ringAt(grown.x, 3.0, noiseTex);
   let progress = gsl_result.v_2;
   let ringIndex = gsl_result.v_1;
@@ -476,7 +476,7 @@ fn wood_solidWood(p: vec3<f32>, axisOrigin: vec3<f32>, axisDir: vec3<f32>, ringW
   let ringContrast = 1.0 + (ringHash.y - 0.5) * 2.0 * ringVariation;
   let latewood = texture_mask(progress, 1.0 - latewoodFraction + ringShift, latewoodSoftness, noiseTex) * ringContrast;
   let ringTint = (fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(ringIndex, ringIndex + 5.0, 2.0 * ringIndex + 29.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(ringIndex, ringIndex + 5.0, 2.0 * ringIndex + 29.0)) / 64.0)) & vec3<i32>(63), 0).rgb).x - 0.5) * 0.08;
-  let local = map_axisAt(p, axisOrigin, axisDir, noiseTex);
+  let local = domain_axisAt(p, axisOrigin, axisDirection, noiseTex);
   let radius = length(local.xy);
   var gsl_detailValue = 0.0;
   if (max(gsl_pw, gsl_detailPw) < 0.075) { let gsl_detailOuterPw = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
@@ -540,13 +540,13 @@ fn wood_woodChecks(local: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
   return (1.0 - texture_mask(fissure, 0.08, 0.025, noiseTex)) * patchy;
 }
 
-fn wood_weatheredColor(p: vec3<f32>, axisOrigin: vec3<f32>, axisDir: vec3<f32>, freshColor: vec3<f32>, amount: f32, noiseTex: texture_3d<f32>) -> vec3<f32> {
+fn wood_weatheredColor(p: vec3<f32>, axisOrigin: vec3<f32>, axisDirection: vec3<f32>, freshColor: vec3<f32>, amount: f32, noiseTex: texture_3d<f32>) -> vec3<f32> {
   let freshLab = color_rgb2oklab(freshColor, noiseTex);
-  let checks = wood_woodChecks(map_axisAt(p, axisOrigin, axisDir, noiseTex), noiseTex) * amount;
+  let checks = wood_woodChecks(domain_axisAt(p, axisOrigin, axisDirection, noiseTex), noiseTex) * amount;
   return color_oklab2rgb(freshLab + (vec3<f32>(0.6675783, 0.0015017033, 0.01586319) - freshLab) * 0.375 * amount - vec3<f32>(0.25 * checks, 0.0, 0.0), noiseTex);
 }
 
-fn wood_colorFromRowsFinished(p: vec3<f32>, rings: vec4<f32>, early: vec4<f32>, late: vec4<f32>, pore: vec4<f32>, knot: vec4<f32>, sap: vec4<f32>, streak: vec4<f32>, surface: vec4<f32>, age: vec4<f32>, bands: vec4<f32>, boundary: vec4<f32>, weeks: vec4<f32>, uptake: vec4<f32>, axisOrigin: vec3<f32>, axisDir: vec3<f32>, look: vec3<f32>, knotSpacing: f32, knotStyle: vec4<f32>, barkRadius: f32, normal: vec3<f32>, prep: mat3x4<f32>, stain: mat2x4<f32>, topcoat: mat2x4<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
+fn wood_colorFromRowsFinished(p: vec3<f32>, rings: vec4<f32>, early: vec4<f32>, late: vec4<f32>, pore: vec4<f32>, knot: vec4<f32>, sap: vec4<f32>, streak: vec4<f32>, surface: vec4<f32>, age: vec4<f32>, bands: vec4<f32>, boundary: vec4<f32>, weeks: vec4<f32>, uptake: vec4<f32>, axisOrigin: vec3<f32>, axisDirection: vec3<f32>, look: vec3<f32>, knotSpacing: f32, knotStyle: vec4<f32>, barkRadius: f32, normal: vec3<f32>, prep: mat3x4<f32>, stain: mat2x4<f32>, topcoat: mat2x4<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
   let aged = clamp(look.y, 0.0, 1.0);
   let aging = (vec3<f32>(1.0, 1.0, 1.0) + (weeks.xyz - vec3<f32>(1.0, 1.0, 1.0)) * (1.0 - pow(1.0 - aged, 37.0))) * (vec3<f32>(1.0, 1.0, 1.0) + (age.xyz - vec3<f32>(1.0, 1.0, 1.0)) * aged);
   let prepHead = prep[0];
@@ -556,8 +556,8 @@ fn wood_colorFromRowsFinished(p: vec3<f32>, rings: vec4<f32>, early: vec4<f32>, 
   let chip = color_linearize(stainLook.xyz, noiseTex) / 1.042;
   let stainGain = min(vec3<f32>(pow(chip.x, 0.71275836), pow(chip.y, 0.71275836), pow(chip.z, 0.71275836)) / vec3<f32>(0.58701634, 0.4064483, 0.24286681), vec3<f32>(1.0, 1.0, 1.0));
   let n = normal / max(length(normal), 0.000001);
-  let endGrain = dot(n, axisDir) / max(length(axisDir), 0.000001);
-  let local = map_axisAt(p, axisOrigin, axisDir, noiseTex);
+  let endGrain = dot(n, axisDirection) / max(length(axisDirection), 0.000001);
+  let local = domain_axisAt(p, axisOrigin, axisDirection, noiseTex);
   let blotch = texture_mask(noise_gradientLattice(vec3<f32>(local.x / 6.0, local.y / 6.0, local.z / 40.0), noiseTex), 0.1, 0.25, noiseTex);
   let stainKind = stain[1];
   let pigment = stainKind.x;
@@ -575,15 +575,15 @@ fn wood_colorFromRowsFinished(p: vec3<f32>, rings: vec4<f32>, early: vec4<f32>, 
     let knots = select(knotSpacing, surface.z, knotSpacing < 0.0);
     let heartRings = barkRadius / rings.x - sap.w + select(1000000.0, 0.0, barkRadius > 0.0);
     let sapAging = vec3<f32>(1.0, 1.0, 1.0) + (age.xyz - vec3<f32>(1.0, 1.0, 1.0)) * aged;
-    let fresh = wood_solidWood(p, axisOrigin, axisDir, rings.x, rings.y, rings.z, wood_finishedColor(early.xyz, aging, earlyChar, stainGain, earlyTaken, wetting, tint, noiseTex), wood_finishedColor(late.xyz, aging, lateChar, stainGain, taken * uptake.y, wetting, tint, noiseTex), early.w, late.w, wood_finishedColor(pore.xyz, aging, earlyChar, stainGain, poreTaken, wetting, tint, noiseTex), pore.w, knot.w, knots, knotStyle, wood_finishedColor(knot.xyz, aging, lateChar, stainGain, earlyTaken, wetting, tint, noiseTex), heartRings, wood_finishedColor(sap.xyz, sapAging, earlyChar, stainGain, earlyTaken, wetting, tint, noiseTex), surface.w, streak.w, wood_finishedColor(streak.xyz, aging, earlyChar, stainGain, earlyTaken, wetting, tint, noiseTex), rings.w, bands.x, bands.y, bands.z, bands.w, wood_finishedColor(boundary.xyz, aging, earlyChar, stainGain, earlyTaken, wetting, tint, noiseTex), boundary.w, noiseTex);
-    gsl_simpleValue = mix(gsl_simpleValue, select(fresh, wood_weatheredColor(p, axisOrigin, axisDir, fresh, look.z, noiseTex), look.z > 0.0), gsl_simpleDetail);
+    let fresh = wood_solidWood(p, axisOrigin, axisDirection, rings.x, rings.y, rings.z, wood_finishedColor(early.xyz, aging, earlyChar, stainGain, earlyTaken, wetting, tint, noiseTex), wood_finishedColor(late.xyz, aging, lateChar, stainGain, taken * uptake.y, wetting, tint, noiseTex), early.w, late.w, wood_finishedColor(pore.xyz, aging, earlyChar, stainGain, poreTaken, wetting, tint, noiseTex), pore.w, knot.w, knots, knotStyle, wood_finishedColor(knot.xyz, aging, lateChar, stainGain, earlyTaken, wetting, tint, noiseTex), heartRings, wood_finishedColor(sap.xyz, sapAging, earlyChar, stainGain, earlyTaken, wetting, tint, noiseTex), surface.w, streak.w, wood_finishedColor(streak.xyz, aging, earlyChar, stainGain, earlyTaken, wetting, tint, noiseTex), rings.w, bands.x, bands.y, bands.z, bands.w, wood_finishedColor(boundary.xyz, aging, earlyChar, stainGain, earlyTaken, wetting, tint, noiseTex), boundary.w, noiseTex);
+    gsl_simpleValue = mix(gsl_simpleValue, select(fresh, wood_weatheredColor(p, axisOrigin, axisDirection, fresh, look.z, noiseTex), look.z > 0.0), gsl_simpleDetail);
   }
   let wood = gsl_simpleValue;
   return wood;
 }
 
-fn wood_speciesColor(p: vec3<f32>, number: f32, axisOrigin: vec3<f32>, axisDir: vec3<f32>, look: vec3<f32>, knotSpacing: f32, barkRadius: f32, normal: vec3<f32>, prep: mat3x4<f32>, stain: mat2x4<f32>, topcoat: mat2x4<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
-  return wood_colorFromRowsFinished(p, wood_speciesRings(number, noiseTex), wood_speciesEarlywood(number, noiseTex), wood_speciesLatewood(number, noiseTex), wood_speciesPoreRow(number, noiseTex), wood_speciesKnotRow(number, noiseTex), wood_speciesSapwood(number, noiseTex), wood_speciesStreakRow(number, noiseTex), wood_speciesSurfaceRow(number, noiseTex), wood_speciesAgeRow(number, noiseTex), wood_speciesBandRow(number, noiseTex), wood_speciesBoundaryRow(number, noiseTex), wood_speciesWeeksRow(number, noiseTex), wood_speciesStainRow(number, noiseTex), axisOrigin, axisDir, look, knotSpacing, wood_speciesKnotStyle(number, noiseTex), barkRadius, normal, prep, stain, topcoat, noiseTex);
+fn wood_speciesColor(p: vec3<f32>, number: f32, axisOrigin: vec3<f32>, axisDirection: vec3<f32>, look: vec3<f32>, knotSpacing: f32, barkRadius: f32, normal: vec3<f32>, prep: mat3x4<f32>, stain: mat2x4<f32>, topcoat: mat2x4<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
+  return wood_colorFromRowsFinished(p, wood_speciesRings(number, noiseTex), wood_speciesEarlywood(number, noiseTex), wood_speciesLatewood(number, noiseTex), wood_speciesPoreRow(number, noiseTex), wood_speciesKnotRow(number, noiseTex), wood_speciesSapwood(number, noiseTex), wood_speciesStreakRow(number, noiseTex), wood_speciesSurfaceRow(number, noiseTex), wood_speciesAgeRow(number, noiseTex), wood_speciesBandRow(number, noiseTex), wood_speciesBoundaryRow(number, noiseTex), wood_speciesWeeksRow(number, noiseTex), wood_speciesStainRow(number, noiseTex), axisOrigin, axisDirection, look, knotSpacing, wood_speciesKnotStyle(number, noiseTex), barkRadius, normal, prep, stain, topcoat, noiseTex);
 }
 
 fn wood_poreSurfaceAt(local: vec3<f32>, progress: f32, ringWidth: f32, poreSize: f32, ringPorosity: f32, poreZone: f32, noiseTex: texture_3d<f32>) -> vec2<f32> {
@@ -782,7 +782,7 @@ fn wood_hiddenSlopeFinish(rough: f32, normal: vec3<f32>, grain: vec3<f32>, feed:
   return material_withLay(wood_woodFinish(sqrt(sqrt(narrow * wide)), noiseTex), (u * au + c * ac) * flip * min(stretch * 1000.0, 1.0), stretch, noiseTex);
 }
 
-fn wood_speciesMaterial(p: vec3<f32>, number: f32, axisOrigin: vec3<f32>, axisDir: vec3<f32>, look: vec3<f32>, knotSpacing: f32, normal: vec3<f32>, prep: mat3x4<f32>, topcoat: mat2x4<f32>, noiseTex: texture_3d<f32>) -> mat4x4<f32> {
+fn wood_speciesMaterial(p: vec3<f32>, number: f32, axisOrigin: vec3<f32>, axisDirection: vec3<f32>, look: vec3<f32>, knotSpacing: f32, normal: vec3<f32>, prep: mat3x4<f32>, topcoat: mat2x4<f32>, noiseTex: texture_3d<f32>) -> mat4x4<f32> {
   let coatLook = topcoat[0];
   let coatSheen = material_roughnessFromGloss(coatLook.w, noiseTex);
   let prepHead = prep[0];
@@ -790,7 +790,7 @@ fn wood_speciesMaterial(p: vec3<f32>, number: f32, axisOrigin: vec3<f32>, axisDi
   let kind = coatFilm.x;
   let charred = select(0.0, select(0.0, min(prepHead.y, 1.0), prepHead.x > 4.5), kind < 0.5);
   let sheen = coatSheen + (0.85 - coatSheen) * charred;
-  let grainDir = normalize(axisDir);
+  let grainDir = normalize(axisDirection);
   let feed = prep[1];
   let unit = normal / max(length(normal), 0.000001);
   let grainIn = 1.0 - dot(grainDir, unit) * dot(grainDir, unit);
@@ -799,11 +799,11 @@ fn wood_speciesMaterial(p: vec3<f32>, number: f32, axisOrigin: vec3<f32>, axisDi
   let early = wood_speciesEarlywood(number, noiseTex);
   let poreSize = early.w;
   let stand = wood_hiddenSlopeFinish(sheen, normal, grainDir, feed.xyz, wood_prepSlopes(prep, normal, grainIn, rings.x, build, 1.0, noiseTex) + wood_poreSlopes__spec2(poreSize, vec2<f32>(1.0, 1.0), grainIn, build, noiseTex), noiseTex);
-  let local = map_axisAt(p, axisOrigin, axisDir, noiseTex);
+  let local = domain_axisAt(p, axisOrigin, axisDirection, noiseTex);
   let surface = wood_speciesSurfaceRow(number, noiseTex);
   let knots = select(knotSpacing, surface.z, knotSpacing < 0.0);
   let knotStyle = wood_speciesKnotStyle(number, noiseTex);
-  let gsl_result_2 = wood_ringAt(select(wood_stemGrowthAt(p, axisOrigin, axisDir, rings.x, noiseTex), wood_knottedGrowthAt(p, axisOrigin, axisDir, rings.x, knots, knotStyle, noiseTex), knots > 0.0).x, 3.0, noiseTex);
+  let gsl_result_2 = wood_ringAt(select(wood_stemGrowthAt(p, axisOrigin, axisDirection, rings.x, noiseTex), wood_knottedGrowthAt(p, axisOrigin, axisDirection, rings.x, knots, knotStyle, noiseTex), knots > 0.0).x, 3.0, noiseTex);
   let progress = gsl_result_2.v_2;
   let late = wood_speciesLatewood(number, noiseTex);
   let bands = wood_speciesBandRow(number, noiseTex);

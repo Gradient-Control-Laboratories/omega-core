@@ -5,32 +5,30 @@ import (
 	"math"
 )
 
-// hodge's Gabor spinodoid (hodge-release spinodoid.py, spinodoid_gabor)
+// The reference Gabor spinodoid (the Python reference's spinodoid.py, spinodoid_gabor)
 // exactly: kernels jittered inside the cells of its grid, its untapered
 // envelope, its SplitMix64 hash, and its drivers read once at every kernel
-// centre. A point agrees with hodge's Python to rounding (hodge_parity_test),
-// so a part baked from this is a part hodge can rebuild from the
-// same arguments — which is the whole reason to pay for it. The lattice form
-// beside it (kernels.go) is the same model, cheaper, and a different
-// realization.
+// centre. A point agrees with the Python reference to rounding (reference_gabor_parity_test),
+// so a part baked from this is a part the Python reference can rebuild from the
+// same arguments. The fast spinodoid beside it (fast_gabor.go) is the same
+// model, cheaper, and a different field pointwise.
 //
-// It shares Params, Level, the pool and the domain rules with the lattice
-// baker, but not its layout. A stationary field is the periodic window hodge's
-// own grid describes, 32^3 cells about the world origin. A driven field with a
-// Domain is baked over the cells covering it, hashed on true cell indices, so
-// it is hodge's field everywhere inside it; one without a Domain falls back to
-// the periodic window, and its drivers repeat with it.
+// It shares Params, Level, the pool and the domain rules with the fast
+// baker, but not its layout. A stationary field is the periodic window of
+// 32^3 cells about the world origin. A driven field is baked over the cells
+// covering its Domain, hashed on true cell indices, so it is the reference
+// field everywhere inside it; a driven field without a Domain is an error.
 
-// HodgeTableCells is the table's edge in kernel cells: 32^3 cells, about 116
+// ReferenceGaborTableCells is the table's edge in kernel cells: 32^3 cells, about 116
 // wavelengths at the default packet width, before the field repeats.
-const HodgeTableCells = 32
+const ReferenceGaborTableCells = 32
 
-// hodgeTableOrigin is the lowest cell index the table holds on each axis,
+// referenceGaborTableOrigin is the lowest cell index the table holds on each axis,
 // centring it on the world origin.
-const hodgeTableOrigin = -HodgeTableCells / 2
+const referenceGaborTableOrigin = -ReferenceGaborTableCells / 2
 
-// gaborOffsets is hodge's _GABOR_OFFSETS: the 27-cell neighbourhood with the
-// LAST axis fastest, the order hodge accumulates kernels in.
+// gaborOffsets is the Python reference's _GABOR_OFFSETS: the 27-cell neighbourhood with the
+// LAST axis fastest, the order the Python reference accumulates kernels in.
 var gaborOffsets = func() [27][3]int64 {
 	var o [27][3]int64
 	n := 0
@@ -45,13 +43,13 @@ var gaborOffsets = func() [27][3]int64 {
 	return o
 }()
 
-// HodgeConstants are a hodge table's scalar constants, which depend only on
+// ReferenceGaborConstants are a reference table's scalar constants, which depend only on
 // the period, packet width and kernel density.
-type HodgeConstants struct {
+type ReferenceGaborConstants struct {
 	// CellSize is the kernel cell's edge, the envelope's reach to the cutoff.
 	CellSize float64
 	// A is the envelope parameter 1 / (PacketWidth * Period), the same for every
-	// kernel: hodge decouples the envelope from the local wavelength.
+	// kernel: the Python reference decouples the envelope from the local wavelength.
 	A float64
 	// Sigma is the unit-variance normalization of the kernel sum.
 	Sigma float64
@@ -59,14 +57,14 @@ type HodgeConstants struct {
 	BaseBeta float64
 }
 
-// HodgeTableConstants computes hodge's kernel-cell size (the envelope's reach
+// ReferenceGaborTableConstants computes the Python reference's kernel-cell size (the envelope's reach
 // to its cutoff), envelope parameter, unit-variance normalization and base
 // wavenumber.
-func HodgeTableConstants(period, packetWidth float64, impulses int) HodgeConstants {
+func ReferenceGaborTableConstants(period, packetWidth float64, impulses int) ReferenceGaborConstants {
 	a0 := 1.0 / (packetWidth * period)
 	cellSize := math.Sqrt(-math.Log(envelopeCutoff)/pi) / a0
 	rhoK := float64(impulses) / (cellSize * cellSize * cellSize)
-	return HodgeConstants{
+	return ReferenceGaborConstants{
 		CellSize: cellSize,
 		A:        a0,
 		Sigma:    math.Sqrt(0.5 * rhoK * math.Pow(2.0*a0*a0, -1.5)),
@@ -86,10 +84,10 @@ type Kernel struct {
 	Gamma float64
 }
 
-// HodgeTable is a baked Gabor spinodoid, hodge's exactly.
-type HodgeTable struct {
-	HodgeConstants
-	// Layout is which cells the table holds: hodge's periodic 32^3 window for
+// ReferenceGaborTable is a baked Gabor spinodoid, the Python reference's exactly.
+type ReferenceGaborTable struct {
+	ReferenceGaborConstants
+	// Layout is which cells the table holds: the Python reference's periodic 32^3 window for
 	// a stationary field, or the cells covering a driven field's domain.
 	Layout
 	Impulses int
@@ -98,20 +96,23 @@ type HodgeTable struct {
 	Kernels []Kernel
 }
 
-// newHodgeLayout is NewLayout for hodge's grid: cells rather than lattice
+// newReferenceGaborLayout is NewLayout for the Python reference's grid: cells rather than lattice
 // sites, and a one-cell pad rather than a Reach, because a query reads exactly
-// the 27 cells around its own (hodge's _GABOR_OFFSETS).
+// the 27 cells around its own (the Python reference's _GABOR_OFFSETS).
 //
-// Unlike the lattice's, a bounded hodge table hashes the TRUE cell index --
-// hodge's realization IS the hash of the true cell, so wrapping it to keep a
+// Unlike the fast one's, a bounded reference table hashes the TRUE cell index --
+// the Python reference's realization IS the hash of the true cell, so wrapping it to keep a
 // world-anchored realization (as the lattice does) would stop the field being
-// hodge's. The consequence is the right one: inside the domain this table is
-// hodge's everywhere, with nothing repeating.
-func newHodgeLayout(c HodgeConstants, domain *[6]float64, periodic bool) (Layout, error) {
-	if periodic || domain == nil {
+// the Python reference's. The consequence is the right one: inside the domain this table is
+// the Python reference's everywhere, with nothing repeating.
+func newReferenceGaborLayout(c ReferenceGaborConstants, domain *[6]float64, periodic bool) (Layout, error) {
+	if !periodic && domain == nil {
+		return Layout{}, errNoBox
+	}
+	if periodic {
 		return Layout{
-			Origin:   [3]int{hodgeTableOrigin, hodgeTableOrigin, hodgeTableOrigin},
-			Size:     [3]int{HodgeTableCells, HodgeTableCells, HodgeTableCells},
+			Origin:   [3]int{referenceGaborTableOrigin, referenceGaborTableOrigin, referenceGaborTableOrigin},
+			Size:     [3]int{ReferenceGaborTableCells, ReferenceGaborTableCells, ReferenceGaborTableCells},
 			Periodic: true,
 		}, nil
 	}
@@ -132,8 +133,8 @@ func newHodgeLayout(c HodgeConstants, domain *[6]float64, periodic bool) (Layout
 	return l, nil
 }
 
-// HodgeBake builds hodge's table for p.
-func HodgeBake(p Params) (*HodgeTable, error) {
+// ReferenceGaborBake builds the reference table for p.
+func ReferenceGaborBake(p Params) (*ReferenceGaborTable, error) {
 	if !(p.Period > 0) {
 		return nil, fmt.Errorf("period must be > 0, got %v", p.Period)
 	}
@@ -150,7 +151,7 @@ func HodgeBake(p Params) (*HodgeTable, error) {
 	if pool == 0 {
 		pool = defaultPool
 	}
-	// The pool is hodge's draw, in radians as hodge takes them. Allow pi/2 to
+	// The pool is the Python reference's draw, in radians as the Python reference takes them. Allow pi/2 to
 	// arrive a float32 rounding high, and clamp it back.
 	theta := make([]float64, len(p.Theta))
 	for i, t := range p.Theta {
@@ -165,20 +166,20 @@ func HodgeBake(p Params) (*HodgeTable, error) {
 	}
 
 	twoPi := 2.0 * pi
-	constants := HodgeTableConstants(p.Period, p.PacketWidth, p.Impulses)
-	layout, err := newHodgeLayout(constants, p.Domain, p.Periodic || (p.Scale == nil && p.Orientation == nil))
+	constants := ReferenceGaborTableConstants(p.Period, p.PacketWidth, p.Impulses)
+	layout, err := newReferenceGaborLayout(constants, p.Domain, p.Periodic || (p.Scale == nil && p.Orientation == nil))
 	if err != nil {
 		return nil, err
 	}
 	if layout.Count() > MaxTableSites/p.Impulses {
-		return nil, fmt.Errorf("a graded hodge spinodoid over this domain needs %d kernels, past the %d limit; "+
+		return nil, fmt.Errorf("a graded reference spinodoid over this domain needs %d kernels, past the %d limit; "+
 			"reduce the domain extent, raise the base period, or lower impulses", layout.Count()*p.Impulses, MaxTableSites)
 	}
-	t := &HodgeTable{
-		HodgeConstants: constants,
-		Layout:         layout,
-		Impulses:       p.Impulses,
-		Kernels:        make([]Kernel, layout.Count()*p.Impulses),
+	t := &ReferenceGaborTable{
+		ReferenceGaborConstants: constants,
+		Layout:                  layout,
+		Impulses:                p.Impulses,
+		Kernels:                 make([]Kernel, layout.Count()*p.Impulses),
 	}
 	cellSize := t.CellSize
 
@@ -208,7 +209,7 @@ func HodgeBake(p Params) (*HodgeTable, error) {
 		}
 	}
 
-	// Then the drivers, once per kernel centre, as hodge calls them.
+	// Then the drivers, once per kernel centre, as the Python reference calls them.
 	var rots [][3][3]float64
 	if p.Orientation != nil {
 		if rots, err = p.Orientation(centers); err != nil {
@@ -252,7 +253,7 @@ const KernelStride = 8
 
 // Flat is the table's kernels as consecutive float64s, KernelStride per
 // kernel in Kernels order: jitter xyz, direction xyz, wavenumber, phase.
-func (t *HodgeTable) Flat() []float64 {
+func (t *ReferenceGaborTable) Flat() []float64 {
 	out := make([]float64, 0, len(t.Kernels)*KernelStride)
 	for _, k := range t.Kernels {
 		out = append(out, k.Jitter[0], k.Jitter[1], k.Jitter[2],
@@ -261,19 +262,46 @@ func (t *HodgeTable) Flat() []float64 {
 	return out
 }
 
+// ReferenceGaborGPUTexelsPerKernel is how many RGBA texels a kernel takes in
+// the GPU layout (GPUTexels).
+const ReferenceGaborGPUTexelsPerKernel = 2
+
+// Rows is how many GPUWidth-wide rows the table's GPU layout takes.
+func (t *ReferenceGaborTable) Rows() int {
+	n := len(t.Kernels) * ReferenceGaborGPUTexelsPerKernel
+	return (n + GPUWidth - 1) / GPUWidth
+}
+
+// GPUTexels packs the table as GPUWidth x t.Rows() RGBA float32 texels, row
+// by row: kernel i of the table (Kernels order) at texels 2i and 2i+1, the
+// first its jitter and phase, the second its wave vector (direction times
+// wavenumber) and wavenumber. The WGSL reference spinodoid reads them in that
+// layout (backend/wgsl/internal/codegen/spinodoid.go).
+func (t *ReferenceGaborTable) GPUTexels() []float32 {
+	out := make([]float32, GPUWidth*t.Rows()*4)
+	for i, k := range t.Kernels {
+		o := i * ReferenceGaborGPUTexelsPerKernel * 4
+		out[o], out[o+1], out[o+2], out[o+3] =
+			float32(k.Jitter[0]), float32(k.Jitter[1]), float32(k.Jitter[2]), float32(k.Gamma)
+		out[o+4], out[o+5], out[o+6], out[o+7] =
+			float32(k.Beta*k.Dir[0]), float32(k.Beta*k.Dir[1]), float32(k.Beta*k.Dir[2]), float32(k.Beta)
+	}
+	return out
+}
+
 // wrapCell maps an unwrapped cell index to the periodic window's
-// [0, HodgeTableCells).
+// [0, ReferenceGaborTableCells).
 func wrapCell(c int64) int {
-	m := (c - hodgeTableOrigin) % HodgeTableCells
+	m := (c - referenceGaborTableOrigin) % ReferenceGaborTableCells
 	if m < 0 {
-		m += HodgeTableCells
+		m += ReferenceGaborTableCells
 	}
 	return int(m)
 }
 
 // kernelsOf is the kernels of cell c, or false where a bounded table does not
 // hold it. A periodic table wraps, which is what makes a stationary field tile.
-func (t *HodgeTable) kernelsOf(c [3]int64) ([]Kernel, bool) {
+func (t *ReferenceGaborTable) kernelsOf(c [3]int64) ([]Kernel, bool) {
 	var idx [3]int
 	for a := range 3 {
 		if t.Periodic {
@@ -292,9 +320,9 @@ func (t *HodgeTable) kernelsOf(c [3]int64) ([]Kernel, bool) {
 
 // Sample is the raw Gabor sum at q: field is the kernel sum divided by Sigma
 // (unit variance), and beta is the envelope-energy-weighted wavenumber the
-// field carries there (hodge's normalize="local"), BaseBeta where no kernel
+// field carries there (the Python reference's normalize="local"), BaseBeta where no kernel
 // reaches.
-func (t *HodgeTable) Sample(q [3]float64) (field, beta float64) {
+func (t *ReferenceGaborTable) Sample(q [3]float64) (field, beta float64) {
 	// Outside a bounded domain the field has no kernels, so carry the distance
 	// to the domain instead: the same conservative extension the lattice uses,
 	// which lets a ray marcher reach the part rather than step over it.
@@ -337,10 +365,10 @@ func (t *HodgeTable) Sample(q [3]float64) (field, beta float64) {
 
 // Distance is spinodoid_gabor's result without wall_thickness: the field
 // leveled at level and divided by the local wavenumber (local true) or by
-// BaseBeta (hodge's normalize="base"). Negative in the solid phase. Outside a
+// BaseBeta (the Python reference's normalize="base"). Negative in the solid phase. Outside a
 // bounded domain it is the distance to the domain, unleveled, as the lattice
 // table's Distance and the oracle are.
-func (t *HodgeTable) Distance(q [3]float64, level float64, local bool) float64 {
+func (t *ReferenceGaborTable) Distance(q [3]float64, level float64, local bool) float64 {
 	if !t.Contains(q) {
 		d, _ := t.Outside(q)
 		return d

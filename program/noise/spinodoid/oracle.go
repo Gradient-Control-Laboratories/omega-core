@@ -1,10 +1,47 @@
 package spinodoid
 
+import (
+	"encoding/base64"
+	"encoding/binary"
+	"math"
+)
+
 // Baked is a baked Gabor spinodoid table and the ID of its content: tables with
-// the same ContentID are identical, whichever call they serve.
+// the same ContentID are identical, whichever call they serve. Exactly one of
+// Fast and Reference is set: the table of the spinodoid the call named.
 type Baked struct {
-	Table     *Table
+	Fast      *FastGaborTable
+	Reference *ReferenceGaborTable
 	ContentID string
+}
+
+// GPUTable is the table in the GPU layout a preview binds, under key: the
+// fast table's sites or the reference table's kernels (each table's
+// GPUTexels), with its layout. The shader reads the kind from the call, so the
+// two pack the same way.
+func (b Baked) GPUTable(key string) BakedTable {
+	var texels []float32
+	var layout Layout
+	var rows int
+	if b.Reference != nil {
+		texels, layout, rows = b.Reference.GPUTexels(), b.Reference.Layout, b.Reference.Rows()
+	} else {
+		texels, layout, rows = b.Fast.GPUTexels(), b.Fast.Layout, b.Fast.Rows()
+	}
+	raw := make([]byte, 4*len(texels))
+	for i, v := range texels {
+		binary.LittleEndian.PutUint32(raw[4*i:], math.Float32bits(v))
+	}
+	return BakedTable{
+		Key:       key,
+		Rows:      rows,
+		Origin:    layout.Origin,
+		Size:      layout.Size,
+		Bounds:    layout.Bounds,
+		Periodic:  layout.Periodic,
+		ContentID: b.ContentID,
+		TexelsB64: base64.StdEncoding.EncodeToString(raw),
+	}
 }
 
 // Oracle describes one spinodoid table bound during a build: the leaf ID of its
@@ -17,8 +54,8 @@ type Oracle struct {
 	// components are the next three IDs; a consumer registers the slot once and
 	// resolves all four, so a gradient-only call is covered too.
 	AssetID uint32
-	// Fast marks the lattice field rather than hodge's. Every table omega
-	// binds is the lattice, whichever builtin the document called.
+	// Fast is true for the fast spinodoid (fastGaborSpinodoid), false for the
+	// reference (gaborSpinodoid): the oracle the document called.
 	Fast bool
 
 	Period         float64

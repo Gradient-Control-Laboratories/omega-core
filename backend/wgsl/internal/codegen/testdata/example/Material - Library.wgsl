@@ -110,7 +110,7 @@ fn texture_fadeTo(gsl_var_value: f32, mean: f32, size: f32, noiseTex: texture_3d
   return mean + (gsl_var_value - mean) * texture_fadeDetail(size, noiseTex);
 }
 
-fn map_axisAt(p: vec3<f32>, point: vec3<f32>, axis: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
+fn domain_axisAt(p: vec3<f32>, point: vec3<f32>, axis: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
   let d = p - point;
   let n = normalize(axis);
   let sz = sign(n.z);
@@ -743,7 +743,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_
     return vec4<f32>(graniteColor, 1.0);
   }
   if (gsl_colorIdx == 3u) {
-    let gsl_tmp_805 = map_axisAt(p, vec3<f32>(-187.5, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex);
+    let gsl_tmp_805 = domain_axisAt(p, vec3<f32>(-187.5, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex);
     let gsl_tmp_806 = length(gsl_tmp_805.xy);
     let gsl_tmp_807 = gsl_tmp_805.xy / max(gsl_tmp_806, 0.001) * 40.0;
     let color_white = vec3<f32>(1.0, 1.0, 1.0);
@@ -760,7 +760,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_
     let gsl_tmp_786 = select(select(gsl_tmp_780, gsl_tmp_780 + 1.0, gsl_tmp_784), gsl_tmp_780 - 1.0, gsl_tmp_783);
     let gsl_tmp_788 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_786, gsl_tmp_786 + 11.0, 3.0 * gsl_tmp_786 + 41.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_786, gsl_tmp_786 + 11.0, 3.0 * gsl_tmp_786 + 41.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
     let gsl_tmp_789 = texture_mask(gsl_tmp_787, 0.4 + (gsl_tmp_788.x - 0.5) * 0.027, 0.3, noiseTex) * (1.0 + (gsl_tmp_788.y - 0.5) * 0.18);
-    let gsl_tmp_776 = map_axisAt(p, vec3<f32>(-187.5, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex);
+    let gsl_tmp_776 = domain_axisAt(p, vec3<f32>(-187.5, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex);
     let gsl_tmp_777 = length(gsl_tmp_776.xy);
     var gsl_detailValue_2 = 0.0;
     if (max(gsl_pw, gsl_detailPw) < 0.075) { let gsl_detailOuterPw_2 = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
@@ -936,7 +936,7 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, noiseTex: te
   if (gsl_materialIdx == 3u) {
     var gsl_detailValue_4 = vec2<f32>(0.0, 0.0);
     if (max(gsl_pw, gsl_detailPw) < 0.14) { let gsl_detailOuterPw_4 = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
-      let gsl_tmp_743 = map_axisAt(p, vec3<f32>(-187.5, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex);
+      let gsl_tmp_743 = domain_axisAt(p, vec3<f32>(-187.5, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex);
       let gsl_tmp_744 = length(gsl_tmp_743.xy);
       let gsl_tmp_745 = gsl_tmp_743.xy / max(gsl_tmp_744, 0.001) * 40.0;
       let color_white = vec3<f32>(1.0, 1.0, 1.0);
@@ -948,7 +948,7 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, noiseTex: te
       let gsl_tmp_732 = gsl_tmp_727 >= gsl_tmp_730;
       let gsl_tmp_731 = gsl_tmp_727 < gsl_tmp_729;
       let gsl_tmp_733 = select(select(gsl_tmp_729, gsl_tmp_730, gsl_tmp_732), wood_ringBoundary(gsl_tmp_728 - 1.0, 3.0, noiseTex), gsl_tmp_731);
-      gsl_detailValue_4 = wood_poreSurfaceAt(map_axisAt(p, vec3<f32>(-187.5, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex), (gsl_tmp_727 - gsl_tmp_733) / (select(select(gsl_tmp_730, wood_ringBoundary(gsl_tmp_728 + 2.0, 3.0, noiseTex), gsl_tmp_732), gsl_tmp_729, gsl_tmp_731) - gsl_tmp_733), 1.5, 0.5, 1.0, 0.0, noiseTex) * 1.0;
+      gsl_detailValue_4 = wood_poreSurfaceAt(domain_axisAt(p, vec3<f32>(-187.5, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex), (gsl_tmp_727 - gsl_tmp_733) / (select(select(gsl_tmp_730, wood_ringBoundary(gsl_tmp_728 + 2.0, 3.0, noiseTex), gsl_tmp_732), gsl_tmp_729, gsl_tmp_731) - gsl_tmp_733), 1.5, 0.5, 1.0, 0.0, noiseTex) * 1.0;
       gsl_pw = gsl_detailOuterPw_4;
     }
     var gsl_simpleValue_11 = mat4x4<f32>(vec4<f32>(0.6685386, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
@@ -1134,7 +1134,7 @@ const gsl_foldK_3 = array<vec2<f32>, 9>(vec2<f32>(-1.0, -1.0), vec2<f32>(0.0, -1
 
 fn gsl_heights(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f32, 10> {
   var gsl_detailValue_5 = vec2<f32>(0.0, 0.0);
-  let gsl_tmp_743 = map_axisAt(p, vec3<f32>(-187.5, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex);
+  let gsl_tmp_743 = domain_axisAt(p, vec3<f32>(-187.5, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex);
   let gsl_tmp_744 = length(gsl_tmp_743.xy);
   let gsl_tmp_745 = gsl_tmp_743.xy / max(gsl_tmp_744, 0.001) * 40.0;
   let color_white = vec3<f32>(1.0, 1.0, 1.0);
@@ -1147,7 +1147,7 @@ fn gsl_heights(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f32,
   let gsl_tmp_731 = gsl_tmp_727 < gsl_tmp_729;
   let gsl_tmp_733 = select(select(gsl_tmp_729, gsl_tmp_730, gsl_tmp_732), wood_ringBoundary(gsl_tmp_728 - 1.0, 3.0, noiseTex), gsl_tmp_731);
   if (max(gsl_pw, gsl_detailPw) < 0.14) { let gsl_detailOuterPw_5 = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
-    gsl_detailValue_5 = wood_poreSurfaceAt(map_axisAt(p, vec3<f32>(-187.5, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex), (gsl_tmp_727 - gsl_tmp_733) / (select(select(gsl_tmp_730, wood_ringBoundary(gsl_tmp_728 + 2.0, 3.0, noiseTex), gsl_tmp_732), gsl_tmp_729, gsl_tmp_731) - gsl_tmp_733), 1.5, 0.5, 1.0, 0.0, noiseTex) * 1.0;
+    gsl_detailValue_5 = wood_poreSurfaceAt(domain_axisAt(p, vec3<f32>(-187.5, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex), (gsl_tmp_727 - gsl_tmp_733) / (select(select(gsl_tmp_730, wood_ringBoundary(gsl_tmp_728 + 2.0, 3.0, noiseTex), gsl_tmp_732), gsl_tmp_729, gsl_tmp_731) - gsl_tmp_733), 1.5, 0.5, 1.0, 0.0, noiseTex) * 1.0;
     gsl_pw = gsl_detailOuterPw_5;
   }
   let gsl_tmp_528 = gsl_detailValue_5;

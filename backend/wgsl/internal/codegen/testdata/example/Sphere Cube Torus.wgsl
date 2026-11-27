@@ -3,8 +3,8 @@ fn builtin_torus(p: vec3<f32>, majorRadius: f32, minorRadius: f32) -> f32 {
   return length(vec2<f32>(radial, p.z)) - minorRadius;
 }
 
-fn builtin_unionSharp(d1: f32, d2: f32, d3: f32) -> f32 {
-  return min(min(d1, d2), d3);
+fn builtin_unionSharp(a: f32, b: f32, c: f32) -> f32 {
+  return min(min(a, b), c);
 }
 
 fn builtin_linearMap(gsl_var_value: f32, inMin: f32, inMax: f32, outMin: vec3<f32>, outMax: vec3<f32>) -> vec3<f32> {

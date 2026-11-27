@@ -22,7 +22,7 @@ import "noise";
 import "color";
 import "material";
 import "ease";
-import "map";
+import "domain";
 
 /// mask(field, edge, width): a soft 0..1 threshold of `field` centered at
 /// `edge` with transition half-width `width` (ease.quadratic — smoothstep —
@@ -288,11 +288,11 @@ bands(size, @direction direction, profile, @range(0, 2) distortion, @range(1, 6)
   return fadeTo(waveProfile(phase, profile), 0.5, size);
 }
 
-/// rings(size, axisOrigin, axisDir, profile, distortion, detail): rings
-/// `size` mm apart about an axis through `axisOrigin` along `axisDir`, as
+/// rings(size, axisOrigin, axisDirection, profile, distortion, detail): rings
+/// `size` mm apart about an axis through `axisOrigin` along `axisDirection`, as
 /// bands are about a direction: growth rings, turned rings, agate.
-rings(size, @point axisOrigin, @direction(axisOrigin) axisDir, profile, @range(0, 2) distortion, @range(1, 6) detail) {
-  a = normalize(axisDir);
+rings(size, @point axisOrigin, @direction(axisOrigin) axisDirection, profile, @range(0, 2) distortion, @range(1, 6) detail) {
+  a = normalize(axisDirection);
   q = p - axisOrigin;
   phase = length(q - a * dot(q, a)) / size + distortion * noise.fbm(4 * size, detail, 0.5, 2);
   return fadeTo(waveProfile(phase, profile), 0.5, size);
@@ -344,7 +344,7 @@ tiles(x, y, sizeU, sizeV, joint, bond) {
 /// the point, and the distance from the point to the cell's edge, positive
 /// inside.
 hexCells(x, y, across) {
-  cellP = remap(map.patternTriangularXY(across), [x, y, 0]);
+  cellP = remap(domain.patternTriangularXY(across), [x, y, 0]);
   q = [cellP.x, cellP.y];
   reach = max(abs(dot(q, [1, 0])), max(abs(dot(q, [0.5, 0.8660254])), abs(dot(q, [-0.5, 0.8660254]))));
   return cellP, 0.5 * across - reach;

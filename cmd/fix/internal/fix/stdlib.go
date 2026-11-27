@@ -28,6 +28,18 @@ var stdlibFixer = Fixer{
 	Help: `The stdlib fixer updates GSL standard library calls across breaking changes:
 
 1. Automatic migrations:
+   - Renames members the standard library renamed, through the package's prefix
+     (its last path segment, an explicit import name, or bare under import .):
+       honeycomb.squareHoneycomb           -> honeycomb.rectangular
+       honeycomb.squareDiagonalHoneycomb   -> honeycomb.rectangularDiagonal
+       honeycomb.squareHoneycombReinforced -> honeycomb.rectangularReinforced
+       honeycomb.hexagonalHoneycomb        -> honeycomb.hexagonal
+       honeycomb.triangularHoneycomb       -> honeycomb.triangular
+       honeycomb.octetHoneycomb            -> honeycomb.octet
+       matrix.scale                        -> matrix.multiplyScalar
+   - Rewrites the deprecated lattice.bcc to beam.bcc less the beam radius:
+       lattice.bcc(cell, radius, combine) -> (beam.bcc(cell, combine) - radius)
+       lattice.bcc(cell, radius)          -> (beam.bcc(cell) - radius)
    - Replaces removed 2-argument thunk calls unionRoundExact(a, b) and
      intersectRoundExact(a, b) with value-based calls with radius 0:
        unionRoundExact(() { return a; }, () { return b; })
@@ -66,13 +78,14 @@ func applyStdlibFix(src string) (string, bool, []Note, error) {
 		normalized = strings.ReplaceAll(src, "\r\n", "\n")
 	}
 
-	curr := normalized
+	curr := renameMembers(normalized)
 	for pass := 0; pass < 8; pass++ {
 		res, err := parser.ParsePackage([]string{curr})
 		if err != nil || res.Package == nil || len(res.Package.Files) == 0 || res.Package.Files[0] == nil {
 			break
 		}
 		edits := collectRoundExactEdits(curr, res.Package.Files[0])
+		edits = append(edits, collectLatticeBccEdits(curr, res.Package.Files[0])...)
 		if len(edits) == 0 {
 			break
 		}

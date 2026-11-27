@@ -197,7 +197,7 @@ deepGroove(designation, at) {
   innerRing = roundedRing(0.5 * d, pitchR - 0.25 * ball, at, at + b, rs);
   outerRing = roundedRing(pitchR + 0.25 * ball, 0.5 * bigD, at, at + b, rs);
   raceway = length([length(p.xy) - pitchR, p.z - mid]) - 0.52 * ball;
-  balls = remap(length([p.x - pitchR, p.y, p.z - mid]) - 0.5 * ball, map.patternPolarXY(ballCount(designation)));
+  balls = remap(length([p.x - pitchR, p.y, p.z - mid]) - 0.5 * ball, domain.patternPolarXY(ballCount(designation)));
   solid = min(max(min(innerRing, outerRing), neg(raceway)), balls);
   solid.box = [[-0.5 * bigD, -0.5 * bigD, at], [0.5 * bigD, 0.5 * bigD, at + b]];
   solid.simple = deepGrooveEnvelope(designation, at);

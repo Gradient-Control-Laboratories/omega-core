@@ -340,10 +340,10 @@ func renderSwatch(e Entry, width, height int, extent float64, env string, light,
 	if err != nil {
 		return nil, fmt.Errorf("assemble: %w", err)
 	}
-	return eval.RenderLitSizedView(res.Program, width, height, extent*swatchRadius, 0, eval.LitView{
+	return eval.RenderLit(res.Program, eval.LitView{
 		Light:        light,
 		NoAxes:       true,
 		Environment:  env,
 		GlassSamples: swatchGlassSamples,
-	})
+	}.Options(width, height, extent*swatchRadius, 0))
 }

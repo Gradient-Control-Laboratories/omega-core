@@ -77,10 +77,10 @@ fn builtin_gcl_closure_boxCentered(p: vec3<f32>, center: vec3<f32>, size: vec3<f
   return solid;
 }
 
-fn map_rotateAxis(v: vec3<f32>, axisOrigin: vec3<f32>, axisDir: vec3<f32>, angle: f32) -> vec3<f32> {
+fn domain_rotateAxis(v: vec3<f32>, axisOrigin: vec3<f32>, axisDirection: vec3<f32>, angle: f32) -> vec3<f32> {
   let rel = v - axisOrigin;
   let ca = cos(angle);
-  let kn = normalize(axisDir);
+  let kn = normalize(axisDirection);
   let sa = sin(angle);
   return axisOrigin + rel * ca + cross(kn, rel) * sa + kn * dot(kn, rel) * (1.0 - ca);
 }
@@ -126,7 +126,7 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
   let rv = builtin_intersectRvachev(vec2<f32>(length(p) - 8.0, builtin_gcl_closure_boxCentered(p, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(12.0, 12.0, 12.0))), 1.0);
   let ru = builtin_unionRvachev(vec2<f32>(length(p) - 8.0, builtin_gcl_closure_boxCentered(p, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(12.0, 12.0, 12.0))), 1.0);
   let rd = builtin_differenceRvachev(length(p) - 8.0, builtin_gcl_closure_boxCentered(p, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(12.0, 12.0, 12.0)), 1.0);
-  let spun = gsl_remap(map_rotateAxis(p, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 0.0), 0.5));
+  let spun = gsl_remap(domain_rotateAxis(p, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 0.0), 0.5));
   let cyl = builtin_gcl_closure_boxCentered(vec3<f32>(length(p.xy), atan2(p.y, p.x) * 40.0 / 6.2831855, p.z), vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(3.0, 3.0, 3.0));
   let gsl_s1 = gsl_shape(min(min(min(t, seg), min(hollow, hollowBias)), min(min(cay, pol), min(min(rv, ru), min(rd, min(spun, cyl))))), 1u);
   return gsl_s1;

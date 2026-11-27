@@ -155,13 +155,13 @@ func matMul3(a, b [3][3]float64) [3][3]float64 {
 //	mesh(0, radials[0], ...);
 func TestExtractMeshDeclsMapIndexPlacement(t *testing.T) {
 	src := `import . "omega";
-import map "map";
+import domain "domain";
 
 partPlacementShift = 4;
 angles = [-pi / 3, -tau / 3, pi / 3, tau / 3];
 
 radials = map(
-  (ang) { return map.rotateXY(vector.dirX * partPlacementShift, ang); },
+  (ang) { return domain.rotateXY(vector.dirX * partPlacementShift, ang); },
   angles
 );
 
@@ -199,7 +199,7 @@ return mesh(0, radials[0]);
 // decls and the export plan.
 func TestMapMeshUnionPlacements(t *testing.T) {
 	src := `import . "omega";
-import map "map";
+import domain "domain";
 import matrix "matrix";
 
 partPlacementShift = 4;
@@ -207,7 +207,7 @@ partOrient = [0, pi / 2, 0];
 angles = [-pi / 3, -tau / 3, pi / 3, tau / 3];
 
 radials = map(
-  (ang) { return map.rotateXY(vector.dirX * partPlacementShift, -ang); },
+  (ang) { return domain.rotateXY(vector.dirX * partPlacementShift, -ang); },
   angles
 );
 

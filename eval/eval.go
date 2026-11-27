@@ -136,7 +136,7 @@ func endQuery() { <-querySlot }
 // them; pass nil if mesh assets are not supported.
 func New(srcMgr source.Manager, fetchAssets AssetFetcher, options ...assembler.Option) *Evaluator {
 	cp := parser.NewCachingParser()
-	opts := append([]assembler.Option{assembler.Parser(cp.ParsePackage), assembler.SourceManager(srcMgr)}, options...)
+	opts := append([]assembler.Option{assembler.WithParser(cp.ParsePackage), assembler.WithSourceManager(srcMgr)}, options...)
 	return &Evaluator{
 		fetchAssets:     fetchAssets,
 		assembleOptions: opts,

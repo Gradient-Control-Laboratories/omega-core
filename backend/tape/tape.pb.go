@@ -306,7 +306,7 @@ func (BinaryOp) EnumDescriptor() ([]byte, []int) {
 // noiseHash3 leaf is the exception: its tile is a build-time constant in every
 // runtime, so its id is globally meaningful and needs no payload.) A consumer
 // may also bind a payload out-of-band by id before replay — register_mesh_oracle
-// / register_vdb_oracle / register_hodge_spinodoid.
+// / register_vdb_oracle / register_reference_gabor_spinodoid.
 type Tape struct {
 	state   protoimpl.MessageState `protogen:"open.v1"`
 	Version uint32                 `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`
@@ -744,50 +744,40 @@ func (x *VdbLevelSet) GetLeafValues() []float32 {
 // during one bake — meaningless in any other process, exactly like a bvhSdf
 // asset id. Hence a payload, and these are the arguments rather than the
 // 8 x 32^3 kernel table, because both sides already compute the field from
-// them: omega's common/noise/spinodoid and hodge's spinodoid_gabor, pinned to
+// them: omega's common/noise/spinodoid and the Python reference's spinodoid_gabor, pinned to
 // each other bit-exactly on the direction pool and to 2e-14 on the field
-// (common/noise/spinodoid/hodge_parity_test.go). Carrying arguments keeps that
+// (common/noise/spinodoid/reference_gabor_parity_test.go). Carrying arguments keeps that
 // agreement checkable; carrying a table would hide a divergence.
 //
-// Maps onto hodge's `spinodoid_gabor_field(theta, bias=..., poles=...,
+// Maps onto the Python reference's `spinodoid_gabor_field(theta, bias=..., poles=...,
 // packet_width=..., impulses_per_cell=..., n_pool=..., seed=...,
-// normalize=...)` argument for argument, in hodge's own units: hodge-release
-// #45 or later.
+// normalize=...)` argument for argument, in the Python reference's own units.
 type SpinodoidParams struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Which of the two fields this leaf is. False is hodge's `spinodoid_gabor`
-	// exactly — jittered kernels, untapered envelope — and is what a consumer
-	// that has to agree with hodge wants. True is omega's cheaper lattice form
-	// (`fastGaborSpinodoid`): the same model and the same density, kernels on a
-	// regular lattice with tapered envelopes, a different realization. The two
-	// measure alike and are not the same field pointwise, so this is not a hint.
+	// Which of the two spinodoid oracles this leaf is. True is the fast one
+	// (`fastGaborSpinodoid`: kernels on a regular lattice, tapered envelopes);
+	// false is the reference (`gaborSpinodoid`: jittered kernels, untapered
+	// envelope). The two measure alike and are different fields pointwise, so a
+	// reader rebuilds this leaf as the oracle it names unless it is asked for
+	// the other.
 	Fast bool `protobuf:"varint,1,opt,name=fast,proto3" json:"fast,omitempty"`
 	// Reference wavelength, in the tape's length units. `scale` multiplies it.
 	Period float64 `protobuf:"fixed64,2,opt,name=period,proto3" json:"period,omitempty"`
-	// Cone half-angles of the direction ODF, one per pole, in **RADIANS**
-	// ([pi/2, pi/2, pi/2] is isotropic), as hodge takes them (`theta`, since
-	// hodge-release #44). The unit is in the field name because the field was
-	// once in degrees and hodge was too: a stale degree value cannot pass as
-	// this one.
+	// Cone half-angles of the direction ODF, one per pole, in radians
+	// ([pi/2, pi/2, pi/2] is isotropic).
 	ThetaRadians []float64 `protobuf:"fixed64,3,rep,packed,name=thetaRadians,proto3" json:"thetaRadians,omitempty"`
 	// Cone axes, flat xyz, three per entry in `thetaRadians`. Empty means the
 	// Cartesian axes (the paper's poles).
 	Poles []float64 `protobuf:"fixed64,4,rep,packed,name=poles,proto3" json:"poles,omitempty"`
-	// Envelope width in wavelengths at scale 1 (hodge's packet_width, 3).
+	// Envelope width in wavelengths at scale 1 (the Python reference's packet_width, 3).
 	PacketWidth float64 `protobuf:"fixed64,5,opt,name=packetWidth,proto3" json:"packetWidth,omitempty"`
-	// Kernels per cell of the kernel grid (hodge's impulses_per_cell, 8).
+	// Kernels per cell of the kernel grid (the Python reference's impulses_per_cell, 8).
 	Impulses uint32 `protobuf:"varint,6,opt,name=impulses,proto3" json:"impulses,omitempty"`
-	// Size of the sampled direction pool (hodge's n_pool, 4096).
+	// Size of the sampled direction pool (the Python reference's n_pool, 4096).
 	Pool uint32 `protobuf:"varint,7,opt,name=pool,proto3" json:"pool,omitempty"`
 	// Seed for both the pool draw and the spatial hash.
 	Seed int64 `protobuf:"varint,8,opt,name=seed,proto3" json:"seed,omitempty"`
-	// DEPRECATED, never written: the old quantile form of `bias`, where 0.5 was
-	// the median. A reader refuses a tape that sets it, since read as a bias it
-	// would be a different lattice. Regenerate such a tape.
-	//
-	// Deprecated: Marked as deprecated in tape.proto.
-	LevelBias float64 `protobuf:"fixed64,9,opt,name=levelBias,proto3" json:"levelBias,omitempty"`
-	// True divides by the wavenumber carried at each point (hodge's
+	// True divides by the wavenumber carried at each point (the Python reference's
 	// normalize="local"), so lengths stay real under a graded scale; false
 	// divides by the wavenumber of `period` ("base").
 	LocalNormalize bool `protobuf:"varint,10,opt,name=localNormalize,proto3" json:"localNormalize,omitempty"`
@@ -812,7 +802,7 @@ type SpinodoidParams struct {
 	DriverFingerprint string `protobuf:"bytes,15,opt,name=driverFingerprint,proto3" json:"driverFingerprint,omitempty"`
 	// True when the table is the stationary periodic window (no field driver).
 	// False means it was baked over a finite domain, given as
-	// [xmin, ymin, zmin, xmax, ymax, zmax] in `domain` when known. hodge builds
+	// [xmin, ymin, zmin, xmax, ymax, zmax] in `domain` when known. The Python reference builds
 	// its table from the query points instead and needs neither; they are here
 	// so a consumer can tell what omega's own bake covered.
 	Periodic bool      `protobuf:"varint,16,opt,name=periodic,proto3" json:"periodic,omitempty"`
@@ -822,7 +812,7 @@ type SpinodoidParams struct {
 	// interface), and +-1 leaves about 84% / 16% of the field below it. A
 	// document that asked for a solid fraction (spinodoid ...BySolidFraction)
 	// arrives here already converted, as sqrt(2) * erfinv(2 * fraction - 1).
-	// hodge takes it as `bias` (hodge-release #45).
+	// The Python reference takes it as `bias`.
 	Bias          float64 `protobuf:"fixed64,18,opt,name=bias,proto3" json:"bias,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -910,14 +900,6 @@ func (x *SpinodoidParams) GetPool() uint32 {
 func (x *SpinodoidParams) GetSeed() int64 {
 	if x != nil {
 		return x.Seed
-	}
-	return 0
-}
-
-// Deprecated: Marked as deprecated in tape.proto.
-func (x *SpinodoidParams) GetLevelBias() float64 {
-	if x != nil {
-		return x.LevelBias
 	}
 	return 0
 }
@@ -1386,7 +1368,7 @@ var File_tape_proto protoreflect.FileDescriptor
 const file_tape_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
-	"tape.proto\x12\x04tape\"\xf9\x01\n" +
+	"tape.proto\x12\x04tape\"\xf3\x01\n" +
 	"\x04Tape\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\rR\aversion\x12 \n" +
 	"\x05nodes\x18\x02 \x03(\v2\n" +
@@ -1397,7 +1379,7 @@ const file_tape_proto_rawDesc = "" +
 	"\voutputNames\x18\x06 \x03(\tR\voutputNames\x120\n" +
 	"\n" +
 	"appearance\x18\b \x03(\v2\x10.tape.AppearanceR\n" +
-	"appearanceJ\x04\b\a\x10\b\"\\\n" +
+	"appearance\"\\\n" +
 	"\n" +
 	"Appearance\x12\x14\n" +
 	"\x05color\x18\x01 \x03(\rR\x05color\x12\x1a\n" +
@@ -1429,7 +1411,7 @@ const file_tape_proto_rawDesc = "" +
 	"blockValue\x12\x1e\n" +
 	"\n" +
 	"leafValues\x18\b \x03(\x02R\n" +
-	"leafValues\"\xa1\x04\n" +
+	"leafValues\"\xff\x03\n" +
 	"\x0fSpinodoidParams\x12\x12\n" +
 	"\x04fast\x18\x01 \x01(\bR\x04fast\x12\x16\n" +
 	"\x06period\x18\x02 \x01(\x01R\x06period\x12\"\n" +
@@ -1438,8 +1420,7 @@ const file_tape_proto_rawDesc = "" +
 	"\vpacketWidth\x18\x05 \x01(\x01R\vpacketWidth\x12\x1a\n" +
 	"\bimpulses\x18\x06 \x01(\rR\bimpulses\x12\x12\n" +
 	"\x04pool\x18\a \x01(\rR\x04pool\x12\x12\n" +
-	"\x04seed\x18\b \x01(\x03R\x04seed\x12 \n" +
-	"\tlevelBias\x18\t \x01(\x01B\x02\x18\x01R\tlevelBias\x12&\n" +
+	"\x04seed\x18\b \x01(\x03R\x04seed\x12&\n" +
 	"\x0elocalNormalize\x18\n" +
 	" \x01(\bR\x0elocalNormalize\x12\x14\n" +
 	"\x05scale\x18\v \x03(\x01R\x05scale\x12 \n" +

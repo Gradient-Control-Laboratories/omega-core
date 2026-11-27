@@ -65,10 +65,10 @@ impl Tape {
     /// default to the tape's values or sensible defaults, and are ignored for
     /// BVH.
     ///
-    /// `backend` chooses which field a spinodoid is rebuilt as from its
-    /// payload's arguments: "fast" (omega's lattice, what the viewer draws) or
-    /// "manufacturing" (hodge's jittered-kernel field), whatever the payload's
-    /// `fast` flag says.
+    /// `backend` chooses which of the two spinodoid oracles a payload is
+    /// rebuilt as from its arguments: "fast" (fastGaborSpinodoid) or
+    /// "reference" (gaborSpinodoid). Left out, each payload is rebuilt as the
+    /// oracle it names.
     ///
     /// Each of the four is either one value, for every payload it applies to,
     /// or a dict keyed by payload asset id (see `tape_oracle_payloads`), for
@@ -98,9 +98,9 @@ impl Tape {
             let s: String = v.extract()?;
             match s.to_ascii_lowercase().as_str() {
                 "fast" => Ok(SpinodoidBackend::Fast),
-                "manufacturing" => Ok(SpinodoidBackend::Manufacturing),
+                "reference" => Ok(SpinodoidBackend::Reference),
                 other => Err(PyValueError::new_err(format!(
-                    "backend must be 'fast' or 'manufacturing', got '{other}'"
+                    "backend must be 'fast' or 'reference', got '{other}'"
                 ))),
             }
         };
@@ -113,7 +113,7 @@ impl Tape {
             force: force.unwrap_or(OracleForce::Auto),
             resolution,
             half_band,
-            spinodoid: spinodoid.unwrap_or(SpinodoidBackend::Fast),
+            spinodoid,
         };
         let mut overrides: HashMap<u32, OracleOverride> = HashMap::new();
         for (id, v) in forces {
@@ -321,12 +321,12 @@ impl Mesh {
 /// What a tape needs bound before `Tape(...)` will load it: one tuple per
 /// mesh-oracle id it references, as `(id, kind, self_contained, slot)`.
 ///
-/// `kind` is "noise", "cellular", "spinodoid", "hodgeSpinodoid", "mesh" or
-/// "unknown". `self_contained` is True when loading resolves the id by itself
-/// (a library-baked tile, a source mesh carried in the tape, or a spinodoid
-/// whose payload the tape carries) and False when this process has to
-/// register the oracle first. `slot` is what to pass as
-/// `register_hodge_spinodoid`'s first argument, where the kind has a slot.
+/// `kind` is "noise", "cellular", "fastGaborSpinodoid", "referenceGaborSpinodoid",
+/// "mesh" or "unknown". `self_contained` is True when loading resolves the id by
+/// itself (a library-baked tile, a source mesh carried in the tape, or a
+/// spinodoid whose payload the tape carries) and False when this process has
+/// to register the oracle first. `slot` is the spinodoid table slot the leaf
+/// names, where the kind has one.
 ///
 /// Read-only, and it registers nothing, so this is the first call to make on a
 /// tape written somewhere else:
@@ -348,63 +348,11 @@ fn tape_oracle_uses(tape: &[u8]) -> PyResult<Vec<tape::OracleUseRow>> {
 /// ```python
 /// for asset_id, kind in omega_tape.tape_oracle_payloads(blob):
 ///     print(f"{asset_id:#x} {kind}")
-/// field = omega_tape.Tape(blob, backend={0xE05B1000: "manufacturing"})
+/// field = omega_tape.Tape(blob, backend={0xE05B1000: "reference"})
 /// ```
 #[pyfunction]
 fn tape_oracle_payloads(tape: &[u8]) -> PyResult<Vec<(u32, String)>> {
     tape::tape_oracle_payloads(tape).map_err(PyValueError::new_err)
-}
-
-/// Install a baked hodge-spinodoid kernel table in `slot`, so a tape whose
-/// leaves name that slot will load.
-///
-/// The table is the caller's: hodge's own `_gabor_kernels` produces exactly
-/// these kernels, and omega's `HodgeBake` is pinned to it bit-for-bit on the
-/// direction pool and to 2e-14 on the field, so handing the table over is
-/// handing over the field hodge computes. Nothing is re-derived here.
-///
-/// `kernels` is `(cells * impulses, 8)` float64 in row-major cell order over
-/// `size` from `origin`, each row `[jitter x, jitter y, jitter z, dir x,
-/// dir y, dir z, beta, gamma]` — a centre is `(cell + jitter) * cell_size`.
-/// `periodic` tables must be hodge's 32-cubed window and ignore `bounds`; a
-/// bounded table is located by `bounds` and reads as a conservative
-/// distance-to-domain outside it. `level` is the field threshold, the
-/// payload's `bias` as it stands, and `local` divides by the
-/// wavenumber carried at each point rather than the base one.
-#[pyfunction]
-#[allow(clippy::too_many_arguments)]
-#[pyo3(signature = (slot, kernels, origin, size, bounds, periodic, impulses,
-                    cell_size, a, sigma, base_beta, level, local))]
-fn register_hodge_spinodoid(
-    slot: u32,
-    kernels: PyReadonlyArray2<f64>,
-    origin: [i64; 3],
-    size: [u32; 3],
-    bounds: [f64; 6],
-    periodic: bool,
-    impulses: usize,
-    cell_size: f64,
-    a: f64,
-    sigma: f64,
-    base_beta: f64,
-    level: f64,
-    local: bool,
-) -> PyResult<()> {
-    let shape = kernels.shape();
-    if shape.len() != 2 || shape[1] != 8 {
-        return Err(PyValueError::new_err(format!(
-            "kernels must be (N,8) float64 — [jitter xyz, dir xyz, beta, gamma] — got {:?}",
-            shape
-        )));
-    }
-    let k = kernels.as_slice().map_err(|e| {
-        PyValueError::new_err(format!("kernels must be C-contiguous (N,8) float64: {e}"))
-    })?;
-    tape::register_hodge_spinodoid(
-        slot, k, origin, size, bounds, periodic, impulses, cell_size, a, sigma, base_beta, level,
-        local,
-    )
-    .map_err(PyValueError::new_err)
 }
 
 /// Register a bvhSdf mesh oracle payload by asset id. `vertices` is `(M,3)`
@@ -454,6 +402,5 @@ fn omega_tape(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(tape_oracle_payloads, m)?)?;
     m.add_function(wrap_pyfunction!(register_mesh_oracle, m)?)?;
     m.add_function(wrap_pyfunction!(register_vdb_oracle, m)?)?;
-    m.add_function(wrap_pyfunction!(register_hodge_spinodoid, m)?)?;
     Ok(())
 }

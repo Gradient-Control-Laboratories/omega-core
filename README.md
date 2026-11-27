@@ -240,8 +240,8 @@ bin/gsl fix examples
 
 ## Language Specification & Roadmap
 
-- [Current GSL Language Specification](doc/gsl_lang_spec_current.md) — implemented GSL syntax,
-  annotations, directives, properties, and built-ins
+- [GSL Compiler Notes](doc/gsl_lang_spec_current.md) — how the compiler parses, types and lowers GSL;
+  the language itself is documented by `gsl skill`
 - [Future GSL Language Specification](doc/gsl_lang_spec_future.md) — target GSL v2 design
 - [Roadmap](doc/roadmap.md) — completed highlights and planned language, compiler, evaluator, and
   backend work

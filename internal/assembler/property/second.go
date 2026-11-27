@@ -155,7 +155,7 @@ func (dd *secondDomain) Operator(operation program.Operation, operands []*progra
 
 // OpaqueCall / OpaqueRef splice a qualified (map./noise./…) call or reference
 // through unchanged as a single surface (no second-closest); the backend
-// resolves the import. A map.rotateZX used as a remap coordinate is a coordinate
+// resolves the import. A domain.rotateZX used as a remap coordinate is a coordinate
 // given, not a surface combiner, so .second transports through it — mirroring the
 // color property's opaque handling.
 func (dd *secondDomain) OpaqueCall(pkgName, name string, args []Value) Value {

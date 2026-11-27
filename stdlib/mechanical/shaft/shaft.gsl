@@ -1000,7 +1000,7 @@ splineSection(count, minor, major, width) {
   tipX = sqrt(majorR * majorR - halfWidth * halfWidth);
   tooth = remap(profileXY([[0.0, neg(halfWidth)], [tipX, neg(halfWidth)], [tipX, halfWidth], [0.0, halfWidth]],
                           [0.0, 1.0 / majorR, 0.0, 0.0]),
-                map.patternPolarXY(count));
+                domain.patternPolarXY(count));
   return min(length(p.xy) - minor / 2.0, tooth);
 }
 

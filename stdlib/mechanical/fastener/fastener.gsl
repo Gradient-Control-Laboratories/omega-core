@@ -1116,14 +1116,14 @@ flatRobertson(nominalInch, overallLength) {
 /// face normal's negation drives it square into that face. Pass it to remap:
 /// `remap(fastener.shcs(3.0, 18.0), fastener.seatedAt([8, 26.75, -4.5], vector.dirZ))`.
 ///
-/// It is map.axisAt with the axis reversed — the datum's +Z is the way the
+/// It is domain.axisAt with the axis reversed — the datum's +Z is the way the
 /// head faces, opposite the shank — so a screw seated here lands in a hole
 /// placed by drill.axisAt at the same point with the face's normal. Straight
 /// up it is a half turn about x, never a mirror. As with axisAt, the turn
 /// ABOUT the shank is not continuous across the equator; a round screw does
 /// not show it, a hex head does.
 seatedAt(seatPoint, shankDir) {
-  return map.axisAt(seatPoint, [neg(shankDir.x), neg(shankDir.y), neg(shankDir.z)]);
+  return domain.axisAt(seatPoint, [neg(shankDir.x), neg(shankDir.y), neg(shankDir.z)]);
 }
 
 /// An ISO 4762 socket head cap screw already placed: its head seated at

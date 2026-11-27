@@ -12,6 +12,36 @@ from `1.0.0` onward).
 
 ### Breaking
 
+- **The `map` package is renamed `domain`**: `map.rotateXY(...)` is now `domain.rotateXY(...)` and
+  `import "map";` is `import "domain";`, so the package no longer shares its name with the
+  `map(fn, list)` primitive. A document that still says `map.` gets an error naming `domain`, and
+  `gsl fix -domain` rewrites the references and imports. `rotateYZ`, `rotateZX` and `eulerAngles`
+  are now documented.
+- **Honeycomb lattices drop the repeated name**: `honeycomb.squareHoneycomb`, `squareDiagonalHoneycomb` and
+  `squareHoneycombReinforced` are `rectangular`, `rectangularDiagonal` and `rectangularReinforced`;
+  `hexagonalHoneycomb`, `triangularHoneycomb` and `octetHoneycomb` are `hexagonal`, `triangular` and
+  `octet`. `gsl fix -stdlib` rewrites them.
+- **`matrix.inverse` inverts any square matrix**: it was the affine 4×4 inverse, now `matrix.inverseAffine`.
+  An affine matrix gets the same result from either; `inverseAffine` is cheaper.
+- **Graded spinodoids take a `box`**: `gaborGraded(..., box)` and the other graded forms end with `box`, the
+  [min, max] corners, in the field's own coordinates, of the region the field is evaluated over; the table is
+  baked there and nowhere else. The scene and imported-geometry bounds and the periodic fallback are no
+  longer used for spinodoid tables, and the spinodoid builtins take `box` as a 13th argument.
+- **`list` is a builtin**, so a document can no longer declare its own `list` function or variable.
+- **`gaborSpinodoid` is the reference spinodoid everywhere**: the `gabor*` library forms now evaluate the
+  reference field (jittered kernels, untapered envelopes) in the preview, meshing, export and the oracle,
+  where every backend used to evaluate the fast field for both names. It is several times slower to
+  evaluate than `fastGabor*`, and a different field pointwise; a document that wants the field it rendered
+  before calls the `fastGabor*` form with the same arguments.
+- **Spinodoid tapes**: each spinodoid leaf loads as the oracle its payload names (`fast` or `reference`).
+  `omega_tape.Tape(..., backend=...)` takes `"fast"` or `"reference"`, tape-wide or per payload, to ask
+  for the other. `omega_tape.register_reference_gabor_spinodoid` and the no-payload spinodoid path are
+  removed, the tape's `SpinodoidParams.levelBias` field is deleted, and a graded spinodoid bake without a
+  box is an error rather than a periodic table.
+- **Spinodoid Go and C names**: the fast table is `spinodoid.FastGaborTable` (`FastGaborBake`,
+  `FastGaborTableConstants`), `spinodoid.Baked` has `Fast` and `Reference` fields in place of `Table`, and
+  the fidget wrappers and C exports are `RegisterFastGaborSpinodoid` / `register_fast_gabor_spinodoid` and
+  likewise. `Baked.GPUTable` packs either kind for a preview.
 - **Changed Go module path to `github.com/Gradient-Control-Laboratories/omega-core`**: The root
   `go.mod` module declaration and all internal package import paths changed from
   `gradientcontrol.com/omega/core` to `github.com/Gradient-Control-Laboratories/omega-core` so
@@ -40,6 +70,24 @@ from `1.0.0` onward).
   Help panel teaches `@range` and notes that the properties were removed.
 
 ### Added
+
+- **`list(n)` and `list(n, fn)`**: the list `[0, 1, ..., n - 1]`, or `[fn(0), ..., fn(n - 1)]`, with n known when
+  the document compiles; a function whose parameter sets a list's length is specialized for each constant
+  its calls pass.
+- **Matrices of any size**: `matrix.transpose`, `identity(n)`, `determinant` and `inverse` take any size
+  (`determinant` and `inverse` pivot, so a zero on the diagonal works), and a matrix that varies at run
+  time unrolls them. The sized names (`transpose2/3/4`, `identity3/4`, `determinant2/3/4`, `inverse2/3/4`)
+  and `matrix.scale` (now `multiplyScalar`) are deprecated; `gsl fix -stdlib` rewrites them.
+- **Lattices take a boolean**: every beam lattice that joins struts has a `combine` form that blends every
+  junction. `foam.kelvin` and `foam.rhombicDodecahedral` are the Voronoi foams, the duals of `beam.bcc`
+  and `beam.octet`, and each lattice's docs name its dual. `lattice.bcc` is deprecated for
+  `beam.bcc(cellSize, combine) - beamRadius`, which `gsl fix -stdlib` writes.
+- **Go options are all `With…`**: `assembler.WithSourcePaths`, `WithParser`, `WithExtractUI` and the rest,
+  `mesh.WithMeshOracles`, `tape.WithBbox`, `wgsl.WithStandalone`; the bare names are deprecated for a
+  release. `eval.RenderLitSized`, `RenderLitSizedView` and `RenderLitSizedViewRadiance` are deprecated for
+  `RenderLit(prog, view.Options(width, height, extent, time))`.
+- **Shapes and booleans**: `torus(center, ...)` and `octahedron(center, size)`; every difference takes a list
+  `[target, tool, ...]` and has an operator form, as unions and intersections do.
 
 - Migrated GSL compiler architecture, language specification/migration, golden verification, and
   stdlib tolerance-table documentation from `omega-release/doc/` into `doc/`, synced

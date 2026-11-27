@@ -16,13 +16,13 @@ import (
 // description, the primitives and core built-ins with the specialist groups
 // named, the builtin package in brief, how packages are imported and
 // referenced with one line per package, the rule for reserved words, and the
-// common pitfalls. includeDomains selects product-specific libraries, as in
-// LibrariesDescriptiveText.
-func GSLSkillIndex(includeDomains ...string) string {
+// common pitfalls. The domains argument is ignored and will be removed: no
+// library sets a domain.
+func GSLSkillIndex(domains ...string) string {
 	return GSLDescription +
 		"\n\n" + coreBuiltinDescriptiveText() +
 		"\n\n" + builtinBriefText() +
-		"\n\n" + PackageIndexText(includeDomains...) +
+		"\n\n" + PackageIndexText() +
 		"\n\n" + reservedWordsRuleText() +
 		"\n\n" + CommonPitfalls
 }
@@ -30,8 +30,9 @@ func GSLSkillIndex(includeDomains ...string) string {
 // PackageIndexText lists every embedded library on one line: its import path,
 // the prefix its members are referenced by, how many documented members it
 // has, and its summary (see PackageSummary). It opens with the same
-// explanation of imports and prefixes as LibrariesDescriptiveText.
-func PackageIndexText(includeDomains ...string) string {
+// explanation of imports and prefixes as LibrariesDescriptiveText. The domains
+// argument is ignored and will be removed: no library sets a domain.
+func PackageIndexText(domains ...string) string {
 	var sb strings.Builder
 	sb.WriteString("\n---\n\n## **Library Packages**\n\n")
 	sb.WriteString(librariesLead)
@@ -42,9 +43,6 @@ func PackageIndexText(includeDomains ...string) string {
 		"documentation lists every member with its signature; read it before " +
 		"calling the package.\n\n")
 	for _, lib := range gsllibs.All() {
-		if lib.Domain != "" && !containsStr(includeDomains, lib.Domain) {
-			continue
-		}
 		prefix := "no prefix"
 		if lib.ImportPath != "builtin" {
 			prefix = "`" + packagePrefix(lib.ImportPath) + ".`"

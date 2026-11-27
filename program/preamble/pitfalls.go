@@ -29,7 +29,7 @@ index further elements with constant integers or iterate with ` + "`map`" + ` an
 A ` + "`map`" + ` whose function returns a vector produces a list of vectors.
 * ` + "`atan2(y, x)`" + ` is not supported. Use ` + "`atan(y, x)`" + ` (two arguments) instead.
 * Use ` + "`pow(base, exponent)`" + `. The ` + "`**`" + ` and ` + "`^`" + ` operators do not exist in GSL.
-* No ` + "`if`" + `, no ` + "`switch`" + `, no loops. Use conditional expressions and recursion.
+* No ` + "`if`" + `, no ` + "`switch`" + `, no loops, no recursion. Use conditional expressions, ` + "`map`" + ` and ` + "`reduce`" + `.
 * When passing an anonymous function as a value to be invoked, include the call parentheses, e.g. ` + "`result = remap(() { return length(p); }(), -p);`" + `
 * You can return multiple shapes; their variable names appear in a panel for the user.
 

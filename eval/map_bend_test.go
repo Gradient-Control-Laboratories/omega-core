@@ -10,7 +10,7 @@ import (
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/source"
 )
 
-// TestMapBendXZ checks map.bendXZ where a drawing of the bend would measure
+// TestMapBendXZ checks domain.bendXZ where a drawing of the bend would measure
 // it: a plate on x = 0 lands on the arc it should, a rung across the plate
 // lands on the arc's radius an arc length along, the sign of the curvature
 // picks the side, and a curvature of 0 leaves the plate where it was.
@@ -24,12 +24,12 @@ func TestMapBendXZ(t *testing.T) {
 	const doc = `
 plate = abs(p.x) - 1;
 rung = abs(p.z - 50) - 0.5;
-bent = remap(plate, map.bendXZ(p, 1 / 100.0));
-bentRung = remap(rung, map.bendXZ(p, 1 / 100.0));
-bentBack = remap(plate, map.bendXZ(p, -1 / 100.0));
-flat = remap(plate, map.bendXZ(p, 0));
+bent = remap(plate, domain.bendXZ(p, 1 / 100.0));
+bentRung = remap(rung, domain.bendXZ(p, 1 / 100.0));
+bentBack = remap(plate, domain.bendXZ(p, -1 / 100.0));
+flat = remap(plate, domain.bendXZ(p, 0));
 plateAway = abs(p.x - 10) - 1;
-moved = remap(plateAway, map.bendXZ(p - [10, 0, 20], 1 / 100.0) + [10, 0, 20]);
+moved = remap(plateAway, domain.bendXZ(p - [10, 0, 20], 1 / 100.0) + [10, 0, 20]);
 return bent;
 `
 

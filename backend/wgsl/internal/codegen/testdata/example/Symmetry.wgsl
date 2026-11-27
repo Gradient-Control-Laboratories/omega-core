@@ -15,7 +15,7 @@ fn gsl_remap(p: vec3<f32>) -> f32 {
 }
 
 fn gsl_remap_2(p: vec3<f32>) -> f32 {
-  let tiled = motif(vec3<f32>(map_triangleWave(p.x, 6.0), map_triangleWave(p.y, 6.0), p.z));
+  let tiled = motif(vec3<f32>(domain_triangleWave(p.x, 6.0), domain_triangleWave(p.y, 6.0), p.z));
   let tiledBlock = max(tiled, builtin_gcl_closure_boxCentered(p, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(22.0, 22.0, 1.2)));
   return tiledBlock;
 }
@@ -61,7 +61,7 @@ fn builtin_gcl_closure_boxCentered(p: vec3<f32>, center: vec3<f32>, size: vec3<f
   return solid;
 }
 
-fn map_triangleWave(x: f32, period: f32) -> f32 {
+fn domain_triangleWave(x: f32, period: f32) -> f32 {
   let half = period * 0.5;
   let twoPeriod = period * 2.0;
   let u = gsl_floored((gsl_floored((x + half), twoPeriod) + twoPeriod), twoPeriod);

@@ -8,7 +8,7 @@ import (
 // normEps is ugf.normalize's eps: shorter vectors pass through unchanged.
 const normEps = 1e-12
 
-// normalize is hodge's ugf.normalize for one vector: v / max(|v|, eps) when
+// normalize is the Python reference's ugf.normalize for one vector: v / max(|v|, eps) when
 // |v| > eps, else v. The norm sums in numpy's order, (x² + y²) + z².
 func normalize(v [3]float64) [3]float64 {
 	n := math.Sqrt(float64(float64(v[0]*v[0])+float64(v[1]*v[1])) + float64(v[2]*v[2]))
@@ -26,17 +26,17 @@ func dot3(a, b [3]float64) float64 {
 // cartesianPoles is spinodoid_waves' default, np.eye(3): the paper's Eq. (2).
 var cartesianPoles = [][3]float64{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}
 
-// Waves is hodge's spinodoid_waves(theta, n_waves, seed, poles) without the
+// Waves is the Python reference's spinodoid_waves(theta, n_waves, seed, poles) without the
 // phases: the unit directions only, which is all the Gabor form reads (its
 // kernel phases come from the spatial hash). The draw consumes numpy's stream
-// exactly as hodge does: batches of 3-vectors of standard normals, normalized,
-// kept when |n . p_k| > cos(theta_k) for any pole k, with hodge's adaptive
+// exactly as the Python reference does: batches of 3-vectors of standard normals, normalized,
+// kept when |n . p_k| > cos(theta_k) for any pole k, with the Python reference's adaptive
 // batch size between rounds. Since the phases are drawn after the directions,
 // leaving them out does not move the directions.
 //
 // theta holds the cone half-angles in radians, one per pole, each in
-// [0, pi/2], as hodge takes them. poles nil means the Cartesian basis;
-// otherwise each is normalized as hodge normalizes them.
+// [0, pi/2], as the Python reference takes them. poles nil means the Cartesian basis;
+// otherwise each is normalized as the Python reference normalizes them.
 func Waves(theta []float64, nWaves int, seed uint64, poles [][3]float64) ([][3]float64, error) {
 	if poles == nil {
 		poles = cartesianPoles

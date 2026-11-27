@@ -9,7 +9,7 @@ import (
 
 func TestSpinodoidFiniteDomainNativePointsAndIntervals(t *testing.T) {
 	bounds := [6]float64{980, -30, -10, 1260, 40, 30}
-	table, err := spinodoid.Bake(spinodoid.Params{
+	table, err := spinodoid.FastGaborBake(spinodoid.Params{
 		Period: 2, PacketWidth: 3, Impulses: 8, Theta: []float64{math.Pi / 2, math.Pi / 2, math.Pi / 2}, Domain: &bounds,
 		Scale: func(centers [][3]float64) ([]float64, error) {
 			out := make([]float64, len(centers))
@@ -27,10 +27,10 @@ func TestSpinodoidFiniteDomainNativePointsAndIntervals(t *testing.T) {
 	Clear()
 	defer Clear()
 	const level = .3
-	if err := RegisterSpinodoid(0, table, level, true); err != nil {
+	if err := RegisterFastGaborSpinodoid(0, table, level, true); err != nil {
 		t.Fatal(err)
 	}
-	canvas := BuildCanvas(SpinodoidTree(0, SpinodoidDistance))
+	canvas := BuildCanvas(FastGaborSpinodoidTree(0, SpinodoidDistance))
 	points := [][3]float32{{981.5, 0, 0}, {1100.25, 20.1, 10.2}, {1259.5, 39, 29}, {800, -270, -10}, {1261, 41, 31}}
 	for _, q := range points {
 		got, err := EvalGrad(canvas, []float32{q[0]}, []float32{q[1]}, []float32{q[2]})
@@ -80,7 +80,7 @@ func TestSpinodoidFiniteDomainNativePointsAndIntervals(t *testing.T) {
 		t.Fatalf("boundary interval must cover both field definitions, got %v", intervals[2])
 	}
 	for axis := range 3 {
-		gradientCanvas := BuildCanvas(SpinodoidTree(0, SpinodoidGradX+uint32(axis)))
+		gradientCanvas := BuildCanvas(FastGaborSpinodoidTree(0, SpinodoidGradX+uint32(axis)))
 		bounds, err := EvalInterval(gradientCanvas, boxes[1:2])
 		if err != nil {
 			t.Fatal(err)

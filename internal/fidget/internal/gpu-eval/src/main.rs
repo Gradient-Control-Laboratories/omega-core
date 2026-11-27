@@ -1,16 +1,20 @@
 //! gpu-eval runs one WGSL compute shader over a list of points, headless.
 //!
-//!   gpu-eval --shader S.wgsl --points P.f32 --stride N --out O.f32 [--noise T.bin] [--repeat R] [--timing 1]
+//!   gpu-eval --shader S.wgsl --points P.f32 --stride N --out O.f32 [--noise T.bin]
+//!            [--texture2d X.f32 --texture2d-dims W,H] [--repeat R] [--timing 1]
 //!
 //! The shader's entry point is `main` with @workgroup_size(64). It binds
 //!
 //!   @group(0) @binding(0) var<storage, read> points: array<vec4<f32>>
 //!   @group(0) @binding(1) var<storage, read_write> out: array<f32>
 //!   @group(0) @binding(2) var noise: texture_3d<f32>      (only with --noise)
+//!   @group(0) @binding(3) var tex: texture_2d<f32>        (only with --texture2d)
 //!
 //! P.f32 is little-endian f32 xyzw per point; O.f32 receives `stride` f32 per
 //! point. --noise is the 64^3 RGBA8 tile common/noise bakes, bound as
-//! rgba8unorm like the viewers bind it. --repeat R dispatches the shader R more
+//! rgba8unorm like the viewers bind it. --texture2d is W x H texels of
+//! little-endian RGBA float32, row by row, bound as rgba32float: the spinodoid
+//! table a preview binds (backend/wgsl PackSpinodoidBinding). --repeat R dispatches the shader R more
 //! times after the one written out, each waited on alone, and prints the
 //! milliseconds each took to stdout, one per line: the shader's own time,
 //! without starting the GPU, compiling, uploading or reading back. --timing 1
@@ -33,6 +37,8 @@ struct Args {
     stride: usize,
     out: String,
     noise: Option<String>,
+    texture2d: Option<String>,
+    texture2d_dims: Option<(u32, u32)>,
     repeat: usize,
     timing: bool,
 }
@@ -43,6 +49,8 @@ fn parse_args() -> Result<Args, String> {
     let mut stride = None;
     let mut out = None;
     let mut noise = None;
+    let mut texture2d = None;
+    let mut texture2d_dims = None;
     let mut repeat = 0;
     let mut timing = false;
     let mut it = std::env::args().skip(1);
@@ -54,6 +62,14 @@ fn parse_args() -> Result<Args, String> {
             "--stride" => stride = Some(value.parse::<usize>().map_err(|e| e.to_string())?),
             "--out" => out = Some(value),
             "--noise" => noise = Some(value),
+            "--texture2d" => texture2d = Some(value),
+            "--texture2d-dims" => {
+                let (w, h) = value.split_once(',').ok_or("--texture2d-dims is W,H")?;
+                texture2d_dims = Some((
+                    w.parse::<u32>().map_err(|e| e.to_string())?,
+                    h.parse::<u32>().map_err(|e| e.to_string())?,
+                ));
+            }
             "--repeat" => repeat = value.parse::<usize>().map_err(|e| e.to_string())?,
             "--timing" => timing = value != "0",
             _ => return Err(format!("unknown flag {flag}")),
@@ -65,6 +81,8 @@ fn parse_args() -> Result<Args, String> {
         stride: stride.ok_or("--stride is required")?,
         out: out.ok_or("--out is required")?,
         noise,
+        texture2d,
+        texture2d_dims,
         repeat,
         timing,
     })
@@ -87,6 +105,12 @@ fn main() {
         .noise
         .as_ref()
         .map(|path| std::fs::read(path).unwrap_or_else(|e| fail(1, e)));
+    let texture2d = args.texture2d.as_ref().map(|path| {
+        let dims = args
+            .texture2d_dims
+            .unwrap_or_else(|| fail(1, "--texture2d needs --texture2d-dims"));
+        (std::fs::read(path).unwrap_or_else(|e| fail(1, e)), dims)
+    });
 
     let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
     let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
@@ -96,7 +120,9 @@ fn main() {
     .unwrap_or_else(|e| fail(3, format!("no GPU adapter: {e}")));
     let (device, queue) = pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
         label: Some("gpu-eval"),
-        required_features: wgpu::Features::empty(),
+        // A derived layout may ask for a filterable float texture; rgba32float
+        // is one only with this feature, so take it where the adapter has it.
+        required_features: adapter.features() & wgpu::Features::FLOAT32_FILTERABLE,
         required_limits: adapter.limits(),
         ..Default::default()
     }))
@@ -189,6 +215,48 @@ fn main() {
         entries.push(wgpu::BindGroupEntry {
             binding: 2,
             resource: wgpu::BindingResource::TextureView(&noise_view),
+        });
+    }
+    let texture2d_view;
+    if let Some((texels, (width, height))) = &texture2d {
+        let expected = (*width as usize) * (*height as usize) * 16;
+        if texels.len() != expected {
+            fail(1, format!("texture2d is {} bytes, want {expected}", texels.len()));
+        }
+        let size = wgpu::Extent3d {
+            width: *width,
+            height: *height,
+            depth_or_array_layers: 1,
+        };
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("texture2d"),
+            size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba32Float,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+        queue.write_texture(
+            wgpu::TexelCopyTextureInfo {
+                texture: &texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            texels,
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(width * 16),
+                rows_per_image: Some(*height),
+            },
+            size,
+        );
+        texture2d_view = texture.create_view(&Default::default());
+        entries.push(wgpu::BindGroupEntry {
+            binding: 3,
+            resource: wgpu::BindingResource::TextureView(&texture2d_view),
         });
     }
     let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {

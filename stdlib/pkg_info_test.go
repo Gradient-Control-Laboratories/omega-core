@@ -14,7 +14,7 @@ import (
 // auto-import a library the source named but never imported.
 func TestPathForPrefix(t *testing.T) {
 	cases := map[string]string{
-		"map":       "map",
+		"domain":    "domain",
 		"lattice":   "lattice",
 		"beam":      "lattice/beam",
 		"foam":      "lattice/foam",

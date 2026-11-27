@@ -16,9 +16,9 @@ import (
 
 // The spinodoid oracles, end to end: parse, bake, fidget.
 //
-// These check that the oracle fidget evaluates is the lattice table that was
-// baked, for both builtins, and that a tape marks the leaf as the lattice, so
-// a reader that wants hodge's field knows to swap it in.
+// These check that each builtin's oracle is its own table: the fast table for
+// fastGaborSpinodoid, the reference table for gaborSpinodoid, and that a tape
+// names which of the two each leaf is.
 //
 // Samples come back as float32, so the tolerance is f32 rounding on a field
 // whose values are a few length units.
@@ -70,22 +70,21 @@ func evalField(t *testing.T, code, expr string, points [][3]float64) []float64 {
 	return out
 }
 
-// TestGaborSpinodoidOracleMatchesLatticeTable checks the field fidget
-// evaluates for spinodoid.gabor against the Go reference for the lattice
-// table, the field the preview renders.
-func TestGaborSpinodoidOracleMatchesLatticeTable(t *testing.T) {
+// TestFastGaborLibraryOracleMatchesFastTable checks the field fidget
+// evaluates for spinodoid.fastGabor against the Go fast table.
+func TestFastGaborLibraryOracleMatchesFastTable(t *testing.T) {
 	p := referenceParams()
 	level, err := spinodoid.Level(0.5)
 	if err != nil {
 		t.Fatalf("Level: %v", err)
 	}
-	table, err := spinodoid.Bake(p)
+	table, err := spinodoid.FastGaborBake(p)
 	if err != nil {
 		t.Fatalf("Bake: %v", err)
 	}
 
 	points := oraclePoints()
-	got := evalField(t, gaborSpinodoidDoc, "field", points)
+	got := evalField(t, fastGaborLibraryDoc, "field", points)
 
 	worst := 0.0
 	for i, q := range points {
@@ -108,7 +107,7 @@ func TestFastGaborSpinodoidOracleMatchesLatticeTable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Level: %v", err)
 	}
-	table, err := spinodoid.Bake(p)
+	table, err := spinodoid.FastGaborBake(p)
 	if err != nil {
 		t.Fatalf("Bake: %v", err)
 	}
@@ -129,51 +128,78 @@ func TestFastGaborSpinodoidOracleMatchesLatticeTable(t *testing.T) {
 	t.Logf("%d points, worst difference %g", len(points), worst)
 }
 
-// TestSpinodoidBuiltinsAreOneField guards the dispatch: gaborSpinodoid and
-// fastGaborSpinodoid read the same lattice table, so with the same arguments
-// they agree at every point, bit for bit.
-func TestSpinodoidBuiltinsAreOneField(t *testing.T) {
+// TestSpinodoidBuiltinsAreTwoOracles guards the dispatch: with the same
+// arguments, spinodoid.gabor is the reference table's field and
+// fastGaborSpinodoid the fast table's, and the two differ.
+func TestSpinodoidBuiltinsAreTwoOracles(t *testing.T) {
+	level, err := spinodoid.Level(0.5)
+	if err != nil {
+		t.Fatalf("Level: %v", err)
+	}
+	table, err := spinodoid.ReferenceGaborBake(referenceParams())
+	if err != nil {
+		t.Fatalf("ReferenceGaborBake: %v", err)
+	}
 	points := oraclePoints()
 	gabor := evalField(t, gaborSpinodoidDoc, "field", points)
 	fast := evalField(t, fastSpinodoidDoc, "field", points)
 
+	same := 0
 	for i, q := range points {
-		if gabor[i] != fast[i] {
-			t.Errorf("point %v: gaborSpinodoid %v, fastGaborSpinodoid %v", q, gabor[i], fast[i])
+		want := table.Distance(q, level, true)
+		if math.Abs(gabor[i]-want) > oracleTolerance {
+			t.Errorf("point %v: gaborSpinodoid %v, reference table %v", q, gabor[i], want)
+		}
+		if math.Abs(gabor[i]-fast[i]) <= oracleTolerance {
+			same++
+		}
+	}
+	if same == len(points) {
+		t.Errorf("gaborSpinodoid and fastGaborSpinodoid agree at every point: one table serves both")
+	}
+}
+
+// TestSpinodoidTapeLeavesNameTheirOracle checks what a tape tells its reader:
+// a fastGabor leaf is the fast oracle, in the fast block and marked fast; a
+// gabor leaf is the reference, in the reference block and not marked fast.
+func TestSpinodoidTapeLeavesNameTheirOracle(t *testing.T) {
+	for _, c := range []struct {
+		name, doc string
+		fast      bool
+		id        uint32
+	}{
+		{"fastGabor", fastGaborLibraryDoc, true, fidget.FastGaborSpinodoidOracleID(0, fidget.SpinodoidDistance)},
+		{"gabor", gaborSpinodoidDoc, false, fidget.ReferenceGaborSpinodoidOracleID(0, fidget.SpinodoidDistance)},
+	} {
+		res, err := assembler.Assemble([]string{c.doc},
+			assembler.SourceManager(source.NewLocalManager("../stdlib")))
+		if err != nil {
+			t.Fatalf("%s: Assemble: %v", c.name, err)
+		}
+		_, _, oracles, err := tape.GenerateTapeWithSpinodoids(res.Program)
+		if err != nil {
+			t.Fatalf("%s: GenerateTapeWithSpinodoids: %v", c.name, err)
+		}
+		if len(oracles) != 1 {
+			t.Fatalf("%s: want one spinodoid oracle, got %d", c.name, len(oracles))
+		}
+		o := oracles[0]
+		if o.Fast != c.fast {
+			t.Errorf("spinodoid.%s's tape leaf has fast %v, want %v", c.name, o.Fast, c.fast)
+		}
+		if o.AssetID != c.id {
+			t.Errorf("spinodoid.%s's leaf id %#x, want %#x", c.name, o.AssetID, c.id)
 		}
 	}
 }
 
-// TestGaborSpinodoidTapeLeafIsFast checks what a tape tells its reader: a
-// spinodoid.gabor leaf is the lattice field, in the lattice's oracle-id block
-// and marked fast, so a reader that wants hodge's field knows to swap it in.
-func TestGaborSpinodoidTapeLeafIsFast(t *testing.T) {
-	res, err := assembler.Assemble([]string{gaborSpinodoidDoc},
-		assembler.SourceManager(source.NewLocalManager("../stdlib")))
-	if err != nil {
-		t.Fatalf("Assemble: %v", err)
-	}
-	_, _, oracles, err := tape.GenerateTapeWithSpinodoids(res.Program)
-	if err != nil {
-		t.Fatalf("GenerateTapeWithSpinodoids: %v", err)
-	}
-	if len(oracles) != 1 {
-		t.Fatalf("want one spinodoid oracle, got %d", len(oracles))
-	}
-	o := oracles[0]
-	if !o.Fast {
-		t.Errorf("spinodoid.gabor's tape leaf is not marked fast")
-	}
-	if want := fidget.SpinodoidOracleID(0, fidget.SpinodoidDistance); o.AssetID != want {
-		t.Errorf("leaf id %#x, want the lattice block's %#x", o.AssetID, want)
-	}
-}
-
-// The library form both builtins are checked against.
+// The library forms the builtins are checked against: the reference and the
+// fast one.
 const gaborSpinodoidDoc = "import \"lattice/spinodoid\";\nfield = spinodoid.gabor(6, [pi / 2, pi / 2, pi / 2]);\nreturn field;"
+const fastGaborLibraryDoc = "import \"lattice/spinodoid\";\nfield = spinodoid.fastGabor(6, [pi / 2, pi / 2, pi / 2]);\nreturn field;"
 
-// The fastGaborSpinodoid builtin spelled out: spinodoid.gabor's arguments,
+// The fastGaborSpinodoid builtin spelled out: spinodoid.fastGabor's arguments,
 // with the Cartesian poles and an identity frame.
 const fastSpinodoidDoc = `poles = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
-field = fastGaborSpinodoid(p, 6, [pi / 2, pi / 2, pi / 2], poles, 3, 8, 4096, 0, 0, 1, 1, poles);
+field = fastGaborSpinodoid(p, 6, [pi / 2, pi / 2, pi / 2], poles, 3, 8, 4096, 0, 0, 1, 1, poles, [[0, 0, 0], [0, 0, 0]]);
 return field;`

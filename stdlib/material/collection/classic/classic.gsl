@@ -56,14 +56,14 @@ turbulence(@range(2, 200) scale, @color cool, @color hot) {
 turbulenceGain = 1.2;
 turbulenceMean = 0.33;
 
-/// wood(ringSpacing, axisOrigin, axisDir, earlywood, latewood, wobble):
+/// wood(ringSpacing, axisOrigin, axisDirection, earlywood, latewood, wobble):
 /// Peachey's solid wood: rings `ringSpacing` mm apart as cylinders about
-/// a stem through `axisOrigin` along `axisDir`, the radius wobbled by
+/// a stem through `axisOrigin` along `axisDirection`, the radius wobbled by
 /// `wobble` mm (0 to 5) of noise, the last third of each ring `latewood`
 /// and the rest `earlywood`; satin. The wood library grows the real
 /// thing. Returns material, color, height and slope.
-wood(@range(0.5, 10) ringSpacing, @point axisOrigin, @direction(axisOrigin) axisDir, @color earlywood, @color latewood, @range(0, 5) wobble) {
-  a = normalize(axisDir);
+wood(@range(0.5, 10) ringSpacing, @point axisOrigin, @direction(axisOrigin) axisDirection, @color earlywood, @color latewood, @range(0, 5) wobble) {
+  a = normalize(axisDirection);
   q = p - axisOrigin;
   radius = length(q - a * dot(q, a)) + wobble * noise.gradient(4 * ringSpacing);
   ring = radius / ringSpacing - floor(radius / ringSpacing);

@@ -115,7 +115,7 @@ fn gsl_remap_11(p: vec3<f32>) -> f32 {
   return builtin_unionSharp_3(vec3<f32>(builtin_lineSegment(p, vec3<f32>(6.0, 6.0, 6.0), vec3<f32>(0.0, 6.0, 6.0)), builtin_lineSegment(p, vec3<f32>(6.0, 6.0, 6.0), vec3<f32>(6.0, 0.0, 6.0)), builtin_lineSegment(p, vec3<f32>(6.0, 6.0, 6.0), vec3<f32>(6.0, 6.0, 0.0))));
 }
 
-fn map_repeatCentered_2(x: vec2<f32>, period: vec2<f32>) -> vec2<f32> {
+fn domain_repeatCentered_2(x: vec2<f32>, period: vec2<f32>) -> vec2<f32> {
   let half = period * 0.5;
   return gsl_floored_vec2((gsl_floored_vec2((x + half), period) + period), period) - half;
 }
@@ -124,7 +124,7 @@ fn lattice_solidify(field: f32, bias: f32) -> f32 {
   return field - bias;
 }
 
-fn map_repeatCentered(x: vec3<f32>, period: vec3<f32>) -> vec3<f32> {
+fn domain_repeatCentered(x: vec3<f32>, period: vec3<f32>) -> vec3<f32> {
   let half = period * 0.5;
   return gsl_floored_vec3((gsl_floored_vec3((x + half), period) + period), period) - half;
 }
@@ -142,7 +142,7 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
   if (gsl_vanishView.w <= 0.0 || gsl_partBox <= gsl_vanishView.w) {
     let gsl_partVanish = gsl_vanish(gsl_partLo, gsl_partHi);
     gsl_part = 1e10;
-    if (gsl_partVanish.x > 0.0) { gsl_part = specimen(p, gsl_remap(abs(map_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0)))), -221.0) + gsl_partVanish.y; }
+    if (gsl_partVanish.x > 0.0) { gsl_part = specimen(p, gsl_remap(abs(domain_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0)))), -221.0) + gsl_partVanish.y; }
     if (abs(gsl_part) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part), gsl_partVanish.zw); }
   }
   let oct = gsl_part;
@@ -153,7 +153,7 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_2 <= gsl_vanishView.w) {
     let gsl_partVanish_2 = gsl_vanish(gsl_partLo_2, gsl_partHi_2);
     gsl_part_2 = 1e10;
-    if (gsl_partVanish_2.x > 0.0) { gsl_part_2 = specimen(p, gsl_remap_2(abs(map_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0)))), -187.0) + gsl_partVanish_2.y; }
+    if (gsl_partVanish_2.x > 0.0) { gsl_part_2 = specimen(p, gsl_remap_2(abs(domain_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0)))), -187.0) + gsl_partVanish_2.y; }
     if (abs(gsl_part_2) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_2), gsl_partVanish_2.zw); }
   }
   let toc = gsl_part_2;
@@ -164,7 +164,7 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_3 <= gsl_vanishView.w) {
     let gsl_partVanish_3 = gsl_vanish(gsl_partLo_3, gsl_partHi_3);
     gsl_part_3 = 1e10;
-    if (gsl_partVanish_3.x > 0.0) { gsl_part_3 = specimen(p, builtin_lineSegment(abs(map_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0))), vec3<f32>(6.0, 6.0, 6.0), vec3<f32>(-6.0, -6.0, -6.0)), -153.0) + gsl_partVanish_3.y; }
+    if (gsl_partVanish_3.x > 0.0) { gsl_part_3 = specimen(p, builtin_lineSegment(abs(domain_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0))), vec3<f32>(6.0, 6.0, 6.0), vec3<f32>(-6.0, -6.0, -6.0)), -153.0) + gsl_partVanish_3.y; }
     if (abs(gsl_part_3) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_3), gsl_partVanish_3.zw); }
   }
   let bcc = gsl_part_3;
@@ -175,7 +175,7 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_4 <= gsl_vanishView.w) {
     let gsl_partVanish_4 = gsl_vanish(gsl_partLo_4, gsl_partHi_4);
     gsl_part_4 = 1e10;
-    if (gsl_partVanish_4.x > 0.0) { gsl_part_4 = specimen(p, gsl_remap_3(abs(map_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0)))), -119.0) + gsl_partVanish_4.y; }
+    if (gsl_partVanish_4.x > 0.0) { gsl_part_4 = specimen(p, gsl_remap_3(abs(domain_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0)))), -119.0) + gsl_partVanish_4.y; }
     if (abs(gsl_part_4) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_4), gsl_partVanish_4.zw); }
   }
   let fcc = gsl_part_4;
@@ -186,7 +186,7 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_5 <= gsl_vanishView.w) {
     let gsl_partVanish_5 = gsl_vanish(gsl_partLo_5, gsl_partHi_5);
     gsl_part_5 = 1e10;
-    if (gsl_partVanish_5.x > 0.0) { gsl_part_5 = specimen(p, gsl_remap_4(abs(map_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0)))), -85.0) + gsl_partVanish_5.y; }
+    if (gsl_partVanish_5.x > 0.0) { gsl_part_5 = specimen(p, gsl_remap_4(abs(domain_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0)))), -85.0) + gsl_partVanish_5.y; }
     if (abs(gsl_part_5) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_5), gsl_partVanish_5.zw); }
   }
   let tcu = gsl_part_5;
@@ -197,7 +197,7 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_6 <= gsl_vanishView.w) {
     let gsl_partVanish_6 = gsl_vanish(gsl_partLo_6, gsl_partHi_6);
     gsl_part_6 = 1e10;
-    if (gsl_partVanish_6.x > 0.0) { gsl_part_6 = specimen(p, gsl_remap_5(abs(map_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0)))), -51.0) + gsl_partVanish_6.y; }
+    if (gsl_partVanish_6.x > 0.0) { gsl_part_6 = specimen(p, gsl_remap_5(abs(domain_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0)))), -51.0) + gsl_partVanish_6.y; }
     if (abs(gsl_part_6) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_6), gsl_partVanish_6.zw); }
   }
   let kel = gsl_part_6;
@@ -208,7 +208,7 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_7 <= gsl_vanishView.w) {
     let gsl_partVanish_7 = gsl_vanish(gsl_partLo_7, gsl_partHi_7);
     gsl_part_7 = 1e10;
-    if (gsl_partVanish_7.x > 0.0) { gsl_part_7 = specimen(p, gsl_remap_6(abs(map_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0)))), -17.0) + gsl_partVanish_7.y; }
+    if (gsl_partVanish_7.x > 0.0) { gsl_part_7 = specimen(p, gsl_remap_6(abs(domain_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0)))), -17.0) + gsl_partVanish_7.y; }
     if (abs(gsl_part_7) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_7), gsl_partVanish_7.zw); }
   }
   let flu = gsl_part_7;
@@ -219,7 +219,7 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_8 <= gsl_vanishView.w) {
     let gsl_partVanish_8 = gsl_vanish(gsl_partLo_8, gsl_partHi_8);
     gsl_part_8 = 1e10;
-    if (gsl_partVanish_8.x > 0.0) { gsl_part_8 = specimen(p, builtin_unionSharp_5(vec2<f32>(gsl_remap_7(map_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0))), gsl_remap_8(abs(map_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0)))))), 17.0) + gsl_partVanish_8.y; }
+    if (gsl_partVanish_8.x > 0.0) { gsl_part_8 = specimen(p, builtin_unionSharp_5(vec2<f32>(gsl_remap_7(domain_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0))), gsl_remap_8(abs(domain_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0)))))), 17.0) + gsl_partVanish_8.y; }
     if (abs(gsl_part_8) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_8), gsl_partVanish_8.zw); }
   }
   let iso = gsl_part_8;
@@ -230,7 +230,7 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_9 <= gsl_vanishView.w) {
     let gsl_partVanish_9 = gsl_vanish(gsl_partLo_9, gsl_partHi_9);
     gsl_part_9 = 1e10;
-    if (gsl_partVanish_9.x > 0.0) { gsl_part_9 = specimen(p, builtin_unionSharp_5(vec2<f32>(gsl_remap_9(abs(map_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0)))), builtin_lineSegment(map_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0)), vec3<f32>(0.0, 0.0, -4.8), vec3<f32>(0.0, 0.0, 4.8)))), 51.0) + gsl_partVanish_9.y; }
+    if (gsl_partVanish_9.x > 0.0) { gsl_part_9 = specimen(p, builtin_unionSharp_5(vec2<f32>(gsl_remap_9(abs(domain_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0)))), builtin_lineSegment(domain_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0)), vec3<f32>(0.0, 0.0, -4.8), vec3<f32>(0.0, 0.0, 4.8)))), 51.0) + gsl_partVanish_9.y; }
     if (abs(gsl_part_9) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_9), gsl_partVanish_9.zw); }
   }
   let ree = gsl_part_9;
@@ -241,7 +241,7 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_10 <= gsl_vanishView.w) {
     let gsl_partVanish_10 = gsl_vanish(gsl_partLo_10, gsl_partHi_10);
     gsl_part_10 = 1e10;
-    if (gsl_partVanish_10.x > 0.0) { gsl_part_10 = specimen(p, gsl_remap_10(map_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0))), 85.0) + gsl_partVanish_10.y; }
+    if (gsl_partVanish_10.x > 0.0) { gsl_part_10 = specimen(p, gsl_remap_10(domain_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0))), 85.0) + gsl_partVanish_10.y; }
     if (abs(gsl_part_10) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_10), gsl_partVanish_10.zw); }
   }
   let cub = gsl_part_10;
@@ -252,7 +252,7 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_11 <= gsl_vanishView.w) {
     let gsl_partVanish_11 = gsl_vanish(gsl_partLo_11, gsl_partHi_11);
     gsl_part_11 = 1e10;
-    if (gsl_partVanish_11.x > 0.0) { gsl_part_11 = specimen(p, min(gsl_remap_7(map_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0))), gsl_remap_11(abs(map_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0))))), 119.0) + gsl_partVanish_11.y; }
+    if (gsl_partVanish_11.x > 0.0) { gsl_part_11 = specimen(p, min(gsl_remap_7(domain_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0))), gsl_remap_11(abs(domain_repeatCentered(p, vec3<f32>(12.0, 12.0, 12.0))))), 119.0) + gsl_partVanish_11.y; }
     if (abs(gsl_part_11) < gsl_partNear.x) { gsl_partNear = vec3<f32>(abs(gsl_part_11), gsl_partVanish_11.zw); }
   }
   let cud = gsl_part_11;
@@ -260,7 +260,7 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
   let gsl_partHi_12 = vec3<f32>(167.0, 14.0, 14.0);
   let gsl_partBox_12 = gsl_boxDistance(p, gsl_partLo_12, gsl_partHi_12);
   var gsl_part_12 = gsl_partBox_12;
-  let gsl_tmp_4 = map_repeatCentered_2(p.xy, vec2<f32>(12.0, 12.0));
+  let gsl_tmp_4 = domain_repeatCentered_2(p.xy, vec2<f32>(12.0, 12.0));
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_12 <= gsl_vanishView.w) {
     let gsl_partVanish_12 = gsl_vanish(gsl_partLo_12, gsl_partHi_12);
     gsl_part_12 = 1e10;
@@ -272,8 +272,8 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
   let gsl_partHi_13 = vec3<f32>(201.0, 14.0, 14.0);
   let gsl_partBox_13 = gsl_boxDistance(p, gsl_partLo_13, gsl_partHi_13);
   var gsl_part_13 = gsl_partBox_13;
-  let gsl_tmp_6 = map_repeatCentered_2(p.xy - vec2<f32>(6.0, 10.392304), vec2<f32>(12.0, 20.784609));
-  let gsl_tmp_5 = map_repeatCentered_2(p.xy, vec2<f32>(12.0, 20.784609));
+  let gsl_tmp_6 = domain_repeatCentered_2(p.xy - vec2<f32>(6.0, 10.392304), vec2<f32>(12.0, 20.784609));
+  let gsl_tmp_5 = domain_repeatCentered_2(p.xy, vec2<f32>(12.0, 20.784609));
   let gsl_tmp_7 = select(gsl_tmp_6, gsl_tmp_5, dot(gsl_tmp_5, gsl_tmp_5) < dot(gsl_tmp_6, gsl_tmp_6));
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_13 <= gsl_vanishView.w) {
     let gsl_partVanish_13 = gsl_vanish(gsl_partLo_13, gsl_partHi_13);
@@ -286,11 +286,11 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
   let gsl_partHi_14 = vec3<f32>(235.0, 14.0, 14.0);
   let gsl_partBox_14 = gsl_boxDistance(p, gsl_partLo_14, gsl_partHi_14);
   var gsl_part_14 = gsl_partBox_14;
-  let gsl_tmp_11 = map_repeatCentered_2(p.xy - vec2<f32>(6.928203, 20.0), vec2<f32>(13.856406, 24.0));
-  let gsl_tmp_10 = map_repeatCentered_2(p.xy - vec2<f32>(6.928203, 12.0), vec2<f32>(13.856406, 24.0));
+  let gsl_tmp_11 = domain_repeatCentered_2(p.xy - vec2<f32>(6.928203, 20.0), vec2<f32>(13.856406, 24.0));
+  let gsl_tmp_10 = domain_repeatCentered_2(p.xy - vec2<f32>(6.928203, 12.0), vec2<f32>(13.856406, 24.0));
   let gsl_tmp_13 = select(gsl_tmp_11, gsl_tmp_10, dot(gsl_tmp_10, gsl_tmp_10) < dot(gsl_tmp_11, gsl_tmp_11));
-  let gsl_tmp_9 = map_repeatCentered_2(p.xy - vec2<f32>(0.0, 8.0), vec2<f32>(13.856406, 24.0));
-  let gsl_tmp_8 = map_repeatCentered_2(p.xy, vec2<f32>(13.856406, 24.0));
+  let gsl_tmp_9 = domain_repeatCentered_2(p.xy - vec2<f32>(0.0, 8.0), vec2<f32>(13.856406, 24.0));
+  let gsl_tmp_8 = domain_repeatCentered_2(p.xy, vec2<f32>(13.856406, 24.0));
   let gsl_tmp_12 = select(gsl_tmp_9, gsl_tmp_8, dot(gsl_tmp_8, gsl_tmp_8) < dot(gsl_tmp_9, gsl_tmp_9));
   let gsl_tmp_14 = select(gsl_tmp_13, gsl_tmp_12, dot(gsl_tmp_12, gsl_tmp_12) < dot(gsl_tmp_13, gsl_tmp_13));
   if (gsl_vanishView.w <= 0.0 || gsl_partBox_14 <= gsl_vanishView.w) {
