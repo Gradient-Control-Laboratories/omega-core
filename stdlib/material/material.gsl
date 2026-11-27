@@ -11,7 +11,7 @@
 // bolt.color = boltColor;` is the usual pairing.
 //
 // Representation: a list of four vec4 rows,
-//   row 0  [roughness, metallic, ior, reserved]
+//   row 0  [roughness, metallic, ior, relief depth]     (see reliefDepth)
 //   row 1  [emissive r, g, b, emissive strength]        (rgb is sRGB, like color)
 //   row 2  [transmission, absorptionDistance, displacement, build]
 //   row 3  [lay x, y, z, anisotropy]                    (see withLay)
@@ -147,6 +147,25 @@ build(m) {
 relief(m) {
   volume = m[2];
   return volume.z - volume.w;
+}
+
+/// Relief depth of m, in mm (0 or more): how far below its peaks m's relief
+/// reaches. Relief is measured down from the peaks, so it runs from -depth to
+/// 0, and the depth is its whole envelope: a part at its least material has
+/// every surface at -depth, at its most every surface at 0. Set by
+/// withReliefDepth; 0 for a material that declares none.
+reliefDepth(m) {
+  surface = m[0];
+  return surface.w;
+}
+
+/// m declaring that its relief reaches `depth` mm (0 or more) below its peaks
+/// (see reliefDepth). A process states it from what it does, as machined's
+/// grooves state the tool nose's: the field evaluated at the least-material
+/// condition moves each surface by it.
+withReliefDepth(m, depth) {
+  surface = m[0];
+  return [[surface.x, surface.y, surface.z, depth], m[1], m[2], m[3]];
 }
 
 /// The direction of m's lay (vec3), the way its grooves run; see withLay.

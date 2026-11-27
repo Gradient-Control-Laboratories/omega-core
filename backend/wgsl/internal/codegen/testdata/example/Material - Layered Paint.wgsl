@@ -143,6 +143,16 @@ fn material_anisotropy(m: mat4x4<f32>, noiseTex: texture_3d<f32>) -> f32 {
   return grooves.w;
 }
 
+fn material_reliefDepth(m: mat4x4<f32>, noiseTex: texture_3d<f32>) -> f32 {
+  let surface = m[0];
+  return surface.w;
+}
+
+fn material_withReliefDepth(m: mat4x4<f32>, depth: f32, noiseTex: texture_3d<f32>) -> mat4x4<f32> {
+  let surface = m[0];
+  return mat4x4<f32>(vec4<f32>(surface.x, surface.y, surface.z, depth), m[1], m[2], m[3]);
+}
+
 fn builtin_differenceSharp(gsl_var_target: f32, tool: f32, noiseTex: texture_3d<f32>) -> f32 {
   return max(gsl_var_target, -tool);
 }
@@ -983,7 +993,8 @@ fn coating_levelled(coat: mat4x4<f32>, baseMaterial: mat4x4<f32>, build: f32, un
   let relief = material_relief(coat, noiseTex) + material_relief(baseMaterial, noiseTex) * keeps;
   let surface = material_withDisplacement(material_withLay(lobe, material_lay(baseMaterial, noiseTex), material_anisotropy(baseMaterial, noiseTex) * keeps, noiseTex), relief, noiseTex);
   let stacked = material_build(baseMaterial, noiseTex) + material_build(coat, noiseTex) + build;
-  return material_withBuild(surface, stacked, noiseTex);
+  let depth = material_reliefDepth(coat, noiseTex) + material_reliefDepth(baseMaterial, noiseTex) * keeps;
+  return material_withReliefDepth(material_withBuild(surface, stacked, noiseTex), depth, noiseTex);
 }
 
 fn gsl_shapeParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f32, 1> {

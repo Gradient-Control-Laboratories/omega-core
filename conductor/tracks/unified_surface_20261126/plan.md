@@ -184,8 +184,19 @@ New tests are added only once the owner agrees them.
       builds with the relief at its depth; Phase 6 moves each build to the end of its spread. The
       measured/judged tag is documentation: a `///` line on each process and a table in
       [material_composition.md](../../../doc/material_composition.md)
-- [ ] Task: `machined` declares its envelopes from the process (`[-f^2 / (8 r), 0]` below the cusps for
+- [x] Task: `machined` declares its envelopes from the process (`[-f^2 / (8 r), 0]` below the cusps for
       turned, faced and face-milled), and interval evaluation over a surface patch checks each one
+      (2026-11-27). `material.reliefDepth` / `withReliefDepth` (row 0's fourth component);
+      `grooveFinish` (turned, faced, face-milled, ball-end) declares the exact groove depth,
+      `r - sqrt(r^2 - f^2 / 4)` (`grooveDepth`; f^2 / (8 r) falls a little short, so it would not
+      bound the relief), added to any depth beneath, on the finish and its stand-in;
+      `coating.levelled` declares the coat's depth plus `keeps` of the depth beneath. Checked over
+      the whole 15 mm journal seat: relief <= 0 proven in 1 interval evaluation, relief >= -depth
+      proven in 1 with 0.1 µm slack (undecided without, touching at every groove bottom). Three WGSL
+      goldens move (owner's go): Material - Coated +0.73%, Layered Paint +0.29%, Machined +0.52%.
+      Open (owner thinking): how min-material reads the depth: a `reliefDepthScale()` builtin in the
+      layered distance (a TestSanityCheck exception, ~16 goldens), or a band shifted by the feature's
+      depth in Phase 7's generated claims, min-material staying refused as a field condition
 - [ ] Task: Audit every library relief for its datum. Any that is not measured from its peaks moves by a
       constant to be. That moves surfaces and goldens, so each is shown first
 - [ ] Task: Tag each process as measured (heights from the process: `machined`) or judged for appearance

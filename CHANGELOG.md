@@ -79,6 +79,12 @@ from `1.0.0` onward).
   moves only the shapes inside it: `max(rMax - r, seat)` moves `seat`, so a tolerance claim no
   longer writes the displacement by hand. `convert.ToSurfaceTrees` builds every query's field at a
   condition.
+- **Relief depth (`material.reliefDepth`, `material.withReliefDepth`)**: a material declares how far
+  its relief reaches below its peaks, in row 0's fourth component (until now reserved, 0 for every
+  record that sets none). Relief is measured down from the peaks, so the depth is its whole
+  envelope. `machined`'s groove finishes declare the tool nose's exact groove depth,
+  `r - sqrt(r^2 - f^2 / 4)`, on the finish and its stand-in, and `coating.levelled` the coat's own
+  depth plus the share of the depth beneath that it keeps.
 - Migrated GSL compiler architecture, language specification/migration, golden verification, and
   stdlib tolerance-table documentation from `omega-release/doc/` into `doc/`, synced
   `doc/gsl_lang_spec_future.md`, extracted `doc/roadmap.md` from `README.md`, and documented Go

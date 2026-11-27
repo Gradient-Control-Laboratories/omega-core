@@ -15,6 +15,11 @@ fn texture_reliefRoughness(roughness: f32, slope: f32, size: f32, noiseTex: text
   return sqrt(roughness * roughness + (1.0 - texture_fadeDetail(size, noiseTex) * gsl_dispDrawn) * slope * slope);
 }
 
+fn material_reliefDepth(m: mat4x4<f32>, noiseTex: texture_3d<f32>) -> f32 {
+  let surface = m[0];
+  return surface.w;
+}
+
 fn material_withRoughness(m: mat4x4<f32>, rough: f32, noiseTex: texture_3d<f32>) -> mat4x4<f32> {
   let surface = m[0];
   return mat4x4<f32>(vec4<f32>(rough, surface.y, surface.z, surface.w), m[1], m[2], m[3]);
@@ -36,6 +41,11 @@ fn material_withDisplacement(m: mat4x4<f32>, height: f32, noiseTex: texture_3d<f
 
 fn material_addDisplacement(m: mat4x4<f32>, height: f32, noiseTex: texture_3d<f32>) -> mat4x4<f32> {
   return material_withDisplacement(m, material_displacement(m, noiseTex) + height, noiseTex);
+}
+
+fn material_withReliefDepth(m: mat4x4<f32>, depth: f32, noiseTex: texture_3d<f32>) -> mat4x4<f32> {
+  let surface = m[0];
+  return mat4x4<f32>(vec4<f32>(surface.x, surface.y, surface.z, depth), m[1], m[2], m[3]);
 }
 
 fn builtin_intersectSharp(fields: array<f32, 6>, noiseTex: texture_3d<f32>) -> f32 {
@@ -385,6 +395,10 @@ fn texture_grainShade(p: vec3<f32>, size: f32, spread: f32, noiseTex: texture_3d
   return shade;
 }
 
+fn machined_grooveDepth(spacing: f32, radius: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return radius - sqrt(max(radius * radius - 0.25 * spacing * spacing, 0.0));
+}
+
 fn machined_layFinish(baseMaterial: mat4x4<f32>, direction: vec3<f32>, along: f32, across: f32, noiseTex: texture_3d<f32>) -> mat4x4<f32> {
   let alpha = sqrt(along * across);
   let squeeze = clamp(along / across, 0.1, 1.0);
@@ -400,11 +414,12 @@ fn machined_nosePitch(s: f32, spacing: f32, radius: f32, noiseTex: texture_3d<f3
 
 fn machined_grooveFinish(baseMaterial: mat4x4<f32>, direction: vec3<f32>, s: f32, spacing: f32, radius: f32, noiseTex: texture_3d<f32>) -> mat4x4<f32> {
   let slope = 0.408 * spacing / radius;
-  var gsl_simpleValue = material_addDisplacement(machined_layFinish(baseMaterial, direction, 0.02, sqrt(0.0004 + slope * slope), noiseTex), -spacing * spacing / (12.0 * radius), noiseTex);
+  let depth = material_reliefDepth(baseMaterial, noiseTex) + machined_grooveDepth(spacing, radius, noiseTex);
+  var gsl_simpleValue = material_withReliefDepth(material_addDisplacement(machined_layFinish(baseMaterial, direction, 0.02, sqrt(0.0004 + slope * slope), noiseTex), -spacing * spacing / (12.0 * radius), noiseTex), depth, noiseTex);
   if (gsl_simpleDetail > 0.0) {
     let across = texture_reliefRoughness(0.02, slope, spacing, noiseTex);
     let fade = texture_fadeDetail(spacing, noiseTex);
-    let gsl_simpleFull = material_addDisplacement(machined_layFinish(baseMaterial, direction, 0.02, across, noiseTex), -machined_nosePitch(s, spacing, radius, noiseTex) * fade, noiseTex);
+    let gsl_simpleFull = material_withReliefDepth(material_addDisplacement(machined_layFinish(baseMaterial, direction, 0.02, across, noiseTex), -machined_nosePitch(s, spacing, radius, noiseTex) * fade, noiseTex), depth, noiseTex);
     gsl_simpleValue = mat4x4<f32>(mix(gsl_simpleValue[0], gsl_simpleFull[0], gsl_simpleDetail), mix(gsl_simpleValue[1], gsl_simpleFull[1], gsl_simpleDetail), mix(gsl_simpleValue[2], gsl_simpleFull[2], gsl_simpleDetail), mix(gsl_simpleValue[3], gsl_simpleFull[3], gsl_simpleDetail));
   }
   let finish = gsl_simpleValue;

@@ -52,9 +52,18 @@ grooveFinish(baseMaterial, direction, s, spacing, radius) {
   fade = texture.fadeDetail(spacing);
   slope = 0.408 * spacing / radius;
   across = texture.reliefRoughness(0.02, slope, spacing);
-  finish = material.addDisplacement(layFinish(baseMaterial, direction, 0.02, across), -nosePitch(s, spacing, radius) * fade);
-  finish.simple = material.addDisplacement(layFinish(baseMaterial, direction, 0.02, sqrt(0.0004 + slope * slope)), -spacing * spacing / (12 * radius));
+  // The grooves reach nosePitch's depth at their bottoms below the cusps,
+  // beneath whatever relief the base material had.
+  depth = material.reliefDepth(baseMaterial) + grooveDepth(spacing, radius);
+  finish = material.withReliefDepth(material.addDisplacement(layFinish(baseMaterial, direction, 0.02, across), -nosePitch(s, spacing, radius) * fade), depth);
+  finish.simple = material.withReliefDepth(material.addDisplacement(layFinish(baseMaterial, direction, 0.02, sqrt(0.0004 + slope * slope)), -spacing * spacing / (12 * radius)), depth);
   return finish;
+}
+
+// The depth below the cusps, in mm, of a groove's bottom: nosePitch at s =
+// 0.5, r - sqrt(r^2 - f^2 / 4), a little more than f^2 / (8 r).
+grooveDepth(spacing, radius) {
+  return radius - sqrt(max(radius * radius - 0.25 * spacing * spacing, 0));
 }
 
 // The depth below the cusps, in mm, of a groove of tool-nose arcs of radius

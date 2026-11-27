@@ -482,7 +482,9 @@ levelled(coat, baseMaterial, build, underSize) {
   stacked = material.build(baseMaterial) + material.build(coat) + build;
   lobe = material.withRoughness(material.withBuild(coat, 0), sqrt(alpha));
   surface = material.withDisplacement(material.withLay(lobe, material.lay(baseMaterial), material.anisotropy(baseMaterial) * keeps), relief);
-  return material.withBuild(surface, stacked);
+  // The relief kept from beneath reaches keeps of its depth, under the coat's own.
+  depth = material.reliefDepth(coat) + material.reliefDepth(baseMaterial) * keeps;
+  return material.withReliefDepth(material.withBuild(surface, stacked), depth);
 }
 
 /// clearCoat(baseMaterial, baseColor, tint, glossUnits, build, underSize): a
