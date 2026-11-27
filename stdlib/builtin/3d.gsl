@@ -280,6 +280,17 @@ torusTubeAngle(majorRadius) {
   return atan(length(p.xy) - majorRadius, p.z);
 }
 
+/// Torus centered at `center`, lying in a plane parallel to XY, with the frame
+/// of torus(majorRadius, minorRadius) about that center.
+torus(center, majorRadius, minorRadius) {
+  q = p - center;
+  radial = length(q.xy) - majorRadius;
+  form = length([radial, q.z]) - minorRadius;
+  form.u = sphereAzimuth(center, vector.dirZ, vector.dirX);
+  form.v = atan(length(q.xy) - majorRadius, q.z);
+  return form;
+}
+
 // --- Cones ---
 
 /// Infinite cone with apex at `origin`, opening along `direction`, with
@@ -516,4 +527,11 @@ carriedSimple(proxy) {
 octahedron(size) {
   center = [size, size, size] / 3;
   return remap(plane(center, [1, 1, 1]), abs(p));
+}
+
+/// Regular octahedron centered at `center`, with vertices at center ± size along
+/// each axis.
+octahedron(center, size) {
+  c = [size, size, size] / 3;
+  return remap(plane(c, [1, 1, 1]), abs(p - center));
 }

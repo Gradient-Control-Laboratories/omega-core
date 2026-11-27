@@ -69,8 +69,9 @@ golden stops for approval before the golden is updated.
 - [x] Goal: `matrix.scale` becomes `multiplyScalar` (N2), with its rewrite and the lowering updated; hide the lowering targets (R1)
   - [x] `scale` stays as an alias for a release; argument order kept `(s, m)` (`vector.multiplyScalar` is `(v, s)`);
         lower_test's five routed-name checks follow; no golden moved
-- [ ] Goal: Centred `torus` and `octahedron` (N9); difference operator forms (N10)
-  - [ ] A test per new form; the documentation examples still build
+- [x] Goal: Centred `torus` and `octahedron` (N9); difference operator forms (N10)
+  - [x] `torus(center, majorRadius, minorRadius)`, `octahedron(center, size)`; every difference family gets a list
+        form `[target, tool, …]` and an operator form; a test per form (constant-folded equality)
 
 ## Phase 3: Matrices
 

@@ -1317,3 +1317,107 @@ unionRvachev(band) {
 differenceRvachev(target, tool, band) {
   return intersectRvachev([target, neg(tool)], band);
 }
+
+// --- difference lists and operators ---
+//
+// Each difference is the intersection of the target with the tools' outsides,
+// so its list form negates every field after the first and intersects, blending
+// every seam alike, and its operator form binds the parameters as the unions'
+// and intersections' do.
+
+// fields with every field after the first negated: the target, then the
+// outsides of the tools. A constant sign rather than a ternary, which would
+// stay a select in the generated code.
+targetLessTools(fields) {
+  return map((field, i) { return field * (1 - 2 * min(i, 1)); }, fields);
+}
+
+/// Sharp CSG difference of a list [target, tool, ...]: the target minus every
+/// tool. Pass it as an operator where a primitive takes its own boolean.
+differenceSharp(fields) {
+  return intersectSharp(targetLessTools(fields));
+}
+
+/// Round difference of a list [target, tool, ...]: the target minus every tool,
+/// each seam filleted with `radius`.
+differenceRound(fields, radius) {
+  return intersectRound(targetLessTools(fields), radius);
+}
+
+/// Partial application of differenceRound: binds the fillet radius and returns
+/// the operator, which takes [target, tool, ...].
+differenceRound(radius) {
+  return (fields) { return differenceRound(fields, radius); };
+}
+
+/// Lp-blended difference of a list [target, tool, ...]: the target minus every
+/// tool (see intersectLp).
+differenceLp(fields, width, exponent) {
+  return intersectLp(targetLessTools(fields), width, exponent);
+}
+
+/// Partial application of differenceLp: binds width and exponent and returns
+/// the operator, which takes [target, tool, ...].
+differenceLp(width, exponent) {
+  return (fields) { return differenceLp(fields, width, exponent); };
+}
+
+/// Exponential-blended difference of a list [target, tool, ...]: the target
+/// minus every tool (see intersectExponential).
+differenceExponential(fields, width) {
+  return intersectExponential(targetLessTools(fields), width);
+}
+
+/// Partial application of differenceExponential: binds the width and returns
+/// the operator, which takes [target, tool, ...].
+differenceExponential(width) {
+  return (fields) { return differenceExponential(fields, width); };
+}
+
+/// Chamfered difference of a list [target, tool, ...]: the target minus every
+/// tool, each seam chamfered by `offset` (see intersectChamfer).
+differenceChamfer(fields, offset) {
+  return intersectChamfer(targetLessTools(fields), offset);
+}
+
+/// Partial application of differenceChamfer: binds the offset and returns the
+/// operator, which takes [target, tool, ...].
+differenceChamfer(offset) {
+  return (fields) { return differenceChamfer(fields, offset); };
+}
+
+/// Chamfered and rounded difference of a list [target, tool, ...]: the target
+/// minus every tool (see intersectChamferRound).
+differenceChamferRound(fields, offset, radius) {
+  return intersectChamferRound(targetLessTools(fields), offset, radius);
+}
+
+/// Partial application of differenceChamferRound: binds offset and radius and
+/// returns the operator, which takes [target, tool, ...].
+differenceChamferRound(offset, radius) {
+  return (fields) { return differenceChamferRound(fields, offset, radius); };
+}
+
+/// Chamfered difference of a list [target, tool, ...] with the chamfer planes
+/// combined by the intersection operator `blend` (see intersectChamferBlend).
+differenceChamferBlend(fields, offset, blend) {
+  return intersectChamferBlend(targetLessTools(fields), offset, blend);
+}
+
+/// Partial application of differenceChamferBlend: binds offset and blend and
+/// returns the operator, which takes [target, tool, ...].
+differenceChamferBlend(offset, blend) {
+  return (fields) { return differenceChamferBlend(fields, offset, blend); };
+}
+
+/// Rvachev difference of a list [target, tool, ...]: the target minus every
+/// tool (see intersectRvachev).
+differenceRvachev(fields, band) {
+  return intersectRvachev(targetLessTools(fields), band);
+}
+
+/// Partial application of differenceRvachev: binds the band and returns the
+/// operator, which takes [target, tool, ...].
+differenceRvachev(band) {
+  return (fields) { return differenceRvachev(fields, band); };
+}

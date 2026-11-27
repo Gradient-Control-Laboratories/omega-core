@@ -167,8 +167,13 @@ reserved and undocumented in `gsl skill`: it is designed in
 
 ## 9. Open
 
-Nothing. The names (N1 `domain`, N2 `multiplyScalar`, N10 `a, b`), the spinodoid's scale (section 6) and the
-`RenderLit` wrappers (section 7) were settled on 2026-11-26.
+- **Chamfer-blend list forms (found 2026-11-27).** Under a non-sharp blend, `intersectChamferRound` and
+  `intersectChamferBlend` on a list differ from their two- and three-field forms: the list form blends every
+  edge plane and the vertex planes, the field forms only the binding ones, so the same shapes round
+  differently. Sharp blends agree. The new difference list forms inherit it. Not decided: which is right.
+
+Settled on 2026-11-26: the names (N1 `domain`, N2 `multiplyScalar`, N10 `a, b`), the spinodoid's scale (section 6) and the
+`RenderLit` wrappers (section 7).
 
 ## 10. omega-dm Inventory
 

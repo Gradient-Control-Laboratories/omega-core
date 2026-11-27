@@ -14,12 +14,18 @@ import (
 // expression of remap(field, point) terms to a number.
 func differenceAt(t *testing.T, a, b string, points [][3]float64) float64 {
 	t.Helper()
+	return differenceAtWith(t, "", a, b, points)
+}
+
+// differenceAtWith is differenceAt with declarations ahead of the return.
+func differenceAtWith(t *testing.T, prelude, a, b string, points [][3]float64) float64 {
+	t.Helper()
 	var terms []string
 	for _, p := range points {
 		pt := fmt.Sprintf("[%g, %g, %g]", p[0], p[1], p[2])
 		terms = append(terms, fmt.Sprintf("abs(remap(%s, %s) - remap(%s, %s))", a, pt, b, pt))
 	}
-	src := "return " + strings.Join(terms, " + ") + ";"
+	src := prelude + "return " + strings.Join(terms, " + ") + ";"
 	res, err := assembler.Assemble([]string{src})
 	if err != nil {
 		t.Fatalf("%v\n%s", err, src)
