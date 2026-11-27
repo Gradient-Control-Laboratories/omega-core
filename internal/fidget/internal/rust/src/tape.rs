@@ -9,7 +9,7 @@
 //! are bound by asset id via `register_mesh_oracle` / `register_vdb_oracle`
 //! before replay; a spinodoid is baked on load from the arguments its payload
 //! carries, as the backend `OracleMode::spinodoid` chooses (a tape without the
-//! payload binds a table by slot via `register_hodge_spinodoid`).
+//! payload binds a table by slot via `register_reference_gabor_spinodoid`).
 //! `tape_oracle_uses` lists what a given tape needs, and loading fails rather
 //! than reading an unbound oracle as zero.
 //!
@@ -61,7 +61,7 @@ pub enum OracleForce {
 
 /// Which spinodoid a payload is rebuilt as on load. The tape carries the
 /// field's arguments, and the same arguments describe two fields: `Fast` is
-/// omega's lattice (what the viewer draws), `Manufacturing` hodge's
+/// omega's lattice (what the viewer draws), `Manufacturing` the Python reference's
 /// jittered-kernel field.
 #[derive(Clone, Copy, PartialEq)]
 pub enum SpinodoidBackend {
@@ -269,12 +269,12 @@ fn eval_driver_nodes(
     Ok(out)
 }
 
-/// Whether `id` is a spinodoid slot's distance leaf, lattice or hodge block:
+/// Whether `id` is a spinodoid slot's distance leaf, lattice or reference block:
 /// the only id a SPINODOID payload may be keyed by.
 fn is_spinodoid_distance_id(id: u32) -> bool {
-    use tape_core::spinodoid::{component, hodge};
+    use tape_core::spinodoid::{component, reference_gabor};
     let comp = tape_core::spinodoid::leaf_of_id(id)
-        .or_else(|| hodge::leaf_of_id(id))
+        .or_else(|| reference_gabor::leaf_of_id(id))
         .map(|(_, comp)| comp);
     comp == Some(component::DISTANCE)
 }
@@ -291,7 +291,7 @@ fn register_spinodoid(
     first_id: u32,
     backend: SpinodoidBackend,
 ) -> Result<(), String> {
-    use tape_core::spinodoid::{bake, hodge};
+    use tape_core::spinodoid::{bake, reference_gabor};
 
     let s = o
         .spinodoid
@@ -383,7 +383,7 @@ fn register_spinodoid(
         }
         SpinodoidBackend::Manufacturing => {
             let table = bake::manufacturing(&p, s.bias, s.local_normalize).map_err(what)?;
-            hodge::register_leaves(first_id, table);
+            reference_gabor::register_leaves(first_id, table);
         }
     }
     Ok(())
@@ -763,7 +763,7 @@ fn build_tape(
             "tape references {} mesh oracle(s) nothing has registered: {}. \
              A spinodoid or unknown leaf carries only its id, so the oracle has to be \
              installed before loading — see tape_oracle_uses to list what a tape needs, \
-             and register_hodge_spinodoid / register_mesh_oracle / register_vdb_oracle",
+             and register_reference_gabor_spinodoid / register_mesh_oracle / register_vdb_oracle",
             missing.len(),
             missing.join(", ")
         ));
@@ -1157,7 +1157,7 @@ pub fn tape_oracle_uses(bytes: &[u8]) -> Result<Vec<OracleUseRow>, String> {
     let baked = |slot: Option<u32>, kind: &str| {
         let first = match (kind, slot) {
             ("spinodoid", Some(s)) => tape_core::spinodoid::oracle_id(s, 0),
-            ("hodgeSpinodoid", Some(s)) => tape_core::spinodoid::hodge::oracle_id(s, 0),
+            ("referenceGaborSpinodoid", Some(s)) => tape_core::spinodoid::reference_gabor::oracle_id(s, 0),
             _ => return false,
         };
         tape.oracles
@@ -1195,21 +1195,21 @@ pub fn tape_oracle_payloads(bytes: &[u8]) -> Result<Vec<(u32, String)>, String> 
     Ok(out)
 }
 
-/// Install a baked hodge-spinodoid kernel table in `slot`, registering the
+/// Install a baked reference-spinodoid kernel table in `slot`, registering the
 /// oracles for every leaf id `slot` covers, so a tape referencing them loads.
 ///
 /// For a tape whose leaf has no payload. A tape with one is baked on load
 /// instead (register_spinodoid), and its payload's table replaces this one.
-/// hodge's `_gabor_kernels` produces exactly these kernels, and omega's
-/// `HodgeBake` is pinned to it (common/noise/spinodoid/hodge_parity_test.go).
+/// The Python reference's `_gabor_kernels` produces exactly these kernels, and omega's
+/// `ReferenceGaborBake` is pinned to it (common/noise/spinodoid/reference_gabor_parity_test.go).
 ///
 /// `kernels` is `cells * impulses * 8` f64, in row-major cell order over
 /// `size` from `origin`, each kernel `[jitter xyz, dir xyz, beta, gamma]`.
-/// A `periodic` table must be hodge's 32-cubed window; a bounded one is
+/// A `periodic` table must be the Python reference's 32-cubed window; a bounded one is
 /// located by `bounds` (`[xmin, ymin, zmin, xmax, ymax, zmax]`) and reads as a
 /// conservative distance-to-domain outside it.
 #[allow(clippy::too_many_arguments)]
-pub fn register_hodge_spinodoid(
+pub fn register_reference_gabor_spinodoid(
     slot: u32,
     kernels: &[f64],
     origin: [i64; 3],
@@ -1224,7 +1224,7 @@ pub fn register_hodge_spinodoid(
     level: f64,
     local: bool,
 ) -> Result<(), String> {
-    let table = tape_core::spinodoid::hodge::Table::new(
+    let table = tape_core::spinodoid::reference_gabor::Table::new(
         kernels.to_vec(),
         origin,
         size.map(|s| s as usize),
@@ -1238,7 +1238,7 @@ pub fn register_hodge_spinodoid(
         level,
         local,
     )?;
-    tape_core::spinodoid::hodge::register(slot, table)
+    tape_core::spinodoid::reference_gabor::register(slot, table)
 }
 
 /// Register a bvhSdf mesh oracle payload by asset id. `vertices` is xyz-packed
@@ -1591,11 +1591,11 @@ mod tests {
         }
     }
 
-    // A one-leaf tape over a hodge spinodoid slot.
-    fn hodge_leaf_tape(slot: u32) -> Vec<u8> {
+    // A one-leaf tape over a reference spinodoid slot.
+    fn reference_gabor_leaf_tape(slot: u32) -> Vec<u8> {
         use prost::Message;
         use tape_proto::node::N;
-        let id = tape_core::spinodoid::hodge::oracle_id(slot, 0);
+        let id = tape_core::spinodoid::reference_gabor::oracle_id(slot, 0);
         tape_proto::Tape {
             version: 1,
             nodes: vec![tape_proto::Node {
@@ -1612,7 +1612,7 @@ mod tests {
 
     // A smallest valid bounded table: 2x2x2 cells of one kernel each, every
     // kernel the same plane wave. Enough to bind a slot; the field's agreement
-    // with hodge is pinned in Go (hodge_parity_test.go), not here.
+    // with the Python reference is pinned in Go (reference_gabor_parity_test.go), not here.
     fn flat_table() -> Vec<f64> {
         let mut k = Vec::new();
         for _ in 0..8 {
@@ -1628,23 +1628,23 @@ mod tests {
     // Replay is exactly that process, so here it has to fail loudly.
     #[test]
     fn spinodoid_leaf_without_a_table_is_an_error() {
-        let bytes = hodge_leaf_tape(250);
+        let bytes = reference_gabor_leaf_tape(250);
         let err = match Tape::from_bytes(&bytes) {
             Ok(_) => panic!("a slot nothing registered must not load"),
             Err(e) => e,
         };
         assert!(
-            err.contains("hodgeSpinodoid") && err.contains("register_hodge_spinodoid"),
+            err.contains("referenceGaborSpinodoid") && err.contains("register_reference_gabor_spinodoid"),
             "error should name the kind and the way out, got: {err}"
         );
     }
 
     // And with the table bound first, the same tape loads and evaluates. This
-    // is the hodge path: inspect, register, load.
+    // is the reference path: inspect, register, load.
     #[test]
     fn spinodoid_leaf_replays_from_a_registered_table() {
         let slot = 251;
-        register_hodge_spinodoid(
+        register_reference_gabor_spinodoid(
             slot,
             &flat_table(),
             [0, 0, 0],
@@ -1661,7 +1661,7 @@ mod tests {
         )
         .expect("register");
 
-        let bytes = hodge_leaf_tape(slot);
+        let bytes = reference_gabor_leaf_tape(slot);
         let h = Tape::from_bytes(&bytes).expect("build");
         // On a kernel centre and half a wavelength along it: crest against
         // trough. (A quarter wavelength out, every kernel contributes cos of
@@ -1718,7 +1718,7 @@ mod tests {
     }
 
     // What omega's Go baker gives for payload_tape's arguments at these
-    // points (Bake / HodgeBake, Distance with local normalization).
+    // points (Bake / ReferenceGaborBake, Distance with local normalization).
     const PAYLOAD_POINTS: [f32; 9] = [0.0, 0.0, 0.0, 2.5, -3.75, 6.125, -18.5, 11.25, 4.0];
     const GO_LATTICE: [f64; 3] = [0.52092486296795693, 1.0646893390705905, -0.02383445563949289];
     const GO_MANUFACTURING: [f64; 3] = [-0.41810563283014013, -1.0595184216823339, 0.18173290695875885];
@@ -1762,21 +1762,21 @@ mod tests {
     }
 
     // A tape written before omega marked every leaf fast has its leaf in
-    // hodge's id block. The backend still decides: with none chosen it reads
+    // the reference field's id block. The backend still decides: with none chosen it reads
     // as the lattice, and the table is bound under the ids the tape carries.
     #[test]
-    fn hodge_block_leaf_follows_the_backend() {
-        let mut t = payload_tape(tape_core::spinodoid::hodge::oracle_id(243, 0));
+    fn reference_gabor_block_leaf_follows_the_backend() {
+        let mut t = payload_tape(tape_core::spinodoid::reference_gabor::oracle_id(243, 0));
         t.oracles[0].spinodoid.as_mut().unwrap().fast = false;
         let fast = load(&t, None).eval(&PAYLOAD_POINTS, None).expect("eval");
-        assert_near(&fast, &GO_LATTICE, 1e-5, "hodge-block leaf, default backend");
+        assert_near(&fast, &GO_LATTICE, 1e-5, "reference-block leaf, default backend");
 
-        let mut t = payload_tape(tape_core::spinodoid::hodge::oracle_id(244, 0));
+        let mut t = payload_tape(tape_core::spinodoid::reference_gabor::oracle_id(244, 0));
         t.oracles[0].spinodoid.as_mut().unwrap().fast = false;
         let mfg = load(&t, Some(SpinodoidBackend::Manufacturing))
             .eval(&PAYLOAD_POINTS, None)
             .expect("eval");
-        assert_near(&mfg, &GO_MANUFACTURING, 1e-5, "hodge-block leaf, manufacturing");
+        assert_near(&mfg, &GO_MANUFACTURING, 1e-5, "reference-block leaf, manufacturing");
     }
 
     // Two spinodoids from the same arguments, one output each: the second
@@ -2017,11 +2017,11 @@ mod tests {
     // references, and which of them the tape cannot resolve by itself.
     #[test]
     fn oracle_uses_separates_self_contained_leaves_from_bindable_ones() {
-        let uses = tape_oracle_uses(&hodge_leaf_tape(7)).expect("uses");
+        let uses = tape_oracle_uses(&reference_gabor_leaf_tape(7)).expect("uses");
         assert_eq!(uses.len(), 1);
         let (id, kind, self_contained, slot) = &uses[0];
-        assert_eq!(*id, tape_core::spinodoid::hodge::oracle_id(7, 0));
-        assert_eq!(kind, "hodgeSpinodoid");
+        assert_eq!(*id, tape_core::spinodoid::reference_gabor::oracle_id(7, 0));
+        assert_eq!(kind, "referenceGaborSpinodoid");
         assert!(!*self_contained, "a spinodoid leaf carries no table");
         assert_eq!(*slot, Some(7));
 

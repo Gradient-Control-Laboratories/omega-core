@@ -5,10 +5,10 @@ import (
 	"math/bits"
 )
 
-// A port of the slice of numpy (v2.2.6) that hodge's spinodoid_waves draws
+// A port of the slice of numpy (v2.2.6) that the Python reference's spinodoid_waves draws
 // from: np.random.default_rng(seed) — a SeedSequence feeding PCG64 — and the
 // Generator's standard_normal (a 256-layer ziggurat) and uniform. The direction
-// pool is drawn by rejection from these normals, so reproducing hodge's pool
+// pool is drawn by rejection from these normals, so reproducing the Python reference's pool
 // means reproducing numpy's stream bit for bit; nothing here is "a PCG64", it is
 // numpy's PCG64, seeded numpy's way.
 //

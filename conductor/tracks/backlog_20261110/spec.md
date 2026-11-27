@@ -725,8 +725,8 @@ defined in [README.md](../../../README.md):
     - **Delete unreferenced dead helpers:** remove `subdivide8` (`eval/certify.go`), `shadeLit`
       (`eval/litrender.go`), `(*pcg64).uniform` (`program/noise/spinodoid/numpy.go`), `NewSubExpr`
       (`backend/wgsl/internal/wgsl/expression.go`), `VecType` and `NewListVecType`
-      (`internal/fidget/convert/type.go`), `HodgeSpinodoidOracleID`, `RegisterHodgeSpinodoid`, and
-      `HodgeSpinodoidTree` (`internal/fidget/fidget.go`), and `JSONEq`
+      (`internal/fidget/convert/type.go`), `ReferenceGaborSpinodoidOracleID`, `RegisterReferenceGaborSpinodoid`, and
+      `ReferenceGaborSpinodoidTree` (`internal/fidget/fidget.go`), and `JSONEq`
       (`internal/test/assert/json.go`).
     - **Relocate or inline test-only internal exports out of production `.go` files:** move
       test-only wrappers/constructors into `*_test.go` (or call production APIs directly) for

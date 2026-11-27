@@ -11,7 +11,7 @@ import (
 // them at codegen from the call's constant arguments, so only the sites
 // themselves have to be shipped.
 type Constants struct {
-	// Reach is the kernel's support radius R: hodge's cutoff radius, where
+	// Reach is the kernel's support radius R: the Python reference's cutoff radius, where
 	// the untapered envelope falls to 0.01.
 	Reach float64
 	// Spacing is the lattice spacing, Reach / cbrt(impulses).
@@ -75,8 +75,8 @@ type Call struct {
 	Seed        int64
 	Bias        float64
 	Local       bool
-	// Fast is true for the lattice table (kernels.go), false for hodge's
-	// (hodge.go). The two are different fields from the same arguments, so the
+	// Fast is true for the lattice table (kernels.go), false for the Python reference's
+	// (reference_gabor.go). The two are different fields from the same arguments, so the
 	// kind is part of the key. Every omega backend binds the lattice, for
 	// gaborSpinodoid and fastGaborSpinodoid alike, so both set it.
 	Fast  bool

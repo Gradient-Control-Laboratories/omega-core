@@ -1,6 +1,6 @@
 //! The spinodoid bakes, from a field's arguments: the lattice table (super)
-//! and hodge's manufacturing table (super::hodge), each the Go baker's exactly
-//! (common/noise/spinodoid: kernels.go Bake and hodge.go HodgeBake, with the
+//! and the reference manufacturing table (super::reference_gabor), each the Go baker's exactly
+//! (common/noise/spinodoid: kernels.go Bake and reference_gabor.go ReferenceGaborBake, with the
 //! hash, pool and layouts they share). This is what lets a tape reader rebuild
 //! a spinodoid from the arguments the tape carries, rather than being handed a
 //! table.
@@ -14,7 +14,7 @@ use std::f64::consts::PI;
 
 use super::numpy::Pcg64;
 
-/// hodge's cutoff: the envelope value at the kernel's reach.
+/// The Python reference's cutoff: the envelope value at the kernel's reach.
 const ENVELOPE_CUTOFF: f64 = 0.01;
 const DEFAULT_POOL: usize = 4096;
 /// common/noise/spinodoid.MaxTableSites.
@@ -35,7 +35,7 @@ pub struct Params<'a> {
     pub period: f64,
     pub packet_width: f64,
     pub impulses: usize,
-    /// Direction pool size; 0 means hodge's 4096.
+    /// Direction pool size; 0 means the Python reference's 4096.
     pub pool: usize,
     pub seed: i64,
     pub scale: Option<ScaleDriver<'a>>,
@@ -57,7 +57,7 @@ fn splitmix64(x: u64) -> u64 {
     z ^ (z >> 31)
 }
 
-/// hodge's _cell_uniform for one cell: a uniform in [0, 1) with 53 random
+/// The Python reference's _cell_uniform for one cell: a uniform in [0, 1) with 53 random
 /// bits. Negative cells and seeds wrap two's-complement, as in Go.
 fn cell_uniform(cell: [i64; 3], stream: usize, seed: i64) -> f64 {
     let key = (cell[0] as u64).wrapping_mul(0x9E3779B97F4A7C15)
@@ -75,7 +75,7 @@ fn dot3(a: [f64; 3], b: [f64; 3]) -> f64 {
     a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
 }
 
-/// hodge's ugf.normalize for one vector.
+/// The Python reference's ugf.normalize for one vector.
 fn normalize(v: [f64; 3]) -> [f64; 3] {
     let n = dot3(v, v).sqrt();
     if !(n > NORM_EPS) {
@@ -90,7 +90,7 @@ fn normalize_row(v: [f64; 3]) -> [f64; 3] {
     [v[0] / n, v[1] / n, v[2] / n]
 }
 
-/// hodge's spinodoid_waves without the phases: common/noise/spinodoid.Waves.
+/// The Python reference's spinodoid_waves without the phases: common/noise/spinodoid.Waves.
 fn waves(theta: &[f64], n_waves: usize, seed: u64, poles: &[[f64; 3]]) -> Result<Vec<[f64; 3]>, String> {
     let poles: Vec<[f64; 3]> = if poles.is_empty() {
         vec![[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
@@ -164,7 +164,7 @@ fn pool_directions(p: &Params) -> Result<Vec<[f64; 3]>, String> {
         return Err(format!("seed must be >= 0, got {}", p.seed));
     }
     let pool = if p.pool == 0 { DEFAULT_POOL } else { p.pool };
-    // The pool is hodge's draw, in radians. Allow pi/2 to arrive a float32
+    // The pool is the Python reference's draw, in radians. Allow pi/2 to arrive a float32
     // rounding high, and clamp it back.
     let mut theta = Vec::with_capacity(p.theta.len());
     for &t in &p.theta {
@@ -397,19 +397,19 @@ fn lattice_sites(p: &Params) -> Result<(Vec<f64>, Layout, LatticeConstants), Str
     Ok((sites, layout, c))
 }
 
-/// The scalar constants of hodge's table: common/noise/spinodoid.HodgeConstants.
-struct HodgeConstants {
+/// The scalar constants of the reference table: common/noise/spinodoid.ReferenceGaborConstants.
+struct ReferenceGaborConstants {
     cell_size: f64,
     a: f64,
     sigma: f64,
     base_beta: f64,
 }
 
-fn hodge_constants(period: f64, packet_width: f64, impulses: usize) -> HodgeConstants {
+fn reference_gabor_constants(period: f64, packet_width: f64, impulses: usize) -> ReferenceGaborConstants {
     let a0 = 1.0 / (packet_width * period);
     let cell_size = (-ENVELOPE_CUTOFF.ln() / PI).sqrt() / a0;
     let rho_k = impulses as f64 / (cell_size * cell_size * cell_size);
-    HodgeConstants {
+    ReferenceGaborConstants {
         cell_size,
         a: a0,
         sigma: (0.5 * rho_k * (2.0 * a0 * a0).powf(-1.5)).sqrt(),
@@ -417,12 +417,12 @@ fn hodge_constants(period: f64, packet_width: f64, impulses: usize) -> HodgeCons
     }
 }
 
-/// common/noise/spinodoid's newHodgeLayout: cells rather than sites, a
+/// common/noise/spinodoid's newReferenceGaborLayout: cells rather than sites, a
 /// one-cell pad, and true cell indices (no wrap) when bounded.
-fn hodge_layout(c: &HodgeConstants, domain: Option<[f64; 6]>, periodic: bool) -> Result<Layout, String> {
+fn reference_gabor_layout(c: &ReferenceGaborConstants, domain: Option<[f64; 6]>, periodic: bool) -> Result<Layout, String> {
     let domain = match domain {
         Some(d) if !periodic => d,
-        _ => return Ok(Layout::periodic(super::hodge::TABLE_CELLS)),
+        _ => return Ok(Layout::periodic(super::reference_gabor::TABLE_CELLS)),
     };
     let mut l = Layout {
         origin: [0; 3],
@@ -445,11 +445,11 @@ fn hodge_layout(c: &HodgeConstants, domain: Option<[f64; 6]>, periodic: bool) ->
     Ok(l)
 }
 
-/// hodge's manufacturing table for `p`, leveled at `level`:
-/// common/noise/spinodoid.HodgeBake.
-pub fn manufacturing(p: &Params, level: f64, local: bool) -> Result<super::hodge::Table, String> {
+/// the reference manufacturing table for `p`, leveled at `level`:
+/// common/noise/spinodoid.ReferenceGaborBake.
+pub fn manufacturing(p: &Params, level: f64, local: bool) -> Result<super::reference_gabor::Table, String> {
     let (kernels, layout, c) = manufacturing_kernels(p)?;
-    super::hodge::Table::new(
+    super::reference_gabor::Table::new(
         kernels,
         layout.origin,
         layout.size,
@@ -465,15 +465,15 @@ pub fn manufacturing(p: &Params, level: f64, local: bool) -> Result<super::hodge
     )
 }
 
-/// hodge's table's kernels, in Go's Flat order, and what locates them.
-fn manufacturing_kernels(p: &Params) -> Result<(Vec<f64>, Layout, HodgeConstants), String> {
+/// the reference table's kernels, in Go's Flat order, and what locates them.
+fn manufacturing_kernels(p: &Params) -> Result<(Vec<f64>, Layout, ReferenceGaborConstants), String> {
     let base_dirs = pool_directions(p)?;
-    let c = hodge_constants(p.period, p.packet_width, p.impulses);
-    let layout = hodge_layout(&c, p.domain, p.periodic || (p.scale.is_none() && p.orientation.is_none()))?;
+    let c = reference_gabor_constants(p.period, p.packet_width, p.impulses);
+    let layout = reference_gabor_layout(&c, p.domain, p.periodic || (p.scale.is_none() && p.orientation.is_none()))?;
     let cells = layout.count();
     if cells > MAX_TABLE_SITES / p.impulses {
         return Err(format!(
-            "a graded hodge spinodoid over this domain needs {} kernels, past the {} limit; \
+            "a graded reference spinodoid over this domain needs {} kernels, past the {} limit; \
              reduce the domain extent, raise the base period, or lower impulses",
             cells * p.impulses,
             MAX_TABLE_SITES
@@ -510,9 +510,9 @@ fn manufacturing_kernels(p: &Params) -> Result<(Vec<f64>, Layout, HodgeConstants
             }
         }
     }
-    // Then the drivers, once per kernel centre, as hodge calls them.
+    // Then the drivers, once per kernel centre, as the Python reference calls them.
     let finished = apply_drivers(p, &centers, &dirs, false)?;
-    let mut kernels = Vec::with_capacity(n * super::hodge::KERNEL_STRIDE);
+    let mut kernels = Vec::with_capacity(n * super::reference_gabor::KERNEL_STRIDE);
     for (i, (dir, beta)) in finished.into_iter().enumerate() {
         let j = jitters[i];
         kernels.extend_from_slice(&[j[0], j[1], j[2], dir[0], dir[1], dir[2], beta, gammas[i]]);
@@ -522,7 +522,7 @@ fn manufacturing_kernels(p: &Params) -> Result<(Vec<f64>, Layout, HodgeConstants
 
 #[cfg(test)]
 mod tests {
-    //! Pinned to the Go baker (common/noise/spinodoid Bake and HodgeBake):
+    //! Pinned to the Go baker (common/noise/spinodoid Bake and ReferenceGaborBake):
     //! the reference values below are what it printed for the same arguments.
     //! The kernels must match bit for bit, through an FNV-1a fingerprint of
     //! their f64 bits in Flat order; the constants and distances must match to
@@ -568,11 +568,11 @@ mod tests {
         lattice_origin: [i64; 3],
         /// reach, spacing, a, sigma, base_beta
         lattice_consts: [u64; 5],
-        hodge_fnv: u64,
-        hodge_size: [usize; 3],
-        hodge_origin: [i64; 3],
+        reference_gabor_fnv: u64,
+        reference_gabor_size: [usize; 3],
+        reference_gabor_origin: [i64; 3],
         /// cell_size, a, sigma, base_beta
-        hodge_consts: [u64; 4],
+        reference_gabor_consts: [u64; 4],
         level: f64,
     }
 
@@ -598,24 +598,24 @@ mod tests {
         }
 
         let (kernels, layout, c) = manufacturing_kernels(p).expect("manufacturing");
-        assert_eq!(layout.size, r.hodge_size);
-        assert_eq!(layout.origin, r.hodge_origin);
-        assert!(driven || fnv(&kernels) == r.hodge_fnv, "hodge kernels are not Go's bit for bit");
+        assert_eq!(layout.size, r.reference_gabor_size);
+        assert_eq!(layout.origin, r.reference_gabor_origin);
+        assert!(driven || fnv(&kernels) == r.reference_gabor_fnv, "reference kernels are not Go's bit for bit");
         for (got, (bits, what)) in [c.cell_size, c.a, c.sigma, c.base_beta]
             .into_iter()
-            .zip(r.hodge_consts.iter().zip(["cell_size", "a", "sigma", "base_beta"]))
+            .zip(r.reference_gabor_consts.iter().zip(["cell_size", "a", "sigma", "base_beta"]))
         {
             close_bits(got, *bits, what);
         }
 
         let lt = lattice(p, r.level, true).expect("lattice table");
-        let ht = manufacturing(p, r.level, true).expect("hodge table");
+        let ht = manufacturing(p, r.level, true).expect("reference table");
         // Summation order in the evaluators leaves ~5e-15.
         for (q, &(want_l, want_h)) in POINTS.iter().zip(distances) {
             let (got_l, _) = lt.eval(*q);
             let (got_h, _) = ht.eval(*q);
             assert!((got_l - want_l).abs() < 1e-12, "lattice at {q:?}: {got_l} vs Go {want_l}");
-            assert!((got_h - want_h).abs() < 1e-12, "hodge at {q:?}: {got_h} vs Go {want_h}");
+            assert!((got_h - want_h).abs() < 1e-12, "reference at {q:?}: {got_h} vs Go {want_h}");
         }
     }
 
@@ -645,10 +645,10 @@ mod tests {
                 0x3fe546db0c54c63b,
                 0x3ff0c152382d7365,
             ],
-            hodge_fnv: 0xba3b91b09bfffde6,
-            hodge_size: [32; 3],
-            hodge_origin: [-16; 3],
-            hodge_consts: [0x4035cb0d340ae5ee, 0x3fac71c71c71c71c, 0x3fec90a9d4feb3b6, 0x3ff0c152382d7365],
+            reference_gabor_fnv: 0xba3b91b09bfffde6,
+            reference_gabor_size: [32; 3],
+            reference_gabor_origin: [-16; 3],
+            reference_gabor_consts: [0x4035cb0d340ae5ee, 0x3fac71c71c71c71c, 0x3fec90a9d4feb3b6, 0x3ff0c152382d7365],
             level: 0.3,
         };
         check(
@@ -666,7 +666,7 @@ mod tests {
     }
 
     // A seed past 32 bits (two words of SeedSequence entropy), unnormalized
-    // poles, narrow cones, and a pool that is not hodge's default.
+    // poles, narrow cones, and a pool that is not the Python reference's default.
     #[test]
     fn wide_seed_and_poles_match_go() {
         let p = Params {
@@ -693,10 +693,10 @@ mod tests {
                 0x3fe26d1d88dd3244,
                 0x3ff921fb54442d18,
             ],
-            hodge_fnv: 0xc73f979d3ef6cd1a,
-            hodge_size: [32; 3],
-            hodge_origin: [-16; 3],
-            hodge_consts: [0x402836f239d3385d, 0x3fb999999999999a, 0x3fe8bcf3c8916dd5, 0x3ff921fb54442d18],
+            reference_gabor_fnv: 0xc73f979d3ef6cd1a,
+            reference_gabor_size: [32; 3],
+            reference_gabor_origin: [-16; 3],
+            reference_gabor_consts: [0x402836f239d3385d, 0x3fb999999999999a, 0x3fe8bcf3c8916dd5, 0x3ff921fb54442d18],
             level: -0.4,
         };
         check(
@@ -741,10 +741,10 @@ mod tests {
                 0x3fe546db0c54c63b,
                 0x3ff0c152382d7365,
             ],
-            hodge_fnv: 0xa865fe642fe4b68b,
-            hodge_size: [4; 3],
-            hodge_origin: [-2; 3],
-            hodge_consts: [0x4035cb0d340ae5ee, 0x3fac71c71c71c71c, 0x3fec90a9d4feb3b6, 0x3ff0c152382d7365],
+            reference_gabor_fnv: 0xa865fe642fe4b68b,
+            reference_gabor_size: [4; 3],
+            reference_gabor_origin: [-2; 3],
+            reference_gabor_consts: [0x4035cb0d340ae5ee, 0x3fac71c71c71c71c, 0x3fec90a9d4feb3b6, 0x3ff0c152382d7365],
             level: 0.25,
         };
         check(

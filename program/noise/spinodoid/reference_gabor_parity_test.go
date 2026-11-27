@@ -13,21 +13,21 @@ import (
 	"github.com/Gradient-Control-Laboratories/omega-core/program/noise/spinodoid"
 )
 
-// What hodge's Gabor spinodoid is, measured against hodge itself.
+// What the reference Gabor spinodoid is, measured against the Python reference itself.
 //
-// The Go baker reproduces hodge-release's spinodoid_gabor: the same SplitMix64
+// The Go baker reproduces the Python reference's spinodoid_gabor: the same SplitMix64
 // kernel hash, the same numpy-drawn direction pool, the same jitter, envelope
 // and normalization, with its scale and orientation drivers sampled at the
 // kernel centres. That claim is only worth anything if something checks it, so
-// these tests run hodge's own spinodoid.py and compare.
+// these tests run the Python reference's own spinodoid.py and compare.
 //
-// hodge is found as repoHodgeDir says: HODGE_PATH, the sibling hodge-release
-// checkout omega's other hodge tooling uses, by default. They skip unless a
-// Python with numpy and scipy can import it (hodge's level threshold needs
-// scipy): HODGE_PYTHON names the interpreter — the hodge conda env's python —
+// The Python reference is found at REFERENCE_GABOR_PATH, the directory that
+// holds its spinodoid.py; the tests skip when it is unset. They also skip
+// unless a Python with numpy and scipy can import it (the Python reference's
+// level threshold needs scipy): REFERENCE_GABOR_PYTHON names the interpreter,
 // and "python" then "python3" are tried after it.
 //
-// Parity holds inside the table's range. hodge generates kernels on demand for
+// Parity holds inside the table's range. The Python reference generates kernels on demand for
 // any cell, while the table holds [-TableCells/2, TableCells/2) and wraps, so
 // the points below stay well inside it.
 
@@ -51,8 +51,8 @@ const poolTolerance = 1e-15
 // ULPs.
 const fieldTolerance = 1e-9
 
-func TestWavesMatchHodge(t *testing.T) {
-	py := hodgePython(t)
+func TestWavesMatchReferenceGabor(t *testing.T) {
+	py := referenceGaborPython(t)
 	theta := []float64{math.Pi / 2, math.Pi / 3, 0}
 
 	got, err := spinodoid.Waves(theta, parityPool, 0, nil)
@@ -67,7 +67,7 @@ print(json.dumps(np.asarray(dirs).tolist()))
 `, pyList(theta), parityPool), &want)
 
 	if len(got) != len(want) {
-		t.Fatalf("pool has %d directions, hodge drew %d", len(got), len(want))
+		t.Fatalf("pool has %d directions, the Python reference drew %d", len(got), len(want))
 	}
 	worst := 0.0
 	for i := range got {
@@ -76,13 +76,13 @@ print(json.dumps(np.asarray(dirs).tolist()))
 		}
 	}
 	if worst > poolTolerance {
-		t.Errorf("direction pool differs from hodge's by %g, want <= %g", worst, poolTolerance)
+		t.Errorf("direction pool differs from the Python reference's by %g, want <= %g", worst, poolTolerance)
 	}
 	t.Logf("pool of %d directions, worst component differs by %g (theta %v rad)", len(got), worst, theta)
 }
 
-// A stationary field: no drivers at all, which is what hodge's None means.
-func TestBakeMatchesHodgeStationary(t *testing.T) {
+// A stationary field: no drivers at all, which is what the Python reference's None means.
+func TestBakeMatchesReferenceGaborStationary(t *testing.T) {
 	checkFieldParity(t, spinodoid.Params{
 		Theta:       []float64{math.Pi / 2, math.Pi / 2, math.Pi / 2},
 		Period:      parityPeriod,
@@ -94,7 +94,7 @@ func TestBakeMatchesHodgeStationary(t *testing.T) {
 
 // An anisotropic field: cones of different half-angles, which is what makes
 // the pool draw and the per-kernel direction choice matter.
-func TestBakeMatchesHodgeAnisotropic(t *testing.T) {
+func TestBakeMatchesReferenceGaborAnisotropic(t *testing.T) {
 	checkFieldParity(t, spinodoid.Params{
 		Theta:       []float64{math.Pi / 12, math.Pi / 6, math.Pi / 2},
 		Period:      parityPeriod,
@@ -106,8 +106,8 @@ func TestBakeMatchesHodgeAnisotropic(t *testing.T) {
 }
 
 // A graded field: the scale driver is read once at every kernel centre, so it
-// only agrees with hodge if the centres do — jitter included.
-func TestBakeMatchesHodgeGradedScale(t *testing.T) {
+// only agrees with the Python reference if the centres do — jitter included.
+func TestBakeMatchesReferenceGaborGradedScale(t *testing.T) {
 	scale := func(centers [][3]float64) ([]float64, error) {
 		out := make([]float64, len(centers))
 		for i, c := range centers {
@@ -126,8 +126,8 @@ func TestBakeMatchesHodgeGradedScale(t *testing.T) {
 }
 
 // A rotated field: the orientation driver turns each kernel's direction, so
-// this checks the rotation is applied as hodge applies it (R . n, per kernel).
-func TestBakeMatchesHodgeGradedOrientation(t *testing.T) {
+// this checks the rotation is applied as the Python reference applies it (R . n, per kernel).
+func TestBakeMatchesReferenceGaborGradedOrientation(t *testing.T) {
 	rotate := func(centers [][3]float64) ([][3][3]float64, error) {
 		out := make([][3][3]float64, len(centers))
 		for i, c := range centers {
@@ -147,19 +147,19 @@ func TestBakeMatchesHodgeGradedOrientation(t *testing.T) {
 }
 
 // checkFieldParity bakes p, evaluates the pseudo-distance at the probe points,
-// and compares against hodge's spinodoid_gabor with the same arguments.
+// and compares against the Python reference's spinodoid_gabor with the same arguments.
 // orientationPy and scalePy are the Python spellings of p's drivers, or "".
 func checkFieldParity(t *testing.T, p spinodoid.Params, orientationPy, scalePy string) {
 	t.Helper()
-	py := hodgePython(t)
+	py := referenceGaborPython(t)
 
 	level, err := spinodoid.Level(parityLevelBias)
 	if err != nil {
 		t.Fatalf("Level: %v", err)
 	}
-	table, err := spinodoid.HodgeBake(p)
+	table, err := spinodoid.ReferenceGaborBake(p)
 	if err != nil {
-		t.Fatalf("HodgeBake: %v", err)
+		t.Fatalf("ReferenceGaborBake: %v", err)
 	}
 	points := probePoints()
 	got := make([]float64, len(points))
@@ -189,7 +189,7 @@ print(json.dumps(np.asarray(d).tolist()))
 		orNone(orientationPy), orNone(scalePy)), &want)
 
 	if len(want) != len(got) {
-		t.Fatalf("hodge returned %d values for %d points", len(want), len(got))
+		t.Fatalf("the Python reference returned %d values for %d points", len(want), len(got))
 	}
 	worst, at := 0.0, 0
 	for i := range got {
@@ -198,7 +198,7 @@ print(json.dumps(np.asarray(d).tolist()))
 		}
 	}
 	if worst > fieldTolerance {
-		t.Errorf("pseudo-distance differs from hodge's by %g at %v (got %.12f, hodge %.12f), want <= %g",
+		t.Errorf("pseudo-distance differs from the Python reference's by %g at %v (got %.12f, reference %.12f), want <= %g",
 			worst, points[at], got[at], want[at], fieldTolerance)
 	}
 	t.Logf("%d points, worst difference %g (period %g, cell %g)",
@@ -233,18 +233,18 @@ func probePoints() [][3]float64 {
 	return pts
 }
 
-// hodgeRunner is the interpreter and environment that can import the repo's
-// hodge, or a skip.
-type hodgeRunner struct {
-	exe     string
-	hodgeIn string
+// referenceGaborRunner is the interpreter and environment that can import the
+// Python reference, or a skip.
+type referenceGaborRunner struct {
+	exe              string
+	referenceGaborIn string
 }
 
-func (py hodgeRunner) run(t *testing.T, script string, out any) {
+func (py referenceGaborRunner) run(t *testing.T, script string, out any) {
 	t.Helper()
 	cmd := exec.Command(py.exe, "-c", script)
 	cmd.Env = append(os.Environ(),
-		"PYTHONPATH="+py.hodgeIn,
+		"PYTHONPATH="+py.referenceGaborIn,
 		"PYTHONDONTWRITEBYTECODE=1")
 	stdout, err := cmd.Output()
 	if err != nil {
@@ -252,20 +252,20 @@ func (py hodgeRunner) run(t *testing.T, script string, out any) {
 		if ee, ok := err.(*exec.ExitError); ok {
 			stderr = string(ee.Stderr)
 		}
-		t.Fatalf("hodge python failed: %v\n%s", err, stderr)
+		t.Fatalf("Python reference failed: %v\n%s", err, stderr)
 	}
 	// numpy's OpenMP can print warnings before the JSON; take the last line.
 	lines := strings.Split(strings.TrimSpace(string(stdout)), "\n")
 	if err := json.Unmarshal([]byte(lines[len(lines)-1]), out); err != nil {
-		t.Fatalf("hodge python output: %v\n%s", err, stdout)
+		t.Fatalf("Python reference output: %v\n%s", err, stdout)
 	}
 }
 
-func hodgePython(t *testing.T) hodgeRunner {
+func referenceGaborPython(t *testing.T) referenceGaborRunner {
 	t.Helper()
-	dir := repoHodgeDir(t)
+	dir := referenceGaborDir(t)
 	candidates := []string{"python", "python3"}
-	if named := os.Getenv("HODGE_PYTHON"); named != "" {
+	if named := os.Getenv("REFERENCE_GABOR_PYTHON"); named != "" {
 		candidates = append([]string{named}, candidates...)
 	}
 	var tried []string
@@ -275,7 +275,7 @@ func hodgePython(t *testing.T) hodgeRunner {
 			tried = append(tried, exe+": not on PATH")
 			continue
 		}
-		// hodge's level threshold reaches for scipy's erfinv, and it does so
+		// The Python reference's level threshold reaches for scipy's erfinv, and it does so
 		// lazily, so importing the module is not enough to know it is there.
 		probe := exec.Command(path, "-c", "import numpy, spinodoid; from scipy.special import erfinv")
 		probe.Env = append(os.Environ(), "PYTHONPATH="+dir, "PYTHONDONTWRITEBYTECODE=1")
@@ -283,50 +283,25 @@ func hodgePython(t *testing.T) hodgeRunner {
 			tried = append(tried, fmt.Sprintf("%s: %v (%s)", path, err, firstLine(out)))
 			continue
 		}
-		return hodgeRunner{exe: path, hodgeIn: dir}
+		return referenceGaborRunner{exe: path, referenceGaborIn: dir}
 	}
-	t.Skipf("no Python here can import hodge's spinodoid with numpy and scipy, so this parity "+
-		"check cannot run; set HODGE_PYTHON to one that can. Tried %v", tried)
-	return hodgeRunner{}
+	t.Skipf("no Python here can import the Python reference's spinodoid with numpy and scipy, so this parity "+
+		"check cannot run; set REFERENCE_GABOR_PYTHON to one that can. Tried %v", tried)
+	return referenceGaborRunner{}
 }
 
-// repoHodgeDir finds hodge's spinodoid.py: HODGE_PATH if set (omega's
-// convention for its sibling hodge-release checkout), else a hodge/ directory
-// above the package (a monorepo that carries hodge as source), else the
-// default sibling ~/github/hodge-release.
-func repoHodgeDir(t *testing.T) string {
+// referenceGaborDir finds the Python reference's spinodoid.py from
+// REFERENCE_GABOR_PATH, or skips when it is unset.
+func referenceGaborDir(t *testing.T) string {
 	t.Helper()
-	has := func(dir string) bool {
-		_, err := os.Stat(filepath.Join(dir, "spinodoid.py"))
-		return err == nil
+	named := os.Getenv("REFERENCE_GABOR_PATH")
+	if named == "" {
+		t.Skip("no Python reference: set REFERENCE_GABOR_PATH to the directory holding its spinodoid.py")
 	}
-	if named := os.Getenv("HODGE_PATH"); named != "" {
-		if !has(named) {
-			t.Fatalf("HODGE_PATH=%s has no spinodoid.py", named)
-		}
-		return named
+	if _, err := os.Stat(filepath.Join(named, "spinodoid.py")); err != nil {
+		t.Fatalf("REFERENCE_GABOR_PATH=%s has no spinodoid.py", named)
 	}
-	dir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	for {
-		if candidate := filepath.Join(dir, "hodge"); has(candidate) {
-			return candidate
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			break
-		}
-		dir = parent
-	}
-	if home, err := os.UserHomeDir(); err == nil {
-		if sibling := filepath.Join(home, "github", "hodge-release"); has(sibling) {
-			return sibling
-		}
-	}
-	t.Skip("no hodge checkout: set HODGE_PATH to a hodge-release checkout")
-	return ""
+	return named
 }
 
 func pyList(vs []float64) string {
