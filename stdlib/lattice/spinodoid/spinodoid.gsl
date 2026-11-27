@@ -31,7 +31,7 @@
 // Fields are unit-normalized like the rest of the lattice family: a
 // pseudo-distance with unit RMS gradient, negative in the solid phase. So
 // lattice.solidify(field, 0, h) is a wall of width h straddling the level set
-// (hodge's wall_thickness), and lengths are real lengths even under a graded
+// (the Python reference's wall_thickness), and lengths are real lengths even under a graded
 // scale.
 //
 // The kernel grid is fixed in the field's own coordinates, at a spacing set by
@@ -88,8 +88,8 @@ gabor(period, theta, bias) {
 /// parameter of a stationary spinodoid. `poles` lists one cone axis per angle
 /// in `theta` (e.g. the six <110> directions reach the gyroid's star).
 /// `packetWidth` is the envelope width in wavelengths (default 3); `impulses`
-/// the kernel density, in kernels per cell of the kernel grid (default 8,
-/// hodge's impulses_per_cell; evaluation cost grows with it, and the preview
+/// the kernel density, in kernels per cell of the kernel grid (default 8;
+/// evaluation cost grows with it, and the preview
 /// shows banding at low densities); `seed` picks the realization.
 gabor(period, theta, poles, packetWidth, impulses, seed, bias) {
   return gaborSpinodoid(p, period, theta, poles, packetWidth, impulses, 4096, seed, bias, 1, 1, identityFrame(), noBox());

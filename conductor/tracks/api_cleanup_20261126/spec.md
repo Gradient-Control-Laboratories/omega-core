@@ -68,17 +68,17 @@ recursion on the size or an unrolled elimination. The plan prototypes them befor
 
 ## 6. Decisions: Spinodoids
 
-**Two fields, both everywhere.** `gaborSpinodoid` is hodge's field: the reference, and the expensive one.
-`fastGaborSpinodoid` is the lattice field, built for the GPU. Each is evaluated by both the CPU (fidget) and the
-GPU (WGSL) backends. No other versions exist. In the library, `gabor*` draws hodge's field and `fastGabor*`
-the lattice field.
+**Two versions, both everywhere.** The spinodoid has exactly two algorithms. `gaborSpinodoid` is the reference
+field: jittered kernels, the definition the other is measured against, and the expensive one.
+`fastGaborSpinodoid` is the fast version: the lattice field, built for the GPU. Each is evaluated by both the
+CPU (fidget) and the GPU (WGSL) backends. No other versions exist. In the library, `gabor*` draws the reference
+field and `fastGabor*` the fast one.
 
 Today both names bake the lattice table in every backend: WGSL codegen and fidget conversion set `call.Fast =
-true` for either name. Hodge's field exists only on the CPU side
-([program/noise/spinodoid/hodge.go](../../../program/noise/spinodoid/hodge.go) and `spinodoid/hodge.rs` in the
-fidget tape core), parity-tested against `hodge/spinodoid.py` in the el_explorer repository, for a tape reader
-that swaps it in from the payload's arguments. el_explorer is in the same state. The missing piece is a WGSL
-hodge field.
+true` for either name. The reference field exists only on the CPU side (the Go baker in
+[program/noise/spinodoid](../../../program/noise/spinodoid) and its Rust port in the fidget tape core),
+parity-tested against the Python reference implementation, for a tape reader that swaps it in from the
+payload's arguments. el_explorer is in the same state. The missing piece is a WGSL reference field.
 
 **The table's box is given, not inferred.** A graded field (scale or orientation varying with `p`) bakes a
 bounded kernel table today, whose box comes from the imported geometry's bounds or the `@scene` cube, and falls

@@ -91,11 +91,11 @@ golden stops for approval before the golden is updated.
 ## Phase 4: Spinodoids
 
 - [x] Task: Settle what "scale" means in the table decision: only the box changes (spec section 6)
-- [ ] Goal: `gaborSpinodoid` is hodge's field and `fastGaborSpinodoid` the lattice field, in every backend
+- [ ] Goal: `gaborSpinodoid` is the reference field and `fastGaborSpinodoid` the fast lattice field, in every backend
       (follow-up after #178: needs a GPU parity check)
-  - [ ] A WGSL hodge field, checked against the CPU one (`hodge_parity_test.go`'s values)
+  - [ ] A WGSL reference field, checked against the CPU one (the reference parity test's values)
   - [ ] WGSL codegen and fidget conversion stop forcing `Fast` for `gaborSpinodoid`
-  - [ ] Library: `gabor*` over hodge's field, `fastGabor*` over the lattice
+  - [ ] Library: `gabor*` over the reference field, `fastGabor*` over the lattice
 - [x] Goal: A graded field's table box comes from the call
   - [x] Graded forms take `box`, [min, max] in the field's own coordinates; the builtins take it as a 13th
         argument (stationary forms pass an ignored zero box). The converter bakes over it: no scene or

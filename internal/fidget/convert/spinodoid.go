@@ -17,16 +17,16 @@ import (
 // their fastGaborSpinodoid aliases to the spinodoid oracle leaves over a
 // lattice kernel table baked here, in the fidget agent: the drivers are fields
 // of p, and this is where a field can be evaluated at the kernel centres, once
-// each, as hodge samples them.
+// each, as the Python reference samples them.
 //
 // Both names are the lattice field, here as in the preview, so a part meshes
-// as it renders. A tape marks every leaf fast; a reader that wants hodge's
+// as it renders. A tape marks every leaf fast; a reader that wants the Python reference's
 // field swaps it in from the payload's arguments.
 //
 // Every argument but q, scale and orientation must be a constant by now
 // (inlining has folded the library wrapper's parameters into the call); they
 // are the table's key. A constant scale of 1 and a constant identity
-// orientation are no driver at all, which is what hodge's None means, and bake
+// orientation are no driver at all, which is what the Python reference's None means, and bake
 // the same table bit for bit.
 //
 // Slots are handed out per build: every tree is cleared when the build ends,
@@ -304,7 +304,7 @@ func spinodoidOrientationDriver(trees []fidget.TreeIndex) ([3][3]float64, bool) 
 }
 
 // evalField evaluates a field tree of the implicit (x, y, z) at points, in
-// one batch: hodge calls its drivers with every kernel centre at once, and
+// one batch: the Python reference calls its drivers with every kernel centre at once, and
 // so does the bake.
 func evalField(tree fidget.TreeIndex, xs, ys, zs []float32) ([]float64, error) {
 	if v, ok := fidget.ConstValue(tree); ok {
