@@ -137,6 +137,55 @@ func TestKeepApartLeavesTwoVerticesOffOnePoint(t *testing.T) {
 	}
 }
 
+// TestFoldsLeavesTrianglesOffTheZeroSetAlone checks a triangle where the field jumps across zero is not taken for a
+// fold: a sphere whose field, over its top cap, is -8 with a gradient pointing in, as a face cut by a choice between
+// branches reads, comes back as it was given.
+func TestFoldsLeavesTrianglesOffTheZeroSetAlone(t *testing.T) {
+	const r = 5.0
+	verts, tris := sphereSTL(r, 3)
+	in := writeSTL(verts, tris)
+	sphere := sphereField(r)
+	field := func(xs, ys, zs []float32) ([]Sample, error) {
+		out, err := sphere(xs, ys, zs)
+		for i := range out {
+			if zs[i] > 4 {
+				out[i] = Sample{Value: -8, Dx: -out[i].Dx, Dy: -out[i].Dy, Dz: -out[i].Dz}
+			}
+		}
+		return out, err
+	}
+	out, stats, err := Folds(in, field)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stats.BackwardBefore != 0 || stats.Passes != 0 || stats.Moved != 0 {
+		t.Fatalf("triangles off the zero set were taken for folds: %+v", stats)
+	}
+	if string(out) != string(in) {
+		t.Fatal("a sphere with triangles off the zero set came back changed")
+	}
+}
+
+// TestKeepNearHoldsAVertexSentPastItsEdges checks a vertex whose new place is farther than its edges' mean length
+// stays where it was, and one sent less far moves.
+func TestKeepNearHoldsAVertexSentPastItsEdges(t *testing.T) {
+	verts, tris := sphereSTL(5, 2)
+	m := weld(writeSTL(verts, tris), len(tris))
+	r := &repair{mesh: m, field: sphereField(5)}
+	edge := norm(sub(m.verts[m.ringOf(0)[0]], m.verts[0]))
+	near := add(m.verts[0], vec{0, 0.2 * edge, 0})
+	far := add(m.verts[1], vec{0, 3 * edge, 0})
+	order := []int32{0, 1}
+	pts := []vec{near, far}
+	r.keepNear(order, pts)
+	if pts[0] != near {
+		t.Fatalf("vertex 0, sent a fifth of an edge, did not move there: %v", pts[0])
+	}
+	if pts[1] != m.verts[1] {
+		t.Fatalf("vertex 1, sent three edges, moved to %v", pts[1])
+	}
+}
+
 // TestFoldsReturnsTheMeshWhenNoPassHelps checks a mesh no pass improves comes back as it was given: a sphere whose
 // every triangle faces in, which moving vertices cannot turn round.
 func TestFoldsReturnsTheMeshWhenNoPassHelps(t *testing.T) {
