@@ -152,23 +152,24 @@ stuccoEmbossed(baseMaterial, @color baseColor, @range(1, 8) pebble, @range(0.05,
 }
 
 /// Steel floor plate, 25 mm four-way pattern, lugs 1.2 mm high, on a +Z
-/// face through the origin, its lugs as displacement. Returns material and
-/// colour.
+/// face through the origin, its lugs as displacement measured down from
+/// their tops: the face drawn is the lugs' tops, the plate 1.2 mm below.
+/// Returns material and colour.
 @material checkerPlateSteel() {
   steelMat, steelColor = metal.steel();
   skin, tone, height, slope = checkerPlate(steelMat, steelColor, [0, 0, 0], [1, 0, 0], [0, 0, 1], 25, 1.0, 1.2);
-  plate = material.withDisplacement(skin, height);
-  plate.simple = skin;
+  plate = material.withReliefDepth(material.withDisplacement(skin, height - 1.2), 1.2);
+  plate.simple = material.withReliefDepth(material.withDisplacement(skin, -1.2), 1.2);
   return plate, tone;
 }
 
-/// Stucco-embossed aluminium, 4 mm pebbles 0.2 mm deep, as displacement.
-/// Returns material and colour.
+/// Stucco-embossed aluminium, 4 mm pebbles standing 0.2 mm proud, as
+/// displacement measured down from their tops. Returns material and colour.
 @material stuccoEmbossedAluminum() {
   aluMat, aluColor = metal.aluminum();
   skin, tone, height, slope = stuccoEmbossed(aluMat, aluColor, 4, 0.2);
-  embossed = material.withDisplacement(skin, height);
-  embossed.simple = material.withRoughness(skin, sqrt(texture.reliefRoughness(material.roughness(skin) * material.roughness(skin), 0.1, 4)));
+  embossed = material.withReliefDepth(material.withDisplacement(skin, height - 0.2), 0.2);
+  embossed.simple = material.withReliefDepth(material.withDisplacement(material.withRoughness(skin, sqrt(texture.reliefRoughness(material.roughness(skin) * material.roughness(skin), 0.1, 4))), -0.2), 0.2);
   return embossed, tone;
 }
 

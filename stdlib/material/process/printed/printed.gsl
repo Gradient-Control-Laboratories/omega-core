@@ -40,18 +40,21 @@ layerLay(buildDir, center) {
 // displacement off or the part too small for it (displacementDrawn()), or
 // fades as the layers shrink, the lobe widens to the coarse look's. The
 // relief fades by the layer height or 0.15 mm, whichever is less, so it is
-// gone by the pixel the viewer stops drawing fine detail at.
-layerFinish(baseMaterial, up, center, layerHeight, relief, edgeAlpha, slope) {
+// gone by the pixel the viewer stops drawing fine detail at. The relief is
+// measured down from its peaks, `crest` above relief's own zero, and reaches
+// `depth` below them; faded, the surface stays at the peaks' datum.
+layerFinish(baseMaterial, up, center, layerHeight, relief, crest, depth, edgeAlpha, slope) {
   size = min(layerHeight, 0.15);
   layDir = layerLay(up, center);
   farAcross = sqrt(edgeAlpha * edgeAlpha + slope * slope);
   farStretch = (1 - clamp(edgeAlpha / farAcross, 0.1, 1)) / 0.9;
-  coarse = material.withLay(material.withRoughness(baseMaterial, sqrt(sqrt(edgeAlpha * farAcross))), layDir, farStretch);
+  full = material.reliefDepth(baseMaterial) + depth;
+  coarse = material.withReliefDepth(material.addDisplacement(material.withLay(material.withRoughness(baseMaterial, sqrt(sqrt(edgeAlpha * farAcross))), layDir, farStretch), -crest), full);
   shown = texture.fadeDetail(size) * displacementDrawn();
   across = sqrt(edgeAlpha * edgeAlpha + (1 - shown) * slope * slope);
   stretch = (1 - clamp(edgeAlpha / across, 0.1, 1)) / 0.9;
   fineLay = stretch > 0 ? layDir : [0, 0, 0];
-  fine = material.addDisplacement(material.withLay(material.withRoughness(baseMaterial, sqrt(sqrt(edgeAlpha * across))), fineLay, stretch), relief * texture.fadeDetail(size));
+  fine = material.withReliefDepth(material.addDisplacement(material.withLay(material.withRoughness(baseMaterial, sqrt(sqrt(edgeAlpha * across))), fineLay, stretch), relief * texture.fadeDetail(size) - crest), full);
   finish = coarse;
   finish.detail = fine;
   finish.detailSize = size;
@@ -68,6 +71,7 @@ layerFinish(baseMaterial, up, center, layerHeight, relief, edgeAlpha, slope) {
 /// middle, for the lay. While the beads show they are relief; seen smaller
 /// than a pixel their slopes, about a radian either way, streak the highlight
 /// across the layers instead. Returns material, color, height and slope.
+/// Relief: measured (the beads' geometry), down from their crowns; declares its depth.
 fdm(@color plasticColor, @direction(center) buildDir, @point center, @range(0.1, 0.3) layerHeight, @range(0, 100) glossUnits) {
   up = normalize(buildDir);
   s = fract(dot(p, up) / layerHeight);
@@ -77,7 +81,7 @@ fdm(@color plasticColor, @direction(center) buildDir, @point center, @range(0.1,
   bead = 0.5 * layerHeight * (sqrt(max(1 - x * x, 0)) - 0.785398);
   gu = clamp(glossUnits, 1, 99);
   alpha = 0.044 * sqrt(100 / gu - 1);
-  printed = layerFinish(material.make(0.5, 0, 1.5), up, center, layerHeight, bead, alpha, 0.8);
+  printed = layerFinish(material.make(0.5, 0, 1.5), up, center, layerHeight, bead, 0.107301 * layerHeight, 0.5 * layerHeight, alpha, 0.8);
   return printed, plasticColor, 0, 0;
 }
 
@@ -89,12 +93,13 @@ fdm(@color plasticColor, @direction(center) buildDir, @point center, @range(0.1,
 /// or colour) to 1 (a clear resin) lets light through. `center` is a point
 /// near the part's middle, for the lay. Returns material, color, height and
 /// slope.
+/// Relief: judged, down from the steps' tops; declares its depth.
 resin(@color resinColor, @direction(center) buildDir, @point center, @range(0.025, 0.1) layerHeight, @range(0, 1) clarity) {
   up = normalize(buildDir);
   s = fract(dot(p, up) / layerHeight);
   stepRelief = (s - 0.5) * 0.08 * layerHeight;
   clear = material.withTransmission(material.make(0.5, 0, 1.5), clamp(clarity, 0, 1), 20);
-  printed = layerFinish(clear, up, center, layerHeight, stepRelief, 0.0225, 0.05);
+  printed = layerFinish(clear, up, center, layerHeight, stepRelief, 0.04 * layerHeight, 0.08 * layerHeight, 0.0225, 0.05);
   return printed, resinColor, 0, 0;
 }
 
@@ -103,17 +108,21 @@ resin(@color resinColor, @direction(center) buildDir, @point center, @range(0.02
 /// fusion (grey, often dyed black): matte and grainy, the half-fused grains of
 /// its skin `grain` mm across, its layers lost among them. Returns material,
 /// color, height and slope.
+/// Relief: judged, down from the grains' tops; declares its depth.
 powderBed(@color powderColor, grain) {
   // The grains' relief and shade, fine detail (name.detail):
   // faded, they are no relief and the powder's own colour.
   grainF1, grainF2, grainCell = noise.cellularCell(grain);
   speck = noiseHash3(grainCell + [23, 61, 7]);
   bump = clamp(1 - grainF1 / (0.5 * grain), 0, 1);
-  fine = [0, 1];
-  fine.detail = [(bump * bump - 0.2) * 0.3 * grain * texture.fadeDetail(min(grain, 0.15)), texture.fadeTo(0.9 + 0.2 * speck.x, 1, min(grain, 0.15))];
+  // Measured down from the grains' tops: bump is 1 at each grain's centre, so
+  // they stand 0.24 grain above the relief's zero and the gaps 0.06 below.
+  crest = 0.24 * grain;
+  fine = [-crest, 1];
+  fine.detail = [(bump * bump - 0.2) * 0.3 * grain * texture.fadeDetail(min(grain, 0.15)) - crest, texture.fadeTo(0.9 + 0.2 * speck.x, 1, min(grain, 0.15))];
   fine.detailSize = min(grain, 0.15);
-  nylon = material.withDisplacement(material.make(0.85, 0, 1.53), fine.x);
-  nylon.simple = material.make(0.85, 0, 1.53);
+  nylon = material.withReliefDepth(material.withDisplacement(material.make(0.85, 0, 1.53), fine.x), 0.3 * grain);
+  nylon.simple = material.withReliefDepth(material.withDisplacement(material.make(0.85, 0, 1.53), -crest), 0.3 * grain);
   tone = powderColor * fine.y;
   tone.simple = powderColor;
   return nylon, tone, 0, 0;

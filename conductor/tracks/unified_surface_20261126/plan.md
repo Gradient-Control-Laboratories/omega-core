@@ -201,11 +201,37 @@ New tests are added only once the owner agrees them.
       claims do; a claim across surfaces of different depths writes the shift itself. That keeps a
       `reliefDepthScale()` builtin, a TestSanityCheck exception and ~16 goldens out. Two of this
       branch's tests updated to match (owner's go)
-- [ ] Task: Audit every library relief for its datum. Any that is not measured from its peaks moves by a
-      constant to be. That moves surfaces and goldens, so each is shown first
-- [ ] Task: Tag each process as measured (heights from the process: `machined`) or judged for appearance
-      (wood, `filmKeeps`'s fitted coefficient)
-- [ ] Task: Phase Verification & Checkpoint
+- [x] Task: Audit every library relief for its datum. Any that is not measured from its peaks moves by a
+      constant to be. That moves surfaces and goldens, so each is shown first. Audit done
+      2026-11-27: [datum_audit.md](datum_audit.md). Decided: the process and coat families (cast,
+      printed, molded, sheet, coating) move, one family at a time, each declaring its depth; bulk and
+      collection materials stay judged appearance, documented as not measured from their peaks. Fix
+      in this track: replace-vs-add (shaft.body, fastener male/femaleFinish, @rubberGrip),
+      chippedPaint's blended build, the fabric stand-in, the documented amplitudes. Done
+      2026-11-27, each relief and its stand-in shifted by the same constant and declaring its depth:
+      sheet (checkerPlate 1.2, stuccoEmbossed 0.2; no golden), coats (powderCoat by its sound noise
+      bound 0.009 peel, wrinkle 0.0351 size, sand 0.4 grain, hammertone 0.02532 cell; Coated golden),
+      cast (sandCast by Rpm 3.1 / GFN, depth Rz 5.6 / GFN; shotPeened declares 0.08 dimple; no golden),
+      printed (fdm 0.107301 L, resin 0.04 L, powderBed 0.24 grain, all exact; `layerFinish` takes
+      crest and depth; Printed golden), molded (leatherGrain 0.5 depth, exact; no golden). Stochastic
+      reliefs (decided): the peak is a profilometer's, Rpm over five sampling lengths (ISO 21920,
+      sampling length by ISO 4288), measured with a scratchpad Go tool over twelve profiles, since a
+      random surface has no highest point (sandCast's noise bound is 21 / GFN against Rpm 3.1 / GFN).
+      Fixes: shaft and fastener finishes add their heights; @rubberGrip's dots sit on its 2 mm build,
+      from their tops; chippedPaint keeps the base's build and is measured from the paint's top
+      (-0.05 paintGone - 0.03 primerGone; stand-in their mean); the fabric stand-in goes through the
+      same resin; water, lava, cloud, reeded and orangePeel docs give sampled amplitudes. Goldens
+      (owner's go): Detail Ladder +0.29%, Fastener Cosmetics +0.16%, Coated +0.27%. Threads and knurls
+      declare no depth: their tolerance is the pitch diameter (ISO 965), for Phase 7
+- [x] Task: Tag each process as measured (heights from the process: `machined`) or judged for appearance
+      (wood, `filmKeeps`'s fitted coefficient). Done 2026-11-27: a `/// Relief:` line on each of the
+      fifteen process and coat functions, and a table in
+      [material_composition.md](../../../doc/material_composition.md)
+- [x] Task: Phase Verification & Checkpoint (2026-11-27): backend, internal/assembler, cmd, eval,
+      stdlib, program, parser and assembler pass, 58 packages (eval 655 s); lint clean. The stdlib
+      protos are regenerated (`./tool/build-stdlib.sh --force`), stale since `79a1e616`. `shaft.body`
+      writes its add as `withDisplacement(finish, displacement(finish) + relief)`, the same value as
+      `addDisplacement`, which keeps `TestShaftKnurl_FinishedBody`'s check on the shader text as it is
 
 ## Phase 6: Spreads as Parameters (D3)
 

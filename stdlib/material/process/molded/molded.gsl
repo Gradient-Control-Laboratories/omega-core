@@ -43,14 +43,19 @@ textured(baseMaterial, @color baseColor, @range(12, 45) vdiGrade) {
 /// degree, so 0.08 is usual), the cells domed between them to half the
 /// depth, as relief in the material, the creases a shade darker. Matte, the
 /// lobe 0.7 wide. Returns material, color, height and slope.
+/// Relief: judged, down from the domes' tops; declares its depth.
 leatherGrain(baseMaterial, @color baseColor, @range(0.5, 4) grainSize, @range(0.02, 0.2) depth) {
   f1, f2, cell = noise.cellularCell(grainSize);
   dome = 1 - clamp(f1 / (0.6 * grainSize), 0, 1);
   crease = 1 - texture.mask(f2 - f1, 0.12 * grainSize, 0.06 * grainSize);
-  relief = depth * (0.5 * dome * dome - crease) * texture.fadeDetail(grainSize);
+  // Measured down from the domes' tops, half the depth above the crease
+  // network's zero at each cell's centre; the creases reach the depth below.
+  crest = 0.5 * depth;
+  full = material.reliefDepth(baseMaterial) + 1.5 * depth;
+  relief = depth * (0.5 * dome * dome - crease) * texture.fadeDetail(grainSize) - crest;
   alpha = texture.reliefRoughness(0.49, 0.5 * depth / (0.1 * grainSize), grainSize);
-  skin = material.addDisplacement(material.withLay(material.withRoughness(baseMaterial, sqrt(alpha)), [0, 0, 0], 0), relief);
-  skin.simple = material.withLay(material.withRoughness(baseMaterial, sqrt(sqrt(0.24 + 0.25 * depth * depth / (0.01 * grainSize * grainSize)))), [0, 0, 0], 0);
+  skin = material.withReliefDepth(material.addDisplacement(material.withLay(material.withRoughness(baseMaterial, sqrt(alpha)), [0, 0, 0], 0), relief), full);
+  skin.simple = material.withReliefDepth(material.addDisplacement(material.withLay(material.withRoughness(baseMaterial, sqrt(sqrt(0.24 + 0.25 * depth * depth / (0.01 * grainSize * grainSize)))), [0, 0, 0], 0), -crest), full);
   // The creases cover about a fifth of the grain (judged).
   tone = baseColor * texture.fadeTo(1 - 0.15 * crease, 0.97, grainSize);
   tone.simple = baseColor * 0.97;
@@ -207,12 +212,13 @@ absPlastic(@color color) {
 }
 
 /// A black rubber grip, 3 mm dots 0.8 mm high, rows along +X on a +Z face
-/// through the origin, its dots as displacement. Returns material and
-/// colour.
+/// through the origin, its dots as displacement added onto the rubber,
+/// measured down from their tops. Returns material and colour.
 @material rubberGrip() {
   rubber, tone, height, slope = grip(material.make(0.5, 0, 1.5), [0.1, 0.1, 0.1], [0, 0, 0], [0, 0, 1], [1, 0, 0], 3, 0.8, 0);
-  dotted = material.withDisplacement(rubber, height);
-  dotted.simple = rubber;
+  depth = material.reliefDepth(rubber) + 0.8;
+  dotted = material.withReliefDepth(material.addDisplacement(rubber, height - 0.8), depth);
+  dotted.simple = material.withReliefDepth(material.addDisplacement(rubber, -0.8), depth);
   return dotted, tone;
 }
 

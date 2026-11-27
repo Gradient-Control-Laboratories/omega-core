@@ -41,8 +41,9 @@ fabric(x, y, uAxis, vAxis, pitch, towWidth, over, under, towColor, shade, crimp,
   woven = material.withDisplacement(material.withLay(material.make(0.3, 0, 1.55), towDir, 0.7), crimp * height * texture.fadeDetail(pitch));
   laid = resinOver(woven, glossUnits, 0.15, pitch);
   // Stand-in: the tows too fine to see, their lay averaged out to a round
-  // lobe at the resin's gloss, the crimp's mean, 0.6 of its height, kept.
-  laid.simple = material.withDisplacement(material.make(coating.glossRoughness(glossUnits), 0, 1.55), 0.6 * crimp);
+  // lobe, the crimp at its mean, 0.6 of its height, under the same resin, so
+  // the film's build and the share of the crimp it keeps match the fabric's.
+  laid.simple = resinOver(material.withDisplacement(material.make(0.3, 0, 1.55), 0.6 * crimp), glossUnits, 0.15, pitch);
   tone = towColor * (1 + shade * (2 * pick.x - 1));
   tone.simple = towColor;
   return laid, tone;

@@ -215,6 +215,17 @@ from `1.0.0` onward).
 
 ### Changed
 
+- **Process and coat reliefs are measured down from their peaks**: `sheet.checkerPlateSteel` and
+  `stuccoEmbossedAluminum`, `coating.powderCoat`, `wrinkleCoat`, `sandCoat`, `hammertone` and
+  `chippedPaint`, `cast.sandCast`, `printed.fdm`, `resin` and `powderBed`, and `molded.leatherGrain`
+  and `rubberGrip` now draw the surface at their peaks, the relief below it, so each surface (and
+  its stand-in) sits lower by the relief's former peak: 1.2 mm for the checker plate's lugs,
+  0.107 L for an FDM wall, 3.1 / GFN for a sand casting (its mean profile peak, Rpm, as a
+  profilometer measures it). Each declares its relief depth. Bulk and collection materials keep
+  their reliefs; see the track's datum audit.
+- **Finishes keep their relief under threads and shafts**: `shaft.body` and `fastener.maleFinish` /
+  `femaleFinish` add the thread or knurl heights onto the finish's relief instead of replacing it,
+  so a turned finish keeps its grooves and a finish with a build keeps it as film.
 - **A layer's build and its relief are moved apart (`buildScale`, `displacementScale`)**: a coat's
   displaced distance is now `under - buildScale() * build - displacementScale() * relief`, where it
   was `under - displacementScale() * height`. A build is size and a relief is texture, so the export
@@ -312,6 +323,15 @@ from `1.0.0` onward).
   5 µm plating claim certify proves in 5 thousand evaluations went undecided at 200 thousand. The
   chain now telescopes as a chain on an undisplaced shape does: the seat's own distance less the
   top coat's height, read once. Values are unchanged.
+- **`molded.rubberGrip` keeps its rubber**: its dots replaced the displacement of a rubber laid 2 mm
+  thick, leaving the 2 mm film as relief from -2 to -1.2 mm; they now sit on the rubber.
+- **`coating.chippedPaint` keeps the base's build**: blending the paint over the base mixed the
+  build away where the paint was intact, so a built base's film read as relief there.
+- **The composite fabrics' stand-in keeps the resin**: it dropped the 0.15 mm epoxy build and the
+  share of the crimp the film keeps, so it jumped about 0.1 mm where the weave fades out.
+- **Relief amplitudes in the docs**: `natural.water`, `lava` and `cloudMaterial` give the heights
+  their parameters reach (about 0.06 to 0.08 times the amount times the size, sampled), and
+  `glazing.reeded` and `organic.orangePeel` say how their reliefs stand.
 - `topofold` now evaluates general UI-derived constant expressions via a scoped `ConstEvalFunc`
   fallback (`eval.ConstPkgSlotsAt`) in `assembler`, rejecting non-finite results, and Rust Cargo
   build scripts (`internal/fidget/internal/rust/build.rs`, `internal/fidget/internal/tape-core/build.rs`,

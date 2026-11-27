@@ -152,14 +152,19 @@ glossRoughness(glossUnits) {
 /// dimpled wobble up close; seen smaller than a pixel their slopes widen the
 /// lobe instead. The color is the coat's, even: the peel shows in the
 /// reflection, not the albedo. Returns material, color, height and slope.
+/// Relief: amplitude stated (8 um peak to valley), down from its noise bound; declares its depth.
 powderCoat(@color coatColor, @range(0, 100) glossUnits, @range(0, 1) peel) {
   amount = clamp(peel, 0, 1);
   // Each band is fine detail (name.detail), worked out only where it shows.
+  // Measured down from the waves' peaks: gradient noise stays within ±0.87, so
+  // the bands together stay within ±0.009 mm at peel 1 (their sampled peak is
+  // about 0.0056).
+  crest = 0.009 * amount;
   shortWave = 0;
   shortWave.detail = noise.gradient(0.3) * 0.0006 * amount * texture.fadeDetail(0.3);
   shortWave.detailSize = 0.3;
-  waves = 0;
-  waves.detail = (noise.gradient(1.5) + 0.5 * noise.gradient(0.65) * texture.fadeDetail(0.65)) * 0.0065 * amount * texture.fadeDetail(1.5) + shortWave;
+  waves = -crest;
+  waves.detail = (noise.gradient(1.5) + 0.5 * noise.gradient(0.65) * texture.fadeDetail(0.65)) * 0.0065 * amount * texture.fadeDetail(1.5) + shortWave - crest;
   waves.detailSize = 1.5;
   rough = glossRoughness(glossUnits);
   alpha = rough * rough;
@@ -168,35 +173,44 @@ powderCoat(@color coatColor, @range(0, 100) glossUnits, @range(0, 1) peel) {
   // differences over four 3 mm patches.
   lobe = texture.reliefRoughness(alpha, 0.0010 * amount, 0.3);
   wide = texture.reliefRoughness(lobe, 0.0032 * amount, 1.5);
-  coat = material.withDisplacement(material.make(sqrt(wide), 0, 1.5), waves);
+  coat = material.withReliefDepth(material.withDisplacement(material.make(sqrt(wide), 0, 1.5), waves), 2 * crest);
   // Stand-in: the waves too small to see, both bands' slopes in the lobe.
-  coat.simple = material.make(sqrt(sqrt(alpha * alpha + 0.00001124 * amount * amount)), 0, 1.5);
+  coat.simple = material.withReliefDepth(material.withDisplacement(material.make(sqrt(sqrt(alpha * alpha + 0.00001124 * amount * amount)), 0, 1.5), -crest), 2 * crest);
   return coat, coatColor, 0, 0;
 }
 
 /// wrinkleCoat(coatColor, size): a wrinkle powder coat, its skin cured faster
 /// than beneath it and puckered into ridges `size` mm apart (0.3 to 1), low
 /// gloss. Returns material, color, height and slope.
+/// Relief: judged, down from the ridges' tops; declares its depth.
 wrinkleCoat(@color coatColor, @range(0.3, 1) size) {
-  relief = 0;
-  relief.detail = (0.234 - noise.turbulence2(size, 0.5, 2.1)) * 0.15 * size * texture.fadeDetail(size);
+  // Measured down from the ridges' tops: turbulence is 0 or more, so the
+  // ridges reach 0.234 x 0.15 size above their mean and, turbulence below
+  // 1.31, 0.161 size below it.
+  crest = 0.0351 * size;
+  relief = -crest;
+  relief.detail = (0.234 - noise.turbulence2(size, 0.5, 2.1)) * 0.15 * size * texture.fadeDetail(size) - crest;
   relief.detailSize = size;
   alpha = texture.reliefRoughness(0.2, 0.5, size);
-  coat = material.withDisplacement(material.make(sqrt(alpha), 0, 1.5), relief);
+  coat = material.withReliefDepth(material.withDisplacement(material.make(sqrt(alpha), 0, 1.5), relief), 0.196 * size);
   // Stand-in: the ridges too small to see, their slopes in the lobe.
-  coat.simple = material.make(sqrt(sqrt(0.04 + 0.25)), 0, 1.5);
+  coat.simple = material.withReliefDepth(material.withDisplacement(material.make(sqrt(sqrt(0.04 + 0.25)), 0, 1.5), -crest), 0.196 * size);
   return coat, coatColor, 0, 0;
 }
 
 /// sandCoat(coatColor, grain): a sand-textured powder coat, grains `grain` mm
 /// across (0.1 to 0.3) standing out of a matte coat. Returns material, color,
 /// height and slope.
+/// Relief: judged, down from the grains' tops; declares its depth.
 sandCoat(@color coatColor, @range(0.1, 0.3) grain) {
-  relief = texture.grainRelief(grain, 0.4 * grain);
+  // Measured down from the grains' tops, 0.4 grain above the coat between
+  // them.
+  crest = 0.4 * grain;
+  relief = texture.grainRelief(grain, crest) - crest;
   alpha = texture.reliefRoughness(0.3, 0.6, grain);
-  coat = material.withDisplacement(material.make(sqrt(alpha), 0, 1.5), relief);
+  coat = material.withReliefDepth(material.withDisplacement(material.make(sqrt(alpha), 0, 1.5), relief), crest);
   // Stand-in: the grains too small to see, their slopes in the lobe.
-  coat.simple = material.make(sqrt(sqrt(0.09 + 0.36)), 0, 1.5);
+  coat.simple = material.withReliefDepth(material.withDisplacement(material.make(sqrt(sqrt(0.09 + 0.36)), 0, 1.5), -crest), crest);
   return coat, coatColor, 0, 0;
 }
 
@@ -204,20 +218,24 @@ sandCoat(@color coatColor, @range(0.1, 0.3) grain) {
 /// in a coat that sets in dimples `cellSize` mm across (2 to 6), as if beaten:
 /// the flake glints and each dimple catches the light its own way. Returns
 /// material, color, height and slope.
+/// Relief: judged, down from the dimples' rims; declares its depth.
 hammertone(@color coatColor, @range(2, 6) cellSize) {
   dimpleF1, dimpleF2, dimpleCell = noise.cellularCell(cellSize);
   bowl = clamp(dimpleF1 / (0.7 * cellSize), 0, 1);
-  relief = 0;
-  relief.detail = (bowl * bowl - 0.578) * 0.06 * cellSize * texture.fadeDetail(cellSize);
+  // Measured down from the dimples' rims: bowl runs 0 to 1, so the dimples
+  // reach 0.422 x 0.06 cellSize above their mean and 0.578 x it below.
+  crest = 0.02532 * cellSize;
+  relief = -crest;
+  relief.detail = (bowl * bowl - 0.578) * 0.06 * cellSize * texture.fadeDetail(cellSize) - crest;
   relief.detailSize = cellSize;
   shade = 1;
   shade.detail = texture.fadeTo(0.85 + 0.3 * noiseHash3(dimpleCell + [41, 7, 13]).x, 1, cellSize);
   shade.detailSize = cellSize;
   // The dimples' slopes, 0.09 root mean square at any size (measured).
   alpha = texture.reliefRoughness(0.12, 0.09, cellSize);
-  coat = material.withDisplacement(material.make(sqrt(alpha), 0.5, 1.5), relief);
+  coat = material.withReliefDepth(material.withDisplacement(material.make(sqrt(alpha), 0.5, 1.5), relief), 0.06 * cellSize);
   // Stand-in: the dimples too small to see, their slopes in the lobe.
-  coat.simple = material.make(sqrt(sqrt(0.0144 + 0.0081)), 0.5, 1.5);
+  coat.simple = material.withReliefDepth(material.withDisplacement(material.make(sqrt(sqrt(0.0144 + 0.0081)), 0.5, 1.5), -crest), 0.06 * cellSize);
   tint = coatColor * shade;
   tint.simple = coatColor;
   return coat, tint, 0, 0;
@@ -251,6 +269,7 @@ edgeWear(faceA, faceB, width) {
 /// paint itself is faintly mottled and chalked, lighter, grayer and duller
 /// in broad patches. Chips too small to see settle to their share. Returns
 /// material, color, height and slope.
+/// Relief: judged, down from the paint's top; declares its depth.
 chippedPaint(baseMaterial, @color baseColor, @color paintColor, @color primerColor, @range(0, 100) glossUnits, wear, @range(0.5, 30) chipSize) {
   reach = chipReach(wear);
   paintGone, primerGone = chipCover(chipSize, reach);
@@ -263,9 +282,11 @@ chippedPaint(baseMaterial, @color baseColor, @color paintColor, @color primerCol
   primerShows = clamp((paintGone - primerGone) / max(1 - primerGone, 0.0001), 0, 1);
   coated = material.blend(paintMat, primerMat, primerShows);
   worn = material.blend(coated, baseMaterial, primerGone);
-  // The coats' steps, less their mean, so the stand-in's flat height is the
-  // relief's own average.
-  chipped = material.withDisplacement(worn, material.displacement(baseMaterial) + 0.05 * (chipUnion(reach, 0) - paintGone) + 0.03 * (chipUnion(reach, 1) - primerGone));
+  // The coats' steps, measured down from the paint's top: 0.05 mm of paint
+  // and 0.03 of primer, each gone where it is chipped. The blend above mixes
+  // the volume row, so the base's build is set back as it was: the coats
+  // here are relief, not film.
+  chipped = material.withDisplacement(chipLaid(worn, baseMaterial), material.displacement(baseMaterial) - 0.05 * paintGone - 0.03 * primerGone);
   chipped.simple = chippedStandInMaterial(baseMaterial, glossUnits, wear);
   // Chalking: lighter, and grayer by the same token, zero on average.
   paintLab = color.rgb2oklab(paintColor);
@@ -382,7 +403,15 @@ chippedStandInMaterial(baseMaterial, glossUnits, wear) {
   share1 = chipUnion(reach, 0);
   share2 = chipUnion(reach, 1);
   coats = material.blend(material.make(glossRoughness(glossUnits), 0, 1.5), material.make(0.85, 0, 1.5), (share1 - share2) / max(1 - share2, 0.0001));
-  return material.withDisplacement(material.blend(coats, baseMaterial, share2), material.displacement(baseMaterial));
+  // The chips' mean depth below the paint's top.
+  return material.withDisplacement(chipLaid(material.blend(coats, baseMaterial, share2), baseMaterial), material.displacement(baseMaterial) - 0.05 * share1 - 0.03 * share2);
+}
+
+// chipLaid: a blend of chipped coats over baseMaterial, with the base's own
+// build (the blend mixes it away where the paint is intact) and a relief
+// depth of the base's plus the coats' 0.08 mm.
+chipLaid(blended, baseMaterial) {
+  return material.withReliefDepth(material.withBuild(blended, material.build(baseMaterial)), material.reliefDepth(baseMaterial) + 0.08);
 }
 
 chippedStandInColor(baseColor, paintColor, primerColor, wear) {

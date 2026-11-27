@@ -81,6 +81,7 @@ nosePitch(s, spacing, radius) {
 /// round the axis, f^2 / (8 r) deep: the highlight streaks along the axis and
 /// the grooves show where they are big enough to see. Returns material,
 /// color, height and slope.
+/// Relief: measured (the tool nose and feed), down from the cusps; declares its depth.
 turned(baseMaterial, @color baseColor, @point axisOrigin, @direction(axisOrigin) axisDir, @range(0.05, 0.3) feed, @range(0.2, 1.6) noseRadius) {
   axis = normalize(axisDir);
   offset = p - axisOrigin;
@@ -93,6 +94,7 @@ turned(baseMaterial, @color baseColor, @point axisOrigin, @direction(axisOrigin)
 /// same grooves as turned, as rings round the axis every `feed` mm, and the
 /// highlight streaked across them, a fan of light from the centre. Returns
 /// material, color, height and slope.
+/// Relief: measured (the tool nose and feed), down from the cusps; declares its depth.
 faced(baseMaterial, @color baseColor, @point axisOrigin, @direction(axisOrigin) axisDir, @range(0.05, 0.3) feed, @range(0.2, 1.6) noseRadius) {
   axis = normalize(axisDir);
   offset = p - axisOrigin;
@@ -108,6 +110,7 @@ faced(baseMaterial, @color baseColor, @point axisOrigin, @direction(axisOrigin) 
 /// capped cylinder one call turns the side, where v runs along the axis, and
 /// faces the caps, where v runs out from it, as a lathe does. Returns
 /// material, color, height and slope.
+/// Relief: measured (the tool nose and feed), down from the cusps; declares its depth.
 turned(baseMaterial, @color baseColor, frame, @range(0.05, 0.3) feed, @range(0.2, 1.6) noseRadius) {
   s = fract(frame.y / feed);
   return grooveFinish(baseMaterial, frame.x.dp, s, feed, noseRadius), baseColor, 0, 0;
@@ -120,6 +123,7 @@ turned(baseMaterial, @color baseColor, frame, @range(0.05, 0.3) feed, @range(0.2
 /// round. The inserts leave arcs of the cutter's radius, one every feed, whose
 /// cusps are f^2 / (8 r) high: the highlight streaks across the arcs. Returns
 /// material, color, height and slope.
+/// Relief: measured (the inserts' corners and the feed), down from the cusps; declares its depth.
 faceMilled(baseMaterial, @color baseColor, @point origin, @direction(origin) feedDir, @direction(origin) normal, @range(5, 100) cutterRadius, feedPerRev, cornerRadius) {
   n = normalize(normal);
   along = normalize(feedDir - n * dot(feedDir, n));
