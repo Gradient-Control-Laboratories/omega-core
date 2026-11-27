@@ -40,12 +40,16 @@ func renderRadianceDoc(doc string, width, height int, extent float64, env string
 	if err != nil {
 		return nil, nil, fmt.Errorf("assemble: %w", err)
 	}
-	return eval.RenderLitSizedViewRadiance(res.Program, width, height, extent*swatchRadius, 0, eval.LitView{
+	png, lin, err := eval.RenderLitWithLinear(res.Program, eval.LitView{
 		Light:        light,
 		NoAxes:       true,
 		Environment:  env,
 		GlassSamples: swatchGlassSamples,
-	})
+	}.Options(width, height, extent*swatchRadius, 0))
+	if err != nil {
+		return nil, nil, err
+	}
+	return png, lin.Radiance, nil
 }
 
 // renderBasis appends a finish's two renders to out, as half floats.

@@ -100,10 +100,11 @@ golden stops for approval before the golden is updated.
 
 ## Phase 5: Go SDK
 
-- [ ] Goal: `With…` options (spec section 7's table); bare names marked `Deprecated` for one release; omega-core's
-      callers move
-- [ ] Goal: Deprecate `RenderLitSized`, `RenderLitSizedView` and `RenderLitSizedViewRadiance` for one release;
+- [x] Goal: `With…` options (spec section 7's table); bare names marked `Deprecated` for one release; omega-core's
+      callers move (names are `With` + the old name, e.g. `WithDisableDeadcodeRemoval`)
+- [x] Goal: Deprecate `RenderLitSized`, `RenderLitSizedView` and `RenderLitSizedViewRadiance` for one release;
       omega-core's callers move to `RenderLit(prog, LitOptions)`; `RenderLitLinear` and `RenderLitWithLinear` stay
+      (`LitView.Options(width, height, extent, time)` builds the LitOptions a view used to)
 - [ ] Goal: `LitOptions.Device = "fidget"`
   - [ ] The cgo layer exposes fidget's CPU voxel render per return: depth, normal, return id
   - [ ] Merge, colour and material tapes at hits, SSAO, then `RenderLit`'s shading; compared with the browser's

@@ -64,6 +64,10 @@ from `1.0.0` onward).
   junction. `foam.kelvin` and `foam.rhombicDodecahedral` are the Voronoi foams, the duals of `beam.bcc`
   and `beam.octet`, and each lattice's docs name its dual. `lattice.bcc` is deprecated for
   `beam.bcc(cellSize, combine) - beamRadius`, which `gsl fix -stdlib` writes.
+- **Go options are all `With…`**: `assembler.WithSourcePaths`, `WithParser`, `WithExtractUI` and the rest,
+  `mesh.WithMeshOracles`, `tape.WithBbox`, `wgsl.WithStandalone`; the bare names are deprecated for a
+  release. `eval.RenderLitSized`, `RenderLitSizedView` and `RenderLitSizedViewRadiance` are deprecated for
+  `RenderLit(prog, view.Options(width, height, extent, time))`.
 - **Shapes and booleans**: `torus(center, ...)` and `octahedron(center, size)`; every difference takes a list
   `[target, tool, ...]` and has an operator form, as unions and intersections do.
 

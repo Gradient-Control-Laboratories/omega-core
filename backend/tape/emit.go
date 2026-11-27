@@ -39,37 +39,60 @@ type options struct {
 	progressFn  progress.Callback
 }
 
-// Progress supplies a progress callback to report tape compilation progress.
-func Progress(fn progress.Callback) Option {
+// WithProgress supplies a progress callback to report tape compilation progress.
+func WithProgress(fn progress.Callback) Option {
 	return func(o *options) {
 		o.progressFn = fn
 	}
 }
 
-// WithProgress supplies a progress callback to report tape compilation progress.
-func WithProgress(fn progress.Callback) Option {
-	return Progress(fn)
+// Progress is WithProgress.
+//
+// Deprecated: use WithProgress; Progress will be removed after a release.
+func Progress(fn progress.Callback) Option {
+	return WithProgress(fn)
 }
 
-// Bbox stamps the world-space scene bounding box [xmin, ymin, zmin, xmax, ymax, zmax] into the tape.
-func Bbox(bbox [6]float32) Option {
+// WithBbox stamps the world-space scene bounding box [xmin, ymin, zmin, xmax, ymax, zmax] into the tape.
+func WithBbox(bbox [6]float32) Option {
 	return func(o *options) {
 		o.bbox = bbox
 	}
 }
 
-// MeshOracles registers BVH mesh SDF oracles before compilation and embeds them in the tape.
-func MeshOracles(oracles []meshasset.MeshSdfOracle) Option {
+// Bbox is WithBbox.
+//
+// Deprecated: use WithBbox; Bbox will be removed after a release.
+func Bbox(bbox [6]float32) Option {
+	return WithBbox(bbox)
+}
+
+// WithMeshOracles registers BVH mesh SDF oracles before compilation and embeds them in the tape.
+func WithMeshOracles(oracles []meshasset.MeshSdfOracle) Option {
 	return func(o *options) {
 		o.meshOracles = oracles
 	}
 }
 
-// VdbOracles registers OpenVDB level-set oracles before compilation and embeds them in the tape.
-func VdbOracles(oracles []meshasset.VdbOracle) Option {
+// MeshOracles is WithMeshOracles.
+//
+// Deprecated: use WithMeshOracles; MeshOracles will be removed after a release.
+func MeshOracles(oracles []meshasset.MeshSdfOracle) Option {
+	return WithMeshOracles(oracles)
+}
+
+// WithVdbOracles registers OpenVDB level-set oracles before compilation and embeds them in the tape.
+func WithVdbOracles(oracles []meshasset.VdbOracle) Option {
 	return func(o *options) {
 		o.vdbOracles = oracles
 	}
+}
+
+// VdbOracles is WithVdbOracles.
+//
+// Deprecated: use WithVdbOracles; VdbOracles will be removed after a release.
+func VdbOracles(oracles []meshasset.VdbOracle) Option {
+	return WithVdbOracles(oracles)
 }
 
 // WithAppearance configures whether to serialize each return's colour and material fields into the tape.
@@ -79,11 +102,18 @@ func WithAppearance(enable bool) Option {
 	}
 }
 
-// LevelSets configures whether to bake and embed each vdbSdf's narrow-band level set into the tape.
-func LevelSets(enable bool) Option {
+// WithLevelSets configures whether to bake and embed each vdbSdf's narrow-band level set into the tape.
+func WithLevelSets(enable bool) Option {
 	return func(o *options) {
 		o.levelSets = enable
 	}
+}
+
+// LevelSets is WithLevelSets.
+//
+// Deprecated: use WithLevelSets; LevelSets will be removed after a release.
+func LevelSets(enable bool) Option {
+	return WithLevelSets(enable)
 }
 
 // Compile translates an assembled program into a self-contained bytecode evaluation tape.

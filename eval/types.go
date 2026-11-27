@@ -214,6 +214,24 @@ type LitView struct {
 	GlassSamples    int
 }
 
+// Options are the LitOptions that render v at the given size, world extent
+// and time.
+func (v LitView) Options(width, height int, worldExtent, timeAt float64) LitOptions {
+	return LitOptions{
+		Width:           width,
+		Height:          height,
+		WorldExtent:     worldExtent,
+		Time:            timeAt,
+		View:            v.Dir,
+		Up:              v.Up,
+		Light:           v.Light,
+		NoAxes:          v.NoAxes,
+		Environment:     v.Environment,
+		EnvironmentTurn: v.EnvironmentTurn,
+		GlassSamples:    v.GlassSamples,
+	}
+}
+
 // LitOptions controls a lit CPU render. The zero value renders 900x600 at the
 // document's default framing.
 type LitOptions struct {

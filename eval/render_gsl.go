@@ -76,7 +76,7 @@ func (e *Evaluator) render(ctx context.Context, manifest map[string]string, code
 
 	panels := make([][]byte, 0, len(litViews))
 	for i, v := range litViews {
-		png, err := RenderLitSizedView(prog, width, height, extent, timeAt, v)
+		png, err := RenderLit(prog, v.Options(width, height, extent, timeAt))
 		if err != nil {
 			return nil, fmt.Errorf("view %s: %w", names[i], err)
 		}

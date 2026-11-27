@@ -156,7 +156,7 @@ func (s *server) evaluator(paths []string, docDir string) *eval.Evaluator {
 	}
 	var opts []assembler.Option
 	if len(paths) > 0 {
-		opts = append(opts, assembler.SourcePaths(paths...))
+		opts = append(opts, assembler.WithSourcePaths(paths...))
 	}
 	e := eval.New(nil, nil, opts...)
 	meshDirs := []string{docDir}
