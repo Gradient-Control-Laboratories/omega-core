@@ -6,7 +6,7 @@ Expected:
               arguments:
                 - fnCall:
                     reference:
-                      name: list
+                      name: fields
                 - reference:
                     name: gsl_anon
               reference:
@@ -18,7 +18,7 @@ Expected:
               arguments:
                 - fnCall:
                     reference:
-                      name: list
+                      name: fields
                 - reference:
                     name: gsl_anon_2
               reference:
@@ -62,7 +62,7 @@ Expected:
                                 - value: 3
                               operation: SUB
                         operation: COLLECT
-          name: list
+          name: fields
         - groups:
             - functions:
                 - returns:

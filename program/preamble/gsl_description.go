@@ -381,6 +381,10 @@ over the elements starting from the initial value; the accumulator may be a vect
 The callback may also take the element's ` + "`index`" + `, and a fold over a list of
 functions a fourth parameter, ` + "`prev`" + `, the element before (the first is handed
 itself), which it can call with constant arguments.
+` + "`list(n)`" + ` is the list ` + "`[0, 1, ..., n - 1]`" + ` and ` + "`list(n, fn)`" + ` is ` + "`[fn(0), ..., fn(n - 1)]`" + `.
+A list's length is part of its type, so n must be known when the document compiles: a
+literal, a constant, or a parameter every call passes a constant for (the function is
+specialized for each value).
 
 ### **Operators**
 

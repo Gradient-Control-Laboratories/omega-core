@@ -150,6 +150,7 @@ var reservedMap = map[string]bool{
 	"exp2":      true,
 	"fract":     true,
 	"length":    true,
+	"list":      true,
 	"normalize": true,
 	"radians":   true,
 	"sign":      true,

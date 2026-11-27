@@ -68,6 +68,7 @@ var builtinsMap = map[string]*BuiltinType{
 	"exp2":      {Name: "exp2", MinArgs: 1, MaxArgs: 1},
 	"fract":     {Name: "fract", MinArgs: 1, MaxArgs: 1},
 	"length":    {Name: "length", MinArgs: 1, MaxArgs: 1},
+	"list":      {Name: "list", MinArgs: 1, MaxArgs: 2},
 	"normalize": {Name: "normalize", MinArgs: 1, MaxArgs: 1},
 	"radians":   {Name: "radians", MinArgs: 1, MaxArgs: 1},
 	"sign":      {Name: "sign", MinArgs: 1, MaxArgs: 1},

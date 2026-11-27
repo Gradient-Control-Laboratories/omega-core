@@ -8,6 +8,7 @@ var builtinDescriptions = map[string]string{
 	"acosh":     "Takes one argument, e, and returns the inverse hyperbolic cosine of e.",
 	"asinh":     "Takes one argument, e, and returns the inverse hyperbolic sine of e.",
 	"atanh":     "Takes one argument, e, and returns the inverse hyperbolic tangent of e.",
+	"list":      "Takes a constant count n, and optionally a function fn(i), and returns the list [0, 1, ..., n - 1], or [fn(0), fn(1), ..., fn(n - 1)] with fn. n must be known when the document compiles: a literal, a constant, or a parameter every call passes a constant for (the function is specialized for each). list(3, (i) { return i * 2; }) is [0, 2, 4].",
 	"clamp":     "Takes three arguments, e1, e2, and e3, and returns e1 clamped to the range [e2, e3].",
 	"cosh":      "Takes one argument, e, and returns the hyperbolic cosine of e.",
 	"cross":     "Takes two arguments, e1 and e2, and returns the cross product of e1 and e2.",
