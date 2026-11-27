@@ -90,17 +90,18 @@ New tests are added only once the owner agrees them.
       reads each return's volume row once and returns (height, build), and `gsl_sdShapeDisplaced` moves
       relief by its relief scale and build by its build scale (owner's choice over gating on evidence of
       a build, which missed *Material - Coated*'s builds through `coating.levelled`)
-- [x] Task: Mesh export (proposal agreed 2026-11-26): `--build` and `--relief` on
-      `compile -t stl|glb|3mf`, `"build"` and `"relief"` on `gsl eval`'s mesh op and the server's mesh
-      request, `mesh.WithDisplacement`, off by default. `convert.ToDisplacedTreesAtTime` builds each
+- [x] Task: Mesh export (proposal agreed 2026-11-26): `--coatings` and `--relief` on
+      `compile -t stl|glb|3mf`, `"coatings"` and `"relief"` on `gsl eval`'s mesh op and the server's mesh
+      request, `mesh.WithDisplacement`, off by default (named `--build` / `"build"` until the owner's
+      rename to Coatings, 2026-11-27; `buildScale()` and the material's `build` keep their names). `convert.ToDisplacedTreesAtTime` builds each
       return's layered distance with `buildScale()` and `displacementScale()` at the flags. A box worked
       out for the part (`.box`, `--bbox auto`, `@scene`) is grown `mesh.DisplacementMargin`, 3 mm (owner's
       choice): those boxes hold the field as built, and MDC left the coated stick open where its coats
       crossed the box. A box named outright is meshed as given. `gsl eval` meshes displaced take the
       facets' normals. Relief is shipped documented (owner's choice): finer than a cell it aliases, and on
-      the oak's noisy relief MDC throws vertices about 11 mm off the surface; `--build --relief` on the
+      the oak's noisy relief MDC throws vertices about 11 mm off the surface; `--coatings --relief` on the
       whole stick at subdivision 7 did not finish in 45 CPU-minutes. Both are open, with the MDC work (#170)
-- [x] Task: Section mode: Build and Relief checkboxes in the Section panel, off by default. The
+- [x] Task: Section mode: Coatings and Relief checkboxes in the Section panel, off by default. The
       field plane draws `gsl_sectionShape(p, time, relief, build)` ([gsl-displace.js](../../../examples/viewer/render/gsl-displace.js)),
       sdShape moved by the toggles through the per-return composite or the winner's material, with no
       Detail fade. `buildScale()` has its own WGSL var (`gsl_buildScaleK`); the march passes its knob to
@@ -110,9 +111,19 @@ New tests are added only once the owner agrees them.
       `buildScale()` and `displacementScale()`, and a displaced mesh sets it to the relief flag
 - [x] Task: New tests (owner's go), `backend/mesh/displacement_test.go`: a 20 mm cube with a 0.1 mm
       build, laid as a coat and as its own material, meshes to the offset cube's volume (8241.94 mm³
-      against 8241.89) with `--build` and to the bare cube's with relief alone; with both flags off the
+      against 8241.89) with `--coatings` and to the bare cube's with relief alone; with both flags off the
       mesh is byte for byte the one meshed without the option. The coated oak stick: flags off byte-
-      identical to before; `--build` closed, 327,050 mm³ against 317,136 bare
+      identical to before; `--coatings` closed, 327,050 mm³ against 317,136 bare
+- [x] Task: Viewer follow-ups (owner's requests, 2026-11-26/27). Section panel: Direction, Offset,
+      Model (the old Section slider), then Color | Coatings | Relief, then the contour controls, which
+      Color disables. Color draws the cut faces in the material's colour (sRGB decoded, so not encoded
+      twice). The Model opacity slider is gone in both modes: while the panel is open the field is
+      clipped at the plane (`sdShape` wraps `gsl_sdShapeUnclipped`, clip state set at fragment entry)
+      and the primary ray starts at the plane, so grazing rays no longer crawl through clipped solids
+      (the "ghost objects"). Color samples each visible shape alone and cuts wherever any is solid:
+      `gsl_min` keeps the nearest crossing, not the minimum, so a screw in a tapped hole dropped its
+      cut. The Export panel has Coatings and Relief checkboxes for the server meshers, and grows the
+      measured box 3 mm. Open: the Simple and path-traced tiers do not clip
 - [x] Task: Phase Verification & Checkpoint
 
 ## Phase 4: A Condition for Evaluation
