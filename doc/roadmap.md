@@ -6,7 +6,7 @@ For the full, chronological record of shipped features, breaking changes, and fi
 
 ## Reference Documents
 
-- [Current GSL Language Specification](gsl_lang_spec_current.md) — what the compiler implements today
+- [GSL Compiler Notes](gsl_lang_spec_current.md) — how the compiler parses, types and lowers GSL (the language itself: `gsl skill`)
 - [Future GSL Language Specification](gsl_lang_spec_future.md) — target GSL v2 design
 - [Changelog](../CHANGELOG.md) — completed releases and unreleased changes on `main`
 - [Master Backlog Spec](../conductor/tracks/backlog_20261110/spec.md) — detailed engineering backlog

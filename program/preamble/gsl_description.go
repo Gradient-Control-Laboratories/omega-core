@@ -73,6 +73,8 @@ Numbers are converted to booleans using the following rules:
 
 * **First-Class Functions:** Functions can be named or anonymous, assigned to variables, and passed as arguments.
 
+* **No recursion:** a function cannot call itself, directly or through other functions.
+
 * **Formatting:** Indent nested blocks with **2 spaces** (never tabs, never 4).
 The modeling library and the canonical examples all follow this convention;
 mixing indent widths is the single biggest source of diff noise when humans
@@ -94,8 +96,12 @@ in millimeters, same as every other length in the language.
   ` + "```" + `
 No semicolon follows the directive.
 
+* **Loop length (` + "`@duration`" + `):** ` + "`@duration(seconds)`" + `, beside ` + "`@scene`" + ` at the top of the first file, loops ` + "`time`" + ` over ` + "`[0, seconds]`" + `. One positive number; only the primary package's applies.
+
+* **Captions (` + "`@caption`" + `):** ` + "`@caption(\"text\", start, end)`" + ` or ` + "`@caption(\"text\", start, end, fade)`" + ` at the top level of any file shows text between two times in seconds. The fade defaults to 0.5 s or half the interval, whichever is shorter, and may be at most half of it; ` + "`\\n`" + ` breaks the line, overlapping captions stack, and only the primary package's show.
+
 * **Variable Assignment:** ` + "`name = expression;`" + `
-Supports multiple assignment: ` + "`x, y = someFunc();`" + `
+Several names take a function's several returns: ` + "`x, y = someFunc();`" + `. That is the only multiple assignment; ` + "`a, b = 1, 2;`" + ` is an error.
 Top-level variables are evaluated in order: declare a name before any line that uses it. Functions may be called before their definition.
 
 * **Sliders (` + "`@range`" + `):**
@@ -309,6 +315,13 @@ every measurement use the value itself.
 * **Return Statement:** ` + "`return expr1, expr2;`" + ` (Functions can return multiple values).
 * The return statement can include an optional audio expression as the last element.
 
+### **Imports, Assets & Scope**
+
+* **Imports** come first in a file: ` + "`import \"lattice/beam\";`" + ` (members as ` + "`beam.cubic`" + `), ` + "`import b \"lattice/beam\";`" + ` (as ` + "`b.cubic`" + `) or ` + "`import . \"lattice/beam\";`" + ` (bare names). A standard library prefix also works without an import. A path has no ` + "`//`" + `, no leading or trailing ` + "`/`" + `, no ` + "`.`" + ` or ` + "`..`" + ` segment and no ` + "`.gsl`" + `.
+* **Assets:** ` + "`importMesh 0 \"gear.stl\";`" + ` numbers a mesh as a statement (no parentheses; the index a whole number), and ` + "`g = importMesh \"gear.stl\";`" + ` names it; ` + "`importStep`" + ` (` + "`.step`" + `, ` + "`.stp`" + `, ` + "`.hodge`" + `) and ` + "`importWarp`" + ` work alike. A mesh is ` + "`.stl`" + `, beside the document.
+* **Scope:** ` + "`builtin`" + ` is imported into every file, and a declaration of yours may shadow it. A name of yours that matches another dot-imported member, or two dot-imports declaring one variable, is an error. The files of a package share one namespace; functions overload by their number of parameters, across files too, and two of one name and arity are an error.
+* **Names** may not start with ` + "`gcl_`" + ` or ` + "`gsl_`" + ` or contain ` + "`_gcl`" + ` or ` + "`_gsl`" + `, and ` + "`auto`" + ` is reserved outside ` + "`.box`" + `. Expressions nest at most about 128 deep.
+
 ### **Expressions**
 
 * **Vector Construction:** ` + "`[val1, val2, val3]`" + `
@@ -388,7 +401,7 @@ specialized for each value).
 
 ### **Operators**
 
-All of the math related to vectors in GSL is Hadamard or component-wise vector algebra.
+Vector math is component-wise: ` + "`[1, 2] * [3, 4]`" + ` is ` + "`[3, 8]`" + `. A matrix (a list of column vectors) is the exception: ` + "`m * v`" + ` and ` + "`m * n`" + ` are matrix products, ` + "`v * m`" + ` is an error, ` + "`+`" + ` and ` + "`-`" + ` need matrices of one size, and ` + "`m[c][r]`" + ` is column c, row r (a matrix has no swizzles). Comparing two values of one shape compares them component-wise; comparing a list with a scalar is an error.
 
 * **Arithmetic:** ` + "`+, -, *, /`" + `
 * **Modulo:** ` + "`%`" + `
@@ -418,15 +431,16 @@ Use surrounding parentheses when nesting!
 | Precedence   | Operators                                   | Description                                                        |
 | :---         | :---                                        | :---                                                               |
 | 1  (Highest) | ` + "`(), f(), x, p.x`" + `                 | Parentheses, function calls, literals, references, property access |
-| 2            | ` + "`!, +, -`" + `                         | Unary logical NOT, unary plus/minus                                |
+| 2            | ` + "`!, -`" + `                            | Unary logical NOT, unary minus                                     |
 | 3            | ` + "`*, /, %`" + `                         | Multiplication, division, modulo                                   |
 | 4            | ` + "`+, -`" + `                            | Addition, subtraction                                              |
 | 5            | ` + "`<, <=, >, >=, <=>`" + `               | Relational comparison, spaceship                                   |
 | 6            | ` + "`==, !=`" + `                          | Equality                                                           |
 | 7            | ` + "`&&`" + `                              | Logical AND                                                        |
 | 8            | ` + "`\\|\\|`" + `                          | Logical OR                                                         |
-| 9            | ` + "`?:, ?::`" + `                         | Conditional (ternary / extended ternary)                           |
-| 10 (Lowest)  | ` + "`=`" + `                               | Assignment                                                         |
+| 9  (Lowest)  | ` + "`?:, ?::`" + `                         | Conditional (ternary / extended ternary)                           |
+
+Assignment is a statement, not an operator.
 
 ---
 

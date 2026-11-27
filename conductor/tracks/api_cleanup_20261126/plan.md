@@ -117,5 +117,10 @@ golden stops for approval before the golden is updated.
 
 ## Phase 6: The Language Spec
 
-- [ ] Goal: Move what the generated description lacks into it; cut
+- [x] Goal: Move what the generated description lacks into it; cut
       [doc/gsl_lang_spec_current.md](../../../doc/gsl_lang_spec_current.md) to the compiler's internals
+  - [x] Added to the description: imports, assets and scope; `@duration`, `@caption`; no recursion; the
+        one multiple assignment; matrix products and comparisons; name rules and the depth limit. Fixed
+        there: the precedence table (no unary `+`, no `=` operator), the component-wise claim, the pitfall
+        that recommended recursion, `importMesh`'s forms. The spec is now compiler notes (grammar,
+        annotation lowering, types, the specialization passes, audio, mesh tables)
