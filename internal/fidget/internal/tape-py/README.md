@@ -152,7 +152,7 @@ as, whatever the payload's `fast` flag says:
 ```python
 field = omega_tape.Tape(blob)                           # "fast": omega-core's lattice,
                                                         #   what the viewer draws
-field = omega_tape.Tape(blob, backend="manufacturing")  # hodge's spinodoid_gabor
+field = omega_tape.Tape(blob, backend="manufacturing")  # the Python reference's spinodoid_gabor
 ```
 
 Field drivers (a graded scale or orientation) travel as nodes of the tape and
@@ -167,9 +167,9 @@ import numpy as np, omega_tape
 blob = open("field.tape", "rb").read()
 for oid, kind, self_contained, slot in omega_tape.tape_oracle_uses(blob):
     print(f"{oid:#x} {kind} self_contained={self_contained} slot={slot}")
-# 0xe05b2000 hodgeSpinodoid self_contained=False slot=0   (no payload)
+# 0xe05b2000 referenceGaborSpinodoid self_contained=False slot=0   (no payload)
 
-omega_tape.register_hodge_spinodoid(
+omega_tape.register_reference_gabor_spinodoid(
     slot=0,
     kernels=K,                      # (cells*impulses, 8) float64, see below
     origin=[-16, -16, -16], size=[32, 32, 32],
@@ -183,11 +183,11 @@ field = omega_tape.Tape(blob)       # now it loads
 
 `kernels` is row-major over `size` from `origin`, `impulses` rows per cell, each
 row `[jitter x, jitter y, jitter z, dir x, dir y, dir z, beta, gamma]`, with a
-kernel centre at `(cell + jitter) * cell_size`. hodge's own `_gabor_kernels`
-produces exactly these, and `omega-core`'s `HodgeBake` is pinned to it (bit-exact on
+kernel centre at `(cell + jitter) * cell_size`. The Python reference's own `_gabor_kernels`
+produces exactly these, and `omega-core`'s `ReferenceGaborBake` is pinned to it (bit-exact on
 the direction pool, 2e-14 on the field —
-`program/noise/spinodoid/hodge_parity_test.go`). A `periodic=True` table must be
-hodge's 32-cubed window; a bounded one is located by `bounds` and reads as a
+`program/noise/spinodoid/reference_gabor_parity_test.go`). A `periodic=True` table must be
+the Python reference's 32-cubed window; a bounded one is located by `bounds` and reads as a
 conservative distance-to-domain outside it. A tape with a payload ignores this:
 its baked table replaces a registered one.
 
@@ -249,7 +249,7 @@ drops in directly as a distance/boundary/source oracle — no mesh required.
 Oracle (`bvhSdf`/`vdbSdf`) payloads are embedded in the tape and auto-registered
 on load, so even mesh-referencing tapes are read with a bare `Tape(bytes)`, and
 so are spinodoid tapes `omega-core` writes, which carry their payload; pass
-`backend="manufacturing"` for hodge's field.
+`backend="manufacturing"` for the reference field.
 
 ### Making it a native hodge feature
 

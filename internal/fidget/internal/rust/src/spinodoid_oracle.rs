@@ -2,7 +2,7 @@
 //! fastGaborSpinodoid builtins and their gradients).
 //!
 //! The tables and the oracles live in tape-core (spinodoid.rs for the lattice
-//! field, spinodoid/hodge.rs for hodge's, each with its own slots); this file is
+//! field, spinodoid/reference_gabor.rs for the Python reference's, each with its own slots); this file is
 //! the entry point the Go side calls and the tree builder that pushes onto
 //! TREES. Mirrors cellular_oracle.rs.
 
@@ -90,19 +90,19 @@ pub extern "C" fn tree_spinodoid(slot: u32, comp: u32) -> c_ulong {
     (trees.len() - 1) as c_ulong
 }
 
-/// Install a baked table of hodge's field in `slot`. `kernels` holds `len`
+/// Install a baked table of the reference field in `slot`. `kernels` holds `len`
 /// f64s, KERNEL_STRIDE per kernel in common/noise/spinodoid's order, with
 /// `impulses` of them per cell, over the cells `origin`/`size` hold. A
-/// stationary field is `periodic` over hodge's own 32-cubed window; a driven
+/// stationary field is `periodic` over the reference field's own 32-cubed window; a driven
 /// one is bounded by `bounds` and hashed on true cell indices, so it is
-/// hodge's field everywhere inside the domain. Its slots are its own,
+/// the reference field everywhere inside the domain. Its slots are its own,
 /// separate from the lattice's. Same returns as register_spinodoid.
 ///
 /// # Safety
 /// `kernels` must point to `len` valid f64s.
 #[no_mangle]
 #[allow(clippy::too_many_arguments)]
-pub unsafe extern "C" fn register_hodge_spinodoid(
+pub unsafe extern "C" fn register_reference_gabor_spinodoid(
     slot: u32,
     kernels: *const f64,
     len: usize,
@@ -131,7 +131,7 @@ pub unsafe extern "C" fn register_hodge_spinodoid(
     let bounds: [f64; 6] = unsafe { std::slice::from_raw_parts(bounds, 6) }
         .try_into()
         .unwrap();
-    let table = match spinodoid::hodge::Table::new(
+    let table = match spinodoid::reference_gabor::Table::new(
         data,
         origin,
         size.map(|s| s as usize),
@@ -148,22 +148,22 @@ pub unsafe extern "C" fn register_hodge_spinodoid(
         Ok(t) => t,
         Err(_) => return -2,
     };
-    if spinodoid::hodge::register(slot, table).is_err() {
+    if spinodoid::reference_gabor::register(slot, table).is_err() {
         return -2;
     }
     0
 }
 
-/// tree_spinodoid for a hodge table: the same leaf shape over hodge's own
+/// tree_spinodoid for a reference table: the same leaf shape over the reference field's own
 /// slots and oracle ids.
 #[no_mangle]
-pub extern "C" fn tree_hodge_spinodoid(slot: u32, comp: u32) -> c_ulong {
-    if !spinodoid::hodge::has(slot) || comp >= spinodoid::component::COUNT {
+pub extern "C" fn tree_reference_gabor_spinodoid(slot: u32, comp: u32) -> c_ulong {
+    if !spinodoid::reference_gabor::has(slot) || comp >= spinodoid::component::COUNT {
         return u64::MAX;
     }
     let (x, y, z) = Tree::axes();
     let zero_via_axes = (x.clone() - x) + (y.clone() - y) + (z.clone() - z);
-    let tree = Tree::mesh_oracle(spinodoid::hodge::oracle_id(slot, comp)) + zero_via_axes;
+    let tree = Tree::mesh_oracle(spinodoid::reference_gabor::oracle_id(slot, comp)) + zero_via_axes;
     let mut trees = crate::TREES.lock().unwrap();
     trees.push(tree);
     (trees.len() - 1) as c_ulong
@@ -183,11 +183,11 @@ pub extern "C" fn spinodoid_oracle_id(slot: u32, comp: u32) -> u32 {
     spinodoid::oracle_id(slot, comp)
 }
 
-/// spinodoid_oracle_id for hodge's slots, which are their own id space.
+/// spinodoid_oracle_id for the reference field's slots, which are their own id space.
 #[no_mangle]
-pub extern "C" fn hodge_spinodoid_oracle_id(slot: u32, comp: u32) -> u32 {
+pub extern "C" fn reference_gabor_spinodoid_oracle_id(slot: u32, comp: u32) -> u32 {
     if comp >= spinodoid::component::COUNT {
         return u32::MAX;
     }
-    spinodoid::hodge::oracle_id(slot, comp)
+    spinodoid::reference_gabor::oracle_id(slot, comp)
 }
