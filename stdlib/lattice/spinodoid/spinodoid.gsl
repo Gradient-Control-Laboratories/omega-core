@@ -53,13 +53,18 @@ identityFrame() {
   return [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
 }
 
+// The box a stationary field passes: its table repeats, so it ignores the box.
+noBox() {
+  return [[0, 0, 0], [0, 0, 0]];
+}
+
 /// gabor(period, theta): a stationary spinodoid of wavelength `period` with
 /// the default packet width (3) and kernel density (8). `theta` holds the cone half-angles in radians about the
 /// x, y and z axes, each 0 or between pi/12 and pi/2: [pi/2, pi/2, pi/2] is
 /// isotropic, [0, 0, pi/2] lamellar along z, [pi/6, pi/6, 0] columnar. The level set sits at the
 /// balanced interface.
 gabor(period, theta) {
-  return gaborSpinodoid(p, period, theta, cartesianPoles(), 3, 8, 4096, 0, 0, 1, 1, identityFrame());
+  return gaborSpinodoid(p, period, theta, cartesianPoles(), 3, 8, 4096, 0, 0, 1, 1, identityFrame(), noBox());
 }
 
 /// gabor(period, theta, bias): gabor(period, theta) with the level set moved
@@ -71,7 +76,7 @@ gabor(period, theta) {
 /// density from the cell size instead, so leave this at 0 there. To ask for a
 /// solid fraction instead, use gaborBySolidFraction.
 gabor(period, theta, bias) {
-  return gaborSpinodoid(p, period, theta, cartesianPoles(), 3, 8, 4096, 0, bias, 1, 1, identityFrame());
+  return gaborSpinodoid(p, period, theta, cartesianPoles(), 3, 8, 4096, 0, bias, 1, 1, identityFrame(), noBox());
 }
 
 /// gabor(period, theta, poles, packetWidth, impulses, seed, bias): every
@@ -82,27 +87,30 @@ gabor(period, theta, bias) {
 /// hodge's impulses_per_cell; evaluation cost grows with it, and the preview
 /// shows banding at low densities); `seed` picks the realization.
 gabor(period, theta, poles, packetWidth, impulses, seed, bias) {
-  return gaborSpinodoid(p, period, theta, poles, packetWidth, impulses, 4096, seed, bias, 1, 1, identityFrame());
+  return gaborSpinodoid(p, period, theta, poles, packetWidth, impulses, 4096, seed, bias, 1, 1, identityFrame(), noBox());
 }
 
-/// gaborGraded(period, theta, scale, orientation): a spinodoid whose
+/// gaborGraded(period, theta, scale, orientation, box): a spinodoid whose
 /// wavelength and orientation distribution vary through space. `scale` is a
 /// field multiplying `period` (> 0; keep it below ~packetWidth/2 = 1.5, past
 /// which a packet holds under two waves); `orientation` is a 3x3 rotation field
 /// applied to the wave directions — a frame that follows the part, e.g. a
-/// build axis. Both are read once at every kernel centre.
-gaborGraded(period, theta, scale, orientation) {
-  return gaborSpinodoid(p, period, theta, cartesianPoles(), 3, 8, 4096, 0, 0, 1, scale, orientation);
+/// build axis. Both are read once at every kernel centre, over `box`: the
+/// [min, max] corners of the region the field is evaluated over, in its own
+/// coordinates, as constants. The kernels are baked over that box and nowhere
+/// else, so it must cover the part the field fills (its box, say).
+gaborGraded(period, theta, scale, orientation, box) {
+  return gaborSpinodoid(p, period, theta, cartesianPoles(), 3, 8, 4096, 0, 0, 1, scale, orientation, box);
 }
 
 /// gaborGraded(period, theta, poles, packetWidth, impulses, pool, seed,
-/// bias, localNormalize, scale, orientation): every parameter.
+/// bias, localNormalize, scale, orientation, box): every parameter.
 /// `pool` is the size of the sampled direction pool (default 4096).
 /// `localNormalize` 1 divides by the wavenumber the field carries at each
 /// point, keeping lengths real under a graded scale; 0 divides by the
 /// wavenumber of `period`.
-gaborGraded(period, theta, poles, packetWidth, impulses, pool, seed, bias, localNormalize, scale, orientation) {
-  return gaborSpinodoid(p, period, theta, poles, packetWidth, impulses, pool, seed, bias, localNormalize, scale, orientation);
+gaborGraded(period, theta, poles, packetWidth, impulses, pool, seed, bias, localNormalize, scale, orientation, box) {
+  return gaborSpinodoid(p, period, theta, poles, packetWidth, impulses, pool, seed, bias, localNormalize, scale, orientation, box);
 }
 
 // --- fast forms ---
@@ -113,32 +121,32 @@ gaborGraded(period, theta, poles, packetWidth, impulses, pool, seed, bias, local
 
 /// fastGabor(period, theta): gabor(period, theta) over the lattice field.
 fastGabor(period, theta) {
-  return fastGaborSpinodoid(p, period, theta, cartesianPoles(), 3, 8, 4096, 0, 0, 1, 1, identityFrame());
+  return fastGaborSpinodoid(p, period, theta, cartesianPoles(), 3, 8, 4096, 0, 0, 1, 1, identityFrame(), noBox());
 }
 
 /// fastGabor(period, theta, bias): gabor(period, theta, bias) over
 /// the lattice field.
 fastGabor(period, theta, bias) {
-  return fastGaborSpinodoid(p, period, theta, cartesianPoles(), 3, 8, 4096, 0, bias, 1, 1, identityFrame());
+  return fastGaborSpinodoid(p, period, theta, cartesianPoles(), 3, 8, 4096, 0, bias, 1, 1, identityFrame(), noBox());
 }
 
 /// fastGabor(period, theta, poles, packetWidth, impulses, seed, bias):
 /// every parameter of a stationary lattice spinodoid.
 fastGabor(period, theta, poles, packetWidth, impulses, seed, bias) {
-  return fastGaborSpinodoid(p, period, theta, poles, packetWidth, impulses, 4096, seed, bias, 1, 1, identityFrame());
+  return fastGaborSpinodoid(p, period, theta, poles, packetWidth, impulses, 4096, seed, bias, 1, 1, identityFrame(), noBox());
 }
 
-/// fastGaborGraded(period, theta, scale, orientation): gaborGraded over the
+/// fastGaborGraded(period, theta, scale, orientation, box): gaborGraded over the
 /// lattice field. Its table is sized to the part's domain, so a graded field
 /// may cover geometry of any extent.
-fastGaborGraded(period, theta, scale, orientation) {
-  return fastGaborSpinodoid(p, period, theta, cartesianPoles(), 3, 8, 4096, 0, 0, 1, scale, orientation);
+fastGaborGraded(period, theta, scale, orientation, box) {
+  return fastGaborSpinodoid(p, period, theta, cartesianPoles(), 3, 8, 4096, 0, 0, 1, scale, orientation, box);
 }
 
 /// fastGaborGraded(period, theta, poles, packetWidth, impulses, pool, seed,
-/// bias, localNormalize, scale, orientation): every parameter.
-fastGaborGraded(period, theta, poles, packetWidth, impulses, pool, seed, bias, localNormalize, scale, orientation) {
-  return fastGaborSpinodoid(p, period, theta, poles, packetWidth, impulses, pool, seed, bias, localNormalize, scale, orientation);
+/// bias, localNormalize, scale, orientation, box): every parameter.
+fastGaborGraded(period, theta, poles, packetWidth, impulses, pool, seed, bias, localNormalize, scale, orientation, box) {
+  return fastGaborSpinodoid(p, period, theta, poles, packetWidth, impulses, pool, seed, bias, localNormalize, scale, orientation, box);
 }
 
 // --- by solid fraction ---
@@ -176,11 +184,11 @@ gaborBySolidFraction(period, theta, poles, packetWidth, impulses, seed, solidFra
 }
 
 /// gaborGradedBySolidFraction(period, theta, poles, packetWidth, impulses, pool,
-/// seed, solidFraction, localNormalize, scale, orientation): every parameter, at
+/// seed, solidFraction, localNormalize, scale, orientation, box): every parameter, at
 /// solid fraction `solidFraction`. A fraction is scale-invariant, so a graded scale
 /// grades cell size at flat density (up to the drift above).
-gaborGradedBySolidFraction(period, theta, poles, packetWidth, impulses, pool, seed, solidFraction, localNormalize, scale, orientation) {
-  return gaborGraded(period, theta, poles, packetWidth, impulses, pool, seed, solidFractionBias(solidFraction), localNormalize, scale, orientation);
+gaborGradedBySolidFraction(period, theta, poles, packetWidth, impulses, pool, seed, solidFraction, localNormalize, scale, orientation, box) {
+  return gaborGraded(period, theta, poles, packetWidth, impulses, pool, seed, solidFractionBias(solidFraction), localNormalize, scale, orientation, box);
 }
 
 /// fastGaborBySolidFraction(period, theta, solidFraction): gaborBySolidFraction over the
@@ -197,8 +205,8 @@ fastGaborBySolidFraction(period, theta, poles, packetWidth, impulses, seed, soli
 }
 
 /// fastGaborGradedBySolidFraction(period, theta, poles, packetWidth, impulses, pool,
-/// seed, solidFraction, localNormalize, scale, orientation): gaborGradedBySolidFraction
+/// seed, solidFraction, localNormalize, scale, orientation, box): gaborGradedBySolidFraction
 /// over the lattice field.
-fastGaborGradedBySolidFraction(period, theta, poles, packetWidth, impulses, pool, seed, solidFraction, localNormalize, scale, orientation) {
-  return fastGaborGraded(period, theta, poles, packetWidth, impulses, pool, seed, solidFractionBias(solidFraction), localNormalize, scale, orientation);
+fastGaborGradedBySolidFraction(period, theta, poles, packetWidth, impulses, pool, seed, solidFraction, localNormalize, scale, orientation, box) {
+  return fastGaborGraded(period, theta, poles, packetWidth, impulses, pool, seed, solidFractionBias(solidFraction), localNormalize, scale, orientation, box);
 }

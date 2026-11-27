@@ -42,8 +42,9 @@ const FastGaborSpinodoidGradient = "fastGaborSpinodoidGradient"
 
 // GaborSpinodoidArgs is every spinodoid builtin's argument count: q, period,
 // theta, poles, packetWidth, impulses, pool, seed, bias, localNormalize,
-// scale, orientation.
-const GaborSpinodoidArgs = 12
+// scale, orientation, box. box is the [min, max] region, in the field's own
+// coordinates, a graded field's table covers; a stationary field ignores it.
+const GaborSpinodoidArgs = 13
 
 // IsGaborSpinodoid reports whether name is one of the four spinodoid builtins,
 // and FastSpinodoid whether it is one of the lattice pair.

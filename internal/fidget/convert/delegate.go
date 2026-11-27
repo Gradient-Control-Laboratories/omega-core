@@ -31,8 +31,7 @@ type Delegate struct {
 	spinodoidNextSlot uint32
 
 	// spinodoid tables baked this build, by spinodoid.Call key.
-	spinodoidBakes  map[string]bakedSpinodoidSlot
-	spinodoidDomain *[6]float64
+	spinodoidBakes map[string]bakedSpinodoidSlot
 
 	// spinodoidOracles describes every spinodoid table bound this build, one
 	// per slot, for a tape export to stamp into tape.oracles. A slot's leaf id

@@ -94,9 +94,12 @@ golden stops for approval before the golden is updated.
   - [ ] A WGSL hodge field, checked against the CPU one (`hodge_parity_test.go`'s values)
   - [ ] WGSL codegen and fidget conversion stop forcing `Fast` for `gaborSpinodoid`
   - [ ] Library: `gabor*` over hodge's field, `fastGabor*` over the lattice
-- [ ] Goal: A graded field's table box comes from the call
-  - [ ] Remove the `@scene` and geometry fallback (`SceneDomain`) and the periodic fallback for graded fields
-  - [ ] A graded call with no box is an error naming the argument
+- [x] Goal: A graded field's table box comes from the call
+  - [x] Graded forms take `box`, [min, max] in the field's own coordinates; the builtins take it as a 13th
+        argument (stationary forms pass an ignored zero box). The converter bakes over it: no scene or
+        geometry domain, no query-space transform, no outer-remap periodic fallback. SpinodoidBounds stays
+        computed (the omega app sends it) but no longer reaches the tables
+  - [x] A graded call with no usable box is an error naming box
 
 ## Phase 5: Go SDK
 

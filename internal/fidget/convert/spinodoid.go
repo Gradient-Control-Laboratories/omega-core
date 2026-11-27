@@ -7,8 +7,6 @@ import (
 	"math"
 	"sync"
 
-	"google.golang.org/protobuf/encoding/protowire"
-
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/build"
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget"
 	"github.com/Gradient-Control-Laboratories/omega-core/program"
@@ -189,14 +187,24 @@ func (d *Delegate) builtinGaborSpinodoid(
 		fingerprint = hex.EncodeToString(sum[:])
 	}
 	p.Periodic = len(drivers) == 0
-	p.Domain = d.spinodoidDomain
-	if !p.Periodic && p.Domain != nil {
-		// A direct gaborSpinodoid(q, ...) call may translate/scale its query.
-		// Bake the conservative q-space image of the known world-space domain.
-		p.Domain, err = spinodoidQueryDomain(q, *p.Domain)
+	if !p.Periodic {
+		// A graded table covers the box the call names, in the field's own
+		// coordinates (the q it is evaluated at); nothing comes from the scene.
+		box, err := constant(12, "box")
 		if err != nil {
-			return nil, fmt.Errorf("%s: %w", name, err)
+			return nil, err
 		}
+		var domain [6]float64
+		if len(box) != 6 {
+			return nil, fmt.Errorf("%s: box must be [min, max], two 3-component corners, got %d components", name, len(box))
+		}
+		copy(domain[:], box)
+		for a := 0; a < 3; a++ {
+			if !(domain[a] < domain[a+3]) {
+				return nil, fmt.Errorf("%s: a graded field needs box, the [min, max] corners of the region it is evaluated over in its own coordinates, each min below its max; got %v", name, box)
+			}
+		}
+		p.Domain = &domain
 	}
 	layout, err := spinodoid.NewLayout(spinodoid.TableConstants(p.Period, p.PacketWidth, p.Impulses), p.Domain, p.Periodic)
 	if err != nil {
@@ -437,130 +445,4 @@ type bakedSpinodoidSlot struct {
 	slot      uint32
 	level     float64
 	local     bool
-}
-
-func spinodoidQueryDomain(q []fidget.TreeIndex, world [6]float64) (*[6]float64, error) {
-	var box [6]float32
-	for i, v := range world {
-		box[i] = float32(v)
-		// Widen conversion instead of excluding points at a rounded boundary.
-		if i < 3 {
-			box[i] = math.Nextafter32(box[i], float32(math.Inf(-1)))
-		} else {
-			box[i] = math.Nextafter32(box[i], float32(math.Inf(1)))
-		}
-	}
-	var domain [6]float64
-	for axis := range 3 {
-		values, err := fidget.EvalInterval(fidget.BuildCanvas(q[axis]), [][6]float32{box})
-		if err != nil {
-			return nil, fmt.Errorf("bound spinodoid query: %w", err)
-		}
-		lo, hi := float64(values[0].Lower), float64(values[0].Upper)
-		if math.IsNaN(lo) || math.IsNaN(hi) || math.IsInf(lo, 0) || math.IsInf(hi, 0) {
-			return nil, fmt.Errorf("spinodoid query has no finite domain; use a bounded query transform")
-		}
-		if lo == hi {
-			lo, hi = lo-1e-6, hi+1e-6
-		}
-		domain[axis], domain[axis+3] = lo, hi
-	}
-	return &domain, nil
-}
-
-// Outer remap is applied after a field has been built; its full composed
-// coordinate domain is not available when that field's kernels are baked.
-// Preserve legacy behavior for only the actual spinodoid leaves being remapped,
-// instead of clipping them or disabling finite grading for unrelated material
-// library remaps. Imported default projects use the direct world-space field.
-func (d *Delegate) preserveRemappedSpinodoids(trees []fidget.TreeIndex) error {
-	if len(d.spinodoidBakes) == 0 {
-		return nil
-	}
-	data, err := fidget.SerializeTape(trees)
-	if err != nil {
-		return err
-	}
-	oracles, err := extractTapeMeshOracles(data)
-	if err != nil {
-		return err
-	}
-	const oracleBase = uint32(0xE05B1000) // tape-core spinodoid::SPINODOID_ORACLE_ID_BASE
-	slots := map[uint32]bool{}
-	for _, meshOracle := range oracles {
-		if meshOracle >= oracleBase && meshOracle < oracleBase+256*4 {
-			slots[(meshOracle-oracleBase)/4] = true
-		}
-	}
-	for callKey, baked := range d.spinodoidBakes {
-		if !slots[baked.slot] || baked.table.Periodic {
-			continue
-		}
-		baked.params.Periodic, baked.params.Domain = true, nil
-		baked.cacheKey += "|outer-remap-legacy-periodic"
-		baked.table, err = bakeSpinodoid(baked.cacheKey, baked.params)
-		if err != nil {
-			return err
-		}
-		sum := sha256.Sum256([]byte(baked.cacheKey))
-		baked.contentID = hex.EncodeToString(sum[:16])
-		if err := fidget.RegisterSpinodoid(baked.slot, baked.table, baked.level, baked.local); err != nil {
-			return err
-		}
-		d.spinodoidBakes[callKey] = baked
-		for key, slot := range d.spinodoidSlots {
-			if slot == baked.slot {
-				delete(d.spinodoidSlots, key)
-			}
-		}
-	}
-	return nil
-}
-
-// extractTapeMeshOracles scans a serialized tape.Tape message (field 2 = repeated Node)
-// and returns the meshOracle leaf IDs (Node field 6 = uint32 meshOracle).
-func extractTapeMeshOracles(data []byte) ([]uint32, error) {
-	var ids []uint32
-	for len(data) > 0 {
-		num, typ, n := protowire.ConsumeTag(data)
-		if n < 0 {
-			return nil, protowire.ParseError(n)
-		}
-		data = data[n:]
-		if num == 2 && typ == protowire.BytesType {
-			nodeBytes, m := protowire.ConsumeBytes(data)
-			if m < 0 {
-				return nil, protowire.ParseError(m)
-			}
-			data = data[m:]
-			for len(nodeBytes) > 0 {
-				fnum, ftyp, fn := protowire.ConsumeTag(nodeBytes)
-				if fn < 0 {
-					return nil, protowire.ParseError(fn)
-				}
-				nodeBytes = nodeBytes[fn:]
-				if fnum == 6 && ftyp == protowire.VarintType {
-					v, vm := protowire.ConsumeVarint(nodeBytes)
-					if vm < 0 {
-						return nil, protowire.ParseError(vm)
-					}
-					ids = append(ids, uint32(v))
-					nodeBytes = nodeBytes[vm:]
-				} else {
-					vm := protowire.ConsumeFieldValue(fnum, ftyp, nodeBytes)
-					if vm < 0 {
-						return nil, protowire.ParseError(vm)
-					}
-					nodeBytes = nodeBytes[vm:]
-				}
-			}
-		} else {
-			m := protowire.ConsumeFieldValue(num, typ, data)
-			if m < 0 {
-				return nil, protowire.ParseError(m)
-			}
-			data = data[m:]
-		}
-	}
-	return ids, nil
 }

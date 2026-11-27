@@ -23,6 +23,10 @@ from `1.0.0` onward).
   `octet`. `gsl fix -stdlib` rewrites them.
 - **`matrix.inverse` inverts any square matrix**: it was the affine 4×4 inverse, now `matrix.inverseAffine`.
   An affine matrix gets the same result from either; `inverseAffine` is cheaper.
+- **Graded spinodoids take a `box`**: `gaborGraded(..., box)` and the other graded forms end with `box`, the
+  [min, max] corners, in the field's own coordinates, of the region the field is evaluated over; the table is
+  baked there and nowhere else. The scene and imported-geometry bounds and the periodic fallback are no
+  longer used for spinodoid tables, and the spinodoid builtins take `box` as a 13th argument.
 - **`list` is a builtin**, so a document can no longer declare its own `list` function or variable.
 - **Changed Go module path to `github.com/Gradient-Control-Laboratories/omega-core`**: The root
   `go.mod` module declaration and all internal package import paths changed from
