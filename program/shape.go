@@ -101,7 +101,7 @@ func DeriveBinaryOpType(op Operation, left, right *Type, opIdx int) (*Type, erro
 			return nil, fmt.Errorf("cannot add matrix and scalar at operand %d: matrix addition requires matrices", opIdx)
 		}
 		if (lMat && rVec) || (lVec && rMat) {
-			return nil, fmt.Errorf("cannot add matrix and vector at operand %d", opIdx)
+			return broadcastVectorType("add", left, right, lMat, opIdx)
 		}
 		if lVec && rVec {
 			l1 := int(left.Size)
@@ -135,7 +135,7 @@ func DeriveBinaryOpType(op Operation, left, right *Type, opIdx int) (*Type, erro
 			return nil, fmt.Errorf("cannot subtract matrix and scalar at operand %d", opIdx)
 		}
 		if (lMat && rVec) || (lVec && rMat) {
-			return nil, fmt.Errorf("cannot subtract matrix and vector at operand %d", opIdx)
+			return broadcastVectorType("subtract", left, right, lMat, opIdx)
 		}
 		if lVec && rVec {
 			l1 := int(left.Size)
@@ -187,4 +187,19 @@ func DeriveBinaryOpType(op Operation, left, right *Type, opIdx int) (*Type, erro
 	}
 
 	return nil, nil
+}
+
+// broadcastVectorType is the type of a vector added to or subtracted from a
+// list of vectors: the vector meets every element, so it must be as long as
+// one, and the result is the list. matLeft says which side the list is on.
+func broadcastVectorType(verb string, left, right *Type, matLeft bool, opIdx int) (*Type, error) {
+	mat, vec := left, right
+	if !matLeft {
+		mat, vec = right, left
+	}
+	rows, _ := MatrixDims(mat)
+	if int(vec.Size) != rows {
+		return nil, fmt.Errorf("cannot %s a vector of length %d and a list of vectors of length %d at operand %d: the vector meets each element, so their lengths must match", verb, vec.Size, rows, opIdx)
+	}
+	return mat, nil
 }

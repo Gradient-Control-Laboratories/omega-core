@@ -268,6 +268,12 @@ func lowerBinaryOp(file *program.PackageFile, op program.Operation, acc, step *p
 		} else if lMat && rMat {
 			ensureImported(file, "matrix", start, end)
 			result = program.NewFnCall("matrix", "plus", []*program.Operand{acc, step}, start, end)
+		} else if (lMat && rVec) || (lVec && rMat) {
+			r, err := broadcastOverElements(file, op, acc, step, lMat, opIdx)
+			if err != nil {
+				return nil, err
+			}
+			result = r
 		} else if lVec && rVec {
 			ensureImported(file, "vector", start, end)
 			result = program.NewFnCall("vector", "addVector", []*program.Operand{acc, step}, start, end)
@@ -285,6 +291,12 @@ func lowerBinaryOp(file *program.PackageFile, op program.Operation, acc, step *p
 		} else if lMat && rMat {
 			ensureImported(file, "matrix", start, end)
 			result = program.NewFnCall("matrix", "minus", []*program.Operand{acc, step}, start, end)
+		} else if (lMat && rVec) || (lVec && rMat) {
+			r, err := broadcastOverElements(file, op, acc, step, lMat, opIdx)
+			if err != nil {
+				return nil, err
+			}
+			result = r
 		} else if lVec && rVec {
 			ensureImported(file, "vector", start, end)
 			result = program.NewFnCall("vector", "subtractVector", []*program.Operand{acc, step}, start, end)
@@ -537,4 +549,30 @@ func walkFile(file *program.PackageFile, f func(*program.Operand, []*program.Fun
 		return err
 	}
 	return nil
+}
+
+// broadcastOverElements lowers a vector added to or subtracted from a list of
+// vectors: the operation is applied to each element and the vector, in the
+// order written, and the results collected. matLeft says which side the list
+// is on, so v - m subtracts each element from v.
+func broadcastOverElements(file *program.PackageFile, op program.Operation, acc, step *program.Operand, matLeft bool, opIdx int) (*program.Operand, error) {
+	mat, vec := acc, step
+	if !matLeft {
+		mat, vec = step, acc
+	}
+	elems := make([]*program.Operand, int(mat.Type.Size))
+	for i := range elems {
+		elem := makeIndexAccess(mat, i, mat.Start, mat.End)
+		elem.Type = mat.Type.ElemType
+		l, r := elem, vec
+		if !matLeft {
+			l, r = vec, elem
+		}
+		lowered, err := lowerBinaryOp(file, op, l, r, opIdx)
+		if err != nil {
+			return nil, err
+		}
+		elems[i] = lowered
+	}
+	return program.NewExpression(program.Operation_COLLECT, elems, acc.Start, step.End), nil
 }
