@@ -31,8 +31,7 @@
 package manifold
 
 /*
-#cgo LDFLAGS: -L../../../target/release -lmanifold_glue
-#cgo linux LDFLAGS: -Wl,-rpath,${SRCDIR}/../../../target/release
+// How manifold_glue is linked is in link_dynamic.go and link_static.go (the omega_static tag: release binaries).
 #include <stdint.h>
 #include <stdlib.h>
 

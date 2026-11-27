@@ -54,6 +54,36 @@ type options struct {
 	progressFn  progress.Callback
 	// bodies, when set, is the 1-based returns MeshBodies meshes (WithBodies).
 	bodies map[int]bool
+	// clip, when set, intersects the field with this box before meshing (withClip).
+	clip    [6]float32
+	hasClip bool
+}
+
+// withClip has Mesh mesh the field intersected with box, max(f, the box's field), so a field that runs past the
+// box is closed by the box's faces where it meets them. The mesh plan's composer uses it for a part Manifold is to
+// combine, which must be closed.
+func withClip(box [6]float32) Option {
+	return func(o *options) {
+		o.clip = box
+		o.hasClip = true
+	}
+}
+
+// clipTree is t intersected with box: max(t, max over the axes of |coordinate − centre| − half size).
+func clipTree(t fidget.TreeIndex, box [6]float32) fidget.TreeIndex {
+	axes := [3]fidget.TreeIndex{fidget.NewX(), fidget.NewY(), fidget.NewZ()}
+	var outside fidget.TreeIndex
+	for k, axis := range axes {
+		centre := (float64(box[k]) + float64(box[k+3])) / 2
+		half := (float64(box[k+3]) - float64(box[k])) / 2
+		d := fidget.Sub(fidget.Abs(fidget.Sub(axis, fidget.NewConst(centre))), fidget.NewConst(half))
+		if k == 0 {
+			outside = d
+		} else {
+			outside = fidget.Max(outside, d)
+		}
+	}
+	return fidget.Max(t, outside)
 }
 
 // Progress supplies a progress callback to report meshing progress.
@@ -277,6 +307,13 @@ func Mesh(prog *program.Program, opts ...Option) ([]byte, error) {
 	var stlBytes []byte
 	var err error
 	err = convert.ToTreesAtTime(prog, o.time, func(treeIndices []fidget.TreeIndex, _ []string) error {
+		if o.hasClip {
+			clipped := make([]fidget.TreeIndex, len(treeIndices))
+			for i, t := range treeIndices {
+				clipped[i] = clipTree(t, o.clip)
+			}
+			treeIndices = clipped
+		}
 		stlBytes, err = fidget.GenerateSTL(treeIndices, o.subdivision, fidget.PadBbox(o.bbox, o.subdivision, o.padCells),
 			o.algo, internalProgress)
 		return err

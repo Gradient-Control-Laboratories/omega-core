@@ -23,6 +23,11 @@ type MeshExportPlan struct {
 	// program.OperandName does, a repeat suffixed -2, -3, ...; Bodies calls a
 	// return missing here "body-N".
 	BodyNames map[int]string `json:"bodyNames,omitempty"`
+	// MeshOps reports that the slicer carved a mesh placement (mesh) or a mesh boolean (meshUnion, meshIntersect,
+	// meshDifference) out of the returns. A boolean of two fields leaves a single field part (min, max or max with
+	// the negation), so the tree alone does not show it; the program's returns still hold the call, which only the
+	// plan's parts can be meshed without.
+	MeshOps bool `json:"-"`
 }
 
 // MeshPlanBody is one top-level return of a plan: its own subtree, which an
