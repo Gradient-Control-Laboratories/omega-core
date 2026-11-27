@@ -80,6 +80,32 @@ func TestAtan2CallNamesAtan(t *testing.T) {
 	}
 }
 
+func TestReservedCallsNameTheGSLForm(t *testing.T) {
+	for _, c := range []struct{ src, want string }{
+		{"return gt(p.x, 0) ? sphere(1) : sphere(2);", "'gt' is a reserved word, not a GSL function; use a > b"},
+		{"return sphere(modulo(p.x, 2));", "'modulo' is a reserved word, not a GSL function; use a % b"},
+		{"return remap(sphere(1), vec3(p.x, p.y, 0));", "'vec3' is a reserved word, not a GSL function; use a list, [x, y, z]"},
+		{"return sphere(float(2));", "'float' is a reserved word, not a GSL function; use the value itself"},
+		{"return sphere(int(p.x));", "'int' is a reserved word, not a GSL function; use floor(x), round(x) or trunc(x)"},
+		{"return oneof(sphere(1), sphere(2));", "'oneof' is a reserved word, not a GSL function"},
+	} {
+		msg := assembleErr(t, c.src)
+		if !strings.Contains(msg, c.want) {
+			t.Errorf("missing %q in:\n%s", c.want, msg)
+		}
+		if strings.Contains(msg, "try '") {
+			t.Errorf("suggested renaming a call:\n%s", msg)
+		}
+	}
+}
+
+func TestReservedDeclarationStillSuggestsARename(t *testing.T) {
+	msg := assembleErr(t, "shape = sphere(1);\nreturn shape;")
+	if !strings.Contains(msg, "try 'myShape'") {
+		t.Errorf("no rename for a reserved declaration in:\n%s", msg)
+	}
+}
+
 func TestRemapRejectsATwoComponentPoint(t *testing.T) {
 	msg := assembleErr(t, "return remap(sphere(1), p.xy);")
 	for _, want := range []string{"must be a vec3, not 2 component(s)", "[p.x, p.y, 0]"} {
