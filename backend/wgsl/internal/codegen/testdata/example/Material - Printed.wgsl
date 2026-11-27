@@ -480,7 +480,7 @@ var<private> gsl_dispDrawn: f32 = 0.0;
 
 var<private> gsl_detailPw: f32 = 0.0;
 
-fn gsl_heights(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f32, 8> {
+fn gsl_heights(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<vec2<f32>, 8> {
   let plaMat = printed_layerFinish(p, mat4x4<f32>(vec4<f32>(0.5, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), normalize(vec3<f32>(0.0, 0.0, 1.0)), vec3<f32>(-40.0, 25.0, 0.0), 0.2, 0.1 * (sqrt(max(1.0 - (2.0 * fract(dot(p, normalize(vec3<f32>(0.0, 0.0, 1.0))) / 0.2) - 1.0) * (2.0 * fract(dot(p, normalize(vec3<f32>(0.0, 0.0, 1.0))) / 0.2) - 1.0), 0.0)) - 0.785398), 0.044 * sqrt(100.0 / clamp(40.0, 1.0, 99.0) - 1.0), 0.8, noiseTex);
   let petgMat = printed_layerFinish(p, mat4x4<f32>(vec4<f32>(0.5, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), normalize(vec3<f32>(0.0, 0.0, 1.0)), vec3<f32>(-10.0, 25.0, 0.0), 0.2, 0.1 * (sqrt(max(1.0 - (2.0 * fract(dot(p, normalize(vec3<f32>(0.0, 0.0, 1.0))) / 0.2) - 1.0) * (2.0 * fract(dot(p, normalize(vec3<f32>(0.0, 0.0, 1.0))) / 0.2) - 1.0), 0.0)) - 0.785398), 0.044 * sqrt(100.0 / clamp(70.0, 1.0, 99.0) - 1.0), 0.8, noiseTex);
   let greyMat = printed_layerFinish(p, material_withTransmission(mat4x4<f32>(vec4<f32>(0.5, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), clamp(0.0, 0.0, 1.0), 20.0, noiseTex), normalize(vec3<f32>(0.0, 0.0, 1.0)), vec3<f32>(20.0, 25.0, 0.0), 0.05, (fract(dot(p, normalize(vec3<f32>(0.0, 0.0, 1.0))) / 0.05) - 0.5) * 0.004, 0.0225, 0.05, noiseTex);
@@ -513,18 +513,24 @@ fn gsl_heights(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f32,
     gsl_simpleValue_8 = mat4x4<f32>(mix(gsl_simpleValue_8[0], gsl_simpleFull_4[0], gsl_simpleDetail), mix(gsl_simpleValue_8[1], gsl_simpleFull_4[1], gsl_simpleDetail), mix(gsl_simpleValue_8[2], gsl_simpleFull_4[2], gsl_simpleDetail), mix(gsl_simpleValue_8[3], gsl_simpleFull_4[3], gsl_simpleDetail));
   }
   let mjfMat = gsl_simpleValue_8;
-  return array<f32, 8>(plaMat[2].z, petgMat[2].z, greyMat[2].z, clearMat[2].z, slsMat[2].z, mjfMat[2].z, 0.0, 0.0);
+  let gsl_v0 = plaMat[2];
+  let gsl_v1 = petgMat[2];
+  let gsl_v2 = greyMat[2];
+  let gsl_v3 = clearMat[2];
+  let gsl_v4 = slsMat[2];
+  let gsl_v5 = mjfMat[2];
+  return array<vec2<f32>, 8>(vec2<f32>(gsl_v0.z, gsl_v0.w), vec2<f32>(gsl_v1.z, gsl_v1.w), vec2<f32>(gsl_v2.z, gsl_v2.w), vec2<f32>(gsl_v3.z, gsl_v3.w), vec2<f32>(gsl_v4.z, gsl_v4.w), vec2<f32>(gsl_v5.z, gsl_v5.w), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0));
 }
 
-fn gsl_sdShapeDisplaced(p: vec3<f32>, time: f32, gsl_dispK: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
+fn gsl_sdShapeDisplaced(p: vec3<f32>, time: f32, gsl_dispK: f32, gsl_buildK: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
   let gsl_d = gsl_shapeParts(p, time, noiseTex);
   let gsl_h = gsl_heights(p, time, noiseTex);
-  let gsl_s1 = gsl_shape(gsl_d[0] - gsl_h[0] * gsl_dispK, 1u);
-  let gsl_s2 = gsl_shape(gsl_d[1] - gsl_h[1] * gsl_dispK, 2u);
-  let gsl_s3 = gsl_shape(gsl_d[2] - gsl_h[2] * gsl_dispK, 3u);
-  let gsl_s4 = gsl_shape(gsl_d[3] - gsl_h[3] * gsl_dispK, 4u);
-  let gsl_s5 = gsl_shape(gsl_d[4] - gsl_h[4] * gsl_dispK, 5u);
-  let gsl_s6 = gsl_shape(gsl_d[5] - gsl_h[5] * gsl_dispK, 6u);
+  let gsl_s1 = gsl_shape(gsl_d[0] - (gsl_h[0].x - gsl_h[0].y) * gsl_dispK - gsl_h[0].y * gsl_buildK, 1u);
+  let gsl_s2 = gsl_shape(gsl_d[1] - (gsl_h[1].x - gsl_h[1].y) * gsl_dispK - gsl_h[1].y * gsl_buildK, 2u);
+  let gsl_s3 = gsl_shape(gsl_d[2] - (gsl_h[2].x - gsl_h[2].y) * gsl_dispK - gsl_h[2].y * gsl_buildK, 3u);
+  let gsl_s4 = gsl_shape(gsl_d[3] - (gsl_h[3].x - gsl_h[3].y) * gsl_dispK - gsl_h[3].y * gsl_buildK, 4u);
+  let gsl_s5 = gsl_shape(gsl_d[4] - (gsl_h[4].x - gsl_h[4].y) * gsl_dispK - gsl_h[4].y * gsl_buildK, 5u);
+  let gsl_s6 = gsl_shape(gsl_d[5] - (gsl_h[5].x - gsl_h[5].y) * gsl_dispK - gsl_h[5].y * gsl_buildK, 6u);
   let gsl_s7 = gsl_shape(gsl_d[6], 7u);
   let gsl_s8 = gsl_shape(gsl_d[7], 8u);
   return gsl_min(gsl_min(gsl_min(gsl_min(gsl_min(gsl_min(gsl_min(gsl_s1, gsl_s2), gsl_s3), gsl_s4), gsl_s5), gsl_s6), gsl_s7), gsl_s8);

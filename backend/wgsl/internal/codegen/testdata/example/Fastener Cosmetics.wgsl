@@ -1614,7 +1614,7 @@ var<private> gsl_simpleDetail: f32 = 1.0;
 
 var<private> gsl_dispDrawn: f32 = 0.0;
 
-fn gsl_heights(p: vec3<f32>, time: f32) -> array<f32, 24> {
+fn gsl_heights(p: vec3<f32>, time: f32) -> array<vec2<f32>, 24> {
   let gsl_simpleWeight_33 = gsl_simple(vec3<f32>(-22.26, -20.26, -0.01), vec3<f32>(-13.74, -11.74, 21.01));
   var gsl_simpleField_33 = mat4x4<f32>(clamp(gsl_remap_73(p - vec3<f32>(-18.0, -16.0, 16.0)) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_74(p - vec3<f32>(-18.0, -16.0, 16.0)) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_74(p - vec3<f32>(-18.0, -16.0, 16.0)) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
   if (gsl_simpleWeight_33 > 0.0) {
@@ -1687,28 +1687,40 @@ fn gsl_heights(p: vec3<f32>, time: f32) -> array<f32, 24> {
     let gsl_simpleFull_24 = mat4x4<f32>(clamp(gsl_remap_96(p - vec3<f32>(6.0, 16.0, 0.0)) * 1.0, vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(gsl_remap_97(p - vec3<f32>(6.0, 16.0, 0.0)) * 1.0, vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(gsl_remap_98(p - vec3<f32>(6.0, 16.0, 0.0)) * 1.0, vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), vec4<f32>(0.0, 0.0, 0.0, 0.0));
     gsl_simpleField_44 = mat4x4<f32>(mix(gsl_simpleField_44[0], gsl_simpleFull_24[0], gsl_simpleWeight_44), mix(gsl_simpleField_44[1], gsl_simpleFull_24[1], gsl_simpleWeight_44), mix(gsl_simpleField_44[2], gsl_simpleFull_24[2], gsl_simpleWeight_44), mix(gsl_simpleField_44[3], gsl_simpleFull_24[3], gsl_simpleWeight_44));
   }
-  return array<f32, 24>(0.0, 0.0, 0.0, 0.0, gsl_simpleField_33[2].z, gsl_simpleField_34[2].z, gsl_simpleField_35[2].z, gsl_simpleField_36[2].z, gsl_simpleField_37[2].z, gsl_simpleField_38[2].z, gsl_simpleField_39[2].z, gsl_simpleField_40[2].z, gsl_simpleField_41[2].z, gsl_simpleField_42[2].z, gsl_simpleField_43[2].z, gsl_simpleField_44[2].z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+  let gsl_v4 = gsl_simpleField_33[2];
+  let gsl_v5 = gsl_simpleField_34[2];
+  let gsl_v6 = gsl_simpleField_35[2];
+  let gsl_v7 = gsl_simpleField_36[2];
+  let gsl_v8 = gsl_simpleField_37[2];
+  let gsl_v9 = gsl_simpleField_38[2];
+  let gsl_v10 = gsl_simpleField_39[2];
+  let gsl_v11 = gsl_simpleField_40[2];
+  let gsl_v12 = gsl_simpleField_41[2];
+  let gsl_v13 = gsl_simpleField_42[2];
+  let gsl_v14 = gsl_simpleField_43[2];
+  let gsl_v15 = gsl_simpleField_44[2];
+  return array<vec2<f32>, 24>(vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(gsl_v4.z, gsl_v4.w), vec2<f32>(gsl_v5.z, gsl_v5.w), vec2<f32>(gsl_v6.z, gsl_v6.w), vec2<f32>(gsl_v7.z, gsl_v7.w), vec2<f32>(gsl_v8.z, gsl_v8.w), vec2<f32>(gsl_v9.z, gsl_v9.w), vec2<f32>(gsl_v10.z, gsl_v10.w), vec2<f32>(gsl_v11.z, gsl_v11.w), vec2<f32>(gsl_v12.z, gsl_v12.w), vec2<f32>(gsl_v13.z, gsl_v13.w), vec2<f32>(gsl_v14.z, gsl_v14.w), vec2<f32>(gsl_v15.z, gsl_v15.w), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0));
 }
 
-fn gsl_sdShapeDisplaced(p: vec3<f32>, time: f32, gsl_dispK: f32) -> gsl_shape {
+fn gsl_sdShapeDisplaced(p: vec3<f32>, time: f32, gsl_dispK: f32, gsl_buildK: f32) -> gsl_shape {
   let gsl_d = gsl_shapeParts(p, time);
   let gsl_h = gsl_heights(p, time);
   let gsl_s1 = gsl_shape(gsl_d[0], 1u);
   let gsl_s2 = gsl_shape(gsl_d[1], 2u);
   let gsl_s3 = gsl_shape(gsl_d[2], 3u);
   let gsl_s4 = gsl_shape(gsl_d[3], 4u);
-  let gsl_s5 = gsl_shape(gsl_d[4] - gsl_h[4] * gsl_dispK, 5u);
-  let gsl_s6 = gsl_shape(gsl_d[5] - gsl_h[5] * gsl_dispK, 6u);
-  let gsl_s7 = gsl_shape(gsl_d[6] - gsl_h[6] * gsl_dispK, 7u);
-  let gsl_s8 = gsl_shape(gsl_d[7] - gsl_h[7] * gsl_dispK, 8u);
-  let gsl_s9 = gsl_shape(gsl_d[8] - gsl_h[8] * gsl_dispK, 9u);
-  let gsl_s10 = gsl_shape(gsl_d[9] - gsl_h[9] * gsl_dispK, 10u);
-  let gsl_s11 = gsl_shape(gsl_d[10] - gsl_h[10] * gsl_dispK, 11u);
-  let gsl_s12 = gsl_shape(gsl_d[11] - gsl_h[11] * gsl_dispK, 12u);
-  let gsl_s13 = gsl_shape(gsl_d[12] - gsl_h[12] * gsl_dispK, 13u);
-  let gsl_s14 = gsl_shape(gsl_d[13] - gsl_h[13] * gsl_dispK, 14u);
-  let gsl_s15 = gsl_shape(gsl_d[14] - gsl_h[14] * gsl_dispK, 15u);
-  let gsl_s16 = gsl_shape(gsl_d[15] - gsl_h[15] * gsl_dispK, 16u);
+  let gsl_s5 = gsl_shape(gsl_d[4] - (gsl_h[4].x - gsl_h[4].y) * gsl_dispK - gsl_h[4].y * gsl_buildK, 5u);
+  let gsl_s6 = gsl_shape(gsl_d[5] - (gsl_h[5].x - gsl_h[5].y) * gsl_dispK - gsl_h[5].y * gsl_buildK, 6u);
+  let gsl_s7 = gsl_shape(gsl_d[6] - (gsl_h[6].x - gsl_h[6].y) * gsl_dispK - gsl_h[6].y * gsl_buildK, 7u);
+  let gsl_s8 = gsl_shape(gsl_d[7] - (gsl_h[7].x - gsl_h[7].y) * gsl_dispK - gsl_h[7].y * gsl_buildK, 8u);
+  let gsl_s9 = gsl_shape(gsl_d[8] - (gsl_h[8].x - gsl_h[8].y) * gsl_dispK - gsl_h[8].y * gsl_buildK, 9u);
+  let gsl_s10 = gsl_shape(gsl_d[9] - (gsl_h[9].x - gsl_h[9].y) * gsl_dispK - gsl_h[9].y * gsl_buildK, 10u);
+  let gsl_s11 = gsl_shape(gsl_d[10] - (gsl_h[10].x - gsl_h[10].y) * gsl_dispK - gsl_h[10].y * gsl_buildK, 11u);
+  let gsl_s12 = gsl_shape(gsl_d[11] - (gsl_h[11].x - gsl_h[11].y) * gsl_dispK - gsl_h[11].y * gsl_buildK, 12u);
+  let gsl_s13 = gsl_shape(gsl_d[12] - (gsl_h[12].x - gsl_h[12].y) * gsl_dispK - gsl_h[12].y * gsl_buildK, 13u);
+  let gsl_s14 = gsl_shape(gsl_d[13] - (gsl_h[13].x - gsl_h[13].y) * gsl_dispK - gsl_h[13].y * gsl_buildK, 14u);
+  let gsl_s15 = gsl_shape(gsl_d[14] - (gsl_h[14].x - gsl_h[14].y) * gsl_dispK - gsl_h[14].y * gsl_buildK, 15u);
+  let gsl_s16 = gsl_shape(gsl_d[15] - (gsl_h[15].x - gsl_h[15].y) * gsl_dispK - gsl_h[15].y * gsl_buildK, 16u);
   let gsl_s17 = gsl_shape(gsl_d[16], 17u);
   let gsl_s18 = gsl_shape(gsl_d[17], 18u);
   let gsl_s19 = gsl_shape(gsl_d[18], 19u);

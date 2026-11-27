@@ -199,9 +199,9 @@ fn gsl_remap_20(p: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
   let gsl__under__knobEnds = abs(p.z) - 12.0;
   let gsl__incbuild__knobEnds = knobEndMat[2].w;
   let gsl__inc__knobEnds = knobEndMat[2].z;
-  let gsl__disp__knobEnds = gsl__under__knobEnds - gsl_dispScaleK * gsl__incbuild__knobEnds - gsl_dispScaleK * (gsl__inc__knobEnds - gsl__incbuild__knobEnds);
+  let gsl__disp__knobEnds = gsl__under__knobEnds - gsl_buildScaleK * gsl__incbuild__knobEnds - gsl_dispScaleK * (gsl__inc__knobEnds - gsl__incbuild__knobEnds);
   let gsl__under__knobChamfer = (knobBlank + gsl__disp__knobEnds + 0.5) / 1.4142135;
-  return select(vec3<f32>(0.77, 0.78, 0.78), vec3<f32>(0.77, 0.78, 0.78), select(0.0, 1.0, gsl_dispScaleK * gsl__incbuild__knobChamfer + gsl_dispScaleK * (gsl__inc__knobChamfer - gsl__incbuild__knobChamfer) > 0.002 && gsl__under__knobChamfer < 0.001) > 0.5);
+  return select(vec3<f32>(0.77, 0.78, 0.78), vec3<f32>(0.77, 0.78, 0.78), select(0.0, 1.0, gsl_buildScaleK * gsl__incbuild__knobChamfer + gsl_dispScaleK * (gsl__inc__knobChamfer - gsl__incbuild__knobChamfer) > 0.002 && gsl__under__knobChamfer < 0.001) > 0.5);
 }
 
 fn gsl_remap_21(p: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
@@ -265,9 +265,9 @@ fn gsl_remap_30(p: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
   let gsl__under__knobEnds = abs(p.z) - 12.0;
   let gsl__incbuild__knobEnds = knobEndMat[2].w;
   let gsl__inc__knobEnds = knobEndMat[2].z;
-  let gsl__disp__knobEnds = gsl__under__knobEnds - gsl_dispScaleK * gsl__incbuild__knobEnds - gsl_dispScaleK * (gsl__inc__knobEnds - gsl__incbuild__knobEnds);
+  let gsl__disp__knobEnds = gsl__under__knobEnds - gsl_buildScaleK * gsl__incbuild__knobEnds - gsl_dispScaleK * (gsl__inc__knobEnds - gsl__incbuild__knobEnds);
   let gsl__under__knobChamfer = (knobBlank + gsl__disp__knobEnds + 0.5) / 1.4142135;
-  return select(knobChamferMat[0], knobEndMat[0], select(0.0, 1.0, gsl_dispScaleK * gsl__incbuild__knobChamfer + gsl_dispScaleK * (gsl__inc__knobChamfer - gsl__incbuild__knobChamfer) > 0.002 && gsl__under__knobChamfer < 0.001) > 0.5);
+  return select(knobChamferMat[0], knobEndMat[0], select(0.0, 1.0, gsl_buildScaleK * gsl__incbuild__knobChamfer + gsl_dispScaleK * (gsl__inc__knobChamfer - gsl__incbuild__knobChamfer) > 0.002 && gsl__under__knobChamfer < 0.001) > 0.5);
 }
 
 fn gsl_remap_31(p: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
@@ -290,9 +290,9 @@ fn gsl_remap_33(p: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
   let gsl__under__knobEnds = abs(p.z) - 12.0;
   let gsl__incbuild__knobEnds = knobEndMat[2].w;
   let gsl__inc__knobEnds = knobEndMat[2].z;
-  let gsl__disp__knobEnds = gsl__under__knobEnds - gsl_dispScaleK * gsl__incbuild__knobEnds - gsl_dispScaleK * (gsl__inc__knobEnds - gsl__incbuild__knobEnds);
+  let gsl__disp__knobEnds = gsl__under__knobEnds - gsl_buildScaleK * gsl__incbuild__knobEnds - gsl_dispScaleK * (gsl__inc__knobEnds - gsl__incbuild__knobEnds);
   let gsl__under__knobChamfer = (knobBlank + gsl__disp__knobEnds + 0.5) / 1.4142135;
-  return select(knobChamferMat[1], knobEndMat[1], select(0.0, 1.0, gsl_dispScaleK * gsl__incbuild__knobChamfer + gsl_dispScaleK * (gsl__inc__knobChamfer - gsl__incbuild__knobChamfer) > 0.002 && gsl__under__knobChamfer < 0.001) > 0.5);
+  return select(knobChamferMat[1], knobEndMat[1], select(0.0, 1.0, gsl_buildScaleK * gsl__incbuild__knobChamfer + gsl_dispScaleK * (gsl__inc__knobChamfer - gsl__incbuild__knobChamfer) > 0.002 && gsl__under__knobChamfer < 0.001) > 0.5);
 }
 
 fn gsl_remap_34(p: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
@@ -315,9 +315,9 @@ fn gsl_remap_36(p: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
   let gsl__under__knobEnds = abs(p.z) - 12.0;
   let gsl__incbuild__knobEnds = knobEndMat[2].w;
   let gsl__inc__knobEnds = knobEndMat[2].z;
-  let gsl__disp__knobEnds = gsl__under__knobEnds - gsl_dispScaleK * gsl__incbuild__knobEnds - gsl_dispScaleK * (gsl__inc__knobEnds - gsl__incbuild__knobEnds);
+  let gsl__disp__knobEnds = gsl__under__knobEnds - gsl_buildScaleK * gsl__incbuild__knobEnds - gsl_dispScaleK * (gsl__inc__knobEnds - gsl__incbuild__knobEnds);
   let gsl__under__knobChamfer = (knobBlank + gsl__disp__knobEnds + 0.5) / 1.4142135;
-  return select(knobChamferMat[2], knobEndMat[2], select(0.0, 1.0, gsl_dispScaleK * gsl__incbuild__knobChamfer + gsl_dispScaleK * (gsl__inc__knobChamfer - gsl__incbuild__knobChamfer) > 0.002 && gsl__under__knobChamfer < 0.001) > 0.5);
+  return select(knobChamferMat[2], knobEndMat[2], select(0.0, 1.0, gsl_buildScaleK * gsl__incbuild__knobChamfer + gsl_dispScaleK * (gsl__inc__knobChamfer - gsl__incbuild__knobChamfer) > 0.002 && gsl__under__knobChamfer < 0.001) > 0.5);
 }
 
 fn gsl_remap_37(p: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
@@ -340,9 +340,9 @@ fn gsl_remap_39(p: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
   let gsl__under__knobEnds = abs(p.z) - 12.0;
   let gsl__incbuild__knobEnds = knobEndMat[2].w;
   let gsl__inc__knobEnds = knobEndMat[2].z;
-  let gsl__disp__knobEnds = gsl__under__knobEnds - gsl_dispScaleK * gsl__incbuild__knobEnds - gsl_dispScaleK * (gsl__inc__knobEnds - gsl__incbuild__knobEnds);
+  let gsl__disp__knobEnds = gsl__under__knobEnds - gsl_buildScaleK * gsl__incbuild__knobEnds - gsl_dispScaleK * (gsl__inc__knobEnds - gsl__incbuild__knobEnds);
   let gsl__under__knobChamfer = (knobBlank + gsl__disp__knobEnds + 0.5) / 1.4142135;
-  return select(knobChamferMat[3], knobEndMat[3], select(0.0, 1.0, gsl_dispScaleK * gsl__incbuild__knobChamfer + gsl_dispScaleK * (gsl__inc__knobChamfer - gsl__incbuild__knobChamfer) > 0.002 && gsl__under__knobChamfer < 0.001) > 0.5);
+  return select(knobChamferMat[3], knobEndMat[3], select(0.0, 1.0, gsl_buildScaleK * gsl__incbuild__knobChamfer + gsl_dispScaleK * (gsl__inc__knobChamfer - gsl__incbuild__knobChamfer) > 0.002 && gsl__under__knobChamfer < 0.001) > 0.5);
 }
 
 fn gsl_remap_40(p: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
@@ -501,15 +501,15 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_
     let sideMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(normalize(vec3<f32>(1.0, 0.0, 0.0)), p - vec3<f32>(-40.0, 25.0, 0.0)), fract(dot(p - vec3<f32>(-40.0, 25.0, 0.0), normalize(vec3<f32>(1.0, 0.0, 0.0))) / 0.2), 0.2, 0.8, noiseTex);
     let gsl__incbuild__barSide = sideMat[2].w;
     let gsl__inc__barSide = sideMat[2].z;
-    let gsl__disp__barSide = gsl__under__barSide - gsl_dispScaleK * gsl__incbuild__barSide - gsl_dispScaleK * (gsl__inc__barSide - gsl__incbuild__barSide);
+    let gsl__disp__barSide = gsl__under__barSide - gsl_buildScaleK * gsl__incbuild__barSide - gsl_dispScaleK * (gsl__inc__barSide - gsl__incbuild__barSide);
     let gsl__under__barEnds = max(p.x - 5.0, -p.x - 85.0);
     let endMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(normalize(vec3<f32>(1.0, 0.0, 0.0)), p - vec3<f32>(-40.0, 25.0, 0.0)), fract(length(p - vec3<f32>(-40.0, 25.0, 0.0) - normalize(vec3<f32>(1.0, 0.0, 0.0)) * dot(p - vec3<f32>(-40.0, 25.0, 0.0), normalize(vec3<f32>(1.0, 0.0, 0.0)))) / 0.2), 0.2, 0.8, noiseTex);
     let gsl__incbuild__barEnds = endMat[2].w;
     let gsl__inc__barEnds = endMat[2].z;
-    let gsl__disp__barEnds = gsl__under__barEnds - gsl_dispScaleK * gsl__incbuild__barEnds - gsl_dispScaleK * (gsl__inc__barEnds - gsl__incbuild__barEnds);
+    let gsl__disp__barEnds = gsl__under__barEnds - gsl_buildScaleK * gsl__incbuild__barEnds - gsl_dispScaleK * (gsl__inc__barEnds - gsl__incbuild__barEnds);
     let gsl__under__barChamfer = (gsl__disp__barSide + gsl__disp__barEnds + 0.5) / 1.4142135;
     let barChamfer = (barSide + barEnds + 0.5) / 1.4142135;
-    return vec4<f32>(clamp(select(vec3<f32>(0.77, 0.78, 0.78), clamp((gsl_remap_11(p, noiseTex) * (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + gsl_remap_11(p, noiseTex) * (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + select(gsl_remap_11(p, noiseTex), gsl_remap_11(p, noiseTex), gsl_remap_3(p, noiseTex) < gsl_remap_4(p, noiseTex)) * max(1.0 - ((1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0), 0.0)) / max((1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0, 1.0), vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0)), select(0.0, 1.0, gsl_dispScaleK * gsl__incbuild__barChamfer + gsl_dispScaleK * (gsl__inc__barChamfer - gsl__incbuild__barChamfer) > 0.002 && gsl__under__barChamfer < 0.001) > 0.5) * select(1.0, select(0.0, 0.0, barSide > barEnds), max(barSide, barEnds) > barChamfer) + gsl_remap_11(p, noiseTex) * select(0.0, select(1.0, 0.0, barSide > barEnds), max(barSide, barEnds) > barChamfer) + gsl_remap_11(p, noiseTex) * select(0.0, select(0.0, 1.0, barSide > barEnds), max(barSide, barEnds) > barChamfer), vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0)), 1.0);
+    return vec4<f32>(clamp(select(vec3<f32>(0.77, 0.78, 0.78), clamp((gsl_remap_11(p, noiseTex) * (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + gsl_remap_11(p, noiseTex) * (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + select(gsl_remap_11(p, noiseTex), gsl_remap_11(p, noiseTex), gsl_remap_3(p, noiseTex) < gsl_remap_4(p, noiseTex)) * max(1.0 - ((1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0), 0.0)) / max((1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0, 1.0), vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0)), select(0.0, 1.0, gsl_buildScaleK * gsl__incbuild__barChamfer + gsl_dispScaleK * (gsl__inc__barChamfer - gsl__incbuild__barChamfer) > 0.002 && gsl__under__barChamfer < 0.001) > 0.5) * select(1.0, select(0.0, 0.0, barSide > barEnds), max(barSide, barEnds) > barChamfer) + gsl_remap_11(p, noiseTex) * select(0.0, select(1.0, 0.0, barSide > barEnds), max(barSide, barEnds) > barChamfer) + gsl_remap_11(p, noiseTex) * select(0.0, select(0.0, 1.0, barSide > barEnds), max(barSide, barEnds) > barChamfer), vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0)), 1.0);
   }
   if (gsl_colorIdx == 2u) {
     let slabX = max(p.x - 0.0, -40.0 - p.x);
@@ -553,15 +553,15 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, noiseTex: te
     let sideMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(normalize(vec3<f32>(1.0, 0.0, 0.0)), p - vec3<f32>(-40.0, 25.0, 0.0)), fract(dot(p - vec3<f32>(-40.0, 25.0, 0.0), normalize(vec3<f32>(1.0, 0.0, 0.0))) / 0.2), 0.2, 0.8, noiseTex);
     let gsl__incbuild__barSide = sideMat[2].w;
     let gsl__inc__barSide = sideMat[2].z;
-    let gsl__disp__barSide = gsl__under__barSide - gsl_dispScaleK * gsl__incbuild__barSide - gsl_dispScaleK * (gsl__inc__barSide - gsl__incbuild__barSide);
+    let gsl__disp__barSide = gsl__under__barSide - gsl_buildScaleK * gsl__incbuild__barSide - gsl_dispScaleK * (gsl__inc__barSide - gsl__incbuild__barSide);
     let gsl__under__barEnds = max(p.x - 5.0, -p.x - 85.0);
     let endMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(normalize(vec3<f32>(1.0, 0.0, 0.0)), p - vec3<f32>(-40.0, 25.0, 0.0)), fract(length(p - vec3<f32>(-40.0, 25.0, 0.0) - normalize(vec3<f32>(1.0, 0.0, 0.0)) * dot(p - vec3<f32>(-40.0, 25.0, 0.0), normalize(vec3<f32>(1.0, 0.0, 0.0)))) / 0.2), 0.2, 0.8, noiseTex);
     let gsl__incbuild__barEnds = endMat[2].w;
     let gsl__inc__barEnds = endMat[2].z;
-    let gsl__disp__barEnds = gsl__under__barEnds - gsl_dispScaleK * gsl__incbuild__barEnds - gsl_dispScaleK * (gsl__inc__barEnds - gsl__incbuild__barEnds);
+    let gsl__disp__barEnds = gsl__under__barEnds - gsl_buildScaleK * gsl__incbuild__barEnds - gsl_dispScaleK * (gsl__inc__barEnds - gsl__incbuild__barEnds);
     let gsl__under__barChamfer = (gsl__disp__barSide + gsl__disp__barEnds + 0.5) / 1.4142135;
     let barChamfer = (barSide + barEnds + 0.5) / 1.4142135;
-    let gsl_m = mat4x4<f32>(clamp(select(barChamferMat[0], clamp((gsl_remap(p, noiseTex) * (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + gsl_remap_2(p, noiseTex) * (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + select(gsl_remap(p, noiseTex), gsl_remap_2(p, noiseTex), gsl_remap_3(p, noiseTex) < gsl_remap_4(p, noiseTex)) * max(1.0 - ((1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0), 0.0)) / max((1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0, 1.0), vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), select(0.0, 1.0, gsl_dispScaleK * gsl__incbuild__barChamfer + gsl_dispScaleK * (gsl__inc__barChamfer - gsl__incbuild__barChamfer) > 0.002 && gsl__under__barChamfer < 0.001) > 0.5) * select(1.0, select(0.0, 0.0, barSide > barEnds), max(barSide, barEnds) > barChamfer) + gsl_remap(p, noiseTex) * select(0.0, select(1.0, 0.0, barSide > barEnds), max(barSide, barEnds) > barChamfer) + gsl_remap_2(p, noiseTex) * select(0.0, select(0.0, 1.0, barSide > barEnds), max(barSide, barEnds) > barChamfer), vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(select(barChamferMat[1], clamp((gsl_remap_5(p, noiseTex) * (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + gsl_remap_6(p, noiseTex) * (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + select(gsl_remap_5(p, noiseTex), gsl_remap_6(p, noiseTex), gsl_remap_3(p, noiseTex) < gsl_remap_4(p, noiseTex)) * max(1.0 - ((1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0), 0.0)) / max((1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0, 1.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), select(0.0, 1.0, gsl_dispScaleK * gsl__incbuild__barChamfer + gsl_dispScaleK * (gsl__inc__barChamfer - gsl__incbuild__barChamfer) > 0.002 && gsl__under__barChamfer < 0.001) > 0.5) * select(1.0, select(0.0, 0.0, barSide > barEnds), max(barSide, barEnds) > barChamfer) + gsl_remap_5(p, noiseTex) * select(0.0, select(1.0, 0.0, barSide > barEnds), max(barSide, barEnds) > barChamfer) + gsl_remap_6(p, noiseTex) * select(0.0, select(0.0, 1.0, barSide > barEnds), max(barSide, barEnds) > barChamfer), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(select(barChamferMat[2], clamp((gsl_remap_7(p, noiseTex) * (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + gsl_remap_8(p, noiseTex) * (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + select(gsl_remap_7(p, noiseTex), gsl_remap_8(p, noiseTex), gsl_remap_3(p, noiseTex) < gsl_remap_4(p, noiseTex)) * max(1.0 - ((1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0), 0.0)) / max((1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0, 1.0), vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), select(0.0, 1.0, gsl_dispScaleK * gsl__incbuild__barChamfer + gsl_dispScaleK * (gsl__inc__barChamfer - gsl__incbuild__barChamfer) > 0.002 && gsl__under__barChamfer < 0.001) > 0.5) * select(1.0, select(0.0, 0.0, barSide > barEnds), max(barSide, barEnds) > barChamfer) + gsl_remap_7(p, noiseTex) * select(0.0, select(1.0, 0.0, barSide > barEnds), max(barSide, barEnds) > barChamfer) + gsl_remap_8(p, noiseTex) * select(0.0, select(0.0, 1.0, barSide > barEnds), max(barSide, barEnds) > barChamfer), vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), clamp(select(barChamferMat[3], clamp((gsl_remap_9(p, noiseTex) * (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + gsl_remap_10(p, noiseTex) * (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + select(gsl_remap_9(p, noiseTex), gsl_remap_10(p, noiseTex), gsl_remap_3(p, noiseTex) < gsl_remap_4(p, noiseTex)) * max(1.0 - ((1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0), 0.0)) / max((1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0, 1.0), vec4<f32>(-10000.0, -10000.0, -10000.0, 0.0), vec4<f32>(10000.0, 10000.0, 10000.0, 1.0)), select(0.0, 1.0, gsl_dispScaleK * gsl__incbuild__barChamfer + gsl_dispScaleK * (gsl__inc__barChamfer - gsl__incbuild__barChamfer) > 0.002 && gsl__under__barChamfer < 0.001) > 0.5) * select(1.0, select(0.0, 0.0, barSide > barEnds), max(barSide, barEnds) > barChamfer) + gsl_remap_9(p, noiseTex) * select(0.0, select(1.0, 0.0, barSide > barEnds), max(barSide, barEnds) > barChamfer) + gsl_remap_10(p, noiseTex) * select(0.0, select(0.0, 1.0, barSide > barEnds), max(barSide, barEnds) > barChamfer), vec4<f32>(-10000.0, -10000.0, -10000.0, 0.0), vec4<f32>(10000.0, 10000.0, 10000.0, 1.0))); return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
+    let gsl_m = mat4x4<f32>(clamp(select(barChamferMat[0], clamp((gsl_remap(p, noiseTex) * (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + gsl_remap_2(p, noiseTex) * (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + select(gsl_remap(p, noiseTex), gsl_remap_2(p, noiseTex), gsl_remap_3(p, noiseTex) < gsl_remap_4(p, noiseTex)) * max(1.0 - ((1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0), 0.0)) / max((1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0, 1.0), vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), select(0.0, 1.0, gsl_buildScaleK * gsl__incbuild__barChamfer + gsl_dispScaleK * (gsl__inc__barChamfer - gsl__incbuild__barChamfer) > 0.002 && gsl__under__barChamfer < 0.001) > 0.5) * select(1.0, select(0.0, 0.0, barSide > barEnds), max(barSide, barEnds) > barChamfer) + gsl_remap(p, noiseTex) * select(0.0, select(1.0, 0.0, barSide > barEnds), max(barSide, barEnds) > barChamfer) + gsl_remap_2(p, noiseTex) * select(0.0, select(0.0, 1.0, barSide > barEnds), max(barSide, barEnds) > barChamfer), vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(1.0, 1.0, 10000.0, 10000.0)), clamp(select(barChamferMat[1], clamp((gsl_remap_5(p, noiseTex) * (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + gsl_remap_6(p, noiseTex) * (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + select(gsl_remap_5(p, noiseTex), gsl_remap_6(p, noiseTex), gsl_remap_3(p, noiseTex) < gsl_remap_4(p, noiseTex)) * max(1.0 - ((1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0), 0.0)) / max((1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0, 1.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), select(0.0, 1.0, gsl_buildScaleK * gsl__incbuild__barChamfer + gsl_dispScaleK * (gsl__inc__barChamfer - gsl__incbuild__barChamfer) > 0.002 && gsl__under__barChamfer < 0.001) > 0.5) * select(1.0, select(0.0, 0.0, barSide > barEnds), max(barSide, barEnds) > barChamfer) + gsl_remap_5(p, noiseTex) * select(0.0, select(1.0, 0.0, barSide > barEnds), max(barSide, barEnds) > barChamfer) + gsl_remap_6(p, noiseTex) * select(0.0, select(0.0, 1.0, barSide > barEnds), max(barSide, barEnds) > barChamfer), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 1.0, 1.0, 10000.0)), clamp(select(barChamferMat[2], clamp((gsl_remap_7(p, noiseTex) * (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + gsl_remap_8(p, noiseTex) * (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + select(gsl_remap_7(p, noiseTex), gsl_remap_8(p, noiseTex), gsl_remap_3(p, noiseTex) < gsl_remap_4(p, noiseTex)) * max(1.0 - ((1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0), 0.0)) / max((1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0, 1.0), vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), select(0.0, 1.0, gsl_buildScaleK * gsl__incbuild__barChamfer + gsl_dispScaleK * (gsl__inc__barChamfer - gsl__incbuild__barChamfer) > 0.002 && gsl__under__barChamfer < 0.001) > 0.5) * select(1.0, select(0.0, 0.0, barSide > barEnds), max(barSide, barEnds) > barChamfer) + gsl_remap_7(p, noiseTex) * select(0.0, select(1.0, 0.0, barSide > barEnds), max(barSide, barEnds) > barChamfer) + gsl_remap_8(p, noiseTex) * select(0.0, select(0.0, 1.0, barSide > barEnds), max(barSide, barEnds) > barChamfer), vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)), clamp(select(barChamferMat[3], clamp((gsl_remap_9(p, noiseTex) * (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + gsl_remap_10(p, noiseTex) * (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + select(gsl_remap_9(p, noiseTex), gsl_remap_10(p, noiseTex), gsl_remap_3(p, noiseTex) < gsl_remap_4(p, noiseTex)) * max(1.0 - ((1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0), 0.0)) / max((1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0, 1.0), vec4<f32>(-10000.0, -10000.0, -10000.0, 0.0), vec4<f32>(10000.0, 10000.0, 10000.0, 1.0)), select(0.0, 1.0, gsl_buildScaleK * gsl__incbuild__barChamfer + gsl_dispScaleK * (gsl__inc__barChamfer - gsl__incbuild__barChamfer) > 0.002 && gsl__under__barChamfer < 0.001) > 0.5) * select(1.0, select(0.0, 0.0, barSide > barEnds), max(barSide, barEnds) > barChamfer) + gsl_remap_9(p, noiseTex) * select(0.0, select(1.0, 0.0, barSide > barEnds), max(barSide, barEnds) > barChamfer) + gsl_remap_10(p, noiseTex) * select(0.0, select(0.0, 1.0, barSide > barEnds), max(barSide, barEnds) > barChamfer), vec4<f32>(-10000.0, -10000.0, -10000.0, 0.0), vec4<f32>(10000.0, 10000.0, 10000.0, 1.0))); return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
   }
   if (gsl_materialIdx == 2u) {
     let slabX = max(p.x - 0.0, -40.0 - p.x);
@@ -680,24 +680,26 @@ var<private> gsl_detailPw: f32 = 0.0;
 
 var<private> gsl_dispScaleK: f32 = 0.0;
 
+var<private> gsl_buildScaleK: f32 = 0.0;
+
 fn gsl_displacedParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f32, 7> {
   let gsl__under__barSide = builtin_axis(p, vec3<f32>(-40.0, 25.0, 0.0), vec3<f32>(1.0, 0.0, 0.0), noiseTex) - 10.0;
   let sideMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(normalize(vec3<f32>(1.0, 0.0, 0.0)), p - vec3<f32>(-40.0, 25.0, 0.0)), fract(dot(p - vec3<f32>(-40.0, 25.0, 0.0), normalize(vec3<f32>(1.0, 0.0, 0.0))) / 0.2), 0.2, 0.8, noiseTex);
   let gsl__incbuild__barSide = sideMat[2].w;
   let gsl__inc__barSide = sideMat[2].z;
-  let gsl__disp__barSide = gsl__under__barSide - gsl_dispScaleK * gsl__incbuild__barSide - gsl_dispScaleK * (gsl__inc__barSide - gsl__incbuild__barSide);
+  let gsl__disp__barSide = gsl__under__barSide - gsl_buildScaleK * gsl__incbuild__barSide - gsl_dispScaleK * (gsl__inc__barSide - gsl__incbuild__barSide);
   let gsl__under__barEnds = max(p.x - 5.0, -p.x - 85.0);
   let endMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(normalize(vec3<f32>(1.0, 0.0, 0.0)), p - vec3<f32>(-40.0, 25.0, 0.0)), fract(length(p - vec3<f32>(-40.0, 25.0, 0.0) - normalize(vec3<f32>(1.0, 0.0, 0.0)) * dot(p - vec3<f32>(-40.0, 25.0, 0.0), normalize(vec3<f32>(1.0, 0.0, 0.0)))) / 0.2), 0.2, 0.8, noiseTex);
   let gsl__incbuild__barEnds = endMat[2].w;
   let gsl__inc__barEnds = endMat[2].z;
-  let gsl__disp__barEnds = gsl__under__barEnds - gsl_dispScaleK * gsl__incbuild__barEnds - gsl_dispScaleK * (gsl__inc__barEnds - gsl__incbuild__barEnds);
+  let gsl__disp__barEnds = gsl__under__barEnds - gsl_buildScaleK * gsl__incbuild__barEnds - gsl_dispScaleK * (gsl__inc__barEnds - gsl__incbuild__barEnds);
   let gsl__under__barChamfer = (gsl__disp__barSide + gsl__disp__barEnds + 0.5) / 1.4142135;
   let barChamferMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(normalize(vec3<f32>(1.0, 0.0, 0.0)), p - vec3<f32>(-40.0, 25.0, 0.0)), fract(dot(p - vec3<f32>(-40.0, 25.0, 0.0), normalize(vec3<f32>(1.0, 0.0, 0.0))) / 0.05), 0.05, 0.4, noiseTex);
   let barSide = builtin_axis(p, vec3<f32>(-40.0, 25.0, 0.0), vec3<f32>(1.0, 0.0, 0.0), noiseTex) - 10.0;
   let barEnds = max(p.x - 5.0, -p.x - 85.0);
   let gsl__incbuild__barChamfer = barChamferMat[2].w - clamp((gsl_remap_7(p, noiseTex) * (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + gsl_remap_8(p, noiseTex) * (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + select(gsl_remap_7(p, noiseTex), gsl_remap_8(p, noiseTex), gsl_remap_3(p, noiseTex) < gsl_remap_4(p, noiseTex)) * max(1.0 - ((1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0), 0.0)) / max((1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0, 1.0), vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)).w;
   let gsl__inc__barChamfer = barChamferMat[2].z - clamp((gsl_remap_7(p, noiseTex) * (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + gsl_remap_8(p, noiseTex) * (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + select(gsl_remap_7(p, noiseTex), gsl_remap_8(p, noiseTex), gsl_remap_3(p, noiseTex) < gsl_remap_4(p, noiseTex)) * max(1.0 - ((1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0), 0.0)) / max((1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0 + (1.4142135 - (barSide + barEnds + 0.5) * 0.0) / 2.0, 1.0), vec4<f32>(0.0, 0.0, -10000.0, 0.0), vec4<f32>(1.0, 10000.0, 10000.0, 10000.0)).z;
-  let gsl__disp__barChamfer = gsl__under__barChamfer - gsl_dispScaleK * gsl__incbuild__barChamfer - gsl_dispScaleK * (gsl__inc__barChamfer - gsl__incbuild__barChamfer);
+  let gsl__disp__barChamfer = gsl__under__barChamfer - gsl_buildScaleK * gsl__incbuild__barChamfer - gsl_dispScaleK * (gsl__inc__barChamfer - gsl__incbuild__barChamfer);
   let gsl__disp__bar = max(max(gsl__disp__barSide, gsl__disp__barEnds), gsl__disp__barChamfer);
   let gsl_partLo = vec3<f32>(-40.0, -30.0, -8.0);
   let gsl_partHi = vec3<f32>(0.0, -5.0, 8.0);
@@ -712,7 +714,7 @@ fn gsl_displacedParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> arr
   let blockMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.4, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), vec3<f32>(0.0, 1.0, 0.0) * gsl_tmp_5 - vec3<f32>(1.0, 0.0, 0.0) * gsl_tmp_4, fract((dot(gsl_tmp_3, vec3<f32>(1.0, 0.0, 0.0)) - gsl_tmp_5) / 0.3), 0.3, 0.8, noiseTex);
   let gsl__incbuild__slabZ = blockMat[2].w;
   let gsl__inc__slabZ = blockMat[2].z;
-  let gsl__disp__slabZ = gsl__under__slabZ - gsl_dispScaleK * gsl__incbuild__slabZ - gsl_dispScaleK * (gsl__inc__slabZ - gsl__incbuild__slabZ);
+  let gsl__disp__slabZ = gsl__under__slabZ - gsl_buildScaleK * gsl__incbuild__slabZ - gsl_dispScaleK * (gsl__inc__slabZ - gsl__incbuild__slabZ);
   let slabZ = max(p.z - 8.0, -8.0 - p.z);
   let edgesX = (slabY + slabZ + 0.5) / 1.4142135;
   let edgesY = (slabX + slabZ + 0.5) / 1.4142135;
@@ -738,23 +740,24 @@ fn gsl_displacedParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> arr
   let knobTurnedMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), p - vec3<f32>(0.0, 50.0, 0.0)), fract(dot(p - vec3<f32>(0.0, 50.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0))) / 0.15), 0.15, 0.8, noiseTex);
   let gsl__incbuild__knobSide = material_blend(knobTurnedMat, mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), runOut, noiseTex)[2].w;
   let gsl__inc__knobSide = material_blend(knobTurnedMat, mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), runOut, noiseTex)[2].z;
-  let gsl__disp__knobSide = gsl__under__knobSide - gsl_dispScaleK * gsl__incbuild__knobSide - gsl_dispScaleK * (gsl__inc__knobSide - gsl__incbuild__knobSide);
+  let gsl__disp__knobSide = gsl__under__knobSide - gsl_buildScaleK * gsl__incbuild__knobSide - gsl_dispScaleK * (gsl__inc__knobSide - gsl__incbuild__knobSide);
   let gsl__under__knobEnds = abs(p.z) - 12.0;
   let knobEndMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), p - vec3<f32>(0.0, 50.0, 0.0)), fract(length(p - vec3<f32>(0.0, 50.0, 0.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(p - vec3<f32>(0.0, 50.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))) / 0.15), 0.15, 0.8, noiseTex);
   let gsl__incbuild__knobEnds = knobEndMat[2].w;
   let gsl__inc__knobEnds = knobEndMat[2].z;
-  let gsl__disp__knobEnds = gsl__under__knobEnds - gsl_dispScaleK * gsl__incbuild__knobEnds - gsl_dispScaleK * (gsl__inc__knobEnds - gsl__incbuild__knobEnds);
+  let gsl__disp__knobEnds = gsl__under__knobEnds - gsl_buildScaleK * gsl__incbuild__knobEnds - gsl_dispScaleK * (gsl__inc__knobEnds - gsl__incbuild__knobEnds);
   let gsl__under__knobChamfer = (knobBlank + gsl__disp__knobEnds + 0.5) / 1.4142135;
   let knobChamferMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), p - vec3<f32>(0.0, 50.0, 0.0)), fract(dot(p - vec3<f32>(0.0, 50.0, 0.0), normalize(vec3<f32>(0.0, 0.0, 1.0))) / 0.05), 0.05, 0.4, noiseTex);
   let gsl__incbuild__knobChamfer = knobChamferMat[2].w - knobEndMat[2].w;
   let gsl__inc__knobChamfer = knobChamferMat[2].z - knobEndMat[2].z;
-  let gsl__disp__knobChamfer = gsl__under__knobChamfer - gsl_dispScaleK * gsl__incbuild__knobChamfer - gsl_dispScaleK * (gsl__inc__knobChamfer - gsl__incbuild__knobChamfer);
+  let gsl__disp__knobChamfer = gsl__under__knobChamfer - gsl_buildScaleK * gsl__incbuild__knobChamfer - gsl_dispScaleK * (gsl__inc__knobChamfer - gsl__incbuild__knobChamfer);
   let gsl__disp__knob = max(max(gsl__disp__knobSide, gsl__disp__knobEnds), gsl__disp__knobChamfer);
   return array<f32, 7>(gsl__disp__bar, gsl__disp__block, 0.0, 0.0, 0.0, 0.0, gsl__disp__knob);
 }
 
-fn gsl_sdShapeDisplaced(p: vec3<f32>, time: f32, gsl_dispK: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
+fn gsl_sdShapeDisplaced(p: vec3<f32>, time: f32, gsl_dispK: f32, gsl_buildK: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
   gsl_dispScaleK = gsl_dispK;
+  gsl_buildScaleK = gsl_buildK;
   let gsl_d = gsl_shapeParts(p, time, noiseTex);
   let gsl_dd = gsl_displacedParts(p, time, noiseTex);
   let gsl_s1 = gsl_shape(gsl_dd[0], 1u);

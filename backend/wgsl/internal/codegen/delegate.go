@@ -135,6 +135,8 @@ type Delegate struct {
 	// dispScaleUsed is true when the program reads displacementScale(), so its
 	// var is declared after sdShape (function_call.go).
 	dispScaleUsed bool
+	// buildScaleUsed is the same for buildScale().
+	buildScaleUsed bool
 	// inTreeMask marks the returns displaced inside their booleans
 	// (BuildPackageDisplacedReturns), and inTreeChildSrc, inTreeLets and
 	// inTreeSrcs are their distances as gsl_displacedParts writes them, built

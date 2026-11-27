@@ -218,20 +218,23 @@ fn gsl_boxDistance(q: vec3<f32>, lo: vec3<f32>, hi: vec3<f32>) -> f32 {
   return length(max(max(lo - q, q - hi), vec3<f32>(0.0)));
 }
 
-fn gsl_heights(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f32, 4> {
+fn gsl_heights(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<vec2<f32>, 4> {
   let material_plastic = mat4x4<f32>(vec4<f32>(0.35, 0.0, 1.46, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
   let gsl_tmp_1 = p / 1.5;
   let pebble = (gsl_cellularScan(gsl_tmp_1, 1, noiseTex).f2 - gsl_cellularScan(gsl_tmp_1, 1, noiseTex).f1) * 1.5;
   let rings = map_triangleWave(p.z, 0.6, noiseTex);
-  return array<f32, 4>(0.0, material_withDisplacement(material_plastic, pebble * 0.2, noiseTex)[2].z, material_withDisplacement(material_plastic, pebble * 0.6, noiseTex)[2].z, material_withDisplacement(mat4x4<f32>(vec4<f32>(0.35, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), rings, noiseTex)[2].z);
+  let gsl_v1 = material_withDisplacement(material_plastic, pebble * 0.2, noiseTex)[2];
+  let gsl_v2 = material_withDisplacement(material_plastic, pebble * 0.6, noiseTex)[2];
+  let gsl_v3 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.35, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), rings, noiseTex)[2];
+  return array<vec2<f32>, 4>(vec2<f32>(0.0, 0.0), vec2<f32>(gsl_v1.z, gsl_v1.w), vec2<f32>(gsl_v2.z, gsl_v2.w), vec2<f32>(gsl_v3.z, gsl_v3.w));
 }
 
-fn gsl_sdShapeDisplaced(p: vec3<f32>, time: f32, gsl_dispK: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
+fn gsl_sdShapeDisplaced(p: vec3<f32>, time: f32, gsl_dispK: f32, gsl_buildK: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
   let gsl_d = gsl_shapeParts(p, time, noiseTex);
   let gsl_h = gsl_heights(p, time, noiseTex);
   let gsl_s1 = gsl_shape(gsl_d[0], 1u);
-  let gsl_s2 = gsl_shape(gsl_d[1] - gsl_h[1] * gsl_dispK, 2u);
-  let gsl_s3 = gsl_shape(gsl_d[2] - gsl_h[2] * gsl_dispK, 3u);
-  let gsl_s4 = gsl_shape(gsl_d[3] - gsl_h[3] * gsl_dispK, 4u);
+  let gsl_s2 = gsl_shape(gsl_d[1] - (gsl_h[1].x - gsl_h[1].y) * gsl_dispK - gsl_h[1].y * gsl_buildK, 2u);
+  let gsl_s3 = gsl_shape(gsl_d[2] - (gsl_h[2].x - gsl_h[2].y) * gsl_dispK - gsl_h[2].y * gsl_buildK, 3u);
+  let gsl_s4 = gsl_shape(gsl_d[3] - (gsl_h[3].x - gsl_h[3].y) * gsl_dispK - gsl_h[3].y * gsl_buildK, 4u);
   return gsl_min(gsl_min(gsl_min(gsl_s1, gsl_s2), gsl_s3), gsl_s4);
 }

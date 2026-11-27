@@ -84,10 +84,12 @@ New tests are added only once the owner agrees them.
 
 ## Phase 3: Flags for Export and Section Mode (D2)
 
-- [ ] Task: The whole-return split, moved from Phase 2. Go side done: a return with no layers moves by
+- [x] Task: The whole-return split, moved from Phase 2. Go side: a return with no layers moves by
       `build * b + relief * (h - b)` (`convert.DisplacedTree`), which the mesher and `litrender.go`'s
-      `litDisplaced` share; with the scales equal it is `d - s * h` exactly. Left: the viewer's
-      `gsl_displaceSample` and `gsl_sdShapeDisplaced` (with the section toggles below)
+      `litDisplaced` share; with the scales equal it is `d - s * h` exactly. Viewer: `gsl_heights`
+      reads each return's volume row once and returns (height, build), and `gsl_sdShapeDisplaced` moves
+      relief by its relief scale and build by its build scale (owner's choice over gating on evidence of
+      a build, which missed *Material - Coated*'s builds through `coating.levelled`)
 - [x] Task: Mesh export (proposal agreed 2026-11-26): `--build` and `--relief` on
       `compile -t stl|glb|3mf`, `"build"` and `"relief"` on `gsl eval`'s mesh op and the server's mesh
       request, `mesh.WithDisplacement`, off by default. `convert.ToDisplacedTreesAtTime` builds each
@@ -98,8 +100,12 @@ New tests are added only once the owner agrees them.
       facets' normals. Relief is shipped documented (owner's choice): finer than a cell it aliases, and on
       the oak's noisy relief MDC throws vertices about 11 mm off the surface; `--build --relief` on the
       whole stick at subdivision 7 did not finish in 45 CPU-minutes. Both are open, with the MDC work (#170)
-- [ ] Task: Section mode: separate build and relief toggles in the viewer's section view, whose
-      shaders now show the field as built ([gsl-displace.js](../../../examples/viewer/render/gsl-displace.js))
+- [x] Task: Section mode: Build and Relief checkboxes in the Section panel, off by default. The
+      field plane draws `gsl_sectionShape(p, time, relief, build)` ([gsl-displace.js](../../../examples/viewer/render/gsl-displace.js)),
+      sdShape moved by the toggles through the per-return composite or the winner's material, with no
+      Detail fade. `buildScale()` has its own WGSL var (`gsl_buildScaleK`); the march passes its knob to
+      both scales. Sixteen WGSL goldens change in text, 0.5 to 3.6% (owner's go to regenerate); no
+      program changes composite. Checked in the viewer by the owner (2026-11-26)
 - [x] Task: `displacementDrawn()` follows the relief flag (owner's choice): convert keeps it apart from
       `buildScale()` and `displacementScale()`, and a displaced mesh sets it to the relief flag
 - [x] Task: New tests (owner's go), `backend/mesh/displacement_test.go`: a 20 mm cube with a 0.1 mm
@@ -107,7 +113,7 @@ New tests are added only once the owner agrees them.
       against 8241.89) with `--build` and to the bare cube's with relief alone; with both flags off the
       mesh is byte for byte the one meshed without the option. The coated oak stick: flags off byte-
       identical to before; `--build` closed, 327,050 mm³ against 317,136 bare
-- [ ] Task: Phase Verification & Checkpoint
+- [x] Task: Phase Verification & Checkpoint
 
 ## Phase 4: A Condition for Evaluation
 

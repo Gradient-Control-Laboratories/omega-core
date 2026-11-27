@@ -1022,11 +1022,14 @@ var<private> gsl_simpleDetail: f32 = 1.0;
 
 var<private> gsl_dispDrawn: f32 = 0.0;
 
-fn gsl_heights(p: vec3<f32>, time: f32) -> array<f32, 32> {
-  return array<f32, 32>(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, material_withDisplacement(mat4x4<f32>(vec4<f32>(0.55, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), thread_maleRelief(vec3<f32>(p.x + 30.0, p.y - 5.0, p.z - 10.0), 4.0, 0.7, 0.0, -10.0))[2].z, material_withDisplacement(mat4x4<f32>(vec4<f32>(0.55, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), thread_maleRelief(vec3<f32>(p.x, p.y - 5.0, p.z - 10.0), 4.0, 0.7, 0.0, -10.0))[2].z, material_withDisplacement(mat4x4<f32>(vec4<f32>(0.55, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), thread_maleRelief(vec3<f32>(p.x - 30.0, p.y - 5.0, p.z - 10.0), 5.0, 0.8, 0.0, -10.0))[2].z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+fn gsl_heights(p: vec3<f32>, time: f32) -> array<vec2<f32>, 32> {
+  let gsl_v18 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.55, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), thread_maleRelief(vec3<f32>(p.x + 30.0, p.y - 5.0, p.z - 10.0), 4.0, 0.7, 0.0, -10.0))[2];
+  let gsl_v19 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.55, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), thread_maleRelief(vec3<f32>(p.x, p.y - 5.0, p.z - 10.0), 4.0, 0.7, 0.0, -10.0))[2];
+  let gsl_v20 = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.55, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), thread_maleRelief(vec3<f32>(p.x - 30.0, p.y - 5.0, p.z - 10.0), 5.0, 0.8, 0.0, -10.0))[2];
+  return array<vec2<f32>, 32>(vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(gsl_v18.z, gsl_v18.w), vec2<f32>(gsl_v19.z, gsl_v19.w), vec2<f32>(gsl_v20.z, gsl_v20.w), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0));
 }
 
-fn gsl_sdShapeDisplaced(p: vec3<f32>, time: f32, gsl_dispK: f32) -> gsl_shape {
+fn gsl_sdShapeDisplaced(p: vec3<f32>, time: f32, gsl_dispK: f32, gsl_buildK: f32) -> gsl_shape {
   let gsl_d = gsl_shapeParts(p, time);
   let gsl_h = gsl_heights(p, time);
   let gsl_s1 = gsl_shape(gsl_d[0], 1u);
@@ -1047,9 +1050,9 @@ fn gsl_sdShapeDisplaced(p: vec3<f32>, time: f32, gsl_dispK: f32) -> gsl_shape {
   let gsl_s16 = gsl_shape(gsl_d[15], 16u);
   let gsl_s17 = gsl_shape(gsl_d[16], 17u);
   let gsl_s18 = gsl_shape(gsl_d[17], 18u);
-  let gsl_s19 = gsl_shape(gsl_d[18] - gsl_h[18] * gsl_dispK, 19u);
-  let gsl_s20 = gsl_shape(gsl_d[19] - gsl_h[19] * gsl_dispK, 20u);
-  let gsl_s21 = gsl_shape(gsl_d[20] - gsl_h[20] * gsl_dispK, 21u);
+  let gsl_s19 = gsl_shape(gsl_d[18] - (gsl_h[18].x - gsl_h[18].y) * gsl_dispK - gsl_h[18].y * gsl_buildK, 19u);
+  let gsl_s20 = gsl_shape(gsl_d[19] - (gsl_h[19].x - gsl_h[19].y) * gsl_dispK - gsl_h[19].y * gsl_buildK, 20u);
+  let gsl_s21 = gsl_shape(gsl_d[20] - (gsl_h[20].x - gsl_h[20].y) * gsl_dispK - gsl_h[20].y * gsl_buildK, 21u);
   let gsl_s22 = gsl_shape(gsl_d[21], 22u);
   let gsl_s23 = gsl_shape(gsl_d[22], 23u);
   let gsl_s24 = gsl_shape(gsl_d[23], 24u);

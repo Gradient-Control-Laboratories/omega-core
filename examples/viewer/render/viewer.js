@@ -223,6 +223,11 @@ const modelOpacityU = uniform(1.0);
 const sectionOpacityU = uniform(0.25);
 const fieldUnionU = uniform(0.0); // off by default — draw each shape's field independently
 const fieldExternalU = uniform(1.0); // on by default — show external (dist>0) interval curves
+// The section panel's Build and Relief toggles: 1 draws the section's field
+// with its surfaces moved by their materials' builds / relief (gsl_sectionShape),
+// 0 the field as built. Off by default, so the section shows what it always has.
+const fieldBuildU = uniform(0.0);
+const fieldReliefU = uniform(0.0);
 const bgColorU = uniform(new THREE.Vector3(BG_COLOR.r, BG_COLOR.g, BG_COLOR.b));
 let currentWGSL = "";
 let currentShapeCount = 0;
@@ -809,8 +814,15 @@ function updateShader(wgslCode, shapeCount = 1, shapeNames = [], meshSdfBindings
   }
 
   // The shaders around the compiled program (gsl-render-graph.js).
-  const { sdShape, gsl_min, gsl_shapeColor, injectExtraArgs, colorParamsWGSL, colorArgsWGSL, wgslFragmentShader, ptFragment, simpleFragment } =
+  const { sdShape, gsl_min, gsl_shapeColor, injectExtraArgs, colorParamsWGSL, colorArgsWGSL, wgslFragmentShader, ptFragment, simpleFragment, gsl_sectionShape } =
     buildRenderGraph({ wgslCode, shapeCount: currentShapeCount, extraParamsWGSL, extraArgsWGSL, pixelWidthNode: gsl_pixelWidthNode });
+  // The section's field: moved by the panel's Build and Relief toggles when the
+  // program has a material field to move it by (gsl_sectionShape), else sdShape.
+  // gsl_sectionShape's call carries its extra arguments itself, injectExtraArgs
+  // filling in only sdShape's.
+  const sectionField = gsl_sectionShape
+    ? `gsl_sectionShape(hitPoint, time, fieldRelief, fieldBuild${extraArgsWGSL})`
+    : "sdShape(hitPoint, time)";
   // The Color tier's frame: the standard one as if the program authored no
   // material. Its pipeline compiles only once the tier is drawn.
   const { wgslFragmentShader: colorFragment } =
@@ -891,7 +903,7 @@ function updateShader(wgslCode, shapeCount = 1, shapeNames = [], meshSdfBindings
     nonUnionShapes.push(`
             if (vis${i} > 0.5) {
                 gsl_fieldFilterIdx = ${i}u;
-                let sd_nu = sdShape(hitPoint, time);
+                let sd_nu = ${sectionField};
                 let rgb_nu = gsl_shapeColor(${i}u, ${colorArgsWGSL.join(", ")});
                 nuResult = clamp(nuResult + gsl_drawField(sd_nu.distance, vec4<f32>(rgb_nu, 1.0),
                     vec4<f32>(0.0, 0.0, 0.0, 0.0), max(fieldInterval, 1e-4), fieldFade, fieldExternal), vec4<f32>(0.0), vec4<f32>(1.0));
@@ -917,6 +929,8 @@ function updateShader(wgslCode, shapeCount = 1, shapeNames = [], meshSdfBindings
             fieldFade: f32,
             fieldUnion: f32,
             fieldExternal: f32,
+            fieldBuild: f32,
+            fieldRelief: f32,
             bgColor: vec3<f32>,
             ${colorParamsWGSL.join(", ")},
             ${visParamsWGSL.join(", ")}${extraParamsWGSL}
@@ -945,7 +959,7 @@ function updateShader(wgslCode, shapeCount = 1, shapeNames = [], meshSdfBindings
                 // Union mode: take the SDF union, draw with opaque gray background.
                 // Alpha channel encodes depth for fieldHit detection in composite.
                 gsl_fieldFilterIdx = 0u;
-                let sd = sdShape(hitPoint, time);
+                let sd = ${sectionField};
                 let shapeRGB = gsl_shapeColor(sd.shapeIndex, ${colorArgsWGSL.join(", ")});
                 let drawn = gsl_drawField(sd.distance, vec4<f32>(shapeRGB, 1.0),
                     vec4<f32>(bgColor, 1.0), max(fieldInterval, 1e-4), fieldFade, fieldExternal);
@@ -970,6 +984,7 @@ function updateShader(wgslCode, shapeCount = 1, shapeNames = [], meshSdfBindings
       gsl_drawField,
       gsl_fieldFilterNode,
       gsl_pixelWidthNode,
+      ...(gsl_sectionShape ? [gsl_sectionShape] : []),
     ],
   );
 
@@ -1003,6 +1018,8 @@ function updateShader(wgslCode, shapeCount = 1, shapeNames = [], meshSdfBindings
     fieldNormal: fieldNormalU,
     fieldUnion: fieldUnionU,
     fieldExternal: fieldExternalU,
+    fieldBuild: fieldBuildU,
+    fieldRelief: fieldReliefU,
     bgColor: bgColorU,
     ...colorUniforms,
     ...visUniforms,
@@ -2281,6 +2298,19 @@ export function setFieldUnion(enabled) {
 
 export function setFieldExternal(enabled) {
   fieldExternalU.value = enabled ? 1.0 : 0.0;
+  scheduleRender();
+}
+
+// setFieldBuild and setFieldRelief move the section's surfaces by their
+// materials' builds and relief (gsl_sectionShape); off, the section draws the
+// field as built.
+export function setFieldBuild(enabled) {
+  fieldBuildU.value = enabled ? 1.0 : 0.0;
+  scheduleRender();
+}
+
+export function setFieldRelief(enabled) {
+  fieldReliefU.value = enabled ? 1.0 : 0.0;
   scheduleRender();
 }
 

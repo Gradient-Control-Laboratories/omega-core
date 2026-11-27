@@ -78,22 +78,25 @@ export const GSL_DISPLACE_STATE_WGSL = `var<private> gsl_dispScale: f32 = 1.0;`;
 // to fill in, like every other module here. The call to gsl_sdShapeDisplaced
 // is written in full: its displacement scale sits before the suffix, where
 // injectExtraArgs would not put it.
-export function displaceSampleWGSL({ materialAtIdx, extraParamsWGSL, parts = false, perReturn = false, scaleVar = false }) {
+export function displaceSampleWGSL({ materialAtIdx, extraParamsWGSL, parts = false, perReturn = false, scaleVar = false, buildVar = false }) {
   if (perReturn) {
-    // Every height in gsl_sdShapeDisplaced is scaled by its third argument,
-    // so a part whose relief has faded out (w 0) is its undisplaced sample
-    // exactly, and skips the materials the displaced field evaluates. It
-    // still sets the scale displacementScale() reads (scaleVar), as the call
-    // would have, so the shading after it sees a part drawn undisplaced and
-    // shows its top coat, not a scale left over from another part.
+    // Every height in gsl_sdShapeDisplaced is scaled by its scale arguments,
+    // relief by the third and build by the fourth, both w here: the march
+    // moves a coat's build by its knob as it moves the relief. So a part
+    // whose relief has faded out (w 0) is its undisplaced sample exactly,
+    // and skips the materials the displaced field evaluates. It still sets
+    // the scales displacementScale() and buildScale() read (scaleVar,
+    // buildVar), as the call would have, so the shading after it sees a part
+    // drawn undisplaced and shows its top coat, not a scale left over from
+    // another part.
     const partScale = parts ? " * gsl_partDetail(gsl_detail.x, sd.distance, 1e-3)" : "";
-    const zeroScale = scaleVar ? " gsl_dispScaleK = 0.0;" : "";
+    const zeroScale = (scaleVar ? " gsl_dispScaleK = 0.0;" : "") + (buildVar ? " gsl_buildScaleK = 0.0;" : "");
     return `
 fn gsl_displaceSample(p: vec3<f32>, sd: gsl_shape, time: f32${extraParamsWGSL}) -> gsl_shape {
     if (gsl_dispScale == 0.0) { return sd; }
     let w = gsl_dispScale${partScale};
     if (w == 0.0) {${zeroScale} return sd; }
-    return gsl_sdShapeDisplaced(p, time, w${argsFromParams(extraParamsWGSL)});
+    return gsl_sdShapeDisplaced(p, time, w, w${argsFromParams(extraParamsWGSL)});
 }
 `;
   }
@@ -112,6 +115,34 @@ fn gsl_displaceSample(p: vec3<f32>, sd: gsl_shape, time: f32${extraParamsWGSL}) 
     // material field answers with the default record, whose height is 0.
     let h = (${materialAtIdx("p", "sd.shapeIndex")}).volume.z;
     return gsl_shape(sd.distance - h * w, sd.shapeIndex);
+}
+`;
+}
+
+// sectionShapeWGSL returns the source of
+//
+//   fn gsl_sectionShape(p: vec3<f32>, time: f32, wRelief: f32, wBuild: f32, <suffix>) -> gsl_shape
+//
+// the field the section view draws: sdShape at p, its surfaces moved by
+// their materials' relief times wRelief and their builds times wBuild, each
+// 0 or 1 by the section panel's Relief and Build toggles. Both 0 is sdShape
+// exactly, the field as built, as the section has always drawn it. Unlike
+// gsl_displaceSample it takes no Detail fade: a section is read, not looked
+// at, and the panel says what it draws. The per-return composite
+// (gsl_sdShapeDisplaced, perReturn) moves each return by its own layers;
+// otherwise the winner's material moves it, as the march's plain path does.
+// The sdShape call is written bare, for injectExtraArgs; the
+// gsl_sdShapeDisplaced call is written in full.
+export function sectionShapeWGSL({ materialAtIdx, extraParamsWGSL, perReturn = false }) {
+  const moved = perReturn
+    ? `return gsl_sdShapeDisplaced(p, time, wRelief, wBuild${argsFromParams(extraParamsWGSL)});`
+    : `let vol = (${materialAtIdx("p", "sd.shapeIndex")}).volume;
+    return gsl_shape(sd.distance - (vol.z - vol.w) * wRelief - vol.w * wBuild, sd.shapeIndex);`;
+  return `
+fn gsl_sectionShape(p: vec3<f32>, time: f32, wRelief: f32, wBuild: f32${extraParamsWGSL}) -> gsl_shape {
+    let sd = sdShape(p, time);
+    if (wRelief == 0.0 && wBuild == 0.0) { return sd; }
+    ${moved}
 }
 `;
 }

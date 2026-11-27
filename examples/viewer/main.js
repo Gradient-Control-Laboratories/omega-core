@@ -20,6 +20,8 @@ import {
     setSectionOpacity,
     setFieldUnion,
     setFieldExternal,
+    setFieldBuild,
+    setFieldRelief,
     setShapeVisible,
     setSlotVisible,
     setMeshShapeVisible,
@@ -1364,6 +1366,14 @@ document.getElementById("field-union").addEventListener("change", (e) => {
 
 document.getElementById("field-external").addEventListener("change", (e) => {
     setFieldExternal(e.target.checked);
+});
+
+document.getElementById("field-build").addEventListener("change", (e) => {
+    setFieldBuild(e.target.checked);
+});
+
+document.getElementById("field-relief").addEventListener("change", (e) => {
+    setFieldRelief(e.target.checked);
 });
 
 function updateFieldNormal() {

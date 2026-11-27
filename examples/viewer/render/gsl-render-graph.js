@@ -15,7 +15,7 @@ import { wgslFn } from "three/tsl";
 import { GSL_SHAPE_STRUCT_WGSL, GSL_MIN_WGSL } from "./gsl-host.js";
 import { GSL_SHADING_WGSL, GSL_MATERIAL_STRUCT_WGSL, GSL_MATERIAL_DEFAULT_WGSL, partDetailWGSL, hasParts, hasSimpleValues, partDetailSetupWGSL } from "./gsl-shading.js";
 import { GSL_SECONDARY_HIT_STRUCT_WGSL, marchSecondaryWGSL, shadeGlassWGSL } from "./gsl-glass.js";
-import { displaceSampleWGSL, sdDisplacedWGSL, renameToDisplaced, GSL_DISPLACE_STATE_WGSL } from "./gsl-displace.js";
+import { displaceSampleWGSL, sdDisplacedWGSL, sectionShapeWGSL, renameToDisplaced, GSL_DISPLACE_STATE_WGSL } from "./gsl-displace.js";
 import { visArrayDeclWGSL, visAssignWGSL, isShapeVisibleWGSL } from "./gsl-visibility.js";
 import { traceSampleWGSL, GSL_TRACE_STATE_WGSL } from "./gsl-trace.js";
 import { simpleFragmentWGSL } from "./gsl-simple.js";
@@ -178,13 +178,22 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
   // The var displacementScale() reads, when the program reads it (layered
   // coats switching by layer); see backend/wgsl/internal/codegen/displace.go.
   const scaleVar = wgslCode.includes("var<private> gsl_dispScaleK");
+  // And the one buildScale() reads, set beside it.
+  const buildVar = wgslCode.includes("var<private> gsl_buildScaleK");
   const gsl_displaceSample = displaceActive
-    ? wgslFn(injectExtraArgs(displaceSampleWGSL({ extraParamsWGSL, materialAtIdx, parts, perReturn, scaleVar })),
+    ? wgslFn(injectExtraArgs(displaceSampleWGSL({ extraParamsWGSL, materialAtIdx, parts, perReturn, scaleVar, buildVar })),
              [gsl_shape, gsl_material, gsl_displaceState, ...partDetailDeps, ...(perReturn ? [sdShape] : [])])
     : null;
   const gsl_sdDisplaced = displaceActive
     ? wgslFn(injectExtraArgs(sdDisplacedWGSL({ extraParamsWGSL, extraArgsWGSL })),
              [sdShape, gsl_shape, gsl_displaceSample])
+    : null;
+  // The section view's field: sdShape, its surfaces moved by their relief
+  // and builds as the section panel's toggles say (gsl-displace.js). Without
+  // a material field nothing moves, and the section draws sdShape.
+  const gsl_sectionShape = displaceActive
+    ? wgslFn(injectExtraArgs(sectionShapeWGSL({ extraParamsWGSL, materialAtIdx, perReturn })),
+             [sdShape, gsl_shape, gsl_material])
     : null;
   // The state var is listed on the fragment too, the way gsl_pixelWidthNode is:
   // the fragment assigns gsl_dispScale directly.
@@ -763,5 +772,6 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
     wgslFragmentShader,
     ptFragment,
     simpleFragment,
+    gsl_sectionShape,
   };
 }

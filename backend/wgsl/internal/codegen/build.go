@@ -370,6 +370,9 @@ func (d *Delegate) BuildPackageReturns(_ []*program.Operand, expressions []build
 	if d.dispScaleUsed {
 		d.module.AddRuntimeSnippet(dispScaleDeclWGSL)
 	}
+	if d.buildScaleUsed {
+		d.module.AddRuntimeSnippet(buildScaleDeclWGSL)
+	}
 	if d.displacedFieldSrc != "" {
 		if d.heightsSrc != "" {
 			d.module.AddRuntimeSnippet(d.heightsSrc)

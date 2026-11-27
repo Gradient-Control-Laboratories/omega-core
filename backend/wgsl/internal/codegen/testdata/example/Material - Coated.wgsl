@@ -1363,7 +1363,7 @@ var<private> gsl_detailPw: f32 = 0.0;
 
 const gsl_foldK = array<vec3<f32>, 8>(vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 0.0, 0.0), vec3<f32>(0.0, 1.0, 0.0), vec3<f32>(1.0, 1.0, 0.0), vec3<f32>(0.0, 0.0, 1.0), vec3<f32>(1.0, 0.0, 1.0), vec3<f32>(0.0, 1.0, 1.0), vec3<f32>(1.0, 1.0, 1.0));
 
-fn gsl_heights(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f32, 18> {
+fn gsl_heights(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<vec2<f32>, 18> {
   let gsl_tmp_1 = p - vec3<f32>(0.0, 0.0, 0.0);
   let turnedMat = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.4, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(vec3<f32>(0.0, 1.0, 0.0), gsl_tmp_1), fract(dot(gsl_tmp_1, vec3<f32>(0.0, 1.0, 0.0)) / 0.15), 0.15, 0.8, noiseTex);
   let gsl_result = coating_anodized(turnedMat, vec3<f32>(0.9621, 0.9654, 0.9658), vec3<f32>(1.0, 1.0, 1.0), noiseTex);
@@ -1464,30 +1464,47 @@ fn gsl_heights(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f32,
   let coarsePowderBase = machined_grooveFinish(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), cross(normalize(vec3<f32>(0.0, 0.0, 1.0)), p - vec3<f32>(30.0, 0.0, 3.0)), fract(length(p - vec3<f32>(30.0, 0.0, 3.0) - normalize(vec3<f32>(0.0, 0.0, 1.0)) * dot(p - vec3<f32>(30.0, 0.0, 3.0), normalize(vec3<f32>(0.0, 0.0, 1.0)))) / 1.2), 1.2, 0.8, noiseTex);
   let gsl_result_16 = coating_powderCoat(p, coarsePowderBase, vec3<f32>(0.16, 0.3, 0.42), 85.0, 0.5, 0.08, 1.2, noiseTex);
   let coarsePowderMat = gsl_result_16.v_1;
-  return array<f32, 18>(clearMat[2].z, blueMat[2].z, redMat[2].z, blackMat[2].z, hardMat[2].z, oxideMat[2].z, 0.0, glossMat[2].z, wrinkleMat[2].z, sandMat[2].z, hammerMat[2].z, paintMat[2].z, freshMat[2].z, agedMat[2].z, fineMat[2].z, lacqMat[2].z, coarseLacqMat[2].z, coarsePowderMat[2].z);
+  let gsl_v0 = clearMat[2];
+  let gsl_v1 = blueMat[2];
+  let gsl_v2 = redMat[2];
+  let gsl_v3 = blackMat[2];
+  let gsl_v4 = hardMat[2];
+  let gsl_v5 = oxideMat[2];
+  let gsl_v7 = glossMat[2];
+  let gsl_v8 = wrinkleMat[2];
+  let gsl_v9 = sandMat[2];
+  let gsl_v10 = hammerMat[2];
+  let gsl_v11 = paintMat[2];
+  let gsl_v12 = freshMat[2];
+  let gsl_v13 = agedMat[2];
+  let gsl_v14 = fineMat[2];
+  let gsl_v15 = lacqMat[2];
+  let gsl_v16 = coarseLacqMat[2];
+  let gsl_v17 = coarsePowderMat[2];
+  return array<vec2<f32>, 18>(vec2<f32>(gsl_v0.z, gsl_v0.w), vec2<f32>(gsl_v1.z, gsl_v1.w), vec2<f32>(gsl_v2.z, gsl_v2.w), vec2<f32>(gsl_v3.z, gsl_v3.w), vec2<f32>(gsl_v4.z, gsl_v4.w), vec2<f32>(gsl_v5.z, gsl_v5.w), vec2<f32>(0.0, 0.0), vec2<f32>(gsl_v7.z, gsl_v7.w), vec2<f32>(gsl_v8.z, gsl_v8.w), vec2<f32>(gsl_v9.z, gsl_v9.w), vec2<f32>(gsl_v10.z, gsl_v10.w), vec2<f32>(gsl_v11.z, gsl_v11.w), vec2<f32>(gsl_v12.z, gsl_v12.w), vec2<f32>(gsl_v13.z, gsl_v13.w), vec2<f32>(gsl_v14.z, gsl_v14.w), vec2<f32>(gsl_v15.z, gsl_v15.w), vec2<f32>(gsl_v16.z, gsl_v16.w), vec2<f32>(gsl_v17.z, gsl_v17.w));
 }
 
-fn gsl_sdShapeDisplaced(p: vec3<f32>, time: f32, gsl_dispK: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
+fn gsl_sdShapeDisplaced(p: vec3<f32>, time: f32, gsl_dispK: f32, gsl_buildK: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
   let gsl_d = gsl_shapeParts(p, time, noiseTex);
   let gsl_h = gsl_heights(p, time, noiseTex);
-  let gsl_s1 = gsl_shape(gsl_d[0] - gsl_h[0] * gsl_dispK, 1u);
-  let gsl_s2 = gsl_shape(gsl_d[1] - gsl_h[1] * gsl_dispK, 2u);
-  let gsl_s3 = gsl_shape(gsl_d[2] - gsl_h[2] * gsl_dispK, 3u);
-  let gsl_s4 = gsl_shape(gsl_d[3] - gsl_h[3] * gsl_dispK, 4u);
-  let gsl_s5 = gsl_shape(gsl_d[4] - gsl_h[4] * gsl_dispK, 5u);
-  let gsl_s6 = gsl_shape(gsl_d[5] - gsl_h[5] * gsl_dispK, 6u);
+  let gsl_s1 = gsl_shape(gsl_d[0] - (gsl_h[0].x - gsl_h[0].y) * gsl_dispK - gsl_h[0].y * gsl_buildK, 1u);
+  let gsl_s2 = gsl_shape(gsl_d[1] - (gsl_h[1].x - gsl_h[1].y) * gsl_dispK - gsl_h[1].y * gsl_buildK, 2u);
+  let gsl_s3 = gsl_shape(gsl_d[2] - (gsl_h[2].x - gsl_h[2].y) * gsl_dispK - gsl_h[2].y * gsl_buildK, 3u);
+  let gsl_s4 = gsl_shape(gsl_d[3] - (gsl_h[3].x - gsl_h[3].y) * gsl_dispK - gsl_h[3].y * gsl_buildK, 4u);
+  let gsl_s5 = gsl_shape(gsl_d[4] - (gsl_h[4].x - gsl_h[4].y) * gsl_dispK - gsl_h[4].y * gsl_buildK, 5u);
+  let gsl_s6 = gsl_shape(gsl_d[5] - (gsl_h[5].x - gsl_h[5].y) * gsl_dispK - gsl_h[5].y * gsl_buildK, 6u);
   let gsl_s7 = gsl_shape(gsl_d[6], 7u);
-  let gsl_s8 = gsl_shape(gsl_d[7] - gsl_h[7] * gsl_dispK, 8u);
-  let gsl_s9 = gsl_shape(gsl_d[8] - gsl_h[8] * gsl_dispK, 9u);
-  let gsl_s10 = gsl_shape(gsl_d[9] - gsl_h[9] * gsl_dispK, 10u);
-  let gsl_s11 = gsl_shape(gsl_d[10] - gsl_h[10] * gsl_dispK, 11u);
-  let gsl_s12 = gsl_shape(gsl_d[11] - gsl_h[11] * gsl_dispK, 12u);
-  let gsl_s13 = gsl_shape(gsl_d[12] - gsl_h[12] * gsl_dispK, 13u);
-  let gsl_s14 = gsl_shape(gsl_d[13] - gsl_h[13] * gsl_dispK, 14u);
-  let gsl_s15 = gsl_shape(gsl_d[14] - gsl_h[14] * gsl_dispK, 15u);
-  let gsl_s16 = gsl_shape(gsl_d[15] - gsl_h[15] * gsl_dispK, 16u);
-  let gsl_s17 = gsl_shape(gsl_d[16] - gsl_h[16] * gsl_dispK, 17u);
-  let gsl_s18 = gsl_shape(gsl_d[17] - gsl_h[17] * gsl_dispK, 18u);
+  let gsl_s8 = gsl_shape(gsl_d[7] - (gsl_h[7].x - gsl_h[7].y) * gsl_dispK - gsl_h[7].y * gsl_buildK, 8u);
+  let gsl_s9 = gsl_shape(gsl_d[8] - (gsl_h[8].x - gsl_h[8].y) * gsl_dispK - gsl_h[8].y * gsl_buildK, 9u);
+  let gsl_s10 = gsl_shape(gsl_d[9] - (gsl_h[9].x - gsl_h[9].y) * gsl_dispK - gsl_h[9].y * gsl_buildK, 10u);
+  let gsl_s11 = gsl_shape(gsl_d[10] - (gsl_h[10].x - gsl_h[10].y) * gsl_dispK - gsl_h[10].y * gsl_buildK, 11u);
+  let gsl_s12 = gsl_shape(gsl_d[11] - (gsl_h[11].x - gsl_h[11].y) * gsl_dispK - gsl_h[11].y * gsl_buildK, 12u);
+  let gsl_s13 = gsl_shape(gsl_d[12] - (gsl_h[12].x - gsl_h[12].y) * gsl_dispK - gsl_h[12].y * gsl_buildK, 13u);
+  let gsl_s14 = gsl_shape(gsl_d[13] - (gsl_h[13].x - gsl_h[13].y) * gsl_dispK - gsl_h[13].y * gsl_buildK, 14u);
+  let gsl_s15 = gsl_shape(gsl_d[14] - (gsl_h[14].x - gsl_h[14].y) * gsl_dispK - gsl_h[14].y * gsl_buildK, 15u);
+  let gsl_s16 = gsl_shape(gsl_d[15] - (gsl_h[15].x - gsl_h[15].y) * gsl_dispK - gsl_h[15].y * gsl_buildK, 16u);
+  let gsl_s17 = gsl_shape(gsl_d[16] - (gsl_h[16].x - gsl_h[16].y) * gsl_dispK - gsl_h[16].y * gsl_buildK, 17u);
+  let gsl_s18 = gsl_shape(gsl_d[17] - (gsl_h[17].x - gsl_h[17].y) * gsl_dispK - gsl_h[17].y * gsl_buildK, 18u);
   return gsl_min(gsl_min(gsl_min(gsl_min(gsl_min(gsl_min(gsl_min(gsl_min(gsl_min(gsl_min(gsl_min(gsl_min(gsl_min(gsl_min(gsl_min(gsl_min(gsl_min(gsl_s1, gsl_s2), gsl_s3), gsl_s4), gsl_s5), gsl_s6), gsl_s7), gsl_s8), gsl_s9), gsl_s10), gsl_s11), gsl_s12), gsl_s13), gsl_s14), gsl_s15), gsl_s16), gsl_s17), gsl_s18);
 }
 

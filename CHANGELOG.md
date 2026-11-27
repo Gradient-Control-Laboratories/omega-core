@@ -52,6 +52,13 @@ from `1.0.0` onward).
   A 20 mm cube with a 0.1 mm build meshes to 8241.94 mm³ against 8241.89 exact. Relief finer than a
   cell is not resolved, and on noisy relief (a wood's pores) `mdc` can throw vertices off the
   surface; `marching-cubes` stays on it. `displacementDrawn()` follows the relief flag.
+- **Section view Build and Relief toggles**: the viewer's Section panel draws its field with each
+  surface moved by its materials' builds and relief (`gsl_sectionShape`), off by default, so the
+  section shows the field as built as it always has. `buildScale()` has its own WGSL var, and
+  `gsl_sdShapeDisplaced` takes a relief scale and a build scale (the march passes its knob to both,
+  so nothing drawn changes); `gsl_heights` reads each return's volume row once and returns its
+  height and build. Sixteen WGSL goldens change in text (0.5 to 3.6%), none in which programs get
+  the per-return composite.
 - Migrated GSL compiler architecture, language specification/migration, golden verification, and
   stdlib tolerance-table documentation from `omega-release/doc/` into `doc/`, synced
   `doc/gsl_lang_spec_future.md`, extracted `doc/roadmap.md` from `README.md`, and documented Go
