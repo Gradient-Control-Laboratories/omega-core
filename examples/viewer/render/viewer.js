@@ -825,6 +825,23 @@ function updateShader(wgslCode, shapeCount = 1, shapeNames = [], meshSdfBindings
   const sectionField = gsl_sectionShape
     ? `gsl_sectionShape(hitPoint, time, fieldRelief, fieldBuild${extraArgsWGSL})`
     : "sdShape(hitPoint, time)";
+  // Color mode's cut: inside ANY visible shape, colored by the one it is deepest
+  // in. The union (gsl_min) cannot say: it keeps the nearest crossing, |d|, so
+  // where two returns overlap -- a screw in a tapped hole -- a point deep in the
+  // screw reads the plate's small positive distance to its bore, and the cut
+  // vanished there. Each shape is sampled alone (gsl_fieldFilterIdx), as the
+  // contour view's per-shape mode does.
+  const colorCutShapes = [];
+  for (let i = 1; i <= currentShapeCount; i++) {
+    colorCutShapes.push(`
+                if (vis${i} > 0.5) {
+                    gsl_fieldFilterIdx = ${i}u;
+                    let cs${i} = ${sectionField};
+                    if (cs${i}.shapeIndex == ${i}u && cs${i}.distance < cut.distance) {
+                        cut = gsl_shape(cs${i}.distance, ${i}u);
+                    }
+                }`);
+  }
   // The color of a cut face: the program's color field where it authors one
   // (gsl_colorField, whose call injectExtraArgs completes), else the shape's
   // palette color, as shading chooses. Both are sRGB and the render targets
@@ -973,14 +990,18 @@ function updateShader(wgslCode, shapeCount = 1, shapeNames = [], meshSdfBindings
 
             if (fieldColor > 0.5) {
                 // Color mode: the cut faces in each shape's color, the background
-                // elsewhere, with no contours. Alpha carries depth, as in union mode.
+                // elsewhere, with no contours. Alpha carries depth, as in union mode,
+                // and 2 more on a cut face, so the composite knows a cut by that and
+                // not by its color, which can be as dark as the background (a
+                // thread's painted relief).
+                var cut = gsl_shape(1e9, 0u);
+                ${colorCutShapes.join("")}
                 gsl_fieldFilterIdx = 0u;
-                let cut = ${sectionField};
                 if (cut.shapeIndex == 0u || cut.distance > 0.0) {
                     return vec4<f32>(bgColor, depth01);
                 }
                 ${cutColorWGSL}
-                return vec4<f32>(cutRGB, depth01);
+                return vec4<f32>(cutRGB, depth01 + 2.0);
             }
 
             if (fieldUnion > 0.5) {
@@ -1778,6 +1799,8 @@ function initComposite() {
             let fieldRGB = fieldRGBA.rgb;
             let planeDepth = fieldRGBA.a;
             let fieldHit = (fieldOn > 0.5) && (planeDepth > 0.001);
+            // The section pass marks a Color-mode cut face by adding 2 to its depth.
+            let isCut = planeDepth >= 2.0;
 
             let sel = u32(selIdx + 0.5);
             let hov = u32(hovIdx + 0.5);
@@ -1863,7 +1886,7 @@ function initComposite() {
                 if (ptOn && !centerIsAxis && (shapeVisible || !shapeHit)) {
                     result = vec4(mix(effectiveBgRGB, ptColor, coverage), 1.0);
                 }
-            } else if (fieldColor > 0.5 && isLine > 0.5) {
+            } else if (fieldColor > 0.5 && isCut) {
                 // Color mode, a cut face: the cut itself, in full color.
                 result = vec4(fieldRGB, 1.0);
             } else if (modelBelowPlane) {
