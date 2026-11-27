@@ -108,17 +108,17 @@ c_int     register_spinodoid(uint32_t slot, const double* sites, size_t len,
                              c_int local);
 TreeIndex tree_spinodoid(uint32_t slot, uint32_t comp);
 uint32_t  spinodoid_oracle_id(uint32_t slot, uint32_t comp);
-uint32_t  hodge_spinodoid_oracle_id(uint32_t slot, uint32_t comp);
+uint32_t  reference_gabor_spinodoid_oracle_id(uint32_t slot, uint32_t comp);
 
-// hodge's field (the gaborSpinodoid builtins) over its own slots: a table of
-// jittered kernels, periodic over hodge's own window or bounded to a driven
+// the reference field (the gaborSpinodoid builtins) over its own slots: a table of
+// jittered kernels, periodic over the reference field's own window or bounded to a driven
 // field's domain.
-c_int     register_hodge_spinodoid(uint32_t slot, const double* kernels, size_t len,
+c_int     register_reference_gabor_spinodoid(uint32_t slot, const double* kernels, size_t len,
                              const int64_t* origin, const uint32_t* size, const double* bounds, c_int periodic,
                              size_t impulses, double cell_size, double a,
                              double sigma, double base_beta, double level,
                              c_int local);
-TreeIndex tree_hodge_spinodoid(uint32_t slot, uint32_t comp);
+TreeIndex tree_reference_gabor_spinodoid(uint32_t slot, uint32_t comp);
 
 // VDB-oracle (vdbSdf) registration. Same triangle layout as the mesh
 // oracle, plus a voxel size (world units) and a half-band width (in
@@ -1073,19 +1073,19 @@ func SpinodoidOracleID(slot, comp uint32) uint32 {
 	return uint32(C.spinodoid_oracle_id(C.uint32_t(slot), C.uint32_t(comp)))
 }
 
-// HodgeSpinodoidOracleID is SpinodoidOracleID for hodge's slots, which are a
+// ReferenceGaborSpinodoidOracleID is SpinodoidOracleID for the reference field's slots, which are a
 // separate id space.
-func HodgeSpinodoidOracleID(slot, comp uint32) uint32 {
-	return uint32(C.hodge_spinodoid_oracle_id(C.uint32_t(slot), C.uint32_t(comp)))
+func ReferenceGaborSpinodoidOracleID(slot, comp uint32) uint32 {
+	return uint32(C.reference_gabor_spinodoid_oracle_id(C.uint32_t(slot), C.uint32_t(comp)))
 }
 
-// RegisterHodgeSpinodoid installs a baked table of hodge's field in slot, on
-// the same terms as RegisterSpinodoid. hodge's slots are its own, so the two
+// RegisterReferenceGaborSpinodoid installs a baked table of the reference field in slot, on
+// the same terms as RegisterSpinodoid. The reference field's slots are its own, so the two
 // fields never collide, and a document may read both.
-func RegisterHodgeSpinodoid(slot uint32, t *spinodoid.HodgeTable, level float64, local bool) error {
+func RegisterReferenceGaborSpinodoid(slot uint32, t *spinodoid.ReferenceGaborTable, level float64, local bool) error {
 	flat := t.Flat()
 	if len(flat) == 0 {
-		return fmt.Errorf("RegisterHodgeSpinodoid: empty table")
+		return fmt.Errorf("RegisterReferenceGaborSpinodoid: empty table")
 	}
 	localFlag := C.c_int(0)
 	if local {
@@ -1097,21 +1097,21 @@ func RegisterHodgeSpinodoid(slot uint32, t *spinodoid.HodgeTable, level float64,
 	if t.Periodic {
 		periodic = 1
 	}
-	ret := C.register_hodge_spinodoid(C.uint32_t(slot),
+	ret := C.register_reference_gabor_spinodoid(C.uint32_t(slot),
 		(*C.double)(unsafe.Pointer(&flat[0])), C.size_t(len(flat)),
 		(*C.int64_t)(unsafe.Pointer(&origin[0])), (*C.uint32_t)(unsafe.Pointer(&size[0])),
 		(*C.double)(unsafe.Pointer(&t.Bounds[0])), periodic,
 		C.size_t(t.Impulses), C.double(t.CellSize), C.double(t.A),
 		C.double(t.Sigma), C.double(t.BaseBeta), C.double(level), localFlag)
 	if ret != 0 {
-		return fmt.Errorf("RegisterHodgeSpinodoid: rust returned %d", int(ret))
+		return fmt.Errorf("RegisterReferenceGaborSpinodoid: rust returned %d", int(ret))
 	}
 	return nil
 }
 
-// HodgeSpinodoidTree is SpinodoidTree for a hodge table, over hodge's slots.
-func HodgeSpinodoidTree(slot, comp uint32) TreeIndex {
-	return TreeIndex(C.tree_hodge_spinodoid(C.uint32_t(slot), C.uint32_t(comp)))
+// ReferenceGaborSpinodoidTree is SpinodoidTree for a reference table, over the reference field's slots.
+func ReferenceGaborSpinodoidTree(slot, comp uint32) TreeIndex {
+	return TreeIndex(C.tree_reference_gabor_spinodoid(C.uint32_t(slot), C.uint32_t(comp)))
 }
 
 // ConstValue reports the value of t if it is a constant tree.

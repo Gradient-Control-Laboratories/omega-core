@@ -17,7 +17,7 @@ type Oracle struct {
 	// components are the next three IDs; a consumer registers the slot once and
 	// resolves all four, so a gradient-only call is covered too.
 	AssetID uint32
-	// Fast marks the lattice field rather than hodge's. Every table omega
+	// Fast marks the lattice field rather than the Python reference's. Every table omega
 	// binds is the lattice, whichever builtin the document called.
 	Fast bool
 

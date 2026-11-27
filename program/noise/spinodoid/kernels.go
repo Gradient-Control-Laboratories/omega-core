@@ -1,22 +1,22 @@
 // Package spinodoid bakes a lattice Gabor spinodoid for omega's backends.
 //
-// It began as an exact port of hodge's spinodoid_gabor (hodge-release
+// It began as an exact port of the Python reference's spinodoid_gabor (the Python reference's
 // spinodoid.py) and keeps its statistical model: wave packets of one
 // wavelength under a Gaussian envelope of fixed physical size, directions
-// drawn from hodge's cone orientation distribution (the same numpy-drawn
+// drawn from the Python reference's cone orientation distribution (the same numpy-drawn
 // pool), and scale and orientation drivers sampled once per kernel centre, so
 // each packet is an honest plane wave. Two things differ, both for speed:
 //
-//   - Kernels sit on a regular lattice instead of jittered in hodge's cells, so
+//   - Kernels sit on a regular lattice instead of jittered in the Python reference's cells, so
 //     where they are is arithmetic: an evaluation visits only the sites within
 //     reach and loads data only for those, instead of scanning 27 cells of
 //     kernels to find the few that matter. Each site still has its own random
 //     direction and phase, and at the lattice spacing used (1.5 envelope
-//     standard deviations at hodge's density) the lattice does not print
+//     standard deviations at the Python reference's density) the lattice does not print
 //     through the variance.
-//   - Each kernel's envelope is tapered to zero at hodge's cutoff radius,
+//   - Each kernel's envelope is tapered to zero at the Python reference's cutoff radius,
 //     exp(-pi a^2 r^2) (1 - r^2/R^2)^2, so a kernel enters and leaves the sum
-//     smoothly. The field is smooth everywhere (hodge's has small seams at its
+//     smoothly. The field is smooth everywhere (the Python reference's has small seams at its
 //     cell faces), and the reach is part of the definition, not a culling
 //     approximation, so every backend computes the same field.
 //
@@ -31,7 +31,7 @@ import (
 	"math"
 )
 
-// TableSites is the table's edge in lattice sites. At hodge's density (8
+// TableSites is the table's edge in lattice sites. At the Python reference's density (8
 // kernels per cutoff cell) that is 32 cutoff cells, about 116 wavelengths at
 // the default packet width, before the field repeats.
 const TableSites = 64
@@ -41,7 +41,7 @@ const TableSites = 64
 const tableOrigin = -TableSites / 2
 
 const (
-	// envelopeCutoff is hodge's: the envelope value at the kernel's reach R.
+	// envelopeCutoff is the Python reference's: the envelope value at the kernel's reach R.
 	envelopeCutoff = 0.01
 	defaultPool    = 4096
 )
@@ -56,13 +56,13 @@ type Params struct {
 	Poles [][3]float64
 	// Period is the reference wavelength; Scale multiplies it locally.
 	Period float64
-	// PacketWidth is the envelope width in wavelengths at scale 1 (hodge: 3).
+	// PacketWidth is the envelope width in wavelengths at scale 1 (the Python reference: 3).
 	PacketWidth float64
 	// Impulses is the kernel density, in kernels per cube of the reach's edge
-	// (hodge's impulses_per_cell; 8 by default). The lattice spacing is
+	// (the Python reference's impulses_per_cell; 8 by default). The lattice spacing is
 	// reach / cbrt(Impulses), and about 4.19 * Impulses kernels reach a point.
 	Impulses int
-	// Pool is the direction pool's size (hodge: 4096; 0 means that).
+	// Pool is the direction pool's size (the Python reference: 4096; 0 means that).
 	Pool int
 	// Seed seeds both the pool draw and the spatial hash.
 	Seed int64
@@ -117,7 +117,7 @@ func Bake(p Params) (*Table, error) {
 	if pool == 0 {
 		pool = defaultPool
 	}
-	// The pool is hodge's draw, in radians as hodge takes them. Allow pi/2 to
+	// The pool is the Python reference's draw, in radians as the Python reference takes them. Allow pi/2 to
 	// arrive a float32 rounding high, and clamp it back.
 	theta := make([]float64, len(p.Theta))
 	for i, t := range p.Theta {
@@ -277,7 +277,7 @@ func (t *Table) Sample(q [3]float64) (field float64, grad [3]float64, beta float
 
 // Level is the threshold that leaves fraction `solidFraction` of the
 // (asymptotically standard normal) field below it: the bias a
-// ...BySolidFraction spinodoid passes, and hodge's solid_fraction= path. It is
+// ...BySolidFraction spinodoid passes, and the Python reference's solid_fraction= path. It is
 // an estimate, exact only where the kernel sum is Gaussian, which the median
 // (fraction 0.5, level 0) always is.
 func Level(solidFraction float64) (float64, error) {

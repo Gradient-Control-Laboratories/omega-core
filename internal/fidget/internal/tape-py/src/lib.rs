@@ -67,7 +67,7 @@ impl Tape {
     ///
     /// `backend` chooses which field a spinodoid is rebuilt as from its
     /// payload's arguments: "fast" (omega's lattice, what the viewer draws) or
-    /// "manufacturing" (hodge's jittered-kernel field), whatever the payload's
+    /// "manufacturing" (the reference jittered-kernel field), whatever the payload's
     /// `fast` flag says.
     ///
     /// Each of the four is either one value, for every payload it applies to,
@@ -321,12 +321,12 @@ impl Mesh {
 /// What a tape needs bound before `Tape(...)` will load it: one tuple per
 /// mesh-oracle id it references, as `(id, kind, self_contained, slot)`.
 ///
-/// `kind` is "noise", "cellular", "spinodoid", "hodgeSpinodoid", "mesh" or
+/// `kind` is "noise", "cellular", "spinodoid", "referenceGaborSpinodoid", "mesh" or
 /// "unknown". `self_contained` is True when loading resolves the id by itself
 /// (a library-baked tile, a source mesh carried in the tape, or a spinodoid
 /// whose payload the tape carries) and False when this process has to
 /// register the oracle first. `slot` is what to pass as
-/// `register_hodge_spinodoid`'s first argument, where the kind has a slot.
+/// `register_reference_gabor_spinodoid`'s first argument, where the kind has a slot.
 ///
 /// Read-only, and it registers nothing, so this is the first call to make on a
 /// tape written somewhere else:
@@ -355,18 +355,18 @@ fn tape_oracle_payloads(tape: &[u8]) -> PyResult<Vec<(u32, String)>> {
     tape::tape_oracle_payloads(tape).map_err(PyValueError::new_err)
 }
 
-/// Install a baked hodge-spinodoid kernel table in `slot`, so a tape whose
+/// Install a baked reference-spinodoid kernel table in `slot`, so a tape whose
 /// leaves name that slot will load.
 ///
-/// The table is the caller's: hodge's own `_gabor_kernels` produces exactly
-/// these kernels, and omega's `HodgeBake` is pinned to it bit-for-bit on the
+/// The table is the caller's: the Python reference's own `_gabor_kernels` produces exactly
+/// these kernels, and omega's `ReferenceGaborBake` is pinned to it bit-for-bit on the
 /// direction pool and to 2e-14 on the field, so handing the table over is
-/// handing over the field hodge computes. Nothing is re-derived here.
+/// handing over the field the Python reference computes. Nothing is re-derived here.
 ///
 /// `kernels` is `(cells * impulses, 8)` float64 in row-major cell order over
 /// `size` from `origin`, each row `[jitter x, jitter y, jitter z, dir x,
 /// dir y, dir z, beta, gamma]` — a centre is `(cell + jitter) * cell_size`.
-/// `periodic` tables must be hodge's 32-cubed window and ignore `bounds`; a
+/// `periodic` tables must be the Python reference's 32-cubed window and ignore `bounds`; a
 /// bounded table is located by `bounds` and reads as a conservative
 /// distance-to-domain outside it. `level` is the field threshold, the
 /// payload's `bias` as it stands, and `local` divides by the
@@ -375,7 +375,7 @@ fn tape_oracle_payloads(tape: &[u8]) -> PyResult<Vec<(u32, String)>> {
 #[allow(clippy::too_many_arguments)]
 #[pyo3(signature = (slot, kernels, origin, size, bounds, periodic, impulses,
                     cell_size, a, sigma, base_beta, level, local))]
-fn register_hodge_spinodoid(
+fn register_reference_gabor_spinodoid(
     slot: u32,
     kernels: PyReadonlyArray2<f64>,
     origin: [i64; 3],
@@ -400,7 +400,7 @@ fn register_hodge_spinodoid(
     let k = kernels.as_slice().map_err(|e| {
         PyValueError::new_err(format!("kernels must be C-contiguous (N,8) float64: {e}"))
     })?;
-    tape::register_hodge_spinodoid(
+    tape::register_reference_gabor_spinodoid(
         slot, k, origin, size, bounds, periodic, impulses, cell_size, a, sigma, base_beta, level,
         local,
     )
@@ -454,6 +454,6 @@ fn omega_tape(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(tape_oracle_payloads, m)?)?;
     m.add_function(wrap_pyfunction!(register_mesh_oracle, m)?)?;
     m.add_function(wrap_pyfunction!(register_vdb_oracle, m)?)?;
-    m.add_function(wrap_pyfunction!(register_hodge_spinodoid, m)?)?;
+    m.add_function(wrap_pyfunction!(register_reference_gabor_spinodoid, m)?)?;
     Ok(())
 }

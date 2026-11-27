@@ -9,7 +9,7 @@
 // orientation distribution of wave directions — cones of half-angle theta about
 // a set of poles.
 //
-// These are a lattice form of hodge's Gabor spinodoid (hodge-release
+// These are a lattice form of the reference Gabor spinodoid (the Python reference's
 // spinodoid.py, spinodoid_gabor): the same localized wave packets, the same
 // direction distribution and the same density, with the kernels on a lattice
 // and their envelopes tapered, several times faster to evaluate (see
@@ -20,13 +20,13 @@
 //
 // The preview, meshing, export and the oracle all evaluate this one field, so
 // a part meshes as it renders. A tape carries the field's arguments; a reader
-// that has to agree with hodge rebuilds hodge's own field from them, which
+// that has to agree with the Python reference rebuilds the reference field from them, which
 // measures the same but places individual cells elsewhere.
 //
 // Fields are unit-normalized like the rest of the lattice family: a
 // pseudo-distance with unit RMS gradient, negative in the solid phase. So
 // lattice.solidify(field, 0, h) is a wall of width h straddling the level set
-// (hodge's wall_thickness), and lengths are real lengths even under a graded
+// (the Python reference's wall_thickness), and lengths are real lengths even under a graded
 // scale.
 //
 // The kernel grid is fixed in the world, at a spacing set by period and
@@ -36,7 +36,7 @@
 // Headerless analytical fields and outer coordinate remaps keep the legacy
 // periodic table; direct low-level query transforms use query bounds.
 //
-// The short forms use hodge's kernel density, 8 kernels per cell. Pass a lower
+// The short forms use the Python reference's kernel density, 8 kernels per cell. Pass a lower
 // impulses through the full forms to trade quality for speed.
 //
 // Doc convention follows builtin/base.gsl: `///` lines are public docs.
@@ -79,7 +79,7 @@ gabor(period, theta, bias) {
 /// in `theta` (e.g. the six <110> directions reach the gyroid's star).
 /// `packetWidth` is the envelope width in wavelengths (default 3); `impulses`
 /// the kernel density, in kernels per cell of the kernel grid (default 8,
-/// hodge's impulses_per_cell; evaluation cost grows with it, and the preview
+/// the Python reference's impulses_per_cell; evaluation cost grows with it, and the preview
 /// shows banding at low densities); `seed` picks the realization.
 gabor(period, theta, poles, packetWidth, impulses, seed, bias) {
   return gaborSpinodoid(p, period, theta, poles, packetWidth, impulses, 4096, seed, bias, 1, 1, identityFrame());

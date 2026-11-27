@@ -20,10 +20,10 @@ use fidget_core::{
     types::{Grad, Interval},
 };
 
-/// hodge's own field, over its own slots and leaf ids (hodge.rs). omega's
-/// builds bind only the lattice here; hodge's is for a tape reader that
-/// registers hodge's kernels itself (tape.rs register_hodge_spinodoid).
-pub mod hodge;
+/// the reference field, over its own slots and leaf ids (reference_gabor.rs). omega's
+/// builds bind only the lattice here; the Python reference's is for a tape reader that
+/// registers the reference field's kernels itself (tape.rs register_reference_gabor_spinodoid).
+pub mod reference_gabor;
 
 /// Both tables baked from a field's arguments, for a tape reader that rebuilds
 /// a spinodoid from its payload.
