@@ -167,10 +167,16 @@ reserved and undocumented in `gsl skill`: it is designed in
 
 ## 9. Open
 
-- **Chamfer-blend list forms (found 2026-11-27).** Under a non-sharp blend, `intersectChamferRound` and
-  `intersectChamferBlend` on a list differ from their two- and three-field forms: the list form blends every
-  edge plane and the vertex planes, the field forms only the binding ones, so the same shapes round
-  differently. Sharp blends agree. The new difference list forms inherit it. Not decided: which is right.
+Nothing is open.
+
+- **Chamfer-blend list forms (found and settled 2026-11-27).** Under a non-sharp blend, `intersectChamferRound`
+  and `intersectChamferBlend` on a list differed from their two- and three-field forms. The cause was not the
+  planes the list form takes, since its strongest edge and vertex planes are the binding ones. It was the
+  filler: `intersectChamferEdges` and `intersectChamferVertices` gave `face` for the slots that hold no plane,
+  so the blend over `[face, edges, vertices]` held the face up to three times, and `intersectRound` sank every
+  face by about 0.42 of its radius, with a gradient of length √3 there. The field forms are right. The filler
+  is now `-nothing`, and the list forms equal the field forms (`assembler/chamfer_list_test.go`). The indices
+  are constants, so the choice folds away before an interval is taken.
 
 Settled on 2026-11-26: the names (N1 `domain`, N2 `multiplyScalar`, N10 `a, b`), the spinodoid's scale (section 6) and the
 `RenderLit` wrappers (section 7).

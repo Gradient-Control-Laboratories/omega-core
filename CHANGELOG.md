@@ -272,6 +272,13 @@ from `1.0.0` onward).
 
 ### Fixed
 
+- **A round chamfer over a list no longer sinks every face**: `intersectChamferRound`, `unionChamferRound`,
+  `differenceChamferRound` and the `…ChamferBlend` forms on a list, and every primitive handed one as its
+  blend, blended the face with itself up to three times, so each face moved in: by about 0.42 of the radius
+  under a round blend, with the field's gradient √3 long there, and by other amounts under Lp and
+  exponential blends. The list forms now equal
+  their two- and three-field forms. `intersectChamferEdges` and `intersectChamferVertices` give `-nothing`,
+  not the sharp intersection, for a list too short to hold an edge or a vertex.
 - `topofold` now evaluates general UI-derived constant expressions via a scoped `ConstEvalFunc`
   fallback (`eval.ConstPkgSlotsAt`) in `assembler`, rejecting non-finite results, and Rust Cargo
   build scripts (`internal/fidget/internal/rust/build.rs`, `internal/fidget/internal/tape-core/build.rs`,
