@@ -103,7 +103,7 @@ fn builtin_sphere_2(p: vec3<f32>, radius: f32, noiseTex: texture_3d<f32>) -> f32
   return length(p) - radius;
 }
 
-fn map_repeatCentered(x: vec2<f32>, period: vec2<f32>, noiseTex: texture_3d<f32>) -> vec2<f32> {
+fn domain_repeatCentered(x: vec2<f32>, period: vec2<f32>, noiseTex: texture_3d<f32>) -> vec2<f32> {
   let half = period * 0.5;
   return gsl_floored_vec2((gsl_floored_vec2((x + half), period) + period), period) - half;
 }
@@ -132,11 +132,11 @@ fn texture_fadeTo(gsl_var_value: f32, mean: f32, size: f32, noiseTex: texture_3d
 }
 
 fn gsl_remap_3(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
-  let gsl_tmp_18 = map_repeatCentered(p.xy - vec2<f32>(0.8660254, 2.5), vec2<f32>(1.7320508, 3.0), noiseTex);
-  let gsl_tmp_17 = map_repeatCentered(p.xy - vec2<f32>(0.8660254, 1.5), vec2<f32>(1.7320508, 3.0), noiseTex);
+  let gsl_tmp_18 = domain_repeatCentered(p.xy - vec2<f32>(0.8660254, 2.5), vec2<f32>(1.7320508, 3.0), noiseTex);
+  let gsl_tmp_17 = domain_repeatCentered(p.xy - vec2<f32>(0.8660254, 1.5), vec2<f32>(1.7320508, 3.0), noiseTex);
   let gsl_tmp_20 = select(gsl_tmp_18, gsl_tmp_17, dot(gsl_tmp_17, gsl_tmp_17) < dot(gsl_tmp_18, gsl_tmp_18));
-  let gsl_tmp_16 = map_repeatCentered(p.xy - vec2<f32>(0.0, 1.0), vec2<f32>(1.7320508, 3.0), noiseTex);
-  let gsl_tmp_15 = map_repeatCentered(p.xy, vec2<f32>(1.7320508, 3.0), noiseTex);
+  let gsl_tmp_16 = domain_repeatCentered(p.xy - vec2<f32>(0.0, 1.0), vec2<f32>(1.7320508, 3.0), noiseTex);
+  let gsl_tmp_15 = domain_repeatCentered(p.xy, vec2<f32>(1.7320508, 3.0), noiseTex);
   let gsl_tmp_19 = select(gsl_tmp_16, gsl_tmp_15, dot(gsl_tmp_15, gsl_tmp_15) < dot(gsl_tmp_16, gsl_tmp_16));
   let gsl_tmp_21 = select(gsl_tmp_20, gsl_tmp_19, dot(gsl_tmp_19, gsl_tmp_19) < dot(gsl_tmp_20, gsl_tmp_20));
   let gsl_tmp_25 = vec3<f32>(0.6151075, -0.05253712, -0.094294235) + vec3<f32>(0.38489252, 0.05253712, 0.09429427) * texture_fadeTo(texture_coverageDisc(length(vec3<f32>(gsl_tmp_21.x, gsl_tmp_21.y, p.z).xy), 0.25, noiseTex), 0.15114996, 1.0, noiseTex);
@@ -163,11 +163,11 @@ fn gsl_remap_5(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec
 }
 
 fn gsl_remap_6(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
-  let gsl_tmp_51 = map_repeatCentered(p.xy - vec2<f32>(1.7320508, 5.0), vec2<f32>(3.4641016, 6.0), noiseTex);
-  let gsl_tmp_50 = map_repeatCentered(p.xy - vec2<f32>(1.7320508, 3.0), vec2<f32>(3.4641016, 6.0), noiseTex);
+  let gsl_tmp_51 = domain_repeatCentered(p.xy - vec2<f32>(1.7320508, 5.0), vec2<f32>(3.4641016, 6.0), noiseTex);
+  let gsl_tmp_50 = domain_repeatCentered(p.xy - vec2<f32>(1.7320508, 3.0), vec2<f32>(3.4641016, 6.0), noiseTex);
   let gsl_tmp_53 = select(gsl_tmp_51, gsl_tmp_50, dot(gsl_tmp_50, gsl_tmp_50) < dot(gsl_tmp_51, gsl_tmp_51));
-  let gsl_tmp_49 = map_repeatCentered(p.xy - vec2<f32>(0.0, 2.0), vec2<f32>(3.4641016, 6.0), noiseTex);
-  let gsl_tmp_48 = map_repeatCentered(p.xy, vec2<f32>(3.4641016, 6.0), noiseTex);
+  let gsl_tmp_49 = domain_repeatCentered(p.xy - vec2<f32>(0.0, 2.0), vec2<f32>(3.4641016, 6.0), noiseTex);
+  let gsl_tmp_48 = domain_repeatCentered(p.xy, vec2<f32>(3.4641016, 6.0), noiseTex);
   let gsl_tmp_52 = select(gsl_tmp_49, gsl_tmp_48, dot(gsl_tmp_48, gsl_tmp_48) < dot(gsl_tmp_49, gsl_tmp_49));
   let gsl_tmp_54 = select(gsl_tmp_53, gsl_tmp_52, dot(gsl_tmp_52, gsl_tmp_52) < dot(gsl_tmp_53, gsl_tmp_53));
   let gsl_tmp_58 = vec3<f32>(0.6151075, -0.05253712, -0.094294235) + vec3<f32>(0.38489252, 0.05253712, 0.09429427) * texture_fadeTo(texture_coverageDisc(length(vec3<f32>(gsl_tmp_54.x, gsl_tmp_54.y, p.z).xy), 0.5, noiseTex), 0.15114996, 2.0, noiseTex);
@@ -190,11 +190,11 @@ fn gsl_remap_8(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec
 }
 
 fn gsl_remap_9(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
-  let gsl_tmp_84 = map_repeatCentered(p.xy - vec2<f32>(3.4641016, 10.0), vec2<f32>(6.928203, 12.0), noiseTex);
-  let gsl_tmp_83 = map_repeatCentered(p.xy - vec2<f32>(3.4641016, 6.0), vec2<f32>(6.928203, 12.0), noiseTex);
+  let gsl_tmp_84 = domain_repeatCentered(p.xy - vec2<f32>(3.4641016, 10.0), vec2<f32>(6.928203, 12.0), noiseTex);
+  let gsl_tmp_83 = domain_repeatCentered(p.xy - vec2<f32>(3.4641016, 6.0), vec2<f32>(6.928203, 12.0), noiseTex);
   let gsl_tmp_86 = select(gsl_tmp_84, gsl_tmp_83, dot(gsl_tmp_83, gsl_tmp_83) < dot(gsl_tmp_84, gsl_tmp_84));
-  let gsl_tmp_82 = map_repeatCentered(p.xy - vec2<f32>(0.0, 4.0), vec2<f32>(6.928203, 12.0), noiseTex);
-  let gsl_tmp_81 = map_repeatCentered(p.xy, vec2<f32>(6.928203, 12.0), noiseTex);
+  let gsl_tmp_82 = domain_repeatCentered(p.xy - vec2<f32>(0.0, 4.0), vec2<f32>(6.928203, 12.0), noiseTex);
+  let gsl_tmp_81 = domain_repeatCentered(p.xy, vec2<f32>(6.928203, 12.0), noiseTex);
   let gsl_tmp_85 = select(gsl_tmp_82, gsl_tmp_81, dot(gsl_tmp_81, gsl_tmp_81) < dot(gsl_tmp_82, gsl_tmp_82));
   let gsl_tmp_87 = select(gsl_tmp_86, gsl_tmp_85, dot(gsl_tmp_85, gsl_tmp_85) < dot(gsl_tmp_86, gsl_tmp_86));
   let gsl_tmp_91 = vec3<f32>(0.6151075, -0.05253712, -0.094294235) + vec3<f32>(0.38489252, 0.05253712, 0.09429427) * texture_fadeTo(texture_coverageDisc(length(vec3<f32>(gsl_tmp_87.x, gsl_tmp_87.y, p.z).xy), 1.0, noiseTex), 0.15114996, 4.0, noiseTex);
@@ -217,11 +217,11 @@ fn gsl_remap_11(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: ve
 }
 
 fn gsl_remap_12(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
-  let gsl_tmp_117 = map_repeatCentered(p.xy - vec2<f32>(6.928203, 20.0), vec2<f32>(13.856406, 24.0), noiseTex);
-  let gsl_tmp_116 = map_repeatCentered(p.xy - vec2<f32>(6.928203, 12.0), vec2<f32>(13.856406, 24.0), noiseTex);
+  let gsl_tmp_117 = domain_repeatCentered(p.xy - vec2<f32>(6.928203, 20.0), vec2<f32>(13.856406, 24.0), noiseTex);
+  let gsl_tmp_116 = domain_repeatCentered(p.xy - vec2<f32>(6.928203, 12.0), vec2<f32>(13.856406, 24.0), noiseTex);
   let gsl_tmp_119 = select(gsl_tmp_117, gsl_tmp_116, dot(gsl_tmp_116, gsl_tmp_116) < dot(gsl_tmp_117, gsl_tmp_117));
-  let gsl_tmp_115 = map_repeatCentered(p.xy - vec2<f32>(0.0, 8.0), vec2<f32>(13.856406, 24.0), noiseTex);
-  let gsl_tmp_114 = map_repeatCentered(p.xy, vec2<f32>(13.856406, 24.0), noiseTex);
+  let gsl_tmp_115 = domain_repeatCentered(p.xy - vec2<f32>(0.0, 8.0), vec2<f32>(13.856406, 24.0), noiseTex);
+  let gsl_tmp_114 = domain_repeatCentered(p.xy, vec2<f32>(13.856406, 24.0), noiseTex);
   let gsl_tmp_118 = select(gsl_tmp_115, gsl_tmp_114, dot(gsl_tmp_114, gsl_tmp_114) < dot(gsl_tmp_115, gsl_tmp_115));
   let gsl_tmp_120 = select(gsl_tmp_119, gsl_tmp_118, dot(gsl_tmp_118, gsl_tmp_118) < dot(gsl_tmp_119, gsl_tmp_119));
   let gsl_tmp_124 = vec3<f32>(0.6151075, -0.05253712, -0.094294235) + vec3<f32>(0.38489252, 0.05253712, 0.09429427) * texture_fadeTo(texture_coverageDisc(length(vec3<f32>(gsl_tmp_120.x, gsl_tmp_120.y, p.z).xy), 2.0, noiseTex), 0.15114996, 8.0, noiseTex);
@@ -244,11 +244,11 @@ fn gsl_remap_14(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: ve
 }
 
 fn gsl_remap_15(p: vec3<f32>, material_brushedMetal: mat4x4<f32>, color_gray: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
-  let gsl_tmp_150 = map_repeatCentered(p.xy - vec2<f32>(13.856406, 40.0), vec2<f32>(27.712812, 48.0), noiseTex);
-  let gsl_tmp_149 = map_repeatCentered(p.xy - vec2<f32>(13.856406, 24.0), vec2<f32>(27.712812, 48.0), noiseTex);
+  let gsl_tmp_150 = domain_repeatCentered(p.xy - vec2<f32>(13.856406, 40.0), vec2<f32>(27.712812, 48.0), noiseTex);
+  let gsl_tmp_149 = domain_repeatCentered(p.xy - vec2<f32>(13.856406, 24.0), vec2<f32>(27.712812, 48.0), noiseTex);
   let gsl_tmp_152 = select(gsl_tmp_150, gsl_tmp_149, dot(gsl_tmp_149, gsl_tmp_149) < dot(gsl_tmp_150, gsl_tmp_150));
-  let gsl_tmp_148 = map_repeatCentered(p.xy - vec2<f32>(0.0, 16.0), vec2<f32>(27.712812, 48.0), noiseTex);
-  let gsl_tmp_147 = map_repeatCentered(p.xy, vec2<f32>(27.712812, 48.0), noiseTex);
+  let gsl_tmp_148 = domain_repeatCentered(p.xy - vec2<f32>(0.0, 16.0), vec2<f32>(27.712812, 48.0), noiseTex);
+  let gsl_tmp_147 = domain_repeatCentered(p.xy, vec2<f32>(27.712812, 48.0), noiseTex);
   let gsl_tmp_151 = select(gsl_tmp_148, gsl_tmp_147, dot(gsl_tmp_147, gsl_tmp_147) < dot(gsl_tmp_148, gsl_tmp_148));
   let gsl_tmp_153 = select(gsl_tmp_152, gsl_tmp_151, dot(gsl_tmp_151, gsl_tmp_151) < dot(gsl_tmp_152, gsl_tmp_152));
   let gsl_tmp_157 = vec3<f32>(0.6151075, -0.05253712, -0.094294235) + vec3<f32>(0.38489252, 0.05253712, 0.09429427) * texture_fadeTo(texture_coverageDisc(length(vec3<f32>(gsl_tmp_153.x, gsl_tmp_153.y, p.z).xy), 4.0, noiseTex), 0.15114996, 16.0, noiseTex);

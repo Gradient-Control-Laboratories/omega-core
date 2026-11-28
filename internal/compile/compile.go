@@ -102,7 +102,7 @@ func Process(req Request, sourcePaths []string, progressFn ProgressFunc) *Respon
 
 	// The mesh plan lists the meshes the program places (mesh(i, placement)),
 	// which the viewer draws itself, as omega's canvas does.
-	asmOpts := append(AssemblerOptions(sourcePaths, progressFn), assembler.ExtractMeshPlan("leaf-"))
+	asmOpts := append(AssemblerOptions(sourcePaths, progressFn), assembler.WithExtractMeshPlan("leaf-"))
 	if req.AnalyticNormals {
 		asmOpts = append(asmOpts, assembler.WithAnalyticGradient())
 	}
@@ -231,10 +231,10 @@ func meshBindings(asmRes *assembler.Result, slots []wgsl.MeshSdfSlot, find meshi
 // extraction, sourcePaths, and progressFn's parse milestones.
 func AssemblerOptions(sourcePaths []string, progressFn ProgressFunc) []assembler.Option {
 	opts := []assembler.Option{
-		assembler.ExtractUI(),
+		assembler.WithExtractUI(),
 	}
 	if len(sourcePaths) > 0 {
-		opts = append(opts, assembler.SourcePaths(sourcePaths...))
+		opts = append(opts, assembler.WithSourcePaths(sourcePaths...))
 	}
 	if progressFn != nil {
 		opts = append(opts, assembler.WithProgress(func(stage string, completed, total uint32) {

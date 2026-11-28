@@ -147,7 +147,9 @@ func (t *transformer) run() error {
 	for _, dep := range t.prog.Dependencies {
 		allFiles = append(allFiles, dep.Files...)
 	}
-	t.pruneHigherOrderTemplates(allFiles)
+	if err := t.pruneHigherOrderTemplates(allFiles); err != nil {
+		return err
+	}
 
 	return nil
 }

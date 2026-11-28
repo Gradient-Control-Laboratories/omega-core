@@ -32,7 +32,7 @@ fn builtin_gcl_closure_cylinderCapped(p: vec3<f32>, pointA: vec3<f32>, pointB: v
   return form;
 }
 
-fn map_triangleWave(x: f32, period: f32, noiseTex: texture_3d<f32>) -> f32 {
+fn domain_triangleWave(x: f32, period: f32, noiseTex: texture_3d<f32>) -> f32 {
   let half = period * 0.5;
   let twoPeriod = period * 2.0;
   let u = gsl_floored((gsl_floored((x + half), twoPeriod) + twoPeriod), twoPeriod);
@@ -135,7 +135,7 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, noiseTex: te
     let gsl_m = material_withDisplacement(material_plastic, pebble * 0.6, noiseTex); return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
   }
   if (gsl_materialIdx == 4u) {
-    let rings = map_triangleWave(p.z, 0.6, noiseTex);
+    let rings = domain_triangleWave(p.z, 0.6, noiseTex);
     let gsl_m = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.35, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), rings, noiseTex); return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
   }
   return gsl_material(vec4<f32>(0.5, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), 0.0);
@@ -222,7 +222,7 @@ fn gsl_heights(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f32,
   let material_plastic = mat4x4<f32>(vec4<f32>(0.35, 0.0, 1.46, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
   let gsl_tmp_1 = p / 1.5;
   let pebble = (gsl_cellularScan(gsl_tmp_1, 1, noiseTex).f2 - gsl_cellularScan(gsl_tmp_1, 1, noiseTex).f1) * 1.5;
-  let rings = map_triangleWave(p.z, 0.6, noiseTex);
+  let rings = domain_triangleWave(p.z, 0.6, noiseTex);
   return array<f32, 4>(0.0, material_withDisplacement(material_plastic, pebble * 0.2, noiseTex)[2].z, material_withDisplacement(material_plastic, pebble * 0.6, noiseTex)[2].z, material_withDisplacement(mat4x4<f32>(vec4<f32>(0.35, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), rings, noiseTex)[2].z);
 }
 

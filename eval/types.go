@@ -97,23 +97,6 @@ type MapRangeDigest struct {
 	Coverage float64    `json:"coverage"`
 }
 
-// RenderGlslResponse holds generated GLSL source and slider input metadata.
-type RenderGlslResponse struct {
-	ID     string                  `json:"id"`
-	Inputs map[string]*RenderInput `json:"inputs"`
-	Glsl   string                  `json:"glsl"`
-	Error  string                  `json:"error,omitempty"`
-}
-
-// RenderInput describes one slider input's default value and bounds.
-type RenderInput struct {
-	Value  float64 `json:"value"`
-	HasMin bool    `json:"hasMin"`
-	HasMax bool    `json:"hasMax"`
-	Min    float64 `json:"min"`
-	Max    float64 `json:"max"`
-}
-
 // AssetFetcher returns the mesh-asset context (import slots and oracle payloads)
 // for a module. digestOnly requests skip the heavy payloads and return just
 // slots and digests, for prompt context.
@@ -214,6 +197,24 @@ type LitView struct {
 	GlassSamples    int
 }
 
+// Options are the LitOptions that render v at the given size, world extent
+// and time.
+func (v LitView) Options(width, height int, worldExtent, timeAt float64) LitOptions {
+	return LitOptions{
+		Width:           width,
+		Height:          height,
+		WorldExtent:     worldExtent,
+		Time:            timeAt,
+		View:            v.Dir,
+		Up:              v.Up,
+		Light:           v.Light,
+		NoAxes:          v.NoAxes,
+		Environment:     v.Environment,
+		EnvironmentTurn: v.EnvironmentTurn,
+		GlassSamples:    v.GlassSamples,
+	}
+}
+
 // LitOptions controls a lit CPU render. The zero value renders 900x600 at the
 // document's default framing.
 type LitOptions struct {
@@ -227,6 +228,14 @@ type LitOptions struct {
 	Environment     string
 	EnvironmentTurn float64
 	GlassSamples    int
+
+	// Device is what finds each pixel's hit: "trace" (or empty), the sphere
+	// tracer, or "fidget", fidget's CPU voxel render of each return, merged
+	// nearest first, with fidget's SSAO for the occlusion, as the viewer's
+	// Fidget device draws in the browser. Either way the colours, materials,
+	// glass and lighting that follow are the same. The fidget device draws
+	// neither the Simple frame nor the viewer's march.
+	Device string
 
 	Camera      *LitCamera
 	Colors      [][3]float64

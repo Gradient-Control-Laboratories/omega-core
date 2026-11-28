@@ -1,4 +1,4 @@
-fn map_axisAt(p: vec3<f32>, point: vec3<f32>, axis: vec3<f32>) -> vec3<f32> {
+fn domain_axisAt(p: vec3<f32>, point: vec3<f32>, axis: vec3<f32>) -> vec3<f32> {
   let d = p - point;
   let n = normalize(axis);
   let sz = sign(n.z);
@@ -11,7 +11,7 @@ fn map_axisAt(p: vec3<f32>, point: vec3<f32>, axis: vec3<f32>) -> vec3<f32> {
 }
 
 fn fastener_seatedAt(p: vec3<f32>, seatPoint: vec3<f32>, shankDir: vec3<f32>) -> vec3<f32> {
-  return map_axisAt(p, seatPoint, vec3<f32>(-shankDir.x, -shankDir.y, -shankDir.z));
+  return domain_axisAt(p, seatPoint, vec3<f32>(-shankDir.x, -shankDir.y, -shankDir.z));
 }
 
 fn catalog_onRow(key: f32, rowKey: f32, tol: f32) -> f32 {

@@ -182,7 +182,16 @@ c_int canvas_eval_interval_vars(CanvasIndex canvas, size_t count, const float* b
 char* canvas_codegen_glsl(CanvasIndex canvas_index);
 void  tape_free(char*);
 
-RenderResult canvas_render_png(CanvasIndex canvas, float centerX, float centerY, float centerZ, float scale, float yaw, float pitch);
+// fidget's CPU voxel render of one canvas through a world-to-model matrix (16
+// floats, column-major), the nvars listed inputs at the given values: depth
+// (width*height) and the gradient in pixel coordinates (3 per pixel).
+c_int canvas_render_voxels(CanvasIndex canvas, uint32_t width, uint32_t height, uint32_t depth,
+                           const float* mat, size_t nvars, const uint64_t* var_trees,
+                           const float* var_values, uint32_t* out_depth, float* out_normal);
+// fidget's blurred SSAO over a merged voxel frame: 1 for none, NaN on a miss.
+c_int voxel_ssao(uint32_t width, uint32_t height, uint32_t depth,
+                 const uint32_t* depth_in, const float* normal_in, float* out);
+
 RenderResult canvas_mesh_stl(CanvasIndex canvas, int depth, float bboxMinX, float bboxMinY, float bboxMinZ, float bboxMaxX, float bboxMaxY, float bboxMaxZ, ProgressCallback progress_cb);
 RenderResult canvas_mesh_stl_marching_cubes(CanvasIndex canvas, int depth, float bboxMinX, float bboxMinY, float bboxMinZ, float bboxMaxX, float bboxMaxY, float bboxMaxZ, ProgressCallback progress_cb);
 void         render_result_free(RenderResult result);
@@ -466,41 +475,6 @@ func BuildCanvas(target TreeIndex) CanvasIndex {
 	return CanvasIndex(C.build_canvas(C.TreeIndex(target)))
 }
 
-// Generate a PNG file of the specified object centered on the specified world coordinates
-// and with the specified scale (aka zoom factor - larger number to zoom out)
-// yaw (rotation around the y-axis in radians),
-// and pitch (rotation around the x-axis in radians 0 to pi)
-func RenderPng(
-	canvasIndex CanvasIndex,
-	centerX float32, centerY float32, centerZ float32,
-	scale float32, yaw float32, pitch float32,
-) ([]byte, error) {
-	result := C.canvas_render_png(C.CanvasIndex(canvasIndex), C.float(centerX), C.float(centerY), C.float(centerZ), C.float(scale), C.float(yaw), C.float(pitch))
-	defer C.render_result_free(result)
-
-	safeSlice := make([]byte, result.len)
-	if result.len > 0 {
-
-		// Create Go slice backed by C data.
-		// The C data will be freed when this function exits.
-
-		unsafeSlice := unsafe.Slice(result.data, result.len)
-
-		// Copy the content out of unsafeSlice into an array that can be returned
-		// so that the heap space used by unsafeSlice can be released
-
-		for i := range int(result.len) {
-			safeSlice[i] = byte(unsafeSlice[i])
-		}
-	}
-
-	if result.code == 0 {
-		return safeSlice, nil
-	}
-
-	return nil, fmt.Errorf("render failed: %d", result.code)
-}
-
 // Generate STL mesh of the specified object.
 // `subdivisionLevel` is the fidget octree depth (3..12, clamped by the
 // caller). `bbox` is the world-space [xmin, ymin, zmin, xmax, ymax,
@@ -656,6 +630,66 @@ func EvalGradVars(canvasIndex CanvasIndex, xs, ys, zs []float32, varTrees []Tree
 		}
 	}
 	return results, nil
+}
+
+// VoxelFrame is fidget's CPU voxel render of one canvas, rows top first: each
+// pixel's voxel depth (0 for a miss, larger nearer the viewer) and the field's
+// gradient in fidget's pixel coordinates (x right, y down, z toward the
+// viewer), three floats a pixel.
+type VoxelFrame struct {
+	Width, Height, Depth int
+	Z                    []uint32
+	Normal               []float32
+}
+
+// RenderVoxels voxel-renders the canvas at width x height pixels, depth voxels
+// deep, through worldToModel (fidget's world-to-model transform, column-major).
+// The listed input trees take the given values for the whole frame; the
+// others keep their current values.
+func RenderVoxels(canvasIndex CanvasIndex, width, height, depth int, worldToModel [16]float32, varTrees []TreeIndex, varValues []float32) (*VoxelFrame, error) {
+	if width <= 0 || height <= 0 || depth <= 0 {
+		return nil, fmt.Errorf("RenderVoxels: size %dx%dx%d", width, height, depth)
+	}
+	if len(varTrees) != len(varValues) {
+		return nil, fmt.Errorf("RenderVoxels: %d vars but %d values", len(varTrees), len(varValues))
+	}
+	f := &VoxelFrame{Width: width, Height: height, Depth: depth,
+		Z: make([]uint32, width*height), Normal: make([]float32, 3*width*height)}
+	trees := make([]uint64, len(varTrees))
+	for i, t := range varTrees {
+		trees[i] = uint64(t)
+	}
+	var treesPtr *C.uint64_t
+	var valuesPtr *C.float
+	if len(trees) > 0 {
+		treesPtr = (*C.uint64_t)(unsafe.Pointer(&trees[0]))
+		valuesPtr = (*C.float)(unsafe.Pointer(&varValues[0]))
+	}
+	ret := C.canvas_render_voxels(C.CanvasIndex(canvasIndex), C.uint32_t(width), C.uint32_t(height), C.uint32_t(depth),
+		(*C.float)(unsafe.Pointer(&worldToModel[0])), C.size_t(len(trees)), treesPtr, valuesPtr,
+		(*C.uint32_t)(unsafe.Pointer(&f.Z[0])), (*C.float)(unsafe.Pointer(&f.Normal[0])))
+	if ret != 0 {
+		return nil, fmt.Errorf("RenderVoxels: rust returned %d", int(ret))
+	}
+	return f, nil
+}
+
+// VoxelSSAO is fidget's screen-space ambient occlusion over a voxel frame
+// (one return's, or several merged), blurred: per pixel, 1 for none and NaN
+// on a miss.
+func VoxelSSAO(f *VoxelFrame) ([]float32, error) {
+	n := f.Width * f.Height
+	if n == 0 || len(f.Z) != n || len(f.Normal) != 3*n {
+		return nil, fmt.Errorf("VoxelSSAO: a %dx%d frame with %d depths and %d normals", f.Width, f.Height, len(f.Z), len(f.Normal))
+	}
+	out := make([]float32, n)
+	ret := C.voxel_ssao(C.uint32_t(f.Width), C.uint32_t(f.Height), C.uint32_t(f.Depth),
+		(*C.uint32_t)(unsafe.Pointer(&f.Z[0])), (*C.float)(unsafe.Pointer(&f.Normal[0])),
+		(*C.float)(unsafe.Pointer(&out[0])))
+	if ret != 0 {
+		return nil, fmt.Errorf("VoxelSSAO: rust returned %d", int(ret))
+	}
+	return out, nil
 }
 
 // IntervalResult is a sound [Lower, Upper] bracket of the field over a box:

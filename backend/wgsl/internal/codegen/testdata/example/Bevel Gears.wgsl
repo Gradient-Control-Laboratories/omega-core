@@ -6,25 +6,25 @@ fn builtin_circleXY(p: vec3<f32>, center: vec2<f32>, radius: f32) -> f32 {
   return length(p.xy - center) - radius;
 }
 
-fn builtin_intersectChamferNormalized(d1: f32, d2: f32, depth: f32, normal1: vec2<f32>, normal2: vec2<f32>) -> f32 {
-  let face = max(d1, d2);
-  let edge = (d1 + d2) / max(length(normal1 + normal2), 0.000001) + depth;
+fn builtin_intersectChamferNormalized(a: f32, b: f32, depth: f32, normalA: vec2<f32>, normalB: vec2<f32>) -> f32 {
+  let face = max(a, b);
+  let edge = (a + b) / max(length(normalA + normalB), 0.000001) + depth;
   return max(face, edge);
 }
 
-fn builtin_intersectRound(d1: f32, d2: f32, radius: f32) -> f32 {
-  let inset1 = max(d1 + radius, 0.0);
-  let inset2 = max(d2 + radius, 0.0);
-  return min(-radius, max(d1, d2)) + length(vec2<f32>(inset1, inset2));
+fn builtin_intersectRound(a: f32, b: f32, radius: f32) -> f32 {
+  let inset1 = max(a + radius, 0.0);
+  let inset2 = max(b + radius, 0.0);
+  return min(-radius, max(a, b)) + length(vec2<f32>(inset1, inset2));
 }
 
-fn builtin_unionRound(d1: f32, d2: f32, radius: f32) -> f32 {
-  return -builtin_intersectRound(-d1, -d2, radius);
+fn builtin_unionRound(a: f32, b: f32, radius: f32) -> f32 {
+  return -builtin_intersectRound(-a, -b, radius);
 }
 
-fn builtin_intersectChamfer(d1: f32, d2: f32, offset: f32) -> f32 {
-  let face = max(d1, d2);
-  let edge = (d1 + d2 + offset) / 1.4142135;
+fn builtin_intersectChamfer(a: f32, b: f32, offset: f32) -> f32 {
+  let face = max(a, b);
+  let edge = (a + b + offset) / 1.4142135;
   return max(face, edge);
 }
 
@@ -44,8 +44,8 @@ fn builtin_cylinderZ(p: vec3<f32>, vector_dirZ: vec3<f32>, center: vec3<f32>, ra
   return builtin_cylinder(p, center, vector_dirZ, radius);
 }
 
-fn builtin_unionChamfer(d1: f32, d2: f32, offset: f32) -> f32 {
-  return -builtin_intersectChamfer(-d1, -d2, offset);
+fn builtin_unionChamfer(a: f32, b: f32, offset: f32) -> f32 {
+  return -builtin_intersectChamfer(-a, -b, offset);
 }
 
 fn builtin_differenceChamfer(gsl_var_target: f32, tool: f32, offset: f32) -> f32 {

@@ -80,7 +80,7 @@ axis(center, direction) {
 // compiled (property/carry.go) — so they are written in these helpers, never
 // as locals of a primitive, which would outlive the erasure.
 
-// The orthonormal pair perpendicular to `direction` that map.axisAt uses (Duff
+// The orthonormal pair perpendicular to `direction` that domain.axisAt uses (Duff
 // et al., "Building an Orthonormal Basis, Revisited"): well conditioned at
 // every axis, and right-handed with it, so an angle measured in it runs
 // counterclockwise seen from the tip of `direction`. Written out rather than
@@ -280,6 +280,17 @@ torusTubeAngle(majorRadius) {
   return atan(length(p.xy) - majorRadius, p.z);
 }
 
+/// Torus centered at `center`, lying in a plane parallel to XY, with the frame
+/// of torus(majorRadius, minorRadius) about that center.
+torus(center, majorRadius, minorRadius) {
+  q = p - center;
+  radial = length(q.xy) - majorRadius;
+  form = length([radial, q.z]) - minorRadius;
+  form.u = sphereAzimuth(center, vector.dirZ, vector.dirX);
+  form.v = atan(length(q.xy) - majorRadius, q.z);
+  return form;
+}
+
 // --- Cones ---
 
 /// Infinite cone with apex at `origin`, opening along `direction`, with
@@ -403,9 +414,9 @@ boxCentered(center, size) {
 /// combine the three slab fields — pass `intersectRound(radius)` to round every
 /// edge, or any other operator taking a list of fields; see boxCentered. Its
 /// frame is boxCentered's.
-box(pointA, pointB, blend) {
-  center = (pointA + pointB) * 0.5;
-  size = abs(pointB - pointA);
+box(min, max, blend) {
+  center = (min + max) * 0.5;
+  size = abs(max - min);
   form = boxCentered(center, size, blend);
   form.u = boxU(center, size);
   form.v = boxV(center, size);
@@ -413,10 +424,10 @@ box(pointA, pointB, blend) {
 }
 
 /// Axis-aligned box defined by two opposite corners.
-box(pointA, pointB) {
-  form = box(pointA, pointB, intersectRound(0));
-  form.u = boxU((pointA + pointB) * 0.5, abs(pointB - pointA));
-  form.v = boxV((pointA + pointB) * 0.5, abs(pointB - pointA));
+box(min, max) {
+  form = box(min, max, intersectRound(0));
+  form.u = boxU((min + max) * 0.5, abs(max - min));
+  form.v = boxV((min + max) * 0.5, abs(max - min));
   return form;
 }
 
@@ -436,8 +447,8 @@ boxV(center, size) {
   return d.x >= max(d.y, d.z) ? q.z : (d.y >= d.z ? q.x : q.y);
 }
 
-/// `shape` capped by the box between corners `low` and `high`, grown by boxPad:
-/// the closed solid that export meshes. A declaration's name.box = [low, high] applies
+/// `shape` capped by the box between corners `min` and `max`, grown by boxPad:
+/// the closed solid that export meshes. A declaration's name.box = [min, max] applies
 /// this. The viewer draws it cut open instead, so where the box crosses the
 /// part its inside shows through, the way the scene's bounds cut unbounded
 /// geometry.
@@ -447,26 +458,26 @@ boxV(center, size) {
 // specialized, so this body must not need one. The WGSL codegen derives the
 // viewer's cut from this return value (agent/wgsl/internal/codegen/box_cut.go),
 // so it must stay max(shape, the box's distance).
-cropToBox(shape, low, high) {
-  lowCorner = min(low, high) - boxPad;
-  highCorner = max(low, high) + boxPad;
+cropToBox(shape, min, max) {
+  lowCorner = min(min, max) - boxPad;
+  highCorner = max(min, max) + boxPad;
   d = abs(p - (lowCorner + highCorner) * 0.5) - (highCorner - lowCorner) * 0.5;
   outside = length([max(d.x, 0), max(d.y, 0), max(d.z, 0)]);
   inside = min(max(d.x, max(d.y, d.z)), 0);
   return max(shape, outside + inside);
 }
 
-// Internal: a standard library part whose solid lies in the box [low, high]. A
-// library's name.box = [low, high] applies this rather than cropToBox: its boxes
+// Internal: a standard library part whose solid lies in the box [min, max]. A
+// library's name.box = [min, max] applies this rather than cropToBox: its boxes
 // are proven against the parts they bound (agent/fidget/gsleval
 // library_box_test.go), so there is nothing to crop, and the declaration is
 // only what .box reads. Once the boxes have been read, the assembler replaces
 // every call with its shape (property.DropDeclaredBoxes).
-declaredBox(shape, low, high) {
+declaredBox(shape, min, max) {
   return shape;
 }
 
-// Internal: a part of a document, whose surface lies in the box [low, high], and
+// Internal: a part of a document, whose surface lies in the box [min, max], and
 // its solid too when `solid` is 1. The assembler wraps each part in this
 // (property.MarkParts): a named value that only a min or a return reads. The
 // viewer shrinks the part to nothing as its box falls under a few pixels on
@@ -475,12 +486,12 @@ declaredBox(shape, low, high) {
 // the WGSL codegen writes that guard in place of every call
 // (agent/wgsl/internal/codegen/vanish.go), and everything else, fidget, the
 // mesher and export, keeps the part whole, which is this body.
-shrinkToVanish(shape, low, high, solid) {
+shrinkToVanish(shape, min, max, solid) {
   return shape;
 }
 
 // Internal: a part with a simpler stand-in, its name.simple = proxy, whose
-// box is [low, high]. The assembler writes this inside the part's shrinkToVanish
+// box is [min, max]. The assembler writes this inside the part's shrinkToVanish
 // (property.MarkParts), and the part's colour and material fields write it
 // again over the part's and the stand-in's (property.resolveField). The
 // viewer draws the stand-in, the shape cropped to the box, once the part
@@ -488,14 +499,14 @@ shrinkToVanish(shape, low, high, solid) {
 // octave below it; the WGSL codegen writes that switch in place of every call
 // (agent/wgsl/internal/codegen/simple.go). Everything else keeps the part,
 // which is this body.
-simplified(shape, proxy, low, high) {
+simplified(shape, proxy, min, max) {
   return shape;
 }
 
 // Internal: a stand-in switched at a declared size, name.featureSize, rather
-// than at its box's smallest extent; [low, high] crops the stand-in, and is
+// than at its box's smallest extent; [min, max] crops the stand-in, and is
 // everywhere when the value's box is not bounded (property.MarkParts).
-simplified(shape, proxy, low, high, size) {
+simplified(shape, proxy, min, max, size) {
   return shape;
 }
 
@@ -516,4 +527,11 @@ carriedSimple(proxy) {
 octahedron(size) {
   center = [size, size, size] / 3;
   return remap(plane(center, [1, 1, 1]), abs(p));
+}
+
+/// Regular octahedron centered at `center`, with vertices at center ± size along
+/// each axis.
+octahedron(center, size) {
+  c = [size, size, size] / 3;
+  return remap(plane(c, [1, 1, 1]), abs(p - center));
 }

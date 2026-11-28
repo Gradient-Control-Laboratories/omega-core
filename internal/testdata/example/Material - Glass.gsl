@@ -52,6 +52,6 @@ pin.color = stainlessColor;
 
 board = boxCentered([0, 2, -4.5], [38, 20, 1]);
 board.material = material.matte;
-board.color = map.checkerXY(2) > 0 ? [0.85, 0.85, 0.85] : [0.12, 0.12, 0.12];
+board.color = domain.checkerXY(2) > 0 ? [0.85, 0.85, 0.85] : [0.12, 0.12, 0.12];
 
 return lens, brassBall, slab, redBall, cube, block, pin, board;

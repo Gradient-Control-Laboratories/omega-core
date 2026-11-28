@@ -13,12 +13,10 @@ path = "src/lib.rs"
 
 [dependencies]
 cxx = "1.0"
-egui = "0.27"
 # To develop with a locally checked out copy of fidget:
 # fidget = { path = "../../../../../fidget/fidget" }
 fidget = { version = "0.5", default-features = false, features = ["gui", "jit", "raster"] }
 fidget-mesh = "0.5"
-image = "0.24"
 libc = "0.2.168"
 # WGSL in, GLSL ES 3.00 out, for `gsl eval`'s shader op on a WebGL2 host. The version is the one fidget-wgpu
 # already resolves, so Cargo.lock gains no package.

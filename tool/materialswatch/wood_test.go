@@ -7,12 +7,12 @@ import (
 	gsllibs "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
 )
 
-// Every wood species, declared as species(axisOrigin, axisDir) at its default
+// Every wood species, declared as species(axisOrigin, axisDirection) at its default
 // look, has a zero-argument @material overload for the browser, so a species
 // added to the library without one is caught here rather than missing from
 // the panel.
 func TestEveryWoodSpeciesIsBrowsable(t *testing.T) {
-	speciesRE := regexp.MustCompile(`(?m)^([a-zA-Z]+)\(@point axisOrigin, @direction\(axisOrigin\) axisDir\) \{`)
+	speciesRE := regexp.MustCompile(`(?m)^([a-zA-Z]+)\(@point axisOrigin, @direction\(axisOrigin\) axisDirection\) \{`)
 	browsable := map[string]bool{}
 	for _, e := range ReadCatalog() {
 		if e.Package == "wood" && e.Kind == "material" {

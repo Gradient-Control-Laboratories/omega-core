@@ -65,27 +65,27 @@ nosePitch(s, spacing, radius) {
   return sqrt(max(radius * radius - x * x, 0)) - sqrt(max(radius * radius - 0.25 * spacing * spacing, 0));
 }
 
-/// turned(baseMaterial, baseColor, axisOrigin, axisDir, feed, noseRadius): a
-/// surface turned on a lathe about the axis through axisOrigin along axisDir,
+/// turned(baseMaterial, baseColor, axisOrigin, axisDirection, feed, noseRadius): a
+/// surface turned on a lathe about the axis through axisOrigin along axisDirection,
 /// at `feed` mm a turn with a tool nose `noseRadius` mm round (0.05 to 0.3
 /// feed and 0.2 to 1.6 nose are usual). The tool leaves a helix of grooves
 /// round the axis, f^2 / (8 r) deep: the highlight streaks along the axis and
 /// the grooves show where they are big enough to see. Returns material,
 /// color, height and slope.
-turned(baseMaterial, @color baseColor, @point axisOrigin, @direction(axisOrigin) axisDir, @range(0.05, 0.3) feed, @range(0.2, 1.6) noseRadius) {
-  axis = normalize(axisDir);
+turned(baseMaterial, @color baseColor, @point axisOrigin, @direction(axisOrigin) axisDirection, @range(0.05, 0.3) feed, @range(0.2, 1.6) noseRadius) {
+  axis = normalize(axisDirection);
   offset = p - axisOrigin;
   s = fract(dot(offset, axis) / feed);
   return grooveFinish(baseMaterial, cross(axis, offset), s, feed, noseRadius), baseColor, 0, 0;
 }
 
-/// faced(baseMaterial, baseColor, axisOrigin, axisDir, feed, noseRadius): the
+/// faced(baseMaterial, baseColor, axisOrigin, axisDirection, feed, noseRadius): the
 /// face of a part turned on a lathe, its tool fed in toward the axis: the
 /// same grooves as turned, as rings round the axis every `feed` mm, and the
 /// highlight streaked across them, a fan of light from the centre. Returns
 /// material, color, height and slope.
-faced(baseMaterial, @color baseColor, @point axisOrigin, @direction(axisOrigin) axisDir, @range(0.05, 0.3) feed, @range(0.2, 1.6) noseRadius) {
-  axis = normalize(axisDir);
+faced(baseMaterial, @color baseColor, @point axisOrigin, @direction(axisOrigin) axisDirection, @range(0.05, 0.3) feed, @range(0.2, 1.6) noseRadius) {
+  axis = normalize(axisDirection);
   offset = p - axisOrigin;
   radial = offset - axis * dot(offset, axis);
   s = fract(length(radial) / feed);
@@ -168,17 +168,17 @@ knurlTooth(u) {
   return -abs(fract(u) - 0.5);
 }
 
-/// knurled(baseMaterial, baseColor, axisOrigin, axisDir, diameter, pitch,
+/// knurled(baseMaterial, baseColor, axisOrigin, axisDirection, diameter, pitch,
 /// diamond, raised): a knurl rolled on a round `diameter` mm across, about
-/// the axis through axisOrigin along axisDir, to ISO 13444: 90 degree teeth
+/// the axis through axisOrigin along axisDirection, to ISO 13444: 90 degree teeth
 /// `pitch` mm apart round it (0.4, 0.5, 0.6, 0.8, 1.0, 1.2 or 1.6), straight
 /// along the axis (diamond 0) or crossed at 30 degrees either way to it
 /// (diamond 1), their points raised (raised 1) or sunk (raised 0). The count
 /// of teeth round it is whole, so the knurl closes on itself. The teeth are
 /// real shape, pitch / 2 deep: subtract the height from the part and divide
 /// by 1 + slope. Returns material, color, height and slope.
-knurled(baseMaterial, @color baseColor, @point axisOrigin, @direction(axisOrigin) axisDir, @range(4, 100) diameter, @range(0.4, 1.6) pitch, @range(0, 1) diamond, @range(0, 1) raised) {
-  axis = normalize(axisDir);
+knurled(baseMaterial, @color baseColor, @point axisOrigin, @direction(axisOrigin) axisDirection, @range(4, 100) diameter, @range(0.4, 1.6) pitch, @range(0, 1) diamond, @range(0, 1) raised) {
+  axis = normalize(axisDirection);
   offset = p - axisOrigin;
   radial = offset - axis * dot(offset, axis);
   side = normalize(cross(axis, [0.577, 0.577, 0.577]) + [0.000001, 0, 0]);

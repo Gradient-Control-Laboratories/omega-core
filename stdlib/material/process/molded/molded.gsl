@@ -20,7 +20,7 @@ import "material";
 import "texture";
 import "noise";
 import "color";
-import "map";
+import "domain";
 import "material/process/machined";
 import "material/coat/coating";
 
@@ -85,7 +85,7 @@ ridge(u) {
 // apart (diamond 0), or crossed ridges at 30 degrees to y, `height` high at
 // their crossings (diamond 1).
 gripRelief(x, y, pitch, height, diamond) {
-  cellP = remap(map.patternHexagonalXY(pitch), [x, y, 0]);
+  cellP = remap(domain.patternHexagonalXY(pitch), [x, y, 0]);
   dome = clamp(1 - length(cellP.xy) / (0.35 * pitch), 0, 1);
   dots = height * dome * (2 - dome);
   crossed = height * min(ridge(x / pitch + 0.577 * y / pitch), ridge(x / pitch - 0.577 * y / pitch));

@@ -15,6 +15,8 @@ import (
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/constspec"
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/deadcode"
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/inline"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/listlen"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/listsize"
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/property"
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/propval"
 	internaltopofold "github.com/Gradient-Control-Laboratories/omega-core/internal/assembler/topofold"
@@ -142,6 +144,17 @@ func assembleWithOptions(primarySources []string, srcMgr source.Manager, o *opti
 	}
 	rp.AttachVariants(prog, srcMgr, o.variants, o.parsePkg)
 
+	// Build the lists list(n) and list(n, fn) ask for, specializing each function
+	// whose parameter decides a list's length on the constants its calls pass,
+	// so the closure pass sees ordinary maps over literal lists.
+	if built, lerr := listlen.Transform(prog); lerr != nil {
+		return nil, lerr
+	} else if built {
+		if err = link.References(prog, srcMgr, o.parsePkg); err != nil {
+			return nil, err
+		}
+	}
+
 	// 2. Closure & Higher-Order Function Transformation
 	// Hoist anonymous closures to package level and convert higher-order function patterns
 	// to first-order representations, re-linking references afterwards.
@@ -228,6 +241,18 @@ func assembleWithOptions(primarySources []string, srcMgr source.Manager, o *opti
 		if err = types.Analyze(prog); err != nil {
 			return nil, err
 		}
+	}
+
+	// A function whose reduce over a list parameter indexes by the element's
+	// index is cloned per list size its calls pass, and those reduces written
+	// out, so the lowering unrolls them with constant indices.
+	if _, err = listsize.Transform(prog, func() error {
+		if err := link.References(prog, srcMgr, o.parsePkg); err != nil {
+			return err
+		}
+		return types.Analyze(prog)
+	}); err != nil {
+		return nil, err
 	}
 
 	// 4. Pre-Lowering Constant Evaluation & Structural AST Lowering

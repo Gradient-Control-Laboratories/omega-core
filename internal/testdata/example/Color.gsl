@@ -7,7 +7,7 @@
 
 flr = p.z;
 period = 2;
-checkerboard = map.triangleWave(p.x, period) * map.triangleWave(p.y, period);
+checkerboard = domain.triangleWave(p.x, period) * domain.triangleWave(p.y, period);
 flr.color = checkerboard ? color.gray : color.lightGray ;
 
 cellular = noise.cellularEdges(1);
@@ -15,7 +15,7 @@ ball = sphere(5);
 ball.color = color.viridis(cellular * 1.2);
 
 ballSpike = ball + cellular * 0.2;
-ballRot = remap(ballSpike, map.rotateZX(p, time * 0.5));
+ballRot = remap(ballSpike, domain.rotateZX(p, time * 0.5));
 ballTrans = remap(ballRot, p - height * vector.dirZ);
 
 ball2 = sphere([6, 0, 2], 2);

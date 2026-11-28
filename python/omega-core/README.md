@@ -99,6 +99,7 @@ Picture flags (`-t png`, `gsl render`):
 | `--size` | `640x480` | each view's size in pixels |
 | `--light` | off | a light studio ground instead of the dark canvas |
 | `--extent` | `0` | the scene's half-size in mm; 0 frames the geometry |
+| `--device` | `trace` | what finds the hits: `trace`, the sphere tracer, or `fidget`, fidget's voxel render with its ambient occlusion |
 
 ### `gsl eval`
 

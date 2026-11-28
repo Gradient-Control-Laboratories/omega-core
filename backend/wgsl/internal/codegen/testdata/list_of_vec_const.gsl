@@ -5,7 +5,7 @@ dirX = [1.0, 0.0, 0.0];
 angles = [0.0, 1.5707963, 3.14159265, 4.7123890];
 
 radials = map(
-  (ang, index) { return map.rotateXY(dirX * partPlacementShift, ang); },
+  (ang, index) { return domain.rotateXY(dirX * partPlacementShift, ang); },
   angles
 );
 

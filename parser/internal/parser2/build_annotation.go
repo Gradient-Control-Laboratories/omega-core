@@ -79,6 +79,21 @@ func buildAnnotatedDeclaration(buildScope scope.BuilderScope, decl *AnnotatedDec
 func buildAnnotatedExpr(buildScope scope.BuilderScope, v *AnnotatedExpr) (*program.Operand, error) {
 	// Invariant: v.Annotation is guaranteed non-nil by parser grammar ("@@").
 	annotName := v.Annotation.Name
+	// A slider is a top-level variable's: nothing turns a @range on a value
+	// inside an expression into one, so it is refused rather than ignored.
+	// A malformed one reports its arguments first.
+	if annotName == annotation.Range {
+		if err := annotation.ValidateArgCount(annotName, len(v.Annotation.Args)); err != nil {
+			return nil, &participle.ParseError{
+				Pos: v.Annotation.Pos,
+				Msg: err.Error(),
+			}
+		}
+		return nil, &participle.ParseError{
+			Pos: v.Pos,
+			Msg: "@range on a value inside an expression makes no slider; put it on a top-level variable: @range(min, max) name = value;",
+		}
+	}
 	if err := annotation.ValidateTarget(annotName, annotation.TargetExpression); err != nil {
 		return nil, &participle.ParseError{
 			Pos: v.Pos,
@@ -90,10 +105,6 @@ func buildAnnotatedExpr(buildScope scope.BuilderScope, v *AnnotatedExpr) (*progr
 			Pos: v.Annotation.Pos,
 			Msg: err.Error(),
 		}
-	}
-
-	if annotName == annotation.Range {
-		return buildExpression(buildScope, v.Expression)
 	}
 
 	targetFn := annotation.TargetBuiltin(annotName)

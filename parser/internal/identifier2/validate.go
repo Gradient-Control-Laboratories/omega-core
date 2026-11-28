@@ -24,6 +24,52 @@ func Validate(name string) error {
 	return nil
 }
 
+// callReplacements names what to write in place of a reserved name that a
+// reader calls expecting the function from another language: the operator
+// forms of the comparison and modulo operations, and the GLSL/WGSL
+// constructors and casts.
+var callReplacements = map[string]string{
+	"atan2": "atan(y, x)",
+
+	"eq":     "a == b",
+	"ne":     "a != b",
+	"gt":     "a > b",
+	"ge":     "a >= b",
+	"lt":     "a < b",
+	"le":     "a <= b",
+	"modulo": "a % b",
+
+	"vec2": "a list, [x, y]",
+	"vec3": "a list, [x, y, z]",
+	"vec4": "a list, [x, y, z, w]",
+
+	"float":  "the value itself: every GSL number is a float",
+	"double": "the value itself: every GSL number is a float",
+	"f32":    "the value itself: every GSL number is a float",
+	"f16":    "the value itself: every GSL number is a float",
+	"int":    "floor(x), round(x) or trunc(x)",
+	"uint":   "floor(x), round(x) or trunc(x)",
+	"i32":    "floor(x), round(x) or trunc(x)",
+	"u32":    "floor(x), round(x) or trunc(x)",
+}
+
+// ValidateCall validates the name of a called function. Renaming does not
+// help a call, so a reserved name is reported as not callable, with what to
+// write instead when there is a GSL equivalent.
+func ValidateCall(name string) error {
+	if err := validateStructure(name); err != nil {
+		return err
+	}
+	if program.IsReservedWord(name) && !program.IsPrimitive(name) {
+		msg := fmt.Sprintf("'%s' is a reserved word, not a GSL function", name)
+		if alt, ok := callReplacements[name]; ok {
+			msg += "; use " + alt
+		}
+		return fmt.Errorf("%s", msg)
+	}
+	return Validate(name)
+}
+
 // ValidatePackageName validates an import prefix / package name. Unlike
 // Validate, it permits names that are reserved words, primitives, or builtins
 // — e.g. a package named "map". A package qualifier appears only in

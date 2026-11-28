@@ -1,11 +1,11 @@
-fn builtin_gcl_closure_box(p: vec3<f32>, pointA: vec3<f32>, pointB: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
-  let center = (pointA + pointB) * 0.5;
-  let size = abs(pointB - pointA);
+fn builtin_gcl_closure_box(p: vec3<f32>, gsl_var_min: vec3<f32>, gsl_var_max: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
+  let center = (gsl_var_min + gsl_var_max) * 0.5;
+  let size = abs(gsl_var_max - gsl_var_min);
   return builtin_gcl_closure_boxCentered(p, center, size, noiseTex);
 }
 
-fn builtin_box(p: vec3<f32>, pointA: vec3<f32>, pointB: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
-  return builtin_gcl_closure_box(p, pointA, pointB, noiseTex);
+fn builtin_box(p: vec3<f32>, gsl_var_min: vec3<f32>, gsl_var_max: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
+  return builtin_gcl_closure_box(p, gsl_var_min, gsl_var_max, noiseTex);
 }
 
 fn gsl_remap(p: vec3<f32>, gsl_param_48_34: f32, gsl_param_49_33: f32, gsl_param_50_35: f32, noiseTex: texture_3d<f32>) -> f32 {

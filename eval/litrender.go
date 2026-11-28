@@ -35,6 +35,9 @@ import (
 )
 
 // RenderLitSized renders prog on the CPU at the given dimensions and world extent.
+//
+// Deprecated: use RenderLit with LitOptions{Width, Height, WorldExtent, Time};
+// RenderLitSized will be removed after a release.
 func RenderLitSized(
 	prog *program.Program,
 	width, height int,
@@ -49,47 +52,30 @@ func RenderLitSized(
 }
 
 // RenderLitSizedView renders prog on the CPU with a chosen camera and ground.
+//
+// Deprecated: use RenderLit(prog, view.Options(width, height, worldExtent,
+// timeAt)); RenderLitSizedView will be removed after a release.
 func RenderLitSizedView(
 	prog *program.Program,
 	width, height int,
 	worldExtent, timeAt float64,
 	view LitView,
 ) ([]byte, error) {
-	return RenderLit(prog, LitOptions{
-		Width:           width,
-		Height:          height,
-		WorldExtent:     worldExtent,
-		Time:            timeAt,
-		View:            view.Dir,
-		Up:              view.Up,
-		Light:           view.Light,
-		NoAxes:          view.NoAxes,
-		Environment:     view.Environment,
-		EnvironmentTurn: view.EnvironmentTurn,
-		GlassSamples:    view.GlassSamples,
-	})
+	return RenderLit(prog, view.Options(width, height, worldExtent, timeAt))
 }
 
 // RenderLitSizedViewRadiance is RenderLitSizedView returning each pixel's linear radiance beside the PNG.
+//
+// Deprecated: use RenderLitWithLinear(prog, view.Options(width, height,
+// worldExtent, timeAt)) and its Radiance; RenderLitSizedViewRadiance will be
+// removed after a release.
 func RenderLitSizedViewRadiance(
 	prog *program.Program,
 	width, height int,
 	worldExtent, timeAt float64,
 	view LitView,
 ) ([]byte, []float32, error) {
-	png, lin, err := RenderLitWithLinear(prog, LitOptions{
-		Width:           width,
-		Height:          height,
-		WorldExtent:     worldExtent,
-		Time:            timeAt,
-		View:            view.Dir,
-		Up:              view.Up,
-		Light:           view.Light,
-		NoAxes:          view.NoAxes,
-		Environment:     view.Environment,
-		EnvironmentTurn: view.EnvironmentTurn,
-		GlassSamples:    view.GlassSamples,
-	})
+	png, lin, err := RenderLitWithLinear(prog, view.Options(width, height, worldExtent, timeAt))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -227,6 +213,9 @@ func renderLit(prog *program.Program, opts LitOptions, done func([]byte, *LitLin
 	if _, err := litEnvironment(opts.Environment, 0, [3]float64{1, 0, 0}); err != nil {
 		return err
 	}
+	if _, err := litDevice(opts); err != nil {
+		return err
+	}
 
 	if opts.Simple != nil && opts.Camera == nil {
 		return fmt.Errorf("the Simple frame needs a camera")
@@ -359,10 +348,15 @@ func marchLit(
 	opts LitOptions,
 ) (*image.RGBA, *LitLinear, error) {
 	w, h := opts.Width, opts.Height
-	// Progress is reported along the viewer's march and the phases after it
-	// (litShares); any other render reports only that it is done (renderLit).
+	fidgetDevice, err := litDevice(opts)
+	if err != nil {
+		return nil, nil, err
+	}
+	// Progress is reported along the viewer's march, or the fidget device's
+	// returns, and the phases after it (litShares); any other render reports
+	// only that it is done (renderLit).
 	var progress *litProgress
-	if opts.ViewerMarch {
+	if opts.ViewerMarch || fidgetDevice {
 		progress = newLitProgress(opts.Progress)
 	}
 	aspect := float64(w) / float64(h)
@@ -497,6 +491,23 @@ func marchLit(
 		}
 	}
 
+	// The fidget device finds the hits, their returns, normals and occlusion
+	// itself (litfidget.go); the loop then runs no steps.
+	var fh *litFidgetHits
+	if fidgetDevice {
+		marchSteps = 0
+		cam := litFidgetCamera{pos: camPos, right: right, up: up, fwd: fwd, tanFovX: tanFovX, tanFovY: tanFovY, ortho: ortho > 0}
+		fh, err = litFidgetRender(union, shapeCanvases, cam, w, h, origins, dirs, lookAt, boxHalf, pixelScale,
+			litBackDim(opts.BackDim), pixelSize, progress.span(0, litShares.march))
+		if err != nil {
+			return nil, nil, err
+		}
+		copy(isHit, fh.isHit)
+		copy(surfT, fh.t)
+		copy(hitPos, fh.pos)
+		copy(hitNormal, fh.normal)
+	}
+
 	// March: every step evaluates the union field at all still-live rays in
 	// one bulk call, so the cost per step is one JIT pass, not one per pixel.
 	idx := make([]int, 0, n)
@@ -533,8 +544,9 @@ func marchLit(
 				continue
 			}
 			// The hit epsilon grows with distance so a pixel's worth of
-			// surface always counts as a hit — the viewer's rule.
-			pixelWorld := pixelScale * math.Max(tv[i], 1.0)
+			// surface always counts as a hit — the viewer's rule. An
+			// orthographic pixel is the same size at every distance.
+			pixelWorld := pixelScale * (math.Max(tv[i], 1.0)*(1-ortho) + ortho)
 			hitEps := math.Max(1e-4, pixelWorld*0.5)
 			if math.Abs(d) < hitEps {
 				isHit[i] = true
@@ -588,7 +600,12 @@ func marchLit(
 		}
 		progress.at(litShares.normals)
 	}
-	if len(hitIdx) > 0 && len(shapes) > 1 && !opts.ViewerMarch {
+	if fh != nil {
+		copy(shapeOf, fh.shapeOf)
+		copy(dim, fh.dim)
+		progress.at(litShares.normals)
+	}
+	if len(hitIdx) > 0 && len(shapes) > 1 && !opts.ViewerMarch && fh == nil {
 		hx, hy, hz := gatherPoints(hitPos, hitIdx)
 		best := make([]float64, len(hitIdx))
 		for j := range best {
@@ -614,7 +631,7 @@ func marchLit(
 	// fine to see shades faded rather than aliasing. Take the normal again
 	// with the footprint bound, and the occlusion taps below with it too.
 	var hitFP []float32
-	if pixelSize.ok && len(hitIdx) > 0 && !opts.ViewerMarch {
+	if pixelSize.ok && len(hitIdx) > 0 && !opts.ViewerMarch && fh == nil {
 		hitFP = make([]float32, len(hitIdx))
 		for j, i := range hitIdx {
 			hitFP[j] = float32(pixelScale * (math.Max(surfT[i], 1.0)*(1-ortho) + ortho))
@@ -638,7 +655,11 @@ func marchLit(
 	for i := range aoFactor {
 		aoFactor[i] = 1
 	}
-	if len(hitIdx) > 0 {
+	if fh != nil {
+		// fidget's SSAO, taken over the merged frame.
+		copy(aoFactor, fh.ao)
+		progress.at(litShares.occlusion)
+	} else if len(hitIdx) > 0 {
 		ao := make([]float64, len(hitIdx))
 		aoScale := 2.0
 		for step := 0; step < litAOSteps; step++ {

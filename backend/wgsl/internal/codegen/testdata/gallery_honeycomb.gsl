@@ -18,12 +18,12 @@ specimen(field, off) {
   return max(lattice.solidify(field, bias), boxCentered([off, 0, 0], [2 * r, 2 * r, 2 * r]));
 }
 
-sqr = specimen(honeycomb.squareHoneycomb([10, 10]),                       -3 * step);
-dia = specimen(honeycomb.squareDiagonalHoneycomb([10, 10]),              -2 * step);
-rf1 = specimen(honeycomb.squareHoneycombReinforced([10, 10], 0.25),       -1 * step);
-rf2 = specimen(honeycomb.squareHoneycombReinforced([10, 10], 0.25, 0.75, unionSharp), 0 * step);
-oct = specimen(honeycomb.octetHoneycomb([12, 12], unionRound(0.3)),                       1 * step);
-hex = specimen(honeycomb.hexagonalHoneycomb(8, unionRound(0.3)),                        2 * step);
-tri = specimen(honeycomb.triangularHoneycomb(8, unionRound(0.2)),                       3 * step);
+sqr = specimen(honeycomb.rectangular([10, 10]),                       -3 * step);
+dia = specimen(honeycomb.rectangularDiagonal([10, 10]),              -2 * step);
+rf1 = specimen(honeycomb.rectangularReinforced([10, 10], 0.25),       -1 * step);
+rf2 = specimen(honeycomb.rectangularReinforced([10, 10], 0.25, 0.75, unionSharp), 0 * step);
+oct = specimen(honeycomb.octet([12, 12], unionRound(0.3)),                       1 * step);
+hex = specimen(honeycomb.hexagonal(8, unionRound(0.3)),                        2 * step);
+tri = specimen(honeycomb.triangular(8, unionRound(0.2)),                       3 * step);
 
 return sqr, dia, rf1, rf2, oct, hex, tri;

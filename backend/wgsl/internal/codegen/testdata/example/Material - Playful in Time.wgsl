@@ -25,7 +25,7 @@ fn texture_fadeTo(gsl_var_value: f32, mean: f32, size: f32, noiseTex: texture_3d
   return mean + (gsl_var_value - mean) * texture_fadeDetail(size, noiseTex);
 }
 
-fn map_repeatCentered(x: vec2<f32>, period: vec2<f32>, noiseTex: texture_3d<f32>) -> vec2<f32> {
+fn domain_repeatCentered(x: vec2<f32>, period: vec2<f32>, noiseTex: texture_3d<f32>) -> vec2<f32> {
   let half = period * 0.5;
   return gsl_floored_vec2((gsl_floored_vec2((x + half), period) + period), period) - half;
 }
@@ -37,11 +37,11 @@ fn gsl_remap(p: vec3<f32>, material_polishedMetal: mat4x4<f32>, color_white: vec
   }
   let rainbow = gsl_simpleValue;
   let gsl_tmp_74 = color_rgb2oklab(rainbow, noiseTex);
-  let gsl_tmp_70 = map_repeatCentered(p.xy - vec2<f32>(5.196152, 15.0), vec2<f32>(10.392304, 18.0), noiseTex);
-  let gsl_tmp_69 = map_repeatCentered(p.xy - vec2<f32>(5.196152, 9.0), vec2<f32>(10.392304, 18.0), noiseTex);
+  let gsl_tmp_70 = domain_repeatCentered(p.xy - vec2<f32>(5.196152, 15.0), vec2<f32>(10.392304, 18.0), noiseTex);
+  let gsl_tmp_69 = domain_repeatCentered(p.xy - vec2<f32>(5.196152, 9.0), vec2<f32>(10.392304, 18.0), noiseTex);
   let gsl_tmp_72 = select(gsl_tmp_70, gsl_tmp_69, dot(gsl_tmp_69, gsl_tmp_69) < dot(gsl_tmp_70, gsl_tmp_70));
-  let gsl_tmp_68 = map_repeatCentered(p.xy - vec2<f32>(0.0, 6.0), vec2<f32>(10.392304, 18.0), noiseTex);
-  let gsl_tmp_67 = map_repeatCentered(p.xy, vec2<f32>(10.392304, 18.0), noiseTex);
+  let gsl_tmp_68 = domain_repeatCentered(p.xy - vec2<f32>(0.0, 6.0), vec2<f32>(10.392304, 18.0), noiseTex);
+  let gsl_tmp_67 = domain_repeatCentered(p.xy, vec2<f32>(10.392304, 18.0), noiseTex);
   let gsl_tmp_71 = select(gsl_tmp_68, gsl_tmp_67, dot(gsl_tmp_67, gsl_tmp_67) < dot(gsl_tmp_68, gsl_tmp_68));
   let gsl_tmp_73 = select(gsl_tmp_72, gsl_tmp_71, dot(gsl_tmp_71, gsl_tmp_71) < dot(gsl_tmp_72, gsl_tmp_72));
   let gsl_tmp_76 = gsl_tmp_74 + (vec3<f32>(1.0, 0.00000000008095291, 0.000000037273907) - gsl_tmp_74) * texture_fadeTo(texture_coverageDisc(length(vec3<f32>(gsl_tmp_73.x, gsl_tmp_73.y, p.z).xy), 2.0, noiseTex), 0.26871103, 6.0, noiseTex);

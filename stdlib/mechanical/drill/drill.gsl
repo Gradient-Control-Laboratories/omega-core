@@ -233,7 +233,7 @@ robertsonVoid(zTop, halfAF, depth, leg) {
 // diameter. Bigger fillets make narrower lobes.
 torxXY(major, minor, filletR) {
   bite = length([p.x - (minor / 2.0 + filletR), p.y]) - filletR;
-  bites = remap(bite, map.patternPolarXY(6));
+  bites = remap(bite, domain.patternPolarXY(6));
   return max(length(p.xy) - major / 2.0, -bites);
 }
 
@@ -507,7 +507,7 @@ phillipsVoid(zRef, m, core, facet, g, ridge, lean, root) {
 // spline forms sharing one body.
 splineVoid(count, major, width) {
   slot = max(abs(p.y) - width / 2.0, length(p.xy) - major / 2.0);
-  return remap(slot, map.patternPolarXY(count));
+  return remap(slot, domain.patternPolarXY(count));
 }
 
 // keywayVoid: one slot on +x, `width` across, cut `depth` radially outward
@@ -1348,10 +1348,10 @@ slotChamfer(dia, centers, ang, leg) {
 ///
 ///   remap(drill.hole([drill.thru(6.6)], 0), drill.axisAt(faceCenter, faceNormal))
 ///
-/// THE IMPLEMENTATION IS map.axisAt, which is where it belongs: aligning a
+/// THE IMPLEMENTATION IS domain.axisAt, which is where it belongs: aligning a
 /// datum to a direction is not a fact about holes, and map is where rotateAxis
 /// and the pattern remaps already live. This forwards so a hole can be placed
 /// without reaching outside the package it came from.
 axisAt(point, axis) {
-  return map.axisAt(point, axis);
+  return domain.axisAt(point, axis);
 }

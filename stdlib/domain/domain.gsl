@@ -3,17 +3,14 @@
 /// patterns.
 
 
-// Map Library (map)
+// Domain Library (domain)
 //
 // Domain transforms — functions that map points and directions through space.
 // These pair with `remap`, GSL's domain-remapping primitive: to evaluate a
-// shape under a transform you sample it at the mapped point.
-//
-// The package name reuses the word `map`. That is intentional and unambiguous:
-// `map(fn, list)` is the iteration primitive (bare, in call position) while
-// `map.rotateXY(...)` is a package-qualified call. The parser keys the
-// primitive check off the member name, not the prefix, so the two never
-// collide. Call qualified: `map.rotateXY(v, ang)`.
+// shape under a transform you sample it at the mapped point. Call qualified:
+// `domain.rotateXY(v, angle)`. The package was named `map` until it was
+// renamed for sharing its name with the `map(fn, list)` primitive; `gsl fix`
+// rewrites the old references.
 //
 // Uses builtin's shared constants (tau, pi) rather than redefining them.
 // builtin is implicitly dot-imported into every file, so nothing declares it.
@@ -134,23 +131,22 @@ triangleDistance(x, period) {
 /// triangleWaveEvenPositive(x, period): the unit-gradient triangle-wave distance
 /// whose zeros land on cell *boundaries* (x = 0, +/-period, ...) and whose peak
 /// (period/2) is at the cell center. Identical to triangleDistance — the named
-/// form documents the phase. "Even" follows the GCL stdlib convention; note this
-/// is the OPPOSITE phase from the lattice package's legacy `planesEven` (which
-/// is center-phased, i.e. the Odd family here). Range [0, period/2].
+/// form documents the phase. "Even" follows the GCL stdlib convention: the walls
+/// sit on the cell boundaries. Range [0, period/2].
 triangleWaveEvenPositive(x, period) {
   return triangleDistance(x, period);
 }
 
 /// triangleWaveOddPositive(x, period): triangle-wave distance phased a half cell
 /// over from Even, so its zeros land on cell *centers* (x = +/-period/2, ...).
-/// Equivalent to the lattice package's legacy `planesEven`. Range [0, period/2].
+/// Range [0, period/2].
 triangleWaveOddPositive(x, period) {
   return triangleDistance(x - period * 0.5, period);
 }
 
 /// Checkerboard parity on a 3D grid of cell size `cellSize`: +1 or -1 by
 /// whether the cell's (x+y+z) integer-coordinate sum is even or odd. Signed,
-/// so it works directly as a GSL boolean (`map.checker(2) ? colorA : colorB`)
+/// so it works directly as a GSL boolean (`domain.checker(2) ? colorA : colorB`)
 /// per the "<=0 is false" convention — no threshold/mask needed for a sharp
 /// 2-way board.
 checker(cellSize) {
@@ -171,35 +167,42 @@ checkerXY(cellSize) {
   return 1 - 2 * s;
 }
 
-/// Rotate 3D vector v by `ang` radians around the Z axis (XY plane
+/// Rotate 3D vector v by `angle` radians around the Z axis (XY plane
 /// rotation). v.z passes through unchanged.
-rotateXY(v, ang) {
-  ca = cos(ang);
-  sa = sin(ang);
+rotateXY(v, angle) {
+  ca = cos(angle);
+  sa = sin(angle);
   return [v.x * ca + v.y * sa, -v.x * sa + v.y * ca, v.z];
 }
 
-rotateYZ(v, ang) {
-  ca = cos(ang);
-  sa = sin(ang);
+/// Rotate 3D vector v by `angle` radians around the X axis (YZ plane
+/// rotation), in the same sense as rotateXY. v.x passes through unchanged.
+rotateYZ(v, angle) {
+  ca = cos(angle);
+  sa = sin(angle);
   return [v.x, v.y * ca + v.z * sa, -v.y * sa + v.z * ca];
 }
 
-rotateZX(v, ang) {
-  ca = cos(ang);
-  sa = sin(ang);
+/// Rotate 3D vector v by `angle` radians around the Y axis (ZX plane
+/// rotation), in the same sense as rotateXY. v.y passes through unchanged.
+rotateZX(v, angle) {
+  ca = cos(angle);
+  sa = sin(angle);
   return [v.x * ca - v.z * sa, v.y, v.z * ca + v.x * sa];
 }
 
+/// Rotate 3D vector v by the Euler angles `angles`, applied in order:
+/// rotateYZ by angles.x, then rotateZX by angles.y, then rotateXY by angles.z.
+/// matrix.rotationEuler3 builds the same rotation as a matrix.
 eulerAngles(v, angles) {
   return rotateXY(rotateZX(rotateYZ(v, angles.x), angles.y), angles.z);
 }
 
 /// Rotate vector `v` by `angle` radians about the line through `axisOrigin` with
-/// direction `axisDir` (Rodrigues' formula). `axisDir` need not be normalized.
+/// direction `axisDirection` (Rodrigues' formula). `axisDirection` need not be normalized.
 /// The arbitrary-axis counterpart to rotateXY / rotateYZ / rotateZX.
-rotateAxis(v, axisOrigin, axisDir, angle) {
-  kn = normalize(axisDir);
+rotateAxis(v, axisOrigin, axisDirection, angle) {
+  kn = normalize(axisDirection);
   rel = v - axisOrigin;
   ca = cos(angle);
   sa = sin(angle);
@@ -223,7 +226,7 @@ remapCylindrical(circumference) {
 /// +x. A negative curvature curls them toward -x, and 0 is no bend. v.y passes
 /// through unchanged. To bow a plate about a point `origin` on it:
 ///
-///   bowed = remap(plate, map.bendXZ(p - origin, 1 / 400) + origin);
+///   bowed = remap(plate, domain.bendXZ(p - origin, 1 / 400) + origin);
 ///
 /// Lengths along z are kept on the plane itself. Off it they change by
 /// 1 - curvature * x: stretched on the outside of the bend and squeezed on the
@@ -247,7 +250,7 @@ bendXZ(v, curvature) {
 /// axis aligned to `axis` — for a hole, the direction the drill enters, which
 /// is the outward normal of the face it goes into. Pass it to remap:
 ///
-///   remap(drill.hole([drill.thru(6.6)], 0), map.axisAt(faceCenter, faceNormal))
+///   remap(drill.hole([drill.thru(6.6)], 0), domain.axisAt(faceCenter, faceNormal))
 ///
 /// It takes a DIRECTION, where rotateAxis and matrix.rotation take an axis AND
 /// an angle. Nothing else here aligns a datum to a direction, which is the

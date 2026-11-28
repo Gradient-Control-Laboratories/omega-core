@@ -208,6 +208,10 @@ func (pa *PackageAnalyzer) inferBuiltinCall(name string, args []*program.Operand
 			return nil, fmt.Errorf("%s orientation must be a 3x3 matrix, got %s",
 				name, o.TypeString())
 		}
+		if b := argTypes[12]; !b.IsMatrix() || b.Size != 2 || b.ElemType == nil || b.ElemType.Size != 3 {
+			return nil, fmt.Errorf("%s box must be [min, max], two 3-component corners, got %s",
+				name, b.TypeString())
+		}
 		if program.IsGaborSpinodoidGradient(name) {
 			return []*program.Type{program.NewListType(3, program.NewScalarType())}, nil
 		}

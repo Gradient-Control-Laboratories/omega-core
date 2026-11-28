@@ -35,14 +35,6 @@ Expected:
                 - expression:
                     value: 2
                   name: period
-        - expression:
-            value: 2.5
-          variables:
-            - name: inlineVal
-        - expression:
-            value: 5
-          variables:
-            - name: inlineAnim
       fnTypes:
         - groups:
             - functions:

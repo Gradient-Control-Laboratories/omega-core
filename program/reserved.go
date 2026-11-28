@@ -24,7 +24,7 @@ const WorleyFarCell = "worleyFarCell"
 const WorleyWall = "worleyWall"
 const WorleyWallFeature = "worleyWallFeature"
 
-// The Gabor spinodoid (hodge-release spinodoid.py, spinodoid_gabor) as one
+// The Gabor spinodoid (the Python reference's spinodoid.py, spinodoid_gabor) as one
 // oracle over a kernel table baked in Go (common/noise/spinodoid), and its
 // analytic gradient, which carries the field's derivative the way
 // WorleyFeature carries WorleyF1's.
@@ -33,8 +33,8 @@ const GaborSpinodoidGradient = "gaborSpinodoidGradient"
 
 // The lattice spinodoid: the same field family and the same arguments, with
 // the kernels on a lattice and their envelopes tapered, which makes it cheap
-// enough to ray-march. It is a different realization than hodge's, so a part
-// built from it is not one hodge can rebuild — which is the whole difference
+// enough to ray-march. It is a different realization than the Python reference's, so a part
+// built from it is not one the Python reference can rebuild — which is the whole difference
 // between the two. Every preview renders this one whichever the document
 // names; naming it here asks for it in the bake as well.
 const FastGaborSpinodoid = "fastGaborSpinodoid"
@@ -42,8 +42,9 @@ const FastGaborSpinodoidGradient = "fastGaborSpinodoidGradient"
 
 // GaborSpinodoidArgs is every spinodoid builtin's argument count: q, period,
 // theta, poles, packetWidth, impulses, pool, seed, bias, localNormalize,
-// scale, orientation.
-const GaborSpinodoidArgs = 12
+// scale, orientation, box. box is the [min, max] region, in the field's own
+// coordinates, a graded field's table covers; a stationary field ignores it.
+const GaborSpinodoidArgs = 13
 
 // IsGaborSpinodoid reports whether name is one of the four spinodoid builtins,
 // and FastSpinodoid whether it is one of the lattice pair.
@@ -150,6 +151,7 @@ var reservedMap = map[string]bool{
 	"exp2":      true,
 	"fract":     true,
 	"length":    true,
+	"list":      true,
 	"normalize": true,
 	"radians":   true,
 	"sign":      true,

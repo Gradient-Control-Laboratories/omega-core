@@ -6,6 +6,7 @@ import (
 	"github.com/Gradient-Control-Laboratories/omega-core/assembler/source"
 	"github.com/Gradient-Control-Laboratories/omega-core/parser"
 	"github.com/Gradient-Control-Laboratories/omega-core/program"
+	gsllibs "github.com/Gradient-Control-Laboratories/omega-core/stdlib"
 )
 
 // Program collects all packages starting from the primary package
@@ -87,6 +88,9 @@ func Package(primaryPkg *program.Package, srcMgr source.Manager, parsePkg func(s
 				if !visited[impPath] {
 					sources, _, err := srcMgr.Sources(impPath)
 					if err != nil {
+						if renamed, ok := gsllibs.RenamedPath(impPath); ok {
+							return fmt.Errorf("failed to load package %s: the package was renamed %s, and `gsl fix` rewrites the import: %w", impPath, renamed, err)
+						}
 						return fmt.Errorf("failed to load package %s: %w", impPath, err)
 					}
 					depRes, err := parsePkg(sources)

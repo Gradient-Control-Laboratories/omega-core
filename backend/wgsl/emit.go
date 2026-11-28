@@ -13,11 +13,18 @@ type config struct {
 	progressFn progress.Callback
 }
 
-// Standalone configures WGSL emission in standalone mode.
-func Standalone(standalone bool) Option {
+// WithStandalone configures WGSL emission in standalone mode.
+func WithStandalone(standalone bool) Option {
 	return func(c *config) {
 		c.standalone = standalone
 	}
+}
+
+// Standalone is WithStandalone.
+//
+// Deprecated: use WithStandalone; Standalone will be removed after a release.
+func Standalone(standalone bool) Option {
+	return WithStandalone(standalone)
 }
 
 // WithProgress supplies a progress callback during WGSL emission.

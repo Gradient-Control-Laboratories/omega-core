@@ -73,6 +73,9 @@ func PrintUsage(w io.Writer) {
 	fmt.Fprintf(w, "        The png scene's half-size in mm; 0 frames the geometry (default 0)\n")
 	fmt.Fprintf(w, "      --light\n")
 	fmt.Fprintf(w, "        A light studio ground for png instead of the dark canvas\n")
+	fmt.Fprintf(w, "      --device string\n")
+	fmt.Fprintf(w, "        What finds png's hits: trace (the sphere tracer) or fidget (fidget's voxel render,\n")
+	fmt.Fprintf(w, "        each return merged nearest first, with fidget's ambient occlusion) (default \"trace\")\n")
 	fmt.Fprintf(w, "  -O, --opt-level int\n")
 	fmt.Fprintf(w, "        Optimization level (0 = debug, 1 = standard) (default 1)\n")
 	fmt.Fprintf(w, "      --standalone\n")
@@ -152,7 +155,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 
 	// Configure assembler options
 	asmOpts := []assembler.Option{
-		assembler.ExtractUI(),
+		assembler.WithExtractUI(),
 	}
 	srcPaths := cfg.SourcePaths
 	if len(srcPaths) == 0 && len(cfg.Sources) > 0 {
@@ -163,10 +166,10 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		srcPaths = []string{dir}
 	}
 	if len(srcPaths) > 0 {
-		asmOpts = append(asmOpts, assembler.SourcePaths(srcPaths...))
+		asmOpts = append(asmOpts, assembler.WithSourcePaths(srcPaths...))
 	}
 	if cfg.OptLevel == 0 {
-		asmOpts = append(asmOpts, assembler.DisableDeadcodeRemoval())
+		asmOpts = append(asmOpts, assembler.WithDisableDeadcodeRemoval())
 	}
 	if cfg.Verbose {
 		asmOpts = append(asmOpts, assembler.WithProgress(func(stage string, completed, total uint32) {
@@ -197,7 +200,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	switch cfg.Target {
 	case config.TargetWGSL:
 		wgslOpts := []wgsl.Option{
-			wgsl.Standalone(cfg.Standalone),
+			wgsl.WithStandalone(cfg.Standalone),
 		}
 		if cfg.Verbose {
 			wgslOpts = append(wgslOpts, wgsl.WithProgress(func(stage string, completed, total uint32) {
@@ -311,21 +314,21 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 			return loadErr
 		}
 		bvhOracles, vdbOracles := meshimport.Oracles(meshUses)
-		tapeOpts := []tape.Option{tape.MeshOracles(bvhOracles), tape.VdbOracles(vdbOracles)}
+		tapeOpts := []tape.Option{tape.WithMeshOracles(bvhOracles), tape.WithVdbOracles(vdbOracles)}
 		// The box a mesh of this document would cover, stamped in the tape for whoever reads it: --bbox, else the
 		// returned value's .box, else the @scene box. With none of them it stays unset.
 		switch {
 		case cfg.HasBbox:
-			tapeOpts = append(tapeOpts, tape.Bbox(cfg.Bbox))
+			tapeOpts = append(tapeOpts, tape.WithBbox(cfg.Bbox))
 		case len(sourceTexts) == 1:
 			box, ok, boxErr := returnBox(primarySourceText, srcPaths, meshDirs)
 			if boxErr != nil {
 				return boxErr
 			}
 			if ok {
-				tapeOpts = append(tapeOpts, tape.Bbox(box))
+				tapeOpts = append(tapeOpts, tape.WithBbox(box))
 			} else if half := float32(res.Scene.GetSize() / 2); half > 0 {
-				tapeOpts = append(tapeOpts, tape.Bbox([6]float32{-half, -half, -half, half, half, half}))
+				tapeOpts = append(tapeOpts, tape.WithBbox([6]float32{-half, -half, -half, half, half, half}))
 			}
 		}
 		if cfg.Verbose {
@@ -524,7 +527,9 @@ func renderPNG(prog *program.Program, cfg *config.Config) ([]byte, error) {
 	panels := make([][]byte, 0, len(views))
 	for i, v := range views {
 		v.Light = cfg.Light
-		panel, renderErr := eval.RenderLitSizedView(prog, cfg.Width, cfg.Height, cfg.Extent, cfg.Time, v)
+		opts := v.Options(cfg.Width, cfg.Height, cfg.Extent, cfg.Time)
+		opts.Device = cfg.Device
+		panel, renderErr := eval.RenderLit(prog, opts)
 		if renderErr != nil {
 			return nil, fmt.Errorf("rendering view %d: %w", i+1, renderErr)
 		}
@@ -556,7 +561,7 @@ func returnBox(code string, srcPaths, meshDirs []string) ([6]float32, bool, erro
 	}
 	var opts []eval.Option
 	if len(srcPaths) > 0 {
-		opts = append(opts, assembler.SourcePaths(srcPaths...))
+		opts = append(opts, assembler.WithSourcePaths(srcPaths...))
 	}
 	ev := eval.New(nil, nil, opts...)
 	ev.LoadMeshesFrom(meshDirs...)
@@ -595,7 +600,7 @@ func autoBbox(code string, srcPaths, meshDirs []string) ([6]float32, error) {
 	}
 	var opts []eval.Option
 	if len(srcPaths) > 0 {
-		opts = append(opts, assembler.SourcePaths(srcPaths...))
+		opts = append(opts, assembler.WithSourcePaths(srcPaths...))
 	}
 	ev := eval.New(nil, nil, opts...)
 	ev.LoadMeshesFrom(meshDirs...)

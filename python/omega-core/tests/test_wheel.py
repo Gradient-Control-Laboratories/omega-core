@@ -42,7 +42,7 @@ def test_the_gsl_command_runs_the_bundled_program() -> None:
 def test_the_licences_of_what_it_links_are_shipped() -> None:
     licences = Path(omega_core.__file__).parent / "licenses"
     third_party = (licences / "THIRD_PARTY_LICENSES.txt").read_text()
-    for component in ("Go standard library", "Rust standard library", "fidget-core", "epaint", "openvdb", "tbb",
+    for component in ("Go standard library", "Rust standard library", "fidget-core", "openvdb", "tbb",
                       "imath", "blosc", "zlib"):
         assert component in third_party, component
     assert (licences / "LICENSE").is_file()

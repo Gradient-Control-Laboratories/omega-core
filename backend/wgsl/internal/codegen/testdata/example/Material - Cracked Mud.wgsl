@@ -1,5 +1,5 @@
-fn builtin_intersectSharp_2(d1: f32, d2: f32, noiseTex: texture_3d<f32>) -> f32 {
-  return max(d1, d2);
+fn builtin_intersectSharp_2(a: f32, b: f32, noiseTex: texture_3d<f32>) -> f32 {
+  return max(a, b);
 }
 
 fn ease_cubic(t: f32, noiseTex: texture_3d<f32>) -> f32 {

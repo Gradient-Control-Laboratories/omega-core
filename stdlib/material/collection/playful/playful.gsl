@@ -12,13 +12,13 @@
 // Doc convention follows builtin/base.gsl: `///` lines are public docs.
 
 import "noise";
-import "map";
+import "domain";
 import "color";
 import "material";
 import "texture";
 
 /// checkerboard(cellSize, colorA, colorB): a sharp 3D checkerboard, colorA on
-/// the cells of map.checker's even parity. Each axis's squares are averaged
+/// the cells of domain.checker's even parity. Each axis's squares are averaged
 /// over the pixel (texture.squareWave) and the three combined as the chance
 /// their parity is odd, so the edges blur by what a pixel sees and a board
 /// too fine to resolve settles to the two colours' even mix.
@@ -70,7 +70,7 @@ polkaFrame(direction) {
 
 // polkaPlane: the dots in the XY plane, as columns along z.
 polkaPlane(spacing, dotRadius, share, baseColor, dotColor) {
-  cellP = map.patternHexagonalXY(spacing);
+  cellP = domain.patternHexagonalXY(spacing);
   disc = texture.coverageDisc(length(cellP.xy), dotRadius);
   return color.mixOklab(baseColor, dotColor, texture.fadeTo(disc, share, spacing));
 }
@@ -78,7 +78,7 @@ polkaPlane(spacing, dotRadius, share, baseColor, dotColor) {
 /// polkaDot(spacing, dotRatio, direction, baseColor, dotColor): a
 /// hexagonally-packed dot pattern in the plane facing `direction`, dots
 /// `spacing` mm apart with a radius `dotRatio` of that (0.25 for dots half as
-/// wide as they are apart; at 0.5 they touch) — map.patternHexagonalXY gives
+/// wide as they are apart; at 0.5 they touch) — domain.patternHexagonalXY gives
 /// the offset to the nearest dot center, and texture.coverageDisc draws the
 /// dot there, a pixel soft at its edge. Dots too small or too close to resolve
 /// settle to their share of the honeycomb, pi r^2 over 3 sqrt(3) / 4 spacing^2.

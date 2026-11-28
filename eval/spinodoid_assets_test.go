@@ -35,7 +35,7 @@ func TestEvalGslGradedImportedBodyUsesSharedDomainInsteadOfFramingCube(t *testin
 	const document = `// Scene Size: 1105
 import "lattice/spinodoid";
 importMesh 0 "sole.stl";
-field = spinodoid.fastGaborGraded(2, [pi/2,pi/2,pi/2], 1+p.y/300, [[1,0,0],[0,1,0],[0,0,1]]);
+field = spinodoid.fastGaborGraded(2, [pi/2,pi/2,pi/2], 1+p.y/300, [[1,0,0],[0,1,0],[0,0,1]], [[-56.45, -13.2, -8.25], [63.45, 277.2, 41.25]]);
 return field;`
 	groups, err := e.EvalGsl(context.Background(), nil, document, "", []string{"field"}, [][3]float64{{0, 20, 10}, {0, 240, 10}})
 	if err != nil {
