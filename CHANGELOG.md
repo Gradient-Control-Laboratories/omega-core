@@ -106,6 +106,11 @@ from `1.0.0` onward).
   `gsl_toleranceField`), with an Exaggerate slider (x1 to x1000) so micrometre tolerances read at a
   glance; the Section panel's Band shades where each surface may lie, at least a pixel wide. Documents
   without tolerances compile as before.
+- **Requirements as claims (`tolerance.mostMaterialClaim`, `leastMaterialClaim`, `shaftBand`,
+  `holeBand`, `gradientClaim`)**: the two claims that a surface lies in a band about a reference field,
+  for certify to prove with a measurement slack (over the working tolerances, for every value), ISO 286
+  zones as bands about a cylinder's radial field, and a check that the reference has unit gradient
+  where the band is read.
 - **Relief depth (`material.reliefDepth`, `material.withReliefDepth`)**: a material declares how far
   its relief reaches below its peaks, in row 0's fourth component (until now reserved, 0 for every
   record that sets none). Relief is measured down from the peaks, so the depth is its whole

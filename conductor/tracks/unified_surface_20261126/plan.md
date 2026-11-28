@@ -288,11 +288,23 @@ New tests are added only once the owner agrees them.
       micrometres), its width exaggerated as the view. The CPU device (Fidget only) does not take
       the view. No existing golden moves. Checked in the viewer by the owner. Test (owner's go):
       `TestToleranceField_OnlyForTolerancedDocuments`
-- [ ] Task: Requirements as claims: ISO 286 and profile constructors (`tolerance.shaftDia` and
+- [x] Task: Requirements as claims: ISO 286 and profile constructors (`tolerance.shaftDia` and
       `holeDia` as bands) used inside a certify claim, with a slack for measurement resolution; the
-      least-material claim's band shifted by the surface's `material.reliefDepth`
-- [ ] Task: The edge rule, with the UGF edge exceptions: where a field is not a true distance at a
-      convex edge, a requirement there is refused or computed from an exact round, never overstated
+      least-material claim's band shifted by the surface's `material.reliefDepth`. Built 2026-11-27
+      (owner's choice: library helpers): `tolerance.mostMaterialClaim(made, reference, hi)`,
+      `leastMaterialClaim(made, reference, lo)`, `shaftBand` / `holeBand` (ISO 286 zones as bands
+      about a cylinder's radial reference field). A first cut returned both claims from one
+      `conform` call; a destructured declaration is not moved by its coats (the layer pass skips
+      destructured names), so claims read as built, C proving; each claim is now its own call. The
+      journal through the helpers, as made: A proven 169, envelope proven 5,257, C disproven 2,217,
+      D proven 5,257, as recorded. Tests (owner's go): `TestRequirement_PlatedJournal`,
+      `TestRequirement_Bands`
+- [x] Task: The edge rule, with the UGF edge exceptions: where a field is not a true distance at a
+      convex edge, a requirement there is refused or computed from an exact round, never overstated.
+      Owner's choice: a unit-gradient check, `tolerance.gradientClaim(reference, eps)` certified over
+      the region (the journal's patch: proven in 4,681); its doc says a max of planes keeps unit
+      gradient to its edges, where a band is overstated, so a band near a convex edge is read from
+      an exact round
 - [x] Task: D5: remove the condition arguments from `tolerance.shaftDia` / `holeDia` and
       `bearing.seatDia` / `housingDia`; callers draw the size they make, its `.tolerance` on the
       scalar; a `gsl fix -stdlib` rewrite; `examples/shaft_bearings.gsl` migrated (goldens shown

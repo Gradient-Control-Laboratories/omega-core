@@ -164,3 +164,57 @@ limits(lo, hi) {
 symmetric(w) {
   return [0.0 - w, w];
 }
+
+// ===========================================================================
+// Requirements
+// ===========================================================================
+
+// A requirement is a question asked of what is made, not something a shape
+// stores: eval's certify proves each claim below >= 0, less a slack for what
+// a measurement can resolve, over the region it names, at the condition it
+// names (as-made counts the relief exactly). Over the working tolerances
+// (certify's overTolerances) it holds for every value each takes.
+
+/// mostMaterialClaim(made, reference, hi): the claim that `made` has no
+/// material beyond the outer edge of a band about the reference field
+/// `reference` (a true distance near the band; see gradientClaim),
+/// max(hi - reference, made): it holds where it is >= 0. With
+/// leastMaterialClaim it says the surface of `made` lies in the band [lo, hi].
+/// Declare each claim on its own (claim = tolerance.mostMaterialClaim(...);):
+/// a value destructured from a call is not moved by its coats.
+mostMaterialClaim(made, reference, hi) {
+  return max(hi - reference, made);
+}
+
+/// leastMaterialClaim(made, reference, lo): the claim that `made` has
+/// material everywhere inside the inner edge of a band about `reference`,
+/// max(reference - lo, -made): it holds where it is >= 0. Read at
+/// max-material, its band moves out by the surface's material.reliefDepth.
+leastMaterialClaim(made, reference, lo) {
+  return max(reference - lo, 0.0 - made);
+}
+
+/// shaftBand(nominal, zone): an ISO 286 shaft zone as a band [lo, hi] for the claims,
+/// about the reference field r - nominal / 2 of a cylinder of the nominal
+/// diameter (r the distance from its axis): [ei / 2, es / 2].
+shaftBand(nominal, zone) {
+  return [0.5 * shaftLower(nominal, zone), 0.5 * shaftUpper(nominal, zone)];
+}
+
+/// holeBand(nominal, zone): an ISO 286 hole zone as a band [lo, hi] for the claims,
+/// about the reference field nominal / 2 - r of the material round a hole of
+/// the nominal diameter: [-ES / 2, -EI / 2].
+holeBand(nominal, zone) {
+  return [0.0 - 0.5 * holeUpper(nominal, zone), 0.0 - 0.5 * holeLower(nominal, zone)];
+}
+
+/// gradientClaim(reference, eps): the claim, >= 0 where it holds, that the
+/// reference field has unit gradient to within eps,
+/// eps - |length(reference.dp) - 1|: certify
+/// it over the region before trusting a band there. It does not see every
+/// field that is not a true distance (a max of planes keeps unit gradient up
+/// to its edges, where its offsets are sharp and overstate the zone), so
+/// read a band near a convex edge from an exact round.
+gradientClaim(reference, eps) {
+  return eps - abs(length(reference.dp) - 1.0);
+}

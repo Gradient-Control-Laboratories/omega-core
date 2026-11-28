@@ -370,3 +370,48 @@ func TestTolerance_Propagates(t *testing.T) {
 	nearly(t, "untoleranced low", float64(groups[0].Samples[0][0].Value), 0, 0)
 	nearly(t, "untoleranced high", float64(groups[0].Samples[1][0].Value), 0, 0)
 }
+
+// The plated journal's requirements as claims: its k5 band about the nominal
+// cylinder, as made. Drawn 5 µm under and plated 5 µm, it stays inside its
+// envelope and keeps material inside its least-material edge; drawn at the
+// envelope, its plating crosses it. The reference has unit gradient where the
+// band is read.
+func TestRequirement_PlatedJournal(t *testing.T) {
+	doc := strings.Replace(journal, "return plated;", `refField = r - 12.5;
+band = tolerance.shaftBand(25.0, tolerance.k5);
+most = tolerance.mostMaterialClaim(plated, refField, band[1]);
+least = tolerance.leastMaterialClaim(plated, refField, band[0]);
+edge = tolerance.gradientClaim(refField, 0.0001);
+return plated;`, 1)
+	patch := [6]float64{12.495, -0.05, 0, 12.512, 0.05, 0.5}
+	asMade := conditioned(t, eval.AsMade)
+	for _, c := range []struct {
+		name, defs, claim string
+		slack             float64
+		proven            bool
+	}{
+		{"5 µm under, envelope", "", "most", -0.0001, true},
+		{"5 µm under, least material", "", "least", 0, true},
+		{"at the envelope, plated", "seat = r - rMax;", "most", -0.0001, false},
+		{"unit gradient", "", "edge", 0, true},
+	} {
+		r, err := asMade.Certify(t.Context(), nil, doc, c.defs, c.claim, patch, c.slack, 0)
+		require.NoError(t, err)
+		if c.proven && !r.Proven || !c.proven && !r.Disproven {
+			t.Errorf("%s: %+v", c.name, r)
+		}
+	}
+}
+
+// ISO 286 bands about a cylinder's radial reference field: a k5 shaft at 25
+// between 1 and 5.5 µm out, an H7 hole at 52 between 0 and 15 µm out, about
+// the field of the material round it (signs reversed).
+func TestRequirement_Bands(t *testing.T) {
+	groups, err := eval.New(&source.MockManager{}, nil).EvalGsl(t.Context(), nil, "return sphere(1.0);", "",
+		[]string{"tolerance.shaftBand(25.0, tolerance.k5)", "tolerance.holeBand(52.0, tolerance.H7)"}, [][3]float64{{0, 0, 0}})
+	require.NoError(t, err)
+	for i, want := range [][2]float64{{0.001, 0.0055}, {-0.015, 0}} {
+		nearly(t, "band low", float64(groups[i].Samples[0][0].Value), want[0], 1e-7)
+		nearly(t, "band high", float64(groups[i].Samples[1][0].Value), want[1], 1e-7)
+	}
+}
