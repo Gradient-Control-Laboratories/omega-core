@@ -121,19 +121,32 @@ width(designation) {
 
 /// The journal a bearing's inner ring seats on, its bore made to the ISO 286
 /// shaft `zone` (mechanical/tolerance: k5 or k6 for an inner ring that turns
-/// under load, j5 or j6 for a light fit, m, n and p for heavier ones) at the
-/// maximum or minimum material `condition`: list shaft.diameter of it.
+/// under load, j5 or j6 for a light fit, m, n and p for heavier ones): the size
+/// it is made to, the zone's middle, its working tolerance seatZone.
 ///
-///   shaft.diameter(bearing.seatDia(6205.0, tolerance.k5, tolerance.maxMaterial), 10.0, 25.0)
-seatDia(designation, zone, condition) {
-  return tolerance.shaftDia(bore(designation), zone, condition);
+///   seat = bearing.seatDia(6205.0, tolerance.k5);
+///   seat.tolerance = bearing.seatZone(6205.0, tolerance.k5);
+///   shaft.diameter(seat, 10.0, 25.0)
+seatDia(designation, zone) {
+  return tolerance.shaftDia(bore(designation), zone);
+}
+
+/// The journal's zone as a working tolerance about seatDia.
+seatZone(designation, zone) {
+  return tolerance.shaftZone(bore(designation), zone);
 }
 
 /// The housing bore a bearing's outer ring seats in, its outside diameter made
 /// to the ISO 286 hole `zone` (H7 for an outer ring free to creep, J, K or M
-/// for tighter ones) at the maximum or minimum material `condition`.
-housingDia(designation, zone, condition) {
-  return tolerance.holeDia(outerDia(designation), zone, condition);
+/// for tighter ones): the size it is made to, the zone's middle, its working
+/// tolerance housingZone.
+housingDia(designation, zone) {
+  return tolerance.holeDia(outerDia(designation), zone);
+}
+
+/// The housing bore's zone as a working tolerance about housingDia.
+housingZone(designation, zone) {
+  return tolerance.holeZone(outerDia(designation), zone);
 }
 
 /// The smallest chamfer r_s min on the rings' corners, which a seat's fillet

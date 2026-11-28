@@ -36,6 +36,12 @@ var stdlibFixer = Fixer{
      intersectRoundExact(a, b, n1, n2) with 5-argument value calls with radius 0:
        unionRoundExact(() { return a; }, () { return b; }, n1, n2)
          -> unionRoundExact(a, b, 0, n1, n2)
+   - Replaces removed 3-argument calls that took a material condition with the
+     size they gave, the nominal plus that condition's deviation:
+       tolerance.shaftDia(25.0, tolerance.k5, tolerance.maxMaterial)
+         -> (25.0 + tolerance.shaftUpper(25.0, tolerance.k5))
+     and likewise tolerance.holeDia, bearing.seatDia and bearing.housingDia
+     (a condition it cannot read is reported instead).
 
 2. Manual migration hints (reported to output, file left unchanged):
    - Calls to removed builtin 3D lofting functions (sweepLoft, sweepLoftScale,
@@ -73,6 +79,8 @@ func applyStdlibFix(src string) (string, bool, []Note, error) {
 			break
 		}
 		edits := collectRoundExactEdits(curr, res.Package.Files[0])
+		conditionEdits, _ := collectConditionEdits(curr, res.Package.Files[0])
+		edits = append(edits, conditionEdits...)
 		if len(edits) == 0 {
 			break
 		}
@@ -86,6 +94,8 @@ func applyStdlibFix(src string) (string, bool, []Note, error) {
 	var notes []Note
 	if res, err := parser.ParsePackage([]string{curr}); err == nil && res.Package != nil && len(res.Package.Files) > 0 && res.Package.Files[0] != nil {
 		notes = collectRemovedStdlibNotes(res.Package.Files[0])
+		_, conditionNotes := collectConditionEdits(curr, res.Package.Files[0])
+		notes = append(notes, conditionNotes...)
 	}
 
 	out := curr

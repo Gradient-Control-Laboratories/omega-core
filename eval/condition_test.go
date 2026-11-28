@@ -114,7 +114,7 @@ func TestCondition_Certify(t *testing.T) {
 // 3.14 µm deep) and machined 5 µm under its maximum-material size, then plated
 // 5 µm over the turning.
 const journal = `
-rMax = tolerance.shaftDia(25.0, tolerance.k5, tolerance.maxMaterial) / 2.0;
+rMax = (25.0 + tolerance.shaftUpper(25.0, tolerance.k5)) / 2.0;
 steelMat, steelColor = metal.steel();
 fMat, fColor, fHeight, fSlope = machined.turned(steelMat, steelColor, [0, 0, 0], [0, 0, 1], 0.1, 0.4);
 r = sqrt(p.x * p.x + p.y * p.y);

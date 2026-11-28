@@ -12,6 +12,15 @@ from `1.0.0` onward).
 
 ### Breaking
 
+- **`tolerance.shaftDia` / `holeDia` and `bearing.seatDia` / `housingDia` give the size made**: the
+  three-argument forms that took a material condition, and `tolerance.maxMaterial` / `minMaterial`,
+  are removed. The two-argument forms return the zone's middle, the size a part is made to
+  (`tolerance.shaftDia(25.0, tolerance.k5)` is 25.0065), and `tolerance.shaftZone` / `holeZone`,
+  `bearing.seatZone` / `housingZone` give the zone about it as a working tolerance for the value's
+  `.tolerance`. `gsl fix -stdlib` rewrites an old call to the size it gave, the nominal plus that
+  condition's deviation (`(25.0 + tolerance.shaftUpper(25.0, tolerance.k5))`), so a migrated document
+  does not move; a condition it cannot read is reported. `examples/shaft_bearings.gsl` now seats its
+  bearings at the k5 zone's middle with the zone as the seat's tolerance.
 - **Changed Go module path to `github.com/Gradient-Control-Laboratories/omega-core`**: The root
   `go.mod` module declaration and all internal package import paths changed from
   `gradientcontrol.com/omega/core` to `github.com/Gradient-Control-Laboratories/omega-core` so

@@ -12,14 +12,22 @@
 //
 //   tolerance.shaftUpper(25.0, tolerance.k5)   // 0.011
 //   tolerance.shaftLower(25.0, tolerance.k5)   // 0.002
-//   tolerance.shaftDia(25.0, tolerance.k5, tolerance.maxMaterial)   // 25.011
+//   tolerance.shaftDia(25.0, tolerance.k5)    // 25.0065, the size made
+//   tolerance.shaftZone(25.0, tolerance.k5)   // [-0.0045, 0.0045] about it
+//
+// A part is drawn at the size it is made to, the zone's middle, and carries the
+// zone as its working tolerance, which certify, propagation and the viewer read:
+//
+//   seat = tolerance.shaftDia(25.0, tolerance.k5);
+//   seat.tolerance = tolerance.shaftZone(25.0, tolerance.k5);
 //
 // Everything is in millimetres. A size out of the table's ranges reads zero.
 //
 // THE ZONES are those bearing seats are made to (and a good many other fits):
 // shafts j5, j6, k5, k6, m5, m6, n6 and p6, holes H6, H7, J6, J7, K6, K7, M6 and
 // M7. MAXIMUM MATERIAL is the largest shaft and the smallest hole, the
-// condition a fit binds at; minimum material the other.
+// condition a fit binds at (nominal + es, nominal + EI); minimum material the
+// other (nominal + ei, nominal + ES).
 //
 // THE TABLE is ISO 286-2's limit deviations, in micrometres, one row per
 // range of nominal size, "over lo up to and including hi": lo, hi, IT5, IT6,
@@ -76,11 +84,6 @@ IT5 = 5.0;
 IT6 = 6.0;
 IT7 = 7.0;
 
-/// The material conditions, for shaftDia and holeDia: the largest shaft and
-/// the smallest hole, or the other way round.
-maxMaterial = 1.0;
-minMaterial = 2.0;
-
 // toleranceColumn: column `col` of the row whose range holds `nominal`, over
 // its lower end up to and including its upper, in micrometres; zero outside
 // the table.
@@ -117,16 +120,30 @@ holeLower(nominal, zone) {
   return toleranceColumn(nominal, 22.0 + 2.0 * zone) / 1000.0;
 }
 
-/// A shaft made to `zone` at a `nominal` size, at its maximum or minimum
-/// material `condition`: nominal + es or nominal + ei.
-shaftDia(nominal, zone, condition) {
-  return nominal + (condition < 1.5 ? shaftUpper(nominal, zone) : shaftLower(nominal, zone));
+/// The size a shaft made to `zone` at a `nominal` size is made to: the zone's
+/// middle, nominal + (es + ei) / 2. Its working tolerance is shaftZone.
+shaftDia(nominal, zone) {
+  return nominal + 0.5 * (shaftUpper(nominal, zone) + shaftLower(nominal, zone));
 }
 
-/// A hole made to `zone` at a `nominal` size, at its maximum or minimum
-/// material `condition`: nominal + EI or nominal + ES.
-holeDia(nominal, zone, condition) {
-  return nominal + (condition < 1.5 ? holeLower(nominal, zone) : holeUpper(nominal, zone));
+/// A shaft zone as a working tolerance about shaftDia: [-(es - ei) / 2,
+/// (es - ei) / 2], for the value's .tolerance.
+shaftZone(nominal, zone) {
+  half = 0.5 * (shaftUpper(nominal, zone) - shaftLower(nominal, zone));
+  return [0.0 - half, half];
+}
+
+/// The size a hole made to `zone` at a `nominal` size is made to: the zone's
+/// middle, nominal + (ES + EI) / 2. Its working tolerance is holeZone.
+holeDia(nominal, zone) {
+  return nominal + 0.5 * (holeUpper(nominal, zone) + holeLower(nominal, zone));
+}
+
+/// A hole zone as a working tolerance about holeDia: [-(ES - EI) / 2,
+/// (ES - EI) / 2], for the value's .tolerance.
+holeZone(nominal, zone) {
+  half = 0.5 * (holeUpper(nominal, zone) - holeLower(nominal, zone));
+  return [0.0 - half, half];
 }
 
 // ===========================================================================

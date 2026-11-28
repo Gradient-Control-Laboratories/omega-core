@@ -293,10 +293,18 @@ New tests are added only once the owner agrees them.
       least-material claim's band shifted by the surface's `material.reliefDepth`
 - [ ] Task: The edge rule, with the UGF edge exceptions: where a field is not a true distance at a
       convex edge, a requirement there is refused or computed from an exact round, never overstated
-- [ ] Task: D5: remove the condition arguments from `tolerance.shaftDia` / `holeDia` and
+- [x] Task: D5: remove the condition arguments from `tolerance.shaftDia` / `holeDia` and
       `bearing.seatDia` / `housingDia`; callers draw the size they make, its `.tolerance` on the
       scalar; a `gsl fix -stdlib` rewrite; `examples/shaft_bearings.gsl` migrated (goldens shown
-      first); a CHANGELOG `Breaking` entry
+      first); a CHANGELOG `Breaking` entry. Done 2026-11-27 (owner's choices): the two-argument forms
+      give the zone's middle, with `shaftZone` / `holeZone` / `seatZone` / `housingZone` as the working
+      tolerance about it; `gsl fix -stdlib` rewrites an old call to its exact size, nominal plus the
+      condition's deviation (`cmd/fix/internal/fix/tolerance_args.go`), and reports a condition it
+      cannot read; the example seats at the zone's middle with `.tolerance`, no golden covering it;
+      the tests that used the old forms (`TestBearing_SeatsInAZone`, the journal in
+      `condition_test.go`) rewritten to the fixer's exact equivalents, same values (owner's go).
+      `../omega-dm` read (owner's go): it has no copies of these functions. Tests (owner's go):
+      `TestStdlibFix_ConditionArgumentsBecomeDeviations`, `TestStdlibFix_UnreadableConditionIsReported`
 - [ ] Task: Phase Verification & Checkpoint
 
 ## Phase 8: `.dp` Through Material Records
