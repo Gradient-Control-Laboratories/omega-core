@@ -178,13 +178,6 @@ packages across their dependency graphs. Every one offers a permissive option
   A binary that includes them must be accompanied by the source of those
   crates, which is available from crates.io and, for the vendored copies, this
   repository.
-- **Fonts embedded by `epaint` 0.27 (egui `default_fonts`)** are compiled into
-  the `render` library and the `omega_tape` Python extension:
-  - Ubuntu-Light, Ubuntu Font Licence 1.0 (Appendix H).
-  - NotoEmoji-Regular, SIL OFL 1.1.
-  - Hack-Regular, MIT with the Bitstream Vera License and DejaVu public-domain
-    additions.
-  - emoji-icon-font, MIT, Copyright (c) John Slegers.
 - **Apache-2.0 only:** `nalgebra`, `nalgebra-macros`, `simba`, `approx`, `prost`,
   `prost-derive`, `prost-build`, `prost-types`, `ab_glyph`, `ab_glyph_rasterizer`,
   `owned_ttf_parser`, `codespan-reporting`, `spirv`, `glutin_wgl_sys`,
