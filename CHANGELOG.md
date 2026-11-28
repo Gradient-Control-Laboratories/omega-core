@@ -91,6 +91,12 @@ from `1.0.0` onward).
   document's working tolerances: `(boreR - zinc).tolerance` is the two combined, and a shape's is a
   field, its range at each point (on a plated bore, the boring's and the zinc's on the bore, the
   zinc's alone outside). Read in a `gsl eval` query, it counts the coats at the request's condition.
+- **Viewer: parts at their most or least material**: for a document with working tolerances, the
+  Render panel's Detail section draws each part at its most material, nominal, or least material,
+  each surface moved by its own propagated tolerance (`Program.ToleranceReturns`, the WGSL
+  `gsl_toleranceField`), with an Exaggerate slider (x1 to x1000) so micrometre tolerances read at a
+  glance; the Section panel's Band shades where each surface may lie, at least a pixel wide. Documents
+  without tolerances compile as before.
 - **Relief depth (`material.reliefDepth`, `material.withReliefDepth`)**: a material declares how far
   its relief reaches below its peaks, in row 0's fourth component (until now reserved, 0 for every
   record that sets none). Relief is measured down from the peaks, so the depth is its whole

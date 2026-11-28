@@ -27,6 +27,11 @@ func LowerReturnProperties(prog *program.Program) error {
 	if err := expandReturnDerivs(prog, lastFile.Returns); err != nil {
 		return err
 	}
+	// Each return's working tolerance, for a viewer to draw the part at its
+	// most or least material; nothing for a document that declares none.
+	if err := lowerToleranceReturns(prog); err != nil {
+		return err
+	}
 	colorFields, err := layeredPropertyFields(prog.Primary, prog.GetImport, colorSpec, lay)
 	if err != nil {
 		return fmt.Errorf("lower color returns: %w", err)

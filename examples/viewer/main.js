@@ -21,6 +21,7 @@ import {
     setFieldExternal,
     setFieldCoatings,
     setFieldRelief,
+    setFieldBand,
     setFieldColor,
     setShapeVisible,
     setSlotVisible,
@@ -1346,6 +1347,16 @@ document.getElementById("field-coatings").addEventListener("change", (e) => {
 
 document.getElementById("field-relief").addEventListener("change", (e) => {
     setFieldRelief(e.target.checked);
+});
+
+// Band shades the section's tolerance band, its width exaggerated by the
+// Render panel's Exaggerate slider (10 to its value), as the tolerance view is.
+const toleranceScale = () => Math.pow(10, Number(document.getElementById("render-tolerance-scale")?.value ?? 0));
+document.getElementById("field-band").addEventListener("change", (e) => {
+    setFieldBand(e.target.checked ? toleranceScale() : 0);
+});
+document.getElementById("render-tolerance-scale")?.addEventListener("input", () => {
+    if (document.getElementById("field-band").checked) setFieldBand(toleranceScale());
 });
 
 // Color shows the cut faces in each shape's color, so the controls that shape

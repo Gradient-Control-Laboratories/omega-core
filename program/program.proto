@@ -496,6 +496,13 @@ message PackageFile {
     // height as a whole, as before. Render only: meshing and export keep the
     // returns.
     repeated Operand      displacedReturns = 14;
+
+    // Lowered working tolerance of each return, parallel to returns on the
+    // primary package's last file: a vec2 [lo, hi] at each point, the offsets
+    // its distance takes to first order over the document's working tolerances
+    // (x.tolerance). Set only when the document declares one; render only, for
+    // a viewer to draw the part at its most or least material.
+    repeated Operand      toleranceReturns = 15;
 }
 
 enum MeshSdfKind {

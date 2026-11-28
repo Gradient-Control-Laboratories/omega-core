@@ -270,8 +270,24 @@ New tests are added only once the owner agrees them.
       in a query it is taken at the condition. On the plated H7 bore: `boreR - zinc` reads ±4.5 µm;
       the plated block ±4.5 µm on its bore and ±1.5 µm outside as made, ±3 µm and 0 as built; the
       shaft ±1.6 µm; nothing toleranced reads [0, 0]. Test (owner's go): `TestTolerance_Propagates`
-- [ ] Task: The viewer draws a shape's min and max surfaces (D minus its tolerance's max and min); the
-      Section panel gets a Min / Max toggle beside Coatings and Relief
+- [x] Task: The viewer draws a shape's min and max surfaces (D minus its tolerance's max and min); the
+      Section panel gets a Min / Max toggle beside Coatings and Relief. Built 2026-11-27 as the owner
+      chose: Render › Detail › Tolerance, Most material / Nominal / Least material, with an Exaggerate
+      slider (x1 to x1000, log), and a Band checkbox in the Section panel. Program gains
+      `toleranceReturns` (proto field 15, regenerated), lowered by `LowerReturnProperties` only for a
+      document that declares a tolerance (`property/tolerance.go`, the returns' propagated tolerance
+      as built: coats not counted, the owner's choice) and carried through every pass that walks the
+      return slices (clone, refs, link, types, inline, unroll, topofold, warpfold, deadcode, lower,
+      meshfold, meshslots, textures, auto-import, eval fold, variation). WGSL emits
+      `gsl_toleranceField(p, time, idx)` (`codegen/tolerance.go`, `build.ToleranceReturnsBuilder`).
+      The viewer offsets the winning return's distance by `lo` or `hi` times the exaggeration in the
+      clipped `sdShape` wrapper and, for the per-return displaced composite, `gsl_tolMoved`; every
+      tier (Simple, Color, Standard, Progressive) sets the view from `surfaceKnobs.w`, the sign the
+      side and the size the exaggeration. The band shades, in the cut, where each shape's surface
+      may lie between its most and least material, at least a pixel wide (tolerances are
+      micrometres), its width exaggerated as the view. The CPU device (Fidget only) does not take
+      the view. No existing golden moves. Checked in the viewer by the owner. Test (owner's go):
+      `TestToleranceField_OnlyForTolerancedDocuments`
 - [ ] Task: Requirements as claims: ISO 286 and profile constructors (`tolerance.shaftDia` and
       `holeDia` as bands) used inside a certify claim, with a slack for measurement resolution; the
       least-material claim's band shifted by the surface's `material.reliefDepth`

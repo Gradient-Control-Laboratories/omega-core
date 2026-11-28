@@ -315,6 +315,15 @@ func (p *Program) DisplacedReturns() []*Operand {
 	return p.Primary.Files[len(p.Primary.Files)-1].DisplacedReturns
 }
 
+// ToleranceReturns returns the lowered working tolerance of each return, a
+// vec2 [lo, hi] of offsets of its distance (see the field), or nil.
+func (p *Program) ToleranceReturns() []*Operand {
+	if len(p.Primary.Files) == 0 {
+		return nil
+	}
+	return p.Primary.Files[len(p.Primary.Files)-1].ToleranceReturns
+}
+
 // ModuleFunction finds a package-local function declaration with the given
 // name and parameter count.
 func ModuleFunction(pkg *Package, name string, paramCount int) *Function {

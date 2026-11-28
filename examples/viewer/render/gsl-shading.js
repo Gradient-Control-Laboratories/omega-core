@@ -56,6 +56,9 @@ import { GSL_ENVIRONMENT_WGSL } from "./gsl-environment.js";
 //                         1, the default, is one pixel; 0 filters nothing,
 //                         so detail finer than a pixel aliases; above 1
 //                         fades detail and widens sub-pixel lines sooner
+//   w  toleranceView      draws a part with working tolerances
+//                         (x.tolerance) at its most material, -1, as
+//                         nominal, 0, the default, or at its least, 1
 export const SHADING_DEFAULTS = Object.freeze({
   lightScale: 2.0,
   ambientScale: 1.25,
@@ -68,6 +71,7 @@ export const SHADING_DEFAULTS = Object.freeze({
   displacementScale: 1.0,
   marchFade: 0,
   pixelFilter: 1,
+  toleranceView: 0,
 });
 
 export const shadingKnobsU = uniform(
@@ -89,7 +93,7 @@ export const glassKnobsU = uniform(
 );
 
 export const surfaceKnobsU = uniform(
-  new THREE.Vector4(SHADING_DEFAULTS.displacementScale, SHADING_DEFAULTS.marchFade, SHADING_DEFAULTS.pixelFilter, 0),
+  new THREE.Vector4(SHADING_DEFAULTS.displacementScale, SHADING_DEFAULTS.marchFade, SHADING_DEFAULTS.pixelFilter, SHADING_DEFAULTS.toleranceView),
 );
 
 // BACK_FACE_DIM is how bright every tier draws a surface seen from behind,
@@ -224,7 +228,7 @@ export function getShading() {
   return {
     lightScale: v.x, ambientScale: v.y, exposure: v.z, warmLightHeight: v.w,
     glassSamples: g.x, glassCone: g.y, glassBounces: g.z, glassSteps: g.w,
-    displacementScale: s.x, marchFade: s.y, pixelFilter: s.z,
+    displacementScale: s.x, marchFade: s.y, pixelFilter: s.z, toleranceView: s.w,
   };
 }
 
@@ -235,7 +239,7 @@ export function setShading(patch) {
   const next = { ...(patch ? getShading() : SHADING_DEFAULTS), ...(patch || {}) };
   shadingKnobsU.value.set(next.lightScale, next.ambientScale, next.exposure, next.warmLightHeight);
   glassKnobsU.value.set(next.glassSamples, next.glassCone, next.glassBounces, next.glassSteps);
-  surfaceKnobsU.value.set(next.displacementScale, next.marchFade, next.pixelFilter, 0);
+  surfaceKnobsU.value.set(next.displacementScale, next.marchFade, next.pixelFilter, next.toleranceView);
   for (const fn of shadingListeners) fn();
   return getShading();
 }

@@ -347,6 +347,11 @@ func (l *linker) linkFile(fileScope *scope.PkgFileScope) error {
 			return err
 		}
 	}
+	for _, ret := range fileScope.File.ToleranceReturns {
+		if _, err := program.VisitOperand(ret, visitor); err != nil {
+			return err
+		}
+	}
 
 	// Link package-level functions in the file
 	for _, typeScope := range fileScope.Functions {

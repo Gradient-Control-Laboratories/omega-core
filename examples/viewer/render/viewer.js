@@ -230,6 +230,10 @@ const fieldReliefU = uniform(0.0);
 // The section panel's Color toggle: 1 shows the cut faces in each shape's color
 // (inside a solid, its color field; outside, the background) instead of contours.
 const fieldColorU = uniform(0.0);
+// The section panel's Band toggle: when not 0, shades where each shape's surface
+// may lie between its most and least material (a document with working
+// tolerances), its width exaggerated by this factor.
+const fieldBandU = uniform(0.0);
 const bgColorU = uniform(new THREE.Vector3(BG_COLOR.r, BG_COLOR.g, BG_COLOR.b));
 let currentWGSL = "";
 let currentShapeCount = 0;
@@ -855,6 +859,37 @@ function updateShader(wgslCode, shapeCount = 1, shapeNames = [], meshSdfBindings
   const cutColorWGSL = `${cutSrgbWGSL}
                 let cutRGB = select(pow((cutSrgb + vec3<f32>(0.055)) / 1.055, vec3<f32>(2.4)), cutSrgb / 12.92,
                     cutSrgb <= vec3<f32>(0.04045));`;
+  // The tolerance band: in the cut, where a shape's surface may lie between
+  // its most and least material (gsl_toleranceField, for a document with
+  // working tolerances), shaded by the Section panel's Band toggle. dn is the
+  // shape's nominal distance, read through the tolerance view the section
+  // shows (gsl_tolSel). Tolerances are micrometres, far below a pixel at most
+  // zooms, so the band is drawn at least a pixel wide wherever a shape has a
+  // tolerance, and at its true width once zoomed in far enough.
+  const hasTolField = wgslCode.includes("fn gsl_toleranceField(");
+  const tolBandShapes = [];
+  if (hasTolField) {
+    for (let i = 1; i <= currentShapeCount; i++) {
+      tolBandShapes.push(`
+                if (vis${i} > 0.5) {
+                    gsl_fieldFilterIdx = ${i}u;
+                    let bs${i} = ${sectionField};
+                    if (bs${i}.shapeIndex == ${i}u) {
+                        let tb${i} = gsl_toleranceField(hitPoint, time, ${i}u${extraArgsWGSL});
+                        let off${i} = select(tb${i}.y, tb${i}.x, gsl_tolSel < 0.0) * abs(gsl_tolSel);
+                        let dn${i} = bs${i}.distance - off${i};
+                        if (tb${i}.y > tb${i}.x && dn${i} + tb${i}.x * fieldBand < gsl_pw && dn${i} + tb${i}.y * fieldBand > -gsl_pw) {
+                            inBand = true;
+                        }
+                    }
+                }`);
+    }
+  }
+  const tolBandWGSL = `let gsl_tolBandRGB = vec3<f32>(1.0, 0.45, 0.05);
+            var inBand = false;
+            ${hasTolField ? `if (fieldBand > 0.0) {${tolBandShapes.join("")}
+                gsl_fieldFilterIdx = 0u;
+            }` : ""}`;
   // The Color tier's frame: the standard one as if the program authored no
   // material. Its pipeline compiles only once the tier is drawn.
   const { wgslFragmentShader: colorFragment } =
@@ -964,6 +999,8 @@ function updateShader(wgslCode, shapeCount = 1, shapeNames = [], meshSdfBindings
             fieldBuild: f32,
             fieldRelief: f32,
             fieldColor: f32,
+            fieldBand: f32,
+            surfaceKnobs: vec4<f32>,
             bgColor: vec3<f32>,
             ${colorParamsWGSL.join(", ")},
             ${visParamsWGSL.join(", ")}${extraParamsWGSL}
@@ -988,6 +1025,8 @@ function updateShader(wgslCode, shapeCount = 1, shapeNames = [], meshSdfBindings
             let clipPos = projViewZUp * vec4<f32>(hitPoint, 1.0);
             let depth01 = clipPos.z / clipPos.w;
 
+            ${hasTolField ? "gsl_tolSel = surfaceKnobs.w;" : ""}
+            ${tolBandWGSL}
             if (fieldColor > 0.5) {
                 // Color mode: the cut faces in each shape's color, the background
                 // elsewhere, with no contours. Alpha carries depth, as in union mode,
@@ -998,10 +1037,10 @@ function updateShader(wgslCode, shapeCount = 1, shapeNames = [], meshSdfBindings
                 ${colorCutShapes.join("")}
                 gsl_fieldFilterIdx = 0u;
                 if (cut.shapeIndex == 0u || cut.distance > 0.0) {
-                    return vec4<f32>(bgColor, depth01);
+                    return vec4<f32>(select(bgColor, mix(bgColor, gsl_tolBandRGB, 0.7), inBand), depth01);
                 }
                 ${cutColorWGSL}
-                return vec4<f32>(cutRGB, depth01 + 2.0);
+                return vec4<f32>(select(cutRGB, mix(cutRGB, gsl_tolBandRGB, 0.7), inBand), depth01 + 2.0);
             }
 
             if (fieldUnion > 0.5) {
@@ -1012,7 +1051,7 @@ function updateShader(wgslCode, shapeCount = 1, shapeNames = [], meshSdfBindings
                 let shapeRGB = gsl_shapeColor(sd.shapeIndex, ${colorArgsWGSL.join(", ")});
                 let drawn = gsl_drawField(sd.distance, vec4<f32>(shapeRGB, 1.0),
                     vec4<f32>(bgColor, 1.0), max(fieldInterval, 1e-4), fieldFade, fieldExternal);
-                return vec4<f32>(drawn.rgb, depth01);
+                return vec4<f32>(select(drawn.rgb, mix(drawn.rgb, gsl_tolBandRGB, 0.7), inBand), depth01);
             }
 
             // Non-union mode: all shape fields combined additively (all lines visible),
@@ -1022,7 +1061,7 @@ function updateShader(wgslCode, shapeCount = 1, shapeNames = [], meshSdfBindings
             gsl_fieldFilterIdx = 0u;
             let nuAlpha = nuResult.a;
             let lineRGB = select(bgColor, nuResult.rgb / max(nuAlpha, 0.001), nuAlpha > 0.001);
-            return vec4<f32>(mix(bgColor, lineRGB, nuAlpha), depth01);
+            return vec4<f32>(select(mix(bgColor, lineRGB, nuAlpha), mix(mix(bgColor, lineRGB, nuAlpha), gsl_tolBandRGB, 0.7), inBand), depth01);
         }
     `),
     [
@@ -1070,6 +1109,8 @@ function updateShader(wgslCode, shapeCount = 1, shapeNames = [], meshSdfBindings
     fieldBuild: fieldBuildU,
     fieldRelief: fieldReliefU,
     fieldColor: fieldColorU,
+    fieldBand: fieldBandU,
+    surfaceKnobs: surfaceKnobsU,
     bgColor: bgColorU,
     ...colorUniforms,
     ...visUniforms,
@@ -2374,6 +2415,14 @@ export function setFieldRelief(enabled) {
 // of the field's contours.
 export function setFieldColor(enabled) {
   fieldColorU.value = enabled ? 1.0 : 0.0;
+  scheduleRender();
+}
+
+// setFieldBand shades the section's tolerance band, where each shape's surface
+// may lie between its most and least material, its width exaggerated by scale
+// (1 as it is); 0 turns it off.
+export function setFieldBand(scale) {
+  fieldBandU.value = scale > 0 ? scale : 0.0;
   scheduleRender();
 }
 

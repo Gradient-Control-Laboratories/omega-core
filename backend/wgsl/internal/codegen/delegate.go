@@ -115,6 +115,9 @@ type Delegate struct {
 	// materialFieldSrc is the generated gsl_materialField function (empty when
 	// the program authors no material), woven in after colorFieldSrc.
 	materialFieldSrc string
+	// toleranceFieldSrc is the generated gsl_toleranceField function (empty
+	// unless the document declares a working tolerance).
+	toleranceFieldSrc string
 	// gradFieldSrc is the generated gsl_gradField function (empty unless
 	// assembly lowered analytic gradients), woven in after materialFieldSrc.
 	gradFieldSrc string

@@ -78,7 +78,7 @@ export const GSL_DISPLACE_STATE_WGSL = `var<private> gsl_dispScale: f32 = 1.0;`;
 // to fill in, like every other module here. The call to gsl_sdShapeDisplaced
 // is written in full: its displacement scale sits before the suffix, where
 // injectExtraArgs would not put it.
-export function displaceSampleWGSL({ materialAtIdx, extraParamsWGSL, parts = false, perReturn = false, scaleVar = false, buildVar = false }) {
+export function displaceSampleWGSL({ materialAtIdx, extraParamsWGSL, parts = false, perReturn = false, scaleVar = false, buildVar = false, tolerance = false }) {
   if (perReturn) {
     // Every height in gsl_sdShapeDisplaced is scaled by its scale arguments,
     // relief by the third and build by the fourth, both w here: the march
@@ -96,7 +96,7 @@ fn gsl_displaceSample(p: vec3<f32>, sd: gsl_shape, time: f32${extraParamsWGSL}) 
     if (gsl_dispScale == 0.0) { return sd; }
     let w = gsl_dispScale${partScale};
     if (w == 0.0) {${zeroScale} return sd; }
-    return gsl_sdShapeDisplaced(p, time, w, w${argsFromParams(extraParamsWGSL)});
+    ${tolerance ? `return gsl_tolMoved(p, time, gsl_sdShapeDisplaced(p, time, w, w${argsFromParams(extraParamsWGSL)})${argsFromParams(extraParamsWGSL)});` : `return gsl_sdShapeDisplaced(p, time, w, w${argsFromParams(extraParamsWGSL)});`}
 }
 `;
   }
@@ -131,7 +131,12 @@ fn gsl_displaceSample(p: vec3<f32>, sd: gsl_shape, time: f32${extraParamsWGSL}) 
 //
 //   gsl_clipOn     1 while clipping
 //   gsl_clipPlane  (n, w) with n unit and dot(n, p) + w > 0 on the cut-away side
+// gsl_tolSel is the tolerance view a fragment sets at entry (surfaceKnobs.w):
+// negative draws a part with working tolerances at its most material, positive
+// at its least, 0 as nominal, its size the exaggeration the offsets are drawn
+// at (1 as they are). clipSdShapeWGSL applies it.
 export const GSL_CLIP_STATE_WGSL = `var<private> gsl_clipOn: f32 = 0.0;
+var<private> gsl_tolSel: f32 = 0.0;
 var<private> gsl_clipPlane: vec4<f32> = vec4<f32>(0.0, 0.0, 1.0, 0.0);
 fn gsl_clipShape(p: vec3<f32>, s: gsl_shape) -> gsl_shape {
     if (gsl_clipOn == 0.0) { return s; }
@@ -159,13 +164,31 @@ export function clipSdShapeWGSL(wgslCode) {
   const m = wgslCode.match(/\bfn sdShape\(([^)]*)\)\s*->\s*gsl_shape/);
   if (!m) return wgslCode;
   const params = m[1];
-  const args = params
+  const argList = params
     .split(",")
     .map((s) => s.trim())
     .filter((s) => s !== "")
-    .map((s) => s.split(":")[0].trim())
-    .join(", ");
-  return wgslCode.replace(/\bfn sdShape\(/, "fn gsl_sdShapeUnclipped(") + `
+    .map((s) => s.split(":")[0].trim());
+  const args = argList.join(", ");
+  const renamed = wgslCode.replace(/\bfn sdShape\(/, "fn gsl_sdShapeUnclipped(");
+  // A document with working tolerances: the winning return's distance moves by
+  // its tolerance's low offset (most material) or high one (least), by the
+  // tolerance view gsl_tolSel, before the clip.
+  if (/\bfn gsl_toleranceField\(/.test(wgslCode)) {
+    const tolArgs = ["p", "time", "s.shapeIndex", ...argList.slice(2)].join(", ");
+    return renamed + `
+
+fn sdShape(${params}) -> gsl_shape {
+    var s = gsl_sdShapeUnclipped(${args});
+    if (gsl_tolSel != 0.0 && s.shapeIndex != 0u) {
+        let tol = gsl_toleranceField(${tolArgs});
+        s.distance = s.distance + select(tol.y, tol.x, gsl_tolSel < 0.0) * abs(gsl_tolSel);
+    }
+    return gsl_clipShape(p, s);
+}
+`;
+  }
+  return renamed + `
 
 fn sdShape(${params}) -> gsl_shape {
     return gsl_clipShape(p, gsl_sdShapeUnclipped(${args}));
@@ -187,9 +210,11 @@ fn sdShape(${params}) -> gsl_shape {
 // otherwise the winner's material moves it, as the march's plain path does.
 // The sdShape call is written bare, for injectExtraArgs; the
 // gsl_sdShapeDisplaced call is written in full.
-export function sectionShapeWGSL({ materialAtIdx, extraParamsWGSL, perReturn = false }) {
+export function sectionShapeWGSL({ materialAtIdx, extraParamsWGSL, perReturn = false, tolerance = false }) {
   const moved = perReturn
-    ? `return gsl_sdShapeDisplaced(p, time, wRelief, wBuild${argsFromParams(extraParamsWGSL)});`
+    ? (tolerance
+        ? `return gsl_tolMoved(p, time, gsl_sdShapeDisplaced(p, time, wRelief, wBuild${argsFromParams(extraParamsWGSL)})${argsFromParams(extraParamsWGSL)});`
+        : `return gsl_sdShapeDisplaced(p, time, wRelief, wBuild${argsFromParams(extraParamsWGSL)});`)
     : `let vol = (${materialAtIdx("p", "sd.shapeIndex")}).volume;
     return gsl_shape(sd.distance - (vol.z - vol.w) * wRelief - vol.w * wBuild, sd.shapeIndex);`;
   return `
@@ -240,4 +265,21 @@ function argsFromParams(params) {
 // deliberately left alone: they show the geometry as it is built.
 export function renameToDisplaced(wgsl) {
   return wgsl.replace(/\bsdShape\(/g, "gsl_sdDisplaced(");
+}
+
+// tolMovedWGSL returns the source of
+//
+//   fn gsl_tolMoved(p: vec3<f32>, time: f32, s: gsl_shape, <suffix>) -> gsl_shape
+//
+// s with its winning return moved by the tolerance view (gsl_tolSel): what
+// the clipped sdShape does to the compiled field, for the per-return displaced
+// composite, which computes each return's distance itself and so never passes
+// through it. For a document with working tolerances (gsl_toleranceField).
+export function tolMovedWGSL(extraParamsWGSL) {
+  return `
+fn gsl_tolMoved(p: vec3<f32>, time: f32, s: gsl_shape${extraParamsWGSL}) -> gsl_shape {
+    if (gsl_tolSel == 0.0 || s.shapeIndex == 0u) { return s; }
+    let tol = gsl_toleranceField(p, time, s.shapeIndex${argsFromParams(extraParamsWGSL)});
+    return gsl_shape(s.distance + select(tol.y, tol.x, gsl_tolSel < 0.0) * abs(gsl_tolSel), s.shapeIndex);
+}`;
 }
