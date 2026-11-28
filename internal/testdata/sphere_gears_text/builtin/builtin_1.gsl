@@ -1,34 +1,34 @@
 import vector "vector";
 
-intersectRound(d1, d2, radius) {
-   inset1 = max((d1 + radius), 0)
-   inset2 = max((d2 + radius), 0)
+intersectRound(a, b, radius) {
+   inset1 = max((a + radius), 0)
+   inset2 = max((b + radius), 0)
 
-   return (min(neg(radius), max(d1, d2)) + length(collect(inset1, inset2)));
+   return (min(neg(radius), max(a, b)) + length(collect(inset1, inset2)));
 }
 
-unionRound(d1, d2, radius) {
-   return neg(intersectRound(neg(d1), neg(d2), radius));
+unionRound(a, b, radius) {
+   return neg(intersectRound(neg(a), neg(b), radius));
 }
 
-intersectChamfer(d1, d2, offset) {
-   face = max(d1, d2)
-   edge = ((d1 + d2 + offset) / sqrt2)
+intersectChamfer(a, b, offset) {
+   face = max(a, b)
+   edge = ((a + b + offset) / sqrt2)
 
    return max(face, edge);
 }
 
-unionChamfer(d1, d2, offset) {
-   return neg(intersectChamfer(neg(d1), neg(d2), offset));
+unionChamfer(a, b, offset) {
+   return neg(intersectChamfer(neg(a), neg(b), offset));
 }
 
 differenceChamfer(target, tool, offset) {
    return intersectChamfer(target, neg(tool), offset);
 }
 
-intersectChamferNormalized(d1, d2, depth, normal1, normal2) {
-   face = max(d1, d2)
-   edge = (((d1 + d2) / max(length(vector.addVector(normal1, normal2)), 1e-06)) + depth)
+intersectChamferNormalized(a, b, depth, normalA, normalB) {
+   face = max(a, b)
+   edge = (((a + b) / max(length(vector.addVector(normalA, normalB)), 1e-06)) + depth)
 
    return max(face, edge);
 }

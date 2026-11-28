@@ -56,42 +56,48 @@ type options struct {
 	bodies map[int]bool
 }
 
-// Progress supplies a progress callback to report meshing progress.
-func Progress(fn progress.Callback) Option {
+// WithProgress supplies a progress callback to report meshing progress.
+func WithProgress(fn progress.Callback) Option {
 	return func(o *options) {
 		o.progressFn = fn
 	}
 }
 
-// WithProgress supplies a progress callback to report meshing progress.
-func WithProgress(fn progress.Callback) Option {
-	return Progress(fn)
+// Progress is WithProgress.
+//
+// Deprecated: use WithProgress; Progress will be removed after a release.
+func Progress(fn progress.Callback) Option {
+	return WithProgress(fn)
 }
 
-// Subdivision sets the octree subdivision depth (default: 4).
-func Subdivision(level int) Option {
+// WithSubdivision sets the octree subdivision depth (default: 4).
+func WithSubdivision(level int) Option {
 	return func(o *options) {
 		o.subdivision = level
 	}
 }
 
-// WithSubdivision sets the octree subdivision depth (default: 4).
-func WithSubdivision(level int) Option {
-	return Subdivision(level)
+// Subdivision is WithSubdivision.
+//
+// Deprecated: use WithSubdivision; Subdivision will be removed after a release.
+func Subdivision(level int) Option {
+	return WithSubdivision(level)
 }
 
-// Bbox sets the explicit world-space bounding box for meshing.
-func Bbox(bbox [6]float32) Option {
+// WithBbox sets the explicit world-space bounding box for meshing.
+// If omitted, the bounding box is automatically derived from the program's @scene or AST bounds.
+func WithBbox(bbox [6]float32) Option {
 	return func(o *options) {
 		o.bbox = bbox
 		o.hasBbox = true
 	}
 }
 
-// WithBbox sets the explicit world-space bounding box for meshing.
-// If omitted, the bounding box is automatically derived from the program's @scene or AST bounds.
-func WithBbox(bbox [6]float32) Option {
-	return Bbox(bbox)
+// Bbox is WithBbox.
+//
+// Deprecated: use WithBbox; Bbox will be removed after a release.
+func Bbox(bbox [6]float32) Option {
+	return WithBbox(bbox)
 }
 
 // WithBboxPadCells grows the bounding box by cells of the mesh's own octree, at its subdivision, just before meshing
@@ -103,42 +109,60 @@ func WithBboxPadCells(cells int) Option {
 	}
 }
 
-// Algorithm selects the polygonization algorithm ("marching-cubes" or "mdc").
-func Algorithm(algo string) Option {
+// WithAlgorithm selects the polygonization algorithm ("marching-cubes" or "mdc").
+func WithAlgorithm(algo string) Option {
 	return func(o *options) {
 		o.algo = algo
 	}
 }
 
-// WithAlgorithm selects the polygonization algorithm ("marching-cubes" or "mdc").
-func WithAlgorithm(algo string) Option {
-	return Algorithm(algo)
+// Algorithm is WithAlgorithm.
+//
+// Deprecated: use WithAlgorithm; Algorithm will be removed after a release.
+func Algorithm(algo string) Option {
+	return WithAlgorithm(algo)
 }
 
-// Time sets the animation timestamp for evaluating dynamic geometry (default: 0.0).
-func Time(timeSec float64) Option {
+// WithTime sets the animation timestamp for evaluating dynamic geometry (default: 0.0).
+func WithTime(timeSec float64) Option {
 	return func(o *options) {
 		o.time = timeSec
 	}
 }
 
-// WithTime sets the animation timestamp for evaluating dynamic geometry (default: 0.0).
-func WithTime(timeSec float64) Option {
-	return Time(timeSec)
+// Time is WithTime.
+//
+// Deprecated: use WithTime; Time will be removed after a release.
+func Time(timeSec float64) Option {
+	return WithTime(timeSec)
 }
 
-// MeshOracles registers BVH mesh SDF oracles before meshing.
-func MeshOracles(oracles []meshasset.MeshSdfOracle) Option {
+// WithMeshOracles registers BVH mesh SDF oracles before meshing.
+func WithMeshOracles(oracles []meshasset.MeshSdfOracle) Option {
 	return func(o *options) {
 		o.meshOracles = oracles
 	}
 }
 
-// VdbOracles registers OpenVDB narrow-band level-set oracles before meshing.
-func VdbOracles(oracles []meshasset.VdbOracle) Option {
+// MeshOracles is WithMeshOracles.
+//
+// Deprecated: use WithMeshOracles; MeshOracles will be removed after a release.
+func MeshOracles(oracles []meshasset.MeshSdfOracle) Option {
+	return WithMeshOracles(oracles)
+}
+
+// WithVdbOracles registers OpenVDB narrow-band level-set oracles before meshing.
+func WithVdbOracles(oracles []meshasset.VdbOracle) Option {
 	return func(o *options) {
 		o.vdbOracles = oracles
 	}
+}
+
+// VdbOracles is WithVdbOracles.
+//
+// Deprecated: use WithVdbOracles; VdbOracles will be removed after a release.
+func VdbOracles(oracles []meshasset.VdbOracle) Option {
+	return WithVdbOracles(oracles)
 }
 
 // DecodePackedTriangles unpacks base64+f32 triangle data (9 floats per triangle,

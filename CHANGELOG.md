@@ -12,6 +12,22 @@ from `1.0.0` onward).
 
 ### Breaking
 
+- **The `map` package is renamed `domain`**: `map.rotateXY(...)` is now `domain.rotateXY(...)` and
+  `import "map";` is `import "domain";`, so the package no longer shares its name with the
+  `map(fn, list)` primitive. A document that still says `map.` gets an error naming `domain`, and
+  `gsl fix -domain` rewrites the references and imports. `rotateYZ`, `rotateZX` and `eulerAngles`
+  are now documented.
+- **Honeycomb lattices drop the repeated name**: `honeycomb.squareHoneycomb`, `squareDiagonalHoneycomb` and
+  `squareHoneycombReinforced` are `rectangular`, `rectangularDiagonal` and `rectangularReinforced`;
+  `hexagonalHoneycomb`, `triangularHoneycomb` and `octetHoneycomb` are `hexagonal`, `triangular` and
+  `octet`. `gsl fix -stdlib` rewrites them.
+- **`matrix.inverse` inverts any square matrix**: it was the affine 4×4 inverse, now `matrix.inverseAffine`.
+  An affine matrix gets the same result from either; `inverseAffine` is cheaper.
+- **Graded spinodoids take a `box`**: `gaborGraded(..., box)` and the other graded forms end with `box`, the
+  [min, max] corners, in the field's own coordinates, of the region the field is evaluated over; the table is
+  baked there and nowhere else. The scene and imported-geometry bounds and the periodic fallback are no
+  longer used for spinodoid tables, and the spinodoid builtins take `box` as a 13th argument.
+- **`list` is a builtin**, so a document can no longer declare its own `list` function or variable.
 - **Changed Go module path to `github.com/Gradient-Control-Laboratories/omega-core`**: The root
   `go.mod` module declaration and all internal package import paths changed from
   `gradientcontrol.com/omega/core` to `github.com/Gradient-Control-Laboratories/omega-core` so
@@ -40,6 +56,24 @@ from `1.0.0` onward).
   Help panel teaches `@range` and notes that the properties were removed.
 
 ### Added
+
+- **`list(n)` and `list(n, fn)`**: the list `[0, 1, ..., n - 1]`, or `[fn(0), ..., fn(n - 1)]`, with n known when
+  the document compiles; a function whose parameter sets a list's length is specialized for each constant
+  its calls pass.
+- **Matrices of any size**: `matrix.transpose`, `identity(n)`, `determinant` and `inverse` take any size
+  (`determinant` and `inverse` pivot, so a zero on the diagonal works), and a matrix that varies at run
+  time unrolls them. The sized names (`transpose2/3/4`, `identity3/4`, `determinant2/3/4`, `inverse2/3/4`)
+  and `matrix.scale` (now `multiplyScalar`) are deprecated; `gsl fix -stdlib` rewrites them.
+- **Lattices take a boolean**: every beam lattice that joins struts has a `combine` form that blends every
+  junction. `foam.kelvin` and `foam.rhombicDodecahedral` are the Voronoi foams, the duals of `beam.bcc`
+  and `beam.octet`, and each lattice's docs name its dual. `lattice.bcc` is deprecated for
+  `beam.bcc(cellSize, combine) - beamRadius`, which `gsl fix -stdlib` writes.
+- **Go options are all `With…`**: `assembler.WithSourcePaths`, `WithParser`, `WithExtractUI` and the rest,
+  `mesh.WithMeshOracles`, `tape.WithBbox`, `wgsl.WithStandalone`; the bare names are deprecated for a
+  release. `eval.RenderLitSized`, `RenderLitSizedView` and `RenderLitSizedViewRadiance` are deprecated for
+  `RenderLit(prog, view.Options(width, height, extent, time))`.
+- **Shapes and booleans**: `torus(center, ...)` and `octahedron(center, size)`; every difference takes a list
+  `[target, tool, ...]` and has an operator form, as unions and intersections do.
 
 - Migrated GSL compiler architecture, language specification/migration, golden verification, and
   stdlib tolerance-table documentation from `omega-release/doc/` into `doc/`, synced
@@ -238,6 +272,18 @@ from `1.0.0` onward).
 
 ### Fixed
 
+- **A round chamfer over a list no longer sinks every face**: `intersectChamferRound`, `unionChamferRound`,
+  `differenceChamferRound` and the `…ChamferBlend` forms on a list, and every primitive handed one as its
+  blend, blended the face with itself up to three times, so each face moved in: by about 0.42 of the radius
+  under a round blend, with the field's gradient √3 long there, and by other amounts under Lp and
+  exponential blends. The list forms now equal their two- and three-field forms. `intersectChamferEdges` and
+  `intersectChamferVertices` give `-nothing`, not the sharp intersection, for a list too short to hold an
+  edge or a vertex.
+- **`.second` of a sharp chamfer names the runner-up**: on `intersectChamfer` over a list, and so on a box
+  with a chamfer blend, `.second` equalled the field itself everywhere, and the no-second sentinel (1e30)
+  reached its mins and maxes, so f32 backends and the Go evaluator disagreed on its gradient. A ternary whose
+  condition the build knows (a library's test on constant list indices) now takes its branch before
+  `.second` is expanded, and `.second` names the next face slab or chamfer plane with that piece's gradient.
 - `topofold` now evaluates general UI-derived constant expressions via a scoped `ConstEvalFunc`
   fallback (`eval.ConstPkgSlotsAt`) in `assembler`, rejecting non-finite results, and Rust Cargo
   build scripts (`internal/fidget/internal/rust/build.rs`, `internal/fidget/internal/tape-core/build.rs`,

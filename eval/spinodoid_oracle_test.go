@@ -18,7 +18,7 @@ import (
 //
 // These check that the oracle fidget evaluates is the lattice table that was
 // baked, for both builtins, and that a tape marks the leaf as the lattice, so
-// a reader that wants hodge's field knows to swap it in.
+// a reader that wants the reference field knows to swap it in.
 //
 // Samples come back as float32, so the tolerance is f32 rounding on a field
 // whose values are a few length units.
@@ -146,7 +146,7 @@ func TestSpinodoidBuiltinsAreOneField(t *testing.T) {
 
 // TestGaborSpinodoidTapeLeafIsFast checks what a tape tells its reader: a
 // spinodoid.gabor leaf is the lattice field, in the lattice's oracle-id block
-// and marked fast, so a reader that wants hodge's field knows to swap it in.
+// and marked fast, so a reader that wants the reference field knows to swap it in.
 func TestGaborSpinodoidTapeLeafIsFast(t *testing.T) {
 	res, err := assembler.Assemble([]string{gaborSpinodoidDoc},
 		assembler.SourceManager(source.NewLocalManager("../stdlib")))
@@ -175,5 +175,5 @@ const gaborSpinodoidDoc = "import \"lattice/spinodoid\";\nfield = spinodoid.gabo
 // The fastGaborSpinodoid builtin spelled out: spinodoid.gabor's arguments,
 // with the Cartesian poles and an identity frame.
 const fastSpinodoidDoc = `poles = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
-field = fastGaborSpinodoid(p, 6, [pi / 2, pi / 2, pi / 2], poles, 3, 8, 4096, 0, 0, 1, 1, poles);
+field = fastGaborSpinodoid(p, 6, [pi / 2, pi / 2, pi / 2], poles, 3, 8, 4096, 0, 0, 1, 1, poles, [[0, 0, 0], [0, 0, 0]]);
 return field;`

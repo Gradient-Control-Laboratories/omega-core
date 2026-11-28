@@ -15,8 +15,8 @@ func TestLookupFindsEachKindOfName(t *testing.T) {
 		{"builtin/mesh", []string{"### `builtin/mesh`", "* **`meshUnion`**"}},
 		{"length", []string{"### `length` (a primitive or built-in)"}},
 		{"meshUnion", []string{"### `meshUnion` (a built-in, in builtin/mesh)"}},
-		{"transform.rotate", []string{"### `transform`", "`rotate(shape, origin, direction, angle)`"}},
-		{"unionRound", []string{"### `builtin`", "`unionRound(radius)`", "`unionRound(d1, d2, radius)`"}},
+		{"transform.rotate", []string{"### `transform`", "`rotate(shape, axisOrigin, axisDirection, angle)`"}},
+		{"unionRound", []string{"### `builtin`", "`unionRound(radius)`", "`unionRound(a, b, radius)`"}},
 		{"bcc", []string{"### `lattice`", "### `lattice/beam`", "### `lattice/foam`"}},
 	} {
 		got, err := Lookup(tc.name)
@@ -78,7 +78,7 @@ func TestBriefIsOneLinePerName(t *testing.T) {
 	if n := strings.Count(brief, "- **`unionRound`**"); n != 1 {
 		t.Errorf("unionRound has %d lines in the brief, want 1", n)
 	}
-	for _, w := range []string{"`(d1, d2, radius)`", "`(fields, radius)`", "`(radius)`"} {
+	for _, w := range []string{"`(a, b, radius)`", "`(fields, radius)`", "`(radius)`"} {
 		if !strings.Contains(brief, w) {
 			t.Errorf("the brief lacks unionRound form %s", w)
 		}

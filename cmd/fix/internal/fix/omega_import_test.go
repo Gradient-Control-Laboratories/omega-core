@@ -80,8 +80,8 @@ func TestOmegaImportFixer_Conversions(t *testing.T) {
 		},
 		{
 			name:        "removes middle import . \"omega\" between two imports on same line",
-			in:          "import \"color\"; import . \"omega\"; import \"map\";\nreturn sphere(1);\n",
-			want:        "import \"color\"; import \"map\";\nreturn sphere(1);\n",
+			in:          "import \"color\"; import . \"omega\"; import \"vector\";\nreturn sphere(1);\n",
+			want:        "import \"color\"; import \"vector\";\nreturn sphere(1);\n",
 			wantChanged: true,
 		},
 		{

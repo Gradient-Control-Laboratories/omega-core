@@ -7994,7 +7994,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "classic.wood",
           "arg": 2,
@@ -8039,7 +8039,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor, ${body}Height, ${body}Slope = classic.wood(${ringSpacing}, ${axisOrigin}, ${axisDir}, ${earlywood}, ${latewood}, ${wobble});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor, ${body}Height, ${body}Slope = classic.wood(${ringSpacing}, ${axisOrigin}, ${axisDirection}, ${earlywood}, ${latewood}, ${wobble});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "classic.perlinClouds": {
       "calls": [
@@ -10858,7 +10858,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "organic.bamboo",
           "arg": 1,
@@ -10892,7 +10892,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor, ${body}Height, ${body}Slope = organic.bamboo(${axisOrigin}, ${axisDir}, ${nodeSpacing}, ${age});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor, ${body}Height, ${body}Slope = organic.bamboo(${axisOrigin}, ${axisDirection}, ${nodeSpacing}, ${age});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "organic.bark": {
       "calls": [
@@ -14293,7 +14293,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.americanElm",
           "arg": 1,
@@ -14305,7 +14305,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.americanElm(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.americanElm(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.aromaticCedar": {
       "calls": [
@@ -14324,7 +14324,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.aromaticCedar",
           "arg": 1,
@@ -14336,7 +14336,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.aromaticCedar(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.aromaticCedar(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.beech": {
       "calls": [
@@ -14355,7 +14355,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.beech",
           "arg": 1,
@@ -14367,7 +14367,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.beech(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.beech(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.butternut": {
       "calls": [
@@ -14386,7 +14386,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.butternut",
           "arg": 1,
@@ -14398,7 +14398,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.butternut(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.butternut(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.cherry": {
       "calls": [
@@ -14417,7 +14417,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.cherry",
           "arg": 1,
@@ -14429,7 +14429,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.cherry(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.cherry(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.cherryBirch": {
       "calls": [
@@ -14448,7 +14448,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.cherryBirch",
           "arg": 1,
@@ -14460,7 +14460,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.cherryBirch(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.cherryBirch(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.chestnut": {
       "calls": [
@@ -14479,7 +14479,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.chestnut",
           "arg": 1,
@@ -14491,7 +14491,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.chestnut(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.chestnut(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.chineseElm": {
       "calls": [
@@ -14510,7 +14510,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.chineseElm",
           "arg": 1,
@@ -14522,7 +14522,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.chineseElm(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.chineseElm(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.darkPoplar": {
       "calls": [
@@ -14541,7 +14541,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.darkPoplar",
           "arg": 1,
@@ -14553,7 +14553,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.darkPoplar(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.darkPoplar(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.douglasFir": {
       "calls": [
@@ -14572,7 +14572,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.douglasFir",
           "arg": 1,
@@ -14584,7 +14584,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.douglasFir(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.douglasFir(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.dutchElm": {
       "calls": [
@@ -14603,7 +14603,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.dutchElm",
           "arg": 1,
@@ -14615,7 +14615,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.dutchElm(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.dutchElm(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.ebony": {
       "calls": [
@@ -14634,7 +14634,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.ebony",
           "arg": 1,
@@ -14646,7 +14646,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.ebony(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.ebony(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.englishWalnut": {
       "calls": [
@@ -14665,7 +14665,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.englishWalnut",
           "arg": 1,
@@ -14677,7 +14677,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.englishWalnut(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.englishWalnut(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.europeanAsh": {
       "calls": [
@@ -14696,7 +14696,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.europeanAsh",
           "arg": 1,
@@ -14708,7 +14708,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.europeanAsh(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.europeanAsh(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.europeanSycamore": {
       "calls": [
@@ -14727,7 +14727,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.europeanSycamore",
           "arg": 1,
@@ -14739,7 +14739,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.europeanSycamore(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.europeanSycamore(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.ginkgo": {
       "calls": [
@@ -14758,7 +14758,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.ginkgo",
           "arg": 1,
@@ -14770,7 +14770,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.ginkgo(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.ginkgo(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.hickory": {
       "calls": [
@@ -14789,7 +14789,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.hickory",
           "arg": 1,
@@ -14801,7 +14801,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.hickory(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.hickory(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.hinoki": {
       "calls": [
@@ -14820,7 +14820,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.hinoki",
           "arg": 1,
@@ -14832,7 +14832,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.hinoki(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.hinoki(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.holly": {
       "calls": [
@@ -14851,7 +14851,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.holly",
           "arg": 1,
@@ -14863,7 +14863,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.holly(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.holly(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.honeyLocust": {
       "calls": [
@@ -14882,7 +14882,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.honeyLocust",
           "arg": 1,
@@ -14894,7 +14894,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.honeyLocust(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.honeyLocust(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.horseChestnut": {
       "calls": [
@@ -14913,7 +14913,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.horseChestnut",
           "arg": 1,
@@ -14925,7 +14925,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.horseChestnut(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.horseChestnut(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.japaneseElm": {
       "calls": [
@@ -14944,7 +14944,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.japaneseElm",
           "arg": 1,
@@ -14956,7 +14956,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.japaneseElm(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.japaneseElm(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.japaneseWalnut": {
       "calls": [
@@ -14975,7 +14975,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.japaneseWalnut",
           "arg": 1,
@@ -14987,7 +14987,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.japaneseWalnut(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.japaneseWalnut(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.keyaki": {
       "calls": [
@@ -15006,7 +15006,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.keyaki",
           "arg": 1,
@@ -15018,7 +15018,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.keyaki(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.keyaki(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.lacewood": {
       "calls": [
@@ -15037,7 +15037,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.lacewood",
           "arg": 1,
@@ -15049,7 +15049,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.lacewood(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.lacewood(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.liveOak": {
       "calls": [
@@ -15068,7 +15068,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.liveOak",
           "arg": 1,
@@ -15080,7 +15080,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.liveOak(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.liveOak(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.macassarEbony": {
       "calls": [
@@ -15099,7 +15099,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.macassarEbony",
           "arg": 1,
@@ -15111,7 +15111,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.macassarEbony(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.macassarEbony(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.mahogany": {
       "calls": [
@@ -15130,7 +15130,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.mahogany",
           "arg": 1,
@@ -15142,7 +15142,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.mahogany(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.mahogany(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.norwayMaple": {
       "calls": [
@@ -15161,7 +15161,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.norwayMaple",
           "arg": 1,
@@ -15173,7 +15173,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.norwayMaple(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.norwayMaple(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.oliveAsh": {
       "calls": [
@@ -15192,7 +15192,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.oliveAsh",
           "arg": 1,
@@ -15204,7 +15204,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.oliveAsh(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.oliveAsh(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.osageOrange": {
       "calls": [
@@ -15223,7 +15223,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.osageOrange",
           "arg": 1,
@@ -15235,7 +15235,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.osageOrange(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.osageOrange(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.padauk": {
       "calls": [
@@ -15254,7 +15254,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.padauk",
           "arg": 1,
@@ -15266,7 +15266,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.padauk(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.padauk(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.poplar": {
       "calls": [
@@ -15285,7 +15285,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.poplar",
           "arg": 1,
@@ -15297,7 +15297,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.poplar(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.poplar(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.purpleheart": {
       "calls": [
@@ -15316,7 +15316,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.purpleheart",
           "arg": 1,
@@ -15328,7 +15328,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.purpleheart(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.purpleheart(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.redOak": {
       "calls": [
@@ -15347,7 +15347,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.redOak",
           "arg": 1,
@@ -15359,7 +15359,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.redOak(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.redOak(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.rosewood": {
       "calls": [
@@ -15378,7 +15378,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.rosewood",
           "arg": 1,
@@ -15390,7 +15390,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.rosewood(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.rosewood(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.sakura": {
       "calls": [
@@ -15409,7 +15409,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.sakura",
           "arg": 1,
@@ -15421,7 +15421,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.sakura(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.sakura(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.spruce": {
       "calls": [
@@ -15440,7 +15440,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.spruce",
           "arg": 1,
@@ -15452,7 +15452,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.spruce(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.spruce(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.sugarMaple": {
       "calls": [
@@ -15471,7 +15471,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.sugarMaple",
           "arg": 1,
@@ -15483,7 +15483,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.sugarMaple(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.sugarMaple(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.sugi": {
       "calls": [
@@ -15502,7 +15502,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.sugi",
           "arg": 1,
@@ -15514,7 +15514,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.sugi(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.sugi(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.sycamore": {
       "calls": [
@@ -15533,7 +15533,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.sycamore",
           "arg": 1,
@@ -15545,7 +15545,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.sycamore(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.sycamore(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.teak": {
       "calls": [
@@ -15564,7 +15564,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.teak",
           "arg": 1,
@@ -15576,7 +15576,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.teak(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.teak(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.walnut": {
       "calls": [
@@ -15595,7 +15595,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.walnut",
           "arg": 1,
@@ -15607,7 +15607,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.walnut(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.walnut(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.weatheredOak": {
       "calls": [
@@ -15626,7 +15626,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.weatheredOak",
           "arg": 1,
@@ -15638,7 +15638,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.weatheredOak(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.weatheredOak(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.weatheredWalnut": {
       "calls": [
@@ -15657,7 +15657,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.weatheredWalnut",
           "arg": 1,
@@ -15669,7 +15669,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.weatheredWalnut(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.weatheredWalnut(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.westernRedCedar": {
       "calls": [
@@ -15688,7 +15688,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.westernRedCedar",
           "arg": 1,
@@ -15700,7 +15700,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.westernRedCedar(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.westernRedCedar(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.whiteAsh": {
       "calls": [
@@ -15719,7 +15719,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.whiteAsh",
           "arg": 1,
@@ -15731,7 +15731,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.whiteAsh(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.whiteAsh(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.whiteOak": {
       "calls": [
@@ -15750,7 +15750,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.whiteOak",
           "arg": 1,
@@ -15762,7 +15762,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.whiteOak(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.whiteOak(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.yew": {
       "calls": [
@@ -15781,7 +15781,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.yew",
           "arg": 1,
@@ -15793,7 +15793,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.yew(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.yew(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     },
     "wood.zebrawood": {
       "calls": [
@@ -15812,7 +15812,7 @@
           ]
         },
         {
-          "name": "axisDir",
+          "name": "axisDirection",
           "kind": "direction",
           "call": "wood.zebrawood",
           "arg": 1,
@@ -15824,7 +15824,7 @@
           ]
         }
       ],
-      "template": "${body}Surface, ${body}SurfaceColor = wood.zebrawood(${axisOrigin}, ${axisDir});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
+      "template": "${body}Surface, ${body}SurfaceColor = wood.zebrawood(${axisOrigin}, ${axisDirection});\n${body}.material = ${body}Surface;\n${body}.color = ${body}SurfaceColor;"
     }
   },
   "coatBasis": {
@@ -17064,7 +17064,7 @@
             ]
           },
           {
-            "name": "axisDir",
+            "name": "axisDirection",
             "kind": "direction",
             "call": "machined.faced",
             "arg": 3,
@@ -17098,7 +17098,7 @@
             ]
           }
         ],
-        "template": "${layer}, ${layer}Color, ${layer}Height, ${layer}Slope = machined.faced(${material}, ${color}, ${axisOrigin}, ${axisDir}, ${feed}, ${noseRadius});\n${body}.material = ${layer};\n${body}.color = ${layer}Color;"
+        "template": "${layer}, ${layer}Color, ${layer}Height, ${layer}Slope = machined.faced(${material}, ${color}, ${axisOrigin}, ${axisDirection}, ${feed}, ${noseRadius});\n${body}.material = ${layer};\n${body}.color = ${layer}Color;"
       }
     },
     "machined.ground": {

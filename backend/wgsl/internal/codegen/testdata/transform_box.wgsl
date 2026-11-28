@@ -1,11 +1,11 @@
-fn builtin_intersectRound_2(d1: f32, d2: f32, radius: f32) -> f32 {
-  let inset1 = max(d1 + radius, 0.0);
-  let inset2 = max(d2 + radius, 0.0);
-  return min(-radius, max(d1, d2)) + length(vec2<f32>(inset1, inset2));
+fn builtin_intersectRound_2(a: f32, b: f32, radius: f32) -> f32 {
+  let inset1 = max(a + radius, 0.0);
+  let inset2 = max(b + radius, 0.0);
+  return min(-radius, max(a, b)) + length(vec2<f32>(inset1, inset2));
 }
 
-fn builtin_unionRound(d1: f32, d2: f32, radius: f32) -> f32 {
-  return -builtin_intersectRound_2(-d1, -d2, radius);
+fn builtin_unionRound(a: f32, b: f32, radius: f32) -> f32 {
+  return -builtin_intersectRound_2(-a, -b, radius);
 }
 
 fn gsl_remap(p: vec3<f32>, gsl_param_3_26: f32) -> f32 {
@@ -17,14 +17,14 @@ fn gsl_remap_2(p: vec3<f32>, gsl_param_3_26: f32) -> f32 {
   return gsl_remap(p - vec3<f32>(1.0, 2.0, 0.0), gsl_param_3_26);
 }
 
-fn builtin_gcl_closure_box(p: vec3<f32>, pointA: vec3<f32>, pointB: vec3<f32>) -> f32 {
-  let center = (pointA + pointB) * 0.5;
-  let size = abs(pointB - pointA);
+fn builtin_gcl_closure_box(p: vec3<f32>, gsl_var_min: vec3<f32>, gsl_var_max: vec3<f32>) -> f32 {
+  let center = (gsl_var_min + gsl_var_max) * 0.5;
+  let size = abs(gsl_var_max - gsl_var_min);
   return builtin_gcl_closure_boxCentered(p, center, size);
 }
 
-fn builtin_box(p: vec3<f32>, pointA: vec3<f32>, pointB: vec3<f32>) -> f32 {
-  return builtin_gcl_closure_box(p, pointA, pointB);
+fn builtin_box(p: vec3<f32>, gsl_var_min: vec3<f32>, gsl_var_max: vec3<f32>) -> f32 {
+  return builtin_gcl_closure_box(p, gsl_var_min, gsl_var_max);
 }
 
 fn builtin_intersectSharp(fields: vec3<f32>) -> f32 {

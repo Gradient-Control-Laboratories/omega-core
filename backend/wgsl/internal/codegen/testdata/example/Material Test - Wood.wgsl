@@ -2,7 +2,7 @@ fn gsl_floored(a: f32, n: f32) -> f32 {
   return a - n * floor(a / n);
 }
 
-fn map_axisAt(p: vec3<f32>, point: vec3<f32>, axis: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
+fn domain_axisAt(p: vec3<f32>, point: vec3<f32>, axis: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
   let d = p - point;
   let n = normalize(axis);
   let sz = sign(n.z);
@@ -203,7 +203,7 @@ fn sdShape(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
 
 fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_3d<f32>) -> vec4<f32> {
   if (gsl_colorIdx == 1u) {
-    let gsl_tmp_176 = map_axisAt(p, vec3<f32>(0.0, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex);
+    let gsl_tmp_176 = domain_axisAt(p, vec3<f32>(0.0, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex);
     let gsl_tmp_177 = length(gsl_tmp_176.xy);
     let gsl_tmp_178 = gsl_tmp_176.xy / max(gsl_tmp_177, 0.001) * 40.0;
     let gsl_tmp_149 = vec2<f32>(gsl_tmp_177 * (1.0 + 0.08 * gsl_remap(vec3<f32>(gsl_tmp_178.x, gsl_tmp_178.y, gsl_tmp_176.z * 0.25), noiseTex)) / 1.5 + 0.3 * gsl_remap_2(vec3<f32>(gsl_tmp_176.x, gsl_tmp_176.y, gsl_tmp_176.z * 0.2), noiseTex), 0.0);
@@ -218,7 +218,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_
     let gsl_tmp_157 = select(select(gsl_tmp_151, gsl_tmp_151 + 1.0, gsl_tmp_155), gsl_tmp_151 - 1.0, gsl_tmp_154);
     let gsl_tmp_159 = fract(textureLoad(noiseTex, vec3<i32>(floor(vec3<f32>(gsl_tmp_157, gsl_tmp_157 + 11.0, 3.0 * gsl_tmp_157 + 41.0))) & vec3<i32>(63), 0).rgb + textureLoad(noiseTex, vec3<i32>(floor((vec3<f32>(gsl_tmp_157, gsl_tmp_157 + 11.0, 3.0 * gsl_tmp_157 + 41.0)) / 64.0)) & vec3<i32>(63), 0).rgb);
     let gsl_tmp_160 = texture_mask(gsl_tmp_158, 0.4 + (gsl_tmp_159.x - 0.5) * 0.027, 0.3, noiseTex) * (1.0 + (gsl_tmp_159.y - 0.5) * 0.18);
-    let gsl_tmp_147 = map_axisAt(p, vec3<f32>(0.0, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex);
+    let gsl_tmp_147 = domain_axisAt(p, vec3<f32>(0.0, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex);
     let gsl_tmp_148 = length(gsl_tmp_147.xy);
     var gsl_detailValue = 0.0;
     if (max(gsl_pw, gsl_detailPw) < 0.075) { let gsl_detailOuterPw = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
@@ -259,7 +259,7 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, noiseTex: te
   if (gsl_materialIdx == 1u) {
     var gsl_detailValue_3 = vec2<f32>(0.0, 0.0);
     if (max(gsl_pw, gsl_detailPw) < 0.14) { let gsl_detailOuterPw_3 = gsl_pw; gsl_pw = max(gsl_pw, gsl_detailPw);
-      let gsl_tmp_144 = map_axisAt(p, vec3<f32>(0.0, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex);
+      let gsl_tmp_144 = domain_axisAt(p, vec3<f32>(0.0, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex);
       let gsl_tmp_145 = length(gsl_tmp_144.xy);
       let gsl_tmp_146 = gsl_tmp_144.xy / max(gsl_tmp_145, 0.001) * 40.0;
       let gsl_tmp_128 = gsl_tmp_145 * (1.0 + 0.08 * gsl_remap(vec3<f32>(gsl_tmp_146.x, gsl_tmp_146.y, gsl_tmp_144.z * 0.25), noiseTex)) / 1.5 + 0.3 * gsl_remap_2(vec3<f32>(gsl_tmp_144.x, gsl_tmp_144.y, gsl_tmp_144.z * 0.2), noiseTex);
@@ -269,7 +269,7 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, noiseTex: te
       let gsl_tmp_133 = gsl_tmp_128 >= gsl_tmp_131;
       let gsl_tmp_132 = gsl_tmp_128 < gsl_tmp_130;
       let gsl_tmp_134 = select(select(gsl_tmp_130, gsl_tmp_131, gsl_tmp_133), wood_ringBoundary(gsl_tmp_129 - 1.0, 3.0, noiseTex), gsl_tmp_132);
-      gsl_detailValue_3 = wood_poreSurfaceAt(map_axisAt(p, vec3<f32>(0.0, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex), (gsl_tmp_128 - gsl_tmp_134) / (select(select(gsl_tmp_131, wood_ringBoundary(gsl_tmp_129 + 2.0, 3.0, noiseTex), gsl_tmp_133), gsl_tmp_130, gsl_tmp_132) - gsl_tmp_134), 1.5, 0.5, 1.0, 0.0, noiseTex) * 1.0;
+      gsl_detailValue_3 = wood_poreSurfaceAt(domain_axisAt(p, vec3<f32>(0.0, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex), (gsl_tmp_128 - gsl_tmp_134) / (select(select(gsl_tmp_131, wood_ringBoundary(gsl_tmp_129 + 2.0, 3.0, noiseTex), gsl_tmp_133), gsl_tmp_130, gsl_tmp_132) - gsl_tmp_134), 1.5, 0.5, 1.0, 0.0, noiseTex) * 1.0;
       gsl_pw = gsl_detailOuterPw_3;
     }
     var gsl_simpleValue_2 = mat4x4<f32>(vec4<f32>(0.6685386, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));

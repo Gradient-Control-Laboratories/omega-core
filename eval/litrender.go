@@ -35,6 +35,9 @@ import (
 )
 
 // RenderLitSized renders prog on the CPU at the given dimensions and world extent.
+//
+// Deprecated: use RenderLit with LitOptions{Width, Height, WorldExtent, Time};
+// RenderLitSized will be removed after a release.
 func RenderLitSized(
 	prog *program.Program,
 	width, height int,
@@ -49,47 +52,30 @@ func RenderLitSized(
 }
 
 // RenderLitSizedView renders prog on the CPU with a chosen camera and ground.
+//
+// Deprecated: use RenderLit(prog, view.Options(width, height, worldExtent,
+// timeAt)); RenderLitSizedView will be removed after a release.
 func RenderLitSizedView(
 	prog *program.Program,
 	width, height int,
 	worldExtent, timeAt float64,
 	view LitView,
 ) ([]byte, error) {
-	return RenderLit(prog, LitOptions{
-		Width:           width,
-		Height:          height,
-		WorldExtent:     worldExtent,
-		Time:            timeAt,
-		View:            view.Dir,
-		Up:              view.Up,
-		Light:           view.Light,
-		NoAxes:          view.NoAxes,
-		Environment:     view.Environment,
-		EnvironmentTurn: view.EnvironmentTurn,
-		GlassSamples:    view.GlassSamples,
-	})
+	return RenderLit(prog, view.Options(width, height, worldExtent, timeAt))
 }
 
 // RenderLitSizedViewRadiance is RenderLitSizedView returning each pixel's linear radiance beside the PNG.
+//
+// Deprecated: use RenderLitWithLinear(prog, view.Options(width, height,
+// worldExtent, timeAt)) and its Radiance; RenderLitSizedViewRadiance will be
+// removed after a release.
 func RenderLitSizedViewRadiance(
 	prog *program.Program,
 	width, height int,
 	worldExtent, timeAt float64,
 	view LitView,
 ) ([]byte, []float32, error) {
-	png, lin, err := RenderLitWithLinear(prog, LitOptions{
-		Width:           width,
-		Height:          height,
-		WorldExtent:     worldExtent,
-		Time:            timeAt,
-		View:            view.Dir,
-		Up:              view.Up,
-		Light:           view.Light,
-		NoAxes:          view.NoAxes,
-		Environment:     view.Environment,
-		EnvironmentTurn: view.EnvironmentTurn,
-		GlassSamples:    view.GlassSamples,
-	})
+	png, lin, err := RenderLitWithLinear(prog, view.Options(width, height, worldExtent, timeAt))
 	if err != nil {
 		return nil, nil, err
 	}

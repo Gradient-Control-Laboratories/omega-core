@@ -52,9 +52,6 @@ func (d *Delegate) remapNode(
 	if err != nil {
 		return nil, build.ErrLoc(d.GetScope(), targetOp.Start, err)
 	}
-	if err := d.preserveRemappedSpinodoids(targetTrees); err != nil {
-		return nil, build.ErrLoc(d.GetScope(), targetOp.Start, err)
-	}
 
 	resultTrees := make([]fidget.TreeIndex, len(targetTrees))
 	for i := 0; i < len(targetTrees); i++ {

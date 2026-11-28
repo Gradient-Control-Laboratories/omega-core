@@ -53,13 +53,13 @@ solidify(field, bias, thickness) {
   return abs(field - bias) - thickness * 0.5;
 }
 
-// --- legacy ---
+// --- deprecated ---
 
-/// Body-centered-cubic beam lattice: an infinite 3D lattice of cubes of size
-/// `cellSize` with diagonal beams of the given radius connecting each cube
-/// center to its eight corners. Useful for printable space-filling support
-/// structures. (Legacy; the new GCL-derived lattice/beam.bcc supersedes this for
-/// later substitution.)
+/// Deprecated, and to be removed: use beam.bcc(cellSize, combine) - beamRadius,
+/// the same lattice, which also blends the junctions at the cell corners;
+/// `gsl fix -stdlib` rewrites calls. Body-centered-cubic beam lattice: cubes of
+/// size `cellSize` with diagonal beams of the given radius connecting each cube
+/// center to its eight corners.
 bcc(cellSize, beamRadius, combine) {
   half = cellSize * 0.5;
   q = [
@@ -88,9 +88,8 @@ bcc(cellSize, beamRadius, combine) {
   return combine([b1, b2, b3, b4]);
 }
 
-/// Body-centered-cubic beam lattice with the four diagonal beams unioned
-/// sharply. Pass a blend to `bcc(cellSize, beamRadius, combine)` to fillet the
-/// junction where they meet at the cell center.
+/// Deprecated, and to be removed: use beam.bcc(cellSize) - beamRadius;
+/// `gsl fix -stdlib` rewrites calls. The four diagonal beams unioned sharply.
 bcc(cellSize, beamRadius) {
   return bcc(cellSize, beamRadius, unionSharp);
 }

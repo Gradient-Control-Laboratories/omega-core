@@ -12,7 +12,7 @@
 // Doc convention follows builtin/base.gsl: `///` lines are public docs.
 
 import "noise";
-import "map";
+import "domain";
 import "color";
 import "material";
 import "material/bulk/metal";
@@ -211,7 +211,7 @@ runoffWeights(q, edge, streakLength) {
 /// the flow; flowOrigin only anchors it. Returns material, color.
 weatheredRunoff(baseMaterial, @color baseColor, @color corrosionColor, @range(0, 1) amount, @point flowOrigin, @direction(flowOrigin) flowDir, @range(5, 200) streakLength) {
   f = normalize(flowDir);
-  local = map.axisAt(flowOrigin, f);
+  local = domain.axisAt(flowOrigin, f);
   corroded = material.withMetallic(material.withRoughness(baseMaterial, 0.92), 0);
   // The patches: weathered's field and edge.
   q = [local.x, local.y, local.z / runoffDrawn];

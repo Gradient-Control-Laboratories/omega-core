@@ -189,7 +189,6 @@ func (d *Delegate) NewImpliedVars(bScope *build.Scope) ([]build.VarInfo, error) 
 
 // The first method called by the build package
 func (d *Delegate) BuildPackage(module *program.Package) error {
-	d.spinodoidDomain = spinodoid.SceneDomain(module.GetScene().GetSpinodoidBounds(), module.GetScene().GetSize())
 
 	// Clear the global state
 	fidget.Clear()

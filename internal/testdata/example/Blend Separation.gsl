@@ -3,7 +3,7 @@
 @range(0, 3.14159) angle = 0.852;
 
 a = p.x;
-b = plane(vector.zero, map.rotateXY(vector.dirX, angle));
+b = plane(vector.zero, domain.rotateXY(vector.dirX, angle));
 rad = 50;
 
 blend = intersectRound(a, b, rad);

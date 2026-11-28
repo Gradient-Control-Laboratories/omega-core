@@ -47,7 +47,7 @@ func importPkg(rets ...*program.Operand) *program.Package {
 }
 
 // TestDerivThroughQualifiedImport differentiates through a qualified library
-// call — the aerospace bracket's map.rotateZX(p, ang) shape. A library function
+// call — the aerospace bracket's domain.rotateZX(p, ang) shape. A library function
 // is ordinary GSL, so the chain rule must run through its body: splicing it as
 // an opaque given (what a Domain implementing OpaqueDomain asks for) would zero
 // the tangent of anything reached through it.

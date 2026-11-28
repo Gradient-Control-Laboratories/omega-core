@@ -34,7 +34,7 @@ func TestEvalGslSecondGradientStaysSmall(t *testing.T) {
 	done := make(chan result, 1)
 	go func() {
 		groups, err := e.EvalGsl(context.Background(), nil, chamferedSlabDoc, "",
-			[]string{"slab.second.dp"}, [][3]float64{{0, 0, 10}})
+			[]string{"slab.second.dp"}, [][3]float64{{0, 3, 10}})
 		if err != nil {
 			done <- result{err: err}
 			return

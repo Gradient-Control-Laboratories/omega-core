@@ -9,7 +9,7 @@ fn gsl_remap_2(p: vec3<f32>, mechanical_fastener_fitMedium: f32) -> f32 {
 }
 
 fn fastener_seatedAt(p: vec3<f32>, seatPoint: vec3<f32>, shankDir: vec3<f32>) -> vec3<f32> {
-  return map_axisAt(p, seatPoint, vec3<f32>(-shankDir.x, -shankDir.y, -shankDir.z));
+  return domain_axisAt(p, seatPoint, vec3<f32>(-shankDir.x, -shankDir.y, -shankDir.z));
 }
 
 fn catalog_onRow(key: f32, rowKey: f32, tol: f32) -> f32 {
@@ -335,7 +335,7 @@ fn builtin_gcl_closure_boxCentered(p: vec3<f32>, center: vec3<f32>, size: vec3<f
   return solid;
 }
 
-fn map_axisAt(p: vec3<f32>, point: vec3<f32>, axis: vec3<f32>) -> vec3<f32> {
+fn domain_axisAt(p: vec3<f32>, point: vec3<f32>, axis: vec3<f32>) -> vec3<f32> {
   let d = p - point;
   let n = normalize(axis);
   let sz = sign(n.z);
@@ -405,7 +405,7 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32) -> array<f32, 6> {
   gsl_partNear = vec3<f32>(1e10, 1e10, 1e10);
   let vector_zero = vec3<f32>(0.0, 0.0, 0.0);
   let vector_dirZ = vec3<f32>(0.0, 0.0, 1.0);
-  let at1 = map_axisAt(p, vec3<f32>(-22.0, 0.0, 0.0), vec3<f32>(-0.0, -0.0, 1.0));
+  let at1 = domain_axisAt(p, vec3<f32>(-22.0, 0.0, 0.0), vec3<f32>(-0.0, -0.0, 1.0));
   let mechanical_fastener_fitMedium = 2.0;
   let gsl_result = joint_bolted(p, vector_zero, vector_dirZ, gsl_remap(at1, mechanical_fastener_fitMedium), gsl_remap_2(at1, mechanical_fastener_fitMedium), vec3<f32>(-22.0, 0.0, 0.0), vec3<f32>(0.0, 0.0, -1.0), 6.0, 7.5, 2.0);
   let screw1 = gsl_result.v_1;
@@ -415,7 +415,7 @@ fn gsl_shapeParts(p: vec3<f32>, time: f32) -> array<f32, 6> {
   let baseWhole1 = gsl_result.v_3;
   let base1 = max(baseWhole1, cutaway);
   let block = max(builtin_gcl_closure_boxCentered(p, vec3<f32>(48.0, 0.0, -10.0) * 0.5, abs(vec3<f32>(36.0, 30.0, 50.0))), dot(p - vec3<f32>(24.0, 0.0, 0.0), vec3<f32>(0.5, 0.0, 0.8660254)));
-  let gsl_result_2 = joint_bolted(p, vector_zero, vector_dirZ, gsl_remap_3(map_axisAt(p, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(0.5, 0.0, 0.8660254)), mechanical_fastener_fitMedium, vector_zero, vector_dirZ), block, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(-0.5, -0.0, -0.8660254), 6.0, 7.5, 2.0);
+  let gsl_result_2 = joint_bolted(p, vector_zero, vector_dirZ, gsl_remap_3(domain_axisAt(p, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(0.5, 0.0, 0.8660254)), mechanical_fastener_fitMedium, vector_zero, vector_dirZ), block, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(-0.5, -0.0, -0.8660254), 6.0, 7.5, 2.0);
   let screw2 = gsl_result_2.v_1;
   let lidWhole2 = gsl_result_2.v_2;
   let lid2 = max(lidWhole2, cutaway);
@@ -436,7 +436,7 @@ fn sdShape(p: vec3<f32>, time: f32) -> gsl_shape {
 }
 fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32) -> vec4<f32> {
   if (gsl_colorIdx == 1u) {
-    let at1 = map_axisAt(p, vec3<f32>(-22.0, 0.0, 0.0), vec3<f32>(-0.0, -0.0, 1.0));
+    let at1 = domain_axisAt(p, vec3<f32>(-22.0, 0.0, 0.0), vec3<f32>(-0.0, -0.0, 1.0));
     let mechanical_fastener_fitMedium = 2.0;
     let gslCarry1 = joint_bolted__color__0(p, gsl_remap(at1, mechanical_fastener_fitMedium), gsl_remap_2(at1, mechanical_fastener_fitMedium), vec3<f32>(-22.0, 0.0, 0.0), vec3<f32>(0.0, 0.0, -1.0), 6.0, 7.5, 2.0);
     return vec4<f32>(gslCarry1, 1.0);
@@ -445,7 +445,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32) -> vec4<f32> {
   if (gsl_colorIdx == 3u) {
     let vector_zero = vec3<f32>(0.0, 0.0, 0.0);
     let vector_dirZ = vec3<f32>(0.0, 0.0, 1.0);
-    let at1 = map_axisAt(p, vec3<f32>(-22.0, 0.0, 0.0), vec3<f32>(-0.0, -0.0, 1.0));
+    let at1 = domain_axisAt(p, vec3<f32>(-22.0, 0.0, 0.0), vec3<f32>(-0.0, -0.0, 1.0));
     let mechanical_fastener_fitMedium = 2.0;
     let gsl_result = joint_bolted(p, vector_zero, vector_dirZ, gsl_remap(at1, mechanical_fastener_fitMedium), gsl_remap_2(at1, mechanical_fastener_fitMedium), vec3<f32>(-22.0, 0.0, 0.0), vec3<f32>(0.0, 0.0, -1.0), 6.0, 7.5, 2.0);
     let baseWhole1 = gsl_result.v_3;
@@ -459,7 +459,7 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32) -> vec4<f32> {
     let vector_zero = vec3<f32>(0.0, 0.0, 0.0);
     let vector_dirZ = vec3<f32>(0.0, 0.0, 1.0);
     let block = max(builtin_gcl_closure_boxCentered(p, vec3<f32>(48.0, 0.0, -10.0) * 0.5, abs(vec3<f32>(36.0, 30.0, 50.0))), dot(p - vec3<f32>(24.0, 0.0, 0.0), vec3<f32>(0.5, 0.0, 0.8660254)));
-    let gslCarry5 = joint_bolted__color__0(p, gsl_remap_3(map_axisAt(p, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(0.5, 0.0, 0.8660254)), mechanical_fastener_fitMedium, vector_zero, vector_dirZ), block, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(-0.5, -0.0, -0.8660254), 6.0, 7.5, 2.0);
+    let gslCarry5 = joint_bolted__color__0(p, gsl_remap_3(domain_axisAt(p, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(0.5, 0.0, 0.8660254)), mechanical_fastener_fitMedium, vector_zero, vector_dirZ), block, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(-0.5, -0.0, -0.8660254), 6.0, 7.5, 2.0);
     return vec4<f32>(gslCarry5, 1.0);
   }
   if (gsl_colorIdx == 5u) { return vec4<f32>(vec3<f32>(0.9621, 0.9654, 0.9658), 1.0); }
@@ -468,18 +468,18 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32) -> vec4<f32> {
     let vector_dirZ = vec3<f32>(0.0, 0.0, 1.0);
     let mechanical_fastener_fitMedium = 2.0;
     let block = max(builtin_gcl_closure_boxCentered(p, vec3<f32>(48.0, 0.0, -10.0) * 0.5, abs(vec3<f32>(36.0, 30.0, 50.0))), dot(p - vec3<f32>(24.0, 0.0, 0.0), vec3<f32>(0.5, 0.0, 0.8660254)));
-    let gsl_result_2 = joint_bolted(p, vector_zero, vector_dirZ, gsl_remap_3(map_axisAt(p, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(0.5, 0.0, 0.8660254)), mechanical_fastener_fitMedium, vector_zero, vector_dirZ), block, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(-0.5, -0.0, -0.8660254), 6.0, 7.5, 2.0);
+    let gsl_result_2 = joint_bolted(p, vector_zero, vector_dirZ, gsl_remap_3(domain_axisAt(p, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(0.5, 0.0, 0.8660254)), mechanical_fastener_fitMedium, vector_zero, vector_dirZ), block, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(-0.5, -0.0, -0.8660254), 6.0, 7.5, 2.0);
     let baseWhole2 = gsl_result_2.v_3;
     let cutaway = -p.y;
     let base2 = max(baseWhole2, cutaway);
-    let tapped2 = base2 - max(baseWhole2 - gsl_remap_4(map_axisAt(p, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(0.5, 0.0, 0.8660254)), mechanical_fastener_fitMedium, vector_zero, vector_dirZ), cutaway);
+    let tapped2 = base2 - max(baseWhole2 - gsl_remap_4(domain_axisAt(p, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(0.5, 0.0, 0.8660254)), mechanical_fastener_fitMedium, vector_zero, vector_dirZ), cutaway);
     return vec4<f32>(thread_reliefColor(vec3<f32>(0.36, 0.38, 0.42), tapped2, 1.0), 1.0);
   }
   return vec4<f32>(0.0, 0.0, 0.0, 0.0);
 }
 fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32) -> gsl_material {
   if (gsl_materialIdx == 1u) {
-    let at1 = map_axisAt(p, vec3<f32>(-22.0, 0.0, 0.0), vec3<f32>(-0.0, -0.0, 1.0));
+    let at1 = domain_axisAt(p, vec3<f32>(-22.0, 0.0, 0.0), vec3<f32>(-0.0, -0.0, 1.0));
     let mechanical_fastener_fitMedium = 2.0;
     let gslCarry2 = joint_bolted__material__0(p, gsl_remap(at1, mechanical_fastener_fitMedium), gsl_remap_2(at1, mechanical_fastener_fitMedium), vec3<f32>(-22.0, 0.0, 0.0), vec3<f32>(0.0, 0.0, -1.0), 6.0, 7.5, 2.0);
     let gsl_m = gslCarry2; return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
@@ -488,7 +488,7 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32) -> gsl_mater
   if (gsl_materialIdx == 3u) {
     let vector_zero = vec3<f32>(0.0, 0.0, 0.0);
     let vector_dirZ = vec3<f32>(0.0, 0.0, 1.0);
-    let at1 = map_axisAt(p, vec3<f32>(-22.0, 0.0, 0.0), vec3<f32>(-0.0, -0.0, 1.0));
+    let at1 = domain_axisAt(p, vec3<f32>(-22.0, 0.0, 0.0), vec3<f32>(-0.0, -0.0, 1.0));
     let mechanical_fastener_fitMedium = 2.0;
     let gsl_result = joint_bolted(p, vector_zero, vector_dirZ, gsl_remap(at1, mechanical_fastener_fitMedium), gsl_remap_2(at1, mechanical_fastener_fitMedium), vec3<f32>(-22.0, 0.0, 0.0), vec3<f32>(0.0, 0.0, -1.0), 6.0, 7.5, 2.0);
     let baseWhole1 = gsl_result.v_3;
@@ -502,7 +502,7 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32) -> gsl_mater
     let vector_zero = vec3<f32>(0.0, 0.0, 0.0);
     let vector_dirZ = vec3<f32>(0.0, 0.0, 1.0);
     let block = max(builtin_gcl_closure_boxCentered(p, vec3<f32>(48.0, 0.0, -10.0) * 0.5, abs(vec3<f32>(36.0, 30.0, 50.0))), dot(p - vec3<f32>(24.0, 0.0, 0.0), vec3<f32>(0.5, 0.0, 0.8660254)));
-    let gslCarry6 = joint_bolted__material__0(p, gsl_remap_3(map_axisAt(p, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(0.5, 0.0, 0.8660254)), mechanical_fastener_fitMedium, vector_zero, vector_dirZ), block, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(-0.5, -0.0, -0.8660254), 6.0, 7.5, 2.0);
+    let gslCarry6 = joint_bolted__material__0(p, gsl_remap_3(domain_axisAt(p, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(0.5, 0.0, 0.8660254)), mechanical_fastener_fitMedium, vector_zero, vector_dirZ), block, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(-0.5, -0.0, -0.8660254), 6.0, 7.5, 2.0);
     let gsl_m = gslCarry6; return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
   }
   if (gsl_materialIdx == 5u) { let gsl_m = mat4x4<f32>(vec4<f32>(0.4, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)); return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0); }
@@ -511,11 +511,11 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32) -> gsl_mater
     let vector_dirZ = vec3<f32>(0.0, 0.0, 1.0);
     let mechanical_fastener_fitMedium = 2.0;
     let block = max(builtin_gcl_closure_boxCentered(p, vec3<f32>(48.0, 0.0, -10.0) * 0.5, abs(vec3<f32>(36.0, 30.0, 50.0))), dot(p - vec3<f32>(24.0, 0.0, 0.0), vec3<f32>(0.5, 0.0, 0.8660254)));
-    let gsl_result_2 = joint_bolted(p, vector_zero, vector_dirZ, gsl_remap_3(map_axisAt(p, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(0.5, 0.0, 0.8660254)), mechanical_fastener_fitMedium, vector_zero, vector_dirZ), block, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(-0.5, -0.0, -0.8660254), 6.0, 7.5, 2.0);
+    let gsl_result_2 = joint_bolted(p, vector_zero, vector_dirZ, gsl_remap_3(domain_axisAt(p, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(0.5, 0.0, 0.8660254)), mechanical_fastener_fitMedium, vector_zero, vector_dirZ), block, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(-0.5, -0.0, -0.8660254), 6.0, 7.5, 2.0);
     let baseWhole2 = gsl_result_2.v_3;
     let cutaway = -p.y;
     let base2 = max(baseWhole2, cutaway);
-    let tapped2 = base2 - max(baseWhole2 - gsl_remap_4(map_axisAt(p, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(0.5, 0.0, 0.8660254)), mechanical_fastener_fitMedium, vector_zero, vector_dirZ), cutaway);
+    let tapped2 = base2 - max(baseWhole2 - gsl_remap_4(domain_axisAt(p, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(0.5, 0.0, 0.8660254)), mechanical_fastener_fitMedium, vector_zero, vector_dirZ), cutaway);
     let gsl_m = material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), tapped2); return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
   }
   return gsl_material(vec4<f32>(0.5, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), 0.0);
@@ -551,7 +551,7 @@ var<private> gsl_simpleDetail: f32 = 1.0;
 var<private> gsl_dispDrawn: f32 = 0.0;
 
 fn gsl_heights(p: vec3<f32>, time: f32) -> array<f32, 6> {
-  let at1 = map_axisAt(p, vec3<f32>(-22.0, 0.0, 0.0), vec3<f32>(-0.0, -0.0, 1.0));
+  let at1 = domain_axisAt(p, vec3<f32>(-22.0, 0.0, 0.0), vec3<f32>(-0.0, -0.0, 1.0));
   let mechanical_fastener_fitMedium = 2.0;
   let gslCarry2 = joint_bolted__material__0(p, gsl_remap(at1, mechanical_fastener_fitMedium), gsl_remap_2(at1, mechanical_fastener_fitMedium), vec3<f32>(-22.0, 0.0, 0.0), vec3<f32>(0.0, 0.0, -1.0), 6.0, 7.5, 2.0);
   let vector_zero = vec3<f32>(0.0, 0.0, 0.0);
@@ -562,11 +562,11 @@ fn gsl_heights(p: vec3<f32>, time: f32) -> array<f32, 6> {
   let base1 = max(baseWhole1, cutaway);
   let tapped1 = base1 - max(baseWhole1 - gsl_remap_4(at1, mechanical_fastener_fitMedium, vector_zero, vector_dirZ), cutaway);
   let block = max(builtin_gcl_closure_boxCentered(p, vec3<f32>(48.0, 0.0, -10.0) * 0.5, abs(vec3<f32>(36.0, 30.0, 50.0))), dot(p - vec3<f32>(24.0, 0.0, 0.0), vec3<f32>(0.5, 0.0, 0.8660254)));
-  let gslCarry6 = joint_bolted__material__0(p, gsl_remap_3(map_axisAt(p, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(0.5, 0.0, 0.8660254)), mechanical_fastener_fitMedium, vector_zero, vector_dirZ), block, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(-0.5, -0.0, -0.8660254), 6.0, 7.5, 2.0);
-  let gsl_result_2 = joint_bolted(p, vector_zero, vector_dirZ, gsl_remap_3(map_axisAt(p, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(0.5, 0.0, 0.8660254)), mechanical_fastener_fitMedium, vector_zero, vector_dirZ), block, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(-0.5, -0.0, -0.8660254), 6.0, 7.5, 2.0);
+  let gslCarry6 = joint_bolted__material__0(p, gsl_remap_3(domain_axisAt(p, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(0.5, 0.0, 0.8660254)), mechanical_fastener_fitMedium, vector_zero, vector_dirZ), block, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(-0.5, -0.0, -0.8660254), 6.0, 7.5, 2.0);
+  let gsl_result_2 = joint_bolted(p, vector_zero, vector_dirZ, gsl_remap_3(domain_axisAt(p, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(0.5, 0.0, 0.8660254)), mechanical_fastener_fitMedium, vector_zero, vector_dirZ), block, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(-0.5, -0.0, -0.8660254), 6.0, 7.5, 2.0);
   let baseWhole2 = gsl_result_2.v_3;
   let base2 = max(baseWhole2, cutaway);
-  let tapped2 = base2 - max(baseWhole2 - gsl_remap_4(map_axisAt(p, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(0.5, 0.0, 0.8660254)), mechanical_fastener_fitMedium, vector_zero, vector_dirZ), cutaway);
+  let tapped2 = base2 - max(baseWhole2 - gsl_remap_4(domain_axisAt(p, vec3<f32>(27.75, 0.0, 6.4951906), vec3<f32>(0.5, 0.0, 0.8660254)), mechanical_fastener_fitMedium, vector_zero, vector_dirZ), cutaway);
   return array<f32, 6>(gslCarry2[2].z, 0.0, material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), tapped1)[2].z, gslCarry6[2].z, 0.0, material_withDisplacement(mat4x4<f32>(vec4<f32>(0.45, 1.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), tapped2)[2].z);
 }
 

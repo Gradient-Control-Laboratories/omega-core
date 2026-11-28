@@ -8,7 +8,7 @@ angles = [0, pi, 0, pi];
 partTrans = [60, 0, -40];
 partOrient = [0, 0, pi / 2];
 
-radials = map((ang) { return map.rotateXY(partTrans, ang); }, angles);
+radials = map((ang) { return domain.rotateXY(partTrans, ang); }, angles);
 orientations = map((ang) { return partOrient * [1, 1, ang]; }, angles);
 
 placed = meshUnion(map(

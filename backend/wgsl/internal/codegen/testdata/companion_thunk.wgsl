@@ -1,21 +1,21 @@
-fn gsl_builtin_unionRoundExact_remap(p: vec3<f32>, field1: f32, field2: f32, normal1: vec3<f32>, normal2: vec3<f32>, radius: f32) -> f32 {
-  return field1;
+fn gsl_builtin_unionRoundExact_remap(p: vec3<f32>, a: f32, b: f32, normalA: vec3<f32>, normalB: vec3<f32>, radius: f32) -> f32 {
+  return a;
 }
 
-fn gsl_builtin_unionRoundExact_remap_2(p: vec3<f32>, field1: f32, field2: f32, normal1: vec3<f32>, normal2: vec3<f32>, radius: f32) -> f32 {
-  return field2;
+fn gsl_builtin_unionRoundExact_remap_2(p: vec3<f32>, a: f32, b: f32, normalA: vec3<f32>, normalB: vec3<f32>, radius: f32) -> f32 {
+  return b;
 }
 
-fn builtin_unionRoundExact(p: vec3<f32>, field1: f32, field2: f32, radius: f32, normal1: vec3<f32>, normal2: vec3<f32>) -> f32 {
-  let d1 = field1 - radius;
-  let d2 = field2 - radius;
-  let sumScale = length(normal1 + normal2);
+fn builtin_unionRoundExact(p: vec3<f32>, a: f32, b: f32, radius: f32, normalA: vec3<f32>, normalB: vec3<f32>) -> f32 {
+  let d1 = a - radius;
+  let d2 = b - radius;
+  let sumScale = length(normalA + normalB);
   let sum = (d1 + d2) / sumScale;
-  let diffScale = length(normal1 - normal2);
+  let diffScale = length(normalA - normalB);
   let diff = (d1 - d2) / diffScale;
   let sharp = min(d1, d2);
-  let field1OnSurface2 = gsl_builtin_unionRoundExact_remap(p - normal2 * d2, field1, field2, normal1, normal2, radius) - radius;
-  let field2OnSurface1 = gsl_builtin_unionRoundExact_remap_2(p - normal1 * d1, field1, field2, normal1, normal2, radius) - radius;
+  let field1OnSurface2 = gsl_builtin_unionRoundExact_remap(p - normalB * d2, a, b, normalA, normalB, radius) - radius;
+  let field2OnSurface1 = gsl_builtin_unionRoundExact_remap_2(p - normalA * d1, a, b, normalA, normalB, radius) - radius;
   return select(-length(vec2<f32>(sum, diff)), sharp, max(field1OnSurface2, field2OnSurface1) > 0.0) + radius;
 }
 

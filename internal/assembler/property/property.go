@@ -83,7 +83,7 @@ type CallDomain interface {
 }
 
 // OpaqueDomain is an optional Domain extension for treating cross-package
-// (qualified) calls and references — e.g. map.triangleWave, noise.cellularEdges —
+// (qualified) calls and references — e.g. domain.triangleWave, noise.cellularEdges —
 // as opaque givens rather than an error. The color gradient uses it: it only
 // needs the value spliced (the backend resolves the import when it lowers) and
 // does not differentiate through them.
@@ -91,7 +91,7 @@ type CallDomain interface {
 // Implementing it is also the choice NOT to resolve the import: a Domain that
 // declares how to treat a cross-package value keeps that treatment, while one
 // that does not gets the imported function's body inlined (see Engine.imports),
-// which is what a derivative needs — map.rotateZX(p, ang) depends on p, so
+// which is what a derivative needs — domain.rotateZX(p, ang) depends on p, so
 // splicing it with no tangent would silently zero the chain rule through it.
 type OpaqueDomain interface {
 	OpaqueCall(pkgName, name string, args []Value) Value

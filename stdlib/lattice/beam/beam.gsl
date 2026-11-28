@@ -5,15 +5,15 @@
 // Beam Lattice Library (lattice/beam)
 //
 // Periodic strut lattices — 3D networks of infinitely thin beams that tile a
-// scalar or vec3 `size` cell. Each returns the unsigned distance field to the strut
+// scalar or vec3 `cellSize`. Each returns the unsigned distance field to the strut
 // skeleton; give the beams width with `lattice.solidify(field, bias)`, then
 // intersect with a body to infill it.
 //
 // Translated from the Gradient Control Labs script-editor stdlib (GCL v1). The
 // cubic-symmetry lattices fold the cell into its positive octant and reflect a
-// representative set of struts (remap through map.patternRepeatMirror, GCL
+// representative set of struts (remap through domain.patternRepeatMirror, GCL
 // LineSegmentRepeatMirror); a few tile by plain translation
-// (map.patternRepeat, GCL LineSegmentRepeat).
+// (domain.patternRepeat, GCL LineSegmentRepeat).
 //
 // NOTE: the symmetry remap must wrap the struts inline (in the same scope) — a
 // list of struts passed through a helper is evaluated at the original point, and
@@ -24,14 +24,15 @@
 //
 // Doc convention follows builtin/base.gsl: `///` lines are public docs.
 
-import "map";
+import "domain";
 
 // --- public lattices ---
 
-/// Octet truss: the stretch-dominated FCC strut lattice (cell corners to face
-/// centers). scalar or vec3 `size` cell.
-octet(sizeIn) {
-  size = sizeIn * [1, 1, 1];
+/// Octet truss: the stretch-dominated strut lattice of every nearest-neighbour
+/// bond of the face-centred points (the cell corners and face centres). Its dual
+/// is foam.rhombicDodecahedral. scalar or vec3 `cellSize`.
+octet(cellSize) {
+  size = cellSize * [1, 1, 1];
   h = size * 0.5;
   return remap(unionSharp([
     lineSegment([0, h.y, 0], [0, 0, h.z]),
@@ -40,12 +41,13 @@ octet(sizeIn) {
     lineSegment(h, [0, 0, h.z]),
     lineSegment(h, [0, h.y, 0]),
     lineSegment(h, [h.x, 0, 0])
-  ]), map.patternRepeatMirror(size));
+  ]), domain.patternRepeatMirror(size));
 }
 
-/// Truncated-octahedral (Kelvin-adjacent) strut lattice. scalar or vec3 `size` cell.
-truncatedOctahedral(sizeIn) {
-  size = sizeIn * [1, 1, 1];
+/// Truncated-octahedral (Kelvin-adjacent) strut lattice. Not Kelvin's exact
+/// skeleton, which is kelvinCell(cellSize, 0.5). scalar or vec3 `cellSize`.
+truncatedOctahedral(cellSize) {
+  size = cellSize * [1, 1, 1];
   h = size * 0.5;
   q = size * 0.25;
   third = size * (1.0 / 3.0);
@@ -60,34 +62,37 @@ truncatedOctahedral(sizeIn) {
     lineSegment([-sixth.x, h.y, 0], [sixth.x, h.y, 0]),
     lineSegment([-sixth.x, sixth.y, h.z], [sixth.x, sixth.y, h.z]),
     lineSegment([sixth.x, -sixth.y, h.z], [sixth.x, sixth.y, h.z])
-  ]), map.patternRepeatMirror(size));
+  ]), domain.patternRepeatMirror(size));
 }
 
 /// Body-centered-cubic strut lattice: the cell-center-to-corner diagonal,
-/// mirrored to all eight corners. scalar or vec3 `size` cell. (The new GCL-derived BCC;
-/// the legacy lattice.bcc remains for substitution.)
-bcc(sizeIn) {
-  size = sizeIn * [1, 1, 1];
+/// mirrored to all eight corners: the nearest-neighbour bonds of the
+/// body-centred points (the cell corners and centres). Its dual is foam.kelvin;
+/// foam.bcc is the walls of the same points' Delaunay tetrahedra, which hold
+/// these struts. scalar or vec3 `cellSize`.
+bcc(cellSize) {
+  size = cellSize * [1, 1, 1];
   h = size * 0.5;
-  return remap(lineSegment(h, -h), map.patternRepeatMirror(size));
+  return remap(lineSegment(h, -h), domain.patternRepeatMirror(size));
 }
 
 /// Face-centered-cubic strut lattice: cell corner to the three near face
-/// centers, mirrored. scalar or vec3 `size` cell.
-fcc(sizeIn) {
-  size = sizeIn * [1, 1, 1];
+/// centers, mirrored; the corner-to-face-centre subset of octet's bonds. scalar
+/// or vec3 `cellSize`.
+fcc(cellSize) {
+  size = cellSize * [1, 1, 1];
   h = size * 0.5;
   return remap(unionSharp([
     lineSegment(h, [0, 0, h.z]),
     lineSegment(h, [0, h.y, 0]),
     lineSegment(h, [h.x, 0, 0])
-  ]), map.patternRepeatMirror(size));
+  ]), domain.patternRepeatMirror(size));
 }
 
 /// Truncated-cubic strut lattice. `setback` in [0, 1] pulls the strut endpoints
-/// in from the cell edges (truncating the corners). scalar or vec3 `size` cell.
-truncatedCubic(sizeIn, setback) {
-  size = sizeIn * [1, 1, 1];
+/// in from the cell edges (truncating the corners). scalar or vec3 `cellSize`.
+truncatedCubic(cellSize, setback) {
+  size = cellSize * [1, 1, 1];
   h = size * 0.5;
   s = 1 - setback;
   return remap(unionSharp([
@@ -97,13 +102,16 @@ truncatedCubic(sizeIn, setback) {
     lineSegment([s * h.x, h.y, h.z], [0, h.y, h.z]),
     lineSegment([h.x, s * h.y, h.z], [h.x, 0, h.z]),
     lineSegment([h.x, h.y, s * h.z], [h.x, h.y, 0])
-  ]), map.patternRepeatMirror(size));
+  ]), domain.patternRepeatMirror(size));
 }
 
 /// Kelvin cell (tetrakaidecahedron) strut lattice. `setback` in [0, 1] sets the
-/// hexagon/square truncation. scalar or vec3 `size` cell.
-kelvinCell(sizeIn, setback) {
-  size = sizeIn * [1, 1, 1];
+/// hexagon/square truncation. At setback 0.5 the struts are the edges of
+/// Kelvin's truncated octahedra, the Voronoi cells of the body-centred points:
+/// the dual of foam.bcc, and the cell edges of foam.kelvin. scalar or vec3
+/// `cellSize`.
+kelvinCell(cellSize, setback) {
+  size = cellSize * [1, 1, 1];
   h = size * 0.5;
   return remap(unionSharp([
     lineSegment([0, h.y, setback * h.z], [0, setback * h.y, h.z]),
@@ -112,12 +120,15 @@ kelvinCell(sizeIn, setback) {
     lineSegment([h.x, 0, setback * h.z], [setback * h.x, 0, h.z]),
     lineSegment([h.x, setback * h.y, 0], [setback * h.x, h.y, 0]),
     lineSegment([h.x, setback * h.y, 0], [h.x, 0, setback * h.z])
-  ]), map.patternRepeatMirror(size));
+  ]), domain.patternRepeatMirror(size));
 }
 
-/// Fluorite (CaF2-type) strut lattice. scalar or vec3 `size` cell.
-fluorite(sizeIn) {
-  size = sizeIn * [1, 1, 1];
+/// Fluorite (CaF2-type) strut lattice: each tetrahedral hole joined to its four
+/// nearest cell corners and face centres. These are the edges of the rhombic
+/// dodecahedra that tile space around the cell centres and edge midpoints: the
+/// dual of foam.fcc. scalar or vec3 `cellSize`.
+fluorite(cellSize) {
+  size = cellSize * [1, 1, 1];
   h = size * 0.5;
   q = size * 0.25;
   return remap(unionSharp([
@@ -125,38 +136,38 @@ fluorite(sizeIn) {
     lineSegment(q, [0, h.y, 0]),
     lineSegment([h.x, 0, 0], q),
     lineSegment(h, q)
-  ]), map.patternRepeatMirror(size));
+  ]), domain.patternRepeatMirror(size));
 }
 
 /// Isotruss: orthogonal axis struts (translational) plus corner-to-face
-/// diagonals (mirrored). scalar or vec3 `size` cell.
-isotruss(sizeIn, combine) {
-  size = sizeIn * [1, 1, 1];
+/// diagonals (mirrored). scalar or vec3 `cellSize`.
+isotruss(cellSize, combine) {
+  size = cellSize * [1, 1, 1];
   h = size * 0.5;
   axes = remap(unionSharp([
     lineSegment([-h.x, 0, 0], [h.x, 0, 0]),
     lineSegment([0, -h.y, 0], [0, h.y, 0]),
     lineSegment([0, 0, -h.z], [0, 0, h.z])
-  ]), map.patternRepeat(size));
+  ]), domain.patternRepeat(size));
   diags = remap(unionSharp([
     lineSegment(h, [0, h.y, h.z]),
     lineSegment(h, [h.x, 0, h.z]),
     lineSegment(h, [h.x, h.y, 0]),
     lineSegment(h, [0, 0, 0])
-  ]), map.patternRepeatMirror(size));
+  ]), domain.patternRepeatMirror(size));
   return combine([axes, diags]);
 }
 
 /// As isotruss, with its strut families unioned sharply. Pass a blend to
-/// `isotruss(sizeIn, combine)` to fillet where they meet.
-isotruss(sizeIn) {
-  return isotruss(sizeIn, unionSharp);
+/// `isotruss(cellSize, combine)` to fillet where they meet.
+isotruss(cellSize) {
+  return isotruss(cellSize, unionSharp);
 }
 
 /// Re-entrant (auxetic) strut lattice — inward-folded cell walls plus a central
-/// Z column. `setback` in [0, 1] sets the fold depth. scalar or vec3 `size` cell.
-reentrant(sizeIn, setback, combine) {
-  size = sizeIn * [1, 1, 1];
+/// Z column. `setback` in [0, 1] sets the fold depth. scalar or vec3 `cellSize`.
+reentrant(cellSize, setback, combine) {
+  size = cellSize * [1, 1, 1];
   h = size * 0.5;
   setbackZ = setback * h.z;
   recessedZ = 0.8 * h.z;
@@ -168,71 +179,361 @@ reentrant(sizeIn, setback, combine) {
     lineSegment([h.x, h.y, recessedZ], [0, h.y, setbackZ]),
     lineSegment([h.x, h.y, recessedZ], [h.x, 0, setbackZ]),
     lineSegment([h.x, h.y, recessedZ], [h.x, h.y, 0])
-  ]), map.patternRepeatMirror(size));
-  column = remap(lineSegment([0, 0, -recessedZ], [0, 0, recessedZ]), map.patternRepeat(size));
+  ]), domain.patternRepeatMirror(size));
+  column = remap(lineSegment([0, 0, -recessedZ], [0, 0, recessedZ]), domain.patternRepeat(size));
   return combine([walls, column]);
 }
 
 /// As reentrant, with its strut families unioned sharply. Pass a blend to
-/// `reentrant(sizeIn, setback, combine)` to fillet where they meet.
-reentrant(sizeIn, setback) {
-  return reentrant(sizeIn, setback, unionSharp);
+/// `reentrant(cellSize, setback, combine)` to fillet where they meet.
+reentrant(cellSize, setback) {
+  return reentrant(cellSize, setback, unionSharp);
 }
 
 /// Simple cubic lattice: three orthogonal axis struts per cell, joined by
-/// `combine`, tiled across the scalar or vec3 `size` grid.
-cubic(sizeIn, combine) {
-  size = sizeIn * [1, 1, 1];
+/// `combine`, tiled across the scalar or vec3 `cellSize` grid. The struts are the
+/// edges of foam.cubic's cells; foam.cubicGrid is the dual.
+cubic(cellSize, combine) {
+  size = cellSize * [1, 1, 1];
   h = size * 0.5;
   return remap(combine([
     lineSegment([-h.x, 0, 0], [h.x, 0, 0]),
     lineSegment([0, -h.y, 0], [0, h.y, 0]),
     lineSegment([0, 0, -h.z], [0, 0, h.z])
-  ]), map.patternRepeat(size));
+  ]), domain.patternRepeat(size));
 }
 
 /// Simple cubic lattice with the three struts joined sharply.
-cubic(sizeIn) {
-  return cubic(sizeIn, unionSharp);
+cubic(cellSize) {
+  return cubic(cellSize, unionSharp);
 }
 
 /// Grid of infinite vertical columns (z cylinders) on a rectangular XY lattice
-/// `cell` ([cellX, cellY]). The thin field is the distance to the nearest column
+/// `cellSize` ([cellX, cellY]). The thin field is the distance to the nearest column
 /// axis; lattice.solidify turns it into cylinders. z passes through, so the
 /// columns run the full height.
-columnRectangular(cell) {
-  o = map.patternRepeatXY(cell);
+columnRectangular(cellSize) {
+  o = domain.patternRepeatXY(cellSize);
   return length(o.xy);
 }
 
 /// Infinite vertical columns on a triangular (6-neighbor close-packed) lattice
-/// with nearest-neighbor `spacing`.
-columnTriangular(spacing) {
-  o = map.patternTriangularXY(spacing);
+/// with nearest-neighbor `cellSize`.
+columnTriangular(cellSize) {
+  o = domain.patternTriangularXY(cellSize);
   return length(o.xy);
 }
 
 /// Infinite vertical columns on a hexagonal (honeycomb, 3-neighbor) lattice with
-/// bond length `spacing`.
-columnHexagonal(spacing) {
-  o = map.patternHexagonalXY(spacing);
+/// bond length `cellSize`.
+columnHexagonal(cellSize) {
+  o = domain.patternHexagonalXY(cellSize);
   return length(o.xy);
 }
 
-/// Double cubic: orthogonal axis struts (translational) plus corner-to-face
-/// diagonals (mirrored) — a stiffer cubic variant. scalar or vec3 `size` cell.
-cubicDouble(sizeIn) {
-  size = sizeIn * [1, 1, 1];
+/// Double cubic: axis struts through the cell centres plus the cell edges — two
+/// simple cubic lattices offset by half a cell, a stiffer cubic variant. scalar
+/// or vec3 `cellSize`.
+cubicDouble(cellSize) {
+  size = cellSize * [1, 1, 1];
   h = size * 0.5;
   axes = remap(unionSharp([
     lineSegment([-h.x, 0, 0], [h.x, 0, 0]),
     lineSegment([0, -h.y, 0], [0, h.y, 0]),
     lineSegment([0, 0, -h.z], [0, 0, h.z])
-  ]), map.patternRepeat(size));
+  ]), domain.patternRepeat(size));
   diags = remap(unionSharp([
     lineSegment(h, [0, h.y, h.z]),
     lineSegment(h, [h.x, 0, h.z]),
     lineSegment(h, [h.x, h.y, 0])
-  ]), map.patternRepeatMirror(size));
+  ]), domain.patternRepeatMirror(size));
   return min(axes, diags);
+}
+
+// --- blendable forms ---
+//
+// Each folded lattice above joins a strut to its own mirror images sharply, so
+// a blend passed to it could not reach those junctions. The forms below write
+// the struts out instead: each piece of strut in the fold domain [0, h]^3 is
+// evaluated at the fold point and at its reflections across the nearest mirror
+// planes, only along the axes where the reflection is a different strut (a
+// duplicate would thicken a strut under a blend). Generated and checked against
+// the folded forms: with unionSharp they are the same field.
+
+// The fold point f reflected across its nearest mirror plane on each axis: the
+// cell's centre plane (0) or its face (h).
+mirrorNearest(f, h) {
+  return [
+    2 * h.x * round(f.x / h.x) - f.x,
+    2 * h.y * round(f.y / h.y) - f.y,
+    2 * h.z * round(f.z / h.z) - f.z
+  ];
+}
+
+/// Body-centered-cubic strut lattice with its struts joined by `combine`, written out so a blend reaches every
+/// junction (a mirror fold joins a strut to its own images sharply). Slower
+/// than bcc(cellSize); with `unionSharp` it is the same field.
+bcc(cellSize, combine) {
+  size = cellSize * [1, 1, 1];
+  h = size * 0.5;
+  f = domain.patternRepeatMirror(size);
+  m = mirrorNearest(f, h);
+  return combine([
+    remap(lineSegment([0, 0, 0], h), f),
+    remap(lineSegment([0, 0, 0], h), [m.x, f.y, f.z]),
+    remap(lineSegment([0, 0, 0], h), [f.x, m.y, f.z]),
+    remap(lineSegment([0, 0, 0], h), [m.x, m.y, f.z]),
+    remap(lineSegment([0, 0, 0], h), [f.x, f.y, m.z]),
+    remap(lineSegment([0, 0, 0], h), [m.x, f.y, m.z]),
+    remap(lineSegment([0, 0, 0], h), [f.x, m.y, m.z]),
+    remap(lineSegment([0, 0, 0], h), [m.x, m.y, m.z])
+  ]);
+}
+
+/// Face-centered-cubic strut lattice with its struts joined by `combine`, written out so a blend reaches every
+/// junction (a mirror fold joins a strut to its own images sharply). Slower
+/// than fcc(cellSize); with `unionSharp` it is the same field.
+fcc(cellSize, combine) {
+  size = cellSize * [1, 1, 1];
+  h = size * 0.5;
+  f = domain.patternRepeatMirror(size);
+  m = mirrorNearest(f, h);
+  return combine([
+    remap(lineSegment(h, [0, 0, h.z]), f),
+    remap(lineSegment(h, [0, 0, h.z]), [m.x, f.y, f.z]),
+    remap(lineSegment(h, [0, 0, h.z]), [f.x, m.y, f.z]),
+    remap(lineSegment(h, [0, 0, h.z]), [m.x, m.y, f.z]),
+    remap(lineSegment(h, [0, h.y, 0]), f),
+    remap(lineSegment(h, [0, h.y, 0]), [m.x, f.y, f.z]),
+    remap(lineSegment(h, [0, h.y, 0]), [f.x, f.y, m.z]),
+    remap(lineSegment(h, [0, h.y, 0]), [m.x, f.y, m.z]),
+    remap(lineSegment(h, [h.x, 0, 0]), f),
+    remap(lineSegment(h, [h.x, 0, 0]), [f.x, m.y, f.z]),
+    remap(lineSegment(h, [h.x, 0, 0]), [f.x, f.y, m.z]),
+    remap(lineSegment(h, [h.x, 0, 0]), [f.x, m.y, m.z])
+  ]);
+}
+
+/// Octet truss with its struts joined by `combine`, written out so a blend reaches every
+/// junction (a mirror fold joins a strut to its own images sharply). Slower
+/// than octet(cellSize); with `unionSharp` it is the same field.
+octet(cellSize, combine) {
+  size = cellSize * [1, 1, 1];
+  h = size * 0.5;
+  f = domain.patternRepeatMirror(size);
+  m = mirrorNearest(f, h);
+  return combine([
+    remap(lineSegment([0, h.y, 0], [0, 0, h.z]), f),
+    remap(lineSegment([0, h.y, 0], [0, 0, h.z]), [f.x, m.y, f.z]),
+    remap(lineSegment([0, h.y, 0], [0, 0, h.z]), [f.x, f.y, m.z]),
+    remap(lineSegment([0, h.y, 0], [0, 0, h.z]), [f.x, m.y, m.z]),
+    remap(lineSegment([h.x, 0, 0], [0, 0, h.z]), f),
+    remap(lineSegment([h.x, 0, 0], [0, 0, h.z]), [m.x, f.y, f.z]),
+    remap(lineSegment([h.x, 0, 0], [0, 0, h.z]), [f.x, f.y, m.z]),
+    remap(lineSegment([h.x, 0, 0], [0, 0, h.z]), [m.x, f.y, m.z]),
+    remap(lineSegment([h.x, 0, 0], [0, h.y, 0]), f),
+    remap(lineSegment([h.x, 0, 0], [0, h.y, 0]), [m.x, f.y, f.z]),
+    remap(lineSegment([h.x, 0, 0], [0, h.y, 0]), [f.x, m.y, f.z]),
+    remap(lineSegment([h.x, 0, 0], [0, h.y, 0]), [m.x, m.y, f.z]),
+    remap(lineSegment(h, [0, 0, h.z]), f),
+    remap(lineSegment(h, [0, 0, h.z]), [m.x, f.y, f.z]),
+    remap(lineSegment(h, [0, 0, h.z]), [f.x, m.y, f.z]),
+    remap(lineSegment(h, [0, 0, h.z]), [m.x, m.y, f.z]),
+    remap(lineSegment(h, [0, h.y, 0]), f),
+    remap(lineSegment(h, [0, h.y, 0]), [m.x, f.y, f.z]),
+    remap(lineSegment(h, [0, h.y, 0]), [f.x, f.y, m.z]),
+    remap(lineSegment(h, [0, h.y, 0]), [m.x, f.y, m.z]),
+    remap(lineSegment(h, [h.x, 0, 0]), f),
+    remap(lineSegment(h, [h.x, 0, 0]), [f.x, m.y, f.z]),
+    remap(lineSegment(h, [h.x, 0, 0]), [f.x, f.y, m.z]),
+    remap(lineSegment(h, [h.x, 0, 0]), [f.x, m.y, m.z])
+  ]);
+}
+
+/// Truncated-octahedral strut lattice with its struts joined by `combine`, written out so a blend reaches every
+/// junction (a mirror fold joins a strut to its own images sharply). Slower
+/// than truncatedOctahedral(cellSize); with `unionSharp` it is the same field.
+truncatedOctahedral(cellSize, combine) {
+  size = cellSize * [1, 1, 1];
+  h = size * 0.5;
+  q = size * 0.25;
+  third = size * (1.0 / 3.0);
+  sixth = size * (1.0 / 6.0);
+  c = [third.x, third.y, q.z];
+  f = domain.patternRepeatMirror(size);
+  m = mirrorNearest(f, h);
+  return combine([
+    remap(lineSegment(c, [sixth.x, sixth.y, h.z]), f),
+    remap(lineSegment(c, [sixth.x, sixth.y, h.z]), [m.x, f.y, f.z]),
+    remap(lineSegment(c, [sixth.x, sixth.y, h.z]), [f.x, m.y, f.z]),
+    remap(lineSegment(c, [sixth.x, sixth.y, h.z]), [m.x, m.y, f.z]),
+    remap(lineSegment(c, [sixth.x, sixth.y, h.z]), [f.x, f.y, m.z]),
+    remap(lineSegment(c, [sixth.x, sixth.y, h.z]), [m.x, f.y, m.z]),
+    remap(lineSegment(c, [sixth.x, sixth.y, h.z]), [f.x, m.y, m.z]),
+    remap(lineSegment(c, [sixth.x, sixth.y, h.z]), [m.x, m.y, m.z]),
+    remap(lineSegment(c, [sixth.x, h.y, 0]), f),
+    remap(lineSegment(c, [sixth.x, h.y, 0]), [m.x, f.y, f.z]),
+    remap(lineSegment(c, [sixth.x, h.y, 0]), [f.x, m.y, f.z]),
+    remap(lineSegment(c, [sixth.x, h.y, 0]), [m.x, m.y, f.z]),
+    remap(lineSegment(c, [sixth.x, h.y, 0]), [f.x, f.y, m.z]),
+    remap(lineSegment(c, [sixth.x, h.y, 0]), [m.x, f.y, m.z]),
+    remap(lineSegment(c, [sixth.x, h.y, 0]), [f.x, m.y, m.z]),
+    remap(lineSegment(c, [sixth.x, h.y, 0]), [m.x, m.y, m.z]),
+    remap(lineSegment([h.x, sixth.y, 0], c), f),
+    remap(lineSegment([h.x, sixth.y, 0], c), [m.x, f.y, f.z]),
+    remap(lineSegment([h.x, sixth.y, 0], c), [f.x, m.y, f.z]),
+    remap(lineSegment([h.x, sixth.y, 0], c), [m.x, m.y, f.z]),
+    remap(lineSegment([h.x, sixth.y, 0], c), [f.x, f.y, m.z]),
+    remap(lineSegment([h.x, sixth.y, 0], c), [m.x, f.y, m.z]),
+    remap(lineSegment([h.x, sixth.y, 0], c), [f.x, m.y, m.z]),
+    remap(lineSegment([h.x, sixth.y, 0], c), [m.x, m.y, m.z]),
+    remap(lineSegment(h, c), f),
+    remap(lineSegment(h, c), [m.x, f.y, f.z]),
+    remap(lineSegment(h, c), [f.x, m.y, f.z]),
+    remap(lineSegment(h, c), [m.x, m.y, f.z]),
+    remap(lineSegment(h, c), [f.x, f.y, m.z]),
+    remap(lineSegment(h, c), [m.x, f.y, m.z]),
+    remap(lineSegment(h, c), [f.x, m.y, m.z]),
+    remap(lineSegment(h, c), [m.x, m.y, m.z]),
+    remap(lineSegment([h.x, -sixth.y, 0], [h.x, sixth.y, 0]), f),
+    remap(lineSegment([-sixth.x, h.y, 0], [sixth.x, h.y, 0]), f),
+    remap(lineSegment([-sixth.x, sixth.y, h.z], [sixth.x, sixth.y, h.z]), f),
+    remap(lineSegment([-sixth.x, sixth.y, h.z], [sixth.x, sixth.y, h.z]), [f.x, m.y, f.z]),
+    remap(lineSegment([sixth.x, -sixth.y, h.z], [sixth.x, sixth.y, h.z]), f),
+    remap(lineSegment([sixth.x, -sixth.y, h.z], [sixth.x, sixth.y, h.z]), [m.x, f.y, f.z])
+  ]);
+}
+
+/// Truncated-cubic strut lattice with its struts joined by `combine`, written out so a blend reaches every
+/// junction (a mirror fold joins a strut to its own images sharply). Slower
+/// than truncatedCubic(cellSize, setback); with `unionSharp` it is the same field.
+truncatedCubic(cellSize, setback, combine) {
+  size = cellSize * [1, 1, 1];
+  h = size * 0.5;
+  s = 1 - setback;
+  f = domain.patternRepeatMirror(size);
+  m = mirrorNearest(f, h);
+  return combine([
+    remap(lineSegment([h.x, s * h.y, h.z], [s * h.x, h.y, h.z]), f),
+    remap(lineSegment([h.x, s * h.y, h.z], [s * h.x, h.y, h.z]), [m.x, f.y, f.z]),
+    remap(lineSegment([h.x, s * h.y, h.z], [s * h.x, h.y, h.z]), [f.x, m.y, f.z]),
+    remap(lineSegment([h.x, s * h.y, h.z], [s * h.x, h.y, h.z]), [m.x, m.y, f.z]),
+    remap(lineSegment([h.x, h.y, s * h.z], [s * h.x, h.y, h.z]), f),
+    remap(lineSegment([h.x, h.y, s * h.z], [s * h.x, h.y, h.z]), [m.x, f.y, f.z]),
+    remap(lineSegment([h.x, h.y, s * h.z], [s * h.x, h.y, h.z]), [f.x, f.y, m.z]),
+    remap(lineSegment([h.x, h.y, s * h.z], [s * h.x, h.y, h.z]), [m.x, f.y, m.z]),
+    remap(lineSegment([h.x, h.y, s * h.z], [h.x, s * h.y, h.z]), f),
+    remap(lineSegment([h.x, h.y, s * h.z], [h.x, s * h.y, h.z]), [f.x, m.y, f.z]),
+    remap(lineSegment([h.x, h.y, s * h.z], [h.x, s * h.y, h.z]), [f.x, f.y, m.z]),
+    remap(lineSegment([h.x, h.y, s * h.z], [h.x, s * h.y, h.z]), [f.x, m.y, m.z]),
+    remap(lineSegment([-s * h.x, h.y, h.z], [s * h.x, h.y, h.z]), f),
+    remap(lineSegment([-s * h.x, h.y, h.z], [s * h.x, h.y, h.z]), [m.x + 4 * h.x * (1 - round(f.x / h.x)), f.y, f.z]),
+    remap(lineSegment([h.x, -s * h.y, h.z], [h.x, s * h.y, h.z]), f),
+    remap(lineSegment([h.x, -s * h.y, h.z], [h.x, s * h.y, h.z]), [f.x, m.y + 4 * h.y * (1 - round(f.y / h.y)), f.z]),
+    remap(lineSegment([h.x, h.y, -s * h.z], [h.x, h.y, s * h.z]), f),
+    remap(lineSegment([h.x, h.y, -s * h.z], [h.x, h.y, s * h.z]), [f.x, f.y, m.z + 4 * h.z * (1 - round(f.z / h.z))])
+  ]);
+}
+
+/// Kelvin cell strut lattice with its struts joined by `combine`, written out so a blend reaches every
+/// junction (a mirror fold joins a strut to its own images sharply). Slower
+/// than kelvinCell(cellSize, setback); with `unionSharp` it is the same field.
+kelvinCell(cellSize, setback, combine) {
+  size = cellSize * [1, 1, 1];
+  h = size * 0.5;
+  f = domain.patternRepeatMirror(size);
+  m = mirrorNearest(f, h);
+  return combine([
+    remap(lineSegment([0, h.y, setback * h.z], [0, setback * h.y, h.z]), f),
+    remap(lineSegment([0, h.y, setback * h.z], [0, setback * h.y, h.z]), [f.x, m.y, f.z]),
+    remap(lineSegment([0, h.y, setback * h.z], [0, setback * h.y, h.z]), [f.x, f.y, m.z]),
+    remap(lineSegment([0, h.y, setback * h.z], [0, setback * h.y, h.z]), [f.x, m.y, m.z]),
+    remap(lineSegment([setback * h.x, 0, h.z], [0, setback * h.y, h.z]), f),
+    remap(lineSegment([setback * h.x, 0, h.z], [0, setback * h.y, h.z]), [m.x, f.y, f.z]),
+    remap(lineSegment([setback * h.x, 0, h.z], [0, setback * h.y, h.z]), [f.x, m.y, f.z]),
+    remap(lineSegment([setback * h.x, 0, h.z], [0, setback * h.y, h.z]), [m.x, m.y, f.z]),
+    remap(lineSegment([setback * h.x, h.y, 0], [0, h.y, setback * h.z]), f),
+    remap(lineSegment([setback * h.x, h.y, 0], [0, h.y, setback * h.z]), [m.x, f.y, f.z]),
+    remap(lineSegment([setback * h.x, h.y, 0], [0, h.y, setback * h.z]), [f.x, f.y, m.z]),
+    remap(lineSegment([setback * h.x, h.y, 0], [0, h.y, setback * h.z]), [m.x, f.y, m.z]),
+    remap(lineSegment([h.x, 0, setback * h.z], [setback * h.x, 0, h.z]), f),
+    remap(lineSegment([h.x, 0, setback * h.z], [setback * h.x, 0, h.z]), [m.x, f.y, f.z]),
+    remap(lineSegment([h.x, 0, setback * h.z], [setback * h.x, 0, h.z]), [f.x, f.y, m.z]),
+    remap(lineSegment([h.x, 0, setback * h.z], [setback * h.x, 0, h.z]), [m.x, f.y, m.z]),
+    remap(lineSegment([h.x, setback * h.y, 0], [setback * h.x, h.y, 0]), f),
+    remap(lineSegment([h.x, setback * h.y, 0], [setback * h.x, h.y, 0]), [m.x, f.y, f.z]),
+    remap(lineSegment([h.x, setback * h.y, 0], [setback * h.x, h.y, 0]), [f.x, m.y, f.z]),
+    remap(lineSegment([h.x, setback * h.y, 0], [setback * h.x, h.y, 0]), [m.x, m.y, f.z]),
+    remap(lineSegment([h.x, setback * h.y, 0], [h.x, 0, setback * h.z]), f),
+    remap(lineSegment([h.x, setback * h.y, 0], [h.x, 0, setback * h.z]), [f.x, m.y, f.z]),
+    remap(lineSegment([h.x, setback * h.y, 0], [h.x, 0, setback * h.z]), [f.x, f.y, m.z]),
+    remap(lineSegment([h.x, setback * h.y, 0], [h.x, 0, setback * h.z]), [f.x, m.y, m.z])
+  ]);
+}
+
+/// Fluorite strut lattice with its struts joined by `combine`, written out so a blend reaches every
+/// junction (a mirror fold joins a strut to its own images sharply). Slower
+/// than fluorite(cellSize); with `unionSharp` it is the same field.
+fluorite(cellSize, combine) {
+  size = cellSize * [1, 1, 1];
+  h = size * 0.5;
+  q = size * 0.25;
+  f = domain.patternRepeatMirror(size);
+  m = mirrorNearest(f, h);
+  return combine([
+    remap(lineSegment(q, [0, 0, h.z]), f),
+    remap(lineSegment(q, [0, 0, h.z]), [m.x, f.y, f.z]),
+    remap(lineSegment(q, [0, 0, h.z]), [f.x, m.y, f.z]),
+    remap(lineSegment(q, [0, 0, h.z]), [m.x, m.y, f.z]),
+    remap(lineSegment(q, [0, 0, h.z]), [f.x, f.y, m.z]),
+    remap(lineSegment(q, [0, 0, h.z]), [m.x, f.y, m.z]),
+    remap(lineSegment(q, [0, 0, h.z]), [f.x, m.y, m.z]),
+    remap(lineSegment(q, [0, 0, h.z]), [m.x, m.y, m.z]),
+    remap(lineSegment(q, [0, h.y, 0]), f),
+    remap(lineSegment(q, [0, h.y, 0]), [m.x, f.y, f.z]),
+    remap(lineSegment(q, [0, h.y, 0]), [f.x, m.y, f.z]),
+    remap(lineSegment(q, [0, h.y, 0]), [m.x, m.y, f.z]),
+    remap(lineSegment(q, [0, h.y, 0]), [f.x, f.y, m.z]),
+    remap(lineSegment(q, [0, h.y, 0]), [m.x, f.y, m.z]),
+    remap(lineSegment(q, [0, h.y, 0]), [f.x, m.y, m.z]),
+    remap(lineSegment(q, [0, h.y, 0]), [m.x, m.y, m.z]),
+    remap(lineSegment([h.x, 0, 0], q), f),
+    remap(lineSegment([h.x, 0, 0], q), [m.x, f.y, f.z]),
+    remap(lineSegment([h.x, 0, 0], q), [f.x, m.y, f.z]),
+    remap(lineSegment([h.x, 0, 0], q), [m.x, m.y, f.z]),
+    remap(lineSegment([h.x, 0, 0], q), [f.x, f.y, m.z]),
+    remap(lineSegment([h.x, 0, 0], q), [m.x, f.y, m.z]),
+    remap(lineSegment([h.x, 0, 0], q), [f.x, m.y, m.z]),
+    remap(lineSegment([h.x, 0, 0], q), [m.x, m.y, m.z]),
+    remap(lineSegment(h, q), f),
+    remap(lineSegment(h, q), [m.x, f.y, f.z]),
+    remap(lineSegment(h, q), [f.x, m.y, f.z]),
+    remap(lineSegment(h, q), [m.x, m.y, f.z]),
+    remap(lineSegment(h, q), [f.x, f.y, m.z]),
+    remap(lineSegment(h, q), [m.x, f.y, m.z]),
+    remap(lineSegment(h, q), [f.x, m.y, m.z]),
+    remap(lineSegment(h, q), [m.x, m.y, m.z])
+  ]);
+}
+
+/// Double cubic lattice with its struts joined by `combine`, written out so a
+/// blend reaches every junction. Slower than cubicDouble(cellSize); with
+/// `unionSharp` it is the same field.
+cubicDouble(cellSize, combine) {
+  size = cellSize * [1, 1, 1];
+  h = size * 0.5;
+  t = domain.patternRepeat(size);
+  f = domain.patternRepeatMirror(size);
+  m = mirrorNearest(f, h);
+  return combine([
+    remap(lineSegment([-h.x, 0, 0], [h.x, 0, 0]), t),
+    remap(lineSegment([0, -h.y, 0], [0, h.y, 0]), t),
+    remap(lineSegment([0, 0, -h.z], [0, 0, h.z]), t),
+    remap(lineSegment([-h.x, h.y, h.z], [h.x, h.y, h.z]), f),
+    remap(lineSegment([-h.x, h.y, h.z], [h.x, h.y, h.z]), [m.x + 4 * h.x * (1 - round(f.x / h.x)), f.y, f.z]),
+    remap(lineSegment([h.x, -h.y, h.z], [h.x, h.y, h.z]), f),
+    remap(lineSegment([h.x, -h.y, h.z], [h.x, h.y, h.z]), [f.x, m.y + 4 * h.y * (1 - round(f.y / h.y)), f.z]),
+    remap(lineSegment([h.x, h.y, -h.z], [h.x, h.y, h.z]), f),
+    remap(lineSegment([h.x, h.y, -h.z], [h.x, h.y, h.z]), [f.x, f.y, m.z + 4 * h.z * (1 - round(f.z / h.z))])
+  ]);
 }

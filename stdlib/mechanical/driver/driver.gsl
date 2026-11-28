@@ -330,7 +330,7 @@ screwdriverHandle(zBase, dia, len) {
              min(p.z - (top - r), length([p.x, p.y, p.z - (top - r)]) - r));
   flute = max(length([p.x - 1.1 * r, p.y]) - 0.28 * r,
               (zBase + 0.3 * len) - p.z, p.z - (top - 0.25 * len));
-  form = max(body, neg(remap(flute, map.patternPolarXY(6))));
+  form = max(body, neg(remap(flute, domain.patternPolarXY(6))));
   form.box = [[-r, -r, zBase], [r, r, top]];
   return form;
 }
