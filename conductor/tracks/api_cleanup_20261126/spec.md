@@ -167,16 +167,19 @@ reserved and undocumented in `gsl skill`: it is designed in
 
 ## 9. Open
 
-Nothing is open.
+- **`.second` on a sharp chamfer (found 2026-11-27).** Open, outside this track: see the next item.
 
 - **Chamfer-blend list forms (found and settled 2026-11-27).** Under a non-sharp blend, `intersectChamferRound`
   and `intersectChamferBlend` on a list differed from their two- and three-field forms. The cause was not the
   planes the list form takes, since its strongest edge and vertex planes are the binding ones. It was the
   filler: `intersectChamferEdges` and `intersectChamferVertices` gave `face` for the slots that hold no plane,
   so the blend over `[face, edges, vertices]` held the face up to three times, and `intersectRound` sank every
-  face by about 0.42 of its radius, with a gradient of length √3 there. The field forms are right. The filler
-  is now `-nothing`, and the list forms equal the field forms (`assembler/chamfer_list_test.go`). The indices
-  are constants, so the choice folds away before an interval is taken.
+  face by about 0.42 of its radius, with a gradient of length √3 there. The field forms are right. The list
+  blend forms now take their planes from two private helpers whose filler is `-nothing`, and equal the field
+  forms (`assembler/chamfer_list_test.go`); the indices are constants, so the choice folds away before an
+  interval is taken. The public helpers keep `face`: the sharp `intersectChamfer`'s `.second` reads it (with
+  `face` it reports the surface as its own runner-up, and with `-nothing` its value and gradient disagree), so
+  changing them is a `.second` question, not this one.
 
 Settled on 2026-11-26: the names (N1 `domain`, N2 `multiplyScalar`, N10 `a, b`), the spinodoid's scale (section 6) and the
 `RenderLit` wrappers (section 7).
