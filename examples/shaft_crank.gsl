@@ -2,22 +2,38 @@
 
 // A single-throw crankshaft. Main journals on the shaft's axis, a crank pin
 // thrown off it, and a web at each end of the pin: each web the hull of a
-// circle about the axis and one about the pin. Fillets where each journal and
-// the pin rise from the webs, and a centre hole in each end. Every segment is
-// placed by the two planes it runs between, measured from the left end.
+// circle about the axis and one about the pin, with a counterweight standing
+// out opposite the pin. Fillets where each journal and the pin rise from the
+// webs, and a centre hole in each end. Every segment is placed by the two
+// planes it runs between, measured from the left end.
 // Lengths are in mm, angles in radians.
+//
+// The counterweights balance the throw. Each carries `balance` times the first
+// moment of its web's hull and half the pin: at 1 the throw's centre of mass
+// sits on the axis, below 1 it stays out toward the pin and above 1 it passes
+// to the far side. That ratio holds as the throw moves. Each reaches `margin`
+// beyond the smallest radius that can balance it (at a margin of 0 the sector
+// is half a circle), so a larger margin gives a narrower, longer one. Both webs
+// are 15 thick and take the same counterweight, which also balances the couple
+// because they stand equally far from the pin's centre plane.
 
 @range(30, 50) crankThrow = 40.0;
 @range(0, 6.28) throwAngle = 0.0;
+@range(0, 1.5) balance = 1.0;
+@range(0, 20) margin = 6.0;
+
+counter = shaft.counterweight(
+  shaft.minSwingRadius(25.0, 18.0, crankThrow, 40.0, 55.0, balance, 28.0, 30.0) + margin,
+  balance, 28.0, 30.0);
 
 crank = shaft.body(
   [shaft.diameter(30.0, 0.0, 40.0),
    shaft.fillet(2.0),
-   shaft.web(25.0, 18.0, crankThrow, throwAngle, 40.0, 55.0),
+   shaft.web(25.0, 18.0, crankThrow, throwAngle, 40.0, 55.0, counter),
    shaft.fillet(2.0),
    shaft.eccentric(28.0, crankThrow, throwAngle, 55.0, 85.0),
    shaft.fillet(2.0),
-   shaft.web(25.0, 18.0, crankThrow, throwAngle, 85.0, 100.0),
+   shaft.web(25.0, 18.0, crankThrow, throwAngle, 85.0, 100.0, counter),
    shaft.fillet(2.0),
    shaft.diameter(30.0, 100.0, 140.0)],
   drill.centerHole(3.15, 6.7, 8.0),

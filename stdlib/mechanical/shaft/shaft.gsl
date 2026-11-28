@@ -20,7 +20,7 @@
 // THE VOCABULARY. Segments: shaft.diameter, taper, section (any 2D field),
 // hex, dFlat, doubleD, spline, gear (spur or helical), bevel (a bevel gear,
 // placed by its pitch apex and flat faces), thread (ISO 68-1), eccentric (a
-// crank pin) and web (a crank web). Ends, on spline, gear and
+// crank pin) and web (a crank web, with a counterweight if given one). Ends, on spline, gear and
 // thread: shaft.planeEnd, runout (a cutter's), chamferEnd and threadRunout.
 // Joints, listed between two segments: shaft.fillet and shaft.chamfer. The
 // body declares its box from its end faces and its segments' reach, which a
@@ -504,8 +504,8 @@ eccentric(dia, offset, angle, from, to) {
 /// A crank web: the convex hull of a circle of radius `mainR` about the
 /// shaft's axis and one of `pinR` about a pin thrown `offset` at `angle`, as
 /// shaft.eccentric places it. Exact. The two circles must not contain one
-/// another, |mainR - pinR| < offset. A counterweight or any other outline is a
-/// shaft.section.
+/// another, |mainR - pinR| < offset. For a counterweight, pass shaft.counterweight
+/// as a seventh argument; any other outline is a shaft.section.
 ///
 ///   shaft.web(25.0, 18.0, 40.0, 0.0, 30.0, 45.0)
 web(mainR, pinR, offset, angle, from, to) {
@@ -515,6 +515,56 @@ web(mainR, pinR, offset, angle, from, to) {
                       : (want > 2.5 && want < 3.5 ? q1(nothing) : prismQuad(webSection(mainR, pinR, offset, angle), from, to)));
   }
   return seg;
+}
+
+/// A counterweight for shaft.web, passed as its seventh argument: a sector
+/// standing out of the web's main circle on the side opposite the pin, in the
+/// web's own planes. Its first moment about the shaft's axis is `balance`
+/// times that of the throw's pin side: this web's hull and half of the pin, a
+/// round `pinDia` across and `pinLen` long between the two webs. `balance` is
+/// a ratio of moments of one material, so it has no units and needs no
+/// density: 1 cancels the pin and the webs' hulls, and more stands for what
+/// else swings with the pin, such as a connecting rod's share. The sector
+/// reaches `swingR` from the axis and takes the span that needs, up to half a
+/// circle; if that is not enough it stops there, short of `balance`, and
+/// shaft.minSwingRadius says how far out it would have to reach. It adds
+/// nothing when `swingR` is within the web's main circle, or `balance` is 0.
+/// Give both webs of a throw the same arguments: that balances the throw
+/// statically, whatever the webs' thicknesses, and its couple too when the
+/// webs' centre planes stand equally far from the pin's centre plane (webs
+/// flush with the pin, that is, of one thickness). The sector stays clear of
+/// the hull when mainR is at least pinR; for a larger pinR its span stops
+/// where it would meet the hull.
+///
+///   shaft.counterweight(52.0, 1.0, 28.0, 30.0)
+counterweight(swingR, balance, pinDia, pinLen) {
+  return [swingR, balance, pinDia, pinLen];
+}
+
+/// A crank web, as above, with a counterweight: shaft.counterweight, on the
+/// side opposite the pin. Exact outside, as the web's section and the sector's
+/// each are and the union is their min. The segment's reach is the counterweight's
+/// swing radius whenever that is the greater, so the body's box holds it.
+///
+///   shaft.web(25.0, 18.0, 40.0, 0.0, 40.0, 55.0, shaft.counterweight(52.0, 1.0, 28.0, 30.0))
+web(mainR, pinR, offset, angle, from, to, weight) {
+  seg(eDown, eUp, want) {
+    return want > 0.5 && want < 2.5 ? q1(want < 1.5 ? from : to)
+         : (want > 4.5 ? q1(want > 5.5 ? nothing : max(max(mainR, abs(offset) + pinR), weight.x))
+                      : (want > 2.5 && want < 3.5 ? q1(nothing) : prismQuad(weightedWebSection(mainR, pinR, offset, angle, from, to, weight), from, to)));
+  }
+  return seg;
+}
+
+/// The smallest swing radius at which a web's counterweight reaches `balance`,
+/// its sector then half a circle: a shaft.counterweight with a smaller `swingR`
+/// falls short. The arguments are the web's, as shaft.web takes them, and the
+/// counterweight's `balance`, `pinDia` and `pinLen`.
+///
+///   shaft.minSwingRadius(25.0, 18.0, 40.0, 40.0, 55.0, 1.0, 28.0, 30.0)
+minSwingRadius(mainR, pinR, offset, from, to, balance, pinDia, pinLen) {
+  moment = weightMoment(mainR, pinR, offset, from, to, balance, pinDia, pinLen);
+  return pow(mainR * mainR * mainR + 1.5 * moment / ((to - from) * weightSinMax(mainR, pinR, offset)), 1.0 / 3.0);
 }
 
 /// A hexagon `acrossFlats` wide, its flats facing +x and -x as
@@ -960,6 +1010,57 @@ webSection(mainR, pinR, offset, angle) {
   run = sqrt(1.0 - slope * slope);
   t = clamp((along - slope * across / run) / offset, 0.0, 1.0);
   return length([along - t * offset, across]) - (mainR + t * (pinR - mainR));
+}
+
+// The first moment of a web's hull, per unit thickness, about the shaft's axis
+// and along the pin's direction: the integral of x over the hull of a circle
+// of mainR about the axis and one of pinR at x = offset. The hull is the
+// circles' two sectors, the big one on the far side with its moment toward -x,
+// and a right trapezoid on each tangent, so it is closed form. The tangents
+// touch the circles at angle b from +x, cos b = (mainR - pinR) / offset.
+webMoment(mainR, pinR, offset) {
+  cb = (mainR - pinR) / offset;
+  sb = sqrt(1.0 - cb * cb);
+  b = acos(cb);
+  bigSector = neg(2.0 / 3.0) * mainR * mainR * mainR * sb;
+  smallSector = b * pinR * pinR * offset + 2.0 / 3.0 * pinR * pinR * pinR * sb;
+  trapezoids = offset * sb * (mainR * (mainR * cb + offset + pinR * cb) + pinR * (2.0 * offset + pinR * cb)) / 3.0;
+  return bigSector + smallSector + trapezoids;
+}
+
+// The sine of the widest half-span a counterweight may take: 1, at a quarter
+// circle either side (where a sector's moment peaks), unless pinR is the
+// larger radius, when the hull's tangent meets the sector sooner.
+weightSinMax(mainR, pinR, offset) {
+  return sin(min(pi / 2.0, pi - acos((mainR - pinR) / offset)));
+}
+
+// The first moment a counterweight carries: balance times this web's hull
+// over its thickness plus half of the pin's moment (the pin's whole is
+// pi/4 pinDia^2 pinLen offset).
+weightMoment(mainR, pinR, offset, from, to, balance, pinDia, pinLen) {
+  return balance * ((to - from) * webMoment(mainR, pinR, offset) + pi * pinDia * pinDia * pinLen * offset / 8.0);
+}
+
+// A web's section with its counterweight. The counterweight is a pie of
+// radius swingR about the axis, opposite the pin, its half-span the angle whose
+// sine makes its moment the one wanted: a sector from mainR to swingR has
+// 2/3 (swingR^3 - mainR^3) sin(half) per unit thickness, and the part inside
+// mainR is the web's already. The pie's distance is the usual one, to its
+// radius and to its edge, signed by the side of the edge; exact outside. A
+// moment of 0 is a pie of no width, which is gated out: a zero-width fin would
+// read 0 along its length.
+weightedWebSection(mainR, pinR, offset, angle, from, to, weight) {
+  swingR = weight.x;
+  moment = weightMoment(mainR, pinR, offset, from, to, weight.y, weight.z, weight.w);
+  reach = swingR * swingR * swingR - mainR * mainR * mainR;
+  half = asin(min(1.5 * moment / ((to - from) * max(reach, 0.000000001)), weightSinMax(mainR, pinR, offset)));
+  c = cos(angle);
+  s = sin(angle);
+  q = [neg(p.x * c + p.y * s), abs(p.y * c - p.x * s)];
+  e = [cos(half), sin(half)];
+  pie = max(length(q) - swingR, length(q - e * clamp(dot(q, e), 0.0, swingR)) * sign(e.x * q.y - e.y * q.x));
+  return min(webSection(mainR, pinR, offset, angle), max(pie, moment > 0.0 ? neg(nothing) : nothing));
 }
 
 // The hexagon's six corners, counterclockwise from 30 degrees, so its flats

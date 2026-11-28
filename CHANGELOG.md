@@ -41,6 +41,17 @@ from `1.0.0` onward).
 
 ### Added
 
+- Crank counterweights: `shaft.web` takes `shaft.counterweight(swingR, balance, pinDia, pinLen)` as a
+  seventh argument, adding a sector opposite the pin in the web's own planes. Its span is solved so
+  that its first moment about the axis is `balance` times that of the throw's pin side (this web's
+  hull and half the pin), a ratio of moments of one material, so it needs no density and stays
+  balanced as the throw, pin and web sliders move. A `balance` of 1 balances the throw statically,
+  whatever the webs' thicknesses, and its couple too when the webs' centre planes stand equally far
+  from the pin's. The span stops at half a circle when the swing radius cannot reach `balance`;
+  `shaft.minSwingRadius(mainR, pinR, offset, from, to, balance, pinDia, pinLen)` gives the smallest
+  radius that can. Exact outside, and the body's box holds the swing radius. The six-argument `web`
+  is unchanged. `examples/shaft_crank.gsl` now counterweights its webs, with `balance` and `margin`
+  sliders.
 - Migrated GSL compiler architecture, language specification/migration, golden verification, and
   stdlib tolerance-table documentation from `omega-release/doc/` into `doc/`, synced
   `doc/gsl_lang_spec_future.md`, extracted `doc/roadmap.md` from `README.md`, and documented Go
