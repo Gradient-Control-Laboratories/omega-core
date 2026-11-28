@@ -415,3 +415,53 @@ func TestRequirement_Bands(t *testing.T) {
 		nearly(t, "band high", float64(groups[i].Samples[1][0].Value), want[1], 1e-7)
 	}
 }
+
+// journalTurned is the 25 k5 journal turned (0.1 mm feed, 0.4 mm nose) and
+// drawn at its maximum-material size, unplated: the spec's journal cases.
+const journalTurned = `
+rMax = (25.0 + tolerance.shaftUpper(25.0, tolerance.k5)) / 2.0;
+rMin = (25.0 + tolerance.shaftLower(25.0, tolerance.k5)) / 2.0;
+feed = 0.1;
+nose = 0.4;
+steelMat, steelColor = metal.steel();
+fMat, fColor, fHeight, fSlope = machined.turned(steelMat, steelColor, [0, 0, 0], [0, 0, 1], feed, nose);
+r = sqrt(p.x * p.x + p.y * p.y);
+seat = r - rMax;
+seat.material = fMat;
+envelope = max(rMax - r, seat);
+least = max(r - rMin, 0.0 - seat);
+return seat;
+`
+
+// The journal cases, as made: the groove bottoms of a fine turning stay
+// outside the least-material cylinder and a coarse turning's do not; the cusp
+// tips touch the envelope everywhere, so without a slack the claim cannot be
+// decided; and with one, read in the profile plane, it is proven over the
+// whole 15 mm seat, which the tight bound on fract makes affordable.
+func TestJournal_Cases(t *testing.T) {
+	patch := [6]float64{12.495, -0.05, 0, 12.512, 0.05, 0.5}
+	asMade := conditioned(t, eval.AsMade)
+	for _, c := range []struct {
+		name, defs, claim string
+		region            [6]float64
+		slack             float64
+		want              string
+	}{
+		{"fine turning, least material", "", "least", patch, 0, "proven"},
+		{"coarse turning, least material", "feed = 0.2; nose = 0.8;", "least", patch, 0, "disproven"},
+		{"envelope, no slack", "", "envelope", patch, 0, "undecided"},
+		{"envelope, whole seat in the profile plane", "r = abs(p.x);", "envelope", [6]float64{12.495, -1, 10, 12.512, 1, 25}, -0.0001, "proven"},
+	} {
+		r, err := asMade.Certify(t.Context(), nil, journalTurned, c.defs, c.claim, c.region, c.slack, 0)
+		require.NoError(t, err)
+		got := "undecided"
+		if r.Proven {
+			got = "proven"
+		} else if r.Disproven {
+			got = "disproven"
+		}
+		if got != c.want {
+			t.Errorf("%s: %s in %d interval evaluations, want %s", c.name, got, r.Evals, c.want)
+		}
+	}
+}

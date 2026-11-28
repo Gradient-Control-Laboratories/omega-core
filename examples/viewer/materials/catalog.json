@@ -2507,7 +2507,7 @@
       "package": "sheet",
       "symbol": "checkerPlateSteel",
       "section": "Ready-made",
-      "doc": "Steel floor plate, 25 mm four-way pattern, lugs 1.2 mm high, on a +Z face through the origin, its lugs as displacement.",
+      "doc": "Steel floor plate, 25 mm four-way pattern, lugs 1.2 mm high, on a +Z face through the origin, its lugs as displacement measured down from their tops: the face drawn is the lugs' tops, the plate 1.2 mm below.",
       "index": 277
     },
     {
@@ -2516,7 +2516,7 @@
       "package": "sheet",
       "symbol": "stuccoEmbossedAluminum",
       "section": "Ready-made",
-      "doc": "Stucco-embossed aluminium, 4 mm pebbles 0.2 mm deep, as displacement.",
+      "doc": "Stucco-embossed aluminium, 4 mm pebbles standing 0.2 mm proud, as displacement measured down from their tops.",
       "index": 278
     },
     {
@@ -2597,7 +2597,7 @@
       "package": "molded",
       "symbol": "rubberGrip",
       "section": "Ready-made",
-      "doc": "A black rubber grip, 3 mm dots 0.8 mm high, rows along +X on a +Z face through the origin, its dots as displacement.",
+      "doc": "A black rubber grip, 3 mm dots 0.8 mm high, rows along +X on a +Z face through the origin, its dots as displacement added onto the rubber, measured down from their tops.",
       "index": 287
     },
     {

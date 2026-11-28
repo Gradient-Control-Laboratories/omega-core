@@ -353,9 +353,20 @@ New tests are added only once the owner agrees them.
 
 ## Phase 10: Verification and Records
 
-- [ ] Task: The journal cases (proven, disproven, undecided at the stated slack; patch and whole seat)
-      and the coated-block export volume as tests, once agreed
-- [ ] Task: Docs: [material_composition.md](../../../doc/material_composition.md),
-      [material_library.md](../../../doc/material_library.md) and a tolerance page
-- [ ] Task: CHANGELOG entries for every phase
-- [ ] Task: Phase Verification & Checkpoint
+- [x] Task: The journal cases (proven, disproven, undecided at the stated slack; patch and whole seat)
+      and the coated-block export volume as tests, once agreed (owner's go, 2026-11-27):
+      `TestJournal_Cases` (fine turning least material proven, coarse disproven, the envelope with no
+      slack undecided, the whole seat in the profile plane proven); the plated cases in
+      `TestCondition_PlatingOverTurningProves`, `TestRequirement_PlatedJournal` and
+      `TestTolerance_CertifyProvesThePlatedJournal`; the coated block's export volume in
+      `backend/mesh/displacement_test.go`
+- [x] Task: Docs: [material_composition.md](../../../doc/material_composition.md) (the relief datum
+      and depth table), [material_library.md](../../../doc/material_library.md) (datum and depth in
+      "Relief") and a tolerance page, [tolerance.md](../../../doc/tolerance.md) (2026-11-27)
+- [x] Task: CHANGELOG entries for every phase
+- [x] Task: Phase Verification & Checkpoint (2026-11-27): `go test ./...`, 97 packages pass; gpuparity's two
+      tests fail on origin/main itself. `tool/materialswatch`'s `TestTintedCoatIsARender` found the
+      committed coat basis stale after Phase 5 moved the coats to their peaks; regenerated with
+      `go run ./tool/materialswatch -manifest-only -coat-basis` (owner's go): `coat-basis.bin` and
+      `catalog.json` (which also takes the two sheet presets' new doc lines); the swatch sheet and
+      finish basis stay as committed. Lint clean. Phase 9 (optional) not done
