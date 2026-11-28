@@ -87,7 +87,10 @@ from `1.0.0` onward).
   `CertifyOverTolerances` and `gsl eval`'s certify `"overTolerances"` prove a claim for every value
   each toleranced declaration takes between its limits, and a disproof names each one's failing share
   of its tolerance. The parse error for an unknown property lists `tolerance` among those that may be
-  assigned.
+  assigned. A value that declares no tolerance reads its own, propagated to first order from the
+  document's working tolerances: `(boreR - zinc).tolerance` is the two combined, and a shape's is a
+  field, its range at each point (on a plated bore, the boring's and the zinc's on the bore, the
+  zinc's alone outside). Read in a `gsl eval` query, it counts the coats at the request's condition.
 - **Relief depth (`material.reliefDepth`, `material.withReliefDepth`)**: a material declares how far
   its relief reaches below its peaks, in row 0's fourth component (until now reserved, 0 for every
   record that sets none). Relief is measured down from the peaks, so the depth is its whole

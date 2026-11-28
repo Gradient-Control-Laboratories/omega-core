@@ -261,10 +261,15 @@ New tests are added only once the owner agrees them.
 
 ## Phase 7: Propagation, Display and Requirements (D4, D5, D8)
 
-- [ ] Task: Proposal: `shape.tolerance`, a per-point field from first-order propagation over the
-      toleranced declarations (worst case the sum of `abs(shape.d(x))` times each half-width, bias the
-      sum of `shape.d(x)` times each midpoint), read at a condition; how a document reads it and
-      what eval returns
+- [x] Task: Proposal (agreed and built 2026-11-27): a value that declares no tolerance reads its own,
+      `y.tolerance = [bias - spread, bias + spread]`, offsets of its value, bias the sum of
+      `y.d(x) * (lo + hi) / 2` and spread the sum of `abs(y.d(x)) * (hi - lo) / 2` over the
+      package's own toleranced declarations (owner's choices: offsets of the value, so `D + lo` is a
+      shape's most-material surface; the document's own sources). The linker rewrites the read into
+      that expression of DERIVs (`internal/link/tolerance.go`), expanded as every derivative is, so
+      in a query it is taken at the condition. On the plated H7 bore: `boreR - zinc` reads ±4.5 µm;
+      the plated block ±4.5 µm on its bore and ±1.5 µm outside as made, ±3 µm and 0 as built; the
+      shaft ±1.6 µm; nothing toleranced reads [0, 0]. Test (owner's go): `TestTolerance_Propagates`
 - [ ] Task: The viewer draws a shape's min and max surfaces (D minus its tolerance's max and min); the
       Section panel gets a Min / Max toggle beside Coatings and Relief
 - [ ] Task: Requirements as claims: ISO 286 and profile constructors (`tolerance.shaftDia` and

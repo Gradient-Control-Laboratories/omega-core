@@ -335,3 +335,38 @@ func TestTolerance_CertifyNeedsATolerance(t *testing.T) {
 		t.Errorf("got %v", err)
 	}
 }
+
+// A value that declares no tolerance reads its own, to first order from the
+// working tolerances it is made from: a sum of two, and a shape's, which
+// differs face by face and, as made, counts the coat.
+func TestTolerance_Propagates(t *testing.T) {
+	points := [][3]float64{{12.505, 0, 0}, {20.01, 0, 0}, {0, 20.01, 5}}
+	for _, c := range []struct {
+		condition    eval.Condition
+		bore, others float64
+	}{
+		{eval.AsBuilt, 0.003, 0},
+		{eval.AsMade, 0.0045, 0.0015},
+	} {
+		groups, err := conditioned(t, c.condition).EvalGsl(t.Context(), nil, fitToleranced, "finished = boreR - zinc;",
+			[]string{"finished.tolerance", "plated.tolerance", "shaft.tolerance"}, points)
+		require.NoError(t, err)
+		for i := range points {
+			nearly(t, "finished low", float64(groups[0].Samples[0][i].Value), -0.0045, 1e-7)
+			nearly(t, "finished high", float64(groups[0].Samples[1][i].Value), 0.0045, 1e-7)
+			want := c.others
+			if i == 0 {
+				want = c.bore
+			}
+			nearly(t, string(c.condition)+" plated low", float64(groups[1].Samples[0][i].Value), -want, 1e-7)
+			nearly(t, string(c.condition)+" plated high", float64(groups[1].Samples[1][i].Value), want, 1e-7)
+			nearly(t, "shaft high", float64(groups[2].Samples[1][i].Value), 0.0016, 1e-7)
+		}
+	}
+
+	// Nothing toleranced, nothing varies.
+	groups, err := eval.New(&source.MockManager{}, nil).EvalGsl(t.Context(), nil, fit, "", []string{"plated.tolerance"}, points[:1])
+	require.NoError(t, err)
+	nearly(t, "untoleranced low", float64(groups[0].Samples[0][0].Value), 0, 0)
+	nearly(t, "untoleranced high", float64(groups[0].Samples[1][0].Value), 0, 0)
+}

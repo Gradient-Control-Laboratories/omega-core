@@ -658,6 +658,18 @@ func (v *linkVisitor) VisitPropRef(op *program.Operand, pr *program.PropertyRef)
 				}
 			}
 		}
+		// A value that declares no tolerance reads its own, propagated to
+		// first order from the package's working tolerances.
+		if pr.Property == "tolerance" && !hasProp {
+			var pkg *program.Package
+			if ps := v.currScope.PkgScope(); ps != nil {
+				pkg = ps.Package
+			}
+			read := propagatedTolerance(pr.Reference, pkg, op.Start, op.End)
+			op.T = read.T
+			_, err := program.VisitOperand(op, v)
+			return nil, err
+		}
 		if !hasProp {
 			return nil, v.currScope.Err(op.Start, fmt.Errorf("variable %q has no property %q", pr.Reference.Name, pr.Property))
 		}
