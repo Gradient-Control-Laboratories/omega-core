@@ -297,28 +297,29 @@ differenceExponential(target, tool, width) {
 // sqrt3 planes); higher-order groups add no new features.
 // intersectChamferEdges and intersectChamferVertices scan all i<j (and
 // i<j<l) combinations and take the strongest plane. Slots that aren't a
-// valid combination fall back to `face` (the sharp intersection), the
-// natural floor of the chamfer field; this avoids large sentinels that
-// would otherwise blow up interval bounds in the mesher. The union
-// counterparts negate, intersect, and negate back, as elsewhere.
+// valid combination are -nothing, so they never win: the indices are
+// constants, so the choice folds away before any interval is taken. They
+// must not be `face`: a blend over [face, edges, vertices] would then hold
+// the face up to three times, and a round blend would sink every face. The
+// union counterparts negate, intersect, and negate back, as elsewhere.
 
-/// Strongest pairwise (edge) chamfer plane of a list of SDFs at `offset`.
+/// Strongest pairwise (edge) chamfer plane of a list of SDFs at `offset`;
+/// -nothing for a list of fewer than two.
 intersectChamferEdges(fields, offset) {
-  face = intersectSharp(fields);
   return intersectSharp(map((di, i) {
     return intersectSharp(map((dj, j) {
-      return (j > i) ? (di + dj + offset) / sqrt2 : face;
+      return (j > i) ? (di + dj + offset) / sqrt2 : -nothing;
     }, fields));
   }, fields));
 }
 
-/// Strongest three-way (vertex) chamfer plane of a list of SDFs at `offset`.
+/// Strongest three-way (vertex) chamfer plane of a list of SDFs at `offset`;
+/// -nothing for a list of fewer than three.
 intersectChamferVertices(fields, offset) {
-  face = intersectSharp(fields);
   return intersectSharp(map((di, i) {
     return intersectSharp(map((dj, j) {
       return intersectSharp(map((dl, l) {
-        return (l > j) && (j > i) ? (di + dj + dl + offset) / sqrt3 : face;
+        return (l > j) && (j > i) ? (di + dj + dl + offset) / sqrt3 : -nothing;
       }, fields));
     }, fields));
   }, fields));
@@ -600,38 +601,14 @@ intersectChamferBlend(a, b, c, offset, blend) {
   return blend([face, edge, corner]);
 }
 
-// The strongest edge and vertex planes for a chamfer blend over a list. Unlike
-// intersectChamferEdges and intersectChamferVertices, a slot that holds no
-// plane is -nothing, not the sharp intersection: the blend already has the
-// face, and holding it twice more would sink every face under a round blend.
-// The indices are constants, so the choice folds away before any interval is
-// taken.
-chamferBlendEdges(fields, offset) {
-  return intersectSharp(map((di, i) {
-    return intersectSharp(map((dj, j) {
-      return (j > i) ? (di + dj + offset) / sqrt2 : -nothing;
-    }, fields));
-  }, fields));
-}
-
-chamferBlendVertices(fields, offset) {
-  return intersectSharp(map((di, i) {
-    return intersectSharp(map((dj, j) {
-      return intersectSharp(map((dl, l) {
-        return (l > j) && (j > i) ? (di + dj + dl + offset) / sqrt3 : -nothing;
-      }, fields));
-    }, fields));
-  }, fields));
-}
-
 /// Chamfered CSG intersection of N SDFs with its chamfer planes combined by
 /// `blend`. `offset` is a scalar, or [edgeOffset, vertexOffset].
 /// One blend joins the face, edge and vertex planes, so edge and vertex
 /// blending are not independent.
 intersectChamferBlend(fields, offset, blend) {
   return blend([intersectSharp(fields),
-    chamferBlendEdges(fields, firstOf(offset)),
-    chamferBlendVertices(fields, lastOf(offset))]);
+    intersectChamferEdges(fields, firstOf(offset)),
+    intersectChamferVertices(fields, lastOf(offset))]);
 }
 
 /// Partial application of intersectChamferBlend: binds the chamfer offset and
@@ -662,12 +639,9 @@ unionChamferBlend(a, b, c, offset, blend) {
 /// Chamfered CSG union of N SDFs with its chamfer planes combined by the
 /// union operator `blend` (see intersectChamferBlend for offset).
 unionChamferBlend(fields, offset, blend) {
-  negated = map((field) {
-    return neg(field);
-  }, fields);
   return blend([unionSharp(fields),
-    neg(chamferBlendEdges(negated, firstOf(offset))),
-    neg(chamferBlendVertices(negated, lastOf(offset)))]);
+    unionChamferEdges(fields, firstOf(offset)),
+    unionChamferVertices(fields, lastOf(offset))]);
 }
 
 /// Partial application of unionChamferBlend: binds the chamfer offset and

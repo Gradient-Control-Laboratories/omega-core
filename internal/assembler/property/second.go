@@ -118,9 +118,31 @@ func (dd *secondDomain) Index(base Value, index *program.Operand) Value {
 
 // Select is a hard branch (ternary), which can act as a union: keep the chosen
 // branch's pair, selecting by the condition's first (a boolean is a scalar).
+//
+// A condition the build already knows, such as a library's `(j > i) ? plane :
+// -nothing` over a list's constant indices, takes its branch whole. Selected
+// at run time instead, each branch's sentinel second would sit in a select
+// where isInf cannot see it, and once the condition folds it lands in a min or
+// max as a real 1e30 (see secondInf). For the same reason a select whose
+// branches carry no second carries none.
 func (dd *secondDomain) Select(cond Value, branches []Value) Value {
 	c := cond.(pair)
 	bs := pairs(branches)
+	if len(bs) == 2 {
+		if truth, ok := constTruth(c.first); ok {
+			if truth {
+				return bs[0]
+			}
+			return bs[1]
+		}
+	}
+	noSecond := true
+	for _, b := range bs {
+		noSecond = noSecond && isInf(b.second)
+	}
+	if noSecond {
+		return leaf(nary(program.Operation_SELECT, append([]*program.Operand{c.first}, firstsOf(bs)...)...))
+	}
 	pArgs := append([]*program.Operand{c.first}, firstsOf(bs)...)
 	sArgs := append([]*program.Operand{c.first}, secondsOf(bs)...)
 	return pair{
@@ -379,6 +401,74 @@ func nearestToSurface(cands []*program.Operand) *program.Operand {
 	// as b + cond*(a-b) is exact.
 	behind := bin(program.Operation_LT, nearest, nary(program.Operation_MIN, ahead...))
 	return mul(nearest, nary(program.Operation_SELECT, behind, num(-1), num(1)))
+}
+
+// constNum is op's value when it is a numeric literal or a negated one.
+func constNum(op *program.Operand) (float64, bool) {
+	switch t := op.T.(type) {
+	case *program.Operand_Value:
+		return t.Value, true
+	case *program.Operand_Expression:
+		if t.Expression.Operation == program.Operation_NEG && len(t.Expression.Operands) == 1 {
+			v, ok := constNum(t.Expression.Operands[0])
+			return -v, ok
+		}
+	}
+	return 0, false
+}
+
+// constTruth is a condition's value when the build knows it: a literal, a
+// comparison of two literals, or not/and/or over such conditions.
+func constTruth(op *program.Operand) (truth, ok bool) {
+	if v, ok := constNum(op); ok {
+		return v != 0, true
+	}
+	e, isExpr := op.T.(*program.Operand_Expression)
+	if !isExpr {
+		return false, false
+	}
+	xs := e.Expression.Operands
+	switch operation := e.Expression.Operation; operation {
+	case program.Operation_NOT:
+		if len(xs) == 1 {
+			v, ok := constTruth(xs[0])
+			return !v, ok
+		}
+	case program.Operation_AND, program.Operation_OR:
+		if len(xs) == 2 {
+			a, okA := constTruth(xs[0])
+			b, okB := constTruth(xs[1])
+			if okA && okB {
+				if operation == program.Operation_AND {
+					return a && b, true
+				}
+				return a || b, true
+			}
+		}
+	case program.Operation_GT, program.Operation_GE, program.Operation_LT, program.Operation_LE,
+		program.Operation_EQ, program.Operation_NE:
+		if len(xs) == 2 {
+			a, okA := constNum(xs[0])
+			b, okB := constNum(xs[1])
+			if okA && okB {
+				switch operation {
+				case program.Operation_GT:
+					return a > b, true
+				case program.Operation_GE:
+					return a >= b, true
+				case program.Operation_LT:
+					return a < b, true
+				case program.Operation_LE:
+					return a <= b, true
+				case program.Operation_EQ:
+					return a == b, true
+				default:
+					return a != b, true
+				}
+			}
+		}
+	}
+	return false, false
 }
 
 func listElems(p pair) ([]pair, bool) {

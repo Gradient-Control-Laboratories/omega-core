@@ -276,8 +276,14 @@ from `1.0.0` onward).
   `differenceChamferRound` and the `…ChamferBlend` forms on a list, and every primitive handed one as its
   blend, blended the face with itself up to three times, so each face moved in: by about 0.42 of the radius
   under a round blend, with the field's gradient √3 long there, and by other amounts under Lp and
-  exponential blends. The list forms now equal their two- and three-field forms. `intersectChamferEdges`,
-  `intersectChamferVertices` and the sharp chamfers are unchanged.
+  exponential blends. The list forms now equal their two- and three-field forms. `intersectChamferEdges` and
+  `intersectChamferVertices` give `-nothing`, not the sharp intersection, for a list too short to hold an
+  edge or a vertex.
+- **`.second` of a sharp chamfer names the runner-up**: on `intersectChamfer` over a list, and so on a box
+  with a chamfer blend, `.second` equalled the field itself everywhere, and the no-second sentinel (1e30)
+  reached its mins and maxes, so f32 backends and the Go evaluator disagreed on its gradient. A ternary whose
+  condition the build knows (a library's test on constant list indices) now takes its branch before
+  `.second` is expanded, and `.second` names the next face slab or chamfer plane with that piece's gradient.
 - `topofold` now evaluates general UI-derived constant expressions via a scoped `ConstEvalFunc`
   fallback (`eval.ConstPkgSlotsAt`) in `assembler`, rejecting non-finite results, and Rust Cargo
   build scripts (`internal/fidget/internal/rust/build.rs`, `internal/fidget/internal/tape-core/build.rs`,
