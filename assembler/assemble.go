@@ -167,7 +167,11 @@ func assembleWithOptions(primarySources []string, srcMgr source.Manager, o *opti
 	}
 	// Expand property definitions and member accessors into explicit function calls/expressions,
 	// re-link references, and perform initial type inference across all packages.
-	prog, err = property.ExpandShared(prog)
+	if o.conditionDerivatives {
+		prog, err = property.ExpandSharedKeepingReturnDerivatives(prog)
+	} else {
+		prog, err = property.ExpandShared(prog)
+	}
 	if err != nil {
 		return nil, err
 	}

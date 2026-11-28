@@ -12,6 +12,15 @@ from `1.0.0` onward).
 
 ### Breaking
 
+- **`tolerance.shaftDia` / `holeDia` and `bearing.seatDia` / `housingDia` give the size made**: the
+  three-argument forms that took a material condition, and `tolerance.maxMaterial` / `minMaterial`,
+  are removed. The two-argument forms return the zone's middle, the size a part is made to
+  (`tolerance.shaftDia(25.0, tolerance.k5)` is 25.0065), and `tolerance.shaftZone` / `holeZone`,
+  `bearing.seatZone` / `housingZone` give the zone about it as a working tolerance for the value's
+  `.tolerance`. `gsl fix -stdlib` rewrites an old call to the size it gave, the nominal plus that
+  condition's deviation (`(25.0 + tolerance.shaftUpper(25.0, tolerance.k5))`), so a migrated document
+  does not move; a condition it cannot read is reported. `examples/shaft_bearings.gsl` now seats its
+  bearings at the k5 zone's middle with the zone as the seat's tolerance.
 - **Changed Go module path to `github.com/Gradient-Control-Laboratories/omega-core`**: The root
   `go.mod` module declaration and all internal package import paths changed from
   `gradientcontrol.com/omega/core` to `github.com/Gradient-Control-Laboratories/omega-core` so
@@ -41,6 +50,73 @@ from `1.0.0` onward).
 
 ### Added
 
+- **Meshes with their coats on (`--coatings`, `--relief`)**: `gsl compile -t stl|3mf|glb --coatings --relief`,
+  `gsl eval`'s mesh op (`"coatings"`, `"relief"`), the server's mesh request (`coatings`, `relief`), the
+  viewer's Export panel (Coatings and Relief, for the server meshers) and `mesh.WithDisplacement`
+  mesh each surface moved by its materials' coatings (the film a coat stands proud by, its build,
+  which is size) and by their relief (the marks on it, which are texture), as the CPU
+  renderer draws them. Coats laid inside a return move by their layered distance; a return whose
+  own material has a height moves as a whole. A box worked out for the part (its `.box`,
+  `--bbox auto`, its `@scene`) is grown 3 mm for them, since those boxes hold the field as built;
+  a box named outright is meshed as given, and the Export panel grows the box it measures by the
+  same 3 mm. Off, the default, the mesh is byte for byte what it was.
+  A 20 mm cube with a 0.1 mm build meshes to 8241.94 mm³ against 8241.89 exact. Relief finer than a
+  cell is not resolved, and on noisy relief (a wood's pores) `mdc` can throw vertices off the
+  surface; `marching-cubes` stays on it. `displacementDrawn()` follows the relief flag.
+- **Section view Coatings and Relief toggles**: the viewer's Section panel draws its field with each
+  surface moved by its materials' coatings (builds) and relief (`gsl_sectionShape`), off by default, so the
+  section shows the field as built as it always has. `buildScale()` has its own WGSL var, and
+  `gsl_sdShapeDisplaced` takes a relief scale and a build scale (the march passes its knob to both,
+  so nothing drawn changes); `gsl_heights` reads each return's volume row once and returns its
+  height and build. Sixteen WGSL goldens change in text (0.5 to 3.6%), none in which programs get
+  the per-return composite.
+- **Section view Color option, and a clipped section**: the Section panel's controls are reordered
+  (Direction, Offset, Model, then Color, Coatings and Relief, then the contour controls), and Color
+  shows the cut faces in each shape's color field (decoded from sRGB, as shading decodes it) in
+  place of the contours, which it takes out of play. While the section is open the viewer's field
+  is clipped at the plane (sdShape wraps the compiled field, renamed gsl_sdShapeUnclipped), so
+  nothing is drawn in front of the section and what lies behind it shows whole. The Model opacity
+  slider is gone; the slider that was Section, the opacity of the section's background over the
+  model behind it, is now labelled Model.
+- **Field queries at a condition (`Evaluator.SetCondition`, `gsl eval`'s `"condition"`)**: `as-built`
+  (the default, the field as the document builds it, exactly as before), `nominal` (each surface
+  moved out by its materials' builds) and `as-made` (by their builds and their relief, as the CPU
+  renderer draws them). Eval, Extremum, Certify (with its parameters and over the sliders), Bounds,
+  Enclose, Volume, SurfacePoint and Mesh read it; Mesh takes it as its Coatings and Relief flags.
+  Render, describe and shader do not, and `gsl eval` refuses it on them. `max-material` is the
+  builds with each relief at its peaks (the same surface as `nominal` until builds have spreads);
+  `min-material` is refused as a field: a least-material claim shifts its band by the surface's
+  `material.reliefDepth`. A claim
+  moves only the shapes inside it: `max(rMax - r, seat)` moves `seat`, so a tolerance claim no
+  longer writes the displacement by hand. `convert.ToSurfaceTrees` builds every query's field at a
+  condition.
+- **Working tolerances (`x.tolerance`, `tolerance.limits`, `tolerance.symmetric`)**: a scalar a part is
+  made from carries the offsets its value may take, `zinc.tolerance = tolerance.limits(-0.0015, 0.0015);`,
+  constant or varying over the part, and reads them back as `zinc.tolerance`. `eval`'s
+  `CertifyOverTolerances` and `gsl eval`'s certify `"overTolerances"` prove a claim for every value
+  each toleranced declaration takes between its limits, and a disproof names each one's failing share
+  of its tolerance. The parse error for an unknown property lists `tolerance` among those that may be
+  assigned. A value that declares no tolerance reads its own, propagated to first order from the
+  document's working tolerances: `(boreR - zinc).tolerance` is the two combined, and a shape's is a
+  field, its range at each point (on a plated bore, the boring's and the zinc's on the bore, the
+  zinc's alone outside). Read in a `gsl eval` query, it counts the coats at the request's condition.
+- **Viewer: parts at their most or least material**: for a document with working tolerances, the
+  Render panel's Detail section draws each part at its most material, nominal, or least material,
+  each surface moved by its own propagated tolerance (`Program.ToleranceReturns`, the WGSL
+  `gsl_toleranceField`), with an Exaggerate slider (x1 to x1000) so micrometre tolerances read at a
+  glance; the Section panel's Band shades where each surface may lie, at least a pixel wide. Documents
+  without tolerances compile as before.
+- **Requirements as claims (`tolerance.mostMaterialClaim`, `leastMaterialClaim`, `shaftBand`,
+  `holeBand`, `gradientClaim`)**: the two claims that a surface lies in a band about a reference field,
+  for certify to prove with a measurement slack (over the working tolerances, for every value), ISO 286
+  zones as bands about a cylinder's radial field, and a check that the reference has unit gradient
+  where the band is read.
+- **Relief depth (`material.reliefDepth`, `material.withReliefDepth`)**: a material declares how far
+  its relief reaches below its peaks, in row 0's fourth component (until now reserved, 0 for every
+  record that sets none). Relief is measured down from the peaks, so the depth is its whole
+  envelope. `machined`'s groove finishes declare the tool nose's exact groove depth,
+  `r - sqrt(r^2 - f^2 / 4)`, on the finish and its stand-in, and `coating.levelled` the coat's own
+  depth plus the share of the depth beneath that it keeps.
 - Migrated GSL compiler architecture, language specification/migration, golden verification, and
   stdlib tolerance-table documentation from `omega-release/doc/` into `doc/`, synced
   `doc/gsl_lang_spec_future.md`, extracted `doc/roadmap.md` from `README.md`, and documented Go
@@ -169,6 +245,26 @@ from `1.0.0` onward).
 
 ### Changed
 
+- **Process and coat reliefs are measured down from their peaks**: `sheet.checkerPlateSteel` and
+  `stuccoEmbossedAluminum`, `coating.powderCoat`, `wrinkleCoat`, `sandCoat`, `hammertone` and
+  `chippedPaint`, `cast.sandCast`, `printed.fdm`, `resin` and `powderBed`, and `molded.leatherGrain`
+  and `rubberGrip` now draw the surface at their peaks, the relief below it, so each surface (and
+  its stand-in) sits lower by the relief's former peak: 1.2 mm for the checker plate's lugs,
+  0.107 L for an FDM wall, 3.1 / GFN for a sand casting (its mean profile peak, Rpm, as a
+  profilometer measures it). Each declares its relief depth. Bulk and collection materials keep
+  their reliefs; see the track's datum audit.
+- **Finishes keep their relief under threads and shafts**: `shaft.body` and `fastener.maleFinish` /
+  `femaleFinish` add the thread or knurl heights onto the finish's relief instead of replacing it,
+  so a turned finish keeps its grooves and a finish with a build keeps it as film.
+- **A layer's build and its relief are moved apart (`buildScale`, `displacementScale`)**: a coat's
+  displaced distance is now `under - buildScale() * build - displacementScale() * relief`, where it
+  was `under - displacementScale() * height`. A build is size and a relief is texture, so the export
+  and section flags and the evaluation conditions of the Unified Surface Model track can move one
+  without the other. `buildScale()` is new; `displacementScale()` now scales relief only. Both are
+  the displacement knob in the viewer, 1 in the CPU renderer and 0 elsewhere, so nothing drawn
+  changes. Reads at a surface point pack four to a remap, so a coat's height and build share one and
+  the march evaluates as many remaps as before; the *Material - Layered Paint* and
+  *Material - Machined* WGSL goldens change in text only.
 - `coating.levelled` (and every coating laid over a base through it: `clearCoat`, `galvanized`, and
   the `powderCoat`, `wrinkleCoat`, `sandCoat` and `hammertone` overloads) adds the film's `build` to
   the base's build and levels only the base's relief, where it used to level the base's whole
@@ -238,6 +334,43 @@ from `1.0.0` onward).
 
 ### Fixed
 
+- **`fract` keeps its interval bounds on the CPU (fidget) path**: it was built as `x - floor(x)`,
+  which interval arithmetic bounds by `[-10, 10]` over `x` in `[100, 110]`, so every periodic
+  surface built on it (turned grooves, face-mill arcs) lost its bounds and certify, interval
+  pruning and the meshers subdivided below the period. It is now fidget's modulo, whose interval is
+  `[0, 1]` wherever the range crosses an integer; values are unchanged. Certifying that a turned
+  25 k5 journal's cusps stay inside the maximum-material envelope over the whole 15 mm seat now
+  takes 43.7 thousand interval evaluations, where 2 million did not decide it.
+- **`.dp` through a material record**: differentiating a value read from a material whose rows
+  only partly vary (`material.displacement(m).dp`) failed with "collection elements must be all
+  scalars or all vectors", since a constant row's derivative was a scalar 0 beside vector rows. A
+  zero tangent now takes its row's shape.
+- **A query's derivatives see the coats** (`assembler.WithConditionDerivatives`, which `eval`
+  sets): a `.d(var)` or `.dp` in a query's expressions was taken of each shape as built, so
+  `plated.d(zinc)` read 0 at every condition. It is now taken of the field the condition reads:
+  as made, the plated surface's derivative with respect to its zinc thickness is -1. Documents keep
+  their derivatives as built.
+- **A coated shape returned bare beside a return that layers it moves by its own build**: with
+  `return coat, max(coat, …);` the bare `coat` was moved as a whole by its material, but that
+  material is its layer's shading switch, the material beneath within 1 µm of the solid beneath and
+  inside it, whose height is not the coat's; the displaced surface stood where the switch flipped,
+  leaving a thin shell outside the field inside the coat. Such a return now moves by its layered
+  distance, in the viewer, displaced meshes and the field queries alike.
+- **A coat over a shape with its own finish keeps its interval bounds**: plating laid on a turned seat
+  (`plated = seat; seat.material = turned;`) was moved by its increment over the seat, which reads the
+  turning's relief three times, so interval bounds on it were four times the groove depth and a
+  5 µm plating claim certify proves in 5 thousand evaluations went undecided at 200 thousand. The
+  chain now telescopes as a chain on an undisplaced shape does: the seat's own distance less the
+  top coat's height, read once. Values are unchanged.
+- **`molded.rubberGrip` keeps its rubber**: its dots replaced the displacement of a rubber laid 2 mm
+  thick, leaving the 2 mm film as relief from -2 to -1.2 mm; they now sit on the rubber.
+- **`coating.chippedPaint` keeps the base's build**: blending the paint over the base mixed the
+  build away where the paint was intact, so a built base's film read as relief there.
+- **The composite fabrics' stand-in keeps the resin**: it dropped the 0.15 mm epoxy build and the
+  share of the crimp the film keeps, so it jumped about 0.1 mm where the weave fades out.
+- **Relief amplitudes in the docs**: `natural.water`, `lava` and `cloudMaterial` give the heights
+  their parameters reach (about 0.06 to 0.08 times the amount times the size, sampled), and
+  `glazing.reeded` and `organic.orangePeel` say how their reliefs stand.
 - `topofold` now evaluates general UI-derived constant expressions via a scoped `ConstEvalFunc`
   fallback (`eval.ConstPkgSlotsAt`) in `assembler`, rejecting non-finite results, and Rust Cargo
   build scripts (`internal/fidget/internal/rust/build.rs`, `internal/fidget/internal/tape-core/build.rs`,

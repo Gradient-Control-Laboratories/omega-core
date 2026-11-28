@@ -15,7 +15,8 @@ import { wgslFn } from "three/tsl";
 import { GSL_SHAPE_STRUCT_WGSL, GSL_MIN_WGSL } from "./gsl-host.js";
 import { GSL_SHADING_WGSL, GSL_MATERIAL_STRUCT_WGSL, GSL_MATERIAL_DEFAULT_WGSL, partDetailWGSL, hasParts, hasSimpleValues, partDetailSetupWGSL } from "./gsl-shading.js";
 import { GSL_SECONDARY_HIT_STRUCT_WGSL, marchSecondaryWGSL, shadeGlassWGSL } from "./gsl-glass.js";
-import { displaceSampleWGSL, sdDisplacedWGSL, renameToDisplaced, GSL_DISPLACE_STATE_WGSL } from "./gsl-displace.js";
+import { displaceSampleWGSL, sdDisplacedWGSL, sectionShapeWGSL, renameToDisplaced, GSL_DISPLACE_STATE_WGSL,
+         GSL_CLIP_STATE_WGSL, clipSdShapeWGSL, clipSetupWGSL, tolMovedWGSL } from "./gsl-displace.js";
 import { visArrayDeclWGSL, visAssignWGSL, isShapeVisibleWGSL } from "./gsl-visibility.js";
 import { traceSampleWGSL, GSL_TRACE_STATE_WGSL } from "./gsl-trace.js";
 import { simpleFragmentWGSL } from "./gsl-simple.js";
@@ -31,6 +32,8 @@ export const gsl_secondaryHit = new THREE.CodeNode(GSL_SECONDARY_HIT_STRUCT_WGSL
 // The displacement scale, per fragment invocation: gsl_sdDisplaced stands in
 // for sdShape at call sites that cannot grow an argument.
 export const gsl_displaceState = new THREE.CodeNode(GSL_DISPLACE_STATE_WGSL, [], "wgsl");
+// The section clip's state and gsl_clipShape (gsl-displace.js).
+export const gsl_clipState = new THREE.CodeNode(GSL_CLIP_STATE_WGSL, [gsl_shape], "wgsl");
 
 // The progressive pass's random-number state.
 export const gsl_traceState = new THREE.CodeNode(GSL_TRACE_STATE_WGSL, [], "wgsl");
@@ -118,6 +121,10 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
   // sdShape's wgslCode, so any shader that depends on sdShape can call it. When
   // absent, shading keeps the cosine palette. alpha 1 = computed color present.
   const hasColorField = wgslCode.includes("fn gsl_colorField(");
+  // `fn gsl_toleranceField(p, time, gsl_tolIdx, …) -> vec2<f32>` only for a
+  // document that declares working tolerances: the tolerance view
+  // (surfaceKnobs.w) draws its parts at their most or least material.
+  const hasTolField = wgslCode.includes("fn gsl_toleranceField(");
   // Likewise `fn gsl_materialField(p, time, gsl_materialIdx, …) -> gsl_material`
   // only when the program authors a material (name.material = …); absent, every
   // hit shades with the default record.
@@ -141,7 +148,9 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
 
   // pixelWidthNode declares gsl_pw, which a program's pixelSize() reads,
   // in every shader that carries the program.
-  const sdShape = wgslFn(wgslCode, [gsl_shape, gsl_min, gsl_material, pixelWidthNode]);
+  // sdShape is clipped at the section plane where a fragment turns the clip on
+  // (clipSdShapeWGSL); everywhere else it is the compiled field.
+  const sdShape = wgslFn(clipSdShapeWGSL(wgslCode), [gsl_shape, gsl_min, gsl_material, pixelWidthNode, gsl_clipState]);
 
   // The detail ladder (gsl-shading.js), for a program with parts: the
   // fragments hand the part guards the camera and the rungs, and displacement
@@ -178,13 +187,28 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
   // The var displacementScale() reads, when the program reads it (layered
   // coats switching by layer); see backend/wgsl/internal/codegen/displace.go.
   const scaleVar = wgslCode.includes("var<private> gsl_dispScaleK");
+  // And the one buildScale() reads, set beside it.
+  const buildVar = wgslCode.includes("var<private> gsl_buildScaleK");
+  // The tolerance view for the per-return composite, which never passes
+  // through the clipped sdShape that applies it (gsl-displace.js).
+  const gsl_tolMoved = hasTolField && displaceActive && perReturn
+    ? wgslFn(tolMovedWGSL(extraParamsWGSL), [gsl_shape, sdShape, gsl_clipState])
+    : null;
+  const tolMovedDeps = gsl_tolMoved ? [gsl_tolMoved] : [];
   const gsl_displaceSample = displaceActive
-    ? wgslFn(injectExtraArgs(displaceSampleWGSL({ extraParamsWGSL, materialAtIdx, parts, perReturn, scaleVar })),
-             [gsl_shape, gsl_material, gsl_displaceState, ...partDetailDeps, ...(perReturn ? [sdShape] : [])])
+    ? wgslFn(injectExtraArgs(displaceSampleWGSL({ extraParamsWGSL, materialAtIdx, parts, perReturn, scaleVar, buildVar, tolerance: hasTolField })),
+             [gsl_shape, gsl_material, gsl_displaceState, ...partDetailDeps, ...(perReturn ? [sdShape] : []), ...tolMovedDeps])
     : null;
   const gsl_sdDisplaced = displaceActive
     ? wgslFn(injectExtraArgs(sdDisplacedWGSL({ extraParamsWGSL, extraArgsWGSL })),
-             [sdShape, gsl_shape, gsl_displaceSample])
+             [sdShape, gsl_shape, gsl_displaceSample, gsl_clipState])
+    : null;
+  // The section view's field: sdShape, its surfaces moved by their relief
+  // and builds as the section panel's toggles say (gsl-displace.js). Without
+  // a material field nothing moves, and the section draws sdShape.
+  const gsl_sectionShape = displaceActive
+    ? wgslFn(injectExtraArgs(sectionShapeWGSL({ extraParamsWGSL, materialAtIdx, perReturn, tolerance: hasTolField })),
+             [sdShape, gsl_shape, gsl_material, ...tolMovedDeps])
     : null;
   // The state var is listed on the fragment too, the way gsl_pixelWidthNode is:
   // the fragment assigns gsl_dispScale directly.
@@ -353,8 +377,10 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
             ${partDetailSetupWGSL(wgslCode)}
             gsl_envA = envA; gsl_envB = envB; gsl_envC = envC;
             gsl_pwScale = surfaceKnobs.z;
+            ${clipSetupWGSL({ active: "fieldActive", normal: "fieldNormal", height: "fieldHeight", camera: "camPosZUp" })}
 
             ${displaceActive ? "gsl_dispScale = surfaceKnobs.x;" : ""}
+            ${hasTolField ? "gsl_tolSel = surfaceKnobs.w;" : ""}
 
             // Reconstruct ray from screen UV
             // UV is [0,1] with Y=0 at top (WebGPU convention), convert to NDC [-1,1] with Y=1 at top
@@ -378,7 +404,25 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
             let tMax = max(t1, t2);
             let tEntry = max(max(tMin.x, tMin.y), tMin.z);
             let tExit = min(min(tMax.x, tMax.y), tMax.z);
-            let boxHit = tEntry <= tExit && tExit > 0.0;
+            // The section clip (gsl-displace.js) cuts away the side of the plane the
+            // camera is on, so nothing this ray can hit lies before the plane: it
+            // starts there, and a ray that never reaches the plane hits nothing.
+            // Marching from the camera instead, a ray grazing the plane crawls
+            // through the clipped solids by its small height above it and runs
+            // out of steps there, drawing their ghosts beyond the horizon.
+            var tClip = 0.0;
+            var clipMiss = false;
+            if (gsl_clipOn > 0.0) {
+                let clipDen = dot(gsl_clipPlane.xyz, rayDir);
+                let clipS0 = dot(gsl_clipPlane.xyz, rayOrigin) + gsl_clipPlane.w;
+                if (clipDen >= -1e-6) {
+                    clipMiss = true;
+                } else {
+                    tClip = max(clipS0, 0.0) / -clipDen;
+                }
+            }
+            let tStart = max(tEntry, tClip);
+            let boxHit = tStart <= tExit && tExit > 0.0 && !clipMiss;
 
             // Gradient-corrected sphere tracing (Quilez): divide SDF by its
             // tet gradient magnitude to recover the true distance even when the
@@ -397,7 +441,7 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
             let maxMarchSteps = u32(clamp(256.0 * boxPathScale, 256.0, 1024.0) * renderKnobs.y);
             // The AO loop runs 5 taps, or none when a draft frame turns it off.
             let aoTaps = select(0, 5, renderKnobs.x > 0.5);
-            var t = max(tEntry, 0.0);
+            var t = max(tStart, 0.0);
             var prev_t = t;
             var hitPos = vec3<f32>(0.0);
             var hitSd : gsl_shape;
@@ -679,8 +723,8 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
         }
     `),
     fieldInfo.active
-      ? [sdShape, gsl_material, gsl_calcNormal, gsl_shapeColor, gsl_shadeSurface, ...glassDeps, ...displaceDeps, ...partDetailDeps, gsl_isShapeVisible, wgslFn(fieldInfo.rampWGSL)]
-      : [sdShape, gsl_material, gsl_calcNormal, gsl_shapeColor, gsl_shadeSurface, ...glassDeps, ...displaceDeps, ...partDetailDeps, gsl_isShapeVisible],
+      ? [sdShape, gsl_material, gsl_calcNormal, gsl_shapeColor, gsl_shadeSurface, ...glassDeps, ...displaceDeps, ...partDetailDeps, gsl_isShapeVisible, gsl_clipState, wgslFn(fieldInfo.rampWGSL)]
+      : [sdShape, gsl_material, gsl_calcNormal, gsl_shapeColor, gsl_shadeSurface, ...glassDeps, ...displaceDeps, ...partDetailDeps, gsl_isShapeVisible, gsl_clipState],
   );
 
   // The progressive pass: one path per pixel, added to the previous sum.
@@ -736,6 +780,7 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
             gsl_envA = envA; gsl_envB = envB; gsl_envC = envC;
             gsl_pwScale = surfaceKnobs.z;
             ${displaceActive ? "gsl_dispScale = surfaceKnobs.x;" : ""}
+            ${hasTolField ? "gsl_tolSel = surfaceKnobs.w;" : ""}
             return prev + gsl_traceSample(uv, resolution, frame, camPosZUp, camRight, camUp, camFwd, camTanFov,
                 camOrtho, zUpToView, skyCol, groundCol, shadingKnobs, traceKnobs, lens, traceFlags, bgColor, pixelScale,
                 worldExtent, time, ${colorArgsWGSL.join(", ")}${extraArgsWGSL});
@@ -747,7 +792,7 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
   // on the undisplaced field.
   const simpleFragment = wgslFn(
     injectExtraArgs(simpleFragmentWGSL({ visParamsWGSL, visArgsWGSL, colorParamsWGSL, colorArgsWGSL, extraParamsWGSL,
-      setupWGSL: partDetailSetupWGSL(wgslCode), parts })),
+      setupWGSL: partDetailSetupWGSL(wgslCode), parts , tolerance: hasTolField })),
     [sdShape, gsl_isShapeVisible, gsl_shapeColor, ...partDetailDeps],
   );
 
@@ -763,5 +808,6 @@ export function buildRenderGraph({ wgslCode, shapeCount, extraParamsWGSL, extraA
     wgslFragmentShader,
     ptFragment,
     simpleFragment,
+    gsl_sectionShape,
   };
 }

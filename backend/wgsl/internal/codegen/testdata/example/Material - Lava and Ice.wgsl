@@ -447,7 +447,7 @@ var<private> gsl_dispDrawn: f32 = 0.0;
 
 const gsl_foldK = array<vec3<f32>, 8>(vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 0.0, 0.0), vec3<f32>(0.0, 1.0, 0.0), vec3<f32>(1.0, 1.0, 0.0), vec3<f32>(0.0, 0.0, 1.0), vec3<f32>(1.0, 0.0, 1.0), vec3<f32>(0.0, 1.0, 1.0), vec3<f32>(1.0, 1.0, 1.0));
 
-fn gsl_heights(p: vec3<f32>, time: f32, gsl_param_12_31: f32, gsl_param_17_25: f32, noiseTex: texture_3d<f32>) -> array<f32, 2> {
+fn gsl_heights(p: vec3<f32>, time: f32, gsl_param_12_31: f32, gsl_param_17_25: f32, noiseTex: texture_3d<f32>) -> array<vec2<f32>, 2> {
   let windAngle = gsl_param_12_31;
   let wind = vec3<f32>(cos(windAngle * 3.1415927 / 180.0), sin(windAngle * 3.1415927 / 180.0), 0.0);
   let gsl_result = gcl_closure_driftingCellsLatticeXY(wind, time, p / 8.0, vec3<f32>(8.0, 8.0, 8.0), 20.0, noiseTex);
@@ -462,14 +462,16 @@ fn gsl_heights(p: vec3<f32>, time: f32, gsl_param_12_31: f32, gsl_param_17_25: f
   let iceStage = gsl_param_17_25;
   let gsl_result_3 = gcl_closure_iceFloes(p, wind, time, 8.0, 120.0, iceStage, 0.3, noiseTex);
   let iceMat = gsl_result_3.v_1;
-  return array<f32, 2>(lavaMat[2].z, iceMat[2].z);
+  let gsl_v0 = lavaMat[2];
+  let gsl_v1 = iceMat[2];
+  return array<vec2<f32>, 2>(vec2<f32>(gsl_v0.z, gsl_v0.w), vec2<f32>(gsl_v1.z, gsl_v1.w));
 }
 
-fn gsl_sdShapeDisplaced(p: vec3<f32>, time: f32, gsl_dispK: f32, gsl_param_12_31: f32, gsl_param_17_25: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
+fn gsl_sdShapeDisplaced(p: vec3<f32>, time: f32, gsl_dispK: f32, gsl_buildK: f32, gsl_param_12_31: f32, gsl_param_17_25: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
   let gsl_d = gsl_shapeParts(p, time, gsl_param_12_31, gsl_param_17_25, noiseTex);
   let gsl_h = gsl_heights(p, time, gsl_param_12_31, gsl_param_17_25, noiseTex);
-  let gsl_s1 = gsl_shape(gsl_d[0] - gsl_h[0] * gsl_dispK, 1u);
-  let gsl_s2 = gsl_shape(gsl_d[1] - gsl_h[1] * gsl_dispK, 2u);
+  let gsl_s1 = gsl_shape(gsl_d[0] - (gsl_h[0].x - gsl_h[0].y) * gsl_dispK - gsl_h[0].y * gsl_buildK, 1u);
+  let gsl_s2 = gsl_shape(gsl_d[1] - (gsl_h[1].x - gsl_h[1].y) * gsl_dispK - gsl_h[1].y * gsl_buildK, 2u);
   return gsl_min(gsl_s1, gsl_s2);
 }
 

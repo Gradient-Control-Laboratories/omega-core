@@ -19,6 +19,19 @@ func LowerReturnProperties(prog *program.Program) error {
 		return nil
 	}
 	lay := analyzeLayers(prog)
+	lastFile := prog.Primary.Files[len(prog.Primary.Files)-1]
+	// A query's derivatives were left in its returns
+	// (ExpandSharedKeepingReturnDerivatives) so the layers above could carry
+	// them into the displaced returns; the plain returns take theirs now, as
+	// Expand would have, before their colour and material are read.
+	if err := expandReturnDerivs(prog, lastFile.Returns); err != nil {
+		return err
+	}
+	// Each return's working tolerance, for a viewer to draw the part at its
+	// most or least material; nothing for a document that declares none.
+	if err := lowerToleranceReturns(prog); err != nil {
+		return err
+	}
 	colorFields, err := layeredPropertyFields(prog.Primary, prog.GetImport, colorSpec, lay)
 	if err != nil {
 		return fmt.Errorf("lower color returns: %w", err)
@@ -27,7 +40,6 @@ func LowerReturnProperties(prog *program.Program) error {
 	if err != nil {
 		return fmt.Errorf("lower material returns: %w", err)
 	}
-	lastFile := prog.Primary.Files[len(prog.Primary.Files)-1]
 	if colorFields != nil {
 		lastFile.ColorReturns = colorFields
 	}
@@ -35,7 +47,118 @@ func LowerReturnProperties(prog *program.Program) error {
 		lastFile.MaterialReturns = matFields
 	}
 	lay.attach(prog)
+	// The displaced returns take theirs of the layered distances, with the
+	// declarations the layers just added in scope: read at a condition, a
+	// derivative is the coated field's.
+	return expandReturnDerivs(prog, lastFile.DisplacedReturns)
+}
+
+// expandReturnDerivs replaces each DERIV operation in ops (a .d(var), .dp or
+// .dtime left there by ExpandSharedKeepingReturnDerivatives) with its
+// expansion against the primary package's declarations as they now stand,
+// innermost first.
+func expandReturnDerivs(prog *program.Program, ops []*program.Operand) error {
+	if !anyDeriv(ops) {
+		return nil
+	}
+	pkg := prog.Primary
+	exp := &expansion{getImport: prog.GetImport, deps: prog.Dependencies, scopes: map[*program.Package]*pkgScope{}}
+	s := exp.scopeFor(pkg)
+	d := &derivative{decls: s.decls, multiDecls: s.multiDecls, funcs: s.funcsList, imports: s.imports, own: ownFunctionNames(pkg)}
+	// Shared as ExpandShared shares: an expansion's nodes reached more than
+	// once become the locals of a function synthesized beside it, or every
+	// pass after this copies the graph out as a tree, which grows with each
+	// remap the derivative goes through.
+	file := pkg.Files[len(pkg.Files)-1]
+	share := func(expanded *program.Operand) *program.Operand {
+		root, locals := sharedLocals(expanded, s.names)
+		if len(locals) == 0 {
+			return expanded
+		}
+		fnName := s.names.fresh("shared")
+		file.FnTypes = append(file.FnTypes, &program.FnType{
+			Name: fnName,
+			Groups: []*program.FnGroup{{
+				ParamCount: 0,
+				Functions:  []*program.Function{{Assignments: locals, Returns: []*program.Operand{root}}},
+			}},
+		})
+		return program.NewFnCall("", fnName, nil, nil, nil)
+	}
+	var walk func(op *program.Operand) (*program.Operand, error)
+	walk = func(op *program.Operand) (*program.Operand, error) {
+		if op == nil {
+			return nil, nil
+		}
+		switch t := op.T.(type) {
+		case *program.Operand_Expression:
+			for i, sub := range t.Expression.Operands {
+				w, err := walk(sub)
+				if err != nil {
+					return nil, err
+				}
+				t.Expression.Operands[i] = w
+			}
+			if t.Expression.Operation == program.Operation_DERIV {
+				expanded, err := d.expandDeriv(t.Expression.Operands)
+				if err != nil {
+					return nil, err
+				}
+				return share(expanded), nil
+			}
+		case *program.Operand_FnCall:
+			for i, a := range t.FnCall.Arguments {
+				w, err := walk(a)
+				if err != nil {
+					return nil, err
+				}
+				t.FnCall.Arguments[i] = w
+			}
+		}
+		return op, nil
+	}
+	for i, op := range ops {
+		w, err := walk(op)
+		if err != nil {
+			return fmt.Errorf("differentiating return %d: %w", i+1, err)
+		}
+		ops[i] = w
+	}
 	return nil
+}
+
+// anyDeriv reports whether a DERIV operation appears in ops.
+func anyDeriv(ops []*program.Operand) bool {
+	var found func(op *program.Operand) bool
+	found = func(op *program.Operand) bool {
+		if op == nil {
+			return false
+		}
+		switch t := op.T.(type) {
+		case *program.Operand_Expression:
+			if t.Expression.Operation == program.Operation_DERIV {
+				return true
+			}
+			for _, sub := range t.Expression.Operands {
+				if found(sub) {
+					return true
+				}
+			}
+		case *program.Operand_FnCall:
+			for _, a := range t.FnCall.Arguments {
+				if found(a) {
+					return true
+				}
+			}
+		}
+		return false
+	}
+	for _, op := range ops {
+		if found(op) {
+			return true
+		}
+	}
+	return false
 }
 
 // LowerColorReturns evaluates .color properties across the program's primary

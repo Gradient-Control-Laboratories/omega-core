@@ -352,6 +352,15 @@ func (d *Delegate) BuildBuiltinCall(
 		return wgsl.NewOpaqueExpr(op, wgsl.TypeF32, build.PrecedenceHighest, dispScaleVar, dispScaleVar), nil
 	}
 
+	// buildScale() -> f32: the same for a coat's build, its own private var
+	// (buildScaleDeclWGSL), so the section view can move builds and relief
+	// apart. The march passes its displacement knob to both, so the viewer
+	// moves a coat's build as it moves the relief.
+	if builtin.Name == program.BuildScale {
+		d.buildScaleUsed = true
+		return wgsl.NewOpaqueExpr(op, wgsl.TypeF32, build.PrecedenceHighest, buildScaleVar, buildScaleVar), nil
+	}
+
 	// The worley* builtins: the 27-neighbour scan, emitted as a helper with a
 	// real WGSL `for` loop. The GSL build layer unrolls reduce at compile time,
 	// so written as a library fold this became 27 inlined copies at every call

@@ -304,9 +304,31 @@ func (dd *derivDomain) Opaque(name string) Value {
 	return dual{primal: ref(name), tangent: tangent}
 }
 
+// Collect keeps each element's tangent in its element's shape. A constant
+// element differentiates to the literal 0 whatever its shape, so a collection
+// of vectors, some constant and some not (a material record whose rows only
+// partly vary), would collect scalars beside vectors, which no type admits.
+// Where the tangents are mixed, a zero one is written as 0 times its element,
+// which has the element's shape; where all are zero the collection stays one
+// of zeros, as isZeroTangent reads it.
 func (dd *derivDomain) Collect(args []Value) Value {
 	ds := duals(args)
-	return dual{nary(program.Operation_COLLECT, primalsOf(ds)...), nary(program.Operation_COLLECT, tangentsOf(ds)...)}
+	tangents := tangentsOf(ds)
+	mixed := false
+	for _, t := range tangents {
+		if !isZeroTangent(t) {
+			mixed = true
+			break
+		}
+	}
+	if mixed {
+		for i, t := range tangents {
+			if isZeroTangent(t) {
+				tangents[i] = mul(num(0), program.CloneOperand(ds[i].primal))
+			}
+		}
+	}
+	return dual{nary(program.Operation_COLLECT, primalsOf(ds)...), nary(program.Operation_COLLECT, tangents...)}
 }
 
 // Access and Index keep a zero tangent zero rather than selecting into it. A
@@ -591,7 +613,7 @@ func (dd *derivDomain) Builtin(name string, args []Value) (Value, error) {
 		return dual{value, call("dot", call(gradient, primals...), ds[0].tangent)}, nil
 	case "fract":
 		return dual{call("fract", ds[0].primal), ds[0].tangent}, nil
-	case program.PixelSize, program.DisplacementDrawn, program.DisplacementScale:
+	case program.PixelSize, program.DisplacementDrawn, program.DisplacementScale, program.BuildScale:
 		// The pixel footprint at the shading point, or the displacement drawn
 		// or being drawn there: a per-pixel constant, not a function of p, so
 		// its tangent is zero.

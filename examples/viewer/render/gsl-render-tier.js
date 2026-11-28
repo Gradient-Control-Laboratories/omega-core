@@ -386,6 +386,31 @@ export function bindRenderControls({ onAperture, onFocusTool, onRenderImage, onS
     if (pixelFilterLabel) pixelFilterLabel.textContent = scale.toFixed(2);
     setShading({ pixelFilter: scale });
   });
+  // The tolerance view: a part with working tolerances drawn at its most
+  // material, nominal or least material, its offsets exaggerated by the
+  // Exaggerate slider (10 to the slider's value): surfaceKnobs.w is the view's
+  // sign times that factor.
+  let tolSide = 0;
+  const tolScale = document.getElementById("render-tolerance-scale");
+  const tolScaleLabel = document.getElementById("render-tolerance-scale-label");
+  const tolFactor = () => Math.pow(10, Number(tolScale?.value ?? 0));
+  const applyTolerance = () => setShading({ toleranceView: tolSide * tolFactor() });
+  const tolerances = document.querySelectorAll("[data-tolerance]");
+  tolerances.forEach((b) => {
+    b.addEventListener("click", () => {
+      if (b.classList.contains("active")) return;
+      tolerances.forEach((o) => {
+        o.classList.toggle("active", o === b);
+        o.setAttribute("aria-pressed", o === b);
+      });
+      tolSide = Number(b.dataset.tolerance);
+      applyTolerance();
+    });
+  });
+  tolScale?.addEventListener("input", () => {
+    if (tolScaleLabel) tolScaleLabel.textContent = "x" + Math.round(tolFactor());
+    applyTolerance();
+  });
   const normals = document.querySelectorAll("[data-normals]");
   normals.forEach((b) => {
     b.addEventListener("click", () => {

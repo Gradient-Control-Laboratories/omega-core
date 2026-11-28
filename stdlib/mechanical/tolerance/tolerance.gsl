@@ -12,14 +12,22 @@
 //
 //   tolerance.shaftUpper(25.0, tolerance.k5)   // 0.011
 //   tolerance.shaftLower(25.0, tolerance.k5)   // 0.002
-//   tolerance.shaftDia(25.0, tolerance.k5, tolerance.maxMaterial)   // 25.011
+//   tolerance.shaftDia(25.0, tolerance.k5)    // 25.0065, the size made
+//   tolerance.shaftZone(25.0, tolerance.k5)   // [-0.0045, 0.0045] about it
+//
+// A part is drawn at the size it is made to, the zone's middle, and carries the
+// zone as its working tolerance, which certify, propagation and the viewer read:
+//
+//   seat = tolerance.shaftDia(25.0, tolerance.k5);
+//   seat.tolerance = tolerance.shaftZone(25.0, tolerance.k5);
 //
 // Everything is in millimetres. A size out of the table's ranges reads zero.
 //
 // THE ZONES are those bearing seats are made to (and a good many other fits):
 // shafts j5, j6, k5, k6, m5, m6, n6 and p6, holes H6, H7, J6, J7, K6, K7, M6 and
 // M7. MAXIMUM MATERIAL is the largest shaft and the smallest hole, the
-// condition a fit binds at; minimum material the other.
+// condition a fit binds at (nominal + es, nominal + EI); minimum material the
+// other (nominal + ei, nominal + ES).
 //
 // THE TABLE is ISO 286-2's limit deviations, in micrometres, one row per
 // range of nominal size, "over lo up to and including hi": lo, hi, IT5, IT6,
@@ -76,11 +84,6 @@ IT5 = 5.0;
 IT6 = 6.0;
 IT7 = 7.0;
 
-/// The material conditions, for shaftDia and holeDia: the largest shaft and
-/// the smallest hole, or the other way round.
-maxMaterial = 1.0;
-minMaterial = 2.0;
-
 // toleranceColumn: column `col` of the row whose range holds `nominal`, over
 // its lower end up to and including its upper, in micrometres; zero outside
 // the table.
@@ -117,14 +120,101 @@ holeLower(nominal, zone) {
   return toleranceColumn(nominal, 22.0 + 2.0 * zone) / 1000.0;
 }
 
-/// A shaft made to `zone` at a `nominal` size, at its maximum or minimum
-/// material `condition`: nominal + es or nominal + ei.
-shaftDia(nominal, zone, condition) {
-  return nominal + (condition < 1.5 ? shaftUpper(nominal, zone) : shaftLower(nominal, zone));
+/// The size a shaft made to `zone` at a `nominal` size is made to: the zone's
+/// middle, nominal + (es + ei) / 2. Its working tolerance is shaftZone.
+shaftDia(nominal, zone) {
+  return nominal + 0.5 * (shaftUpper(nominal, zone) + shaftLower(nominal, zone));
 }
 
-/// A hole made to `zone` at a `nominal` size, at its maximum or minimum
-/// material `condition`: nominal + EI or nominal + ES.
-holeDia(nominal, zone, condition) {
-  return nominal + (condition < 1.5 ? holeLower(nominal, zone) : holeUpper(nominal, zone));
+/// A shaft zone as a working tolerance about shaftDia: [-(es - ei) / 2,
+/// (es - ei) / 2], for the value's .tolerance.
+shaftZone(nominal, zone) {
+  half = 0.5 * (shaftUpper(nominal, zone) - shaftLower(nominal, zone));
+  return [0.0 - half, half];
+}
+
+/// The size a hole made to `zone` at a `nominal` size is made to: the zone's
+/// middle, nominal + (ES + EI) / 2. Its working tolerance is holeZone.
+holeDia(nominal, zone) {
+  return nominal + 0.5 * (holeUpper(nominal, zone) + holeLower(nominal, zone));
+}
+
+/// A hole zone as a working tolerance about holeDia: [-(ES - EI) / 2,
+/// (ES - EI) / 2], for the value's .tolerance.
+holeZone(nominal, zone) {
+  half = 0.5 * (holeUpper(nominal, zone) - holeLower(nominal, zone));
+  return [0.0 - half, half];
+}
+
+// ===========================================================================
+// Working tolerances
+// ===========================================================================
+
+/// limits(lo, hi): a working tolerance, the offsets [lo, hi] mm from a
+/// value that what is made may take: set on the scalar an operation uses,
+/// `zinc.tolerance = tolerance.limits(-0.0015, 0.0015);`, and read back as
+/// `zinc.tolerance`. Either limit may vary over the part (a field of p), as
+/// a plating builds heavier at edges. eval's certify over tolerances ranges
+/// each such value between its limits.
+limits(lo, hi) {
+  return [lo, hi];
+}
+
+/// symmetric(w): limits(-w, w), a working tolerance of ±w mm.
+symmetric(w) {
+  return [0.0 - w, w];
+}
+
+// ===========================================================================
+// Requirements
+// ===========================================================================
+
+// A requirement is a question asked of what is made, not something a shape
+// stores: eval's certify proves each claim below >= 0, less a slack for what
+// a measurement can resolve, over the region it names, at the condition it
+// names (as-made counts the relief exactly). Over the working tolerances
+// (certify's overTolerances) it holds for every value each takes.
+
+/// mostMaterialClaim(made, reference, hi): the claim that `made` has no
+/// material beyond the outer edge of a band about the reference field
+/// `reference` (a true distance near the band; see gradientClaim),
+/// max(hi - reference, made): it holds where it is >= 0. With
+/// leastMaterialClaim it says the surface of `made` lies in the band [lo, hi].
+/// Declare each claim on its own (claim = tolerance.mostMaterialClaim(...);):
+/// a value destructured from a call is not moved by its coats.
+mostMaterialClaim(made, reference, hi) {
+  return max(hi - reference, made);
+}
+
+/// leastMaterialClaim(made, reference, lo): the claim that `made` has
+/// material everywhere inside the inner edge of a band about `reference`,
+/// max(reference - lo, -made): it holds where it is >= 0. Read at
+/// max-material, its band moves out by the surface's material.reliefDepth.
+leastMaterialClaim(made, reference, lo) {
+  return max(reference - lo, 0.0 - made);
+}
+
+/// shaftBand(nominal, zone): an ISO 286 shaft zone as a band [lo, hi] for the claims,
+/// about the reference field r - nominal / 2 of a cylinder of the nominal
+/// diameter (r the distance from its axis): [ei / 2, es / 2].
+shaftBand(nominal, zone) {
+  return [0.5 * shaftLower(nominal, zone), 0.5 * shaftUpper(nominal, zone)];
+}
+
+/// holeBand(nominal, zone): an ISO 286 hole zone as a band [lo, hi] for the claims,
+/// about the reference field nominal / 2 - r of the material round a hole of
+/// the nominal diameter: [-ES / 2, -EI / 2].
+holeBand(nominal, zone) {
+  return [0.0 - 0.5 * holeUpper(nominal, zone), 0.0 - 0.5 * holeLower(nominal, zone)];
+}
+
+/// gradientClaim(reference, eps): the claim, >= 0 where it holds, that the
+/// reference field has unit gradient to within eps,
+/// eps - |length(reference.dp) - 1|: certify
+/// it over the region before trusting a band there. It does not see every
+/// field that is not a true distance (a max of planes keeps unit gradient up
+/// to its edges, where its offsets are sharp and overstate the zone), so
+/// read a band near a convex edge from an exact round.
+gradientClaim(reference, eps) {
+  return eps - abs(length(reference.dp) - 1.0);
 }

@@ -39,14 +39,18 @@
 //   getWorldExtent()     viewer.getWorldExtent — scales the voxel-size estimate
 //   clearError()         optional; cleared after a successful union export
 //   track(name, params)  optional analytics hook
-//   onServerExport(detail, surfaceBbox, bodyBoxes, algo, format)  optional;
+//   onServerExport(detail, surfaceBbox, bodyBoxes, algo, format, displace)  optional;
 //                           server-side export. bodyBoxes maps each visible body's return
 //                           index to its measured box (see measureBodyBoxes),
 //                           or is null when they could not be measured. algo is
 //                           the mesher picked: "mdc" (Server DC) or
 //                           "marching-cubes" (Server MC). format is the
 //                           format picked ("3mf", "glb" or "stl"), for an
-//                           app with serverFormats.
+//                           app with serverFormats. displace is
+//                           { coatings, relief }: the panel's Coatings and
+//                           Relief boxes, each surface meshed moved by its
+//                           materials' coatings or relief; the app grows the
+//                           measured box to hold them.
 //                           Without it the Server DC mesher is not offered,
 //                           unless serverExportUnavailable is given.
 //   serverMarchingCubes     optional; true when onServerExport meshes by the
@@ -887,6 +891,10 @@ export function initExportPanel(hooks) {
     const formatSelect = document.getElementById('export-format');
     const mesherSelect = document.getElementById('export-mesher');
     const cleanBox = document.getElementById('export-clean');
+    // Coatings and Relief: the server meshers' alone, as only they evaluate the
+    // materials that move a surface.
+    const coatingsBox = document.getElementById('export-coatings');
+    const reliefBox = document.getElementById('export-relief');
     const btnExport = document.getElementById('btn-export');
 
     document.getElementById('stl-bounds-header').addEventListener('click', (e) => {
@@ -984,6 +992,7 @@ export function initExportPanel(hooks) {
     const GLB_SERVER_ONLY = "GLB is written by the server: pick Server DC or Server MC";
     const SERVER_STL_ONLY = "This app's server export comes back as one STL";
     const SERVER_NOT_CLEANED = "This app's server export is not cleaned";
+    const DISPLACE_SERVER_ONLY = "Coatings and relief are meshed by the server meshers only";
     const TAPE_NOT_MESHED = "A tape is the implicit field itself; nothing is meshed";
     const PAGE_NOT_MESHED = "A web page draws the implicit field itself; nothing is meshed";
     const AUDIO_NOT_MESHED = "Audio is the program's sound; nothing is meshed";
@@ -1030,6 +1039,16 @@ export function initExportPanel(hooks) {
         mesherSelect.title = unmeshed ? NOT_MESHED : '';
         cleanBox.parentElement.title = stlOnly ? SERVER_STL_ONLY : serverFormatted ? SERVER_NOT_CLEANED : unmeshed ? NOT_MESHED
             : "Rebuild each body through Manifold: weld its vertices, drop degenerate triangles, close it as a 2-manifold";
+        const displaceOff = unmeshed || !onServer;
+        for (const box of [coatingsBox, reliefBox]) {
+            if (!box) continue;
+            box.disabled = displaceOff;
+            box.parentElement.title = unmeshed ? NOT_MESHED : !onServer ? DISPLACE_SERVER_ONLY
+                : box === coatingsBox
+                    ? "Mesh each surface moved out by its materials' coatings, the film each coat stands proud by"
+                    : "Mesh each surface moved by its materials' relief, the marks on it; relief finer than a cell is not resolved";
+        }
+        coatingsBox?.closest('.field-panel-row').classList.toggle('disabled', displaceOff);
         const none = unmeshed ? false : !mesherSelect.value || mesherSelect.selectedOptions[0]?.disabled;
         btnExport.classList.toggle('unavailable', none);
     };
@@ -1118,7 +1137,8 @@ export function initExportPanel(hooks) {
             : null;
         const surfaceBbox = await measureSurfaceBbox();
         pendingServerExport = deps.serverResults && (options.format !== 'stl' || options.clean) ? options : null;
-        if (deps.onServerExport(currentDetail(), surfaceBbox, boxes, algo, options.format) === false) {
+        const displace = { coatings: !!coatingsBox?.checked, relief: !!reliefBox?.checked };
+        if (deps.onServerExport(currentDetail(), surfaceBbox, boxes, algo, options.format, displace) === false) {
             // The app sent nothing, and has said why.
             pendingServerExport = null;
             serverExportShown = false;

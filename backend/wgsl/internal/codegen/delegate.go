@@ -115,6 +115,9 @@ type Delegate struct {
 	// materialFieldSrc is the generated gsl_materialField function (empty when
 	// the program authors no material), woven in after colorFieldSrc.
 	materialFieldSrc string
+	// toleranceFieldSrc is the generated gsl_toleranceField function (empty
+	// unless the document declares a working tolerance).
+	toleranceFieldSrc string
 	// gradFieldSrc is the generated gsl_gradField function (empty unless
 	// assembly lowered analytic gradients), woven in after materialFieldSrc.
 	gradFieldSrc string
@@ -135,6 +138,8 @@ type Delegate struct {
 	// dispScaleUsed is true when the program reads displacementScale(), so its
 	// var is declared after sdShape (function_call.go).
 	dispScaleUsed bool
+	// buildScaleUsed is the same for buildScale().
+	buildScaleUsed bool
 	// inTreeMask marks the returns displaced inside their booleans
 	// (BuildPackageDisplacedReturns), and inTreeChildSrc, inTreeLets and
 	// inTreeSrcs are their distances as gsl_displacedParts writes them, built

@@ -408,6 +408,13 @@ func ClonePackageFile(file *PackageFile) *PackageFile {
 			displacedReturns[i] = CloneOperand(ret)
 		}
 	}
+	var toleranceReturns []*Operand
+	if len(file.ToleranceReturns) > 0 {
+		toleranceReturns = make([]*Operand, len(file.ToleranceReturns))
+		for i, ret := range file.ToleranceReturns {
+			toleranceReturns[i] = CloneOperand(ret)
+		}
+	}
 	return &PackageFile{
 		Path:             file.Path,
 		Source:           file.Source,
@@ -422,6 +429,7 @@ func ClonePackageFile(file *PackageFile) *PackageFile {
 		MaterialReturns:  materialReturns,
 		GradientReturns:  gradientReturns,
 		DisplacedReturns: displacedReturns,
+		ToleranceReturns: toleranceReturns,
 		Annotations:      file.Annotations,
 	}
 }

@@ -17,12 +17,16 @@ import (
 // displaced return moves its OWN distance before the composite, as the
 // fidget renderer's litDisplaced does:
 //
-//	gsl_sdShapeDisplaced = gsl_min over i of gsl_shape(d_i - h_i * k, i)
+//	gsl_sdShapeDisplaced = gsl_min over i of
+//	    gsl_shape(d_i - (h_i - b_i) * gsl_dispK - b_i * gsl_buildK, i)
 //
-// The distances are built once, in gsl_shapeParts, which sdShape reads too, so
-// the geometry is not emitted twice; the heights are built together in
-// gsl_heights, so a value two heights share is computed once. A program with
-// no displaced return keeps its sdShape exactly as before.
+// where b_i is the part of h_i that is build (material.withBuild): relief is
+// moved by gsl_dispK and build by gsl_buildK, so the section view can move
+// one without the other; the march passes its knob to both. The distances are
+// built once, in gsl_shapeParts, which sdShape reads too, so the geometry is
+// not emitted twice; the heights and builds are built together in gsl_heights,
+// so a value two of them share is computed once. A program with no displaced
+// return keeps its sdShape exactly as before.
 
 //
 // DISPLACEMENT INSIDE THE BOOLEANS. A return whose material comes from a shape
@@ -31,8 +35,9 @@ import (
 // property.LowerDisplacedReturns): each such shape moved by its own layer's
 // height before the booleans that use it, so a cut stays a plane. Those
 // distances are built together in gsl_displacedParts and stand in for the
-// return's d_i - h_i in the composite; the heights they carry are scaled by
-// displacementScale(), the var gsl_sdShapeDisplaced sets to gsl_dispK.
+// return's d_i - h_i in the composite; the relief they carry is scaled by
+// displacementScale(), the var gsl_sdShapeDisplaced sets to gsl_dispK, and
+// the build by buildScale(), the var it sets to gsl_buildK.
 
 const (
 	shapePartsFn     = "gsl_shapeParts"
@@ -41,6 +46,8 @@ const (
 	inTreePartsFn    = "gsl_displacedParts"
 	// dispScaleVar is what displacementScale() reads.
 	dispScaleVar = "gsl_dispScaleK"
+	// buildScaleVar is what buildScale() reads.
+	buildScaleVar = "gsl_buildScaleK"
 )
 
 // BuildPackageDisplacedReturns implements [build.DisplacedReturnsBuilder]: it
@@ -98,12 +105,18 @@ func (d *Delegate) inTreeFnSrc(paramSuffix string, n int) string {
 // moved, until gsl_sdShapeDisplaced sets it.
 const dispScaleDeclWGSL = "var<private> " + dispScaleVar + ": f32 = 0.0;"
 
+// buildScaleDeclWGSL declares what buildScale() reads, the same way: 0 until
+// gsl_sdShapeDisplaced sets it.
+const buildScaleDeclWGSL = "var<private> " + buildScaleVar + ": f32 = 0.0;"
+
 // The displacement channel's position in a material record: the volume row's
 // third component.
 const (
 	displacementRow  = 2
 	displacementComp = 2
-	materialRowSize  = 4
+	// buildComp is the volume row's fourth component, the build.
+	buildComp       = 3
+	materialRowSize = 4
 )
 
 // buildHeights lowers each return's displacement height, skipping any known to
@@ -137,31 +150,59 @@ func (d *Delegate) buildHeights(materialExpressions []build.Expression) error {
 		return nil
 	}
 
-	childSrc, bodyLets, caseSrc := d.codegenFieldCasesShared(heightsFn, heights)
-	vals := make([]string, len(caseSrc))
-	for i, src := range caseSrc {
-		if src == "" {
-			vals[i] = "0.0"
+	// Each return's volume row, read once, gives its height and its build,
+	// (z, w), so the composite moves the build by buildScale() and the rest,
+	// the relief, by displacementScale() without evaluating a material twice.
+	n := len(heights)
+	rows := make([]build.Expression, n)
+	for i, me := range materialExpressions {
+		if !mask[i] {
 			continue
 		}
-		vals[i] = src
+		r, err := volumeRow(me)
+		if err != nil {
+			return err
+		}
+		rows[i] = r
 	}
-
+	childSrc, bodyLets, caseSrc := d.codegenFieldCasesShared(heightsFn, rows)
+	var lets strings.Builder
+	vals := make([]string, n)
+	heightSrcs := make([]string, n)
+	for i := 0; i < n; i++ {
+		if caseSrc[i] == "" {
+			vals[i] = "vec2<f32>(0.0, 0.0)"
+			continue
+		}
+		fmt.Fprintf(&lets, "  let gsl_v%d = %s;\n", i, caseSrc[i])
+		vals[i] = fmt.Sprintf("vec2<f32>(gsl_v%d.z, gsl_v%d.w)", i, i)
+		heightSrcs[i] = caseSrc[i] + ".z"
+	}
 	var sb strings.Builder
 	if childSrc != "" {
 		sb.WriteString(childSrc)
 		sb.WriteString("\n\n")
 	}
-	fmt.Fprintf(&sb, "fn %s(p: vec3<f32>, time: f32%s) -> array<f32, %d> {\n",
-		heightsFn, d.fieldFnParamSuffix(), len(caseSrc))
+	fmt.Fprintf(&sb, "fn %s(p: vec3<f32>, time: f32%s) -> array<vec2<f32>, %d> {\n",
+		heightsFn, d.fieldFnParamSuffix(), n)
 	sb.WriteString(bodyLets)
-	fmt.Fprintf(&sb, "  return array<f32, %d>(%s);\n", len(caseSrc), strings.Join(vals, ", "))
+	sb.WriteString(lets.String())
+	fmt.Fprintf(&sb, "  return array<vec2<f32>, %d>(%s);\n", n, strings.Join(vals, ", "))
 	sb.WriteString("}")
 
 	d.heightsSrc = sb.String()
 	d.displacedMask = mask
-	d.heightSrcs = caseSrc
+	d.heightSrcs = heightSrcs
 	return nil
+}
+
+// volumeRow is the volume row of one lowered material record: the row itself
+// when the record is lowered as its rows, else the record indexed.
+func volumeRow(me build.Expression) (build.Expression, error) {
+	if c, ok := me.(*wgsl.Collect); ok && (len(c.Args) == 3 || len(c.Args) == materialRowSize) {
+		return c.Args[displacementRow], nil
+	}
+	return wgsl.NewListIndexedAccess(nil, me.(wgsl.Expression), displacementRow, wgsl.TypeVec4)
 }
 
 // heightsDiffer reports whether two displaced returns carry different heights.
@@ -290,9 +331,12 @@ func (d *Delegate) displacedComposite(paramSuffix string, n int) (sdShapeSrc, di
 	sdShapeSrc = sb.String()
 
 	sb.Reset()
-	fmt.Fprintf(&sb, "fn %s(p: vec3<f32>, time: f32, gsl_dispK: f32%s) -> gsl_shape {\n", displacedShapeFn, paramSuffix)
+	fmt.Fprintf(&sb, "fn %s(p: vec3<f32>, time: f32, gsl_dispK: f32, gsl_buildK: f32%s) -> gsl_shape {\n", displacedShapeFn, paramSuffix)
 	if d.dispScaleUsed {
 		fmt.Fprintf(&sb, "  %s = gsl_dispK;\n", dispScaleVar)
+	}
+	if d.buildScaleUsed {
+		fmt.Fprintf(&sb, "  %s = gsl_buildK;\n", buildScaleVar)
 	}
 	needParts := false
 	for i := 0; i < n; i++ {
@@ -317,7 +361,7 @@ func (d *Delegate) displacedComposite(paramSuffix string, n int) (sdShapeSrc, di
 		case d.inTree(i):
 			dist = fmt.Sprintf("gsl_dd[%d]", i)
 		case d.heightsSrc != "" && i < len(d.displacedMask) && d.displacedMask[i]:
-			dist = fmt.Sprintf("gsl_d[%d] - gsl_h[%d] * gsl_dispK", i, i)
+			dist = fmt.Sprintf("gsl_d[%d] - (gsl_h[%d].x - gsl_h[%d].y) * gsl_dispK - gsl_h[%d].y * gsl_buildK", i, i, i, i)
 		}
 		fmt.Fprintf(&cb, "  let gsl_s%d = gsl_shape(%s, %du);\n", i+1, dist, i+1)
 		if i == 0 {

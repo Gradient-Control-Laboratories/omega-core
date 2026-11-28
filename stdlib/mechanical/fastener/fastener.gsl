@@ -1420,7 +1420,7 @@ threadPaint = 3.0;
 /// thread is paint.
 maleFinish(finish, major, pitchVal, zTop, zBottom, form) {
   return form > 2.5 ? finish
-                    : material.withDisplacement(finish, maleHeight(major, pitchVal, zTop, zBottom, form));
+                    : material.addDisplacement(finish, maleHeight(major, pitchVal, zTop, zBottom, form));
 }
 
 // maleHeight: the external thread of `form` as a displacement height, the ISO
@@ -1448,7 +1448,7 @@ malePaint(major, pitchVal, zTop, zBottom, form) {
 /// or `finish` itself when the thread is paint.
 femaleFinish(finish, major, pitchVal, zTop, zBottom, form) {
   return form > 2.5 ? finish
-                    : material.withDisplacement(finish, femaleHeight(major, pitchVal, zTop, zBottom, form));
+                    : material.addDisplacement(finish, femaleHeight(major, pitchVal, zTop, zBottom, form));
 }
 
 // femaleHeight: the internal thread of `form` as a displacement height, the

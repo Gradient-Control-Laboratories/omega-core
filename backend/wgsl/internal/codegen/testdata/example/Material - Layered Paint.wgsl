@@ -143,11 +143,21 @@ fn material_anisotropy(m: mat4x4<f32>, noiseTex: texture_3d<f32>) -> f32 {
   return grooves.w;
 }
 
+fn material_reliefDepth(m: mat4x4<f32>, noiseTex: texture_3d<f32>) -> f32 {
+  let surface = m[0];
+  return surface.w;
+}
+
+fn material_withReliefDepth(m: mat4x4<f32>, depth: f32, noiseTex: texture_3d<f32>) -> mat4x4<f32> {
+  let surface = m[0];
+  return mat4x4<f32>(vec4<f32>(surface.x, surface.y, surface.z, depth), m[1], m[2], m[3]);
+}
+
 fn builtin_differenceSharp(gsl_var_target: f32, tool: f32, noiseTex: texture_3d<f32>) -> f32 {
   return max(gsl_var_target, -tool);
 }
 
-fn gsl_remap(p: vec3<f32>, vector_zero: vec3<f32>, material_bulk_wood_whiteOakNumber: f32, vector_dirX: vec3<f32>, material_bulk_wood_defaultLook: vec3<f32>, material_bulk_wood_noStain: mat2x4<f32>, material_bulk_wood_unfinished: mat2x4<f32>, vector_dirY: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
+fn gsl_remap(p: vec3<f32>, vector_zero: vec3<f32>, material_bulk_wood_whiteOakNumber: f32, vector_dirX: vec3<f32>, material_bulk_wood_defaultLook: vec3<f32>, material_bulk_wood_noStain: mat2x4<f32>, material_bulk_wood_unfinished: mat2x4<f32>, vector_dirY: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
   let gsl_tmp_2 = sign(p - vec3<f32>(0.0, 0.0, 0.0)) * vec3<f32>(1.0, 0.0, 0.0);
   let gsl_tmp_1 = abs(p - vec3<f32>(0.0, 0.0, 0.0)) - vec3<f32>(100.0, 20.0, 20.0);
   let gsl_tmp_4 = select(0.0, gsl_tmp_2.x, gsl_tmp_1.x + 0.0 > 0.0);
@@ -178,10 +188,10 @@ fn gsl_remap(p: vec3<f32>, vector_zero: vec3<f32>, material_bulk_wood_whiteOakNu
   let coat4Mat = material_blend(coat3Mat, coating_levelled(mat4x4<f32>(vec4<f32>(0.0966324, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), coat3Mat, 0.1, 2.0, noiseTex), in4, noiseTex);
   let side = texture_mask(-p.y, 0.0, 0.05, noiseTex);
   let coat5Mat = material_blend(coat4Mat, coating_levelled(mat4x4<f32>(vec4<f32>(0.0966324, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), coat4Mat, 0.1, 2.0, noiseTex), side, noiseTex);
-  return vec3<f32>(coat5Mat[2].z - coat5Mat[2].w - (coat4Mat[2].z - coat4Mat[2].w), coat5Mat[2].w - coat4Mat[2].w, coat4Mat[2].z);
+  return vec4<f32>(coat5Mat[2].z - coat5Mat[2].w - (coat4Mat[2].z - coat4Mat[2].w), coat5Mat[2].w - coat4Mat[2].w, coat4Mat[2].w, coat4Mat[2].z);
 }
 
-fn gsl_remap_2(p: vec3<f32>, vector_zero: vec3<f32>, material_bulk_wood_whiteOakNumber: f32, vector_dirX: vec3<f32>, material_bulk_wood_defaultLook: vec3<f32>, material_bulk_wood_noStain: mat2x4<f32>, material_bulk_wood_unfinished: mat2x4<f32>, vector_dirY: vec3<f32>, noiseTex: texture_3d<f32>) -> vec3<f32> {
+fn gsl_remap_2(p: vec3<f32>, vector_zero: vec3<f32>, material_bulk_wood_whiteOakNumber: f32, vector_dirX: vec3<f32>, material_bulk_wood_defaultLook: vec3<f32>, material_bulk_wood_noStain: mat2x4<f32>, material_bulk_wood_unfinished: mat2x4<f32>, vector_dirY: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
   let gsl_tmp_2 = sign(p - vec3<f32>(0.0, 0.0, 0.0)) * vec3<f32>(1.0, 0.0, 0.0);
   let gsl_tmp_1 = abs(p - vec3<f32>(0.0, 0.0, 0.0)) - vec3<f32>(100.0, 20.0, 20.0);
   let gsl_tmp_4 = select(0.0, gsl_tmp_2.x, gsl_tmp_1.x + 0.0 > 0.0);
@@ -208,10 +218,10 @@ fn gsl_remap_2(p: vec3<f32>, vector_zero: vec3<f32>, material_bulk_wood_whiteOak
   let coat2Mat = material_blend(coat1Mat, coating_levelled(mat4x4<f32>(vec4<f32>(0.0966324, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), coat1Mat, 0.1, 2.0, noiseTex), in2, noiseTex);
   let in3 = texture_mask(p.x, -20.0, 0.05, noiseTex);
   let coat3Mat = material_blend(coat2Mat, coating_levelled(mat4x4<f32>(vec4<f32>(0.0966324, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), coat2Mat, 0.1, 2.0, noiseTex), in3, noiseTex);
-  return vec3<f32>(coat3Mat[2].z, coat2Mat[2].z, coat1Mat[2].z);
+  return vec4<f32>(coat3Mat[2].w, coat3Mat[2].z, coat2Mat[2].w, coat2Mat[2].z);
 }
 
-fn gsl_remap_3(p: vec3<f32>, vector_zero: vec3<f32>, material_bulk_wood_whiteOakNumber: f32, vector_dirX: vec3<f32>, material_bulk_wood_defaultLook: vec3<f32>, material_bulk_wood_noStain: mat2x4<f32>, material_bulk_wood_unfinished: mat2x4<f32>, vector_dirY: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
+fn gsl_remap_3(p: vec3<f32>, vector_zero: vec3<f32>, material_bulk_wood_whiteOakNumber: f32, vector_dirX: vec3<f32>, material_bulk_wood_defaultLook: vec3<f32>, material_bulk_wood_noStain: mat2x4<f32>, material_bulk_wood_unfinished: mat2x4<f32>, vector_dirY: vec3<f32>, noiseTex: texture_3d<f32>) -> vec4<f32> {
   let gsl_tmp_2 = sign(p - vec3<f32>(0.0, 0.0, 0.0)) * vec3<f32>(1.0, 0.0, 0.0);
   let gsl_tmp_1 = abs(p - vec3<f32>(0.0, 0.0, 0.0)) - vec3<f32>(100.0, 20.0, 20.0);
   let gsl_tmp_4 = select(0.0, gsl_tmp_2.x, gsl_tmp_1.x + 0.0 > 0.0);
@@ -232,7 +242,9 @@ fn gsl_remap_3(p: vec3<f32>, vector_zero: vec3<f32>, material_bulk_wood_whiteOak
   let gsl_tmp_15 = 0.0 + max(gsl_tmp_13.x + 0.0, 0.0) * max(gsl_tmp_13.x + 0.0, 0.0) + max(gsl_tmp_13.y + 0.0, 0.0) * max(gsl_tmp_13.y + 0.0, 0.0) + max(gsl_tmp_13.z + 0.0, 0.0) * max(gsl_tmp_13.z + 0.0, 0.0);
   let gsl_result_3 = wood_species(p, material_bulk_wood_whiteOakNumber, vec3<f32>(0.0, -25.0, -18.0), vector_dirX, material_bulk_wood_defaultLook, 0.0, 200.0, vec3<f32>(select(0.0, select(gsl_tmp_2.z, select(gsl_tmp_2.y, gsl_tmp_2.x, gsl_tmp_1.x > gsl_tmp_1.y), max(gsl_tmp_1.x, gsl_tmp_1.y) > gsl_tmp_1.z), max(max(gsl_tmp_1.x, gsl_tmp_1.y), gsl_tmp_1.z) < 0.000000000000000000000000000001) + select(0.0, gsl_tmp_4 * max(gsl_tmp_1.x + 0.0, 0.0) + max(gsl_tmp_1.x + 0.0, 0.0) * gsl_tmp_4 + gsl_tmp_5 * max(gsl_tmp_1.y + 0.0, 0.0) + max(gsl_tmp_1.y + 0.0, 0.0) * gsl_tmp_5 + gsl_tmp_6 * max(gsl_tmp_1.z + 0.0, 0.0) + max(gsl_tmp_1.z + 0.0, 0.0) * gsl_tmp_6, gsl_tmp_3 > 0.000000000000000000000000000001) / (2.0 * (sqrt(max(gsl_tmp_3, 0.000000000000000000000000000001)) + 1.0 - select(0.0, 1.0, (sqrt(max(gsl_tmp_3, 0.000000000000000000000000000001)) > 0.0)))), select(0.0, select(gsl_tmp_8.z, select(gsl_tmp_8.y, gsl_tmp_8.x, gsl_tmp_7.x > gsl_tmp_7.y), max(gsl_tmp_7.x, gsl_tmp_7.y) > gsl_tmp_7.z), max(max(gsl_tmp_7.x, gsl_tmp_7.y), gsl_tmp_7.z) < 0.000000000000000000000000000001) + select(0.0, gsl_tmp_10 * max(gsl_tmp_7.x + 0.0, 0.0) + max(gsl_tmp_7.x + 0.0, 0.0) * gsl_tmp_10 + gsl_tmp_11 * max(gsl_tmp_7.y + 0.0, 0.0) + max(gsl_tmp_7.y + 0.0, 0.0) * gsl_tmp_11 + gsl_tmp_12 * max(gsl_tmp_7.z + 0.0, 0.0) + max(gsl_tmp_7.z + 0.0, 0.0) * gsl_tmp_12, gsl_tmp_9 > 0.000000000000000000000000000001) / (2.0 * (sqrt(max(gsl_tmp_9, 0.000000000000000000000000000001)) + 1.0 - select(0.0, 1.0, (sqrt(max(gsl_tmp_9, 0.000000000000000000000000000001)) > 0.0)))), select(0.0, select(gsl_tmp_14.z, select(gsl_tmp_14.y, gsl_tmp_14.x, gsl_tmp_13.x > gsl_tmp_13.y), max(gsl_tmp_13.x, gsl_tmp_13.y) > gsl_tmp_13.z), max(max(gsl_tmp_13.x, gsl_tmp_13.y), gsl_tmp_13.z) < 0.000000000000000000000000000001) + select(0.0, gsl_tmp_16 * max(gsl_tmp_13.x + 0.0, 0.0) + max(gsl_tmp_13.x + 0.0, 0.0) * gsl_tmp_16 + gsl_tmp_17 * max(gsl_tmp_13.y + 0.0, 0.0) + max(gsl_tmp_13.y + 0.0, 0.0) * gsl_tmp_17 + gsl_tmp_18 * max(gsl_tmp_13.z + 0.0, 0.0) + max(gsl_tmp_13.z + 0.0, 0.0) * gsl_tmp_18, gsl_tmp_15 > 0.000000000000000000000000000001) / (2.0 * (sqrt(max(gsl_tmp_15, 0.000000000000000000000000000001)) + 1.0 - select(0.0, 1.0, (sqrt(max(gsl_tmp_15, 0.000000000000000000000000000001)) > 0.0))))), mat3x4<f32>(vec4<f32>(2.0, 0.0, 0.0, 0.0), vec4<f32>(1.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), material_bulk_wood_noStain, material_bulk_wood_unfinished, noiseTex);
   let oakMat = gsl_result_3.v_1;
-  return oakMat[2].z;
+  let in1 = texture_mask(p.x, -60.0, 0.05, noiseTex);
+  let coat1Mat = material_blend(oakMat, coating_levelled(mat4x4<f32>(vec4<f32>(0.0966324, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0)), oakMat, 0.1, 2.0, noiseTex), in1, noiseTex);
+  return vec4<f32>(coat1Mat[2].w, coat1Mat[2].z, oakMat[2].w, oakMat[2].z);
 }
 
 fn builtin_intersectSharp(fields: vec3<f32>, noiseTex: texture_3d<f32>) -> f32 {
@@ -981,7 +993,8 @@ fn coating_levelled(coat: mat4x4<f32>, baseMaterial: mat4x4<f32>, build: f32, un
   let relief = material_relief(coat, noiseTex) + material_relief(baseMaterial, noiseTex) * keeps;
   let surface = material_withDisplacement(material_withLay(lobe, material_lay(baseMaterial, noiseTex), material_anisotropy(baseMaterial, noiseTex) * keeps, noiseTex), relief, noiseTex);
   let stacked = material_build(baseMaterial, noiseTex) + material_build(coat, noiseTex) + build;
-  return material_withBuild(surface, stacked, noiseTex);
+  let depth = material_reliefDepth(coat, noiseTex) + material_reliefDepth(baseMaterial, noiseTex) * keeps;
+  return material_withReliefDepth(material_withBuild(surface, stacked, noiseTex), depth, noiseTex);
 }
 
 fn gsl_shapeParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f32, 1> {
@@ -1059,32 +1072,38 @@ fn gsl_colorField(p: vec3<f32>, time: f32, gsl_colorIdx: u32, noiseTex: texture_
     let oakBlank = builtin_gcl_closure_boxCentered(p, vector_zero, vec3<f32>(200.0, 40.0, 40.0), noiseTex);
     let gsl__surf__oakBlank = p - gsl__surfgrad__oakBlank * oakBlank / max(dot(gsl__surfgrad__oakBlank, gsl__surfgrad__oakBlank), 0.000000000001);
     let vector_dirY = vec3<f32>(0.0, 1.0, 0.0);
-    let gsl__surfread__oakBlank_1 = gsl_remap_2(gsl__surf__oakBlank, vector_zero, material_bulk_wood_whiteOakNumber, vector_dirX, material_bulk_wood_defaultLook, material_bulk_wood_noStain, material_bulk_wood_unfinished, vector_dirY, noiseTex);
-    let gsl__top__coat1 = gsl__surfread__oakBlank_1.z;
     let gsl__surfread__oakBlank_2 = gsl_remap_3(gsl__surf__oakBlank, vector_zero, material_bulk_wood_whiteOakNumber, vector_dirX, material_bulk_wood_defaultLook, material_bulk_wood_noStain, material_bulk_wood_unfinished, vector_dirY, noiseTex);
-    let gsl__top__oak = gsl__surfread__oakBlank_2;
+    let gsl__top__coat1 = gsl__surfread__oakBlank_2.y;
+    let gsl__top__oak = gsl__surfread__oakBlank_2.w;
     let gsl__inc__coat1 = gsl__top__coat1 - gsl__top__oak;
-    let gsl__disp__oak = oakBlank - gsl_dispScaleK * gsl__top__oak;
+    let gsl__topbuild__oak = gsl__surfread__oakBlank_2.z;
+    let gsl__disp__oak = oakBlank - gsl_buildScaleK * gsl__topbuild__oak - gsl_dispScaleK * (gsl__top__oak - gsl__topbuild__oak);
     let gsl__under__coat1 = gsl__disp__oak;
-    let gsl__top__coat2 = gsl__surfread__oakBlank_1.y;
+    let gsl__surfread__oakBlank_1 = gsl_remap_2(gsl__surf__oakBlank, vector_zero, material_bulk_wood_whiteOakNumber, vector_dirX, material_bulk_wood_defaultLook, material_bulk_wood_noStain, material_bulk_wood_unfinished, vector_dirY, noiseTex);
+    let gsl__top__coat2 = gsl__surfread__oakBlank_1.w;
     let gsl__inc__coat2 = gsl__top__coat2 - gsl__top__coat1;
-    let gsl__disp__coat1 = oakBlank - gsl_dispScaleK * gsl__top__coat1;
+    let gsl__topbuild__coat1 = gsl__surfread__oakBlank_2.x;
+    let gsl__disp__coat1 = oakBlank - gsl_buildScaleK * gsl__topbuild__coat1 - gsl_dispScaleK * (gsl__top__coat1 - gsl__topbuild__coat1);
     let gsl__under__coat2 = gsl__disp__coat1;
-    let gsl__top__coat3 = gsl__surfread__oakBlank_1.x;
+    let gsl__top__coat3 = gsl__surfread__oakBlank_1.y;
     let gsl__inc__coat3 = gsl__top__coat3 - gsl__top__coat2;
-    let gsl__disp__coat2 = oakBlank - gsl_dispScaleK * gsl__top__coat2;
+    let gsl__topbuild__coat2 = gsl__surfread__oakBlank_1.z;
+    let gsl__disp__coat2 = oakBlank - gsl_buildScaleK * gsl__topbuild__coat2 - gsl_dispScaleK * (gsl__top__coat2 - gsl__topbuild__coat2);
     let gsl__under__coat3 = gsl__disp__coat2;
     let gsl__surfread__oakBlank_0 = gsl_remap(gsl__surf__oakBlank, vector_zero, material_bulk_wood_whiteOakNumber, vector_dirX, material_bulk_wood_defaultLook, material_bulk_wood_noStain, material_bulk_wood_unfinished, vector_dirY, noiseTex);
-    let gsl__top__coat4 = gsl__surfread__oakBlank_0.z;
+    let gsl__top__coat4 = gsl__surfread__oakBlank_0.w;
     let gsl__inc__coat4 = gsl__top__coat4 - gsl__top__coat3;
-    let gsl__disp__coat3 = oakBlank - gsl_dispScaleK * gsl__top__coat3;
+    let gsl__topbuild__coat3 = gsl__surfread__oakBlank_1.x;
+    let gsl__disp__coat3 = oakBlank - gsl_buildScaleK * gsl__topbuild__coat3 - gsl_dispScaleK * (gsl__top__coat3 - gsl__topbuild__coat3);
     let gsl__under__coat4 = gsl__disp__coat3;
-    let gsl__disp__coat4 = oakBlank - gsl_dispScaleK * gsl__top__coat4;
+    let gsl__incbuild__coat5 = gsl__surfread__oakBlank_0.y;
+    let gsl__topbuild__coat4 = gsl__surfread__oakBlank_0.z;
+    let gsl__disp__coat4 = oakBlank - gsl_buildScaleK * gsl__topbuild__coat4 - gsl_dispScaleK * (gsl__top__coat4 - gsl__topbuild__coat4);
     let cutout = builtin_axis(p, vec3<f32>(50.0, 0.0, 68.94153), vector_dirY, noiseTex) - 51.74153;
     let gsl__disp__cut = builtin_differenceSharp(gsl__disp__coat4, cutout, noiseTex);
     let gsl__under__coat5 = gsl__disp__cut;
-    let gsl__inc__coat5 = gsl__surfread__oakBlank_0.y + clamp(1.0 - (gsl__under__coat5 - gsl__disp__coat4) / 0.05, 0.0, 1.0) * gsl__surfread__oakBlank_0.x;
-    return vec4<f32>(select(coat5Col, select(coat4Col, select(coat3Col, select(coat2Col, select(coat1Col, oakCol, select(0.0, 1.0, gsl__inc__coat1 <= 0.002 || gsl__under__coat1 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat2 <= 0.002 || gsl__under__coat2 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat3 <= 0.002 || gsl__under__coat3 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat4 <= 0.002 || gsl__under__coat4 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat5 <= 0.002 || gsl__under__coat5 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_dispScaleK > 0.0)) > 0.5), 1.0);
+    let gsl__inc__coat5 = gsl__incbuild__coat5 + clamp(1.0 - (gsl__under__coat5 - gsl__disp__coat4) / 0.05, 0.0, 1.0) * gsl__surfread__oakBlank_0.x;
+    return vec4<f32>(select(coat5Col, select(coat4Col, select(coat3Col, select(coat2Col, select(coat1Col, oakCol, select(0.0, 1.0, gsl__inc__coat1 <= 0.002 || gsl__under__coat1 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_buildScaleK + gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat2 <= 0.002 || gsl__under__coat2 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_buildScaleK + gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat3 <= 0.002 || gsl__under__coat3 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_buildScaleK + gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat4 <= 0.002 || gsl__under__coat4 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_buildScaleK + gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat5 <= 0.002 || gsl__under__coat5 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_buildScaleK + gsl_dispScaleK > 0.0)) > 0.5), 1.0);
   }
   return vec4<f32>(0.0, 0.0, 0.0, 0.0);
 }
@@ -1130,32 +1149,38 @@ fn gsl_materialField(p: vec3<f32>, time: f32, gsl_materialIdx: u32, noiseTex: te
     let oakBlank = builtin_gcl_closure_boxCentered(p, vector_zero, vec3<f32>(200.0, 40.0, 40.0), noiseTex);
     let gsl__surf__oakBlank = p - gsl__surfgrad__oakBlank * oakBlank / max(dot(gsl__surfgrad__oakBlank, gsl__surfgrad__oakBlank), 0.000000000001);
     let vector_dirY = vec3<f32>(0.0, 1.0, 0.0);
-    let gsl__surfread__oakBlank_1 = gsl_remap_2(gsl__surf__oakBlank, vector_zero, material_bulk_wood_whiteOakNumber, vector_dirX, material_bulk_wood_defaultLook, material_bulk_wood_noStain, material_bulk_wood_unfinished, vector_dirY, noiseTex);
-    let gsl__top__coat1 = gsl__surfread__oakBlank_1.z;
     let gsl__surfread__oakBlank_2 = gsl_remap_3(gsl__surf__oakBlank, vector_zero, material_bulk_wood_whiteOakNumber, vector_dirX, material_bulk_wood_defaultLook, material_bulk_wood_noStain, material_bulk_wood_unfinished, vector_dirY, noiseTex);
-    let gsl__top__oak = gsl__surfread__oakBlank_2;
+    let gsl__top__coat1 = gsl__surfread__oakBlank_2.y;
+    let gsl__top__oak = gsl__surfread__oakBlank_2.w;
     let gsl__inc__coat1 = gsl__top__coat1 - gsl__top__oak;
-    let gsl__disp__oak = oakBlank - gsl_dispScaleK * gsl__top__oak;
+    let gsl__topbuild__oak = gsl__surfread__oakBlank_2.z;
+    let gsl__disp__oak = oakBlank - gsl_buildScaleK * gsl__topbuild__oak - gsl_dispScaleK * (gsl__top__oak - gsl__topbuild__oak);
     let gsl__under__coat1 = gsl__disp__oak;
-    let gsl__top__coat2 = gsl__surfread__oakBlank_1.y;
+    let gsl__surfread__oakBlank_1 = gsl_remap_2(gsl__surf__oakBlank, vector_zero, material_bulk_wood_whiteOakNumber, vector_dirX, material_bulk_wood_defaultLook, material_bulk_wood_noStain, material_bulk_wood_unfinished, vector_dirY, noiseTex);
+    let gsl__top__coat2 = gsl__surfread__oakBlank_1.w;
     let gsl__inc__coat2 = gsl__top__coat2 - gsl__top__coat1;
-    let gsl__disp__coat1 = oakBlank - gsl_dispScaleK * gsl__top__coat1;
+    let gsl__topbuild__coat1 = gsl__surfread__oakBlank_2.x;
+    let gsl__disp__coat1 = oakBlank - gsl_buildScaleK * gsl__topbuild__coat1 - gsl_dispScaleK * (gsl__top__coat1 - gsl__topbuild__coat1);
     let gsl__under__coat2 = gsl__disp__coat1;
-    let gsl__top__coat3 = gsl__surfread__oakBlank_1.x;
+    let gsl__top__coat3 = gsl__surfread__oakBlank_1.y;
     let gsl__inc__coat3 = gsl__top__coat3 - gsl__top__coat2;
-    let gsl__disp__coat2 = oakBlank - gsl_dispScaleK * gsl__top__coat2;
+    let gsl__topbuild__coat2 = gsl__surfread__oakBlank_1.z;
+    let gsl__disp__coat2 = oakBlank - gsl_buildScaleK * gsl__topbuild__coat2 - gsl_dispScaleK * (gsl__top__coat2 - gsl__topbuild__coat2);
     let gsl__under__coat3 = gsl__disp__coat2;
     let gsl__surfread__oakBlank_0 = gsl_remap(gsl__surf__oakBlank, vector_zero, material_bulk_wood_whiteOakNumber, vector_dirX, material_bulk_wood_defaultLook, material_bulk_wood_noStain, material_bulk_wood_unfinished, vector_dirY, noiseTex);
-    let gsl__top__coat4 = gsl__surfread__oakBlank_0.z;
+    let gsl__top__coat4 = gsl__surfread__oakBlank_0.w;
     let gsl__inc__coat4 = gsl__top__coat4 - gsl__top__coat3;
-    let gsl__disp__coat3 = oakBlank - gsl_dispScaleK * gsl__top__coat3;
+    let gsl__topbuild__coat3 = gsl__surfread__oakBlank_1.x;
+    let gsl__disp__coat3 = oakBlank - gsl_buildScaleK * gsl__topbuild__coat3 - gsl_dispScaleK * (gsl__top__coat3 - gsl__topbuild__coat3);
     let gsl__under__coat4 = gsl__disp__coat3;
-    let gsl__disp__coat4 = oakBlank - gsl_dispScaleK * gsl__top__coat4;
+    let gsl__incbuild__coat5 = gsl__surfread__oakBlank_0.y;
+    let gsl__topbuild__coat4 = gsl__surfread__oakBlank_0.z;
+    let gsl__disp__coat4 = oakBlank - gsl_buildScaleK * gsl__topbuild__coat4 - gsl_dispScaleK * (gsl__top__coat4 - gsl__topbuild__coat4);
     let cutout = builtin_axis(p, vec3<f32>(50.0, 0.0, 68.94153), vector_dirY, noiseTex) - 51.74153;
     let gsl__disp__cut = builtin_differenceSharp(gsl__disp__coat4, cutout, noiseTex);
     let gsl__under__coat5 = gsl__disp__cut;
-    let gsl__inc__coat5 = gsl__surfread__oakBlank_0.y + clamp(1.0 - (gsl__under__coat5 - gsl__disp__coat4) / 0.05, 0.0, 1.0) * gsl__surfread__oakBlank_0.x;
-    let gsl_m = mat4x4<f32>(select(coat5Mat[0], select(coat4Mat[0], select(coat3Mat[0], select(coat2Mat[0], select(coat1Mat[0], oakMat[0], select(0.0, 1.0, gsl__inc__coat1 <= 0.002 || gsl__under__coat1 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat2 <= 0.002 || gsl__under__coat2 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat3 <= 0.002 || gsl__under__coat3 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat4 <= 0.002 || gsl__under__coat4 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat5 <= 0.002 || gsl__under__coat5 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_dispScaleK > 0.0)) > 0.5), select(coat5Mat[1], select(coat4Mat[1], select(coat3Mat[1], select(coat2Mat[1], select(coat1Mat[1], oakMat[1], select(0.0, 1.0, gsl__inc__coat1 <= 0.002 || gsl__under__coat1 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat2 <= 0.002 || gsl__under__coat2 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat3 <= 0.002 || gsl__under__coat3 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat4 <= 0.002 || gsl__under__coat4 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat5 <= 0.002 || gsl__under__coat5 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_dispScaleK > 0.0)) > 0.5), select(coat5Mat[2], select(coat4Mat[2], select(coat3Mat[2], select(coat2Mat[2], select(coat1Mat[2], oakMat[2], select(0.0, 1.0, gsl__inc__coat1 <= 0.002 || gsl__under__coat1 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat2 <= 0.002 || gsl__under__coat2 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat3 <= 0.002 || gsl__under__coat3 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat4 <= 0.002 || gsl__under__coat4 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat5 <= 0.002 || gsl__under__coat5 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_dispScaleK > 0.0)) > 0.5), select(coat5Mat[3], select(coat4Mat[3], select(coat3Mat[3], select(coat2Mat[3], select(coat1Mat[3], oakMat[3], select(0.0, 1.0, gsl__inc__coat1 <= 0.002 || gsl__under__coat1 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat2 <= 0.002 || gsl__under__coat2 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat3 <= 0.002 || gsl__under__coat3 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat4 <= 0.002 || gsl__under__coat4 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat5 <= 0.002 || gsl__under__coat5 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_dispScaleK > 0.0)) > 0.5)); return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
+    let gsl__inc__coat5 = gsl__incbuild__coat5 + clamp(1.0 - (gsl__under__coat5 - gsl__disp__coat4) / 0.05, 0.0, 1.0) * gsl__surfread__oakBlank_0.x;
+    let gsl_m = mat4x4<f32>(select(coat5Mat[0], select(coat4Mat[0], select(coat3Mat[0], select(coat2Mat[0], select(coat1Mat[0], oakMat[0], select(0.0, 1.0, gsl__inc__coat1 <= 0.002 || gsl__under__coat1 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_buildScaleK + gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat2 <= 0.002 || gsl__under__coat2 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_buildScaleK + gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat3 <= 0.002 || gsl__under__coat3 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_buildScaleK + gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat4 <= 0.002 || gsl__under__coat4 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_buildScaleK + gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat5 <= 0.002 || gsl__under__coat5 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_buildScaleK + gsl_dispScaleK > 0.0)) > 0.5), select(coat5Mat[1], select(coat4Mat[1], select(coat3Mat[1], select(coat2Mat[1], select(coat1Mat[1], oakMat[1], select(0.0, 1.0, gsl__inc__coat1 <= 0.002 || gsl__under__coat1 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_buildScaleK + gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat2 <= 0.002 || gsl__under__coat2 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_buildScaleK + gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat3 <= 0.002 || gsl__under__coat3 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_buildScaleK + gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat4 <= 0.002 || gsl__under__coat4 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_buildScaleK + gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat5 <= 0.002 || gsl__under__coat5 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_buildScaleK + gsl_dispScaleK > 0.0)) > 0.5), select(coat5Mat[2], select(coat4Mat[2], select(coat3Mat[2], select(coat2Mat[2], select(coat1Mat[2], oakMat[2], select(0.0, 1.0, gsl__inc__coat1 <= 0.002 || gsl__under__coat1 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_buildScaleK + gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat2 <= 0.002 || gsl__under__coat2 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_buildScaleK + gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat3 <= 0.002 || gsl__under__coat3 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_buildScaleK + gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat4 <= 0.002 || gsl__under__coat4 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_buildScaleK + gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat5 <= 0.002 || gsl__under__coat5 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_buildScaleK + gsl_dispScaleK > 0.0)) > 0.5), select(coat5Mat[3], select(coat4Mat[3], select(coat3Mat[3], select(coat2Mat[3], select(coat1Mat[3], oakMat[3], select(0.0, 1.0, gsl__inc__coat1 <= 0.002 || gsl__under__coat1 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_buildScaleK + gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat2 <= 0.002 || gsl__under__coat2 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_buildScaleK + gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat3 <= 0.002 || gsl__under__coat3 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_buildScaleK + gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat4 <= 0.002 || gsl__under__coat4 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_buildScaleK + gsl_dispScaleK > 0.0)) > 0.5), select(0.0, 1.0, gsl__inc__coat5 <= 0.002 || gsl__under__coat5 < select(-max(0.01, 2.0 * gsl_pw), 0.001, gsl_buildScaleK + gsl_dispScaleK > 0.0)) > 0.5)); return gsl_material(gsl_m[0], gsl_m[1], gsl_m[2], gsl_m[3], 1.0);
   }
   return gsl_material(vec4<f32>(0.5, 0.0, 1.5, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), 0.0);
 }
@@ -1188,6 +1213,8 @@ const gsl_foldK = array<vec3<f32>, 8>(vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 0
 
 var<private> gsl_dispScaleK: f32 = 0.0;
 
+var<private> gsl_buildScaleK: f32 = 0.0;
+
 fn gsl_displacedParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f32, 1> {
   let gsl_partLo = vec3<f32>(-100.0, -20.0, -20.0);
   let gsl_partHi = vec3<f32>(100.0, 20.0, 20.0);
@@ -1204,13 +1231,15 @@ fn gsl_displacedParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> arr
   let material_bulk_wood_unfinished = mat2x4<f32>(vec4<f32>(1.0, 1.0, 1.0, 3.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
   let vector_dirY = vec3<f32>(0.0, 1.0, 0.0);
   let gsl__surfread__oakBlank_0 = gsl_remap(gsl__surf__oakBlank, vector_zero, material_bulk_wood_whiteOakNumber, vector_dirX, material_bulk_wood_defaultLook, material_bulk_wood_noStain, material_bulk_wood_unfinished, vector_dirY, noiseTex);
-  let gsl__top__coat4 = gsl__surfread__oakBlank_0.z;
-  let gsl__disp__coat4 = oakBlank - gsl_dispScaleK * gsl__top__coat4;
+  let gsl__topbuild__coat4 = gsl__surfread__oakBlank_0.z;
+  let gsl__top__coat4 = gsl__surfread__oakBlank_0.w;
+  let gsl__disp__coat4 = oakBlank - gsl_buildScaleK * gsl__topbuild__coat4 - gsl_dispScaleK * (gsl__top__coat4 - gsl__topbuild__coat4);
   let cutout = builtin_axis(p, vec3<f32>(50.0, 0.0, 68.94153), vector_dirY, noiseTex) - 51.74153;
   let gsl__disp__cut = builtin_differenceSharp(gsl__disp__coat4, cutout, noiseTex);
   let gsl__under__coat5 = gsl__disp__cut;
-  let gsl__inc__coat5 = gsl__surfread__oakBlank_0.y + clamp(1.0 - (gsl__under__coat5 - gsl__disp__coat4) / 0.05, 0.0, 1.0) * gsl__surfread__oakBlank_0.x;
-  let gsl__disp__coat5 = gsl__under__coat5 - gsl_dispScaleK * gsl__inc__coat5;
+  let gsl__incbuild__coat5 = gsl__surfread__oakBlank_0.y;
+  let gsl__inc__coat5 = gsl__incbuild__coat5 + clamp(1.0 - (gsl__under__coat5 - gsl__disp__coat4) / 0.05, 0.0, 1.0) * gsl__surfread__oakBlank_0.x;
+  let gsl__disp__coat5 = gsl__under__coat5 - gsl_buildScaleK * gsl__incbuild__coat5 - gsl_dispScaleK * (gsl__inc__coat5 - gsl__incbuild__coat5);
   let chamferCut = 26.870058 - (p.z - p.y) / 1.4142135;
   if (gsl_vanishView.w <= 0.0 || gsl_partBox <= gsl_vanishView.w) {
     let gsl_partVanish = gsl_vanish(gsl_partLo, gsl_partHi);
@@ -1222,8 +1251,9 @@ fn gsl_displacedParts(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> arr
   return array<f32, 1>(gsl__disp__stick);
 }
 
-fn gsl_sdShapeDisplaced(p: vec3<f32>, time: f32, gsl_dispK: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
+fn gsl_sdShapeDisplaced(p: vec3<f32>, time: f32, gsl_dispK: f32, gsl_buildK: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
   gsl_dispScaleK = gsl_dispK;
+  gsl_buildScaleK = gsl_buildK;
   let gsl_dd = gsl_displacedParts(p, time, noiseTex);
   let gsl_s1 = gsl_shape(gsl_dd[0], 1u);
   return gsl_s1;

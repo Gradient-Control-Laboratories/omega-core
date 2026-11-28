@@ -31,6 +31,33 @@ the goal the earlier draft designed an architecture for.
 | `material/bulk/wood` | solid wood as a growth field, with its own prep / stain / topcoat pipeline |
 | `material/bulk/stone`, `weathering`, `natural`, `animated`, `playful` | further material families on the same convention |
 
+### Relief datum and depth: where each height comes from
+
+A relief is measured down from its peaks: its maximum over the surface is 0, so the surface drawn
+is the one a part's size is held to, and the relief runs from `-depth` to 0. A material declares
+that depth, its whole envelope, with `material.withReliefDepth` (row 0's fourth component), and
+`material.reliefDepth` reads it. A coat laid with `coating.levelled` declares its own depth plus the
+share of the depth beneath that it keeps. For a random surface the peak is a profilometer's: the
+mean peak height over five sampling lengths, Rpm (ISO 21920), with the sampling length set by
+ISO 4288. Such a surface has no highest point, and like a real one it passes its Rpm here and
+there.
+
+| family | functions | heights | peak and depth |
+| :--- | :--- | :--- | :--- |
+| machined | turned, faced, faceMilled, ball-end | measured: the tool nose's arc every feed | cusps; `r - sqrt(r^2 - f^2/4)` |
+| thread, fastener, joint | thread reliefs | measured: ISO 68-1 profile | crest at the major diameter; none declared (the pitch diameter's tolerance, ISO 965) |
+| shaft | knurls | measured: ISO 13444 | tips; none declared |
+| printed | fdm | measured geometry: semicircular beads | crowns; 0.5 L |
+| printed | resin, powderBed | judged | step tops, grain tops; 0.08 L, 0.3 grain |
+| cast | sandCast | judged fit; peak measured as Rpm | Rpm 3.1 / GFN; Rz 5.6 / GFN |
+| cast | shotPeened | judged | dimple rims; 0.08 dimple |
+| molded | leatherGrain, rubberGrip | judged | dome and dot tops; 1.5 depth, 0.8 |
+| sheet | checkerPlate, stuccoEmbossed | judged | lug and pebble tops; 1.2, 0.2 |
+| coating | powderCoat | amplitude stated (8 µm peak to valley) | noise bound; 0.018 peel |
+| coating | wrinkleCoat, sandCoat, hammertone, chippedPaint | judged | ridge, grain, rim, paint tops; 0.196 size, 0.4 grain, 0.06 cell, 0.08 |
+| coating | levelled (clearCoat, powder over a part, glazes) | inherits; `filmKeeps` judged | its own plus the kept share beneath |
+| bulk, collection | wood, stone, masonry, water, studs, … | judged appearance | not measured from the peaks; see the [datum audit](../conductor/tracks/unified_surface_20261126/datum_audit.md) |
+
 ### Conventions that matter, and one trap
 
 **Lobe widths are alpha, not roughness.** `alpha = roughness^2`

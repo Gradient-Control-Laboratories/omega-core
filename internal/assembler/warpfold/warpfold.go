@@ -121,6 +121,9 @@ func HasWarpCall(pkg *program.Package) bool {
 		for _, r := range file.DisplacedReturns {
 			walkOp(r)
 		}
+		for _, r := range file.ToleranceReturns {
+			walkOp(r)
+		}
 	}
 	return found
 }
@@ -253,6 +256,9 @@ func AssignWarpSlots(pkgs []WarpGraphPkg, primaryPkgName string) *WarpSlots {
 				walkOperand(r, gp)
 			}
 			for _, r := range file.DisplacedReturns {
+				walkOperand(r, gp)
+			}
+			for _, r := range file.ToleranceReturns {
 				walkOperand(r, gp)
 			}
 		}
@@ -416,6 +422,13 @@ func (f *warpFolder) foldPackage() error {
 				return err
 			}
 			file.DisplacedReturns[i] = out
+		}
+		for i, ret := range file.ToleranceReturns {
+			out, err := f.foldOperand(ret)
+			if err != nil {
+				return err
+			}
+			file.ToleranceReturns[i] = out
 		}
 	}
 	return nil
@@ -614,6 +627,9 @@ func foldWarpFieldPackage(pkg *program.Package) {
 		}
 		for i, ret := range file.DisplacedReturns {
 			file.DisplacedReturns[i] = foldWarpFieldOperand(ret)
+		}
+		for i, ret := range file.ToleranceReturns {
+			file.ToleranceReturns[i] = foldWarpFieldOperand(ret)
 		}
 	}
 }

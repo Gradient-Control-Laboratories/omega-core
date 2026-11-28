@@ -56,7 +56,7 @@ func (e *Evaluator) SurfacePoint(ctx context.Context, manifest map[string]string
 		for i, pt := range cur {
 			xs[i], ys[i], zs[i] = float32(pt[0]), float32(pt[1]), float32(pt[2])
 		}
-		grads, err := EvalGrad(prog, xs, ys, zs)
+		grads, err := evalGrad(prog, e.surface, xs, ys, zs)
 		if err != nil {
 			return nil, err
 		}

@@ -1132,7 +1132,7 @@ const gsl_foldK_2 = array<vec3<f32>, 27>(vec3<f32>(-1.0, -1.0, -1.0), vec3<f32>(
 
 const gsl_foldK_3 = array<vec2<f32>, 9>(vec2<f32>(-1.0, -1.0), vec2<f32>(0.0, -1.0), vec2<f32>(1.0, -1.0), vec2<f32>(-1.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(1.0, 0.0), vec2<f32>(-1.0, 1.0), vec2<f32>(0.0, 1.0), vec2<f32>(1.0, 1.0));
 
-fn gsl_heights(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f32, 10> {
+fn gsl_heights(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<vec2<f32>, 10> {
   var gsl_detailValue_5 = vec2<f32>(0.0, 0.0);
   let gsl_tmp_743 = map_axisAt(p, vec3<f32>(-187.5, 0.0, -25.0), vec3<f32>(0.0, 0.0, 1.0), noiseTex);
   let gsl_tmp_744 = length(gsl_tmp_743.xy);
@@ -1214,21 +1214,27 @@ fn gsl_heights(p: vec3<f32>, time: f32, noiseTex: texture_3d<f32>) -> array<f32,
     gsl_simpleValue_22 = mat4x4<f32>(mix(gsl_simpleValue_22[0], gsl_simpleFull_12[0], gsl_simpleDetail), mix(gsl_simpleValue_22[1], gsl_simpleFull_12[1], gsl_simpleDetail), mix(gsl_simpleValue_22[2], gsl_simpleFull_12[2], gsl_simpleDetail), mix(gsl_simpleValue_22[3], gsl_simpleFull_12[3], gsl_simpleDetail));
   }
   let lavaMat = gsl_simpleValue_22;
-  return array<f32, 10>(0.0, 0.0, oakMat[2].z, rustedMat[2].z, patinaMat[2].z, glitterMat[2].z, 0.0, material_withTransmission(waterMat, 0.6, 50.0, noiseTex)[2].z, lavaMat[2].z, 0.0);
+  let gsl_v2 = oakMat[2];
+  let gsl_v3 = rustedMat[2];
+  let gsl_v4 = patinaMat[2];
+  let gsl_v5 = glitterMat[2];
+  let gsl_v7 = material_withTransmission(waterMat, 0.6, 50.0, noiseTex)[2];
+  let gsl_v8 = lavaMat[2];
+  return array<vec2<f32>, 10>(vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(gsl_v2.z, gsl_v2.w), vec2<f32>(gsl_v3.z, gsl_v3.w), vec2<f32>(gsl_v4.z, gsl_v4.w), vec2<f32>(gsl_v5.z, gsl_v5.w), vec2<f32>(0.0, 0.0), vec2<f32>(gsl_v7.z, gsl_v7.w), vec2<f32>(gsl_v8.z, gsl_v8.w), vec2<f32>(0.0, 0.0));
 }
 
-fn gsl_sdShapeDisplaced(p: vec3<f32>, time: f32, gsl_dispK: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
+fn gsl_sdShapeDisplaced(p: vec3<f32>, time: f32, gsl_dispK: f32, gsl_buildK: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
   let gsl_d = gsl_shapeParts(p, time, noiseTex);
   let gsl_h = gsl_heights(p, time, noiseTex);
   let gsl_s1 = gsl_shape(gsl_d[0], 1u);
   let gsl_s2 = gsl_shape(gsl_d[1], 2u);
-  let gsl_s3 = gsl_shape(gsl_d[2] - gsl_h[2] * gsl_dispK, 3u);
-  let gsl_s4 = gsl_shape(gsl_d[3] - gsl_h[3] * gsl_dispK, 4u);
-  let gsl_s5 = gsl_shape(gsl_d[4] - gsl_h[4] * gsl_dispK, 5u);
-  let gsl_s6 = gsl_shape(gsl_d[5] - gsl_h[5] * gsl_dispK, 6u);
+  let gsl_s3 = gsl_shape(gsl_d[2] - (gsl_h[2].x - gsl_h[2].y) * gsl_dispK - gsl_h[2].y * gsl_buildK, 3u);
+  let gsl_s4 = gsl_shape(gsl_d[3] - (gsl_h[3].x - gsl_h[3].y) * gsl_dispK - gsl_h[3].y * gsl_buildK, 4u);
+  let gsl_s5 = gsl_shape(gsl_d[4] - (gsl_h[4].x - gsl_h[4].y) * gsl_dispK - gsl_h[4].y * gsl_buildK, 5u);
+  let gsl_s6 = gsl_shape(gsl_d[5] - (gsl_h[5].x - gsl_h[5].y) * gsl_dispK - gsl_h[5].y * gsl_buildK, 6u);
   let gsl_s7 = gsl_shape(gsl_d[6], 7u);
-  let gsl_s8 = gsl_shape(gsl_d[7] - gsl_h[7] * gsl_dispK, 8u);
-  let gsl_s9 = gsl_shape(gsl_d[8] - gsl_h[8] * gsl_dispK, 9u);
+  let gsl_s8 = gsl_shape(gsl_d[7] - (gsl_h[7].x - gsl_h[7].y) * gsl_dispK - gsl_h[7].y * gsl_buildK, 8u);
+  let gsl_s9 = gsl_shape(gsl_d[8] - (gsl_h[8].x - gsl_h[8].y) * gsl_dispK - gsl_h[8].y * gsl_buildK, 9u);
   let gsl_s10 = gsl_shape(gsl_d[9], 10u);
   return gsl_min(gsl_min(gsl_min(gsl_min(gsl_min(gsl_min(gsl_min(gsl_min(gsl_min(gsl_s1, gsl_s2), gsl_s3), gsl_s4), gsl_s5), gsl_s6), gsl_s7), gsl_s8), gsl_s9), gsl_s10);
 }

@@ -19,8 +19,17 @@ func EvalGrad(
 	prog *program.Program,
 	xs, ys, zs []float32,
 ) ([][]GradSample, error) {
+	return evalGrad(prog, convert.Surface{}, xs, ys, zs)
+}
+
+// evalGrad is EvalGrad with the surfaces at s (Evaluator.SetCondition).
+func evalGrad(
+	prog *program.Program,
+	s convert.Surface,
+	xs, ys, zs []float32,
+) ([][]GradSample, error) {
 	var results [][]GradSample
-	err := convert.ToTrees(prog, func(treeIndices []fidget.TreeIndex, _ []string) error {
+	err := scalarTrees(prog, s, func(treeIndices []fidget.TreeIndex) error {
 		for _, treeIndex := range treeIndices {
 			canvasIndex := fidget.BuildCanvas(treeIndex)
 			grads, err := fidget.EvalGrad(canvasIndex, xs, ys, zs)
@@ -45,8 +54,17 @@ func EvalInterval(
 	prog *program.Program,
 	boxes [][6]float32,
 ) ([][]IntervalSample, error) {
+	return evalInterval(prog, convert.Surface{}, boxes)
+}
+
+// evalInterval is EvalInterval with the surfaces at s (Evaluator.SetCondition).
+func evalInterval(
+	prog *program.Program,
+	s convert.Surface,
+	boxes [][6]float32,
+) ([][]IntervalSample, error) {
 	var results [][]IntervalSample
-	err := convert.ToTrees(prog, func(treeIndices []fidget.TreeIndex, _ []string) error {
+	err := scalarTrees(prog, s, func(treeIndices []fidget.TreeIndex) error {
 		for _, treeIndex := range treeIndices {
 			canvasIndex := fidget.BuildCanvas(treeIndex)
 			ivals, err := fidget.EvalInterval(canvasIndex, boxes)
@@ -70,8 +88,17 @@ func EvalGradGroups(
 	prog *program.Program,
 	xs, ys, zs []float32,
 ) ([]GradGroup, error) {
+	return evalGradGroups(prog, convert.Surface{}, xs, ys, zs)
+}
+
+// evalGradGroups is EvalGradGroups with the surfaces at s (Evaluator.SetCondition).
+func evalGradGroups(
+	prog *program.Program,
+	s convert.Surface,
+	xs, ys, zs []float32,
+) ([]GradGroup, error) {
 	var results []GradGroup
-	err := convert.ToTreeGroups(prog, func(treeIndices []fidget.TreeIndex, groups []convert.ReturnGroup) error {
+	err := groupTrees(prog, s, func(treeIndices []fidget.TreeIndex, groups []convert.ReturnGroup) error {
 		next := 0
 		for _, group := range groups {
 			g := GradGroup{TypeName: group.TypeName}
@@ -106,8 +133,20 @@ func EvalIntervalParamBoxes(
 	boxes [][6]float32,
 	bounds [][][2]float64,
 ) ([]IntervalSample, error) {
+	return evalIntervalParamBoxes(prog, convert.Surface{}, names, boxes, bounds)
+}
+
+// evalIntervalParamBoxes is EvalIntervalParamBoxes with the surfaces at s
+// (Evaluator.SetCondition).
+func evalIntervalParamBoxes(
+	prog *program.Program,
+	s convert.Surface,
+	names []string,
+	boxes [][6]float32,
+	bounds [][][2]float64,
+) ([]IntervalSample, error) {
 	var results []IntervalSample
-	err := convert.ToTreesWithParams(prog, names, func(treeIndices []fidget.TreeIndex, paramTrees map[string]fidget.TreeIndex) error {
+	err := paramTrees(prog, s, names, func(treeIndices []fidget.TreeIndex, paramTrees map[string]fidget.TreeIndex) error {
 		if len(treeIndices) != 1 {
 			return fmt.Errorf("parametric interval evaluation requires a single scalar return, got %d", len(treeIndices))
 		}
@@ -157,6 +196,58 @@ func EvalIntervalParams(
 		bounds[i] = row
 	}
 	return EvalIntervalParamBoxes(prog, names, boxes, bounds)
+}
+
+// scalarTrees builds prog's scalar returns with the surfaces at s: ToTrees's
+// trees for the field as built, else ToSurfaceTrees's, refusing a return that
+// is not a number as ToTrees refuses it.
+func scalarTrees(prog *program.Program, s convert.Surface, f func([]fidget.TreeIndex) error) error {
+	if !s.Moved() {
+		return convert.ToTrees(prog, func(treeIndices []fidget.TreeIndex, _ []string) error {
+			return f(treeIndices)
+		})
+	}
+	return convert.ToSurfaceTrees(prog, s, nil, func(treeIndices []fidget.TreeIndex, groups []convert.ReturnGroup, _ map[string]fidget.TreeIndex) error {
+		if err := scalarGroups(groups); err != nil {
+			return err
+		}
+		return f(treeIndices)
+	})
+}
+
+// groupTrees is scalarTrees for returns of any numeric type, as ToTreeGroups
+// builds them.
+func groupTrees(prog *program.Program, s convert.Surface, f func([]fidget.TreeIndex, []convert.ReturnGroup) error) error {
+	if !s.Moved() {
+		return convert.ToTreeGroups(prog, f)
+	}
+	return convert.ToSurfaceTrees(prog, s, nil, func(treeIndices []fidget.TreeIndex, groups []convert.ReturnGroup, _ map[string]fidget.TreeIndex) error {
+		return f(treeIndices, groups)
+	})
+}
+
+// paramTrees is scalarTrees with the named declarations built as input vars,
+// as ToTreesWithParams builds them.
+func paramTrees(prog *program.Program, s convert.Surface, names []string, f func([]fidget.TreeIndex, map[string]fidget.TreeIndex) error) error {
+	if !s.Moved() {
+		return convert.ToTreesWithParams(prog, names, f)
+	}
+	return convert.ToSurfaceTrees(prog, s, names, func(treeIndices []fidget.TreeIndex, groups []convert.ReturnGroup, vars map[string]fidget.TreeIndex) error {
+		if err := scalarGroups(groups); err != nil {
+			return err
+		}
+		return f(treeIndices, vars)
+	})
+}
+
+// scalarGroups refuses a return that is not one number.
+func scalarGroups(groups []convert.ReturnGroup) error {
+	for _, g := range groups {
+		if g.Count != 1 {
+			return fmt.Errorf("expected numeric return values, got %s", g.TypeName)
+		}
+	}
+	return nil
 }
 
 func toGradSamples(samples []fidget.GradResult) []GradSample {

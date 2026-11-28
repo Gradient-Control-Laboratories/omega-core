@@ -119,10 +119,10 @@ func splitLines(s string) []string {
 // condition: bore 25 (18-30: k5 +11 / +2), outside 52 (50-80: H7 +30 / 0).
 func TestBearing_SeatsInAZone(t *testing.T) {
 	doc := `
-jMax = bearing.seatDia(6205.0, tolerance.k5, tolerance.maxMaterial);
-jMin = bearing.seatDia(6205.0, tolerance.k5, tolerance.minMaterial);
-hMax = bearing.housingDia(6205.0, tolerance.H7, tolerance.maxMaterial);
-hMin = bearing.housingDia(6205.0, tolerance.H7, tolerance.minMaterial);
+jMax = (bearing.bore(6205.0) + tolerance.shaftUpper(bearing.bore(6205.0), tolerance.k5));
+jMin = (bearing.bore(6205.0) + tolerance.shaftLower(bearing.bore(6205.0), tolerance.k5));
+hMax = (bearing.outerDia(6205.0) + tolerance.holeLower(bearing.outerDia(6205.0), tolerance.H7));
+hMin = (bearing.outerDia(6205.0) + tolerance.holeUpper(bearing.outerDia(6205.0), tolerance.H7));
 return sphere(1.0);
 `
 	got := undercutEval(t, doc, []string{"jMax", "jMin", "hMax", "hMin"}, [][3]float64{{0, 0, 0}})

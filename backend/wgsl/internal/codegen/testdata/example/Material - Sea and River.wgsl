@@ -324,7 +324,7 @@ var<private> gsl_dispDrawn: f32 = 0.0;
 
 const gsl_foldK = array<vec3<f32>, 8>(vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 0.0, 0.0), vec3<f32>(0.0, 1.0, 0.0), vec3<f32>(1.0, 1.0, 0.0), vec3<f32>(0.0, 0.0, 1.0), vec3<f32>(1.0, 0.0, 1.0), vec3<f32>(0.0, 1.0, 1.0), vec3<f32>(1.0, 1.0, 1.0));
 
-fn gsl_heights(p: vec3<f32>, time: f32, gsl_param_12_27: f32, gsl_param_13_31: f32, gsl_param_17_27: f32, gsl_param_20_26: f32, noiseTex: texture_3d<f32>) -> array<f32, 2> {
+fn gsl_heights(p: vec3<f32>, time: f32, gsl_param_12_27: f32, gsl_param_13_31: f32, gsl_param_17_27: f32, gsl_param_20_26: f32, noiseTex: texture_3d<f32>) -> array<vec2<f32>, 2> {
   let windSpeed = gsl_param_12_27;
   let gsl_tmp_100 = mat4x4<f32>(vec4<f32>(sqrt(0.003 + 0.00512 * windSpeed), 0.0, 1.34, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 0.0));
   let gsl_tmp_92 = 0.1 * windSpeed * windSpeed * 8.60337 / windSpeed * 8.60337 / windSpeed / 61.638046;
@@ -367,13 +367,15 @@ fn gsl_heights(p: vec3<f32>, time: f32, gsl_param_12_27: f32, gsl_param_13_31: f
     gsl_simpleValue_6 = mat4x4<f32>(mix(gsl_simpleValue_6[0], gsl_simpleFull_4[0], gsl_simpleDetail), mix(gsl_simpleValue_6[1], gsl_simpleFull_4[1], gsl_simpleDetail), mix(gsl_simpleValue_6[2], gsl_simpleFull_4[2], gsl_simpleDetail), mix(gsl_simpleValue_6[3], gsl_simpleFull_4[3], gsl_simpleDetail));
   }
   let riverMat = gsl_simpleValue_6;
-  return array<f32, 2>(material_withTransmission(seaMat, 0.6, 24.0, noiseTex)[2].z, riverMat[2].z);
+  let gsl_v0 = material_withTransmission(seaMat, 0.6, 24.0, noiseTex)[2];
+  let gsl_v1 = riverMat[2];
+  return array<vec2<f32>, 2>(vec2<f32>(gsl_v0.z, gsl_v0.w), vec2<f32>(gsl_v1.z, gsl_v1.w));
 }
 
-fn gsl_sdShapeDisplaced(p: vec3<f32>, time: f32, gsl_dispK: f32, gsl_param_12_27: f32, gsl_param_13_31: f32, gsl_param_17_27: f32, gsl_param_20_26: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
+fn gsl_sdShapeDisplaced(p: vec3<f32>, time: f32, gsl_dispK: f32, gsl_buildK: f32, gsl_param_12_27: f32, gsl_param_13_31: f32, gsl_param_17_27: f32, gsl_param_20_26: f32, noiseTex: texture_3d<f32>) -> gsl_shape {
   let gsl_d = gsl_shapeParts(p, time, gsl_param_12_27, gsl_param_13_31, gsl_param_17_27, gsl_param_20_26, noiseTex);
   let gsl_h = gsl_heights(p, time, gsl_param_12_27, gsl_param_13_31, gsl_param_17_27, gsl_param_20_26, noiseTex);
-  let gsl_s1 = gsl_shape(gsl_d[0] - gsl_h[0] * gsl_dispK, 1u);
-  let gsl_s2 = gsl_shape(gsl_d[1] - gsl_h[1] * gsl_dispK, 2u);
+  let gsl_s1 = gsl_shape(gsl_d[0] - (gsl_h[0].x - gsl_h[0].y) * gsl_dispK - gsl_h[0].y * gsl_buildK, 1u);
+  let gsl_s2 = gsl_shape(gsl_d[1] - (gsl_h[1].x - gsl_h[1].y) * gsl_dispK - gsl_h[1].y * gsl_buildK, 2u);
   return gsl_min(gsl_s1, gsl_s2);
 }

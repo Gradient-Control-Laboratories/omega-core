@@ -36,6 +36,7 @@ import "material/bulk/metal";
 /// warm. The lobe is 0.9 to 0.8 wide where the grains are too small to see,
 /// narrowing by their slopes where they are drawn, with no lay. Returns
 /// material, color, height and slope.
+/// Relief: judged fit, down from its mean profile peak (Rpm); declares its depth (Rz).
 sandCast(baseMaterial, @color baseColor, @range(40, 140) grainFineness) {
   gfn = clamp(grainFineness, 40, 140);
   t = (gfn - 40) / 100;
@@ -44,13 +45,23 @@ sandCast(baseMaterial, @color baseColor, @range(40, 140) grainFineness) {
   // them, the rammed mold's unevenness ten grains across, and the gas
   // holes, each in mm.
   pit = sandPits(3, 0.3);
-  relief = (4.5 / gfn) * sandImprint(grain) + (2 / gfn) * sandImprint(0.6 * grain) + (3 / gfn) * noise.fbm(10 * grain, 2, 0.5, 2) - 0.06 * pit;
+  // Measured down from the peaks as a profilometer measures them (ISO 21920):
+  // the mean peak height over five sampling lengths, Rpm, 3.1 / GFN above
+  // the mean line, and the mean peak to valley height, Rz, 5.6 / GFN, over
+  // twelve profiles at 40, 90 and 140 GFN, sampling lengths 8 and 2.5 mm by
+  // ISO 4288 (Rz 5.6 times Ra, usual for a casting). A random surface has no
+  // highest point, so, as a real casting does, it passes its Rpm here and
+  // there.
+  crest = 3.1 / gfn;
+  castDepth = 5.6 / gfn;
+  relief = (4.5 / gfn) * sandImprint(grain) + (2 / gfn) * sandImprint(0.6 * grain) + (3 / gfn) * noise.fbm(10 * grain, 2, 0.5, 2) - 0.06 * pit - crest;
   // The lobe with the grains unseen is 0.9 to 0.8 wide (judged); where
   // they show, their slopes are drawn and the lobe narrows by them.
   rough = 0.9 - 0.1 * t;
   micro = rough * rough - sandSlope * sandSlope;
-  skin = material.addDisplacement(material.withLay(material.withRoughness(baseMaterial, sqrt(texture.reliefRoughness(micro, sandSlope, grain))), [0, 0, 0], 0), relief);
-  skin.simple = material.withLay(material.withRoughness(baseMaterial, rough), [0, 0, 0], 0);
+  depth = material.reliefDepth(baseMaterial) + castDepth;
+  skin = material.withReliefDepth(material.addDisplacement(material.withLay(material.withRoughness(baseMaterial, sqrt(texture.reliefRoughness(micro, sandSlope, grain))), [0, 0, 0], 0), relief), depth);
+  skin.simple = material.withReliefDepth(material.addDisplacement(material.withLay(material.withRoughness(baseMaterial, rough), [0, 0, 0], 0), -crest), depth);
   // Color: the skin's tone, mottled in patches (darker ones a little
   // browner), a shade per grain, burnt-on sand light and warm, each mean
   // zero, and the holes' shadow, too rare to move the mean.
@@ -189,11 +200,14 @@ forged(baseMaterial, @color baseColor, @range(0, 1) scale) {
 /// alone), its relief and a shade per dimple as fine detail, and the lobe
 /// 0.5 to 0.7 wide as the dimples' slopes spread the highlight. Returns
 /// material, color, height and slope.
+/// Relief: judged, down from the dimples' rims; declares its depth.
 shotPeened(baseMaterial, @color baseColor, @range(4, 20) almenIntensity) {
   a = clamp((almenIntensity - 4) / 16, 0, 1);
   dimple = 0.15 + 0.25 * a;
-  skin = material.addDisplacement(material.withLay(material.withRoughness(baseMaterial, 0.5 + 0.2 * a), [0, 0, 0], 0), -texture.grainRelief(dimple, 0.08 * dimple));
-  skin.simple = material.withLay(material.withRoughness(baseMaterial, 0.5 + 0.2 * a), [0, 0, 0], 0);
+  // Already measured down from the peaks: the dimples reach 0.08 dimple deep.
+  depth = material.reliefDepth(baseMaterial) + 0.08 * dimple;
+  skin = material.withReliefDepth(material.addDisplacement(material.withLay(material.withRoughness(baseMaterial, 0.5 + 0.2 * a), [0, 0, 0], 0), -texture.grainRelief(dimple, 0.08 * dimple)), depth);
+  skin.simple = material.withReliefDepth(material.withLay(material.withRoughness(baseMaterial, 0.5 + 0.2 * a), [0, 0, 0], 0), depth);
   tint = baseColor * texture.grainShade(dimple, 0.06);
   tint.simple = baseColor;
   return skin, tint, 0, 0;

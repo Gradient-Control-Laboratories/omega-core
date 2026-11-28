@@ -853,7 +853,7 @@ var<private> gsl_simpleDetail: f32 = 1.0;
 
 var<private> gsl_dispDrawn: f32 = 0.0;
 
-fn gsl_heights(p: vec3<f32>, time: f32) -> array<f32, 8> {
+fn gsl_heights(p: vec3<f32>, time: f32) -> array<vec2<f32>, 8> {
   let vector_dirZ = vec3<f32>(0.0, 0.0, 1.0);
   let vector_zero = vec3<f32>(0.0, 0.0, 0.0);
   let coverBlank = max(builtin_gcl_closure_boxCentered(p, vec3<f32>(40.0, 0.0, 3.0) * 0.5, abs(vec3<f32>(36.0, 36.0, 3.0))), -dot(p - vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(0.0, 0.0, 1.0)));
@@ -875,20 +875,25 @@ fn gsl_heights(p: vec3<f32>, time: f32) -> array<f32, 8> {
   let gslCarry6 = joint_insert__material__0__spec1(p, mat2x4<f32>(vec4<f32>(-20.0, -12.0, 7.5, 6.0), vec4<f32>(-0.0, -0.0, -1.0, 2.0)), lid1, base1, 7.5);
   let gslCarry10 = joint_insert__material__0__spec2(p, mat2x4<f32>(vec4<f32>(30.0, 13.0, 3.0, 3.0), vec4<f32>(-0.0, -0.0, -1.0, 2.0)), coverBlank, base2, 3.0);
   let gslCarry14 = joint_insert__material__0__spec2(p, mat2x4<f32>(vec4<f32>(30.0, -13.0, 3.0, 3.0), vec4<f32>(-0.0, -0.0, -1.0, 2.0)), cover1, base3, 3.0);
-  return array<f32, 8>(gslCarry16[2].z, 0.0, 0.0, 0.0, gslCarry2[2].z, gslCarry6[2].z, gslCarry10[2].z, gslCarry14[2].z);
+  let gsl_v0 = gslCarry16[2];
+  let gsl_v4 = gslCarry2[2];
+  let gsl_v5 = gslCarry6[2];
+  let gsl_v6 = gslCarry10[2];
+  let gsl_v7 = gslCarry14[2];
+  return array<vec2<f32>, 8>(vec2<f32>(gsl_v0.z, gsl_v0.w), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0), vec2<f32>(gsl_v4.z, gsl_v4.w), vec2<f32>(gsl_v5.z, gsl_v5.w), vec2<f32>(gsl_v6.z, gsl_v6.w), vec2<f32>(gsl_v7.z, gsl_v7.w));
 }
 
-fn gsl_sdShapeDisplaced(p: vec3<f32>, time: f32, gsl_dispK: f32) -> gsl_shape {
+fn gsl_sdShapeDisplaced(p: vec3<f32>, time: f32, gsl_dispK: f32, gsl_buildK: f32) -> gsl_shape {
   let gsl_d = gsl_shapeParts(p, time);
   let gsl_h = gsl_heights(p, time);
-  let gsl_s1 = gsl_shape(gsl_d[0] - gsl_h[0] * gsl_dispK, 1u);
+  let gsl_s1 = gsl_shape(gsl_d[0] - (gsl_h[0].x - gsl_h[0].y) * gsl_dispK - gsl_h[0].y * gsl_buildK, 1u);
   let gsl_s2 = gsl_shape(gsl_d[1], 2u);
   let gsl_s3 = gsl_shape(gsl_d[2], 3u);
   let gsl_s4 = gsl_shape(gsl_d[3], 4u);
-  let gsl_s5 = gsl_shape(gsl_d[4] - gsl_h[4] * gsl_dispK, 5u);
-  let gsl_s6 = gsl_shape(gsl_d[5] - gsl_h[5] * gsl_dispK, 6u);
-  let gsl_s7 = gsl_shape(gsl_d[6] - gsl_h[6] * gsl_dispK, 7u);
-  let gsl_s8 = gsl_shape(gsl_d[7] - gsl_h[7] * gsl_dispK, 8u);
+  let gsl_s5 = gsl_shape(gsl_d[4] - (gsl_h[4].x - gsl_h[4].y) * gsl_dispK - gsl_h[4].y * gsl_buildK, 5u);
+  let gsl_s6 = gsl_shape(gsl_d[5] - (gsl_h[5].x - gsl_h[5].y) * gsl_dispK - gsl_h[5].y * gsl_buildK, 6u);
+  let gsl_s7 = gsl_shape(gsl_d[6] - (gsl_h[6].x - gsl_h[6].y) * gsl_dispK - gsl_h[6].y * gsl_buildK, 7u);
+  let gsl_s8 = gsl_shape(gsl_d[7] - (gsl_h[7].x - gsl_h[7].y) * gsl_dispK - gsl_h[7].y * gsl_buildK, 8u);
   return gsl_min(gsl_min(gsl_min(gsl_min(gsl_min(gsl_min(gsl_min(gsl_s1, gsl_s2), gsl_s3), gsl_s4), gsl_s5), gsl_s6), gsl_s7), gsl_s8);
 }
 

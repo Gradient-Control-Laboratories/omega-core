@@ -142,6 +142,9 @@ func hasTopoCall(pkg *program.Package) bool {
 		for _, r := range file.DisplacedReturns {
 			walkOp(r)
 		}
+		for _, r := range file.ToleranceReturns {
+			walkOp(r)
+		}
 	}
 	return found
 }
@@ -226,6 +229,9 @@ func foldPackage(
 			return err
 		}
 		if err := folder.foldReturns(&file.DisplacedReturns, consts, foldedScope); err != nil {
+			return err
+		}
+		if err := folder.foldReturns(&file.ToleranceReturns, consts, foldedScope); err != nil {
 			return err
 		}
 	}
@@ -386,6 +392,7 @@ func (s *evalScope) scopePackage() *program.Package {
 			Annotations:      f.Annotations,
 			GradientReturns:  f.GradientReturns,
 			DisplacedReturns: f.DisplacedReturns,
+			ToleranceReturns: f.ToleranceReturns,
 		}
 		if i == s.fileIdx {
 			cp.Assignments = activeAssigns

@@ -19,6 +19,10 @@ type MeshRequest struct {
 	HasBbox     bool       `json:"-"`
 	Algo        string     `json:"algo"`
 	Time        float64    `json:"time"`
+	// Coatings and Relief mesh each surface moved by its materials' coatings
+	// and relief (mesh.WithDisplacement). The box is the request's as given.
+	Coatings bool `json:"coatings"`
+	Relief   bool `json:"relief"`
 	// Meshes finds the STL files the source's importMesh declarations name,
 	// as on compile.Request.
 	Meshes meshimport.Finder `json:"-"`
@@ -101,6 +105,7 @@ func meshSetup(req MeshRequest, sourcePaths []string, progressFn compile.Progres
 		mesh.WithSubdivision(subdiv),
 		mesh.WithAlgorithm(algo),
 		mesh.WithTime(req.Time),
+		mesh.WithDisplacement(req.Coatings, req.Relief),
 	}
 	if req.HasBbox {
 		meshOpts = append(meshOpts, mesh.WithBbox(req.Bbox))

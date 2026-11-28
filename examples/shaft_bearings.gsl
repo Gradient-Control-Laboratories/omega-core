@@ -9,8 +9,10 @@
 
 journal = bearing.bore(6205.0);
 // Each bearing seats on a k5 journal, the usual fit for an inner ring that
-// turns under load: 25.002 to 25.011 (ISO 286), drawn at maximum material.
-seat = bearing.seatDia(6205.0, tolerance.k5, tolerance.maxMaterial);
+// turns under load: made to 25.0065, the middle of 25.002 to 25.011 (ISO 286),
+// with the zone as its working tolerance.
+seat = bearing.seatDia(6205.0, tolerance.k5);
+seat.tolerance = bearing.seatZone(6205.0, tolerance.k5);
 groove = bearing.ringGrooveWidth(journal);
 leftFace = 10.0;
 rightFace = 85.0;

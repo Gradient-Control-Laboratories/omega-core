@@ -191,6 +191,9 @@ func (c *importCollector) collectFromPackageFile(file *PackageFile) {
 	for _, op := range file.DisplacedReturns {
 		c.visit(op)
 	}
+	for _, op := range file.ToleranceReturns {
+		c.visit(op)
+	}
 	for _, fnType := range file.FnTypes {
 		if fnType != nil {
 			for _, group := range fnType.Groups {

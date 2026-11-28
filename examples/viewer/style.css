@@ -775,6 +775,13 @@ body.resizing #stl-canvas-container {
     color: #bababa;
 }
 
+/* The Section panel's contour controls while its Color view is on: shown,
+ * but out of play. */
+#field-panel .field-contour-control.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
 .panel-close {
     display: none;
     cursor: pointer;

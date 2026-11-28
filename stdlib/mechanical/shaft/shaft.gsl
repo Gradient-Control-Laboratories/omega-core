@@ -386,7 +386,7 @@ body(segments, finish) {
   solid = max(shaftSoFar.x, -cuts);
   solid.box = [[neg(reach), neg(reach), extentLow < 50000.0 ? boxLow : bottomFace],
                [reach, reach, extentHigh < 50000.0 ? boxHigh : topFace]];
-  solid.material = material.withDisplacement(finish, relief);
+  solid.material = material.withDisplacement(finish, material.displacement(finish) + relief);
   solid.color = tint;
   solid.simple = stand;
   return solid;
@@ -439,7 +439,7 @@ body(segments, bottomHole, topHole, finish) {
   solid = max(shaftSoFar.x, -cuts, -topVoid, -bottomVoid);
   solid.box = [[neg(reach), neg(reach), extentLow < 50000.0 ? boxLow : bottomFace],
                [reach, reach, extentHigh < 50000.0 ? boxHigh : topFace]];
-  solid.material = material.withDisplacement(finish, relief);
+  solid.material = material.withDisplacement(finish, material.displacement(finish) + relief);
   solid.color = tint;
   solid.simple = stand;
   return solid;

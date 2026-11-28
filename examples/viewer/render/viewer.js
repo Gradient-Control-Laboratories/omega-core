@@ -219,10 +219,21 @@ const fieldHeightU = uniform(0.0);
 const fieldNormalU = uniform(new THREE.Vector3(0, 0, 1));
 const fieldIntervalU = uniform(0.25); // matches the panel default
 const fieldFadeU = uniform(5.0); // matches the panel default (half of fade max)
-const modelOpacityU = uniform(1.0);
 const sectionOpacityU = uniform(0.25);
 const fieldUnionU = uniform(0.0); // off by default — draw each shape's field independently
 const fieldExternalU = uniform(1.0); // on by default — show external (dist>0) interval curves
+// The section panel's Coatings and Relief toggles: 1 draws the section's field
+// with its surfaces moved by their materials' coatings (builds) / relief (gsl_sectionShape),
+// 0 the field as built. Off by default, so the section shows what it always has.
+const fieldBuildU = uniform(0.0);
+const fieldReliefU = uniform(0.0);
+// The section panel's Color toggle: 1 shows the cut faces in each shape's color
+// (inside a solid, its color field; outside, the background) instead of contours.
+const fieldColorU = uniform(0.0);
+// The section panel's Band toggle: when not 0, shades where each shape's surface
+// may lie between its most and least material (a document with working
+// tolerances), its width exaggerated by this factor.
+const fieldBandU = uniform(0.0);
 const bgColorU = uniform(new THREE.Vector3(BG_COLOR.r, BG_COLOR.g, BG_COLOR.b));
 let currentWGSL = "";
 let currentShapeCount = 0;
@@ -809,8 +820,76 @@ function updateShader(wgslCode, shapeCount = 1, shapeNames = [], meshSdfBindings
   }
 
   // The shaders around the compiled program (gsl-render-graph.js).
-  const { sdShape, gsl_min, gsl_shapeColor, injectExtraArgs, colorParamsWGSL, colorArgsWGSL, wgslFragmentShader, ptFragment, simpleFragment } =
+  const { sdShape, gsl_min, gsl_shapeColor, injectExtraArgs, colorParamsWGSL, colorArgsWGSL, wgslFragmentShader, ptFragment, simpleFragment, gsl_sectionShape } =
     buildRenderGraph({ wgslCode, shapeCount: currentShapeCount, extraParamsWGSL, extraArgsWGSL, pixelWidthNode: gsl_pixelWidthNode });
+  // The section's field: moved by the panel's Build and Relief toggles when the
+  // program has a material field to move it by (gsl_sectionShape), else sdShape.
+  // gsl_sectionShape's call carries its extra arguments itself, injectExtraArgs
+  // filling in only sdShape's.
+  const sectionField = gsl_sectionShape
+    ? `gsl_sectionShape(hitPoint, time, fieldRelief, fieldBuild${extraArgsWGSL})`
+    : "sdShape(hitPoint, time)";
+  // Color mode's cut: inside ANY visible shape, colored by the one it is deepest
+  // in. The union (gsl_min) cannot say: it keeps the nearest crossing, |d|, so
+  // where two returns overlap -- a screw in a tapped hole -- a point deep in the
+  // screw reads the plate's small positive distance to its bore, and the cut
+  // vanished there. Each shape is sampled alone (gsl_fieldFilterIdx), as the
+  // contour view's per-shape mode does.
+  const colorCutShapes = [];
+  for (let i = 1; i <= currentShapeCount; i++) {
+    colorCutShapes.push(`
+                if (vis${i} > 0.5) {
+                    gsl_fieldFilterIdx = ${i}u;
+                    let cs${i} = ${sectionField};
+                    if (cs${i}.shapeIndex == ${i}u && cs${i}.distance < cut.distance) {
+                        cut = gsl_shape(cs${i}.distance, ${i}u);
+                    }
+                }`);
+  }
+  // The color of a cut face: the program's color field where it authors one
+  // (gsl_colorField, whose call injectExtraArgs completes), else the shape's
+  // palette color, as shading chooses. Both are sRGB and the render targets
+  // are linear (the composite encodes to sRGB at the canvas), so it is decoded
+  // with the exact transfer function shading uses (gsl_srgbToLinear); written
+  // as it is, it was encoded twice and showed washed out.
+  const cutSrgbWGSL = wgslCode.includes("fn gsl_colorField(")
+    ? `let cut_cf = gsl_colorField(hitPoint, time, cut.shapeIndex);
+                let cutSrgb = select(gsl_shapeColor(cut.shapeIndex, ${colorArgsWGSL.join(", ")}), cut_cf.rgb, cut_cf.a > 0.5);`
+    : `let cutSrgb = gsl_shapeColor(cut.shapeIndex, ${colorArgsWGSL.join(", ")});`;
+  const cutColorWGSL = `${cutSrgbWGSL}
+                let cutRGB = select(pow((cutSrgb + vec3<f32>(0.055)) / 1.055, vec3<f32>(2.4)), cutSrgb / 12.92,
+                    cutSrgb <= vec3<f32>(0.04045));`;
+  // The tolerance band: in the cut, where a shape's surface may lie between
+  // its most and least material (gsl_toleranceField, for a document with
+  // working tolerances), shaded by the Section panel's Band toggle. dn is the
+  // shape's nominal distance, read through the tolerance view the section
+  // shows (gsl_tolSel). Tolerances are micrometres, far below a pixel at most
+  // zooms, so the band is drawn at least a pixel wide wherever a shape has a
+  // tolerance, and at its true width once zoomed in far enough.
+  const hasTolField = wgslCode.includes("fn gsl_toleranceField(");
+  const tolBandShapes = [];
+  if (hasTolField) {
+    for (let i = 1; i <= currentShapeCount; i++) {
+      tolBandShapes.push(`
+                if (vis${i} > 0.5) {
+                    gsl_fieldFilterIdx = ${i}u;
+                    let bs${i} = ${sectionField};
+                    if (bs${i}.shapeIndex == ${i}u) {
+                        let tb${i} = gsl_toleranceField(hitPoint, time, ${i}u${extraArgsWGSL});
+                        let off${i} = select(tb${i}.y, tb${i}.x, gsl_tolSel < 0.0) * abs(gsl_tolSel);
+                        let dn${i} = bs${i}.distance - off${i};
+                        if (tb${i}.y > tb${i}.x && dn${i} + tb${i}.x * fieldBand < gsl_pw && dn${i} + tb${i}.y * fieldBand > -gsl_pw) {
+                            inBand = true;
+                        }
+                    }
+                }`);
+    }
+  }
+  const tolBandWGSL = `let gsl_tolBandRGB = vec3<f32>(1.0, 0.45, 0.05);
+            var inBand = false;
+            ${hasTolField ? `if (fieldBand > 0.0) {${tolBandShapes.join("")}
+                gsl_fieldFilterIdx = 0u;
+            }` : ""}`;
   // The Color tier's frame: the standard one as if the program authored no
   // material. Its pipeline compiles only once the tier is drawn.
   const { wgslFragmentShader: colorFragment } =
@@ -891,7 +970,7 @@ function updateShader(wgslCode, shapeCount = 1, shapeNames = [], meshSdfBindings
     nonUnionShapes.push(`
             if (vis${i} > 0.5) {
                 gsl_fieldFilterIdx = ${i}u;
-                let sd_nu = sdShape(hitPoint, time);
+                let sd_nu = ${sectionField};
                 let rgb_nu = gsl_shapeColor(${i}u, ${colorArgsWGSL.join(", ")});
                 nuResult = clamp(nuResult + gsl_drawField(sd_nu.distance, vec4<f32>(rgb_nu, 1.0),
                     vec4<f32>(0.0, 0.0, 0.0, 0.0), max(fieldInterval, 1e-4), fieldFade, fieldExternal), vec4<f32>(0.0), vec4<f32>(1.0));
@@ -917,6 +996,11 @@ function updateShader(wgslCode, shapeCount = 1, shapeNames = [], meshSdfBindings
             fieldFade: f32,
             fieldUnion: f32,
             fieldExternal: f32,
+            fieldBuild: f32,
+            fieldRelief: f32,
+            fieldColor: f32,
+            fieldBand: f32,
+            surfaceKnobs: vec4<f32>,
             bgColor: vec3<f32>,
             ${colorParamsWGSL.join(", ")},
             ${visParamsWGSL.join(", ")}${extraParamsWGSL}
@@ -941,15 +1025,33 @@ function updateShader(wgslCode, shapeCount = 1, shapeNames = [], meshSdfBindings
             let clipPos = projViewZUp * vec4<f32>(hitPoint, 1.0);
             let depth01 = clipPos.z / clipPos.w;
 
+            ${hasTolField ? "gsl_tolSel = surfaceKnobs.w;" : ""}
+            ${tolBandWGSL}
+            if (fieldColor > 0.5) {
+                // Color mode: the cut faces in each shape's color, the background
+                // elsewhere, with no contours. Alpha carries depth, as in union mode,
+                // and 2 more on a cut face, so the composite knows a cut by that and
+                // not by its color, which can be as dark as the background (a
+                // thread's painted relief).
+                var cut = gsl_shape(1e9, 0u);
+                ${colorCutShapes.join("")}
+                gsl_fieldFilterIdx = 0u;
+                if (cut.shapeIndex == 0u || cut.distance > 0.0) {
+                    return vec4<f32>(select(bgColor, mix(bgColor, gsl_tolBandRGB, 0.7), inBand), depth01);
+                }
+                ${cutColorWGSL}
+                return vec4<f32>(select(cutRGB, mix(cutRGB, gsl_tolBandRGB, 0.7), inBand), depth01 + 2.0);
+            }
+
             if (fieldUnion > 0.5) {
                 // Union mode: take the SDF union, draw with opaque gray background.
                 // Alpha channel encodes depth for fieldHit detection in composite.
                 gsl_fieldFilterIdx = 0u;
-                let sd = sdShape(hitPoint, time);
+                let sd = ${sectionField};
                 let shapeRGB = gsl_shapeColor(sd.shapeIndex, ${colorArgsWGSL.join(", ")});
                 let drawn = gsl_drawField(sd.distance, vec4<f32>(shapeRGB, 1.0),
                     vec4<f32>(bgColor, 1.0), max(fieldInterval, 1e-4), fieldFade, fieldExternal);
-                return vec4<f32>(drawn.rgb, depth01);
+                return vec4<f32>(select(drawn.rgb, mix(drawn.rgb, gsl_tolBandRGB, 0.7), inBand), depth01);
             }
 
             // Non-union mode: all shape fields combined additively (all lines visible),
@@ -959,7 +1061,7 @@ function updateShader(wgslCode, shapeCount = 1, shapeNames = [], meshSdfBindings
             gsl_fieldFilterIdx = 0u;
             let nuAlpha = nuResult.a;
             let lineRGB = select(bgColor, nuResult.rgb / max(nuAlpha, 0.001), nuAlpha > 0.001);
-            return vec4<f32>(mix(bgColor, lineRGB, nuAlpha), depth01);
+            return vec4<f32>(select(mix(bgColor, lineRGB, nuAlpha), mix(mix(bgColor, lineRGB, nuAlpha), gsl_tolBandRGB, 0.7), inBand), depth01);
         }
     `),
     [
@@ -970,6 +1072,7 @@ function updateShader(wgslCode, shapeCount = 1, shapeNames = [], meshSdfBindings
       gsl_drawField,
       gsl_fieldFilterNode,
       gsl_pixelWidthNode,
+      ...(gsl_sectionShape ? [gsl_sectionShape] : []),
     ],
   );
 
@@ -1003,6 +1106,11 @@ function updateShader(wgslCode, shapeCount = 1, shapeNames = [], meshSdfBindings
     fieldNormal: fieldNormalU,
     fieldUnion: fieldUnionU,
     fieldExternal: fieldExternalU,
+    fieldBuild: fieldBuildU,
+    fieldRelief: fieldReliefU,
+    fieldColor: fieldColorU,
+    fieldBand: fieldBandU,
+    surfaceKnobs: surfaceKnobsU,
     bgColor: bgColorU,
     ...colorUniforms,
     ...visUniforms,
@@ -1680,7 +1788,7 @@ function initComposite() {
             fieldRGBA: vec4<f32>,
             fieldOn: f32,
             fieldUnion: f32,
-            modelOpacity: f32,
+            fieldColor: f32,
             sectionOpacity: f32,
             camPosZUp: vec3<f32>,
             fieldNormal: vec3<f32>,
@@ -1732,6 +1840,8 @@ function initComposite() {
             let fieldRGB = fieldRGBA.rgb;
             let planeDepth = fieldRGBA.a;
             let fieldHit = (fieldOn > 0.5) && (planeDepth > 0.001);
+            // The section pass marks a Color-mode cut face by adding 2 to its depth.
+            let isCut = planeDepth >= 2.0;
 
             let sel = u32(selIdx + 0.5);
             let hov = u32(hovIdx + 0.5);
@@ -1807,24 +1917,28 @@ function initComposite() {
             // Compute scene result before box overlay
             var result: vec4<f32>;
 
-            // No active plane: draw model at modelOpacity (or axis at 0.5) over background
+            // No active plane: draw the model (or the axis at 0.5) over the background
             if (!fieldHit) {
-                let op = select(axisOpacity, modelOpacity, shapeHit);
+                let op = select(axisOpacity, 1.0, shapeHit);
                 let behind = select(effectiveBgRGB, effectiveBgFlat, shapeHit);
                 result = vec4(select(effectiveBgRGB, mix(behind, shapeRGB, op), shapeVisible), 1.0);
                 // Over the background, blend by coverage, unless the standard
                 // frame's hit is hidden behind a mesh or the grid.
                 if (ptOn && !centerIsAxis && (shapeVisible || !shapeHit)) {
-                    result = vec4(mix(effectiveBgRGB, ptColor, coverage * select(1.0, modelOpacity, shapeHit)), 1.0);
+                    result = vec4(mix(effectiveBgRGB, ptColor, coverage), 1.0);
                 }
+            } else if (fieldColor > 0.5 && isCut) {
+                // Color mode, a cut face: the cut itself, in full color.
+                result = vec4(fieldRGB, 1.0);
             } else if (modelBelowPlane) {
                 // Model is behind the plane — composite section over 100% opaque model
                 result = vec4(mix(shapeRGB, sectionRGBA.rgb, sectionRGBA.a), 1.0);
             } else {
-                // Model is in front of the plane (or no model) — composite section over background,
-                // then model at modelOpacity on top
+                // No model behind the plane: the section over the background. Nothing is
+                // drawn in front of the section (the shape passes clip the model there;
+                // a tier that does not clip, the Simple one, drops it here), only the axis.
                 let behindModel = mix(effectiveBgRGB, sectionRGBA.rgb, sectionRGBA.a);
-                let op = select(axisOpacity, modelOpacity, shapeHit);
+                let op = select(axisOpacity, 0.0, shapeHit);
                 let behindShape = select(behindModel, mix(effectiveBgFlat, sectionRGBA.rgb, sectionRGBA.a), shapeHit);
                 result = vec4(select(behindModel, mix(behindShape, shapeRGB, op), shapeVisible), 1.0);
             }
@@ -1848,7 +1962,7 @@ function initComposite() {
     fieldRGBA: centerFieldSample,
     fieldOn: fieldEnabledU,
     fieldUnion: fieldUnionU,
-    modelOpacity: modelOpacityU,
+    fieldColor: fieldColorU,
     sectionOpacity: sectionOpacityU,
     camPosZUp: camPosZUpU,
     fieldNormal: fieldNormalU,
@@ -2284,6 +2398,34 @@ export function setFieldExternal(enabled) {
   scheduleRender();
 }
 
+// setFieldCoatings and setFieldRelief move the section's surfaces by their
+// materials' coatings (builds) and relief (gsl_sectionShape); off, the section
+// draws the field as built.
+export function setFieldCoatings(enabled) {
+  fieldBuildU.value = enabled ? 1.0 : 0.0;
+  scheduleRender();
+}
+
+export function setFieldRelief(enabled) {
+  fieldReliefU.value = enabled ? 1.0 : 0.0;
+  scheduleRender();
+}
+
+// setFieldColor shows the section's cut faces in each shape's color in place
+// of the field's contours.
+export function setFieldColor(enabled) {
+  fieldColorU.value = enabled ? 1.0 : 0.0;
+  scheduleRender();
+}
+
+// setFieldBand shades the section's tolerance band, where each shape's surface
+// may lie between its most and least material, its width exaggerated by scale
+// (1 as it is); 0 turns it off.
+export function setFieldBand(scale) {
+  fieldBandU.value = scale > 0 ? scale : 0.0;
+  scheduleRender();
+}
+
 export function getWorldExtent() {
   return worldExtent;
 }
@@ -2387,10 +2529,6 @@ export function setSectionOpacity(opacity) {
   scheduleRender();
 }
 
-export function setModelOpacity(opacity) {
-  modelOpacityU.value = opacity;
-  scheduleRender();
-}
 
 export function captureScene() {
   if (renderDisabled) return null;

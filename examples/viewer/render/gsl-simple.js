@@ -59,7 +59,7 @@ const f = (v) => {
 // rungs for the program's part guards). parts is whether the program has
 // parts: while the ray marches, a part far from it reads as its box
 // (backend/wgsl/internal/codegen/vanish.go).
-export function simpleFragmentWGSL({ visParamsWGSL, visArgsWGSL, colorParamsWGSL, colorArgsWGSL, extraParamsWGSL, setupWGSL = "", parts = false }) {
+export function simpleFragmentWGSL({ visParamsWGSL, visArgsWGSL, colorParamsWGSL, colorArgsWGSL, extraParamsWGSL, setupWGSL = "", parts = false, tolerance = false }) {
   return `
         fn gsl_simpleFragment(
             uv: vec2<f32>,
@@ -79,10 +79,12 @@ export function simpleFragmentWGSL({ visParamsWGSL, visArgsWGSL, colorParamsWGSL
             renderKnobs: vec4<f32>,
             detailKnobs: vec4<f32>,
             detailKnobs2: vec4<f32>,
+            surfaceKnobs: vec4<f32>,
             ${[...visParamsWGSL, ...colorParamsWGSL].join(", ")}${extraParamsWGSL}
         ) -> vec4<f32> {
             ${visArgsWGSL.map((v, i) => visAssignWGSL(i, v)).join(" ")}
             ${setupWGSL}
+            ${tolerance ? "gsl_tolSel = surfaceKnobs.w;" : ""}
 
             let ndc = vec2<f32>(uv.x * 2.0 - 1.0, 1.0 - uv.y * 2.0);
             let rayOffset = ndc.x * camTanFov.x * camRight + ndc.y * camTanFov.y * camUp;

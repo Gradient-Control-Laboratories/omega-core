@@ -176,3 +176,12 @@ type DisplacedReturnsBuilder interface {
 type GradientReturnsBuilder interface {
 	BuildPackageGradientReturns(gradientExpressions []Expression) error
 }
+
+// ToleranceReturnsBuilder is an optional Delegate extension for renderers that
+// draw a part at its most or least material: it receives each return's lowered
+// working tolerance (program.ToleranceReturns, a vec2 [lo, hi] of offsets of
+// its distance), after the material hook and before BuildPackageReturns. Only
+// called for a document that declares a tolerance.
+type ToleranceReturnsBuilder interface {
+	BuildPackageToleranceReturns(toleranceExpressions []Expression) error
+}

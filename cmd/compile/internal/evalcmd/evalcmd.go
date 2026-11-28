@@ -58,7 +58,7 @@ A request names its op and its document, by path ("source") or text ("code"):
   eval       exprs, points                            values and gradients at each point
   extremum   expr, region, mode, tolerance, lipschitz  min and/or max; the bound assumes the Lipschitz constant
   certify    expr, region, threshold, tolerance,      a sound proof that expr >= threshold over the region
-             params | overSliders                     (and over the parameter ranges)
+             params | overSliders | overTolerances    (and over the parameter ranges, or every x.tolerance)
   bounds     expr, region, resolution                 a box proven to hold all of expr < 0 ("proven"); else a
                                                       fit on a grid that can miss thin walls, and "reason"
   surface    expr, points, maxIters, tolerance        each point moved onto expr = 0
@@ -69,17 +69,24 @@ A request names its op and its document, by path ("source") or text ("code"):
   render     out, expr, views, width, height, light,   a PNG at out, as compile -t png draws it; expr defaults
              extent, time                              to the returns, each in its own colour
   mesh       out, region, subdivision, algorithm,      a .glb at out: a node per return, a normal per vertex from
-             time                                      the field's gradient; and each body's counts and volume
+             time, coatings, relief                    the field's gradient; and each body's counts and volume
   shader     target, outDir                            the field as a library a host's shader calls, in "wgsl" or
                                                        "glsl-es300": gsl_field and gsl_march, a uniform block
                                                        for time and the sliders, and its textures as files
 
 "defs" are GSL statements in the document's scope; one naming a declared name replaces it ("skin = 1.6;").
+"condition" is the state of the surfaces eval, extremum, certify, bounds, surface, volume and mesh read: "as-built"
+(the default: the field as the document builds it), "nominal" (each surface moved out by its materials' coatings) or
+"as-made" (by their coatings and their relief, as render draws it) or "max-material" (coatings on, relief at its peaks:
+as nominal until spreads exist); mesh then meshes as with "coatings" and "relief". "min-material" is refused: shift
+the claim's band by the surface's material.reliefDepth.
 "expr" defaults to the union of the document's returns, and eval's "exprs" to each of them.
 "region" is [x0, y0, z0, x1, y1, z1] in mm.
 render's "views" is compile's --views ("iso,top,-1,1,0.6"), its size 640 by 480 unless named.
 mesh's "region" defaults to the box the field fills (compile's --bbox auto), "subdivision" to 9 and "algorithm"
-to "mdc" (or "marching-cubes"); the response's "region" is the box that was meshed.
+to "mdc" (or "marching-cubes"); the response's "region" is the box that was meshed. "coatings" and "relief" mesh each
+surface moved by its materials' coatings and relief, as compile's --coatings and --relief; a region worked out for the
+part is then grown 3 mm, and the normals are the facets' average.
 shader's "code" has no entry point: a host adds its own, binds a buffer of "blockBytes" to "uniformBlock" and
 writes each of "uniforms" and "sliders" at its "offset", and loads each of "textures" from its "path" (raw texels,
 written under "outDir"). "region" is the box to march: the @scene box, or the box the field fills.
@@ -214,6 +221,7 @@ type request struct {
 	Threshold         *float64              `json:"threshold"`
 	Params            map[string][2]float64 `json:"params"`
 	OverSliders       bool                  `json:"overSliders"`
+	OverTolerances    bool                  `json:"overTolerances"`
 	Resolution        int                   `json:"resolution"`
 	MaxIters          int                   `json:"maxIters"`
 	RelativeTolerance float64               `json:"relativeTolerance"`
@@ -227,6 +235,9 @@ type request struct {
 	Time              float64               `json:"time"`
 	Subdivision       int                   `json:"subdivision"`
 	Algorithm         string                `json:"algorithm"`
+	Coatings          bool                  `json:"coatings"`
+	Relief            bool                  `json:"relief"`
+	Condition         string                `json:"condition"`
 	Target            string                `json:"target"`
 	OutDir            string                `json:"outDir"`
 }
@@ -285,11 +296,22 @@ func (s *server) dispatch(ctx context.Context, req *request) (map[string]any, er
 	if req.Op != "eval" && len(req.Exprs) > 0 {
 		return nil, malformedf("exprs is eval's; %s takes one expr", req.Op)
 	}
+	condition, err := eval.ParseCondition(req.Condition)
+	if err != nil {
+		return nil, malformed{err.Error()}
+	}
+	if condition != eval.AsBuilt && (req.Op == "describe" || req.Op == "render" || req.Op == "shader") {
+		return nil, malformedf("condition is for the field queries; %s does not take it", req.Op)
+	}
 	code, paths, docDir, err := s.document(req)
 	if err != nil {
 		return nil, err
 	}
 	e := s.evaluator(paths, docDir)
+	// A session's evaluator serves every request on its paths, so each request sets its own condition.
+	if err := e.SetCondition(condition); err != nil {
+		return nil, malformed{err.Error()}
+	}
 	switch req.Op {
 	case "eval":
 		return evalPoints(ctx, e, code, req)
@@ -461,6 +483,9 @@ func certify(ctx context.Context, e *eval.Evaluator, code string, req *request) 
 	if req.OverSliders && len(req.Params) > 0 {
 		return nil, malformedf("certify over the document's sliders (overSliders) or over params, not both")
 	}
+	if req.OverTolerances && (req.OverSliders || len(req.Params) > 0) {
+		return nil, malformedf("certify over the document's tolerances (overTolerances) alone, not with overSliders or params")
+	}
 	if err := nonNegative("tolerance", req.Tolerance); err != nil {
 		return nil, err
 	}
@@ -474,6 +499,8 @@ func certify(ctx context.Context, e *eval.Evaluator, code string, req *request) 
 	}
 	var r *eval.CertifyResult
 	switch {
+	case req.OverTolerances:
+		r, err = e.CertifyOverTolerances(ctx, nil, code, req.Defs, x, box, *req.Threshold, req.Tolerance)
 	case req.OverSliders:
 		r, err = e.CertifyOverSliders(ctx, nil, code, req.Defs, x, box, *req.Threshold, req.Tolerance)
 	case len(req.Params) > 0:
@@ -668,7 +695,8 @@ func meshFile(ctx context.Context, e *eval.Evaluator, code string, req *request)
 	default:
 		return nil, malformedf("algorithm %q: mdc or marching-cubes", req.Algorithm)
 	}
-	opt := eval.MeshOptions{Subdivision: req.Subdivision, Algorithm: req.Algorithm, Time: req.Time}
+	opt := eval.MeshOptions{Subdivision: req.Subdivision, Algorithm: req.Algorithm, Time: req.Time,
+		Coatings: req.Coatings, Relief: req.Relief}
 	if req.Region != nil {
 		box, err := checkRegion(*req.Region)
 		if err != nil {

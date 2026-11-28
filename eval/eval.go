@@ -15,6 +15,7 @@ import (
 	"github.com/Gradient-Control-Laboratories/omega-core/assembler"
 	"github.com/Gradient-Control-Laboratories/omega-core/assembler/source"
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget"
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget/convert"
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/meshfold"
 	"github.com/Gradient-Control-Laboratories/omega-core/internal/meshimport"
 	"github.com/Gradient-Control-Laboratories/omega-core/parser"
@@ -35,6 +36,10 @@ type Evaluator struct {
 	// certifyBudget overrides certify's per-proof interval-eval budget
 	// when positive; see SetCertifyBudget.
 	certifyBudget int
+
+	// surface is where the condition puts the layered surfaces the field
+	// queries read; see SetCondition. The zero value is the field as built.
+	surface convert.Surface
 
 	// queryCacheSize, when positive, is how many prepared queries
 	// queryCache keeps, most recently used last; see CacheQueries.
@@ -170,7 +175,7 @@ func (e *Evaluator) EvalGsl(ctx context.Context, manifest map[string]string, cod
 		zs[i] = float32(pt[2])
 	}
 
-	return EvalGradGroups(prog, xs, ys, zs)
+	return evalGradGroups(prog, e.surface, xs, ys, zs)
 }
 
 // prepareQuery parses the document with the given expressions substituted
@@ -231,7 +236,10 @@ func (e *Evaluator) assembleQuery(ctx context.Context, manifest map[string]strin
 		}
 	}
 
-	res, err := assembler.Assemble([]string{gslSource}, e.assembleOptions...)
+	// The query's expressions are its returns, so a .d or .dp in one is taken
+	// of the field the condition reads: of the coated field where a shape in
+	// it is layered.
+	res, err := assembler.Assemble([]string{gslSource}, append(append([]assembler.Option(nil), e.assembleOptions...), assembler.WithConditionDerivatives())...)
 	if err != nil {
 		return nil, "", nil, fmt.Errorf("failed to assemble query: %w", err)
 	}
@@ -309,7 +317,7 @@ func (e *Evaluator) Bounds(ctx context.Context, manifest map[string]string, code
 		return nil, err
 	}
 
-	pass1, err := gridScan(prog, region, resolution)
+	pass1, err := gridScan(prog, e.surface, region, resolution)
 	if err != nil {
 		return nil, err
 	}
@@ -330,7 +338,7 @@ func (e *Evaluator) Bounds(ctx context.Context, manifest map[string]string, code
 		refined[k] = pass1.bboxMin[k] - pass1.cellSize[k]
 		refined[k+3] = pass1.bboxMax[k] + pass1.cellSize[k]
 	}
-	pass2, err := gridScan(prog, refined, resolution)
+	pass2, err := gridScan(prog, e.surface, refined, resolution)
 	if err != nil {
 		return nil, err
 	}
@@ -367,7 +375,8 @@ type gridScanResult struct {
 // cell). The fallback must not be the primary test: clamped fields like
 // vdbSdf sit at a small constant background away from the surface, and a
 // half-diagonal larger than that background would mark every cell occupied.
-func gridScan(prog *program.Program, region [6]float64, resolution int) (*gridScanResult, error) {
+// The surfaces stand at s (Evaluator.SetCondition).
+func gridScan(prog *program.Program, s convert.Surface, region [6]float64, resolution int) (*gridScanResult, error) {
 	r := &gridScanResult{minValue: float32(math.Inf(1))}
 	var cellSize [3]float64
 	for k := 0; k < 3; k++ {
@@ -394,7 +403,7 @@ func gridScan(prog *program.Program, region [6]float64, resolution int) (*gridSc
 		}
 	}
 
-	results, err := EvalGrad(prog, xs, ys, zs)
+	results, err := evalGrad(prog, s, xs, ys, zs)
 	if err != nil {
 		return nil, err
 	}

@@ -62,9 +62,13 @@ func (d *Delegate) BuildBuiltinCall(
 		// lit renderer moves every one by all of it (dispDrawn).
 		return d.BuildValue(op, d.dispDrawn)
 	case program.DisplacementScale:
-		// The same weight, asked while marching: the lit renderer moves every
-		// surface by all of its height, meshing and export by none.
-		return d.BuildValue(op, d.dispDrawn)
+		// How far a layered shape is moved by its relief: all of it in the lit
+		// renderer, none in meshing and export unless a displaced mesh asks
+		// for it (ToDisplacedTreesAtTime).
+		return d.BuildValue(op, d.reliefScale)
+	case program.BuildScale:
+		// The same for the film a coat stands proud by.
+		return d.BuildValue(op, d.buildScale)
 	case "length":
 		return d.builtinLength(op, args[0].(*TreeNode))
 	case "bvhSdf":
@@ -386,12 +390,22 @@ func (d *Delegate) builtinExp2(op *program.Operand, arg *TreeNode) (*TreeNode, e
 	return NewTreeNode(op, op.Start, result...)
 }
 
-// fract(x) = x - floor(x) — element-wise
+// fract(x) = x mod 1 — element-wise
+//
+// It is built as fidget's modulo (rem_euclid), not as x - floor(x). The two
+// agree at every point, but interval arithmetic treats the two x's in
+// x - floor(x) as independent: over x in [100, 110] it bounds fract by
+// [-10, 10], so anything periodic built on it (a turned surface's grooves, a
+// face mill's arcs) loses its bounds, and certify, interval pruning and the
+// meshers subdivide below the period to recover them. rem_euclid's interval
+// is [0, 1] wherever the range crosses an integer, and exact where it does
+// not.
 func (d *Delegate) builtinFract(op *program.Operand, arg *TreeNode) (*TreeNode, error) {
 	v := arg.trees
 	result := make([]fidget.TreeIndex, len(v))
+	one := fidget.NewConst(1)
 	for i := range v {
-		result[i] = fidget.Sub(v[i], fidget.Floor(v[i]))
+		result[i] = fidget.Modulo(v[i], one)
 	}
 	return NewTreeNode(op, op.Start, result...)
 }

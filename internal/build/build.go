@@ -248,6 +248,30 @@ func (b *Builder) build(prog *program.Program, progScope *scope.ProgScope) error
 		}
 	}
 
+	// And for tolerance returns, present only for a document that declares a
+	// working tolerance, for delegates that draw a part at its most or least
+	// material.
+	if tb, ok := b.delegate.(ToleranceReturnsBuilder); ok {
+		toleranceOps := prog.ToleranceReturns()
+		if len(toleranceOps) > 0 {
+			toleranceExprs := make([]Expression, len(toleranceOps))
+			for i, op := range toleranceOps {
+				if op != nil {
+					expr, err := program.VisitOperand(op, b)
+					if err != nil {
+						return ErrLoc(lastFileScope, op.Start, err)
+					}
+					toleranceExprs[i] = expr
+				}
+				CheckScope(b, lastFileScope)
+			}
+			if err := tb.BuildPackageToleranceReturns(toleranceExprs); err != nil {
+				return err
+			}
+			CheckScope(b, lastFileScope)
+		}
+	}
+
 	// And for gradient returns, present only when assembly was asked for
 	// analytic gradients, for delegates that render analytic normals.
 	if gb, ok := b.delegate.(GradientReturnsBuilder); ok {

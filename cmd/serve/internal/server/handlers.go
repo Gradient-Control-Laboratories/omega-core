@@ -148,6 +148,10 @@ func (s *Server) handleMesh(w http.ResponseWriter, r *http.Request) {
 		Bbox        []float32 `json:"bbox"`
 		Algo        string    `json:"algo"`
 		Time        float64   `json:"time"`
+		// Coatings and Relief mesh each surface moved by its materials'
+		// coatings and relief (mesh.WithDisplacement).
+		Coatings bool `json:"coatings"`
+		Relief   bool `json:"relief"`
 		// Format is "stl" (the default: one body's STL, or a zip of <name>.stl for
 		// several), "3mf" (one file, each body an object in its own color) or
 		// "glb" (one binary glTF, each body a node with its own color).
@@ -176,6 +180,8 @@ func (s *Server) handleMesh(w http.ResponseWriter, r *http.Request) {
 		Subdivision: payload.Subdivision,
 		Algo:        payload.Algo,
 		Time:        payload.Time,
+		Coatings:    payload.Coatings,
+		Relief:      payload.Relief,
 		Meshes:      s.meshFinder(),
 		Bodies:      payload.Bodies,
 	}

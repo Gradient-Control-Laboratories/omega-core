@@ -22,8 +22,14 @@ import (
 // of its children's):
 //
 //	inc(v)   = height(v.material) - height(inherited(v))
+//	incb(v)  = build(v.material) - build(inherited(v))
 //	under(v) = v's body, with every shape in it moved the same way
-//	disp(v)  = under(v) - displacementScale() * inc(v)
+//	disp(v)  = under(v) - buildScale() * incb(v)
+//	                    - displacementScale() * (inc(v) - incb(v))
+//
+// A build is size and a relief is texture, so the two are scaled apart:
+// buildScale() moves the film a coat stands proud by, displacementScale() the
+// marks on it.
 //
 // For paint laid with material.levelled over the material beneath, inc is the
 // film's build less the relief it levels, so the paint rides the wood and
@@ -40,7 +46,9 @@ import (
 //
 // A return that is one such shape with nothing displaced inside it is left to
 // the renderer as before (its DisplacedReturns entry is nil), so a document
-// that sets its materials on its returns compiles exactly as it did.
+// that sets its materials on its returns compiles exactly as it did, unless
+// another return moves that shape inside its booleans: then the shape shades
+// by its layer, and the return is moved by its displaced distance as well.
 
 const (
 	// The synthetic declarations: a shape's displaced distance, the distance
@@ -48,9 +56,11 @@ const (
 	layerDispPrefix     = "gsl__disp__"
 	layerUnderPrefix    = "gsl__under__"
 	layerIncPrefix      = "gsl__inc__"
+	layerIncBuildPrefix = "gsl__incbuild__"
 	layerSurfPrefix     = "gsl__surf__"
 	layerSurfGradPrefix = "gsl__surfgrad__"
 	layerTopPrefix      = "gsl__top__"
+	layerTopBuildPrefix = "gsl__topbuild__"
 	layerSurfReadPrefix = "gsl__surfread__"
 
 	// layerThick is the least layer thickness (mm) the shading switch takes
@@ -158,12 +168,28 @@ func analyzeLayers(prog *program.Program) *layers {
 	last := pkg.Files[len(pkg.Files)-1]
 	l.returns = make([]*program.Operand, len(last.Returns))
 	any := false
+	var whole []int
 	for i, ret := range last.Returns {
-		if !l.containsOp(ret) || l.wholeReturn(ret) {
+		if !l.containsOp(ret) {
+			continue
+		}
+		if _, ok := l.wholeShape(ret); ok {
+			whole = append(whole, i)
 			continue
 		}
 		l.returns[i] = l.subst(ret)
 		any = true
+	}
+	// A whole return whose shape another return moves inside its booleans
+	// shades by that shape's layer switch: near and inside the solid beneath
+	// the layer, its material is the one beneath, whose height is not the
+	// shape's. Moved as a whole by that material, its surface would stand
+	// where the switch flips, so it is moved by its displaced distance too.
+	for _, i := range whole {
+		if name, _ := l.wholeShape(last.Returns[i]); l.inTree[name] {
+			l.returns[i] = l.subst(last.Returns[i])
+			any = true
+		}
 	}
 	if !any {
 		return nil
@@ -171,11 +197,11 @@ func analyzeLayers(prog *program.Program) *layers {
 	return l
 }
 
-// wholeReturn reports whether ret is one displacing shape with nothing moved
-// inside it, placed by nothing but moves (remap, a transform, a part's
+// wholeShape reports whether ret is one displacing shape, name, with nothing
+// moved inside it, placed by nothing but moves (remap, a transform, a part's
 // stand-in): moving that shape before the moves is moving the return after
 // them, which the renderer does as a whole exactly as before.
-func (l *layers) wholeReturn(ret *program.Operand) bool {
+func (l *layers) wholeShape(ret *program.Operand) (name string, ok bool) {
 	op := l.plain.unwrapRemaps(ret)
 	for depth := 0; op != nil && depth < 64; depth++ {
 		if stand := simplifiedCall(op); stand != nil {
@@ -186,26 +212,26 @@ func (l *layers) wholeReturn(ret *program.Operand) bool {
 		case *program.Operand_Reference:
 			name := t.Reference.Name
 			if t.Reference.Prefix != "" {
-				return false
+				return "", false
 			}
 			if l.displacing[name] {
-				return !l.containsOp(l.decls[name])
+				return name, !l.containsOp(l.decls[name])
 			}
 			body, ok := l.plain.decls[name]
 			if !ok {
-				return false
+				return "", false
 			}
 			op = body
 		case *program.Operand_Expression:
 			if t.Expression.Operation != program.Operation_REMAP || len(t.Expression.Operands) == 0 {
-				return false
+				return "", false
 			}
 			op = t.Expression.Operands[0]
 		default:
-			return false
+			return "", false
 		}
 	}
-	return false
+	return "", false
 }
 
 // contains reports whether a declaration has a moving surface in it: it sets
@@ -345,20 +371,79 @@ func (l *layers) emit(name string) {
 	// colour and material switch, is its height less the one beneath.
 	if root, _, aliases := l.chainRoot(name); aliases {
 		if at := l.surface(name); at != nil {
+			// The top coat's build is read beside its height, so the two
+			// share a remap (packReads) and the march still evaluates one
+			// material at one point.
 			l.declare(layerTopPrefix+name, l.readAt(at, height(program.CloneOperand(l.mats[name]))))
+			l.declare(layerTopBuildPrefix+name, l.readAt(at, build(program.CloneOperand(l.mats[name]))))
 			inc := ref(layerTopPrefix + name)
 			if beneath := aliasOf(body); beneath != "" && l.displacing[beneath] {
 				inc = sub(inc, ref(layerTopPrefix+beneath))
 			}
 			l.declare(layerIncPrefix+name, inc)
-			l.declare(layerDispPrefix+name, sub(program.CloneOperand(root),
-				mul(call(program.DisplacementScale), ref(layerTopPrefix+name))))
+			l.declare(layerDispPrefix+name, moved(program.CloneOperand(root),
+				ref(layerTopBuildPrefix+name), ref(layerTopPrefix+name)))
 			return
 		}
 	}
-	l.declare(layerIncPrefix+name, l.increment(name))
-	l.declare(layerDispPrefix+name, sub(ref(layerUnderPrefix+name),
-		mul(call(program.DisplacementScale), ref(layerIncPrefix+name))))
+	inc, incb := l.increment(name)
+	l.declare(layerIncBuildPrefix+name, incb)
+	l.declare(layerIncPrefix+name, inc)
+	// A chain of coats laid down to a shape with its own finish (a seat whose
+	// material is turned) telescopes too: the top coat's height holds the
+	// finish's relief, so its surface is the finished shape's own distance less
+	// that one height. Moving it by the increment instead would read the relief
+	// three times, once beneath and twice in the increment, which cancel in
+	// value but not in interval bounds. The increment is kept for the switch.
+	if root, ok := l.finishRoot(name); ok {
+		if at := l.surface(name); at != nil {
+			l.declare(layerTopPrefix+name, l.readAt(at, height(program.CloneOperand(l.mats[name]))))
+			l.declare(layerTopBuildPrefix+name, l.readAt(at, build(program.CloneOperand(l.mats[name]))))
+			l.declare(layerDispPrefix+name, moved(program.CloneOperand(root),
+				ref(layerTopBuildPrefix+name), ref(layerTopPrefix+name)))
+			return
+		}
+	}
+	l.declare(layerDispPrefix+name, moved(ref(layerUnderPrefix+name),
+		ref(layerIncBuildPrefix+name), ref(layerIncPrefix+name)))
+}
+
+// finishRoot is, for a coat laid on a coat ... laid on a shape whose material
+// is set on its own expression, that shape's undisplaced expression: every
+// link a bare name of a displacing shape, down to one that is not a bare name.
+func (l *layers) finishRoot(name string) (*program.Operand, bool) {
+	cur := name
+	for depth := 0; depth < 64; depth++ {
+		beneath := aliasOf(l.decls[cur])
+		if beneath == "" {
+			if cur == name {
+				return nil, false
+			}
+			return l.decls[cur], true
+		}
+		if !l.displacing[beneath] {
+			return nil, false
+		}
+		if _, ok := l.decls[beneath]; !ok {
+			return nil, false
+		}
+		cur = beneath
+	}
+	return nil, false
+}
+
+// moved is a distance moved out by a layer whose height is h, b of it build:
+// under - buildScale() * b - displacementScale() * (h - b).
+func moved(under, b, h *program.Operand) *program.Operand {
+	relief := sub(h, program.CloneOperand(b))
+	return sub(sub(under, mul(call(program.BuildScale), b)), mul(call(program.DisplacementScale), relief))
+}
+
+// drawnHeight is how far a layer whose height is h, b of it build, is moved
+// as drawn: buildScale() * b + displacementScale() * (h - b).
+func drawnHeight(b, h *program.Operand) *program.Operand {
+	relief := sub(h, program.CloneOperand(b))
+	return add(mul(call(program.BuildScale), b), mul(call(program.DisplacementScale), relief))
 }
 
 // aliasOf is the name an expression is, or "" when it is not a bare name.
@@ -380,7 +465,10 @@ func aliasOf(op *program.Operand) string {
 //
 // Only a coat laid over a named shape stands off a surface; a finish set on a
 // shape's own expression (a face of a max) sits on it, so is read at p.
-func (l *layers) increment(name string) *program.Operand {
+//
+// It returns the increment and, apart, the build in it (incb). Each is one
+// read, made one after the other, so the two share a remap (packReads).
+func (l *layers) increment(name string) (inc, incb *program.Operand) {
 	var at *program.Operand
 	if aliasOf(l.decls[name]) != "" {
 		at = l.surface(name)
@@ -394,7 +482,7 @@ func (l *layers) increment(name string) *program.Operand {
 	own := height(program.CloneOperand(l.mats[name]))
 	inherited, err := l.plain.fieldOf(l.plain.unwrapRemaps(l.decls[name]))
 	if err != nil || inherited == nil {
-		return onSurface(own)
+		return onSurface(own), onSurface(build(program.CloneOperand(l.mats[name])))
 	}
 	inh := flattenRemaps(inherited)
 	if chain := l.baseChain(name); chain != "" && at != nil {
@@ -408,12 +496,13 @@ func (l *layers) increment(name string) *program.Operand {
 		builds := l.readAt(at, sub(build(own), build(program.CloneOperand(inh))))
 		reliefs := l.readAt(at, sub(sub(height(program.CloneOperand(own)), build(program.CloneOperand(own))),
 			sub(height(program.CloneOperand(inh)), build(program.CloneOperand(inh)))))
-		return add(builds, mul(l.onChain(name, chain), reliefs))
+		return add(ref(layerIncBuildPrefix+name), mul(l.onChain(name, chain), reliefs)), builds
 	}
 	// One remap of the difference, not two of the heights: the coat's
 	// material is usually built from the one beneath, so one evaluation at
 	// the surface point serves both.
-	return onSurface(sub(own, height(inh)))
+	return onSurface(sub(own, height(inh))),
+		onSurface(sub(build(program.CloneOperand(l.mats[name])), build(program.CloneOperand(inh))))
 }
 
 // build is a material record's build, its volume row's fourth component.
@@ -498,17 +587,19 @@ type surfRead struct {
 }
 
 // readAt is expr evaluated at the surface point at refers to. Every value
-// read at one point is evaluated in one remap (packReads), up to three to a
+// read at one point is evaluated in one remap (packReads), up to four to a
 // vector: each remap is a function of its own to the GPU, which does not share
 // work between two, so reading a coat's height and the one beneath it in two
-// would evaluate the material beneath twice.
+// would evaluate the material beneath twice. Every coat reads two values, its
+// height and its build, one after the other, so a coat's pair never straddles
+// two remaps.
 func (l *layers) readAt(at, expr *program.Operand) *program.Operand {
 	slot := &program.Operand{}
 	l.reads = append(l.reads, surfRead{at: aliasOf(at), expr: expr, slot: slot})
 	return slot
 }
 
-// packReads writes the reads at each surface point as remaps of up to three
+// packReads writes the reads at each surface point as remaps of up to four
 // values at once, declared just after the point, and fills each read's slot
 // with its component.
 func (l *layers) packReads() {
@@ -528,11 +619,11 @@ func (l *layers) packReads() {
 		byAt[r.at] = append(byAt[r.at], r)
 	}
 	inserts := map[int][]*program.Assignment{}
-	comps := []string{program.XVarName, program.YVarName, program.ZVarName}
+	comps := []string{program.XVarName, program.YVarName, program.ZVarName, "w"}
 	for _, at := range order {
 		reads := byAt[at]
-		for g := 0; g*3 < len(reads); g++ {
-			chunk := reads[g*3 : min(len(reads), g*3+3)]
+		for g := 0; g*len(comps) < len(reads); g++ {
+			chunk := reads[g*len(comps) : min(len(reads), (g+1)*len(comps))]
 			name := fmt.Sprintf("%s%s_%d", layerSurfReadPrefix, strings.TrimPrefix(at, layerSurfPrefix), g)
 			var expr *program.Operand
 			if len(chunk) == 1 {
@@ -662,10 +753,10 @@ func (l *layers) beneath(name string) *program.Operand {
 		// face's look whatever its height: it gives way only inside the solid
 		// beneath, and only where it has thickness.
 		inside := bin(program.Operation_LT, ref(layerUnderPrefix+name), num(layerInside))
-		thick := bin(program.Operation_GT, mul(call(program.DisplacementScale), ref(layerIncPrefix+name)), num(layerThick))
+		thick := bin(program.Operation_GT, drawnHeight(ref(layerIncBuildPrefix+name), ref(layerIncPrefix+name)), num(layerThick))
 		return nary(program.Operation_SELECT, bin(program.Operation_AND, thick, inside), num(1), num(0))
 	}
-	drawn := bin(program.Operation_GT, call(program.DisplacementScale), num(0))
+	drawn := bin(program.Operation_GT, add(call(program.BuildScale), call(program.DisplacementScale)), num(0))
 	undrawn := neg(nary(program.Operation_MAX, num(layerUndrawn), mul(num(2), call(program.PixelSize))))
 	edge := nary(program.Operation_SELECT, drawn, num(layerInside), undrawn)
 	inside := bin(program.Operation_LT, ref(layerUnderPrefix+name), edge)

@@ -334,6 +334,9 @@ func (d *Delegate) BuildPackageReturns(_ []*program.Operand, expressions []build
 	if d.gradFieldSrc != "" {
 		d.module.AddFunction(ir.NewRawFuncDecl(d.gradFieldSrc))
 	}
+	if d.toleranceFieldSrc != "" {
+		d.module.AddFunction(ir.NewRawFuncDecl(d.toleranceFieldSrc))
+	}
 	if d.cellularUsed {
 		d.module.AddRuntimeSnippet(cellularWGSL)
 		if d.cellularWallUsed {
@@ -369,6 +372,9 @@ func (d *Delegate) BuildPackageReturns(_ []*program.Operand, expressions []build
 	}
 	if d.dispScaleUsed {
 		d.module.AddRuntimeSnippet(dispScaleDeclWGSL)
+	}
+	if d.buildScaleUsed {
+		d.module.AddRuntimeSnippet(buildScaleDeclWGSL)
 	}
 	if d.displacedFieldSrc != "" {
 		if d.heightsSrc != "" {

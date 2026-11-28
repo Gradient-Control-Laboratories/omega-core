@@ -420,6 +420,14 @@ Relief is what GSL does that a texture map cannot, and the one place the
 renderer sets a hard limit, so every entry decides its relief deliberately.
 There are three channels, and an entry may use all three.
 
+**Datum and depth.** A process or coat's relief is measured down from its
+peaks: 0 at the peaks, negative into the part, so the drawn surface is the one a
+part's size is held to. Each declares how far it reaches below them with
+`material.withReliefDepth` (row 0's fourth component), which tolerance
+requirements read; a random relief's peak is its mean profile peak, Rpm. Bulk and
+collection materials are judged for appearance and keep their own datums. See
+[tolerance.md](tolerance.md) and [material_composition.md](material_composition.md).
+
 **Relief in the material.** `material.withDisplacement(m, height)` carries a
 height in mm that the viewer marches as surface. The viewer evaluates the
 displaced field only within a band of the undisplaced surface, 4 mm since

@@ -78,22 +78,25 @@ export const GSL_DISPLACE_STATE_WGSL = `var<private> gsl_dispScale: f32 = 1.0;`;
 // to fill in, like every other module here. The call to gsl_sdShapeDisplaced
 // is written in full: its displacement scale sits before the suffix, where
 // injectExtraArgs would not put it.
-export function displaceSampleWGSL({ materialAtIdx, extraParamsWGSL, parts = false, perReturn = false, scaleVar = false }) {
+export function displaceSampleWGSL({ materialAtIdx, extraParamsWGSL, parts = false, perReturn = false, scaleVar = false, buildVar = false, tolerance = false }) {
   if (perReturn) {
-    // Every height in gsl_sdShapeDisplaced is scaled by its third argument,
-    // so a part whose relief has faded out (w 0) is its undisplaced sample
-    // exactly, and skips the materials the displaced field evaluates. It
-    // still sets the scale displacementScale() reads (scaleVar), as the call
-    // would have, so the shading after it sees a part drawn undisplaced and
-    // shows its top coat, not a scale left over from another part.
+    // Every height in gsl_sdShapeDisplaced is scaled by its scale arguments,
+    // relief by the third and build by the fourth, both w here: the march
+    // moves a coat's build by its knob as it moves the relief. So a part
+    // whose relief has faded out (w 0) is its undisplaced sample exactly,
+    // and skips the materials the displaced field evaluates. It still sets
+    // the scales displacementScale() and buildScale() read (scaleVar,
+    // buildVar), as the call would have, so the shading after it sees a part
+    // drawn undisplaced and shows its top coat, not a scale left over from
+    // another part.
     const partScale = parts ? " * gsl_partDetail(gsl_detail.x, sd.distance, 1e-3)" : "";
-    const zeroScale = scaleVar ? " gsl_dispScaleK = 0.0;" : "";
+    const zeroScale = (scaleVar ? " gsl_dispScaleK = 0.0;" : "") + (buildVar ? " gsl_buildScaleK = 0.0;" : "");
     return `
 fn gsl_displaceSample(p: vec3<f32>, sd: gsl_shape, time: f32${extraParamsWGSL}) -> gsl_shape {
     if (gsl_dispScale == 0.0) { return sd; }
     let w = gsl_dispScale${partScale};
     if (w == 0.0) {${zeroScale} return sd; }
-    return gsl_sdShapeDisplaced(p, time, w${argsFromParams(extraParamsWGSL)});
+    ${tolerance ? `return gsl_tolMoved(p, time, gsl_sdShapeDisplaced(p, time, w, w${argsFromParams(extraParamsWGSL)})${argsFromParams(extraParamsWGSL)});` : `return gsl_sdShapeDisplaced(p, time, w, w${argsFromParams(extraParamsWGSL)});`}
 }
 `;
   }
@@ -116,6 +119,113 @@ fn gsl_displaceSample(p: vec3<f32>, sd: gsl_shape, time: f32${extraParamsWGSL}) 
 `;
 }
 
+// THE SECTION CLIP. With the Section panel open, the model on the camera's
+// side of the section plane is cut away, so the march must not see it: rays pass through that half and find what lies behind it, and the cut
+// faces stand where the plane enters each solid. The clip is in the field, so
+// every march, normal and AO tap sees it: the compiled sdShape is renamed
+// gsl_sdShapeUnclipped and a wrapper of the same signature clips it
+// (clipSdShapeWGSL), and gsl_sdDisplaced clips its displaced result the same
+// way. The state is private: a fragment that clips sets it at entry from its
+// uniforms; every other shader, the section pass among them, leaves it off and
+// samples the whole field.
+//
+//   gsl_clipOn     1 while clipping
+//   gsl_clipPlane  (n, w) with n unit and dot(n, p) + w > 0 on the cut-away side
+// gsl_tolSel is the tolerance view a fragment sets at entry (surfaceKnobs.w):
+// negative draws a part with working tolerances at its most material, positive
+// at its least, 0 as nominal, its size the exaggeration the offsets are drawn
+// at (1 as they are). clipSdShapeWGSL applies it.
+export const GSL_CLIP_STATE_WGSL = `var<private> gsl_clipOn: f32 = 0.0;
+var<private> gsl_tolSel: f32 = 0.0;
+var<private> gsl_clipPlane: vec4<f32> = vec4<f32>(0.0, 0.0, 1.0, 0.0);
+fn gsl_clipShape(p: vec3<f32>, s: gsl_shape) -> gsl_shape {
+    if (gsl_clipOn == 0.0) { return s; }
+    return gsl_shape(max(s.distance, dot(gsl_clipPlane.xyz, p) + gsl_clipPlane.w), s.shapeIndex);
+}`;
+
+// clipSetupWGSL is the statement a fragment runs at entry to clip: on while
+// the section is active, cutting away the side of the plane
+// dot(normal, p) = height the camera is on. Nothing is drawn in front of the
+// section.
+export function clipSetupWGSL({ active, normal, height, camera }) {
+  return `gsl_clipOn = select(0.0, 1.0, ${active} > 0.5);
+            {
+                let clipLen = max(length(${normal}), 1e-6);
+                let clipSide = select(-1.0, 1.0, dot(${normal}, ${camera}) >= ${height});
+                gsl_clipPlane = vec4<f32>(${normal} / clipLen, -${height} / clipLen) * clipSide;
+            }`;
+}
+
+// clipSdShapeWGSL rewrites the compiled module so sdShape is clipped: the
+// compiled function is renamed gsl_sdShapeUnclipped and a wrapper with its
+// signature returns it through gsl_clipShape. A module without sdShape is
+// returned as it is.
+export function clipSdShapeWGSL(wgslCode) {
+  const m = wgslCode.match(/\bfn sdShape\(([^)]*)\)\s*->\s*gsl_shape/);
+  if (!m) return wgslCode;
+  const params = m[1];
+  const argList = params
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s !== "")
+    .map((s) => s.split(":")[0].trim());
+  const args = argList.join(", ");
+  const renamed = wgslCode.replace(/\bfn sdShape\(/, "fn gsl_sdShapeUnclipped(");
+  // A document with working tolerances: the winning return's distance moves by
+  // its tolerance's low offset (most material) or high one (least), by the
+  // tolerance view gsl_tolSel, before the clip.
+  if (/\bfn gsl_toleranceField\(/.test(wgslCode)) {
+    const tolArgs = ["p", "time", "s.shapeIndex", ...argList.slice(2)].join(", ");
+    return renamed + `
+
+fn sdShape(${params}) -> gsl_shape {
+    var s = gsl_sdShapeUnclipped(${args});
+    if (gsl_tolSel != 0.0 && s.shapeIndex != 0u) {
+        let tol = gsl_toleranceField(${tolArgs});
+        s.distance = s.distance + select(tol.y, tol.x, gsl_tolSel < 0.0) * abs(gsl_tolSel);
+    }
+    return gsl_clipShape(p, s);
+}
+`;
+  }
+  return renamed + `
+
+fn sdShape(${params}) -> gsl_shape {
+    return gsl_clipShape(p, gsl_sdShapeUnclipped(${args}));
+}
+`;
+}
+
+// sectionShapeWGSL returns the source of
+//
+//   fn gsl_sectionShape(p: vec3<f32>, time: f32, wRelief: f32, wBuild: f32, <suffix>) -> gsl_shape
+//
+// the field the section view draws: sdShape at p, its surfaces moved by
+// their materials' relief times wRelief and their builds times wBuild, each
+// 0 or 1 by the section panel's Relief and Build toggles. Both 0 is sdShape
+// exactly, the field as built, as the section has always drawn it. Unlike
+// gsl_displaceSample it takes no Detail fade: a section is read, not looked
+// at, and the panel says what it draws. The per-return composite
+// (gsl_sdShapeDisplaced, perReturn) moves each return by its own layers;
+// otherwise the winner's material moves it, as the march's plain path does.
+// The sdShape call is written bare, for injectExtraArgs; the
+// gsl_sdShapeDisplaced call is written in full.
+export function sectionShapeWGSL({ materialAtIdx, extraParamsWGSL, perReturn = false, tolerance = false }) {
+  const moved = perReturn
+    ? (tolerance
+        ? `return gsl_tolMoved(p, time, gsl_sdShapeDisplaced(p, time, wRelief, wBuild${argsFromParams(extraParamsWGSL)})${argsFromParams(extraParamsWGSL)});`
+        : `return gsl_sdShapeDisplaced(p, time, wRelief, wBuild${argsFromParams(extraParamsWGSL)});`)
+    : `let vol = (${materialAtIdx("p", "sd.shapeIndex")}).volume;
+    return gsl_shape(sd.distance - (vol.z - vol.w) * wRelief - vol.w * wBuild, sd.shapeIndex);`;
+  return `
+fn gsl_sectionShape(p: vec3<f32>, time: f32, wRelief: f32, wBuild: f32${extraParamsWGSL}) -> gsl_shape {
+    let sd = sdShape(p, time);
+    if (wRelief == 0.0 && wBuild == 0.0) { return sd; }
+    ${moved}
+}
+`;
+}
+
 // sdDisplacedWGSL returns the source of
 //
 //   fn gsl_sdDisplaced(p: vec3<f32>, time: f32, <suffix>) -> gsl_shape
@@ -131,7 +241,7 @@ export function sdDisplacedWGSL({ extraParamsWGSL, extraArgsWGSL }) {
   return `
 fn gsl_sdDisplaced(p: vec3<f32>, time: f32${extraParamsWGSL}) -> gsl_shape {
     let sd = sdShape(p, time);
-    return gsl_displaceSample(p, sd, time${extraArgsWGSL});
+    return gsl_clipShape(p, gsl_displaceSample(p, sd, time${extraArgsWGSL}));
 }
 `;
 }
@@ -155,4 +265,21 @@ function argsFromParams(params) {
 // deliberately left alone: they show the geometry as it is built.
 export function renameToDisplaced(wgsl) {
   return wgsl.replace(/\bsdShape\(/g, "gsl_sdDisplaced(");
+}
+
+// tolMovedWGSL returns the source of
+//
+//   fn gsl_tolMoved(p: vec3<f32>, time: f32, s: gsl_shape, <suffix>) -> gsl_shape
+//
+// s with its winning return moved by the tolerance view (gsl_tolSel): what
+// the clipped sdShape does to the compiled field, for the per-return displaced
+// composite, which computes each return's distance itself and so never passes
+// through it. For a document with working tolerances (gsl_toleranceField).
+export function tolMovedWGSL(extraParamsWGSL) {
+  return `
+fn gsl_tolMoved(p: vec3<f32>, time: f32, s: gsl_shape${extraParamsWGSL}) -> gsl_shape {
+    if (gsl_tolSel == 0.0 || s.shapeIndex == 0u) { return s; }
+    let tol = gsl_toleranceField(p, time, s.shapeIndex${argsFromParams(extraParamsWGSL)});
+    return gsl_shape(s.distance + select(tol.y, tol.x, gsl_tolSel < 0.0) * abs(gsl_tolSel), s.shapeIndex);
+}`;
 }

@@ -21,7 +21,9 @@ import "material/bulk/glass";
 
 /// reeded(origin, normal, along, pitch, depth): reeded glass, half-round
 /// flutes `pitch` mm apart (5 to 30; 13 to 15 the usual) running along
-/// `along` on the face through `origin`, `depth` mm deep (0.3 to 2),
+/// `along` on the face through `origin`, their seams `depth` mm (0.3 to 2)
+/// below their crowns, raised from the seams as relief (not measured down
+/// from the crowns),
 /// polished. Returns material, color, height and slope.
 reeded(@point origin, @direction(origin) normal, @direction(origin) along, @range(5, 30) pitch, @range(0.3, 2) depth) {
   n = normalize(normal);

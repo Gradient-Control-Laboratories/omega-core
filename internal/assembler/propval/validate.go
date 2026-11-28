@@ -24,6 +24,9 @@ var validAssignablePropNames = map[string]bool{
 	// Linear coordinates are millimetres, angular ones radians.
 	"u": true,
 	"v": true,
+	// A working tolerance on a scalar a part is made from: offsets [lo, hi]
+	// from its value (tolerance.limits). Readable, as .box is.
+	"tolerance": true,
 }
 
 // removedSliderProperties are the properties that set a slider's limits before
@@ -422,7 +425,7 @@ func validateExpression(op *program.Operand, inBoxProperty bool, file *program.P
 	// 2. Reject reading metadata properties in expressions
 	if propRef, ok := op.T.(*program.Operand_PropRef); ok && propRef != nil && propRef.PropRef != nil {
 		pName := propRef.PropRef.Property
-		if pName != "box" && validAssignablePropNames[pName] {
+		if pName != "box" && pName != "tolerance" && validAssignablePropNames[pName] {
 			return fileErr(file, op.Start, fmt.Sprintf("reading property %q in expressions is not supported; properties are declaration metadata", pName))
 		}
 	}

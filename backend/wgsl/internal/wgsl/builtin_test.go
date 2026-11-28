@@ -29,7 +29,7 @@ func TestSanityCheck(t *testing.T) {
 		// derived asset by the canvas agent, for the same reason the topology
 		// builtins are folded there: the warp is baked into geometry, so by the
 		// time a module reaches any backend the warped forms are gone.
-		if name == "mesh" || name == "importStep" || name == "importMesh" || name == "importWarp" || name == "bvhSdf" || name == "vdbSdf" || name == "meshDifference" || name == program.NoiseHash3 || name == program.PixelSize || name == program.DisplacementDrawn || name == program.DisplacementScale ||
+		if name == "mesh" || name == "importStep" || name == "importMesh" || name == "importWarp" || name == "bvhSdf" || name == "vdbSdf" || name == "meshDifference" || name == program.NoiseHash3 || name == program.PixelSize || name == program.DisplacementDrawn || name == program.DisplacementScale || name == program.BuildScale ||
 			// The worley* builtins lower to the gsl_cellularScan helper in
 			// codegen/cellular.go, not to a wgslBuiltins alias.
 			name == program.WorleyF1 || name == program.WorleyF2 ||

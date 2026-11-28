@@ -30,33 +30,52 @@ const (
 const (
 	displacementRow  = 2
 	displacementComp = 2
+	// buildComp is the volume row's fourth component: the part of the height
+	// that is film (material.withBuild).
+	buildComp = 3
 )
 
 // BuildPackageDisplacedReturns implements [build.DisplacedReturnsBuilder]: it
 // records each return's distance displaced inside its booleans, for the lit
-// renderer to march in place of its distance minus its material's height.
-// Meshing and export move no surface, so for them nothing is recorded.
+// renderer to march, or a displaced mesh to mesh, in place of its distance
+// minus its material's height. Plain meshing and export move no surface, so
+// for them nothing is recorded.
 func (cd *colorDelegate) BuildPackageDisplacedReturns(displacedExpressions []build.Expression) error {
 	d := cd.Delegate
-	if !d.pixelSizeInput {
+	if !d.recordInTree {
 		return nil
 	}
 	trees := make([]fidget.TreeIndex, len(displacedExpressions))
 	has := make([]bool, len(displacedExpressions))
+	all := make([][]fidget.TreeIndex, len(displacedExpressions))
 	for i, e := range displacedExpressions {
 		if e == nil {
 			continue
 		}
-		node, ok := e.(*TreeNode)
-		if !ok || len(node.Trees()) != 1 {
+		// A distance is one tree; a query's .d or .dp of a layered shape may
+		// be a vector (convert.ToSurfaceTrees reads every component).
+		var components []fidget.TreeIndex
+		switch node := e.(type) {
+		case *TreeNode:
+			components = node.Trees()
+		case *MultiTreeNode:
+			for _, n := range node.Nodes() {
+				components = append(components, n.Trees()...)
+			}
+		}
+		if len(components) == 0 {
 			return build.ErrLoc(d.GetScope(), e.Start(),
 				fmt.Errorf("expected a numeric displaced distance, got %s", e.Type().String()))
 		}
-		trees[i] = node.Trees()[0]
-		has[i] = true
+		all[i] = components
+		if len(components) == 1 {
+			trees[i] = components[0]
+			has[i] = true
+		}
 	}
 	d.inTreeReturns = trees
 	d.hasInTreeReturn = has
+	d.inTreeAll = all
 	return nil
 }
 

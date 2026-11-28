@@ -32,8 +32,9 @@ import "material/bulk/stone";
 /// ripple to one tap, not a multi-octave stack, or the double-march cost
 /// compounds. For water that moves by its own physics, with waves that run
 /// at the speed their length gives them, see animated.ocean. rippleScale is
-/// the ripples' size and rippleAmount their height, both in mm. Returns
-/// material, color.
+/// the ripples' size in mm and rippleAmount scales their height: they reach
+/// about ±0.06 rippleAmount rippleScale mm (±0.3 mm at 0.5 and 10 mm
+/// ripples, sampled). Returns material, color.
 water(@range(1, 50) rippleScale, rippleTimeScale, @range(0.02, 1) rippleAmount) {
   still, tint = glass.water();
   // Too small to resolve, the ripples fade flat and their slopes, 0.06
@@ -82,7 +83,8 @@ lavaStandColor(crustColor, glowColor) {
 
 /// lava(crackScale, crustColor, glowColor, glowStrength, flowTimeScale,
 /// crustDepth): lava(), plus one cheap noise.gradientBump crust-roughness
-/// displacement `crustDepth` mm high — the displaced tier of lava, real
+/// displacement scaled by `crustDepth`, reaching about ±0.08 crustDepth
+/// crackScale mm (±0.8 mm at 0.5 and 20 mm cracks, sampled) — the displaced tier of lava, real
 /// geometric relief on top of the already-animated color/material effect, so
 /// the viewer marches the displaced band for it. See animated.lavaLake for
 /// the lake's physics. Returns material, color.
@@ -113,7 +115,8 @@ fogMaterial(@range(0, 1) density, @color tintColor) {
 
 /// cloudMaterial(density, tintColor, puffScale, puffTimeScale, puffAmount):
 /// an opaque, matte surface with one cheap noise.gradientBump4 puff
-/// displacement, puffs `puffScale` mm across and `puffAmount` mm high, so it
+/// displacement, puffs `puffScale` mm across reaching about ±0.06 puffAmount
+/// puffScale mm (±1.2 mm at 1 and 20 mm puffs, sampled), so it
 /// visibly billows over time; `density` in [0,1] is how
 /// soft it looks, roughness 0.7 for a thin wisp up to 1 for a dense cumulus.
 /// It passes no light: see the package note. Drape over a caller-supplied

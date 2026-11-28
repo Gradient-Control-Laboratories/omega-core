@@ -178,6 +178,19 @@
                                         </div>
                                         <span id="render-normals-note" class="field-panel-label" hidden></span>
                                     </div>
+                                    <div class="field-panel-row">
+                                        <label>Tolerance</label>
+                                        <div class="resolution-controls" role="group" aria-label="The size a part with working tolerances is drawn at">
+                                            <button class="resolution-btn" type="button" data-tolerance="-1" aria-pressed="false" title="Each surface at its most material, from the document's working tolerances (x.tolerance), to first order: the largest shaft, the smallest hole">Most material</button>
+                                            <button class="resolution-btn active" type="button" data-tolerance="0" aria-pressed="true" title="Each surface at its nominal size">Nominal</button>
+                                            <button class="resolution-btn" type="button" data-tolerance="1" aria-pressed="false" title="Each surface at its least material, from the document's working tolerances, to first order: the smallest shaft, the largest hole">Least material</button>
+                                        </div>
+                                    </div>
+                                    <div class="field-panel-row">
+                                        <label>Exaggerate</label>
+                                        <input type="range" id="render-tolerance-scale" min="0" max="3" value="0" step="0.01" style="width: 80px;" title="Draw the tolerance offsets (Most and Least material) and the Section panel's Band this many times their size: micrometre tolerances read at a glance at x100 or x1000; x1 is as they are">
+                                        <span id="render-tolerance-scale-label" class="field-panel-label">x1</span>
+                                    </div>
                                 </details>
                                 <details class="render-section" id="render-advanced">
                                     <summary>Advanced</summary>
@@ -235,26 +248,39 @@
                                     <span id="field-height-label" class="field-panel-label">0.00</span>
                                 </div>
                                 <div class="field-panel-row">
-                                    <label>Interval (mm)</label>
-                                    <input type="range" id="field-interval" min="0" max="40" value="5" step="0.01">
-                                    <span id="field-interval-label" class="field-panel-label">5.00</span>
-                                </div>
-                                <div class="field-panel-row">
-                                    <label>Fade (mm)</label>
-                                    <input type="range" id="field-fade" min="0" max="200" value="100" step="0.1">
-                                    <span id="field-fade-label" class="field-panel-label">100.0</span>
-                                </div>
-                                <div class="field-panel-row">
                                     <label>Model</label>
-                                    <input type="range" id="field-model" min="0" max="1" value="0.5" step="0.01">
-                                    <span id="field-model-label" class="field-panel-label">0.50</span>
-                                </div>
-                                <div class="field-panel-row">
-                                    <label>Section</label>
                                     <input type="range" id="field-section" min="0" max="1" value="0.25" step="0.01">
                                     <span id="field-section-label" class="field-panel-label">0.25</span>
                                 </div>
                                 <div class="checkbox-row">
+                                    <div class="checkbox-row-group" title="Show the cut faces in each shape's color instead of the field's contours">
+                                        <label for="field-color">Color</label>
+                                        <input type="checkbox" id="field-color">
+                                    </div>
+                                    <div class="checkbox-row-group" title="Move the section's surfaces by their materials' coatings, the film each coat stands proud by">
+                                        <label for="field-coatings">Coatings</label>
+                                        <input type="checkbox" id="field-coatings">
+                                    </div>
+                                    <div class="checkbox-row-group" title="Move the section's surfaces by their materials' relief, the marks on them">
+                                        <label for="field-relief">Relief</label>
+                                        <input type="checkbox" id="field-relief">
+                                    </div>
+                                    <div class="checkbox-row-group" title="Shade where each surface may lie between its most and least material, from the document's working tolerances (x.tolerance); at least a pixel wide, so a micrometre band shows at any zoom">
+                                        <label for="field-band">Band</label>
+                                        <input type="checkbox" id="field-band">
+                                    </div>
+                                </div>
+                                <div class="field-panel-row field-contour-control">
+                                    <label>Interval (mm)</label>
+                                    <input type="range" id="field-interval" min="0" max="40" value="5" step="0.01">
+                                    <span id="field-interval-label" class="field-panel-label">5.00</span>
+                                </div>
+                                <div class="field-panel-row field-contour-control">
+                                    <label>Fade (mm)</label>
+                                    <input type="range" id="field-fade" min="0" max="200" value="100" step="0.1">
+                                    <span id="field-fade-label" class="field-panel-label">100.0</span>
+                                </div>
+                                <div class="checkbox-row field-contour-control">
                                     <div class="checkbox-row-group">
                                         <label for="field-union">Union</label>
                                         <input type="checkbox" id="field-union">

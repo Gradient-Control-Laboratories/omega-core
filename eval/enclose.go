@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/Gradient-Control-Laboratories/omega-core/internal/fidget/convert"
 	"github.com/Gradient-Control-Laboratories/omega-core/program"
 )
 
@@ -95,7 +96,7 @@ func (e *Evaluator) Enclose(ctx context.Context, manifest map[string]string, cod
 	leaf := float32(math.Max(span/encloseSteps, 16*ulp))
 
 	inf := float32(math.Inf(1))
-	search := &encloseSearch{ctx: ctx, prog: prog, leaf: leaf, inner: [6]float32{inf, inf, inf, -inf, -inf, -inf}}
+	search := &encloseSearch{ctx: ctx, prog: prog, surface: e.surface, leaf: leaf, inner: [6]float32{inf, inf, inf, -inf, -inf, -inf}}
 	unproven := func() (*EncloseResult, error) {
 		out.Reason = ReasonBudget
 		if search.unbounded {
@@ -186,6 +187,7 @@ func (h *encloseHeap) Pop() any {
 type encloseSearch struct {
 	ctx       context.Context
 	prog      *program.Program
+	surface   convert.Surface
 	leaf      float32
 	inner     [6]float32
 	evals     int
@@ -200,7 +202,7 @@ func (s *encloseSearch) intervals(boxes [][6]float32) ([]IntervalSample, error) 
 	if len(boxes) == 0 {
 		return nil, nil
 	}
-	intervals, err := EvalInterval(s.prog, boxes)
+	intervals, err := evalInterval(s.prog, s.surface, boxes)
 	if err != nil {
 		return nil, err
 	}
