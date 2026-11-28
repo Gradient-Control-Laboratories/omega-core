@@ -1,0 +1,47 @@
+// Koch snowflake with exact interior and exterior signed distance,
+// built by folding space onto one edge and subdividing via KIFS.
+//
+// After Matt Keeter's snowflake post:
+// https://www.mattkeeter.com/blog/2026-11-23-snowflake/
+
+// Reflect points on the positive side of a line through the origin.
+// The line's normal is (-sin(angle), cos(angle)).
+fold(q, angle) {
+  nrm = [-sin(angle), cos(angle)];
+  pushed = max(dot(q, nrm), 0);
+  return q - 2 * pushed * nrm;
+}
+
+// One Koch subdivision step on the segment [-1, 1] x {0} (inside: y < 0).
+kochify(field) {
+  qFolded = fold([abs(p.x) - 1 / 3, p.y], radians(60));
+  return remap(field, [3 * qFolded.x - 1, 3 * qFolded.y, p.z]) / 3;
+}
+
+// Fold the 3-fold symmetric plane onto one edge [-1, 1] x {0} of the
+// unit-circumradius equilateral triangle (inside: y < 0).
+foldTriangle(field) {
+  q0 = [abs(p.x), p.y];
+  q1 = fold(q0, radians(-30));
+  q2 = [abs(q1.x), q1.y];
+  edgePt = [q2.x, -0.5 - q2.y] * (2 / sqrt3);
+  return remap(field, [edgePt.x, edgePt.y, p.z]) * (sqrt3 / 2);
+}
+
+// Base segment [-1, 1] x {0} with exact signed distance (negative for y < 0).
+edgeDist = length([p.x - clamp(p.x, -1, 1), p.y]);
+level0 = (p.y < 0) ? -edgeDist : edgeDist;
+
+level1 = kochify(level0);
+level2 = kochify(level1);
+level3 = kochify(level2);
+level4 = kochify(level3);
+level5 = kochify(level4);
+level6 = kochify(level5);
+
+flakeProfile = foldTriangle(level6);
+flakeSolid = extrude(flakeProfile, -0.1, 0.1);
+flakeSolid.box = [[-1, -1, -0.1], [1, 1, 0.1]];
+snowflake = transform.scale(flakeSolid, 4.5);
+
+return snowflake;
